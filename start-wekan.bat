@@ -22,12 +22,6 @@ REM # ==== RICH TEXT EDITOR IN CARD COMMENTS ====
 REM # https://github.com/wekan/wekan/pull/2560
 SET RICHER_CARD_COMMENT_EDITOR=false
 
-REM # ==== MOUSE SCROLL ====
-REM # https://github.com/wekan/wekan/issues/2949
-SET SCROLLINERTIA=0
-SET SCROLLAMOUNT=auto
-SET SCROLLDELTAFACTOR=auto
-
 REM # ==== CARD OPENED, SEND WEBHOOK MESSAGE ====
 SET CARD_OPENED_WEBHOOK_ENABLED=false
 
@@ -124,6 +118,9 @@ REM # Enable the OAuth2 connection
 REM # OAuth2 docs: https://github.com/wekan/wekan/wiki/OAuth2
 REM # example: OAUTH2_ENABLED=true
 REM SET OAUTH2_ENABLED=false
+
+REM # Use OAuth2 ADFS additional changes. Also needs OAUTH2_ENABLED=true setting.
+REM SET OAUTH2_ADFS_ENABLED=false
 
 REM # OAuth2 Client ID, for example from Rocket.Chat. Example: abcde12345
 REM # example: OAUTH2_CLIENT_ID=abcde12345
@@ -392,5 +389,22 @@ REM SET LOGOUT_ON_HOURS=
 REM # LOGOUT_ON_MINUTES : The number of minutes
 REM # example : LOGOUT_ON_MINUTES=55
 REM SET LOGOUT_ON_MINUTES=
+
+REM SET CAS_ENABLED=true
+REM SET CAS_BASE_URL=https://cas.example.com/cas
+REM SET CAS_LOGIN_URL=https://cas.example.com/login
+REM SET CAS_VALIDATE_URL=https://cas.example.com/cas/p3/serviceValidate
+
+REM SET SAML_ENABLED=true
+REM SET SAML_PROVIDER=
+REM SET SAML_ENTRYPOINT=
+REM SET SAML_ISSUER=
+REM SET SAML_CERT=
+REM SET SAML_IDPSLO_REDIRECTURL=
+REM SET SAML_PRIVATE_KEYFILE=
+REM SET SAML_PUBLIC_CERTFILE=
+REM SET SAML_IDENTIFIER_FORMAT=
+REM SET SAML_LOCAL_PROFILE_MATCH_ATTRIBUTE=
+REM SET SAML_ATTRIBUTES=
 
 node main.js

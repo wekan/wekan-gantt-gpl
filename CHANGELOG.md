@@ -1,14 +1,138 @@
-# Upcoming Wekan release
+# v4.40 2020-09-18 Wekan release
 
 This release adds the following new features:
 
-- [Add setting for OAUTH2_ADFS=true](https://github.com/wekan/wekan/pull/3269)
-  and [related settings for Wekan platforms]()
-  for [SSO Integration with ADFS 4.0 using OAuth 2 and OpenID](https://github.com/wekan/wekan/issues/3184).
-  Thanks to phaseshift3r and xet7.
+- Custom Logo for Login and Top Left Corner. Optional link when clicking logo.
+  Settings at Admin Panel / Layout.
+  [Part 1](https://github.com/wekan/wekan/commit/a7c3317ed696fad8e211b22afbb3012f3a4f2ddb),
+  [Part 2](https://github.com/wekan/wekan/commit/05e3fc31b4633978a6b002a0325aad8e74d57ec4),
+  [Part 3](https://github.com/wekan/wekan/commit/3fc80e1145b23f8e6c7492ef4e3313b02f3d8772).
+  Thanks to xet7.
+
+and adds the following updates:
+
+- [Upgrade to Meteor v1.11.1](https://github.com/wekan/wekan/commit/185cf163b23280af5a7910381209984e2362a452).
+  Thanks to Meteor developers.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
+# v4.39 2020-09-17 Wekan release
+
+This release adds the following new features:
+
+- [Impersonate one user](https://github.com/wekan/wekan/pull/3280) and
+  [related translatable strings](https://github.com/wekan/wekan/commit/81ac0fdba9b52477dbbe7b6ed01b6d299288bcca).
+  Thanks to Akuket and xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
+# v4.38 2020-09-16 Wekan release
+
+This release fixes the following CRITICAL VULNERABILITIES:
+
+- [Upgrade to Node.js v12.18.4](https://github.com/wekan/wekan/commit/5cd9f89b21e6f800c2b78da49a1c0cf7f6fba955).
+  Thanks to Node.js developers.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
+# v4.37 2020-09-15 Wekan release
+
+This release adds the following UI improvements:
+
+- [UI improvements in filter, multi-selection and rules](https://github.com/wekan/wekan/pull/3279).
+  Thanks to helioguardabaxo and xet7.
+
+and adds the following updates:
+
+- [Update release scripts](https://github.com/wekan/wekan/commit/e79b7fad0a35f29020c48a4a4eedb435573c9bf1).
+  Thanks to xet7.
+
+and fixes the following bugs:
+
+- [Fix parse error in docker-compose.yml](https://github.com/wekan/wekan/pull/3278).
+  Thanks to devilmengcry.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
+# v4.36 2020-09-15 Wekan release
+
+This release adds the following new features:
+
+- [Added translations for date selection popups](https://github.com/wekan/wekan/commit/f9b0da65f1de48a2af11aa7afbd767559ba95b79).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
+# v4.35 2020-09-14 Wekan release
+
+This release tries to fix the following bugs:
+
+- [Try to fix Snap](https://github.com/wekan/wekan/commit/7173e293ef6b0d3c1fe82b5320340589c72c9326).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
+# v4.34 2020-09-14 Wekan release
+
+This release tries to fix the following bugs:
+
+- [Try to fix Snap](https://github.com/wekan/wekan/commit/d2b84c7773f20b34bca8be23078469a8809005a6).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
+# v4.33 2020-09-14 Wekan release
+
+This release adds the following login settings:
+
+- [Added some CAS and SAML settings](https://github.com/wekan/wekan/commit/214c86cc22f4c721a79ec0a4a4f3bbd90d673f93).
+  Not tested. Please test and send pull requests if it does not work.
+  See https://github.com/wekan/wekan/wiki/SAML and https://github.com/wekan/wekan/wiki/CAS .
+  Thanks to xet7.
 
 and updates some dependencies:
 
+- [Update dependencies](https://github.com/wekan/wekan/commit/cca041e21a66087ca4008a22cb0f5b4176801101).
+  Thanks to developers of dependencies.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
+# v4.32 2020-09-13 Wekan release
+
+This release tried to fix the following bugs:
+
+- [Try to fix Snap](https://github.com/wekan/wekan/commit/).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
+# v4.31 2020-09-13 Wekan release
+
+This release tried to fix the following bugs:
+
+- [Try to fix Snap](https://github.com/wekan/wekan/commit/fe62e12ab46c41ea30ba79795b0dc39b3451d4a2).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
+# v4.30 2020-09-13 Wekan release
+
+This release adds the following new features and improvements:
+
+- [Add setting for OAUTH2_ADFS_ENABLED=true](https://github.com/wekan/wekan/pull/3269)
+  for [SSO Integration with ADFS 4.0 using OAuth 2 and OpenID](https://github.com/wekan/wekan/issues/3184).
+  Thanks to phaseshift3r.
+- [Add setting OAUTH2_ADFS_ENABLED=false for most platforms. Remove mouse scroll settings of already removed custom scrollbar.
+  Add testing for both string and boolean version of true](https://github.com/wekan/wekan/commit/f6bdb4d694453d73f4bfa6a75814833594cf5000).
+  Thanks to xet7.
+- [Design improvements in templates, card details and custom fields](https://github.com/wekan/wekan/pull/3271)
+  and [related change to translation](https://github.com/wekan/wekan/commit/fe40c5fd37a7c54240c080caf98b6130229f5d31).
+  Thanks to helioguardabaxo and xet7.
+
+and adds the following updates:
+
+- [Use forked & updated version of gridfs-stream](https://github.com/wekan/wekan/pull/3270).
+  Thanks to blaggacao.
 - [Update dependencies](https://github.com/wekan/wekan/pull/3268).
   Thanks to blaggacao.
 - [Update npm-mongo dependency](https://github.com/wekan/wekan/commit/9fdafd20081b20302af3d1a6397fb840348f1209).
@@ -16,7 +140,7 @@ and updates some dependencies:
 
 Thanks to above GitHub users for their contributions and translators for their translations.
 
-# v4.29 2020-09-11
+# v4.29 2020-09-11 Wekan release
 
 This release adds the following new features:
 

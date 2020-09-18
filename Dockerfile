@@ -8,7 +8,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 ENV BUILD_DEPS="apt-utils libarchive-tools gnupg gosu wget curl bzip2 g++ build-essential git ca-certificates python3" \
     DEBUG=false \
-    NODE_VERSION=v12.18.3 \
+    NODE_VERSION=v12.18.4 \
     METEOR_RELEASE=1.10.2 \
     USE_EDGE=false \
     METEOR_EDGE=1.5-beta.17 \
@@ -41,6 +41,7 @@ ENV BUILD_DEPS="apt-utils libarchive-tools gnupg gosu wget curl bzip2 g++ build-
     TRUSTED_URL="" \
     WEBHOOKS_ATTRIBUTES="" \
     OAUTH2_ENABLED=false \
+    OAUTH2_ADFS_ENABLED=false \
     OAUTH2_LOGIN_STYLE=redirect \
     OAUTH2_CLIENT_ID="" \
     OAUTH2_SECRET="" \
@@ -114,10 +115,22 @@ ENV BUILD_DEPS="apt-utils libarchive-tools gnupg gosu wget curl bzip2 g++ build-
     CORS_ALLOW_HEADERS="" \
     CORS_EXPOSE_HEADERS="" \
     DEFAULT_AUTHENTICATION_METHOD="" \
-    SCROLLINERTIA="0" \
-    SCROLLAMOUNT="auto" \
-    SCROLLDELTAFACTOR="auto" \
-    PASSWORD_LOGIN_ENABLED=true
+    PASSWORD_LOGIN_ENABLED=true \
+    CAS_ENABLED=false \
+    CAS_BASE_URL="" \
+    CAS_LOGIN_URL="" \
+    CAS_VALIDATE_URL="" \
+    SAML_ENABLED=false \
+    SAML_PROVIDER="" \
+    SAML_ENTRYPOINT="" \
+    SAML_ISSUER="" \
+    SAML_CERT="" \
+    SAML_IDPSLO_REDIRECTURL="" \
+    SAML_PRIVATE_KEYFILE="" \
+    SAML_PUBLIC_CERTFILE="" \
+    SAML_IDENTIFIER_FORMAT="" \
+    SAML_LOCAL_PROFILE_MATCH_ATTRIBUTE="" \
+    SAML_ATTRIBUTES=""
 
 # Copy the app to the image
 COPY ${SRC_PATH} /home/wekan/app
