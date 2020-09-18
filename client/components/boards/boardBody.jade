@@ -31,6 +31,8 @@ template(name="boardBody")
         +listsGroup(currentBoard)
       else if isViewCalendar
         +calendarView
+      else if isViewGantt
+        +ganttView
       else
         +listsGroup(currentBoard)
 
@@ -40,3 +42,4 @@ template(name="calendarView")
       if currentCard
         +cardDetails(currentCard)
       +fullcalendar(calendarOptions)
+

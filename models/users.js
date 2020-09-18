@@ -228,6 +228,7 @@ Users.attachSchema(
         'board-view-swimlanes',
         'board-view-lists',
         'board-view-cal',
+        'board-view-gantt',
       ],
     },
     'profile.listSortBy': {

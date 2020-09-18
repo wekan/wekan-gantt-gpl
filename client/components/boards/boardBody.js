@@ -259,6 +259,15 @@ BlazeComponent.extendComponent({
     }
   },
 
+  isViewGantt() {
+    currentUser = Meteor.user();
+    if (currentUser) {
+      return (currentUser.profile || {}).boardView === 'board-view-gantt';
+    } else {
+      return cookies.get('boardView') === 'board-view-gantt';
+    }
+  },
+
   openNewListForm() {
     if (this.isViewSwimlanes()) {
       this.childComponents('swimlane')[0]

@@ -105,6 +105,8 @@ template(name="boardHeaderBar")
             i.fa.fa-trello
           if $eq boardView 'board-view-cal'
             i.fa.fa-calendar
+          if $eq boardView 'board-view-gantt'
+            i.fa.fa-area-chart
           span {{#if boardView}}{{_ boardView}}{{else}}{{_ 'board-view-swimlanes'}}{{/if}}
 
       if canModifyBoard
@@ -192,6 +194,13 @@ template(name="boardChangeViewPopup")
           i.fa.fa-calendar.colorful
           | {{_ 'board-view-cal'}}
           if $eq Utils.boardView "board-view-cal"
+            i.fa.fa-check
+    li
+      with "board-view-gantt"
+        a.js-open-gantt-view
+          i.fa.fa-area-chart
+          | {{_ 'board-view-gantt'}}
+          if $eq Utils.boardView "board-view-gantt"
             i.fa.fa-check
 
 template(name="createBoard")

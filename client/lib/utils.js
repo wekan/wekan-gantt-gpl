@@ -15,6 +15,9 @@ Utils = {
     } else if (view === 'board-view-cal') {
       cookies.set('boardView', 'board-view-cal'); //true
       location.reload();
+    } else if (view === 'board-view-gantt') {
+      cookies.set('boardView', 'board-view-gantt'); //true
+      location.reload();
     } else {
       cookies.set('boardView', 'board-view-swimlanes'); //true
       location.reload();

@@ -1,0 +1,7 @@
+template(name="ganttView")
+  if isViewGantt
+    .gantt-view.swimlane
+      if currentCard
+        +cardDetails(currentCard)
+      #ganttEl
+      div#ganttDatepicker
