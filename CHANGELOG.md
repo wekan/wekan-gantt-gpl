@@ -1,3 +1,35 @@
+# v4.44 2020-10-28 Wekan release
+
+This release adds the following new features:
+
+- For development, [add Meteor 2.0 Hot Module Replacement](https://github.com/wekan/wekan/commit/e6162472548d9dff497dd76e82d23044f779f757).
+  More info at https://forums.meteor.com/t/meteor-2-0-beta-with-hot-module-replacement-hmr/54313/8 .
+  Thanks to zodern.
+
+and adds the following updates:
+
+- [Upgrade to Node.js 14.15.0](https://github.com/wekan/wekan/commit/045e9db7b8f0de852ef4486cb1ad200d6ca7296d).
+  Thanks to Node.js and Meteor.js developers.
+- [Upgrade to Meteor 2.0-beta.3. Removed fast-render and ostrio:cookies](https://github.com/wekan/wekan/commit/a463f2a855498935db5b66e5fad446ce465adab1).
+  Thanks to Meteor.js developers and xet7.
+
+and fixes the following bugs:
+
+- [Fixed: With ORACLE_OIM_ENABLED, allow setting OAUTH2_REQUEST_PERMISSIONS with environment variable](https://github.com/wekan/wekan/commit/1b429b3f99c32840ebb0ff9a29015aa8c28ec644).
+  Thanks to xet7.
+- [Changed public board changing Swimlanes/Lists/Calendar view and changing Hide minicard label text
+  from using cookies to using browser localStorage](https://github.com/wekan/wekan/commit/460b1d3a664b648bc03c40422b9d175401e229c1),
+  to remove some errors from browser inspect console.
+  Thanks to xet7.
+- [Fix Modern theme board canvas background](https://github.com/wekan/wekan/pull/3312).
+  Thanks to helioguardabaxo.
+- [Fix: 1) Expose moving cards on mobile to workers. 2) Hide the move to another board functionality
+  in the submenu (only from the worker) so that the worker is still constrained to a single
+  board](https://github.com/wekan/wekan/pull/3315).
+  Thanks to jtbairdsr.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v4.43 2020-10-20 Wekan release
 
 This release adds the following new features:
@@ -10,7 +42,7 @@ and fixes the following bugs:
 - [Fixed CSV/TSV export](https://github.com/wekan/wekan/commit/d7333dec84328ca191f430d96aaf9e550840631a).
   Please test and report any problems [at issue #3173](https://github.com/wekan/wekan/issues/3173).
   Thanks to xet7.
-    
+
 Thanks to above GitHub users for their contributions and translators for their translations.
 
 # v4.42 2020-10-14 Wekan release
