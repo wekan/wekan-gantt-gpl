@@ -1,3 +1,16 @@
+# v4.46 2020-10-30 Wekan release
+
+This release adds the following updates:
+
+- [Upgrade to Meteor 2.0-beta.4](https://github.com/wekan/wekan/commit/af583145ed2b36af8e6c72765fd35d70a292fad6).
+  Thanks to Meteor developers.
+
+and fixes the following bugs:
+
+- [Fix: Use current boardId when a worker moves a card](https://github.com/wekan/wekan/pull/3323).
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v4.45 2020-10-30 Wekan release
 
 This release fixes the following bugs:
