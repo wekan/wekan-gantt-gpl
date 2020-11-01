@@ -22,10 +22,10 @@ const pkgdef :Spk.PackageDefinition = (
     appTitle = (defaultText = "Wekan"),
     # The name of the app as it is displayed to the user.
 
-    appVersion = 446,
+    appVersion = 447,
     # Increment this for every release.
 
-    appMarketingVersion = (defaultText = "4.46.0~2020-10-30"),
+    appMarketingVersion = (defaultText = "4.47.0~2020-11-01"),
     # Human-readable presentation of the app version.
 
     minUpgradableAppVersion = 0,
@@ -250,6 +250,7 @@ const myCommand :Spk.Manifest.Command = (
     (key = "TRUSTED_URL", value=""),
     (key = "WEBHOOKS_ATTRIBUTES", value=""),
     (key = "OAUTH2_ENABLED", value="false"),
+    (key = "OAUTH2_CA_CERT", value=""),
     (key = "OAUTH2_ADFS_ENABLED", value="false"),
     (key = "OAUTH2_CLIENT_ID", value="false"),
     (key = "OAUTH2_SECRET", value=""),

@@ -1,3 +1,13 @@
+# v4.47 2020-11-01 Wekan release
+
+This release fixes the following bugs:
+
+- [Fix: OAuth2 fails with self-signed server certificate](https://github.com/wekan/wekan/pull/3325) and
+  [Added related settings for OAUTH2_CA_CERT that is optional OAuth2 CA Cert](https://github.com/wekan/wekan/commit/55252300c601ea40dc8adad1887397b31ceb0bb2).
+  Thanks to faust64 and xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v4.46 2020-10-30 Wekan release
 
 This release adds the following updates:
@@ -8,6 +18,7 @@ This release adds the following updates:
 and fixes the following bugs:
 
 - [Fix: Use current boardId when a worker moves a card](https://github.com/wekan/wekan/pull/3323).
+  Thanks to jtbairdsr.
 
 Thanks to above GitHub users for their contributions and translators for their translations.
 
