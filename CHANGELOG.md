@@ -1,3 +1,27 @@
+# v4.48 2020-11-02 Wekan release
+
+This release adds the following new features:
+
+- [Smaller board icons to All Boards Page, and use full page width, so more board icons fit visible at once.
+  Removed variable height, because different heights made it look a little unbalanced](https://github.com/wekan/wekan/commit/0a5f9307d27a4b77aa7ff005701fea8ce0d50ec8).
+  Thanks to xet7.
+- [Admin Panel / Settings / Layout / Custom Top Left Corner Logo Height](https://github.com/wekan/wekan/commit/4cfddf1d8d37bdbbb58c050333ee6ea2afc3e6f9).
+  Thanks to xet7.
+- [When RICHER_CARD_COMMENT_EDITOR=true, use richer editor also when editing card description](https://github.com/wekan/wekan/commit/4e2d337620ac490b8e99ee968e6f92477e09b900).
+  Thanks to xet7.
+
+and removes the following dependencies:
+
+- [Removed hot-module-replacement and mdg:meteor-apm-agent](https://github.com/wekan/wekan/commit/aa454a5542e5ab1d581eef50cdb5c96ac2ada940).
+  Thanks to xet7.
+
+and fixes the following bugs:
+
+- [Fix Clone Board](https://github.com/wekan/wekan/commit/f4fdb94a3fcd63432ef7ded4df970b3491700020).
+  Thanks to e-gaulue and xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v4.47 2020-11-01 Wekan release
 
 This release fixes the following bugs:
