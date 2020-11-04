@@ -28,7 +28,9 @@ BlazeComponent.extendComponent({
     });
 
     gantt.templates.tooltip_text = function(start, end, task) {
-      return `<b>Task:</b> ${task.text}<br/><b>Description:</b> ${task.description}`;
+      return `<b>${TAPi18n.__('task')}:</b> ${task.text}<br/><b>${TAPi18n.__(
+        'description',
+      )}:</b> ${task.description}`;
     };
 
     gantt.init('ganttEl');
@@ -56,7 +58,7 @@ BlazeComponent.extendComponent({
     });
 
     //Delete task
-    gantt.attachEvent('onAfterTaskDelete', function(id, item) {
+    gantt.attachEvent('onAfterTaskDelete', function(id) {
       Cards.remove(id);
     });
 
@@ -67,7 +69,7 @@ BlazeComponent.extendComponent({
     });
 
     gantt.attachEvent('onTaskCreated', function(item) {
-      let html = '<label>Select Board</label>';
+      let html = `<label>${TAPi18n.__('select-board')}</label>`;
       html += '<select style="width:100%;">';
       boards.forEach(b => {
         html += `<option value="${b._id}">${b.title}</option>`;
@@ -75,11 +77,11 @@ BlazeComponent.extendComponent({
       html += '</select>';
 
       const modal = gantt.modalbox({
-        title: 'Create Task',
+        title: `${TAPi18n.__('create-task')}`,
         text: html,
-        buttons: ['OK', 'Cancel'],
+        buttons: [`${TAPi18n.__('ok')}`, `${TAPi18n.__('cancel')}`],
         callback(result) {
-          if (result != 0) {
+          if (result !== 0) {
             return;
           }
 
@@ -89,7 +91,7 @@ BlazeComponent.extendComponent({
           let board = null;
 
           boards.forEach(b => {
-            if (b._id == bId) {
+            if (b._id === bId) {
               board = b;
             }
           });
