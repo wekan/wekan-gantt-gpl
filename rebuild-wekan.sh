@@ -22,11 +22,11 @@ do
 		if [[ "$OSTYPE" == "linux-gnu" ]]; then
 	                echo "Linux";
 			# Debian, Ubuntu, Mint
-			sudo apt-get install -y build-essential gcc g++ make git curl wget
+			sudo apt-get install -y build-essential gcc g++ make git curl wget npm
 			# npm nodejs
 			#sudo npm -g install npm
-			curl -0 -L https://npmjs.org/install.sh | sudo sh
-			sudo chown -R $(id -u):$(id -g) $HOME/.npm
+			#curl -0 -L https://npmjs.org/install.sh | sudo sh
+			#sudo chown -R $(id -u):$(id -g) $HOME/.npm
 			sudo npm -g install n
 			sudo n 12.19.0
 			#curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
@@ -63,7 +63,7 @@ do
 		sudo npm -g install fibers
 		# Install Meteor, if it's not yet installed
 		curl https://install.meteor.com | bash
-		sudo chown -R $(id -u):$(id -g) $HOME/.npm $HOME/.meteor
+		#sudo chown -R $(id -u):$(id -g) $HOME/.npm $HOME/.meteor
 		break
 		;;
 
@@ -77,12 +77,12 @@ do
 		#	sed -i 's/api\.versionsFrom/\/\/api.versionsFrom/' ~/repos/wekan/packages/meteor-useraccounts-core/package.js
 		#fi
 		#cd ..
-		sudo chown -R $(id -u):$(id -g) $HOME/.npm $HOME/.meteor
+		#sudo chown -R $(id -u):$(id -g) $HOME/.npm $HOME/.meteor
 		rm -rf node_modules .meteor/local
 		npm install
 		rm -rf .build
 		meteor build .build --directory
-		cp -f fix-download-unicode/cfs_access-point.txt .build/bundle/programs/server/packages/cfs_access-point.js
+		#cp -f fix-download-unicode/cfs_access-point.txt .build/bundle/programs/server/packages/cfs_access-point.js
 		# Remove legacy webbroser bundle, so that Wekan works also at Android Firefox, iOS Safari, etc.
 		rm -rf .build/bundle/programs/web.browser.legacy
 		#Removed binary version of bcrypt because of security vulnerability that is not fixed yet.

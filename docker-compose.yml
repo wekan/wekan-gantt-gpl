@@ -13,13 +13,12 @@ version: '2'
 #       see https://github.com/wekan/wekan/wiki/Backup
 # 1) Stop Wekan:
 #      docker-compose stop
-# 2) Download new version:
-#      docker-compose pull wekan
-# 3) If you have more networks for VPN etc as described at bottom of
-#    this config, download for them too:
-#      docker-compose pull wekan2
+# 2) Remove old Wekan app (wekan-app only, not that wekan-db container that has all your data)
+#      docker rm wekan-app
+# 3) Get newest docker-compose.yml from https://github.com/wekan/wekan to have correct image,
+#    for example: "image: quay.io/wekan/wekan" or version tag "image: quay.io/wekan/wekan:v4.52"
 # 4) Start Wekan:
-#      docker-compose start
+#      docker-compose up -d
 #----------------------------------------------------------------------------------
 # ==== OPTIONAL: DEDICATED DOCKER USER ====
 # 1) Optionally create a dedicated user for Wekan, for example:
@@ -92,13 +91,8 @@ services:
   wekandb:
     #-------------------------------------------------------------------------------------
     # ==== MONGODB AND METEOR VERSION ====
-    # a) For Wekan Meteor 1.8.x version at master branch, use mongo 4.x
-    # DOES NOT WORK: mongo 4.4, see https://github.com/wekan/wekan/issues/3247
-    # WORKS: mongo 3.x and 4.2
-    image: mongo:4.2
-    # b) For Wekan Meteor 1.6.x version at devel branch.
-    # Only for Snap and Sandstorm while they are not upgraded yet to Meteor 1.8.x
-    #image: mongo:3.2.21
+    # a) mongodb latest, like 3.2 - 4.4 or newer https://hub.docker.com/_/mongo?tab=description
+    image: mongo:latest
     #-------------------------------------------------------------------------------------
     container_name: wekan-db
     restart: always
@@ -114,15 +108,12 @@ services:
   wekan:
     #-------------------------------------------------------------------------------------
     # ==== MONGODB AND METEOR VERSION ====
-    # NOTE: Quay is currently not updated, use Docker Hub image below c)
-    # a) For Wekan Meteor 1.8.x version at master branch,
-    #    using https://quay.io/wekan/wekan automatic builds
-    #image: quay.io/wekan/wekan-gantt-gpl
-    # b) Using specific Meteor 1.6.x version tag:
-    # image: quay.io/wekan/wekan-gantt-gpl:v4.40
-    # c) Using Docker Hub automatic builds https://hub.docker.com/r/wekanteam/wekan
-    image: wekanteam/wekan-gantt-gpl
-    # image: wekanteam/wekan-gantt-gpl:v4.40
+    # a) Quay automatic builds do work, https://quay.io/wekan/wekan
+    image: quay.io/wekan/wekan-gantt-gpl
+    # b) Using specific version tag:
+    # image: quay.io/wekan/wekan-gantt-gpl:v4.52
+    # c) Docker Hub builds are broken with error ENOMEM https://hub.docker.com/r/wekanteam/wekan-gantt-gpl
+    # image: wekanteam/wekan-gantt-gpl
     #-------------------------------------------------------------------------------------
     container_name: wekan-app
     restart: always
