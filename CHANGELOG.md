@@ -1,3 +1,16 @@
+# v4.55 2020-11-21 Wekan release
+
+This release adds the following improvements:
+
+- [Set minimum height to icons at All Boards page](https://github.com/wekan/wekan/commit/6193a0b64e85df2f2353192e7efb16680b436622).
+  Thanks to xet7.
+- [Increase avatar size](https://github.com/wekan/wekan/pull/3360).
+  Thanks to centralhardware.
+- [Modern Dark theme: card details as lightbox](https://github.com/wekan/wekan/pull/3359).
+  Thanks to jghaanstra.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v4.54 2020-11-17 Wekan release
 
 This release adds the following new features:
