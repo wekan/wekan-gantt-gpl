@@ -1,3 +1,36 @@
+# v4.56 2020-11-30 Wekan release
+
+This release adds the following new features:
+
+- [Added date notification icons](https://github.com/wekan/wekan/pull/3366).
+  This partially resolves [#3363](https://github.com/wekan/wekan/issues/3363).
+  Thanks to helioguardabaxo.
+- Attempt to implement date activities notification [Part1](https://github.com/wekan/wekan/pull/3372)
+  and [Part2](https://github.com/wekan/wekan/pull/3373).
+  Thanks to helioguardabaxo.
+- [Sticky swimlane](https://github.com/wekan/wekan/pull/3370).
+  Thanks to progressify and xet7.
+- [1) New default: sudo snap set wekan mongo-log-destination='devnull'.
+  Other options: syslog/snapcommon.
+  This should lower amount of disk usage and logs.
+  2) Tried to fix command:
+  `sudo snap set wekan mongo-url='...'`](https://github.com/wekan/wekan/commit/5510c2a37dc6bcfa0ec588eceb8dc9f32cec9851).
+  Thanks to xet7.
+
+and adds the following improvements:
+
+- [Improvements in activities design](https://github.com/wekan/wekan/pull/3374).
+  Thanks to helioguardabaxo.
+
+and fixes the following bugs:
+
+- [Fix typo on MONGO_URL on Snap](https://github.com/wekan/wekan/commit/05a72f7c627e05ac4ce38cb9588f2aac45273ce8).
+  Thanks to xet7.
+- [Fix: Update helm mongodb dependency](https://github.com/wekan/wekan/pull/3369).
+  Thanks to jiangytcn.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v4.55 2020-11-21 Wekan release
 
 This release adds the following improvements:
