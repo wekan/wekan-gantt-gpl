@@ -198,8 +198,6 @@ Utils = {
     const currentUser = Meteor.user();
     if (currentUser) {
       return (currentUser.profile || {}).showDesktopDragHandles;
-    } else if (cookies.has('showDesktopDragHandles')) {
-      return true;
     } else {
       return false;
     }
