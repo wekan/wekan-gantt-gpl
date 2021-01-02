@@ -809,6 +809,10 @@
   "addmore-detail": "Lisää tarkempi kuvaus",
   "show-on-card": "Näytä kortilla",
   "new": "Uusi",
+  "editOrgPopup-title": "Muokkaa organisaatiota",
+  "newOrgPopup-title": "Uusi organisaatio",
+  "editTeamPopup-title": "Muokkaa tiimiä",
+  "newTeamPopup-title": "Uusi tiimi",
   "editUserPopup-title": "Muokkaa käyttäjää",
   "newUserPopup-title": "Uusi käyttäjä",
   "notifications": "Ilmoitukset",
@@ -844,5 +848,9 @@
   "displayName": "Näyttönimi",
   "shortName": "Lyhyt nimi",
   "website": "Verkkosivusto",
-  "person": "Henkilö"
+  "person": "Henkilö",
+  "my-cards": "Korttini",
+  "card": "Kortti",
+  "list": "Lista",
+  "board": "Taulu"
 }

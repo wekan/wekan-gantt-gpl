@@ -809,6 +809,10 @@
   "addmore-detail": "הוספת תיאור מפורט",
   "show-on-card": "הצגה על הכרטיס",
   "new": "חדש",
+  "editOrgPopup-title": "עריכת ארגון",
+  "newOrgPopup-title": "ארגון חדש",
+  "editTeamPopup-title": "עריכת צוות",
+  "newTeamPopup-title": "צוות חדש",
   "editUserPopup-title": "עריכת משתמש",
   "newUserPopup-title": "משתמש חדש",
   "notifications": "הודעות",
@@ -844,5 +848,9 @@
   "displayName": "שם התצוגה",
   "shortName": "שם קצר",
   "website": "אתר",
-  "person": "איש/ה"
+  "person": "איש/ה",
+  "my-cards": "My Cards",
+  "card": "כרטיס",
+  "list": "List",
+  "board": "Board"
 }
