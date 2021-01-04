@@ -14,15 +14,18 @@ template(name="myCards")
     each board in cardsFind
       .board-title
         | {{_ 'board' }}:
-        = board.title
+        +viewer
+          = board.title
       each swimlane in board.swimlanes
         .swimlane-title
           | {{_ 'swimlane' }}:
-          = swimlane.title
+          +viewer
+            = swimlane.title
         each list in swimlane.lists
           .list-title
             | {{_ 'list' }}:
-            = list.title
-          each card in list.cards
-            a.minicard-wrapper.card-title(href="{{pathFor 'card' boardId=board.id slug=board.slug cardId=card._id }}")
-              +minicard(card)
+            +viewer
+              = list.title
+            each card in list.cards
+              a.minicard-wrapper.card-title(href="{{pathFor 'card' boardId=board.id slug=board.slug cardId=card._id }}")
+                +minicard(card)
