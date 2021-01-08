@@ -1,22 +1,23 @@
-const subManager = new SubsManager();
-Meteor.subscribe('myCards');
-Meteor.subscribe('mySwimlanes');
-Meteor.subscribe('myLists');
+BlazeComponent.extendComponent({
+  myCardsSort() {
+    // eslint-disable-next-line no-console
+    // console.log('sort:', Utils.myCardsSort());
+    return Utils.myCardsSort();
+  },
 
-Template.myCardsHeaderBar.events({
-  'click .js-open-archived-board'() {
-    Modal.open('archivedBoards');
+  events() {
+    return [
+      {
+        'click .js-toggle-my-cards-choose-sort'() {
+          // eslint-disable-next-line no-console
+          // console.log('open sort');
+          // Popup.open('myCardsSortChange');
+          Utils.myCardsSortToggle();
+        },
+      },
+    ];
   },
-});
-
-Template.myCardsHeaderBar.helpers({
-  title() {
-    return FlowRouter.getRouteName() === 'home' ? 'my-boards' : 'public';
-  },
-  templatesUser() {
-    return Meteor.user();
-  },
-});
+}).register('myCardsHeaderBar');
 
 Template.myCards.helpers({
   userId() {
@@ -25,12 +26,42 @@ Template.myCards.helpers({
 });
 
 BlazeComponent.extendComponent({
+  events() {
+    return [
+      {
+        'click .js-my-cards-sort-board'() {
+          Utils.setMyCardsSort('board');
+          Popup.close();
+        },
+
+        'click .js-my-cards-sort-dueat'() {
+          Utils.setMyCardsSort('dueAt');
+          Popup.close();
+        },
+      },
+    ];
+  },
+}).register('myCardsSortChangePopup');
+
+BlazeComponent.extendComponent({
   onCreated() {
     Meteor.subscribe('setting');
-    // subManager.subscribe('myCards');
+    Meteor.subscribe('myCards');
+    Meteor.subscribe('mySwimlanes');
+    Meteor.subscribe('myLists');
   },
 
-  cardsFind() {
+  myCardsSort() {
+    // eslint-disable-next-line no-console
+    console.log('sort:', Utils.myCardsSort());
+    return Utils.myCardsSort();
+  },
+
+  sortByBoard() {
+    return this.myCardsSort() === 'board';
+  },
+
+  myBoards() {
     const userId = Meteor.userId();
     const boards = [];
     let board = null;
@@ -39,8 +70,8 @@ BlazeComponent.extendComponent({
 
     const cursor = Cards.find(
       {
-        archived: false,
         $or: [{ members: userId }, { assignees: userId }],
+        archived: false,
       },
       {
         sort: {
@@ -51,8 +82,6 @@ BlazeComponent.extendComponent({
         },
       },
     );
-    // eslint-disable-next-line no-console
-    // console.log('cursor:', cursor);
 
     let newBoard = false;
     let newSwimlane = false;
@@ -61,67 +90,50 @@ BlazeComponent.extendComponent({
     cursor.forEach(card => {
       // eslint-disable-next-line no-console
       // console.log('card:', card.title);
-      if (list === null || list.id !== card.listId) {
+      if (list === null || card.listId !== list._id) {
         // eslint-disable-next-line no-console
         // console.log('new list');
-        let l = Lists.findOne(card.listId);
-        if (!l) {
-          l = {
-            _id: card.listId,
-            title: 'undefined list',
-          };
+        list = card.list();
+        if (list.archived) {
+          list = null;
+          return;
         }
-        // eslint-disable-next-line no-console
-        // console.log('list:', l);
-        list = {
-          id: l._id,
-          title: l.title,
-          cards: [card],
-        };
+        list.myCards = [card];
         newList = true;
       }
-      if (swimlane === null || card.swimlaneId !== swimlane.id) {
+      if (swimlane === null || card.swimlaneId !== swimlane._id) {
         // eslint-disable-next-line no-console
         // console.log('new swimlane');
-        let s = Swimlanes.findOne(card.swimlaneId);
-        if (!s) {
-          s = {
-            _id: card.swimlaneId,
-            title: 'undefined swimlane',
-          };
+        swimlane = card.swimlane();
+        if (swimlane.archived) {
+          swimlane = null;
+          return;
         }
-        // eslint-disable-next-line no-console
-        // console.log('swimlane:', s);
-        swimlane = {
-          id: s._id,
-          title: s.title,
-          lists: [list],
-        };
+        swimlane.myLists = [list];
         newSwimlane = true;
       }
-      if (board === null || card.boardId !== board.id) {
+      if (board === null || card.boardId !== board._id) {
         // eslint-disable-next-line no-console
         // console.log('new board');
-        const b = Boards.findOne(card.boardId);
+        board = card.board();
+        if (board.archived) {
+          board = null;
+          return;
+        }
         // eslint-disable-next-line no-console
         // console.log('board:', b, b._id, b.title);
-        board = {
-          id: b._id,
-          title: b.title,
-          slug: b.slug,
-          swimlanes: [swimlane],
-        };
+        board.mySwimlanes = [swimlane];
         newBoard = true;
       }
 
       if (newBoard) {
         boards.push(board);
       } else if (newSwimlane) {
-        board.swimlanes.push(swimlane);
+        board.mySwimlanes.push(swimlane);
       } else if (newList) {
-        swimlane.lists.push(list);
+        swimlane.myLists.push(list);
       } else {
-        list.cards.push(card);
+        list.myCards.push(card);
       }
 
       newBoard = false;
@@ -129,25 +141,97 @@ BlazeComponent.extendComponent({
       newList = false;
     });
 
+    // sort the data structure
+    boards.forEach(board => {
+      board.mySwimlanes.forEach(swimlane => {
+        swimlane.myLists.forEach(list => {
+          list.myCards.sort((a, b) => {
+            return a.sort - b.sort;
+          });
+        });
+        swimlane.myLists.sort((a, b) => {
+          return a.sort - b.sort;
+        });
+      });
+      board.mySwimlanes.sort((a, b) => {
+        return a.sort - b.sort;
+      });
+    });
+
+    boards.sort((a, b) => {
+      let x = a.sort;
+      let y = b.sort;
+
+      // show the template board last
+      if (a.type === 'template-container') {
+        x = 99999999;
+      } else if (b.type === 'template-container') {
+        y = 99999999;
+      }
+      return x - y;
+    });
+
     // eslint-disable-next-line no-console
     // console.log('boards:', boards);
     return boards;
   },
 
+  myCardsList() {
+    const userId = Meteor.userId();
+
+    const cursor = Cards.find(
+      {
+        $or: [{ members: userId }, { assignees: userId }],
+        archived: false,
+      },
+      {
+        sort: {
+          dueAt: -1,
+          boardId: 1,
+          swimlaneId: 1,
+          listId: 1,
+          sort: 1,
+        },
+      },
+    );
+
+    // eslint-disable-next-line no-console
+    // console.log('cursor:', cursor);
+
+    const cards = [];
+    cursor.forEach(card => {
+      cards.push(card);
+    });
+
+    cards.sort((a, b) => {
+      const x = a.dueAt === null ? Date('2100-12-31') : a.dueAt;
+      const y = b.dueAt === null ? Date('2100-12-31') : b.dueAt;
+
+      if (x > y) return 1;
+      else if (x < y) return -1;
+
+      return 0;
+    });
+
+    // eslint-disable-next-line no-console
+    // console.log('cursor:', cards);
+    return cards;
+  },
+
   events() {
     return [
       {
-        'click .js-my-card'(evt) {
-          const card = this.currentData().card;
-          // eslint-disable-next-line no-console
-          console.log('currentData():', this.currentData());
-          // eslint-disable-next-line no-console
-          console.log('card:', card);
-          if (card) {
-            Utils.goCardId(card._id);
-          }
-          evt.preventDefault();
-        },
+        // 'click .js-my-card'(evt) {
+        //   const card = this.currentData().card;
+        //   // eslint-disable-next-line no-console
+        //   console.log('currentData():', this.currentData());
+        //   // eslint-disable-next-line no-console
+        //   console.log('card:', card);
+        //   if (card) {
+        //     Utils.goCardId(card._id);
+        //   }
+        //   evt.preventDefault();
+        // },
       },
     ];
   },
