@@ -1,3 +1,28 @@
+# v4.73 2020-01-10 Wekan release
+
+This release adds the following new features:
+
+- [Broken Cards](https://github.com/wekan/wekan/pull/3426) for debugging.
+  Thanks to jrsupplee.
+- ["Broken Cards" to be translatable](https://github.com/wekan/wekan/commit/d09e448fbd37ae84419aa3909b9a4594cd7ddb92).
+  Thanks to xet7.
+- [Added Broken Cards to User Settings menu](https://github.com/wekan/wekan/commit/b98df8ef87fc0c501d4f06e3e5af292605bd21cf).
+  Thanks to xet7.
+
+and adds the following improvements:
+
+- [My Cards: Make code forgiving of possible null values for a card's board, swimlane, or list.
+  Added a new Due Cards page that displays cards with a Due date for either just the user or all
+  users](https://github.com/wekan/wekan/pull/3425).
+  Thanks to jrsupplee.
+
+and fixes the following bugs:
+
+- [Fixed Spanish language names to lowercase español](https://github.com/wekan/wekan/commit/9ec1904119e6bec4c00600cb8ea81c28e631ae2e).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v4.72 2021-01-09 Wekan release
 
 This release fixes the following bugs:

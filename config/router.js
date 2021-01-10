@@ -116,7 +116,43 @@ FlowRouter.route('/shortcuts', {
 FlowRouter.route('/my-cards', {
   name: 'my-cards',
   action() {
-    const myCardsTemplate = 'myCards';
+    Filter.reset();
+    // EscapeActions.executeAll();
+    EscapeActions.executeUpTo('popup-close');
+
+    Utils.manageCustomUI();
+    Utils.manageMatomo();
+
+    BlazeLayout.render('defaultLayout', {
+      headerBar: 'myCardsHeaderBar',
+      content: 'myCards',
+    });
+    // }
+  },
+});
+
+FlowRouter.route('/due-cards', {
+  name: 'due-cards',
+  action() {
+    Filter.reset();
+    // EscapeActions.executeAll();
+    EscapeActions.executeUpTo('popup-close');
+
+    Utils.manageCustomUI();
+    Utils.manageMatomo();
+
+    BlazeLayout.render('defaultLayout', {
+      headerBar: 'dueCardsHeaderBar',
+      content: 'dueCards',
+    });
+    // }
+  },
+});
+
+FlowRouter.route('/broken-cards', {
+  name: 'broken-cards',
+  action() {
+    const brokenCardsTemplate = 'brokenCards';
 
     Filter.reset();
     // EscapeActions.executeAll();
@@ -125,15 +161,9 @@ FlowRouter.route('/my-cards', {
     Utils.manageCustomUI();
     Utils.manageMatomo();
 
-    // if (previousPath) {
-    //   Modal.open(myCardsTemplate, {
-    //     header: 'myCardsModalTitle',
-    //     onCloseGoTo: previousPath,
-    //   });
-    // } else {
     BlazeLayout.render('defaultLayout', {
-      headerBar: 'myCardsHeaderBar',
-      content: myCardsTemplate,
+      headerBar: 'brokenCardsHeaderBar',
+      content: brokenCardsTemplate,
     });
     // }
   },
