@@ -1,3 +1,17 @@
+# v4.76 2021-01-13 Wekan release
+
+This release adds the following new features:
+
+- [Try to allow links to onenote, mailspring and file](https://github.com/wekan/wekan/commit/3977f2187aa4dc0bd9ddfcd02065437df0f1a5c0).
+  Thanks to lime918, rgalonso, ocdtrekkie, gkarachuk and xet7.
+
+and adds the following improvements:
+
+- [Removed wekan- from export filenames for whitelabeling](https://github.com/wekan/wekan/commit/de27be0911053195838d6d0d4f1b6eae8a1d773a).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v4.75 2021-01-11 Wekan release
 
 This release adds the following CRITICAL SECURITY FIXES:
