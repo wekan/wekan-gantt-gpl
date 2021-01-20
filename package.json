@@ -1,6 +1,6 @@
 {
   "name": "wekan",
-  "version": "v4.81.0",
+  "version": "v4.82.0",
   "description": "Open-Source kanban",
   "private": true,
   "scripts": {
@@ -64,6 +64,7 @@
     "bunyan": "^1.8.12",
     "dhtmlx-gantt": "^7.0.9",
     "es6-promise": "^4.2.4",
+    "exceljs": "^4.2.0",
     "fibers": "^5.0.0",
     "flatted": "^3.0.4",
     "gridfs-stream": "https://github.com/wekan/gridfs-stream/tarball/master",
