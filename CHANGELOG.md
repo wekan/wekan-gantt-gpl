@@ -1,3 +1,51 @@
+# v4.92 2021-02-03 Wekan release
+
+This release adds the following improvements:
+
+- [Import user mapping improvements](https://github.com/wekan/wekan/pull/3510).
+  Thanks to jrsupplee.
+- Added Createtoken API.
+  [Part 1](https://github.com/wekan/wekan/pull/3520),
+  [Part 2](https://github.com/wekan/wekan/commit/3774060d32abcfee17dc1c31958d4673794d8619).
+  Thanks to magicbelette and xet7.
+- Sorted archives.
+  [Part 1](https://github.com/wekan/wekan/pull/3518),
+  [Part 2](https://github.com/wekan/wekan/commit/3da66a0fe30c2b54b63e5d098232b375d899925e).
+  Thanks to bronger, jrsupplee and xet7.
+
+and adds the following updates:
+
+- [Updated dependencies](https://github.com/wekan/wekan/commit/05ebae7329ba0dd3fe9b04cd63b1f983830cdeee).
+  Thanks to developers of dependencies.
+
+and fixes the following bugs:
+
+- [Don't reload page when returning default sort](https://github.com/wekan/wekan/pull/3509).
+  Thanks to jrsupplee.
+- [Avatar overlaped notifications](https://github.com/wekan/wekan/pull/3516).
+  Thanks to mfilser.
+- [Hopeful fix for i18n not working in `onRendered()`](https://github.com/wekan/wekan/pull/3519).
+  Thanks to jrsupplee.
+- [Disable some console.log code, that is only needed while developing](https://github.com/wekan/wekan/commit/f40c9804f848fdb91229c5718ad97495337109ba).
+  Thanks to xet7.
+- [Try fix removed nonexistent document error](https://github.com/wekan/wekan/commit/f274b3c26be60813829dcf2b0e68a8dd876ff614).
+  Thanks to Brulf, TheMasterFX and xet7.
+- [Fixed Cards and CustomFields sorted alphabetically](https://github.com/wekan/wekan/pull/3521).
+  Thanks to mfilser.
+- [Notifications avatar overlaped at mobile view](https://github.com/wekan/wekan/pull/3523).
+  Thanks to mfilser.
+
+and improves some security related info:
+
+- [Added badge for CII Best Practices](https://github.com/wekan/wekan/commit/ee2f7c077fe56d6fedb8b75ae3cba6bab56f9363).
+  Thanks to CII and xet7.
+- [Added PGP public key for sending security vulnerability reports](https://github.com/wekan/wekan/commit/a385d6f4fd76e2bb0f374963848513b9373d6b5a).
+  Thanks to xet7.
+- [Updated security report email address](https://github.com/wekan/wekan/commit/7031b7a3c77acc0ddeabe436572dd4057001e9f5).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v4.91 2021-01-29 Wekan release
 
 This release fixes the following bugs:

@@ -26,6 +26,13 @@ Cards.attachSchema(
         }
       },
     },
+    archivedAt: {
+      /**
+       * latest archiving date
+       */
+      type: Date,
+      optional: true,
+    },
     parentId: {
       /**
        * ID of the parent card
@@ -724,9 +731,12 @@ Cards.helpers({
         definition,
       };
     });
-    if (ret.definition !== undefined) {
-      ret.sort((a, b) => a.definition.name.localeCompare(b.definition.name));
-    }
+    ret.sort(
+      (a, b) =>
+        a.definition.name !== undefined &&
+        b.definition.name !== undefined &&
+        a.definition.name.localeCompare(b.definition.name),
+    );
     return ret;
   },
 
@@ -1446,6 +1456,7 @@ Cards.mutations({
     return {
       $set: {
         archived: true,
+        archivedAt: new Date(),
       },
     };
   },

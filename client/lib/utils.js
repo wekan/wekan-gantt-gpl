@@ -51,8 +51,6 @@ Utils = {
     let sort = window.localStorage.getItem('myCardsSort');
 
     if (!sort || !['board', 'dueAt'].includes(sort)) {
-      window.localStorage.setItem('myCardsSort', 'board');
-      location.reload();
       sort = 'board';
     }
 
@@ -84,8 +82,6 @@ Utils = {
     let view = window.localStorage.getItem('dueCardsView');
 
     if (!view || !['me', 'all'].includes(view)) {
-      window.localStorage.setItem('dueCardsView', 'me');
-      location.reload();
       view = 'me';
     }
 

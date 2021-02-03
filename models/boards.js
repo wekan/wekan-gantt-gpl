@@ -43,6 +43,13 @@ Boards.attachSchema(
         }
       },
     },
+    archivedAt: {
+      /**
+       * Latest archiving time of the board
+       */
+      type: Date,
+      optional: true,
+    },
     createdAt: {
       /**
        * Creation time of the board
@@ -1042,7 +1049,7 @@ Boards.helpers({
 
 Boards.mutations({
   archive() {
-    return { $set: { archived: true } };
+    return { $set: { archived: true, archivedAt: new Date() } };
   },
 
   restore() {
@@ -1316,6 +1323,18 @@ Boards.userBoardIds = (userId, archived = false, selector = {}) => {
   return Boards.userBoards(userId, archived, selector).map(board => {
     return board._id;
   });
+};
+
+Boards.colorMap = () => {
+  const colors = {};
+  for (const color of Boards.labelColors()) {
+    colors[TAPi18n.__(`color-${color}`)] = color;
+  }
+  return colors;
+};
+
+Boards.labelColors = () => {
+  return _.clone(Boards.simpleSchema()._schema['labels.$.color'].allowedValues);
 };
 
 if (Meteor.isServer) {

@@ -78,12 +78,10 @@ BlazeComponent.extendComponent({
   onRendered() {
     Meteor.subscribe('setting');
 
-    this.colorMap = {};
-    for (const color of Boards.simpleSchema()._schema['labels.$.color']
-      .allowedValues) {
-      this.colorMap[TAPi18n.__(`color-${color}`)] = color;
-    }
-    // // eslint-disable-next-line no-console
+    // eslint-disable-next-line no-console
+    //console.log('lang:', TAPi18n.getLanguage());
+    this.colorMap = Boards.colorMap();
+    // eslint-disable-next-line no-console
     // console.log('colorMap:', this.colorMap);
 
     if (Session.get('globalQuery')) {
@@ -116,7 +114,7 @@ BlazeComponent.extendComponent({
     if (this.queryParams) {
       const sessionData = this.getSessionData();
       // eslint-disable-next-line no-console
-      console.log('selector:', sessionData.getSelector());
+      // console.log('selector:', sessionData.getSelector());
       // console.log('session data:', sessionData);
       const cards = Cards.find({ _id: { $in: sessionData.cards } });
       this.queryErrors = sessionData.errors;
@@ -178,7 +176,7 @@ BlazeComponent.extendComponent({
   searchAllBoards(query) {
     query = query.trim();
     // eslint-disable-next-line no-console
-    console.log('query:', query);
+    //console.log('query:', query);
 
     this.query.set(query);
 
@@ -296,13 +294,14 @@ BlazeComponent.extendComponent({
         if (m.groups.operator) {
           op = m.groups.operator.toLowerCase();
         } else {
-          op = m.groups.abbrev;
+          op = m.groups.abbrev.toLowerCase();
         }
         if (operatorMap.hasOwnProperty(op)) {
           let value = m.groups.value;
           if (operatorMap[op] === 'labels') {
             if (value in this.colorMap) {
               value = this.colorMap[value];
+              // console.log('found color:', value);
             }
           } else if (
             ['dueAt', 'createdAt', 'modifiedAt'].includes(operatorMap[op])
@@ -388,7 +387,7 @@ BlazeComponent.extendComponent({
     params.text = text;
 
     // eslint-disable-next-line no-console
-    // console.log('params:', params);
+    console.log('params:', params);
 
     this.queryParams = params;
 

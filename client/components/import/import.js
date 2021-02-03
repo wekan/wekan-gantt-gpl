@@ -169,10 +169,13 @@ BlazeComponent.extendComponent({
             this._refreshMembers(
               this.members().map(member => {
                 if (!member.wekanId) {
-                  const user = Users.findOne({ username: member.username });
+                  let user = Users.findOne({ username: member.username });
+                  if (!user) {
+                    user = Users.findOne({ importUsernames: member.username });
+                  }
                   if (user) {
                     // eslint-disable-next-line no-console
-                    console.log('found username:', user.username);
+                    // console.log('found username:', user.username);
                     member.wekanId = user._id;
                   }
                 }
