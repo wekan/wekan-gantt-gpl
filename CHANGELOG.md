@@ -1,3 +1,23 @@
+# v4.95 2021-02-08 Wekan release
+
+This release adds back the following features:
+
+- [Added back Custom Fields sorting, because it now does not prevent loading boards](https://github.com/wekan/wekan/pull/3547).
+  Thanks to mfilser.
+
+and adds the following updates:
+
+- [Updated dependencies](https://github.com/wekan/wekan/commit/1c494803b091d987e26ccb783432434e7fee15a5).
+  Thanks to xet7.
+- [Fix typo](https://github.com/wekan/wekan/commit/0bd0a70564d3dda67706deb1bbfbd1d5a96f811f).
+  Thanks to xet7.
+- Updated release scripts
+  [Part 1](https://github.com/wekan/wekan/commit/d0df3a2915d08b255d7ab92f9bcac195a1e7f442),
+  [Part 2](https://github.com/wekan/wekan/commit/e34a2840366351c0e069515ac2210db3911dbc0f).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v4.94 2021-02-08 Wekan release
 
 This release adds the following new features:
@@ -16,7 +36,6 @@ and fixes the following bugs:
 
 - [Fix bug in adding new users](https://github.com/wekan/wekan/pull/3544).
   Thanks to jrsupplee.
-- [Issue - Deleting a linked card blocked the parent board to load
 - [Fixed Board does not load, by disabling Custom Fields sorting](https://github.com/wekan/wekan/commit/d57eb6a2fc73c7b25c957ad42b5f7a06f680e1a1).
   Thanks to marcungeschikts, olivierlambert and xet7.
 - [Fixed lint](https://github.com/wekan/wekan/commit/60fedad3fe384a2b0652941e57ecaa5fc4b7897a).

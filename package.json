@@ -1,6 +1,6 @@
 {
   "name": "wekan",
-  "version": "v4.94.0",
+  "version": "v4.95.0",
   "description": "Open-Source kanban",
   "private": true,
   "scripts": {
@@ -63,7 +63,7 @@
     "bson": "^4.2.2",
     "bunyan": "^1.8.15",
     "core-js": "^3.8.3",
-    "dhtmlx-gantt": "^7.0.9",
+    "dhtmlx-gantt": "^7.0.12",
     "es6-promise": "^4.2.4",
     "exceljs": "^4.2.0",
     "fibers": "^5.0.0",
