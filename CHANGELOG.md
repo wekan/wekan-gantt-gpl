@@ -1,3 +1,35 @@
+# Upcoming Wekan release
+
+This release adds the following new features:
+
+- [Add /api/boards_count endpoint for statistics](https://github.com/wekan/wekan/pull/3556).
+  Thanks to pichouk.
+- [Added possibility to specify hours in single digits in 24 hour format](https://github.com/wekan/wekan/pull/3557).
+  Thanks to lindhork.
+
+and adds the following improvements:
+
+- [Checklistitems are now inserted always at the end of the checklist](https://github.com/wekan/wekan/pull/3551).
+  Thanks to mfilser.
+- [Teams/Organizations: Added more code to Admin Panel for saving and editing. In Progress](https://github.com/wekan/wekan/commit/1bc07b1b4a3e8cd1a177f3f1776ed8e189bc627a).
+  Thanks to xet7.
+
+and adds the following updates:
+
+- [Updated Node.js to v12.20.2](https://github.com/wekan/wekan/commit/011f86f368a83c2e70f597c11ec60ec857e0fab0).
+  Thanks to Node.js developers.
+
+and fixes the following bugs:
+
+- [Minicard, remove red line below member avatar icon](https://github.com/wekan/wekan/pull/3560).
+  Thanks to mfilser.
+- [Added padding](https://github.com/wekan/wekan/pull/3559).
+  Thanks to lindhork.
+- [Changed default behaviour for BIGEVENTS that no activity matches it](https://github.com/wekan/wekan/pull/3561).
+  Thanks to bronger.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v4.95 2021-02-08 Wekan release
 
 This release adds back the following features:
