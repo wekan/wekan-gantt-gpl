@@ -801,6 +801,7 @@ if (Meteor.isServer) {
     setCreateUser(
       fullname,
       username,
+      initials,
       password,
       isAdmin,
       isActive,
@@ -810,6 +811,7 @@ if (Meteor.isServer) {
       if (Meteor.user() && Meteor.user().isAdmin) {
         check(fullname, String);
         check(username, String);
+        check(initials, String);
         check(password, String);
         check(isAdmin, String);
         check(isActive, String);
@@ -834,7 +836,11 @@ if (Meteor.isServer) {
           const user = Users.findOne(username) || Users.findOne({ username });
           if (user) {
             Users.update(user._id, {
-              $set: { 'profile.fullname': fullname, importUsernames },
+              $set: {
+                'profile.fullname': fullname,
+                importUsernames,
+                'profile.initials': initials,
+              },
             });
           }
         }
