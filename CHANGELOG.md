@@ -1,10 +1,36 @@
-# Upcoming Wekan release
+# v5.04 2021-03-07 Wekan release
 
-This release fixes the following bugs:
+This release adds the following speed improvements:
 
-- [Try to fix Snap: Removed fibers multi arch from Snap, because Snap build servers do not build corretly with
+- [Speed improvement: Delete presences older than one week, and add database index to presences
+  serverId](https://github.com/wekan/wekan/commit/9db3c931161adfbeb6fc52d3e4cf621fb9a4955f).
+  Thanks to xet7.
+
+and adds the following new features:
+
+- [Added autolinking settings in Admin Panel](https://github.com/wekan/wekan/pull/3633).
+  Thanks to chrisi51.
+- [Add custom field editing to the REST API](https://github.com/wekan/wekan/pull/3593).
+  Thanks to dudeofawesome.
+- [Related to custom field editing, Fixed generating API docs and Wekan Custom Fields
+  REST API](https://github.com/wekan/wekan/commit/0bb3b670753c6ba20b0ad63f63d273036f609ee5).
+  Thanks to xet7.
+
+and adds back the following platforms:
+
+- [OpenPower Minicloud emergency maintenance has finished, so can now build Wekan for
+  ppc64le](https://github.com/wekan/wekan/commit/ac9b23f00f10b0170b8693e1e997bfb54f807adc).
+  Thanks to OpenPower Minicloud.
+
+and fixes the following bugs:
+
+- [Try to fix Snap: Removed fibers multi arch from Snap, because Snap build servers do not build correctly with
   it](https://github.com/wekan/wekan/commit/a44ca39eb84508441f0f8bdac852745f417f12e7).
   Thanks to xet7.
+- [Fix search on labels server error](https://github.com/wekan/wekan/pull/3634).
+  Thanks to jrsupplee.
+- [Fixed Bug: inconsistent use of relative/absolute URLs](https://github.com/wekan/wekan/pull/3635).
+  Thanks to Majed6.
 
 Thanks to above GitHub users for their contributions and translators for their translations.
 
