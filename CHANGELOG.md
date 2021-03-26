@@ -1,3 +1,29 @@
+# v5.08 2021-03-26 Wekan release
+
+This release adds the following new features:
+
+- [Admin Panel/Settings/Accounts: Hide system messages of all users](https://github.com/wekan/wekan/commit/a249ffc8054189d8e3db9b4c8f082cc7ce7dcb52).
+  Thanks to bbyszio, r4nc0r and xet7.
+
+and adds the following improvements:
+
+- [Add Trello attached links to the card description](https://github.com/wekan/wekan/pull/3669).
+  Thanks to jrsupplee.
+- [Added package-lock.json and updated .gitignore](https://github.com/wekan/wekan/commit/d532a3591f338cec9a3839d43d9a1e9d69f59dc2).
+  Thanks to xet7.
+
+and adds the following new translations:
+
+- [Added translation: español de América Latina](https://github.com/wekan/wekan/commit/ccc9efb2703efda4e199a861920b9ec88e634b59).
+  Thanks to translators.
+
+and fixes the following bugs:
+
+- [Fix typos in translations](https://github.com/wekan/wekan/commit/a0e1b6f918dbb252a13db05d6b9e1f832c28654f).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v5.07 2021-03-19 Wekan release
 
 This release fixes the following bugs:
