@@ -1,3 +1,37 @@
+# v5.15 2021-03-31 Wekan release
+
+This release fixes the following bugs:
+
+- [Fixed card sort reset](https://github.com/wekan/wekan/pull/3686).
+  Thanks to ednamaeG.
+- [Fix bug in My Cards and Global Search](https://github.com/wekan/wekan/pull/3687).
+  Thanks to jrsupplee.
+- [Fix bug in Due Cards introduced by last bug fix](https://github.com/wekan/wekan/pull/3688).
+  Thanks to jrsupplee.
+- [Fixed Bug: Move Swimlane to Archive does not work anymore. Fixed lint in
+  router.js](https://github.com/wekan/wekan/commit/0b263cf582a9649ef72efbd289927105a27583af).
+  Thanks to marcungeschikts and xet7.
+
+and adds the following updates:
+
+- Updated sandstorm release script and added new node update script
+  [Part 1](https://github.com/wekan/wekan/commit/34b6aa0858678da937eacf9a87878bbcb476fd4b),
+  [Part 2](https://github.com/wekan/wekan/commit/01de3f187c90af3ac94215ba7e8c7e780c98768d),
+  [Part 3](https://github.com/wekan/wekan/commit/1d3673e9d320926127b46383321023f149287d6d),
+  [Part 4](https://github.com/wekan/wekan/commit/09b9f690b162ae2797d1996e82c96ed8b8c74221),
+  [Part 5](https://github.com/wekan/wekan/commit/6819303047eab17b03a0c28108fd9a2cfde23d20).
+  Thanks to xet7.
+- Updated to Node.js v12.22.0
+  [Part 1](https://github.com/wekan/wekan/commit/7a9c3972642601e9d89d5e7a3816643f91448c63),
+  [Part 2](https://github.com/wekan/wekan/commit/c2b7525864048694c39f9cbe8f8c4cd96e36f7aa).
+  Thanks to Node.js developers.
+- Fixed release website script
+  [Part 1](https://github.com/wekan/wekan/commit/b6f60c08e55c2620fe6724ae2b5da0d9dfc9ec31),
+  [Part 2](https://github.com/wekan/wekan/commit/91dae9795ebd1a98b8ed12c68b78ad90a6983402).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v5.14 2021-03-29 Wekan release
 
 This release adds the following new features:
@@ -5,7 +39,7 @@ This release adds the following new features:
 - [Clean-up Global Search, Due Cards, and My Cards. New environment variable `RESULTS_PER_PAGE` for search
   results](https://github.com/wekan/wekan/pull/3676).
   Thanks to jrsupplee.
-- [Added environment variable `RESULTS_PER_PAGE` to all Wekan platforms](https://github.com/wekan/wekan/commit/ba05f383ca2>
+- [Added environment variable `RESULTS_PER_PAGE` to all Wekan platforms](https://github.com/wekan/wekan/commit/ba05f383ca29211c5474e06c5ba6673e712afe7a).
   Thanks to xet7.
 
 and adds the following updates:
