@@ -122,7 +122,7 @@ services:
     # b) Using specific version tag:
     # image: quay.io/wekan/wekan-gantt-gpl:v4.52
     # c) Docker Hub builds does work https://hub.docker.com/r/wekanteam/wekan-gantt-gpl
-    image: wekanteam/wekan-gantt-gpl
+    image: wekanteam/wekan-gantt-gpl:stable
     #-------------------------------------------------------------------------------------
     container_name: wekan-app
     restart: always
