@@ -62,7 +62,7 @@
     "bcrypt": "^5.0.0",
     "bson": "^4.0.3",
     "bunyan": "^1.8.12",
-    "dhtmlx-gantt": "^7.0.9",
+    "dhtmlx-gantt": "^7.0.12",
     "es6-promise": "^4.2.4",
     "exceljs": "^4.2.1",
     "fibers": "^5.0.0",
