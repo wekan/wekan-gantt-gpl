@@ -1,3 +1,10 @@
+import {
+  ALLOWED_COLORS,
+  TYPE_CARD,
+  TYPE_LINKED_BOARD,
+  TYPE_LINKED_CARD,
+} from '../config/const';
+
 Cards = new Mongo.Collection('cards');
 
 // XXX To improve pub/sub performances a card document should include a
@@ -77,33 +84,7 @@ Cards.attachSchema(
     color: {
       type: String,
       optional: true,
-      allowedValues: [
-        'white',
-        'green',
-        'yellow',
-        'orange',
-        'red',
-        'purple',
-        'blue',
-        'sky',
-        'lime',
-        'pink',
-        'black',
-        'silver',
-        'peachpuff',
-        'crimson',
-        'plum',
-        'darkgreen',
-        'slateblue',
-        'magenta',
-        'gold',
-        'navy',
-        'gray',
-        'saddlebrown',
-        'paleturquoise',
-        'mistyrose',
-        'indigo',
-      ],
+      allowedValues: ALLOWED_COLORS,
     },
     createdAt: {
       /**
@@ -155,9 +136,13 @@ Cards.attachSchema(
           /**
            * value attached to the custom field
            */
-          type: Match.OneOf(String, Number, Boolean, Date),
+          type: Match.OneOf(String, Number, Boolean, Date, [String]),
           optional: true,
           defaultValue: '',
+        },
+        'value.$': {
+          type: String,
+          optional: true,
         },
       }),
     },
@@ -301,7 +286,8 @@ Cards.attachSchema(
        * type of the card
        */
       type: String,
-      defaultValue: 'cardType-card',
+      defaultValue: TYPE_CARD,
+      allowedValues: [TYPE_CARD, TYPE_LINKED_CARD, TYPE_LINKED_BOARD],
     },
     linkedId: {
       /**
@@ -702,7 +688,9 @@ Cards.helpers({
     const definitions = CustomFields.find({
       boardIds: { $in: [this.boardId] },
     }).fetch();
-
+    if (!definitions) {
+      return {};
+    }
     // match right definition to each field
     if (!this.customFields) return [];
     const ret = this.customFields.map(customField => {
@@ -731,8 +719,11 @@ Cards.helpers({
         definition,
       };
     });
+    // at linked cards custom fields definition is not found
     ret.sort(
       (a, b) =>
+        a.definition !== undefined &&
+        b.definition !== undefined &&
         a.definition.name !== undefined &&
         b.definition.name !== undefined &&
         a.definition.name.localeCompare(b.definition.name),
@@ -748,6 +739,14 @@ Cards.helpers({
   absoluteUrl() {
     const board = this.board();
     return FlowRouter.url('card', {
+      boardId: board._id,
+      slug: board.slug,
+      cardId: this._id,
+    });
+  },
+  originRelativeUrl() {
+    const board = this.board();
+    return FlowRouter.path('card', {
       boardId: board._id,
       slug: board.slug,
       cardId: this._id,
@@ -1514,13 +1513,16 @@ Cards.mutations({
     return this.move(boardId, swimlaneId, listId, sort);
   },
 
-  move(boardId, swimlaneId, listId, sort) {
+  move(boardId, swimlaneId, listId, sort = null) {
     const mutatedFields = {
       boardId,
       swimlaneId,
       listId,
-      sort,
     };
+
+    if (sort !== null) {
+      mutatedFields.sort = sort;
+    }
 
     // we must only copy the labels and custom fields if the target board
     // differs from the source board
@@ -2107,6 +2109,8 @@ function cardCustomFields(userId, doc, fieldNames, modifier) {
             activityType: 'setCustomField',
             boardId: doc.boardId,
             cardId: doc._id,
+            listId: doc.listId,
+            swimlaneId: doc.swimlaneId,
           };
           Activities.insert(act);
         }
@@ -2317,11 +2321,12 @@ if (Meteor.isServer) {
       const card = Cards.findOne(doc._id);
       const list = card.list();
       if (list) {
-        // change list modifiedAt, when user modified the key values in timingaction array, if it's endAt, put the modifiedAt of list back to one year ago for sorting purpose
-        const modifiedAt = new Date(
-          new Date(value).getTime() -
-            (action === 'endAt' ? 365 * 24 * 3600 * 1e3 : 0),
-        ); // set it as 1 year before
+        // change list modifiedAt, when user modified the key values in
+        // timingaction array, if it's endAt, put the modifiedAt of list
+        // back to one year ago for sorting purpose
+        const modifiedAt = moment()
+          .subtract(1, 'year')
+          .toISOString();
         const boardId = list.boardId;
         Lists.direct.update(
           {
@@ -2568,6 +2573,7 @@ if (Meteor.isServer) {
    * @param {string} list the list ID of the card
    * @param {string} cardId the ID of the card
    * @param {string} [title] the new title of the card
+   * @param {string} [sort] the new sort value of the card
    * @param {string} [listId] the new list ID of the card (move operation)
    * @param {string} [description] the new description of the card
    * @param {string} [authorId] change the owner of the card
@@ -2614,6 +2620,22 @@ if (Meteor.isServer) {
           {
             $set: {
               title: newTitle,
+            },
+          },
+        );
+      }
+      if (req.body.hasOwnProperty('sort')) {
+        const newSort = req.body.sort;
+        Cards.direct.update(
+          {
+            _id: paramCardId,
+            listId: paramListId,
+            boardId: paramBoardId,
+            archived: false,
+          },
+          {
+            $set: {
+              sort: newSort,
             },
           },
         );

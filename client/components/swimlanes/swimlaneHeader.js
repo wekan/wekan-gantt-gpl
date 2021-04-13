@@ -54,9 +54,10 @@ Template.swimlaneActionPopup.events({
     this.archive();
     Popup.close();
   },
+  'click .js-move-swimlane': Popup.open('moveSwimlane'),
 });
 
-Template.swimlaneActionPopup.helpers({
+Template.swimlaneActionPopup.events({
   isCommentOnly() {
     return Meteor.user().isCommentOnly();
   },

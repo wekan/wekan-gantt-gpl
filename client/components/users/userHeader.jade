@@ -26,10 +26,6 @@ template(name="memberMenuPopup")
           i.fa.fa-search
           | {{_ 'globalSearch-title'}}
       li
-        a.js-broken-cards(href="{{pathFor 'broken-cards'}}")
-          i.fa.fa-chain-broken
-          | {{_ 'broken-cards'}}
-      li
         a(href="{{pathFor 'home'}}")
           span.fa.fa-home
           | {{_ 'all-boards'}}
@@ -143,7 +139,7 @@ template(name="changeSettingsPopup")
         label.bold.clear
           i.fa.fa-sort-numeric-asc
           | {{_ 'show-cards-minimum-count'}}
-        input#show-cards-count-at.inline-input.left(type="number" value="#{showCardsCountAt}" min="0" max="99" onkeydown="return false")
+        input#show-cards-count-at.inline-input.left(type="number" value="#{showCardsCountAt}" min="-1")
         label.bold.clear
           i.fa.fa-calendar
           | {{_ 'start-day-of-week'}}

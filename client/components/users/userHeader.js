@@ -168,10 +168,32 @@ Template.changeLanguagePopup.helpers({
       let name = lang.name;
       if (lang.name === 'br') {
         name = 'Brezhoneg';
+      } else if (lang.name === 'ar-EG') {
+        // ar-EG = Arabic (Egypt), simply Masri (مَصرى, [ˈmɑsˤɾi], Egyptian, Masr refers to Cairo)
+        name = 'مَصرى';
+      } else if (lang.name === 'fa-IR') {
+        // fa-IR = Persian (Iran)
+        name = 'فارسی/پارسی (ایران‎)';
+      } else if (lang.name === 'fr-BE') {
+        name = 'Français (Belgique)';
+      } else if (lang.name === 'fr-CA') {
+        name = 'Français (Canada)';
       } else if (lang.name === 'ig') {
         name = 'Igbo';
+      } else if (lang.name === 'lv') {
+        name = 'Latviešu';
+      } else if (lang.name === 'latviešu valoda') {
+        name = 'Latviešu';
       } else if (lang.name === 'Español') {
         name = 'español';
+      } else if (lang.name === 'es_419') {
+        name = 'español de América Latina';
+      } else if (lang.name === 'es-419') {
+        name = 'español de América Latina';
+      } else if (lang.name === 'Español de América Latina') {
+        name = 'español de América Latina';
+      } else if (lang.name === 'es-LA') {
+        name = 'español de América Latina';
       } else if (lang.name === 'Español de Argentina') {
         name = 'español de Argentina';
       } else if (lang.name === 'Español de Chile') {
@@ -182,12 +204,16 @@ Template.changeLanguagePopup.helpers({
         name = 'español de México';
       } else if (lang.name === 'es-PY') {
         name = 'español de Paraguayo';
+      } else if (lang.name === 'Español de Paraguayo') {
+        name = 'español de Paraguayo';
       } else if (lang.name === 'Español de Perú') {
         name = 'español de Perú';
       } else if (lang.name === 'Español de Puerto Rico') {
         name = 'español de Puerto Rico';
       } else if (lang.name === 'oc') {
         name = 'Occitan';
+      } else if (lang.name === 'st') {
+        name = 'Sãotomense';
       } else if (lang.name === '繁体中文（台湾）') {
         name = '繁體中文（台灣）';
       }
@@ -213,6 +239,7 @@ Template.changeLanguagePopup.events({
         'profile.language': this.tag,
       },
     });
+    TAPi18n.setLanguage(this.tag);
     event.preventDefault();
   },
 });
@@ -270,6 +297,13 @@ Template.changeSettingsPopup.helpers({
 });
 
 Template.changeSettingsPopup.events({
+  'keypress/paste #show-cards-count-at'() {
+    let keyCode = event.keyCode;
+    let charCode = String.fromCharCode(keyCode);
+    let regex = new RegExp('[-0-9]');
+    let ret = regex.test(charCode);
+    return ret;
+  },
   'click .js-toggle-desktop-drag-handles'() {
     currentUser = Meteor.user();
     if (currentUser) {
@@ -292,7 +326,7 @@ Template.changeSettingsPopup.events({
   },
   'click .js-apply-user-settings'(event, templateInstance) {
     event.preventDefault();
-    const minLimit = parseInt(
+    let minLimit = parseInt(
       templateInstance.$('#show-cards-count-at').val(),
       10,
     );
@@ -301,6 +335,9 @@ Template.changeSettingsPopup.events({
       10,
     );
     const currentUser = Meteor.user();
+    if (isNaN(minLimit) || minLimit < -1) {
+      minLimit = -1;
+    }
     if (!isNaN(minLimit)) {
       if (currentUser) {
         Meteor.call('changeLimitToShowCardsCount', minLimit);

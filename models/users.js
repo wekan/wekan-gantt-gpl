@@ -798,9 +798,29 @@ Meteor.methods({
 
 if (Meteor.isServer) {
   Meteor.methods({
+    setAllUsersHideSystemMessages() {
+      if (Meteor.user() && Meteor.user().isAdmin) {
+        // If setting is missing, add it
+        Users.update(
+          { 'profile.hiddenSystemMessages': { $exists: false } },
+          { $set: { 'profile.hiddenSystemMessages': true } },
+          { multi: true },
+        );
+        // If setting is false, set it to true
+        Users.update(
+          { 'profile.hiddenSystemMessages': false },
+          { $set: { 'profile.hiddenSystemMessages': true } },
+          { multi: true },
+        );
+        return true;
+      } else {
+        return false;
+      }
+    },
     setCreateUser(
       fullname,
       username,
+      initials,
       password,
       isAdmin,
       isActive,
@@ -810,6 +830,7 @@ if (Meteor.isServer) {
       if (Meteor.user() && Meteor.user().isAdmin) {
         check(fullname, String);
         check(username, String);
+        check(initials, String);
         check(password, String);
         check(isAdmin, String);
         check(isActive, String);
@@ -834,7 +855,11 @@ if (Meteor.isServer) {
           const user = Users.findOne(username) || Users.findOne({ username });
           if (user) {
             Users.update(user._id, {
-              $set: { 'profile.fullname': fullname, importUsernames },
+              $set: {
+                'profile.fullname': fullname,
+                importUsernames,
+                'profile.initials': initials,
+              },
             });
           }
         }
@@ -1461,13 +1486,18 @@ if (Meteor.isServer) {
    *
    * @description Only the admin user (the first user) can call the REST API.
    *
-   * @param {string} userId the user ID
+   * @param {string} userId the user ID or username
    * @return_type Users
    */
   JsonRoutes.add('GET', '/api/users/:userId', function(req, res) {
     try {
       Authentication.checkUserId(req.userId);
-      const id = req.params.userId;
+      let id = req.params.userId;
+      let user = Meteor.users.findOne({ _id: id });
+      if (!user) {
+        user = Meteor.users.findOne({ username: id });
+        id = user._id;
+      }
 
       // get all boards where the user is member of
       let boards = Boards.find(
@@ -1486,7 +1516,6 @@ if (Meteor.isServer) {
         return u;
       });
 
-      const user = Meteor.users.findOne({ _id: id });
       user.boards = boards;
       JsonRoutes.sendResult(res, {
         code: 200,
