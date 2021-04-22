@@ -1,12 +1,52 @@
+# v5.23 2021-04-22 Wekan release
+
+This release adds the following new features:
+
+- [Filtering by due date](https://github.com/wekan/wekan/pull/3731).
+  Thanks to mcrute.
+
+and adds the following updates:
+
+- [Updated dependencies](https://github.com/wekan/wekan/commit/676bf686c7a121b0da744afce5911807a6be48fe).
+  Thanks to developers of dependencies.
+
+and fixes the following bugs:
+
+- [Fix: Trello data without labels definition](https://github.com/wekan/wekan/pull/3733).
+  Thanks to jrsupplee.
+- [Bug fix for Due Cards](https://github.com/wekan/wekan/pull/3741).
+  Thanks to jrsupplee.
+- [Fix: The bg color of start at button is almost-due](https://github.com/wekan/wekan/pull/3749).
+  Thanks to listenerri.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
+# v5.22 2021-04-16 Wekan release
+
+This release adds the following new translations:
+
+- Added German (Switzerland) (de_CH) (Schwiizerdütsch). Updated translations.
+  [Part 1](https://github.com/wekan/wekan/commit/09506c78f3c3439db622574eb851fa0c20d3a066),
+  [Part 2](https://github.com/wekan/wekan/commit/dce99c00be80cceba686fd73b4b78b6c778d78a6),
+  [Part 3](https://github.com/wekan/wekan/commit/6ff9c5b58d25ba52b11e5429c9cfe6ed6a97000e).
+  Thanks to translators.
+
+and fixes the following bugs:
+
+- [Remove allowedValues from Cards.type schema](https://github.com/wekan/wekan/pull/3724).
+  Thanks to jrsupplee.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v5.21 2021-04-16 Wekan release
 
 This release adds the following new features:
 
-- [Summernote Rich Text Editor:
+- [Summernote Rich Text Editor](https://github.com/wekan/wekan/pull/3720):
   1) Add new button to insert a URL link.
   2) Add new popover allowing you to edit existing URL links.
   3) Enable spell check.
-  4) Allow client side grammerly extension](https://github.com/wekan/wekan/pull/3720).
+  4) Allow client side grammerly extension.
   Thanks to ryanMushy.
 
 and adds the following updates:
