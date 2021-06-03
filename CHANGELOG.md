@@ -1,5 +1,24 @@
 [Mac ChangeLog](https://github.com/wekan/wekan/wiki/Mac)
 
+# v5.30 2021-06-03 Wekan release
+
+This release adds the following new features:
+
+- [Planning Poker / Scrum Poker](https://github.com/wekan/wekan/pull/3836),
+  see https://github.com/wekan/wekan/wiki/Planning-Poker .
+  Thanks to helioguardabaxo.
+
+and fixes the following bugs:
+
+- [Fixed Python API example: Edit card, etc](https://github.com/wekan/wekan/commit/bf62a947fbfa7d387074550288376e682fd6ad47).
+  Thanks to Lucky-Shi and xet7.
+- [Default language is still used although this one has been modified previously](https://github.com/wekan/wekan/pull/3833).
+  Thanks to Emile840.
+- [Moved Keyboard Shortcuts from bottom to top of Sidebar](https://github.com/wekan/wekan/commit/659a65b8b919a49ba0beef5cc53d8e61e0f794aa).
+  Thanks to ClaudiaK21 and xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v5.29 2021-05-29 Wekan release
 
 This release adds the following new features:
