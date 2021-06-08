@@ -35,6 +35,26 @@ BlazeComponent.extendComponent({
 
     gantt.init('ganttEl');
 
+    // Retain links created between tasks
+    // https://github.com/wekan/wekan/issues/2870#issuecomment-857115753
+    // Code part 3: Adding this to gantt.js which will fire during the events specified.
+    // https://github.com/wekan/wekan/issues/2870#issuecomment-857171127
+    gantt.attachEvent("onLinkCreated", function(link){
+      const c = Cards.findOne(link.source);
+      var sourceTask = gantt.getTask(link.source);
+      var targetTask = gantt.getTask(link.target);
+
+      c.setGanttTargetId(sourceTask.id, targetTask.id, link.type, link.id);
+      return true;
+    });
+
+    gantt.attachEvent("onBeforeLinkDelete", function(id,item){
+      const c = Cards.findOne(item.source);
+
+      c.removeGanttTargetId(item.source, item.target, item.type, id)
+      return true;
+    });
+
     //Clicking on task will show the card
     gantt.attachEvent('onTaskClick', function(id, e) {
       const path = FlowRouter.current();
@@ -144,6 +164,8 @@ BlazeComponent.extendComponent({
 
     this.autorun(() => {
       const events = [];
+      // https://github.com/wekan/wekan/issues/2870#issuecomment-857171127 part 4
+      const LinksDate = [];
       currentBoard.cards().forEach(c => {
         if (!c.startAt || !c.endAt) {
           return;
@@ -156,15 +178,36 @@ BlazeComponent.extendComponent({
           start_date: moment(c.startAt).format('DD-MM-YYYY'),
           due_date: moment(c.endAt).format('YYYY-MM-DD'),
           duration: moment.duration(moment(c.endAt).diff(c.startAt)).asDays(),
+          // type: projectTask,
         };
 
+        if(c.targetId_gantt) {
+          for (var i = 0; i < c.targetId_gantt.length; i++) {
+            var cardLink = c.targetId_gantt[i];
+            var linkType = c.linkType_gantt[i];
+            var linkId = c.linkId_gantt[i];
+
+            const LinkInfo= {
+              id: linkId,
+              source: c._id,
+              target: cardLink,
+              type: linkType,
+            };
+          LinksData.push(LinkInfo);
+          }
+        }
+
         events.push(event);
+        //LinksData.push(links);
       });
 
-      gantt.clearAll();
+      //this is the reason why links get deleted when a task is moved... why is this here?
+      //    => So now commented this away.
+      //gantt.clearAll();
 
       gantt.parse({
         data: events,
+        links: LinksData,
       });
     });
   },
