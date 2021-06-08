@@ -13,6 +13,9 @@ This release adds the following new features:
 - [Gantt: Retain links created between tasks. Part 1: Database changes, not active in
   MIT Wekan](https://github.com/wekan/wekan/commit/07a3a0b3882147effac890514b19ff84f1d76bdb).
   Thanks to benjaminhrivera.
+- [Gantt: Retain links created between tasks. Part 2: Gantt Wekan specific
+  changes](https://github.com/wekan/wekan/commit/3045f33020268c4378747484ab6ce15cbb28964d).
+  Thanks to benjaminhrivera.
 
 and adds the following updates:
 
