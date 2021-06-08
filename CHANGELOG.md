@@ -1,6 +1,6 @@
 [Mac ChangeLog](https://github.com/wekan/wekan/wiki/Mac)
 
-# Upcoming Wekan release
+# v5.31 2021-06-09 Wekan release
 
 This release adds the following new features:
 
@@ -21,6 +21,8 @@ and adds the following updates:
 
 - [Removed extra package](https://github.com/wekan/wekan/commit/646497c3f041e2f562d032fe28ef29169f671ac1).
   Thanks to xet7.
+- [Updated dependencies](https://github.com/wekan/wekan/commit/122757ca9c091e98b31d34c3abc25caa295dbdc0).
+  Thanks to developers of dependencies.
 
 and fixes the following bugs:
 
