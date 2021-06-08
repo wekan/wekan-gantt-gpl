@@ -1,5 +1,38 @@
 [Mac ChangeLog](https://github.com/wekan/wekan/wiki/Mac)
 
+# Upcoming Wekan release
+
+This release adds the following new features:
+
+- [Admin Panel: Edit Organizations and Teams](https://github.com/wekan/wekan/issues/802).
+  Thanks to Emile840.
+- [Admin Panel: Delete Organizations and Teams](https://github.com/wekan/wekan/commit/14b2c1309f0f910c1e46b5681d3612d7ff0cbf81).
+  Thanks to xet7.
+- [Admin Panel Organizations/Teams: Show confirm text above delete button](https://github.com/wekan/wekan/commit/16379201704ea1a43ce14859633ffb1b9fae6710).
+  Thanks to xet7.
+- [Gantt: Retain links created between tasks. Part 1: Database changes, not active in
+  MIT Wekan](https://github.com/wekan/wekan/commit/07a3a0b3882147effac890514b19ff84f1d76bdb).
+  Thanks to benjaminhrivera.
+
+and adds the following updates:
+
+- [Removed extra package](https://github.com/wekan/wekan/commit/646497c3f041e2f562d032fe28ef29169f671ac1).
+  Thanks to xet7.
+
+and fixes the following bugs:
+
+- [Now new boards do not have any labels added by default](https://github.com/wekan/wekan/commit/481404e8d7bad7799c2ad34d6a94eaf5e87602c2).
+  Thanks to tedkoch and xet7.
+- [Try to fix OAUTH2_LOGIN_STYLE=redirect Has No Effect](https://github.com/wekan/wekan/commit/78324263c1c78e7e9e99f153e3158e39f564b67a).
+  Thanks to 1ubuntuuser and xet7.
+- [Try to fix: Wekan UI fails to finish import of closed Trello boards](https://github.com/wekan/wekan/commit/007e0f1c16c935ce580093a6aec31305c75d1e45).
+  Thanks to berezovskyi and xet7.
+- [Partial Fix: Vote and Planning Poker: Setting date and time now works for some languages that have
+  ascii characters in date format](https://github.com/wekan/wekan/commit/57f31d443faaa32d6c7b53d81af3be133af5f040).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v5.30 2021-06-03 Wekan release
 
 This release adds the following new features:
