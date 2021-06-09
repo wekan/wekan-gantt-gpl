@@ -1,5 +1,14 @@
 [Mac ChangeLog](https://github.com/wekan/wekan/wiki/Mac)
 
+# Upcoming Wekan release
+
+This release fixes the following bugs:
+
+- [Uncomment necessary Gantt code](https://github.com/wekan/wekan-gantt-gpl/commit/e37c17ec084abcf1be77ce285d40a00920ca90ec).
+  Thanks to benjaminhrivera.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v5.31 2021-06-09 Wekan release
 
 This release adds the following new features:
