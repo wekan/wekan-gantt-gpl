@@ -201,9 +201,7 @@ BlazeComponent.extendComponent({
         //LinksData.push(links);
       });
 
-      //this is the reason why links get deleted when a task is moved... why is this here?
-      //    => So now commented this away.
-      //gantt.clearAll();
+      gantt.clearAll();
 
       gantt.parse({
         data: events,
