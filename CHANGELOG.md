@@ -1,5 +1,35 @@
 [Mac ChangeLog](https://github.com/wekan/wekan/wiki/Mac)
 
+# v5.34 2021-06-11 Wekan release
+
+This release adds the following new features:
+
+- [View and change card sort number](https://github.com/wekan/wekan/pull/3857).
+  Thanks to mfilser.
+- [More spinners + configureable in admin panel](https://github.com/wekan/wekan/pull/3858).
+  Thanks to mfilser.
+- [Added remaining spinner settings](https://github.com/wekan/wekan/commit/488b765f95ad67b19630cd125543836c04eaa24f).
+  Thanks to xet7.
+
+and adds the following new improvements:
+
+- [Card Description has now the same color on view and editing](https://github.com/wekan/wekan/pull/3851).
+  Thanks to mfilser.
+- [Development in docker container](https://github.com/wekan/wekan/pull/3852).
+  Thanks to mfilser.
+
+and fixes the following bugs:
+
+- [Fix Google SSO to access Wekan has not been working by reverting Wekan v5.31 not-working fixes
+  to OAUTH2_LOGIN_STYLE=redirect Has No Effect](https://github.com/wekan/wekan/commit/1e837dec11dc5cb266b83efcff4f462aa02d733d).
+  Thanks to unpokitodxfavor and xet7.
+- [CustomFields were not created after adding 1 card](https://github.com/wekan/wekan/pull/3856).
+  Thanks to mfilser.
+- [Try to fix BUG: Database error attempting to change a account](https://github.com/wekan/wekan/commit/762391965e6ae3cd5682d5b164131500e7d92338).
+  Thanks to bbyszio and xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v5.33 2021-06-10 Wekan release
 
 This release adds the following new features:
