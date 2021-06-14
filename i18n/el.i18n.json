@@ -358,7 +358,11 @@
     "export-board-excel": "Εξαγωγή πίνακα σε Excel",
     "user-can-not-export-excel": "Ο χρήστης δε μπορεί να εξάγει σε Excel",
     "export-board-html": "Εξαγωγή πίνακα σε HTML",
+    "export-card": "Export card",
+    "export-card-pdf": "Export card to PDF",
+    "user-can-not-export-card-to-pdf": "User can not export card to PDF",
     "exportBoardPopup-title": "Εξαγωγή πίνακα",
+    "exportCardPopup-title": "Export card",
     "sort": "Ταξινόμηση",
     "sort-desc": "Κάντε κλικ για να ταξινομήστε τη λίστα",
     "list-sort-by": "Ταξινόμηση λίστας βάσει:",
@@ -1039,5 +1043,15 @@
     "copy-swimlane": "Copy Swimlane",
     "copySwimlanePopup-title": "Copy Swimlane",
     "display-card-creator": "Display Card Creator",
-    "wait-spinner": "Wait Spinner"
+    "wait-spinner": "Wait Spinner",
+    "Bounce": "Bounce Wait Spinner",
+    "Cube": "Cube Wait Spinner",
+    "Cube-Grid": "Cube-Grid Wait Spinner",
+    "Dot": "Dot Wait Spinner",
+    "Double-Bounce": "Double Bounce Wait Spinner",
+    "Rotateplane": "Rotateplane Wait Spinner",
+    "Scaleout": "Scaleout Wait Spinner",
+    "Wave": "Wave Wait Spinner",
+    "maximize-card": "Maximize Card",
+    "minimize-card": "Minimize Card"
 }

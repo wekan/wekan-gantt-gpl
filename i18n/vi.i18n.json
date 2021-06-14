@@ -358,7 +358,11 @@
     "export-board-excel": "Xuất bảng sang Excel",
     "user-can-not-export-excel": "Người dùng không thể xuất Excel",
     "export-board-html": "Xuất bảng sang HTML",
+    "export-card": "Export card",
+    "export-card-pdf": "Export card to PDF",
+    "user-can-not-export-card-to-pdf": "User can not export card to PDF",
     "exportBoardPopup-title": "Xuất bảng",
+    "exportCardPopup-title": "Export card",
     "sort": "Sắp xếp",
     "sort-desc": "Nhấp để sắp xếp danh sách",
     "list-sort-by": "Sắp xếp Danh sách bởi:",
@@ -1039,5 +1043,15 @@
     "copy-swimlane": "Sao chép Làn ngang",
     "copySwimlanePopup-title": "Sao chép Làn ngang",
     "display-card-creator": "Display Card Creator",
-    "wait-spinner": "Wait Spinner"
+    "wait-spinner": "Wait Spinner",
+    "Bounce": "Bounce Wait Spinner",
+    "Cube": "Cube Wait Spinner",
+    "Cube-Grid": "Cube-Grid Wait Spinner",
+    "Dot": "Dot Wait Spinner",
+    "Double-Bounce": "Double Bounce Wait Spinner",
+    "Rotateplane": "Rotateplane Wait Spinner",
+    "Scaleout": "Scaleout Wait Spinner",
+    "Wave": "Wave Wait Spinner",
+    "maximize-card": "Maximize Card",
+    "minimize-card": "Minimize Card"
 }

@@ -358,7 +358,11 @@
     "export-board-excel": "Export board to Excel",
     "user-can-not-export-excel": "User can not export Excel",
     "export-board-html": "Panoyu HTML olarak dışarı aktar",
+    "export-card": "Export card",
+    "export-card-pdf": "Export card to PDF",
+    "user-can-not-export-card-to-pdf": "User can not export card to PDF",
     "exportBoardPopup-title": "Panoyu dışarı aktar",
+    "exportCardPopup-title": "Export card",
     "sort": "Sırala",
     "sort-desc": "Listeyi Sıralamak için Tıklayın",
     "list-sort-by": "Listeyi Sırala:",
@@ -1039,5 +1043,15 @@
     "copy-swimlane": "Copy Swimlane",
     "copySwimlanePopup-title": "Copy Swimlane",
     "display-card-creator": "Display Card Creator",
-    "wait-spinner": "Wait Spinner"
+    "wait-spinner": "Wait Spinner",
+    "Bounce": "Bounce Wait Spinner",
+    "Cube": "Cube Wait Spinner",
+    "Cube-Grid": "Cube-Grid Wait Spinner",
+    "Dot": "Dot Wait Spinner",
+    "Double-Bounce": "Double Bounce Wait Spinner",
+    "Rotateplane": "Rotateplane Wait Spinner",
+    "Scaleout": "Scaleout Wait Spinner",
+    "Wave": "Wave Wait Spinner",
+    "maximize-card": "Maximize Card",
+    "minimize-card": "Minimize Card"
 }

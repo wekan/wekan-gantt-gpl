@@ -54,6 +54,10 @@ BlazeComponent.extendComponent({
     return Meteor.user().hasHiddenSystemMessages();
   },
 
+  cardMaximized() {
+    return Meteor.user().hasCardMaximized();
+  },
+
   canModifyCard() {
     return (
       Meteor.user() &&
@@ -366,7 +370,7 @@ BlazeComponent.extendComponent({
           const sort = parseFloat(this.currentComponent()
             .getValue()
             .trim());
-          if (sort) {
+          if (!Number.isNaN(sort)) {
             let card = this.data();
             card.move(card.boardId, card.swimlaneId, card.listId, sort);
           }
@@ -407,6 +411,14 @@ BlazeComponent.extendComponent({
         },
         'click #toggleButton'() {
           Meteor.call('toggleSystemMessages');
+        },
+        'click .js-maximize-card-details'() {
+          Meteor.call('toggleCardMaximized');
+          autosize($('.card-details'));
+        },
+        'click .js-minimize-card-details'() {
+          Meteor.call('toggleCardMaximized');
+          autosize($('.card-details'));
         },
         'click .js-vote'(e) {
           const forIt = $(e.target).hasClass('js-vote-positive');
@@ -499,9 +511,38 @@ BlazeComponent.extendComponent({
   },
 }).register('cardDetails');
 
+BlazeComponent.extendComponent({
+  template() {
+    return 'exportCard';
+  },
+  withApi() {
+    return Template.instance().apiEnabled.get();
+  },
+  exportUrlCardPDF() {
+    const params = {
+      boardId: Session.get('currentBoard'),
+      listId: this.listId,
+      cardId: this.cardId,
+    };
+    const queryParams = {
+      authToken: Accounts._storedLoginToken(),
+    };
+    return FlowRouter.path(
+      '/api/boards/:boardId/lists/:listId/cards/:cardId/exportPDF',
+      params,
+      queryParams,
+    );
+  },
+  exportFilenameCardPDF() {
+    //const boardId = Session.get('currentBoard');
+    //return `export-card-pdf-${boardId}.xlsx`;
+    return `export-card.pdf`;
+  },
+}).register('exportCardPopup');
+
 // only allow number input
 Template.editCardSortOrderForm.onRendered(function() {
-  this.$('input').on("keypress paste", function() {
+  this.$('input').on("keypress paste", function(event) {
     let keyCode = event.keyCode;
     let charCode = String.fromCharCode(keyCode);
     let regex = new RegExp('[-0-9.]');
@@ -571,6 +612,7 @@ Template.cardDetailsActionsPopup.helpers({
 });
 
 Template.cardDetailsActionsPopup.events({
+  'click .js-export-card': Popup.open('exportCard'),
   'click .js-members': Popup.open('cardMembers'),
   'click .js-assignees': Popup.open('cardAssignees'),
   'click .js-labels': Popup.open('cardLabels'),

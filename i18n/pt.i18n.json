@@ -358,7 +358,11 @@
     "export-board-excel": "Exportar quadro para Excel",
     "user-can-not-export-excel": "Utilizador não pode exportar Excel",
     "export-board-html": "Exportar quadro para HTML",
+    "export-card": "Export card",
+    "export-card-pdf": "Export card to PDF",
+    "user-can-not-export-card-to-pdf": "User can not export card to PDF",
     "exportBoardPopup-title": "Exportar quadro",
+    "exportCardPopup-title": "Export card",
     "sort": "Ordenar",
     "sort-desc": "Clique para ordenar a Lista",
     "list-sort-by": "Ordenar a Lista por:",
@@ -1039,5 +1043,15 @@
     "copy-swimlane": "Copiar Pista",
     "copySwimlanePopup-title": "Copiar Pista",
     "display-card-creator": "Display Card Creator",
-    "wait-spinner": "Wait Spinner"
+    "wait-spinner": "Wait Spinner",
+    "Bounce": "Bounce Wait Spinner",
+    "Cube": "Cube Wait Spinner",
+    "Cube-Grid": "Cube-Grid Wait Spinner",
+    "Dot": "Dot Wait Spinner",
+    "Double-Bounce": "Double Bounce Wait Spinner",
+    "Rotateplane": "Rotateplane Wait Spinner",
+    "Scaleout": "Scaleout Wait Spinner",
+    "Wave": "Wave Wait Spinner",
+    "maximize-card": "Maximize Card",
+    "minimize-card": "Minimize Card"
 }

@@ -358,7 +358,11 @@
     "export-board-excel": "Vie taulu Excel",
     "user-can-not-export-excel": "Käyttäjä ei voi viedä Excel tiedostoon",
     "export-board-html": "Vie taulu HTML",
+    "export-card": "Vie kortti",
+    "export-card-pdf": "Vie kortti PDF",
+    "user-can-not-export-card-to-pdf": "Käyttäjä ei voi viedä korttia PDF tiedostoon",
     "exportBoardPopup-title": "Vie taulu",
+    "exportCardPopup-title": "Vie kortti",
     "sort": "Lajittele",
     "sort-desc": "Klikkaa lajitellaksesi listan",
     "list-sort-by": "Lajittele lista:",
@@ -1039,5 +1043,15 @@
     "copy-swimlane": "Kopioi Swimlane",
     "copySwimlanePopup-title": "Kopioi Swimlane",
     "display-card-creator": "Näytä kortin luoja",
-    "wait-spinner": "Odotus pyörijä"
+    "wait-spinner": "Odotus pyörijä",
+    "Bounce": "Pomppu odotus pyörijä",
+    "Cube": "Kuutio odotus pyörijä",
+    "Cube-Grid": "Kuutio ristikko odotus pyörijä",
+    "Dot": "Piste odotus pyörijä",
+    "Double-Bounce": "Tupla pomppu odotus pyörijä",
+    "Rotateplane": "Pyöritä tasoa odotus pyörijä",
+    "Scaleout": "Skaalaus ulos odotus pyörijä",
+    "Wave": "Aalto odotus pyörijä",
+    "maximize-card": "Suurenna kortti",
+    "minimize-card": "Pienennä kortti"
 }
