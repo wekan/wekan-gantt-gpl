@@ -81,6 +81,7 @@
     "activity-endDate": "edited end date to %s of %s",
     "add-attachment": "Tilføj vedhæftning",
     "add-board": "Tilføj tavle",
+    "add-template": "Add Template",
     "add-card": "Tilføj kort",
     "add-card-to-top-of-list": "Add Card to Top of List",
     "add-card-to-bottom-of-list": "Add Card to Bottom of List",
@@ -119,6 +120,8 @@
     "archives": "Arkiv",
     "template": "Skabelon",
     "templates": "Skabeloner",
+    "template-container": "Template Container",
+    "add-template-container": "Add Template Container",
     "assign-member": "Tilknyt medlem",
     "attached": "vedhæftet",
     "attachment": "Vedhæftning",
@@ -1053,5 +1056,7 @@
     "Scaleout": "Scaleout Wait Spinner",
     "Wave": "Wave Wait Spinner",
     "maximize-card": "Maximize Card",
-    "minimize-card": "Minimize Card"
+    "minimize-card": "Minimize Card",
+    "delete-org-warning-message": "Can not delete this organization, there is at least one user that belongs to it",
+    "delete-team-warning-message": "Can not delete this team, there is at least one user that belongs to it"
 }

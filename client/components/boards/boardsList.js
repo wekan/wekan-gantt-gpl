@@ -88,6 +88,7 @@ BlazeComponent.extendComponent({
   boards() {
     const query = {
       archived: false,
+      //type: { $in: ['board','template-container'] },
       type: 'board',
     };
     if (FlowRouter.getRouteName() === 'home')

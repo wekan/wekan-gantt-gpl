@@ -81,6 +81,7 @@
     "activity-endDate": "muokkasi loppumispäiväksi %s / %s",
     "add-attachment": "Lisää liite",
     "add-board": "Lisää taulu",
+    "add-template": "Lisää malli",
     "add-card": "Lisää kortti",
     "add-card-to-top-of-list": "Lisää kortti listan alkuun",
     "add-card-to-bottom-of-list": "Lisää kortti listan loppuun",
@@ -119,6 +120,8 @@
     "archives": "Arkisto",
     "template": "Malli",
     "templates": "Mallit",
+    "template-container": "Mallikontti",
+    "add-template-container": "Lisää mallikontti",
     "assign-member": "Valitse jäsen",
     "attached": "liitetty",
     "attachment": "Liitetiedosto",
@@ -1053,5 +1056,7 @@
     "Scaleout": "Skaalaus ulos odotus pyörijä",
     "Wave": "Aalto odotus pyörijä",
     "maximize-card": "Suurenna kortti",
-    "minimize-card": "Pienennä kortti"
+    "minimize-card": "Pienennä kortti",
+    "delete-org-warning-message": "Ei voi poistaa tätä organisaatiota, ainakin yksi käyttäjä kuuluu siihen",
+    "delete-team-warning-message": "Ei voi poistaa tätä tiimiä, ainakin yksi käyttäjä kuuluu siihen"
 }

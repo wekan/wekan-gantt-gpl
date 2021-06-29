@@ -81,6 +81,7 @@
     "activity-endDate": "hat Enddatum zu %s geändert auf %s",
     "add-attachment": "Datei anhängen",
     "add-board": "Board hinzufügen",
+    "add-template": "Vorlage hinzufügen",
     "add-card": "Karte hinzufügen",
     "add-card-to-top-of-list": "Karte am Anfang der Liste hinzufügen",
     "add-card-to-bottom-of-list": "Karte am Ende der Liste hinzufügen",
@@ -119,6 +120,8 @@
     "archives": "Archiv",
     "template": "Vorlage",
     "templates": "Vorlagen",
+    "template-container": "Vorlagen-Container",
+    "add-template-container": "Vorlagen-Container hinzufügen",
     "assign-member": "Mitglied zuweisen",
     "attached": "angehängt",
     "attachment": "Anhang",
@@ -1053,5 +1056,7 @@
     "Scaleout": "Scaleout Wait Spinner",
     "Wave": "Wave Wait Spinner",
     "maximize-card": "Karte maximieren",
-    "minimize-card": "Karte minimieren"
+    "minimize-card": "Karte minimieren",
+    "delete-org-warning-message": "Diese Organisation kann nicht gelöscht werden. Zumindest ein Benutzer ist ihr noch zugehörig.",
+    "delete-team-warning-message": "Dieses Team kann nicht gelöscht werden. Zumindest ein Benutzer ist ihm noch zugehörig."
 }
