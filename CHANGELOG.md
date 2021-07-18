@@ -3,6 +3,36 @@
 Note: With Docker, please don't use latest tag. Only use release tags.
 See https://github.com/wekan/wekan/issues/3874
 
+# v5.38 2021-07-18 Wekan release
+
+This release adds the following new features:
+
+- [Added Code View `</>` button when `RICHER_CARD_COMMENT_EDITOR=true` and in desktop view
+  where is enough screen space for buttons (not added to mobile
+  view)](https://github.com/wekan/wekan/commit/ec01e5182d6b8c848d752540887a8113472b0226).
+  Thanks to xet7.
+
+and adds the following updates:
+
+- Updated dependencies
+  [Part 1](https://github.com/wekan/wekan/commit/7024929881c05cad472de74c86517cf80c8e240c),
+  [Part 2](https://github.com/wekan/wekan/commit/609adcdf100db226c5f310577195afa4b1a4aead).
+  Thanks to developers of dependencies.
+- [Updated to Node.js v12.22.3](https://github.com/wekan/wekan/commit/d538a01d1962464cf4cb001462669150eeafaa99).
+  Thanks to Node.js developers.
+
+and fixes the following bugs:
+
+- [Fixed Line break which is wrongly added in Cards description and Cards
+  comments](https://github.com/wekan/wekan/commit/ec01e5182d6b8c848d752540887a8113472b0226).
+  Thanks to Emile840 and xet7.
+- [Fixed rebuild-wekan.sh](https://github.com/wekan/wekan/commit/1d5dd5e60fec151de6c7dce7ef4e758b562923b9).
+  Thanks to xet7.
+- [Small fixes for ModernDark theme](https://github.com/wekan/wekan/pull/3902).
+  Thanks to jghaanstra.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v5.37 2021-07-04 Wekan release
 
 This release adds the following CRITICAL SECURITY UPDATES:
