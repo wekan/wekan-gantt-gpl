@@ -3,6 +3,29 @@
 Note: With Docker, please don't use latest tag. Only use release tags.
 See https://github.com/wekan/wekan/issues/3874
 
+# v5.39 2021-07-24 Wekan release
+
+This release adds the following new features:
+
+- [LDAP AD Simple Auth](https://github.com/wekan/wekan/pull/3909).
+  Thanks to indika-dev.
+- [LDAP AD Simple Auth: Added settings for all remainin Wekan Standalone (non-Sandstorm)
+  platforms](https://github.com/wekan/wekan/commit/fe40f35d6d9b6293f3bdbf5bc0f3e8e708c59518)
+  and Docs to https://github.com/wekan/wekan/wiki/LDAP-AD-Simple-Auth .
+  Thanks to xet7.
+- [Convert Checklist Item to Card](https://github.com/wekan/wekan/pull/3910).
+  Thanks to helioguardabaxo.
+- [Organizations and Teams are taken into account when displaying board at
+  `All Boards` page](https://github.com/wekan/wekan/pull/3912).
+  Thanks to Emile840.
+
+and adds the following new translations:
+
+- [English (Italy)](https://github.com/wekan/wekan/commit/ae73029dda63db361925e378202e6f8c137cf5bd).
+  Thanks to translators.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v5.38 2021-07-18 Wekan release
 
 This release adds the following new features:
