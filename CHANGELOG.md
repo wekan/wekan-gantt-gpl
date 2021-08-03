@@ -3,6 +3,20 @@
 Note: With Docker, please don't use latest tag. Only use release tags.
 See https://github.com/wekan/wekan/issues/3874
 
+# v5.44 2021-08-03 Wekan release
+
+This release adds the following updates:
+
+- [Wekan v5.43](https://github.com/wekan/wekan/commit/4e17d5a10f95fcea420c794ed8b30ea18dc2a725) and v5.44 for helm.
+  Thanks to xet7.
+
+and fixes the following bugs:
+
+- [Fix: Consecutive Card numbering when a card is moved to another board or copied](https://github.com/wekan/wekan/pull/3936).
+  Thanks to syndimann.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v5.43 2021-08-03 Wekan release
 
 This release adds the following new features:
