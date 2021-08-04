@@ -3,6 +3,38 @@
 Note: With Docker, please don't use latest tag. Only use release tags.
 See https://github.com/wekan/wekan/issues/3874
 
+# v5.47 2021-08-05 Wekan release
+
+This release adds the following updates:
+
+- [Updated dependencies](https://github.com/wekan/wekan/commit/68d9de89466611521db7d942dcf8daf58ba15a3e).
+  Thanks to developers of dependencies.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
+# v5.46 2021-08-05 Wekan release
+
+This release adds the following updates:
+
+- [Updated dependencies](https://github.com/wekan/wekan/commit/d5c0a5d377d31bedadf3730756406355a17a563a).
+  Thanks to developers of dependencies.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
+# v5.45 2021-08-05 Wekan release
+
+This release adds the following new features:
+
+- [Special handles to notify board or card members in a comment](https://github.com/wekan/wekan/pull/3937).
+  Thanks to syndimann.
+
+and fixes the following bugs:
+
+- [Fix: Show missing user mentions popover when posting comments in maximized card layout](https://github.com/wekan/wekan/pull/3939).
+  Thanks to syndimann.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v5.44 2021-08-03 Wekan release
 
 This release adds the following updates:
