@@ -3,6 +3,40 @@
 Note: With Docker, please don't use latest tag. Only use release tags.
 See https://github.com/wekan/wekan/issues/3874
 
+# v5.52 2021-08-26 Wekan release
+
+This release adds the following new features:
+
+- Added MAIL_SERVICE settings for Well Known Email Services
+  [Part 1](https://github.com/wekan/wekan/commit/ab8e56e16a02ef0afb7b4023a43b4adf2558a8ff),
+  [Part 2](https://github.com/wekan/wekan/commit/1fadf204c2d5fa96ea41b9cb39f003cc05e2fe46).
+  https://github.com/wekan/wekan/wiki/Troubleshooting-Mail . Please test.
+  Thanks to xet7.
+- [All Boards page: Possibility of filtering board by team or organization](https://github.com/wekan/wekan/pull/3964).
+  Thanks to Emile840.
+- [Fixed translation of "Clear Filter" for "All boards page: Possibility of filtering board by team or organization"](https://github.com/wekan/wekan/commit/b36a7621e0feca5c22fc4a24eceba1a9fc584ab0).
+  Thanks to xet7.
+
+and adds the following new translations:
+
+- [Added Chinese (Simplified) (zh-Hans or zh-CN)](https://github.com/wekan/wekan/commit/f2c242f49e18e2197f1f90c9b2dac5934a08325d).
+  Thanks to translators.
+
+and fixes the following bugs:
+
+- [Initials not required for new user that is created at Admin Panel](https://github.com/wekan/wekan/commit/9c7c481f48cb66406715f7571439f9d7fa332b87).
+  Thanks to xet7.
+- [Delete user is now possible at Admin Panel](https://github.com/wekan/wekan/commit/7808fdd22f04cc482b7df21187aaf3e9623f19e6).
+  But you should remove user first from all boards, because otherwise there could be
+  bug of empty avatars at boards, that need to be removed manually from database.
+  Thanks to xet7.
+- [Fixed Save button not clickable in maximized card view](https://github.com/wekan/wekan/commit/a59932af00c066871102970d252b78d262d06fa0).
+  Thanks to hatl, urmel1960 and syndimann.
+- [Fixed New wide card edit view is all jumbled on mobile](https://github.com/wekan/wekan/commit/241eb9df0fb446b3775704848281b0cc032c4921).
+  Thanks to jdaviescoates and xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v5.51 2021-08-17 Wekan release
 
 This release fixes the following bugs:

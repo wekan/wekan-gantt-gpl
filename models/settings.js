@@ -1,3 +1,5 @@
+var nodemailer = require('nodemailer');
+
 // Sandstorm context is detected using the METEOR_SETTINGS environment variable
 // in the package definition.
 const isSandstorm =
@@ -157,6 +159,7 @@ if (Meteor.isServer) {
       };
       Settings.insert(defaultSetting);
     }
+    /*
     if (isSandstorm) {
       // At Sandstorm, Admin Panel has SMTP settings
       const newSetting = Settings.findOne();
@@ -169,7 +172,9 @@ if (Meteor.isServer) {
       // Not running on Sandstorm, so using environment variables
       Accounts.emailTemplates.from = process.env.MAIL_FROM;
     }
+    */
   });
+  /*
   if (isSandstorm) {
     // At Sandstorm Wekan Admin Panel, save SMTP settings.
     Settings.after.update((userId, doc, fieldNames) => {
@@ -189,6 +194,7 @@ if (Meteor.isServer) {
       }
     });
   }
+  */
 
   function getRandomNum(min, max) {
     const range = max - min;
@@ -220,12 +226,29 @@ if (Meteor.isServer) {
       };
       const lang = author.getLanguage();
 
-      Email.send({
-        to: icode.email,
-        from: Accounts.emailTemplates.from,
-        subject: TAPi18n.__('email-invite-register-subject', params, lang),
-        text: TAPi18n.__('email-invite-register-text', params, lang),
-      });
+
+      if (process.env.MAIL_SERVICE !== '') {
+        let transporter = nodemailer.createTransport({
+          service: process.env.MAIL_SERVICE,
+          auth: {
+            user: process.env.MAIL_SERVICE_USER,
+            pass: process.env.MAIL_SERVICE_PASSWORD
+          },
+        })
+        let info = transporter.sendMail({
+          to: icode.email,
+          from: Accounts.emailTemplates.from,
+          subject: TAPi18n.__('email-invite-register-subject', params, lang),
+          text: TAPi18n.__('email-invite-register-text', params, lang),
+        })
+      } else if (process.env.MAIL_URL !== '') {
+        Email.send({
+          to: icode.email,
+          from: Accounts.emailTemplates.from,
+          subject: TAPi18n.__('email-invite-register-subject', params, lang),
+          text: TAPi18n.__('email-invite-register-text', params, lang),
+        });
+      }
     } catch (e) {
       InvitationCodes.remove(_id);
       throw new Meteor.Error('email-fail', e.message);
@@ -318,12 +341,28 @@ if (Meteor.isServer) {
       this.unblock();
       const lang = user.getLanguage();
       try {
-        Email.send({
-          to: user.emails[0].address,
-          from: Accounts.emailTemplates.from,
-          subject: TAPi18n.__('email-smtp-test-subject', { lng: lang }),
-          text: TAPi18n.__('email-smtp-test-text', { lng: lang }),
-        });
+        if (process.env.MAIL_SERVICE !== '') {
+          let transporter = nodemailer.createTransport({
+            service: process.env.MAIL_SERVICE,
+            auth: {
+              user: process.env.MAIL_SERVICE_USER,
+              pass: process.env.MAIL_SERVICE_PASSWORD
+            },
+          })
+          let info = transporter.sendMail({
+            to: user.emails[0].address,
+            from: Accounts.emailTemplates.from,
+            subject: TAPi18n.__('email-smtp-test-subject', { lng: lang }),
+            text: TAPi18n.__('email-smtp-test-text', { lng: lang }),
+          })
+        } else if (process.env.MAIL_URL !== '') {
+          Email.send({
+            to: user.emails[0].address,
+            from: Accounts.emailTemplates.from,
+            subject: TAPi18n.__('email-smtp-test-subject', { lng: lang }),
+            text: TAPi18n.__('email-smtp-test-text', { lng: lang }),
+          });
+        }
       } catch ({ message }) {
         throw new Meteor.Error(
           'email-fail',
