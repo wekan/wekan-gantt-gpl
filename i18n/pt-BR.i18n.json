@@ -657,6 +657,8 @@
     "accounts": "Contas",
     "accounts-allowEmailChange": "Permitir Mudança de e-mail",
     "accounts-allowUserNameChange": "Permitir alteração de nome de usuário",
+    "tableVisibilityMode-allowPrivateOnly": "Boards visibility: Allow private boards only",
+    "tableVisibilityMode": "Boards visibility",
     "createdAt": "Criado em",
     "modifiedAt": "Modificado em",
     "verified": "Verificado",

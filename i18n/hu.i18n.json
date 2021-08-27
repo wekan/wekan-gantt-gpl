@@ -657,6 +657,8 @@
     "accounts": "Fiókok",
     "accounts-allowEmailChange": "E-mail megváltoztatásának engedélyezése",
     "accounts-allowUserNameChange": "Felhasználónév megváltoztatásának engedélyezése",
+    "tableVisibilityMode-allowPrivateOnly": "Boards visibility: Allow private boards only",
+    "tableVisibilityMode": "Boards visibility",
     "createdAt": "Létrehozva",
     "modifiedAt": "Módosult",
     "verified": "Ellenőrizve",

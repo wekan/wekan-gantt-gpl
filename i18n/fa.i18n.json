@@ -657,6 +657,8 @@
     "accounts": "حساب‌ها",
     "accounts-allowEmailChange": "اجازه تغییر ایمیل",
     "accounts-allowUserNameChange": "اجازه تغییر نام کاربری",
+    "tableVisibilityMode-allowPrivateOnly": "Boards visibility: Allow private boards only",
+    "tableVisibilityMode": "Boards visibility",
     "createdAt": "ساخته شده در",
     "modifiedAt": "تغییر یافته در",
     "verified": "معتبر",

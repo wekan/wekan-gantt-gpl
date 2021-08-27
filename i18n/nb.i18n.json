@@ -657,6 +657,8 @@
     "accounts": "Konto",
     "accounts-allowEmailChange": "Tillat endring e-post",
     "accounts-allowUserNameChange": "Tillat endring brukernavn",
+    "tableVisibilityMode-allowPrivateOnly": "Boards visibility: Allow private boards only",
+    "tableVisibilityMode": "Boards visibility",
     "createdAt": "Opprettet på",
     "modifiedAt": "Endret kl. ",
     "verified": "Verifisert",

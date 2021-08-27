@@ -657,6 +657,8 @@
     "accounts": "Учетные записи",
     "accounts-allowEmailChange": "Разрешить изменение электронной почты",
     "accounts-allowUserNameChange": "Разрешить изменение имени пользователя",
+    "tableVisibilityMode-allowPrivateOnly": "Boards visibility: Allow private boards only",
+    "tableVisibilityMode": "Boards visibility",
     "createdAt": "Создан",
     "modifiedAt": "Изменено",
     "verified": "Подтвержден",

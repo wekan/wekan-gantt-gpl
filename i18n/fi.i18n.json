@@ -657,6 +657,8 @@
     "accounts": "Tilit",
     "accounts-allowEmailChange": "Salli sähköpostiosoitteen muuttaminen",
     "accounts-allowUserNameChange": "Salli käyttäjätunnuksen muuttaminen",
+    "tableVisibilityMode-allowPrivateOnly": "Taulujen näkyvyys: Salli vain yksityiset taulut",
+    "tableVisibilityMode": "Taulujen näkyvyys",
     "createdAt": "Luotu",
     "modifiedAt": "Muokattu",
     "verified": "Varmistettu",

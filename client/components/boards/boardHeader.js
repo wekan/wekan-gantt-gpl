@@ -198,6 +198,11 @@ const CreateBoard = BlazeComponent.extendComponent({
     this.visibilityMenuIsOpen = new ReactiveVar(false);
     this.visibility = new ReactiveVar('private');
     this.boardId = new ReactiveVar('');
+    Meteor.subscribe('tableVisibilityModeSettings');
+  },
+
+  notAllowPrivateVisibilityOnly(){
+    return !TableVisibilityModeSettings.findOne('tableVisibilityMode-allowPrivateOnly').booleanValue;
   },
 
   visibilityCheck() {
@@ -314,6 +319,9 @@ const CreateBoard = BlazeComponent.extendComponent({
 }.register('headerBarCreateBoardPopup'));
 
 BlazeComponent.extendComponent({
+  notAllowPrivateVisibilityOnly(){
+    return !TableVisibilityModeSettings.findOne('tableVisibilityMode-allowPrivateOnly').booleanValue;
+  },
   visibilityCheck() {
     const currentBoard = Boards.findOne(Session.get('currentBoard'));
     return this.currentData() === currentBoard.permission;

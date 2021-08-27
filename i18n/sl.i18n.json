@@ -657,6 +657,8 @@
     "accounts": "Up. računi",
     "accounts-allowEmailChange": "Dovoli spremembo e-poštnega naslova",
     "accounts-allowUserNameChange": "Dovoli spremembo up. imena",
+    "tableVisibilityMode-allowPrivateOnly": "Boards visibility: Allow private boards only",
+    "tableVisibilityMode": "Boards visibility",
     "createdAt": "Ustvarjen ob",
     "modifiedAt": "Modified at",
     "verified": "Preverjeno",
