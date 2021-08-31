@@ -3,6 +3,32 @@
 Note: With Docker, please don't use latest tag. Only use release tags.
 See https://github.com/wekan/wekan/issues/3874
 
+# v5.56 2021-08-31 Wekan release
+
+This release adds the following updates:
+
+- [Updated dependencies](https://github.com/wekan/wekan/commit/858967f4200783cadaa62d0e3436f661c772ede7).
+  Thanks to developers of dependencies.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
+# v5.55 2021-08-31 Wekan release
+
+This release adds to following CRITICAL SECURITY UPDATES:
+
+- [Updated to Node.js v12.22.6](https://github.com/wekan/wekan/commit/48636892489dd01c6f6b930bafb94651c00859d8).
+  Thanks to Node.js developers.
+
+and fixes the following bugs:
+
+- [Fixed bugs:
+  1) Public Boards page shows only "Add Board" button, not any Public Boards.
+  2) When at Admin Panel / Boards visibility / Private only, public board still accessible publicly by it's
+  public board URL](https://github.com/wekan/wekan/pull/3981).
+  Thanks to Emile840.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v5.54 2021-08-28 Wekan release
 
 This release adds the following new features:
