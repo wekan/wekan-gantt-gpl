@@ -3,6 +3,17 @@
 Note: With Docker, please don't use latest tag. Only use release tags.
 See https://github.com/wekan/wekan/issues/3874
 
+# v5.58 2021-09-01 Wekan release
+
+This release fixes the following bugs:
+
+- [1) Edit profile and modify password menus are not displayed if SSO authentication is used.
+  2) Board filtering will be displayed only if user belongs to atleast one team or
+  organization](https://github.com/wekan/wekan/pull/3983).
+  Thanks to Emile840.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v5.57 2021-08-31 Wekan release
 
 This release adds the following updates:
@@ -30,10 +41,10 @@ This release adds to following CRITICAL SECURITY UPDATES:
 
 and fixes the following bugs:
 
-- [Fixed bugs:
+- [Fixed bugs](https://github.com/wekan/wekan/pull/3981):
   1) Public Boards page shows only "Add Board" button, not any Public Boards.
   2) When at Admin Panel / Boards visibility / Private only, public board still accessible publicly by it's
-  public board URL](https://github.com/wekan/wekan/pull/3981).
+  public board URL.
   Thanks to Emile840.
 
 Thanks to above GitHub users for their contributions and translators for their translations.
