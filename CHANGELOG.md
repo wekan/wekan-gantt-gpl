@@ -3,6 +3,42 @@
 Note: With Docker, please don't use latest tag. Only use release tags.
 See https://github.com/wekan/wekan/issues/3874
 
+# v5.59 2021-09-17 Wekan release
+
+This release adds the following new features:
+
+- [Admin Panel/People: Possibility of adding a team to all selected users](https://github.com/wekan/wekan/pull/3996).
+  Thanks to Emile840.
+- [Add / remove team members as board members when adding / removing team from board](https://github.com/wekan/wekan/pull/4000).
+  Thanks to Emile840.
+- [Added more translations to: Admin Panel/People: Possibility of adding a team to all selected users](https://github.com/wekan/wekan/commit/3d9b7eb7ab41c6450b473f6f349d894f516c5487).
+  Thanks to xet7.
+- [Enter new password 2 times when registering](https://github.com/wekan/wekan/commit/0da84f8f3eb91c5bf726e058f5ec74a7891d734b).
+  Thanks to sh2515 and xet7.
+- Sum of cards. In Progress, not ready yet.
+  [Part 1: Add Custom Field options for field sum](https://github.com/wekan/wekan/commit/8626b466b830adf6c671211bbd61b53b96ac5a49).
+  [Part 2: Show option for custom field sum only for currency and number custom fields](https://github.com/wekan/wekan/commit/9bee6ae6663a5e1c974de2811f6a5fdd2d66efe5).
+  Thanks to xet7.
+- [Admin Panel/Settings/Layout: Customize OIDC button text](https://github.com/wekan/wekan/pull/4011.
+  Thanks to Emile840.
+- [At card attachments, show play and fullscreen controls for video webm/mp4/ogg, and play controls for audio mp3/ogg](https://github.com/wekan/wekan/commit/bd9fbedbf9fbe0181913876b930b335261cd2a0a).
+  Thanks to luistiktok and xet7.
+
+and fixes the following bugs:
+
+- [Links to devel branch are broken; use master instead](https://github.com/wekan/wekan/pull/3993).
+  Thanks to garrison.
+- [Fix first user creation for via OIDC](https://github.com/wekan/wekan/pull/3994).
+  Thanks to ww-daniel-mora.
+- [When list has just one card, to show 'card' instead of 'cards'](https://github.com/wekan/wekan/pull/3999).
+  Thanks to helioguardabaxo.
+- [Fix: Linked card cannot change date](https://github.com/wekan/wekan/pull/4002).
+  Thanks to Ben0it-T.
+- [Try to fix: Can't delete attachment](https://github.com/wekan/wekan/commit/889ec1339a025a68ec919f059b9d58e8d94a3376).
+  Thanks to luistiktok and xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v5.58 2021-09-01 Wekan release
 
 This release fixes the following bugs:
@@ -5748,7 +5784,7 @@ This release adds the following new features:
 and fixes the following bugs:
 
 - Revert [Sandstorm API changes](https://github.com/wekan/wekan/commit/be03a191c4321c2f80116c0ee1ae6c826d882535)
-  that were done at [Wekan v2.05](https://github.com/wekan/wekan/blob/devel/CHANGELOG.md#v205-2019-01-27-wekan-release)
+  that were done at [Wekan v2.05](https://github.com/wekan/wekan/blob/master/CHANGELOG.md#v205-2019-01-27-wekan-release)
   to fix #2143. Thanks to pantraining and xet7.
 
 Thanks to above GitHub users and translators for contributions.
@@ -5895,7 +5931,7 @@ Update translations. Thanks to translators.
 This release adds the following new features:
 
 - [IFTTT Rules improvements](https://github.com/wekan/wekan/pull/2088). Thanks to Angtrim.
-- Add [find.sh](https://github.com/wekan/wekan/blob/devel/find.sh) bash script that ignores
+- Add [find.sh](https://github.com/wekan/wekan/blob/master/find.sh) bash script that ignores
   extra directories when searching. xet7 uses this a lot when developing. Thanks to xet7.
 
 Thanks to above GitHub users for their contributions.
@@ -7406,7 +7442,7 @@ This release adds the following new features:
 
 - [Checklist templates](https://github.com/wekan/wekan/pull/1470);
 - Added [Finnish language changelog](https://github.com/wekan/wekan/tree/devel/meta/t9n-changelog)
-  and [more Finnish traslations](https://github.com/wekan/wekan/blob/devel/sandstorm-pkgdef.capnp)
+  and [more Finnish traslations](https://github.com/wekan/wekan/blob/master/sandstorm-pkgdef.capnp)
   to Sandstorm.
 
 Thanks to GitHub users erikturk and xet7 for their contributions.

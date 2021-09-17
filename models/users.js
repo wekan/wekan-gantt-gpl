@@ -1275,7 +1275,6 @@ if (Meteor.isServer) {
     const userCount = Users.find().count();
     if (userCount === 0) {
       user.isAdmin = true;
-      return user;
     }
 
     if (user.services.oidc) {
