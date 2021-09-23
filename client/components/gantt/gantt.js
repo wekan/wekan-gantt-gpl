@@ -193,19 +193,19 @@ BlazeComponent.extendComponent({
               target: cardLink,
               type: linkType,
             };
-          LinksData.push(LinkInfo);
+          LinksDate.push(LinkInfo);
           }
         }
 
         events.push(event);
-        //LinksData.push(links);
+        //LinksDate.push(links);
       });
 
       gantt.clearAll();
 
       gantt.parse({
         data: events,
-        links: LinksData,
+        links: LinksDate,
       });
     });
   },
