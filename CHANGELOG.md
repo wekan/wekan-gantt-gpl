@@ -3,12 +3,20 @@
 Note: With Docker, please don't use latest tag. Only use release tags.
 See https://github.com/wekan/wekan/issues/3874
 
-# Upcoming Wekan release
+# v5.61 2021-09-25 Wekan release
 
 This release adds the following new features:
 
 - [Search by name or username or emails address when adding a new user to a board](https://github.com/wekan/wekan/pull/4018).
   Thanks to Emile840.
+
+and fixes the following bugs:
+
+- [Fixed REST API, it shoud work now by Admin user](https://github.com/wekan/wekan/commit/e3a0dea85fa1f8e2f580f419b30cf5f36775d731).
+  Reverted [Allow board members to use more of API of Wekan v5.35](https://github.com/wekan/wekan/commit/a719e8fda1f78bcbf9af6e7b4341f8be1d141e90).
+  Thanks to tomhughes and xet7.
+- [Wekan Gantt GPL: Fix Tasks not displayed in Gantt screen](https://github.com/wekan/wekan-gantt-gpl/commit/72d464f5eb55501f08eb0cfd31fd5340380d7f3b).
+  Thanks to MrLovegreen and khjde1207.
 
 Thanks to above GitHub users for their contributions and translators for their translations.
 
