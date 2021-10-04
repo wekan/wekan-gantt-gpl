@@ -3,6 +3,30 @@
 Note: With Docker, please don't use latest tag. Only use release tags.
 See https://github.com/wekan/wekan/issues/3874
 
+# v5.62 2021-10-04 Wekan release
+
+This release adds the following new features:
+
+- [Allow word match for rules -> title filter](https://github.com/wekan/wekan/pull/4025).
+  Thanks to ilvar.
+- [CSV/TSV/Excel Export translatable and fixed, CSV semicolon option added](https://github.com/wekan/wekan/pull/4028).
+  Thanks to Ben0it-T.
+- Added week numbers to dates at card, minicard, Custom Field dates, DatePicker and Calendar.
+  [Part 1](https://github.com/wekan/wekan/commit/d06ac09485dafb0256ae7fbe613ab2dbe00b70f3),
+  [Part 2](https://github.com/wekan/wekan/commit/9e6744d1e33b37e0d23eea5869ccac3ff37f7d53).
+  Thanks to xet7.
+- [Confirm Archive Card](https://github.com/wekan/wekan/commit/6c3fcdcc4c446fd4c8dc4dca1b2846f6e3ea72e4).
+  Thanks to xet7.
+
+and fixes the following bugs:
+
+- [Clean up /tmp after Docker build. This drastically reduces docker image size from ~280 MB to ~180 MB](https://github.com/wekan/wekan/pull/4026).
+  Thanks to ilvar.
+- [Removed extra quotes from Export menu](https://github.com/wekan/wekan/commit/553652556468ac88c0691d4d688d5a922ef6a0c2).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v5.61 2021-09-25 Wekan release
 
 This release adds the following new features:
