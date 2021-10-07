@@ -1,4 +1,4 @@
-var nodemailer = require('nodemailer');
+//var nodemailer = require('nodemailer');
 import { SyncedCron } from 'meteor/percolate:synced-cron';
 import ImpersonatedUsers from './impersonatedUsers';
 
@@ -1246,6 +1246,7 @@ if (Meteor.isServer) {
         };
         const lang = user.getLanguage();
 
+/*
         if (process.env.MAIL_SERVICE !== '') {
           let transporter = nodemailer.createTransport({
             service: process.env.MAIL_SERVICE,
@@ -1268,6 +1269,13 @@ if (Meteor.isServer) {
             text: TAPi18n.__('email-invite-text', params, lang),
           });
         }
+*/
+        Email.send({
+          to: user.emails[0].address.toLowerCase(),
+          from: Accounts.emailTemplates.from,
+          subject: TAPi18n.__('email-invite-subject', params, lang),
+          text: TAPi18n.__('email-invite-text', params, lang),
+        });
       } catch (e) {
         throw new Meteor.Error('email-fail', e.message);
       }
