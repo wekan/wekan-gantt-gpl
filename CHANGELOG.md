@@ -1,7 +1,13 @@
 [Mac ChangeLog](https://github.com/wekan/wekan/wiki/Mac)
 
-Note: With Docker, please don't use latest tag. Only use release tags.
-See https://github.com/wekan/wekan/issues/3874
+# v5.64 2021-10-09 WeKan ® release
+
+This release adds the following new features:
+
+- [Excel Export : add board description, add comments worksheet](https://github.com/wekan/wekan/pull/4045).
+  Thanks to Ben0it-T.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
 
 # v5.63 2021-10-07 Wekan release
 
