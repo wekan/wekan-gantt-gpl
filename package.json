@@ -1,7 +1,7 @@
 {
   "name": "wekan-gantt-gpl",
-  "version": "v5.67.0",
-  "description": "Open-Source GPLv2 kanban",
+  "version": "v5.68.0",
+  "description": "Open Source GPLv2 kanban",
   "private": true,
   "repository": {
     "type": "git",
