@@ -34,11 +34,14 @@ BlazeComponent.extendComponent({
   onCreated() {
     this.currentBoard = Boards.findOne(Session.get('currentBoard'));
     this.isLoaded = new ReactiveVar(false);
-    const boardBody = this.parentComponent().parentComponent();
-    //in Miniview parent is Board, not BoardBody.
-    if (boardBody !== null) {
-      boardBody.showOverlay.set(true);
-      boardBody.mouseHasEnterCardDetails = false;
+
+    if (this.parentComponent() && this.parentComponent().parentComponent()) {
+      const boardBody = this.parentComponent().parentComponent();
+      //in Miniview parent is Board, not BoardBody.
+      if (boardBody !== null) {
+        boardBody.showOverlay.set(true);
+        boardBody.mouseHasEnterCardDetails = false;
+      }
     }
     this.calculateNextPeak();
 
@@ -215,7 +218,7 @@ BlazeComponent.extendComponent({
       distance: 7,
       start(evt, ui) {
         ui.placeholder.height(ui.helper.height());
-        EscapeActions.executeUpTo('popup-close');
+        EscapeActions.clickExecute(evt.target, 'inlinedForm');
       },
       stop(evt, ui) {
         let prevChecklist = ui.item.prev('.js-checklist').get(0);
@@ -297,6 +300,7 @@ BlazeComponent.extendComponent({
   },
 
   onDestroyed() {
+    if (this.parentComponent() === null) return;
     const parentComponent = this.parentComponent().parentComponent();
     //on mobile view parent is Board, not board body.
     if (parentComponent === null) return;
@@ -319,7 +323,8 @@ BlazeComponent.extendComponent({
         'click .js-close-card-details'() {
           Utils.goBoardId(this.data().boardId);
         },
-        'click .js-copy-link'() {
+        'click .js-copy-link'(event) {
+          event.preventDefault();
           const StringToCopyElement = document.getElementById('cardURL_copy');
           StringToCopyElement.value =
             window.location.origin + window.location.pathname;
@@ -377,6 +382,12 @@ BlazeComponent.extendComponent({
             this.data().setRequestedBy('');
           }
         },
+        'keydown input.js-edit-card-sort'(evt) {
+          // enter = save
+          if (evt.keyCode === 13) {
+            this.find('button[type=submit]').click();
+          }
+        },
         'submit .js-card-details-sort'(event) {
           event.preventDefault();
           const sort = parseFloat(this.currentComponent()
@@ -401,7 +412,9 @@ BlazeComponent.extendComponent({
         'click .js-end-date': Popup.open('editCardEndDate'),
         'click .js-show-positive-votes': Popup.open('positiveVoteMembers'),
         'click .js-show-negative-votes': Popup.open('negativeVoteMembers'),
+        'click .js-custom-fields': Popup.open('cardCustomFields'),
         'mouseenter .js-card-details'() {
+          if (this.parentComponent() === null) return;
           const parentComponent = this.parentComponent().parentComponent();
           //on mobile view parent is Board, not BoardBody.
           if (parentComponent === null) return;
@@ -526,6 +539,22 @@ BlazeComponent.extendComponent({
   },
 }).register('cardDetails');
 
+Template.cardDetails.helpers({
+  isPopup() {
+    let ret = !!Utils.getPopupCardId();
+    return ret;
+  }
+});
+Template.cardDetailsPopup.onDestroyed(() => {
+  Session.delete('popupCard');
+});
+Template.cardDetailsPopup.helpers({
+  popupCard() {
+    const ret = Utils.getPopupCard();
+    return ret;
+  },
+});
+
 BlazeComponent.extendComponent({
   template() {
     return 'exportCard';
@@ -576,16 +605,15 @@ Template.editCardSortOrderForm.onRendered(function () {
       // XXX Recovering the currentCard identifier form a session variable is
       // fragile because this variable may change for instance if the route
       // change. We should use some component props instead.
-      docId: Session.get('currentCard'),
+      docId: Utils.getCurrentCardId(),
     };
   }
 
   close(isReset = false) {
     if (this.isOpen.get() && !isReset) {
       const draft = this.getValue().trim();
-      if (
-        draft !== Cards.findOne(Session.get('currentCard')).getDescription()
-      ) {
+      let card = Utils.getCurrentCard();
+      if (card && draft !== card.getDescription()) {
         UnsavedEdits.set(this._getUnsavedEditKey(), this.getValue());
       }
     }
@@ -630,7 +658,6 @@ Template.cardDetailsActionsPopup.events({
   'click .js-export-card': Popup.open('exportCard'),
   'click .js-members': Popup.open('cardMembers'),
   'click .js-assignees': Popup.open('cardAssignees'),
-  'click .js-labels': Popup.open('cardLabels'),
   'click .js-attachments': Popup.open('cardAttachments'),
   'click .js-start-voting': Popup.open('cardStartVoting'),
   'click .js-start-planning-poker': Popup.open('cardStartPlanningPoker'),
@@ -653,6 +680,7 @@ Template.cardDetailsActionsPopup.events({
         .map((c) => c.sort),
     );
     this.move(this.boardId, this.swimlaneId, this.listId, minOrder - 1);
+    Popup.back();
   },
   'click .js-move-card-to-bottom'(event) {
     event.preventDefault();
@@ -664,7 +692,7 @@ Template.cardDetailsActionsPopup.events({
     this.move(this.boardId, this.swimlaneId, this.listId, maxOrder + 1);
   },
   'click .js-archive': Popup.afterConfirm('cardArchive', function () {
-    Popup.close();
+    Popup.back();
     this.archive();
     Utils.goBoardId(this.boardId);
   }),
@@ -673,7 +701,7 @@ Template.cardDetailsActionsPopup.events({
     const currentCard = this;
     const level = currentCard.findWatcher(Meteor.userId()) ? null : 'watching';
     Meteor.call('watch', 'card', currentCard._id, level, (err, ret) => {
-      if (!err && ret) Popup.close();
+      if (!err && ret) Popup.back();
     });
   },
 });
@@ -780,7 +808,7 @@ Template.moveCardPopup.events({
   'click .js-done'() {
     // XXX We should *not* get the currentCard from the global state, but
     // instead from a “component” state.
-    const card = Cards.findOne(Session.get('currentCard'));
+    const card = Utils.getCurrentCard();
     const bSelect = $('.js-select-boards')[0];
     let boardId;
     // if we are a worker, we won't have a board select so we just use the
@@ -792,7 +820,13 @@ Template.moveCardPopup.events({
     const slSelect = $('.js-select-swimlanes')[0];
     const swimlaneId = slSelect.options[slSelect.selectedIndex].value;
     card.move(boardId, swimlaneId, listId, 0);
-    Popup.close();
+
+    // set new id's to card object in case the card is moved to top by the comment "moveCard" after this command (.js-move-card)
+    this.boardId = boardId;
+    this.swimlaneId = swimlaneId;
+    this.listId = listId;
+
+    Popup.back();
   },
 });
 BlazeComponent.extendComponent({
@@ -838,7 +872,7 @@ BlazeComponent.extendComponent({
 
 Template.copyCardPopup.events({
   'click .js-done'() {
-    const card = Cards.findOne(Session.get('currentCard'));
+    const card = Utils.getCurrentCard();
     const lSelect = $('.js-select-lists')[0];
     const listId = lSelect.options[lSelect.selectedIndex].value;
     const slSelect = $('.js-select-swimlanes')[0];
@@ -860,14 +894,14 @@ Template.copyCardPopup.events({
       // See https://github.com/wekan/wekan/issues/80
       Filter.addException(_id);
 
-      Popup.close();
+      Popup.back();
     }
   },
 });
 
 Template.convertChecklistItemToCardPopup.events({
   'click .js-done'() {
-    const card = Cards.findOne(Session.get('currentCard'));
+    const card = Utils.getCurrentCard();
     const lSelect = $('.js-select-lists')[0];
     const listId = lSelect.options[lSelect.selectedIndex].value;
     const slSelect = $('.js-select-swimlanes')[0];
@@ -887,7 +921,7 @@ Template.convertChecklistItemToCardPopup.events({
       });
       Filter.addException(_id);
 
-      Popup.close();
+      Popup.back();
 
     }
   },
@@ -895,7 +929,7 @@ Template.convertChecklistItemToCardPopup.events({
 
 Template.copyChecklistToManyCardsPopup.events({
   'click .js-done'() {
-    const card = Cards.findOne(Session.get('currentCard'));
+    const card = Utils.getCurrentCard();
     const oldId = card._id;
     card._id = null;
     const lSelect = $('.js-select-lists')[0];
@@ -943,7 +977,7 @@ Template.copyChecklistToManyCardsPopup.events({
           cmt.copy(_id);
         });
       }
-      Popup.close();
+      Popup.back();
     }
   },
 });
@@ -973,11 +1007,11 @@ BlazeComponent.extendComponent({
         },
         'click .js-submit'() {
           this.currentCard.setColor(this.currentColor.get());
-          Popup.close();
+          Popup.back();
         },
         'click .js-remove-color'() {
           this.currentCard.setColor(null);
-          Popup.close();
+          Popup.back();
         },
       },
     ];
@@ -1014,7 +1048,7 @@ BlazeComponent.extendComponent({
   },
 
   cards() {
-    const currentId = Session.get('currentCard');
+    const currentId = Utils.getCurrentCardId();
     if (this.parentBoard.get()) {
       return Cards.find({
         boardId: this.parentBoard.get(),
@@ -1079,7 +1113,7 @@ BlazeComponent.extendComponent({
           }
         },
         'click .js-delete': Popup.afterConfirm('cardDelete', function () {
-          Popup.close();
+          Popup.back();
           // verify that there are no linked cards
           if (Cards.find({ linkedId: this._id }).count() === 0) {
             Cards.remove(this._id);
@@ -1146,12 +1180,12 @@ BlazeComponent.extendComponent({
           if (endString) {
             this.currentCard.setVoteEnd(endString);
           }
-          Popup.close();
+          Popup.back();
         },
         'click .js-remove-vote': Popup.afterConfirm('deleteVote', () => {
           event.preventDefault();
           this.currentCard.unsetVote();
-          Popup.close();
+          Popup.back();
         }),
         'click a.js-toggle-vote-public'(event) {
           event.preventDefault();
@@ -1191,7 +1225,7 @@ BlazeComponent.extendComponent({
             // if active vote -  store it
             if (this.currentData().getVoteQuestion()) {
               this._storeDate(newDate.toDate());
-              Popup.close();
+              Popup.back();
             } else {
               this.currentData().vote = { end: newDate.toDate() }; // set vote end temp
               Popup.back();
@@ -1225,86 +1259,77 @@ BlazeComponent.extendComponent({
             // if active poker -  store it
             if (this.currentData().getPokerQuestion()) {
               this._storeDate(usaDate.toDate());
-              Popup.close();
             } else {
               this.currentData().poker = { end: usaDate.toDate() }; // set poker end temp
-              Popup.back();
             }
+            Popup.back();
           } else if (euroAmDate.isValid()) {
             // if active poker -  store it
             if (this.currentData().getPokerQuestion()) {
               this._storeDate(euroAmDate.toDate());
-              Popup.close();
             } else {
               this.currentData().poker = { end: euroAmDate.toDate() }; // set poker end temp
-              Popup.back();
             }
+            Popup.back();
           } else if (euro24hDate.isValid()) {
             // if active poker -  store it
             if (this.currentData().getPokerQuestion()) {
               this._storeDate(euro24hDate.toDate());
               this.card.setPokerEnd(euro24hDate.toDate());
-              Popup.close();
             } else {
               this.currentData().poker = { end: euro24hDate.toDate() }; // set poker end temp
-              Popup.back();
             }
+            Popup.back();
           } else if (eurodotDate.isValid()) {
             // if active poker -  store it
             if (this.currentData().getPokerQuestion()) {
               this._storeDate(eurodotDate.toDate());
               this.card.setPokerEnd(eurodotDate.toDate());
-              Popup.close();
             } else {
               this.currentData().poker = { end: eurodotDate.toDate() }; // set poker end temp
-              Popup.back();
             }
+            Popup.back();
           } else if (minusDate.isValid()) {
             // if active poker -  store it
             if (this.currentData().getPokerQuestion()) {
               this._storeDate(minusDate.toDate());
               this.card.setPokerEnd(minusDate.toDate());
-              Popup.close();
             } else {
               this.currentData().poker = { end: minusDate.toDate() }; // set poker end temp
-              Popup.back();
             }
+            Popup.back();
           } else if (slashDate.isValid()) {
             // if active poker -  store it
             if (this.currentData().getPokerQuestion()) {
               this._storeDate(slashDate.toDate());
               this.card.setPokerEnd(slashDate.toDate());
-              Popup.close();
             } else {
               this.currentData().poker = { end: slashDate.toDate() }; // set poker end temp
-              Popup.back();
             }
+            Popup.back();
           } else if (dotDate.isValid()) {
             // if active poker -  store it
             if (this.currentData().getPokerQuestion()) {
               this._storeDate(dotDate.toDate());
               this.card.setPokerEnd(dotDate.toDate());
-              Popup.close();
             } else {
               this.currentData().poker = { end: dotDate.toDate() }; // set poker end temp
-              Popup.back();
             }
+            Popup.back();
           } else if (brezhonegDate.isValid()) {
             // if active poker -  store it
             if (this.currentData().getPokerQuestion()) {
               this._storeDate(brezhonegDate.toDate());
               this.card.setPokerEnd(brezhonegDate.toDate());
-              Popup.close();
             } else {
               this.currentData().poker = { end: brezhonegDate.toDate() }; // set poker end temp
-              Popup.back();
             }
+            Popup.back();
           } else if (hrvatskiDate.isValid()) {
             // if active poker -  store it
             if (this.currentData().getPokerQuestion()) {
               this._storeDate(hrvatskiDate.toDate());
               this.card.setPokerEnd(hrvatskiDate.toDate());
-              Popup.close();
             } else {
               this.currentData().poker = { end: hrvatskiDate.toDate() }; // set poker end temp
               Popup.back();
@@ -1314,41 +1339,37 @@ BlazeComponent.extendComponent({
             if (this.currentData().getPokerQuestion()) {
               this._storeDate(latviaDate.toDate());
               this.card.setPokerEnd(latviaDate.toDate());
-              Popup.close();
             } else {
               this.currentData().poker = { end: latviaDate.toDate() }; // set poker end temp
-              Popup.back();
             }
+            Popup.back();
           } else if (nederlandsDate.isValid()) {
             // if active poker -  store it
             if (this.currentData().getPokerQuestion()) {
               this._storeDate(nederlandsDate.toDate());
               this.card.setPokerEnd(nederlandsDate.toDate());
-              Popup.close();
             } else {
               this.currentData().poker = { end: nederlandsDate.toDate() }; // set poker end temp
-              Popup.back();
             }
+            Popup.back();
           } else if (greekDate.isValid()) {
             // if active poker -  store it
             if (this.currentData().getPokerQuestion()) {
               this._storeDate(greekDate.toDate());
               this.card.setPokerEnd(greekDate.toDate());
-              Popup.close();
             } else {
               this.currentData().poker = { end: greekDate.toDate() }; // set poker end temp
-              Popup.back();
             }
+            Popup.back();
           } else if (macedonianDate.isValid()) {
             // if active poker -  store it
             if (this.currentData().getPokerQuestion()) {
               this._storeDate(macedonianDate.toDate());
               this.card.setPokerEnd(macedonianDate.toDate());
-              Popup.close();
             } else {
               this.currentData().poker = { end: macedonianDate.toDate() }; // set poker end temp
-              Popup.back();
             }
+            Popup.back();
           } else {
             this.error.set('invalid-date');
             evt.target.date.focus();
@@ -1357,7 +1378,7 @@ BlazeComponent.extendComponent({
         'click .js-delete-date'(evt) {
           evt.preventDefault();
           this._deleteDate();
-          Popup.close();
+          Popup.back();
         },
       },
     ];
@@ -1395,11 +1416,11 @@ BlazeComponent.extendComponent({
           if (endString) {
             this.currentCard.setPokerEnd(endString);
           }
-          Popup.close();
+          Popup.back();
         },
         'click .js-remove-poker': Popup.afterConfirm('deletePoker', (event) => {
           this.currentCard.unsetPoker();
-          Popup.close();
+          Popup.back();
         }),
         'click a.js-toggle-poker-allow-non-members'(event) {
           event.preventDefault();
@@ -1462,7 +1483,7 @@ BlazeComponent.extendComponent({
             // if active poker -  store it
             if (this.currentData().getPokerQuestion()) {
               this._storeDate(newDate.toDate());
-              Popup.close();
+              Popup.back();
             } else {
               this.currentData().poker = { end: newDate.toDate() }; // set poker end temp
               Popup.back();
@@ -1494,130 +1515,117 @@ BlazeComponent.extendComponent({
             // if active poker -  store it
             if (this.currentData().getPokerQuestion()) {
               this._storeDate(usaDate.toDate());
-              Popup.close();
             } else {
               this.currentData().poker = { end: usaDate.toDate() }; // set poker end temp
-              Popup.back();
             }
+            Popup.back();
           } else if (euroAmDate.isValid()) {
             // if active poker -  store it
             if (this.currentData().getPokerQuestion()) {
               this._storeDate(euroAmDate.toDate());
-              Popup.close();
             } else {
               this.currentData().poker = { end: euroAmDate.toDate() }; // set poker end temp
-              Popup.back();
             }
+            Popup.back();
           } else if (euro24hDate.isValid()) {
             // if active poker -  store it
             if (this.currentData().getPokerQuestion()) {
               this._storeDate(euro24hDate.toDate());
               this.card.setPokerEnd(euro24hDate.toDate());
-              Popup.close();
             } else {
               this.currentData().poker = { end: euro24hDate.toDate() }; // set poker end temp
-              Popup.back();
             }
+            Popup.back();
           } else if (eurodotDate.isValid()) {
             // if active poker -  store it
             if (this.currentData().getPokerQuestion()) {
               this._storeDate(eurodotDate.toDate());
               this.card.setPokerEnd(eurodotDate.toDate());
-              Popup.close();
             } else {
               this.currentData().poker = { end: eurodotDate.toDate() }; // set poker end temp
-              Popup.back();
             }
+            Popup.back();
           } else if (minusDate.isValid()) {
             // if active poker -  store it
             if (this.currentData().getPokerQuestion()) {
               this._storeDate(minusDate.toDate());
               this.card.setPokerEnd(minusDate.toDate());
-              Popup.close();
             } else {
               this.currentData().poker = { end: minusDate.toDate() }; // set poker end temp
-              Popup.back();
             }
+            Popup.back();
           } else if (slashDate.isValid()) {
             // if active poker -  store it
             if (this.currentData().getPokerQuestion()) {
               this._storeDate(slashDate.toDate());
               this.card.setPokerEnd(slashDate.toDate());
-              Popup.close();
             } else {
               this.currentData().poker = { end: slashDate.toDate() }; // set poker end temp
-              Popup.back();
             }
+            Popup.back();
           } else if (dotDate.isValid()) {
             // if active poker -  store it
             if (this.currentData().getPokerQuestion()) {
               this._storeDate(dotDate.toDate());
               this.card.setPokerEnd(dotDate.toDate());
-              Popup.close();
             } else {
               this.currentData().poker = { end: dotDate.toDate() }; // set poker end temp
-              Popup.back();
             }
+            Popup.back();
           } else if (brezhonegDate.isValid()) {
             // if active poker -  store it
             if (this.currentData().getPokerQuestion()) {
               this._storeDate(brezhonegDate.toDate());
               this.card.setPokerEnd(brezhonegDate.toDate());
-              Popup.close();
             } else {
               this.currentData().poker = { end: brezhonegDate.toDate() }; // set poker end temp
-              Popup.back();
             }
+            Popup.back();
           } else if (hrvatskiDate.isValid()) {
             // if active poker -  store it
             if (this.currentData().getPokerQuestion()) {
               this._storeDate(hrvatskiDate.toDate());
               this.card.setPokerEnd(hrvatskiDate.toDate());
-              Popup.close();
             } else {
               this.currentData().poker = { end: hrvatskiDate.toDate() }; // set poker end temp
-              Popup.back();
             }
+            Popup.back();
           } else if (latviaDate.isValid()) {
             // if active poker -  store it
             if (this.currentData().getPokerQuestion()) {
               this._storeDate(latviaDate.toDate());
               this.card.setPokerEnd(latviaDate.toDate());
-              Popup.close();
             } else {
               this.currentData().poker = { end: latviaDate.toDate() }; // set poker end temp
-              Popup.back();
             }
+            Popup.back();
           } else if (nederlandsDate.isValid()) {
             // if active poker -  store it
             if (this.currentData().getPokerQuestion()) {
               this._storeDate(nederlandsDate.toDate());
               this.card.setPokerEnd(nederlandsDate.toDate());
-              Popup.close();
             } else {
               this.currentData().poker = { end: nederlandsDate.toDate() }; // set poker end temp
-              Popup.back();
             }
+            Popup.back();
           } else if (greekDate.isValid()) {
             // if active poker -  store it
             if (this.currentData().getPokerQuestion()) {
               this._storeDate(greekDate.toDate());
               this.card.setPokerEnd(greekDate.toDate());
-              Popup.close();
             } else {
               this.currentData().poker = { end: greekDate.toDate() }; // set poker end temp
-              Popup.back();
             }
+            Popup.back();
           } else if (macedonianDate.isValid()) {
             // if active poker -  store it
             if (this.currentData().getPokerQuestion()) {
               this._storeDate(macedonianDate.toDate());
               this.card.setPokerEnd(macedonianDate.toDate());
-              Popup.close();
             } else {
               this.currentData().poker = { end: macedonianDate.toDate() }; // set poker end temp
-              Popup.back();
             }
+            Popup.back();
           } else {
             // this.error.set('invalid-date);
             this.error.set('invalid-date' + ' ' + dateString);
@@ -1627,7 +1635,7 @@ BlazeComponent.extendComponent({
         'click .js-delete-date'(evt) {
           evt.preventDefault();
           this._deleteDate();
-          Popup.close();
+          Popup.back();
         },
       },
     ];
@@ -1680,7 +1688,7 @@ Template.cardAssigneesPopup.onCreated(function () {
 
 Template.cardAssigneesPopup.events({
   'click .js-select-assignee'(event) {
-    const card = Cards.findOne(Session.get('currentCard'));
+    const card = Utils.getCurrentCard();
     const assigneeId = this.userId;
     card.toggleAssignee(assigneeId);
     event.preventDefault();
@@ -1754,7 +1762,7 @@ Template.cardAssigneePopup.helpers({
 Template.cardAssigneePopup.events({
   'click .js-remove-assignee'() {
     Cards.findOne(this.cardId).unassignAssignee(this.userId);
-    Popup.close();
+    Popup.back();
   },
   'click .js-edit-profile': Popup.open('editProfile'),
 });

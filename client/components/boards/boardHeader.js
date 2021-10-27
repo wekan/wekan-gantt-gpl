@@ -7,11 +7,11 @@ Template.boardMenuPopup.events({
   'click .js-rename-board': Popup.open('boardChangeTitle'),
   'click .js-custom-fields'() {
     Sidebar.setView('customFields');
-    Popup.close();
+    Popup.back();
   },
   'click .js-open-archives'() {
     Sidebar.setView('archives');
-    Popup.close();
+    Popup.back();
   },
   'click .js-change-board-color': Popup.open('boardChangeColor'),
   'click .js-change-language': Popup.open('changeLanguage'),
@@ -24,7 +24,7 @@ Template.boardMenuPopup.events({
   }),
   'click .js-delete-board': Popup.afterConfirm('deleteBoard', function() {
     const currentBoard = Boards.findOne(Session.get('currentBoard'));
-    Popup.close();
+    Popup.back();
     Boards.remove(currentBoard._id);
     FlowRouter.go('home');
   }),
@@ -47,7 +47,7 @@ Template.boardChangeTitlePopup.events({
     if (newTitle) {
       this.rename(newTitle);
       this.setDescription(newDesc);
-      Popup.close();
+      Popup.back();
     }
     event.preventDefault();
   },
@@ -136,7 +136,7 @@ BlazeComponent.extendComponent({
           Sidebar.setView('search');
         },
         'click .js-multiselection-activate'() {
-          const currentCard = Session.get('currentCard');
+          const currentCard = Utils.getCurrentCardId();
           MultiSelection.activate();
           if (currentCard) {
             MultiSelection.add(currentCard);
@@ -173,15 +173,15 @@ Template.boardHeaderBar.helpers({
 Template.boardChangeViewPopup.events({
   'click .js-open-lists-view'() {
     Utils.setBoardView('board-view-lists');
-    Popup.close();
+    Popup.back();
   },
   'click .js-open-swimlanes-view'() {
     Utils.setBoardView('board-view-swimlanes');
-    Popup.close();
+    Popup.back();
   },
   'click .js-open-cal-view'() {
     Utils.setBoardView('board-view-cal');
-    Popup.close();
+    Popup.back();
   },
   'click .js-open-gantt-view'() {
     Utils.setBoardView('board-view-gantt');
@@ -331,7 +331,7 @@ BlazeComponent.extendComponent({
     const currentBoard = Boards.findOne(Session.get('currentBoard'));
     const visibility = this.currentData();
     currentBoard.setVisibility(visibility);
-    Popup.close();
+    Popup.back();
   },
 
   events() {
@@ -364,7 +364,7 @@ BlazeComponent.extendComponent({
             Session.get('currentBoard'),
             level,
             (err, ret) => {
-              if (!err && ret) Popup.close();
+              if (!err && ret) Popup.back();
             },
           );
         },
@@ -436,7 +436,7 @@ BlazeComponent.extendComponent({
           const direction = down ? -1 : 1;
           this.setSortBy([sortby, direction]);
           if (Utils.isMiniScreen) {
-            Popup.close();
+            Popup.back();
           }
         },
       },
@@ -455,7 +455,7 @@ BlazeComponent.extendComponent({
           };
           Session.set('sortBy', sortBy);
           sortCardsBy.set(TAPi18n.__('due-date'));
-          Popup.close();
+          Popup.back();
         },
         'click .js-sort-title'() {
           const sortBy = {
@@ -463,7 +463,7 @@ BlazeComponent.extendComponent({
           };
           Session.set('sortBy', sortBy);
           sortCardsBy.set(TAPi18n.__('title'));
-          Popup.close();
+          Popup.back();
         },
         'click .js-sort-created-asc'() {
           const sortBy = {
@@ -471,7 +471,7 @@ BlazeComponent.extendComponent({
           };
           Session.set('sortBy', sortBy);
           sortCardsBy.set(TAPi18n.__('date-created-newest-first'));
-          Popup.close();
+          Popup.back();
         },
         'click .js-sort-created-desc'() {
           const sortBy = {
@@ -479,7 +479,7 @@ BlazeComponent.extendComponent({
           };
           Session.set('sortBy', sortBy);
           sortCardsBy.set(TAPi18n.__('date-created-oldest-first'));
-          Popup.close();
+          Popup.back();
         },
       },
     ];

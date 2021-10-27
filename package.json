@@ -1,6 +1,6 @@
 {
   "name": "wekan-gantt-gpl",
-  "version": "v5.65.0",
+  "version": "v5.67.0",
   "description": "Open-Source GPLv2 kanban",
   "private": true,
   "repository": {
@@ -13,16 +13,16 @@
   },
   "homepage": "https://wekan.github.io",
   "devDependencies": {
-    "babel-plugin-istanbul": "^6.0.0",
+    "babel-plugin-istanbul": "^6.1.1",
     "chai": "^4.3.4",
     "flatted": "^3.2.2",
     "puppeteer": "^10.2.0",
     "sinon": "^11.1.2"
   },
   "dependencies": {
-    "@babel/core": "^7.15.5",
-    "@babel/runtime": "^7.15.4",
-    "@liradb2000/markdown-it-mermaid": "^0.4.3",
+    "@babel/core": "^7.15.0",
+    "@babel/runtime": "^7.15.3",
+    "@wekanteam/markdown-it-mermaid": "^0.5.0",
     "ajv": "^6.12.6",
     "babel-runtime": "^6.26.0",
     "bcryptjs": "^2.4.3",

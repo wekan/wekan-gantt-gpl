@@ -524,6 +524,41 @@ BlazeComponent.extendComponent({
   },
 }).register('newUserRow');
 
+BlazeComponent.extendComponent({
+  events() {
+    return [
+      {
+        'click .allUserChkBox': function(ev){
+          selectedUserChkBoxUserIds = [];
+          const checkboxes = document.getElementsByClassName("selectUserChkBox");
+          if(ev.currentTarget){
+            if(ev.currentTarget.checked){
+              for (let i=0; i<checkboxes.length; i++) {
+                if (!checkboxes[i].disabled) {
+                 selectedUserChkBoxUserIds.push(checkboxes[i].id);
+                 checkboxes[i].checked = true;
+                }
+             }
+            }
+            else{
+              for (let i=0; i<checkboxes.length; i++) {
+                if (!checkboxes[i].disabled) {
+                 checkboxes[i].checked = false;
+                }
+             }
+            }
+          }
+
+          if(selectedUserChkBoxUserIds.length > 0)
+            document.getElementById("divAddOrRemoveTeam").style.display = 'block';
+          else
+            document.getElementById("divAddOrRemoveTeam").style.display = 'none';
+        },
+      },
+    ];
+  },
+}).register('selectAllUser');
+
 Template.editOrgPopup.events({
   submit(event, templateInstance) {
     event.preventDefault();
@@ -535,8 +570,7 @@ Template.editOrgPopup.events({
     const orgDesc = templateInstance.find('.js-orgDesc').value.trim();
     const orgShortName = templateInstance.find('.js-orgShortName').value.trim();
     const orgWebsite = templateInstance.find('.js-orgWebsite').value.trim();
-    const orgIsActive =
-      templateInstance.find('.js-org-isactive').value.trim() == 'true';
+    const orgIsActive = templateInstance.find('.js-org-isactive').value.trim() == 'true';
 
     const isChangeOrgDisplayName = orgDisplayName !== org.orgDisplayName;
     const isChangeOrgDesc = orgDesc !== org.orgDesc;
@@ -562,7 +596,7 @@ Template.editOrgPopup.events({
       );
     }
 
-    Popup.close();
+    Popup.back();
   },
 });
 
@@ -606,7 +640,7 @@ Template.editTeamPopup.events({
       );
     }
 
-    Popup.close();
+    Popup.back();
   },
 });
 
@@ -721,7 +755,7 @@ Template.editUserPopup.events({
           } else {
             usernameMessageElement.hide();
             emailMessageElement.hide();
-            Popup.close();
+            Popup.back();
           }
         },
       );
@@ -735,7 +769,7 @@ Template.editUserPopup.events({
           }
         } else {
           usernameMessageElement.hide();
-          Popup.close();
+          Popup.back();
         }
       });
     } else if (isChangeEmail) {
@@ -752,11 +786,11 @@ Template.editUserPopup.events({
             }
           } else {
             emailMessageElement.hide();
-            Popup.close();
+            Popup.back();
           }
         },
       );
-    } else Popup.close();
+    } else Popup.back();
   },
   'click #addUserOrg'(event) {
     event.preventDefault();
@@ -891,7 +925,7 @@ Template.newOrgPopup.events({
       orgWebsite,
       orgIsActive,
     );
-    Popup.close();
+    Popup.back();
   },
 });
 
@@ -917,7 +951,7 @@ Template.newTeamPopup.events({
       teamWebsite,
       teamIsActive,
     );
-    Popup.close();
+    Popup.back();
   },
 });
 
@@ -990,11 +1024,11 @@ Template.newUserPopup.events({
         } else {
           usernameMessageElement.hide();
           emailMessageElement.hide();
-          Popup.close();
+          Popup.back();
         }
       },
     );
-    Popup.close();
+    Popup.back();
   },
   'click #addUserOrgNewUser'(event) {
     event.preventDefault();
@@ -1048,7 +1082,7 @@ Template.settingsOrgPopup.events({
       return;
     }
     Org.remove(this.orgId);
-    Popup.close();
+    Popup.back();
   }
 });
 
@@ -1066,7 +1100,7 @@ Template.settingsTeamPopup.events({
       return;
     }
     Team.remove(this.teamId);
-    Popup.close();
+    Popup.back();
   }
 });
 
@@ -1099,7 +1133,7 @@ Template.settingsUserPopup.events({
     //
     //
     */
-    Popup.close();
+    Popup.back();
   },
 });
 

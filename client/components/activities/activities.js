@@ -15,7 +15,7 @@ BlazeComponent.extendComponent({
       const capitalizedMode = Utils.capitalize(mode);
       let thisId, searchId;
       if (mode === 'linkedcard' || mode === 'linkedboard') {
-        thisId = Session.get('currentCard');
+        thisId = Utils.getCurrentCardId();
         searchId = Cards.findOne({ _id: thisId }).linkedId;
         mode = mode.replace('linked', '');
       } else {
@@ -53,6 +53,13 @@ BlazeComponent.extendComponent({
     }
   },
 }).register('activities');
+
+Template.activities.helpers({
+  activities() {
+    const ret = this.card.activities();
+    return ret;
+  },
+});
 
 BlazeComponent.extendComponent({
   checkItem() {
@@ -213,10 +220,11 @@ BlazeComponent.extendComponent({
     return [
       {
         // XXX We should use Popup.afterConfirmation here
-        'click .js-delete-comment'() {
-          const commentId = this.currentData().activity.commentId;
+        'click .js-delete-comment': Popup.afterConfirm('deleteComment', () => {
+          const commentId = this.data().activity.commentId;
           CardComments.remove(commentId);
-        },
+          Popup.back();
+        }),
         'submit .js-edit-comment'(evt) {
           evt.preventDefault();
           const commentText = this.currentComponent()
@@ -262,7 +270,7 @@ Template.addReactionPopup.events({
       const cardComment = CardComments.findOne({_id: commentId});
       cardComment.toggleReaction(codepoint);
     }
-    Popup.close();
+    Popup.back();
   },
 })
 

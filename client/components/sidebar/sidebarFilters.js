@@ -6,7 +6,7 @@ BlazeComponent.extendComponent({
       {
         'submit .js-list-filter'(evt) {
           evt.preventDefault();
-          Filter.lists.set(this.find('.js-list-filter input').value.trim());
+          Filter.title.set(this.find('.js-list-filter input').value.trim());
         },
         'click .js-toggle-label-filter'(evt) {
           evt.preventDefault();
@@ -171,22 +171,22 @@ Template.multiselectionSidebar.helpers({
 Template.disambiguateMultiLabelPopup.events({
   'click .js-remove-label'() {
     mutateSelectedCards('removeLabel', this._id);
-    Popup.close();
+    Popup.back();
   },
   'click .js-add-label'() {
     mutateSelectedCards('addLabel', this._id);
-    Popup.close();
+    Popup.back();
   },
 });
 
 Template.disambiguateMultiMemberPopup.events({
   'click .js-unassign-member'() {
     mutateSelectedCards('assignMember', this._id);
-    Popup.close();
+    Popup.back();
   },
   'click .js-assign-member'() {
     mutateSelectedCards('unassignMember', this._id);
-    Popup.close();
+    Popup.back();
   },
 });
 

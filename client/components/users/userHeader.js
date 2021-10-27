@@ -25,7 +25,7 @@ Template.memberMenuPopup.helpers({
   isNotOAuth2AuthenticationMethod(){
     currentUser = Meteor.user();
     if (currentUser) {
-      return currentUser.authenticationMethod != 'OAuth2';
+      return currentUser.authenticationMethod.toLowerCase() != 'oauth2';
     } else {
       return true;
     }
@@ -34,10 +34,10 @@ Template.memberMenuPopup.helpers({
 
 Template.memberMenuPopup.events({
   'click .js-my-cards'() {
-    Popup.close();
+    Popup.back();
   },
   'click .js-due-cards'() {
-    Popup.close();
+    Popup.back();
   },
   'click .js-open-archived-board'() {
     Modal.open('archivedBoards');
@@ -53,7 +53,7 @@ Template.memberMenuPopup.events({
     AccountsTemplates.logout();
   },
   'click .js-go-setting'() {
-    Popup.close();
+    Popup.back();
   },
 });
 
@@ -155,7 +155,7 @@ Template.editProfilePopup.events({
     } else Popup.back();
   },
   'click #deleteButton': Popup.afterConfirm('userDelete', function() {
-    Popup.close();
+    Popup.back();
     Users.remove(Meteor.userId());
     AccountsTemplates.logout();
   }),
@@ -259,16 +259,6 @@ Template.changeLanguagePopup.events({
 });
 
 Template.changeSettingsPopup.helpers({
-  showDesktopDragHandles() {
-    currentUser = Meteor.user();
-    if (currentUser) {
-      return (currentUser.profile || {}).showDesktopDragHandles;
-    } else if (window.localStorage.getItem('showDesktopDragHandles')) {
-      return true;
-    } else {
-      return false;
-    }
-  },
   hiddenSystemMessages() {
     currentUser = Meteor.user();
     if (currentUser) {
