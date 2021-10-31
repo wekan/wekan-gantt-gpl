@@ -205,6 +205,11 @@ BlazeComponent.extendComponent({
     )
       .val()
       .trim();
+    const mailDomainName = $(
+      '#mailDomainNamevalue',
+    )
+      .val()
+      .trim();
     const hideLogoChange = $('input[name=hideLogo]:checked').val() === 'true';
     const displayAuthenticationMethod =
       $('input[name=displayAuthenticationMethod]:checked').val() === 'true';
@@ -228,6 +233,7 @@ BlazeComponent.extendComponent({
           automaticLinkedUrlSchemes,
           spinnerName,
           oidcBtnText,
+          mailDomainName,
         },
       });
     } catch (e) {
