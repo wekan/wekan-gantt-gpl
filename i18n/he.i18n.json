@@ -106,6 +106,7 @@
     "and-n-other-card_plural": "ו־__count__ כרטיסים נוספים",
     "apply": "החלה",
     "app-is-offline": "בטעינה, נא להמתין. רענון הדף תוביל לאבדן מידע. אם הטעינה אורכת זמן רב מדי, מוטב לבדוק אם השרת מקוון.",
+    "app-try-reconnect": "לנסות להתחבר שוב.",
     "archive": "העברה לארכיון",
     "archive-all": "אחסן הכל בארכיון",
     "archive-board": "העברת הלוח לארכיון",
@@ -1113,5 +1114,9 @@
     "Node_memory_usage_rss": "ניצולת זיכרון של Node: גודל ערכה מאוחסנת",
     "Node_memory_usage_heap_total": "ניצולת זיכרון Node: גודל ערימה מוקצית כולל",
     "Node_memory_usage_heap_used": "ניצולת זיכרון של Node: זיכרון בשימוש בפועל",
-    "Node_memory_usage_external": "ניצולת זיכרון של Node: חיצוני"
+    "Node_memory_usage_external": "ניצולת זיכרון של Node: חיצוני",
+    "add-organizations": "הוספת ארגונים",
+    "add-organizations-label": "הארגונים שנוספו מוצגים להלן:",
+    "remove-organization-from-board": "להסיר את הארגון הזה מהלוח הזה?",
+    "to-create-organizations-contact-admin": "כדי ליצור ארגונים, נא ליצור קשר עם ההנהלה."
 }
