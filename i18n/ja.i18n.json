@@ -96,6 +96,7 @@
     "add-members": "メンバーの追加",
     "added": "追加しました",
     "addMemberPopup-title": "メンバー",
+    "memberPopup-title": "メンバー設定",
     "admin": "管理",
     "admin-desc": "カードの閲覧と編集、メンバーの削除、ボードの設定変更が可能",
     "admin-announcement": "アナウンス",
@@ -282,6 +283,7 @@
     "confirm-subtask-delete-dialog": "本当にサブタスクを削除してもよろしいでしょうか？",
     "confirm-checklist-delete-dialog": "本当にチェックリストを削除してもよろしいでしょうか？",
     "copy-card-link-to-clipboard": "カードへのリンクをクリップボードにコピー",
+    "copy-text-to-clipboard": "Copy text to clipboard",
     "linkCardPopup-title": "カードをリンク",
     "searchElementPopup-title": "検索",
     "copyCardPopup-title": "カードをコピー",
@@ -1118,5 +1120,9 @@
     "add-organizations": "Add organizations",
     "add-organizations-label": "Added organizations are displayed below:",
     "remove-organization-from-board": "Are you sure you want to remove this organization from this board ?",
-    "to-create-organizations-contact-admin": "To create organizations, please contact administrator."
+    "to-create-organizations-contact-admin": "To create organizations, please contact administrator.",
+    "custom-legal-notice-link-url": "Custom legal notice page URL",
+    "acceptance_of_our_legalNotice": "By continuing, you accept our",
+    "legalNotice": "legal notice",
+    "copied": "Copied!"
 }

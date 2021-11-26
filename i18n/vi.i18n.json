@@ -96,6 +96,7 @@
     "add-members": "Thêm Thành Viên",
     "added": "Đã Thêm",
     "addMemberPopup-title": "Thành Viên",
+    "memberPopup-title": "Cài đặt thành viên",
     "admin": "Quản Trị Viên",
     "admin-desc": "Có thể xem và chỉnh sửa những thẻ, xóa thành viên và thay đổi cài đặt cho bảng.",
     "admin-announcement": "Thông báo",
@@ -282,6 +283,7 @@
     "confirm-subtask-delete-dialog": "Bạn có chắc chắn muốn xóa nhiệm vụ phụ không?",
     "confirm-checklist-delete-dialog": "Bạn có chắc chắn muốn xóa checklist không?",
     "copy-card-link-to-clipboard": "Sao chép liên kết thẻ vào khay nhớ tạm",
+    "copy-text-to-clipboard": "Copy text to clipboard",
     "linkCardPopup-title": "Thẻ liên kết",
     "searchElementPopup-title": "Tìm kiếm",
     "copyCardPopup-title": "Sao chép Thẻ",
@@ -1118,5 +1120,9 @@
     "add-organizations": "Add organizations",
     "add-organizations-label": "Added organizations are displayed below:",
     "remove-organization-from-board": "Are you sure you want to remove this organization from this board ?",
-    "to-create-organizations-contact-admin": "To create organizations, please contact administrator."
+    "to-create-organizations-contact-admin": "To create organizations, please contact administrator.",
+    "custom-legal-notice-link-url": "Custom legal notice page URL",
+    "acceptance_of_our_legalNotice": "By continuing, you accept our",
+    "legalNotice": "legal notice",
+    "copied": "Copied!"
 }

@@ -96,6 +96,7 @@
     "add-members": "Lisää jäseniä",
     "added": "Lisätty",
     "addMemberPopup-title": "Jäsenet",
+    "memberPopup-title": "Jäsenasetukset",
     "admin": "Ylläpitäjä",
     "admin-desc": "Voi nähdä ja muokata kortteja, poistaa jäseniä, ja muuttaa taulun asetuksia.",
     "admin-announcement": "Ilmoitus",
@@ -282,6 +283,7 @@
     "confirm-subtask-delete-dialog": "Haluatko varmasti poistaa alitehtävän?",
     "confirm-checklist-delete-dialog": "Haluatko varmasti poistaa tarkistuslistan?",
     "copy-card-link-to-clipboard": "Kopioi kortin linkki leikepöydälle",
+    "copy-text-to-clipboard": "Kopioi teksti leikepöydälle",
     "linkCardPopup-title": "Linkitä kortti",
     "searchElementPopup-title": "Etsi",
     "copyCardPopup-title": "Kopioi kortti",
@@ -1118,5 +1120,9 @@
     "add-organizations": "Lisää organisaatioita",
     "add-organizations-label": "Lisätyt organisaatiot näkyy tässä alla:",
     "remove-organization-from-board": "Haluatko varmasti poistaa tämän organisaation tältä taululta ?",
-    "to-create-organizations-contact-admin": "Luodaksesi organisaatioita, ota yhteyttä ylläpitäjään."
+    "to-create-organizations-contact-admin": "Luodaksesi organisaatioita, ota yhteyttä ylläpitäjään.",
+    "custom-legal-notice-link-url": "Muokatun oikeudellisen huomautuksen sivun URL",
+    "acceptance_of_our_legalNotice": "Jatkamalla hyväksyt meidän",
+    "legalNotice": "oikeudellisen huomautuksen",
+    "copied": "Kopioitu!"
 }

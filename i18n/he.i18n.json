@@ -96,6 +96,7 @@
     "add-members": "הוספת חברים",
     "added": "התווסף",
     "addMemberPopup-title": "חברים",
+    "memberPopup-title": "הגדרות חברות",
     "admin": "מנהל",
     "admin-desc": "יש הרשאות לצפייה ולעריכת כרטיסים, להסרת חברים ולשינוי הגדרות לוח.",
     "admin-announcement": "הכרזה",
@@ -282,6 +283,7 @@
     "confirm-subtask-delete-dialog": "למחוק את תת המשימה?",
     "confirm-checklist-delete-dialog": "למחוק את רשימת המשימות?",
     "copy-card-link-to-clipboard": "העתקת קישור הכרטיס ללוח הגזירים",
+    "copy-text-to-clipboard": "Copy text to clipboard",
     "linkCardPopup-title": "קישור כרטיס",
     "searchElementPopup-title": "חיפוש",
     "copyCardPopup-title": "העתקת כרטיס",
@@ -1118,5 +1120,9 @@
     "add-organizations": "הוספת ארגונים",
     "add-organizations-label": "הארגונים שנוספו מוצגים להלן:",
     "remove-organization-from-board": "להסיר את הארגון הזה מהלוח הזה?",
-    "to-create-organizations-contact-admin": "כדי ליצור ארגונים, נא ליצור קשר עם ההנהלה."
+    "to-create-organizations-contact-admin": "כדי ליצור ארגונים, נא ליצור קשר עם ההנהלה.",
+    "custom-legal-notice-link-url": "כתובת עמוד הצהרה משפטית משלך",
+    "acceptance_of_our_legalNotice": "בחירה להמשיך היא למעשה הסכמה ל",
+    "legalNotice": "הצהרה המשפטית שלנו",
+    "copied": "הועתק!"
 }

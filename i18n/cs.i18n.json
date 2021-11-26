@@ -96,6 +96,7 @@
     "add-members": "Přidat členy",
     "added": "Přidán",
     "addMemberPopup-title": "Členové",
+    "memberPopup-title": "Nastavení uživatele",
     "admin": "Administrátor",
     "admin-desc": "Může zobrazovat a upravovat karty, mazat členy a měnit nastavení tabla.",
     "admin-announcement": "Oznámení",
@@ -282,6 +283,7 @@
     "confirm-subtask-delete-dialog": "Opravdu chcete smazat tento podúkol?",
     "confirm-checklist-delete-dialog": "Opravdu chcete smazat tento checklist?",
     "copy-card-link-to-clipboard": "Kopírovat adresu karty do mezipaměti",
+    "copy-text-to-clipboard": "Copy text to clipboard",
     "linkCardPopup-title": "Propojit kartu",
     "searchElementPopup-title": "Hledat",
     "copyCardPopup-title": "Kopírovat kartu",
@@ -1118,5 +1120,9 @@
     "add-organizations": "Add organizations",
     "add-organizations-label": "Added organizations are displayed below:",
     "remove-organization-from-board": "Are you sure you want to remove this organization from this board ?",
-    "to-create-organizations-contact-admin": "To create organizations, please contact administrator."
+    "to-create-organizations-contact-admin": "To create organizations, please contact administrator.",
+    "custom-legal-notice-link-url": "Custom legal notice page URL",
+    "acceptance_of_our_legalNotice": "By continuing, you accept our",
+    "legalNotice": "legal notice",
+    "copied": "Copied!"
 }

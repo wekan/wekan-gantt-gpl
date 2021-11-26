@@ -96,6 +96,7 @@
     "add-members": "Assigner des participants",
     "added": "Ajouté le",
     "addMemberPopup-title": "Participants",
+    "memberPopup-title": "Préférence du participant",
     "admin": "Admin",
     "admin-desc": "Peut voir et éditer les cartes, supprimer des participants et changer les paramètres du tableau.",
     "admin-announcement": "Annonce",
@@ -282,6 +283,7 @@
     "confirm-subtask-delete-dialog": "Êtes-vous sûr de vouloir supprimer la sous-tâche ?",
     "confirm-checklist-delete-dialog": "Êtes-vous sûr de vouloir supprimer la checklist ?",
     "copy-card-link-to-clipboard": "Copier le lien vers la carte dans le presse-papier",
+    "copy-text-to-clipboard": "Copy text to clipboard",
     "linkCardPopup-title": "Lier une Carte",
     "searchElementPopup-title": "Chercher",
     "copyCardPopup-title": "Copier la carte",
@@ -1118,5 +1120,9 @@
     "add-organizations": "Ajouter des organisations",
     "add-organizations-label": "Les organisations ajoutées sont affichées ci-dessous :",
     "remove-organization-from-board": "Voulez-vous vraiment supprimer cette organisation de ce tableau ?",
-    "to-create-organizations-contact-admin": "Pour créer des organisations, veuillez contacter l'administrateur."
+    "to-create-organizations-contact-admin": "Pour créer des organisations, veuillez contacter l'administrateur.",
+    "custom-legal-notice-link-url": "URL de la page des mentions légales personnalisées",
+    "acceptance_of_our_legalNotice": "En continuant, vous acceptez nos",
+    "legalNotice": "mentions légales",
+    "copied": "Copié !"
 }

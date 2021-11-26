@@ -96,6 +96,7 @@
     "add-members": "멤버 추가",
     "added": "추가됨",
     "addMemberPopup-title": "멤버",
+    "memberPopup-title": "멤버 설정",
     "admin": "관리자",
     "admin-desc": "카드를 보거나 수정하고, 멤버를 삭제하고, 보드에 대한 설정을 수정할 수 있습니다.",
     "admin-announcement": "공지사항",
@@ -282,6 +283,7 @@
     "confirm-subtask-delete-dialog": "Are you sure you want to delete subtask?",
     "confirm-checklist-delete-dialog": "정말로 체크리스트를 삭제하실 건가요?",
     "copy-card-link-to-clipboard": "클립보드에 카드의 링크가 복사되었습니다.",
+    "copy-text-to-clipboard": "Copy text to clipboard",
     "linkCardPopup-title": "Link Card",
     "searchElementPopup-title": "검색",
     "copyCardPopup-title": "카드 복사",
@@ -1118,5 +1120,9 @@
     "add-organizations": "Add organizations",
     "add-organizations-label": "Added organizations are displayed below:",
     "remove-organization-from-board": "Are you sure you want to remove this organization from this board ?",
-    "to-create-organizations-contact-admin": "To create organizations, please contact administrator."
+    "to-create-organizations-contact-admin": "To create organizations, please contact administrator.",
+    "custom-legal-notice-link-url": "Custom legal notice page URL",
+    "acceptance_of_our_legalNotice": "By continuing, you accept our",
+    "legalNotice": "legal notice",
+    "copied": "Copied!"
 }

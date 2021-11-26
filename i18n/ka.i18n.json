@@ -96,6 +96,7 @@
     "add-members": "წევრების დამატება",
     "added": "-მა დაამატა",
     "addMemberPopup-title": "წევრები",
+    "memberPopup-title": "მომხმარებლის პარამეტრები",
     "admin": "ადმინი",
     "admin-desc": "შეუძლია ნახოს და შეასწოროს ბარათები, წაშალოს წევრები და შეცვალოს დაფის პარამეტრები. ",
     "admin-announcement": "განცხადება",
@@ -282,6 +283,7 @@
     "confirm-subtask-delete-dialog": "დარწმუნებული ხართ, რომ გსურთ ქვესაქმიანობის წაშლა? ",
     "confirm-checklist-delete-dialog": "დარწმუნებული ხართ, რომ გსურთ კატალოგის წაშლა ? ",
     "copy-card-link-to-clipboard": "დააკოპირეთ ბარათის ბმული clipboard-ზე",
+    "copy-text-to-clipboard": "Copy text to clipboard",
     "linkCardPopup-title": "Link Card",
     "searchElementPopup-title": "ძებნა",
     "copyCardPopup-title": "ბარათის ასლი",
@@ -1118,5 +1120,9 @@
     "add-organizations": "Add organizations",
     "add-organizations-label": "Added organizations are displayed below:",
     "remove-organization-from-board": "Are you sure you want to remove this organization from this board ?",
-    "to-create-organizations-contact-admin": "To create organizations, please contact administrator."
+    "to-create-organizations-contact-admin": "To create organizations, please contact administrator.",
+    "custom-legal-notice-link-url": "Custom legal notice page URL",
+    "acceptance_of_our_legalNotice": "By continuing, you accept our",
+    "legalNotice": "legal notice",
+    "copied": "Copied!"
 }

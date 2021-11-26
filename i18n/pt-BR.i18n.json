@@ -96,6 +96,7 @@
     "add-members": "Adicionar Membros",
     "added": "Criado",
     "addMemberPopup-title": "Membros",
+    "memberPopup-title": "Configuração de Membros",
     "admin": "Administrador",
     "admin-desc": "Pode ver e editar cartões, remover membros e alterar configurações do quadro.",
     "admin-announcement": "Anúncio",
@@ -282,6 +283,7 @@
     "confirm-subtask-delete-dialog": "Tem certeza que deseja excluir a subtarefa?",
     "confirm-checklist-delete-dialog": "Tem certeza que quer excluir a lista de verificação?",
     "copy-card-link-to-clipboard": "Copiar link do cartão para a área de transferência",
+    "copy-text-to-clipboard": "Copiar texto para a área de transferência",
     "linkCardPopup-title": "Ligar Cartão",
     "searchElementPopup-title": "Buscar",
     "copyCardPopup-title": "Copiar o cartão",
@@ -1118,5 +1120,9 @@
     "add-organizations": "Adicionar organizações",
     "add-organizations-label": "Organizações adicionadas são exibidas abaixo:",
     "remove-organization-from-board": "Você tem certeza que deseja excluir esta organização do quadro?",
-    "to-create-organizations-contact-admin": "Para criação de organizações, favor entrar em contato com o administrador."
+    "to-create-organizations-contact-admin": "Para criação de organizações, favor entrar em contato com o administrador.",
+    "custom-legal-notice-link-url": "URL da página de aviso legal customizada",
+    "acceptance_of_our_legalNotice": "Para continuar, você precisa aceitar nosso",
+    "legalNotice": "aviso legal",
+    "copied": "Copiado!"
 }

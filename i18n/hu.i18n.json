@@ -96,6 +96,7 @@
     "add-members": "Tagok hozzáadása",
     "added": "Hozzáadva",
     "addMemberPopup-title": "Tagok",
+    "memberPopup-title": "Tagok beállításai",
     "admin": "Adminisztrátor",
     "admin-desc": "Megtekintheti és szerkesztheti a kártyákat, eltávolíthat tagokat, valamint megváltoztathatja a tábla beállításait.",
     "admin-announcement": "Bejelentés",
@@ -282,6 +283,7 @@
     "confirm-subtask-delete-dialog": "Biztosan törlöd a Rész-feladatot?",
     "confirm-checklist-delete-dialog": "Biztosan törlöd a Feladatlistát?",
     "copy-card-link-to-clipboard": "Kártya hivatkozásának másolása a vágólapra",
+    "copy-text-to-clipboard": "Copy text to clipboard",
     "linkCardPopup-title": "Kártyára hivatkozás",
     "searchElementPopup-title": "Keresés",
     "copyCardPopup-title": "Kártya másolása",
@@ -1118,5 +1120,9 @@
     "add-organizations": "Add organizations",
     "add-organizations-label": "Added organizations are displayed below:",
     "remove-organization-from-board": "Are you sure you want to remove this organization from this board ?",
-    "to-create-organizations-contact-admin": "To create organizations, please contact administrator."
+    "to-create-organizations-contact-admin": "To create organizations, please contact administrator.",
+    "custom-legal-notice-link-url": "Custom legal notice page URL",
+    "acceptance_of_our_legalNotice": "By continuing, you accept our",
+    "legalNotice": "legal notice",
+    "copied": "Copied!"
 }

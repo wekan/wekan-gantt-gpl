@@ -96,6 +96,7 @@
     "add-members": "सदस्य जोड़ें",
     "added": "जोड़ा गया",
     "addMemberPopup-title": "सदस्य",
+    "memberPopup-title": "सदस्य  व्यवस्था",
     "admin": "Admin",
     "admin-desc": "कार्ड देख और संपादित कर सकते हैं, सदस्यों को हटा सकते हैं, और बोर्ड के लिए सेटिंग्स बदल सकते हैं।",
     "admin-announcement": "घोषणा",
@@ -282,6 +283,7 @@
     "confirm-subtask-delete-dialog": "क्या आप वाकई उपकार्य हटाना चाहते हैं?",
     "confirm-checklist-delete-dialog": "क्या आप वाकई जांचसूची हटाना चाहते हैं?",
     "copy-card-link-to-clipboard": "कॉपी कार्ड क्लिपबोर्ड करने के लिए लिंक",
+    "copy-text-to-clipboard": "Copy text to clipboard",
     "linkCardPopup-title": "कार्ड कड़ी",
     "searchElementPopup-title": "Search",
     "copyCardPopup-title": "कार्ड प्रतिलिपि",
@@ -1118,5 +1120,9 @@
     "add-organizations": "Add organizations",
     "add-organizations-label": "Added organizations are displayed below:",
     "remove-organization-from-board": "Are you sure you want to remove this organization from this board ?",
-    "to-create-organizations-contact-admin": "To create organizations, please contact administrator."
+    "to-create-organizations-contact-admin": "To create organizations, please contact administrator.",
+    "custom-legal-notice-link-url": "Custom legal notice page URL",
+    "acceptance_of_our_legalNotice": "By continuing, you accept our",
+    "legalNotice": "legal notice",
+    "copied": "Copied!"
 }

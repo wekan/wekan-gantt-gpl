@@ -96,6 +96,7 @@
     "add-members": "Dodaj člane",
     "added": "Dodano",
     "addMemberPopup-title": "Člani",
+    "memberPopup-title": "Nastavitve članov",
     "admin": "Administrator",
     "admin-desc": "Lahko gleda in ureja kartice, odstrani člane ter spreminja nastavitve table.",
     "admin-announcement": "Najava",
@@ -282,6 +283,7 @@
     "confirm-subtask-delete-dialog": "Ste prepričani, da želite izbrisati podopravilo?",
     "confirm-checklist-delete-dialog": "Ste prepričani, da želite izbrisati kontrolni seznam?",
     "copy-card-link-to-clipboard": "Kopiraj povezavo kartice na odložišče",
+    "copy-text-to-clipboard": "Copy text to clipboard",
     "linkCardPopup-title": "Poveži kartico",
     "searchElementPopup-title": "Išči",
     "copyCardPopup-title": "Kopiraj kartico",
@@ -1118,5 +1120,9 @@
     "add-organizations": "Add organizations",
     "add-organizations-label": "Added organizations are displayed below:",
     "remove-organization-from-board": "Are you sure you want to remove this organization from this board ?",
-    "to-create-organizations-contact-admin": "To create organizations, please contact administrator."
+    "to-create-organizations-contact-admin": "To create organizations, please contact administrator.",
+    "custom-legal-notice-link-url": "Custom legal notice page URL",
+    "acceptance_of_our_legalNotice": "By continuing, you accept our",
+    "legalNotice": "legal notice",
+    "copied": "Copied!"
 }

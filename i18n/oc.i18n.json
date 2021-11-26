@@ -96,6 +96,7 @@
     "add-members": "Apondre un participant",
     "added": "Apondut lo",
     "addMemberPopup-title": "Participants",
+    "memberPopup-title": "Paramètres dels participants",
     "admin": "Administartor",
     "admin-desc": "As lo drech de legir e modificar las cartas, tirar de participants, e modificar las opcions del tablèu.",
     "admin-announcement": "Anóncia",
@@ -282,6 +283,7 @@
     "confirm-subtask-delete-dialog": "Sètz segur de voler quitar aquesta jos-tasca?",
     "confirm-checklist-delete-dialog": "Sètz segur de voler quitar aquesta checklist?",
     "copy-card-link-to-clipboard": "Còpia del ligam de la carta",
+    "copy-text-to-clipboard": "Copy text to clipboard",
     "linkCardPopup-title": "Ligam de la carta",
     "searchElementPopup-title": "Cèrca",
     "copyCardPopup-title": "Còpia de la carta",
@@ -1118,5 +1120,9 @@
     "add-organizations": "Add organizations",
     "add-organizations-label": "Added organizations are displayed below:",
     "remove-organization-from-board": "Are you sure you want to remove this organization from this board ?",
-    "to-create-organizations-contact-admin": "To create organizations, please contact administrator."
+    "to-create-organizations-contact-admin": "To create organizations, please contact administrator.",
+    "custom-legal-notice-link-url": "Custom legal notice page URL",
+    "acceptance_of_our_legalNotice": "By continuing, you accept our",
+    "legalNotice": "legal notice",
+    "copied": "Copied!"
 }

@@ -2,7 +2,60 @@
 
 [Mac ChangeLog](https://github.com/wekan/wekan/wiki/Mac)
 
-# # v5.79 2021-11-25 WeKan ® release
+# v5.80 2021-11-26 WeKan ® release
+
+This release adds the following new features:
+
+- [Show helper at label drag/drop if label popup opened from card details popup](https://github.com/wekan/wekan/pull/4176).
+  Thanks to mfilser.
+- [Show or hide members and assignee(s) on minicard](https://github.com/wekan/wekan/pull/4179).
+  Thanks to Ben0it-T.
+- [List adding has now a cancel button](https://github.com/wekan/wekan/pull/4183).
+  Thanks to mfilser.
+- [CustomFields Currency, autofocus on edit](https://github.com/wekan/wekan/pull/4189).
+  Thanks to mfilser.
+- [Attachments, show file size in KB in card details](https://github.com/wekan/wekan/pull/4191).
+  Thanks to mfilser.
+- [Sidebar Member Settings Popup has now a Popup title](https://github.com/wekan/wekan/pull/4190).
+  Thanks to mfilser.
+- [Add copy text button to most textarea fields](https://github.com/wekan/wekan/pull/4185).
+  Thanks to mfilser.
+- Copy text button at most textarea fields is now translatable.
+  [Part 1](https://github.com/wekan/wekan/commit/5088c122536e13b44cf2fdbcfabeefd00cee332e),
+  [Part 2](https://github.com/wekan/wekan/commit/96465ac664c526d8749dcad158704b512317e256).
+  Thanks to xet7.
+
+and adds the following updates:
+
+- [Docker build script to be executeable](https://github.com/wekan/wekan/commit/8054f2b0025c4cb3f6a3ddf71754ae7c707d6ac0).
+  Thanks to xet7.
+- [Drag drop jquery-ui update + screen and list scroll](https://github.com/wekan/wekan/pull/4181).
+  Thanks to mfilser.
+- [Settings, add some space between radio buttons](https://github.com/wekan/wekan/pull/4186).
+  Thanks to mfilser.
+
+and fixes the following bugs:
+
+- [Default Top Left Corner Logo Image display few seconds before a display of custom Top Left Corner Logo Image](https://github.com/wekan/wekan/issues/4173).
+  Thanks to Emile840.
+- [App reconnect link wasn't clickable](https://github.com/wekan/wekan/pull/4180).
+  Thanks to mfilser.
+- [Copy card URL works now again](https://github.com/wekan/wekan/pull/4184).
+  Thanks to mfilser.
+- [Fix: On mobile infinite scrolling didn't work](https://github.com/wekan/wekan/pull/4187).
+  Thanks to mfilser.
+- [Custom Field StringTemplates didn't save the last input value on touch devices](https://github.com/wekan/wekan/pull/4188).
+  Thanks to mfilser.
+- [Move cards to top/bottom ignores the current filter if active](https://github.com/wekan/wekan/pull/4192).
+  Thanks to mfilser.
+- [Moving many cards with multi selection drag/drop to another list keeps the card order](https://github.com/wekan/wekan/pull/4193).
+  Thanks to mfilser.
+- [Sidebar multi selection actions keep now the card sorting (cards moving, cards to archive etc)](https://github.com/wekan/wekan/pull/4194).
+  Thanks to mfilser.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
+# v5.79 2021-11-25 WeKan ® release
 
 This release fixes the following bugs:
 

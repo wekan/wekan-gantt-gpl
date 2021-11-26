@@ -96,6 +96,7 @@
     "add-members": "Afegeix membres",
     "added": "Afegit",
     "addMemberPopup-title": "Membres",
+    "memberPopup-title": "Configura membres",
     "admin": "Administrador",
     "admin-desc": "Pots veure i editar fitxes, eliminar usuaris, i canviar la configuració del tauler.",
     "admin-announcement": "Alertes",
@@ -282,6 +283,7 @@
     "confirm-subtask-delete-dialog": "Esteu segur que voleu eliminar la subtasca?",
     "confirm-checklist-delete-dialog": "Are you sure you want to delete checklist?",
     "copy-card-link-to-clipboard": "Copia l'enllaç de la ftixa al porta-retalls",
+    "copy-text-to-clipboard": "Copy text to clipboard",
     "linkCardPopup-title": "Link Card",
     "searchElementPopup-title": "Cerca",
     "copyCardPopup-title": "Copia la fitxa",
@@ -1118,5 +1120,9 @@
     "add-organizations": "Add organizations",
     "add-organizations-label": "Added organizations are displayed below:",
     "remove-organization-from-board": "Are you sure you want to remove this organization from this board ?",
-    "to-create-organizations-contact-admin": "To create organizations, please contact administrator."
+    "to-create-organizations-contact-admin": "To create organizations, please contact administrator.",
+    "custom-legal-notice-link-url": "Custom legal notice page URL",
+    "acceptance_of_our_legalNotice": "By continuing, you accept our",
+    "legalNotice": "legal notice",
+    "copied": "Copied!"
 }

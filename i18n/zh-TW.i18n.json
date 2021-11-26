@@ -96,6 +96,7 @@
     "add-members": "新增成員",
     "added": "新增",
     "addMemberPopup-title": "成員",
+    "memberPopup-title": "成員更改",
     "admin": "管理員",
     "admin-desc": "可以瀏覽並編輯卡片，移除成員，並且更改該看板的設定",
     "admin-announcement": "通知",
@@ -282,6 +283,7 @@
     "confirm-subtask-delete-dialog": "確定要刪除子任務嗎？",
     "confirm-checklist-delete-dialog": "確定要刪除清單嗎？",
     "copy-card-link-to-clipboard": "將卡片連結複製到剪貼簿",
+    "copy-text-to-clipboard": "Copy text to clipboard",
     "linkCardPopup-title": "連結卡片",
     "searchElementPopup-title": "搜尋",
     "copyCardPopup-title": "複製卡片",
@@ -1118,5 +1120,9 @@
     "add-organizations": "Add organizations",
     "add-organizations-label": "Added organizations are displayed below:",
     "remove-organization-from-board": "Are you sure you want to remove this organization from this board ?",
-    "to-create-organizations-contact-admin": "To create organizations, please contact administrator."
+    "to-create-organizations-contact-admin": "To create organizations, please contact administrator.",
+    "custom-legal-notice-link-url": "Custom legal notice page URL",
+    "acceptance_of_our_legalNotice": "By continuing, you accept our",
+    "legalNotice": "legal notice",
+    "copied": "Copied!"
 }
