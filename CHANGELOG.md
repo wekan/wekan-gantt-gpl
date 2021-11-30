@@ -2,6 +2,17 @@
 
 [Mac ChangeLog](https://github.com/wekan/wekan/wiki/Mac)
 
+# v5.83 2021-11-30 WeKan ® release
+
+This release adds to following new improvements:
+
+- [Changed delete checklist dialog to a popup](https://github.com/wekan/wekan/pull/4200).
+  Thanks to mfilser.
+- [Dragging minicards scrolls now vertically at the end of the screen](https://github.com/wekan/wekan/pull/4201).
+  Thanks to mfilser.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v5.82 2021-11-29 WeKan ® release
 
 This release removes the following new features:
