@@ -2,6 +2,30 @@
 
 [Mac ChangeLog](https://github.com/wekan/wekan/wiki/Mac)
 
+# v5.84 2021-12-15 WeKan ® release
+
+This release adds the following new features:
+
+- [Kubernetes 1.22 support and basic helm test](https://github.com/wekan/wekan/pull/4208).
+  Thanks to varac.
+- [Added Helm Chart usage docs](https://github.com/wekan/wekan/pull/4224).
+  Thanks to varac.
+- [Add full name if exists in `email-invite-subject` for user to invite](https://github.com/wekan/wekan/pull/4226).
+  Thanks to Emile840.
+- [Sort Organizations, Teams and People](https://github.com/wekan/wekan/pull/4232).
+  Thanks to Emile840.
+
+and fixes the following bugs:
+
+- [List title doesn't overlap with hamburger menu anymore](https://github.com/wekan/wekan/pull/4203).
+  Thanks to mfilser.
+- [Fix legal notice traduction bug when refreshing sign in page](https://github.com/wekan/wekan/pull/4217).
+  Thanks to Emile840.
+- [Fix: Clicking to view Lists or Swimlanes Archive adds temporarily many empty Lists to board](https://github.com/wekan/wekan/pull/4221).
+  Thanks to Ben0it-T.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v5.83 2021-11-30 WeKan ® release
 
 This release adds to following new improvements:
