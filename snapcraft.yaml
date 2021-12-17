@@ -1,5 +1,5 @@
 name: wekan-gantt-gpl
-version: '5.84'
+version: '5.85'
 summary: Open Source GPLv2 kanban
 description: |
    WeKan ® is an Open Source and collaborative kanban board application.
@@ -80,7 +80,7 @@ parts:
     wekan:
         source: .
         plugin: nodejs
-        node-engine: 12.22.7
+        node-engine: 12.22.8
         node-packages:
             - node-gyp
             - node-pre-gyp
