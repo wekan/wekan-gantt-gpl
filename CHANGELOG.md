@@ -2,6 +2,42 @@
 
 [Mac ChangeLog](https://github.com/wekan/wekan/wiki/Mac)
 
+# v5.88 2021-12-22 WeKan ® release
+
+This release adds to following CRITICAL SECURITY FIXES:
+
+- [User now should only see archived cards belonging to boards to which he has permission](https://github.com/wekan/wekan/pull/4252).
+  Thanks to jrsupplee.
+- [Fix `Boards.userBoards()` method to take into account organizations and teams of the user when determining which boards are accessible](https://github.com/wekan/wekan/pull/4252).
+  Thanks to jrsupplee.
+
+and adds the following new features:
+
+- [New `debug` search operator that should help debugging future problems with search](https://github.com/wekan/wekan/pull/4252).
+  Thanks to jrsupplee.
+- [New `org` and `team` search operators for finding cards belonging to boards with the given organization or team](https://github.com/wekan/wekan/pull/4252).
+  Thanks to jrsupplee.
+- [New admin report to list boards](https://github.com/wekan/wekan/pull/4252).
+  Thanks to jrsupplee.
+
+and adds the following accessibility improvements:
+
+- Made WeKan zoomable by recommendation of Axe browser extension
+  https://github.com/wekan/wekan/issues/459#issuecomment-999098233 by changing meta viewport settings at
+  https://github.com/wekan/wekan/blob/master/client/components/main/layouts.jade#L3 ,
+  in some commit of this WeKan v5.88.
+  Thanks to xet7.
+
+and fixes the following bugs:
+
+- Fixed Mermaid Diagram error: Maximum call stack size exceeded.
+  [Part 1](https://github.com/wekan/wekan/commit/23a403644c7db44392d4b0498ee0fc85c504d974),
+  [Part 2](https://github.com/wekan/wekan/commit/998d2f5b445b6bf2bc6cd16beac7231a0cf94fc3),
+  [Part 3](https://github.com/wekan/wekan/commit/443b40cff3cf507887c20639224ac1447acfaf88).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v5.87 2021-12-19 WeKan ® release
 
 This release adds the following updates:
