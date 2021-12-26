@@ -2,6 +2,32 @@
 
 [Mac ChangeLog](https://github.com/wekan/wekan/wiki/Mac)
 
+# v5.89 2021-12-26 WeKan ® release
+
+This release adds the following new features:
+
+- [Edit team/org now update users.teams.teamDisplayName / users.orgs.orgDisplayName](https://github.com/wekan/wekan/pull/4257).
+  Thanks to Ben0it-T.
+- [Trello api.py: Added for using newest Trello API, to show Trello boards/cards/actions/reactions JSON and download Trello attachments
+  as binary files from S3](https://github.com/wekan/wekan/commit/aff6e361f03f1a7e269edc184884313557c94362).
+  Thanks to xet7.
+- [Trello api.py: Added additional TODO notes](https://github.com/wekan/wekan/commit/f2c31f877c5a22af4429688fe2620919858ca69f).
+  Thanks to xet7.
+- [Added Info about Shared Templates In Progress](https://github.com/wekan/wekan/issues/3313#issuecomment-1001187003).
+  Thanks to xet7.
+
+and fixes the following bugs:
+
+- [Fix getLabels exception in template helper](https://github.com/wekan/wekan/pull/4262).
+  Thanks to Ben0it-T.
+- [Fixed Templates are Missing, Error: Site not Found "/templates" is missing in the URL.
+  Shared Templates part 5: Make visible Create template board checkbox and templates at All Boards page, In Progress](https://github.com/wekan/wekan/commit/7f32de3bec151df9e656013e8e910eb650b8ce80).
+  Thanks to xet7.
+- [Fixed Duplicate board](https://github.com/wekan/wekan/commit/67687110bb715028dd646d5879c109a095e584d5).
+  Thanks to Ben0it-T and xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v5.88 2021-12-22 WeKan ® release
 
 This release adds to following CRITICAL SECURITY FIXES:

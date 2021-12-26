@@ -720,7 +720,8 @@ Users.helpers({
   },
 
   getTemplatesBoardSlug() {
-    return (Boards.findOne((this.profile || {}).templatesBoardId) || {}).slug;
+    //return (Boards.findOne((this.profile || {}).templatesBoardId) || {}).slug;
+    return 'templates';
   },
 
   remove() {
@@ -1299,6 +1300,50 @@ if (Meteor.isServer) {
         userId: userId,
       });
       return isImpersonated;
+    },
+    setUsersTeamsTeamDisplayName(teamId, teamDisplayName) {
+      check(teamId, String);
+      check(teamDisplayName, String);
+      if (Meteor.user() && Meteor.user().isAdmin) {
+        Users.find({
+          teams: {
+              $elemMatch: {teamId: teamId}
+          }
+        }).forEach(user => {
+          Users.update({
+            _id: user._id,
+            teams: {
+              $elemMatch: {teamId: teamId}
+            }
+          }, {
+            $set: {
+              'teams.$.teamDisplayName': teamDisplayName
+            }
+          });
+        });
+      }
+    },
+    setUsersOrgsOrgDisplayName(orgId, orgDisplayName) {
+      check(orgId, String);
+      check(orgDisplayName, String);
+      if (Meteor.user() && Meteor.user().isAdmin) {
+        Users.find({
+          orgs: {
+              $elemMatch: {orgId: orgId}
+          }
+        }).forEach(user => {
+          Users.update({
+            _id: user._id,
+            orgs: {
+              $elemMatch: {orgId: orgId}
+            }
+          }, {
+            $set: {
+              'orgs.$.orgDisplayName': orgDisplayName
+            }
+          });
+        });
+      }
     },
   });
   Accounts.onCreateUser((options, user) => {
