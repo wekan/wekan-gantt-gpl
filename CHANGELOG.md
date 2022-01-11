@@ -2,6 +2,37 @@
 
 [Mac ChangeLog](https://github.com/wekan/wekan/wiki/Mac)
 
+# v5.91 2022-01-11 WeKan ® release
+
+This release adds the following CRITICAL SECURITY UPDATES:
+
+- [Updated to Node.js v12.22.9](https://github.com/wekan/wekan/commit/0218f3266bbab2e044f83a06042ca61afab65bdf).
+  Thanks to Node.js developers.
+
+and adds the following updates:
+
+- [Added release scripts for starting and stopping services](https://github.com/wekan/wekan/commit/33f47414bbecdc3bca10e807c38562e833997db4).
+  Thanks to xet7.
+- Updated rebuild-wekan.sh script about installing dependencies.
+  [Part1](https://github.com/wekan/wekan/commit/9979193df5b896efb1a8c0ac9c244972fa08aae1),
+  [Part2](https://github.com/wekan/wekan/commit/6f7292db5e8427fb63305e1e0e41d2337d8d9a60).
+  Thanks to xet7.
+- In install scripts, use Volta Node and NPM install manager, made with Rust https://volta.sh .
+  Volta uses home directory also with "npm -g install", no sudo needed.
+  xet7 found info about Volta from Miniflare docs.
+  [Part 1](https://github.com/wekan/wekan/commit/2efa42b8537b8a404a0f82d78c5299f098130183),
+  [Part 2](https://github.com/wekan/wekan/commit/ef685703cf8180c3fedef381d3c10aaf405ee8b4).
+  Thanks to Volta developers.
+- [Updated dependencies](https://github.com/wekan/wekan/commit/75fdc53746710206482b66513b02216dab5a4ad6).
+  Thanks to developers of dependencies.
+
+and fixes the following bugs:
+
+- [Fix user mentions](https://github.com/wekan/wekan/pull/4273).
+  Thanks to Ben0it-T.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v5.90 2021-12-26 WeKan ® release
 
 This release fixes the following bugs:
