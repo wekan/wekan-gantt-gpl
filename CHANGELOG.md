@@ -2,6 +2,27 @@
 
 [Mac ChangeLog](https://github.com/wekan/wekan/wiki/Mac)
 
+# v5.92 2022-01-13 WeKan ® release
+
+This release adds the following CRITICAL SECURITY UPDATES:
+
+- [Upgraded markdown-it to 12.3.2](https://github.com/wekan/wekan/commit/724f9d43b47aab3198730801200c0faa53c73e5c).
+  Thanks to markdown-it developers.
+
+and adds the following new translations:
+
+- Added translations: Estonian (Estonia) et_EE, Russian (Ukraine) ru_UA, Ukrainian (Ukraine) uk_UA.
+  [Part 1](https://github.com/wekan/wekan/commit/ac85e00e0a99574499786ddf97823dcf2802a47f),
+  [Part 1](https://github.com/wekan/wekan/commit/30131ffc20173d222cb02b283f38a8c0d6a28ccc).
+  Thanks to translators.
+
+and fixes the following bugs:
+
+- [Fixed OpenAPI docs generating has some swagger error](https://github.com/wekan/wekan/commit/99d6f7a765e2945fb17411f5b8545cd7d6010c5f).
+  Thanks to bentiss.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v5.91 2022-01-11 WeKan ® release
 
 This release adds the following CRITICAL SECURITY UPDATES:
