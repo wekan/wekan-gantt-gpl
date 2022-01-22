@@ -2,6 +2,26 @@
 
 [Mac ChangeLog](https://github.com/wekan/wekan/wiki/Mac)
 
+# v5.96 2022-01-23 WeKan ® release
+
+This release adds the following new features:
+
+- [Move checklist and card popup restore last selected board value](https://github.com/wekan/wekan/pull/4307).
+  Thanks to mfilser.
+
+and fixes the following bugs:
+
+- [Fix Layout "Modern Dark", Card Color, List Header and mouse hover](https://github.com/wekan/wekan/pull/4308).
+  Thanks to mfilser.
+- [Try to fix OAUTH2_REQUEST_PERMISSIONS by removing quotes](https://github.com/wekan/wekan/commit/5e65dfc272925490b4ad20c49d8d3fd74597beac).
+  Thanks to pcurie and xet7.
+- [Fix notification drawer always on top](https://github.com/wekan/wekan/commit/bec25720da947e048a63541b4e421bd9bd846c58).
+  Thanks to Azorimor.
+- [Fix comments not loading on cardType-linkedBoard](https://github.com/wekan/wekan/pull/4315).
+  Thanks to Ben0it-T.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v5.95 2022-01-18 WeKan ® release
 
 This release adds the following new features:
