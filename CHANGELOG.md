@@ -2,6 +2,43 @@
 
 [Mac ChangeLog](https://github.com/wekan/wekan/wiki/Mac)
 
+# v5.98 2022-02-03 WeKan ® release
+
+This release adds the following CRITICAL SECURITY UPDATES:
+
+- [Updated to Node.js v12.22.10](https://github.com/wekan/wekan/commit/290a6dfb6e104b887f9ee2cc70db84b83fe3be35).
+  Thanks to Node.js developers.
+
+and adds the following new features:
+
+- [Make card corners round](https://github.com/wekan/wekan/commit/045160c7bb7c8696a181d9ed4e0b54d0c27b5f59).
+  Thanks to Meeques and xet7.
+
+and adds the following new translations:
+
+- Added translation: Galician (Spain).
+  [Part 1](https://github.com/wekan/wekan/commit/c0828f2d00095c68b4533a10ff7ede0a16131093),
+  [Part 2](https://github.com/wekan/wekan/commit/9a539fb414c3ffeae2ea94f863d2bb3bc6e314f1),
+  [Part 3](https://github.com/wekan/wekan/commit/a8e3dc06fe76620d09eddbc7d118a749c85b1c7c).
+  Thanks to translators.
+
+and fixes the following bugs:
+
+- [Fix typo in tests](https://github.com/wekan/wekan/commit/62efb67d06a4aeb3299805911391b6e936901b42).
+  Thanks to xet7.
+- Try to fix tests by adding puppeteer back.
+  [Part 1](https://github.com/wekan/wekan/commit/7122f59c51775f9b382cdbcf5690eba2ad907ccf),
+  [Part 2](https://github.com/wekan/wekan/commit/1bf1ed79e85e091d79fa70feb46d072c81e55810).
+  Thanks to xet7.
+- [Removed unnecessary space between checklist title and first checklist item if checklist progress is 0%](https://github.com/wekan/wekan/pull/4329).
+  Thanks to mfilser.
+- [Lists now moveable when swimlane requires scrolling](https://github.com/wekan/wekan/pull/4330).
+  Thanks to mfilser.
+- [Add more stack and heap to Node.js at all WeKan platforms](https://github.com/wekan/wekan/commit/ff13571c719ad24e24ea6dc871ced827a7120ac8).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v5.97 2022-01-23 WeKan ® release
 
 This release fixes the following bugs:
