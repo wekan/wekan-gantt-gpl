@@ -2,6 +2,20 @@
 
 [Mac ChangeLog](https://github.com/wekan/wekan/wiki/Mac)
 
+# v5.99 2022-02-04 WeKan ® release
+
+This release adds the following changes:
+
+- [Revert rounded corners minicard on moderndark theme](https://github.com/wekan/wekan/pull/4332).
+  Thanks to jghaanstra.
+
+and fixes the following bugs:
+
+- [Remove not working options from rebuild-wekan.sh](https://github.com/wekan/wekan/commit/af598b13e8266654ab52425f71840c3628c9835a).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v5.98 2022-02-03 WeKan ® release
 
 This release adds the following CRITICAL SECURITY UPDATES:
@@ -13,6 +27,8 @@ and adds the following new features:
 
 - [Make card corners round](https://github.com/wekan/wekan/commit/045160c7bb7c8696a181d9ed4e0b54d0c27b5f59).
   Thanks to Meeques and xet7.
+- [Copy checklist](https://github.com/wekan/wekan/pull/4331).
+  Thanks to mfilser.
 
 and adds the following new translations:
 
