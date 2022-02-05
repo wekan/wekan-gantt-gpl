@@ -2,6 +2,20 @@
 
 [Mac ChangeLog](https://github.com/wekan/wekan/wiki/Mac)
 
+# v6.00 2022-02-05 WeKan ® release
+
+This release adds the following new features:
+
+- [Adding list select at card details](https://github.com/wekan/wekan/pull/4333).
+  Thanks to mfilser.
+
+and adds the following updates:
+
+- [Updated release scripts](https://github.com/wekan/wekan/commit/9b7bf1ba289f0026f0bf957527c86b6f4696686e).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v5.99 2022-02-04 WeKan ® release
 
 This release adds the following changes:
