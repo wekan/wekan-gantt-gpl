@@ -6,7 +6,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 ENV \
     DEBUG=false \
-    NODE_VERSION=v12.22.10 \
+    NODE_VERSION=v14.19.0 \
     METEOR_RELEASE=1.10.2 \
     USE_EDGE=false \
     METEOR_EDGE=1.5-beta.17 \
@@ -238,7 +238,9 @@ RUN \
     set -o xtrace && \
     cd /home/wekan/app_build/bundle/programs/server/ && \
     chmod u+w package.json npm-shrinkwrap.json && \
-    npm install
+    npm install && \
+    cd node_modules/fibers && \
+    node build.js
 
 USER root
 # Cleanup

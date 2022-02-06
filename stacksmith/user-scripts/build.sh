@@ -2,7 +2,7 @@
 set -euxo pipefail
 
 BUILD_DEPS="bsdtar gnupg wget curl bzip2 python git ca-certificates perl-Digest-SHA"
-NODE_VERSION=v12.22.10
+NODE_VERSION=v14.19.0
 #METEOR_RELEASE=1.6.0.1 - for Stacksmith, meteor-1.8 branch that could have METEOR@1.8.1-beta.8 or newer
 USE_EDGE=false
 METEOR_EDGE=1.5-beta.17
@@ -79,6 +79,9 @@ sudo rm /home/wekan/app_build/bundle/programs/server/npm/node_modules/meteor/raj
 rm -rf /home/wekan/app_build/bundle/programs/web.browser.legacy
 cd /home/wekan/app_build/bundle/programs/server/
 sudo npm install
+cd node_modules/fibers
+node build.js
+cd ../..
 sudo chown -R wekan:wekan ./node_modules
 
 #cd /home/wekan/app_build/bundle
