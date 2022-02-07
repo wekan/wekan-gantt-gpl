@@ -2,6 +2,17 @@
 
 [Mac ChangeLog](https://github.com/wekan/wekan/wiki/Mac)
 
+# v6.04 2022-02-07 WeKan ® release
+
+This release fixes the following bugs:
+
+- [Fixed Copy card to list does not work, by reverting clientside changes of PR 4333](https://github.com/wekan/wekan/commit/a5b376e6b5f9b171c39cd9341b8c2a4346fc3f5e).
+  Thanks to Meeques, PaulITsoft and xet7.
+- [Fixed Problem with selecting action in rule window](https://github.com/wekan/wekan/commit/dc7b97c1780849b04389696f0dac38e4477e28cf).
+  Thanks to Meeques and xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.03 2022-02-07 WeKan ® release
 
 This release adds the following updates:
