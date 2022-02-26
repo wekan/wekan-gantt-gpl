@@ -2,6 +2,28 @@
 
 [Mac ChangeLog](https://github.com/wekan/wekan/wiki/Mac)
 
+# v6.06 2022-02-26 WeKan ® release
+
+This release adds the following new features:
+
+- [Feature/shortcuts for label assignment](https://github.com/wekan/wekan/pull/4377).
+  Thanks to Viehlieb.
+- [Feature/propagate OIDC data](https://github.com/wekan/wekan/pull/4379).
+  Thanks to Viehlieb.
+
+and fixes the following bugs:
+
+- [Global search: Card Details popup opens now in normal view even if maximized card is configured](https://github.com/wekan/wekan/pull/4352).
+  Thanks to mfilser.
+- [Card details, fix header while scrolling](https://github.com/wekan/wekan/pull/4358).
+  Thanks to mfilser.
+- [Add subscription to announcements, so that system wide announcements are shown to all](https://github.com/wekan/wekan/pull/4375).
+  Thanks to pablo-ng.
+- [Fixed Disable Self-Registration. Added Disable Forgot Password to same Admin Panel page](https://github.com/wekan/wekan/commit/b85db43c4755cf54e550f664311cd95097d68ae1).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.05 2022-02-07 WeKan ® release
 
 This release adds the following updates:

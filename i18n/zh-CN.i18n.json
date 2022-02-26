@@ -571,6 +571,8 @@
     "has-spenttime-cards": "耗时卡",
     "time": "时间",
     "title": "标题",
+    "toggle-labels": "Toggle labels 1-9 for card. Multi-Selection adds labels 1-9",
+    "remove-labels-multiselect": "Multi-Selection removes labels 1-9",
     "tracking": "跟踪",
     "tracking-info": "当任何包含您（作为创建者或成员）的卡片发生变更时，您将得到通知。",
     "type": "类型",
@@ -610,6 +612,7 @@
     "people": "人员",
     "registration": "注册",
     "disable-self-registration": "禁止自助注册",
+    "disable-forgot-password": "Disable Forgot Password",
     "invite": "邀请",
     "invite-people": "邀请人员",
     "to-boards": "邀请到看板 (可多选)",
@@ -1142,7 +1145,7 @@
     "moveChecklist": "移动待办清单",
     "moveChecklistPopup-title": "移动待办清单",
     "newlineBecomesNewChecklistItem": "可换行来新增一个待办清单项",
-    "copyChecklist": "Copy Checklist",
-    "copyChecklistPopup-title": "Copy Checklist",
-    "card-show-lists": "Card Show Lists"
+    "copyChecklist": "复制待办清单",
+    "copyChecklistPopup-title": "复制待办清单",
+    "card-show-lists": "卡片显示列表"
 }
