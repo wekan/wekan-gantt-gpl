@@ -2,6 +2,15 @@
 
 [Mac ChangeLog](https://github.com/wekan/wekan/wiki/Mac)
 
+# v6.09 2022-02-28 WeKan ® release
+
+This release tries to fix the following bugs:
+
+- [Try to fix Admin Panel / Disable Registration and Disable Forgot Password](https://github.com/wekan/wekan/commit/0775e2a3e5c5d98e4d8c1954a15beb0688c73075).
+  Thanks to urmel1960, Ben0it-T and xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.08 2022-02-27 WeKan ® release
 
 This release tries to fix the following bugs:
