@@ -2,6 +2,20 @@
 
 [Mac ChangeLog](https://github.com/wekan/wekan/wiki/Mac)
 
+# v6.11 2022-03-03 WeKan ® release
+
+This release adds the following updates:
+
+- [Updated In Progress future Snap configs](https://github.com/wekan/wekan/commit/dc6bc9ed54e46ad2ba55fb1dd73f41c0432a7b8f).
+  Thanks to xet7.
+
+and tries to fix the following bugs:
+
+- [Try to fix Snap](https://github.com/wekan/wekan/commit/e5cfcc84faea551ea49b588348ade44b027718ce).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.10 2022-03-02 WeKan ® release
 
 This release adds the following new features:

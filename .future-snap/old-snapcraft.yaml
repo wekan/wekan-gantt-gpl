@@ -1,8 +1,8 @@
-name: wekan-gantt-gpl
-version: '6.11'
-summary: Open Source GPLv2 kanban
+name: wekan
+version: git
+summary: The open-source kanban
 description: |
-   WeKan ® is an Open Source and collaborative kanban board application.
+   Wekan is an open-source and collaborative kanban board application.
 
    Whether you’re maintaining a personal todo list, planning your holidays with some friends, or working in a team on your next revolutionary idea, Kanban boards are an unbeatable tool to keep your things organized. They give you a visual overview of the current state of your project, and make you productive by allowing you to focus on the few items that matter the most.
    Depending on target environment, some configuration settings might need to be adjusted.
@@ -11,6 +11,7 @@ description: |
 
 confinement: strict
 grade: stable
+base: core18
 
 architectures:
   - amd64
@@ -64,9 +65,11 @@ apps:
 
 parts:
     mongodb:
-        source: https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-ubuntu1604-3.2.22.tgz
+        source: https://repo.mongodb.org/apt/ubuntu/dists/xenial/mongodb-org/4.2/multiverse/binary-amd64/mongodb-org-server_4.2.2_amd64.deb
+        #https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-4.0.14.tgz
+        #https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-ubuntu1604-3.2.22.tgz
         plugin: dump
-        stage-packages: [libssl1.0.0]
+        stage-packages: [libssl1.0.0, libcurl3]
         filesets:
             mongo:
                 - usr
@@ -86,18 +89,18 @@ parts:
             - node-pre-gyp
             - fibers
         build-packages:
-            - build-essential
             - ca-certificates
             - apt-utils
+            - build-essential
             - python
-#            - python3
+            - python3
             - g++
             - capnproto
             - curl
+            - libcurl3
             - execstack
             - nodejs
             - npm
-#            - p7zip-full
         stage-packages:
             - libfontconfig1
         override-build: |
@@ -110,54 +113,29 @@ parts:
             sh install_meteor.sh
             rm install_meteor.sh
             rm -rf .build
-            chmod u+w *.json
-            npm install
+            meteor add standard-minifier-js --allow-superuser
+            meteor npm install --allow-superuser
+            meteor npm install --allow-superuser --save babel-runtime
             meteor build .build --directory --allow-superuser
-            # Remove legacy webbroser bundle, so that Wekan works also at Android Firefox, iOS Safari, etc.
-            rm -rf .build/bundle/programs/web.browser.legacy
-            # Change to directory .build/bundle/programs/server
+            cp -f fix-download-unicode/cfs_access-point.txt .build/bundle/programs/server/packages/cfs_access-point.js
             cd .build/bundle/programs/server
-            chmod u+w *.json
             npm install
-            cd node_modules/fibers
-            node build.js
-            cd ../../../../../..
-            # Cleanup
-            cd .build/bundle
-            find . -type d -name '*-garbage*' | xargs rm -rf
-            find . -name '*phantom*' | xargs rm -rf
-            find . -name '.*.swp' | xargs rm -f
-            find . -name '*.swp' | xargs rm -f
-            cd ../..
-            # Add fibers multi arch
-            #cd .build/bundle/programs/server/node_modules/fibers/bin
-            #curl https://releases.wekan.team/fibers-multi.7z -o fibers-multi.7z
-            #7z x fibers-multi.7z
-            #rm fibers-multi.7z
-            #cd ../../../../../../..
-            # Copy to Snap
+            npm install --allow-superuser --save babel-runtime
+            # Change back to Wekan source directory
+            cd ../../../..
             cp -r .build/bundle/* $SNAPCRAFT_PART_INSTALL/
             cp .build/bundle/.node_version.txt $SNAPCRAFT_PART_INSTALL/
             rm -f $SNAPCRAFT_PART_INSTALL/lib/node_modules/wekan
-            #rm -f $SNAPCRAFT_PART_INSTALL/programs/server/npm/node_modules/meteor/rajit_bootstrap3-datepicker/lib/bootstrap-datepicker/node_modules/phantomjs-prebuilt/lib/phantom/bin/phantomjs
-            # Delete phantomjs that is in accounts-lockout
-            #rm -rf $SNAPCRAFT_PART_INSTALL/programs/server/npm/node_modules/meteor/lucasantoniassi_accounts-lockout/node_modules/phantomjs-prebuilt
-            # Delete temporary files
-            #rm -f $SNAPCRAFT_PART_INSTALL/programs/server/npm/node_modules/tar/lib/.mkdir.js.swp
-            #rm -f $SNAPCRAFT_PART_INSTALL/lib/node_modules/node-pre-gyp/node_modules/tar/lib/.mkdir.js.swp
-            #rm -f $SNAPCRAFT_PART_INSTALL/lib/node_modules/node-gyp/node_modules/tar/lib/.mkdir.js.swp
-            # Meteor 1.8.x additional .swp remove
-            #rm -f $SNAPCRAFT_PART_INSTALL/programs/server/node_modules/node-pre-gyp/node_modules/tar/lib/.mkdir.js.swp
-            # Delete fibers for other archs
-            #rm -rf $SNAPCRAFT_PART_INSTALL/programs/server/node_modules/fibers/bin/linux-ia32*
-            # ostrio tmp remove
-            #rm -rf $SNAPCRAFT_PART_INSTALL/programs/server/npm/node_modules/meteor/ostrio_files/node_modules/request-libcurl/.node_modules-garbage*
+            rm -f $SNAPCRAFT_PART_INSTALL/programs/server/npm/node_modules/meteor/rajit_bootstrap3-datepicker/lib/bootstrap-datepicker/node_modules/phantomjs-prebuilt/lib/phantom/bin/phantomjs
+            rm -f $SNAPCRAFT_PART_INSTALL/programs/server/npm/node_modules/tar/lib/.mkdir.js.swp
+            rm -f $SNAPCRAFT_PART_INSTALL/lib/node_modules/node-pre-gyp/node_modules/tar/lib/.mkdir.js.swp
+            rm -f $SNAPCRAFT_PART_INSTALL/lib/node_modules/node-gyp/node_modules/tar/lib/.mkdir.js.swp
+            rm -f $SNAPCRAFT_PART_INSTALL/programs/server/node_modules/node-pre-gyp/node_modules/tar/lib/.mkdir.js.swp
 
         organize:
             README: README.wekan
         prime:
             - -lib/node_modules/node-pre-gyp/node_modules/tar/lib/.unpack.js.swp
-            - -lib/node_modules/weka*
 
     helpers:
         source: snap-src
@@ -165,15 +143,8 @@ parts:
 
     caddy:
         plugin: dump
-        ## Caddy v1 is not developed anymore. TODO: Sometime migrate to Caddy v2.
-        ## https://caddy.community/t/caddyfile-v1-adapter/9129
-        ## https://github.com/caddyserver/caddy/tree/v1
-        #source: https://caddyserver.com/download/linux/amd64?license=personal&telemetry=off
-        #source-type: tar
-        # Using last working binary that was downloaded from above URL to Wekan Snap,
-        # and .txt files from https://github.com/caddyserver/caddy/tree/v1/dist
-        source: https://wekan.github.io/caddy-v1-linux-amd64.7z
-        source-type: 7z
+        source: https://caddyserver.com/download/linux/amd64?license=personal&telemetry=off
+        source-type: tar
         organize:
           caddy: bin/caddy
           CHANGES.txt: CADDY_CHANGES.txt
