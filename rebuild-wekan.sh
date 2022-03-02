@@ -23,7 +23,7 @@ do
 			echo "Linux";
 			# Debian, Ubuntu, Mint
 			sudo apt-get install -y build-essential gcc g++ make git curl wget p7zip-full zip unzip unp
-			#curl -fsSL https://deb.nodesource.com/setup_12.x | sudo -E bash -
+			#curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash -
 			#sudo apt-get install -y nodejs
 			#sudo apt-get install -y npm
 			# Volta Node and NPM install manager, made with Rust https://volta.sh
@@ -31,12 +31,12 @@ do
 			curl https://get.volta.sh | bash
 			export VOLTA_HOME="$HOME/.volta"
 			export PATH="$VOLTA_HOME/bin:$PATH"
-			volta install node@12
+			volta install node@14
 			# npm nodejs
 			#curl -0 -L https://npmjs.org/install.sh | sudo sh
 			#sudo chown -R $(id -u):$(id -g) $HOME/.npm
 			#sudo npm -g install n
-			#sudo n 12.22.10
+			#sudo n 14.19.0
 			#sudo npm -g install npm
 			## Latest npm with Meteor 2.2
 			npm -g install node-gyp
@@ -48,7 +48,7 @@ do
 			#sudo chown -R $(id -u):$(id -g) $HOME/.npm $HOME/.meteor
 		elif [[ "$OSTYPE" == "darwin"* ]]; then
 		        echo "macOS";
-			pause '1) Install XCode 2) Install Node 12.x from https://nodejs.org/en/ 3) Press [Enter] key to continue.'
+			pause '1) Install XCode 2) Install Node 14.x from https://nodejs.org/en/ 3) Press [Enter] key to continue.'
 		elif [[ "$OSTYPE" == "cygwin" ]]; then
 		        # POSIX compatibility layer and Linux environment emulation for Windows
 		        echo "TODO: Add Cygwin";
@@ -89,14 +89,9 @@ do
 		meteor npm install
 		meteor build .build --directory
 		rm -rf .build/bundle/programs/web.browser.legacy
-		pushd .build/bundle/programs/server
-		rm -rf node_modules
-                chmod u+w *.json
-		meteor npm install
-		cd node_modules/fibers
-		node build.js
+		(cd .build/bundle/programs/server && rm -rf node_modules && chmod u+w *.json && meteor npm install)
+                (cd .build/bundle/programs/server/node_modules/fibers && node build.js)
 		# Cleanup
-		popd
 		find . -type d -name '*-garbage*' | xargs rm -rf
 		find . -name '*phantom*' | xargs rm -rf
 		find . -name '.*.swp' | xargs rm -f

@@ -22,10 +22,10 @@ const pkgdef :Spk.PackageDefinition = (
     appTitle = (defaultText = "Wekan"),
     # The name of the app as it is displayed to the user.
 
-    appVersion = 609,
+    appVersion = 610,
     # Increment this for every release.
 
-    appMarketingVersion = (defaultText = "6.09.0~2022-02-28"),
+    appMarketingVersion = (defaultText = "6.10.0~2022-03-02"),
     # Human-readable presentation of the app version.
 
     minUpgradableAppVersion = 0,
@@ -246,6 +246,7 @@ const myCommand :Spk.Manifest.Command = (
     #---------------------------------------------------------------------
     (key = "NODE_OPTIONS", value = "--max_old_space_size=4096"),
     (key = "PATH", value = "/usr/local/bin:/usr/bin:/bin"),
+    (key = "WRITABLE_PATH", value = "/var/wekan-uploads"),
     (key = "RESULTS_PER_PAGE", value = ""),
     (key = "WITH_API", value = "true"),
     (key = "RICHER_CARD_COMMENT_EDITOR", value="false"),
