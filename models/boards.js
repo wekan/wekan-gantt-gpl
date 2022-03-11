@@ -773,7 +773,15 @@ Boards.helpers({
   },
 
   activities() {
-    return Activities.find({ boardId: this._id }, { sort: { createdAt: -1 } });
+    let linkedBoardId = [this._id];
+    Cards.find({
+      "type": "cardType-linkedBoard",
+      "boardId": this._id}
+      ).forEach(card => {
+        linkedBoardId.push(card.linkedId);
+    });
+    return Activities.find({ boardId: { $in: linkedBoardId } }, { sort: { createdAt: -1 } });
+    //return Activities.find({ boardId: this._id }, { sort: { createdAt: -1 } });
   },
 
   activeMembers(){
@@ -1457,23 +1465,23 @@ Boards.uniqueTitle = title => {
     new RegExp('^(?<title>.*?)\\s*(\\[(?<num>\\d+)]\\s*$|\\s*$)'),
   );
   const base = escapeForRegex(m.groups.title);
-  let num = 0;
-  Boards.find({ title: new RegExp(`^${base}\\s*\\[\\d+]\\s*$`) }).forEach(
-    board => {
-      const m = board.title.match(
-        new RegExp('^(?<title>.*?)\\s*\\[(?<num>\\d+)]\\s*$'),
-      );
-      if (m) {
-        const n = parseInt(m.groups.num, 10);
-        num = num < n ? n : num;
-      }
-    },
-  );
-
-  if (num > 0) {
-    return `${base} [${num + 1}]`;
+  const baseTitle = m.groups.title;
+  boards = Boards.find({ title: new RegExp(`^${base}\\s*(\\[(?<num>\\d+)]\\s*$|\\s*$)`) });
+  if (boards.count() > 0) {
+    let num = 0;
+    Boards.find({ title: new RegExp(`^${base}\\s*\\[\\d+]\\s*$`) }).forEach(
+      board => {
+        const m = board.title.match(
+          new RegExp('^(?<title>.*?)\\s*\\[(?<num>\\d+)]\\s*$'),
+        );
+        if (m) {
+          const n = parseInt(m.groups.num, 10);
+          num = num < n ? n : num;
+        }
+      },
+    );
+    return `${baseTitle} [${num + 1}]`;
   }
-
   return title;
 };
 
