@@ -2,6 +2,43 @@
 
 [Mac ChangeLog](https://github.com/wekan/wekan/wiki/Mac)
 
+# v6.13 2022-04-01 WeKan ® release
+
+This release adds the following new features:
+
+- [Added Perl scripts for Asana export to WeKan ®](https://github.com/wekan/wekan/commit/376bcbb373d16317060adc2b1154cc20496775cc).
+  Thanks to GeekRuthie.
+- [Add get list and board cards count to API](https://github.com/wekan/wekan/pull/4424).
+  Thanks to helioguardabaxo.
+- [Added translations: English (Brazil) en-BR and Czech (Czech Republic) cs-CZ](https://github.com/wekan/wekan/commit/ca15e060bb182b0ff4768a3ff9d4de5b1ee125ce).
+  Thanks to translators.
+- [Added WRITABLE_PATH to Windows start-wekan.bat](https://github.com/wekan/wekan/commit/1da0786211556697acac45bdc71b283630348081).
+  Thanks to BabyFnord and xet7.
+
+and adds the following updates:
+
+- [Changed from volta to n. Added info about developing on Ubuntu 22.04](https://github.com/wekan/wekan/commit/9099e20b806c713cc73b86122ac4a462b12e4785).
+  Thanks to xet7.
+- [Added some more info about building on Windows, not tested yet](https://github.com/wekan/wekan/commit/e61e9bb5081efca352dc9496f0602df2f15492fd).
+  Thanks to xet7.
+- [Updated URL to meteor-spk](https://github.com/wekan/wekan/commit/f2f3b76eda982856f88f5289c6d574fdf95abd82).
+  Thanks to xet7.
+- Updated dependencies.
+  [Part 1](https://github.com/wekan/wekan/commit/c397b5eda8e60ef41ce66bec716f859c352d4744),
+  [Part 2](https://github.com/wekan/wekan/commit/971391eae9e9d7df341de630a28e074408991c2c).
+  Thanks to developers of dependencies.
+
+and fixes the following bugs:
+
+- [Attachment migration, try to ignore error on Cloudron on removing old index cardId](https://github.com/wekan/wekan/pull/4408).
+  Thanks to mfilser.
+- [Fix Import Done Button do not redirect](https://github.com/wekan/wekan/pull/4411).
+  Thanks to Ben0it-T.
+- [Fix Duplicate board and create board from template doesn't open board](https://github.com/wekan/wekan/pull/4413).
+  Thanks to Ben0it-T.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.12 2022-03-11 WeKan ® release
 
 This release adds the following new features:
