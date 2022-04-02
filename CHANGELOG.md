@@ -2,6 +2,37 @@
 
 [Mac ChangeLog](https://github.com/wekan/wekan/wiki/Mac)
 
+# v6.14 2022-04-03 WeKan ® release
+
+This release fixes the following bugs:
+
+- [WRITABLE_PATH must be writable, otherwise abort starting Wekan](https://github.com/wekan/wekan/pull/4440).
+  Thanks to mfilser.
+- [Better error message layout if Wekan can not start](https://github.com/wekan/wekan/pull/4442).
+  Thanks to mfilser.
+- [Try to fix Attachments.insert is not a function](https://github.com/wekan/wekan/commit/02e977f5128c76b6ff592c8b236868baaa9404cb).
+  Thanks to ChrisMagnuson and xet7.
+- Some torodb fixes. In Progress.
+  [Part 1](https://github.com/wekan/wekan/commit/edb4db30bbd0b60ccc58be7238652288cf31ebd0),
+  [Part 2](https://github.com/wekan/wekan/commit/1e42aebd707aae46a1f7b005a0891d7b12275d1b).
+  Thanks to xet7.
+- [Not ZFS, it uses many gigabytes of RAM](https://github.com/wekan/wekan/commit/747a3b17d52c972db5c9b460e88d02bd52fb35bb).
+  Thanks to xet7.
+- [Added WRITABLE_PATH to rebuild-wekan.sh meteor commands](https://github.com/wekan/wekan/commit/9ab2d5fab09f5c9a245f841df912a9b04bc9b3f0).
+  Thanks to xet7.
+- [Fix list color too close with moderndark theme on mobile view](https://github.com/wekan/wekan/commit/5d3d5e4b2db22564b669c93e083c3d40215454f4).
+  Thanks to gerald41, Meeques, Go-rom, mfilser, jghaanstra and xet7.
+- [Fixed docker-compose.yml WRITABLE_PATH](https://github.com/wekan/wekan/commit/9238b6620cf062e70c812f5c3575fbd8d4dd56be).
+  Thanks to xet7.
+- [Updated WRITABLE_PATH at start-wekan.sh and start-wekan.bat](https://github.com/wekan/wekan/commit/10555e151457edba1d61eff5dd8f6cf75a71abef).
+  Thanks to xet7.
+- [Try to fix Snap WRITABLE_PATH](https://github.com/wekan/wekan/commit/74d468ea7947703bdd77ff84b8d175a3276ddd36).
+  Thanks to xet7.
+- [Snap: Try to delete incomplete uploads when starting](https://github.com/wekan/wekan/commit/25dc378c46f7b047f82d5848ae4d7b4d8ef39c5e).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.13 2022-04-01 WeKan ® release
 
 This release adds the following new features:

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-echo "Recommended for development: Ubuntu 22.04 amd64 Jammy Jellyfish daily iso with ZFS encrypted install option, directly to SSD disk or dual boot, not VM. Works fast."
+echo "Recommended for development: Ubuntu 22.04 amd64 Jammy Jellyfish daily iso, directly to SSD disk or dual boot, not VM. Works fast."
 echo "Note: If you use other locale than en_US.UTF-8 , you need to additionally install en_US.UTF-8"
 echo "      with 'sudo dpkg-reconfigure locales' , so that MongoDB works correctly."
 echo "      You can still use any other locale as your main locale."
@@ -110,14 +110,14 @@ do
 		;;
 
     "Run Meteor for dev on http://localhost:4000")
-		NODE_OPTIONS="--max_old_space_size=4096" WITH_API=true RICHER_CARD_COMMENT_EDITOR=false ROOT_URL=http://localhost:4000 meteor run --exclude-archs web.browser.legacy,web.cordova --port 4000
+		WRITABLE_PATH=.. NODE_OPTIONS="--max_old_space_size=4096" WITH_API=true RICHER_CARD_COMMENT_EDITOR=false ROOT_URL=http://localhost:4000 meteor run --exclude-archs web.browser.legacy,web.cordova --port 4000
 		break
 		;;
 
     "Run Meteor for dev on http://CURRENT-IP-ADDRESS:4000")
 		IPADDRESS=$(ip a | grep 'noprefixroute' | grep 'inet ' | cut -d: -f2 | awk '{ print $2}' | cut -d '/' -f 1)
 		echo "Your IP address is $IPADDRESS"
-		NODE_OPTIONS="--max_old_space_size=4096" WITH_API=true RICHER_CARD_COMMENT_EDITOR=false ROOT_URL=http://$IPADDRESS:4000 meteor run --exclude-archs web.browser.legacy,web.cordova --port 4000
+		WRITABLE_PATH=.. NODE_OPTIONS="--max_old_space_size=4096" WITH_API=true RICHER_CARD_COMMENT_EDITOR=false ROOT_URL=http://$IPADDRESS:4000 meteor run --exclude-archs web.browser.legacy,web.cordova --port 4000
 		break
 		;;
 
@@ -128,7 +128,7 @@ do
 		echo "On what port you would like to run Wekan?"
 		read PORT
 		echo "ROOT_URL=http://$IPADDRESS:$PORT"
-		NODE_OPTIONS="--max_old_space_size=4096" WITH_API=true RICHER_CARD_COMMENT_EDITOR=false ROOT_URL=http://$IPADDRESS:$PORT meteor run --exclude-archs web.browser.legacy,web.cordova --port $PORT
+		WRITABLE_PATH=.. NODE_OPTIONS="--max_old_space_size=4096" WITH_API=true RICHER_CARD_COMMENT_EDITOR=false ROOT_URL=http://$IPADDRESS:$PORT meteor run --exclude-archs web.browser.legacy,web.cordova --port $PORT
 		break
 		;;
 
