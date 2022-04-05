@@ -2,6 +2,28 @@
 
 [Mac ChangeLog](https://github.com/wekan/wekan/wiki/Mac)
 
+# v6.15 2022-04-05 WeKan ® release
+
+This release add the following new features:
+
+- [Show description text on minicard](https://github.com/wekan/wekan/pull/4454).
+  Thanks to helioguardabaxo.
+
+and fixes the following bugs:
+
+- [Card Details List-Dropdown is now filled too if the card is opened from global search](https://github.com/wekan/wekan/pull/4444).
+  Thanks to mfilser.
+- [UI improvements on maximized card header](https://github.com/wekan/wekan/pull/4446).
+  Thanks to helioguardabaxo.
+- [Fix oidc login when no group data is present](https://github.com/wekan/wekan/pull/4450).
+  Thanks to danielkaiser.
+- [Fix LDAP authentication doesn't support multiple emails in LDAP accounts](https://github.com/wekan/wekan/commit/3394f54fb47ce2830dd72f67fba4f281246c156f).
+  Thanks to buzztiaan and NURDspace.
+- [Added missing characters to Subtasks jade template](https://github.com/wekan/wekan/commit/c18f5319152cd4df51729f26911d2e910d8bbc5d).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.14 2022-04-03 WeKan ® release
 
 This release fixes the following bugs:

@@ -280,8 +280,9 @@
     "worker": "Исполнитель",
     "worker-desc": "Может перемещать карточки, отмечаться как исполнитель и оставлять комментарии",
     "computer": "Загрузить с компьютера",
-    "confirm-subtask-delete-dialog": "Вы уверены, что хотите удалить подзадачу?",
+    "confirm-subtask-delete-popup": "Вы уверены, что хотите удалить подзадачу?",
     "confirm-checklist-delete-popup": "Are you sure you want to delete the checklist?",
+    "subtaskDeletePopup-title": "Delete Subtask?",
     "checklistDeletePopup-title": "Delete Checklist?",
     "copy-card-link-to-clipboard": "Копировать ссылку на карточку в буфер обмена",
     "copy-text-to-clipboard": "Copy text to clipboard",
@@ -705,6 +706,7 @@
     "deposit-subtasks-board": "Отправлять подзадачи на доску:",
     "deposit-subtasks-list": "Размещать подзадачи, отправленные на эту доску, в списке:",
     "show-parent-in-minicard": "Указывать исходную карточку:",
+    "description-on-minicard": "Description on minicard",
     "prefix-with-full-path": "Cверху, полный путь",
     "prefix-with-parent": "Сверху, только имя",
     "subtext-with-full-path": "Cнизу, полный путь",
@@ -1147,5 +1149,6 @@
     "newlineBecomesNewChecklistItem": "Newline becomes new checklist item",
     "copyChecklist": "Copy Checklist",
     "copyChecklistPopup-title": "Copy Checklist",
-    "card-show-lists": "Card Show Lists"
+    "card-show-lists": "Card Show Lists",
+    "subtaskActionsPopup-title": "Subtask Actions"
 }

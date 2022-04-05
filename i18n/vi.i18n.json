@@ -280,8 +280,9 @@
     "worker": "Worker",
     "worker-desc": "Chỉ có thể di chuyển thẻ, tự gán thẻ và nhận xét.",
     "computer": "Máy tính",
-    "confirm-subtask-delete-dialog": "Bạn có chắc chắn muốn xóa nhiệm vụ phụ không?",
+    "confirm-subtask-delete-popup": "Bạn có chắc chắn muốn xóa nhiệm vụ phụ không?",
     "confirm-checklist-delete-popup": "Are you sure you want to delete the checklist?",
+    "subtaskDeletePopup-title": "Delete Subtask?",
     "checklistDeletePopup-title": "Delete Checklist?",
     "copy-card-link-to-clipboard": "Sao chép liên kết thẻ vào khay nhớ tạm",
     "copy-text-to-clipboard": "Copy text to clipboard",
@@ -705,6 +706,7 @@
     "deposit-subtasks-board": "Gửi các nhiệm vụ phụ vào bảng này:",
     "deposit-subtasks-list": "Danh sách đích cho các nhiệm vụ phụ được gửi tại đây:",
     "show-parent-in-minicard": "Hiện cha mẹ trong minicard:",
+    "description-on-minicard": "Description on minicard",
     "prefix-with-full-path": "Tiền tố với đường dẫn đầy đủ",
     "prefix-with-parent": "Tiền tố với cha mẹ",
     "subtext-with-full-path": "Văn bản phụ với đường dẫn đầy đủ",
@@ -1147,5 +1149,6 @@
     "newlineBecomesNewChecklistItem": "Newline becomes new checklist item",
     "copyChecklist": "Copy Checklist",
     "copyChecklistPopup-title": "Copy Checklist",
-    "card-show-lists": "Card Show Lists"
+    "card-show-lists": "Card Show Lists",
+    "subtaskActionsPopup-title": "Subtask Actions"
 }

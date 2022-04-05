@@ -280,8 +280,9 @@
     "worker": "作業者",
     "worker-desc": "カードの移動、自分への割り当て、コメントが可能。",
     "computer": "コンピューター",
-    "confirm-subtask-delete-dialog": "本当にサブタスクを削除してもよろしいでしょうか？",
+    "confirm-subtask-delete-popup": "本当にサブタスクを削除してもよろしいでしょうか？",
     "confirm-checklist-delete-popup": "Are you sure you want to delete the checklist?",
+    "subtaskDeletePopup-title": "Delete Subtask?",
     "checklistDeletePopup-title": "Delete Checklist?",
     "copy-card-link-to-clipboard": "カードへのリンクをクリップボードにコピー",
     "copy-text-to-clipboard": "Copy text to clipboard",
@@ -705,6 +706,7 @@
     "deposit-subtasks-board": "サブタスクの作成先ボード：",
     "deposit-subtasks-list": "サブタスクの作成先リスト：",
     "show-parent-in-minicard": "ミニカード上の親表示",
+    "description-on-minicard": "Description on minicard",
     "prefix-with-full-path": "タイトルの前に親をフル表示",
     "prefix-with-parent": "タイトルの前に親を表示",
     "subtext-with-full-path": "タイトルの後ろに親をフル表示",
@@ -1147,5 +1149,6 @@
     "newlineBecomesNewChecklistItem": "Newline becomes new checklist item",
     "copyChecklist": "Copy Checklist",
     "copyChecklistPopup-title": "Copy Checklist",
-    "card-show-lists": "Card Show Lists"
+    "card-show-lists": "Card Show Lists",
+    "subtaskActionsPopup-title": "Subtask Actions"
 }

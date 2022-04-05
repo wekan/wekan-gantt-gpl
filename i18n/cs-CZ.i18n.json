@@ -280,8 +280,9 @@
     "worker": "Pracovník",
     "worker-desc": "Je možné pouze přesouvat karty, přiřazovat ke kartám a komentovat.",
     "computer": "Počítač",
-    "confirm-subtask-delete-dialog": "Opravdu chcete smazat tento podúkol?",
+    "confirm-subtask-delete-popup": "Opravdu chcete smazat tento podúkol?",
     "confirm-checklist-delete-popup": "Are you sure you want to delete the checklist?",
+    "subtaskDeletePopup-title": "Delete Subtask?",
     "checklistDeletePopup-title": "Delete Checklist?",
     "copy-card-link-to-clipboard": "Kopírovat adresu karty do mezipaměti",
     "copy-text-to-clipboard": "Copy text to clipboard",
@@ -705,6 +706,7 @@
     "deposit-subtasks-board": "Vložit podúkoly do tohoto tabla",
     "deposit-subtasks-list": "Landing list for subtasks deposited here:",
     "show-parent-in-minicard": "Ukázat předka na minikartě",
+    "description-on-minicard": "Description on minicard",
     "prefix-with-full-path": "Prefix s celou cestou",
     "prefix-with-parent": "Prefix s předkem",
     "subtext-with-full-path": "Podtext s celou cestou",
@@ -1147,5 +1149,6 @@
     "newlineBecomesNewChecklistItem": "Newline becomes new checklist item",
     "copyChecklist": "Copy Checklist",
     "copyChecklistPopup-title": "Copy Checklist",
-    "card-show-lists": "Card Show Lists"
+    "card-show-lists": "Card Show Lists",
+    "subtaskActionsPopup-title": "Subtask Actions"
 }

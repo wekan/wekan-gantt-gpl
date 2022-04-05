@@ -280,8 +280,9 @@
     "worker": "Darbonis",
     "worker-desc": "Var tikai pārvietot kartiņas, pievienot sevi kartiņai un komentēt.",
     "computer": "Dators",
-    "confirm-subtask-delete-dialog": "Vai tiešām vēlaties dzēst apakšuzdevumu?",
+    "confirm-subtask-delete-popup": "Vai tiešām vēlaties dzēst apakšuzdevumu?",
     "confirm-checklist-delete-popup": "Are you sure you want to delete the checklist?",
+    "subtaskDeletePopup-title": "Delete Subtask?",
     "checklistDeletePopup-title": "Delete Checklist?",
     "copy-card-link-to-clipboard": "Kopet kartiņas saiti starpliktuvē",
     "copy-text-to-clipboard": "Copy text to clipboard",
@@ -705,6 +706,7 @@
     "deposit-subtasks-board": "Noguldīt apakšuzdevumus uz šo dēli:",
     "deposit-subtasks-list": "Saraksts priekš apakšuzdevumiem noguldīts šeit:",
     "show-parent-in-minicard": "Rādīt piederību mini kartiņā:",
+    "description-on-minicard": "Description on minicard",
     "prefix-with-full-path": "Priedēklis ar pilnu ceļu",
     "prefix-with-parent": "Priedēklis ar piederību",
     "subtext-with-full-path": "Apakšteksts ar pilnu ceļu",
@@ -1147,5 +1149,6 @@
     "newlineBecomesNewChecklistItem": "Newline becomes new checklist item",
     "copyChecklist": "Copy Checklist",
     "copyChecklistPopup-title": "Copy Checklist",
-    "card-show-lists": "Card Show Lists"
+    "card-show-lists": "Card Show Lists",
+    "subtaskActionsPopup-title": "Subtask Actions"
 }

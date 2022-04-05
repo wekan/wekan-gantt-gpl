@@ -280,8 +280,9 @@
     "worker": "Töötaja",
     "worker-desc": "Saab ainult liigutada kaarte, määrata ennast kaardile ja kommenteerida.",
     "computer": "Arvuti",
-    "confirm-subtask-delete-dialog": "Kas olete kindel, et soovite alamülesannet kustutada?",
+    "confirm-subtask-delete-popup": "Kas olete kindel, et soovite alamülesannet kustutada?",
     "confirm-checklist-delete-popup": "Kas olete kindel, et soovite kontrollnimekirja kustutada?",
+    "subtaskDeletePopup-title": "Delete Subtask?",
     "checklistDeletePopup-title": "Kustuta kontrollnimekiri?",
     "copy-card-link-to-clipboard": "Kopeeri kaardi link lõikelauale",
     "copy-text-to-clipboard": "Teksti kopeerimine lõikelauale",
@@ -705,6 +706,7 @@
     "deposit-subtasks-board": "Hoiustage alamülesanded sellele tahvlile:",
     "deposit-subtasks-list": "Siin hoiule pandud alamülesannete maandumisloend:",
     "show-parent-in-minicard": "Näita vanemat minikaardil:",
+    "description-on-minicard": "Description on minicard",
     "prefix-with-full-path": "Täieliku teekonna eesliide",
     "prefix-with-parent": "Esileht koos vanemaga",
     "subtext-with-full-path": "Täieliku teekonnaga alltekst",
@@ -1147,5 +1149,6 @@
     "newlineBecomesNewChecklistItem": "Newline becomes new checklist item",
     "copyChecklist": "Copy Checklist",
     "copyChecklistPopup-title": "Copy Checklist",
-    "card-show-lists": "Card Show Lists"
+    "card-show-lists": "Card Show Lists",
+    "subtaskActionsPopup-title": "Subtask Actions"
 }
