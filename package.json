@@ -33,7 +33,7 @@
     "bunyan": "^1.8.15",
     "core-js": "^3.18.2",
     "dhtmlx-gantt": "^7.1.2",
-    "dompurify": "^2.3.6",
+    "dompurify": "^2.3.2",
     "es6-promise": "^4.2.4",
     "escape-string-regexp": "^5.0.0",
     "exceljs": "^4.2.1",
