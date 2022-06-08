@@ -1,5 +1,5 @@
 name: wekan-gantt-gpl
-version: '6.27'
+version: '6.28'
 base: core20
 summary: Open Source GPLv2 kanban
 description: |

@@ -2,6 +2,31 @@
 
 [Mac ChangeLog](https://github.com/wekan/wekan/wiki/Mac)
 
+# v6.28 2022-06-08 WeKan ® release
+
+This release adds the following updates:
+
+- [Upgraded to Meteor 2.7.3](https://github.com/wekan/wekan/commit/43b2d714043e053874e3c1101ae6e464d2e61b7e).
+  Thanks to Meteor developers.
+
+and adds the following translations:
+
+- [Added translations: Moroccan Arabic (ary) and Standard Moroccan Tamazight (zgh)](https://github.com/wekan/wekan/commit/5af4f54f4c702f9cc4df60a27ac234421e41575d).
+  Thanks to translators.
+- [Try to detect Japanese (Japan) better](https://github.com/wekan/wekan/commit/e25050316f6f018f68b03bef6fccbdaea7248461).
+  Thanks to takenoko14 at Transifex and xet7.
+
+and fixes the following bugs:
+
+- [Removed lightbox that caused bugs like Maximum stack size exceeded. TODO later: Add a new way to open attachment image bigger](https://github.com/wekan/wekan/commit/dfea3d0e735f1665a14f7e534e352e0e00871a02).
+  Thanks to xet7.
+- [Move and copy card set sorting](https://github.com/wekan/wekan/pull/4557).
+  Thanks to mfilser.
+- [Updated dependencies. Try to fix Binary release on releases.wekan.team lacks the CSS](https://github.com/wekan/wekan/commit/937797356ceeb99bf66eb826e13fc55f266c8739).
+  Thanks to znerol, mrcancer91, BabyFnord and xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.27 2022-05-28 WeKan ® release
 
 This release adds the following updates:
