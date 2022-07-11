@@ -2,6 +2,31 @@
 
 [Mac ChangeLog](https://github.com/wekan/wekan/wiki/Mac)
 
+Required versions of Node.js, MongoDB etc are listed at https://wekan.github.io
+Download section.
+
+[How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
+
+# v6.30 2022-07-11 WeKan ® release
+
+This release adds the following new features:
+
+- [Automatic login with OIDC](https://github.com/wekan/wekan/pull/4588).
+  Thanks to Viehlieb.
+- [OIDC/OAuth2 autologin settings for Docker/Snap/Source/Bundle platforms](https://github.com/wekan/wekan/commit/284f4401369aadcec72e67fa935dfc3a9fead721).
+  Thanks to xet7.
+
+and tries to fix the following bugs:
+
+- [Try to fix Snap](https://github.com/wekan/wekan/commit/17f8f8f14ff205d0cbb316c63a2da36f61ba4a1d).
+  Thanks to xet7.
+- [On CentOS 7 Docker there is seccomp issue with glibc 6, so setting it to unconfined to get WeKan working](https://github.com/wekan/wekan/commit/054d420dc97cadee6ed7896c608d95a6fe09dc9d (HEAD -> master)
+  Thanks to m-brangeon.
+- [Fix uploading attachments](https://github.com/wekan/wekan/commit/69d454dd035a989266175eb4268ffc3d7891eb95).
+  Thanks to BabyFnord and xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.29 2022-07-11 WeKan ® release
 
 This release adds the following features:
@@ -19,7 +44,7 @@ and adds the following updates:
   Thanks to Ubuntu developers.
 - Updated ostrio:files.
   [Part 1](https://github.com/wekan/wekan/commit/0d67a86f2c9c1c9696d8507c60e53d47a226a6ad),
-  [Part 1](https://github.com/wekan/wekan/commit/c3bfcb78e9047a84d43041bebcec56718eaa140b).
+  [Part 2](https://github.com/wekan/wekan/commit/c3bfcb78e9047a84d43041bebcec56718eaa140b).
   Thanks to developers of dependencies.
 - [Updated dependencies](https://github.com/wekan/wekan/commit/ae09f0f0083a96c2211fdc02e60b4ff6a2f413ca).
   Thanks to developers of dependencies.
@@ -928,7 +953,7 @@ This release removes the following new features:
 
 - [Revert change from WeKan v5.81: At Sandstorm, every WeKan user is now WeKan Admin and has Admin Panel](https://github.com/wekan/wekan/commit/ebc7741fcb9ad854234921ed0546255411adeec9).
   Thanks to ocdtrekkie and xet7.
-    
+
 and adds the following new features:
 
 - [List header contains now a button to add the card to the bottom of the list](https://github.com/wekan/wekan/pull/4195).
@@ -1180,7 +1205,7 @@ and fixes the following bugs:
   Thanks to niklasdahlheimer.
 - [Popup fixes: Archive cards, upload attachements etc](https://github.com/wekan/wekan/pull/4101).
   Thanks to mfilser.
-  
+
 Thanks to above GitHub users for their contributions and translators for their translations.
 
 # v5.68 2021-10-27 WeKan ® release
@@ -2151,7 +2176,7 @@ This release adds the following new features:
 
 - [Custom Field "String Template"](https://github.com/wekan/wekan/pull/3701).
   Thanks to tod31.
-- [1) Admin reports. An option added to the admin panel that has reports an admin can run. 
+- [1) Admin reports. An option added to the admin panel that has reports an admin can run.
       Right now it has two reports for attachments and broken cards.
   2) Add the creator avatar to `cardDetails` and `minicard`.  Avatar is only shown if it is selected in card settings.
   3) Added a new search operator `creator`.
@@ -2884,7 +2909,7 @@ and fixes the following bugs:
   Thanks to xet7.
 - [Rules not copied during board copy](https://github.com/wekan/wekan/pull/3458).
   Thanks to jrsupplee.
- 
+
 Thanks to above GitHub users for their contributions and translators for their translations.
 
 # v4.83 2021-01-20 Wekan release
@@ -2905,7 +2930,7 @@ and fixes the following bugs:
   Thanks to jrsupplee.
 
 Thanks to above GitHub users for their contributions and translators for their translations.
-  
+
 # v4.82 2021-01-20 Wekan release
 
 This release adds the following new features:
