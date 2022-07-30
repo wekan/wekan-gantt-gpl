@@ -7,6 +7,34 @@ Download section.
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# v6.31 2022-07-31 WeKan ® release
+
+This release adds the following new features:
+
+- [Added LaTex support to all input fields with markdown-it-mathjax3](https://github.com/wekan/wekan/commit/e81900178e62d36672952a8f0707c5297dcd7767).
+  Examples: https://github.com/wekan/wekan/wiki/LaTeX .
+  Thanks to DoktorScience.
+- [Rescue Save description on card exit](https://github.com/wekan/wekan/pull/4598).
+  Thanks to Viehlieb.
+
+and adds the following updates:
+
+- [Snap Candidate to MongoDB 5.0.10 etc](https://github.com/wekan/wekan/commit/27198c4064a41035bb800aa5e5797852e1dfdafb).
+  Thanks to MongoDB developers and xet7.
+
+and fixes the following bugs:
+
+- [Fix URLs to favicons etc](https://github.com/wekan/wekan/commit/1b95f9f167a021ac0d0c9392ced6a9cd888ffe2d).
+  Thanks to letmp, Meeques and xet7.
+- [Fix the bug that displayed a card popup to all swimlanes for public board (when a user is not logged)](https://github.com/wekan/wekan/pull/4610).
+  Thanks to Emile840.
+- [Reverted incomplete fix about bug where opening card scrolls to wrong place](https://github.com/wekan/wekan/commit/6594795f39bd6d14a7105dc61642baa034995bad).
+  Thanks to danceb, DimDz, mfilser, Emile840, derbolle, xplodwild and xet7.
+- [Fix Login Page Error, Lists can't move anymore, reverted incomplete Change Lists Width](https://github.com/wekan/wekan/commit/d37adbb0462c7fc9f645594b3bd20d2bec781b18).
+  Thanks to johnnytolengo, gda140 and xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.30 2022-07-11 WeKan ® release
 
 This release adds the following new features:
@@ -20,7 +48,7 @@ and tries to fix the following bugs:
 
 - [Try to fix Snap](https://github.com/wekan/wekan/commit/17f8f8f14ff205d0cbb316c63a2da36f61ba4a1d).
   Thanks to xet7.
-- [On CentOS 7 Docker there is seccomp issue with glibc 6, so setting it to unconfined to get WeKan working](https://github.com/wekan/wekan/commit/054d420dc97cadee6ed7896c608d95a6fe09dc9d (HEAD -> master)
+- [On CentOS 7 Docker there is seccomp issue with glibc 6, so setting it to unconfined to get WeKan working](https://github.com/wekan/wekan/commit/054d420dc97cadee6ed7896c608d95a6fe09dc9d).
   Thanks to m-brangeon.
 - [Fix uploading attachments](https://github.com/wekan/wekan/commit/69d454dd035a989266175eb4268ffc3d7891eb95).
   Thanks to BabyFnord and xet7.

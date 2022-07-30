@@ -86,17 +86,29 @@ BlazeComponent.extendComponent({
   scrollParentContainer() {
     const cardPanelWidth = 600;
     const parentComponent = this.parentComponent();
+
+/*
+    // Incomplete fix about bug where opening card scrolls to wrong place
+    // https://github.com/wekan/wekan/issues/4572#issuecomment-1184149395
     // TODO sometimes parentComponent is not available, maybe because it's not
     // yet created?!
     if (!parentComponent) return;
     const bodyBoardComponent = parentComponent.parentComponent();
+*/
+
     //On Mobile View Parent is Board, Not Board Body. I cant see how this funciton should work then.
     if (bodyBoardComponent === null) return;
     const $cardView = this.$(this.firstNode());
     const $cardContainer = bodyBoardComponent.$('.js-swimlanes');
+
+/*
+    // Incomplete fix about bug where opening card scrolls to wrong place
+    // https://github.com/wekan/wekan/issues/4572#issuecomment-1184149395
     // TODO sometimes cardContainer is not available, maybe because it's not yet
     // created?!
     if (!$cardContainer) return;
+*/
+
     const cardContainerScroll = $cardContainer.scrollLeft();
     const cardContainerWidth = $cardContainer.width();
 
@@ -1714,10 +1726,29 @@ BlazeComponent.extendComponent({
 EscapeActions.register(
   'detailsPane',
   () => {
+    // if card description diverges from database due to editing
+    // ask user whether changes should be applied
+    if(currentUser.profile.rescueCardDescription== true)
+    {
+      currentDescription = document.getElementsByClassName("editor js-new-description-input").item(0)
+      if (currentDescription?.value && !(currentDescription.value === Utils.getCurrentCard().getDescription()))
+      {
+        if (confirm(TAPi18n.__('rescue-card-description-dialogue'))) {
+          Utils.getCurrentCard().setDescription(document.getElementsByClassName("editor js-new-description-input").item(0).value);
+          // Save it!
+          console.log(document.getElementsByClassName("editor js-new-description-input").item(0).value);
+          console.log("current description",Utils.getCurrentCard().getDescription());
+        } else {
+          // Do nothing!
+          console.log('Description changes were not saved to the database.');
+        }
+      }
+    }
     if (Session.get('cardDetailsIsDragging')) {
       // Reset dragging status as the mouse landed outside the cardDetails template area and this will prevent a mousedown event from firing
       Session.set('cardDetailsIsDragging', false);
       Session.set('cardDetailsIsMouseDown', false);
+
     } else {
       // Prevent close card when the user is selecting text and moves the mouse cursor outside the card detail area
       Utils.goBoardId(Session.get('currentBoard'));
