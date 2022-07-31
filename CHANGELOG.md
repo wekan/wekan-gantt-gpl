@@ -7,6 +7,17 @@ Download section.
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# Upcoming WeKan ® release
+
+This release adds the following updates:
+
+- [Updated release build scripts to reinstall bcrypt, upload Windows version etc](https://github.com/wekan/wekan/commit/14e5d08a19d213ab901cce9088a3e368b508e7d0).
+  Thanks to xet7.
+- [Try to fix Snap Candidate](https://github.com/wekan/wekan/commit/b433fbdda81478558585cbaa7717d00247550325).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.31 2022-07-31 WeKan ® release
 
 This release adds the following new features:
