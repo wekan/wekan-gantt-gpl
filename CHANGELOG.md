@@ -7,14 +7,33 @@ Download section.
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
-# Upcoming WeKan ® release
+# v6.32 2022-08-05 WeKan ® release
 
-This release adds the following updates:
+This release adds the following new features:
 
-- [Updated release build scripts to reinstall bcrypt, upload Windows version etc](https://github.com/wekan/wekan/commit/14e5d08a19d213ab901cce9088a3e368b508e7d0).
+- [Add support to validate attachment uploads by type and size](https://github.com/wekan/wekan/pull/4618).
+  Thanks to NotTheEvilOne.
+- [Added attachments file type and size snap settings and help text](https://github.com/wekan/wekan/commit/0c224a0a7f3f2f99839db65eed896bb2dd316e3c).
+  Thanks to xet7.
+- [Added dependencies for attachments file size and type](https://github.com/wekan/wekan/commit 1b30485e68e5cd30784207801a1c8d659fb14018 (HEAD -> master)
+  Thanks to xet7.
+
+and adds the following updates:
+
+- Updated release build scripts to reinstall bcrypt, upload Windows version etc.
+  [Part 1](https://github.com/wekan/wekan/commit/14e5d08a19d213ab901cce9088a3e368b508e7d0),
+  [Part 2](https://github.com/wekan/wekan/commit/86d6d2d19aacaf0cadcbf36e223208a5a5e69ecd),
+  [Part 3](https://github.com/wekan/wekan/commit/73ea39466bd08f8d82e21beb0f71e715ee5ac120).
   Thanks to xet7.
 - [Try to fix Snap Candidate](https://github.com/wekan/wekan/commit/b433fbdda81478558585cbaa7717d00247550325).
   Thanks to xet7.
+
+and fixes the following bugs:
+
+- [Fix In Lists view, Card Details pop-up does not appear in 6.31 release](https://github.com/wekan/wekan/commit/063ad08e9e81f5235d323cc3ed7af4cd5610dc93).
+  Thanks to Sdub76, niels, m4teh, r4nc0r, mfilser, medjedovicm and xet7.
+- [Try to fix missing variable in WeKan fails to get MongoDB server version](https://github.com/wekan/wekan/commit/4941fd183c54f514119587380bf659115a1adc6e).
+  Thanks to simon816 and xet7.
 
 Thanks to above GitHub users for their contributions and translators for their translations.
 
