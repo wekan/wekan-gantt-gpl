@@ -7,6 +7,31 @@ Download section.
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# v6.35 2022-08-13 WeKan ® release
+
+This release fixes the following CRITICAL SECURITY ISSUES:
+
+- [Fix Users can delete Boards from global archive (w/o permission)](https://github.com/wekan/wekan/commit/54e6e32ab2ec0b3a6f4e18154f66d154cf4ee0de).
+  Thanks to Meeques and xet7.
+
+and adds the following updates:
+
+- [Updated dependencies](https://github.com/wekan/wekan/commit/3762768ed39f967aa26b76c0454e7d5900655cc4).
+  Thanks to developers of dependencies.
+
+and fixes the following bugs:
+
+- [Fix Typo in CHANGELOG](https://github.com/wekan/wekan/pull/4624).
+  Thanks to mfilser.
+- [Fix _getTopStack(), comment type error](https://github.com/wekan/wekan/pull/4625).
+  Thanks to mfilser.
+- [Set drag handle on touch screen not miniscreen](https://github.com/wekan/wekan/pull/4633).
+  Thanks to repmovs.
+- [Fix Open card links in current tab. Not in new tab anymore](https://github.com/wekan/wekan/commit/ee3c5cbb6a1ab87c1597d0ffcd6996f423f4d1b3).
+  Thanks to bronger, ManZosh and xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.34 2022-08-05 WeKan ® release
 
 This release adds the following updates:
@@ -38,7 +63,7 @@ This release adds the following new features:
   Thanks to NotTheEvilOne.
 - [Added attachments file type and size snap settings and help text](https://github.com/wekan/wekan/commit/0c224a0a7f3f2f99839db65eed896bb2dd316e3c).
   Thanks to xet7.
-- [Added dependencies for attachments file size and type](https://github.com/wekan/wekan/commit 1b30485e68e5cd30784207801a1c8d659fb14018 (HEAD -> master)
+- [Added dependencies for attachments file size and type](https://github.com/wekan/wekan/commit/1b30485e68e5cd30784207801a1c8d659fb14018) (HEAD -> master)
   Thanks to xet7.
 
 and adds the following updates:
