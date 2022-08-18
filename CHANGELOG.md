@@ -7,6 +7,37 @@ Download section.
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# v6.38 2022-08-18 WeKan ® release
+
+This release adds the following new features:
+
+- [Add support to validate attachment uploads by an external program](https://github.com/wekan/wekan/pull/4637).
+  Thanks to NotTheEvilOne.
+- [Attachment upload progress bar + multiple files upload](https://github.com/wekan/wekan/pull/4641).
+  Thanks to mfilser.
+- [Move and copy card dialog remember last selected board](https://github.com/wekan/wekan/pull/4643).
+  Thanks to mfilser.
+- [Copy card copies now attachments too](https://github.com/wekan/wekan/pull/4646).
+  Thanks to mfilser.
+- [Copy / move card and checklists using same code](https://github.com/wekan/wekan/pull/4647).
+  Thanks to mfilser.
+
+and adds the following updates:
+
+- [Updated to ostrio:files 2.3.0 and standard-minifier-js 2.8.1](https://github.com/wekan/wekan/commit/ce1f8b674de9e9a7d03e198e88e7a200af576729).
+  Thanks to developers of dependencies.
+- [Updated parse-ms](https://github.com/wekan/wekan/commit/79add98aa77658221a86830f4816f19a15a52460).
+  Thanks to developers of dependencies.
+
+and fixes the following bugs:
+
+- [Meteor files 2.2.1 fixes + attachment view](https://github.com/wekan/wekan/pull/4638).
+  Thanks to mfilser.
+- [Fix Validate attachment error at PR Meteor files 2.2.1 fixes + attachment view](https://github.com/wekan/wekan/commit/c23f5dc8582e948a7c9af6fd1c6c7cca85a7e1f1).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.37 2022-08-15 WeKan ® release
 
 This release fixes the following CRITICAL SECURITY ISSUES:

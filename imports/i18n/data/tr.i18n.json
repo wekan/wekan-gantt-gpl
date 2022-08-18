@@ -295,9 +295,9 @@
     "linkCardPopup-title": "Bağlantı kartı",
     "searchElementPopup-title": "Arama",
     "copyCardPopup-title": "Kartı Kopyala",
-    "copyChecklistToManyCardsPopup-title": "Yapılacaklar Listesi şemasını birden çok karta kopyala",
-    "copyChecklistToManyCardsPopup-instructions": "Hedef Kart Başlıkları ve Açıklamaları bu JSON formatında",
-    "copyChecklistToManyCardsPopup-format": "[ {\"title\": \"İlk kart başlığı\", \"description\":\"İlk kart açıklaması\"}, {\"title\":\"İkinci kart başlığı\",\"description\":\"İkinci kart açıklaması\"},{\"title\":\"Son kart başlığı\",\"description\":\"Son kart açıklaması\"} ]",
+    "copyManyCardsPopup-title": "Copy Template to Many Cards",
+    "copyManyCardsPopup-instructions": "Hedef Kart Başlıkları ve Açıklamaları bu JSON formatında",
+    "copyManyCardsPopup-format": "[ {\"title\": \"İlk kart başlığı\", \"description\":\"İlk kart açıklaması\"}, {\"title\":\"İkinci kart başlığı\",\"description\":\"İkinci kart açıklaması\"},{\"title\":\"Son kart başlığı\",\"description\":\"Son kart açıklaması\"} ]",
     "create": "Oluştur",
     "createBoardPopup-title": "Pano Oluşturma",
     "chooseBoardSourcePopup-title": "Panoyu içe aktar",
@@ -1179,5 +1179,9 @@
     "storage": "Storage",
     "action": "Aksiyon",
     "board-title": "Board Title",
-    "attachmentRenamePopup-title": "Yeniden adlandır"
+    "attachmentRenamePopup-title": "Yeniden adlandır",
+    "uploading": "Uploading",
+    "remaining_time": "Remaining time",
+    "speed": "Speed",
+    "progress": "Progress"
 }

@@ -295,9 +295,9 @@
     "linkCardPopup-title": "Koppel Kaart",
     "searchElementPopup-title": "Zoek",
     "copyCardPopup-title": "Kopieer kaart",
-    "copyChecklistToManyCardsPopup-title": "Checklist sjabloon kopiëren naar meerdere kaarten",
-    "copyChecklistToManyCardsPopup-instructions": "Doel kaart titels en omschrijvingen in dit JSON formaat",
-    "copyChecklistToManyCardsPopup-format": "[ {\"title\": \"Titel eerste kaart\", \"description\":\"Omschrijving eerste kaart\"}, {\"title\":\"Titel tweede kaart\",\"description\":\"Omschrijving tweede kaart\"},{\"title\":\"Titel laatste kaart\",\"description\":\"Omschrijving laatste kaart\"} ]",
+    "copyManyCardsPopup-title": "Copy Template to Many Cards",
+    "copyManyCardsPopup-instructions": "Doel kaart titels en omschrijvingen in dit JSON formaat",
+    "copyManyCardsPopup-format": "[ {\"title\": \"Titel eerste kaart\", \"description\":\"Omschrijving eerste kaart\"}, {\"title\":\"Titel tweede kaart\",\"description\":\"Omschrijving tweede kaart\"},{\"title\":\"Titel laatste kaart\",\"description\":\"Omschrijving laatste kaart\"} ]",
     "create": "Aanmaken",
     "createBoardPopup-title": "Bord aanmaken",
     "chooseBoardSourcePopup-title": "Importeer bord",
@@ -1179,5 +1179,9 @@
     "storage": "Opslag",
     "action": "Actie",
     "board-title": "Bord Titel",
-    "attachmentRenamePopup-title": "Hernoem"
+    "attachmentRenamePopup-title": "Hernoem",
+    "uploading": "Uploading",
+    "remaining_time": "Remaining time",
+    "speed": "Speed",
+    "progress": "Progress"
 }

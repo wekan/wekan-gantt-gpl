@@ -1,6 +1,6 @@
 {
   "name": "wekan-gantt-gpl",
-  "version": "v6.37.0",
+  "version": "v6.38.0",
   "description": "Open Source GPLv2 kanban",
   "private": true,
   "repository": {
@@ -38,9 +38,10 @@
     "exceljs": "^4.2.1",
     "fibers": "^5.0.0",
     "file-type": "^16.5.4",
+    "filesize": "^8.0.7",
     "i18next": "^21.6.16",
     "i18next-sprintf-postprocessor": "^0.2.2",
-    "jQuery": "^1.7.4",
+    "jquery": "^2.2.4",
     "jquery-ui": "^1.13.0",
     "jquery-ui-touch-punch": "^0.2.3",
     "jszip": "^3.7.1",
@@ -56,10 +57,10 @@
     "os": "^0.1.2",
     "page": "^1.11.6",
     "papaparse": "^5.3.1",
+    "pretty-ms": "^7.0.1",
     "qs": "^6.10.1",
     "simpl-schema": "^1.12.0",
     "source-map-support": "^0.5.20",
-    "summernote": "^0.8.20",
     "uuid": "^8.3.2"
   }
 }

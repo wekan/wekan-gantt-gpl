@@ -295,9 +295,9 @@
     "linkCardPopup-title": "Linkitä kortti",
     "searchElementPopup-title": "Etsi",
     "copyCardPopup-title": "Kopioi kortti",
-    "copyChecklistToManyCardsPopup-title": "Kopioi tarkistuslistan malli monille korteille",
-    "copyChecklistToManyCardsPopup-instructions": "Kohde korttien otsikot ja kuvaukset JSON-muodossa",
-    "copyChecklistToManyCardsPopup-format": "[ {\"title\": \"Ensimmäisen kortin otsikko\", \"description\":\"Ensimmäisen kortin kuvaus\"}, {\"title\":\"Toisen kortin otsikko\",\"description\":\"Toisen kortin kuvaus\"},{\"title\":\"Viimeisen kortin otsikko\",\"description\":\"Viimeisen kortin kuvaus\"} ]",
+    "copyManyCardsPopup-title": "Kopioi malli monelle kortille",
+    "copyManyCardsPopup-instructions": "Kohde korttien otsikot ja kuvaukset JSON-muodossa",
+    "copyManyCardsPopup-format": "[ {\"title\": \"Ensimmäisen kortin otsikko\", \"description\":\"Ensimmäisen kortin kuvaus\"}, {\"title\":\"Toisen kortin otsikko\",\"description\":\"Toisen kortin kuvaus\"},{\"title\":\"Viimeisen kortin otsikko\",\"description\":\"Viimeisen kortin kuvaus\"} ]",
     "create": "Luo",
     "createBoardPopup-title": "Luo taulu",
     "chooseBoardSourcePopup-title": "Tuo taulu",
@@ -1179,5 +1179,9 @@
     "storage": "Tallennustila",
     "action": "Toimi",
     "board-title": "Taulun otsikko",
-    "attachmentRenamePopup-title": "Nimeä uudelleen"
+    "attachmentRenamePopup-title": "Nimeä uudelleen",
+    "uploading": "Upataan",
+    "remaining_time": "Jäljellä oleva aika",
+    "speed": "Nopeus",
+    "progress": "Edistyminen"
 }
