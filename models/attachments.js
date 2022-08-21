@@ -1,15 +1,12 @@
 import { Meteor } from 'meteor/meteor';
 import { FilesCollection } from 'meteor/ostrio:files';
-import { exec } from 'node:child_process';
-import { promisify } from 'node:util';
+import { isFileValid } from './fileValidation';
 import { createBucket } from './lib/grid/createBucket';
 import fs from 'fs';
-import FileType from 'file-type';
 import path from 'path';
 import { AttachmentStoreStrategyFilesystem, AttachmentStoreStrategyGridFs} from '/models/lib/attachmentStoreStrategy';
 import FileStoreStrategyFactory, {moveToStorage, rename, STORAGE_NAME_FILESYSTEM, STORAGE_NAME_GRIDFS} from '/models/lib/fileStoreStrategy';
 
-let asyncExec;
 let attachmentUploadExternalProgram;
 let attachmentUploadMimeTypes = [];
 let attachmentUploadSize = 0;
@@ -17,7 +14,6 @@ let attachmentBucket;
 let storagePath;
 
 if (Meteor.isServer) {
-  asyncExec = promisify(exec);
   attachmentBucket = createBucket('attachments');
 
   if (process.env.ATTACHMENTS_UPLOAD_MIME_TYPES) {
@@ -63,7 +59,12 @@ Attachments = new FilesCollection({
       delete opts.meta.fileId;
     } else if (opts?.file?.name) {
       // Server
-      filenameWithoutExtension = opts.file.name.replace(new RegExp(opts.file.extensionWithDot + "$"), "")
+      if (opts.file.extension) {
+        filenameWithoutExtension = opts.file.name.replace(new RegExp(opts.file.extensionWithDot + "$"), "")
+      } else {
+        // file has no extension, so don't replace anything, otherwise the last character is removed (because extensionWithDot = '.')
+        filenameWithoutExtension = opts.file.name;
+      }
       fileId = opts.fileId;
     }
     else {
@@ -74,6 +75,10 @@ Attachments = new FilesCollection({
     const ret = fileId + "-original-" + filenameWithoutExtension;
     // remove fileId from meta, it was only stored there to have this information here in the namingFunction function
     return ret;
+  },
+  sanitize(str, max, replacement) {
+    // keep the original filename
+    return str;
   },
   storagePath() {
     const ret = fileStoreStrategyFactory.storagePath;
@@ -140,9 +145,6 @@ if (Meteor.isServer) {
 
       const fileObj = Attachments.findOne({_id: fileObjId});
       moveToStorage(fileObj, storageDestination, fileStoreStrategyFactory);
-
-      // since Meteor-Files 2.1.0 the filename is truncated to 28 characters, so rename the file after upload to the right filename back
-      rename(fileObj, fileObj.name, fileStoreStrategyFactory);
     },
     renameAttachment(fileObjId, newName) {
       check(fileObjId, String);
@@ -155,34 +157,7 @@ if (Meteor.isServer) {
       check(fileObjId, String);
 
       const fileObj = Attachments.findOne({_id: fileObjId});
-      let isValid = true;
-
-      if (attachmentUploadMimeTypes.length) {
-        const mimeTypeResult = Promise.await(FileType.fromFile(fileObj.path));
-
-        const mimeType = (mimeTypeResult ? mimeTypeResult.mime : fileObj.type);
-        const baseMimeType = mimeType.split('/', 1)[0];
-
-        isValid = attachmentUploadMimeTypes.includes(mimeType) || attachmentUploadMimeTypes.includes(baseMimeType + '/*') || attachmentUploadMimeTypes.includes('*');
-
-        if (!isValid) {
-          console.log("Validation of uploaded file failed: file " + fileObj.path + " - mimetype " + mimeType);
-        }
-      }
-
-      if (attachmentUploadSize && fileObj.size > attachmentUploadSize) {
-        console.log("Validation of uploaded file failed: file " + fileObj.path + " - size " + fileObj.size);
-        isValid = false;
-      }
-
-      if (isValid && attachmentUploadExternalProgram) {
-        Promise.await(asyncExec(attachmentUploadExternalProgram.replace("{file}", '"' + fileObj.path + '"')));
-        isValid = fs.existsSync(fileObj.path);
-
-        if (!isValid) {
-          console.log("Validation of uploaded file failed: file " + fileObj.path + " has been deleted externally");
-        }
-      }
+      const isValid = Promise.await(isFileValid(fileObj, attachmentUploadMimeTypes, attachmentUploadSize, attachmentUploadExternalProgram));
 
       if (!isValid) {
         Attachments.remove(fileObjId);
@@ -192,12 +167,11 @@ if (Meteor.isServer) {
       check(fileObjId, String);
       check(storageDestination, String);
 
-      Meteor.defer(() => Meteor.call('validateAttachment', fileObjId));
+      Meteor.call('validateAttachment', fileObjId);
 
       const fileObj = Attachments.findOne({_id: fileObjId});
 
       if (fileObj) {
-        console.debug("Validation of uploaded file completed: file " + fileObj.path + " - storage destination " + storageDestination);
         Meteor.defer(() => Meteor.call('moveAttachmentToStorage', fileObjId, storageDestination));
       }
     },
