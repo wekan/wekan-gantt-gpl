@@ -127,12 +127,13 @@ services:
     image: wekanteam/wekan-gantt-gpl
     #-------------------------------------------------------------------------------------
     container_name: wekan-app
-    # On CentOS 7 there is seccomp issue with glibc 6, so setting it to unconfined
-    # to get WeKan working. See:
+    # On CentOS 7 there is seccomp issue with glibc 6,
+    # so CentOS 7 users shoud use these security_opt seccomp:unconfined
+    # settings to get WeKan working. See:
     #   - https://github.com/wekan/wekan/issues/4585
     #   - https://github.com/wekan/wekan/issues/4587
-    security_opt:
-      - seccomp:unconfined
+    #security_opt:
+    #  - seccomp:unconfined
     restart: always
     networks:
       - wekan-tier
@@ -169,6 +170,12 @@ services:
       #  - http://boards.example.com
       #  - http://192.168.1.100    <=== using at local LAN
       - ROOT_URL=http://localhost  #   <=== using only at same laptop/desktop where Wekan is installed
+      #---------------------------------------------------------------
+      # ==== DEFAULT PORT SETTING ====
+      # By default, Wekan will bind to TCP port 8080. If you need to change this to work with your
+      # reverse proxy settings or other Docker network topology requirements, change this value.
+      #  - Remember to change the above port binding if you change this value!
+      - PORT=8080
       #---------------------------------------------------------------
       # ==== EMAIL SETTINGS ====
       # Email settings are only at MAIL_URL and MAIL_FROM.

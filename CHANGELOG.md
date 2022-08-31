@@ -7,6 +7,32 @@ Download section.
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# v6.42 2022-08-31 WeKan ® release
+
+This release adds the following new translations:
+
+- [Added translations: English (Malaysia) (en_MY), Japanese (Hiragana) (ja-Hira), Malay (ms)](https://github.com/wekan/wekan/commit/17f97f6acc1827e956039f4cae5e15e7fcb0e19e).
+  Thanks to dimanLubis.
+
+and fixes the following bugs:
+
+- [Fix check for current user at card details](https://github.com/wekan/wekan/commit/68e4e6f04921a3618d71d72b617f49c9ee85c18f).
+  Thanks to xet7.
+- [Comment out CentOS 7 specific settings](https://github.com/wekan/wekan/commit/d470a74a9fe2a2029c2063d940d4573b58adf6c0).
+  Thanks to williamtrelawny and xet7.
+- [00checkStartup, userInfo was missing](https://github.com/wekan/wekan/pull/4662).
+  Thanks to mfilser.
+- Try to fix EasySearch.
+  [Part 2](https://github.com/wekan/wekan/commit/a21883e3a151644ffeac921b5978157d0674c414),
+  [Part 3](https://github.com/wekan/wekan/commit/0d3b7ca04121abd2f170a5934672bc79112ac4ef).
+  Thanks to danielkaiser and xet7.
+- [Revert autologin, because it broke OIDC login with Keycloak](https://github.com/wekan/wekan/commit/43a709675394f6aade42033c14c7fb5b78ac25c8).
+  Thanks to wb9688 and xet7.
+- [Remove hard-coded port 8080 binding in Dockerfile](https://github.com/wekan/wekan/pull/4663).
+  Thanks to willman42.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.41 2022-08-28 WeKan ® release
 
 This release fixes the following bugs:
