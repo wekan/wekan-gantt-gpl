@@ -7,6 +7,22 @@ Download section.
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# v6.46 2022-09-15 WeKan ® release
+
+This release adds the following new features:
+
+- [Added limit description on minicard to three lines](https://github.com/wekan/wekan/pull/4685).
+  Thanks to helioguardabaxo.
+- [Added titles to add and edit checklist items](https://github.com/wekan/wekan/pull/4686).
+  Thanks to helioguardabaxo.
+
+and adds the following updates:
+
+- [Updated Snap Candidate MongoDB to 5.0.12](https://github.com/wekan/wekan/commit/080cec07c0f7fefcc8dfa46a4063695f2b8d5aee).
+  Thanks to MongoDB developers.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.45 2022-09-14 WeKan ® release
 
 This release adds the following new features:
