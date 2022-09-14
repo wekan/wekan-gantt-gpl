@@ -512,7 +512,7 @@
     "normal": "Обычный",
     "normal-desc": "Может редактировать карточки. Не может управлять настройками.",
     "not-accepted-yet": "Приглашение еще не принято",
-    "notify-participate": "Получать обновления по любым карточкам, которые вы создавали или участником которых являетесь.",
+    "notify-participate": "Receive updates to any cards you participate as creator or member",
     "notify-watch": "Получать обновления по любым доскам, спискам и карточкам, на которые вы подписаны как наблюдатель.",
     "optional": "не обязательно",
     "or": "или",
@@ -597,6 +597,7 @@
     "custom-top-left-corner-logo-height": "Задать высоту логотипа в верхнем левом углу. По умолчанию 27",
     "custom-login-logo-image-url": "URL пользовательского изображения при входе",
     "custom-login-logo-link-url": "URL ссылки с пользовательского изображения при входе",
+    "custom-help-link-url": "Custom Help Link URL",
     "text-below-custom-login-logo": "Текст под пользовательским изображением при входе",
     "automatic-linked-url-schemes": "Пользовательская URL схема, которая должна быть кликабельной. Одна схема в каждой строке.",
     "username": "Имя пользователя",
@@ -903,6 +904,7 @@
     "editUserPopup-title": "Редактировать пользователя",
     "newUserPopup-title": "Новый пользователь",
     "notifications": "Уведомления",
+    "help": "Help",
     "view-all": "Показать все",
     "filter-by-unread": "Фильтр по непрочитанным",
     "mark-all-as-read": "Отметить все как прочитанные",
@@ -1183,5 +1185,9 @@
     "uploading": "Uploading",
     "remaining_time": "Remaining time",
     "speed": "Speed",
-    "progress": "Progress"
+    "progress": "Progress",
+    "password-again": "Password (again)",
+    "if-you-already-have-an-account": "If you already have an account",
+    "register": "Register",
+    "forgot-password": "Forgot password"
 }

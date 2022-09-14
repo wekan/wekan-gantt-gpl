@@ -7,12 +7,30 @@ Download section.
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
-# Upcoming WeKan ® release
+# v6.45 2022-09-14 WeKan ® release
 
-This release adds the following updates:
+This release adds the following new features:
+
+- [Add ARIA in checklist items](https://github.com/wekan/wekan/pull/4677).
+  Thanks to helioguardabaxo.
+- [Heading hierarchy fixed on checklist title to simplify screen reader](https://github.com/wekan/wekan/pull/4680).
+  Thanks to helioguardabaxo.
+- [Add info about RTL languages to Meteor WeKan. Not used in Meteor WeKan yet](https://github.com/wekan/wekan/commit/cf7c0512422178be23d287cce269a7b854a2bc21).
+  Thanks to xet7.
+- [Added help button with custom URL](https://github.com/wekan/wekan/pull/4681).
+  Thanks to helioguardabaxo.
+
+and adds the following updates:
 
 - [Add starting wekan test to arm64/s390x/ppc64el release scripts](https://github.com/wekan/wekan/commit/51ed0acc4f84ebce497f52a3267e57f554b3cd30).
   Thanks to xet7.
+
+and fixes the following bugs:
+
+- [Avoid non-terminating containers](https://github.com/wekan/wekan/pull/4675).
+  Thanks to bronger.
+- [Fixed WeKan api.py . WeKan API now works in newest WeKan and n8n](https://github.com/wekan/wekan/commit/aa2c3774a233025a163e9d9c210ad2f1807c0acb).
+  Thanks to DimDz and Joffcom.
 
 Thanks to above GitHub users for their contributions and translators for their translations.
 

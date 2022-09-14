@@ -512,7 +512,7 @@
     "normal": "Tavaline",
     "normal-desc": "Saab vaadata ja redigeerida kaarte. Ei saa seadistusi muuta.",
     "not-accepted-yet": "Kutse ei ole veel vastu võetud",
-    "notify-participate": "Saate uuendusi kõikide kaartide kohta, milles osalete loojana või liikmena.",
+    "notify-participate": "Receive updates to any cards you participate as creator or member",
     "notify-watch": "Saate uuendusi kõikidest tahvlitest, nimekirjadest või kaartidest, mida jälgite.",
     "optional": "vabatahtlik",
     "or": "või",
@@ -597,6 +597,7 @@
     "custom-top-left-corner-logo-height": "Kohandatud vasakpoolse ülemise nurga logo kõrgus. Vaikimisi: 27",
     "custom-login-logo-image-url": "Kohandatud sisselogimise logo pildi URL",
     "custom-login-logo-link-url": "Kohandatud sisselogimise logo link URL",
+    "custom-help-link-url": "Custom Help Link URL",
     "text-below-custom-login-logo": "Tekst allpool kohandatud sisselogimise logo",
     "automatic-linked-url-schemes": "Kohandatud URL-skeemid, mis peaksid olema automaatselt klõpsatavad. Üks URL-skeem rea kohta",
     "username": "Kasutajanimi",
@@ -903,6 +904,7 @@
     "editUserPopup-title": "Muuda kasutajat",
     "newUserPopup-title": "Uus kasutaja",
     "notifications": "Teated",
+    "help": "Help",
     "view-all": "Vaata kõiki",
     "filter-by-unread": "Filtreeri lugemata järgi",
     "mark-all-as-read": "Märgi kõik loetud",
@@ -1183,5 +1185,9 @@
     "uploading": "Uploading",
     "remaining_time": "Remaining time",
     "speed": "Speed",
-    "progress": "Progress"
+    "progress": "Progress",
+    "password-again": "Password (again)",
+    "if-you-already-have-an-account": "If you already have an account",
+    "register": "Register",
+    "forgot-password": "Forgot password"
 }

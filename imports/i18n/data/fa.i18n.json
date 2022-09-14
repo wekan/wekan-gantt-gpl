@@ -512,7 +512,7 @@
     "normal": "عادی",
     "normal-desc": "امکان نمایش و تنظیم کارت بدون امکان تغییر تنظیمات",
     "not-accepted-yet": "دعوت نامه هنوز پذیرفته نشده است",
-    "notify-participate": "اطلاع رسانی از هرگونه تغییر در کارتهایی که ایجاد کرده اید ویا عضو آن هستید",
+    "notify-participate": "Receive updates to any cards you participate as creator or member",
     "notify-watch": "اطلاع رسانی از هرگونه تغییر در بردها، لیست‌ها یا کارت‌هایی که از آنها دیده‌بانی می‌کنید",
     "optional": "انتخابی",
     "or": "یا",
@@ -597,6 +597,7 @@
     "custom-top-left-corner-logo-height": "ارتفاع لوگوی سفارشی در گوشه چپ و بالا. پیش‌فرض: ۲۷",
     "custom-login-logo-image-url": "آدرس تصویر لوگوی سفارشی در لاگین",
     "custom-login-logo-link-url": "آدرس لینک لوگوی سفارشی در لاگین",
+    "custom-help-link-url": "Custom Help Link URL",
     "text-below-custom-login-logo": "متن پایین لوگوی سفارشی در فرم لاگین",
     "automatic-linked-url-schemes": "Custom URL Schemes which should automatically be clickable. One URL Scheme per line",
     "username": "نام کاربری",
@@ -903,6 +904,7 @@
     "editUserPopup-title": "ویرایش کاربر",
     "newUserPopup-title": "کاربر جدید",
     "notifications": "اعلان‌ها",
+    "help": "Help",
     "view-all": "مشاهده همه",
     "filter-by-unread": "فیلتر با خوانده نشده",
     "mark-all-as-read": "علامت همه به خوانده شده",
@@ -1183,5 +1185,9 @@
     "uploading": "Uploading",
     "remaining_time": "Remaining time",
     "speed": "Speed",
-    "progress": "Progress"
+    "progress": "Progress",
+    "password-again": "Password (again)",
+    "if-you-already-have-an-account": "If you already have an account",
+    "register": "Register",
+    "forgot-password": "Forgot password"
 }

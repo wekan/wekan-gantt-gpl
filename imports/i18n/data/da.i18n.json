@@ -512,7 +512,7 @@
     "normal": "Normal",
     "normal-desc": "Du kan se og redigere kort. Indstillinger kan ikke ændres.",
     "not-accepted-yet": "Invitation er endnu ikke accepteret",
-    "notify-participate": "Modtag opdateringer for alle kort du deltager i, som opretter eller medlem ",
+    "notify-participate": "Receive updates to any cards you participate as creator or member",
     "notify-watch": "Modtag opdateringer for alle tavler eller kort som du følger ",
     "optional": "valgfri",
     "or": "eller",
@@ -597,6 +597,7 @@
     "custom-top-left-corner-logo-height": "Custom Top Left Corner Logo Height. Default: 27",
     "custom-login-logo-image-url": "Custom Login Logo Image URL",
     "custom-login-logo-link-url": "Custom Login Logo Link URL",
+    "custom-help-link-url": "Custom Help Link URL",
     "text-below-custom-login-logo": "Text below Custom Login Logo",
     "automatic-linked-url-schemes": "Custom URL Schemes which should automatically be clickable. One URL Scheme per line",
     "username": "Brugernavn",
@@ -903,6 +904,7 @@
     "editUserPopup-title": "Redigér bruger",
     "newUserPopup-title": "Ny bruger",
     "notifications": "Notifikationer",
+    "help": "Help",
     "view-all": "Vis alle",
     "filter-by-unread": "Filtrér efter ulæst",
     "mark-all-as-read": "Markér alle som læst",
@@ -1183,5 +1185,9 @@
     "uploading": "Uploading",
     "remaining_time": "Remaining time",
     "speed": "Speed",
-    "progress": "Progress"
+    "progress": "Progress",
+    "password-again": "Password (again)",
+    "if-you-already-have-an-account": "If you already have an account",
+    "register": "Register",
+    "forgot-password": "Forgot password"
 }

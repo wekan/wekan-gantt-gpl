@@ -512,7 +512,7 @@
     "normal": "Normal",
     "normal-desc": "Podeu veure i editar fitxes. No podeu canviar la configuració.",
     "not-accepted-yet": "La invitació no ha esta acceptada encara",
-    "notify-participate": "Rebre actualitzacions per a cada fitxa de la qual n'ets creador o membre",
+    "notify-participate": "Receive updates to any cards you participate as creator or member",
     "notify-watch": "Rebre actualitzacions per qualsevol tauler, llista o fitxa en observació",
     "optional": "opcional",
     "or": "o",
@@ -597,6 +597,7 @@
     "custom-top-left-corner-logo-height": "Custom Top Left Corner Logo Height. Default: 27",
     "custom-login-logo-image-url": "Custom Login Logo Image URL",
     "custom-login-logo-link-url": "Custom Login Logo Link URL",
+    "custom-help-link-url": "Custom Help Link URL",
     "text-below-custom-login-logo": "Text below Custom Login Logo",
     "automatic-linked-url-schemes": "Custom URL Schemes which should automatically be clickable. One URL Scheme per line",
     "username": "Nom d'Usuari",
@@ -903,6 +904,7 @@
     "editUserPopup-title": "Edit User",
     "newUserPopup-title": "New User",
     "notifications": "Notifications",
+    "help": "Help",
     "view-all": "View All",
     "filter-by-unread": "Filter by Unread",
     "mark-all-as-read": "Mark all as read",
@@ -1183,5 +1185,9 @@
     "uploading": "Uploading",
     "remaining_time": "Remaining time",
     "speed": "Speed",
-    "progress": "Progress"
+    "progress": "Progress",
+    "password-again": "Password (again)",
+    "if-you-already-have-an-account": "If you already have an account",
+    "register": "Register",
+    "forgot-password": "Forgot password"
 }

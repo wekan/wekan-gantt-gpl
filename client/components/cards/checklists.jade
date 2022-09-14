@@ -34,13 +34,13 @@ template(name="checklistDetail")
           a.fa.fa-navicon.checklist-details-menu.js-open-checklist-details-menu(title="{{_ 'checklistActionsPopup-title'}}")
 
         if canModifyCard
-          h2.title.js-open-inlined-form.is-editable
+          h4.title.js-open-inlined-form.is-editable
             if isTouchScreenOrShowDesktopDragHandles
               span.fa.checklist-handle(class="fa-arrows" title="{{_ 'dragChecklist'}}")
             +viewer
               = checklist.title
         else
-          h2.title
+          h4.title
             +viewer
                 = checklist.title
 
@@ -100,7 +100,8 @@ template(name="checklistItems")
           i.fa.fa-plus
 
 template(name='checklistItemDetail')
-  .js-checklist-item.checklist-item(class="{{#if item.isFinished }}is-checked{{#if hideCheckedItems}} invisible{{/if}}{{/if}}")
+  .js-checklist-item.checklist-item(class="{{#if item.isFinished }}is-checked{{#if hideCheckedItems}} invisible{{/if}}{{/if}}"
+    role="checkbox" aria-checked="{{#if item.isFinished }}true{{else}}false{{/if}}" tabindex="0")
     if canModifyCard
       .check-box-container
         .check-box.materialCheckBox(class="{{#if item.isFinished }}is-checked{{/if}}")

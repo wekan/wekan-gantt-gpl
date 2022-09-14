@@ -512,7 +512,7 @@
     "normal": "Normal",
     "normal-desc": "Puedes ver y editar tarjetas. No puedes cambiar la configuración.",
     "not-accepted-yet": "La invitación no ha sido aceptada aún",
-    "notify-participate": "Recibir actualizaciones de cualquier tarjeta en la que participas como creador o miembro",
+    "notify-participate": "Receive updates to any cards you participate as creator or member",
     "notify-watch": "Recibir actuaizaciones de cualquier tablero, lista o tarjeta que estés vigilando",
     "optional": "opcional",
     "or": "o",
@@ -597,6 +597,7 @@
     "custom-top-left-corner-logo-height": "Custom Top Left Corner Logo Height. Default: 27",
     "custom-login-logo-image-url": "Custom Login Logo Image URL",
     "custom-login-logo-link-url": "Custom Login Logo Link URL",
+    "custom-help-link-url": "Custom Help Link URL",
     "text-below-custom-login-logo": "Text below Custom Login Logo",
     "automatic-linked-url-schemes": "Custom URL Schemes which should automatically be clickable. One URL Scheme per line",
     "username": "Nombre de usuario",
@@ -903,6 +904,7 @@
     "editUserPopup-title": "Editar el usuario",
     "newUserPopup-title": "Nuevo usuario",
     "notifications": "Notificaciones",
+    "help": "Help",
     "view-all": "Ver todo",
     "filter-by-unread": "Filtrar por no leído",
     "mark-all-as-read": "Marcar todo como leido",
@@ -1183,5 +1185,9 @@
     "uploading": "Subiendo",
     "remaining_time": "Tiempo restante",
     "speed": "Velocidad",
-    "progress": "Progreso"
+    "progress": "Progreso",
+    "password-again": "Password (again)",
+    "if-you-already-have-an-account": "If you already have an account",
+    "register": "Register",
+    "forgot-password": "Forgot password"
 }

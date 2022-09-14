@@ -512,7 +512,7 @@
     "normal": "Bình thường",
     "normal-desc": "Có thể xem và chỉnh sửa thẻ. Không thể thay đổi cài đặt.",
     "not-accepted-yet": "Lời mời chưa được chấp nhận",
-    "notify-participate": "Nhận thông tin cập nhật cho bất kỳ thẻ nào bạn tham gia với tư cách là người sáng tạo hoặc thành viên",
+    "notify-participate": "Receive updates to any cards you participate as creator or member",
     "notify-watch": "Nhận thông tin cập nhật cho bất kỳ bảng, danh sách hoặc thẻ nào bạn đang xem",
     "optional": "không bắt buộc",
     "or": "hoặc",
@@ -597,6 +597,7 @@
     "custom-top-left-corner-logo-height": "Góc trên bên trái tùy chỉnh - Chiều cao Logo. Mặc định: 27",
     "custom-login-logo-image-url": "Đăng nhập tùy chỉnh - URL hình ảnh Logo ",
     "custom-login-logo-link-url": "Đăng nhập tùy chỉnh - Url liên kết Logo",
+    "custom-help-link-url": "Custom Help Link URL",
     "text-below-custom-login-logo": "Đăng nhập tùy chỉnh - Văn bản bên dưới Logo",
     "automatic-linked-url-schemes": "Lược đồ URL tùy chỉnh sẽ tự động có thể nhấp được. Một Lược đồ URL trên mỗi dòng",
     "username": "Tài khoản",
@@ -903,6 +904,7 @@
     "editUserPopup-title": "Sửa Người dùng",
     "newUserPopup-title": "Người dùng mới",
     "notifications": "Thông báo",
+    "help": "Help",
     "view-all": "Xem Tất cả",
     "filter-by-unread": "Lọc theo Chưa đọc",
     "mark-all-as-read": "Đánh dấu tất cả là đã đọc",
@@ -1183,5 +1185,9 @@
     "uploading": "Uploading",
     "remaining_time": "Remaining time",
     "speed": "Speed",
-    "progress": "Progress"
+    "progress": "Progress",
+    "password-again": "Password (again)",
+    "if-you-already-have-an-account": "If you already have an account",
+    "register": "Register",
+    "forgot-password": "Forgot password"
 }
