@@ -7,6 +7,45 @@ Download section.
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# v6.50 2022-09-23 WeKan ® release
+
+This release adds the following new features:
+
+- [Added a possibility of getting some WeKan metrics datas](https://github.com/wekan/wekan/pull/4700).
+  Thanks to Emile840.
+  [Added METRICS_ALLOWED_IP_ADDRESSES settings to Docker/Snap/Source](https://github.com/wekan/wekan/commit/34862810df686abfc0ee9ff1a13690a7b2bacc7e)
+  https://github.com/wekan/wekan/wiki/Metrics and missing Matomo settings to Snap help.
+  Thanks to xet7.
+
+and adds the following updates:
+
+- [Update CONTRIBUTING.md](https://github.com/wekan/wekan/commit/389b07138c43e954d2e6fca0fae278b3e7dcff21).
+  Thanks to [BlobbyBob](https://github.com/wekan/wekan/issues/4696).
+- [Update link to Meteor repair tools](https://github.com/wekan/wekan/issues/4697).
+  Thanks to BlobbyBob.
+- [Updated markdown-it-mermaid and cli-table3](https://github.com/wekan/wekan/commit/5ce08345292b4ca9843fb328a4e82f215ef8fbb6).
+  Thanks to xet7.
+
+and adds the following translations:
+
+- [Added Romanian translation. Updated translations](https://github.com/wekan/wekan/commit/e2d5a83d7c9e1725fec93d9da4038b893736cace).
+  Thanks to translators.
+- [Fix typos and translate comments to English](https://github.com/wekan/wekan/commit/551f57b03bbc1dba37862a0cc3407c8d359e2a9a).
+  Thanks to xet7.
+
+and fixes the following bugs:
+
+- [Build: harden GitHub Workflow permissions](https://github.com/wekan/wekan/pull/4699).
+  Thanks to sashashura.
+- [Try to fix again Mermaid Diagram error: Maximum call stack size exceeded](https://github.com/wekan/wekan/commit/0e5f98fd96abd0f287e38726e68770bcb3940ae6).
+  Thanks to xet7.
+- [Show translations debug messages only when DEBUG=true](https://github.com/wekan/wekan/commit/a30276e3d88c5c15b340d2c8f1a6f896c2207b7e).
+  Thanks to xet7.
+- [Fix bootstrap and datepicker3 css map missing](https://github.com/wekan/wekan/commit/21e6e4cb1a5d44dbe6173ba6696c9375eaecedf3).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.49 2022-09-18 WeKan ® release
 
 This release fixes the following bugs:
