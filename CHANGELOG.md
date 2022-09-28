@@ -7,13 +7,22 @@ Download section.
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# v6.51 2022-09-29 WeKan ® release
+
+This release adds the following updates:
+
+- [Updated to Node.js v14.20.1](https://github.com/wekan/wekan/commit/ccf4f59430ba0b1e63178811286eba4ae668101b).
+  Thanks to Node.js developers.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.50 2022-09-23 WeKan ® release
 
 This release adds the following new features:
 
 - [Added a possibility of getting some WeKan metrics datas](https://github.com/wekan/wekan/pull/4700).
   Thanks to Emile840.
-  [Added METRICS_ALLOWED_IP_ADDRESSES settings to Docker/Snap/Source](https://github.com/wekan/wekan/commit/34862810df686abfc0ee9ff1a13690a7b2bacc7e)
+- [Added METRICS_ALLOWED_IP_ADDRESSES settings to Docker/Snap/Source](https://github.com/wekan/wekan/commit/34862810df686abfc0ee9ff1a13690a7b2bacc7e)
   https://github.com/wekan/wekan/wiki/Metrics and missing Matomo settings to Snap help.
   Thanks to xet7.
 
