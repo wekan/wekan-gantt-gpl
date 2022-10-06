@@ -7,6 +7,28 @@ Download section.
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# v6.53 2022-10-06 WeKan ® release
+
+This release adds the following updates:
+
+- Updated release scripts to try fix building bcrypt from source at accounts-password dependency.
+  [Part 1](https://github.com/wekan/wekan/commit/b98888e128dd3ec932754aba320af11fc02143c3),
+  [Part 2](https://github.com/wekan/wekan/commit/923e48d64c4f9db8a1654e3ed9463771069ba3eb),
+  [Part 3](https://github.com/wekan/wekan/commit/f6dfd2ab67ab8bc216435d46129663bd7e0da103).
+  Thanks to xet7.
+
+and fixes the following bugs:
+
+- [Try to fix Mermaid Diagram error: Maximum call stack size exceeded](https://github.com/wekan/wekan/commit/aeac6e605b9c8659a690b195bc67e6fc2478f74f).
+  Thanks to xet7.
+- [Updated README.md about Docker: You can use latest tag to get newest release tag](https://github.com/wekan/wekan/commit/fc28b6cbe29e578f1415ed47dab7cc11f383a8cc).
+  Thanks to gohrner and xet7.
+- Refine subpath deployment support.
+  [Part 1](https://github.com/wekan/wekan/pull/4712) thanks to schnell18.
+  [Part 2](https://github.com/wekan/wekan/commit/625a9f16f5f34fd2250d83ecbeb7a0b0c8ee6e39) thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.52 2022-10-02 WeKan ® release
 
 This release adds the following new features:
