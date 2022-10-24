@@ -7,6 +7,54 @@ Download section.
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# Upcoming WeKan ® release
+
+This release adds the following updates:
+
+- [Commented out ppc64el from release scripts](https://github.com/wekan/wekan/commit/f67ffc910c7a44e69d799d2e5251c6cdb9bd88c1).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
+# v6.54 2022-10-24 WeKan ® release
+
+This release adds the following new features:
+
+- [Added development option for using bundle visualizer](https://github.com/wekan/wekan/commit/7810e90524438c4305c55b64da716c0f68e1b1df).
+  Thanks to xet7.
+- [In optional WeKan metrics feature, rename metrics key and add a new one](https://github.com/wekan/wekan/pull/4728).
+  Thanks to Emile840.
+- Drag handle toggle at top left.
+  Each touch/non-touch screen can use different setting, because it's saved to browser localstorage, not database.
+  For example, when using Firefox Multi-Account Containers AddOn, different browsers etc, when logged in as same user.
+  [Part 1](https://github.com/wekan/wekan/commit/e214bc55dcfd685c96311da7c2226cfb96208fca),
+  [Part 2](https://github.com/wekan/wekan/commit/7e5e29cacb90e6eb01f34baad2b6dec9adb0ad4a).
+  Thanks to hatl and xet7.
+
+and adds the following updates:
+
+- [Upgraded to Meteor 2.8.0](https://github.com/wekan/wekan/commit/ab495458767162dcfab2d2a5940138eee39f6fc0).
+  Thanks to Meteor developers.
+- [OpenPower MiniCloud is discontinued, no ppc64le build server. Looking for other ways to build](https://github.com/wekan/wekan/commit/93fa56d039500f83a7c290ba57fc609b4295e13d).
+  Thanks to MiniCloud.
+
+and fixes the following bugs:
+
+- [docker-compose.yml added info about LDAP and disable Password login option at Admin Panel](https://github.com/wekan/wekan/pull/4716).
+  Thanks to luisfcorreia.
+- [Commented out fonts, because after upgrade to Meteor 2.8.0 there was errors in browser inspect console: downloadable font: rejected by sanitizer font-family Roboto Poppins](https://github.com/wekan/wekan/commit/005c91af51223966687e3c98fa0b6bce66a552f9).
+  Thanks to xet7.
+- [Try to fix Mermaid Diagram error in Chrome: Maximum call stack size exceeded](https://github.com/wekan/wekan/commit/2573d325e62675771e2faf5ee2c26758d1dda86d).
+  Thanks to xet7.
+- [Added URL path / for site.webmanifest and pwa-service-worker because of errors in Chrome inspect console](https://github.com/wekan/wekan/commit/15bf69c3194394272633a1c5572e37fc09e5d947).
+  Thanks to xet7.
+- [Fix to use metrics related code only when enabled, because got error about userId](https://github.com/wekan/wekan/commit/d474ce64b82c1ba24c7659ad378be0d379ee7826).
+  Thanks to xet7.
+- [Fix metrics to check that socket is defined, because got error about userId](https://github.com/wekan/wekan/commit/a9dfcf852088e968e521b128de643a85e71dc1bc).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.53 2022-10-06 WeKan ® release
 
 This release adds the following updates:
