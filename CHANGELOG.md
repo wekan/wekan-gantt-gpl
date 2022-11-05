@@ -7,14 +7,32 @@ Download section.
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
-# Upcoming WeKan ® release
+# v6.55 2022-11-05 WeKan ® release
 
-This release adds the following updates:
+This release adds the following new features:
+
+- Added LDAP sync Python3 script, that also correctly removes users.
+  [Part 1](https://github.com/wekan/wekan/commit/ca9d47c2aab8d8e856515aba53ac77be90faf9f0),
+  [Part 2](https://github.com/wekan/wekan/commit/55bd94bbf4f8d37d2aebd445694b02bd6fc92e4a).
+  Thanks to hpvb.
+
+and adds the following updates:
 
 - [Commented out ppc64el from release scripts](https://github.com/wekan/wekan/commit/f67ffc910c7a44e69d799d2e5251c6cdb9bd88c1).
   Thanks to xet7.
 - [Use Ubuntu 22.10 base on Docker](https://github.com/wekan/wekan/commit/a52213b93a89dfe407037191e477c73013ac7224).
   Thanks to Ubuntu developers.
+- [Updated to Node.js v14.21.1](https://github.com/wekan/wekan/commit/20e3282edd45fb395143c08e82631a41bdf296d4).
+  Thanks to Node.js developers.
+- [Updated ostrio:files](https://github.com/wekan/wekan/commit/2ef75a810da2566d8630be0dde0ec7c2df518b76).
+  Thanks to ostrio:files developers.
+- [Updated markdown-it-mermaid](https://github.com/wekan/wekan/commit/a3ecda64cfb1ba033caa8e5162f9b8a008a51cdb).
+  Thanks to xet7.
+
+and fixes the following bugs:
+
+- [Fix Python-Esprima upstream failing](https://github.com/wekan/wekan/pull/4732).
+  Thanks to bentiss.
 
 Thanks to above GitHub users for their contributions and translators for their translations.
 
