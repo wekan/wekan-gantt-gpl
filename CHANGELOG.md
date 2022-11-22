@@ -7,12 +7,28 @@ Download section.
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
-# Upcoming WeKan ® release
+# v6.56 2022-11-22 WeKan ® release
 
-This release fixes the following bugs:
+This release adds the following new features:
+
+- [Add delete token api](https://github.com/wekan/wekan/pull/4752).
+  Thanks to aazf.
+
+and adds the following updates:
+
+- [Upgraded to Meteor 2.8.1](https://github.com/wekan/wekan/commit/3b59620ee39b6224660b6abd95fe4f0f288d7a15).
+  Thanks to Meteor developers.
+- [Revert max_old_space_size and stack-size. Update markdown-it-mermaid and cli-table3](https://github.com/wekan/wekan/commit/57c09e15acd40c24f946e220d9e064a34f4152fb).
+  Thanks to xet7.
+- [Updated Meteor version at Dockerfile](https://github.com/wekan/wekan/commit/e62b19affe7cc3ad2858ece776495fb76bfae447).
+  Thanks to xet7.
+
+and fixes the following bugs:
 
 - [Try to fix building Snap Candidate](https://github.com/wekan/wekan/commit/fbae3b0e557d2cf355579456684a9b1dec8cb72d).
   Thanks to xet7.
+- [Revert set miniscreen to 250px](https://github.com/wekan/wekan/commit/6a4e17e0394736cd59ab7650c397c46595c8b60e).
+  Thanks to zlobcek, mfilser and xet7.
 
 Thanks to above GitHub users for their contributions and translators for their translations.
 
