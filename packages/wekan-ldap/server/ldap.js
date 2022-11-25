@@ -1,4 +1,5 @@
 import ldapjs from 'ldapjs';
+import escapedToHex from 'ldapjs';
 import util from 'util';
 import Bunyan from 'bunyan';
 import {log_debug, log_info, log_warn, log_error} from './logger';
@@ -29,7 +30,7 @@ export default class LDAP {
       User_Authentication                : this.constructor.settings_get('LDAP_USER_AUTHENTICATION'),
       User_Authentication_Field          : this.constructor.settings_get('LDAP_USER_AUTHENTICATION_FIELD'),
       User_Attributes                    : this.constructor.settings_get('LDAP_USER_ATTRIBUTES'),
-      User_Search_Filter                 : this.constructor.settings_get('LDAP_USER_SEARCH_FILTER'),
+      User_Search_Filter                 : escapedToHex(this.constructor.settings_get('LDAP_USER_SEARCH_FILTER')),
       User_Search_Scope                  : this.constructor.settings_get('LDAP_USER_SEARCH_SCOPE'),
       User_Search_Field                  : this.constructor.settings_get('LDAP_USER_SEARCH_FIELD'),
       Search_Page_Size                   : this.constructor.settings_get('LDAP_SEARCH_PAGE_SIZE'),
