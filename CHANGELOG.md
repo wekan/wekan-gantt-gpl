@@ -7,6 +7,42 @@ Download section.
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# v6.61 2022-12-15 WeKan ® release
+
+This release adds the following new features:
+
+- [Added newuser to api.py](https://github.com/wekan/wekan/commit/f485ccea2f22e83cab2f780106e79eb5d7a3e741).
+  Thanks to WassimDhib and xet7.
+- [For export/print print board/card, added some CSS better. Use browser print preview %20 etc setting to fit to page. Next: Card CSS](https://github.com/wekan/wekan/commit/a561d1b63368c52c8b643e5134392961a45b81ff).
+  Thanks to xet7.
+
+and adds the following updates:
+
+- [Upgraded to Meteor 2.9.0](https://github.com/wekan/wekan/commit/49546b7e3b6ea77c17008d07b6938da4f8ff0a47).
+  MongoDB performance upgrades etc: https://blog.meteor.com/new-meteorjs-2-9-and-the-new-scaffold-api-5fcc0f3b1ce5
+  Thanks to Meteor developers.
+- Updated to Node.js v14.21.2.
+  [Part 1](https://github.com/wekan/wekan/commit/689e37e43486cb5b96bfa9222d40ec76d4e0be45),
+  [Part 2](https://github.com/wekan/wekan/commit/ed3a512518e629a9399ebe80aea4bd77f43bc809).
+  Thanks to Node.js developers.
+- Updated dependecies like markdown-it-mermaid.
+  [Part 1](https://github.com/wekan/wekan/commit/fe1e1983adfb29c0522c2f81d1ffe1432e496348),
+  [Part 2](https://github.com/wekan/wekan/commit/c4d1ffc2e50344bc8ba35de1109cd03ea1af356a).
+  Thanks to developers of dependencies.
+- [Update release scripts like Node.js update script](https://github.com/wekan/wekan/commit/d1f519917ba3b5a14d110575afd8cfce90360fe1).
+  Thanks to xet7.
+
+and fixes the following bugs:
+
+- [Fixed text not visible at white swimlane at themes dark and exodark. Commented out not in use font Poppins](https://github.com/wekan/wekan/commit/b9ae5a19c7755eaabcdc28d71c94b3044eed9300).
+  Custom fonts were previously removed because they did not work,
+  there were errors at browser inspect console.
+  Thanks to Meeques and xet7.
+- [Move Desktop Drag Handle setting more right](https://github.com/wekan/wekan/commit/2be0385c254793f4ff8371d981c665fcc3878458).
+  Thanks to Emile840 and xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.60 2022-12-01 WeKan ® release
 
 This release adds the following updates:
