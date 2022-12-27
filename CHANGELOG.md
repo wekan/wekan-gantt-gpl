@@ -7,6 +7,41 @@ Download section.
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# v6.65 2022-12-27 WeKan ® release
+
+This release adds the following new features:
+
+- Store files to any cloud storage (like S3, MinIO, etc) mounted as filesystem with Rclone.
+  Works with move to filesystem feature (not move to S3 feature).
+  Docs at https://github.com/wekan/wekan/wiki/Rclone .
+- Store files to S3. In Progress. Note: S3 button does not work yet.
+  [Part 1](https://github.com/wekan/wekan/commit/21e2eabd607cc7fccbce8ed8562d886ab54fee68),
+  [Part 2](https://github.com/wekan/wekan/commit/028633b00ab25bcd5c7ce6f78368aa6e33102a0c),
+  [Part 3](https://github.com/wekan/wekan/commit/fb6f618917f73a1772c9670b85a9d368a8a02855),
+  [Part 4](https://github.com/wekan/wekan/commit/391607ec79954ddc907170add8381c134717f576).
+
+and adds the following updates:
+
+- Update readme badges to be only links, and not load remote images.
+  [Part 1](https://github.com/wekan/wekan/commit/2b2bb5d6e220758be7e7c7b660ba9ab6061d6ba2),
+  [Part 2](https://github.com/wekan/wekan/commit/9a838e7990cd614fdf47047280d7e4731663102e),
+  [Part 3](https://github.com/wekan/wekan/commit/d65f8cda1b1909ed1deac387e4c71fbf92889392),
+  [Part 4](https://github.com/wekan/wekan/commit/182e1d4bf4eb0751ef51e820c223623c11a39e1d).
+  Thanks to xet7.
+- [Moved helm charts to https://github.com/wekan/charts](https://github.com/wekan/wekan/commit/62dc63c03386f092301b1c1ef41007c8c0654eaa).
+  Thanks to xet7.
+- Released newest Helm Chart to https://artifacthub.io/packages/helm/wekan/wekan .
+  Thanks to xet7.
+- [Updated dependencies](https://github.com/wekan/wekan/commit/0ae8e4912b9ac69ef481b101137d30406f1fe03a).
+  Thanks to developers of dependencies.
+
+and fixes the following bugs:
+
+- [Fixed Windows bundle build script and updated newest Windows WeKan release](https://github.com/wekan/wekan/commit/f1ff6d1e1fe935073f2600303c5c54f62d892311).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.64 2022-12-24 WeKan ® release
 
 This release adds the following updates:

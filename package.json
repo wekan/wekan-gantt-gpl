@@ -1,6 +1,6 @@
 {
   "name": "wekan-gantt-gpl",
-  "version": "v6.64.0",
+  "version": "v6.65.0",
   "description": "Open Source GPLv2 kanban",
   "private": true,
   "repository": {
@@ -52,6 +52,7 @@
     "markdown-it-mathjax3": "^4.3.1",
     "meteor-accounts-t9n": "^2.6.0",
     "meteor-node-stubs": "^1.1.0",
+    "minio": "^7.0.32",
     "moment": "^2.29.4",
     "mongodb": "^3.7.3",
     "nodemailer": "^6.6.3",
