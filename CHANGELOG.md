@@ -7,6 +7,22 @@ Download section.
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# v6.67 2023-01-03 WeKan ® release
+
+This release adds the following updates:
+
+- Updated dependencies.
+  [Part 1](https://github.com/wekan/wekan/commit/f20656909bbf8457d2c3ab7e049aec3a6dcf8977),
+  [Part 2](https://github.com/wekan/wekan/commit/4c814ce3fed32f7fdb2a1e2a7cc04946bd79cf3a).
+  Thanks to developers of dependencies.
+
+and fixes the following bugs:
+
+- [Fix OIDC login loop for integer user ID](https://github.com/wekan/wekan/commit/f2a92be01a753c5752284d221706c6efb0dd60a7).
+  Thanks to danielkaiser and xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.65 2022-12-27 WeKan ® release
 
 This release adds the following new features:
