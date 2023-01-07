@@ -7,6 +7,22 @@ Download section.
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# v6.68 2023-01-07 WeKan ® release
+
+This release adds the following updates:
+
+- [Upgraded to Meteor 2.9.1](https://github.com/wekan/wekan/commit/a0318e59c13c2f50339ff170fbd221f3915f5ba9).
+  Thanks to Meteor developers.
+
+and fixes the following bugs:
+
+- [Add "use-credentials" directive to site.webmanifest request](https://github.com/wekan/wekan/pull/4801).
+  Thanks to markormesher.
+- [OIDC login loop for integer user ID. Fix 2](https://github.com/wekan/wekan/commit/bc67b5c3bcd6ff645b7e6cd9c3d8bb79d83d5111).
+  Thanks to danielkaiser.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.67 2023-01-03 WeKan ® release
 
 This release adds the following updates:
