@@ -7,6 +7,32 @@ Download section.
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# v6.72 2023-02-02 WeKan ® release
+
+This release adds the following updates:
+
+- [Change back to MongoDB 5, shell and tool](https://github.com/wekan/wekan/commit/1733203f8e236bd62ef34ea1878d3a63db5eccc4).
+  Thanks to xet7.
+- Updated translations to use new Go-based transifex-client https://developers.transifex.com/docs/cli ,
+  but it seems now all translations look like 100% translated, maybe something is wrong,
+  so discussing about it with Transifex Support.
+  [Part 1](https://github.com/wekan/wekan/commit/2d7639262f266810fd863e3339485371e03cb8e6),
+  [Part 2](https://github.com/wekan/wekan/commit/c7330a47a02efc609a383ddf8d4ad6f409595e01),
+  [Part 3](https://github.com/wekan/wekan/commit/7d7c45c33f9eaa3e4db90758d97c49363f47d0f3),
+  [Part 4](https://github.com/wekan/wekan/commit/bed2669ff8e136d4aedbd66bc2dfd73c38e18469).
+- Updated dependencies
+  [Part 1](https://github.com/wekan/wekan/commit/362fb66b84e7200c3f7482ab8b79ae8ac0b11832),
+  [Part 1](https://github.com/wekan/wekan/commit/b4963d872b9dc2f19dd3fe418fdbf4f7364a7a47),
+  [Part 1](https://github.com/wekan/wekan/commit/a3e3e70a3abb28948c5ad62745d15f142107bb8d).
+  Thanks to developers of dependencies.
+
+and fixes the following bugs:
+
+- [Small improvements modern-dark theme](https://github.com/wekan/wekan/pull/4813).
+  Thanks to jghaanstra.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.71 2023-01-18 WeKan ® release
 
 This release adds the following updates:

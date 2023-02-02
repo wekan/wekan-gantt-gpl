@@ -1,5 +1,5 @@
 name: wekan-gantt-gpl
-version: '6.71'
+version: '6.72'
 base: core20
 summary: Open Source GPLv2 kanban
 description: |
@@ -65,7 +65,7 @@ apps:
 
 parts:
     mongodb:
-        source: https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-ubuntu2004-6.0.3.tgz
+        source: https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-ubuntu2004-5.0.14.tgz
         plugin: dump
         stage-packages:
             - libssl1.1
@@ -90,8 +90,32 @@ parts:
         prime:
             - $mongo
 
+    mongosh:
+        source: https://downloads.mongodb.com/compass/mongodb-mongosh_1.6.2_amd64.deb
+        plugin: dump
+        filesets:
+            mongosh:
+                - bin
+                - usr
+        stage:
+            - $mongosh
+        prime:
+            - $mongosh
+
+    mongotools:
+        source: https://fastdl.mongodb.org/tools/db/mongodb-database-tools-ubuntu2004-x86_64-100.6.1.tgz
+        plugin: dump
+        filesets:
+            mongotools:
+                - bin
+                - usr
+        stage:
+            - $mongotools
+        prime:
+            - $mongotools
+
     mongodb44:
-        source: https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-ubuntu2004-4.4.16.tgz
+        source: https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-ubuntu2004-4.4.18.tgz
         plugin: dump
         organize:
           bin: mongo44bin
@@ -160,9 +184,9 @@ parts:
             # Cleanup
             mkdir .build
             cd .build
-            wget https://github.com/wekan/wekan/releases/download/v6.71/wekan-6.71-amd64.zip
-            unzip wekan-6.71-amd64.zip
-            rm wekan-6.71-amd64.zip
+            wget https://github.com/wekan/wekan/releases/download/v6.72/wekan-6.72-amd64.zip
+            unzip wekan-6.72-amd64.zip
+            rm wekan-6.72-amd64.zip
             cd ..
             ##cd .build/bundle
             ##find . -type d -name '*-garbage*' | xargs rm -rf
