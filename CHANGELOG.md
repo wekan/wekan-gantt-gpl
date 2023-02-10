@@ -7,6 +7,21 @@ Download section.
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# v6.73 2023-02-10 WeKan ® release
+
+This release fixes the following bugs:
+
+- [Update docker-compose.yml: removes quotes, with quotes this setting is not working](https://github.com/wekan/wekan/pull/4829).
+  Thanks to q16marvin.
+- [Fix double quotes around metric label](https://github.com/wekan/wekan/pull/4831).
+  Thanks to garciadavy.
+- [Back to MongoDB 6.x](https://github.com/wekan/wekan/commit/b5d35d464501cbca4dc4e4ee403c8bb205024b21).
+  Thanks to urmel1960 and xet7.
+- [Try to fix building WeKan](https://github.com/wekan/wekan/commit/d9a7e135d33339aedf23875b67ac29c6f11f1bdb).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.72 2023-02-02 WeKan ® release
 
 This release adds the following updates:
