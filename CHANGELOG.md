@@ -12,6 +12,26 @@ Note:
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# v6.76 2023-02-22 WeKan ® release
+
+This release adds the following updates:
+
+- [Updated release scripts](https://github.com/wekan/wekan/commit/cae0b29500ff417598690590f43bc1e1875a4b4e).
+  Thanks to xet7.
+
+and fixes the following bugs:
+
+- [Try to fix build errors on some platforms](https://github.com/wekan/wekan/commit/fd9478dc57a81aadb275a205766c44285efb4c61).
+  Thanks to xet7.
+- Fix at bottom of list Add button to be higher, so that text Add is not over button borders.
+  [Part 1](https://github.com/wekan/wekan/commit/139a1c0f784443103397c9b6c8c17d5432ce9bdd),
+  [Part 2](https://github.com/wekan/wekan/commit/c27a2b22c604377170c34f30e4b5710e18ae47c8).
+  Thanks to WeKan commercial support customer and xet7.
+- [Removed Mermaid, because newest Mermaid does not work anymore](https://github.com/wekan/wekan/commit/67500abcd4d034ebed2d13f5156123d5f70bd014).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.75 2023-02-21 WeKan ® release
 
 This release fixes the following CRITICAL SECURITY ISSUES:
@@ -34,6 +54,8 @@ and fixes the following bugs:
   Thanks to garciadavy.
 - [Swipebox slide background gradient of black to blue, so that back SVG images are visible](https://github.com/wekan/wekan/commit/c3577aa434ac5330d664f17d0771ff9679cced86).
   Thanks to xet7.
+- [Fix typo](https://github.com/wekan/wekan/pull/4840).
+  Thanks to robert-scheck.
 
 Thanks to above GitHub users for their contributions and translators for their translations.
 

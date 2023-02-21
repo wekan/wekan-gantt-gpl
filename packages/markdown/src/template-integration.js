@@ -1,4 +1,4 @@
-import DOMPurify from 'isomorphic-dompurify';
+import DOMPurify from 'dompurify';
 
 var Markdown = require('markdown-it')({
   html: true,
@@ -7,7 +7,7 @@ var Markdown = require('markdown-it')({
   breaks: true,
 });
 
-import markdownItMermaid from "@wekanteam/markdown-it-mermaid";
+//import markdownItMermaid from "@wekanteam/markdown-it-mermaid";
 
 // Static URL Scheme Listing
 var urlschemes = [
@@ -48,9 +48,9 @@ Markdown.use(mathjax);
 // https://github.com/wekan/cli-table3
 // https://www.npmjs.com/package/@wekanteam/markdown-it-mermaid
 // https://github.com/wekan/markdown-it-mermaid
-Markdown.use(markdownItMermaid,{
-  maxTextSize: 200000,
-});
+//Markdown.use(markdownItMermaid,{
+//  maxTextSize: 200000,
+//});
 
 if (Package.ui) {
   const Template = Package.templating.Template;
@@ -65,7 +65,6 @@ if (Package.ui) {
       text = Blaze._toText(self.templateContentBlock, HTML.TEXTMODE.STRING);
     }
 
-    // Using isomorphic-dompurify that is isometric so it works also serverside
     return HTML.Raw(DOMPurify.sanitize(Markdown.render(text), {ALLOW_UNKNOWN_PROTOCOLS: true}));
   }));
 }
