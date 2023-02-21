@@ -2500,6 +2500,7 @@ if (Meteor.isServer) {
         Accounts.destroyToken(userId, token);
         data.message = 'Delete token: [' + token + '] from user: ' + userId;
       } else if (userId) {
+        check(userId, String);
         Users.update(
           {
             _id: userId,

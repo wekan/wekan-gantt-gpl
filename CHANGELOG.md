@@ -5,7 +5,37 @@
 Required versions of Node.js, MongoDB etc are listed at https://wekan.github.io
 Download section.
 
+Note:
+- Snap Candidate has newest WeKan with MongoDB 6 https://github.com/wekan/wekan/issues/4824#issuecomment-1425753485
+- Snap Beta has newest WeKan with MongoDB 5 https://github.com/wekan/wekan/issues/4780#issuecomment-1427625571
+- Snap Stable has old WeKan 6.09 with MongoDB 3.2.2 
+
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
+
+# v6.75 2023-02-21 WeKan ® release
+
+This release fixes the following CRITICAL SECURITY ISSUES:
+
+- Try to fix some security issues.
+  [Part 1](https://github.com/wekan/wekan/commit/ff993e7c917b5650a790238e95c78001e4f0e039),
+  [Part 2](https://github.com/wekan/wekan/commit/382168a5b428a7124d368c4fcb37e7e140e7ec8b).
+  Thanks to responsible security disclosure contributors and xet7.
+
+and adds the following updates:
+
+- [Updated to Node.js v14.21.3. Thanks to Node.js developers](https://github.com/wekan/wekan/commit/dd6e7372b77ec963c3623953a7613f1e468e5745).
+  Thanks to Node.js developers.
+- [Updated webmanifest to have PWA as fullscreen](https://github.com/wekan/wekan/commit/ed058914b53e3575b6e8036fed45fba5e0893001).
+  Thanks to xet7.
+
+and fixes the following bugs:
+
+- [Fix "Top 10 boards" metric order](https://github.com/wekan/wekan/pull/4835).
+  Thanks to garciadavy.
+- [Swipebox slide background gradient of black to blue, so that back SVG images are visible](https://github.com/wekan/wekan/commit/c3577aa434ac5330d664f17d0771ff9679cced86).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
 
 # v6.74 2023-02-10 WeKan ® release
 

@@ -39,7 +39,7 @@ do
 			#curl -0 -L https://npmjs.org/install.sh | sudo sh
 			#sudo chown -R $(id -u):$(id -g) $HOME/.npm
 			sudo npm -g install n
-			sudo n 14.21.2
+			sudo n 14.21.3
 			sudo npm -g install npm
 			#sudo npm -g install npm
 			## Latest npm with Meteor 2.2
@@ -91,7 +91,7 @@ do
 		#sudo chown -R $(id -u):$(id -g) $HOME/.npm $HOME/.meteor
 		rm -rf .build/bundle node_modules .meteor/local .build
 		meteor npm install
-		meteor build .build --directory
+		meteor build .build --directory --platforms=web.browser
 		rm -rf .build/bundle/programs/web.browser.legacy
 		(cd .build/bundle/programs/server && rm -rf node_modules && chmod u+w *.json && meteor npm install)
                 (cd .build/bundle/programs/server/node_modules/fibers && node build.js)
