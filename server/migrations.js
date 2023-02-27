@@ -1246,6 +1246,7 @@ Migrations.add('add-card-details-show-lists', () => {
 });
 
 Migrations.add('migrate-attachments-collectionFS-to-ostrioFiles', () => {
+  Meteor.settings.public.ostrioFilesMigrationInProgress = "true";
   AttachmentsOld.find().forEach(function(fileObj) {
     const newFileName = fileObj.name();
     const storagePath = Attachments.storagePath({});
@@ -1306,9 +1307,11 @@ Migrations.add('migrate-attachments-collectionFS-to-ostrioFiles', () => {
 
     readStream.pipe(writeStream);
   });
+  Meteor.settings.public.ostrioFilesMigrationInProgress = "false";
 });
 
 Migrations.add('migrate-avatars-collectionFS-to-ostrioFiles', () => {
+  Meteor.settings.public.ostrioFilesMigrationInProgress = "true";
   AvatarsOld.find().forEach(function(fileObj) {
     const newFileName = fileObj.name();
     const storagePath = Avatars.storagePath({});
@@ -1361,14 +1364,16 @@ Migrations.add('migrate-avatars-collectionFS-to-ostrioFiles', () => {
                 'original',
                 '/',
               );
-              if (user.profile.avatarUrl.startsWith(old_url)) {
-                // Set avatar url to new url
-                Users.direct.update(
-                  { _id: user._id },
-                  { $set: { 'profile.avatarUrl': new_url } },
-                  noValidate,
-                );
-                console.log('User avatar updated: ', user._id, new_url);
+              if (user.profile.avatarUrl !== undefined) {
+                if (user.profile.avatarUrl.startsWith(old_url)) {
+                  // Set avatar url to new url
+                  Users.direct.update(
+                    { _id: user._id },
+                    { $set: { 'profile.avatarUrl': new_url } },
+                    noValidate,
+                  );
+                  console.log('User avatar updated: ', user._id, new_url);
+                }
               }
             });
             fileObj.remove();
@@ -1384,6 +1389,7 @@ Migrations.add('migrate-avatars-collectionFS-to-ostrioFiles', () => {
 
     readStream.pipe(writeStream);
   });
+  Meteor.settings.public.ostrioFilesMigrationInProgress = "false";
 });
 
 Migrations.add('migrate-attachment-drop-index-cardId', () => {

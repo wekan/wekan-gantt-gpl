@@ -12,6 +12,38 @@ Note:
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# v6.77 2023-02-27 WeKan ® release
+
+This release adds the following updates:
+
+- Updated release scripts
+  [Part 1](https://github.com/wekan/wekan/commit/23e01130e907f0068333046dc4b88a471b781ce7),
+  [Part 2](https://github.com/wekan/wekan/commit/ad53414c4d415b93e808ec88cc36af5a4741f681),
+  [Part 3](https://github.com/wekan/wekan/commit/e390852a673be25e00cb397acf4dbdc5a7d2a1f9).
+  Updated release scripts.
+  Thanks to xet7.
+
+and fixes the following bugs:
+
+- [Fixed indentation for image size and compression in docker-compose.yml](https://github.com/wekan/wekan/pull/4846).
+  Thanks to Entepotenz.
+- [Made ☰ menu buttons bigger at minicard and list, they were too hard to click when they were small](https://github.com/wekan/wekan/commit/c2cf850179ad0079d83561675b6dc2c59825cc11).
+  Thanks to mohammadZahedian and xet7.
+- [Added "Move card to archive" to minicard ☰ menu](https://github.com/wekan/wekan/commit/1deccf2f4b5ba1a72bc76d5ae83858e6c50b36ae).
+  Thanks to mohammadZahedian and xet7.
+- [Fix attachment migration error about avatarUrl startsWith undefined](https://github.com/wekan/wekan/commit/7b2cff4c5e7bae4971776638b680696596edc7e6).
+  Thanks to xet7.
+- Try to fix attachment migrations to ostrioFiles, allow existing files to be migrated.
+  [Part 1](https://github.com/wekan/wekan/commit/9216a69c0541325be6941c07d256b07627a8ec73),
+  [Part 2](https://github.com/wekan/wekan/commit/16ad6bf9fc75b39e6e8cedb8a5a98ec963ccf14a).
+  Thanks to xet7.
+- [MongoDB to 5 for beta Snap. MongoDB 5 does not seem to show some errors that only MongoDB 6 has](https://github.com/wekan/wekan/commit/a64381153fd762b67f2a752b590b2cdd196bcfe5).
+  Thanks to xet7.
+- [Use MongoDB 5 at docker-compose.yml](https://github.com/wekan/wekan/commit/51f22f48dc916717ed6be9502dc767798692f07b).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.76 2023-02-22 WeKan ® release
 
 This release adds the following updates:
