@@ -12,6 +12,22 @@ Note:
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# v6.81 2023-03-26 WeKan ® release
+
+This release fixes the following bugs:
+
+- [Helm Chart - fix: broken secretEnv indentation](https://github.com/wekan/charts/pull/18).
+  Fixed in already released WeKan Helm Chart 1.2.7.
+  Thanks to Nightreaver.
+- [Fix Bug: Cardoptions disappear behind scrollbar in german](https://github.com/wekan/wekan/commit/bf636725e8637200c2121e754297d281f8c38d4e).
+  Thanks to Meeques and xet7.
+- [Add some info about allowed filesizes and filetypes for attachments and avatars](https://github.com/wekan/wekan/commit/5b3bd8ff2a29e2c1ada4c49de4c50c132b603863).
+  Thanks to Meeques and xet7.
+- [Disable MongoDB telemetry and free monitoring in WeKan Snap](https://github.com/wekan/wekan/commit/df152e292dadd10a9873c21fff9571b98a06eec6).
+  Thanks to webenefits and xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.80 2023-03-23 WeKan ® release
 
 This release adds the following improvements:
