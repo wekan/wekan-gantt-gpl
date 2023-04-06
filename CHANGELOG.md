@@ -12,6 +12,21 @@ Note:
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# v6.82 2023-04-07 WeKan ® release
+
+This release fixes the following bugs:
+
+- [Added missing docs of Snap avatars max size etc](https://github.com/wekan/wekan/commit/2aba1e3bf98717f403b064f4de3f893bf1b009aa).
+  Thanks to xet7.
+- [Fix avatar if Meteor.user() is undefined](https://github.com/wekan/wekan/pull/4876).
+  Thanks to mfilser.
+- [Fix broken add_board_member API and return value for remove_board_member](https://github.com/wekan/wekan/pull/4880).
+  Thanks to gustavengstrom.
+- [Try to fix card open position and make card resizeable](https://github.com/wekan/wekan/commit/f258d8d51784839d06b34e43ec50951603340037).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.81 2023-03-26 WeKan ® release
 
 This release fixes the following bugs:
