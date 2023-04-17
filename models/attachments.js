@@ -72,7 +72,12 @@ Attachments = new FilesCollection({
       filenameWithoutExtension = Math.random().toString(36).slice(2);
       fileId = Math.random().toString(36).slice(2);
     }
-    const ret = fileId + "-original-" + filenameWithoutExtension;
+
+    // OLD:
+    //const ret = fileId + "-original-" + filenameWithoutExtension;
+    // NEW: Save file only with filename of ObjectID, not including filename.
+    // Fixes https://github.com/wekan/wekan/issues/4416#issuecomment-1510517168
+    const ret = fileId;
     // remove fileId from meta, it was only stored there to have this information here in the namingFunction function
     return ret;
   },
@@ -91,6 +96,7 @@ Attachments = new FilesCollection({
     });
 
     Attachments.update({ _id: fileObj._id }, { $set: { "versions" : fileObj.versions } });
+    Attachments.update({ _id: fileObj.uploadedAtOstrio }, { $set: { "uploadedAtOstrio" : this._now() } });
 
     let storageDestination = fileObj.meta.copyStorage || STORAGE_NAME_GRIDFS;
     Meteor.defer(() => Meteor.call('validateAttachmentAndMoveToStorage', fileObj._id, storageDestination));

@@ -12,6 +12,37 @@ Note:
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# v6.85 2023-04-18 WeKan ® release
+
+This release adds the following CRITICAL SECURITY FIXES:
+
+- [Security fix to ReactionBleed in WeKan. It is XSS in feature "Reaction to comment"](https://github.com/wekan/wekan/commit/47ac33d6c234359c31d9b5eae49ed3e793907279).
+  Thanks to Alexander Starikov at Jet Infosystems (https://jetinfosystems.com/).
+
+and adds the following updates:
+
+- [Updated dependencies](https://github.com/wekan/wekan/commit/fb37f48a86732be40c20c58eb336fa262218d0fe).
+  Thanks to xet7.
+
+and fixes the following bugs:
+
+- [Disable file validation temporarily, because it causes data loss of some attachments when upgrading](https://github.com/wekan/wekan/commit/e7122a9b368e25cc155f39e34fff741fcc9f004c).
+  Thanks to xet7.
+- [Added uploadedAt and copies to be migrated when migrating CollectionFS to ostrio-files](https://github.com/wekan/wekan/commit/0090734cd85435e852d2546d20c5a16a24a1ae66).
+  Thanks to xet7
+- [Added more descriptive times of attachment migrations and uploads](https://github.com/wekan/wekan/commit/f11650ece1ccd8cd8ff820c1ccb39086129e01d0).
+  Thanks to xet7.
+- [Fix LDAP Group Filtering does not work](https://github.com/wekan/wekan/commit/2da7b1d5420d7621cafa387db5c63bf1612e3d08).
+  Thanks to emilburggraf, psteinforth, craig-silva, Daniel-H76, benh57, falkheiland and xet7.
+- [Save files serverside with filename ObjectID, without filename](https://github.com/wekan/wekan/commit/76ac070f9b99388fa9e13bd987b1c93ed1f465c7).
+  Thanks to g-roliveira, iamabrantes, Floaz, koelle25, scott-dunt, mfilser and xet7.
+- [Fixed count of found cards in Global Search](https://github.com/wekan/wekan/commit/9af03b0416b532f2084d0320b95388f0009fb364).
+  Thanks to xet7.
+- [Fix Card opens full width by opening at left](https://github.com/wekan/wekan/commit/418fe725e5846620a244b22bce2e0d1194ebf033).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.84 2023-04-11 WeKan ® release
 
 This release fixes the following bugs:
@@ -163,7 +194,7 @@ Thanks to above GitHub users for their contributions and translators for their t
 
 This release fixes the following CRITICAL SECURITY ISSUES:
 
-- Try to fix some security issues.
+- Security Fix of Filebleed in WeKan. That is XSS in filename.
   [Part 1](https://github.com/wekan/wekan/commit/ff993e7c917b5650a790238e95c78001e4f0e039),
   [Part 2](https://github.com/wekan/wekan/commit/382168a5b428a7124d368c4fcb37e7e140e7ec8b).
   Thanks to responsible security disclosure contributors and xet7.
