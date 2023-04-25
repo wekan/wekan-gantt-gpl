@@ -5,19 +5,61 @@
 Required versions of Node.js, MongoDB etc are listed at https://wekan.github.io
 Download section.
 
+Newest WeKan is on platforms: Snap Candidate, Docker, Kubernetes, Source/Bundle. Download section at https://wekan.github.io
+
+In Progress is:
+- Getting newest WeKan to all platforms, fixing any migration and upgrade issues
+- Adding more platforms
+- Developing all paid features and fixes https://wekan.team/commercial-support/
+- More info and news at https://github.com/wekan/wekan/issues/4578#issuecomment-1505909376
+
 Note:
 - Snap Candidate has newest WeKan with MongoDB 6 https://github.com/wekan/wekan/issues/4824#issuecomment-1425753485
-- Snap Beta has newest WeKan with MongoDB 5 https://github.com/wekan/wekan/issues/4780#issuecomment-1427625571
+- Snap Beta has old WeKan with MongoDB 5 https://github.com/wekan/wekan/issues/4780#issuecomment-1427625571
 - Snap Stable has old WeKan 6.09 with MongoDB 3.2.2 
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
+
+# v6.86 2023-04-25 WeKan ® release
+
+This release fixes the following CRITICAL SECURITY FIXES:
+
+- [Security fix to InvisibleBleed in WeKan. Escape HTML comment tags so that HTML comments are visible](https://github.com/wekan/wekan/commit/167863d95711249e69bb3511175d73b34acbbdb3).
+  Thanks to xet7 for fixing.
+- [Security Fix to AdminBleed in WeKan, so that non-admin can not change to Admin](https://github.com/wekan/wekan/commit/cbad4cf5943d47b916f64b4582f8ca76a9dfd743).
+  Thanks to Christian Pöschl of usd AG Responsible Disclosure Team for reporting and xet7 for fixing.
+
+and adds the following new features:
+
+- [Feature: Show plus sign in front of attachments](https://github.com/wekan/wekan/commit/2b13158fcd37ff7163fc3d97b88b6bf920dd7b9c).
+  Thanks to Meeques and xet7.
+
+and adds the following updates:
+
+- [Upgrade to Meteor 2.12-beta.2](https://github.com/wekan/wekan/commit/4d9d4a9dfdd5bb0fc5997351df8995f72d9ca82c).
+  Thanks to Meteor developers.
+- [Update Docker Ubuntu base image and Meteor version](https://github.com/wekan/wekan/commit/bcd43629cc4074bc4f9b0b70189645ae91cfe59a).
+  Thanks to xet7.
+
+and fixes the following bugs:
+
+- Fix Exception in callback of async function: TypeError: this._now is not a function.
+  [Part 1](https://github.com/wekan/wekan/commit/aeb0f1e6d8d9f5d8808128f4049768bea57ca164),
+  [Part 2](https://github.com/wekan/wekan/commit/aef6967d4c90544aa0281d22b6df46b2dd40467f).
+  Thanks to xet7.
+- [Remove extra debug message and disable some rarely used feature that produces errors](https://github.com/wekan/wekan/commit/c0bdde26cfd2ae6d1aeaf8b5c7ce0eb72ada6dec).
+  Thanks to xet7.
+- [Revert some migration filename changes](https://github.com/wekan/wekan/commit/3300bbe9e7a6c02c753b0d1f2e8547d1d85cb76c).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
 
 # v6.85 2023-04-18 WeKan ® release
 
 This release adds the following CRITICAL SECURITY FIXES:
 
 - [Security fix to ReactionBleed in WeKan. It is XSS in feature "Reaction to comment"](https://github.com/wekan/wekan/commit/47ac33d6c234359c31d9b5eae49ed3e793907279).
-  Thanks to Alexander Starikov at Jet Infosystems (https://jetinfosystems.com/).
+  Thanks to Alexander Starikov at Jet Infosystems (https://jetinfosystems.com/) for reporting and fixing.
 
 and adds the following updates:
 
