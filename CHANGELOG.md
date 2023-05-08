@@ -20,6 +20,43 @@ Note:
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# v6.87 2023-05-08 WeKan ® release
+
+This release adds the following new features:
+
+- Added to meteor development options for logging also to ../wekan-log.txt, and showing deprecated API that is Meteor v2.12 new feature.
+  [Part 1](https://github.com/wekan/wekan/commit/9fc52838562c3179775a6b24c23d0385363a0661),
+  [Part 2](https://github.com/wekan/wekan/commit/521e840b54dd896eb192834133c5134a104f1d0b),
+  [Part 3](https://github.com/wekan/wekan/commit/e6c59fc9b0ac53abd7519121d3bff700b1a43c24),
+  [Part 4](https://github.com/wekan/wekan/commit/0bd9f309a10dff200efe6e38c6161deaf93c776d).
+  Thanks to Meteor developers and xet7.
+- [API: Added User and Admin API for New Checklist Item and Edit Card Custom Field](https://github.com/wekan/wekan/pull/4911).
+  Thanks to DimDz.
+
+and adds the following updates:
+
+- [Updated dependencies](https://github.com/wekan/wekan/commit/2b91557ad2931b3004a1da1ba0c790ed0e0546d3).
+  Thanks to developers of dependencies.
+- [Upgraded to Meteor 2.12](https://github.com/wekan/wekan/commit/d519429ea14de3740408fbca3d231a1440562201).
+  Thanks to Meteor developers.
+- Updated translations.
+  xet7 fixed all translations of advanced filter description to have correct escaping of slash and backslash,
+  so that bulding bundle of WeKan would not crash to invalid JSON syntax in translations.
+  [Part 1](https://github.com/wekan/wekan/commit/40c077101a94f639b90f607624c4c72e12235711),
+  Thanks to xet7.
+
+and fixes the following bugs:
+
+- [Added X for closing card opened in Global Search](https://github.com/wekan/wekan/pull/4910).
+  Thanks to deniszulic.
+
+and tried to fix the following bugs:
+
+- [Tried to fix building WeKan OpenAPI docs using Ubuntu 23.04 amd64 with XFCE desktop, but it did not work, still getting error: Failed to parse the source OpenAPI document](https://github.com/wekan/wekan/commit/97c6b6531502d09cbd6c267212651f3036338a11).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.86 2023-04-26 WeKan ® release
 
 This release fixes the following CRITICAL SECURITY FIXES:
