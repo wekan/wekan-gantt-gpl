@@ -20,6 +20,35 @@ Note:
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# v6.90 2023-05-24 WeKan ® release
+
+This release adds the following new features:
+
+- [Added Edit Custom Field Value to api.py](https://github.com/wekan/wekan/commit/ea908adbf9b75607c61c0cbc2b23886aa8e95fe7).
+  Thanks to RazvanTinca and xet7.
+
+and adds the following updates:
+
+- Update docker-compose.yml info about Docker images used.
+  [Part 1](https://github.com/wekan/wekan/commit/30ada6086245eb9957385d96132268344ce9513b),
+  [Part 2](https://github.com/wekan/wekan/commit/e83b0ac6519be4163cb6702a4a97d10e7315f5d9).
+  Thanks to xet7.
+- [Upgrade Snap Candidate to MongoDB 6.0.6](https://github.com/wekan/wekan/commit/87fc4f936a2e37c0b9e3353a7b6f93dbff7fc2b7).
+  Thanks to MongoDB developers.
+- [Use GitHub Docker Registry. Updated release scripts](https://github.com/wekan/wekan/commit/28e5b0bd5b270b2e2d3de5dad46804ac0d20d898).
+  Thanks to xet7.
+- [Sync Docker Registries](https://github.com/wekan/wekan/commit/32ec95ffa8b34d5a7d9dff94302520509479c838).
+  Thanks to xet7.
+
+and fixes the following bugs:
+
+- [To get corrent API docs generated, moved new_checklist_item API to correct file where is other checklist item API](https://github.com/wekan/wekan/commit/9de704040172e37769fa28cf571f293dfbd8bbb5).
+  Thanks to xet7.
+- [Fix sharedDataFolder persisdent provide by k8s has no permission to mkdir and write](https://github.com/wekan/charts/commit/54c11ec8d7d165309632c455003b6e861e43fb4c).
+  Thanks to new2001y.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.89 2023-05-12 WeKan ® release
 
 This release fixes the following bugs:

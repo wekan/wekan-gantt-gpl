@@ -90,14 +90,7 @@ services:
 
   wekandb:
     #-------------------------------------------------------------------------------------
-    # ==== MONGODB AND METEOR VERSION ====
-    # a) mongodb latest, like 3.2 - 4.4 or newer https://hub.docker.com/_/mongo?tab=description
-    # 2020-12-03:
-    # - Mongo image copied from Docker Hub mongo:4.4.2-bionic to Quay
-    #   to avoid Docker Hub rate limits.
-    # Quay image does work:
-    #   image: quay.io/wekan/mongo:4.4.2-bionic
-    # Docker Hub MongoDB image does work:
+    # ==== MONGODB FROM DOCKER HUB ====
     image: mongo:6
     #-------------------------------------------------------------------------------------
     container_name: wekan-db
@@ -118,13 +111,20 @@ services:
 
   wekan:
     #-------------------------------------------------------------------------------------
-    # ==== MONGODB AND METEOR VERSION ====
-    # a) Quay automatic builds does work, https://quay.io/wekan/wekan
-    # image: quay.io/wekan/wekan-gantt-gpl
-    # b) Using specific version tag:
-    # image: quay.io/wekan/wekan-gantt-gpl:v4.52
-    # c) Docker Hub builds does work https://hub.docker.com/r/wekanteam/wekan-gantt-gpl
-    image: wekanteam/wekan-gantt-gpl
+    # ==== WEKAN FROM GITHUB/QUAY/DOCKER HUB ====
+    # All of GitHub, Quay and Docker Hub have latest, but because
+    # latest tag changes when is newest release,
+    # when upgrading would be better to use version tag.
+    # a) Using specific version tag is better:
+    # image: ghcr.io/wekan-gantt-gpl/wekan:v6.89
+    # image: quay.io/wekan-gantt-gpl/wekan:v6.89
+    # image: wekanteam/wekan-gantt-gpl:v6.89
+    # b) GitHub Container registry.
+    image: ghcr.io/wekan/wekan-gantt-gpl:latest
+    # c) Quay:
+    #image: quay.io/wekan/wekan-gantt-gpl:latest
+    # d) Docker Hub:
+    #image: wekanteam/wekan-gantt-gpl:latest
     #-------------------------------------------------------------------------------------
     container_name: wekan-app
     # On CentOS 7 there is seccomp issue with glibc 6,
