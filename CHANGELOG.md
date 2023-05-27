@@ -20,6 +20,15 @@ Note:
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# v6.91 2023-05-27 WeKan ® release
+
+This release adds the following new features:
+
+- [BoardAdmin and Admin can now set board background image URL](https://github.com/wekan/wekan/commit/49ef80ab6c2dc038941558f68eface5e82a87593).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.90 2023-05-24 WeKan ® release
 
 This release adds the following new features:
@@ -7303,7 +7312,7 @@ This release adds the following new features, thanks to xet7:
 and adds the following [themes to board background colors](https://github.com/wekan/wekan/commit/c04292e98832e3aa7952e8a7858d47a853f40aad), thanks to xet7:
 
 - RELAX MODE, so when green background selected, list background is light green.
-- [DARK MODE](https://github.com/wekan/wekan/issues/1149), when dark backgroud color selected. Please test and send color visibility fixes as pull requests.
+- [DARK MODE](https://github.com/wekan/wekan/issues/1149), when dark background color selected. Please test and send color visibility fixes as pull requests.
 - In RELAX MODE and DARK MODE, [hide card fields: received, start, due, end, members, requested, assigned](https://github.com/wekan/wekan/commit/b42ecb7948ad194433dc4460305174965106a751).
 
 Thanks to above GitHub users for their contributions and translators for their translations.
