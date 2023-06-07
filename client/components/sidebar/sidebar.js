@@ -691,6 +691,13 @@ BlazeComponent.extendComponent({
           Popup.back();
           event.preventDefault();
         },
+        'click .js-remove-background-image'() {
+          const currentBoard = Boards.findOne(Session.get('currentBoard'));
+          currentBoard.setBackgroundImageURL("");
+          Popup.back();
+          Utils.reload();
+          event.preventDefault();
+        },
       },
     ];
   },
@@ -1326,6 +1333,18 @@ BlazeComponent.extendComponent({
     return this.currentBoard.allowsDescriptionTextOnMinicard;
   },
 
+  allowsCoverAttachmentOnMinicard() {
+    return this.currentBoard.allowsCoverAttachmentOnMinicard;
+  },
+
+  allowsBadgeAttachmentOnMinicard() {
+    return this.currentBoard.allowsBadgeAttachmentOnMinicard;
+  },
+
+  allowsCardSortingByNumberOnMinicard() {
+    return this.currentBoard.allowsCardSortingByNumberOnMinicard;
+  },
+
  lists() {
     return Lists.find(
       {
@@ -1365,6 +1384,54 @@ BlazeComponent.extendComponent({
           $('.js-field-has-description-text-on-minicard').toggleClass(
             CKCLS,
             this.currentBoard.allowsDescriptionTextOnMinicard,
+          );
+        },
+        'click .js-field-has-cover-attachment-on-minicard'(evt) {
+          evt.preventDefault();
+          this.currentBoard.allowsCoverAttachmentOnMinicard = !this.currentBoard
+            .allowsCoverAttachmentOnMinicard;
+          this.currentBoard.setallowsCoverAttachmentOnMinicard(
+            this.currentBoard.allowsCoverAttachmentOnMinicard,
+          );
+          $(`.js-field-has-cover-attachment-on-minicard ${MCB}`).toggleClass(
+            CKCLS,
+            this.currentBoard.allowsCoverAttachmentOnMinicard,
+          );
+          $('.js-field-has-cover-attachment-on-minicard').toggleClass(
+            CKCLS,
+            this.currentBoard.allowsCoverAttachmentOnMinicard,
+          );
+        },
+        'click .js-field-has-badge-attachment-on-minicard'(evt) {
+          evt.preventDefault();
+          this.currentBoard.allowsBadgeAttachmentOnMinicard = !this.currentBoard
+            .allowsBadgeAttachmentOnMinicard;
+          this.currentBoard.setallowsBadgeAttachmentOnMinicard(
+            this.currentBoard.allowsBadgeAttachmentOnMinicard,
+          );
+          $(`.js-field-has-badge-attachment-on-minicard ${MCB}`).toggleClass(
+            CKCLS,
+            this.currentBoard.allowsBadgeAttachmentOnMinicard,
+          );
+          $('.js-field-has-badge-attachment-on-minicard').toggleClass(
+            CKCLS,
+            this.currentBoard.allowsBadgeAttachmentOnMinicard,
+          );
+        },
+        'click .js-field-has-card-sorting-by-number-on-minicard'(evt) {
+          evt.preventDefault();
+          this.currentBoard.allowsCardSortingByNumberOnMinicard = !this.currentBoard
+            .allowsCardSortingByNumberOnMinicard;
+          this.currentBoard.setallowsCardSortingByNumberOnMinicard(
+            this.currentBoard.allowsCardSortingByNumberOnMinicard,
+          );
+          $(`.js-field-has-card-sorting-by-number-on-minicard ${MCB}`).toggleClass(
+            CKCLS,
+            this.currentBoard.allowsCardSortingByNumberOnMinicard,
+          );
+          $('.js-field-has-card-sorting-by-number-on-minicard').toggleClass(
+            CKCLS,
+            this.currentBoard.allowsCardSortingByNumberOnMinicard,
           );
         },
       },

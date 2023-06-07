@@ -145,6 +145,14 @@ template(name="boardChangeBackgroundImagePopup")
       input.js-board-background-image-url(type="text" value="{{backgroundImageURL}}" autofocus)
     div.buttonsContainer
       input.primary.wide(type="submit" value="{{_ 'save'}}")
+    br
+    br
+    br
+    br
+    br
+    hr
+    div
+      button.js-remove-background-image.negate.wide.card-details-red.right {{_ 'unset-color'}}
 
 template(name="boardInfoOnMyBoardsPopup")
   form.board-info-on-my-boards
@@ -302,6 +310,25 @@ template(name="boardMinicardSettingsPopup")
         span
           i.fa.fa-align-left
           | {{_ 'description-on-minicard'}}
+    div.check-div
+      a.flex.js-field-has-cover-attachment-on-minicard(class="{{#if allowsCoverAttachmentOnMinicard}}is-checked{{/if}}")
+        .materialCheckBox(class="{{#if allowsCoverAttachmentOnMinicard}}is-checked{{/if}}")
+        span
+          i.fa.fa-book
+          i.fa.fa-picture-o
+          | {{_ 'cover-attachment-on-minicard'}}
+    div.check-div
+      a.flex.js-field-has-badge-attachment-on-minicard(class="{{#if allowsBadgeAttachmentOnMinicard}}is-checked{{/if}}")
+        .materialCheckBox(class="{{#if allowsBadgeAttachmentOnMinicard}}is-checked{{/if}}")
+        span
+          i.fa.fa-paperclip
+          | {{_ 'badge-attachment-on-minicard'}}
+    div.check-div
+      a.flex.js-field-has-card-sorting-by-number-on-minicard(class="{{#if allowsCardSortingByNumberOnMinicard}}is-checked{{/if}}")
+        .materialCheckBox(class="{{#if allowsCardSortingByNumberOnMinicard}}is-checked{{/if}}")
+        span
+          i.fa.fa-sort
+          | {{_ 'card-sorting-by-number-on-minicard'}}
 
 template(name="boardSubtaskSettingsPopup")
   form.board-subtask-settings

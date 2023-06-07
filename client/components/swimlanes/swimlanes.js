@@ -257,9 +257,19 @@ BlazeComponent.extendComponent({
         submit(evt) {
           evt.preventDefault();
           const lastList = this.currentBoard.getLastList();
-          const sortIndex = Utils.calculateIndexData(lastList, null).base;
           const titleInput = this.find('.list-name-input');
           const title = titleInput.value.trim();
+          let sortIndex = 0
+          if (lastList) {
+            const positionInput = this.find('.list-position-input');
+            const position = positionInput.value.trim();
+            const ret = Lists.findOne({ boardId: Session.get('currentBoard'), _id: position, archived: false })
+            sortIndex = parseInt(JSON.stringify(ret['sort']))
+            sortIndex = sortIndex+1
+          } else {
+            sortIndex = Utils.calculateIndexData(lastList, null).base;
+          }
+
           if (title) {
             Lists.insert({
               title,

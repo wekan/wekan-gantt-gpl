@@ -20,6 +20,60 @@ Note:
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# Upcoming v7.00 WeKan ® release
+
+This version number and and some before it is reserved for upcoming PR from mfilser.
+
+This release adds the following new features:
+
+- Speed improvements to Board and List loading.
+  Thanks to mfilser.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
+# v6.94 2023-06-07 WeKan ® release
+
+This release adds the following new features:
+
+- [Added list position when create a new list on board](https://github.com/wekan/wekan/pull/4938).
+  Thanks to helioguardabaxo.
+- [Added option to show/hide cover attachment on minicard](https://github.com/wekan/wekan/pull/4939).
+  Thanks to helioguardabaxo.
+- [Count of attachments on minicard. (Badges renamed to Count of attachments)](https://github.com/wekan/wekan/pull/4940).
+  Thanks to helioguardabaxo.
+- [Renamed Badge to Count of attachments on minicard. Changed icons to Cover image on minicard](https://github.com/wekan/wekan/commit/825742359ef0738b110ed0904853c604bdbd1bac).
+  Thanks to xet7. 
+- [Added conditional to show after list field only if board has at least one list. Now after list shows the last list by default](https://github.com/wekan/wekan/pull/4941).
+  Thanks to helioguardabaxo.
+- [Changed Add List to be at left. Before it was at right](https://github.com/wekan/wekan/commit/467835192fbcd9d4016674fa2ee406258cc106e7).
+  Thanks to xet7.
+- [Added icons to swimlane action popup](https://github.com/wekan/wekan/pull/4943).
+  Thanks to helioguardabaxo.
+- [Added translations to Sort](https://github.com/wekan/wekan/pull/4945).
+  Thanks to DimDz.
+- Set card attachment as background image.
+  [Part 1](https://github.com/wekan/wekan/commit/8c6df7f20c946163b447227ff2f0d4da681cffb2),
+  [Part 2](https://github.com/wekan/wekan/commit/ed92db87bc0415d3c0bb7f2803d92f8fd7726517),
+  [Part 3](https://github.com/wekan/wekan/commit/01a1eb177e151c3042e1975de771737a6697342f),
+  [Part 4](https://github.com/wekan/wekan/commit/47380244b827a79426ea92d5a96374b72c5b0811).
+  Thanks to xet7.
+- [Edit the title of a swimlane using API](https://github.com/wekan/wekan/pull/4950).
+  Thanks to DimDz.
+
+and adds the following updates:
+
+- Updated dependencies.
+  [Part 1](https://github.com/wekan/wekan/commit/edf08c8cd44062cbdaa0cc98d10ec045a524cff3),
+  [Part 2](https://github.com/wekan/wekan/pull/4949).
+  Thanks to developers of dependencies.
+
+and fixes the following bugs:
+
+- [Fix 6.93 with brackground image breaks scrolling on lists within swimlanes](https://github.com/wekan/wekan/commit/04aaa6f30cfe59769c9b1c75cf8921fcc99b1977).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.93 2023-05-29 WeKan ® release
 
 This release fixes the following bugs:
