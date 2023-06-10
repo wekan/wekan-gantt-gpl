@@ -31,6 +31,42 @@ This release adds the following new features:
 
 Thanks to above GitHub users for their contributions and translators for their translations.
 
+# v6.96 2023-06-10 WeKan ® release
+
+This release fixes the following CRITICAL SECURITY ISSUES:
+
+- Found and fixed more InvisibleBleed of WeKan.
+  [Part 1](https://github.com/wekan/wekan/commit/4c016169c55e0dc5df9533795ddfec424a053300),
+  [Part 2](https://github.com/wekan/wekan/commit/df40384200d10595a7a9cd582d8534295eec5036).
+  Thanks to xet7.
+
+and adds the following new features:
+
+- [Docker Health Check](https://github.com/wekan/wekan/pull/4954).
+  Thanks to luketainton.
+
+and fixes the following bugs:
+
+- [Fix due date filter for next and this week](https://github.com/wekan/wekan/pull/4953).
+  Thanks to helioguardabaxo.
+- Fixed Rare bug: All Boards page icons random dance. Disabled cards counts and card members at All Boards page.
+  [Part 1](https://github.com/wekan/wekan/commit/b75e16f104390211e3e26c500c0a54687fee329d),
+  [Part 2](https://github.com/wekan/wekan/commit/e1a00090ba0ca192ba30f735a13d1ec5b5aa6bc1),
+  [Part 3](https://github.com/wekan/wekan/commit/9ab0efe87adbc872af287fb8254cccb6dd44aec3).
+  Thanks to xet7.
+- [Docker build was broken because of wrong curl install](https://github.com/wekan/wekan/pull/4955).
+  Thanks to mfilser.
+- [Try to fix Docker build by removing empty continuation lines](https://github.com/wekan/wekan/commit/b008986122e258e725379264850d16d06c445db1).
+  Thanks to xet7.
+- [Clarified required settings for start-wekan.bat and start-wekan.sh](https://github.com/wekan/wekan/commit/3e6b396d0913e6747714a9f87e2161bba0ce525e).
+  Thanks to xet7.
+- [Fixed drag-drop at Ubuntu Touch Morph Browser and WeKan OpenStore app by changing jquery-ui-touch-punch to newer updated @rwap/jquery-ui-touch-punch](https://github.com/wekan/wekan/commit/af63259f091cb2ade84493a288ea37c53cd37321).
+  Thanks to xet7.
+- [Try to fix SVG image failed to render](https://github.com/wekan/wekan/commit/7a3c340d657894bf72130b7e51e313e3b020f9cf).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.95 2023-06-07 WeKan ® release
 
 This release fixes the following bugs:

@@ -7,10 +7,14 @@ Template.boardList.helpers({
     return Settings.findOne();
   },
   hideCardCounterList() {
-    return Utils.isMiniScreen() && Session.get('currentBoard');
+    /* Bug Board icons random dance https://github.com/wekan/wekan/issues/4214
+       return Utils.isMiniScreen() && Session.get('currentBoard'); */
+    return true;
   },
   hideBoardMemberList() {
-    return Utils.isMiniScreen() && Session.get('currentBoard');
+    /* Bug Board icons random dance https://github.com/wekan/wekan/issues/4214
+       return Utils.isMiniScreen() && Session.get('currentBoard'); */
+    return true;
   },
 })
 
@@ -84,7 +88,6 @@ BlazeComponent.extendComponent({
         // DOM in its initial state. The card move is then handled reactively by
         // Blaze with the below query.
         $boards.sortable('cancel');
-
         board.move(sortIndex.base);
       },
     });
@@ -211,21 +214,25 @@ BlazeComponent.extendComponent({
   boardLists(boardId) {
     let boardLists = [];
     const lists = Lists.find({ 'boardId': boardId, 'archived': false },{sort: ['sort','asc']});
+    /* Bug Board icons random dance https://github.com/wekan/wekan/issues/4214
     lists.forEach(list => {
       let cardCount = Cards.find({ 'boardId': boardId, 'listId': list._id }).count()
       boardLists.push(`${list.title}: ${cardCount}`);
     });
-    return boardLists
+    */
+    return boardLists;
   },
 
   boardMembers(boardId) {
     let boardMembers = [];
+    /* Bug Board icons random dance https://github.com/wekan/wekan/issues/4214
     const lists = Boards.findOne({ '_id': boardId })
-    let members = lists.members
+    let members = lists.members;
     members.forEach(member => {
       boardMembers.push(member.userId);
     });
-    return boardMembers
+    */
+    return boardMembers;
   },
 
   isStarred() {
