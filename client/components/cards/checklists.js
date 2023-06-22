@@ -97,16 +97,26 @@ BlazeComponent.extendComponent({
     //if (card.isLinked()) cardId = card.linkedId;
     if (card.isLinkedCard()) cardId = card.linkedId;
 
+    let sortIndex;
+    let checklistItemIndex;
+    if (this.currentData().position === 'top') {
+      sortIndex = Utils.calculateIndexData(null, card.firstChecklist()).base;
+      checklistItemIndex = 0;
+    } else {
+      sortIndex = Utils.calculateIndexData(card.lastChecklist(), null).base;
+      checklistItemIndex = -1;
+    }
+
     if (title) {
       Checklists.insert({
         cardId,
         title,
-        sort: card.checklists().count(),
+        sort: sortIndex,
       });
       this.closeAllInlinedForms();
       setTimeout(() => {
         this.$('.add-checklist-item')
-          .last()
+          .eq(checklistItemIndex)
           .click();
       }, 100);
     }
@@ -122,13 +132,22 @@ BlazeComponent.extendComponent({
       let checklistItems = [title];
       if (newlineBecomesNewChecklistItem.checked) {
         checklistItems = title.split('\n').map(_value => _value.trim());
+        if (this.currentData().position === 'top') {
+          checklistItems = checklistItems.reverse();
+        }
       }
       for (let checklistItem of checklistItems) {
+        let sortIndex;
+        if (this.currentData().position === 'top') {
+          sortIndex = Utils.calculateIndexData(null, checklist.firstItem()).base;
+        } else {
+          sortIndex = Utils.calculateIndexData(checklist.lastItem(), null).base;
+        }
         ChecklistItems.insert({
           title: checklistItem,
           checklistId: checklist._id,
           cardId: checklist.cardId,
-          sort: Utils.calculateIndexData(checklist.lastItem()).base,
+          sort: sortIndex,
         });
       }
     }
