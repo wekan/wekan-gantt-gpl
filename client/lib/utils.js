@@ -1,20 +1,11 @@
 Utils = {
   setBackgroundImage(url) {
     const currentBoard = Boards.findOne(Session.get('currentBoard'));
-/*
-    if(url) {
-      if (url !== currentBoard.backgroundImageURL) {
-        currentBoard.setBackgroundImageURL(url);
-      } else {
-        currentBoard.setBackgroundImageURL("");
-      }
-    }
-*/
-    if (currentBoard.backgroundImageURL) {
+    if (currentBoard.backgroundImageURL !== undefined) {
       $(".board-wrapper,.board-wrapper .board-canvas").css({"background":"url(" + currentBoard.backgroundImageURL + ")","background-size":"cover"});
       $(".swimlane,.swimlane .list,.swimlane .list .list-body,.swimlane .list:first-child .list-body").css({"background-color":"transparent"});
-    } else {
-      $(".board-wrapper,.board-wrapper .board-canvas").css({"background": currentBoard.background-color});
+    } else if (currentBoard.color !== undefined) {
+      currentBoard.setColor(currentBoard.color);
     }
   },
   /** returns the current board id
@@ -56,6 +47,25 @@ Utils = {
   getPopupCard() {
     const cardId = Utils.getPopupCardId();
     const ret = Cards.findOne(cardId);
+    return ret;
+  },
+  canModifyCard() {
+    const currentUser = Meteor.user();
+    const ret = (
+      currentUser &&
+      currentUser.isBoardMember() &&
+      !currentUser.isCommentOnly() &&
+      !currentUser.isWorker()
+    );
+    return ret;
+  },
+  canModifyBoard() {
+    const currentUser = Meteor.user();
+    const ret = (
+      currentUser &&
+      currentUser.isBoardMember() &&
+      !currentUser.isCommentOnly()
+    );
     return ret;
   },
   reload() {

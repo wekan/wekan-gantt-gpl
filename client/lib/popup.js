@@ -76,6 +76,14 @@ window.Popup = new (class {
         dataContext: (this && this.currentData && this.currentData()) || (options && options.dataContextIfCurrentDataIsUndefined) || this,
       });
 
+      const $contentWrapper = $('.content-wrapper')
+      if ($contentWrapper.length > 0) {
+        const contentWrapper = $contentWrapper[0];
+        self._getTopStack().scrollTop = contentWrapper.scrollTop;
+        // scroll from e.g. delete comment to the top (where the confirm button is)
+        $contentWrapper.scrollTop(0);
+      }
+
       // If there are no popup currently opened we use the Blaze API to render
       // one into the DOM. We use a reactive function as the data parameter that
       // return the complete along with its top element and depends on our
@@ -129,6 +137,21 @@ window.Popup = new (class {
   /// steps back is greater than the popup stack size, the popup will be closed.
   back(n = 1) {
     if (this._stack.length > n) {
+      const $contentWrapper = $('.content-wrapper')
+      if ($contentWrapper.length > 0) {
+        const contentWrapper = $contentWrapper[0];
+        const stack = this._stack[this._stack.length - n];
+        // scrollTopMax and scrollLeftMax only available at Firefox (https://developer.mozilla.org/en-US/docs/Web/API/Element/scrollTopMax)
+        const scrollTopMax = contentWrapper.scrollTopMax || contentWrapper.scrollHeight - contentWrapper.clientHeight;
+        if (scrollTopMax && stack.scrollTop > scrollTopMax) {
+          // sometimes scrollTopMax is lower than scrollTop, so i need this dirty hack
+          setTimeout(() => {
+            $contentWrapper.scrollTop(stack.scrollTop);
+          }, 6);
+        }
+        // restore the old popup scroll position
+        $contentWrapper.scrollTop(stack.scrollTop);
+      }
       _.times(n, () => this._stack.pop());
       this._dep.changed();
     } else {

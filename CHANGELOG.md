@@ -31,6 +31,76 @@ This release adds the following new features:
 
 Thanks to above GitHub users for their contributions and translators for their translations.
 
+# v6.99 2023-07-09 WeKan ® release
+
+This release adds the following new features:
+
+- [Preview PDF](https://github.com/wekan/wekan/pull/4989).
+  Thanks to VidVidex.
+- [Preview PDF translations](https://github.com/wekan/wekan/commit/83ae1d4a19925363d8f176553fb10a98a77420be).
+  Thanks xet7.
+- [Preview PDF to have full width, close at top, and improve viewing at mobile](https://github.com/wekan/wekan/commit/4be5727a18472920ed775b8a2024b9c8ca2fdf0a).
+  Thanks to xet7.
+- [Show Meteor dependency chain with rebuild-wekan.sh](https://github.com/wekan/wekan/commit/ba9f9705d43189d2491266af1fd4817ff34a3b59).
+  Thanks to xet7.
+
+and adds the following updates:
+
+- [Updated dependencies](https://github.com/wekan/wekan/commit/92c57fc91ea063914730647d0add8dae77187424).
+  Thanks to developers of dependencies.
+- Added Snap MONGO_URL to rebuild-wekan.sh dev options.
+  [Part 1](https://github.com/wekan/wekan/commit/7d59ae93f9263c383a1c8c8605490d54b1e09ed7),
+  [Part 2](https://github.com/wekan/wekan/commit/3c2cc351f4bbe82b6870bab0e1891823c359e789).
+  Thanks to xet7.
+- [MongoDB 6.0.7 at Snap](https://github.com/wekan/wekan/commit/5babe0358deae4b01261ee8655ec0e5a38f0344d).
+  Thanks to MongoDB developers.
+
+and fixes the following bugs:
+
+- [New popup scrolls to top and restore previous position after closing again](https://github.com/wekan/wekan/pull/4979).
+  Thanks to mfilser.
+- [Copy Checklist dialog now set's the last selected board](https://github.com/wekan/wekan/pull/4980).
+  Thanks to mfilser.
+- [Copy Checklist only copied the checklist items at the first time, now always](https://github.com/wekan/wekan/pull/4981).
+  Thanks to mfilser.
+- [Attachment copy changes now the boardId, listId and swimlaneId in the collection data](https://github.com/wekan/wekan/pull/4982).
+  Thanks to mfilser.
+- [Admin attachment view was missing the column header "S3FileId"](https://github.com/wekan/wekan/pull/4983).
+  Thanks to mfilser.
+- [Global Search, limit 0 is no limit](https://github.com/wekan/wekan/pull/4984).
+  Thanks to mfilser.
+- [Admin Report, fixing filesize if not a number](https://github.com/wekan/wekan/pull/4985).
+  Thanks to mfilser.
+- [Global search, found cards count is now substituted by the translation function itself](https://github.com/wekan/wekan/pull/4986).
+  Thanks to mfilser.
+- [Utils of canModifyCard and canModifyBoard + move this general functions to Utils class](https://github.com/wekan/wekan/pull/4987).
+  Thanks to mfilser.
+- Set background color only if it exists.
+  [Part 1](https://github.com/wekan/wekan/commit/45d33fa2e459717064969a1729e016d4004e5435),
+  [Part 2](https://github.com/wekan/wekan/commit/c6cad13f1e86fea44c7c16e1a194c6d7164e824a),
+  [Part 3](https://github.com/wekan/wekan/commit/549b15000b538d6e5013cc978c0f49e753fd903a).
+  Thanks to xet7.
+- [If there is no Custom Field label at minicard, show value full width](https://github.com/wekan/wekan/commit/ffea7aff99db555d357876e1415f9015154782cc).
+  Thanks to koluka and xet7.
+- API: Fix /api/boards/{boardId}/attachments endpoint.
+  [Part 1](https://github.com/wekan/wekan/pull/4991),
+  [Part 2](https://github.com/wekan/wekan/pull/4992).
+  Thanks to VidVidex.
+- [Improved attachment gallery and attachment viewer](https://github.com/wekan/wekan/pull/4995).
+  Thanks to VidVidex.
+- [Removed horka:swipebox](https://github.com/wekan/wekan/commit/4148238af31ad31b6190221ad69db865f9ed5ccc).
+  Thanks to VidVidex and xet7.
+- [Bold minicard custom field title](https://github.com/wekan/wekan/pull/4993).
+  Thanks to VidVidex.
+- [Revert first list width change](https://github.com/wekan/wekan/pull/4993).
+  Thanks to xet7.
+- [Fixed maximum call stack exceeded by removing bootstrap 3, datepicker and summernote. Updated jquery. Disabled attachments viewer that opens empty when opening card. Fixes all npm audit errors](https://github.com/wekan/wekan/commit/140a134a11d0b262f69e4f343dddddb87c978748).
+  Thanks to xet7.
+- [Fix attachment viewer not being hidden](https://github.com/wekan/wekan/pull/4997).
+  Thanks to VidVidex.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.98 2023-06-22 WeKan ® release
 
 This release adds the following new features:
