@@ -1,6 +1,6 @@
 {
   "name": "wekan-gantt-gpl",
-  "version": "v6.99.0",
+  "version": "v6.99.2",
   "description": "Open Source GPLv2 kanban",
   "private": true,
   "repository": {
@@ -20,6 +20,7 @@
     "sinon-chai": "^3.7.0"
   },
   "dependencies": {
+    "@mapbox/node-pre-gyp": "^1.0.10",
     "@rwap/jquery-ui-touch-punch": "^1.0.11",
     "ajv": "^6.12.6",
     "bcryptjs": "^2.4.3",
