@@ -31,6 +31,15 @@ This release adds the following new features:
 
 Thanks to above GitHub users for their contributions and translators for their translations.
 
+# v6.99.8 2023-07-13 WeKan ® release
+
+This release fixes the following bugs:
+
+- [Fix card creation. Now date fields are checked if they are empty](https://github.com/wekan/wekan/pull/5009).
+  Thanks to helioguardabaxo.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.99.7 2023-07-11 WeKan ® release
 
 This release adds the following updates:
