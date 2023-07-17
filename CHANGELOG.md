@@ -31,6 +31,15 @@ This release adds the following new features:
 
 Thanks to above GitHub users for their contributions and translators for their translations.
 
+# v6.99.9 2023-07-18 WeKan ® release
+
+This release fixes the following bugs:
+
+- [Fix "PROPAGATE_OIDC_DATA" mechanism if "info.groups" is undefined](https://github.com/wekan/wekan/pull/5011).
+  Thanks to NotTheEvilOne.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v6.99.8 2023-07-13 WeKan ® release
 
 This release fixes the following bugs:
