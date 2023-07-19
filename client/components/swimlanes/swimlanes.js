@@ -1,7 +1,8 @@
+import { ReactiveCache } from '/imports/reactiveCache';
 const { calculateIndex } = Utils;
 
 function currentListIsInThisSwimlane(swimlaneId) {
-  const currentList = Lists.findOne(Session.get('currentList'));
+  const currentList = Utils.getCurrentList();
   return (
     currentList &&
     (currentList.swimlaneId === swimlaneId || currentList.swimlaneId === '')
@@ -10,7 +11,7 @@ function currentListIsInThisSwimlane(swimlaneId) {
 
 function currentCardIsInThisList(listId, swimlaneId) {
   const currentCard = Utils.getCurrentCard();
-  //const currentUser = Meteor.user();
+  //const currentUser = ReactiveCache.getCurrentUser();
   if (
     //currentUser &&
     //currentUser.profile &&
@@ -104,15 +105,6 @@ function initSortable(boardComponent, $listsDom) {
     },
   });
 
-  //function userIsMember() {
-  //  return (
-  //    Meteor.user() &&
-  //    Meteor.user().isBoardMember() &&
-  //    !Meteor.user().isCommentOnly() &&
-  //    !Meteor.user().isWorker()
-  //  );
-  //}
-
   boardComponent.autorun(() => {
     if (Utils.isTouchScreenOrShowDesktopDragHandles()) {
       $listsDom.sortable({
@@ -129,11 +121,7 @@ function initSortable(boardComponent, $listsDom) {
       $listsDom.sortable(
         'option',
         'disabled',
-        // Disable drag-dropping when user is not member/is worker
-        //!userIsMember() || Meteor.user().isWorker(),
-        !Meteor.user() || !Meteor.user().isBoardAdmin(),
-        // Not disable drag-dropping while in multi-selection mode
-        // MultiSelection.isActive() || !userIsMember(),
+        !ReactiveCache.getCurrentUser()?.isBoardAdmin(),
       );
     }
   });
@@ -182,7 +170,7 @@ BlazeComponent.extendComponent({
         .parentComponent()
         .data()._id;
       const cards = list.cards(swimlaneId);
-      if (cards.count() === 0) {
+      if (cards.length === 0) {
         return false;
       }
     }
@@ -239,7 +227,7 @@ BlazeComponent.extendComponent({
 
 BlazeComponent.extendComponent({
   onCreated() {
-    this.currentBoard = Boards.findOne(Session.get('currentBoard'));
+    this.currentBoard = Utils.getCurrentBoard();
     this.isListTemplatesSwimlane =
       this.currentBoard.isTemplatesBoard() &&
       this.currentData().isListTemplatesSwimlane();
@@ -263,7 +251,7 @@ BlazeComponent.extendComponent({
           if (lastList) {
             const positionInput = this.find('.list-position-input');
             const position = positionInput.value.trim();
-            const ret = Lists.findOne({ boardId: Session.get('currentBoard'), _id: position, archived: false })
+            const ret = ReactiveCache.getList({ boardId: Utils.getCurrentBoardId(), _id: position, archived: false })
             sortIndex = parseInt(JSON.stringify(ret['sort']))
             sortIndex = sortIndex+1
           } else {
@@ -294,12 +282,6 @@ BlazeComponent.extendComponent({
 Template.swimlane.helpers({
   canSeeAddList() {
     return Meteor.user().isBoardAdmin();
-    /*
-      Meteor.user() &&
-      Meteor.user().isBoardMember() &&
-      !Meteor.user().isCommentOnly() &&
-      !Meteor.user().isWorker()
-      */
   },
 });
 
@@ -324,7 +306,7 @@ BlazeComponent.extendComponent({
         .parentComponent()
         .data()._id;
       const cards = list.cards(swimlaneId);
-      if (cards.count() === 0) {
+      if (cards.length === 0) {
         return false;
       }
     }
@@ -350,7 +332,7 @@ class MoveSwimlaneComponent extends BlazeComponent {
   }
 
   board() {
-    return Boards.findOne(Session.get('currentBoard'));
+    return Utils.getCurrentBoard();
   }
 
   toBoardsSelector() {
@@ -363,14 +345,14 @@ class MoveSwimlaneComponent extends BlazeComponent {
   }
 
   toBoards() {
-    return Boards.find(this.toBoardsSelector(), { sort: { title: 1 } });
+    const ret = ReactiveCache.getBoards(this.toBoardsSelector(), { sort: { title: 1 } });
+    return ret;
   }
 
   events() {
     return [
       {
         'click .js-done'() {
-          // const swimlane = Swimlanes.findOne(this.currentSwimlane._id);
           const bSelect = $('.js-select-boards')[0];
           let boardId;
           if (bSelect) {

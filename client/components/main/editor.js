@@ -1,3 +1,5 @@
+import { ReactiveCache } from '/imports/reactiveCache';
+
 const specialHandles = [
   {userId: 'board_members', username: 'board_members'},
   {userId: 'card_members', username: 'card_members'}
@@ -13,13 +15,13 @@ BlazeComponent.extendComponent({
       {
         match: /\B@([\w.-]*)$/,
         search(term, callback) {
-          const currentBoard = Boards.findOne(Session.get('currentBoard'));
+          const currentBoard = Utils.getCurrentBoard();
           callback(
             _.union(
             currentBoard
               .activeMembers()
               .map(member => {
-                const user = Users.findOne(member.userId);
+                const user = ReactiveCache.getUser(member.userId);
                 const username = user.username;
                 const fullName = user.profile && user.profile !== undefined && user.profile.fullname ? user.profile.fullname : "";
                 return username.includes(term) || fullName.includes(term) ? user : null;
@@ -328,13 +330,13 @@ Blaze.Template.registerHelper(
   new Template('mentions', function() {
     const view = this;
     let content = Blaze.toHTML(view.templateContentBlock);
-    const currentBoard = Boards.findOne(Session.get('currentBoard'));
+    const currentBoard = Utils.getCurrentBoard();
     if (!currentBoard)
       return HTML.Raw(
         DOMPurify.sanitize(content, { ALLOW_UNKNOWN_PROTOCOLS: true }),
       );
     const knowedUsers = _.union(currentBoard.members.map(member => {
-      const u = Users.findOne(member.userId);
+      const u = ReactiveCache.getUser(member.userId);
       if (u) {
         member.username = u.username;
       }

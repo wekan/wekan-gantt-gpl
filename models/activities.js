@@ -1,3 +1,5 @@
+import { ReactiveCache } from '/imports/reactiveCache';
+
 // Activities don't need a schema because they are always set from the a trusted
 // environment - the server - and there is no risk that a user change the logic
 // we use with this collection. Moreover using a schema for this collection
@@ -12,53 +14,53 @@ Activities = new Mongo.Collection('activities');
 
 Activities.helpers({
   board() {
-    return Boards.findOne(this.boardId);
+    return ReactiveCache.getBoard(this.boardId);
   },
   oldBoard() {
-    return Boards.findOne(this.oldBoardId);
+    return ReactiveCache.getBoard(this.oldBoardId);
   },
   user() {
-    return Users.findOne(this.userId);
+    return ReactiveCache.getUser(this.userId);
   },
   member() {
-    return Users.findOne(this.memberId);
+    return ReactiveCache.getUser(this.memberId);
   },
   list() {
-    return Lists.findOne(this.listId);
+    return ReactiveCache.getList(this.listId);
   },
   swimlane() {
-    return Swimlanes.findOne(this.swimlaneId);
+    return ReactiveCache.getSwimlane(this.swimlaneId);
   },
   oldSwimlane() {
-    return Swimlanes.findOne(this.oldSwimlaneId);
+    return ReactiveCache.getSwimlane(this.oldSwimlaneId);
   },
   oldList() {
-    return Lists.findOne(this.oldListId);
+    return ReactiveCache.getList(this.oldListId);
   },
   card() {
-    return Cards.findOne(this.cardId);
+    return ReactiveCache.getCard(this.cardId);
   },
   comment() {
-    return CardComments.findOne(this.commentId);
+    return ReactiveCache.getCardComment(this.commentId);
   },
   attachment() {
-    return Attachments.findOne(this.attachmentId);
+    return ReactiveCache.getAttachment(this.attachmentId);
   },
   checklist() {
-    return Checklists.findOne(this.checklistId);
+    return ReactiveCache.getChecklist(this.checklistId);
   },
   checklistItem() {
-    return ChecklistItems.findOne(this.checklistItemId);
+    return ReactiveCache.getChecklistItem(this.checklistItemId);
   },
   subtasks() {
-    return Cards.findOne(this.subtaskId);
+    return ReactiveCache.getCard(this.subtaskId);
   },
   customField() {
-    return CustomFields.findOne(this.customFieldId);
+    return ReactiveCache.getCustomField(this.customFieldId);
   },
   // Label activity did not work yet, unable to edit labels when tried this.
   //label() {
-  //  return Cards.findOne(this.labelId);
+  //  return ReactiveCache.getCard(this.labelId);
   //},
 });
 
@@ -108,7 +110,7 @@ if (Meteor.isServer) {
     let participants = [];
     let watchers = [];
     let title = 'act-activity-notify';
-    const board = Boards.findOne(activity.boardId);
+    const board = ReactiveCache.getBoard(activity.boardId);
     const description = `act-${activity.activityType}`;
     const params = {
       activityId: activity._id,
@@ -201,7 +203,7 @@ if (Meteor.isServer) {
       if (board) {
         const comment = params.comment;
         const knownUsers = board.members.map(member => {
-          const u = Users.findOne(member.userId);
+          const u = ReactiveCache.getUser(member.userId);
           if (u) {
             member.username = u.username;
             member.emails = u.emails;
@@ -332,12 +334,12 @@ if (Meteor.isServer) {
       }
     });
 
-    const integrations = Integrations.find({
+    const integrations = ReactiveCache.getIntegrations({
       boardId: { $in: [board._id, Integrations.Const.GLOBAL_WEBHOOK_ID] },
       // type: 'outgoing-webhooks', // all types
       enabled: true,
       activities: { $in: [description, 'all'] },
-    }).fetch();
+    });
     if (integrations.length > 0) {
       params.watchers = watchers;
       integrations.forEach(integration => {

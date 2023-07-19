@@ -1,6 +1,6 @@
 {
   "name": "wekan-gantt-gpl",
-  "version": "v6.99.9",
+  "version": "v7.00",
   "description": "Open Source GPLv2 kanban",
   "private": true,
   "repository": {
@@ -22,6 +22,8 @@
   "dependencies": {
     "@mapbox/node-pre-gyp": "^1.0.10",
     "@rwap/jquery-ui-touch-punch": "^1.0.11",
+    "@wekanteam/meteor-globals": "^1.1.4",
+    "@wekanteam/meteor-reactive-cache": "^1.0.6",
     "ajv": "^6.12.6",
     "bcryptjs": "^2.4.3",
     "bson": "^4.5.2",

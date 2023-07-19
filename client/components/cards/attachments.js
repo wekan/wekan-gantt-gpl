@@ -1,3 +1,4 @@
+import { ReactiveCache } from '/imports/reactiveCache';
 import { ObjectID } from 'bson';
 import DOMPurify from 'dompurify';
 
@@ -40,7 +41,7 @@ Template.attachmentGallery.events({
 });
 
 function getNextAttachmentId(currentAttachmentId) {
-    const attachments = Attachments.find({'meta.cardId': cardId}).get();
+    const attachments = ReactiveCache.getAttachments({'meta.cardId': cardId});
 
     let i = 0;
     for (; i < attachments.length; i++) {
@@ -52,7 +53,7 @@ function getNextAttachmentId(currentAttachmentId) {
 }
 
 function getPrevAttachmentId(currentAttachmentId) {
-  const attachments = Attachments.find({'meta.cardId': cardId}).get();
+  const attachments = ReactiveCache.getAttachments({'meta.cardId': cardId});
 
   let i = 0;
   for (; i < attachments.length; i++) {
@@ -65,7 +66,7 @@ function getPrevAttachmentId(currentAttachmentId) {
 
 function openAttachmentViewer(attachmentId){
 
-    const attachment = Attachments.findOne({_id: attachmentId});
+    const attachment = ReactiveCache.getAttachment(attachmentId);
 
     $("#attachment-name").text(attachment.name);
 
@@ -166,7 +167,7 @@ Template.attachmentViewer.events({
 
 Template.attachmentGallery.helpers({
   isBoardAdmin() {
-    return Meteor.user().isBoardAdmin();
+    return ReactiveCache.getCurrentUser().isBoardAdmin();
   },
   fileSize(size) {
     const ret = filesize(size);
@@ -322,11 +323,11 @@ Template.previewClipboardImagePopup.events({
 
 BlazeComponent.extendComponent({
   isCover() {
-    const ret = Cards.findOne(this.data().meta.cardId).coverId == this.data()._id;
+    const ret = ReactiveCache.getCard(this.data().meta.cardId).coverId == this.data()._id;
     return ret;
   },
   isBackgroundImage() {
-    //const currentBoard = Boards.findOne(Session.get('currentBoard'));
+    //const currentBoard = Utils.getCurrentBoard();
     //return currentBoard.backgroundImageURL === $(".attachment-thumbnail-img").attr("src");
     return false;
   },
@@ -334,22 +335,22 @@ BlazeComponent.extendComponent({
     return [
       {
         'click .js-add-cover'() {
-          Cards.findOne(this.data().meta.cardId).setCover(this.data()._id);
+          ReactiveCache.getCard(this.data().meta.cardId).setCover(this.data()._id);
           Popup.back();
         },
         'click .js-remove-cover'() {
-          Cards.findOne(this.data().meta.cardId).unsetCover();
+          ReactiveCache.getCard(this.data().meta.cardId).unsetCover();
           Popup.back();
         },
         'click .js-add-background-image'() {
-          const currentBoard = Boards.findOne(Session.get('currentBoard'));
+          const currentBoard = Utils.getCurrentBoard();
           currentBoard.setBackgroundImageURL(attachmentActionsLink);
           Utils.setBackgroundImage(attachmentActionsLink);
           Popup.back();
           event.preventDefault();
         },
         'click .js-remove-background-image'() {
-          const currentBoard = Boards.findOne(Session.get('currentBoard'));
+          const currentBoard = Utils.getCurrentBoard();
           currentBoard.setBackgroundImageURL("");
           Utils.setBackgroundImage("");
           Popup.back();

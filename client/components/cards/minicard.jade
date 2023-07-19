@@ -129,11 +129,11 @@ template(name="minicard")
 
     .badges
       unless currentUser.isNoComments
-        if comments.count
-          .badge(title="{{_ 'card-comments-title' comments.count }}")
+        if comments.length
+          .badge(title="{{_ 'card-comments-title' comments.length }}")
             span.badge-icon.fa.fa-comment-o.badge-comment
               = ' '
-              = comments.count
+              = comments.length
             //span.badge-comment.badge-text
             //|  {{_ 'comment'}}
       if getDescription
@@ -156,7 +156,7 @@ template(name="minicard")
           .badge
             span.badge-icon.fa.fa-paperclip
             span.badge-text= attachments.length
-      if checklists.count
+      if checklists.length
         .badge(class="{{#if checklistFinished}}is-finished{{/if}}")
           span.badge-icon.fa.fa-check-square-o
           span.badge-text.check-list-text {{checklistFinishedCount}}/{{checklistItemCount}}
