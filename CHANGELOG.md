@@ -20,6 +20,23 @@ Note:
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# v7.01 2023-07-21 WeKan ® release
+
+This release fixes the following bugs:
+
+- [Fix for Calendar View Create Card](https://github.com/wekan/wekan/pull/5019).
+  Thanks to DimDz.
+- [Minicard didn't show the assignee](https://github.com/wekan/wekan/pull/5021).
+  Thanks to mfilser.
+- [Helm Chart: Add imagePullPolicy to initContainer. Needed for running wekan when restarting while offline](https://github.com/wekan/charts/pull/21).
+  Thanks to jadams.
+- [Removing Utils.getCurrentSetting() and use ReactiveCache directly](https://github.com/wekan/wekan/pull/5022).
+  Thanks to mfilser.
+- [Attachment rename and delete works now again for non board admins](https://github.com/wekan/wekan/pull/5023).
+  Thanks to mfilser.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v7.00 2023-07-19 WeKan ® release
 
 This release adds the following new features:
@@ -54,6 +71,8 @@ This release fixes the following bugs:
 
 - [Fix card creation. Now date fields are checked if they are empty](https://github.com/wekan/wekan/pull/5009).
   Thanks to helioguardabaxo.
+- [Helm Chart: Changes for Openshift](https://github.com/wekan/charts/pull/20).
+  Thanks to salleman33.
 
 Thanks to above GitHub users for their contributions and translators for their translations.
 
