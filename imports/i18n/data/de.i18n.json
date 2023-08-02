@@ -85,6 +85,14 @@
   "add-card": "Karte hinzufügen",
   "add-card-to-top-of-list": "Karte am Anfang der Liste hinzufügen",
   "add-card-to-bottom-of-list": "Karte am Ende der Liste hinzufügen",
+  "setListWidthPopup-title": "Stelle die Breite der Liste ein",
+  "set-list-width": "Stelle die Breite der Liste ein",
+  "set-list-width-value": "Breite der Liste (Pixel)",
+  "list-width-error-message": "Die Breite der Liste muss eine positive ganze Zahl sein",
+  "setSwimlaneHeightPopup-title": "Stelle die Höhe der Swimlane ein",
+  "set-swimlane-height": "Stelle die Höhe der Swimlane ein",
+  "set-swimlane-height-value": "Höhe der Swimlane (Pixel)",
+  "swimlane-height-error-message": "Die Höhe der Swimlane muss eine positive ganze Zahl sein",
   "add-swimlane": "Swimlane hinzufügen",
   "add-subtask": "Teilaufgabe hinzufügen",
   "add-checklist": "Checkliste hinzufügen",
@@ -1220,5 +1228,6 @@
   "max-avatar-filesize": "Maximale Profilbild Größe in Bytes:",
   "allowed-avatar-filetypes": "Erlaubte Profilbild Dateitypen:",
   "invalid-file": "Wenn der Dateiname ungültig ist, wird das Hochladen oder Umbenennen abgebrochen.",
-  "preview-pdf-not-supported": "Dein Gerät unterstützt keine PDF Vorschau. Versuche sie stattdessen herunterzuladen."
+  "preview-pdf-not-supported": "Dein Gerät unterstützt keine PDF Vorschau. Versuche sie stattdessen herunterzuladen.",
+  "drag-board": "Das Board ziehen nach"
 }

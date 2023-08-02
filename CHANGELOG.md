@@ -2,6 +2,8 @@
 
 [Mac ChangeLog](https://github.com/wekan/wekan/wiki/Mac)
 
+Newest Node.js is at https://github.com/wekan/node-v14-esm/releases/tag/v14.21.4
+
 Required versions of Node.js, MongoDB etc are listed at https://wekan.github.io
 Download section.
 
@@ -19,6 +21,49 @@ Note:
 - Snap Stable has old WeKan 6.09 with MongoDB 3.2.2 
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
+
+# v7.02 2023-08-02 WeKan ® release
+
+This release adds the following new features:
+
+- [Make swimlane height and list width adjustable](https://github.com/wekan/wekan/pull/4964).
+  Thanks to mark-i-m.
+- [Don't translate swimlane height and list width minimum value](https://github.com/wekan/wekan/commit/7baf7d2256b87f66aa31ee282e08ebbd4564202d).
+  Thanks to xet7.
+
+and adds the following updates:
+
+- [Upgrade to Meteor 2.13 and Node.js 14.21.4](https://github.com/wekan/wekan/commit/caa8d087389b3f212c5eb4b7f538f3ad7c8c1227).
+  Thanks to Meteor developers.
+- [Upgrade WeKan Docker to Node.js 14.21.4](https://github.com/wekan/wekan/commit/8dc7aa490a456cbf3207d266470febe69c0d5b6a).
+  Thanks to Meteor and xet7.
+- [Upgrade to MongoDB 6.0.8 in Snap Candidate](https://github.com/wekan/wekan/commit/a773abaf2f4c77cbf586e2b0cba7b9ce412527ef).
+  Thanks to MongoDB developers.
+- [Upgrade WeKan Snap Candidate to Node.js 14.21.4](https://github.com/wekan/wekan/commit/0161f19ba7ac63c40933bb4550f5397ddecd3452).
+  Thanks to Meteor and xet7.
+- [Upgrade WeKan StackSmith to Node.js 14.21.4](https://github.com/wekan/wekan/commit/f0620ce8800eccff4da822048f90ee4812560937).
+  Thanks to Meteor and xet7.
+- [Upgrade to Node.js 14.21.4 at build scripts and remaining Docker containers](https://github.com/wekan/wekan/commit/9f6e6bdc8193d86387166468578a6a24811ca9ec).
+  Thanks to Meteor and xet7.
+
+and fixes the following bugs:
+
+- [Only selectively show login elements once settings is loaded](https://github.com/wekan/wekan/pull/5032).
+  Thanks to nebulade.
+- [First registration after installation must be an admin account](https://github.com/wekan/wekan/pull/5037).
+  Thanks to mfilser.
+- [Fix get_board_cards_count](https://github.com/wekan/wekan/pull/5040).
+  Thanks to Pandetthe.
+- [Login layout code cleanup](https://github.com/wekan/wekan/pull/5041).
+  Thanks to nebulade.
+- [Drag board made translateable](https://github.com/wekan/wekan/commit/62c2d59f469a3e4d11df010ed65561defdda991f).
+  Thanks to xet7.
+- [Fixed v7.01.0 fresh install in listview first column small](https://github.com/wekan/wekan/commit/7b607b2aaf852b550d968c2f1ec17f53fb5d686e).
+  Thanks to intellekta and xet7.
+- [Fix assignees description](https://github.com/wekan/wekan/pull/5043).
+  Thanks to Pandetthe.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
 
 # v7.01 2023-07-21 WeKan ® release
 

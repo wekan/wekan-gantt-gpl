@@ -85,6 +85,14 @@
   "add-card": "Añadir una tarjeta",
   "add-card-to-top-of-list": "Add Card to Top of List",
   "add-card-to-bottom-of-list": "Add Card to Bottom of List",
+  "setListWidthPopup-title": "Set List Width",
+  "set-list-width": "Set List Width",
+  "set-list-width-value": "List Width (pixels)",
+  "list-width-error-message": "List width must be a positive integer",
+  "setSwimlaneHeightPopup-title": "Set Swimlane Height",
+  "set-swimlane-height": "Set Swimlane Height",
+  "set-swimlane-height-value": "Swimlane Height (pixels)",
+  "swimlane-height-error-message": "Swimlane height must be a positive integer",
   "add-swimlane": "Añadir un carril de flujo",
   "add-subtask": "Añadir subtarea",
   "add-checklist": "Añadir una lista de verificación",
@@ -1220,5 +1228,6 @@
   "max-avatar-filesize": "Max avatar filesize in bytes:",
   "allowed-avatar-filetypes": "Allowed avatar filetypes:",
   "invalid-file": "If filename is invalid, upload or rename is cancelled.",
-  "preview-pdf-not-supported": "Your device does not support previewing PDF. Try downloading instead."
+  "preview-pdf-not-supported": "Your device does not support previewing PDF. Try downloading instead.",
+  "drag-board": "Drag board"
 }
