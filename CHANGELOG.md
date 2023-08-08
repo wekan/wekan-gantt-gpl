@@ -22,6 +22,26 @@ Note:
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# v7.05 2023-08-08 WeKan ® release
+
+This release adds the following updates:
+
+- [Updated dependencies](https://github.com/wekan/wekan/commit/529a43fa0e47ff478dd6b2e6f1c7b4513fe0bbbb).
+  Thanks to developers of dependencies.
+
+and fixes the following bugs:
+
+- [Make default swimlane auto-height](https://github.com/wekan/wekan/pull/5059).
+  Thanks to mark-i-m.
+- [Show option b) -1 for disabling swimlane height at swimlane height popup](https://github.com/wekan/wekan/commit/ab4073721151e1308b2e9ffd32a1ee765c7b7668).
+  Thanks to xet7.
+- [Fixed Normal (non-admin) board users cannot adjust swimlane height](https://github.com/wekan/wekan/commit/6b1403984f3b11700f6b06b4eff64a062916381a).
+  Thanks to mgdbbrt and xet7.
+- [Fixing positioning of opened cards](https://github.com/wekan/wekan/pull/5066).
+  Thanks to chrisi51.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v7.04 2023-08-03 WeKan ® release
 
 This release fixes the following bugs:

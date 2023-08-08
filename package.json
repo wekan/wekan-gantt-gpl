@@ -1,6 +1,6 @@
 {
   "name": "wekan-gantt-gpl",
-  "version": "v7.04.0",
+  "version": "v7.05.0",
   "description": "Open Source GPLv2 kanban",
   "private": true,
   "repository": {
@@ -29,8 +29,8 @@
     "bcryptjs": "^2.4.3",
     "bson": "^4.5.2",
     "bunyan": "^1.8.15",
-    "core-js": "^3.18.2",
     "dhtmlx-gantt": "^7.1.2",
+    "core-js": "^3.32.0",
     "dompurify": "^2.4.1",
     "es6-promise": "^4.2.4",
     "escape-string-regexp": "^5.0.0",
