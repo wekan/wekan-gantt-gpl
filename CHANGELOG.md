@@ -22,6 +22,26 @@ Note:
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# v7.06 2023-08-15 WeKan ® release
+
+This release adds the following updates:
+
+- [Updated exceljs and jszip](https://github.com/wekan/wekan/commit/f9823f67bd7ded44982298b15487f945e8216b60).
+  Thanks to developers of dependencies.
+- [Update building Windows bundle](https://github.com/wekan/wekan/commit/6d1705af344a36e1cd7846c3d41e486ae0200e2e).
+  Thanks to xet7.
+
+and fixes the following bugs:
+
+- [Alphabetic ordered member lists on assigne and member lists](https://github.com/wekan/wekan/pull/5071).
+  Thanks to chrisi51.
+- [Label drag/drop (reorder labels) works now again](https://github.com/wekan/wekan/pull/5075).
+  Thanks to mfilser.
+- [Add attachment swiping](https://github.com/wekan/wekan/pull/5080).
+  Thanks to VidVidex.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v7.05 2023-08-08 WeKan ® release
 
 This release adds the following updates:
@@ -38,6 +58,8 @@ and fixes the following bugs:
 - [Fixed Normal (non-admin) board users cannot adjust swimlane height](https://github.com/wekan/wekan/commit/6b1403984f3b11700f6b06b4eff64a062916381a).
   Thanks to mgdbbrt and xet7.
 - [Fixing positioning of opened cards](https://github.com/wekan/wekan/pull/5066).
+  Thanks to chrisi51.
+- [Cleaner memberlist popups](https://github.com/wekan/wekan/issues/5068).
   Thanks to chrisi51.
 
 Thanks to above GitHub users for their contributions and translators for their translations.
