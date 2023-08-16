@@ -22,6 +22,22 @@ Note:
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# v7.07 2023-08-16 WeKan ® release
+
+This release adds the following updates:
+
+- [Update Windows bundle build script](https://github.com/wekan/wekan/commit/d48068f63c93fc5a9f8041acb220d6491b5e22ae).
+  Thanks to xet7.
+
+and fixes the following bugs:
+
+- [Fix downloading attachments with unusual filenames](https://github.com/wekan/wekan/pull/5083).
+  Thanks to VidVidex.
+- [Add some filename, if there is no filename after sanitize](https://github.com/wekan/wekan/commit/3d1a161c59a0cb4eafb50ab2fdb04443d54b2086).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v7.06 2023-08-15 WeKan ® release
 
 This release adds the following updates:
@@ -29,6 +45,8 @@ This release adds the following updates:
 - [Updated exceljs and jszip](https://github.com/wekan/wekan/commit/f9823f67bd7ded44982298b15487f945e8216b60).
   Thanks to developers of dependencies.
 - [Update building Windows bundle](https://github.com/wekan/wekan/commit/6d1705af344a36e1cd7846c3d41e486ae0200e2e).
+  Thanks to xet7.
+- [s390x disabled, because there is problem adding fibers](https://github.com/wekan/wekan/commit/9bf3b960a199ec8d65faab3061947d809144ebdc).
   Thanks to xet7.
 
 and fixes the following bugs:

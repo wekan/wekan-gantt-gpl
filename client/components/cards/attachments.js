@@ -292,13 +292,23 @@ Template.cardAttachmentsPopup.events({
       let uploads = [];
       for (const file of files) {
         const fileId = new ObjectID().toString();
-        // If filename is not same as sanitized filename, has XSS, then cancel upload
-        if (file.name !== DOMPurify.sanitize(file.name)) {
-          return false;
+        let fileName = DOMPurify.sanitize(file.name);
+
+        // If sanitized filename is not same as original filename,
+        // it could be XSS that is already fixed with sanitize,
+        // or just normal mistake, so it is not a problem.
+        // That is why here is no warning.
+        if (fileName !== file.name) {
+          // If filename is empty, only in that case add some filename
+          if (fileName.length === 0) {
+            fileName = 'Empty-filename-after-sanitize.txt';
+          }
         }
+
         const config = {
           file: file,
           fileId: fileId,
+          fileName: fileName,
           meta: Utils.getCommonAttachmentMetaFrom(card),
           chunkSize: 'dynamic',
         };
