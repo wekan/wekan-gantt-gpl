@@ -22,6 +22,26 @@ Note:
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# v7.08 2023-08-17 WeKan ® release
+
+This release adds the following new features:
+
+- [Custom translation strings at Admin Panel](https://github.com/wekan/wekan/pull/5085).
+  Thanks to ipyramiddev.
+- [Added remaining translations to feature custom translation strings at Admin Panel](https://github.com/wekan/wekan/commit/c769bed7dd6d61b5f56e0ec5d43c9f2662a156d2).
+  Thanks to xet7.
+
+and adds the following updates:
+
+- Updated release scripts.
+  [Part 1](https://github.com/wekan/wekan/commit/558d406148eb47c27de9828b541f6081ceac224a),
+  [Part 2](https://github.com/wekan/wekan/commit/d6b960f79a5cb9db83587fae7d9c83d2ee63d90c),
+  [Part 3](https://github.com/wekan/wekan/commit/c570e426a1e6c4055a72a8ae6febce016c3eef5a),
+  [Part 4](https://github.com/wekan/wekan/commit/c47d5ca64e8c9c8a977d7dca5aeb92afb2e62fe5).
+  Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v7.07 2023-08-16 WeKan ® release
 
 This release adds the following updates:

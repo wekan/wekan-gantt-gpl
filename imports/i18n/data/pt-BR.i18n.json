@@ -1229,5 +1229,13 @@
   "allowed-avatar-filetypes": "Tipos de arquivos permitidos para avatar:",
   "invalid-file": "Se nome do arquivo for inválido, o upload ou renomeação será cancelada.",
   "preview-pdf-not-supported": "Seu dispositivo não suporta a pré-visualização de PDF. Tente baixar o arquivo.",
-  "drag-board": "Arrastar quadro"
+  "drag-board": "Arrastar quadro",
+  "translation-number": "O número de textos de tradução customizados é:",
+  "delete-translation-confirm-popup": "Você tem certeza que deseja excluir este texto de tradução customizado? Não há como desfazer.",
+  "newTranslationPopup-title": "Novo texto de tradução customizado",
+  "editTranslationPopup-title": "Editar texto de tradução customizado",
+  "settingsTranslationPopup-title": "Excluir este texto de tradução customizado?",
+  "translation": "Tradução",
+  "text": "Texto",
+  "translation-text": "Texto de tradução"
 }
