@@ -22,6 +22,34 @@ Note:
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# v7.09 2023-08-21 WeKan ® release
+
+This release adds the following new features:
+
+- [Move card to other boards API](https://github.com/wekan/wekan/pull/5090).
+  Thanks to DimDz.
+
+and adds the following updates:
+
+- [Upgraded Snap Candidate MongoDB to 6.0.9](https://github.com/wekan/wekan/commit/9d5af24e7b656c2bf6ad32bc8360bb80374408d6).
+  Thanks to MongoDB developers.
+- Fixed building s390x release.
+  [Part 1](https://github.com/wekan/wekan/commit/73f943f89a89374a83cdfb31f0bfbfdfe4d6f52e),
+  [Part 2](https://github.com/wekan/wekan/commit/7dfb1eb6ce00166a6263f98b9bf975b8a84d1143).
+  Thanks to xet7.
+- [ReactiveCache, use default parameters](https://github.com/wekan/wekan/pull/5091).
+  Thanks to mfilser.
+- [ReactiveCache, serialize and parse json with EJSON](https://github.com/wekan/wekan/pull/5092).
+  Thanks to mfilser.
+- [Translations are working on the client side again](https://github.com/wekan/wekan/pull/5093).
+  Thanks to mfilser.
+- [ReactiveCache, full implementation of the collection "Translation"](https://github.com/wekan/wekan/pull/5094).
+  Thanks to mfilser.
+- [Attachments, big images are now fully displayed](https://github.com/wekan/wekan/pull/5095).
+  Thanks to mfilser.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v7.08 2023-08-17 WeKan ® release
 
 This release adds the following new features:
@@ -40,7 +68,8 @@ and adds the following updates:
   [Part 2](https://github.com/wekan/wekan/commit/d6b960f79a5cb9db83587fae7d9c83d2ee63d90c),
   [Part 3](https://github.com/wekan/wekan/commit/c570e426a1e6c4055a72a8ae6febce016c3eef5a),
   [Part 4](https://github.com/wekan/wekan/commit/c47d5ca64e8c9c8a977d7dca5aeb92afb2e62fe5),
-  [Part 5](https://github.com/wekan/wekan/commit/7b94188f64e554be11bee244892a0cd9fefd0a9a).
+  [Part 5](https://github.com/wekan/wekan/commit/7b94188f64e554be11bee244892a0cd9fefd0a9a),
+  [Part 6](https://github.com/wekan/wekan/commit/b068d07ce56add0fbd02a4a23fcb14d77bd9fcfd).
   Thanks to xet7.
 
 and fixes the following bugs:
