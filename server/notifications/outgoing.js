@@ -66,6 +66,8 @@ if (Meteor.isServer) {
     'swimlaneId',
     'customField',
     'customFieldValue',
+    'labelId',
+    'label',
     'attachmentId',
   ];
   const responseFunc = data => {
@@ -126,6 +128,7 @@ if (Meteor.isServer) {
           'checklist',
           'swimlane',
           'oldSwimlane',
+          'labelId',
           'label',
           'attachment',
           'attachmentId',
@@ -135,11 +138,16 @@ if (Meteor.isServer) {
 
         const userId = params.userId ? params.userId : integrations[0].userId;
         const user = ReactiveCache.getUser(userId);
-        const text = `${params.user} ${TAPi18n.__(
+        const descriptionText = TAPi18n.__(
           description,
           quoteParams,
           user.getLanguage(),
-        )}\n${params.url}`;
+        );
+
+        // If you don't want a hook, set the webhook description to "-".
+        if (descriptionText === "-") return;
+
+        const text = `${params.user} ${descriptionText}\n${params.url}`;
 
         if (text.length === 0) return;
 

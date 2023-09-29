@@ -22,6 +22,131 @@ Note:
 
 [How to upgrade WeKan](https://github.com/wekan/wekan/issues/4585)
 
+# v7.10 2023-09-29 WeKan ® release
+
+This release adds the following new features:
+
+- At opened card, toggle to show checklist at minicard.
+  [Part 1](https://github.com/wekan/wekan/commit/2a190fdc194ac2fc2d8086521c5a3eaa2aff0641),
+  [Part 2](https://github.com/wekan/wekan/commit/2c99d1cecbaab8556b65bce857b8d93c2cc62c37),
+  [Part 3](https://github.com/wekan/wekan/commit/80312d30520840145ee24042aca3ebeda3260d99),
+  [Part 4](https://github.com/wekan/wekan/commit/86814a0fd8615fde1867dcf2841b6a24fcfb105b),
+  [Part 5](https://github.com/wekan/wekan/commit/75d524f61558b2b6003220c43aa23adb142da91d),
+  [Part 6](https://github.com/wekan/wekan/commit/47468a475003c433db0fcc7735741e4548d6c19c).
+  Thanks to xet7.
+- [Added show-subtasks-field to be translateable at Board Settings / Subtasks Settings](https://github.com/wekan/wekan/commit/e60eddda0440f49d769d73db212322d5ba994662).
+  Thanks to xet7.
+- [After OIDC login, add users to board DEFAULT_BOARD_ID](https://github.com/wekan/wekan/pull/5098).
+  Thanks to diegosteiner.
+- [Added DEFAULT_BOARD_ID environment variable setting to all WeKan platforms](https://github.com/wekan/wekan/commit/a781c0e7dcfdbe34c1483ee83cec12455b7026f7).
+  Thanks to xet7.
+- [Make available translation text to set empty string](https://github.com/wekan/wekan/pull/5103).
+  Thanks to ipyramiddev.
+- [Added a condition to filter unwanted webhooks](https://github.com/wekan/wekan/pull/5106).
+  Thanks to ipyramiddev.
+- [Added docker-compose.yml-arm64](https://github.com/wekan/wekan/commit/e103bf46dd796b5c589b315ca68c7a60b5e388db).
+  Thanks to xet7.
+
+and adds the following updates:
+
+- [In rebuild-wekan.sh, option 9 to Save Meteor dependency chain to ../meteor-deps.txt](https://github.com/wekan/wekan/commit/7c80a34cf238cbccfe4fed0fb92cf73ddff6beed).
+  Thanks to xet7.
+- [Update FullCalendar version to 3.10.5](https://github.com/wekan/wekan/pull/5100).
+  Thanks to helioguardabaxo.
+- [Renamed directory packages/meteor-fullcalendar to packages/wekan-fullcalendar](https://github.com/wekan/wekan/commit/2d652df176b63f7cc27e9de51fbf2f2cbd52ef34).
+  Thanks to xet7.
+- [Removed old demo API key to silence GitHub secret scanning warning](https://github.com/wekan/wekan/commit/c22e71e3a2175260e483a08026e1ea3446dc77fa).
+  Thanks to xet7.
+- [Added assetlinks.json](https://github.com/wekan/wekan/commit/74b98a5ee40564448906f41cf66f93ee73faaea1).
+  Thanks to xet7.
+- [Update translations. Added Afrikaans (af), Afrikaans (South africa)(af_ZA), English (South Africa)(en_ZA)](https://github.com/wekan/wekan/commit/ee4a3b5b35ade479b8ddf7cdedf56aa1ef676b3f).
+  Thanks to translators.
+- Updated dependencies.
+  [Part 1](https://github.com/wekan/wekan/commit/4933bf8203dd615ca02963bd502a1cca2584bbac),
+  [Part 2](https://github.com/wekan/wekan/pull/5119).
+  [Part 3](https://github.com/wekan/wekan/pull/5129).
+  Thanks to developers of dependencies.
+- [Update Font Awesome version to 6.4.2](https://github.com/wekan/wekan/pull/5125).
+  Thanks to helioguardabaxo.
+- [Removed Font Awesome not in use directories svgs, scss and less](https://github.com/wekan/wekan/commit/473e2c28c6093403881515067e1b0560eddc85b2).
+  Thanks to xet7.
+- [Add all Font Awesome characters](https://github.com/wekan/wekan/pull/5128).
+  Thanks to helioguardabaxo.
+- [Update Bootstrap Datepicker version to 1.10.0](https://github.com/wekan/wekan/pull/5126).
+  Thanks to helioguardabaxo.
+- [Removed non-existing sw translation and not needed files from bootstrap-datepicker](https://github.com/wekan/wekan/commit/dfe05cc924767e69f40a7332f0e0196ddf2bc8d5).
+  Thanks to xet7.
+- [Upgraded to Meteor 2.13.3](https://github.com/wekan/wekan/commit/6b88ae2ba26427ab58597b580440e601fd77b320).
+  Thanks to Meteor developers.
+- [Upgrade Snap Candidate to MongoDB 6.0.10](https://github.com/wekan/wekan/commit/522ab40f436be5656fd6fbd8057c6715afa2fa36).
+  Thanks to MongoDB developers.
+- Renamed WeKan repo branch master to main.
+  [Part 1](https://github.com/wekan/wekan/commit/549982b5e10c240fb2358c21b0781fef2e63a2ba),
+  [Part 2](https://github.com/wekan/wekan/commit/fa32010a656a47a6fba9a625d6ab216c9b2034df),
+  [Part 3](https://github.com/wekan/wekan/commit/b68493b009bbbb63cf26c9020299762c2a2717aa).
+  Thanks to xet7.
+- [Use newest Docker build from newest main branch commit at docker-compose.yml](https://github.com/wekan/wekan/commit/8cba42efbefeac159c0c653b53f6464a2fc5ed09).
+  Thanks to xet7.
+- [Removed disabled codeql-analysis workflow](https://github.com/wekan/wekan/commit/240e05ba1640e92de639ddded5c4a20b32a74d2a).
+  Thanks to xet7.
+- [Updated versions at Dockerfile](https://github.com/wekan/wekan/commit/637442563ea843a89396d557db3327c1775e6a12).
+  Thanks to xet7.
+- [Fixed arm64 Dockerfile](https://github.com/wekan/wekan/commit/73e690a5fee24707377d3fe7985c52947cbc8929).
+  Thanks to manfromdownunder and xet7.
+- [Added Dockerfile for s390x](https://github.com/wekan/wekan/commit/eacb310e59e03b44b0249206b28e4cb3adf163d0).
+  Thanks to xet7.
+- [Updated dependencies](https://github.com/wekan/wekan/commit/52ce6da32c54d8c65ed679072c64fda66e1606a0).
+  Thanks to developers of dependencies.
+
+and fixes the following bugs:
+
+- [Correctly display preview for very tall images](https://github.com/wekan/wekan/pull/5097).
+  Thanks to VidVidex.
+- Replaced ldap logger https://www.npmjs.com/package/bunyan with https://docs.meteor.com/packages/logging.html, because bunyan did show dtrace errors when building WeKan.
+  [Part 1](https://github.com/wekan/wekan/commit/e83945c1a6c08fe58f660bcd7b7f8494f629e913),
+  [Part 2](https://github.com/wekan/wekan/commit/427eb8ebd16b847eb278cd319adb75adc5206e99).
+  Thanks to xet7.
+- [Comment out warning about unset variable at ldap.js](https://github.com/wekan/wekan/commit/7f91055d8c7ed508b2f6fca111f17ec1353c445a).
+  Thanks to xet7.
+- [Removed CollectionFS and and attachment migrations, because they prevented using MONGO_URL username/passwrod with MongoDB 6.x, CollectionFS forced old MongoDB driver](https://github.com/wekan/wekan/commit/3b936ff6e7ed733a65488f1384f868e17b8ab751).
+  Thanks to xet7.
+- [Hide incomplete feature Show checklist at minicard](https://github.com/wekan/wekan/commit/75d524f61558b2b6003220c43aa23adb142da91d).
+  Thanks to xet7.
+- [Fix for CalendarView, Create Card without Refresh](https://github.com/wekan/wekan/pull/5105).
+  Thanks to DimDz.
+- [Active members list now is ordered](https://github.com/wekan/wekan/pull/5107).
+  Thanks to helioguardabaxo.
+- [Removed limit when setting Swimlane max height](https://github.com/wekan/wekan/commit/7f9aa7509314a85a550dd16615429c5e030b5f2b).
+  Thanks to Meeques, mark-i-m and xet7.
+- [Fixed Can't login via LDAP because of some Node.js issues](https://github.com/wekan/wekan/commit/c898a3f5ea689469f4e1003b90162bd4233b6aeb).
+  Thanks to Danny-Graf and xet7.
+- [Stop using /etc/timezone in Docker. Only use /etc/localtime](https://github.com/wekan/wekan/commit/7baa95fcab5447a359c84a2139b1968f0332f683).
+  Thanks to dabiao2008 and xet7.
+- [Fix createCardWithDueDate Error: User id is required](https://github.com/wekan/wekan/commit/7d1ab0a38875909de02230e70181a7ddb5187870).
+  Thanks to xet7.
+- [Fix Swimlane Default title from "key default returned an object instead of string" to translated title of "Default"](https://github.com/wekan/wekan/commit/73a25775e1cb7b1f1b355707e21e3704b98ca9c5).
+  Thanks to titho85, hpvb and xet7.
+- [Fix allow normal user to view subtasks at subtasks board](https://github.com/wekan/wekan/commit/22d98fec38dd16b4cc8ad0fdca8c2973e9779e08).
+  Thanks to xet7.
+- [Fix minicard description text color to black, so that it is visible at light grey background](https://github.com/wekan/wekan/commit/ab944e51c728412d455d88b5714e84393eccb210).
+  Thanks to xet7.
+- [Fix mini width of add list also to moderndark theme](https://github.com/wekan/wekan/commit/05c6e101ff32efb42365ac2ffbd802497d5199ac).
+  Thanks to xet7.
+- [Fixed typo at ldap.js](https://github.com/wekan/wekan/commit/c27a00a4a872cca280ee07079f93941bbee9844f).
+  Thanks to xet7.
+- [Try to get some label outgoing webhooks working](https://github.com/wekan/wekan/commit/b40654cdfea61cd7a0a6c7f5efca86b62b3a2cbd).
+  Thanks to xet7.
+- [Fix missing Font Awesome icons](https://github.com/wekan/wekan/pull/5133).
+  Thanks to helioguardabaxo.
+- [Font Awesome 6.4.2 adding missing icons](https://github.com/wekan/wekan/pull/5134).
+  Thanks to mfilser.
+- [Make sessinAffinity stickable to clientIP](https://github.com/wekan/wekan/pull/5136).
+  Thanks to Dexus.
+- [Users can't change their password since V7.02](https://github.com/wekan/wekan/pull/5146).
+  Thanks to nebulade.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v7.09 2023-08-21 WeKan ® release
 
 This release adds the following new features:
@@ -2589,7 +2714,7 @@ and adds the following accessibility improvements:
 
 - Made WeKan zoomable by recommendation of Axe browser extension
   https://github.com/wekan/wekan/issues/459#issuecomment-999098233 by changing meta viewport settings at
-  https://github.com/wekan/wekan/blob/master/client/components/main/layouts.jade#L3 ,
+  https://github.com/wekan/wekan/blob/main/client/components/main/layouts.jade#L3 ,
   in some commit of this WeKan v5.88.
   Thanks to xet7.
 
@@ -6443,7 +6568,7 @@ This release fixes the following CRITICAL SECURITY VULNERABILITIES:
 - [Fix XSS bug reported today 4 hours ago by Cyb3rjunky](https://github.com/wekan/wekan/commit/482682e50079d70c5113169020d6834013b57c11).
   Logged in users could run javascript in input fields.
   This affects Wekan versions v3.12-v3.84.
-  In [Wekan v3.12](https://github.com/wekan/wekan/blob/master/CHANGELOG.md#v312-2019-08-09-wekan-release)
+  In [Wekan v3.12](https://github.com/wekan/wekan/blob/main/CHANGELOG.md#v312-2019-08-09-wekan-release)
   there was [changes for XSS filter to allow inserting images, videos etc
   on comment WYSIWYG editor](https://github.com/wekan/wekan/pull/2593)
   so features related to that are now removed.
@@ -8909,7 +9034,7 @@ This release adds the following new features:
 and fixes the following bugs:
 
 - Revert [Sandstorm API changes](https://github.com/wekan/wekan/commit/be03a191c4321c2f80116c0ee1ae6c826d882535)
-  that were done at [Wekan v2.05](https://github.com/wekan/wekan/blob/master/CHANGELOG.md#v205-2019-01-27-wekan-release)
+  that were done at [Wekan v2.05](https://github.com/wekan/wekan/blob/main/CHANGELOG.md#v205-2019-01-27-wekan-release)
   to fix #2143. Thanks to pantraining and xet7.
 
 Thanks to above GitHub users and translators for contributions.
@@ -9056,7 +9181,7 @@ Update translations. Thanks to translators.
 This release adds the following new features:
 
 - [IFTTT Rules improvements](https://github.com/wekan/wekan/pull/2088). Thanks to Angtrim.
-- Add [find.sh](https://github.com/wekan/wekan/blob/master/find.sh) bash script that ignores
+- Add [find.sh](https://github.com/wekan/wekan/blob/main/find.sh) bash script that ignores
   extra directories when searching. xet7 uses this a lot when developing. Thanks to xet7.
 
 Thanks to above GitHub users for their contributions.
@@ -10567,7 +10692,7 @@ This release adds the following new features:
 
 - [Checklist templates](https://github.com/wekan/wekan/pull/1470);
 - Added [Finnish language changelog](https://github.com/wekan/wekan/tree/devel/meta/t9n-changelog)
-  and [more Finnish traslations](https://github.com/wekan/wekan/blob/master/sandstorm-pkgdef.capnp)
+  and [more Finnish traslations](https://github.com/wekan/wekan/blob/main/sandstorm-pkgdef.capnp)
   to Sandstorm.
 
 Thanks to GitHub users erikturk and xet7 for their contributions.

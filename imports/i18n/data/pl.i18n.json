@@ -727,6 +727,7 @@
   "delete-board": "Usuń tablicę",
   "default-subtasks-board": "Podzadania dla tablicy __board__",
   "default": "Domyślny",
+  "defaultdefault": "Domyślny",
   "queue": "Kolejka",
   "subtask-settings": "Ustawienia podzadań",
   "card-settings": "Ustawienia kart",
@@ -1237,5 +1238,8 @@
   "settingsTranslationPopup-title": "Delete this custom translation string?",
   "translation": "Translation",
   "text": "Tekst",
-  "translation-text": "Translation text"
+  "translation-text": "Translation text",
+  "show-at-minicard": "Show at minicard",
+  "show-checklist-at-minicard": "Show checklist at minicard",
+  "show-subtasks-field": "Show subtasks field"
 }

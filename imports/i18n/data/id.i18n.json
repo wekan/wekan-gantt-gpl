@@ -727,6 +727,7 @@
   "delete-board": "Hapus Papan",
   "default-subtasks-board": "Subtasks for __board__ board",
   "default": "Standar",
+  "defaultdefault": "Standar",
   "queue": "Antrian",
   "subtask-settings": "Subtasks Settings",
   "card-settings": "Pengaturan Kartu",
@@ -1237,5 +1238,8 @@
   "settingsTranslationPopup-title": "Delete this custom translation string?",
   "translation": "Translation",
   "text": "Text",
-  "translation-text": "Translation text"
+  "translation-text": "Translation text",
+  "show-at-minicard": "Show at minicard",
+  "show-checklist-at-minicard": "Show checklist at minicard",
+  "show-subtasks-field": "Show subtasks field"
 }

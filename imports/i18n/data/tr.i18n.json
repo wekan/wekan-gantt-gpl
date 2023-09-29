@@ -727,6 +727,7 @@
   "delete-board": "Panoyu Sil",
   "default-subtasks-board": "__board__ panosu için alt görevler",
   "default": "Varsayılan",
+  "defaultdefault": "Varsayılan",
   "queue": "Sıra",
   "subtask-settings": "Alt Görev ayarları",
   "card-settings": "Kart ayarları",
@@ -1237,5 +1238,8 @@
   "settingsTranslationPopup-title": "Delete this custom translation string?",
   "translation": "Translation",
   "text": "Metin",
-  "translation-text": "Translation text"
+  "translation-text": "Translation text",
+  "show-at-minicard": "Show at minicard",
+  "show-checklist-at-minicard": "Show checklist at minicard",
+  "show-subtasks-field": "Show subtasks field"
 }

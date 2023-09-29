@@ -1,6 +1,6 @@
 {
   "name": "wekan-gantt-gpl",
-  "version": "v7.09.0",
+  "version": "v7.10.0",
   "description": "Open Source GPLv2 kanban",
   "private": true,
   "repository": {
@@ -13,14 +13,14 @@
   },
   "homepage": "https://wekan.github.io",
   "devDependencies": {
-    "chai": "^4.3.6",
+    "chai": "^4.3.8",
     "chai-as-promised": "^7.1.1",
     "flatted": "^3.2.2",
     "sinon": "^13.0.2",
     "sinon-chai": "^3.7.0"
   },
   "dependencies": {
-    "@babel/runtime": "^7.22.6",
+    "@babel/runtime": "^7.22.11",
     "@mapbox/node-pre-gyp": "^1.0.10",
     "@rwap/jquery-ui-touch-punch": "^1.0.11",
     "@wekanteam/meteor-globals": "^1.1.4",
@@ -30,7 +30,7 @@
     "bson": "^4.5.2",
     "bunyan": "^1.8.15",
     "dhtmlx-gantt": "^7.1.2",
-    "core-js": "^3.32.0",
+    "core-js": "^3.32.1",
     "dompurify": "^2.4.1",
     "es6-promise": "^4.2.4",
     "escape-string-regexp": "^5.0.0",
@@ -40,7 +40,7 @@
     "filesize": "^8.0.7",
     "i18next": "^21.6.16",
     "i18next-sprintf-postprocessor": "^0.2.2",
-    "jquery": "^3.7.0",
+    "jquery": "^3.7.1",
     "jquery-ui": "^1.13.0",
     "jszip": "^3.7.1",
     "ldapjs": "^2.3.3",
@@ -49,9 +49,8 @@
     "markdown-it-mathjax3": "^4.3.1",
     "meteor-accounts-t9n": "^2.6.0",
     "meteor-node-stubs": "^1.1.0",
-    "minio": "^7.1.0",
+    "minio": "^7.1.3",
     "moment": "^2.29.4",
-    "node-gyp": "^9.3.1",
     "nodemailer": "^6.6.3",
     "os": "^0.1.2",
     "page": "^1.11.6",

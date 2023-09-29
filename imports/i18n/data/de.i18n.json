@@ -150,7 +150,7 @@
   "board-background-image-url": "Hintergrundbild URL",
   "add-background-image": "Hintergrundbild hinzufügen",
   "remove-background-image": "Hintergrundbild entfernen",
-  "show-at-all-boards-page" : "Zeige auf \"Alle Boards\" Seite",
+  "show-at-all-boards-page" : "Auf der \"Alle Boards\" Seite anzeigen",
   "board-info-on-my-boards" : "Einstellungen für Alle Boards",
   "boardInfoOnMyBoardsPopup-title" : "Einstellungen für Alle Boards",
   "boardInfoOnMyBoards-title": "Einstellungen für Alle Boards",
@@ -695,7 +695,7 @@
   "show-field-on-card": "Zeige dieses Feld auf der Karte",
   "automatically-field-on-card": "Füge Feld neuen Karten hinzu",
   "always-field-on-card": "Füge Feld allen Karten hinzu",
-  "showLabel-field-on-card": "Feld für Label auf Minikarte anzeigen",
+  "showLabel-field-on-card": " Label Feld auf Minikarte anzeigen",
   "showSum-field-on-list": "Zeige Summe der Felder oben in der Liste",
   "yes": "Ja",
   "no": "Nein",
@@ -727,6 +727,7 @@
   "delete-board": "Board löschen",
   "default-subtasks-board": "Teilaufgabe für __board__ Board",
   "default": "Standard",
+  "defaultdefault": "Standard",
   "queue": "Warteschlange",
   "subtask-settings": "Einstellungen für Teilaufgaben",
   "card-settings": "Karten-Einstellungen",
@@ -1237,5 +1238,8 @@
   "settingsTranslationPopup-title": "Soll die benutzerdefinierte String-Übersetzung gelöscht werden?",
   "translation": "Übersetzung",
   "text": "Text",
-  "translation-text": "Übersetzungstext"
+  "translation-text": "Übersetzungstext",
+  "show-at-minicard": "Zeige auf Minikarte",
+  "show-checklist-at-minicard": "Checkliste auf Minikarte anzeigen",
+  "show-subtasks-field": "Teilaufgaben Feld anzeigen"
 }

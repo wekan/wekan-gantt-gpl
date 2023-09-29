@@ -727,6 +727,7 @@
   "delete-board": "מחיקת לוח",
   "default-subtasks-board": "תת־משימות עבור הלוח __board__",
   "default": "בררת מחדל",
+  "defaultdefault": "בררת מחדל",
   "queue": "תור",
   "subtask-settings": "הגדרות תתי משימות",
   "card-settings": "הגדרות כרטיס",
@@ -1237,5 +1238,8 @@
   "settingsTranslationPopup-title": "למחוק את מחרוזת התרגום הזאת שהותאמה אישית?",
   "translation": "תרגום",
   "text": "טקסט",
-  "translation-text": "טקסט תרגום"
+  "translation-text": "טקסט תרגום",
+  "show-at-minicard": "הצגה בכרטיסון",
+  "show-checklist-at-minicard": "הצגת רשימת מטלות על הכרטיסון",
+  "show-subtasks-field": "הצגת שדה תת־משימות"
 }

@@ -727,6 +727,7 @@
   "delete-board": "Suprimeix el tauler",
   "default-subtasks-board": "Subtasques per al tauler __board__",
   "default": "Per defecte",
+  "defaultdefault": "Per defecte",
   "queue": "Cua",
   "subtask-settings": "Configuració de subtasques",
   "card-settings": "Configuració de fitxa",
@@ -1237,5 +1238,8 @@
   "settingsTranslationPopup-title": "Delete this custom translation string?",
   "translation": "Translation",
   "text": "Text",
-  "translation-text": "Translation text"
+  "translation-text": "Translation text",
+  "show-at-minicard": "Show at minicard",
+  "show-checklist-at-minicard": "Show checklist at minicard",
+  "show-subtasks-field": "Show subtasks field"
 }

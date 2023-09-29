@@ -1,6 +1,6 @@
 {
   "accept": "Akcepti",
-  "act-activity-notify": "Activity Notification",
+  "act-activity-notify": "Agado Sciigo",
   "act-addAttachment": "aldonita alligitecon __attachment__ al karto __card__ en la listo __list__ en la naĝotubo __swimlane__ en la tabulo __board__",
   "act-deleteAttachment": "forigita alligitecon __attachment__ al karto __card__ en la listo __list__ en la naĝotubo __swimlane__ en la tabulo __board__",
   "act-addSubtask": "aldonita subtaskon __subtask__ al karto __card__ en la listo __list__ en la naĝotubo __swimlane__ en la tabulo __board__",
@@ -727,6 +727,7 @@
   "delete-board": "Delete Board",
   "default-subtasks-board": "Subtasks for __board__ board",
   "default": "Defaŭlto",
+  "defaultdefault": "Defaŭlto",
   "queue": "Queue",
   "subtask-settings": "Subtasks Settings",
   "card-settings": "Card Settings",
@@ -1237,5 +1238,8 @@
   "settingsTranslationPopup-title": "Delete this custom translation string?",
   "translation": "Translation",
   "text": "Teksto",
-  "translation-text": "Translation text"
+  "translation-text": "Translation text",
+  "show-at-minicard": "Show at minicard",
+  "show-checklist-at-minicard": "Show checklist at minicard",
+  "show-subtasks-field": "Show subtasks field"
 }

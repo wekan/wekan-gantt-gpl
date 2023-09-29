@@ -727,6 +727,7 @@
   "delete-board": "Delete Board",
   "default-subtasks-board": "Subtasks for __board__ board",
   "default": "Default",
+  "defaultdefault": "Default",
   "queue": "Queue",
   "subtask-settings": "Subtasks Settings",
   "card-settings": "Card Settings",
@@ -1237,5 +1238,8 @@
   "settingsTranslationPopup-title": "이 사용자정의 번역 문자열을 삭제합니까?",
   "translation": "번역",
   "text": "Text",
-  "translation-text": "번역 문구"
+  "translation-text": "번역 문구",
+  "show-at-minicard": "미니카드에 보이기",
+  "show-checklist-at-minicard": "미니카드에 확인목록 보이기",
+  "show-subtasks-field": "하위할일 항목 보이기"
 }

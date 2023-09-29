@@ -727,6 +727,7 @@
   "delete-board": "Board löschen",
   "default-subtasks-board": "Teilaufgabe für __board__ Board",
   "default": "Standard",
+  "defaultdefault": "Standard",
   "queue": "Warteschlange",
   "subtask-settings": "Einstellungen für Teilaufgaben",
   "card-settings": "Karten-Einstellungen",
@@ -1237,5 +1238,8 @@
   "settingsTranslationPopup-title": "Delete this custom translation string?",
   "translation": "Translation",
   "text": "Text",
-  "translation-text": "Translation text"
+  "translation-text": "Translation text",
+  "show-at-minicard": "Show at minicard",
+  "show-checklist-at-minicard": "Show checklist at minicard",
+  "show-subtasks-field": "Show subtasks field"
 }

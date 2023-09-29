@@ -2820,6 +2820,7 @@ function cardLabels(userId, doc, fieldNames, modifier) {
   // Say hello to the new label
   if (modifier.$addToSet && modifier.$addToSet.labelIds) {
     labelId = modifier.$addToSet.labelIds;
+    //const label = labels(labelId).name;
     if (!_.contains(doc.labelIds, labelId)) {
       const act = {
         userId,
@@ -2932,6 +2933,7 @@ Meteor.methods({
       createdAt: new Date(),
       dueAt: dueDate,
       sort: 0,
+      usedId: Meteor.userId(),
     };
     const cardId = Cards.insert(card);
     return cardId;

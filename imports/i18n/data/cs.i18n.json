@@ -727,6 +727,7 @@
   "delete-board": "Smazat tablo",
   "default-subtasks-board": "Podúkoly pro tablo __board__",
   "default": "Výchozí",
+  "defaultdefault": "Výchozí",
   "queue": "Fronta",
   "subtask-settings": "Nastavení podúkolů",
   "card-settings": "Nastavení karet",
@@ -1237,5 +1238,8 @@
   "settingsTranslationPopup-title": "Delete this custom translation string?",
   "translation": "Translation",
   "text": "Text",
-  "translation-text": "Translation text"
+  "translation-text": "Translation text",
+  "show-at-minicard": "Show at minicard",
+  "show-checklist-at-minicard": "Show checklist at minicard",
+  "show-subtasks-field": "Show subtasks field"
 }
