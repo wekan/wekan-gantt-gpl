@@ -1,0 +1,131 @@
+/* Board Table view: search + pagination controls, styled to match the
+   Admin Panel / People page (see client/components/settings/peopleBody.css).
+   The table itself reuses the My Cards table styling (.my-cards-board-table). */
+
+.table-view-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 9px 0;
+}
+
+.table-view-search-box {
+  display: flex;
+  flex-direction: row;
+  height: 34px;
+}
+
+.table-view-search-box input {
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 0 8px;
+}
+
+.table-view-search-box button {
+  min-width: 90px;
+  margin-inline-start: 6px;
+  background: #01628c;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 0 12px;
+}
+
+.table-view-search-box button:hover {
+  background: #005377;
+}
+
+.table-view-pagination {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.table-view-pagination button {
+  min-width: 32px;
+  height: 30px;
+  border: 1px solid #bbb;
+  background: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.table-view-pagination button.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.table-view-page-info {
+  min-width: 72px;
+  text-align: center;
+  color: #333;
+}
+
+/* Leftmost "Edit" cell: an Edit link (pencil icon + text) styled like the one
+   on the Admin Panel / People page, opening the card when clicked. */
+.my-cards-board-table td.table-view-cell-edit {
+  white-space: nowrap;
+}
+
+.my-cards-board-table td.table-view-cell-edit .edit-card {
+  cursor: pointer;
+}
+
+.my-cards-board-table td.table-view-cell-edit .edit-card i.fa {
+  margin-inline-end: 4px;
+}
+
+/* Word-wrap the Card / List / Swimlane cells so long text breaks onto the next
+   line instead of overflowing across the other columns. */
+.my-cards-board-table td.table-view-cell-wrap {
+  max-width: 250px;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* The +viewer template wraps its markdown in a block-level .viewer div. Inside
+   a table cell it should not add extra vertical margins, and inside a label it
+   must stay inline so the label keeps its pill shape. */
+.my-cards-board-table .viewer {
+  margin: 0;
+}
+
+.my-cards-board-table .viewer p {
+  margin: 0;
+}
+
+.my-cards-board-table .card-label .viewer,
+.my-cards-board-table .card-label .viewer p {
+  display: inline;
+}
+
+/* Word-wrap the Labels cell so each label pill wraps onto the next line instead
+   of stretching the column or overflowing across the date columns. */
+.my-cards-board-table td.table-view-cell-labels {
+  max-width: 250px;
+}
+
+.my-cards-board-table td.table-view-cell-labels .div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.my-cards-board-table td.table-view-cell-labels .card-label {
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Keep each date in a single column; the clickable badge already styles itself
+   like the card detail / Gantt date badges. */
+.my-cards-board-table td.table-view-cell-date {
+  white-space: nowrap;
+}
+
+.my-cards-board-table td.table-view-cell-date .card-date {
+  cursor: pointer;
+}

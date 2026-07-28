@@ -1,17 +1,7 @@
 import { ReactiveCache } from '/imports/reactiveCache';
-import { Meteor } from 'meteor/meteor';
+import { Mongo } from 'meteor/mongo';
 
-Triggers = new Mongo.Collection('triggers');
-
-Triggers.mutations({
-  rename(description) {
-    return {
-      $set: {
-        description,
-      },
-    };
-  },
-});
+const Triggers = new Mongo.Collection('triggers');
 
 Triggers.before.insert((userId, doc) => {
   doc.createdAt = new Date();
@@ -23,19 +13,13 @@ Triggers.before.update((userId, doc, fieldNames, modifier) => {
   modifier.$set.updatedAt = new Date();
 });
 
-Triggers.allow({
-  insert(userId, doc) {
-    return allowIsBoardAdmin(userId, ReactiveCache.getBoard(doc.boardId));
-  },
-  update(userId, doc) {
-    return allowIsBoardAdmin(userId, ReactiveCache.getBoard(doc.boardId));
-  },
-  remove(userId, doc) {
-    return allowIsBoardAdmin(userId, ReactiveCache.getBoard(doc.boardId));
-  },
-});
-
 Triggers.helpers({
+  async rename(description) {
+    return await Triggers.updateAsync(this._id, {
+      $set: { description },
+    });
+  },
+
   description() {
     return this.desc;
   },
@@ -60,17 +44,11 @@ Triggers.helpers({
 
   labels() {
     const boardLabels = this.board().labels;
-    const cardLabels = _.filter(boardLabels, label => {
-      return _.contains(this.labelIds, label._id);
+    const cardLabels = boardLabels.filter(label => {
+      return (this.labelIds || []).includes(label._id);
     });
     return cardLabels;
   },
 });
-
-if (Meteor.isServer) {
-  Meteor.startup(() => {
-    Triggers._collection.createIndex({ modifiedAt: -1 });
-  });
-}
 
 export default Triggers;

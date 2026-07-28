@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [[ "$PATH" != *"$SNAP_INSTANCE_NAME"* ]]; then
+  export PATH="${PATH/\/snap\/wekan\//\/snap\/$SNAP_INSTANCE_NAME\/}"
+fi
+
 # get wekan/mongo settings
 source $SNAP/bin/wekan-read-settings
 
@@ -9,7 +13,13 @@ if [ -z "$LANG" ]; then
 fi
 
 export LC_ALL=C
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/snap/wekan/current/lib/x86_64-linux-gnu
+
+# If CPU does not support AVX, use Qemu that supports AVX. 
+# Migratemongo is at https://github.com/wekan/migratemongo
+# and at directory /snap/${SNAP_NAME}/current/migratemongo/avx
+# is bash scripts like mongod, mongosh check avx support and use Qemu if needed.
+export PATH=$SNAP/migratemongo/avx:$SNAP/usr/bin:$SNAP/bin:$PATH
+export LD_LIBRARY_PATH=$SNAP/lib:$SNAP/lib/x86_64-linux-gnu:$SNAP/lib/aarch64-linux-gnu:$LD_LIBRARY_PATH
 
 if [ -z $1 ]; then
     DATE=`/bin/date +%Y%m%dT%H%M%S`

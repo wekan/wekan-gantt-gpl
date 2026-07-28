@@ -1,40 +1,22 @@
 #!/bin/bash
-
-# This script is only for Wekan maintainer to
-# convert x64 bundle to arm64 bundle.
+set -euo pipefail
 
 if [ $# -ne 1 ]
   then
-    echo "Syntax with Wekan version number:"
-    echo "  ./maintainer-make-bundle-a.sh 5.10"
+    echo "Syntax with Wekan new version number:"
+    echo "  ./build.sh 9.17"
     exit 1
 fi
 
-sudo apt -y install g++ build-essential p7zip-full
-sudo npm -g uninstall node-pre-gyp
-sudo npm -g install @mapbox/node-pre-gyp
-rm -rf bundle
-rm wekan-$1-arm64.zip
-#rm wekan-$1.zip
-#wget https://releases.wekan.team/wekan-$1.zip
-7z x wekan-$1-amd64.zip
 
-(cd bundle/programs/server && chmod u+w *.json && cd node_modules/fibers && node build.js)
-#cd ../../../..
-#(cd bundle/programs/server/npm/node_modules/meteor/accounts-password && npm remove bcrypt && npm install bcrypt)
+DOWNLOAD_DIR="${DOWNLOAD_DIR:-$HOME/Lataukset}"
 
-# Requires building from source https://github.com/meteor/meteor/issues/11682
-(cd bundle/programs/server/npm/node_modules/meteor/accounts-password && npm rebuild --build-from-source)
-
-cd bundle
-find . -type d -name '*-garbage*' | xargs rm -rf
-find . -name '*phantom*' | xargs rm -rf
-find . -name '.*.swp' | xargs rm -f
-find . -name '*.swp' | xargs rm -f
+git pull
+cd .build
+zip -r wekan-$1-arm64.zip bundle
+mkdir -p "$DOWNLOAD_DIR"
+mv -f "wekan-$1-arm64.zip" "$DOWNLOAD_DIR/"
 cd ..
 
-7z a wekan-$1-arm64.zip bundle
-
-sudo snap start juju-db
-
-./start-wekan.sh
+echo "arm64 bundle done: $DOWNLOAD_DIR/wekan-$1-arm64.zip"
+echo "Upload it to the GitHub release (v$1) so snap/Docker builds can fetch it from upstream."

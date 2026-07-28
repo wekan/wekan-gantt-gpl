@@ -1,4 +1,10 @@
+import { Blaze } from 'meteor/blaze';
+import { Template } from 'meteor/templating';
+import { Tracker } from 'meteor/tracker';
 import { TAPi18n } from '/imports/i18n';
+import { EscapeActions } from '/client/lib/escapeActions';
+import { Utils } from '/client/lib/utils';
+import { computePopupOffset } from '/client/lib/popupOffset';
 
 window.Popup = new (class {
   constructor() {
@@ -46,6 +52,8 @@ window.Popup = new (class {
           return;
         } else {
           $(previousOpenerElement).removeClass('is-active');
+          // Clean up previous popup content to prevent mixing
+          self._cleanupPreviousPopupContent();
         }
       }
 
@@ -58,7 +66,12 @@ window.Popup = new (class {
       if (clickFromPopup(evt) && self._getTopStack()) {
         openerElement = self._getTopStack().openerElement;
       } else {
-        self._stack = [];
+        // For Member Settings sub-popups, always start fresh to avoid content mixing
+        if (popupName.includes('changeLanguage') || popupName.includes('changeAvatar') ||
+            popupName.includes('editProfile') || popupName.includes('changePassword') ||
+            popupName.includes('invitePeople') || popupName.includes('support')) {
+          self._stack = [];
+        }
         openerElement = evt.currentTarget;
       }
       $(openerElement).addClass('is-active');
@@ -72,7 +85,7 @@ window.Popup = new (class {
         hasPopupParent: clickFromPopup(evt),
         title: self._getTitle(popupName),
         depth: self._stack.length,
-        offset: self._getOffset(openerElement),
+        offset: self._getOffset(openerElement, popupName),
         dataContext: (this && this.currentData && this.currentData()) || (options && options.dataContextIfCurrentDataIsUndefined) || this,
       });
 
@@ -94,6 +107,10 @@ window.Popup = new (class {
       // our internal dependency, and since we just changed the top element of
       // our internal stack, the popup will be updated with the new data.
       if (!self.isOpen()) {
+        if (!Template[popupName]) {
+          console.error('Template not found:', popupName);
+          return;
+        }
         self.current = Blaze.renderWithData(
           self.template,
           () => {
@@ -119,7 +136,16 @@ window.Popup = new (class {
 
     return function(evt, tpl) {
       const context = (this.currentData && this.currentData()) || this;
-      context.__afterConfirmAction = action;
+      // #6479: store the pending confirm action on the Popup instance, NOT on the
+      // Blaze data context. The old code stashed it as a field on the context and
+      // the confirm button read it back as `this.__afterConfirmAction`; but the
+      // context is a ReactiveCache/Minimongo document (e.g. a board member sub-doc),
+      // and once Blaze re-renders the confirmation popup with a fresh/immutable copy
+      // of that context the field is gone, so clicking "Remove member" (and every
+      // other confirm dialog) silently did nothing. The instance field survives the
+      // re-render; the action is still invoked with the confirmation popup's own data
+      // context as `this`, so `this.userId` etc. keep working.
+      self._afterConfirmAction = action;
       self.open(name).call(context, evt, tpl);
     };
   }
@@ -152,7 +178,7 @@ window.Popup = new (class {
         // restore the old popup scroll position
         $contentWrapper.scrollTop(stack.scrollTop);
       }
-      _.times(n, () => this._stack.pop());
+      for (let i = 0; i < n; i++) this._stack.pop();
       this._dep.changed();
     } else {
       this.close();
@@ -169,12 +195,21 @@ window.Popup = new (class {
       $(openerElement).removeClass('is-active');
 
       this._stack = [];
+      // Clean up popup content when closing
+      this._cleanupPreviousPopupContent();
     }
   }
 
   getOpenerComponent(n=4) {
     const { openerElement } = Template.parentData(n);
-    return BlazeComponent.getComponentForElement(openerElement);
+    if (!openerElement) return null;
+    const view = Blaze.getView(openerElement);
+    let current = view;
+    while (current) {
+      if (current.templateInstance) return current.templateInstance();
+      current = current.parentView;
+    }
+    return null;
   }
 
   // An utility function that returns the top element of the internal stack
@@ -182,22 +217,48 @@ window.Popup = new (class {
     return this._stack[this._stack.length - 1];
   }
 
+  _cleanupPreviousPopupContent() {
+    // Force a re-render to ensure proper cleanup
+    if (this._dep) {
+      this._dep.changed();
+    }
+  }
+
   // We automatically calculate the popup offset from the reference element
   // position and dimensions. We also reactively use the window dimensions to
   // ensure that the popup is always visible on the screen.
-  _getOffset(element) {
+  _getOffset(element, popupName) {
     const $element = $(element);
     return () => {
       Utils.windowResizeDep.depend();
 
-      if (Utils.isMiniScreen()) return { left: 0, top: 0 };
+      // #5667: read the current page scroll and the opener's document offset,
+      // then delegate the geometry to the pure, unit-tested computePopupOffset.
+      // It lays the popup out in VIEWPORT coordinates — so a date-picker opened
+      // low on a scrolled page stays fully visible instead of extending past the
+      // visible area — and returns document coordinates for the absolute style.
+      const hasOpener = !!($element && $element.length);
+      const offset = hasOpener ? $element.offset() : null;
+      const opener = hasOpener
+        ? { top: offset.top, left: offset.left, height: $element.outerHeight() }
+        : null;
 
-      const offset = $element.offset();
-      const popupWidth = 300 + 15;
-      return {
-        left: Math.min(offset.left, $(window).width() - popupWidth),
-        top: offset.top + $element.outerHeight(),
-      };
+      return computePopupOffset({
+        viewportWidth: $(window).width(),
+        viewportHeight: $(window).height(),
+        scrollTop: $(window).scrollTop() || 0,
+        scrollLeft: $(window).scrollLeft() || 0,
+        opener,
+        popupName,
+        isMiniScreen: Utils.isMiniScreen(),
+        isAdminEditPopup:
+          hasOpener &&
+          ($element.hasClass('edit-user') ||
+            $element.hasClass('edit-org') ||
+            $element.hasClass('edit-team')),
+        isLanguagePopup: hasOpener && $element.hasClass('js-change-language'),
+        viewportPadding: 10,
+      });
     };
   }
 
@@ -230,7 +291,7 @@ escapeActions.forEach(actionName => {
     () => Popup[actionName](),
     () => Popup.isOpen(),
     {
-      noClickEscapeOn: '.js-pop-over,.js-open-card-title-popup,.js-open-inlined-form',
+      noClickEscapeOn: '.js-pop-over,.js-open-card-title-popup,.js-open-inlined-form,.textcomplete-dropdown',
       enabledOnClick: actionName === 'close',
     },
   );

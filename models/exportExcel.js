@@ -1,13 +1,17 @@
+import { Meteor } from 'meteor/meteor';
 import { ReactiveCache } from '/imports/reactiveCache';
 import { TAPi18n } from '/imports/i18n';
 import { runOnServer } from './runOnServer';
+import ImpersonatedUsers from '/models/impersonatedUsers';
 
 runOnServer(function() {
   // the ExporterExcel class is only available on server and in order to import
   // it here we use runOnServer to have it inside a function instead of an
   // if (Meteor.isServer) block
-  import { ExporterExcel } from './server/ExporterExcel';
-  import { Picker } from 'meteor/communitypackages:picker';
+  const { ExporterExcel } = require('./server/ExporterExcel');
+  const { WebApp } = require('meteor/webapp');
+  const { safeRoute } = require('/server/apiMiddleware');
+  const { Authentication } = require('/server/authentication');
 
   // todo XXX once we have a real API in place, move that route there
   // todo XXX also  share the route definition between the client and the server
@@ -30,22 +34,61 @@ runOnServer(function() {
    * @param {string} boardId the ID of the board we are exporting
    * @param {string} authToken the loginToken
    */
-  Picker.route('/api/boards/:boardId/exportExcel', function (params, req, res) {
-    const boardId = params.boardId;
+  WebApp.handlers.get('/api/boards/:boardId/exportExcel', safeRoute(async function (req, res) {
+    const boardId = req.params.boardId;
     let user = null;
     let impersonateDone = false;
     let adminId = null;
-    const loginToken = params.query.authToken;
+
+    // First check if board exists and is public to avoid unnecessary authentication
+    const board = await ReactiveCache.getBoard(boardId);
+    if (!board) {
+      res.end('Board not found');
+      return;
+    }
+
+    // If board is public, skip expensive authentication operations
+    if (board.isPublic()) {
+      // Public boards don't require authentication - skip hash operations
+      const exporterExcel = new ExporterExcel(boardId, 'en');
+      exporterExcel.build(res);
+      return;
+    }
+
+    // Only perform expensive authentication for private boards
+    const loginToken = req.query.authToken;
     if (loginToken) {
+      // Validate token length to prevent resource abuse
+      if (loginToken.length > 10000) {
+        if (process.env.DEBUG === 'true') {
+          console.warn('Suspiciously long auth token received, rejecting to prevent resource abuse');
+        }
+        res.end('Invalid token');
+        return;
+      }
+
       const hashToken = Accounts._hashLoginToken(loginToken);
-      user = ReactiveCache.getUser({
+      user = await ReactiveCache.getUser({
         'services.resume.loginTokens.hashedToken': hashToken,
       });
+      if (!user) {
+        // GHSA-3gcg-g6rf-w2rx - see the note in models/export.js: an unknown token
+        // answers `undefined`, and dereferencing it crashed the server.
+        res.writeHead(401, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end('Invalid token');
+        return;
+      }
       adminId = user._id.toString();
-      impersonateDone = ReactiveCache.getImpersonatedUser({ adminId: adminId });
+      impersonateDone = await ReactiveCache.getImpersonatedUser({ adminId: adminId });
     } else if (!Meteor.settings.public.sandstorm) {
-      Authentication.checkUserId(req.userId);
-      user = ReactiveCache.getUser({
+      try {
+        await Authentication.checkUserId(req.userId);
+      } catch (error) {
+        res.writeHead(error.statusCode || 403, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end('Unauthorized');
+        return;
+      }
+      user = await ReactiveCache.getUser({
         _id: req.userId,
         isAdmin: true,
       });
@@ -57,9 +100,9 @@ runOnServer(function() {
     }
 
     const exporterExcel = new ExporterExcel(boardId, userLanguage);
-    if (exporterExcel.canExport(user) || impersonateDone) {
+    if ((await exporterExcel.canExport(user))) {
       if (impersonateDone) {
-        ImpersonatedUsers.insert({
+        await ImpersonatedUsers.insertAsync({
           adminId: adminId,
           boardId: boardId,
           reason: 'exportExcel',
@@ -69,5 +112,5 @@ runOnServer(function() {
     } else {
       res.end(TAPi18n.__('user-can-not-export-excel'));
     }
-  });
+  }));
 });

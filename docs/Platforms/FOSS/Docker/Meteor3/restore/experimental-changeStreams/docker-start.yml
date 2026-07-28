@@ -1,0 +1,9 @@
+services:
+
+  PARAMETER:
+    image: ghcr.io/wekan/wekan:v9.20
+    container_name: PARAMETER-tenant
+    restart: unless-stopped
+    network_mode: "host"
+    environment:
+      # ========== CUSTOM START =====

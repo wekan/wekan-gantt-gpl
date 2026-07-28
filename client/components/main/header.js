@@ -1,10 +1,21 @@
+import { Meteor } from 'meteor/meteor';
+import { Session } from 'meteor/session';
 import { ReactiveCache } from '/imports/reactiveCache';
+import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
+import Announcements, {
+  announcementVersion,
+  shouldShowAnnouncement,
+} from '/models/announcements';
+import { Utils } from '/client/lib/utils';
+// Drag-to-scroll on the two top header bars (they are not scroll containers
+// themselves, so the drag is forwarded to the board canvas / page scroller).
+import '/client/lib/headerDragscroll';
 
 Meteor.subscribe('user-admin');
 Meteor.subscribe('boards');
 Meteor.subscribe('setting');
 Meteor.subscribe('announcements');
-Template.header.onCreated(function(){
+Template.header.onCreated(function () {
   const templateInstance = this;
   templateInstance.currentSetting = new ReactiveVar();
   templateInstance.isLoading = new ReactiveVar(false);
@@ -13,10 +24,21 @@ Template.header.onCreated(function(){
     onReady() {
       templateInstance.currentSetting.set(ReactiveCache.getCurrentSetting());
       let currSetting = templateInstance.currentSetting.curValue;
-      if(currSetting && currSetting !== undefined && currSetting.customLoginLogoImageUrl !== undefined && document.getElementById("headerIsSettingDatabaseCallDone") != null)
-        document.getElementById("headerIsSettingDatabaseCallDone").style.display = 'none';
-      else if(document.getElementById("headerIsSettingDatabaseCallDone") != null)
-        document.getElementById("headerIsSettingDatabaseCallDone").style.display = 'block';
+      if (
+        currSetting &&
+        currSetting !== undefined &&
+        currSetting.customLoginLogoImageUrl !== undefined &&
+        document.getElementById('headerIsSettingDatabaseCallDone') != null
+      )
+        document.getElementById(
+          'headerIsSettingDatabaseCallDone',
+        ).style.display = 'none';
+      else if (
+        document.getElementById('headerIsSettingDatabaseCallDone') != null
+      )
+        document.getElementById(
+          'headerIsSettingDatabaseCallDone',
+        ).style.display = 'block';
       return this.stop();
     },
   });
@@ -31,41 +53,153 @@ Template.header.helpers({
   },
 
   appIsOffline() {
-    return !Meteor.status().connected;
+    const status = Meteor.status();
+    return ['waiting', 'failed', 'offline'].includes(status.status);
+  },
+
+  appOfflineMessage() {
+    const status = Meteor.status();
+
+    if (status.status === 'failed' && status.reason) {
+      return status.reason;
+    }
+
+    if (status.status === 'offline') {
+      return 'Connection is paused.';
+    }
+
+    return null;
+  },
+
+  canReconnectNow() {
+    const status = Meteor.status();
+    return ['waiting', 'failed', 'offline'].includes(status.status);
   },
 
   hasAnnouncement() {
-    const announcements = Announcements.findOne();
-    return announcements && announcements.enabled;
+    const announcement = Announcements.findOne();
+    if (!announcement || !announcement.enabled) {
+      return false;
+    }
+    const version = announcementVersion(announcement);
+    const user = Meteor.user();
+    const dismissedVersion =
+      (user && user.profile && user.profile.dismissedAnnouncementVersion) || null;
+    return shouldShowAnnouncement({
+      enabled: announcement.enabled,
+      version,
+      dismissedVersion,
+    });
   },
 
   announcement() {
     $('.announcement').show();
-    const announcements = Announcements.findOne();
-    return announcements && announcements.body;
+    const announcement = Announcements.findOne();
+    return announcement && announcement.body;
+  },
+
+  zoomLevel() {
+    const sessionZoom = Session.get('wekan-zoom-level');
+    if (sessionZoom !== undefined) {
+      return Math.round(sessionZoom * 100);
+    }
+    return Math.round(Utils.getZoomLevel() * 100);
+  },
+
+  mobileMode() {
+    const sessionMode = Session.get('wekan-mobile-mode');
+    if (sessionMode !== undefined) {
+      return sessionMode;
+    }
+    return Utils.getMobileMode();
   },
 });
 
 Template.header.events({
   'click .js-create-board': Popup.open('headerBarCreateBoard'),
+  'click .js-zoom-level-click'(evt) {
+    const $zoomDisplay = $(evt.currentTarget).find('.zoom-display');
+    const $zoomInput = $(evt.currentTarget).find('.zoom-input');
+
+    // Hide display, show input
+    $zoomDisplay.hide();
+    $zoomInput.show().focus().select();
+  },
+
+  'keypress .js-zoom-input'(evt) {
+    if (evt.which === 13) {
+      // Enter key
+      const newZoomPercent = parseInt(evt.target.value);
+
+      if (
+        !isNaN(newZoomPercent) &&
+        newZoomPercent >= 50 &&
+        newZoomPercent <= 300
+      ) {
+        const newZoom = newZoomPercent / 100;
+        Utils.setZoomLevel(newZoom);
+
+        // Hide input, show display
+        const $zoomDisplay = $(evt.target).siblings('.zoom-display');
+        const $zoomInput = $(evt.target);
+        $zoomInput.hide();
+        $zoomDisplay.show();
+      } else {
+        alert('Please enter a zoom level between 50% and 300%');
+        evt.target.focus().select();
+      }
+    }
+  },
+
+  'blur .js-zoom-input'(evt) {
+    // When input loses focus, hide it and show display
+    const $zoomDisplay = $(evt.target).siblings('.zoom-display');
+    const $zoomInput = $(evt.target);
+    $zoomInput.hide();
+    $zoomDisplay.show();
+  },
+  'click .js-mobile-mode-toggle'() {
+    const currentMode = Utils.getMobileMode();
+    Utils.setMobileMode(!currentMode);
+  },
+  'click .js-open-bookmarks'(evt) {
+    // Already added but ensure single definition -- safe guard
+  },
   'click .js-close-announcement'() {
     $('.announcement').hide();
+    // Permanently dismiss the current announcement for this user (#6051).
+    // The banner reappears only when the admin changes the announcement text.
+    Meteor.call('dismissAnnouncement', (err) => {
+      if (err && process.env.DEBUG === 'true') {
+        console.error('dismissAnnouncement error', err);
+      }
+    });
   },
   'click .js-select-list'() {
     Session.set('currentList', this._id);
     Session.set('currentCard', null);
   },
   'click .js-toggle-desktop-drag-handles'() {
-    //currentUser = Meteor.user();
-    //if (currentUser) {
-    //  Meteor.call('toggleDesktopDragHandles');
-    //} else if (window.localStorage.getItem('showDesktopDragHandles')) {
-    if (window.localStorage.getItem('showDesktopDragHandles')) {
-      window.localStorage.removeItem('showDesktopDragHandles');
-      location.reload();
+    // Toggle the EFFECTIVE state and store it EXPLICITLY, so the choice sticks on
+    // a touch screen too. Storing "off" as a real `false` (rather than removing
+    // the setting) is what lets Utils.showDragHandles() tell "turned off" apart
+    // from "never chosen", which is the only reason the toggle could not hide the
+    // handles on a touch device.
+    const show = !Utils.showDragHandles();
+    const currentUser = Meteor.user();
+    if (currentUser) {
+      Meteor.call('toggleDesktopDragHandles', show);
     } else {
-      window.localStorage.setItem('showDesktopDragHandles', 'true');
+      window.localStorage.setItem('showDesktopDragHandles', show ? 'true' : 'false');
       location.reload();
+    }
+  },
+  'click .js-open-bookmarks'(evt) {
+    // Desktop: open popup, Mobile: route to page
+    if (Utils.isMiniScreen()) {
+      FlowRouter.go('bookmarks');
+    } else {
+      Popup.open('bookmarks')(evt);
     }
   },
 });

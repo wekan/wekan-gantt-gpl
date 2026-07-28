@@ -1,22 +1,10 @@
-template(name='information')
-  .setting-content
-    unless currentUser.isAdmin
-      | {{_ 'error-notAuthorized'}}
-    else
-      .content-title
-        span
-          i.fa.fa-info-circle
-          | {{_ 'info'}}
-      .content-body
-        .side-menu
-          ul
-            li.active
-              a.js-setting-menu(data-id="information-display")
-                i.fa.fa-info-circle
-                | {{_ 'info'}}
-        .main-body
-          +statistics
-
+//- The version, database and system information. It is a PANE of Admin Panel /
+//- Settings now - the first one, and the one that opens with the page - so this
+//- file no longer carries a page of its own: no .setting-content shell, no
+//- one-entry left menu, no route. settingBody.jade renders `+statistics` (Blaze
+//- templates are global) inside the Settings page, which brings the left menu, the
+//- pane title and the admin check with it. The /information URL redirects to
+//- Settings, the same way the old /translation URL does.
 template(name='statistics')
     table
       tbody
@@ -30,14 +18,36 @@ template(name='statistics')
           th {{_ 'Node_version'}}
           td {{statistics.process.nodeVersion}}
         tr
+          th {{_ 'Database_type'}}
+          td {{statistics.mongo.databaseType}}
+        tr
           th {{_ 'MongoDB_version'}}
           td {{statistics.mongo.mongoVersion}}
+        tr
+          th {{_ 'Database_commit'}}
+          td {{statistics.mongo.databaseCommit}}
+        if statistics.mongo.ferretdbVersion
+          tr
+            th {{_ 'FerretDB_version'}}
+            td {{statistics.mongo.ferretdbVersion}}
+          tr
+            th {{_ 'FerretDB_commit'}}
+            td {{statistics.mongo.ferretdbCommit}}
         tr
           th {{_ 'MongoDB_storage_engine'}}
           td {{statistics.mongo.mongoStorageEngine}}
         tr
           th {{_ 'MongoDB_Oplog_enabled'}}
-          td {{statistics.mongo.mongoOplogEnabled}}
+          td {{formatBoolean statistics.mongo.mongoOplogEnabled}}
+        tr
+          th {{_ 'Reactivity_mode'}}
+          td {{statistics.mongo.reactivity}}
+        tr
+          th {{_ 'Reactivity_order'}}
+          td {{statistics.mongo.reactivityOrder}}
+        tr
+          th {{_ 'DDP_transport'}}
+          td {{statistics.mongo.ddpTransport}}
         tr
           th {{_ 'OS_Type'}}
           td {{statistics.os.type}}

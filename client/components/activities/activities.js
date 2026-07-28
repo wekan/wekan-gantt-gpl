@@ -1,23 +1,51 @@
 import { ReactiveCache } from '/imports/reactiveCache';
+import { ReactiveVar } from 'meteor/reactive-var';
+import { Template } from 'meteor/templating';
 import DOMPurify from 'dompurify';
+import { sanitizeHTML, sanitizeText } from '/imports/lib/secureDOMPurify';
 import { TAPi18n } from '/imports/i18n';
+import { Utils } from '/client/lib/utils';
+import { getSidebarInstance } from '/client/features/sidebar/service';
 
-const activitiesPerPage = 500;
+// #6480/#6481: 500 was far more than the sidebar/card activity feed ever shows
+// at once, and with FerretDB (no oplog) every live cursor is re-run on a timer —
+// so a 500-row activities cursor was re-fetched and re-diffed on every poll for
+// each open board/card. 50 covers the visible feed; infinite scroll still pulls
+// the next page on demand (the server cursor is index-bounded either way).
+const activitiesPerPage = 50;
 
-BlazeComponent.extendComponent({
-  onCreated() {
-    // XXX Should we use ReactiveNumber?
-    this.page = new ReactiveVar(1);
-    this.loadNextPageLocked = false;
-    // TODO is sidebar always available? E.g. on small screens/mobile devices
-    const sidebar = Sidebar;
-    sidebar && sidebar.callFirstWith(null, 'resetNextPeak');
-    this.autorun(() => {
-      let mode = this.data().mode;
+Template.activities.onCreated(function () {
+  // Register with sidebar so it can call loadNextPage on us
+  const Sidebar = getSidebarInstance();
+  if (Sidebar) {
+    Sidebar.activitiesInstance = this;
+  }
+
+  // XXX Should we use ReactiveNumber?
+  this.page = new ReactiveVar(1);
+  this.loadNextPageLocked = false;
+  this.loadNextPage = () => {
+    if (this.loadNextPageLocked === false) {
+      this.page.set(this.page.get() + 1);
+      this.loadNextPageLocked = true;
+    }
+  };
+
+  // TODO is sidebar always available? E.g. on small screens/mobile devices
+  const sidebar = getSidebarInstance();
+  if (sidebar && sidebar.infiniteScrolling) {
+    sidebar.infiniteScrolling.resetNextPeak();
+  }
+  this.autorun(() => {
+    const data = Template.currentData();
+    let mode = data?.mode;
+    if (mode) {
       const capitalizedMode = Utils.capitalize(mode);
       let searchId;
+      const showActivities = _showActivities(data);
       if (mode === 'linkedcard' || mode === 'linkedboard') {
-        searchId = Utils.getCurrentCard().linkedId;
+        const currentCard = Utils.getCurrentCard();
+        searchId = currentCard.linkedId;
         mode = mode.replace('linked', '');
       } else if (mode === 'card') {
         searchId = Utils.getCurrentCardId();
@@ -25,129 +53,151 @@ BlazeComponent.extendComponent({
         searchId = Session.get(`current${capitalizedMode}`);
       }
       const limit = this.page.get() * activitiesPerPage;
-      const user = ReactiveCache.getCurrentUser();
-      const hideSystem = user ? user.hasHiddenSystemMessages() : false;
       if (searchId === null) return;
 
-      this.subscribe('activities', mode, searchId, limit, hideSystem, () => {
+      this.subscribe('activities', mode, searchId, limit, showActivities, () => {
         this.loadNextPageLocked = false;
 
         // TODO the guard can be removed as soon as the TODO above is resolved
-        if (!sidebar) return;
-        // If the sibear peak hasn't increased, that mean that there are no more
+        if (!sidebar || !sidebar.infiniteScrolling) return;
+        // If the sidebar peak hasn't increased, that means that there are no more
         // activities, and we can stop calling new subscriptions.
-        // XXX This is hacky! We need to know excatly and reactively how many
-        // activities there are, we probably want to denormalize this number
-        // dirrectly into card and board documents.
-        const nextPeakBefore = sidebar.callFirstWith(null, 'getNextPeak');
+        const nextPeakBefore = sidebar.infiniteScrolling.getNextPeak();
         sidebar.calculateNextPeak();
-        const nextPeakAfter = sidebar.callFirstWith(null, 'getNextPeak');
+        const nextPeakAfter = sidebar.infiniteScrolling.getNextPeak();
         if (nextPeakBefore === nextPeakAfter) {
-          sidebar.callFirstWith(null, 'resetNextPeak');
+          sidebar.infiniteScrolling.resetNextPeak();
         }
       });
-    });
-  },
-  loadNextPage() {
-    if (this.loadNextPageLocked === false) {
-      this.page.set(this.page.get() + 1);
-      this.loadNextPageLocked = true;
     }
-  },
-}).register('activities');
+  });
+});
+
+function _showActivities(data) {
+  // Instance-wide switch (Admin Panel / Settings / Hide board activities on all
+  // boards). Read ONCE from the global settings; when it is on, no board shows
+  // its activities and the per-board value is not consulted at all.
+  if (ReactiveCache.getCurrentSetting()?.hideBoardActivitiesOnAllBoards) {
+    return false;
+  }
+  let ret = false;
+  let mode = data?.mode;
+  if (mode) {
+    if (mode === 'linkedcard' || mode === 'linkedboard') {
+      const currentCard = Utils.getCurrentCard();
+      ret = currentCard.showActivities ?? false;
+    } else if (mode === 'card') {
+      // For card mode, get showActivities from data context or fallback to current card
+      const card = data?.card || Utils.getCurrentCard();
+      ret = card?.showActivities ?? false;
+    } else {
+      ret = Utils.getCurrentBoard().showActivities ?? false;
+    }
+  }
+  return ret;
+}
 
 Template.activities.helpers({
+  showActivities() {
+    const data = Template.currentData();
+    return _showActivities(data);
+  },
+
   activities() {
-    const ret = this.card.activities();
-    return ret;
+    const activities = this.card?.activities?.();
+    return activities || [];
   },
 });
 
-BlazeComponent.extendComponent({
+Template.boardActivities.helpers({
+  boardActivitiesList() {
+    const board = Utils.getCurrentBoard();
+    const activities = board?.activities?.();
+    return activities || [];
+  },
+});
+
+Template.cardActivities.helpers({
+  cardActivitiesList() {
+    const data = Template.currentData();
+    const card = data?.card;
+    const activities = card?.activities?.();
+    return activities || [];
+  },
+});
+
+Template.activity.helpers({
   checkItem() {
-    const checkItemId = this.currentData().activity.checklistItemId;
+    const checkItemId = this.activity.checklistItemId;
     const checkItem = ReactiveCache.getChecklistItem(checkItemId);
     return checkItem && checkItem.title;
   },
 
   boardLabelLink() {
-    const data = this.currentData();
     const currentBoardId = Session.get('currentBoard');
-    if (data.mode !== 'board') {
-      // data.mode: card, linkedcard, linkedboard
-      return createBoardLink(data.activity.board(), data.activity.listName ? data.activity.listName : null);
+    if (this.mode !== 'board') {
+      return createBoardLink(this.activity.board(), this.activity.listName ? this.activity.listName : null);
     }
-    else if (currentBoardId != data.activity.boardId) {
-      // data.mode: board
-      // current activitie is linked
-      return createBoardLink(data.activity.board(), data.activity.listName ? data.activity.listName : null);
+    else if (currentBoardId != this.activity.boardId) {
+      return createBoardLink(this.activity.board(), this.activity.listName ? this.activity.listName : null);
     }
     return TAPi18n.__('this-board');
   },
 
   cardLabelLink() {
-    const data = this.currentData();
     const currentBoardId = Session.get('currentBoard');
-    if (data.mode == 'card') {
-      // data.mode: card
+    if (this.mode == 'card') {
       return TAPi18n.__('this-card');
     }
-    else if (data.mode !== 'board') {
-      // data.mode: linkedcard, linkedboard
-      return createCardLink(data.activity.card(), null);
+    else if (this.mode !== 'board') {
+      return createCardLink(this.activity.card(), null);
     }
-    else if (currentBoardId != data.activity.boardId) {
-      // data.mode: board
-      // current activitie is linked
-      return createCardLink(data.activity.card(), data.activity.board().title);
+    else if (currentBoardId != this.activity.boardId) {
+      return createCardLink(this.activity.card(), this.activity.board().title);
     }
-    return createCardLink(this.currentData().activity.card(), null);
+    return createCardLink(this.activity.card(), null);
   },
 
   cardLink() {
-    const data = this.currentData();
     const currentBoardId = Session.get('currentBoard');
-    if (data.mode !== 'board') {
-      // data.mode: card, linkedcard, linkedboard
-      return createCardLink(data.activity.card(), null);
+    if (this.mode !== 'board') {
+      return createCardLink(this.activity.card(), null);
     }
-    else if (currentBoardId != data.activity.boardId) {
-      // data.mode: board
-      // current activitie is linked
-      return createCardLink(data.activity.card(), data.activity.board().title);
+    else if (currentBoardId != this.activity.boardId) {
+      return createCardLink(this.activity.card(), this.activity.board().title);
     }
-    return createCardLink(this.currentData().activity.card(), null);
+    return createCardLink(this.activity.card(), null);
   },
 
   receivedDate() {
-    const receivedDate = this.currentData().activity.card();
-    if (!receivedDate) return null;
-    return receivedDate.receivedAt;
+    const card = this.activity.card();
+    if (!card) return null;
+    return card.receivedAt;
   },
 
   startDate() {
-    const startDate = this.currentData().activity.card();
-    if (!startDate) return null;
-    return startDate.startAt;
+    const card = this.activity.card();
+    if (!card) return null;
+    return card.startAt;
   },
 
   dueDate() {
-    const dueDate = this.currentData().activity.card();
-    if (!dueDate) return null;
-    return dueDate.dueAt;
+    const card = this.activity.card();
+    if (!card) return null;
+    return card.dueAt;
   },
 
   endDate() {
-    const endDate = this.currentData().activity.card();
-    if (!endDate) return null;
-    return endDate.endAt;
+    const card = this.activity.card();
+    if (!card) return null;
+    return card.endAt;
   },
 
   lastLabel() {
-    const lastLabelId = this.currentData().activity.labelId;
+    const lastLabelId = this.activity.labelId;
     if (!lastLabelId) return null;
     const lastLabel = ReactiveCache.getBoard(
-      this.currentData().activity.boardId,
+      this.activity.boardId,
     ).getLabelById(lastLabelId);
     if (lastLabel && (lastLabel.name === undefined || lastLabel.name === '')) {
       return lastLabel.color;
@@ -160,7 +210,7 @@ BlazeComponent.extendComponent({
 
   lastCustomField() {
     const lastCustomField = ReactiveCache.getCustomField(
-      this.currentData().activity.customFieldId,
+      this.activity.customFieldId,
     );
     if (!lastCustomField) return null;
     return lastCustomField.name;
@@ -168,16 +218,15 @@ BlazeComponent.extendComponent({
 
   lastCustomFieldValue() {
     const lastCustomField = ReactiveCache.getCustomField(
-      this.currentData().activity.customFieldId,
+      this.activity.customFieldId,
     );
     if (!lastCustomField) return null;
-    const value = this.currentData().activity.value;
+    const value = this.activity.value;
     if (
       lastCustomField.settings.dropdownItems &&
       lastCustomField.settings.dropdownItems.length > 0
     ) {
-      const dropDownValue = _.find(
-        lastCustomField.settings.dropdownItems,
+      const dropDownValue = lastCustomField.settings.dropdownItems.find(
         item => {
           return item._id === value;
         },
@@ -188,102 +237,81 @@ BlazeComponent.extendComponent({
   },
 
   listLabel() {
-    const activity = this.currentData().activity;
+    const activity = this.activity;
     const list = activity.list();
     return (list && list.title) || activity.title;
   },
 
   sourceLink() {
-    const source = this.currentData().activity.source;
+    const source = this.activity.source;
     if (source) {
-      if (source.url) {
+      // XSS fix (reported by meifukun): source.url is imported from an external
+      // board (e.g. a Trello board's `url`) and was rendered as an <a href> with
+      // no scheme check, so a `javascript:` (or data:/vbscript:) URL executed in
+      // the board admin's session on click and could exfiltrate Meteor.loginToken.
+      // Only render a link for an http(s) URL; otherwise show the plain (sanitized)
+      // source name with no href.
+      if (source.url && /^https?:\/\//i.test(String(source.url))) {
         return Blaze.toHTML(
           HTML.A(
             {
               href: source.url,
             },
-            DOMPurify.sanitize(source.system, {
-              ALLOW_UNKNOWN_PROTOCOLS: true,
-            }),
+            sanitizeHTML(source.system),
           ),
         );
-      } else {
-        return DOMPurify.sanitize(source.system, {
-          ALLOW_UNKNOWN_PROTOCOLS: true,
-        });
       }
+      return sanitizeHTML(source.system);
     }
     return null;
   },
 
   memberLink() {
     return Blaze.toHTMLWithData(Template.memberName, {
-      user: this.currentData().activity.member(),
+      user: this.activity.member(),
     });
   },
 
   attachmentLink() {
-    const attachment = this.currentData().activity.attachment();
+    const attachment = this.activity.attachment();
+    const attachmentUrl = attachment && typeof attachment.link === 'function'
+      ? attachment.link()
+      : '';
     // trying to display url before file is stored generates js errors
     return (
       (attachment &&
         attachment.path &&
+        attachmentUrl &&
         Blaze.toHTML(
           HTML.A(
             {
-              href: `${attachment.link()}?download=true`,
+              href: `${attachmentUrl}?download=true`,
               target: '_blank',
             },
-            DOMPurify.sanitize(attachment.name),
+            sanitizeText(attachment.name),
           ),
         )) ||
-      DOMPurify.sanitize(this.currentData().activity.attachmentName)
+      sanitizeText(this.activity.attachmentName)
     );
   },
 
   customField() {
-    const customField = this.currentData().activity.customField();
+    const customField = this.activity.customField();
     if (!customField) return null;
     return customField.name;
   },
-
-  events() {
-    return [
-      {
-        // XXX We should use Popup.afterConfirmation here
-        'click .js-delete-comment': Popup.afterConfirm('deleteComment', () => {
-          const commentId = this.data().activity.commentId;
-          CardComments.remove(commentId);
-          Popup.back();
-        }),
-        'submit .js-edit-comment'(evt) {
-          evt.preventDefault();
-          const commentText = this.currentComponent()
-            .getValue()
-            .trim();
-          const commentId = Template.parentData().activity.commentId;
-          if (commentText) {
-            CardComments.update(commentId, {
-              $set: {
-                text: commentText,
-              },
-            });
-          }
-        },
-      },
-    ];
-  },
-}).register('activity');
+});
 
 Template.activity.helpers({
   sanitize(value) {
-    return DOMPurify.sanitize(value, { ALLOW_UNKNOWN_PROTOCOLS: true });
+    return sanitizeHTML(value);
   },
 });
 
 Template.commentReactions.events({
   'click .reaction'(event) {
-    if (ReactiveCache.getCurrentUser().isBoardMember()) {
+    const user = ReactiveCache.getCurrentUser();
+    if (user && user.isBoardMember()) {
       const codepoint = event.currentTarget.dataset['codepoint'];
       const commentId = Template.instance().data.commentId;
       const cardComment = ReactiveCache.getCardComment(commentId);
@@ -295,7 +323,8 @@ Template.commentReactions.events({
 
 Template.addReactionPopup.events({
   'click .add-comment-reaction'(event) {
-    if (ReactiveCache.getCurrentUser().isBoardMember()) {
+    const user = ReactiveCache.getCurrentUser();
+    if (user && user.isBoardMember()) {
       const codepoint = event.currentTarget.dataset['codepoint'];
       const commentId = Template.instance().data.commentId;
       const cardComment = ReactiveCache.getCardComment(commentId);
@@ -348,7 +377,7 @@ function createCardLink(card, board) {
           href: card.originRelativeUrl(),
           class: 'action-card',
         },
-        DOMPurify.sanitize(text, { ALLOW_UNKNOWN_PROTOCOLS: true }),
+        sanitizeHTML(text),
       ),
     )
   );
@@ -365,7 +394,7 @@ function createBoardLink(board, list) {
           href: board.originRelativeUrl(),
           class: 'action-board',
         },
-        DOMPurify.sanitize(text, { ALLOW_UNKNOWN_PROTOCOLS: true }),
+        sanitizeHTML(text),
       ),
     )
   );

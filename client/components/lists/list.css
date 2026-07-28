@@ -4,24 +4,259 @@
   flex-direction: column;
   position: relative;
   background: #dedede;
-  border-left: 1px solid #ccc;
+  border-inline-start: 1px solid #ccc;
   padding: 0;
-  float: left;
-  min-width: 100px; /* TODO(mark-i-m): hardcoded? */
-  /*max-width: 270px;*/
-  /* Reverted incomplete change list width: */
-  /* https://github.com/wekan/wekan/issues/4558 */
-  /* Orinal width: 270px. Changes not saved yet: */
-  /*resize: both;  - List width and height resizeable */
-  /* overflow: auto; - List width and height resizeable */
+  float: inline-start;
+}
+
+/* List resize handle */
+.list-resize-handle {
+  position: absolute;
+  top: 0;
+  inset-inline-end: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 10;
+  background: transparent;
+  transition: background-color 0.2s ease;
+  border-radius: 2px;
+  /* Ensure the handle is clickable */
+  pointer-events: auto;
+}
+
+.list-resize-handle:hover {
+  background: rgba(0, 123, 255, 0.4);
+  box-shadow: 0 0 4px rgba(0, 123, 255, 0.3);
+}
+
+.list-resize-handle:active {
+  background: rgba(0, 123, 255, 0.6);
+  box-shadow: 0 0 6px rgba(0, 123, 255, 0.4);
+}
+
+/* Show resize handle only on hover */
+.list:hover .list-resize-handle {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.list:hover .list-resize-handle:hover {
+  background: rgba(0, 123, 255, 0.4);
+  box-shadow: 0 0 4px rgba(0, 123, 255, 0.3);
+}
+
+/* Add a subtle indicator line */
+.list-resize-handle::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 20px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 1px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.list-resize-handle:hover::before {
+  opacity: 1;
+}
+
+/* Disable resize handle for collapsed lists and mobile view */
+.list.list-collapsed .list-resize-handle,
+.list.mobile-view .list-resize-handle {
+  display: none;
+}
+
+/* Disable resize handle for auto-width lists */
+.list.list-auto-width .list-resize-handle {
+  display: none;
+}
+
+/* Visual feedback during resize */
+.list.list-resizing {
+  transition: none !important;
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.3);
+  /* Ensure the list maintains its new width during resize */
+  flex: none !important;
+  flex-basis: auto !important;
+  flex-grow: 0 !important;
+  flex-shrink: 0 !important;
+  /* Override any conflicting layout properties.
+     Keep the flex column layout so the list-body stays height-bounded and
+     keeps its vertical scrollbar (display:block would collapse it). */
+  float: inline-start !important;
+  display: flex !important;
+  flex-direction: column !important;
+  position: relative !important;
+  /* Force width to be respected */
+  width: var(--list-width, auto) !important;
+  min-width: var(--list-width, auto) !important;
+  max-width: var(--list-width, auto) !important;
+}
+
+body.list-resizing-active {
+  cursor: col-resize !important;
+}
+
+body.list-resizing-active * {
+  cursor: col-resize !important;
+}
+
+/* Ensure swimlane container doesn't interfere with list resizing */
+.swimlane .list.list-resizing {
+  /* Override any swimlane flex properties */
+  flex: none !important;
+  flex-basis: auto !important;
+  flex-grow: 0 !important;
+  flex-shrink: 0 !important;
+  /* Ensure width is respected */
+  width: var(--list-width, auto) !important;
+  min-width: var(--list-width, auto) !important;
+  max-width: var(--list-width, auto) !important;
+}
+
+/* More aggressive override for any container that might interfere */
+.js-swimlane .list.list-resizing,
+.dragscroll .list.list-resizing,
+[id^="swimlane-"] .list.list-resizing {
+  /* Force the width to be applied */
+  width: var(--list-width, auto) !important;
+  min-width: var(--list-width, auto) !important;
+  max-width: var(--list-width, auto) !important;
+  flex: none !important;
+  flex-basis: auto !important;
+  flex-grow: 0 !important;
+  flex-shrink: 0 !important;
+  float: inline-start !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Ensure the width persists after resize is complete.
+   Exclude collapsed lists: a collapsed list keeps its inline --list-width custom
+   property, and without :not() this !important rule overrode the 30px collapsed
+   width, so collapsing a list that had a custom width left it full width.
+   See https://github.com/wekan/wekan/issues/5892 */
+.js-swimlane .list[style*="--list-width"]:not(.list-collapsed),
+.dragscroll .list[style*="--list-width"]:not(.list-collapsed),
+[id^="swimlane-"] .list[style*="--list-width"]:not(.list-collapsed) {
+  /* Maintain the width after resize */
+  width: var(--list-width, auto) !important;
+  min-width: var(--list-width, auto) !important;
+  max-width: var(--list-width, auto) !important;
+  flex: none !important;
+  flex-basis: auto !important;
+  flex-grow: 0 !important;
+  flex-shrink: 0 !important;
+  float: inline-start !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* ...but NOT in mobile mode, where a list is always full width.
+   `.mobile-mode .list` (in boardHeader.css) already says width:100% !important, but
+   the rule above is !important too and more specific, so it won. On a phone that did
+   not show, because a phone gets `list-auto-width` and no inline --list-width at all;
+   in mobile mode on a desktop browser the inline width was there and the lists stayed
+   at their desktop width while everything else was in mobile layout. Same three
+   selectors, prefixed with body.mobile-mode so this one is the more specific. */
+body.mobile-mode .js-swimlane .list[style*="--list-width"]:not(.list-collapsed),
+body.mobile-mode .dragscroll .list[style*="--list-width"]:not(.list-collapsed),
+body.mobile-mode [id^="swimlane-"] .list[style*="--list-width"]:not(.list-collapsed) {
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  float: none !important;
+}
+
+/* Ensure consistent header height for all lists */
+.list-header {
+  /* Maintain consistent height and padding for all lists */
+  min-height: 30px !important;
+  height: auto !important;
+  padding: 28px 21px 6px !important;
+  /* Make sure the background covers the full height */
+  background-color: #e4e4e4 !important;
+  border-bottom: 8px solid #e4e4e4 !important;
+  /* Use original display for consistent button positioning */
+  display: block !important;
+  position: relative !important;
+  /* Allow overflow for text wrapping and forms */
+  overflow: visible !important;
+}
+
+/* Clearfix for floated buttons */
+.list-header::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+/* Ensure title text doesn't cause height changes for all lists */
+.list-header .list-header-name {
+  /* Allow text wrapping to flow below buttons */
+  white-space: normal !important;
+  /* Ensure proper line height */
+  line-height: 1.2 !important;
+  /* Ensure it doesn't overflow horizontally */
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+  /* Full width since buttons are now absolutely positioned above */
+  width: 100% !important;
+}
+
+/* Position elements at top aligned with collapse button */
+.list-header .js-open-list-menu {
+  position: absolute !important;
+  top: 5px !important;
+  inset-inline-end: 10px !important;
+  z-index: 15 !important;
+  display: inline-block !important;
+  padding: 4px !important;
+}
+
+.list-header .list-header-plus-top {
+  position: absolute !important;
+  top: 5px !important;
+  inset-inline-end: 30px !important;
+  z-index: 15 !important;
+  display: inline-block !important;
+  padding: 4px !important;
+}
+
+.list-header .list-header-handle-desktop {
+  position: absolute !important;
+  top: 5px !important;
+  inset-inline-end: 80px !important;
+  z-index: 15 !important;
+  display: inline-block !important;
+  cursor: move !important;
+  pointer-events: auto !important;
+  padding: 4px !important;
+}
+
+/* Anchor header action buttons within header during resize */
+.list .list-header { position: relative; z-index: 5; }
+.list .list-header .js-open-list-menu,
+.list .list-header .list-header-plus-top,
+.list .list-header .list-header-handle-desktop {
+  position: absolute !important;
+}
+[id^="swimlane-"] .list:first-child {
+  min-width: 35px;
+}
+.list.list-auto-width {
+  flex: 1;
 }
 .list:first-child {
-  min-width: 20px;
-  margin-left: 5px;
-  border-left: none;
+  border-inline-start: none;
+  flex: none;
 }
 .card-details + .list {
-  border-left: none;
+  border-inline-start: none;
 }
 .list.ui-sortable-helper {
   box-shadow: -2px 2px 8px rgba(0,0,0,0.3), 0 0 1px rgba(0,0,0,0.5);
@@ -35,8 +270,155 @@
   background-color: rgba(0,0,0,0.2);
   border-color: transparent;
   box-shadow: none;
-  height: 100px;
+  height: 135px;
 }
+.list.list-collapsed {
+  flex: none !important;
+  /* !important so a custom per-list --list-width never keeps a collapsed list
+     full width (see https://github.com/wekan/wekan/issues/5892) */
+  min-width: 30px !important;
+  max-width: 30px !important;
+  width: 30px !important;
+  min-height: 540px;
+  height: 540px;
+  overflow: visible;
+  position: relative;
+}
+.list.list-collapsed .list-header {
+  padding: 5px 0;
+  min-height: 100% !important;
+  height: 100% !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  position: relative;
+  overflow: visible !important;
+  width: 30px;
+  max-width: 30px;
+  margin: 0;
+}
+
+/* In collapsed lists, keep controls inside the 30px column.
+   The inlined wrapper is normally display: contents; convert it to a real
+   flex container so control ordering and centering apply reliably. */
+.list.list-collapsed .list-header > .js-inlined-form-wrapper {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  padding-top: 0 !important;
+}
+
+/* Keep collapsed header controls in a deterministic vertical order:
+   collapse toggle, drag handle, then rotated title. */
+.list.list-collapsed .list-header > .js-inlined-form-wrapper > .list-header-handle-desktop,
+.list.list-collapsed .list-header > .js-inlined-form-wrapper > .list-header-handle {
+  order: 2;
+}
+
+.list.list-collapsed .list-header > .js-inlined-form-wrapper > .js-collapse {
+  order: 1;
+}
+
+.list.list-collapsed .list-header > .js-inlined-form-wrapper > .list-rotated {
+  order: 3;
+}
+.list.list-collapsed .list-header .js-collapse {
+  position: relative !important;
+  margin: 5px auto;
+  z-index: 30;
+  padding: 5px;
+  font-size: 16px;
+  white-space: nowrap;
+  display: block;
+  width: auto;
+  inset-inline-start: auto !important;
+  top: auto !important;
+}
+.list.list-collapsed .list-header .list-header-handle {
+  position: relative !important;
+  margin: 5px auto;
+  z-index: 31;
+  padding: 5px;
+  display: block;
+  width: auto;
+  top: auto !important;
+  inset-inline-end: auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+.list.list-collapsed .list-header .list-header-handle-desktop {
+  position: relative !important;
+  margin: 5px auto;
+  z-index: 31;
+  padding: 5px;
+  display: block;
+  width: auto;
+  top: auto !important;
+  inset-inline-end: auto !important;
+  inset-inline-start: auto !important;
+  transform: none !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+.list.list-collapsed .list-header .list-rotated {
+  width: 100% !important;
+  max-width: 100%;
+  height: auto !important;
+  margin: 10px 0 0 0 !important;
+  position: relative !important;
+  overflow: hidden !important;
+  transform: none;
+  transform-origin: center center;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  pointer-events: none;
+}
+.list.list-collapsed .list-header .list-rotated h2.list-header-name {
+  text-align: center;
+  overflow: hidden;
+  white-space: normal;
+  display: block !important;
+  font-size: 12px;
+  line-height: 1.2;
+  color: #333;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  max-height: 100%;
+  height: 100%;
+  position: static;
+  inset-inline-start: auto;
+  top: auto;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  z-index: 10;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto;
+}
+
+.list.list-composer,
+.list-composer {
+  display: none;
+}
+
+/* Show list-composer when inside an active inlined form */
+form.inlined-form .list-composer {
+  display: block;
+}
+
 .list.list-composer .open-list-composer,
 .list .list-composer .open-list-composer {
   color: #8c8c8c;
@@ -44,24 +426,24 @@
 .list.list-composer .list-name-input,
 .list .list-composer .list-name-input {
   background: #fff;
-  margin: -3px 0 8px;
+  margin: -4px 0 8px;
 }
 .list-header-add {
   flex: 0 0 auto;
-  padding: 20px 12px 4px;
+  padding: 14px 21px;
   position: relative;
-  min-height: 20px;
+  min-height: 30px;
 }
 .list-header {
   flex: 0 0 auto;
-  padding: 20px 12px 4px;
+  padding: 28px 21px 6px;
   position: relative;
-  min-height: 20px;
+  min-height: 30px;
   background-color: #e4e4e4;
-  border-bottom: 6px solid #e4e4e4;
+  border-bottom: 8px solid #e4e4e4;
 }
 .list-header.list-header-card-count {
-  min-height: 35px;
+  min-height: 45px;
   height: auto;
 }
 .list-header.ui-sortable-handle {
@@ -71,23 +453,47 @@
   display: none;
 }
 .list-header .list-header-name {
-  display: inline;
-  font-size: 16px;
-  line-height: 17px;
+  display: block;
+  font-size: 14px;
+  line-height: 1.2;
   margin: 0;
   font-weight: bold;
-  min-height: 9px;
-  min-width: 30px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  min-height: 14px;
+  min-width: 56px;
+  overflow-wrap: break-word;
   word-wrap: break-word;
+  vertical-align: top;
+  width: 100%;
+}
+/* Sum badge shown before list title */
+.list-header .list-sum-badge {
+  display: inline-block;
+  margin-inline-end: 8px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #8c8c8c;
+  font-weight: bold;
+  font-size: 12px;
+  vertical-align: middle;
+}
+.list-rotated {
+  width: 18px;
+  height: 315px;
+  margin-top: -108px;
+  margin-inline-start: -196px;
+  margin-inline-end: 0;
+  transform: rotate(90deg);
+  position: relative;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .list-header .list-header-watch-icon {
-  padding-left: 10px;
+  padding-inline-start: 10px;
   color: #a6a6a6;
 }
 .list-header .list-header-menu {
-  float: right;
+  float: inline-end;
 }
 @media print {
   .list-header .list-header-menu,
@@ -97,7 +503,231 @@
 }
 .list-header .list-header-plus-top {
   color: #a6a6a6;
-  margin-right: 15px;
+  margin-inline-end: 15px;
+  vertical-align: middle;
+  line-height: 1.2;
+}
+.list-header .list-header-collapse-right {
+  color: #a6a6a6;
+}
+.list-header .list-header-collapse-left {
+  color: #a6a6a6;
+  margin-inline-end: 15px;
+}
+/* List header collapse button styling - positioned at top left */
+.list-header .js-collapse {
+  position: absolute !important;
+  top: 5px !important;
+  inset-inline-start: 10px !important;
+  color: #a6a6a6;
+  display: inline-block;
+  vertical-align: top;
+  padding: 5px 8px;
+  border: none;
+  border-radius: 0;
+  background-color: transparent;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1.2;
+  min-width: 30px;
+  text-align: center;
+  text-decoration: none;
+  margin: 0;
+  z-index: 15;
+}
+.list-header .js-collapse:hover {
+  background-color: transparent;
+  color: #333;
+}
+
+/* Title text container */
+.list-header > div {
+  padding-top: 0;
+  width: 100%;
+  display: block;
+  clear: both;
+}
+
+/* Expanded desktop collapse button — static, participates in flex row 1. */
+.list:not(.list-collapsed):not(.mobile-view) .list-header .js-collapse {
+  position: static !important;
+  top: auto !important;
+  inset-inline-start: auto !important;
+  inset-inline-end: auto !important;
+  transform: none !important;
+  margin: 0 !important;
+  min-width: 24px;
+  padding: 2px 4px !important;
+}
+.list.list-collapsed .list-header .js-collapse {
+  display: inline-block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Hide menu button in collapsed state */
+.list.list-collapsed .list-header .js-open-list-menu,
+.list.list-collapsed .list-header .list-header-menu {
+  display: none !important;
+}
+
+/* Responsive adjustments for collapsed lists */
+@media (min-width: 768px) {
+  .list.list-collapsed {
+    min-width: 30px;
+    max-width: 30px;
+    width: 30px;
+    min-height: 540px;
+    height: 540px;
+  }
+  .list.list-collapsed .list-header {
+    width: 30px;
+    max-width: 30px;
+    margin: 0;
+    min-height: 100% !important;
+    height: 100% !important;
+  }
+  .list.list-collapsed .list-header .list-rotated {
+    width: 100% !important;
+    height: auto !important;
+    margin: 10px 0 0 0 !important;
+    position: relative !important;
+    overflow: hidden !important;
+    transform: none;
+    flex: 1;
+  }
+  .list.list-collapsed .list-header .list-rotated h2.list-header-name {
+    width: 100%;
+    font-size: 12px;
+    height: 100%;
+    line-height: 1.2;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    position: static;
+    inset-inline-start: auto;
+    top: auto;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    text-align: center;
+    visibility: visible !important;
+    opacity: 1 !important;
+    display: block !important;
+    background-color: transparent;
+    border: none;
+    color: #333;
+    z-index: 10;
+  }
+  .list.list-collapsed .list-header .js-collapse {
+    margin: 5px auto;
+  }
+}
+
+@media (min-width: 1024px) {
+  .list.list-collapsed {
+    min-width: 30px;
+    max-width: 30px;
+    width: 30px;
+    min-height: 540px;
+    height: 540px;
+  }
+  .list.list-collapsed .list-header {
+    width: 30px;
+    max-width: 30px;
+    min-height: 100% !important;
+    height: 100% !important;
+  }
+  .list.list-collapsed .list-header .list-rotated {
+    width: 100% !important;
+    height: auto !important;
+    margin: 10px 0 0 0 !important;
+    position: relative !important;
+    overflow: hidden !important;
+    transform: none;
+    flex: 1;
+  }
+  .list.list-collapsed .list-header .list-rotated h2.list-header-name {
+    width: 100%;
+    font-size: 12px;
+    height: 100%;
+    line-height: 1.2;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    position: static;
+    inset-inline-start: auto;
+    top: auto;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    text-align: center;
+    visibility: visible !important;
+    opacity: 1 !important;
+    display: block !important;
+    background-color: transparent;
+    border: none;
+    color: #333;
+    z-index: 10;
+  }
+  .list.list-collapsed .list-header .js-collapse {
+    margin: 5px auto;
+  }
+}
+
+@media (min-width: 1200px) {
+  .list.list-collapsed {
+    min-width: 30px;
+    max-width: 30px;
+    width: 30px;
+    min-height: 540px;
+    height: 540px;
+  }
+  .list.list-collapsed .list-header {
+    width: 30px;
+    max-width: 30px;
+    min-height: 100% !important;
+    height: 100% !important;
+  }
+  .list.list-collapsed .list-header .list-rotated {
+    width: 100% !important;
+    height: auto !important;
+    margin: 10px 0 0 0 !important;
+    position: relative !important;
+    overflow: hidden !important;
+    transform: none;
+    flex: 1;
+  }
+  .list.list-collapsed .list-header .list-rotated h2.list-header-name {
+    width: 100%;
+    font-size: 12px;
+    height: 100%;
+    line-height: 1.2;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    position: static;
+    inset-inline-start: auto;
+    top: auto;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    text-align: center;
+    visibility: visible !important;
+    opacity: 1 !important;
+    display: block !important;
+    background-color: transparent;
+    border: none;
+    color: #333;
+    z-index: 10;
+  }
+  .list.list-collapsed .list-header .js-collapse {
+    margin: 5px auto;
+  }
+}
+.list-header .list-header-collapse {
+  color: #a6a6a6;
+  margin-inline-end: 15px;
 }
 .list-header .highlight {
   color: #ce1414;
@@ -111,17 +741,38 @@
 .js-open-list-menu,
 .list-header-menu a {
   color: #4d4d4d;
-  padding-left: 4px;
+  padding-inline-start: 4px;
 }
 .js-open-list-menu {
   font-size: 18px;
+  vertical-align: middle;
+  line-height: 1.2;
 }
 .list-body {
   flex: 1 1 auto;
   flex-direction: column;
   display: flex;
-  overflow-y: auto;
+  /* #5439: always show a scrollbar on the list body across desktop and mobile
+     browsers (overlay scrollbars on macOS/iOS/Android/Firefox otherwise auto-
+     hide it). Keep these declarations in sync with models/lib/scrollbarCss.js
+     (alwaysVisibleScrollbarCss), which is unit tested. */
+  overflow-y: scroll;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.35) rgba(0, 0, 0, 0.08);
+  scrollbar-gutter: stable;
   padding: 5px 11px;
+}
+.list-body::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+  -webkit-appearance: none;
+}
+.list-body::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.08);
+}
+.list-body::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 5px;
 }
 .list-body .minicards {
   flex-grow: 1;
@@ -150,7 +801,7 @@
   }
 }
 .list-body .open-minicard-composer i.fa {
-  margin-right: 7px;
+  margin-inline-end: 7px;
 }
 .list-body .open-minicard-composer:hover {
   background: #fafafa;
@@ -168,91 +819,258 @@
 }
 #js-wip-limit-edit .wip-limit-value {
   width: 20%;
-  margin-right: 5%;
+  margin-inline-end: 5%;
 }
 #js-wip-limit-edit .wip-limit-error {
   display: none;
 }
 #js-wip-limit-edit .soft-wip-limit {
-  margin-right: 8px;
+  margin-inline-end: 8px;
 }
 #js-wip-limit-edit div {
-  float: left;
+  float: inline-start;
 }
 #js-list-width-edit .list-width-error {
   display: none;
 }
-@media screen and (max-width: 800px) {
-  .mini-list {
+/* Mobile view styles - applied when isMiniScreen is true (iPhone, etc.) */
+.mini-list.mobile-view {
+  flex: 0 0 60px;
+  height: auto;
+  width: 100%;
+  max-width: 100%;
+  min-width: 100%;
+  border-inline-start: 0px !important;
+  border-bottom: 1px solid #ccc;
+  display: block !important;
+}
+.list.mobile-view {
+  display: block !important;
+  flex-basis: auto;
+  width: 100%;
+  max-width: 100%;
+  min-width: 100%;
+  border-inline-start: 0px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.list.mobile-view:first-child {
+  margin-inline-start: 0px;
+}
+.list.mobile-view.ui-sortable-helper {
+  flex: 0 0 60px;
+  height: 60px;
+  width: 100%;
+  max-width: 100%;
+  border-inline-start: 0px !important;
+  border-bottom: 1px solid #ccc;
+  display: block !important;
+}
+.list.mobile-view.ui-sortable-helper .list-header.ui-sortable-handle {
+  cursor: grabbing;
+}
+.list.mobile-view.placeholder {
+  flex: 0 0 60px;
+  height: 60px;
+  width: 100%;
+  max-width: 100%;
+  border-inline-start: 0px !important;
+  border-bottom: 1px solid #ccc;
+  display: block !important;
+}
+.list.mobile-view .list-body {
+  padding: 15px 19px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 100%;
+}
+.list.mobile-view .list-header {
+  /*Updated padding values for mobile devices, this should fix text grouping issue*/
+  padding: 20px 0px 20px 0px;
+  border-bottom: 0px solid #e4e4e4;
+  min-height: 30px;
+  margin-top: 10px;
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
+  min-width: 100%;
+  /* Force grid layout for iPhone */
+  display: grid !important;
+  grid-template-columns: 30px 1fr auto auto !important;
+  gap: 10px !important;
+}
+.list.mobile-view .list-header .list-header-left-icon {
+  padding: 7px;
+  padding-inline-end: 27px;
+  margin-top: 1px;
+  top: -7px;
+  inset-inline-start: -7px;
+}
+.list.mobile-view .list-header .list-header-menu-icon {
+  padding: 14px;
+  font-size: 40px !important;
+  text-align: center;
+  /* Force positioning for iPhone */
+  position: absolute !important;
+  inset-inline-end: 60px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  z-index: 10;
+}
+.list.mobile-view .list-header .list-header-handle {
+  padding: 14px;
+  font-size: 48px !important;
+  text-align: center;
+  /* Force positioning for iPhone */
+  position: absolute !important;
+  inset-inline-end: 10px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  z-index: 10;
+}
+.list.mobile-view .list-header .list-header-left-icon {
+  display: grid;
+  grid-row: 1/3;
+  grid-column: 1;
+}
+.list.mobile-view .list-header .list-header-name {
+  grid-row: 1;
+  grid-column: 2;
+  align-self: end;
+  font-size: 20px !important;
+  font-weight: bold;
+  line-height: 1.2;
+  padding-bottom: 2px;
+}
+.list.mobile-view .list-header .cardCount {
+  grid-row: 2;
+  grid-column: 2;
+  align-self: start;
+  text-align: start;
+  padding-inline-start: 0;
+  margin-inline-start: 0;
+  font-size: 16px !important;
+  line-height: 1.2;
+}
+.list.mobile-view .list-header .list-header-menu {
+  grid-row: 1/3;
+  grid-column: 3;
+}
+.list.mobile-view .list-header .list-header-menu-icon {
+  grid-row: 1/3;
+  grid-column: 3;
+}
+.list.mobile-view .list-header .list-header-handle {
+  grid-row: 1/3;
+  grid-column: 4;
+}
+.list.mobile-view .list-header .inlined-form {
+  grid-row: 1/3;
+  grid-column: 1/4;
+}
+.list.mobile-view .list-header .edit-controls {
+  align-items: initial;
+}
+
+@media screen and (max-width: 800px),
+       screen and (max-device-width: 932px) and (-webkit-min-device-pixel-ratio: 3) {
+  /* MOBILE MODE, not merely a narrow window. Stacking every list full width and
+     `display: block` is the phone layout; a phone whose user chose DESKTOP mode
+     asked for the desktop board - lists side by side, scrolled sideways - and was
+     getting one list per row instead. `body.mobile-mode` is exactly "the user is
+     in mobile mode", and it is what the rest of the mobile board layout uses. */
+  body.mobile-mode .mini-list {
     flex: 0 0 60px;
     height: auto;
     width: 100%;
-    border-left: 0px;
+    max-width: 100%;
+    min-width: 100%;
+    border-inline-start: 0px !important;
     border-bottom: 1px solid #ccc;
+    display: block !important;
   }
-  .list {
-    display: contents;
+  body.mobile-mode .list {
+    display: block !important;
     flex-basis: auto;
     width: 100%;
-    border-left: 0px;
+    max-width: 100%;
+    min-width: 100%;
+    border-inline-start: 0px !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
-  .list:first-child {
-    margin-left: 0px;
+  body.mobile-mode .list:first-child {
+    margin-inline-start: 0px;
   }
-  .list.ui-sortable-helper {
+  body.mobile-mode .list.ui-sortable-helper {
     flex: 0 0 60px;
     height: 60px;
     width: 100%;
-    border-left: 0px;
+    max-width: 100%;
+    border-inline-start: 0px !important;
     border-bottom: 1px solid #ccc;
+    display: block !important;
   }
-  .list.ui-sortable-helper .list-header.ui-sortable-handle {
+  body.mobile-mode .list.ui-sortable-helper .list-header.ui-sortable-handle {
     cursor: grabbing;
   }
-  .list.placeholder {
+  body.mobile-mode .list.placeholder {
     flex: 0 0 60px;
     height: 60px;
     width: 100%;
-    border-left: 0px;
+    max-width: 100%;
+    border-inline-start: 0px !important;
     border-bottom: 1px solid #ccc;
+    display: block !important;
   }
   .list-body {
     padding: 15px 19px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 100%;
   }
   .list-header {
-    padding: 0 12px 0px;
+	  /*Updated padding values for mobile devices, this should fix text grouping issue*/
+    padding: 20px 0px 20px 0px;
     border-bottom: 0px solid #e4e4e4;
-    height: 60px;
+    min-height: 30px;
     margin-top: 10px;
-    display: flex;
     align-items: center;
+    width: 100%;
+    max-width: 100%;
+    min-width: 100%;
   }
   .list-header .list-header-left-icon {
     padding: 7px;
-    padding-right: 27px;
+    padding-inline-end: 27px;
     margin-top: 1px;
     top: -7px;
-    left: -7px;
+    inset-inline-start: -7px;
   }
   .list-header .list-header-menu-icon {
+    padding: 14px;
+    font-size: 40px;
+    text-align: center;
+    /* iOS Safari fallback positioning */
     position: absolute;
-    padding: 7px;
+    inset-inline-end: 60px;
     top: 50%;
     transform: translateY(-50%);
-    right: 47px;
-    font-size: 20px;
   }
   .list-header .list-header-handle {
+    padding: 14px;
+    font-size: 48px;
+    text-align: center;
+    /* iOS Safari fallback positioning */
     position: absolute;
-    padding: 7px;
+    inset-inline-end: 10px;
     top: 50%;
     transform: translateY(-50%);
-    right: 10px;
-    font-size: 24px;
   }
   .list-header {
     display: grid;
-    grid-template-columns: 30px 5fr 1fr;
+    grid-template-columns: 30px 1fr auto auto;
+    gap: 10px;
   }
   .list-header .list-header-left-icon {
     display: grid;
@@ -263,15 +1081,29 @@
     grid-row: 1;
     grid-column: 2;
     align-self: end;
+    font-size: 20px;
+    font-weight: bold;
+    line-height: 1.2;
+    padding-bottom: 2px;
   }
   .list-header .cardCount {
     grid-row: 2;
     grid-column: 2;
     align-self: start;
+    font-size: 16px;
+    line-height: 1.2;
   }
   .list-header .list-header-menu {
     grid-row: 1/3;
     grid-column: 3;
+  }
+  .list-header .list-header-menu-icon {
+    grid-row: 1/3;
+    grid-column: 3;
+  }
+  .list-header .list-header-handle {
+    grid-row: 1/3;
+    grid-column: 4;
   }
   .list-header .inlined-form {
     grid-row: 1/3;
@@ -281,12 +1113,159 @@
     align-items: initial;
   }
 }
+
+/* iPhone 12 Mini specific - fix icon positioning in stacked lists view */
+@media screen and (device-width: 375px) and (device-height: 812px), /* iPhone 12 Mini exact */
+       screen and (max-width: 375px) and (max-height: 812px), /* iPhone 12 Mini viewport */
+       screen and (-webkit-min-device-pixel-ratio: 3) and (max-width: 375px) /* iPhone 12 Mini Retina */ {
+  .list.mobile-view .list-header {
+    /* Force grid layout for iPhone 12 Mini */
+    display: grid !important;
+    grid-template-columns: 30px 1fr auto auto !important;
+    gap: 10px !important;
+    align-items: center !important;
+  }
+
+  .list.mobile-view .list-header .list-header-menu-icon {
+    /* Remove absolute positioning for iPhone 12 Mini */
+    position: static !important;
+    inset-inline-end: auto !important;
+    top: auto !important;
+    transform: none !important;
+    /* Use grid positioning */
+    grid-row: 1/3 !important;
+    grid-column: 3 !important;
+    padding: 14px !important;
+    font-size: 40px !important;
+    text-align: center !important;
+  }
+
+  .list.mobile-view .list-header .list-header-handle {
+    /* Remove absolute positioning for iPhone 12 Mini */
+    position: static !important;
+    inset-inline-end: auto !important;
+    top: auto !important;
+    transform: none !important;
+    /* Use grid positioning */
+    grid-row: 1/3 !important;
+    grid-column: 4 !important;
+    padding: 14px !important;
+    font-size: 48px !important;
+    text-align: center !important;
+  }
+
+  .list.mobile-view .list-header .list-header-name {
+    grid-row: 1 !important;
+    grid-column: 2 !important;
+    align-self: end !important;
+    font-size: 20px !important;
+    font-weight: bold !important;
+    line-height: 1.2 !important;
+    padding-bottom: 2px !important;
+  }
+
+  .list.mobile-view .list-header .cardCount {
+    grid-row: 2 !important;
+    grid-column: 2 !important;
+    align-self: start !important;
+    text-align: start !important;
+    padding-inline-start: 0 !important;
+    margin-inline-start: 0 !important;
+    font-size: 16px !important;
+    line-height: 1.2 !important;
+  }
+
+  .list.mobile-view .list-header .list-header-left-icon {
+    display: grid !important;
+    grid-row: 1/3 !important;
+    grid-column: 1 !important;
+  }
+}
+
+/* iPhone device JavaScript detection fallback - fix icon positioning */
+.iphone-device .list.mobile-view .list-header {
+  /* Force grid layout for iPhone devices */
+  display: grid !important;
+  grid-template-columns: 30px 1fr auto auto !important;
+  gap: 10px !important;
+  align-items: center !important;
+}
+
+.iphone-device .list.mobile-view .list-header .list-header-menu-icon {
+  /* Remove absolute positioning for iPhone devices */
+  position: static !important;
+  inset-inline-end: auto !important;
+  top: auto !important;
+  transform: none !important;
+  /* Use grid positioning */
+  grid-row: 1/3 !important;
+  grid-column: 3 !important;
+  padding: 14px !important;
+  font-size: 40px !important;
+  text-align: center !important;
+}
+
+.iphone-device .list.mobile-view .list-header .list-header-handle {
+  /* Remove absolute positioning for iPhone devices */
+  position: static !important;
+  inset-inline-end: auto !important;
+  top: auto !important;
+  transform: none !important;
+  /* Use grid positioning */
+  grid-row: 1/3 !important;
+  grid-column: 4 !important;
+  padding: 14px !important;
+  font-size: 48px !important;
+  text-align: center !important;
+}
+
+.iphone-device .list.mobile-view .list-header .list-header-name {
+  grid-row: 1 !important;
+  grid-column: 2 !important;
+  align-self: end !important;
+  font-size: 20px !important;
+  font-weight: bold !important;
+  line-height: 1.2 !important;
+  padding-bottom: 2px !important;
+}
+
+.iphone-device .list.mobile-view .list-header .cardCount {
+  grid-row: 2 !important;
+  grid-column: 2 !important;
+  align-self: start !important;
+  font-size: 16px !important;
+  line-height: 1.2 !important;
+}
+
+.iphone-device .list.mobile-view .list-header .list-header-left-icon {
+  display: grid !important;
+  grid-row: 1/3 !important;
+  grid-column: 1 !important;
+}
+
+/* Allow long list titles to expand on desktop (non-mobile, non-collapsed) */
+.list:not(.mobile-view):not(.list-collapsed) .list-header {
+  padding-top: 22px !important;
+  overflow: visible !important;
+}
+
+.list:not(.mobile-view):not(.list-collapsed) .list-header .list-header-name {
+  /* Permit wrapping and full visibility */
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  display: block !important;
+  /* Full width since buttons are absolutely positioned */
+  width: 100% !important;
+  /* Break long words to avoid overflow */
+  word-break: break-word !important;
+}
 .link-board-wrapper {
   display: flex;
   align-items: baseline;
 }
 .link-board-wrapper .js-link-board {
-  margin-left: 15px;
+  margin-inline-start: 15px;
 }
 .search-card-results {
   max-height: 250px;
@@ -296,78 +1275,327 @@
   margin-top: unset !important;
 }
 .list-header-white {
-  border-bottom: 6px solid #fff;
-  border: 1px solid #eee;
+  border-bottom: 6px solid #fff !important;
 }
 .list-header-green {
-  border-bottom: 6px solid #3cb500;
+  border-bottom: 6px solid #3cb500 !important;
 }
 .list-header-yellow {
-  border-bottom: 6px solid #fad900;
+  border-bottom: 6px solid #fad900 !important;
 }
 .list-header-orange {
-  border-bottom: 6px solid #ff9f19;
+  border-bottom: 6px solid #ff9f19 !important;
 }
 .list-header-red {
-  border-bottom: 6px solid #eb4646;
+  border-bottom: 6px solid #eb4646 !important;
 }
 .list-header-purple {
-  border-bottom: 6px solid #a632db;
+  border-bottom: 6px solid #a632db !important;
 }
 .list-header-blue {
-  border-bottom: 6px solid #0079bf;
+  border-bottom: 6px solid #0079bf !important;
 }
 .list-header-pink {
-  border-bottom: 6px solid #ff78cb;
+  border-bottom: 6px solid #ff78cb !important;
 }
 .list-header-sky {
-  border-bottom: 6px solid #00c2e0;
+  border-bottom: 6px solid #00c2e0 !important;
 }
 .list-header-black {
-  border-bottom: 6px solid #4d4d4d;
+  border-bottom: 6px solid #4d4d4d !important;
 }
 .list-header-lime {
-  border-bottom: 6px solid #51e898;
+  border-bottom: 6px solid #51e898 !important;
 }
 .list-header-silver {
-  border-bottom: 6px solid unset;
+  border-bottom: 6px solid #e4e4e4 !important;
 }
 .list-header-peachpuff {
-  border-bottom: 6px solid #ffdab9;
+  border-bottom: 6px solid #ffdab9 !important;
 }
 .list-header-crimson {
-  border-bottom: 6px solid #dc143c;
+  border-bottom: 6px solid #dc143c !important;
 }
 .list-header-plum {
-  border-bottom: 6px solid #dda0dd;
+  border-bottom: 6px solid #dda0dd !important;
 }
 .list-header-darkgreen {
-  border-bottom: 6px solid #006400;
+  border-bottom: 6px solid #006400 !important;
+}
+
+/* Final collapsed desktop overrides:
+   keep drag handle visible in every collapsed list and preserve rotated title. */
+.list.list-collapsed:not(.mobile-view) {
+  overflow: visible !important;
+  z-index: 1;
+}
+
+.list.list-collapsed:not(.mobile-view) .list-header {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  width: 30px !important;
+  max-width: 30px !important;
+  min-height: 100% !important;
+  height: 100% !important;
+  padding: 5px 0 !important;
+  overflow: visible !important;
+}
+
+.list.list-collapsed:not(.mobile-view) .list-header > .js-inlined-form-wrapper {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100% !important;
+  height: 100% !important;
+  padding-top: 0 !important;
+}
+
+.list.list-collapsed:not(.mobile-view) .list-header > .js-inlined-form-wrapper > .list-header-handle-desktop,
+.list.list-collapsed:not(.mobile-view) .list-header > .js-inlined-form-wrapper > .list-header-handle {
+  order: 2;
+}
+
+.list.list-collapsed:not(.mobile-view) .list-header > .js-inlined-form-wrapper > .js-collapse {
+  order: 1;
+}
+
+.list.list-collapsed:not(.mobile-view) .list-header > .js-inlined-form-wrapper > .list-rotated {
+  order: 3;
+}
+
+.list.list-collapsed:not(.mobile-view) .list-header .list-header-handle-desktop,
+.list.list-collapsed:not(.mobile-view) .list-header .list-header-handle {
+  position: relative !important;
+  top: auto !important;
+  inset-inline-end: auto !important;
+  inset-inline-start: auto !important;
+  transform: none !important;
+  display: block !important;
+  margin: 4px auto 2px auto !important;
+  padding: 5px !important;
+  z-index: 500 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  color: #4d4d4d !important;
+}
+
+.list.list-collapsed:not(.mobile-view) .list-header .js-collapse {
+  position: relative !important;
+  top: auto !important;
+  inset-inline-start: auto !important;
+  inset-inline-end: auto !important;
+  display: block !important;
+  margin: 2px auto !important;
+  z-index: 400 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.list.list-collapsed:not(.mobile-view) .list-header .list-rotated {
+  position: relative !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  margin: 4px 0 0 0 !important;
+  transform: none !important;
+  transform-origin: initial !important;
+  overflow: hidden !important;
+  z-index: 1 !important;
+  pointer-events: none !important;
+  display: block !important;
+  flex: 0 0 auto !important;
+  align-self: flex-start;
+}
+
+.list.list-collapsed:not(.mobile-view) .list-header .list-rotated h2.list-header-name {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  margin: 0 !important;
+  max-height: 100% !important;
+  padding: 2px 0 !important;
+  white-space: normal !important;
+  overflow: hidden !important;
+  transform: none !important;
+  writing-mode: vertical-lr !important;
+  text-orientation: mixed !important;
+  text-align: start !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 .list-header-slateblue {
-  border-bottom: 6px solid #6a5acd;
+  border-bottom: 6px solid #6a5acd !important;
 }
 .list-header-magenta {
-  border-bottom: 6px solid #f0f;
+  border-bottom: 6px solid #f0f !important;
 }
 .list-header-gold {
-  border-bottom: 6px solid #ffd700;
+  border-bottom: 6px solid #ffd700 !important;
 }
 .list-header-navy {
-  border-bottom: 6px solid #000080;
+  border-bottom: 6px solid #000080 !important;
 }
 .list-header-gray {
-  border-bottom: 6px solid #808080;
+  border-bottom: 6px solid #808080 !important;
 }
 .list-header-saddlebrown {
-  border-bottom: 6px solid #8b4513;
+  border-bottom: 6px solid #8b4513 !important;
 }
 .list-header-paleturquoise {
-  border-bottom: 6px solid #afeeee;
+  border-bottom: 6px solid #afeeee !important;
 }
 .list-header-mistyrose {
-  border-bottom: 6px solid #ffe4e1;
+  border-bottom: 6px solid #ffe4e1 !important;
 }
 .list-header-indigo {
-  border-bottom: 6px solid #4b0082;
+  border-bottom: 6px solid #4b0082 !important;
+}
+
+.list.list-collapsed .collapsed-list-drag-area {
+  width: 100%;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  user-select: none;
+}
+.list.list-collapsed .collapsed-list-drag-area:active {
+  cursor: grabbing;
+}
+
+/* Final expanded desktop header layout:
+   collapse, title, drag handle, add-to-top, menu. */
+/* Final expanded desktop header layout:
+   Row 1: collapse | drag handle | + add card | menu
+   Row 2: list title (full width) */
+.list:not(.list-collapsed):not(.mobile-view) .list-header {
+  display: block !important;
+  /* Match collapsed header top anchor for toolbar controls. */
+  padding-top: 5px !important;
+}
+
+.list:not(.list-collapsed):not(.mobile-view) .list-header > .js-inlined-form-wrapper {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  width: 100%;
+  gap: 0;
+}
+
+/* Collapse button — first item in toolbar row */
+.list:not(.list-collapsed):not(.mobile-view) .list-header > .js-inlined-form-wrapper > .js-collapse {
+  order: 1;
+  flex: 0 0 auto;
+  position: static !important;
+  top: auto !important;
+  inset-inline-start: auto !important;
+  inset-inline-end: auto !important;
+  transform: none !important;
+  margin: 2px 2px 0 0 !important;
+  padding: 2px 4px !important;
+  min-width: 24px;
+  width: auto;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  z-index: 20 !important;
+}
+
+/* Title div — second row, full width */
+.list:not(.list-collapsed):not(.mobile-view) .list-header > .js-inlined-form-wrapper > div:not(.list-header-menu) {
+  order: 10;
+  flex: 1 0 100%;
+  min-width: 0;
+  padding-top: 4px !important;
+  padding-inline-end: 0 !important;
+}
+
+/* Hide standalone duplicate drag handle outside the menu group */
+.list:not(.list-collapsed):not(.mobile-view) .list-header > .js-inlined-form-wrapper > .list-header-handle-desktop {
+  display: none !important;
+}
+
+/* Watch icon in toolbar row */
+.list:not(.list-collapsed):not(.mobile-view) .list-header .list-header-watch-icon {
+  order: 2;
+  flex: 0 0 auto;
+  padding-inline-start: 0;
+  align-self: center;
+}
+
+/* Menu group — right side of toolbar row */
+.list:not(.list-collapsed):not(.mobile-view) .list-header .list-header-menu {
+  order: 5;
+  float: none;
+  display: inline-flex !important;
+  align-items: center;
+  gap: 4px;
+  margin-inline-start: auto;
+  margin-top: 2px;
+  flex: 0 0 auto;
+}
+
+/* Reset absolute positioning on all menu-group items */
+.list:not(.list-collapsed):not(.mobile-view) .list-header .list-header-menu .list-header-handle-desktop,
+.list:not(.list-collapsed):not(.mobile-view) .list-header .list-header-menu .list-header-plus-top,
+.list:not(.list-collapsed):not(.mobile-view) .list-header .list-header-menu .js-open-list-menu {
+  position: static !important;
+  top: auto !important;
+  inset-inline-end: auto !important;
+  inset-inline-start: auto !important;
+  transform: none !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  margin: 0 !important;
+  padding: 2px 6px !important;
+}
+
+.list:not(.list-collapsed):not(.mobile-view) .list-header .list-header-menu .list-header-handle-desktop {
+  order: 1;
+}
+
+.list:not(.list-collapsed):not(.mobile-view) .list-header .list-header-menu .list-header-plus-top {
+  order: 2;
+}
+
+.list:not(.list-collapsed):not(.mobile-view) .list-header .list-header-menu .js-open-list-menu {
+  order: 3;
+}
+.list.list-collapsed .list-header-name-collapsed {
+  writing-mode: vertical-rl;
+  text-align: center;
+  font-size: 12px;
+  color: #333;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.list.list-collapsed .list-header .js-collapse {
+  position: relative !important;
+  inset-inline-start: -10px !important;
+  color: #333;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  display: block !important;
+  align-items: initial;
+  justify-content: initial;
+  font-size: 16px !important;
+  box-shadow: none;
+  margin: 5px auto;
+  z-index: 10;
 }

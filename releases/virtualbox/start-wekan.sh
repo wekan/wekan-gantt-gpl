@@ -8,6 +8,11 @@
       #---------------------------------------------
       export MONGO_URL='mongodb://127.0.0.1:27017/wekan'
       #---------------------------------------------
+      # Card loading: 'all' (default, every card into the browser) or 'lazy'
+      # (each list loads only visible cards on demand, for very large boards).
+      # Also changeable in Admin Panel / Features.
+      #export CARDS_LOADING=lazy
+      #---------------------------------------------
       # Production: https://example.com/wekan
       # Local: http://localhost:2000
       #export ipaddress=$(ifdata -pa eth0)
@@ -154,6 +159,8 @@
       #export OAUTH2_ENABLED=true
       # Use OAuth2 ADFS additional changes. Also needs OAUTH2_ENABLED=true setting.
       #export OAUTH2_ADFS_ENABLED=false
+      # Azure AD B2C. https://github.com/wekan/wekan/issues/5242
+      #- OAUTH2_B2C_ENABLED=false
       # OAuth2 docs: https://github.com/wekan/wekan/wiki/OAuth2
       # OAuth2 login style: popup or redirect.
       #export OAUTH2_LOGIN_STYLE=redirect
@@ -373,6 +380,18 @@
       #export HEADER_LOGIN_FIRSTNAME=HEADERFIRSTNAME
       #export HEADER_LOGIN_LASTNAME=HEADERLASTNAME
       #export HEADER_LOGIN_EMAIL=HEADEREMAILADDRESS
+      # SECURITY (GHSA-jggc-qvfc-jr6x): comma-separated allowlist of source IPs
+      # allowed to use header login. The source IP is the real TCP peer of the
+      # connection (your reverse proxy), NOT the spoofable X-Forwarded-For header.
+      # REQUIRED when header login is enabled: if empty/unset, header login fails
+      # CLOSED and authenticates no one.
+      #export HEADER_LOGIN_TRUSTED_IPS=127.0.0.1,10.0.0.2
+      # Optional: if WeKan is behind MULTIPLE proxy hops, list the intermediate
+      # proxy IPs here. X-Forwarded-For is then honored ONLY when the immediate
+      # TCP peer is one of these trusted proxies, and the right-most hop that is
+      # not itself a trusted proxy (the real client) is matched against
+      # HEADER_LOGIN_TRUSTED_IPS above.
+      #export HEADER_LOGIN_TRUSTED_PROXIES=10.0.0.1,10.0.0.2
       #---------------------------------------------------------------------
       # LOGOUT_WITH_TIMER : Enables or not the option logout with timer
       # example : LOGOUT_WITH_TIMER=true
@@ -409,6 +428,7 @@
       #export WAIT_SPINNER=Bounce
       #---------------------------------------------------------------------
 
+      # node --stack-size=65500 --max-old-space-size=8192 main.js & >> ~/repos/wekan.log
       node main.js & >> ~/repos/wekan.log
       cd ~/repos
 #done

@@ -1,7 +1,27 @@
 import { ReactiveCache } from '/imports/reactiveCache';
-import moment from 'moment/min/moment-with-locales';
 import { TAPi18n } from '/imports/i18n';
-import { createWorkbook } from './createWorkbook';
+import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
+import { createWorkbook, createWorkbookWriter } from './createWorkbook';
+import { 
+  formatDateTime, 
+  formatDate, 
+  formatTime, 
+  getISOWeek, 
+  isValidDate, 
+  isBefore, 
+  isAfter, 
+  isSame, 
+  add, 
+  subtract, 
+  startOf, 
+  endOf, 
+  format, 
+  parseDate, 
+  now, 
+  createDate, 
+  fromNow, 
+  calendar 
+} from '/imports/lib/dateUtils';
 
 // exporter maybe is broken since Gridfs introduced, add fs and path
 
@@ -11,157 +31,82 @@ class ExporterExcel {
     this.userLanguage = userLanguage;
   }
 
-  build(res) {
-    const fs = Npm.require('fs');
-    const os = Npm.require('os');
-    const path = Npm.require('path');
+  async build(res) {
+    // ─────────────────────────────────────────────────────────────────────────
+    // Streaming Excel export. The previous version loaded the ENTIRE board
+    // (cards, comments, activities, checklists, subtasks, rules, custom fields)
+    // into memory and built the whole styled workbook before writing it out —
+    // gigabytes of RAM for a board with thousands of cards, most of it data the
+    // spreadsheet never even shows (activities/checklists/subtasks/rules are not
+    // rendered). This version:
+    //   * loads only the small lookup tables (lists, swimlanes, labels, users),
+    //   * streams cards and comments a document at a time from raw cursors,
+    //   * writes rows through the exceljs streaming WorkbookWriter, committing
+    //     each row straight to `res` so peak memory stays flat, and
+    //   * resolves parent-card titles via a cheap id→title map instead of the old
+    //     O(n²) `result.cards.find()` per card.
+    // The visible layout/styling is unchanged.
+    // ─────────────────────────────────────────────────────────────────────────
+    const noBoardId = { fields: { boardId: 0 } };
+    const cardsRaw = require('/models/cards').default.rawCollection();
+    const cardCommentsRaw = require('/models/cardComments').default.rawCollection();
+    const cardSelector = { boardId: this._boardId, linkedId: { $in: ['', null] } };
 
-    const byBoard = {
-      boardId: this._boardId,
-    };
-    const byBoardNoLinked = {
-      boardId: this._boardId,
-      linkedId: {
-        $in: ['', null],
-      },
-    };
-    // we do not want to retrieve boardId in related elements
-    const noBoardId = {
-      fields: {
-        boardId: 0,
-      },
-    };
+    const board = await ReactiveCache.getBoard(this._boardId, { fields: { stars: 0 } });
     const result = {
-      _format: 'wekan-board-1.0.0',
+      title: board.title,
+      description: board.description,
+      createdAt: board.createdAt,
+      modifiedAt: board.modifiedAt,
+      labels: board.labels || [],
+      members: board.members || [],
     };
-    _.extend(
-      result,
-      ReactiveCache.getBoard(this._boardId, {
-        fields: {
-          stars: 0,
-        },
-      }),
-    );
-    result.lists = ReactiveCache.getLists(byBoard, noBoardId);
-    result.cards = ReactiveCache.getCards(byBoardNoLinked, noBoardId);
-    result.swimlanes = ReactiveCache.getSwimlanes(byBoard, noBoardId);
-    result.customFields = ReactiveCache.getCustomFields(
-      {
-        boardIds: {
-          $in: [this.boardId],
-        },
-      },
-      {
-        fields: {
-          boardId: 0,
-        },
-      },
-    );
-    result.comments = ReactiveCache.getCardComments(byBoard, noBoardId);
-    result.activities = ReactiveCache.getActivities(byBoard, noBoardId);
-    result.rules = ReactiveCache.getRules(byBoard, noBoardId);
-    result.checklists = [];
-    result.checklistItems = [];
-    result.subtaskItems = [];
-    result.triggers = [];
-    result.actions = [];
-    result.cards.forEach((card) => {
-      result.checklists.push(
-        ...ReactiveCache.getChecklists({
-          cardId: card._id,
-        }),
-      );
-      result.checklistItems.push(
-        ...ReactiveCache.getChecklistItems({
-          cardId: card._id,
-        }),
-      );
-      result.subtaskItems.push(
-        ...ReactiveCache.getCards({
-          parentId: card._id,
-        }),
-      );
-    });
-    result.rules.forEach((rule) => {
-      result.triggers.push(
-        ...ReactiveCache.getTriggers(
-          {
-            _id: rule.triggerId,
-          },
-          noBoardId,
-        ),
-      );
-      result.actions.push(
-        ...ReactiveCache.getActions(
-          {
-            _id: rule.actionId,
-          },
-          noBoardId,
-        ),
-      );
+    const lists = await ReactiveCache.getLists({ boardId: this._boardId }, noBoardId);
+    const swimlanes = await ReactiveCache.getSwimlanes({ boardId: this._boardId }, noBoardId);
+
+    // Small lookup maps.
+    const jlist = {};
+    lists.forEach(l => { jlist[l._id] = l.title; });
+    const jswimlane = {};
+    swimlanes.forEach(s => { jswimlane[s._id] = s.title; });
+    const jlabel = {};
+    let isFirstLabel = 1;
+    result.labels.forEach(label => {
+      jlabel[label._id] = isFirstLabel === 0 ? `,${label.name}` : label.name;
+      isFirstLabel = 0;
     });
 
-    // we also have to export some user data - as the other elements only
-    // include id but we have to be careful:
-    // 1- only exports users that are linked somehow to that board
-    // 2- do not export any sensitive information
-    const users = {};
-    result.members.forEach((member) => {
-      users[member.userId] = true;
-    });
-    result.lists.forEach((list) => {
-      users[list.userId] = true;
-    });
-    result.cards.forEach((card) => {
-      users[card.userId] = true;
-      if (card.members) {
-        card.members.forEach((memberId) => {
-          users[memberId] = true;
-        });
+    // Pass 1 — stream cards once to build the id→title map (for parent lookups)
+    // and collect referenced user ids. Only ids/titles are held, never full docs.
+    const cardTitleById = {};
+    const userIds = new Set();
+    result.members.forEach(m => userIds.add(m.userId));
+    lists.forEach(l => userIds.add(l.userId));
+    {
+      const cursor = cardsRaw.find(cardSelector, { projection: { _id: 1, title: 1, userId: 1, members: 1, assignees: 1 } });
+      for await (const c of cursor) {
+        cardTitleById[c._id] = c.title;
+        if (c.userId) userIds.add(c.userId);
+        (c.members || []).forEach(id => userIds.add(id));
+        (c.assignees || []).forEach(id => userIds.add(id));
       }
-      if (card.assignees) {
-        card.assignees.forEach((memberId) => {
-          users[memberId] = true;
-        });
-      }
-    });
-    result.comments.forEach((comment) => {
-      users[comment.userId] = true;
-    });
-    result.activities.forEach((activity) => {
-      users[activity.userId] = true;
-    });
-    result.checklists.forEach((checklist) => {
-      users[checklist.userId] = true;
-    });
-    const byUserIds = {
-      _id: {
-        $in: Object.getOwnPropertyNames(users),
-      },
-    };
-    // we use whitelist to be sure we do not expose inadvertently
-    // some secret fields that gets added to User later.
-    const userFields = {
-      fields: {
-        _id: 1,
-        username: 1,
-        'profile.initials': 1,
-        'profile.avatarUrl': 1,
-      },
-    };
-    result.users = ReactiveCache.getUsers(byUserIds, userFields)
-      .map((user) => {
-        // user avatar is stored as a relative url, we export absolute
-        if ((user.profile || {}).avatarUrl) {
-          user.profile.avatarUrl = FlowRouter.url(user.profile.avatarUrl);
-        }
-        return user;
-      });
+    }
+    // Pass 1b — comment authors.
+    {
+      const cursor = cardCommentsRaw.find({ cardId: { $in: Object.keys(cardTitleById) } }, { projection: { userId: 1 } });
+      for await (const c of cursor) { if (c.userId) userIds.add(c.userId); }
+    }
 
+    const userFields = { fields: { _id: 1, username: 1, 'profile.initials': 1, 'profile.avatarUrl': 1 } };
+    const users = await ReactiveCache.getUsers({ _id: { $in: Array.from(userIds).filter(Boolean) } }, userFields);
+    // member/assignee username map + comma-joined member list, as before.
+    const jmeml = {};
+    let jmem = '';
+    users.forEach(u => { jmeml[u._id] = u.username; jmem += `${u.username},`; });
+    jmem = jmem.substr(0, jmem.length - 1);
 
-
-    //init exceljs workbook
-    const workbook = createWorkbook();
+    //init exceljs streaming workbook (writes rows straight to res)
+    const workbook = createWorkbookWriter(res);
     workbook.creator = TAPi18n.__('export-board','',this.userLanguage);
     workbook.lastModifiedBy = TAPi18n.__('export-board','',this.userLanguage);
     workbook.created = new Date();
@@ -337,50 +282,15 @@ class ExporterExcel {
       horizontal: 'left',
     };
     ws.getRow(1).height = 40;
-    //get member and assignee info
-    let jmem = '';
-    let jassig = '';
-    const jmeml = {};
-    const jassigl = {};
-    for (const i in result.users) {
-      jmem = `${jmem + result.users[i].username},`;
-      jmeml[result.users[i]._id] = result.users[i].username;
-    }
-    jmem = jmem.substr(0, jmem.length - 1);
-    for (const ia in result.users) {
-      jassig = `${jassig + result.users[ia].username},`;
-      jassigl[result.users[ia]._id] = result.users[ia].username;
-    }
-    jassig = jassig.substr(0, jassig.length - 1);
-    //get kanban list info
-    const jlist = {};
-    for (const klist in result.lists) {
-      jlist[result.lists[klist]._id] = result.lists[klist].title;
-    }
-    //get kanban swimlanes info
-    const jswimlane = {};
-    for (const kswimlane in result.swimlanes) {
-      jswimlane[result.swimlanes[kswimlane]._id] =
-        result.swimlanes[kswimlane].title;
-    }
-    //get kanban label info
-    const jlabel = {};
-    var isFirst = 1;
-    for (const klabel in result.labels) {
-      // console.log(klabel);
-      if (isFirst == 0) {
-        jlabel[result.labels[klabel]._id] = `,${result.labels[klabel].name}`;
-      } else {
-        isFirst = 0;
-        jlabel[result.labels[klabel]._id] = result.labels[klabel].name;
-      }
-    }
+    // jmem / jmeml / jlist / jswimlane / jlabel were computed above from cursors.
+    // assignee username map is identical to the member username map.
+    const jassigl = jmeml;
     //add data +8 hours
     function addTZhours(jdate) {
       if (!jdate) { return ' '; }
       const curdate = new Date(jdate);
-      const checkCorrectDate = moment(curdate);
-      if (checkCorrectDate.isValid()) {
+      const checkCorrectDate = new Date(curdate);
+      if (isValidDate(checkCorrectDate)) {
         return curdate;
       } else {
         return ' ';
@@ -596,113 +506,121 @@ class ExporterExcel {
     };
     //add blank row
     //add card info
-    for (const i in result.cards) {
-      const jcard = result.cards[i];
-      //get member info
-      let jcmem = '';
-      for (const j in jcard.members) {
-        jcmem += jmeml[jcard.members[j]];
-        jcmem += ' ';
-      }
-      //get assignee info
-      let jcassig = '';
-      for (const ja in jcard.assignees) {
-        jcassig += jassigl[jcard.assignees[ja]];
-        jcassig += ' ';
-      }
-      //get card label info
-      let jclabel = '';
-      for (const jl in jcard.labelIds) {
-        jclabel += jlabel[jcard.labelIds[jl]];
-        jclabel += ' ';
-      }
-      //get parent name
-      if (jcard.parentId) {
-        const parentCard = result.cards.find(
-          (card) => card._id === jcard.parentId,
-        );
-        jcard.parentCardTitle = parentCard ? parentCard.title : '';
-      }
+    // Header rows 1-7 are fully built — commit them to the stream (in order)
+    // before streaming card rows. The streaming writer requires committed rows
+    // to be finalized in ascending order and never touched again.
+    for (let r = 1; r <= 7; r++) { ws.getRow(r).commit(); }
 
-      //add card detail
-      const t = Number(i) + 1;
-      ws.addRow().values = [
-        t.toString(),
-        jcard.title,
-        jcard.description,
-        jcard.parentCardTitle,
-        jmeml[jcard.userId],
-        addTZhours(jcard.createdAt),
-        addTZhours(jcard.dateLastActivity),
-        addTZhours(jcard.receivedAt),
-        addTZhours(jcard.startAt),
-        addTZhours(jcard.dueAt),
-        addTZhours(jcard.endAt),
-        jlist[jcard.listId],
-        jswimlane[jcard.swimlaneId],
-        jcassig,
-        jcmem,
-        jclabel,
-        jcard.isOvertime ? 'true' : 'false',
-        jcard.spentTime,
-      ];
-      const y = Number(i) + 8;
-      //ws.getRow(y).height = 25;
-      ws.getRow(y).font = {
-        name: TAPi18n.__('excel-font'),
-        size: 10,
-      };
-      // Border
-      allBorder(`A${y}`);
-      allBorder(`B${y}`);
-      allBorder(`C${y}`);
-      allBorder(`D${y}`);
-      allBorder(`E${y}`);
-      allBorder(`F${y}`);
-      allBorder(`G${y}`);
-      allBorder(`H${y}`);
-      allBorder(`I${y}`);
-      allBorder(`J${y}`);
-      allBorder(`K${y}`);
-      allBorder(`L${y}`);
-      allBorder(`M${y}`);
-      allBorder(`N${y}`);
-      allBorder(`O${y}`);
-      allBorder(`P${y}`);
-      allBorder(`Q${y}`);
-      allBorder(`R${y}`);
-      // Alignment
-      ws.getCell(`A${y}`).alignment = {
-        vertical: 'top',
-        horizontal: 'right',
-        wrapText: true,
-      };
-      cellCardAlignment(`B${y}`);
-      cellCardAlignment(`C${y}`);
-      cellCardAlignment(`D${y}`);
-      cellCardAlignment(`E${y}`);
-      cellCardAlignment(`F${y}`);
-      cellCardAlignment(`G${y}`);
-      cellCardAlignment(`H${y}`);
-      cellCardAlignment(`I${y}`);
-      cellCardAlignment(`J${y}`);
-      cellCardAlignment(`K${y}`);
-      cellCardAlignment(`L${y}`);
-      cellCardAlignment(`M${y}`);
-      cellCardAlignment(`N${y}`);
-      cellCardAlignment(`O${y}`);
-      cellCardAlignment(`P${y}`);
-      ws.getCell(`Q${y}`).alignment = {
-        vertical: 'top',
-        horizontal: 'center',
-        wrapText: true,
-      };
-      ws.getCell(`R${y}`).alignment = {
-        vertical: 'top',
-        horizontal: 'center',
-        wrapText: true,
-      };
+    let cardIdx = 0;
+    {
+      const cursor = cardsRaw.find(cardSelector);
+      for await (const jcard of cursor) {
+        //get member info
+        let jcmem = '';
+        for (const j in jcard.members) {
+          jcmem += jmeml[jcard.members[j]];
+          jcmem += ' ';
+        }
+        //get assignee info
+        let jcassig = '';
+        for (const ja in jcard.assignees) {
+          jcassig += jassigl[jcard.assignees[ja]];
+          jcassig += ' ';
+        }
+        //get card label info
+        let jclabel = '';
+        for (const jl in jcard.labelIds) {
+          jclabel += jlabel[jcard.labelIds[jl]];
+          jclabel += ' ';
+        }
+        //get parent name (via id->title map, not an O(n²) scan of all cards)
+        if (jcard.parentId) {
+          jcard.parentCardTitle = cardTitleById[jcard.parentId] || '';
+        }
+
+        //add card detail
+        const t = cardIdx + 1;
+        const row = ws.addRow([
+          t.toString(),
+          jcard.title,
+          jcard.description,
+          jcard.parentCardTitle,
+          jmeml[jcard.userId],
+          addTZhours(jcard.createdAt),
+          addTZhours(jcard.dateLastActivity),
+          addTZhours(jcard.receivedAt),
+          addTZhours(jcard.startAt),
+          addTZhours(jcard.dueAt),
+          addTZhours(jcard.endAt),
+          jlist[jcard.listId],
+          jswimlane[jcard.swimlaneId],
+          jcassig,
+          jcmem,
+          jclabel,
+          jcard.isOvertime ? 'true' : 'false',
+          jcard.spentTime,
+        ]);
+        const y = row.number;
+        //ws.getRow(y).height = 25;
+        ws.getRow(y).font = {
+          name: TAPi18n.__('excel-font'),
+          size: 10,
+        };
+        // Border
+        allBorder(`A${y}`);
+        allBorder(`B${y}`);
+        allBorder(`C${y}`);
+        allBorder(`D${y}`);
+        allBorder(`E${y}`);
+        allBorder(`F${y}`);
+        allBorder(`G${y}`);
+        allBorder(`H${y}`);
+        allBorder(`I${y}`);
+        allBorder(`J${y}`);
+        allBorder(`K${y}`);
+        allBorder(`L${y}`);
+        allBorder(`M${y}`);
+        allBorder(`N${y}`);
+        allBorder(`O${y}`);
+        allBorder(`P${y}`);
+        allBorder(`Q${y}`);
+        allBorder(`R${y}`);
+        // Alignment
+        ws.getCell(`A${y}`).alignment = {
+          vertical: 'top',
+          horizontal: 'right',
+          wrapText: true,
+        };
+        cellCardAlignment(`B${y}`);
+        cellCardAlignment(`C${y}`);
+        cellCardAlignment(`D${y}`);
+        cellCardAlignment(`E${y}`);
+        cellCardAlignment(`F${y}`);
+        cellCardAlignment(`G${y}`);
+        cellCardAlignment(`H${y}`);
+        cellCardAlignment(`I${y}`);
+        cellCardAlignment(`J${y}`);
+        cellCardAlignment(`K${y}`);
+        cellCardAlignment(`L${y}`);
+        cellCardAlignment(`M${y}`);
+        cellCardAlignment(`N${y}`);
+        cellCardAlignment(`O${y}`);
+        cellCardAlignment(`P${y}`);
+        ws.getCell(`Q${y}`).alignment = {
+          vertical: 'top',
+          horizontal: 'center',
+          wrapText: true,
+        };
+        ws.getCell(`R${y}`).alignment = {
+          vertical: 'top',
+          horizontal: 'center',
+          wrapText: true,
+        };
+        row.commit();
+        cardIdx++;
+      }
     }
+    ws.commit();
 
 
 
@@ -836,57 +754,59 @@ class ExporterExcel {
     allBorderWs2('F3');
 
     //add comment info
+    // Commit header rows 1-3 before streaming comment rows (in-order commit).
+    for (let r = 1; r <= 3; r++) { ws2.getRow(r).commit(); }
     let commentcnt = 0;
-    for (const i in result.comments) {
-      const jcomment = result.comments[i];
-      //card title
-      const parentCard = result.cards.find(
-        (card) => card._id === jcomment.cardId,
-      );
-      jcomment.cardTitle = parentCard ? parentCard.title : '';
-      if (jcomment.cardTitle == '') {
-        continue;
+    {
+      const cursor = cardCommentsRaw.find({ cardId: { $in: Object.keys(cardTitleById) } });
+      for await (const jcomment of cursor) {
+        //card title (via id->title map, not an O(n²) scan)
+        jcomment.cardTitle = cardTitleById[jcomment.cardId] || '';
+        if (jcomment.cardTitle == '') {
+          continue;
+        }
+        //add comment detail
+        commentcnt++;
+        const row = ws2.addRow([
+          commentcnt.toString(),
+          jcomment.text,
+          jcomment.cardTitle,
+          jmeml[jcomment.userId] || jcomment.userId || '',
+          addTZhours(jcomment.createdAt),
+          addTZhours(jcomment.modifiedAt),
+        ]);
+        const y = row.number;
+        ws2.getRow(y).font = {
+          name: TAPi18n.__('excel-font'),
+          size: 10,
+        };
+        // Border
+        allBorderWs2(`A${y}`);
+        allBorderWs2(`B${y}`);
+        allBorderWs2(`C${y}`);
+        allBorderWs2(`D${y}`);
+        allBorderWs2(`E${y}`);
+        allBorderWs2(`F${y}`);
+        // Alignment
+        ws2.getCell(`A${y}`).alignment = {
+          vertical: 'top',
+          horizontal: 'right',
+          wrapText: true,
+        };
+        cellCardAlignmentWs2(`B${y}`);
+        cellCardAlignmentWs2(`C${y}`);
+        cellCardAlignmentWs2(`D${y}`);
+        cellCardAlignmentWs2(`E${y}`);
+        cellCardAlignmentWs2(`F${y}`);
+        row.commit();
       }
-      //add comment detail
-      commentcnt++;
-      ws2.addRow().values = [
-        commentcnt.toString(),
-        jcomment.text,
-        jcomment.cardTitle,
-        jmeml[jcomment.userId],
-        addTZhours(jcomment.createdAt),
-        addTZhours(jcomment.modifiedAt),
-      ];
-      const y = commentcnt + 3;
-      ws2.getRow(y).font = {
-        name: TAPi18n.__('excel-font'),
-        size: 10,
-      };
-      // Border
-      allBorderWs2(`A${y}`);
-      allBorderWs2(`B${y}`);
-      allBorderWs2(`C${y}`);
-      allBorderWs2(`D${y}`);
-      allBorderWs2(`E${y}`);
-      allBorderWs2(`F${y}`);
-      // Alignment
-      ws2.getCell(`A${y}`).alignment = {
-        vertical: 'top',
-        horizontal: 'right',
-        wrapText: true,
-      };
-      cellCardAlignmentWs2(`B${y}`);
-      cellCardAlignmentWs2(`C${y}`);
-      cellCardAlignmentWs2(`D${y}`);
-      cellCardAlignmentWs2(`E${y}`);
-      cellCardAlignmentWs2(`F${y}`);
-
     }
-    workbook.xlsx.write(res).then(function () {});
+    ws2.commit();
+    await workbook.commit();
   }
 
-  canExport(user) {
-    const board = ReactiveCache.getBoard(this._boardId);
+  async canExport(user) {
+    const board = await ReactiveCache.getBoard(this._boardId);
     return board && board.isVisibleBy(user);
   }
 }

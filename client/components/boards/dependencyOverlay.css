@@ -1,0 +1,127 @@
+.dependency-overlay {
+  position: absolute;
+  top: 0;
+  inset-inline-start: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 100;
+  overflow: visible;
+}
+
+/* #3392: the overlay SVG stays click-through, but each line is clickable (to
+   open the edit/delete popup) even though its container is pointer-events:none. */
+.dependency-line {
+  pointer-events: stroke;
+  cursor: pointer;
+}
+
+.dependency-temp-line {
+  pointer-events: none;
+}
+
+/* #3392: drag-to-connect handle on the minicard (no mode — cards stay
+   clickable). Shown on hover; drag it onto another card to create a link. */
+.minicard .dependency-connect-handle {
+  position: absolute;
+  top: 50%;
+  inset-inline-end: -7px;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #eb144c;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.4);
+  cursor: crosshair;
+  opacity: 0;
+  z-index: 101;
+}
+
+.minicard:hover .dependency-connect-handle {
+  opacity: 1;
+}
+
+.dependency-line-popup .dependency-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.dependency-line-popup .card-dependency-icons li a.is-selected {
+  border-color: #eb144c;
+  border-width: 2px;
+}
+
+.dependency-line-delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #eb144c;
+}
+
+/* #3392: card detail "Dependencies" rows */
+.card-details-dependencies-list .card-dependency {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.card-details-dependencies-list .card-dependency-link {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-details-dependencies-list .js-dependency-type {
+  flex: 0 0 auto;
+  max-width: 130px;
+}
+
+.card-details-dependencies-list .js-dependency-color {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.card-dependencies-popup .dependency-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.card-dependency-icons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+}
+
+.card-dependency-icons li a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.minicard .badge.minicard-dependencies .badge-icon {
+  font-weight: bold;
+}

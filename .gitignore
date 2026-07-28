@@ -1,4 +1,5 @@
 *~
+/*.log
 *.sw*
 .meteor-spk
 *.sublime-workspace
@@ -31,11 +32,67 @@ Thumbs.db
 ehthumbs.db
 .eslintcache
 .meteor/local
+.meteor/local-test
 .devcontainer/docker-compose.extend.yml
 .devcontainer/volumes*/
 .coverage
+
+# Rspack build artifacts
+_build/
+public/build-assets/
+public/build-chunks/
+private/build-assets/
+private/build-chunks/
+public/client-rspack.js.map
 
 # Helm chart
 # Chart dependencies
 /helm/wekan/**/*.tgz
 /helm/wekan/charts
+
+# Meteor Modern-Tools build context directories
+_build
+*/build-assets
+*/build-chunks
+.rsdoctor
+
+# Tests
+playwright-report/
+test-results/
+
+# Claude AI
+.claude/
+
+# Tools like mongosh etc so that they work inside Flatpak sandbox
+.tools/
+
+# Meteor custom local directory (METEOR_LOCAL_DIR)
+_build-local-test
+*/build-assets-local-test
+*/build-chunks-local-test
+
+# Local-only working copies: other wekan repos cloned under this repo for editing,
+# and build inputs. These are separate git repos / large machine-specific dirs;
+# never commit them.
+#  - projects/    : unarchived meteor-spk fork (Node/Mongo/FerretDB binaries)
+#  - sandstorm/   : clone of sandstorm-io/sandstorm (platform source, for reference)
+#  - FerretDB/    : clone of wekan/FerretDB
+#  - mongo-tools/ : clone of wekan/mongo-tools
+#  - mongosh/     : clone of wekan/mongosh
+/projects/
+/sandstorm/
+/FerretDB/
+/mongo-tools/
+/mongosh/
+
+# Linux core dumps (core.<pid>), e.g. from a crashing Playwright/WebKit browser
+# process. Written into the crashing process CWD (tests/playwright/) by
+# kernel.core_pattern; never source files.
+core.[0-9]*
+
+# The two variant repositories (wekan/wekan-ondra, wekan/wekan-gantt-gpl) when
+# they are cloned INSIDE this working copy to be synced by hand. They are whole
+# git repositories of their own; git would not commit them into this one, but
+# they should not show up as untracked noise either.
+/wekan-ondra/
+/wekan-gantt-gpl/

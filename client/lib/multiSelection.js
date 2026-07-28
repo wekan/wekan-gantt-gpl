@@ -1,4 +1,20 @@
+import { ReactiveVar } from 'meteor/reactive-var';
+import { Session } from 'meteor/session';
 import { ReactiveCache } from '/imports/reactiveCache';
+import { Filter } from '/client/lib/filter';
+import { EscapeActions } from '/client/lib/escapeActions';
+import { Utils } from '/client/lib/utils';
+import {
+  boardScopedSelectionSelector,
+  cardIdsOnBoard,
+} from '/models/lib/boardScopedSelection';
+
+// Late-bind Sidebar to avoid circular dependency (sidebar.js needs its template first)
+let _Sidebar;
+function getSidebar() {
+  if (!_Sidebar) _Sidebar = require('/client/features/sidebar/service').getSidebarInstance;
+  return _Sidebar();
+}
 
 function getCardsBetween(idA, idB) {
   function pluckId(doc) {
@@ -15,9 +31,7 @@ function getCardsBetween(idA, idB) {
     }).map(pluckId);
   }
 
-  const cards = _.sortBy([ReactiveCache.getCard(idA), ReactiveCache.getCard(idB)], c => {
-    return c.sort;
-  });
+  const cards = [ReactiveCache.getCard(idA), ReactiveCache.getCard(idB)].sort((a, b) => a.sort - b.sort);
 
   let selector;
   if (cards[0].listId === cards[1].listId) {
@@ -53,7 +67,7 @@ function getCardsBetween(idA, idB) {
   return ReactiveCache.getCards(Filter.mongoSelector(selector)).map(pluckId);
 }
 
-MultiSelection = {
+export const MultiSelection = {
   sidebarView: 'multiselection',
 
   _selectedCards: new ReactiveVar([]),
@@ -69,9 +83,15 @@ MultiSelection = {
   },
 
   getMongoSelector() {
-    return Filter.mongoSelector({
-      _id: { $in: this._selectedCards.get() },
-    });
+    // #2306: scope the selection to the board currently being viewed so bulk
+    // actions (archive, move, label, ...) never touch cards that were
+    // selected on a previously visited board.
+    return Filter.mongoSelector(
+      boardScopedSelectionSelector(
+        this._selectedCards.get(),
+        Session.get('currentBoard'),
+      ),
+    );
   },
 
   isActive() {
@@ -91,24 +111,26 @@ MultiSelection = {
 
   activate() {
     if (!this.isActive()) {
-      this._sidebarWasOpen = Sidebar.isOpen();
+      this._sidebarWasOpen = getSidebar() && getSidebar().isOpen();
       EscapeActions.executeUpTo('detailsPane');
       this._isActive.set(true);
       Tracker.flush();
     }
-    Sidebar.setView(this.sidebarView);
-    if(Utils.isMiniScreen()) {
-      Sidebar.hide();
+    if (getSidebar()) {
+      getSidebar().setView(this.sidebarView);
+      if(Utils.isMiniScreen()) {
+        getSidebar().hide();
+      }
     }
   },
 
   disable() {
     if (this.isActive()) {
       this._isActive.set(false);
-      if (Sidebar && Sidebar.getView() === this.sidebarView) {
-        Sidebar.setView();
+      if (getSidebar() && getSidebar().getView() === this.sidebarView) {
+        getSidebar().setView();
         if(!this._sidebarWasOpen) {
-          Sidebar.hide();
+          getSidebar().hide();
         }
       }
       this.reset();
@@ -135,7 +157,13 @@ MultiSelection = {
   },
 
   toggle(cardIds, options = {}) {
-    cardIds = _.isString(cardIds) ? [cardIds] : cardIds;
+    cardIds = typeof cardIds === 'string' ? [cardIds] : cardIds;
+    // #2306: never let cards that verifiably live on ANOTHER board enter the
+    // selection (e.g. handed over by a caller that queried the client card
+    // cache without a board scope).
+    cardIds = cardIdsOnBoard(cardIds, Session.get('currentBoard'), id =>
+      ReactiveCache.getCard(id),
+    );
     options = {
       add: true,
       remove: true,

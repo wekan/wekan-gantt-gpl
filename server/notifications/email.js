@@ -2,79 +2,82 @@ import { ReactiveCache } from '/imports/reactiveCache';
 import { TAPi18n } from '/imports/i18n';
 //var nodemailer = require('nodemailer');
 
+import EmailLocalization from '../lib/emailLocalization';
+import { Notifications } from '/server/notifications/notifications';
+
 // buffer each user's email text in a queue, then flush them in single email
 Meteor.startup(() => {
-  Notifications.subscribe('email', (user, title, description, params) => {
-    // add quote to make titles easier to read in email text
-    const quoteParams = _.clone(params);
-    ['card', 'list', 'oldList', 'board', 'comment'].forEach(key => {
-      if (quoteParams[key]) quoteParams[key] = `"${params[key]}"`;
-    });
-    ['timeValue', 'timeOldValue'].forEach(key => {
-      quoteParams[key] = quoteParams[key] ? `${params[key]}` : '';
-    });
-
-    const lan = user.getLanguage();
-    const subject = TAPi18n.__(title, params, lan); // the original function has a fault, i believe the title should be used according to original author
-    const existing = user.getEmailBuffer().length > 0;
-    const htmlEnabled =
-      Meteor.settings.public &&
-      Meteor.settings.public.RICHER_CARD_COMMENT_EDITOR !== false;
-    const text = `${existing ? `\n${subject}\n` : ''}${
-      params.user
-    } ${TAPi18n.__(description, quoteParams, lan)}\n${params.url}`;
-
-    user.addEmailBuffer(htmlEnabled ? text.replace(/\n/g, '<br/>') : text);
-
-    // unlike setTimeout(func, delay, args),
-    // Meteor.setTimeout(func, delay) does not accept args :-(
-    // so we pass userId with closure
-    const userId = user._id;
-    Meteor.setTimeout(() => {
-      const user = ReactiveCache.getUser(userId);
-
-      // for each user, in the timed period, only the first call will get the cached content,
-      // other calls will get nothing
-      const texts = user.getEmailBuffer();
-      if (texts.length === 0) return;
-
-      // merge the cached content into single email and flush
-      const html = texts.join('<br/>\n\n');
-      user.clearEmailBuffer();
-      try {
-/*
-        if (process.env.MAIL_SERVICE !== '') {
-          let transporter = nodemailer.createTransport({
-            service: process.env.MAIL_SERVICE,
-            auth: {
-              user: process.env.MAIL_SERVICE_USER,
-              pass: process.env.MAIL_SERVICE_PASSWORD
-            },
-          })
-          let info = transporter.sendMail({
-            to: user.emails[0].address.toLowerCase(),
-            from: Accounts.emailTemplates.from,
-            subject,
-            html,
-          })
-        } else {
-          Email.send({
-            to: user.emails[0].address.toLowerCase(),
-            from: Accounts.emailTemplates.from,
-            subject,
-            html,
-          });
-        }
-*/
-        Email.send({
-          to: user.emails[0].address.toLowerCase(),
-          from: Accounts.emailTemplates.from,
-          subject,
-          html,
-        });
-      } catch (e) {
+  Notifications.subscribe('email', async (user, title, description, params) => {
+    try {
+      if (
+        !user ||
+        typeof user.getLanguage !== 'function' ||
+        typeof user.getEmailBuffer !== 'function' ||
+        typeof user.addEmailBuffer !== 'function'
+      ) {
+        console.error('Invalid user helper surface for email notification:', user?._id);
         return;
       }
-    }, process.env.EMAIL_NOTIFICATION_TIMEOUT || 30000);
+
+      // #5875: the server only loads the English bundle at startup, so make sure
+      // the recipient's language is loaded before translating the subject/body —
+      // otherwise notification emails silently fall back to English.
+      await TAPi18n.ensureLanguageLoaded(user.getLanguage());
+
+      // add quote to make titles easier to read in email text
+      const quoteParams = { ...params };
+      ['card', 'list', 'oldList', 'board', 'comment'].forEach(key => {
+        if (quoteParams[key]) quoteParams[key] = `"${params[key]}"`;
+      });
+      ['timeValue', 'timeOldValue'].forEach(key => {
+        quoteParams[key] = quoteParams[key] ? `${params[key]}` : '';
+      });
+
+      const lan = user.getLanguage();
+      const subject = TAPi18n.__(title, params, lan);
+      const existing = user.getEmailBuffer().length > 0;
+      const htmlEnabled =
+        Meteor.settings.public &&
+        Meteor.settings.public.RICHER_CARD_COMMENT_EDITOR !== false;
+      const actorName = params.user || '';
+      const text = `${existing ? `\n${subject}\n` : ''}${
+        actorName
+      } ${TAPi18n.__(description, quoteParams, lan)}\n${params.url}`;
+
+      user.addEmailBuffer(htmlEnabled ? text.replace(/\n/g, '<br/>') : text);
+
+      const userId = user._id;
+      Meteor.setTimeout(async () => {
+        const user = await ReactiveCache.getUser(userId);
+        if (
+          !user ||
+          typeof user.getEmailBuffer !== 'function' ||
+          typeof user.clearEmailBuffer !== 'function' ||
+          typeof user.getLanguage !== 'function'
+        ) {
+          return;
+        }
+
+        const texts = user.getEmailBuffer();
+        if (texts.length === 0) return;
+
+        const html = texts.join('<br/>\n\n');
+        user.clearEmailBuffer();
+        try {
+          await EmailLocalization.sendEmail({
+            to: user.emails[0].address.toLowerCase(),
+            from: Accounts.emailTemplates.from,
+            subject,
+            html,
+            language: user.getLanguage(),
+            userId: user._id
+          });
+        } catch (e) {
+          return;
+        }
+      }, process.env.EMAIL_NOTIFICATION_TIMEOUT || 30000);
+    } catch (error) {
+      console.error('Error preparing email notification:', error);
+    }
   });
 });

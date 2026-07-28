@@ -1,13 +1,23 @@
-import { ReactiveCache } from '/imports/reactiveCache';
-import { TAPi18n } from '/imports/i18n';
+// NO import statements — they are hoisted and trigger circular dependency:
+// settings.js → ReactiveCache → i18n/tap → translation.js → ReactiveCache → settings.js
+// All dependencies use require() so Settings collection is defined first.
+
+const Meteor = Package.meteor.Meteor;
+const Mongo = Package.mongo.Mongo;
+const Settings = new Mongo.Collection('settings');
+const FlowRouter = Package['ostrio:flow-router-extra'].FlowRouter;
+// Lazy getter — avoids circular dependency (reactiveCache imports settings)
+const getReactiveCache = () => require('/imports/reactiveCache').ReactiveCache;
+// Lazy getter — avoids circular dependency (i18n/tap → reactiveCache → settings)
+const getTAPi18n = () => require('/imports/i18n').TAPi18n;
+const { SimpleSchema } = require('/imports/simpleSchema');
+const InvitationCodes = require('/models/invitationCodes').default;
 //var nodemailer = require('nodemailer');
 
 // Sandstorm context is detected using the METEOR_SETTINGS environment variable
 // in the package definition.
 const isSandstorm =
   Meteor.settings && Meteor.settings.public && Meteor.settings.public.sandstorm;
-
-Settings = new Mongo.Collection('settings');
 
 Settings.attachSchema(
   new SimpleSchema({
@@ -20,6 +30,102 @@ Settings.attachSchema(
       type: Boolean,
       optional: true,
       defaultValue: false,
+    },
+    // Admin Panel / Features: when true, all links (markdown [label](url) and raw
+    // HTML <a href> tags) are rendered as plain, non-clickable text in every rich
+    // text field. Default false keeps links clickable.
+    renderLinksAsPlainText: {
+      type: Boolean,
+      optional: true,
+      defaultValue: false,
+    },
+    // Admin Panel / Features: when true, rich text is never rendered as markdown or
+    // HTML — the entire raw source is shown as escaped plain text, so hidden links,
+    // HTML comments (<!-- -->), JavaScript and any other code are always visible,
+    // not clickable, and not running. Default false renders markdown normally.
+    alwaysShowCodeAsText: {
+      type: Boolean,
+      optional: true,
+      defaultValue: false,
+    },
+    // Admin Panel / Features / Notifications (issue #5820).
+    // disableActivities: stop recording AND showing all activity-feed entries.
+    // disableNotifications: never send watch notifications.
+    // disableWatch: turn off the watch feature (users can still track via activities
+    //   if activities are enabled, but cannot subscribe to watch notifications).
+    // All default false (current behaviour).
+    disableActivities: {
+      type: Boolean,
+      optional: true,
+      defaultValue: false,
+    },
+    disableNotifications: {
+      type: Boolean,
+      optional: true,
+      defaultValue: false,
+    },
+    disableWatch: {
+      type: Boolean,
+      optional: true,
+      defaultValue: false,
+    },
+    // Admin Panel / Features / Delete (soft delete, docs/Features/Undo/Undo.md).
+    // When true, a Global Admin may PERMANENTLY (physically) delete soft-deleted
+    // content from the Delete panel's category table. Off by default — ordinary
+    // deletes are always soft/restorable, and GDPR/account erasure is separate.
+    enablePermanentDelete: {
+      type: Boolean,
+      optional: true,
+      defaultValue: false,
+    },
+    // Admin Panel / Features: master switches that disable ALL export / ALL import
+    // features (every format and endpoint). Default false (enabled).
+    disableAllExport: {
+      type: Boolean,
+      optional: true,
+      defaultValue: false,
+    },
+    disableAllImport: {
+      type: Boolean,
+      optional: true,
+      defaultValue: false,
+    },
+    // Admin Panel / Features: when true, avatars (user profile pictures) are never
+    // included when EXPORTING a board (WeKan JSON / CSV export). Default false.
+    disableExportAvatars: {
+      type: Boolean,
+      optional: true,
+      defaultValue: false,
+    },
+    // Admin Panel / Features: when true, avatars are never imported — from WeKan
+    // JSON import, Trello import, or external identity providers (LDAP/OIDC/OAuth2
+    // login avatar sync). Default false.
+    disableImportAvatars: {
+      type: Boolean,
+      optional: true,
+      defaultValue: false,
+    },
+    // Admin Panel / Features: when true, user identity fields (username, fullname,
+    // initials) are replaced with counter placeholders (user1, user2, ...) as a
+    // board is EXPORTED, so exported data carries no real user identities. Default
+    // false exports real user data.
+    anonymizeExportUsers: {
+      type: Boolean,
+      optional: true,
+      defaultValue: false,
+    },
+    // Admin Panel / Features: when true, user identity fields (username, fullname,
+    // initials) are replaced with counter placeholders (user1, user2, ...) as a
+    // board is IMPORTED, so the imported board carries no real user identities.
+    // Default false imports real user data.
+    anonymizeImportUsers: {
+      type: Boolean,
+      optional: true,
+      defaultValue: false,
+    },
+    mailServer: {
+      type: Object,
+      optional: true,
     },
     'mailServer.username': {
       type: String,
@@ -49,6 +155,29 @@ Settings.attachSchema(
       type: String,
       optional: true,
     },
+    themeColor: {
+      /**
+       * The site theme, set in Admin Panel / Settings / Visibility / Change color.
+       * It is the layer between WeKan's default theme and a user's own override
+       * (docs/Theme/Theme.md): whoever has not picked a theme of their own sees
+       * this one. On a multitenancy host the Organization's own value replaces it
+       * (models/lib/tenants.js BRANDING_FIELDS).
+       */
+      type: String,
+      optional: true,
+    },
+    themeCustomColors: {
+      /**
+       * The custom colours of that theme: one for a flat theme, two for a clear
+       * (gradient) one.
+       */
+      type: Array,
+      optional: true,
+    },
+    'themeCustomColors.$': {
+      type: String,
+      optional: true,
+    },
     displayAuthenticationMethod: {
       type: Boolean,
       optional: true,
@@ -69,7 +198,24 @@ Settings.attachSchema(
       type: Boolean,
       optional: true,
     },
+    // How a board loads its cards: 'all' (default — every card into minimongo)
+    // or 'lazy' (only the visible per-list window, via a windowed publication).
+    // Seeded from the CARDS_LOADING env var; changeable in Admin Panel.
+    cardsLoading: {
+      type: String,
+      optional: true,
+      allowedValues: ['all', 'lazy'],
+    },
     hideBoardMemberList: {
+      type: Boolean,
+      optional: true,
+    },
+    // Hide the activity feed on EVERY board, instance-wide. Read once from this
+    // global setting instead of being written into every board document: the old
+    // implementation bulk-updated showActivities:false on all boards, which could
+    // not be undone (the previous per-board values were gone) and did nothing for
+    // boards created afterwards.
+    hideBoardActivitiesOnAllBoards: {
       type: Boolean,
       optional: true,
     },
@@ -117,9 +263,97 @@ Settings.attachSchema(
       type: String,
       optional: true,
     },
+    customHeadEnabled: {
+      type: Boolean,
+      optional: true,
+    },
+    customHeadMetaTags: {
+      type: String,
+      optional: true,
+    },
+    customHeadLinkTags: {
+      type: String,
+      optional: true,
+    },
+    customManifestEnabled: {
+      type: Boolean,
+      optional: true,
+    },
+    customManifestContent: {
+      type: String,
+      optional: true,
+    },
+    customAssetLinksEnabled: {
+      type: Boolean,
+      optional: true,
+    },
+    customAssetLinksContent: {
+      type: String,
+      optional: true,
+    },
+    accessibilityPageEnabled: {
+      type: Boolean,
+      optional: true,
+      defaultValue: false,
+    },
+    accessibilityTitle: {
+      type: String,
+      optional: true,
+    },
+    accessibilityContent: {
+      type: String,
+      optional: true,
+    },
+    supportPopupText: {
+      type: String,
+      optional: true,
+    },
+    supportPageEnabled: {
+      type: Boolean,
+      optional: true,
+      defaultValue: false,
+    },
+    supportPagePublic: {
+      type: Boolean,
+      optional: true,
+      defaultValue: false,
+    },
+    // #6116, split in two so each restriction sits with the thing it is about -
+    // Admin Panel / People / Organizations and / Teams. A candidate may be added to
+    // a board when they share at least one of the ENABLED kinds with the user doing
+    // the adding: an Organization when the first is on, a Team when the second is.
+    // With both on that is "an Organization OR a Team", which is exactly what the
+    // single `boardMembersFromSameOrgOrTeamOnly` meant - and is what an existing
+    // install is migrated to (see server/models/settings.js). Both false is the
+    // unrestricted default.
+    boardMembersFromSameOrgOnly: {
+      type: Boolean,
+      optional: true,
+      defaultValue: false,
+    },
+    boardMembersFromSameTeamOnly: {
+      type: Boolean,
+      optional: true,
+      defaultValue: false,
+    },
+    // The setting the two above replace. Kept in the schema so an install that
+    // still has it stored is valid, and so the migration can read it; nothing
+    // writes it any more.
+    boardMembersFromSameOrgOrTeamOnly: {
+      type: Boolean,
+      optional: true,
+      defaultValue: false,
+    },
+    supportTitle: {
+      type: String,
+      optional: true,
+    },
+    supportPageText: {
+      type: String,
+      optional: true,
+    },
     createdAt: {
       type: Date,
-      denyUpdate: true,
       // eslint-disable-next-line consistent-return
       autoValue() {
         if (this.isInsert) {
@@ -158,379 +392,5 @@ Settings.helpers({
     )}@${this.mailServer.host}:${this.mailServer.port}/`;
   },
 });
-Settings.allow({
-  update(userId) {
-    const user = ReactiveCache.getUser(userId);
-    return user && user.isAdmin;
-  },
-});
-
-if (Meteor.isServer) {
-  Meteor.startup(() => {
-    Settings._collection.createIndex({ modifiedAt: -1 });
-    const setting = ReactiveCache.getCurrentSetting();
-    if (!setting) {
-      const now = new Date();
-      const domain = process.env.ROOT_URL.match(
-        /\/\/(?:www\.)?(.*)?(?:\/)?/,
-      )[1];
-      const from = `Boards Support <support@${domain}>`;
-      const defaultSetting = {
-        disableRegistration: false,
-        mailServer: {
-          username: '',
-          password: '',
-          host: '',
-          port: '',
-          enableTLS: false,
-          from,
-        },
-        createdAt: now,
-        modifiedAt: now,
-        displayAuthenticationMethod: true,
-        defaultAuthenticationMethod: 'password',
-      };
-      Settings.insert(defaultSetting);
-    }
-    if (isSandstorm) {
-      // At Sandstorm, Admin Panel has SMTP settings
-      const newSetting = ReactiveCache.getCurrentSetting();
-      if (!process.env.MAIL_URL && newSetting.mailUrl())
-        process.env.MAIL_URL = newSetting.mailUrl();
-      Accounts.emailTemplates.from = process.env.MAIL_FROM
-        ? process.env.MAIL_FROM
-        : newSetting.mailServer.from;
-    } else {
-      // Not running on Sandstorm, so using environment variables
-      Accounts.emailTemplates.from = process.env.MAIL_FROM;
-    }
-  });
-  if (isSandstorm) {
-    // At Sandstorm Wekan Admin Panel, save SMTP settings.
-    Settings.after.update((userId, doc, fieldNames) => {
-      // assign new values to mail-from & MAIL_URL in environment
-      if (_.contains(fieldNames, 'mailServer') && doc.mailServer.host) {
-        const protocol = doc.mailServer.enableTLS ? 'smtps://' : 'smtp://';
-        if (!doc.mailServer.username && !doc.mailServer.password) {
-          process.env.MAIL_URL = `${protocol}${doc.mailServer.host}:${doc.mailServer.port}/`;
-        } else {
-          process.env.MAIL_URL = `${protocol}${
-            doc.mailServer.username
-          }:${encodeURIComponent(doc.mailServer.password)}@${
-            doc.mailServer.host
-          }:${doc.mailServer.port}/`;
-        }
-        Accounts.emailTemplates.from = doc.mailServer.from;
-      }
-    });
-  }
-
-  function getRandomNum(min, max) {
-    const range = max - min;
-    const rand = Math.random();
-    return min + Math.round(rand * range);
-  }
-
-  function getEnvVar(name) {
-    const value = process.env[name];
-    if (value) {
-      return value;
-    }
-    throw new Meteor.Error([
-      'var-not-exist',
-      `The environment variable ${name} does not exist`,
-    ]);
-  }
-
-  function loadOidcConfig(service){
-    check(service, String);
-    var config = ServiceConfiguration.configurations.findOne({service: service});
-    return config;
-  }
-
-  function sendInvitationEmail(_id) {
-    const icode = ReactiveCache.getInvitationCode(_id);
-    const author = ReactiveCache.getCurrentUser();
-    try {
-      const fullName = ReactiveCache.getUser(icode.authorId)?.profile?.fullname || "";
-
-      const params = {
-        email: icode.email,
-        inviter: fullName != "" ? fullName + " (" + ReactiveCache.getUser(icode.authorId).username + " )" : ReactiveCache.getUser(icode.authorId).username,
-        user: icode.email.split('@')[0],
-        icode: icode.code,
-        url: FlowRouter.url('sign-up'),
-      };
-      const lang = author.getLanguage();
-/*
-      if (process.env.MAIL_SERVICE !== '') {
-        let transporter = nodemailer.createTransport({
-          service: process.env.MAIL_SERVICE,
-          auth: {
-            user: process.env.MAIL_SERVICE_USER,
-            pass: process.env.MAIL_SERVICE_PASSWORD
-          },
-        })
-        let info = transporter.sendMail({
-          to: icode.email,
-          from: Accounts.emailTemplates.from,
-          subject: TAPi18n.__('email-invite-register-subject', params, lang),
-          text: TAPi18n.__('email-invite-register-text', params, lang),
-        })
-      } else {
-        Email.send({
-          to: icode.email,
-          from: Accounts.emailTemplates.from,
-          subject: TAPi18n.__('email-invite-register-subject', params, lang),
-          text: TAPi18n.__('email-invite-register-text', params, lang),
-        });
-      }
-*/
-      Email.send({
-        to: icode.email,
-        from: Accounts.emailTemplates.from,
-        subject: TAPi18n.__('email-invite-register-subject', params, lang),
-        text: TAPi18n.__('email-invite-register-text', params, lang),
-      });
-    } catch (e) {
-      InvitationCodes.remove(_id);
-      throw new Meteor.Error('email-fail', e.message);
-    }
-  }
-
-  function isNonAdminAllowedToSendMail(currentUser){
-    const currSett = ReactiveCache.getCurrentSetting();
-    let isAllowed = false;
-    if(currSett && currSett != undefined && currSett.disableRegistration && currSett.mailDomainName !== undefined && currSett.mailDomainName != ""){
-      for(let i = 0; i < currentUser.emails.length; i++) {
-        if(currentUser.emails[i].address.endsWith(currSett.mailDomainName)){
-          isAllowed = true;
-          break;
-        }
-      }
-    }
-    return isAllowed;
-  }
-
-  function isLdapEnabled() {
-    return (
-      process.env.LDAP_ENABLE === 'true' || process.env.LDAP_ENABLE === true
-    );
-  }
-
-  function isOauth2Enabled() {
-    return (
-      process.env.OAUTH2_ENABLED === 'true' ||
-      process.env.OAUTH2_ENABLED === true
-    );
-  }
-
-  function isCasEnabled() {
-    return (
-      process.env.CAS_ENABLED === 'true' || process.env.CAS_ENABLED === true
-    );
-  }
-
-  function isApiEnabled() {
-    return process.env.WITH_API === 'true' || process.env.WITH_API === true;
-  }
-
-  Meteor.methods({
-    sendInvitation(emails, boards) {
-      let rc = 0;
-      check(emails, [String]);
-      check(boards, [String]);
-
-      const user = ReactiveCache.getCurrentUser();
-      if (!user.isAdmin && !isNonAdminAllowedToSendMail(user)) {
-        rc = -1;
-        throw new Meteor.Error('not-allowed');
-      }
-      emails.forEach(email => {
-        if (email && SimpleSchema.RegEx.Email.test(email)) {
-          // Checks if the email is already link to an account.
-          const userExist = ReactiveCache.getUser({ email });
-          if (userExist) {
-            rc = -1;
-            throw new Meteor.Error(
-              'user-exist',
-              `The user with the email ${email} has already an account.`,
-            );
-          }
-          // Checks if the email is already link to an invitation.
-          const invitation = ReactiveCache.getInvitationCode({ email });
-          if (invitation) {
-            InvitationCodes.update(invitation, {
-              $set: { boardsToBeInvited: boards },
-            });
-            sendInvitationEmail(invitation._id);
-          } else {
-            const code = getRandomNum(100000, 999999);
-            InvitationCodes.insert(
-              {
-                code,
-                email,
-                boardsToBeInvited: boards,
-                createdAt: new Date(),
-                authorId: Meteor.userId(),
-              },
-              function(err, _id) {
-                if (!err && _id) {
-                  sendInvitationEmail(_id);
-                } else {
-                  rc = -1;
-                  throw new Meteor.Error(
-                    'invitation-generated-fail',
-                    err.message,
-                  );
-                }
-              },
-            );
-          }
-        }
-      });
-      return rc;
-    },
-
-    sendSMTPTestEmail() {
-      if (!Meteor.userId()) {
-        throw new Meteor.Error('invalid-user');
-      }
-      const user = ReactiveCache.getCurrentUser();
-      if (!user.emails || !user.emails[0] || !user.emails[0].address) {
-        throw new Meteor.Error('email-invalid');
-      }
-      this.unblock();
-      const lang = user.getLanguage();
-      try {
-/*
-        if (process.env.MAIL_SERVICE !== '') {
-          let transporter = nodemailer.createTransport({
-            service: process.env.MAIL_SERVICE,
-            auth: {
-              user: process.env.MAIL_SERVICE_USER,
-              pass: process.env.MAIL_SERVICE_PASSWORD
-            },
-          })
-          let info = transporter.sendMail({
-            to: user.emails[0].address,
-            from: Accounts.emailTemplates.from,
-            subject: TAPi18n.__('email-smtp-test-subject', { lng: lang }),
-            text: TAPi18n.__('email-smtp-test-text', { lng: lang }),
-          })
-        } else {
-          Email.send({
-            to: user.emails[0].address,
-            from: Accounts.emailTemplates.from,
-            subject: TAPi18n.__('email-smtp-test-subject', { lng: lang }),
-            text: TAPi18n.__('email-smtp-test-text', { lng: lang }),
-          });
-        }
-*/
-        Email.send({
-          to: user.emails[0].address,
-          from: Accounts.emailTemplates.from,
-          subject: TAPi18n.__('email-smtp-test-subject', { lng: lang }),
-          text: TAPi18n.__('email-smtp-test-text', { lng: lang }),
-        });
-      } catch ({ message }) {
-        throw new Meteor.Error(
-          'email-fail',
-          `${TAPi18n.__('email-fail-text', { lng: lang })}: ${message}`,
-          message,
-        );
-      }
-      return {
-        message: 'email-sent',
-        email: user.emails[0].address,
-      };
-    },
-
-    getCustomUI() {
-      const setting = ReactiveCache.getCurrentSetting();
-      if (!setting.productName) {
-        return {
-          productName: '',
-        };
-      } else {
-        return {
-          productName: `${setting.productName}`,
-        };
-      }
-    },
-
-    isDisableRegistration() {
-      const setting = ReactiveCache.getCurrentSetting();
-      if (setting.disableRegistration === true) {
-        return true;
-      } else {
-        return false;
-      }
-    },
-
-   isDisableForgotPassword() {
-      const setting = ReactiveCache.getCurrentSetting();
-      if (setting.disableForgotPassword === true) {
-        return true;
-      } else {
-        return false;
-      }
-    },
-
-    getMatomoConf() {
-      return {
-        address: getEnvVar('MATOMO_ADDRESS'),
-        siteId: getEnvVar('MATOMO_SITE_ID'),
-        doNotTrack: process.env.MATOMO_DO_NOT_TRACK || false,
-        withUserName: process.env.MATOMO_WITH_USERNAME || false,
-      };
-    },
-
-    _isLdapEnabled() {
-      return isLdapEnabled();
-    },
-
-    _isOauth2Enabled() {
-      return isOauth2Enabled();
-    },
-
-    _isCasEnabled() {
-      return isCasEnabled();
-    },
-
-    _isApiEnabled() {
-      return isApiEnabled();
-    },
-
-    // Gets all connection methods to use it in the Template
-    getAuthenticationsEnabled() {
-      return {
-        ldap: isLdapEnabled(),
-        oauth2: isOauth2Enabled(),
-        cas: isCasEnabled(),
-      };
-    },
-
-    getOauthServerUrl(){
-      return process.env.OAUTH2_SERVER_URL;
-    },
-    getOauthDashboardUrl(){
-      return process.env.DASHBOARD_URL;
-    },
-    getDefaultAuthenticationMethod() {
-      return process.env.DEFAULT_AUTHENTICATION_METHOD;
-    },
-
-    isPasswordLoginEnabled() {
-      return !(process.env.PASSWORD_LOGIN_ENABLED === 'false');
-    },
-    isOidcRedirectionEnabled(){
-      return process.env.OIDC_REDIRECTION_ENABLED === 'true' && Object.keys(loadOidcConfig("oidc")).length > 0;
-    },
-    getServiceConfiguration(service){
-      return loadOidcConfig(service);
-      }
-  });
-}
 
 export default Settings;

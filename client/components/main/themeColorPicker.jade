@@ -1,0 +1,32 @@
+//- Shared "Select Color" picker (docs/Design/Page/Theme.md), used by Board Settings,
+  Member Settings and Admin Panel / Settings / Visibility. Colors are shown as VISIBLE swatches grouped by category, with
+  the category name as a header above each group; the native color wheel(s) appear
+  for the flat (1) / clear (2) categories once such a color is selected. `data.scope`
+  is 'board', 'global' or 'admin' - the only difference between the three places.
+template(name="themeColorPicker")
+  form.theme-color-picker.edit-label
+    if isGlobal
+      ul.pop-over-list
+        li(class="{{#if isNoneSelected}}active{{/if}}")
+          a.js-theme-none
+            i.fa.fa-ban
+            | {{_ 'theme-default'}}
+            if isNoneSelected
+              i.fa.fa-check
+    each themeGroups
+      .theme-category-group
+        .theme-category-label {{label}}
+        .board-backgrounds-list.clearfix
+          each colors
+            .board-background-select.js-select-theme(data-color="{{name}}")
+              span.background-box(class="board-color-{{name}}")
+                span {{name}}
+                if selected
+                  i.fa.fa-check
+    if showCustom
+      .color-wheel-wrap
+        label {{_ 'custom-color'}}
+        each customWheels
+          input.js-theme-wheel(type="color" data-index="{{index}}" value="{{value}}" title="{{_ 'custom-color'}}")
+      .theme-preview
+        span.background-box(class="{{previewClass}}" style="{{previewStyle}}")

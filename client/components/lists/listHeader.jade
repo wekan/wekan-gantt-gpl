@@ -1,72 +1,158 @@
 template(name="listHeader")
+  //- Same rule as the minicard: the list header is the LIST's drag source only
+  //- when drag handles are OFF, so only then must it opt out of dragscroll.
   .list-header.js-list-header(
+    class="{{#unless isTouchScreenOrShowDesktopDragHandles}}nodragscroll{{/unless}}"
     class="{{#if limitToShowCardsCount}}list-header-card-count{{/if}}"
-    class=colorClass)
+    class=colorClass
+    style=colorStyle)
+    //- #459: keyboard/screen-reader list reordering (visually hidden, focusable).
+    .list-move-buttons.sr-only
+      a.js-list-move-left(href="#" role="button" aria-label="{{_ 'move-list-left'}}") {{_ 'move-list-left'}}
+      a.js-list-move-right(href="#" role="button" aria-label="{{_ 'move-list-right'}}") {{_ 'move-list-right'}}
     +inlinedForm
       +editListTitleForm
     else
       if isMiniScreen
         if currentList
-          a.list-header-left-icon.fa.fa-angle-left.js-unselect-list
-      h2.list-header-name(
-        title="{{ moment modifiedAt 'LLL' }}"
-        class="{{#if currentUser.isBoardMember}}{{#unless currentUser.isCommentOnly}}{{#unless currentUser.isWorker}}js-open-inlined-form is-editable{{/unless}}{{/unless}}{{/if}}")
-        +viewer
-          = title
-        if wipLimit.enabled
-         |&nbsp;(
-         span(class="{{#if exceededWipLimit}}highlight{{/if}}") {{cards.length}}
-         |/#{wipLimit.value})
-
-      if showCardsCountForList cards.length
-        span.cardCount {{cardsCount}} {{cardsCountForListIsOne cards.length}}
-
+          a.list-header-left-icon.js-unselect-list
+            i.fa.fa-caret-left
+      else
+        if collapsed
+          if showCardsCountForList cardsCountWhole
+            br
+            span.cardCount {{cardsCount ../../_id}}
+      if isMiniScreen
+        h2.list-header-name(
+          title="{{ displayDate modifiedAt 'LLL' }}"
+          class="{{#if currentUser.isBoardMember}}{{#unless currentUser.isCommentOnly}}{{#unless currentUser.isWorker}}js-open-inlined-form is-editable{{/unless}}{{/unless}}{{/if}}")
+          +viewer
+            = title
+          if wipLimit.enabled
+           |&nbsp;(
+           span(class="{{#if exceededWipLimit}}highlight{{/if}}") {{cardsCountWhole}}
+           |/#{wipLimit.value})
+        if showCardsCountForList cardsCountWhole
+          span.cardCount {{cardsCount ../../_id}} {{cardsCountForListIsOne cardsCountWhole}}
+          if hasNumberFieldsSum
+            | &nbsp;
+            span.list-sum-badge(title="{{_ 'sum-of-number-fields'}}") ∑ {{numberFieldsSum}}
+      else
+        a.list-collapse-indicator.js-collapse(title="{{#if collapsed}}{{_ 'uncollapse'}}{{else}}{{_ 'collapse'}}{{/if}}" aria-label="{{#if collapsed}}{{_ 'uncollapse'}}{{else}}{{_ 'collapse'}}{{/if}}")
+          if collapsed
+            i.fa.fa-caret-right
+          else
+            i.fa.fa-caret-down
+        div(class="{{#if collapsed}}list-rotated{{/if}}")
+          h2.list-header-name(
+            title="{{ displayDate modifiedAt 'LLL' }}"
+            class="{{#unless collapsed}}{{#if currentUser.isBoardMember}}{{#unless currentUser.isCommentOnly}}{{#unless currentUser.isWorker}}js-open-inlined-form is-editable{{/unless}}{{/unless}}{{/if}}{{/unless}}")
+            +viewer
+              = title
+            if wipLimit.enabled
+             |&nbsp;(
+             span(class="{{#if exceededWipLimit}}highlight{{/if}}") {{cardsCountWhole}}
+             |/#{wipLimit.value})
+        unless collapsed
+          if showCardsCountForList cardsCountWhole
+            span.cardCount {{cardsCount ../../_id}} {{cardsCountForListIsOne cardsCountWhole}}
+            if hasNumberFieldsSum
+              | &nbsp;
+              span.list-sum-badge(title="{{_ 'sum-of-number-fields'}}") ∑ {{numberFieldsSum}}
       if isMiniScreen
         if currentList
           if isWatching
-            i.list-header-watch-icon.fa.fa-eye
+            i.list-header-watch-icon i.fa.fa-eye
           div.list-header-menu
             unless currentUser.isCommentOnly
-              if canSeeAddCard
-                a.js-add-card.fa.fa-plus.list-header-plus-top(title="{{_ 'add-card-to-top-of-list'}}")
-              a.fa.fa-navicon.js-open-list-menu(title="{{_ 'listActionPopup-title'}}")
+              unless currentUser.isReadOnly
+                unless currentUser.isReadAssignedOnly
+                  if canSeeAddCard
+                    a.js-add-card.list-header-plus-top(title="{{_ 'add-card-to-top-of-list'}}")
+                      i.fa.fa-plus
+                  a.js-open-list-menu(title="{{_ 'listActionPopup-title'}}")
+                    i.fa.fa-bars
         else
-          a.list-header-menu-icon.fa.fa-angle-right.js-select-list
-          a.list-header-handle.handle.fa.fa-arrows.js-list-handle
+          a.list-header-menu-icon.js-select-list
+            i.fa.fa-caret-right
+          //- The add-list + sits BETWEEN the caret and the drag handle, so mobile
+          //- mode needs no "Add List" row of its own. Same class, same handler and
+          //- the same Font Awesome icon as the desktop list header uses, so the two
+          //- are one button in two layouts rather than two lookalikes.
+          unless currentUser.isCommentOnly
+            unless currentUser.isReadOnly
+              unless currentUser.isReadAssignedOnly
+                unless currentUser.isWorker
+                  a.js-add-list-here.list-header-add-list(title="{{_ 'add-list'}}")
+                    i.fa.fa-plus-square-o
+          unless currentUser.isWorker
+            if isTouchScreenOrShowDesktopDragHandles
+              a.list-header-handle.handle.nodragscroll.js-list-handle
+                i.fa.fa-arrows
       else if currentUser.isBoardMember
         if isWatching
-          i.list-header-watch-icon.fa.fa-eye
-        div.list-header-menu
-          unless currentUser.isCommentOnly
-            //if isBoardAdmin
-            //  a.fa.js-list-star.list-header-plus-top(class="fa-star{{#unless starred}}-o{{/unless}}")
-            if canSeeAddCard
-              a.js-add-card.fa.fa-plus.list-header-plus-top(title="{{_ 'add-card-to-top-of-list'}}")
-            a.fa.fa-navicon.js-open-list-menu(title="{{_ 'listActionPopup-title'}}")
-          if currentUser.isBoardAdmin
-            if isTouchScreenOrShowDesktopDragHandles
-              a.list-header-handle.handle.fa.fa-arrows.js-list-handle
+          i.list-header-watch-icon i.fa.fa-eye
+        unless currentUser.isCommentOnly
+          unless currentUser.isReadOnly
+            unless currentUser.isReadAssignedOnly
+              if isTouchScreenOrShowDesktopDragHandles
+                a.list-header-handle-desktop.handle.nodragscroll.js-list-handle(title="{{_ 'drag-list'}}")
+                  i.fa.fa-arrows
+        unless collapsed
+          div.list-header-menu
+            unless currentUser.isCommentOnly
+              unless currentUser.isReadOnly
+                unless currentUser.isReadAssignedOnly
+                  //if isBoardAdmin
+                  //
+                    a.fa.js-list-star.list-header-plus-top(class="fa-star{{#unless starred}}-o{{/unless}}")
+                  if isTouchScreenOrShowDesktopDragHandles
+                    a.list-header-handle-desktop.handle.nodragscroll.js-list-handle(title="{{_ 'drag-list'}}")
+                      i.fa.fa-arrows
+                  if canSeeAddCard
+                    a.js-add-card.list-header-plus-top(title="{{_ 'add-card-to-top-of-list'}}")
+                      i.fa.fa-plus
+                  a.js-open-list-menu(title="{{_ 'listActionPopup-title'}}")
+                    i.fa.fa-bars
+                  //- #6465: far-right add-list button. Opens the inline Add List
+                  //- composer AFTER this list (right in LTR / left in RTL).
+                  a.js-add-list-here.list-header-plus-top(title="{{_ 'add-list'}}")
+                    i.fa.fa-plus-square-o
 
 template(name="editListTitleForm")
   .list-composer
     input.list-name-input.full-line(type="text" value=title autofocus)
     .edit-controls.clearfix
       button.primary.confirm(type="submit") {{_ 'save'}}
-      a.fa.fa-times-thin.js-close-inlined-form
+      a.js-close-inlined-form
+        i.fa.fa-times-thin
 
 template(name="listActionPopup")
-  ul.pop-over-list
-    li
-      a.js-add-card.list-header-plus-bottom
-        i.fa.fa-plus
-        i.fa.fa-arrow-down
-        | {{_ 'add-card-to-bottom-of-list'}}
-  hr
-  ul.pop-over-list
-    li
-      a.js-set-list-width
-        i.fa.fa-arrows-h
-        |  {{_ 'set-list-width'}}
+  unless currentUser.isReadOnly
+    unless currentUser.isReadAssignedOnly
+      ul.pop-over-list
+        li
+          a.js-add-card.list-header-plus-top
+            i.fa.fa-plus
+            i.fa.fa-arrow-up
+            | {{_ 'add-card-to-top-of-list'}}
+        li
+          a.js-add-card.list-header-plus-bottom
+            i.fa.fa-plus
+            i.fa.fa-arrow-down
+            | {{_ 'add-card-to-bottom-of-list'}}
+      hr
+      ul.pop-over-list
+        li
+          a.js-add-list
+            i.fa.fa-plus
+            | {{_ 'add-list'}}
+      hr
+      ul.pop-over-list
+        li
+          a.js-set-list-width
+            i.fa.fa-arrows-h
+            |  {{_ 'set-list-width'}}
   ul.pop-over-list
     li
       a.js-toggle-watch-list
@@ -77,38 +163,52 @@ template(name="listActionPopup")
           i.fa.fa-eye-slash
           |  {{_ 'watch'}}
   unless currentUser.isCommentOnly
-    unless currentUser.isWorker
-      ul.pop-over-list
-        li
-          a.js-set-color-list
-            i.fa.fa-paint-brush
-            | {{_ 'set-color-list'}}
-    ul.pop-over-list
-      if cards.length
-        li
-          a.js-select-cards
-            i.fa.fa-check-square
-            | {{_ 'list-select-cards'}}
-    if currentUser.isBoardAdmin
-      ul.pop-over-list
-        li
-          a.js-set-wip-limit
-            i.fa.fa-ban
-            | {{#if isWipLimitEnabled }}{{_ 'edit-wip-limit'}}{{else}}{{_ 'setWipLimitPopup-title'}}{{/if}}
-    unless currentUser.isWorker
-      hr
-      ul.pop-over-list
-        li
-          a.js-close-list
-            i.fa.fa-arrow-right
-            i.fa.fa-archive
-            | {{_ 'archive-list'}}
-    hr
-    ul.pop-over-list
-      li
-        a.js-more
-          i.fa.fa-link
-          | {{_ 'listMorePopup-title'}}
+    unless currentUser.isReadOnly
+      unless currentUser.isReadAssignedOnly
+        unless currentUser.isWorker
+          ul.pop-over-list
+            li
+              a.js-set-color-list
+                i.fa.fa-paint-brush
+                | {{_ 'set-color-list'}}
+        ul.pop-over-list
+          if cards.length
+            li
+              a.js-select-cards
+                i.fa.fa-select-square
+                | {{_ 'list-select-cards'}}
+        if currentUser.isBoardAdmin
+          ul.pop-over-list
+            li
+              a.js-set-wip-limit
+                i.fa.fa-ban
+                | {{#if isWipLimitEnabled }}{{_ 'edit-wip-limit'}}{{else}}{{_ 'setWipLimitPopup-title'}}{{/if}}
+        hr
+        ul.pop-over-list
+          unless currentUser.isWorker
+            li
+              a.js-copy-list
+                i.fa.fa-clipboard
+                | {{_ 'copyListPopup-title'}}
+          if currentUser.isBoardAdmin
+            li
+              a.js-move-list
+                i.fa.fa-arrow-right
+                | {{_ 'moveListPopup-title'}}
+        unless currentUser.isWorker
+          hr
+          ul.pop-over-list
+            li
+              a.js-close-list
+                i.fa.fa-arrow-right
+                i.fa.fa-archive
+                | {{_ 'archive-list'}}
+        hr
+        ul.pop-over-list
+          li
+            a.js-more
+              i.fa.fa-link
+              | {{_ 'listMorePopup-title'}}
 
 template(name="boardLists")
   ul.pop-over-list
@@ -124,13 +224,23 @@ template(name="listMorePopup")
     span.clearfix
       span {{_ 'link-list'}}
       = ' '
-      i.fa.colorful(class="{{#if board.isPublic}}fa-globe{{else}}fa-lock{{/if}}")
-      input.inline-input(type="text" readonly value="{{ rootUrl }}")
+      i.fa(class="{{#if currentBoard.isPublic}}fa-globe{{else}}fa-lock{{/if}}")
+      //- #6459: was {{ rootUrl }}, a helper that does not exist anywhere, so the
+      //- link input was always empty. absoluteUrl resolves a URL via a card on
+      //- this list.
+      input.inline-input(type="text" readonly value="{{ absoluteUrl }}")
     | {{_ 'added'}}
-    span.date(title=list.createdAt) {{ moment createdAt 'LLL' }}
+    span.date(title=list.createdAt) {{ displayDate createdAt 'LLL' }}
     //unless currentUser.isWorker
-    //  if currentUser.isBoardAdmin
-    //    a.js-delete {{_ 'delete'}}
+    //
+      if currentUser.isBoardAdmin
+    //
+        a.js-delete {{_ 'delete'}}
+
+template(name="listArchivePopup")
+  p {{_ "list-archive-pop"}}
+  p {{_ "list-archive-suggest"}}
+  button.js-confirm.negate.full(type="submit") {{_ 'archive'}}
 
 template(name="listDeletePopup")
   p {{_ "list-delete-pop"}}
@@ -163,15 +273,24 @@ template(name="wipLimitErrorPopup")
 
 template(name="setListWidthPopup")
   #js-list-width-edit
-    label {{_ 'set-list-width-value'}}
-      p
-        input.list-width-value(type="number" value="{{ listWidthValue }}" min="100")
-        input.list-width-apply(type="submit" value="{{_ 'apply'}}")
-        input.list-width-error
+    unless isAutoWidth
+      label {{_ 'set-list-width-value'}}
+        p
+          input.list-width-value(type="number" value="{{ listWidthValue }}" min="270")
+          input.list-width-apply(type="submit" value="{{_ 'apply'}}")
+          input.list-width-error
+    if canChangeAutoWidth
+      a.js-toggle-auto-width(title="{{#if isAutoWidth}}{{_ 'click-to-disable-auto-width'}}{{else}}{{_ 'click-to-enable-auto-width'}}{{/if}}")
+        i.fa(class="{{#if isAutoWidth}}fa-compress{{else}}fa-arrows-h{{/if}}")
+        span {{_ 'auto-list-width'}}
+    a.js-toggle-fixed-list-width(title="{{#if isFixedListWidth}}{{_ 'click-to-disable-fixed-list-width'}}{{else}}{{_ 'click-to-enable-fixed-list-width'}}{{/if}}")
+      i.fa(class="{{#if isFixedListWidth}}fa-check-square-o{{else}}fa-square-o{{/if}}")
+      span {{_ 'fixed-list-width'}}
+    p.list-width-scope-note {{ listWidthScopeNote }}
 
 template(name="listWidthErrorPopup")
   .list-width-invalid
-    p {{_ 'list-width-error-message'}} '&gt;=100'
+    p {{_ 'list-width-error-message'}} '&gt;=270'
     button.full.js-back-view(type="submit") {{_ 'cancel'}}
 
 template(name="setListColorPopup")
@@ -181,5 +300,80 @@ template(name="setListColorPopup")
       span.card-label.palette-color.js-palette-color(class="card-details-{{color}}")
         if(isSelected color)
           i.fa.fa-check
+    // #5514: native color wheel for picking a custom RGB / hex color
+    .color-wheel-wrap
+      label(for="listColorWheel") {{_ 'custom-color'}}
+      input.js-list-color-wheel#listColorWheel(type="color" value=currentColorHex title="{{_ 'custom-color'}}")
     button.primary.confirm.js-submit {{_ 'save'}}
     button.js-remove-color.negate.wide.right {{_ 'unset-color'}}
+
+template(name="copyListPopup")
+  label(for='copy-list-title') {{_ 'title'}}:
+  input#copy-list-title.full-line(type="text" value="{{title}}" autofocus)
+  label {{_ 'boards'}}:
+  select.js-select-boards
+    each boards
+      option(value="{{_id}}" selected="{{#if isDialogOptionBoardId _id}}selected{{/if}}") {{add @index 1}}. {{title}}
+  label {{_ 'swimlanes'}}:
+  select.js-select-swimlanes
+    each swimlanes
+      option(value="{{_id}}" selected="{{#if isDialogOptionSwimlaneId _id}}selected{{/if}}") {{add @index 1}}. {{isTitleDefault title}}
+  label {{_ 'lists'}}:
+  select.js-select-lists
+    each lists
+      option(value="{{_id}}" selected="{{#if isDialogOptionListId _id}}selected{{/if}}") {{add @index 1}}. {{title}}
+  div
+    input(type="radio" name="list-position" value="left" checked id="list-position-left" style="display: inline")
+    label(for="list-position-left") {{_ 'left-of-list'}}
+  div
+    input(type="radio" name="list-position" value="right" id="list-position-right" style="display: inline")
+    label(for="list-position-right") {{_ 'right-of-list'}}
+  .edit-controls.clearfix
+    button.primary.confirm.js-done {{_ 'done'}}
+
+template(name="moveListPopup")
+  label(for='move-list-title') {{_ 'title'}}:
+  input#move-list-title.full-line(type="text" value="{{title}}" autofocus)
+  label {{_ 'boards'}}:
+  select.js-select-boards
+    each boards
+      option(value="{{_id}}" selected="{{#if isDialogOptionBoardId _id}}selected{{/if}}") {{add @index 1}}. {{title}}
+  label {{_ 'swimlanes'}}:
+  select.js-select-swimlanes
+    each swimlanes
+      option(value="{{_id}}" selected="{{#if isDialogOptionSwimlaneId _id}}selected{{/if}}") {{add @index 1}}. {{isTitleDefault title}}
+  label {{_ 'lists'}}:
+  select.js-select-lists
+    each lists
+      option(value="{{_id}}" selected="{{#if isDialogOptionListId _id}}selected{{/if}}") {{add @index 1}}. {{title}}
+  div
+    input(type="radio" name="list-position" value="left" checked id="list-position-left" style="display: inline")
+    label(for="list-position-left") {{_ 'left-of-list'}}
+  div
+    input(type="radio" name="list-position" value="right" id="list-position-right" style="display: inline")
+    label(for="list-position-right") {{_ 'right-of-list'}}
+  .edit-controls.clearfix
+    button.primary.confirm.js-done {{_ 'done'}}
+
+template(name="addListPopup")
+  form.js-add-list-form
+    input.list-name-input.full-line(type="text" placeholder="{{_ 'add-list'}}" autocomplete="off" autofocus)
+    if currentSwimlaneData
+      if swimlaneLists.length
+        label {{_ 'add-after-list'}}
+        select.list-position-input.full-line
+          each swimlaneLists
+            option(value="{{_id}}" selected="{{$eq _id currentListIdValue}}") {{increment @index}} {{title}}
+    else
+      if currentBoard.lists.length
+        label {{_ 'add-after-list'}}
+        select.list-position-input.full-line
+          each currentBoard.lists
+            option(value="{{_id}}" selected="{{$eq _id currentListIdValue}}") {{increment @index}} {{title}}
+    .edit-controls.clearfix
+      button.primary.confirm.js-submit-add-list(type="submit") {{_ 'save'}}
+      unless currentBoard.isTemplatesBoard
+        unless currentBoard.isTemplateBoard
+          span.quiet
+            | {{_ 'or'}}
+            a.js-list-template {{_ 'template'}}

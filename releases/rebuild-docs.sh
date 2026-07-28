@@ -1,47 +1,129 @@
-# Extract the OpenAPI specification.
+#!/usr/bin/env bash
 
-# 1) Check that there is only one parameter
-#    of Wekan version number:
+# Rebuild OpenAPI spec (wekan.yml) and HTML docs (wekan.html) from source.
+#
+# Usage:
+#   ./releases/rebuild-docs.sh 8.43
+#
+# Output:
+#   public/api/wekan.yml  — OpenAPI 2.0 spec parsed from models/
+#   public/api/wekan.html — standalone HTML rendered by @redocly/cli
+#
+# Dependencies installed automatically if missing:
+#   Python 3  + pip package: esprima
+#   Node.js   + npx package: @redocly/cli (latest)
 
-if [ $# -ne 1 ]
-  then
-    echo "Syntax with Wekan version number:"
-    echo "  ./rebuild-docs.sh 5.10"
+set -euo pipefail
+
+if [ $# -ne 1 ]; then
+  echo "Usage: ./releases/rebuild-docs.sh VERSION"
+  echo "Example: ./releases/rebuild-docs.sh 8.43"
+  exit 1
+fi
+
+VERSION="$1"
+REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$REPO_DIR"
+
+mkdir -p public/api
+
+# ── Python dependency: esprima ────────────────────────────────────────────────
+# The OpenAPI generator (openapi/generate_openapi.py) uses the esprima package
+# to parse the JavaScript AST from models/*.js files.
+
+# Detect OS and ensure python3, pip3, and brew (on macOS) are available
+if [ "$(uname)" = "Darwin" ]; then
+  # macOS
+  if ! command -v brew >/dev/null 2>&1; then
+    echo "Homebrew not found. Installing Homebrew..."
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  fi
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo "python3 not found. Installing python3 with brew..."
+    brew install python
+  fi
+  if ! command -v pip3 >/dev/null 2>&1; then
+    echo "pip3 not found. Installing pip3 with brew..."
+    brew install pipx
+    pipx ensurepath
+  fi
+else
+  # Linux
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo "python3 not found. Installing python3 with apt-get..."
+    sudo apt-get update && sudo apt-get install -y python3
+  fi
+  if ! command -v pip3 >/dev/null 2>&1; then
+    echo "pip3 not found. Installing pip3 with apt-get..."
+    sudo apt-get update && sudo apt-get install -y python3-pip
+  fi
+fi
+
+# Use /usr/bin/env for python3 and pip3
+PYTHON=$(command -v python3 || command -v /usr/bin/python3)
+PIP=$(command -v pip3 || echo "")
+
+# If pip3 is missing, try to install it
+if [ -z "$PIP" ]; then
+  echo "pip3 not found. Attempting to install pip3..."
+  if $PYTHON -m ensurepip --upgrade 2>/dev/null; then
+    PIP=$(command -v pip3 || echo "")
+  fi
+  if [ -z "$PIP" ]; then
+    if [ "$(uname)" = "Darwin" ]; then
+      if command -v brew >/dev/null 2>&1; then
+        brew install python
+      fi
+    else
+      sudo apt-get update && sudo apt-get install -y python3-pip
+    fi
+    PIP=$(command -v pip3 || echo "")
+  fi
+fi
+
+# Install esprima if missing.
+# Python 3.12+ on Debian/Ubuntu marks the system interpreter as
+# "externally managed" (PEP 668), which rejects `pip install --user`. Fall back
+# to --break-system-packages so the script works directly with Python 3.12.3.
+if ! $PYTHON -c "import esprima" 2>/dev/null; then
+  echo "  Installing Python package: esprima"
+  if $PYTHON -m pip install --quiet --user --upgrade esprima 2>/dev/null; then
+    :
+  elif $PYTHON -m pip install --quiet --user --break-system-packages --upgrade esprima 2>/dev/null; then
+    :
+  elif $PYTHON -m pip install --quiet --break-system-packages --upgrade esprima; then
+    :
+  else
+    echo "Failed to install the 'esprima' package. Please install it manually:" >&2
+    echo "  $PYTHON -m pip install --user --break-system-packages esprima" >&2
     exit 1
+  fi
 fi
 
-# 2) If esprima-python directory does not exist,
-#   install dependencies.
+# ── Generate OpenAPI 2.0 YAML from models/ and server/models/ ─────────────────
+# Always regenerate from source so the spec reflects the current code.
+# SimpleSchema definitions live in models/ while the REST routes that use them
+# live in server/models/ (Meteor 3 split), so both directories must be scanned.
+# The generator writes only YAML to stdout; all debug output goes to stderr.
+echo "  Generating public/api/wekan.yml from models/ and server/models/ ..."
+"$PYTHON" openapi/generate_openapi.py --release "v$VERSION" models server/models \
+  > public/api/wekan.yml
 
-if [ ! -d ~/python/esprima-python ]; then
-  sudo apt-get -y install python3-pip python3-swagger-spec-validator python3-wheel python3-setuptools
-  sudo npm install -g api2html
-  (mkdir -p ~/python && cd ~/python && git clone --depth 1 -b master https://github.com/Kronuz/esprima-python)
-  (cd ~/python/esprima-python && git fetch origin pull/20/head:delete_fix && git checkout delete_fix &&  sudo python3 setup.py install --record files.txt)
-  #(cd ~/python/esprima-python && git fetch origin pull/20/head:delete_fix && git checkout delete_fix && sudo pip3 install .)
-  # temporary fix until https://github.com/Kronuz/esprima-python/pull/20 gets merged
-  # a) Generating docs works on Kubuntu 21.10 with this,
-  #    but generating Sandstorm WeKan package does not work
-  #    https://github.com/wekan/wekan/issues/4280
-  #    https://github.com/sandstorm-io/sandstorm/issues/3600
-  #      sudo pip3 install .
-  # b) Generating docs Works on Linux Mint with this,
-  #    and also generating Sandstorm WeKan package works:
-  #      sudo python3 setup.py install --record files.txt
+# Sanity-check: the first line of a valid spec starts with "swagger:"
+if ! head -1 public/api/wekan.yml | grep -q '^swagger:'; then
+  echo "Error: generated wekan.yml does not look like a valid OpenAPI spec." >&2
+  echo "       First line: $(head -1 public/api/wekan.yml)" >&2
+  exit 1
 fi
 
-# 2) Go to Wekan repo directory
-cd ~/repos/wekan
+# ── Generate standalone HTML via @redocly/cli (latest) ───────────────────────
+# @redocly/cli replaces the deprecated redoc-cli and api2html tools.
+# npx --yes downloads it on first run without prompting.
+echo "  Rendering public/api/wekan.html via @redocly/cli ..."
+npx --yes @redocly/cli@latest build-docs public/api/wekan.yml \
+  --output public/api/wekan.html \
+  --title "WeKan REST API v$VERSION"
 
-# 3) Create api docs directory, if it does not exist
-if [ ! -d public/api ]; then
-  mkdir -p public/api
-fi
-
-# 4) Generate docs.
-#python3 ./openapi/generate_openapi.py --release $(git describe --tags --abbrev=0) > ./public/api/wekan.yml
-python3 ./openapi/generate_openapi.py --release v$1 > ./public/api/wekan.yml
-api2html -c ./public/logo-header.png -o ./public/api/wekan.html ./public/api/wekan.yml
-
-# Copy docs to bundle
-#cp -pR ./public/api ~/repos/wekan/.build/bundle/programs/web.browser/app/
+echo "  Done."
+echo "    public/api/wekan.yml"
+echo "    public/api/wekan.html"

@@ -1,5 +1,5 @@
 .integration-form {
-  padding: 5px;
+  padding: 6px 10px;
   border-bottom: 1px solid #ccc;
 }
 .flex,
@@ -12,12 +12,1149 @@
   display: flex;
 }
 .option {
-  -webkit-border-radius: 3px;
-  border-radius: 3px;
+  -webkit-border-radius: 6px;
+  border-radius: 6px;
   background: #fff;
   text-decoration: none;
-  -webkit-box-shadow: 0 1px 2px rgba(0,0,0,0.2);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
-  margin-top: 5px;
-  padding: 5px;
+  -webkit-box-shadow: 0 2px 3px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 3px rgba(0,0,0,0.2);
+  margin-top: 6px;
+  padding: 6px 10px;
+}
+
+/* Zoom and Mobile Mode Controls */
+.board-header-btns.center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 5px 14px;
+  border-radius: 7px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.zoom-controls .board-header-btn {
+  padding: 5px 11px !important;
+  border-radius: 4px !important;
+  background: #fff !important;
+  border: 1px solid #000 !important;
+  transition: all 0.2s ease !important;
+  color: #000 !important;
+  height: auto !important;
+  line-height: normal !important;
+  margin: 0 !important;
+  float: none !important;
+  overflow: visible !important;
+}
+
+.zoom-controls .board-header-btn i {
+  color: #000 !important;
+  float: none !important;
+  display: inline !important;
+  line-height: normal !important;
+  margin: 0 !important;
+}
+
+.zoom-controls .board-header-btn:hover {
+  background: #000 !important;
+  border-color: #000 !important;
+  color: #fff !important;
+}
+
+.zoom-controls .board-header-btn:hover i {
+  color: #fff !important;
+}
+
+.zoom-controls .board-header-btn.is-active {
+  background: #0079bf;
+  color: white;
+  border-color: #005a8a;
+}
+
+.zoom-controls .board-header-btn.is-active i {
+  color: white;
+}
+
+.zoom-level {
+  font-weight: bold;
+  color: #333;
+  min-width: 42px;
+  text-align: center;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 3px 7px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.zoom-level:hover {
+  background: #f0f0f0;
+  color: #000;
+}
+
+/* Mobile Mode Styles */
+.mobile-mode .board-wrapper {
+  width: 100%;
+  height: 100%;
+}
+
+.mobile-mode .board-canvas {
+  height: 100%;
+}
+
+.mobile-mode .minicard {
+  font-size: 16px;
+  padding: 11px 21px 5px;
+  min-height: 24px;
+}
+
+.mobile-mode .list-header-name {
+  font-size: 18px;
+}
+
+.mobile-mode .board-header-btn {
+  padding: 9px 21px;
+  font-size: 14px;
+}
+
+.mobile-mode .zoom-controls {
+  padding: 9px 21px;
+  gap: 14px;
+}
+
+.mobile-mode .zoom-controls .board-header-btn {
+  padding: 9px 21px !important;
+  font-size: 14px !important;
+  background: #fff !important;
+  border: 1px solid #000 !important;
+  color: #000 !important;
+  height: auto !important;
+  line-height: normal !important;
+  margin: 0 !important;
+  float: none !important;
+  overflow: visible !important;
+}
+
+.mobile-mode .zoom-controls .board-header-btn i {
+  color: #000 !important;
+  float: none !important;
+  display: inline !important;
+  line-height: normal !important;
+  margin: 0 !important;
+}
+
+.mobile-mode .zoom-controls .board-header-btn:hover {
+  background: #000 !important;
+  border-color: #000 !important;
+  color: #fff !important;
+}
+
+.mobile-mode .zoom-controls .board-header-btn:hover i {
+  color: #fff !important;
+}
+
+.mobile-mode .zoom-level {
+  font-size: 14px;
+  min-width: 56px;
+}
+
+/* Comprehensive Mobile Mode Styles - Works on all screen sizes */
+.mobile-mode .board-wrapper {
+  width: 100% !important;
+  height: 100% !important;
+  transform: none !important;
+  transform-origin: initial !important;
+  max-width: 100% !important;
+}
+
+.mobile-mode .board-canvas {
+  height: 100% !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.mobile-mode .swimlane {
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  /* No 2rem band of grey between swimlanes. On a phone every swimlane already begins
+     with its own darker header bar, which separates them perfectly well, and the
+     margin only ever showed up as dead space: below the blue resize bar before the
+     next swimlane's header, and - since this selector matches the header wrapper too -
+     between a swimlane's own header and its lists. */
+  margin-bottom: 0 !important;
+  display: block !important;
+  float: none !important;
+}
+
+/* The header wrapper is exactly as tall as the header bar inside it. It is a
+   `.swimlane` as well, so it picks up that element's sizing, and anything left over
+   renders as the lighter grey of `.swimlane` around the darker bar. */
+.mobile-mode .swimlane.nodragscroll {
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+}
+
+/* The lists container is exactly the height it was resized to - no floor under it and
+   no margin after it, so the blue resize bar sits flush between the last list and the
+   next swimlane's header.
+   `min-height: 150px` (from .swimlane.js-lists.js-swimlane) held a short swimlane open
+   below the height that was chosen for it, and that leftover was the grey band above
+   the bar. Removing the floor is enough; the inline `height` from the stored swimlane
+   height is deliberately NOT overridden, because that is the height being dragged - an
+   `height: auto !important` here would make the resize bar do nothing at all. */
+.mobile-mode .swimlane.js-lists {
+  min-height: 0 !important;
+}
+
+.mobile-mode .swimlane-header {
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  font-size: 18px !important;
+  padding: 1rem !important;
+  /* No margin under the header bar: it is a fixed band of the swimlane's lighter
+     grey between the bar and the first list, with nothing in it. */
+  margin-bottom: 0 !important;
+  /* Flex, not block: the title is a bare text node / .viewer, and as a block it sat
+     at the TOP of a band whose height comes from the padding and the menu icons
+     beside it. Centred on its line instead. */
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* ...and the band itself centres what sits in it, so the title and the icon row
+   share one centre line. */
+.mobile-mode .swimlane-header-wrap {
+  align-items: center !important;
+}
+
+.mobile-mode .list {
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  display: block !important;
+  float: none !important;
+  /* No margin under a list either. Lists are separated by the 2px border below, and
+     on the LAST list this margin was a fixed band of empty grey between it and the
+     swimlane resize bar - the band that travelled with the bar when the swimlane was
+     resized. */
+  margin-bottom: 0 !important;
+  border-inline-start: none !important;
+  border-bottom: 2px solid #ccc !important;
+  clear: both !important;
+}
+
+.mobile-mode .list-header {
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  padding: 1rem !important;
+  font-size: 18px !important;
+  display: grid !important;
+  /* title | caret | add-list + | drag handle. The grid follows the INLINE axis, so
+     under dir="rtl" column 1 is on the right and the whole row mirrors by itself. */
+  grid-template-columns: 30px 1fr auto auto auto !important;
+  gap: 10px !important;
+  align-items: center !important;
+  position: relative !important;
+}
+
+/* The list title must be visible in mobile mode whichever markup rendered it.
+   listHeader.jade has TWO shapes: on a mini screen the `h2.list-header-name` is a
+   direct child of `.list-header`, and otherwise it is wrapped in a `div` (the one
+   that rotates when a list is collapsed). The rules below place the title by grid
+   row/column, which only works on a direct grid ITEM - inside the wrapper the title
+   was not one, so the placement was ignored and the wrapper landed in the 30px first
+   column, squeezing the title to nothing. `display: contents` drops the wrapper from
+   the layout so its children become grid items in both shapes.
+   Not when collapsed: `.list-rotated` needs the wrapper to be a real box to rotate. */
+.mobile-mode .list-header > div:not(.list-rotated):not(.list-move-buttons) {
+  display: contents;
+}
+
+.mobile-mode .list-header .list-header-name {
+  font-size: 18px !important;
+  font-weight: bold !important;
+  grid-row: 1 !important;
+  grid-column: 2 !important;
+  align-self: center !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.mobile-mode .list-header .cardCount {
+  font-size: 14px !important;
+  grid-row: 2 !important;
+  grid-column: 2 !important;
+  align-self: center !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.mobile-mode .list-header .list-header-menu-icon {
+  position: static !important;
+  inset-inline-end: auto !important;
+  top: auto !important;
+  transform: none !important;
+  grid-row: 1/3 !important;
+  grid-column: 3 !important;
+  padding: 14px !important;
+  font-size: 24px !important;
+  text-align: center !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* The add-list + between the caret (column 3) and the drag handle (column 5). */
+.mobile-mode .list-header .list-header-add-list {
+  position: static !important;
+  grid-row: 1/3 !important;
+  grid-column: 4 !important;
+  padding: 14px !important;
+  font-size: 24px !important;
+  text-align: center !important;
+  display: block !important;
+}
+
+.mobile-mode .list-header .list-header-handle {
+  position: static !important;
+  inset-inline-end: auto !important;
+  top: auto !important;
+  transform: none !important;
+  grid-row: 1/3 !important;
+  grid-column: 5 !important;
+  padding: 14px !important;
+  font-size: 28px !important;
+  text-align: center !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.mobile-mode .list-body {
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  padding: 1rem !important;
+  display: block !important;
+}
+
+.mobile-mode .minicard {
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  font-size: 16px !important;
+  padding: 11px 21px 5px !important;
+  min-height: 24px !important;
+  margin-bottom: 0.5rem !important;
+  display: block !important;
+  float: none !important;
+}
+
+.mobile-mode .minicard .minicard-title {
+  font-size: 16px !important;
+  font-weight: bold !important;
+}
+
+.mobile-mode .minicard .minicard-members {
+  font-size: 12px !important;
+}
+
+.mobile-mode .minicard .minicard-lists {
+  font-size: 12px !important;
+}
+
+/* Desktop Mode Styles */
+.desktop-mode .board-wrapper {
+  width: auto !important;
+  height: auto !important;
+}
+
+.desktop-mode .swimlane {
+  width: auto !important;
+  min-width: auto !important;
+}
+
+.desktop-mode .list {
+  width: auto !important;
+  min-width: auto !important;
+  display: flex !important;
+  float: inline-start !important;
+  margin-bottom: 0 !important;
+  border-inline-start: 1px solid #ccc !important;
+  border-bottom: none !important;
+}
+
+.desktop-mode .list-header {
+  width: auto !important;
+  min-width: auto !important;
+  padding: 23px 21px 5px !important;
+  font-size: 14px !important;
+  display: block !important;
+}
+
+.desktop-mode .list-header .list-header-name {
+  font-size: 14px !important;
+  display: inline !important;
+  grid-row: auto !important;
+  grid-column: auto !important;
+  align-self: auto !important;
+}
+
+.desktop-mode .list-header .cardCount {
+  font-size: 12px !important;
+  grid-row: auto !important;
+  grid-column: auto !important;
+  align-self: auto !important;
+}
+
+.desktop-mode .list-header .list-header-menu-icon {
+  position: absolute !important;
+  inset-inline-end: 60px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  grid-row: auto !important;
+  grid-column: auto !important;
+  padding: 14px !important;
+  font-size: 40px !important;
+}
+
+.desktop-mode .list-header .list-header-handle {
+  position: absolute !important;
+  inset-inline-end: 10px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  grid-row: auto !important;
+  grid-column: auto !important;
+  padding: 7px !important;
+  font-size: 16px !important;
+}
+
+.desktop-mode .list-body {
+  width: auto !important;
+  min-width: auto !important;
+  padding: 5px 11px !important;
+}
+
+.desktop-mode .minicard {
+  width: auto !important;
+  min-width: auto !important;
+  font-size: 12px !important;
+  padding: 5px 11px !important;
+  min-height: auto !important;
+  margin-bottom: 9px !important;
+}
+
+.desktop-mode .minicard .minicard-title {
+  font-size: 12px !important;
+}
+
+.desktop-mode .minicard .minicard-members {
+  font-size: 10px !important;
+}
+
+.desktop-mode .minicard .minicard-lists {
+  font-size: 10px !important;
+}
+
+/* Additional Mobile Mode Styles for Other Elements - Works on all screen sizes */
+.mobile-mode .swimlane-header .swimlane-title {
+  font-size: 18px !important;
+  font-weight: bold !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.mobile-mode .swimlane-header .swimlane-description {
+  font-size: 14px !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.mobile-mode .board-header {
+  font-size: 18px !important;
+  padding: 1rem !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.mobile-mode .board-header .board-header-title {
+  font-size: 18px !important;
+  font-weight: bold !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.mobile-mode .board-header .board-header-description {
+  font-size: 14px !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.mobile-mode .board-header .board-header-btn {
+  font-size: 14px !important;
+  padding: 9px 21px !important;
+  display: inline-block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.mobile-mode .board-header .board-header-btn i {
+  font-size: 14px !important;
+  display: inline !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Force mobile mode visibility on all screen sizes */
+.mobile-mode .list-header .fa-angle-right,
+.mobile-mode .list-header .fa-arrows {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: static !important;
+  inset-inline-end: auto !important;
+  top: auto !important;
+  transform: none !important;
+}
+
+.mobile-mode .list-header .fa-angle-right {
+  grid-row: 1/3 !important;
+  grid-column: 3 !important;
+  padding: 14px !important;
+  font-size: 24px !important;
+  text-align: center !important;
+}
+
+.mobile-mode .list-header .fa-arrows {
+  grid-row: 1/3 !important;
+  grid-column: 4 !important;
+  padding: 14px !important;
+  font-size: 28px !important;
+  text-align: center !important;
+}
+
+/* Override any media queries that might hide elements in mobile mode */
+.mobile-mode * {
+  max-width: none !important;
+}
+
+.mobile-mode .list,
+.mobile-mode .swimlane,
+.mobile-mode .board-wrapper,
+.mobile-mode .board-canvas {
+  max-width: 100% !important;
+  width: 100% !important;
+  min-width: 100% !important;
+}
+
+/* Every full-width box on a mobile board measures its padding INSIDE its width.
+   `* { box-sizing: unset }` (layouts.css) makes content-box the default, so a rule
+   that sets `width: 100%` AND `padding: 1rem` - which the swimlane header, the list
+   header, the list body and the minicard all do below - comes out 32px wider than its
+   parent. Stacked over four nesting levels that is what put a horizontal scrollbar
+   under the lists, with a small amount to scroll right and nothing there to see. */
+.mobile-mode .board-canvas,
+.mobile-mode .swimlane,
+.mobile-mode .swimlane-header,
+.mobile-mode .swimlane .lists,
+.mobile-mode .list,
+.mobile-mode .list-header,
+.mobile-mode .list-body,
+.mobile-mode .minicard {
+  box-sizing: border-box !important;
+}
+
+/* Force mobile mode list styling on all screen sizes - override desktop CSS.
+
+   These are `100%`, NOT `100vw`. `100vw` is the width of the viewport INCLUDING the
+   vertical scrollbar, and the board canvas scrolls vertically - so every element
+   forced to 100vw was about a scrollbar's width wider than the box it sat in, at each
+   nesting level (canvas > swimlane > lists > list). The result was a board that
+   always overflowed sideways by a sliver and, with `min-width` pinned to the same
+   value, could not reflow narrower. `100%` resolves against the parent's content box,
+   which already excludes the scrollbar. */
+.mobile-mode .board-canvas {
+  display: block !important;
+  flex-direction: column !important;
+  flex-wrap: nowrap !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 100% !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+
+  .mobile-mode .swimlane {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    float: none !important;
+    clear: both !important;
+  }
+
+  .mobile-mode .swimlane .swimlane-header {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    margin: 0 !important;
+    padding: 1rem !important;
+    font-size: 18px !important;
+    font-weight: bold !important;
+    border-bottom: 2px solid #ccc !important;
+  }
+
+  .mobile-mode .swimlane .lists {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    flex-direction: column !important;
+    flex-wrap: nowrap !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+  }
+
+  .mobile-mode .list {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    float: none !important;
+    clear: both !important;
+    border-inline-start: none !important;
+    border-inline-end: none !important;
+    border-top: none !important;
+    border-bottom: 2px solid #ccc !important;
+    flex: none !important;
+    flex-basis: auto !important;
+    flex-grow: 0 !important;
+    flex-shrink: 0 !important;
+    position: static !important;
+    inset-inline-start: auto !important;
+    inset-inline-end: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+  }
+
+.mobile-mode .list:first-child {
+  margin-inline-start: 0 !important;
+  margin-top: 0 !important;
+}
+
+.mobile-mode .list:last-child {
+  margin-inline-end: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.mobile-mode .list.ui-sortable-helper {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 100% !important;
+  height: auto !important;
+  min-height: 60px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  float: none !important;
+  clear: both !important;
+  border-inline-start: none !important;
+  border-inline-end: none !important;
+  border-top: none !important;
+  border-bottom: 2px solid #ccc !important;
+  flex: none !important;
+}
+
+.mobile-mode .list.placeholder {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 100% !important;
+  height: auto !important;
+  min-height: 60px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  float: none !important;
+  clear: both !important;
+  border-inline-start: none !important;
+  border-inline-end: none !important;
+  border-top: none !important;
+  border-bottom: 2px solid #ccc !important;
+  flex: none !important;
+}
+
+/* Override any existing responsive CSS that might interfere with mobile mode */
+.mobile-mode .board-canvas .swimlane .lists {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  flex-direction: column !important;
+  flex-wrap: nowrap !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  overflow: visible !important;
+}
+
+.mobile-mode .board-canvas .swimlane .lists .list {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  float: none !important;
+  clear: both !important;
+  border-inline-start: none !important;
+  border-inline-end: none !important;
+  border-top: none !important;
+  border-bottom: 2px solid #ccc !important;
+  flex: none !important;
+  flex-basis: auto !important;
+  flex-grow: 0 !important;
+  flex-shrink: 0 !important;
+  position: static !important;
+  inset-inline-start: auto !important;
+  inset-inline-end: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+}
+
+/* Force mobile mode to override any media query styles */
+@media screen and (min-width: 801px) {
+  .mobile-mode .board-canvas {
+    display: block !important;
+    flex-direction: column !important;
+    flex-wrap: nowrap !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  .mobile-mode .swimlane {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    float: none !important;
+    clear: both !important;
+  }
+
+  .mobile-mode .swimlane .lists {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    flex-direction: column !important;
+    flex-wrap: nowrap !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+  }
+
+  .mobile-mode .list {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    float: none !important;
+    clear: both !important;
+    border-inline-start: none !important;
+    border-inline-end: none !important;
+    border-top: none !important;
+    border-bottom: 2px solid #ccc !important;
+    flex: none !important;
+    flex-basis: auto !important;
+    flex-grow: 0 !important;
+    flex-shrink: 0 !important;
+    position: static !important;
+    inset-inline-start: auto !important;
+    inset-inline-end: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+  }
+}
+
+/* Hide desktop-only elements in mobile mode (like mobile media queries do) */
+.mobile-mode .board-header-btn i.fa + span {
+  display: none !important;
+}
+
+.mobile-mode .board-header-btn span {
+  display: none !important;
+}
+
+.mobile-mode .board-header-btn .fa + span {
+  display: none !important;
+}
+
+.mobile-mode .board-header-btn .fa + .board-header-btn-text {
+  display: none !important;
+}
+
+.mobile-mode .board-header-btn .fa + .board-header-btn-label {
+  display: none !important;
+}
+
+/* Show only icons in mobile mode */
+.mobile-mode .board-header-btn {
+  width: auto !important;
+  min-width: auto !important;
+  padding: 8px !important;
+  text-align: center !important;
+}
+
+.mobile-mode .board-header-btn i {
+  display: inline-block !important;
+  margin: 0 !important;
+}
+
+/* Hide desktop-specific elements that shouldn't show in mobile mode */
+.mobile-mode .desktop-only,
+.mobile-mode .board-header .desktop-only {
+  display: none !important;
+}
+
+.mobile-mode .board-header .board-header-btn.desktop-only {
+  display: none !important;
+}
+
+/* The left group is NOT hidden in mobile mode.
+   It holds edit title / visibility / watch / star / sort, and boardHeader.jade renders
+   them in EXACTLY ONE of the two groups: the left one `unless isMiniScreen`, the right
+   one `if isMiniScreen`. So in mobile mode the left group is already empty and hiding
+   it changes nothing - EXCEPT when the two mobile switches disagree, and then it
+   deletes those five buttons from the bar with no replacement. That is what made the
+   second header bar on a phone hold fewer buttons than the same bar in mobile mode on
+   a desktop window. They now agree (see Utils.isMiniScreen), and this rule is gone so
+   that if they ever drift again the buttons survive instead of vanishing. */
+
+.mobile-mode .board-header-btns.center {
+  display: none !important;
+}
+
+/* Show only the right section buttons in mobile mode, but hide text labels */
+.mobile-mode .board-header-btns.right {
+  display: block !important;
+}
+
+.mobile-mode .board-header-btns.right .board-header-btn span {
+  display: none !important;
+}
+
+.mobile-mode .board-header-btns.right .board-header-btn .fa + span {
+  display: none !important;
+}
+
+.mobile-mode .board-header-btns.right .board-header-btn .fa + .board-header-btn-text {
+  display: none !important;
+}
+
+.mobile-mode .board-header-btns.right .board-header-btn .fa + .board-header-btn-label {
+  display: none !important;
+}
+
+/* Hide specific desktop-only buttons that shouldn't show in mobile mode */
+.mobile-mode .board-header-btn.js-star-board span,
+.mobile-mode .board-header-btn.js-change-visibility span,
+.mobile-mode .board-header-btn.js-watch-board span,
+.mobile-mode .board-header-btn.js-sort-cards span {
+  display: none !important;
+}
+
+/* Show only icons for mobile mode buttons */
+.mobile-mode .board-header-btns.right .board-header-btn {
+  width: auto !important;
+  min-width: auto !important;
+  padding: 8px !important;
+  text-align: center !important;
+  margin: 0 2px !important;
+}
+
+.mobile-mode .board-header-btns.right .board-header-btn i {
+  display: inline-block !important;
+  margin: 0 !important;
+}
+
+/* Ensure mobile mode looks like small screen mobile view */
+.mobile-mode .board-header {
+  height: 40px !important;
+}
+
+.mobile-mode .board-header .board-header-btns {
+  margin-top: 0px !important;
+}
+
+.mobile-mode .board-header .board-header-btn {
+  height: 32px !important;
+  line-height: 32px !important;
+  font-size: 15px !important;
+}
+
+.mobile-mode .board-header .board-header-btn i.fa {
+  line-height: 32px !important;
+}
+
+/* Copy mobile media query styles to mobile mode for consistent appearance */
+.mobile-mode .board-header {
+  height: 40px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.mobile-mode .board-header .board-header-btns {
+  margin-top: 0px !important;
+  height: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+}
+
+.mobile-mode .board-header .board-header-btn {
+  height: 32px !important;
+  line-height: 32px !important;
+  font-size: 15px !important;
+  margin: 0 2px !important;
+  padding: 4px 8px !important;
+  border-radius: 4px !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+  text-decoration: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 32px !important;
+  width: auto !important;
+}
+
+.mobile-mode .board-header .board-header-btn:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.mobile-mode .board-header .board-header-btn i.fa {
+  line-height: 32px !important;
+  font-size: 15px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.mobile-mode .board-header .board-header-btn i.fa + span {
+  display: none !important;
+}
+
+.mobile-mode .board-header .board-header-btn span {
+  display: none !important;
+}
+
+/* The second header bar on a phone: board title at the left, buttons flowing from
+   the right of the title, sidebar hamburger pinned in the top right corner with its
+   divider to its left.
+   The title used to be hidden here to save a row, which left the bar with nothing but
+   icons - you could not tell which board you were on. A board name is how you know
+   where you are, so it is shown, and it wraps rather than truncating. */
+.mobile-mode .header-board-menu {
+  /* Only as wide as the title needs, so the buttons can start beside it; it may
+     shrink and wrap when the title is long. */
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+/* The buttons take the space left between the title and the hamburger, and drop to
+   the second row as a block once that space runs out - they are one flex item (see
+   boardHeader.jade), so they never split across the two rows. */
+.mobile-mode #header #header-main-bar .board-header-btns-group {
+  flex: 1 1 auto;
+}
+
+/* The hamburger is taken OUT of the flow and pinned to the top right corner, so it
+   stays there whether the buttons fit on the first row or wrap below. Leaving it in
+   the flow it would follow the buttons down to the second row, since a flex line
+   breaks in order. The bar reserves its width as end padding so a long title or a
+   full row of buttons never runs underneath it. Only on a board: the same bar on All
+   Boards / My Cards / ... has no hamburger, and would just gain empty end padding. */
+body.board-view.mobile-mode #header #header-main-bar {
+  position: relative;
+  /* separator (1px + 8px margins) + button (~20px) + the 8px edge gap. */
+  padding-inline-end: 44px;
+}
+
+body.board-view.mobile-mode #header #header-main-bar .board-header-sidebar-toggle {
+  position: absolute;
+  top: 7px;
+  inset-inline-end: 8px;
+  margin: 0;
+}
+
+/* The same rules by WIDTH, not by mobile mode - and NOT scoped to
+   `body.board-view`, which nothing in the app ever sets: that class is written in
+   67 CSS rules and added by no code, so every one of them, including the
+   mobile-mode pinning above, has never applied. The hamburger only exists on a
+   board page anyway (boardHeaderBar renders it), so `:has()` asks whether it is
+   there instead of asking a class that is never there. A browser without `:has()`
+   simply keeps the old wrapping, which is what it had before.
+
+   On a phone the bar is one row of title + as many buttons as fit, wrapping:
+
+   * the button GROUPS are `display: contents`, so each button is a flex item of
+     the bar itself. As one group they were a single unbreakable item, so the
+     whole set dropped below the title even when there was room beside it for
+     several; now they start immediately to the right of the title and wrap only
+     when they run out of row;
+   * the hamburger leaves the flow and sits in the TOP RIGHT corner, and the bar
+     reserves its width as end padding so a long title or a full row of buttons
+     never runs underneath it. In the flow it followed the buttons down and ended
+     up on a row of its own, which is the empty band under the icons. */
+@media screen and (max-width: 800px) {
+  #header #header-main-bar h1 {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow-wrap: break-word;
+  }
+
+  /* Not the hamburger: it carries `.board-header-btns` too, and it is positioned
+     out of the flow below - `display: contents` would remove the box that is
+     being positioned. */
+  #header #header-main-bar .board-header-btns-group,
+  #header #header-main-bar .board-header-btns:not(.board-header-sidebar-toggle) {
+    display: contents;
+  }
+
+  /* The hamburger is the LAST button, at the right of the last row: it stays in
+     the flow (so it never covers a button) and its auto start margin pushes it to
+     the end of whichever row it lands on. `order: 1` from the desktop rule
+     already puts it after every other button. It was pinned to the top right
+     corner, which put it beside the title with the icons below it; at the end of
+     the row it reads as what it is - one more button, the last one. */
+  #header #header-main-bar .board-header-sidebar-toggle {
+    position: static;
+    margin-inline-start: auto;
+    margin-inline-end: 8px;
+  }
+
+  /* Eleven icons in TWO rows, not four. Each button was ~20px of icon inside
+     10px of icon margin inside 6px of button margin - 52px of bar for 20px of
+     icon - so five fitted a row and the set took three rows under the title.
+     A 44px touch target with 2px between buttons is 48px each: seven fit a
+     375px row, so the icons take two rows (and the first of them shares the
+     title's row, since the groups are `display: contents` above).
+     44px is the minimum comfortable touch target, so this is as tight as it
+     goes without making them harder to hit. */
+  #header #header-main-bar .board-header-btn {
+    margin: 0 2px;
+    min-width: 44px;
+    height: 44px;
+    line-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #header #header-main-bar .board-header-btn i.fa {
+    margin: 0;
+    line-height: 1;
+    float: none;
+  }
+}
+
+/* Ensure the board header takes full width in mobile mode */
+.mobile-mode .board-header {
+  width: 100% !important;
+  max-width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 0 10px !important;
+}
+
+/* Additional Desktop Mode Styles for Other Elements */
+.desktop-mode .swimlane-header .swimlane-title {
+  font-size: 14px !important;
+}
+
+.desktop-mode .swimlane-header .swimlane-description {
+  font-size: 12px !important;
+}
+
+.desktop-mode .board-header {
+  font-size: 14px !important;
+  padding: 23px 21px 5px !important;
+}
+
+.desktop-mode .board-header .board-header-title {
+  font-size: 14px !important;
+}
+
+.desktop-mode .board-header .board-header-description {
+  font-size: 12px !important;
+}
+
+.desktop-mode .board-header .board-header-btn {
+  font-size: 12px !important;
+  padding: 5px 11px !important;
+}
+
+.desktop-mode .board-header .board-header-btn i {
+  font-size: 12px !important;
+}
+
+/* #6419: make the board-header action buttons touch-friendly by VIEWPORT WIDTH,
+   not only when the mobile-mode class is toggled. The measured default at a phone
+   width was 28px tall / 13px font (too small to tap reliably). Enlarge vertically
+   + bump the icon/font; width is left to flex so the existing horizontal layout
+   is unchanged. Applies on real phones whether or not mobile-mode auto-applied. */
+@media screen and (max-width: 800px) {
+  .board-header-btns .board-header-btn {
+    min-height: 40px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    font-size: 15px;
+  }
+  .board-header-btns .board-header-btn i.fa {
+    font-size: 16px;
+  }
 }

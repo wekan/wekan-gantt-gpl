@@ -1,8 +1,9 @@
 section#notifications-drawer {
   position: fixed;
   top: 48px;
-  right: 0;
-  width: 400px;
+  inset-inline-end: 0;
+  width: 100vw;
+  max-width: 100vw;
   background-color: #fafafa;
   box-shadow: 0 1px 2px rgba(0,0,0,0.15);
   border-radius: 2px;
@@ -16,48 +17,103 @@ section#notifications-drawer a:hover {
 section#notifications-drawer .header {
   position: fixed;
   top: 48px;
-  right: 0;
-  width: calc(400px - 32px);
+  inset-inline-end: 0;
+  width: 100vw;
+  box-sizing: border-box;
   padding: 8px 16px;
   background: #ededed;
   border-bottom: 1px solid #dbdbdb;
   z-index: 2;
+  /* Flex row: hamburger (left), title (centre), X (right), all vertically centred. */
+  display: flex;
+  align-items: center;
 }
-section#notifications-drawer .header .toggle-read {
-  position: absolute;
-  left: 16px;
-  top: calc(50% - 8px);
+section#notifications-drawer .header .notification-menu-toggle {
+  font-size: 20px;
+  cursor: pointer;
+  color: #000 !important; /* black hamburger menu (override themed white link colour) */
+  line-height: 24px;
+}
+section#notifications-drawer .header .notification-menu-toggle:hover {
   color: #2980b9;
 }
+section#notifications-drawer .header .notification-menu {
+  position: absolute;
+  inset-inline-start: 16px;
+  top: 44px;
+  background: white;
+  border: 1px solid #dbdbdb;
+  border-radius: 3px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  min-width: 220px;
+  z-index: 100;
+  display: none;
+}
+section#notifications-drawer .header .notification-menu.is-open {
+  display: block;
+}
+section#notifications-drawer .header .notification-menu .menu-section {
+  padding: 4px 0;
+}
+section#notifications-drawer .header .notification-menu .menu-divider {
+  border-top: 1px solid #dbdbdb;
+  margin: 4px 0;
+}
+section#notifications-drawer .header .notification-menu .menu-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  color: #333;
+  white-space: nowrap;
+}
+section#notifications-drawer .header .notification-menu .menu-item:hover {
+  background-color: #f5f5f5;
+}
+section#notifications-drawer .header .notification-menu .menu-item.selected {
+  background-color: #e8f4f8;
+}
+section#notifications-drawer .header .notification-menu .menu-item .check-icon {
+  width: 20px;
+  min-width: 20px;
+  margin-inline-end: 8px;
+  text-align: center;
+  color: #2980b9;
+  font-weight: bold;
+}
+section#notifications-drawer .header .notification-menu .menu-item .menu-icon {
+  margin-inline-end: 8px;
+  font-size: 16px;
+}
+/* Menu-item icons (envelope / copy / trash / check) black. */
+section#notifications-drawer .header .notification-menu .menu-item .menu-icon,
+section#notifications-drawer .header .notification-menu .menu-item .menu-icon i.fa,
+section#notifications-drawer .header .notification-menu .menu-item .check-icon,
+section#notifications-drawer .header .notification-menu .menu-item .check-icon i.fa {
+  color: #000 !important;
+}
 section#notifications-drawer .header h5 {
+  flex: 1;            /* fill the middle so the title is centred, X sits at the right */
   text-align: center;
   margin: 0;
 }
 section#notifications-drawer .header .close {
-  position: absolute;
-  top: calc(50% - 12px);
-  right: 12px;
+  /* Flex item at the right edge, aligned with the title. position: static cancels
+     the GLOBAL `.close { position: absolute; top: 5px }` rule (boardBody.css) that
+     otherwise pulls the X out of the header row and drops it below the title. */
+  position: static;
+  margin-inline-start: 8px;
   font-size: 24px;
   height: 24px;
   line-height: 24px;
   opacity: 1;
+  color: #000 !important; /* black X (override themed white link colour) */
 }
-section#notifications-drawer .all-read,
-section#notifications-drawer .remove-read {
-  color: #2980b9;
-  background-color: #fafafa;
-  margin: 8px 16px 12px;
-  display: inline-block;
+section#notifications-drawer .header .close i.fa,
+section#notifications-drawer .header .notification-menu-toggle i.fa {
+  color: inherit !important;
 }
-section#notifications-drawer .remove-read {
-  float: right;
-}
-section#notifications-drawer .remove-read:hover {
-  color: #eb4646 !important;
-}
-section#notifications-drawer .remove-read:hover i.fa {
-  color: inherit;
-}
+
 section#notifications-drawer ul.notifications {
   display: block;
   padding: 0px 16px 0px 16px;

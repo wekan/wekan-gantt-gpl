@@ -1,12 +1,23 @@
 #!/bin/bash
 
-# get wekan/mongo settings
+if [[ "$PATH" != *"$SNAP_INSTANCE_NAME"* ]]; then
+  export PATH="${PATH/\/snap\/wekan\//\/snap\/$SNAP_INSTANCE_NAME\/}"
+fi
+
+# Get wekan/mongo settings
 source $SNAP/bin/wekan-read-settings
 
 if [ "$CADDY_ENABLED" = "true" ]; then
-    env LC_ALL=C caddy -conf=$SNAP_COMMON/Caddyfile -host=localhost:${CADDY_PORT} -agree
+    # If upgrading from an old WeKan snap, $SNAP_COMMON/Caddyfile may still be in
+    # Caddy v1 format, which Caddy 2 cannot parse. Migrate it to v2 first (no-op if
+    # already valid v2; backs up + validates + falls back to the shipped template).
+    CADDY="$SNAP/bin/caddy" bash "$SNAP/bin/migrate-caddyfile-v1-to-v2.sh" "$SNAP_COMMON/Caddyfile" || true
+    # Use Caddy 2 command format
+    # The 'host' option is no longer needed in Caddy 2
+    # The 'agree' option is no longer needed as Caddy 2 doesn't prompt for EULA
+    env LC_ALL=C caddy run --config $SNAP_COMMON/Caddyfile
 else
-    echo "caddy is disabled. Stop service"
-    snapctl stop --disable ${SNAP_NAME}.caddy
+    echo "caddy is disabled. Service stopping disabled"
+    # snapctl stop --disable ${SNAP_NAME}.caddy
     # sleep here, in case snapctl fails to stop service so we do not restart too often
 fi

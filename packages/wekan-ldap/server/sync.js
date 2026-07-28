@@ -1,7 +1,13 @@
-import _ from 'underscore';
-import SyncedCron from 'meteor/percolate:synced-cron';
+import { SyncedCron } from 'meteor/quave:synced-cron';
+import { DDP } from 'meteor/ddp';
+import limax from 'limax';
 import LDAP from './ldap';
+import { slugifyPreservingHyphens } from './usernameSlug';
+import { parseGroupAllowlist, filterGroupsByAllowlist } from './groupAllowlist';
+import { isAdminByGroups } from './adminGroups';
+import { runWithLdapDisconnect } from './connectionGuard';
 import { log_debug, log_info, log_warn, log_error } from './logger';
+import { getLdapPhotoBuffer } from './ldapPhoto';
 
 Object.defineProperty(Object.prototype, "getLDAPValue", {
   value: function (prop) {
@@ -20,8 +26,10 @@ export function slug(text) {
   if (LDAP.settings_get('LDAP_UTF8_NAMES_SLUGIFY') !== true) {
     return text;
   }
-  text = slugify(text, '.');
-  return text.replace(/[^0-9a-z-_.]/g, '');
+  // #4653: slugify each hyphen-separated segment and rejoin with '-' so a
+  // username like "p.parta-partb" is NOT collapsed to "p.parta.partb" (limax's
+  // '.' separator would otherwise swallow the hyphen and break login).
+  return slugifyPreservingHyphens(text, part => limax(part, { separator: '.' }));
 }
 
 function templateVarHandler (variable, object) {
@@ -54,7 +62,7 @@ function templateVarHandler (variable, object) {
 
 export function getPropertyValue(obj, key) {
   try {
-    return _.reduce(key.split('.'), (acc, el) => acc[el], obj);
+    return key.split('.').reduce((acc, el) => acc[el], obj);
   } catch (err) {
     return undefined;
   }
@@ -120,7 +128,8 @@ export function getLdapUserUniqueID(ldapUser) {
 
   if (Unique_Identifier_Field.length > 0) {
     Unique_Identifier_Field = Unique_Identifier_Field.find((field) => {
-      return !_.isEmpty(ldapUser._raw.getLDAPValue(field));
+      const val = ldapUser._raw.getLDAPValue(field);
+      return val != null && val !== '' && !(Array.isArray(val) && val.length === 0);
     });
     if (Unique_Identifier_Field) {
 		    log_debug(`Identifying user with: ${  Unique_Identifier_Field}`);
@@ -143,28 +152,38 @@ export function getDataToSyncUserData(ldapUser, user) {
     const whitelistedUserFields = ['email', 'name', 'customFields'];
     const fieldMap = JSON.parse(syncUserDataFieldMap);
     const emailList = [];
-    _.map(fieldMap, function(userField, ldapField) {
+    Object.entries(fieldMap).forEach(function([ldapField, userField]) {
 		    log_debug(`Mapping field ${ldapField} -> ${userField}`);
       switch (userField) {
-      case 'email':
-        if (!ldapUser.hasOwnProperty(ldapField)) {
+      case 'email': {
+        // #6481: read the mapped LDAP attribute case-insensitively via
+        // getLDAPValue, the same accessor used everywhere else (getLdapEmail,
+        // getLdapUsername, ...). The old `ldapUser.hasOwnProperty(ldapField)` /
+        // `ldapUser[ldapField]` was case-SENSITIVE, so a fieldmap of `mail`
+        // against an LDAP/AD server that returns the attribute as `Mail` (or any
+        // other casing) yielded `email: undefined` even though the attribute was
+        // present. This worked on older WeKan (ldapjs lowercased keys) and broke
+        // after the move to ldapts, which preserves the server's attribute case.
+        const ldapValue = ldapUser.getLDAPValue(ldapField);
+        if (ldapValue === undefined || ldapValue === null || ldapValue === '') {
           log_debug(`user does not have attribute: ${ ldapField }`);
           return;
         }
 
-        if (_.isObject(ldapUser[ldapField])) {
-          _.map(ldapUser[ldapField], function(item) {
+        if (typeof ldapValue === 'object') {
+          Array.from(ldapValue).forEach(function(item) {
             emailList.push({ address: item, verified: true });
           });
         } else {
-          emailList.push({ address: ldapUser[ldapField], verified: true });
+          emailList.push({ address: ldapValue, verified: true });
         }
         break;
+      }
 
       default:
         const [outerKey, innerKeys] = userField.split(/\.(.+)/);
 
-        if (!_.find(whitelistedUserFields, (el) => el === outerKey)) {
+        if (!whitelistedUserFields.includes(outerKey)) {
           log_debug(`user attribute not whitelisted: ${ userField }`);
           return;
         }
@@ -195,8 +214,8 @@ export function getDataToSyncUserData(ldapUser, user) {
           // arrays.
           // TODO: Find a better solution.
           const dKeys = userField.split('.');
-          const lastKey = _.last(dKeys);
-          _.reduce(dKeys, (obj, currKey) =>
+          const lastKey = dKeys.at(-1);
+          dKeys.reduce((obj, currKey) =>
             (currKey === lastKey)
               ? obj[currKey] = tmpLdapField
               : obj[currKey] = obj[currKey] || {}
@@ -224,13 +243,13 @@ export function getDataToSyncUserData(ldapUser, user) {
     userData.ldap = true;
   }
 
-  if (_.size(userData)) {
+  if (Object.keys(userData).length > 0) {
     return userData;
   }
 }
 
 
-export function syncUserData(user, ldapUser) {
+export async function syncUserData(user, ldapUser) {
   log_info('Syncing user data');
   log_debug('user', {'email': user.email, '_id': user._id});
   // log_debug('ldapUser', ldapUser.object);
@@ -239,7 +258,10 @@ export function syncUserData(user, ldapUser) {
     const username = slug(getLdapUsername(ldapUser));
     if (user && user._id && username !== user.username) {
       log_info('Syncing user username', user.username, '->', username);
-      Meteor.users.findOne({ _id: user._id }, { $set: { username }});
+      // #4654: this was findOne/findOneAsync with the $set passed as the
+      // options argument, which performs no write — username changes in the
+      // directory were logged as synced but never saved.
+      await Meteor.users.updateAsync({ _id: user._id }, { $set: { username }});
     }
   }
 
@@ -248,7 +270,7 @@ export function syncUserData(user, ldapUser) {
     log_debug('fullname=',fullname);
     if (user && user._id && fullname !== '') {
       log_info('Syncing user fullname:', fullname);
-      Meteor.users.update({ _id:  user._id }, { $set: { 'profile.fullname' : fullname, }});
+      await Meteor.users.updateAsync({ _id:  user._id }, { $set: { 'profile.fullname' : fullname, }});
     }
   }
 
@@ -258,7 +280,7 @@ export function syncUserData(user, ldapUser) {
 
     if (user && user._id && email !== '') {
       log_info('Syncing user email:', email);
-      Meteor.users.update({
+      await Meteor.users.updateAsync({
         _id: user._id
       }, {
         $set: {
@@ -268,9 +290,31 @@ export function syncUserData(user, ldapUser) {
     }
   }
 
+  // Import the LDAP photo (jpegPhoto / thumbnailPhoto) as the user's WeKan avatar so it
+  // shows in WeKan and is carried by board export/import. The photo is binary, so store
+  // it as a self-contained data: URI in profile.avatarUrl (displays immediately, no
+  // coupling to app code from this package); the app's board-open trigger then copies it
+  // into a real files/avatars file via the SSRF-safe localizer and repoints avatarUrl.
+  // Only set it when the user does not already have a locally-stored WeKan avatar, so a
+  // user's own uploaded avatar is not clobbered on every login.
+  try {
+    const photo = getLdapPhotoBuffer(ldapUser);
+    if (photo && user && user._id) {
+      const current = (user.profile && user.profile.avatarUrl) || '';
+      const alreadyLocal = current.includes('/cdn/storage/avatars/') || current.includes('/cfs/files/avatars/');
+      if (!alreadyLocal) {
+        const dataUri = 'data:image/jpeg;base64,' + photo.toString('base64');
+        log_info('Syncing user LDAP avatar photo');
+        await Meteor.users.updateAsync({ _id: user._id }, { $set: { 'profile.avatarUrl': dataUri } });
+      }
+    }
+  } catch (e) {
+    log_debug('LDAP photo import skipped:', e && e.message);
+  }
+
 }
 
-export function addLdapUser(ldapUser, username, password) {
+export async function addLdapUser(ldapUser, username, password) {
   const uniqueId = getLdapUserUniqueID(ldapUser);
 
   const userObject = {
@@ -288,8 +332,9 @@ export function addLdapUser(ldapUser, username, password) {
     } else {
       userObject.email = userData.emails[0].address;
     }
-  } else if (ldapUser.mail && ldapUser.mail.indexOf('@') > -1) {
-    userObject.email = ldapUser.mail;
+  } else if (ldapUser.getLDAPValue('mail') && String(ldapUser.getLDAPValue('mail')).indexOf('@') > -1) {
+    // #6481: case-insensitive, matching the fieldmap path above.
+    userObject.email = ldapUser.getLDAPValue('mail');
   } else if (LDAP.settings_get('LDAP_DEFAULT_DOMAIN') !== '') {
     userObject.email = `${ username || uniqueId.value }@${ LDAP.settings_get('LDAP_DEFAULT_DOMAIN') }`;
   } else {
@@ -307,12 +352,14 @@ export function addLdapUser(ldapUser, username, password) {
   try {
     // This creates the account with password service
     userObject.ldap = true;
-    userObject._id = Accounts.createUser(userObject);
+    userObject._id = await Accounts.createUserAsync(userObject);
 
-    // Add the services.ldap identifiers
-    Meteor.users.update({ _id:  userObject._id }, {
+    // Add the services.ldap identifiers. #4654: also persist idAttribute so
+    // the background sync (getUserById in ldap.js) can search by the exact
+    // attribute the id was taken from instead of guessing from settings.
+    await Meteor.users.updateAsync({ _id:  userObject._id }, {
 		    $set: {
-		        'services.ldap': { id: uniqueId.value },
+		        'services.ldap': { id: uniqueId.value, idAttribute: uniqueId.attribute },
 		        'emails.0.verified': true,
 		        'authenticationMethod': 'ldap',
 		    }});
@@ -321,31 +368,35 @@ export function addLdapUser(ldapUser, username, password) {
     return error;
   }
 
-  syncUserData(userObject, ldapUser);
+  await syncUserData(userObject, ldapUser);
 
   return {
     userId: userObject._id,
   };
 }
 
-export function importNewUsers(ldap) {
+export async function importNewUsers(ldap) {
   if (LDAP.settings_get('LDAP_ENABLE') !== true) {
     log_error('Can\'t run LDAP Import, LDAP is disabled');
     return;
   }
 
+  // #6467/#6469: when called standalone (no shared connection passed in),
+  // importNewUsers owns the connection it opens and must release it. When the
+  // background sync() passes in its own `ldap`, ownership stays with sync() (it
+  // disconnects in its finally), so we must NOT close a borrowed connection.
+  let ownConnection = false;
   if (!ldap) {
     ldap = new LDAP();
-    ldap.connectSync();
+    await ldap.connect();
+    ownConnection = true;
   }
 
-  let count = 0;
-  ldap.searchUsersSync('*', Meteor.bindEnvironment((error, ldapUsers, {next, end} = {}) => {
-    if (error) {
-      throw error;
-    }
+  try {
+    let count = 0;
+    const ldapUsers = await ldap.searchUsers('*');
 
-    ldapUsers.forEach((ldapUser) => {
+    for (const ldapUser of ldapUsers) {
       count++;
 
       const uniqueId = getLdapUserUniqueID(ldapUser);
@@ -362,7 +413,7 @@ export function importNewUsers(ldap) {
       }
 
       // Add user if it was not added before
-      let user = Meteor.users.findOne(userQuery);
+      let user = await Meteor.users.findOneAsync(userQuery);
 
       if (!user && username && LDAP.settings_get('LDAP_MERGE_EXISTING_USERS') === true) {
         const userQuery = {
@@ -371,30 +422,83 @@ export function importNewUsers(ldap) {
 
         log_debug('userQuery merge', userQuery);
 
-        user = Meteor.users.findOne(userQuery);
+        user = await Meteor.users.findOneAsync(userQuery);
         if (user) {
-          syncUserData(user, ldapUser);
+          await syncUserData(user, ldapUser);
         }
       }
 
       if (!user) {
-        addLdapUser(ldapUser, username);
+        await addLdapUser(ldapUser, username);
       }
 
       if (count % 100 === 0) {
         log_info('Import running. Users imported until now:', count);
       }
-    });
-
-    if (end) {
-      log_info('Import finished. Users imported:', count);
     }
 
-    next(count);
-  }));
+    log_info('Import finished. Users imported:', count);
+  } finally {
+    if (ownConnection) {
+      await ldap.disconnect();
+    }
+  }
 }
 
-function sync() {
+// #6461: invoke the app-side LDAP org/team sync as a true server-to-server call.
+// A plain Meteor.callAsync here would inherit the CURRENT method invocation —
+// the server's applyAsync copies its userId AND connection into the nested call
+// — and during login that is the client's `login` method call, so the admin
+// guard in setUserOrgsTeamsFromLdap saw a client connection with no logged-in
+// user yet and rejected the sync with 'forbidden'. Clearing the invocation
+// context makes applyAsync use userId:null/connection:null — the documented
+// internal path the method's guard allows — while still going through the
+// normal method dispatch (check() audits, EJSON argument cloning).
+async function callLdapOrgTeamSyncInternal(userId, groupNames, asOrganization) {
+  return await DDP._CurrentMethodInvocation.withValue(undefined, () =>
+    Meteor.callAsync('setUserOrgsTeamsFromLdap', userId, groupNames, asOrganization),
+  );
+}
+
+// #4737: optionally sync a user's LDAP groups as Wekan Organizations and/or
+// Teams. Opt-in via LDAP_SYNC_ORGANIZATIONS / LDAP_SYNC_TEAMS (default off). The
+// optional comma-separated allowlists LDAP_SYNC_ORGANIZATIONS_GROUPS /
+// LDAP_SYNC_TEAMS_GROUPS restrict which of the user's groups become orgs/teams;
+// when empty, all of the user's groups are used. The actual create/assign runs
+// in the app (server method setUserOrgsTeamsFromLdap) and is add-only, so it
+// never removes a user's existing memberships. Shared by the background sync
+// and the login handler.
+export async function syncUserGroupsToOrgsTeams(ldap, ldapUser, userId) {
+  const syncOrgs  = LDAP.settings_get('LDAP_SYNC_ORGANIZATIONS') === true;
+  const syncTeams = LDAP.settings_get('LDAP_SYNC_TEAMS') === true;
+  if (!syncOrgs && !syncTeams) {
+    return;
+  }
+
+  const ldapUsername = getLdapUsername(ldapUser);
+  const userGroups = await ldap.getUserGroups(ldapUsername, ldapUser);
+  if (!Array.isArray(userGroups) || userGroups.length === 0) {
+    return;
+  }
+
+  if (syncOrgs) {
+    const allow = parseGroupAllowlist(LDAP.settings_get('LDAP_SYNC_ORGANIZATIONS_GROUPS'));
+    const names = filterGroupsByAllowlist(userGroups, allow);
+    if (names.length > 0) {
+      await callLdapOrgTeamSyncInternal(userId, names, true);
+    }
+  }
+
+  if (syncTeams) {
+    const allow = parseGroupAllowlist(LDAP.settings_get('LDAP_SYNC_TEAMS_GROUPS'));
+    const names = filterGroupsByAllowlist(userGroups, allow);
+    if (names.length > 0) {
+      await callLdapOrgTeamSyncInternal(userId, names, false);
+    }
+  }
+}
+
+async function sync() {
   if (LDAP.settings_get('LDAP_ENABLE') !== true) {
     return;
   }
@@ -402,7 +506,7 @@ function sync() {
   const ldap = new LDAP();
 
   try {
-    ldap.connectSync();
+    await ldap.connect();
 
     let users;
     if (LDAP.settings_get('LDAP_BACKGROUND_SYNC_KEEP_EXISTANT_USERS_UPDATED') === true) {
@@ -410,37 +514,111 @@ function sync() {
     }
 
     if (LDAP.settings_get('LDAP_BACKGROUND_SYNC_IMPORT_NEW_USERS') === true) {
-      importNewUsers(ldap);
+      await importNewUsers(ldap);
     }
 
     if (LDAP.settings_get('LDAP_BACKGROUND_SYNC_KEEP_EXISTANT_USERS_UPDATED') === true) {
-      users.forEach(function(user) {
+      for await (const user of users) {
         let ldapUser;
 
         if (user.services && user.services.ldap && user.services.ldap.id) {
-          ldapUser = ldap.getUserByIdSync(user.services.ldap.id, user.services.ldap.idAttribute);
+          ldapUser = await ldap.getUserById(user.services.ldap.id, user.services.ldap.idAttribute);
         } else {
-          ldapUser = ldap.getUserByUsernameSync(user.username);
+          ldapUser = await ldap.getUserByUsername(user.username);
         }
 
         if (ldapUser) {
-          syncUserData(user, ldapUser);
+          await syncUserData(user, ldapUser);
+
+          // #4739: keep admin status updated during background sync, not only
+          // at login. Mirrors the LDAP_SYNC_ADMIN_STATUS logic in loginHandler
+          // so an admin-group change in LDAP is applied to existing users even
+          // if they do not log in. Gated by the existing LDAP_SYNC_ADMIN_STATUS
+          // flag (default off), so default behaviour is unchanged.
+          if (LDAP.settings_get('LDAP_SYNC_ADMIN_STATUS') === true) {
+            const ldapUsername = getLdapUsername(ldapUser);
+            // The same rule as at login (#6540): trimmed, case-insensitive, and
+            // never true for an empty configured list.
+            const isAdmin = isAdminByGroups(
+              await ldap.getUserGroups(ldapUsername, ldapUser),
+              LDAP.settings_get('LDAP_SYNC_ADMIN_GROUPS'),
+            );
+            await Meteor.users.updateAsync({ _id: user._id }, { $set: { isAdmin } });
+          }
+
+          // #4737: optionally sync LDAP groups as Wekan Organizations and/or
+          // Teams (shared with the login path).
+          await syncUserGroupsToOrgsTeams(ldap, ldapUser, user._id);
+
+          // #4738: when LDAP is authoritative for active status, re-enable a
+          // user that is present in LDAP again (recovers from a removal or a
+          // transient outage). Gated by the same opt-in flag as the disable
+          // below; off by default.
+          if (
+            LDAP.settings_get('LDAP_BACKGROUND_SYNC_DISABLE_NONEXISTANT_USERS') === true &&
+            user.loginDisabled === true
+          ) {
+            log_info('Re-enabling user present in LDAP again', user.username);
+            await Meteor.users.updateAsync({ _id: user._id }, { $set: { loginDisabled: false } });
+          }
         } else {
-          log_info('Can\'t sync user', user.username);
+          // #4738: optionally disable Wekan users that no longer exist in the
+          // LDAP directory. Opt-in via LDAP_BACKGROUND_SYNC_DISABLE_NONEXISTANT_USERS
+          // (default off); when off, behaviour is unchanged (just log). Only
+          // LDAP-sourced users are iterated here. With the flag on, LDAP is the
+          // authoritative source of active status: users missing from LDAP are
+          // disabled and reappearing users are re-enabled (see the if-branch
+          // above), which also overrides a manual disable of an LDAP user.
+          // Caveat: a transient LDAP lookup failure looks the same as a removed
+          // user, so an account may be briefly disabled until it reappears.
+          if (LDAP.settings_get('LDAP_BACKGROUND_SYNC_DISABLE_NONEXISTANT_USERS') === true) {
+            if (!user.loginDisabled) {
+              log_info('Disabling user no longer present in LDAP', user.username);
+              await Meteor.users.updateAsync({ _id: user._id }, { $set: { loginDisabled: true } });
+            }
+          } else {
+            log_info('Can\'t sync user', user.username);
+          }
         }
-      });
+      }
+    }
+
+    // #5850 / #4737: after the user sync, propagate org/team members to the
+    // boards that list a flagged org/team (orgPropagateMembersToBoards /
+    // teamPropagateMembersToBoards). This gives the feature a periodic trigger;
+    // it is also admin-callable. Add-only, and template boards are skipped.
+    // Wrapped in its own try/catch so a failure here never fails the whole sync.
+    try {
+      await Meteor.callAsync('propagateOrgTeamMembersToBoards');
+    } catch (propagateError) {
+      log_error(propagateError);
     }
   } catch (error) {
     log_error(error);
     return error;
+  } finally {
+    // #6467/#6469: the background sync runs on a cron (every minute by default)
+    // and each run opened a new LDAP connection; without this finally every run
+    // leaked a connection to the directory server, so a long-running WeKan
+    // steadily exhausted the LDAP/AD server's connection limit even with nobody
+    // logging in. Release it on every exit path.
+    await ldap.disconnect();
   }
   return true;
 }
 
 const jobName = 'LDAP_Sync';
 
-const addCronJob = _.debounce(Meteor.bindEnvironment(function addCronJobDebounced() {
-  let sc=SyncedCron.SyncedCron; //Why ?? something must be wrong in the import
+function debounce(fn, wait) {
+  let timer = null;
+  return function (...args) {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => { timer = null; fn.apply(this, args); }, wait);
+  };
+}
+
+const addCronJob = debounce(function addCronJobDebounced() {
+  let sc = SyncedCron;
   if (LDAP.settings_get('LDAP_BACKGROUND_SYNC') !== true) {
     log_info('Disabling LDAP Background Sync');
     if (sc.nextScheduledAtDate(jobName)) {
@@ -459,13 +637,13 @@ const addCronJob = _.debounce(Meteor.bindEnvironment(function addCronJobDebounce
     else {
        return parser.recur().on(0).minute();
     }},
-    job: function() {
-      sync();
+    job: async function() {
+      await sync();
     },
   });
   sc.start();
 
-}), 500);
+}, 500);
 
 Meteor.startup(() => {
   Meteor.defer(() => {

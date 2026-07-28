@@ -1,22 +1,13 @@
-.minicard .checklists-title,
-.minicard .add-checklist,
-.minicard .add-checklist-item,
-.minicard .checklist-details-menu {
-  display: none;
-}
-.minicard .checklist-progress-bar-container {
-  width: 190px; /* TODO: Add adjustable width https://github.com/wekan/wekan/pull/4964 */
-}
 .minicard-wrapper {
   cursor: pointer;
   position: relative;
   display: flex;
   align-items: center;
-  margin-bottom: 9px;
+  margin-bottom: 8px;
 }
 .minicard-wrapper.placeholder {
   background: #ccc;
-  border-radius: 9px;
+  border-radius: 17px;
 }
 .minicard-wrapper.ui-sortable-helper {
   cursor: grabbing;
@@ -25,41 +16,56 @@
 }
 .minicard-wrapper.ui-sortable-helper .and-n-other {
   width: 100%;
-  height: 16px;
-  padding: 4px;
+  height: 25px;
+  padding: 5px;
   background-color: #f2f2f2;
   text-align: center;
-  border-radius: 3px;
+  border-radius: 6px;
 }
 .minicard-wrapper.ui-sortable-helper .multi-selection-checkbox {
   display: none;
 }
 .minicard-wrapper .multi-selection-checkbox + .minicard {
-  margin-left: 8px;
+  margin-inline-start: 14px;
+}
+/* Enlarge the clickable area of the small selection checkbox so it can be
+   reliably clicked at the left side of the minicard. The visible 13px box (and
+   its rotated is-checked checkmark) keep their size; an invisible overlay only
+   extends the hit target. */
+.minicard-wrapper .multi-selection-checkbox::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  inset-inline-start: -8px;
+  inset-inline-end: -8px;
+  bottom: -8px;
 }
 @media only screen {
   .minicard {
-    padding: 6px 8px 2px;
+    padding: 8px 14px 3px;
     position: relative;
     flex: 1;
     flex-wrap: wrap;
     background-color: #fff;
-    min-height: 20px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.15);
-    border-radius: 2px;
+    min-height: 25px;
+    box-shadow: 0 2px 3px rgba(0,0,0,0.15);
+    border-radius: 4px;
     color: #4d4d4d;
     overflow: hidden;
     transition: transform 0.2s, border-radius 0.2s;
   }
 }
 .minicard-details-menu-with-handle {
-  float: right;
-  font-size: 18px;
-  padding-right: 30px;
+  float: inline-end;
+  padding-inline-start: 10px;
+  font-size: 14px;
+  padding: 0;
+  z-index: 1;
 }
 .minicard-details-menu {
-  float: right;
-  font-size: 18px;
+  float: inline-end;
+  font-size: 14px;
+  padding-inline-start: 10px;
 }
 @media print {
   .minicard-details-menu,
@@ -70,7 +76,7 @@
 .minicard.linked-board .linked-icon,
 .minicard.linked-card .linked-icon {
   display: inline-block;
-  margin-right: 11px;
+  margin-inline-end: 21px;
   vertical-align: baseline;
   font-size: 0.9em;
 }
@@ -79,11 +85,11 @@
   color: #937760;
 }
 .is-selected .minicard {
-  transform: translateX(11px);
+  transform: translateX(21px);
   border-bottom-right-radius: 0;
   border-top-right-radius: 0;
   z-index: 25;
-  box-shadow: -2px 1px 2px rgba(0,0,0,0.2);
+  box-shadow: -4px 2px 3px rgba(0,0,0,0.2);
 }
 .minicard:hover:not(.minicard-composer),
 .is-selected .minicard,
@@ -97,20 +103,37 @@
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
-  height: 145px;
+  height: 150px;
   user-select: none;
-  margin: -6px -8px 6px -8px;
-  border-radius: top 2px;
+  margin: 8px -14px 8px -14px;
+  border-radius: top 4px;
 }
 .minicard .minicard-labels {
   float: none;
+  margin-inline-end: 84px;
 }
 .minicard .minicard-labels .minicard-label {
-  width: 11px;
-  height: 11px;
-  border-radius: 2px;
-  margin-right: 3px;
-  margin-bottom: 3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  margin-inline-end: 6px;
+  margin-bottom: 4px;
+}
+/* Keep text labels on a single compact line. The label name is rendered
+   inside a `.viewer`, whose global `min-height: 2.5vh` otherwise forces every
+   label to roughly double height on the minicard. */
+.minicard .minicard-labels .card-label {
+  min-height: 0;
+  padding: 1px 6px;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.minicard .minicard-labels .card-label .viewer {
+  min-height: 0;
+  display: inline;
+}
+.minicard .minicard-labels .card-label .viewer p {
+  display: inline;
 }
 .minicard .minicard-labels-no-text {
   display: flex;
@@ -118,6 +141,7 @@
 }
 .minicard .minicard-custom-fields {
   display: block;
+  margin-inline-end: 84px;
 }
 .minicard .minicard-custom-field {
   display: flex;
@@ -126,45 +150,118 @@
   flex-grow: 1;
   display: block;
   word-wrap: break-word;
-  max-width: 100px;
-  margin-right: 4px;
+  /* Fixed, not 13vw: a chip that grew with the window made the card reflow. */
+  max-width: 160px;
+  margin-inline-end: 7px;
 }
 .minicard .minicard-custom-field-item-fullwidth {
   flex-grow: 1;
   display: block;
   word-wrap: break-word;
   max-width: 100%;
-  margin-right: 4px;
+  margin-inline-end: 7px;
 }
-/*
-.minicard .checklists-title,
-.minicard .add-checklist,
-.minicard .add-checklist-item,
-.minicard .checklist-details-menu {
-  display: none;
-}
-*/
 .minicard .handle {
   width: 20px;
   height: 20px;
   position: absolute;
-  right: 5px;
-  top: 5px;
+  inset-inline-end: 1px;
+  top: 28px;
   display: none;
+  z-index: 1;
 }
 @media only screen {
   .minicard .handle {
     display: block;
   }
 }
-.minicard .handle .fa-arrows {
-  font-size: 20px;
+/* #6521: on a touch device the handle is the ONLY way to drag a card - the rest
+   of the minicard deliberately pans the board instead - so it has to be a target
+   a finger can actually hit. A 20-28px icon in the corner is a mouse-sized
+   target; on a wall-mounted infoscreen it is close to unusable.
+
+   On a coarse pointer the card's two controls become one column down the
+   TRAILING (right in LTR) edge: the details menu on top, the drag handle
+   directly BELOW it. That is where the handle already is for a mouse - just
+   under the menu button - so both pointer kinds put it in the same place, and
+   the thumb-sized version does not move it somewhere else to be looked for.
+   (It was a full-height strip on the LEADING edge, which reached the size goal
+   but put the handle on the opposite side from every other card control.)
+
+   The handle runs from under the menu to the bottom of the card, so on a tall
+   card it is a large target, and a minimum height keeps it a real one on a card
+   with nothing but a title. Mouse users keep the compact corner handle, since
+   `pointer: coarse` does not match a mouse. */
+/* MOBILE MODE, not merely a coarse pointer: a phone whose user chose DESKTOP
+   mode asked for the desktop card, and there the handle is the compact one in the
+   top corner just under the menu button. The full-height thumb column below was
+   appearing there too, which is a handle sitting near the BOTTOM of a tall card -
+   far from the menu it belongs with. `body.mobile-mode` and `pointer: coarse`
+   together mean "a finger, and the user is in the finger layout". */
+@media (pointer: coarse) {
+  /* Pinned rather than floated: the card gets trailing padding below to keep its
+     text out of this column, and a float would be pushed inward by it. */
+  body.mobile-mode .minicard .minicard-details-menu-with-handle {
+    position: absolute;
+    float: none;
+    top: 0;
+    inset-inline-end: 0;
+    width: 44px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  body.mobile-mode .minicard .handle {
+    width: 44px;
+    /* From just below the menu button down to the bottom of the card. */
+    top: 32px;
+    bottom: 0;
+    height: auto;
+    min-height: 36px;
+    inset-inline-start: auto;
+    inset-inline-end: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Faint tint so the target is discoverable without shouting. */
+    background: rgba(127, 127, 127, 0.08);
+    border-end-end-radius: inherit;
+  }
+  /* The card's own content must not sit under the column, and the card must be
+     tall enough to hold menu + handle at their minimum sizes (32 + 36). */
+  body.mobile-mode .minicard.minicard-with-handle {
+    padding-inline-end: 44px;
+    min-height: 68px;
+  }
+  body.mobile-mode .minicard .handle .drag-handle,
+  body.mobile-mode .minicard .handle .fa {
+    font-size: 22px;
+  }
+}
+
+.minicard .handle .drag-handle {
+  font-size: 16px;
   color: #ccc;
+  display: inline-block;
+  width: 1.4em;
+  text-align: center;
+}
+.minicard .minicard-title {
+  margin-inline-end: 21px;
+  /* #6444: isolate each title's bidirectional context. The title is a
+     dir="auto" .viewer; under a global dir="rtl" document, non-isolated
+     dir="auto" runs share bidi state, so typing a strong RTL (e.g. Arabic)
+     character into another list's dir="auto" composer re-resolved the shared
+     context and visibly reflowed OTHER lists' minicard titles (no data change,
+     reverts on refresh). Isolation makes each title a self-contained run. */
+  unicode-bidi: isolate;
 }
 .minicard .minicard-title .card-number {
   color: #b3b3b3;
   display: inline-block;
-  margin-right: 5px;
+  margin-inline-end: 10px;
 }
 @media only screen {
   .minicard .minicard-title p:last-child {
@@ -173,39 +270,183 @@
   .minicard .minicard-title .viewer {
     display: block;
     word-wrap: break-word;
-    max-width: 230px;
+    /* #6465: the minicard title renders inside a .viewer, which inherits the
+       global `.viewer { min-height: 2.5vh }` (layouts.css). On tall screens that
+       reserves a big empty band under a one-line title, so half of every
+       minicard was white space. Collapse it to fit the text (same fix already
+       applied to the label .viewer above). */
+    min-height: 0;
   }
 }
 .minicard .dates {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
+  position: relative;
+  z-index: 5;
+  margin-inline-end: 84px;
+  clear: both;
 }
 .minicard .date {
-  margin-right: 3px;
+  margin-inline-end: 6px;
 }
+
+/* Font Awesome glyphs for minicard dates - matching cardDate.css */
+.minicard .card-date time::before {
+  font-family: FontAwesome;
+  font-weight: normal;
+  font-style: normal;
+  text-decoration: inherit;
+}
+.minicard .card-date.end-date time::before {
+  content: "\f11e"; /* fa-flag-checkered - end/completion */
+}
+.minicard .card-date.due-date time::before {
+  content: "\f017"; /* fa-clock-o - due/deadline */
+}
+.minicard .card-date.start-date time::before {
+  content: "\f135"; /* fa-rocket - start/launch */
+}
+.minicard .card-date.received-date time::before {
+  content: "\f01c"; /* fa-inbox - received/incoming */
+}
+
+.minicard .card-date time::before {
+  font-size: inherit;
+  margin-inline-end: 0.3em;
+  display: inline-block;
+}
+
+/* Date type specific colors for minicards - matching cardDate.css */
+.minicard .card-date.received-date {
+  background-color: #dbdbdb; /* Grey for received - same as base card-date */
+}
+
+.minicard .card-date.received-date:hover,
+.minicard .card-date.received-date.is-active {
+  background-color: #b3b3b3;
+}
+
+.minicard .card-date.start-date {
+  background-color: #90ee90; /* Light green for start */
+  color: #000; /* Black text for start */
+}
+
+.minicard .card-date.start-date:hover,
+.minicard .card-date.start-date.is-active {
+  background-color: #7dd87d;
+}
+
+.minicard .card-date.due-date {
+  background-color: #ffd700; /* Yellow for due */
+  color: #000; /* Black text for due */
+}
+
+.minicard .card-date.due-date:hover,
+.minicard .card-date.due-date.is-active {
+  background-color: #e6c200;
+}
+
+.minicard .card-date.end-date {
+  background-color: #ffb3b3; /* Light red for end */
+  color: #000; /* Black text for end */
+}
+
+.minicard .card-date.end-date:hover,
+.minicard .card-date.end-date.is-active {
+  background-color: #ff9999;
+}
+
+/* Date status colors for minicards - matching cardDate.css */
+.minicard .card-date.overdue {
+  background-color: #ff4444 !important; /* Red for overdue */
+  color: #fff !important;
+}
+.minicard .card-date.overdue:hover,
+.minicard .card-date.overdue.is-active {
+  background-color: #cc3333 !important;
+}
+
+.minicard .card-date.due-soon {
+  background-color: #ffaa00 !important; /* Amber for due soon */
+  color: #000 !important;
+}
+.minicard .card-date.due-soon:hover,
+.minicard .card-date.due-soon.is-active {
+  background-color: #e69900 !important;
+}
+
+.minicard .card-date.not-due {
+  /* No special background - uses default date type colors */
+}
+
+.minicard .card-date.current {
+  background-color: #5ba639 !important; /* Green for current/active */
+  color: #fff !important;
+}
+.minicard .card-date.current:hover,
+.minicard .card-date.current.is-active {
+  background-color: #46802c !important;
+}
+
+.minicard .card-date.completed {
+  background-color: #90ee90 !important; /* Light green for completed */
+  color: #000 !important;
+}
+.minicard .card-date.completed:hover,
+.minicard .card-date.completed.is-active {
+  background-color: #7dd87d !important;
+}
+
+.minicard .card-date.completed-early {
+  background-color: #4caf50 !important; /* Green for completed early */
+  color: #fff !important;
+}
+.minicard .card-date.completed-early:hover,
+.minicard .card-date.completed-early.is-active {
+  background-color: #45a049 !important;
+}
+
+.minicard .card-date.completed-late {
+  background-color: #ff9800 !important; /* Orange for completed late */
+  color: #fff !important;
+}
+.minicard .card-date.completed-late:hover,
+.minicard .card-date.completed-late.is-active {
+  background-color: #f57c00 !important;
+}
+
+.minicard .card-date.completed-on-time {
+  background-color: #2196f3 !important; /* Blue for completed on time */
+  color: #fff !important;
+}
+.minicard .card-date.completed-on-time:hover,
+.minicard .card-date.completed-on-time.is-active {
+  background-color: #1976d2 !important;
+}
+
 .minicard .badges {
-  float: left;
-  margin-top: 7px;
+  float: inline-start;
+  margin-top: 8px;
   color: #808080;
 }
 .minicard .badges:empty {
   display: none;
 }
 .minicard .badges .badge {
-  float: left;
-  margin-right: 11px;
-  margin-bottom: 3px;
+  float: inline-start;
+  margin-inline-end: 21px;
+  margin-bottom: 4px;
   font-size: 0.9em;
 }
 .minicard .badges .badge.is-finished {
   background: #3cb500;
-  padding: 0px 3px;
-  border-radius: 3px;
+  padding: 0 6px;
+  border-radius: 6px;
   color: #fff;
 }
 .minicard .badges .badge:last-of-type {
-  margin-right: 0;
+  margin-inline-end: 0;
 }
 .minicard .badges .badge .badge-icon,
 .minicard .badges .badge .badge-text {
@@ -217,41 +458,41 @@
 }
 .minicard .badges .badge .badge-text {
   font-size: 0.9em;
-  padding-left: 2px;
-  line-height: 14px;
+  padding-inline-start: 4px;
+  line-height: 1.2;
 }
 .minicard .badges .badge .check-list-text {
-  padding-left: 0px;
-  line-height: 12px;
+  padding-inline-start: 0px;
+  line-height: 1.1;
 }
 .minicard .minicard-members,
 .minicard .minicard-assignees,
 .minicard .minicard-creator {
-  float: right;
-  margin-left: 5px;
+  float: inline-end;
+  margin-inline-start: 10px;
   margin-bottom: 4px;
 }
 .minicard .minicard-members .member,
 .minicard .minicard-assignees .member,
 .minicard .minicard-creator .member {
-  float: right;
+  float: inline-end;
   border-radius: 50%;
-  height: 28px;
-  width: 28px;
+  height: 24px;
+  width: 24px;
   margin-bottom: 4px;
 }
 .minicard .minicard-members .assignee,
 .minicard .minicard-assignees .assignee,
 .minicard .minicard-creator .assignee {
-  float: right;
+  float: inline-end;
   border-radius: 50%;
-  height: 28px;
-  width: 28px;
+  height: 24px;
+  width: 24px;
 }
 .minicard .minicard-members + .badges,
 .minicard .minicard-assignees + .badges,
 .minicard .minicard-creator + .badges {
-  margin-top: 5px;
+  margin-top: 6px;
 }
 .minicard .minicard-assignees {
   border-bottom: 1px solid #f00;
@@ -264,13 +505,13 @@
   display: none;
 }
 .minicard .minicard-description {
-  padding: 6px 0 0 8px;
+  padding: 8px 0 0 14px;
   color: #000;
   background-color: #eee;
   width: 100%;
-  margin-bottom: 2px;
-  margin-left: -4px;
-  border-radius: 3px;
+  margin-bottom: 3px;
+  margin-inline-start: -7px;
+  border-radius: 6px;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -278,7 +519,7 @@
   -webkit-box-orient: vertical;
 }
 .minicard.minicard-composer {
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 .minicard.minicard-composer textarea.minicard-composer-textarea,
 .minicard.minicard-composer textarea.minicard-composer-textarea:focus {
@@ -289,10 +530,14 @@
   height: auto;
   margin: 0;
   padding: 0;
-  max-height: 162px;
-  min-height: 36px;
+  max-height: 200px;
+  min-height: 50px;
   margin-bottom: 20px;
   overflow-y: auto;
+  /* #6444: isolate the composer's dir="auto" bidi run so typing a strong RTL
+     character here cannot perturb the rendering of the surrounding minicard
+     titles under a dir="rtl" document. */
+  unicode-bidi: isolate;
 }
 .parent-prefix {
   color: #b3b3b3;
@@ -595,4 +840,152 @@
 }
 .text-green {
   color: #008000;
+}
+
+/* Drag and drop file upload visual feedback */
+.minicard.is-dragging-over {
+  border: 2px dashed #0079bf;
+  background-color: #e3f2fd !important;
+  transform: scale(1.02);
+  transition: all 0.2s ease;
+}
+
+/* List name display on minicard */
+.minicard-list-name {
+  font-size: 0.75em;
+  color: #8c8c8c;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Checklist display on minicard */
+.minicard-checklist {
+  width: 100%;
+  box-sizing: border-box;
+  clear: both;
+  margin-top: 2px;
+  margin-bottom: 5px;
+  padding: 3px 7px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+}
+
+.minicard-checklist .checklist-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3px;
+}
+
+.minicard-checklist .checklist-title {
+  font-size: 0.8em;
+  font-weight: bold;
+  color: #4d4d4d;
+  flex: 1;
+  margin: 0;
+}
+
+.minicard-checklist .checklist-menu {
+  font-size: 1.2em;
+  color: #666;
+  cursor: pointer;
+  padding: 0 4px;
+  border-radius: 3px;
+  transition: background-color 0.2s;
+}
+
+.minicard-checklist .checklist-menu:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.minicard-checklist .checklist-item {
+  font-size: 0.75em;
+  color: #666;
+  margin-bottom: 2px;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  line-height: 1.2;
+  cursor: pointer;
+  padding: 2px 0;
+  border-radius: 3px;
+  transition: background-color 0.2s;
+}
+
+.minicard-checklist .checklist-item:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.minicard-checklist .checklist-item.is-checked {
+  text-decoration: line-through;
+  color: #999;
+}
+
+.minicard-checklist .checklist-item .check-box-unicode {
+  flex-shrink: 0;
+  font-size: 0.8em;
+  margin-top: 1px;
+  transition: transform 0.2s;
+}
+
+.minicard-checklist .checklist-item:hover .check-box-unicode {
+  transform: scale(1.1);
+}
+
+.minicard-checklist .checklist-item .item-title {
+  flex: 1;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Trello-style "mark complete" toggle, left of the minicard title */
+.minicard-title .minicard-complete-toggle {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  /* Nudge down so the checkmark sits at the vertical middle of the title text
+     (the checked materialCheckBox is shifted up 4px by its own positioning). */
+  position: relative;
+  top: 4px;
+  margin-inline-end: 6px;
+  cursor: pointer;
+}
+
+/* Sticker icon highlight styles (used instead of colour): taco pack => underline,
+   pete pack => round (ring around the icon). Icon keeps its normal colour. */
+.minicard-sticker i.sticker-underline {
+  border-bottom: 2px solid currentColor;
+  padding-bottom: 1px;
+  line-height: 1;
+}
+.minicard-sticker i.sticker-round {
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6em;
+  height: 1.6em;
+  line-height: 1;
+  box-sizing: border-box;
+}
+
+/* #3984: Visual card aging — progressively fade cards that have not been
+ * touched recently, when card aging is enabled for the board. */
+.minicard.minicard-aging-1 {
+  opacity: 0.85;
+}
+.minicard.minicard-aging-2 {
+  opacity: 0.6;
+}
+.minicard.minicard-aging-3 {
+  opacity: 0.4;
+}
+.minicard.minicard-aging-1:hover,
+.minicard.minicard-aging-2:hover,
+.minicard.minicard-aging-3:hover {
+  opacity: 1;
 }

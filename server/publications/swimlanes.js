@@ -1,36 +1,49 @@
 import { ReactiveCache } from '/imports/reactiveCache';
+import Boards from '/models/boards';
+import { allowIsBoardMember, allowIsBoardMemberWithWriteAccess } from '/server/lib/utils';
 
 Meteor.methods({
-  copySwimlane(swimlaneId, toBoardId) {
+  async copySwimlane(swimlaneId, toBoardId, targetSwimlaneId = null, position = 'below', title = '') {
     check(swimlaneId, String);
     check(toBoardId, String);
+    check(targetSwimlaneId, Match.OneOf(String, null, undefined));
+    check(position, Match.OneOf('above', 'below'));
+    check(title, Match.OneOf(String, null, undefined));
 
-    const swimlane = ReactiveCache.getSwimlane(swimlaneId);
-    const toBoard = ReactiveCache.getBoard(toBoardId);
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+    const swimlane = await ReactiveCache.getSwimlane(swimlaneId);
+    if (!swimlane) throw new Meteor.Error('not-found');
+    const sourceBoard = await Boards.findOneAsync(swimlane.boardId);
+    if (!allowIsBoardMember(this.userId, sourceBoard))
+      throw new Meteor.Error('not-authorized');
+    const toBoard = await ReactiveCache.getBoard(toBoardId);
+    if (!toBoard) throw new Meteor.Error('not-found');
+    if (!allowIsBoardMemberWithWriteAccess(this.userId, toBoard))
+      throw new Meteor.Error('not-authorized');
 
-    let ret = false;
-    if (swimlane && toBoard) {
-      swimlane.copy(toBoardId);
-      ret = true;
-    }
-
-    return ret;
+    await swimlane.copy(toBoardId, targetSwimlaneId, position, title);
+    return true;
   },
 
-  moveSwimlane(swimlaneId, toBoardId) {
+  async moveSwimlane(swimlaneId, toBoardId, targetSwimlaneId = null, position = 'below', title = '') {
     check(swimlaneId, String);
     check(toBoardId, String);
+    check(targetSwimlaneId, Match.OneOf(String, null, undefined));
+    check(position, Match.OneOf('above', 'below'));
+    check(title, Match.OneOf(String, null, undefined));
 
-    const swimlane = ReactiveCache.getSwimlane(swimlaneId);
-    const toBoard = ReactiveCache.getBoard(toBoardId);
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+    const swimlane = await ReactiveCache.getSwimlane(swimlaneId);
+    if (!swimlane) throw new Meteor.Error('not-found');
+    const sourceBoard = await Boards.findOneAsync(swimlane.boardId);
+    if (!allowIsBoardMember(this.userId, sourceBoard))
+      throw new Meteor.Error('not-authorized');
+    const toBoard = await ReactiveCache.getBoard(toBoardId);
+    if (!toBoard) throw new Meteor.Error('not-found');
+    if (!allowIsBoardMemberWithWriteAccess(this.userId, toBoard))
+      throw new Meteor.Error('not-authorized');
 
-    let ret = false;
-    if (swimlane && toBoard) {
-      swimlane.move(toBoardId);
-
-      ret = true;
-    }
-
-    return ret;
+    await swimlane.move(toBoardId, targetSwimlaneId, position, title);
+    return true;
   },
 });

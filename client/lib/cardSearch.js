@@ -4,9 +4,13 @@ import Cards from '../../models/cards';
 import SessionData from '../../models/usersessiondata';
 import {QueryDebug} from "../../config/query-classes";
 import {OPERATOR_DEBUG} from "../../config/search-const";
+import { TABLE_PAGE_ROWS_PER_PAGE } from '/models/lib/tablePage';
 
-export class CardSearchPagedComponent extends BlazeComponent {
-  onCreated() {
+// Plain helper class for search pages with pagination.
+// Not a BlazeComponent; instantiated in each template's onCreated.
+export class CardSearchPaged {
+  constructor(templateInstance) {
+    this.tpl = templateInstance;
     this.searching = new ReactiveVar(false);
     this.hasResults = new ReactiveVar(false);
     this.hasQueryErrors = new ReactiveVar(false);
@@ -19,7 +23,9 @@ export class CardSearchPagedComponent extends BlazeComponent {
     this.resultsCount = 0;
     this.totalHits = 0;
     this.queryErrors = null;
-    this.resultsPerPage = 25;
+    // The one rows-per-page of the app (docs/Design/Page/Table.md): a search page
+    // is a paginated page too, so it loads the same 10 rows at a time.
+    this.resultsPerPage = TABLE_PAGE_ROWS_PER_PAGE;
     this.sessionId = SessionData.getSessionId();
     this.subscriptionHandle = null;
     this.serverError = new ReactiveVar(false);
@@ -29,21 +35,64 @@ export class CardSearchPagedComponent extends BlazeComponent {
     const that = this;
     this.subscriptionCallbacks = {
       onReady() {
-        that.getResults();
-        that.searching.set(false);
-        that.hasResults.set(true);
-        that.serverError.set(false);
+        const cardsInCollection = Cards.find().count();
+
+        // Wait for session data to be available (with timeout)
+        let waitCount = 0;
+        const maxWaitCount = 50; // 10 seconds max wait
+
+        const waitForSessionData = () => {
+          waitCount++;
+          const sessionData = that.getSessionData();
+
+          if (sessionData) {
+            const results = that.getResults();
+
+            // If no results and this is a due cards search, try to retry
+            if ((!results || results.length === 0) && that.searchRetryCount !== undefined && that.searchRetryCount < that.maxRetries) {
+              that.searchRetryCount++;
+              Meteor.setTimeout(() => {
+                if (that.performSearch) {
+                  that.performSearch();
+                }
+              }, 500);
+              return;
+            }
+
+            // Set the results in the ReactiveVar so they display in the template
+            that.results.set(results);
+            that.resultsHeading.set(that.getResultsHeading());
+            that.searching.set(false);
+            that.hasResults.set(true);
+            that.serverError.set(false);
+          } else if (waitCount < maxWaitCount) {
+            // Session data not available yet, wait a bit more
+            Meteor.setTimeout(waitForSessionData, 200);
+          } else {
+            // Timeout reached, try fallback search
+            const results = that.getResults();
+
+            if (results && results.length > 0) {
+              that.results.set(results);
+              that.resultsHeading.set(that.getResultsHeading());
+              that.searching.set(false);
+              that.hasResults.set(true);
+              that.serverError.set(false);
+            } else {
+              that.searching.set(false);
+              that.hasResults.set(false);
+              that.serverError.set(true);
+            }
+          }
+        };
+
+        // Start waiting for session data
+        Meteor.setTimeout(waitForSessionData, 100);
       },
       onError(error) {
         that.searching.set(false);
         that.hasResults.set(false);
         that.serverError.set(true);
-        // eslint-disable-next-line no-console
-        //console.log('Error.reason:', error.reason);
-        // eslint-disable-next-line no-console
-        //console.log('Error.message:', error.message);
-        // eslint-disable-next-line no-console
-        //console.log('Error.stack:', error.stack);
       },
     };
   }
@@ -62,43 +111,60 @@ export class CardSearchPagedComponent extends BlazeComponent {
   }
 
   getSessionData(sessionId) {
-    return ReactiveCache.getSessionData({
-      sessionId: sessionId || SessionData.getSessionId(),
+    const sessionIdToUse = sessionId || SessionData.getSessionId();
+
+    // Use SessionData.findOne() directly - it's synchronous on the client
+    const sessionData = SessionData.findOne({
+      userId: Meteor.userId(),
+      sessionId: sessionIdToUse,
     });
+
+    return sessionData;
   }
 
   getResults() {
-    // eslint-disable-next-line no-console
-    // console.log('getting results');
     this.sessionData = this.getSessionData();
-    // eslint-disable-next-line no-console
-    console.log('session data:', this.sessionData);
     const cards = [];
-    this.sessionData.cards.forEach(cardId => {
-      cards.push(ReactiveCache.getCard(cardId));
-    });
-    this.queryErrors = this.sessionData.errors;
+
+    if (this.sessionData && this.sessionData.cards && this.sessionData.cards.length > 0) {
+      Cards.find({ _id: { $in: this.sessionData.cards } }).forEach(card => {
+        if (card && card._id) cards.push(card);
+      });
+      this.queryErrors = this.sessionData.errors || [];
+    } else if (this.sessionData) {
+      this.queryErrors = this.sessionData.errors || [];
+    } else {
+      this.queryErrors = [];
+    }
     if (this.queryErrors.length) {
       // console.log('queryErrors:', this.queryErrorMessages());
       this.hasQueryErrors.set(true);
       // return null;
     }
-    this.debug.set(new QueryDebug(this.sessionData.debug));
-    console.log('debug:', this.debug.get().get());
-    console.log('debug.show():', this.debug.get().show());
-    console.log('debug.showSelector():', this.debug.get().showSelector());
+    this.debug.set(new QueryDebug(this.sessionData ? this.sessionData.debug : null));
 
     if (cards) {
-      this.totalHits = this.sessionData.totalHits;
-      this.resultsCount = cards.length;
-      this.resultsStart = this.sessionData.lastHit - this.resultsCount + 1;
-      this.resultsEnd = this.sessionData.lastHit;
-      this.resultsHeading.set(this.getResultsHeading());
-      this.results.set(cards);
-      this.hasNextPage.set(this.sessionData.lastHit < this.sessionData.totalHits);
-      this.hasPreviousPage.set(
-        this.sessionData.lastHit - this.sessionData.resultsCount > 0,
-      );
+      if (this.sessionData) {
+        this.totalHits = this.sessionData.totalHits || 0;
+        this.resultsCount = cards.length;
+        this.resultsStart = this.sessionData.lastHit - this.resultsCount + 1;
+        this.resultsEnd = this.sessionData.lastHit;
+        this.resultsHeading.set(this.getResultsHeading());
+        this.results.set(cards);
+        this.hasNextPage.set(this.sessionData.lastHit < this.sessionData.totalHits);
+        this.hasPreviousPage.set(
+          this.sessionData.lastHit - this.sessionData.resultsCount > 0,
+        );
+      } else {
+        this.totalHits = cards.length;
+        this.resultsCount = cards.length;
+        this.resultsStart = 1;
+        this.resultsEnd = cards.length;
+        this.resultsHeading.set(this.getResultsHeading());
+        this.results.set(cards);
+        this.hasNextPage.set(false);
+        this.hasPreviousPage.set(false);
+      }
       return cards;
     }
 
@@ -113,13 +179,16 @@ export class CardSearchPagedComponent extends BlazeComponent {
   }
 
   getSubscription(queryParams) {
-    return Meteor.subscribe(
+    // Subscribe to globalSearch which includes sessionData as the 11th cursor
+    const globalSearchHandle = Meteor.subscribe(
       'globalSearch',
       this.sessionId,
       queryParams.params,
       queryParams.text,
       this.subscriptionCallbacks,
     );
+
+    return globalSearchHandle;
   }
 
   runGlobalSearch(queryParams) {
@@ -182,20 +251,5 @@ export class CardSearchPagedComponent extends BlazeComponent {
   getSearchHref() {
     const baseUrl = window.location.href.replace(/([?#].*$|\s*$)/, '');
     return `${baseUrl}?q=${encodeURIComponent(this.query.get())}`;
-  }
-
-  events() {
-    return [
-      {
-        'click .js-next-page'(evt) {
-          evt.preventDefault();
-          this.nextPage();
-        },
-        'click .js-previous-page'(evt) {
-          evt.preventDefault();
-          this.previousPage();
-        },
-      },
-    ];
   }
 }

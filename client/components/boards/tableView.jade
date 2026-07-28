@@ -1,0 +1,107 @@
+template(name="tableView")
+  if currentBoard
+    .wrapper
+      .table-view-controls
+        .table-view-search-box
+          input.js-table-view-search(type="text" placeholder="{{_ 'search'}}" aria-label="{{_ 'search'}}")
+          button.js-table-view-search-button(type="button")
+            i.fa.fa-search
+            | {{_ 'search'}}
+        .table-view-pagination
+          button.js-table-view-prev-page(type="button" class="{{#unless hasPrevPage}}disabled{{/unless}}" aria-label="{{_ 'previous'}}")
+            i.fa.fa-chevron-left
+          span.table-view-page-info {{currentPage}} / {{totalPages}}
+          button.js-table-view-next-page(type="button" class="{{#unless hasNextPage}}disabled{{/unless}}" aria-label="{{_ 'next'}}")
+            i.fa.fa-chevron-right
+      table.my-cards-board-table
+        caption.sr-only {{currentBoard.title}}
+        thead
+          tr
+            th(scope="col")
+            th(scope="col") {{_ "card"}}
+            th(scope="col") {{_ "list"}}
+            th(scope="col") {{_ "swimlane"}}
+            unless isMiniScreen
+              th(scope="col") {{_ "assignees"}}
+              th(scope="col") {{_ "members"}}
+              th(scope="col") {{_ "labels"}}
+              if showReceivedColumn
+                th(scope="col") {{_ "card-received"}}
+              if showStartColumn
+                th(scope="col") {{_ "card-start"}}
+              if showDueColumn
+                th(scope="col") {{_ "card-due"}}
+              if showEndColumn
+                th(scope="col") {{_ "card-end"}}
+        tbody
+          each row in rows
+            tr
+              td.table-view-cell-edit
+                a.edit-card.js-table-view-edit-card(href=row.card.originRelativeUrl data-card-id=row.card._id title="{{_ 'edit'}}")
+                  i.fa.fa-pencil-square-o
+                  | {{_ 'edit'}}
+              td.table-view-cell-wrap
+                unless isMiniScreen
+                  .my-cards-board-badge(class=row.colorClass)
+                .my-cards-card-title-table
+                  +viewer
+                    = row.title
+              td.table-view-cell-wrap
+                +viewer
+                  = row.listTitle
+              td.table-view-cell-wrap
+                +viewer
+                  = row.swimlaneTitle
+              unless isMiniScreen
+                td
+                  .div
+                    each assignee in row.card.getAssignees
+                      a.name
+                        +userAvatar(userId=assignee noRemove=true)
+                td
+                  .div
+                    each member in row.card.getMembers
+                      a.name
+                        +userAvatar(userId=member noRemove=true)
+                td.table-view-cell-labels
+                  .div
+                    each label in row.labels
+                      span.card-label(class="{{labelColorClass label.color}}" style="{{labelColorStyle label.color}}" title="{{label.name}}")
+                        +viewer
+                          = label.name
+                if showReceivedColumn
+                  td.table-view-cell-date
+                    with row.card
+                      if getReceived
+                        +cardReceivedDate
+                      else
+                        if canModifyCard
+                          a.card-label.add-label.js-received-date(title="{{_ 'card-received'}}")
+                            i.fa.fa-plus
+                if showStartColumn
+                  td.table-view-cell-date
+                    with row.card
+                      if getStart
+                        +cardStartDate
+                      else
+                        if canModifyCard
+                          a.card-label.add-label.js-start-date(title="{{_ 'card-start'}}")
+                            i.fa.fa-plus
+                if showDueColumn
+                  td.table-view-cell-date
+                    with row.card
+                      if getDue
+                        +cardDueDate
+                      else
+                        if canModifyCard
+                          a.card-label.add-label.js-due-date(title="{{_ 'card-due'}}")
+                            i.fa.fa-plus
+                if showEndColumn
+                  td.table-view-cell-date
+                    with row.card
+                      if getEnd
+                        +cardEndDate
+                      else
+                        if canModifyCard
+                          a.card-label.add-label.js-end-date(title="{{_ 'card-end'}}")
+                            i.fa.fa-plus

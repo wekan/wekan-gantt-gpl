@@ -1,0 +1,219 @@
+import { ReactiveCache } from '/imports/reactiveCache';
+import { publishComposite } from 'meteor/reywood:publish-composite';
+import Boards from '/models/boards';
+import Cards from '/models/cards';
+const { hasWhere } = require('/models/lib/mongoSelectorSafety');
+const { boardCardScope } = require('/models/lib/boardCardScope');
+const { sortWithIdTiebreaker } = require('/models/lib/cardSortTiebreaker');
+const {
+  effectiveBoardCardsMode,
+  DEFAULT_LAZY_THRESHOLD,
+} = require('/models/lib/cardsLoading');
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Lazy (windowed) card loading — used only when CARDS_LOADING=lazy / Admin Panel
+// Features → "Card loading" = lazy. See server/cards-loading.js.
+//
+// In lazy mode the `board` publication does NOT ship every card. Instead each
+// list (per swimlane) subscribes to `boardCardsWindow` for just the cards it is
+// about to render (the infinite-scroll window), and to `boardListCardCount` for
+// the total count so it knows whether to show the "load more" spinner. As the
+// user scrolls the client raises the limit and re-subscribes, streaming in more
+// cards on demand. Default mode ('all') never touches these and is unchanged.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const MAX_WINDOW = 5000; // hard cap on how many cards one list window may request
+
+// hasWhere() (reject a client selector carrying $where server-side JS execution)
+// is imported from /models/lib/mongoSelectorSafety so it can be unit-tested.
+
+async function boardVisibleTo(userId, boardId) {
+  const board = await ReactiveCache.getBoard(boardId);
+  if (!board) return null;
+  if (board.permission === 'public') return board;
+  if (!userId) return null;
+  const user = await ReactiveCache.getUser(userId);
+  return board.isVisibleBy(user) ? board : null;
+}
+
+// Publish the cards of ONE list/swimlane window (client passes the exact selector
+// it renders with — listId/swimlane/filter — which we AND with the board scope),
+// plus each card's comments, attachments, checklists and checklist items.
+publishComposite('boardCardsWindow', function(boardId, cardSelector, sort, limit) {
+  // Same as the `board` publication: a bad argument from a client must end the
+  // subscription, not the server process. A falsy return publishes nothing.
+  // `Match.Any` marks each argument as checked for audit-argument-checks (which
+  // fails a publisher that did not check them all); the validation is below.
+  check(boardId, Match.Any);
+  check(cardSelector, Match.Any);
+  check(sort, Match.Any);
+  check(limit, Match.Any);
+  if (!Match.test(boardId, String) || !boardId) return;
+  if (!Match.test(cardSelector, Object)) return;
+  if (!Match.test(sort, Match.OneOf(Object, null, undefined))) return;
+  if (!Match.test(limit, Number)) return;
+
+  const userId = this.userId;
+  const lim = Math.max(1, Math.min(Math.floor(limit) || 1, MAX_WINDOW));
+  const safe = hasWhere(cardSelector) ? { _id: { $in: [] } } : cardSelector;
+  // #6511: a UNIQUE _id tiebreaker so the LIMITED published window is deterministic
+  // (equal-`sort` ties would otherwise make the "first N cards" vary between polls,
+  // feeding the client's #each an inconsistent ordered set).
+  const sortOpt = sortWithIdTiebreaker(sort || { sort: 1 });
+
+  // The window's card selector, scoped to the board. Merge the board scope with the
+  // client selector at the TOP level (rather than wrapping both in a `$and`) so
+  // `boardId`/`archived` push down to FerretDB v1 (SQLite)'s index: FerretDB does NOT
+  // push down a top-level `$and`, so the wrapped form full-scanned the whole `cards`
+  // table on every poll and the window never became ready — cards never loaded on a
+  // big (lazy) board (10.22). Merging is EXACTLY equivalent to the `$and` as long as
+  // the client selector has no own `boardId`/`archived` key (it does not — it is a
+  // per-list listId + swimlane selector); if it ever did, fall back to `$and` so the
+  // semantics stay correct. The in-Go filter remains the authority either way.
+  const safeCollides =
+    Object.prototype.hasOwnProperty.call(safe, 'boardId') ||
+    Object.prototype.hasOwnProperty.call(safe, 'archived');
+  const windowSel = board =>
+    safeCollides
+      ? { $and: [safe, { boardId: board._id, archived: false }] }
+      : { ...safe, boardId: board._id, archived: false };
+
+  // The ids of the cards in this window. Used to publish the window's comments,
+  // attachments, checklists and checklist items with ONE cursor each
+  // ({ cardId: { $in: ids } }) instead of one live cursor PER card — the same N+1
+  // that pinned FerretDB CPU on big boards in eager mode (#6480). These are
+  // recomputed whenever the client re-subscribes (scroll grows `limit`, or the
+  // filter/sort changes), which is how the window stays current. A card ADDED to
+  // the live cards cursor after subscribe still renders (its minicard); its
+  // comments/checklists refresh on the next re-subscribe — and when the card is
+  // OPENED it gets full, live children from the dedicated `openCardData`
+  // subscription (see server/publications/cards.js), so nothing is missed there.
+  const windowCardIds = async board => {
+    const cards = await ReactiveCache.getCards(
+      windowSel(board),
+      { sort: sortOpt, limit: lim, fields: { _id: 1 } },
+      false,
+    );
+    return (cards || []).map(c => c._id);
+  };
+
+  return {
+    async find() {
+      const board = await boardVisibleTo(userId, boardId);
+      if (!board) return [];
+      return Boards.find({ _id: boardId }, { fields: { _id: 1 }, limit: 1 });
+    },
+    children: [
+      // The window's cards.
+      {
+        async find(board) {
+          return await ReactiveCache.getCards(windowSel(board), { sort: sortOpt, limit: lim }, true);
+        },
+      },
+      // The window's comments — one cursor for the whole window (not per card).
+      {
+        async find(board) {
+          const ids = await windowCardIds(board);
+          if (ids.length === 0) return null;
+          return await ReactiveCache.getCardComments({ cardId: { $in: ids } }, {}, true);
+        },
+      },
+      // The window's attachments.
+      {
+        async find(board) {
+          const ids = await windowCardIds(board);
+          if (ids.length === 0) return null;
+          const result = await ReactiveCache.getAttachments({ 'meta.cardId': { $in: ids } }, {}, true);
+          return result.cursor || result;
+        },
+      },
+      // The window's checklists.
+      {
+        async find(board) {
+          const ids = await windowCardIds(board);
+          if (ids.length === 0) return null;
+          return await ReactiveCache.getChecklists({ cardId: { $in: ids } }, {}, true);
+        },
+      },
+      // The window's checklist items.
+      {
+        async find(board) {
+          const ids = await windowCardIds(board);
+          if (ids.length === 0) return null;
+          return await ReactiveCache.getChecklistItems({ cardId: { $in: ids } }, {}, true);
+        },
+      },
+    ],
+  };
+});
+
+// Reactive count of a list/swimlane window's cards, independent of the window
+// limit, published as a single doc into the client-only `boardListCardCounts`
+// collection (Meteor's standard publish-a-count pattern). The client uses it to
+// decide whether more cards remain to be scrolled in.
+Meteor.publish('boardListCardCount', async function(countId, boardId, cardSelector) {
+  check(countId, String);
+  check(boardId, String);
+  check(cardSelector, Object);
+
+  const board = await boardVisibleTo(this.userId, boardId);
+  if (!board || hasWhere(cardSelector)) {
+    return this.ready();
+  }
+
+  const sel = { $and: [cardSelector, { boardId, archived: false }] };
+  let count = 0;
+  let initializing = true;
+
+  const handle = await Cards.find(sel, { fields: { _id: 1 } }).observeChangesAsync({
+    added: () => {
+      count += 1;
+      if (!initializing) this.changed('boardListCardCounts', countId, { count });
+    },
+    removed: () => {
+      count = Math.max(0, count - 1);
+      this.changed('boardListCardCounts', countId, { count });
+    },
+  });
+
+  initializing = false;
+  this.added('boardListCardCounts', countId, { boardId, count });
+  this.ready();
+  this.onStop(() => handle.stop());
+});
+
+// Tell the client whether THIS board loads lazily, so client rendering and the
+// server board publication agree per board in 'auto' mode. Publishes a single
+// client-only `boardCardLoadingModes` doc { _id: boardId, lazy: bool }. The client
+// subscribes to this on board open and reads it in isLazyCards(boardId). Computed
+// once at subscribe (the mode only changes as a board crosses the threshold, which
+// is rare and picked up on the next board open). #6480.
+Meteor.publish('boardCardsLoadingMode', async function(boardId) {
+  // A null board id here is the same crash: this publisher is async too.
+  // Match.Any marks it checked for audit-argument-checks; the test is the guard.
+  check(boardId, Match.Any);
+  if (!Match.test(boardId, String) || !boardId) return this.ready();
+
+  const board = await boardVisibleTo(this.userId, boardId);
+  if (!board) {
+    return this.ready();
+  }
+
+  const mode = (Meteor.settings.public && Meteor.settings.public.cardsLoading) || 'auto';
+  let lazy;
+  if (mode === 'lazy') {
+    lazy = true;
+  } else if (mode === 'all') {
+    lazy = false;
+  } else {
+    const t = Number(Meteor.settings.public && Meteor.settings.public.cardsLoadingLazyThreshold);
+    const threshold = Number.isFinite(t) && t >= 0 ? t : DEFAULT_LAZY_THRESHOLD;
+    const count = await Cards.find(
+      { ...boardCardScope(board), archived: false },
+    ).countAsync();
+    lazy = effectiveBoardCardsMode('auto', count, threshold) === 'lazy';
+  }
+
+  this.added('boardCardLoadingModes', boardId, { lazy });
+  this.ready();
+});

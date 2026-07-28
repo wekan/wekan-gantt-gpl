@@ -1,0 +1,1 @@
+Moved to [SECURITY.md](../../SECURITY.md)

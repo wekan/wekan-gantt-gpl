@@ -1,0 +1,20 @@
+#!/bin/bash
+# Exit 0 if a one-time MongoDB -> FerretDB v1 migration is pending for this snap,
+# else exit 1. "Pending" = existing MongoDB (WiredTiger) data is present in
+# $SNAP_COMMON, the migration has not completed yet, and the tools to do it
+# (ferretdb binary, bundled node, the migrator script) are all available.
+MARKER="$SNAP_COMMON/.migration-to-ferretdb-done"
+DBPATH="$SNAP_COMMON"
+[ -f "$MARKER" ] && exit 1
+# Admin can pause auto-migration so WeKan keeps running on MongoDB while a migration is being
+# fixed: `snap set wekan migrate=off` (or `snap run wekan.database mongodb`). A migration that
+# FAILS also sets migrate=off automatically so it does not loop and cause downtime. Re-enable
+# and retry with `snap run wekan.migrate`.
+[ "$(snapctl get migrate 2>/dev/null)" = "off" ] && exit 1
+[ -x "$SNAP/ferretdb" ] || exit 1
+[ -x "$SNAP/bin/node" ] || exit 1
+[ -f "$SNAP/bin/migrate-mongodb-to-ferretdb.mjs" ] || exit 1
+if [ -f "$DBPATH/WiredTiger" ] || ls "$DBPATH"/collection-*.wt >/dev/null 2>&1; then
+  exit 0
+fi
+exit 1

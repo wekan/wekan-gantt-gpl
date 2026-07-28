@@ -1,11 +1,86 @@
 #!/bin/bash
 
+if [[ "$PATH" != *"$SNAP_INSTANCE_NAME"* ]]; then
+  export PATH="${PATH/\/snap\/wekan\//\/snap\/$SNAP_INSTANCE_NAME\/}"
+fi
+
 # get wekan/mongo settings
 source $SNAP/bin/wekan-read-settings
 
+# Sibling snap service prefix ("wekan", or the instance name for a parallel install).
+WEKAN_SNAP_SVC="${SNAP_INSTANCE_NAME:-${SNAP_NAME:-wekan}}"
+
+# Maintenance mode: if $SNAP_COMMON/.wekan-maintenance exists, do NOT start WeKan or touch the
+# databases. Instead serve an "under maintenance" page (HTTP 503) on the WeKan port for ALL
+# URLs, so end users see a maintenance message while an admin runs MongoDB or FerretDB by hand
+# (on DB port 27019) for data access over the MongoDB wire protocol. Toggle with
+# `snap run wekan.maintenance on|off`.
+# #6458: run bundled binaries through cpu-exec, which exec's them directly when
+# the CPU has every instruction-set feature they need and falls back to bundled
+# qemu-user when it does not (AVX masked by a hypervisor, an old CPU, ARMv8.0).
+# node and the WeKan bundle declare no required features, so this is a plain exec
+# today; it makes the launch feature-safe if that ever changes. mongodb-control
+# already does this for mongod and ferretdb-control for FerretDB. Empty (direct
+# exec) when cpu-exec is missing, e.g. an older snap revision.
+CPU_EXEC="$SNAP/bin/cpu-exec"
+[ -x "$CPU_EXEC" ] || CPU_EXEC=""
+
+if [ -f "$SNAP_COMMON/.wekan-maintenance" ]; then
+    echo "MAINTENANCE MODE (.wekan-maintenance present): serving the maintenance page instead of WeKan."
+    export PORT="${PORT:-80}"
+    # The maintenance page reads the product name from $SNAP_COMMON/.product-name (cached during
+    # normal operation) so it shows a custom Admin Panel product name, not "WeKan".
+    exec ${CPU_EXEC:+bash "$CPU_EXEC"} "$SNAP/bin/node" "$SNAP/bin/wekan-maintenance-page.mjs"
+fi
+
+# ---------------------------------------------------------------------------------------
+# Which database does WeKan use? The `database` snap setting is AUTHORITATIVE:
+#   snap set wekan database=mongodb    -> WeKan runs on MongoDB
+#   snap set wekan database=ferretdb   -> WeKan runs on FerretDB (migrated SQLite)
+# So an admin can keep WeKan working on MongoDB while a FerretDB migration is being fixed -
+# there is NO forced auto-switch to FerretDB just because a SQLite file exists. A successful
+# migration sets database=ferretdb itself (migration-control's finish_success). The ONLY
+# override is the safety guard below: never start an EMPTY FerretDB while real data still
+# lives in MongoDB (that would look like all data was lost).
+# ---------------------------------------------------------------------------------------
+FERRETDB_SQLITE_DIR="$SNAP_COMMON/files/db"
+ferretdb_has_data=false
+if bash "$SNAP/bin/ferretdb-has-data" "$FERRETDB_SQLITE_DIR"; then ferretdb_has_data=true; fi
+mongodb_has_data=false
+if [ -f "$SNAP_COMMON/WiredTiger" ] || ls "$SNAP_COMMON"/collection-*.wt >/dev/null 2>&1; then mongodb_has_data=true; fi
+echo "Database selection: setting='${DATABASE:-mongodb}' ferretdb_has_data=${ferretdb_has_data} mongodb_has_data=${mongodb_has_data}"
+
+# SAFETY: never start an EMPTY FerretDB while real data still lives in MongoDB - that would
+# look like all data was lost. Revert to MongoDB (which still has the data) and tell the admin
+# to migrate first. Only fires when database=ferretdb AND no SQLite exists AND MongoDB has data.
+if [ "ferretdb" = "$DATABASE" ] && [ "$ferretdb_has_data" != "true" ] && [ "$mongodb_has_data" = "true" ]; then
+    echo "========================================================================"
+    echo "WeKan: database=ferretdb, but no FerretDB SQLite database exists in"
+    echo "  $FERRETDB_SQLITE_DIR"
+    echo "while MongoDB data IS present. Refusing to start an EMPTY FerretDB - reverting to"
+    echo "database=mongodb so your data stays available. Run 'snap run wekan.migrate' to"
+    echo "migrate, or 'snap set wekan database=ferretdb' again once it is migrated."
+    echo "========================================================================"
+    export DATABASE="mongodb"
+    snapctl set database=mongodb 2>/dev/null || true
+fi
+
+# Bring up the chosen database service and stop the other, so exactly one runs on the
+# shared port and WeKan does not wait forever for a stopped service. snapctl start --enable
+# = snap enable + snap start; targets the snap INSTANCE name so parallel snaps hit their own.
+if [ "ferretdb" = "$DATABASE" ]; then
+    snapctl start --enable "${WEKAN_SNAP_SVC}.ferretdb" 2>/dev/null || true
+    snapctl stop --disable "${WEKAN_SNAP_SVC}.mongodb" 2>/dev/null || true
+elif [ "true" != "${DISABLE_MONGODB}" ]; then
+    snapctl start --enable "${WEKAN_SNAP_SVC}.mongodb" 2>/dev/null || true
+    snapctl stop --disable "${WEKAN_SNAP_SVC}.ferretdb" 2>/dev/null || true
+fi
+
 export NODE_PATH=$SNAP/bin
-# if possible we prefer to bind over unix socket
-if [ "nill" != "$MONGODB_BIND_UNIX_SOCKET" ] && [ "x" != "x$MONGODB_BIND_UNIX_SOCKET" ]; then
+# Use user-provided MONGO_URL if set, otherwise build from components
+if [ -n "$MONGO_URL" ]; then
+    echo "Using user-provided MONGO_URL"
+elif [ "nill" != "$MONGODB_BIND_UNIX_SOCKET" ] && [ "x" != "x$MONGODB_BIND_UNIX_SOCKET" ]; then
     if [ -d $MONGODB_BIND_UNIX_SOCKET ]; then
         export MONGO_URL="mongodb://$MONGODB_BIND_UNIX_SOCKET/mongodb-${MONGODB_PORT}.sock/wekan"
     else
@@ -13,17 +88,279 @@ if [ "nill" != "$MONGODB_BIND_UNIX_SOCKET" ] && [ "x" != "x$MONGODB_BIND_UNIX_SO
     fi
 else
     [ "x" == "x$MONGODB_BIND_IP" ] && MONGODB_BIND_IP="127.0.0.1"
-    export MONGO_URL="mongodb://$MONGODB_BIND_IP:$MONGODB_PORT/wekan"
+    # An IPv6 LITERAL has to be in brackets in a MongoDB URI - `mongodb://::1:27019/`
+    # is not a URL and the driver refuses it, so an IPv6-only database could not be
+    # reached at all (#6550). A hostname or an IPv4 address is left as it is: the
+    # test is "contains a colon", which no hostname and no IPv4 address does.
+    MONGODB_BIND_HOST="$MONGODB_BIND_IP"
+    case "$MONGODB_BIND_HOST" in
+        \[*\]) : ;;                                   # already bracketed
+        *:*) MONGODB_BIND_HOST="[$MONGODB_BIND_HOST]" ;;
+    esac
+    export MONGO_URL="mongodb://$MONGODB_BIND_HOST:$MONGODB_PORT/wekan"
+    # FerretDB v1 has no replica-set oplog, so only advertise MONGO_OPLOG_URL for
+    # real MongoDB; with FerretDB, WeKan falls back to polling automatically.
+    if [ -z "$MONGO_OPLOG_URL" ] && [ "ferretdb" != "${DATABASE}" ]; then
+        export MONGO_OPLOG_URL="mongodb://$MONGODB_BIND_HOST:$MONGODB_PORT/local?replicaSet=rs0"
+    fi
 fi
 
-# If uploads directory does not exist, create it.
-# Wekan will store attachments there.
-export WRITABLE_PATH=$SNAP_COMMON/files
-if [ ! -d $WRITABLE_PATH ]; then
-  mkdir $WRITABLE_PATH
+# #6503/#6480/#6481: FerretDB v1 CAN tail an OpLog (auto-created capped
+# local.oplog.rs + replica-set hello handshake — see bin/ferretdb-control), but
+# on the SQLite backend Meteor's tailable+awaitData OpLog tail keeps FerretDB CPU
+# pinned (reporters saw ~190–390% even idle; deleting local.sqlite* dropped it to
+# ~10%), and a struggling tail also shows up as "oplog catching up took too long"
+# and stalls board/login loading. So the DEFAULT is now POLLING ONLY. With the
+# calmer polling defaults (#6467/#6468) and the SQLite pragma tuning, poll-and-diff
+# is cheap. Opt into OpLog tailing with WEKAN_FERRETDB_OPLOG=true (snap set) if you
+# specifically want it and have verified it stays calm on your data.
+#
+# The polling settings below apply either way (they are also the OpLog fallback).
+# #6467/#6468: the Meteor defaults (re-poll 50 ms after any write, at least every
+# 10 s) hammered FerretDB; calmer defaults re-poll at most every 2 s / 30 s. Own
+# writes still show instantly (local cache); only OTHER users' changes wait ~2 s.
+if [ "ferretdb" = "${DATABASE}" ]; then
+    WEKAN_FERRETDB_OPLOG="${WEKAN_FERRETDB_OPLOG:-false}"
+    if [ "true" = "${WEKAN_FERRETDB_OPLOG}" ]; then
+        if [ -z "${MONGO_OPLOG_URL}" ]; then
+            REPL_SET_NAME="${WEKAN_FERRETDB_REPL_SET:-rs0}"
+            export MONGO_OPLOG_URL="mongodb://${MONGODB_BIND_IP:-127.0.0.1}:${MONGODB_PORT:-27019}/local?replicaSet=${REPL_SET_NAME}"
+        fi
+        # Prefer OpLog but ALWAYS keep polling as the final fallback: Meteor tries
+        # the drivers in METEOR_REACTIVITY_ORDER left-to-right and uses OpLog only
+        # when OpLog tailing actually works, otherwise polling — so a broken/absent
+        # OpLog never stops WeKan from starting. Admin Panel / Version ("Reactivity
+        # mode") shows which one is live.
+        #
+        # #6492: FerretDB v1 does NOT implement MongoDB change streams. If Meteor is
+        # told to try `changeStreams` (the snap's general default is
+        # "changeStreams,oplog,polling", so METEOR_REACTIVITY_ORDER arrives already
+        # set here and the `:-oplog,polling` fallback would NOT apply), it issues
+        # $changeStream aggregates that FerretDB rejects as "not implemented" thousands
+        # of times per second — a busy-loop that pins FerretDB CPU (100–390%) and
+        # stalls board/card loading. So force `changeStreams` OUT of the order for
+        # FerretDB, whatever it was set to, leaving oplog + polling.
+        _reactivity="${METEOR_REACTIVITY_ORDER:-oplog,polling}"
+        _reactivity="$(printf '%s' "${_reactivity}" | tr ',' '\n' | grep -vixE 'changeStreams?' | tr '\n' ',' | sed 's/,,*/,/g; s/^,//; s/,$//')"
+        [ -z "${_reactivity}" ] && _reactivity="oplog,polling"
+        export METEOR_REACTIVITY_ORDER="${_reactivity}"
+        export DEFAULT_METEOR_REACTIVITY_ORDER="oplog,polling"
+        echo "FerretDB OpLog enabled (polling fallback): MONGO_OPLOG_URL=${MONGO_OPLOG_URL} METEOR_REACTIVITY_ORDER=${METEOR_REACTIVITY_ORDER}"
+    else
+        # Polling only — never change streams (FerretDB does not implement them, #6492).
+        # #6498: also UNSET MONGO_OPLOG_URL. Merely having it set makes Meteor start an
+        # OpLog tail at boot (a tailable+awaitData cursor on local.oplog.rs) regardless of
+        # the reactivity order, and that tail polls FerretDB continuously — pinning CPU
+        # even with no clients. Clearing it guarantees "polling only" truly does no OpLog
+        # tailing.
+        unset MONGO_OPLOG_URL
+        export METEOR_REACTIVITY_ORDER="polling"
+        export DEFAULT_METEOR_REACTIVITY_ORDER="polling"
+        echo "FerretDB OpLog disabled (WEKAN_FERRETDB_OPLOG=false): polling only, MONGO_OPLOG_URL cleared"
+    fi
+    [ -z "${METEOR_POLLING_THROTTLE_MS}" ] && export METEOR_POLLING_THROTTLE_MS=2000
+    [ -z "${METEOR_POLLING_INTERVAL_MS}" ] && export METEOR_POLLING_INTERVAL_MS=30000
+    echo "FerretDB polling settings: METEOR_POLLING_THROTTLE_MS=${METEOR_POLLING_THROTTLE_MS} METEOR_POLLING_INTERVAL_MS=${METEOR_POLLING_INTERVAL_MS}"
 fi
+
+# If WRITABLE_PATH is not set, use $SNAP_COMMON/files
+# Wekan will store attachments there.
+if [ -z "$WRITABLE_PATH" ]; then
+    export WRITABLE_PATH="$SNAP_COMMON/files"
+fi
+# Create attachments and avatars directories
+mkdir -p "$WRITABLE_PATH/attachments"
+mkdir -p "$WRITABLE_PATH/avatars"
+echo -e "Using WRITABLE_PATH: $WRITABLE_PATH"
 
 echo -e "MONGO_URL=$MONGO_URL"
+
+# #6546: WeKan listens where BIND_IP says. Meteor reads BIND_IP itself, so this
+# only has to pass it on - and only when it is set, so the default (0.0.0.0, IPv4)
+# is unchanged for everyone who does not ask for something else. `::` is the
+# IPv6 wildcard, which on a dual-stack host also accepts IPv4.
+if [ -n "$BIND_IP" ]; then
+    export BIND_IP
+    echo -e "BIND_IP=$BIND_IP"
+fi
+
+# The readiness checks below use db-eval (the bundled Node.js 24 + the `mongodb`
+# driver from the WeKan bundle), so there is no mongosh binary — nothing to install
+# and nothing phoning home. db-eval speaks the wire protocol to both FerretDB v1
+# and MongoDB 6/7.
+DB_EVAL="$SNAP/bin/db-eval"
+MONGO_PORT="${MONGODB_PORT:-27019}"
+MONGO_HOST="${MONGODB_BIND_IP:-127.0.0.1}"
+# Bracketed for the same reason as MONGO_URL above (#6550): the readiness probe
+# builds a URI too, and an unbracketed IPv6 literal makes it wait forever on a
+# URL the driver cannot parse.
+case "$MONGO_HOST" in
+    \[*\]) : ;;
+    *:*) MONGO_HOST="[$MONGO_HOST]" ;;
+esac
+# directConnection so admin commands reach this exact node (also before a replica
+# set is initiated).
+DB_URL="mongodb://${MONGO_HOST}:${MONGO_PORT}/?directConnection=true"
+
+if [ "ferretdb" = "${DATABASE}" ]; then
+    # FerretDB v1 has no replica set / oplog — just wait until it accepts
+    # connections, then start WeKan (which uses polling for reactivity).
+    # Make sure the FerretDB service is actually enabled and running first; if it was
+    # left stopped/disabled (failed migration hand-off, manual stop, crash) enable and
+    # start it now (snapctl start --enable = snap enable + snap start) so WeKan does not
+    # wait here forever.
+    snapctl start --enable "${WEKAN_SNAP_SVC}.ferretdb" 2>/dev/null || true
+    echo "Waiting for FerretDB to accept connections on ${MONGO_HOST}:${MONGO_PORT}..."
+    # #6476: after WEKAN_DB_WAIT_TIMEOUT seconds (default 120) print diagnostics
+    # once, then keep retrying. Without this the loop was silent and infinite:
+    # WeKan does NOT open its web port until FerretDB answers, so if FerretDB
+    # never starts listening (a crashed/incompatible per-arch binary, a locked or
+    # corrupt SQLite file, a failed migration hand-off) WeKan blocks HERE forever
+    # and the only symptom is "port not open, no clue why". Mirrors the MongoDB
+    # branch below.
+    WEKAN_DB_WAIT_TIMEOUT=${WEKAN_DB_WAIT_TIMEOUT:-120}
+    db_waited=0
+    db_hint_shown=false
+    until "$DB_EVAL" ping "$DB_URL" >/dev/null 2>&1; do
+        if [ "$db_hint_shown" != "true" ] && [ "$db_waited" -ge "$WEKAN_DB_WAIT_TIMEOUT" ]; then
+            echo ""
+            echo "========================================================================"
+            echo "WeKan: FerretDB still not accepting connections on ${MONGO_HOST}:${MONGO_PORT}."
+            echo ""
+            echo "WeKan will NOT open its web port until FerretDB answers, so it is"
+            echo "waiting here. The FerretDB service can show as 'active' yet have"
+            echo "crashed or never started listening."
+            echo ""
+            echo "Check the FerretDB log for the real reason:"
+            echo "  snap logs ${WEKAN_SNAP_SVC}.ferretdb"
+            echo ""
+            echo "Common causes after a snap update:"
+            echo "  - the bundled FerretDB binary cannot run on this CPU/architecture"
+            echo "    ('exec format error' in the log) - report your 'snap version' and"
+            echo "    CPU architecture to WeKan."
+            echo "  - a locked or corrupt SQLite database under:"
+            echo "      $FERRETDB_SQLITE_DIR"
+            echo "  - FerretDB left disabled/stopped (a failed migration hand-off):"
+            echo "      snap start --enable ${WEKAN_SNAP_SVC}.ferretdb"
+            echo ""
+            echo "To keep working on MongoDB instead while this is sorted out:"
+            echo "  snap set ${SNAP_NAME:-wekan} database=mongodb"
+            echo ""
+            echo "Attachments and avatars are stored ON DISK under WRITABLE_PATH, NOT"
+            echo "in the database ($SNAP_COMMON/files), so they are safe."
+            echo "========================================================================"
+            echo ""
+            db_hint_shown=true
+        fi
+        echo "FerretDB not ready yet, retrying in 5 seconds..."
+        sleep 5
+        db_waited=$((db_waited + 5))
+    done
+    echo "FerretDB is ready."
+    # #6473: SELF-HEALING attachments. Older MongoDB -> FerretDB migrations silently
+    # lost attachments/avatars (CollectionFS copies.<bucket>.key was never resolved;
+    # gridFsFileId-only Meteor-Files records were skipped). The MongoDB source data
+    # was never modified, so everything is recoverable: run an automatic, INCREMENTAL
+    # files-only repair in the background — it verifies what is already migrated,
+    # migrates only what is missing, never touches text data, runs once (marker
+    # $SNAP_COMMON/.attachments-files-v2-done) and never blocks WeKan from starting.
+    bash "$SNAP/bin/attachment-repair" > "$SNAP_COMMON/attachment-repair.log" 2>&1 &
+elif [ "true" != "${DISABLE_MONGODB}" ]; then
+    # Make sure the MongoDB service is enabled and running first; if it was left
+    # stopped/disabled, enable and start it now so WeKan does not wait here forever.
+    snapctl start --enable "${WEKAN_SNAP_SVC}.mongodb" 2>/dev/null || true
+    # Wait for MongoDB replica set primary to be ready before starting WeKan.
+    # With changeStreams, Meteor requires the replica set primary to be elected.
+    # Large databases can take minutes to replay the WiredTiger journal after a snap update.
+    echo "Waiting for MongoDB replica set primary..."
+    # After WEKAN_DB_WAIT_TIMEOUT seconds (default 120) print the English upgrade
+    # guidance once, then keep retrying (large databases can take minutes to
+    # replay the WiredTiger journal after a snap update).
+    WEKAN_DB_WAIT_TIMEOUT=${WEKAN_DB_WAIT_TIMEOUT:-120}
+    db_waited=0
+    db_hint_shown=false
+    until "$DB_EVAL" primary "$DB_URL" >/dev/null 2>&1; do
+        if [ "$db_hint_shown" != "true" ] && [ "$db_waited" -ge "$WEKAN_DB_WAIT_TIMEOUT" ]; then
+            echo ""
+            echo "========================================================================"
+            echo "WeKan: still cannot connect to MongoDB."
+            echo ""
+            echo "If you just upgraded WeKan or MongoDB, the existing database may have"
+            echo "been created by an OLDER MongoDB version that the new MongoDB cannot"
+            echo "open, so MongoDB never finishes starting and WeKan keeps waiting here."
+            echo ""
+            echo "Upgrade the database - dump with the old version, restore with the new:"
+            echo "  1. Start the OLD, previously-working MongoDB version."
+            echo "  2. Back up:   mongodump --archive=wekan.archive --gzip"
+            echo "  3. Stop old MongoDB. Start the NEW MongoDB on an EMPTY data dir."
+            echo "  4. Restore:   mongorestore --archive=wekan.archive --gzip --drop"
+            echo "  5. Start WeKan again."
+            echo ""
+            echo "Attachments and avatars are stored ON DISK under WRITABLE_PATH, NOT"
+            echo "in MongoDB, so when moving to a new server ALSO copy that whole"
+            echo "directory (it contains 'files', 'attachments' and 'avatars'):"
+            echo "  - Snap:   $SNAP_COMMON/files"
+            echo "  - Docker: the 'wekan-files' volume mounted at /data"
+            echo "  - Source: the WRITABLE_PATH you configured"
+            echo ""
+            echo "Also check the MongoDB log (snap logs ${SNAP_NAME:-wekan}.mongodb) for"
+            echo "the real reason: incompatible featureCompatibilityVersion, wrong mongod"
+            echo "version, or an unclean shutdown needing 'mongod --repair'."
+            echo "========================================================================"
+            echo ""
+            db_hint_shown=true
+        fi
+        # #6525: the database may have been switched to FerretDB WHILE we wait here.
+        # A migration that finishes mid-wait stops MongoDB for good, so continuing to
+        # wait for it is waiting for something that is never coming back — the site
+        # stays on 503 until an admin runs `snap restart wekan` by hand. The
+        # migration does restart us, but that restart is the LAST step of a script
+        # that is itself being stopped, so it must not be the only thing that can get
+        # us out of this loop: notice the switch ourselves and re-exec onto FerretDB.
+        if [ "ferretdb" = "$(snapctl get database 2>/dev/null)" ]; then
+            echo "database is now set to ferretdb (migration finished while WeKan was waiting for MongoDB); restarting onto FerretDB."
+            exec "$0" "$@"
+        fi
+        echo "MongoDB not ready yet, retrying in 5 seconds..."
+        sleep 5
+        db_waited=$((db_waited + 5))
+    done
+    echo "MongoDB replica set primary is ready."
+fi
+
+# Cache the Admin Panel product name to $SNAP_COMMON/.productname.txt while the database is up,
+# so the maintenance page can show a custom product name later when BOTH databases are stopped.
+# Best-effort; only overwrite when a non-empty name is returned (otherwise keep the last known).
+_pn="$("$DB_EVAL" product-name "$DB_URL" 2>/dev/null | head -n1)"
+if [ -n "$_pn" ]; then
+    printf '%s\n' "$_pn" > "$SNAP_COMMON/.productname.txt" 2>/dev/null || true
+fi
+
+# #6492: if a data recovery is in progress (ferretdb-control wrote this marker during a
+# restore/re-migrate of the text-data database), serve the standalone recovery page on
+# the web port for a SHORT grace window while the just-restored FerretDB comes back up,
+# then start WeKan. WeKan itself then shows the in-app recovery spinner (driven by the
+# same marker) until it has health-probed the database and cleared the marker — so the
+# user sees a continuous maintenance UI and never a bare connection error. The static
+# page here is only a brief bridge; it is time-bounded so it can never block WeKan (the
+# server, not this script, clears the marker). Reuses wekan-maintenance-page.mjs with a
+# "recovering data" wording.
+RECOVERY_MARKER="$SNAP_COMMON/files/db/RECOVERY_IN_PROGRESS"
+if [ -f "$RECOVERY_MARKER" ]; then
+    _rgrace="${WEKAN_RECOVERY_BRIDGE_SECONDS:-20}"
+    echo "RECOVERY IN PROGRESS ($RECOVERY_MARKER present): bridging with the recovery page for up to ${_rgrace}s before starting WeKan."
+    WEKAN_MAINTENANCE_REASON=recovery ${CPU_EXEC:+bash "$CPU_EXEC"} "$SNAP/bin/node" "$SNAP/bin/wekan-maintenance-page.mjs" &
+    _mp_pid=$!
+    _rwait=0
+    while [ -f "$RECOVERY_MARKER" ] && [ "$_rwait" -lt "$_rgrace" ]; do
+        sleep 2
+        _rwait=$((_rwait + 2))
+    done
+    kill "$_mp_pid" 2>/dev/null || true
+    wait "$_mp_pid" 2>/dev/null || true
+    echo "Starting WeKan; its in-app recovery spinner takes over until the database is verified healthy."
+fi
+
 APPLICATION_DIRECTORY=$SNAP
 APPLICATION_START=main.js
 cd $APPLICATION_DIRECTORY
@@ -36,4 +373,5 @@ cd $APPLICATION_DIRECTORY
 #   bash -c "ulimit -s 65500; exec node --stack-size=65500 main.js"
 #---------------------------------------------------------------------
 #bash -c "ulimit -s 65500; exec $NODE_PATH/node --stack-size=65500 $APPLICATION_START"
-bash -c "ulimit -s 65500; exec $NODE_PATH/node $APPLICATION_START"
+#bash -c "ulimit -s 65500; exec $NODE_PATH/node --stack-size=65500 --max-old-space-size=8192 $APPLICATION_START"
+bash -c "ulimit -s 65500; exec ${CPU_EXEC:+bash \"$CPU_EXEC\"} $NODE_PATH/node $APPLICATION_START"

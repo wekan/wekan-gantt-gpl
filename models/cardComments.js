@@ -1,8 +1,53 @@
+import { Meteor } from 'meteor/meteor';
+import { Mongo } from 'meteor/mongo';
 import { ReactiveCache } from '/imports/reactiveCache';
 import escapeForRegex from 'escape-string-regexp';
-import DOMPurify from 'dompurify';
+import Boards from '/models/boards';
+import CardCommentReactions from '/models/cardCommentReactions';
+const { SimpleSchema } = require('/imports/simpleSchema');
 
-CardComments = new Mongo.Collection('card_comments');
+// Server-side text sanitization function
+function sanitizeText(text) {
+  if (typeof text !== 'string') return text;
+  // Strip HTML tags and return only text content.
+  // Repeat replacement until stable to avoid incomplete multi-character sanitization.
+  let sanitized = text;
+  let previous;
+  do {
+    previous = sanitized;
+    sanitized = sanitized.replace(/<[^>]*>/g, '');
+  } while (sanitized !== previous);
+  return sanitized;
+}
+
+const CardComments = new Mongo.Collection('card_comments');
+
+/**
+ * Pure permission decision for editing/deleting a comment.
+ *
+ * Kept as a standalone exported function so it can be unit-tested in isolation
+ * and reused by both the collection hooks (server) and the UI (client).
+ *
+ * @param {Object} opts
+ * @param {boolean} opts.isAuthor               is the acting user the comment author?
+ * @param {boolean} opts.isBoardAdmin           is the acting user a board admin?
+ * @param {boolean} opts.restrictCommentEditing board setting: when true, board
+ *                                               admins may NOT edit/delete comments
+ *                                               authored by others.
+ * @returns {boolean} whether the acting user may edit/delete the comment.
+ */
+export function canEditComment({ isAuthor, isBoardAdmin, restrictCommentEditing }) {
+  // The author may always edit/delete their own comment.
+  if (isAuthor) {
+    return true;
+  }
+  // When editing is restricted, admins lose the ability to touch others' comments.
+  if (restrictCommentEditing) {
+    return false;
+  }
+  // Default (unrestricted) behaviour: board admins may edit/delete others' comments.
+  return !!isBoardAdmin;
+}
 
 /**
  * A comment on a card
@@ -28,12 +73,20 @@ CardComments.attachSchema(
        */
       type: String,
     },
+    parentId: {
+      /**
+       * the _id of the comment this comment is a reply to (threaded replies).
+       * Optional: top-level comments have no parentId.
+       */
+      type: String,
+      optional: true,
+      defaultValue: '',
+    },
     createdAt: {
       /**
        * when was the comment created
        */
       type: Date,
-      denyUpdate: false,
       // eslint-disable-next-line consistent-return
       autoValue() {
         if (this.isInsert) {
@@ -47,7 +100,6 @@ CardComments.attachSchema(
     },
     modifiedAt: {
       type: Date,
-      denyUpdate: false,
       // eslint-disable-next-line consistent-return
       autoValue() {
         if (this.isInsert || this.isUpsert || this.isUpdate) {
@@ -73,28 +125,31 @@ CardComments.attachSchema(
   }),
 );
 
-CardComments.allow({
-  insert(userId, doc) {
-    return allowIsBoardMember(userId, ReactiveCache.getBoard(doc.boardId));
-  },
-  update(userId, doc) {
-    return userId === doc.userId || allowIsBoardAdmin(userId, ReactiveCache.getBoard(doc.boardId));
-  },
-  remove(userId, doc) {
-    return userId === doc.userId || allowIsBoardAdmin(userId, ReactiveCache.getBoard(doc.boardId));
-  },
-  fetch: ['userId', 'boardId'],
-});
-
 CardComments.helpers({
-  copy(newCardId) {
+  copy(newCardId, newBoardId) {
     this.cardId = newCardId;
+    // #5166: when a card is copied to another board, the copied comments must
+    // belong to the destination board too. Without this they kept the source
+    // board's boardId, so permission checks (which key off the comment's
+    // boardId) and any board-scoped queries used the wrong board. The author
+    // (userId) is intentionally preserved.
+    if (newBoardId) {
+      this.boardId = newBoardId;
+    }
     delete this._id;
-    CardComments.insert(this);
+    return CardComments.insertAsync(this);
   },
 
   user() {
     return ReactiveCache.getUser(this.userId);
+  },
+
+  // The comment this one replies to, or undefined for top-level comments.
+  parentComment() {
+    if (!this.parentId) {
+      return undefined;
+    }
+    return ReactiveCache.getCardComment(this.parentId);
   },
 
   reactions() {
@@ -103,7 +158,7 @@ CardComments.helpers({
   },
 
   toggleReaction(reactionCodepoint) {
-    if (reactionCodepoint !== DOMPurify.sanitize(reactionCodepoint)) {
+    if (reactionCodepoint !== sanitizeText(reactionCodepoint)) {
       return false;
     } else {
 
@@ -131,9 +186,9 @@ CardComments.helpers({
 
       // If no reaction doc exists yet create otherwise update reaction set
       if (!!cardCommentReactions) {
-        return CardCommentReactions.update({ _id: cardCommentReactions._id }, { $set: { reactions } });
+        return CardCommentReactions.updateAsync({ _id: cardCommentReactions._id }, { $set: { reactions } });
       } else {
-        return CardCommentReactions.insert({
+        return CardCommentReactions.insertAsync({
           boardId: this.boardId,
           cardCommentId: this._id,
           cardId: this.cardId,
@@ -146,9 +201,50 @@ CardComments.helpers({
 
 CardComments.hookOptions.after.update = { fetchPrevious: false };
 
-function commentCreation(userId, doc) {
-  const card = ReactiveCache.getCard(doc.cardId);
-  Activities.insert({
+if (Meteor.isServer) {
+  // Server-side enforcement of comment edit/delete permissions (issue #5906).
+  //
+  // The DDP `allow` rule in server/permissions/cardComments.js is the first
+  // gate, but the per-board `restrictCommentEditing` setting is enforced here
+  // so the rule cannot be bypassed and the decision lives next to the data.
+  const assertCanMutateComment = async (userId, doc) => {
+    // Server-internal operations (board copy, cleanup, migrations, etc.) run
+    // without an authenticated user; do not block those here. User-initiated
+    // DDP calls always carry a userId and are still gated by the allow rule.
+    if (!userId) {
+      return;
+    }
+    const isAuthor = userId === doc.userId;
+    if (isAuthor) {
+      return; // Authors may always edit/delete their own comments.
+    }
+    const board = await Boards.findOneAsync(doc.boardId);
+    const isBoardAdmin = !!board && !!userId && board.hasAdmin(userId);
+    const restrictCommentEditing = !!board && !!board.restrictCommentEditing;
+    if (!canEditComment({ isAuthor, isBoardAdmin, restrictCommentEditing })) {
+      throw new Meteor.Error(
+        'error-comment-edit-not-allowed',
+        "You are not allowed to edit or delete another user's comment on this board.",
+      );
+    }
+  };
+
+  CardComments.before.update(async (userId, doc) => {
+    await assertCanMutateComment(userId, doc);
+  });
+
+  CardComments.before.remove(async (userId, doc) => {
+    await assertCanMutateComment(userId, doc);
+  });
+}
+
+async function commentCreation(userId, doc) {
+  const card = await ReactiveCache.getCard(doc.cardId);
+  if (!card) {
+    console.warn('[commentCreation] Card not found for cardId:', doc.cardId, '— skipping activity insert.');
+    return;
+  }
+  await Activities.insertAsync({
     userId,
     activityType: 'addComment',
     boardId: doc.boardId,
@@ -159,9 +255,9 @@ function commentCreation(userId, doc) {
   });
 }
 
-CardComments.textSearch = (userId, textArray) => {
+CardComments.textSearch = async (userId, textArray) => {
   const selector = {
-    boardId: { $in: Boards.userBoardIds(userId) },
+    boardId: { $in: await Boards.userBoardIds(userId) },
     $and: [],
   };
 
@@ -172,7 +268,7 @@ CardComments.textSearch = (userId, textArray) => {
   // eslint-disable-next-line no-console
   // console.log('cardComments selector:', selector);
 
-  const comments = ReactiveCache.getCardComments(selector);
+  const comments = await ReactiveCache.getCardComments(selector);
   // eslint-disable-next-line no-console
   // console.log('count:', comments.count());
   // eslint-disable-next-line no-console
@@ -180,210 +276,5 @@ CardComments.textSearch = (userId, textArray) => {
 
   return comments;
 };
-
-if (Meteor.isServer) {
-  // Comments are often fetched within a card, so we create an index to make these
-  // queries more efficient.
-  Meteor.startup(() => {
-    CardComments._collection.createIndex({ modifiedAt: -1 });
-    CardComments._collection.createIndex({ cardId: 1, createdAt: -1 });
-  });
-
-  CardComments.after.insert((userId, doc) => {
-    commentCreation(userId, doc);
-  });
-
-  CardComments.after.update((userId, doc) => {
-    const card = ReactiveCache.getCard(doc.cardId);
-    Activities.insert({
-      userId,
-      activityType: 'editComment',
-      boardId: doc.boardId,
-      cardId: doc.cardId,
-      commentId: doc._id,
-      listId: card.listId,
-      swimlaneId: card.swimlaneId,
-    });
-  });
-
-  CardComments.before.remove((userId, doc) => {
-    const card = ReactiveCache.getCard(doc.cardId);
-    Activities.insert({
-      userId,
-      activityType: 'deleteComment',
-      boardId: doc.boardId,
-      cardId: doc.cardId,
-      commentId: doc._id,
-      listId: card.listId,
-      swimlaneId: card.swimlaneId,
-    });
-    const activity = ReactiveCache.getActivity({ commentId: doc._id });
-    if (activity) {
-      Activities.remove(activity._id);
-    }
-  });
-}
-
-//CARD COMMENT REST API
-if (Meteor.isServer) {
-  /**
-   * @operation get_all_comments
-   * @summary Get all comments attached to a card
-   *
-   * @param {string} boardId the board ID of the card
-   * @param {string} cardId the ID of the card
-   * @return_type [{_id: string,
-   *                comment: string,
-   *                authorId: string}]
-   */
-  JsonRoutes.add('GET', '/api/boards/:boardId/cards/:cardId/comments', function (
-    req,
-    res,
-  ) {
-    try {
-      const paramBoardId = req.params.boardId;
-      const paramCardId = req.params.cardId;
-      Authentication.checkBoardAccess(req.userId, paramBoardId);
-      JsonRoutes.sendResult(res, {
-        code: 200,
-        data: ReactiveCache.getCardComments({
-          boardId: paramBoardId,
-          cardId: paramCardId,
-        }).map(function (doc) {
-          return {
-            _id: doc._id,
-            comment: doc.text,
-            authorId: doc.userId,
-          };
-        }),
-      });
-    } catch (error) {
-      JsonRoutes.sendResult(res, {
-        code: 200,
-        data: error,
-      });
-    }
-  });
-
-  /**
-   * @operation get_comment
-   * @summary Get a comment on a card
-   *
-   * @param {string} boardId the board ID of the card
-   * @param {string} cardId the ID of the card
-   * @param {string} commentId the ID of the comment to retrieve
-   * @return_type CardComments
-   */
-  JsonRoutes.add(
-    'GET',
-    '/api/boards/:boardId/cards/:cardId/comments/:commentId',
-    function (req, res) {
-      try {
-        const paramBoardId = req.params.boardId;
-        const paramCommentId = req.params.commentId;
-        const paramCardId = req.params.cardId;
-        Authentication.checkBoardAccess(req.userId, paramBoardId);
-        JsonRoutes.sendResult(res, {
-          code: 200,
-          data: ReactiveCache.getCardComment({
-            _id: paramCommentId,
-            cardId: paramCardId,
-            boardId: paramBoardId,
-          }),
-        });
-      } catch (error) {
-        JsonRoutes.sendResult(res, {
-          code: 200,
-          data: error,
-        });
-      }
-    },
-  );
-
-  /**
-   * @operation new_comment
-   * @summary Add a comment on a card
-   *
-   * @param {string} boardId the board ID of the card
-   * @param {string} cardId the ID of the card
-   * @param {string} authorId the user who 'posted' the comment
-   * @param {string} text the content of the comment
-   * @return_type {_id: string}
-   */
-  JsonRoutes.add(
-    'POST',
-    '/api/boards/:boardId/cards/:cardId/comments',
-    function (req, res) {
-      try {
-        const paramBoardId = req.params.boardId;
-        const paramCardId = req.params.cardId;
-        Authentication.checkBoardAccess(req.userId, paramBoardId);
-        const id = CardComments.direct.insert({
-          userId: req.body.authorId,
-          text: req.body.comment,
-          cardId: paramCardId,
-          boardId: paramBoardId,
-        });
-
-        JsonRoutes.sendResult(res, {
-          code: 200,
-          data: {
-            _id: id,
-          },
-        });
-
-        const cardComment = ReactiveCache.getCardComment({
-          _id: id,
-          cardId: paramCardId,
-          boardId: paramBoardId,
-        });
-        commentCreation(req.body.authorId, cardComment);
-      } catch (error) {
-        JsonRoutes.sendResult(res, {
-          code: 200,
-          data: error,
-        });
-      }
-    },
-  );
-
-  /**
-   * @operation delete_comment
-   * @summary Delete a comment on a card
-   *
-   * @param {string} boardId the board ID of the card
-   * @param {string} cardId the ID of the card
-   * @param {string} commentId the ID of the comment to delete
-   * @return_type {_id: string}
-   */
-  JsonRoutes.add(
-    'DELETE',
-    '/api/boards/:boardId/cards/:cardId/comments/:commentId',
-    function (req, res) {
-      try {
-        const paramBoardId = req.params.boardId;
-        const paramCommentId = req.params.commentId;
-        const paramCardId = req.params.cardId;
-        Authentication.checkBoardAccess(req.userId, paramBoardId);
-        CardComments.remove({
-          _id: paramCommentId,
-          cardId: paramCardId,
-          boardId: paramBoardId,
-        });
-        JsonRoutes.sendResult(res, {
-          code: 200,
-          data: {
-            _id: paramCardId,
-          },
-        });
-      } catch (error) {
-        JsonRoutes.sendResult(res, {
-          code: 200,
-          data: error,
-        });
-      }
-    },
-  );
-}
 
 export default CardComments;

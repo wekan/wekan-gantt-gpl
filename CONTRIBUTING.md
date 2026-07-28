@@ -1,23 +1,50 @@
+## About money
+
+Not paid:
+
+- Money is not paid for these, everyone uses their own time at their own cost:
+  - Security reports, see [SECURITY.md](SECURITY.md)
+  - Pull requests
+  - xet7 checking pull requests
+  - This is because full-featured WeKan FLOSS kanban with MIT license is free to use
+    also for Commercial Use without any payment, with full source code at
+    https://github.com/wekan/wekan for all platforms at https://wekan.fi/install/ .
+    There is nothing proprietary. WeKan is NOT Big Tech.
+    WeKan is maintained by https://github.com/xet7 at Finland https://wekan.fi .     
+- Public FLOSS Developer Community Support:
+  - https://github.com/wekan/wekan/issues
+
+Paid by customers of WeKan to WeKan:
+
+- Optional Private Paid Commercial Support at https://wekan.fi/commercial-support/
+  - Optional Paid Support/Features/Fixes/PrivateChat . All Paid Features and Fixes are added directly to FLOSS WeKan https://github.com/wekan/wekan
+  - Optional Paid Official SaaS Hosting https://wekan.fi/saas/ , if you need full-featured hosting, that is more than free app https://wekan.fi/app/
+
 ## Contributing Security related
 
-For responsible security disclosure, please follow this process:
-https://github.com/wekan/wekan/blob/main/SECURITY.md
+For responsible security disclosure, please follow this process: [SECURITY.md](SECURITY.md)
 
-CVE Hall of Fame is at https://wekan.github.io/hall-of-fame/
+CVE Hall of Fame is at https://wekan.fi/hall-of-fame/
 
 ## Contributing to Documentation Wiki
 
-Please clone wiki:
-```
-git clone https://github.com/wekan/wekan.wiki
-```
-Edit .md files, and add changed files in .zip attachment
-directly to comment of new issue at
-https://github.com/wekan/wekan/issues 
+Fork WeKan repo https://github.com/wekan/wekan ,
+edit `docs` directory content at GitHub web interface,
+and click send PR.
 
 ## Contributing code
 
-[Building WeKan and sending PR](https://github.com/wekan/wekan/wiki/Emoji).
+Use build.sh to run all tests to verify you don't break any features, before sending PR.
+
+Only send one feature or fix at one PR. Do not add many unrelated changes.
+
+Only send those changed code lines, that are related to your one feature or fix.
+
+Do not format unrelated code. Do not use code formatting or linting like eslist or prettier.
+
+Send your code ASAP, because there are daily releases of WeKan with major features and fixes added.
+
+[Building WeKan and sending PR](https://github.com/wekan/wekan/blob/main/docs/DeveloperDocs/Build-and-Create-Pull-Request.md).
 
 WeKan code contributors Hall of Fame is at ChangeLog, where
 GitHub usernames are mentioned with changes added:
@@ -28,13 +55,9 @@ Changes can be like typo fixes, bugfixes, features, or anything else
 like for example at open GitHub issues https://github.com/wekan/wekan/issues .
 Closed issues are already fixed or implemented.
 
-Also see other docs at wiki, for example:
+Also see other docs:
 
-https://github.com/wekan/wekan/wiki/Developer-Documentation
-
-Do not use code formatting or linting like eslist or prettier.
-
-Only send minimal changed code lines, that are related to feature or fix.
+https://github.com/wekan/wekan/tree/main/docs/DeveloperDocs
 
 WeKan code has MIT license.
 
@@ -42,13 +65,13 @@ About 300 persons have contributed to WeKan, stats at:
 
 https://www.openhub.net/p/wekan
 
-WeKan maintainer xet7 checks PR for typos etc before accepting to WeKan,
+WeKan maintainer xet7 reviews PR for typos etc before accepting to WeKan,
 so that WeKan code will still work OK.
 
 ## Contributing translations
 
 Non-English translations are contributed only at
-https://transifex.com/wekan/wekan
+https://app.transifex.com/wekan/wekan
 
 When adding new features, in your PR to
 https://github.com/wekan/wekan/pulls
@@ -62,12 +85,10 @@ new release.
 
 ## About WeKan Organization https://github.com/wekan
 
-xet7 rarely adds any new members to GitHub Organization,
-because xet7 prefers to check PRs.
+Only xet7 has write access to WeKan Organization.
 
-For some repos (other than https://github.com/wekan/wekan ),
-some contributors have direct commit access.
+xet7 reviews all PRs before merging.
 
-Some contributors are mentioned at this outdated page:
+There has been over 300 contributors to WeKan, newest stats at:
 
-https://github.com/wekan/wekan/wiki/Team
+https://www.openhub.net/p/wekan

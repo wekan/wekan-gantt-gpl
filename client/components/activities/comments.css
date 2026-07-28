@@ -6,7 +6,7 @@
   opacity: 0.7;
   position: absolute;
   top: 1px;
-  left: -38px;
+  inset-inline-start: -38px;
 }
 .new-comment.is-open .member {
   opacity: 1;
@@ -62,4 +62,122 @@
 .comment-item.add-comment a {
   display: block;
   margin: auto;
+}
+.comments {
+  clear: both;
+}
+.comments .comment {
+  margin: 0.5px 0;
+  padding: 6px 0;
+  display: flex;
+}
+.comments .comment .member {
+  width: 32px;
+  height: 32px;
+}
+.comments .comment .comment-member {
+  font-weight: 700;
+}
+.comments .comment .comment-desc {
+  word-wrap: break-word;
+  overflow: hidden;
+  flex: 1;
+  align-self: center;
+  margin: 0;
+  margin-inline-start: 3px;
+  overflow: hidden;
+  word-break: break-word;
+}
+.comments .comment .comment-desc .comment-text {
+  display: block;
+  border-radius: 3px;
+  background: #fff;
+  text-decoration: none;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  margin-top: 5px;
+  padding: 5px;
+}
+.comments .comment .comment-desc .reactions {
+  display: flex;
+  margin-top: 5px;
+  gap: 5px;
+}
+.comments .comment .comment-desc .reactions .open-comment-reaction-popup {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  height: 24px;
+}
+.comments .comment .comment-desc .reactions .open-comment-reaction-popup span {
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  margin-inline-start: 4px;
+}
+.comments .comment .comment-desc .reactions .reaction {
+  cursor: pointer;
+  border: 1px solid #808080;
+  border-radius: 15px;
+  display: flex;
+  padding: 2px 5px;
+}
+.comments .comment .comment-desc .reactions .reaction.selected {
+  background-color: #b0c4de;
+}
+.comments .comment .comment-desc .reactions .reaction:hover {
+  background-color: #b0c4de;
+}
+.comments .comment .comment-desc .reactions .reaction .reaction-count {
+  font-size: 12px;
+}
+.comments .comment .comment-desc .comment-meta {
+  font-size: 0.8em;
+  color: #999;
+}
+/* Threaded replies (issue #5907): indent replies under their parent. */
+.comments .comment.is-reply {
+  margin-inline-start: 24px;
+  border-inline-start: 2px solid #e0e0e0;
+  padding-inline-start: 8px;
+}
+.comments .comment .comment-desc .comment-in-reply-to {
+  font-size: 0.8em;
+  color: #999;
+  border-inline-start: 2px solid #ccc;
+  padding-inline-start: 6px;
+  margin: 3px 0;
+  display: block;
+}
+.comments .comment .comment-desc .comment-in-reply-to .comment-in-reply-to-label {
+  font-weight: 700;
+  margin-inline-end: 4px;
+}
+.comments .comment .comment-desc .comment-in-reply-to .comment-in-reply-to-text {
+  font-style: italic;
+}
+/* "In reply to" banner above the new-comment form. */
+.new-comment .comment-reply-banner {
+  background: #f4f4f4;
+  border-inline-start: 2px solid #ccc;
+  padding: 4px 6px;
+  margin: 0 4px 6px 0;
+  font-size: 0.85em;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.new-comment .comment-reply-banner .comment-reply-banner-label {
+  font-weight: 700;
+}
+.new-comment .comment-reply-banner .comment-reply-banner-text {
+  flex: 1;
+  font-style: italic;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.new-comment .comment-reply-banner a {
+  cursor: pointer;
 }

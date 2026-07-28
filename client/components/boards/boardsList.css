@@ -1,11 +1,585 @@
-@import url("../../../css/reset.css") print, screen;
+@import url("../../../public/css/reset.css") print, screen;
 
+/* Two-column layout for All Boards */
+.boards-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 16px;
+}
+
+.boards-left-menu {
+  border-inline-end: 1px solid #e0e0e0;
+  padding-inline-end: 12px;
+}
+
+.boards-left-menu ul.menu {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px 0;
+}
+
+.boards-left-menu .menu-item {
+  margin: 4px 0;
+}
+.boards-left-menu .menu-item a {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.boards-left-menu .menu-item .menu-label {
+  flex: 1;
+}
+.boards-left-menu .menu-item .menu-count {
+  background: #ddd;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+  margin-inline-start: 8px;
+}
+.boards-left-menu .menu-item.active a,
+.boards-left-menu .menu-item a:hover {
+  background: #f0f0f0;
+}
+.boards-left-menu .menu-item.active .menu-count {
+  background: #bbb;
+}
+
+/* Drag-over state for menu items (for dropping boards on Remaining) */
+.boards-left-menu .menu-item a.drag-over {
+  background: #d0e8ff;
+  border: 2px dashed #2196F3;
+}
+
+/* Highlight valid drop targets while a board is being dragged */
+.workspace-node.board-drag-hint > .workspace-node-content {
+  background: #e8f5e9;
+  border: 1px dashed #4CAF50;
+  border-radius: 4px;
+}
+.boards-left-menu .menu-item a.board-drag-hint {
+  background: #e8f5e9;
+  border: 1px dashed #4CAF50;
+}
+
+.workspaces-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: bold;
+  margin-top: 12px;
+}
+.workspaces-header .js-add-space,
+.workspaces-header .js-add-workspace {
+  text-decoration: none;
+  font-weight: bold;
+  border: none;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-inline-end: 10px;
+}
+
+.workspace-tree {
+  list-style: none;
+  padding-inline-start: 10px;
+}
+
+.workspace-node {
+  margin: 2px 0;
+  position: relative;
+}
+
+.workspace-node-content {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.workspace-node.dragging > .workspace-node-content {
+  opacity: 0.5;
+  background: #e0e0e0;
+}
+
+.workspace-node.drag-over > .workspace-node-content {
+  background: #d0e8ff;
+  border: 2px dashed #2196F3;
+}
+
+.workspace-drag-handle {
+  cursor: grab;
+  color: #999;
+  font-size: 14px;
+  padding: 0 4px;
+  user-select: none;
+}
+
+.workspace-drag-handle:active {
+  cursor: grabbing;
+}
+
+.workspace-node .js-select-space {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  flex: 1;
+  min-width: 0; /* allow the workspace name inside to shrink + ellipsis */
+  text-decoration: none;
+}
+
+.workspace-node .workspace-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.workspace-node .workspace-icon .workspace-icon-value,
+.workspace-node .workspace-icon .workspace-icon-value p {
+  display: inline;
+  margin: 0;
+  margin-top: 12px;
+}
+
+.workspace-node .workspace-icon .emoji-icon {
+  margin-top: 0px;
+}
+
+.workspace-node .workspace-name {
+  flex: 1;
+  /* Let the name shrink inside the narrow left menu and truncate with an ellipsis
+     ("Roadmap…") instead of being hard-cut mid-word ("Ro"). */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-node .workspace-count {
+  background: #ddd;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: bold;
+  min-width: 20px;
+  text-align: center;
+}
+
+.workspace-node .js-edit-space,
+.workspace-node .js-add-subspace {
+  padding: 2px 6px;
+  border-radius: 3px;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 14px;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.workspace-node .js-edit-space:hover,
+.workspace-node .js-add-subspace:hover {
+  opacity: 1;
+  background: #e0e0e0;
+}
+
+.workspace-node .js-open-workspace-menu {
+  padding: 2px 6px;
+  border-radius: 3px;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 14px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.workspace-node .js-open-workspace-menu:hover {
+  opacity: 1;
+  background: #e0e0e0;
+}
+
+.workspace-actions-form label,
+.workspace-subspace-form label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.workspace-actions-form input[type='text'],
+.workspace-subspace-form input[type='text'] {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.workspace-actions-form .workspace-color-label {
+  margin-bottom: 6px;
+}
+
+.workspace-actions-form .workspace-color-list {
+  margin-bottom: 10px;
+}
+
+.workspace-delete-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.workspace-delete-confirm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.workspace-node.active > .workspace-node-content .js-select-space,
+.workspace-node > .workspace-node-content:hover .js-select-space {
+  background: #f0f0f0;
+}
+
+.workspace-node.active .workspace-count {
+  background: #bbb;
+}
+
+.boards-right-grid {
+  min-height: 200px;
+  /* The right column is a 1fr grid item of .boards-layout; grid items default to
+     min-width:auto and will NOT shrink below their content's intrinsic width, so on
+     narrow (phone) screens the board tiles pushed this column wider than the viewport
+     and the board titles were cut off on the right. min-width:0 lets the 1fr column
+     shrink to its track so the board list fits and the titles stay visible. */
+  min-width: 0;
+}
+
+.boards-path-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  /* Wrap to a 2nd row on narrow windows so the search box and the Sort /
+     Multi-Selection / Clear buttons stay visible instead of overflowing. */
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  background: #f5f5f5;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.boards-path-header .path-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0; /* allow shrinking so path-right can wrap below instead of overflowing */
+  flex-wrap: wrap; /* the multi-selection hint wraps under the title when tight */
+}
+
+/* Keep the folder icon and the menu title (e.g. "Remaining") on ONE line, the
+   title to the RIGHT of the icon — never let flex-wrap stack them vertically. */
+.boards-path-header .path-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+/* Multi-Selection button with its hint stacked underneath (own column). */
+.boards-path-header .multiselection-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+/* "Selected:" actions row (star / home) below the Multi-Selection button. */
+.boards-path-header .selected-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.boards-path-header .selected-label {
+  font-size: 13px;
+  color: #333;
+}
+.boards-path-header .selected-action {
+  cursor: pointer;
+  color: #333;
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 4px;
+}
+.boards-path-header .selected-action:hover {
+  color: #2980b9;
+}
+
+.boards-path-header .multiselection-hint {
+  background: #FFF3CD;
+  color: #856404;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: normal;
+  border: 1px solid #FFE69C;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.boards-path-header .path-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* Buttons (Sort / Multi-Selection / Clear) wrap among themselves too, so none
+     is ever cut off on a narrow window. */
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* #5799: board-name search box in the All Boards header */
+.boards-path-header .board-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  /* Roughly half the previous width; the input flexes to fill what's left. */
+  width: 300px;
+  max-width: 100%;
+}
+
+.boards-path-header .board-search input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  flex: 1 1 auto;
+  min-width: 0;
+  /* Nudge the text down so it sits at the vertical middle of the field. */
+  position: relative;
+  top: 8px;
+}
+
+.boards-path-header .board-search .board-search-clear {
+  cursor: pointer;
+  color: #999;
+}
+
+.boards-path-header .board-search .board-search-clear:hover {
+  color: #333;
+}
+
+/* #5799: board grid pagination controls, mirroring Admin Panel > People */
+.boards-pagination {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.boards-pagination button {
+  min-width: 32px;
+  height: 30px;
+  border: 1px solid #bbb;
+  background: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.boards-pagination button.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.boards-page-info {
+  min-width: 72px;
+  text-align: center;
+  color: #333;
+}
+
+.boards-path-header .path-icon {
+  font-size: 18px;
+}
+/* #6524: the header section icon is a Font Awesome glyph matching the left menu.
+   The left-menu icons inherit the default text colour (#4d4d4d), so this one is
+   set to the same, and sized like a menu icon rather than the old emoji. */
+.boards-path-header .path-icon i.fa {
+  color: #4d4d4d;
+  font-size: 16px;
+}
+
+/* #6524: hide the current-folder NAME next to its icon in the header. The folder
+   icon already shows which section this is, the left menu highlights it, and the
+   "My Boards" bar names the page - so the repeated "Starred"/"Remaining"/workspace
+   name was redundant and crowded the Multi-Selection / Sort / search controls
+   beside it. Visually hidden rather than removed, so a screen reader still
+   announces which folder is shown (the icon alone has no text alternative). */
+.boards-path-header .path-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.boards-path-header .board-header-btn {
+  padding: 6px 12px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.boards-path-header .board-header-btn:hover {
+  background: #f0f0f0;
+  border-color: #bbb;
+}
+
+.boards-path-header .board-header-btn.emphasis {
+  background: #2196F3;
+  color: #fff;
+  border-color: #2196F3;
+  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.5);
+  transform: scale(1.05);
+}
+
+.boards-path-header .board-header-btn.emphasis:hover {
+  background: #1976D2;
+  box-shadow: 0 3px 12px rgba(33, 150, 243, 0.7);
+}
+
+.boards-path-header .board-header-btn-close {
+  padding: 4px 10px;
+  background: #f44336;
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  margin-inline-start: 10px; /* Extra space between MultiSelection toggle and Remove Filter */
+}
+
+.boards-path-header .board-header-btn-close:hover {
+  background: #d32f2f;
+}
+
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 5px 14px;
+  border-radius: 7px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.zoom-controls .board-header-btn {
+  padding: 5px 11px !important;
+  border-radius: 4px !important;
+  background: #fff !important;
+  border: 1px solid #000 !important;
+  transition: all 0.2s ease !important;
+  text-decoration: none !important;
+  color: #000 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  height: auto !important;
+  line-height: normal !important;
+  margin: 0 !important;
+  float: none !important;
+  overflow: visible !important;
+}
+
+.zoom-controls .board-header-btn i {
+  color: #000 !important;
+  float: none !important;
+  display: inline !important;
+  line-height: normal !important;
+  margin: 0 !important;
+}
+
+.zoom-controls .board-header-btn:hover {
+  background: #000 !important;
+  border-color: #000 !important;
+  color: #fff !important;
+}
+
+.zoom-controls .board-header-btn:hover i {
+  color: #fff !important;
+}
+
+.zoom-controls .board-header-btn.is-active {
+  background: #0079bf;
+  color: white;
+  border-color: #005a8a;
+}
+
+.zoom-controls .board-header-btn.is-active i {
+  color: white;
+}
+
+.zoom-level {
+  font-weight: bold;
+  color: #333;
+  min-width: 42px;
+  text-align: center;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 3px 7px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.zoom-level:hover {
+  background: #f0f0f0;
+  color: #000;
+}
+
+/* #6523: a responsive grid instead of `float: width 20%`. The float layout was
+   a FIXED 5 columns (wrapping to 4 with margins), so as the window widened the
+   tiles just stretched wider instead of more fitting per row. `auto-fill` +
+   `minmax(200px, 1fr)` fills each row with as many ~200px tiles as fit, so more
+   width means more boards per row and the tiles stay a steady size. The 8px
+   `gap` replaces the per-tile margins (set to 0 below). */
 .board-list {
   margin: 0 8px;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+  align-content: start;
 }
 .board-list li {
-  float: left;
-  width: 20%;
+  float: none;
+  width: auto;
+  margin: 0;
   box-sizing: border-box;
   position: relative;
 }
@@ -22,25 +596,51 @@
   transform: rotate(4deg);
   display: block !important;
 }
-.board-list li.starred .fa-star,
-.board-list li.starred .fa-star-o {
+.board-list li.starred .is-star-active,
+.board-list li.starred .is-not-star-active {
+  opacity: 1;
+  color: #ffd700;
+}
+/* Show star icon on hover even for non-starred boards */
+.board-list li:hover .is-star-active,
+.board-list li:hover .is-not-star-active {
   opacity: 1;
 }
 .board-list .board-list-item {
   overflow: hidden;
-  background-color: #999;
+  background-color: inherit; /* Inherit board color from parent li.js-board */
   color: #f6f6f6;
-  min-height: 100px;
+  min-height: 72px; /* #6465: thinner tiles so more boards fit in the overview */
   font-size: 16px;
   line-height: 22px;
-  border-radius: 3px;
+  border-radius: 0; /* No border-radius - parent .js-board has it */
   display: block;
   font-weight: 700;
-  padding: 8px;
-  margin: 8px;
+  padding: 24px 8px 18px 8px; /* #6465: trimmed; top leaves room for the drag handle, bottom for the checkbox */
+  margin: 0; /* No margin - moved to parent .js-board */
   position: relative;
   text-decoration: none;
   word-wrap: break-word;
+}
+
+/* #2220: Home-board badge — a home icon centred at the top of the board tile. */
+.board-list .board-home-badge {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+.board-list .board-list-item > .js-open-board {
+  text-decoration: none;
+  color: inherit;
+  display: block;
 }
 .board-list .board-list-item.template-container {
   border: 4px solid #fff;
@@ -68,22 +668,46 @@
 }
 .board-list .js-add-board .label {
   font-weight: normal;
-  line-height: 56px;
+  /* Match the board tiles (#6465 thinner tiles) so the grey "+ Add Board" /
+     "+ Add Template Container" box is the same height as a board icon:
+     same min-height, padding and line-height as .board-list-item above. */
+  line-height: 22px;
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #999; /* Darker background for better text contrast */
+  border-radius: 3px;
+  /* Same total vertical padding as .board-list-item (42px -> same tile height),
+     but shifted up (top 24->18, bottom 18->24) so the "+ Add Board" text sits
+     higher. */
+  padding: 18px 8px 24px 8px;
+  color: #fff; /* White text */
 }
-.board-list .js-add-board :hover {
-  background-color: #939393;
+/* "+ Add Template Container" text sits 2px lower than "+ Add Board" (same 42px
+   total vertical padding, so the tile height is unchanged). */
+.board-list .js-add-board .label.is-template-container {
+  padding: 20px 8px 22px 8px;
 }
-.board-list .fa-star,
-.board-list .fa-star-o {
-  bottom: 0;
+.board-list .js-add-board .label i {
+  color: #fff; /* White icon */
+}
+.board-list .js-add-board .label:hover {
+  background-color: #808080; /* Even darker on hover */
+}
+.board-list .js-add-board .label:hover i {
+  color: #fff; /* Keep icon white on hover */
+}
+.board-list .is-star-active,
+.board-list .is-not-star-active {
+  top: 0;
   font-size: 14px;
   height: 18px;
   line-height: 18px;
   opacity: 0;
   padding: 9px 9px;
   position: absolute;
-  right: 0;
-  top: 0;
+  inset-inline-end: 0;
   transition-duration: 0.15s;
   transition-property: color, font-size, background;
 }
@@ -94,7 +718,7 @@
   line-height: 10px;
   padding: 9px 9px;
   position: absolute;
-  right: 0;
+  inset-inline-end: 0;
   transition-duration: 0.15s;
   transition-property: color, font-size, background;
 }
@@ -114,7 +738,7 @@
   height: 18px;
   line-height: 18px;
   opacity: 0;
-  right: 0;
+  inset-inline-end: 0;
   padding: 9px 9px;
   transition-duration: 0.15s;
   transition-property: color, font-size, background;
@@ -126,41 +750,134 @@
   height: 18px;
   line-height: 18px;
   opacity: 0;
-  left: 0;
+  inset-inline-start: 0;
   padding: 9px 9px;
   transition-duration: 0.15s;
   transition-property: color, font-size, background;
 }
-.board-list li:hover a:hover .fa-star,
+.board-list li:hover a:hover .is-star-active,
 .board-list li:hover a:hover .fa-clone,
 .board-list li:hover a:hover .fa-archive,
-.board-list li:hover a:hover .fa-star-o {
+.board-list li:hover a:hover .is-not-star-active {
   color: #fff;
 }
-.board-list li:hover a .fa-star,
+.board-list li:hover a .is-star-active,
 .board-list li:hover a .fa-clone,
 .board-list li:hover a .fa-archive,
-.board-list li:hover a .fa-star-o {
+.board-list li:hover a .is-not-star-active {
   color: #fff;
   opacity: 0.75;
 }
-.board-list li:hover a .fa-star:hover,
+.board-list li:hover a .is-star-active:hover,
 .board-list li:hover a .fa-clone:hover,
 .board-list li:hover a .fa-archive:hover,
-.board-list li:hover a .fa-star-o:hover {
+.board-list li:hover a .is-not-star-active:hover {
   font-size: 18px;
   opacity: 1;
 }
-.board-list li:hover a .fa-star.is-star-active,
-.board-list li:hover a .fa-clone.is-star-active,
-.board-list li:hover a .fa-archive.is-star-active,
-.board-list li:hover a .fa-star-o.is-star-active {
+.board-list li:hover a .is-star-active,
+.board-list li:hover a .fa-clone,
+.board-list li:hover a .fa-archive,
+.board-list li:hover a .is-not-star-active {
   opacity: 1;
 }
+
+/* Board drag handle - always visible and positioned at top */
+.board-list .board-handle {
+  position: absolute;
+  padding: 4px 6px;
+  /* Right middle of the tile (matches the mobile/small-screen handle position). */
+  top: 50%;
+  inset-inline-end: 6px;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: #fff;
+  /* Transparent background so only the drag-handle icon shows (not a box). */
+  background: transparent;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: background-color 0.2s ease;
+  cursor: grab;
+  opacity: 1;
+  user-select: none;
+}
+
+.board-list .board-handle:active {
+  cursor: grabbing;
+}
+
+.board-list .board-handle:hover {
+  background: rgba(255, 255, 0, 0.8) !important;
+  color: #000;
+}
+
+/* Multiselection checkbox on board items */
+.board-list .board-list-item .multi-selection-checkbox {
+  position: absolute !important;
+  bottom: 4px !important;
+  inset-inline-start: 4px !important;
+  top: auto !important;
+  width: 24px;
+  height: 24px;
+  border: 3px solid #fff;
+  background: rgba(0,0,0,0.5);
+  border-radius: 4px;
+  cursor: pointer;
+  z-index: 11;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  transform: none !important;
+  margin: 0 !important;
+}
+
+.board-list .board-list-item .multi-selection-checkbox:hover {
+  background: rgba(0,0,0,0.7);
+  transform: scale(1.15) !important;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.5);
+}
+
+.board-list .board-list-item .multi-selection-checkbox.is-checked {
+  background: #3cb500;
+  border-color: #3cb500;
+  box-shadow: 0 2px 8px rgba(60, 181, 0, 0.6);
+  width: 24px !important;
+  height: 24px !important;
+  top: auto !important;
+  inset-inline-start: 4px !important;
+  transform: none !important;
+  border-radius: 4px !important;
+}
+
+.board-list .board-list-item .multi-selection-checkbox.is-checked::after {
+  /* fa-check, so the tick is the same glyph as every other check in the UI. */
+  font-family: FontAwesome;
+  content: "\f00c";
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.board-list.is-multiselection-active .js-board.is-checked {
+  outline: 4px solid #3cb500;
+  outline-offset: -4px;
+  box-shadow: 0 4px 12px rgba(60, 181, 0, 0.4);
+}
+
+/* Visual hint when multiselection is active */
+.board-list.is-multiselection-active .board-list-item {
+  border: 2px dashed rgba(33, 150, 243, 0.3);
+}
+
 .board-backgrounds-list .board-background-select {
   box-sizing: border-box;
   display: block;
-  float: left;
+  float: inline-start;
   width: 50%;
   padding-top: 12px;
   position: relative;
@@ -170,10 +887,10 @@
   padding-top: 0;
 }
 .board-backgrounds-list .board-background-select:nth-child(2n) {
-  padding-left: 6px;
+  padding-inline-start: 6px;
 }
 .board-backgrounds-list .board-background-select:nth-child(2n+1) {
-  padding-right: 6px;
+  padding-inline-end: 6px;
 }
 .board-backgrounds-list .board-background-select .background-box {
   color: #fff;
@@ -190,45 +907,293 @@
 }
 .board-backgrounds-list .board-background-select .background-box i.fa-check {
   font-size: 25px;
-  color: #fff;
+  color: #3cb500;
 }
-@media screen and (max-width: 800px) {
+/* Mobile view styles - applied when isMiniScreen is true (iPhone, etc.) */
+.board-list.mobile-view {
+  /* #6488/#6523: a responsive grid. `min(46%, 200px)` keeps ~2 columns on a narrow
+     phone board-column (46% of it) but caps the tile at 200px, so a wider screen
+     (e.g. a laptop in mobile mode) gets more columns instead of two stretched ones. */
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(46%, 200px), 1fr));
+  gap: 8px;
+  /* #6488: sized by the column it lives in (the flex chain in the phone block
+     below), not by the viewport minus a guess at the bars above it. */
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  padding: 0 0.5rem;
+  margin: 0;
+  scrollbar-width: auto !important;
+  scrollbar-color: #888 #f1f1f1;
+}
+.board-list.mobile-view li {
+  width: auto; /* the grid controls the column width */
+  float: none;
+  display: block;
+  margin-bottom: 0.5rem;
+  /* NO handle reserve here. The drag handle is positioned INSIDE the tile, and
+     the tile already keeps its text clear of it - so 32px here was a second,
+     invisible reserve on top of that one. On a phone the tile is only ~97px
+     wide, so 32 + 30 + 8 = 70px of it went to padding and the board title was
+     laid out in a ~27px column: "Da"/"ta" on two lines. */
+  padding-inline-end: 0;
+}
+.board-list.mobile-view .board-list-item {
+  overflow: visible;
+  height: 8rem;
+  width: 100%;
+  margin: 0;
+  /* Keep clear of the drag handle, but only as much as the (smaller) handle needs —
+     on a ~2-per-row phone column the tile is narrow, so an oversized reserve hid most
+     of the board title. */
+  padding-inline-end: 30px;
+}
+
+.board-list.mobile-view .board-list-item .details {
+  /* The tile pads for the handle; this padded for it a second time. */
+  padding-inline-end: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+.board-list.mobile-view .board-list-item-sub-name {
+  position: relative;
+  top: -100px;
+  inset-inline-start: -100px;
+}
+.board-list.mobile-view .board-handle {
+  position: absolute;
+  padding: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  inset-inline-end: 6px;
+  font-size: 16px;
+  color: #fff;
+  background: rgba(0,0,0,0.3);
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: background-color 0.2s ease;
+}
+
+.board-list.mobile-view .board-handle:hover {
+  background: rgba(255, 255, 0, 0.8) !important; /* Yellow hover */
+}
+
+/* Force scrollbar to be visible on mobile view */
+.board-list.mobile-view::-webkit-scrollbar {
+  width: 12px !important;
+  display: block !important;
+  visibility: visible !important;
+}
+
+.board-list.mobile-view::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 6px !important;
+  display: block !important;
+  visibility: visible !important;
+}
+
+.board-list.mobile-view::-webkit-scrollbar-thumb {
+  background: #888 !important;
+  border-radius: 6px !important;
+  display: block !important;
+  visibility: visible !important;
+}
+
+.board-list.mobile-view::-webkit-scrollbar-thumb:hover {
+  background: #555 !important;
+}
+
+/* Hide archive and clone board buttons in mobile view */
+.board-list.mobile-view .js-archive-board,
+.board-list.mobile-view .js-clone-board {
+  display: none !important;
+}
+
+/* Change board drag handle to up-down arrow in mobile view: fa-arrows-v, the
+   Font Awesome glyph, not the emoji it used to be. */
+.board-list.mobile-view .board-handle.fa-arrows::before {
+  content: "\f07d" !important;
+}
+
+@media screen and (max-width: 800px),
+       screen and (max-device-width: 800px),
+       screen and (-webkit-min-device-pixel-ratio: 2) and (max-width: 800px),
+       screen and (max-width: 800px) and (orientation: portrait),
+       screen and (max-width: 800px) and (orientation: landscape),
+       screen and (max-device-width: 932px) and (-webkit-min-device-pixel-ratio: 3) {
+  /* #6488 + mobile layout: keep the left menu on the left but narrow (so the boards
+     get room), and show the board icons on the right at least 2 per row. */
+  .boards-layout {
+    /* #6523: a wider left menu and a narrower board column. At 30% of a 375px
+       phone the menu was ~112px, so "Workspaces" and the counts wrapped and the
+       menu read as cramped, while the board column had more width than two 4rem
+       tiles need. 42% gives the menu ~157px - enough for the longest label on one
+       line - and still leaves ~200px for the tiles. */
+    grid-template-columns: minmax(140px, min(42%, 210px)) 1fr;
+    gap: 8px;
+  }
   .board-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
     height: 100%;
-    overflow: scroll;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0 0.25rem;
+    margin: 0;
   }
   .board-list li {
-    width: 50%;
+    width: auto; /* the grid controls the column width */
+    float: none;
+    display: block;
+    margin-bottom: 0.5rem;
+    /* Same as `.board-list.mobile-view li` above: the tile keeps its own text
+       clear of the handle, so reserving the width a second time out here only
+       narrowed the title. */
+    padding-inline-end: 0;
   }
-  .board-list .board-list-item {
-    overflow: hidden;
-    height: 8rem;
+  /* #6523: shorter tiles on mobile, and the SAME height for a board tile and the
+     grey "+ Add Board" / "+ Add Template Container" tile.
+     They were neither: a board tile was 8rem (128px) here, while the add tile got
+     no mobile height at all and fell back to the desktop `min-height: 72px` plus
+     42px of padding - then grew further around its wrapped label, so the two
+     never lined up and both wasted vertical space on a phone.
+     Both are now a flat 4rem (64px), half the board tile's previous height, with
+     the padding folded into that box (box-sizing: border-box) so the number IS
+     the rendered height rather than a floor to add padding to. This covers every
+     tab of All Boards - Starred, Templates, Remaining and Workspaces all render
+     the same `.board-list` tiles. */
+  /* `.board-list.mobile-view .board-list-item` (set by isMiniScreen on the <ul>,
+     outside any media query) also declares `height: 8rem` and is MORE specific
+     (0,3,0) than `.board-list .board-list-item` (0,2,0), so it won on board tiles
+     while the add tile - matched by `.board-list .js-add-board .label`, also
+     (0,3,0) but later in the file - shrank. That is why one board icon ended up
+     several times the height of "+ Add Board" instead of equal to it. Both
+     `.mobile-view` shapes are therefore spelled out here. */
+  .board-list .board-list-item,
+  .board-list.mobile-view .board-list-item,
+  .board-list .js-add-board .label,
+  .board-list.mobile-view .js-add-board .label,
+  .board-list .js-add-board .label.is-template-container,
+  .board-list.mobile-view .js-add-board .label.is-template-container {
+    box-sizing: border-box;
+    height: 4rem;
+    min-height: 4rem;
+  }
+
+  .board-list .board-list-item,
+  .board-list.mobile-view .board-list-item {
+    overflow: visible;
+    width: 100%;
+    margin: 0;
+    padding: 6px 30px 6px 8px; /* was 24px/18px vertical: too tall for a 4rem tile */
+  }
+
+  /* The add tile centres its label, so it only needs enough padding not to touch
+     the edges; the flex centring already positions the text. */
+  .board-list .js-add-board .label,
+  .board-list.mobile-view .js-add-board .label,
+  .board-list .js-add-board .label.is-template-container,
+  .board-list.mobile-view .js-add-board .label.is-template-container {
+    padding: 6px 8px;
+  }
+
+  .board-list .board-list-item .details {
+    /* The tile itself already reserves the handle's width (its own
+       `padding: 6px 30px 6px 8px` below); 50px more was a third reserve. */
+    padding-inline-end: 0;
+    width: 100%;
+    box-sizing: border-box;
   }
   .board-list .board-list-item-sub-name {
     position: relative;
     top: -100px;
-    left: -100px;
+    inset-inline-start: -100px;
   }
+  /* The SAME handle as `.board-list.mobile-view .board-handle` below. This rule
+     applies when the user is in desktop mode, that one when they are in mobile
+     mode, and they were 40px and 26px: the same page, the same phone, two sizes,
+     and the bigger one covered a good part of a ~97px tile. One size, the smaller
+     one - a 26px circle is already well over the 24px a finger needs to hit. */
   .board-list .board-handle {
     position: absolute;
-    padding: 7px;
+    padding: 5px;
     top: 50%;
     transform: translateY(-50%);
-    right: 10px;
-    font-size: 24px;
+    inset-inline-end: 6px;
+    font-size: 16px;
+    color: #fff;
+    background: rgba(0,0,0,0.3);
+    border-radius: 50%;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    transition: background-color 0.2s ease;
+  }
+
+  .board-list .board-handle:hover {
+    background: rgba(255, 255, 0, 0.8) !important; /* Yellow hover */
   }
 }
+/* Very small screens - still keep at least 2 board icons per row (#6488). */
 @media screen and (max-width: 360px) {
-  li {
-    width: 100%;
+  .board-list {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px;
   }
-  .board-handle {
+  .board-list li {
+    width: auto !important;
+    float: none !important;
+    display: block !important;
+  }
+  /* Same size as everywhere else on a phone - see the 800px block above. */
+  .board-list .board-handle {
     position: absolute;
-    padding: 7px;
+    padding: 5px;
     top: 50%;
     transform: translateY(-50%);
-    right: 10px;
-    font-size: 24px;
+    inset-inline-end: 6px;
+    font-size: 16px;
+    color: #fff;
+    background: rgba(0,0,0,0.3);
+    border-radius: 50%;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* Mobile All Boards layout fixes */
+@media screen and (max-width: 800px),
+       screen and (max-device-width: 800px),
+       screen and (-webkit-min-device-pixel-ratio: 2) and (max-width: 800px),
+       screen and (max-width: 800px) and (orientation: portrait),
+       screen and (max-width: 800px) and (orientation: landscape),
+       screen and (max-device-width: 932px) and (-webkit-min-device-pixel-ratio: 3) {
+  /* #6488: KEEP the two-column layout (narrow left menu, board icons on the RIGHT)
+     on small touch screens — do NOT stack the boards below the menu. Stacking pushed
+     the board icons under the menu + search bar, and dragscroll does not work over
+     the menu / search area, so boards below the fold were unreachable (you could not
+     drag-scroll down to them). The narrow minmax() menu set in the block above
+     already prevents the old fixed-260px overflow that used to clip the left menu, so
+     collapsing to one column is no longer needed. The board list stays in its own
+     right-hand column with its own overflow-y:auto scroll. */
+  .boards-layout {
+    grid-template-columns: minmax(140px, min(42%, 210px)) 1fr !important; /* #6523: wider menu, narrower boards; capped so landscape (~844px) does not balloon it */
   }
 }
 .AllBoardTeamsOrgs {
@@ -238,13 +1203,13 @@
 .AllBoardTeams,
 .AllBoardOrgs,
 .AllBoardBtns {
-  float: left;
+  float: inline-start;
 }
 .js-AllBoardOrgs {
-  margin-left: 16px;
+  margin-inline-start: 16px;
 }
 .AllBoardTeams {
-  margin-left: 16px;
+  margin-inline-start: 16px;
 }
 .AllBoardButtonsContainer {
   margin: 16px;
@@ -253,14 +1218,74 @@
 #resetBtn {
   display: inline;
 }
+
+#resetBtn.filter-reset-btn {
+  background: #f44336;
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.2s;
+}
+
+#resetBtn.filter-reset-btn:hover {
+  background: #d32f2f;
+}
+
+#resetBtn.filter-reset-btn .reset-icon {
+  font-size: 14px;
+}
+
 .js-board {
   display: block;
+  background-color: #999; /* Default gray background if no color class is applied */
+  border-radius: 3px; /* Rounded corners for board items */
+  overflow: hidden; /* Ensure children respect rounded corners */
+  margin: 0; /* grid gap spaces the tiles now (#6523) */
 }
+
+/* #6439: highlight the board a dragged board will be dropped before, when
+   reordering in the Custom (drag order) sort mode. */
+.js-board.board-reorder-over {
+  outline: 2px dashed #3498db;
+  outline-offset: 2px;
+}
+
+/* Reset background for add-board button */
+.js-add-board {
+  background-color: transparent !important;
+  margin: 0 !important; /* grid gap spaces the tiles now (#6523) */
+}
+
+/* Apply board colors to li.js-board parent instead of just the link */
+.board-list .board-color-nephritis { background-color: #27ae60; }
+.board-list .board-color-pomegranate { background-color: #c0392b; }
+.board-list .board-color-belize { background-color: #2980b9; }
+.board-list .board-color-wisteria { background-color: #8e44ad; }
+.board-list .board-color-midnight { background-color: #2c3e50; }
+.board-list .board-color-pumpkin { background-color: #e67e22; }
+.board-list .board-color-moderatepink { background-color: #cd5a91; }
+.board-list .board-color-strongcyan { background-color: #00aecc; }
+.board-list .board-color-limegreen { background-color: #4bbf6b; }
+.board-list .board-color-dark { background-color: #2c3e51; }
+.board-list .board-color-relax { background-color: #27ae61; }
+.board-list .board-color-corteza { background-color: #568ba2; }
+.board-list .board-color-clearblue { background-color: #3498db; }
+.board-list .board-color-natural { background-color: #596557; }
+.board-list .board-color-modern { background-color: #2a80b8; }
+.board-list .board-color-moderndark { background-color: #2a2a2a; }
+.board-list .board-color-exodark { background-color: #222; }
+
 .minicard-members {
   padding: 6px 0 6px 8px;
   width: 100%;
   margin-bottom: 2px;
-  margin-left: -4px;
+  margin-inline-start: -4px;
   display: inline-block;
 }
 .minicard-lists {
@@ -276,6 +1301,504 @@
 }
 .flex-wrap .item {
   margin: 2px;
-  padding-right: 6px;
+  padding-inline-end: 6px;
   text-align: center;
+}
+
+/* Fix multiple scrollbars issue on mobile */
+@media screen and (max-width: 800px),
+       screen and (max-device-width: 800px),
+       screen and (-webkit-min-device-pixel-ratio: 2) and (max-width: 800px),
+       screen and (max-width: 800px) and (orientation: portrait),
+       screen and (max-width: 800px) and (orientation: landscape),
+       screen and (max-device-width: 932px) and (-webkit-min-device-pixel-ratio: 3) {
+  /* #6488, and the reason the earlier attempts did not fix it: this wrapper is
+     INSIDE #content, which already begins below the two header bars - so sizing
+     it to the whole viewport (100vh, then 100dvh) put its bottom about two bars'
+     worth BELOW the bottom of the screen. Being `overflow: hidden`, that strip
+     is unreachable, and everything laid out inside it inherits the error.
+
+     `height: 100%` is the remaining space of #content, whatever the bars happen
+     to be - body is already a flex column with #content as `flex: 1`, so that
+     percentage resolves against a definite height. From here down the page is a
+     flex chain with no viewport arithmetic in it at all: each part takes the
+     space its parent has left, and the board list is the part that scrolls. */
+  /* `#content .wrapper`, NOT a bare `.wrapper`: the SECOND HEADER BAR carries the
+     class too - header.jade puts `wrapper` on #header-main-bar on every page that
+     is not a board (`wrappedHeader`) - so a bare `.wrapper` rule lands on the bar
+     as well. This one made it a flex COLUMN, and the bar's own
+     `align-items: center` then centres its items across it: "My Boards" moved to
+     the middle of the bar. (The `height: 100vh` this replaced was landing on the
+     bar too.) The page wrapper is inside #content; the header bar is not. */
+  #content .wrapper {
+    overflow: hidden;
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #content .wrapper > .boards-layout {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  /* Grid items stretch to the row, and `min-height: 0` lets them be SHORTER than
+     their content - without it a grid/flex item refuses to shrink below its
+     content height, which is what stops an inner scroller from ever scrolling. */
+  .boards-layout > .boards-left-menu,
+  .boards-layout > .boards-right-grid {
+    min-height: 0;
+    height: 100%;
+  }
+
+  .boards-right-grid {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* The header above the list (section title, Multi-Selection, Sort, search) and
+     the pager keep their own height; the list gets the rest. On a phone that
+     header is two rows tall, which is why a hard-coded "the list is the viewport
+     minus 120px" was wrong by more than 100px. */
+  .boards-right-grid > .boards-path-header,
+  .boards-right-grid > .boards-pagination {
+    flex: 0 0 auto;
+  }
+
+  /* The left menu (Starred / Templates / Remaining / Workspaces / Add board) is its
+     own vertical scroll area, so when it is taller than the screen you can drag-scroll
+     down to its lower items — the board icons already scroll in their own column on the
+     right. Both columns are reachable in LTR and RTL: the grid columns and the logical
+     inline borders mirror automatically, so in RTL the menu is on the right and the
+     boards on the left. */
+  .boards-left-menu {
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    /* Bounded by the layout above, not by a guess at how tall the bars are. */
+    height: 100%;
+    min-height: 0;
+    max-height: none;
+    /* A vertical swipe here is a scroll of THIS menu: never a page scroll behind
+       it, and never a gesture the browser hands to something else. */
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
+
+  .board-list {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: #888 #f1f1f1;
+    /* #6488. The list is the part of the column that scrolls, and it ends where
+       the column ends - which is the bottom of the screen. It used to be
+       `calc(100dvh - 120px)`: a guess at everything above it (two header bars
+       plus a search header that is TWO rows on a phone, ~226px), so the box
+       reached about 100px below the screen. It scrolled internally, but its last
+       rows sat under the fold where no gesture could bring them - "you cannot
+       scroll the board list". No viewport arithmetic here at all now. */
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+    max-height: none;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
+
+  /* Force scrollbar to always be visible */
+  .board-list::-webkit-scrollbar {
+    width: 12px !important;
+    display: block !important;
+    visibility: visible !important;
+  }
+
+  .board-list::-webkit-scrollbar-track {
+    background: #f1f1f1 !important;
+    border-radius: 6px !important;
+    display: block !important;
+    visibility: visible !important;
+  }
+
+  .board-list::-webkit-scrollbar-thumb {
+    background: #888 !important;
+    border-radius: 6px !important;
+    display: block !important;
+    visibility: visible !important;
+  }
+
+  .board-list::-webkit-scrollbar-thumb:hover {
+    background: #555 !important;
+  }
+
+  /* Ensure scrollbar is always visible */
+  .board-list::-webkit-scrollbar-corner {
+    background: #f1f1f1 !important;
+  }
+
+  /* Force scrollbar to be visible */
+  .board-list {
+    scrollbar-gutter: stable;
+    scrollbar-width: auto !important;
+    /* NOTE: no min-height/::after here — the bounded height above is what makes the
+       list scroll; forcing it 100vh tall would defeat that (see #6488). */
+  }
+
+  /* Ensure only one scrollbar is visible */
+  /* The page is exactly the visible viewport, and nothing scrolls but the two
+     inner scrollers. `100dvh` is what is on screen right now; the `vh` line is
+     the fallback where `dvh` is unknown. Without a definite height here the
+     `height: 100%` chain below has nothing to resolve against. */
+  body {
+    overflow: hidden;
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  #content {
+    overflow: hidden;
+  }
+
+  /* Hide archive and clone board buttons in mobile view */
+  .board-list .js-archive-board,
+  .board-list .js-clone-board {
+    display: none !important;
+  }
+
+  /* Change board drag handle to up-down arrow in mobile view: fa-arrows-v. */
+  .board-list .board-handle.fa-arrows::before {
+    content: "\f07d" !important;
+  }
+}
+
+
+/* #5157: show the board's background image on the board list tile, reusing the
+ * existing board.backgroundImageURL. A dark overlay keeps the title readable. */
+.board-list-item.has-background-image {
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+.board-list-item.has-background-image .details,
+.board-list-item.has-background-image .board-list-item-name {
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  color: #fff;
+}
+.board-list-item.has-background-image::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: inherit;
+  z-index: 0;
+}
+
+/* ── Equal, short tiles whenever the list renders in mobile view ─────────────
+   `.mobile-view` is put on the <ul> by the template from Utils.isMiniScreen(),
+   which also weighs mobile MODE and the device - so it can be set on a wide
+   screen, where a `max-width: 800px` media query does not apply. The 8rem rule
+   this overrides (`.board-list.mobile-view .board-list-item`, further up) is
+   itself outside any media query, so the override has to be too, or a board tile
+   stays 8rem while "+ Add Board" is 4rem and the two do not match.
+
+   Last in the file so that, at equal specificity, source order decides. */
+.board-list.mobile-view .board-list-item,
+.board-list.mobile-view .js-add-board .label,
+.board-list.mobile-view .js-add-board .label.is-template-container {
+  box-sizing: border-box;
+  height: 4rem;
+  min-height: 4rem;
+}
+
+.board-list.mobile-view .board-list-item {
+  padding: 6px 30px 6px 8px;
+}
+
+.board-list.mobile-view .js-add-board .label,
+.board-list.mobile-view .js-add-board .label.is-template-container {
+  padding: 6px 8px;
+}
+
+/* The mobile board list is a GRID that fills the height its column gives it (the
+   flex chain in the phone block above) and had no `align-content`, so it defaults
+   to `stretch`: with one row of tiles, that row is stretched to fill the whole
+   column. The tiles then differ for a reason that has nothing to do with their
+   own height - "+ Add Board" shows a 4rem grey `.label` sitting at the top of a
+   stretched cell, while a board's `li.js-board` carries the board colour itself
+   and so paints the entire stretched cell blue. That is why one board icon
+   looked several times taller than "+ Add Board" even after both were set to
+   4rem.
+
+   `align-content: start` keeps rows at their content height instead of dividing
+   the leftover space between them, and `align-items: start` stops each tile from
+   stretching to its row. The list still scrolls: its height comes from the flex
+   column it sits in, and `overflow-y: auto` makes it the scroll container. */
+.board-list.mobile-view {
+  align-content: start;
+  align-items: start;
+}
+
+/* The tile fills its grid cell horizontally but not vertically. */
+.board-list.mobile-view li,
+.board-list.mobile-view li.js-board {
+  align-self: start;
+  height: auto;
+}
+
+/* ── Mobile tile text and "+ Add Board" width (#6523) ────────────────────────
+   Board titles were breaking ONE LETTER PER LINE. The drag handle is a single
+   ~26px absolutely-positioned circle, but space for it was reserved THREE times
+   over on the way down: 32px on `li`, 30px on the tile's padding, and 30px again
+   on `.details`. On a ~96px tile that is 92px of reservation, leaving about
+   nothing for the text, so every character wrapped onto its own line.
+
+   The handle is absolutely positioned, so only the innermost text container has
+   to keep clear of it. Reserve it once, on `.details`, and the title reads
+   left-to-right again with roughly eight characters per line. */
+.board-list.mobile-view li {
+  padding-inline-end: 0;
+}
+
+.board-list.mobile-view .board-list-item {
+  padding: 6px 8px;
+}
+
+.board-list.mobile-view .board-list-item .details {
+  padding-inline-end: 28px; /* the one reservation the handle actually needs */
+}
+
+/* Keep long titles on horizontal lines that clip, rather than breaking mid-word
+   into a vertical stack. `break-word` only splits a word that cannot fit, which
+   is what a starved container made of every character. */
+.board-list.mobile-view .board-list-item-name {
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: none;
+}
+
+/* "+ Add Board" is one grid cell like any board tile, so the two are the same
+   width as well as the same height. `.js-add-board` carries `margin: 8px
+   !important` globally while board `li`s have only a bottom margin, which made
+   its box narrower than a board tile inside an identically sized cell - so the
+   margin is matched here too. (An earlier version made this tile span both
+   columns; identical tiles is what the wide-screen layout does, and what was
+   asked for.) */
+.board-list.mobile-view li.js-add-board,
+.board-list.mobile-view li.js-board {
+  grid-column: auto;
+  /* BOTH get the same margin. `.js-add-board` has `margin: 8px !important` and
+     `.js-board` has `margin: 8px`, so zeroing only one of them would break the
+     match in the other direction. The grid's own 8px gap already separates the
+     tiles, so a margin on top of it only shrinks them unevenly. */
+  margin: 0 !important;
+}
+
+/* Every tile - board or add - is one cell wide and 4rem tall, with nothing
+   inside it able to change that. */
+.board-list.mobile-view li,
+.board-list.mobile-view li.js-board,
+.board-list.mobile-view li.js-add-board {
+  width: auto;
+  min-width: 0;
+  max-width: none;
+}
+
+.board-list.mobile-view li.js-add-board .board-list-item,
+.board-list.mobile-view li.js-add-board .label,
+.board-list.mobile-view li.js-board .board-list-item {
+  width: 100%;
+  box-sizing: border-box;
+  height: 4rem;
+  min-height: 4rem;
+}
+
+/* ── Header on a phone: menu title ABOVE the search box ─────────────────────
+   A wide screen has room to put "Remaining" and the search side by side. A phone
+   does not: squeezed onto one row the title was ellipsised down to "R.." and the
+   search box still had barely any width. So on a phone the row stacks - title
+   first, search under it - each taking the full width of the card.
+
+   The earlier problem with stacking was not the stacking itself but the gap: the
+   two rows were separated by a tall empty band. That came from `.path-right`
+   being free to grow; pinning `row-gap` and letting each part take exactly one
+   full-width row puts them directly above one another. */
+@media screen and (max-width: 800px),
+       screen and (max-device-width: 932px) and (-webkit-min-device-pixel-ratio: 3) {
+  .boards-path-header {
+    flex-wrap: wrap;
+    gap: 6px;
+    row-gap: 6px;
+    justify-content: flex-start; /* pack the icons at the start of row 1 */
+  }
+
+  .boards-path-header .path-left {
+    flex: 0 0 auto; /* just the section icon - stays at the start of row 1 */
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  /* Flatten path-right so its Multi-Selection / Sort buttons and the search box
+     become direct items of the header's OWN flex row. Then the header controls
+     the wrap directly and deterministically: the section icon and the buttons sit
+     together on row 1, and the full-width search box drops to row 2 - instead of
+     path-right wrapping as a two-line block BELOW the section icon (which left the
+     icon alone on row 1 and the buttons on row 2). */
+  .boards-path-header .path-right {
+    display: contents;
+  }
+  .boards-path-header .multiselection-group,
+  .boards-path-header .js-open-boards-sort,
+  .boards-path-header .board-header-btn {
+    flex: 0 0 auto;
+  }
+
+  /* Search takes the whole header width, so it wraps onto its own row under the
+     icons. `min-width: 0` lets it then shrink to fit (a flex item defaults to
+     `min-width: auto` and refuses to go below its content width). */
+  .boards-path-header .board-search {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+}
+
+/* With drag handles OFF there is no handle on a board tile, so the title should
+   use the width that was reserved for it. `:has()` keeps this to one rule
+   instead of a second class on the tile; browsers without it simply keep the
+   reservation, which is the old behaviour and harmless. */
+.board-list .board-list-item:not(:has(.board-handle)) .details,
+.board-list.mobile-view .board-list-item:not(:has(.board-handle)) .details {
+  padding-inline-end: 0;
+}
+
+/* ...and the tile's own reserve goes with it. Only the `.details` half was
+   dropped before, so a tile with no handle still gave 30px of a ~97px phone
+   tile to a handle that is not rendered. */
+.board-list .board-list-item:not(:has(.board-handle)),
+.board-list.mobile-view .board-list-item:not(:has(.board-handle)) {
+  padding-inline-end: 8px;
+}
+
+/* #6523: on a phone (either orientation) the count chip sits right after its
+   label, not pushed to the far edge. The menu item is `justify-content:
+   space-between` with a `flex: 1` label, which spreads the label and the count
+   apart across the whole column - fine on a narrow portrait menu, but a wide gap
+   on a landscape iPhone where the column is wider. Packing them left keeps the
+   number beside the text at any menu width. Scoped to the mobile layout so the
+   desktop 260px menu is untouched. */
+@media screen and (max-width: 800px),
+       screen and (max-device-width: 932px) and (-webkit-min-device-pixel-ratio: 3) {
+  .boards-left-menu .menu-item a {
+    justify-content: flex-start;
+    gap: 8px;
+  }
+  .boards-left-menu .menu-item .menu-label {
+    flex: 0 1 auto;
+  }
+  /* No extra left margin now that a flex `gap` sets the spacing. */
+  .boards-left-menu .menu-item .menu-count {
+    margin-inline-start: 0;
+  }
+
+  /* The workspace row packs a drag handle, a folder icon, the NAME, a "bars" menu
+     button and a count chip. Told only to "give way to the fixed items", the name
+     gave way completely: on a 375px phone the menu column is ~145px wide and those
+     fixed items, at their desktop paddings, came to ~130px - so the name was laid
+     out in the 15px left over and no workspace had a readable name, in either
+     mode.
+
+     The fixed items are trimmed to what they need on a phone (~88px together) and
+     the name is given a floor it may not shrink below, so there is always a name
+     to read, truncated with an ellipsis when it is long. It is still CLIPPED to
+     its own box, so it can never spill over the menu button on its right. */
+  .workspace-node .js-select-space {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden; /* clip the name to this box; it cannot cover the menu */
+    gap: 4px;
+    padding: 4px 2px;
+  }
+  .workspace-node .workspace-name {
+    flex: 1 1 auto;
+    /* The floor: about six characters plus the ellipsis. Everything around it can
+       give way, so this never pushes the row wider than the column. */
+    min-width: 3.5em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .workspace-node .js-open-workspace-menu,
+  .workspace-node .workspace-count {
+    flex: 0 0 auto;
+  }
+  .workspace-node-content {
+    gap: 2px;
+    padding: 4px 0;
+  }
+  .workspace-node .workspace-drag-handle {
+    padding: 0 2px;
+    font-size: 12px;
+  }
+  .workspace-node .workspace-icon {
+    font-size: 14px;
+  }
+  .workspace-node .js-open-workspace-menu {
+    padding: 2px 4px;
+  }
+  .workspace-node .workspace-count {
+    min-width: 16px;
+    padding: 2px 4px;
+    font-size: 10px;
+  }
+}
+
+/* #6524: "+ Add workspace" (and the per-node "+ add subspace") were ~20px "+"
+   links - far below the 44px minimum touch target, so a finger tap usually
+   missed them while the larger menu rows registered fine. On a touch-capable
+   layout they become proper 44px targets with the "+" centred. */
+@media screen and (max-width: 800px),
+       screen and (max-device-width: 932px) and (-webkit-min-device-pixel-ratio: 3) {
+  .workspaces-header .js-add-workspace {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 8px;
+    font-size: 20px;
+    line-height: 1;
+  }
+}
+
+/* #6439: the LIVE drop gap. While a board is dragged, this empty dashed cell is
+   inserted before/after the tile under the cursor to show where the board will
+   land. It is a grid cell like the board tiles, so it opens a real gap the other
+   tiles flow around. Not Blaze-managed - inserted and removed by the drag
+   handlers in boardsList.js. */
+.board-list .js-board-placeholder.board-drop-placeholder {
+  min-height: 4rem;
+  border: 2px dashed #3498db;
+  border-radius: 3px;
+  background: rgba(52, 152, 219, 0.08);
+  box-sizing: border-box;
+  list-style: none;
+  margin: 0;
+}
+
+/* #6439: while a board icon is being dragged, take it out of the grid flow so
+   the other icons reflow as if it were gone and the live gap sits exactly where
+   the icon will land. Added on a timeout after dragstart (hiding it immediately
+   cancels the drag), removed on dragend. */
+.board-list .js-board.board-dragging-hidden {
+  display: none !important;
+}
+
+/* The touch-drag ghost (client/lib/dragDropTouch.js) is a clone that follows the
+   finger while dragging a board icon. Keep it above everything and let it fully
+   colour a board tile clone rather than show a dashed placeholder. */
+.touch-drag-ghost {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  border-radius: 3px;
 }

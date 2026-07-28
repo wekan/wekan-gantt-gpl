@@ -1,9 +1,8 @@
 template(name="listBody")
-  .list-body
+  .list-body(class="{{#unless isVerticalScrollbars}}no-scrollbars{{/unless}}")
     .minicards.clearfix.js-minicards(class="{{#if reachedWipLimit}}js-list-full{{/if}}")
-      if cards.length
-        +inlinedForm(autoclose=false position="top")
-          +addCardForm(listId=_id position="top")
+      +inlinedForm(autoclose=false position="top")
+        +addCardForm(listId=_id position="top")
       ul.sidebar-list
         each customFieldsSum
           li
@@ -17,6 +16,7 @@ template(name="listBody")
                 = formattedCurrencyCustomFieldValue(value)
       each (cardsWithLimit (idOrNull ../../_id))
         a.minicard-wrapper.js-minicard(href=originRelativeUrl
+          data-card-id="{{_id}}"
           class="{{#if cardIsSelected}}is-selected{{/if}}"
           class="{{#if MultiSelection.isSelected _id}}is-checked{{/if}}")
           if MultiSelection.isActive
@@ -25,13 +25,15 @@ template(name="listBody")
           +minicard(this)
       if (showSpinner (idOrNull ../../_id))
         +spinnerList
-
       if canSeeAddCard
         +inlinedForm(autoclose=false position="bottom")
           +addCardForm(listId=_id position="bottom")
         else
           a.open-minicard-composer.js-card-composer.js-open-inlined-form(title="{{_ 'add-card-to-bottom-of-list'}}")
             i.fa.fa-plus
+            | {{_ 'add-card'}}
+      +inlinedForm(autoclose=false position="bottom")
+        +addCardForm(listId=_id position="bottom")
 
 template(name="spinnerList")
   .sk-spinner.sk-spinner-list(
@@ -44,7 +46,7 @@ template(name="addCardForm")
     if getLabels
       .minicard-labels
         each getLabels
-          .minicard-label(class="card-label-{{color}}" title="{{name}}")
+          .minicard-label(class="{{labelColorClass color}}" style="{{labelColorStyle color}}" title="{{name}}")
     textarea.minicard-composer-textarea.js-card-title(autofocus dir="auto")
     if members.get
       .minicard-members.js-minicard-composer-members
@@ -53,7 +55,8 @@ template(name="addCardForm")
 
   .add-controls.clearfix
     button.primary.confirm(type="submit") {{_ 'add'}}
-    a.fa.fa-times-thin.js-close-inlined-form
+    a.js-close-inlined-form
+      i.fa.fa-times-thin
   .add-controls.clearfix
     unless currentBoard.isTemplatesBoard
       unless currentBoard.isTemplateBoard
@@ -84,16 +87,19 @@ template(name="linkCardPopup")
 
   label {{_ 'swimlanes'}}:
   select.js-select-swimlanes
+    option(value="") {{_ 'custom-field-dropdown-none'}}
     each swimlanes
       option(value="{{_id}}") {{isTitleDefault title}}
 
   label {{_ 'lists'}}:
   select.js-select-lists
+    option(value="") {{_ 'custom-field-dropdown-none'}}
     each lists
       option(value="{{_id}}") {{isTitleDefault title}}
 
   label {{_ 'cards'}}:
   select.js-select-cards
+    option(value="") {{_ 'custom-field-dropdown-none'}}
     each cards
       option(value="{{getRealId}}") {{getTitle}}
 

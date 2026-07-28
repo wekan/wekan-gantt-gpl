@@ -1,3 +1,81 @@
+/* #4759: Member Settings / Font popup — a button per installed font (each shown in
+   its own font) and a row of size buttons (smaller ... 100% ... larger). Clicking a
+   button applies immediately. */
+.ui-font-buttons,
+.ui-font-size-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 2px 0 10px 0;
+}
+.ui-font-btn,
+.ui-font-size-btn {
+  display: inline-block;
+  padding: 4px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  color: #333;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1.4;
+  text-decoration: none;
+}
+.ui-font-btn:hover,
+.ui-font-size-btn:hover {
+  background: #f0f0f0;
+}
+.ui-font-btn.active,
+.ui-font-size-btn.active {
+  background: #2980b9;
+  border-color: #2980b9;
+  color: #fff;
+}
+/* The "Unset" colour reset links look like buttons. */
+.color-wheel-wrap .js-reset-text-color,
+.color-wheel-wrap .js-reset-bg-color {
+  display: inline-block;
+  padding: 4px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  color: #333;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1.4;
+  text-decoration: none;
+}
+.color-wheel-wrap .js-reset-text-color:hover,
+.color-wheel-wrap .js-reset-bg-color:hover {
+  background: #f0f0f0;
+}
+.color-wheel-wrap .js-reset-text-color.disabled,
+.color-wheel-wrap .js-reset-bg-color.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* #5514: native color-wheel (custom RGB / hex) picker wrapper, shared by the
+   label / list / swimlane / card color popups. */
+.color-wheel-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 10px 0;
+}
+.color-wheel-wrap label {
+  margin: 0;
+}
+.color-wheel-wrap input[type="color"] {
+  width: 44px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  background: none;
+}
+
 .card-label {
   border: 1px solid #000;
   border-radius: 4px;
@@ -5,7 +83,7 @@
   display: inline-block;
   font-weight: 700;
   font-size: 13px;
-  margin-right: 4px;
+  margin-inline-end: 4px;
   margin-bottom: 5px;
   padding: 3px 8px;
   max-width: 210px;
@@ -38,6 +116,7 @@
 .palette-colors {
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-start; /* left-align color chips in wider popovers */
 }
 .palette-colors .palette-color {
   flex-grow: 1;
@@ -139,7 +218,7 @@
 }
 .edit-label .card-label,
 .create-label .card-label {
-  float: left;
+  float: inline-start;
   height: 25px;
   margin: 0px 3% 7px 0px;
   width: 10.5%;
@@ -152,7 +231,7 @@
 }
 .edit-labels .card-label {
   height: 30px;
-  left: 0;
+  inset-inline-start: 0;
   padding: 1px 5px;
   position: absolute;
   top: 0;
@@ -163,7 +242,7 @@
   margin-bottom: 4px;
   position: relative;
   top: auto;
-  left: 0;
+  inset-inline-start: 0;
   width: 260px;
 }
 .edit-labels-pop-over {
@@ -184,24 +263,24 @@
   min-height: 18px;
   padding: 8px;
   position: relative;
-  transition: margin-right 0.1s;
+  transition: margin-inline-end 0.1s;
 }
 .card-label-selectable .card-label-selectable-icon {
   position: absolute;
   top: 8px;
-  right: -20px;
+  inset-inline-end: -20px;
 }
 .card-label-selectable.active:hover,
 .card-label-selectable.active,
 .card-label-selectable.active.selected:hover,
 .card-label-selectable.active.selected {
-  padding-right: 32px;
+  padding-inline-end: 32px;
 }
 .card-label-selectable.active:hover .card-label-selectable-icon,
 .card-label-selectable.active .card-label-selectable-icon,
 .card-label-selectable.active.selected:hover .card-label-selectable-icon,
 .card-label-selectable.active.selected .card-label-selectable-icon {
-  right: 6px;
+  inset-inline-end: 6px;
 }
 .card-label-selectable.selected,
 .card-label-selectable:hover {
@@ -209,22 +288,26 @@
 }
 .active .card-label-selectable,
 .active .card-label-selectable:hover {
-  margin-right: 0;
+  margin-inline-end: 0;
 }
 .active .card-label-selectable .card-label-selectable-icon {
-  right: 8px;
+  inset-inline-end: 8px;
 }
 .card-label-edit-button {
   border-radius: 3px;
-  float: right;
+  float: inline-end;
   padding: 8px;
 }
 .card-label-edit-button:hover {
   background: #dbdbdb;
 }
-ul.edit-labels-pop-over span.fa.label-handle {
-  padding-right: 10px;
+ul.edit-labels-pop-over span.label-handle {
+  padding-inline-end: 10px;
+  display: inline-block;
+  width: 1.2em;
+  text-align: center;
+  color: #999;
 }
-ul.edit-labels-pop-over span.fa.label-handle + .card-label {
+ul.edit-labels-pop-over span.label-handle + .card-label {
   max-width: 180px;
 }

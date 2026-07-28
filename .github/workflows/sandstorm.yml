@@ -1,0 +1,144 @@
+name: Build Sandstorm .spk
+
+# Manually triggered. Builds ONLY the Sandstorm .spk package (nothing else) and
+# uploads it as wekan-sandstorm-YYYY_MM_DD-HH_MM_SS.spk to the NEWEST WeKan GitHub
+# Release as an attachment, so you can download it, test whether the Sandstorm
+# build works, and see any errors — without running a full release.
+#
+#   gh workflow run sandstorm.yml
+#
+# EXPERIMENTAL in CI (same caveats as the build-sandstorm job in release-all.yml):
+#   * Sandstorm needs unprivileged user namespaces; GitHub's Ubuntu runners are VMs
+#     that allow them, but this is the fragile part.
+#   * meteor-spk SIGNS the .spk with the app private key from the Sandstorm keyring;
+#     provide it as the SANDSTORM_KEYRING secret (base64 of ~/.sandstorm keyring).
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch, tag or SHA to build the .spk from (default: main)'
+        required: false
+        default: 'main'
+
+permissions:
+  contents: write
+
+env:
+  NODE_VERSION: '24'
+
+jobs:
+  sandstorm:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Build the dispatched ref so a fix branch can be tested before it is
+          # merged to main; defaults to main for a plain `gh workflow run`.
+          ref: ${{ github.event.inputs.ref || 'main' }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Enable unprivileged user namespaces (Ubuntu 24.04 restricts them)
+        # Ubuntu 24.04's AppArmor defaults kernel.apparmor_restrict_unprivileged_userns=1,
+        # which blocks the unprivileged user namespaces that the Sandstorm install and
+        # the spk supervisor rely on (the "fragile part" noted above). Relax it so
+        # `install.sandstorm.io` and meteor-spk can create sandboxes on the runner.
+        # `|| true`: on kernels/runners without these knobs, setting them is a no-op.
+        run: |
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+          sudo sysctl -w kernel.unprivileged_userns_clone=1 2>/dev/null || true
+
+      - name: Install system dependencies and Meteor
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y p7zip-full wget curl build-essential g++ make python3 unzip xz-utils git qemu-user-static
+          if [ ! -f "$HOME/.meteor/meteor" ]; then curl https://install.meteor.com/ | sh; fi
+          echo "$HOME/.meteor" >> "$GITHUB_PATH"
+
+      - name: Install Sandstorm (dev, unattended)
+        # Installed BEFORE assembling the deps: build-deps.sh's [bridge] step copies
+        # the modern /opt/sandstorm/latest/bin/sandstorm-http-bridge over the ancient
+        # bundled one, so the Sandstorm install must be in place first.
+        run: curl https://install.sandstorm.io | sudo bash -s -- -d
+
+      - name: Assemble modern meteor-spk.deps (Node 24 + FerretDB + Mongo 3.x CLIs)
+        # Base = upstream meteor-spk 0.6.0 from dl.sandstorm.io (has mongod 3.0 +
+        # niscud). build-deps.sh swaps in Node 24, adds FerretDB + the Mongo 3.x
+        # CLIs + the migration launcher/importer, keeps niscud, and swaps in the
+        # modern sandstorm-http-bridge from the Sandstorm install above. No dependency
+        # on the retired releases.wekan.team or the old projects.7z.
+        run: |
+          bash sandstorm-src/build-deps.sh
+          echo "$HOME/projects/meteor-spk/meteor-spk-0.6.0" >> "$GITHUB_PATH"
+
+      - name: Restore the Sandstorm signing keyring
+        env:
+          SANDSTORM_KEYRING: ${{ secrets.SANDSTORM_KEYRING }}
+        run: |
+          if [ -n "${SANDSTORM_KEYRING:-}" ]; then
+            # meteor-spk / spk read the app signing key from ~/.sandstorm-keyring —
+            # a FILE directly in $HOME (see the pack crash path
+            # "/home/runner/.sandstorm-keyring"). Write it exactly there, NOT to
+            # ~/.sandstorm/sandstorm-keyring, or `meteor-spk pack` aborts with
+            # "open(~/.sandstorm-keyring): No such file or directory".
+            printf '%s' "$SANDSTORM_KEYRING" | base64 -d > "$HOME/.sandstorm-keyring"
+            chmod 600 "$HOME/.sandstorm-keyring"
+            echo "Restored ~/.sandstorm-keyring ($(wc -c < "$HOME/.sandstorm-keyring") bytes)."
+          else
+            echo "::error::SANDSTORM_KEYRING secret is not set. meteor-spk pack signs the .spk with the WeKan Sandstorm app's private key, which lives in this keyring, so packing cannot proceed without it. Add the base64 of your ~/.sandstorm-keyring file as the SANDSTORM_KEYRING repository secret (e.g. 'base64 -w0 ~/.sandstorm-keyring')."
+            exit 1
+          fi
+
+      - name: Install Meteor npm dependencies
+        # PUPPETEER_SKIP_DOWNLOAD: puppeteer is a devDependency used only by tests,
+        # not by the server, so it never belongs in the packed .spk. Skipping its
+        # Chromium download (~150 MB) avoids any risk of it bloating the build and
+        # speeds up CI.
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: '1'
+        run: |
+          (meteor update --npm 2>/dev/null || true) && meteor npm install
+
+      - name: Build the Sandstorm .spk
+        id: build
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: '1'
+        run: |
+          set -euo pipefail
+          STAMP="$(date +'%Y_%m_%d-%H_%M_%S')"
+          SPK="wekan-sandstorm-${STAMP}.spk"
+          meteor-spk pack "$SPK"
+          # Report the packed size and warn if it exceeds Cloudflare's 100 MB upload
+          # cap (a proxied browser upload to a Cloudflare-fronted Sandstorm 413s above
+          # this; install via a DNS-only host / SSH tunnel, or trim further).
+          SPK_BYTES=$(stat -c%s "$SPK")
+          echo "Packed $SPK: $((SPK_BYTES/1024/1024)) MiB ($SPK_BYTES bytes)"
+          if [ "$SPK_BYTES" -gt $((100*1024*1024)) ]; then
+            echo "::warning::$SPK is $((SPK_BYTES/1024/1024)) MiB — over Cloudflare's 100 MB upload limit. Upload via a DNS-only host / SSH tunnel to Sandstorm, or trim the bundle further."
+          fi
+          ls -la "$SPK"
+          echo "spk=$SPK" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.build.outputs.spk }}
+          path: ${{ steps.build.outputs.spk }}
+          retention-days: 7
+
+      - name: Upload the .spk to the newest WeKan release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          TAG="$(gh release list --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null || true)"
+          if [ -z "${TAG:-}" ] || [ "$TAG" = "null" ]; then
+            echo "::error::No existing GitHub Release found to attach the .spk to."
+            exit 1
+          fi
+          echo "Uploading ${{ steps.build.outputs.spk }} to the newest release: $TAG"
+          gh release upload "$TAG" "${{ steps.build.outputs.spk }}" --clobber

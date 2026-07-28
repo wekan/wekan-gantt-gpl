@@ -5,31 +5,31 @@
 
 template(name="filterSidebar")
   h3
-    i.fa.fa-trello
+    i.fa.fa-list
     | {{_ 'list-filter-label'}}
   ul.sidebar-list
     form.js-list-filter
       input(type="text")
   hr
   h3
-    i.fa.fa-list-alt
+    i.fa.fa-list
     | {{_ 'filter-card-title-label'}}
   input.js-field-card-filter(type="text")
   hr
   h3
-    i.fa.fa-tags
+    i.fa.fa-tag
     | {{_ 'filter-labels-label'}}
   ul.sidebar-list
     li(class="{{#if Filter.labelIds.isSelected undefined}}active{{/if}}")
-          a.name.js-toggle-label-filter
+          a.name.js-toggle-label-filter(data-filter-id="__none__")
             span.sidebar-list-item-description
               | {{_ 'filter-no-label'}}
             if Filter.labelIds.isSelected undefined
               i.fa.fa-check
     each currentBoard.labels
       li
-        a.name.js-toggle-label-filter
-          span.card-label.square(class="card-label-{{color}}")
+        a.name.js-toggle-label-filter(data-filter-id="{{_id}}")
+          span.card-label.square(class="{{labelColorClass color}}" style="{{labelColorStyle color}}")
           span.sidebar-list-item-description
             if name
               = name
@@ -43,7 +43,7 @@ template(name="filterSidebar")
     | {{_ 'filter-member-label'}}
   ul.sidebar-list
     li(class="{{#if Filter.members.isSelected undefined}}active{{/if}}")
-          a.name.js-toggle-member-filter
+          a.name.js-toggle-member-filter(data-filter-id="__none__")
             span.sidebar-list-item-description
               | {{_ 'filter-no-member'}}
             if Filter.members.isSelected undefined
@@ -51,7 +51,7 @@ template(name="filterSidebar")
     each currentBoard.activeMembers
       with getUser userId
         li(class="{{#if Filter.members.isSelected _id}}active{{/if}}")
-          a.name.js-toggle-member-filter
+          a.name.js-toggle-member-filter(data-filter-id="{{_id}}")
             +userAvatar(userId=this._id)
             span.sidebar-list-item-description
               = profile.fullname
@@ -64,7 +64,7 @@ template(name="filterSidebar")
     | {{_ 'filter-assignee-label'}}
   ul.sidebar-list
     li(class="{{#if Filter.assignees.isSelected undefined}}active{{/if}}")
-      a.name.js-toggle-assignee-filter
+      a.name.js-toggle-assignee-filter(data-filter-id="__none__")
         span.sidebar-list-item-description
           | {{_ 'filter-no-assignee'}}
         if Filter.assignees.isSelected undefined
@@ -72,17 +72,16 @@ template(name="filterSidebar")
     each currentBoard.activeMembers
       with getUser userId
         li(class="{{#if Filter.assignees.isSelected _id}}active{{/if}}")
-          a.name.js-toggle-assignee-filter
+          a.name.js-toggle-assignee-filter(data-filter-id="{{_id}}")
             +userAvatar(userId=this._id)
             span.sidebar-list-item-description
               = profile.fullname
               | (<span class="username">{{ username }}</span>)
             if Filter.assignees.isSelected _id
               i.fa.fa-check
-
   hr
   h3
-    i.fa.fa-list-alt
+    i.fa.fa-calendar
     | {{_ 'filter-dates-label' }}
   ul.sidebar-list
     li(class="{{#if Filter.dueAt.isSelected 'noDate'}}active{{/if}}")
@@ -123,21 +122,33 @@ template(name="filterSidebar")
           i.fa.fa-check
   hr
   h3
-    i.fa.fa-list-alt
+    i.fa.fa-list
     | {{_ 'filter-custom-fields-label'}}
   ul.sidebar-list
     li(class="{{#if Filter.customFields.isSelected undefined}}active{{/if}}")
-          a.name.js-toggle-custom-fields-filter
+          a.name.js-toggle-custom-fields-filter(data-filter-id="__none__")
             span.sidebar-list-item-description
               | {{_ 'filter-no-custom-fields'}}
             if Filter.customFields.isSelected undefined
               i.fa.fa-check
     each currentBoard.customFields
       li(class="{{#if Filter.customFields.isSelected _id}}active{{/if}}")
-        a.name.js-toggle-custom-fields-filter
+        a.name.js-toggle-custom-fields-filter(data-filter-id="{{_id}}")
           span.sidebar-list-item-description
             | {{ name }}
           if Filter.customFields.isSelected _id
+            i.fa.fa-check
+  hr
+  h3
+    i.fa.fa-link
+    | {{_ 'filter-dependencies-label'}}
+  ul.sidebar-list
+    each dependencyTypes
+      li(class="{{#if Filter.cardDependencies.isSelected id}}active{{/if}}")
+        a.name.js-toggle-dependency-filter(data-filter-id="{{id}}")
+          span.sidebar-list-item-description
+            | {{_ label}}
+          if Filter.cardDependencies.isSelected id
             i.fa.fa-check
   hr
   h3
@@ -163,21 +174,21 @@ template(name="filterSidebar")
   if Filter.isActive
     hr
     a.sidebar-btn.js-clear-all
-      i.fa.fa-filter
+      i.fa.fa-search
       span {{_ 'filter-clear'}}
     a.sidebar-btn.js-filter-to-selection
-      i.fa.fa-check-square-o
+      i.fa.fa-check
       span {{_ 'filter-to-selection'}}
 
 template(name="multiselectionSidebar")
   h3
-    i.fa.fa-tags
+    i.fa.fa-tag
     | {{_ 'multi-selection-label'}}
   ul.sidebar-list
     each currentBoard.labels
       li
         a.name.js-toggle-label-multiselection
-          span.card-label.square(class="card-label-{{color}}")
+          span.card-label.square(class="{{labelColorClass color}}" style="{{labelColorStyle color}}")
           span.sidebar-list-item-description
             if name
               = name
@@ -186,7 +197,7 @@ template(name="multiselectionSidebar")
           if allSelectedElementHave 'label' _id
             i.fa.fa-check
           else if someSelectedElementHave 'label' _id
-            i.fa.fa-ellipsis-h
+            | ⋯
   hr
   h3
     i.fa.fa-users
@@ -203,11 +214,17 @@ template(name="multiselectionSidebar")
             if allSelectedElementHave 'member' _id
               i.fa.fa-check
             else if someSelectedElementHave 'member' _id
-              i.fa.fa-ellipsis-h
+              | ⋯
   if currentUser.isBoardAdmin
     hr
+    a.sidebar-btn.js-selection-color
+      i.fa.fa-paint-brush
+      span {{_ 'selection-color'}}
+    a.sidebar-btn.js-copy-selection
+      i.fa.fa-clipboard
+      span {{_ 'copy-selection'}}
     a.sidebar-btn.js-move-selection
-      i.fa.fa-share
+      i.fa.fa-upload
       span {{_ 'move-selection'}}
     a.sidebar-btn.js-archive-selection
       i.fa.fa-archive
@@ -224,4 +241,76 @@ template(name="disambiguateMultiMemberPopup")
   button.wide.js-assign-member {{_ 'assign-member'}}
 
 template(name="moveSelectionPopup")
-  +boardLists
+  h3 {{_ 'moveSelectionPopup-title'}}
+  label {{_ 'boards'}}:
+  select.js-select-boards
+    each boards
+      option(value="{{_id}}" selected="{{#if isDialogOptionBoardId _id}}selected{{/if}}") {{add @index 1}}. {{title}}
+
+  label {{_ 'swimlanes'}}:
+  select.js-select-swimlanes
+    each swimlanes
+      option(value="{{_id}}" selected="{{#if isDialogOptionSwimlaneId _id}}selected{{/if}}") {{add @index 1}}. {{isTitleDefault title}}
+
+  label {{_ 'lists'}}:
+  select.js-select-lists
+    each lists
+      option(value="{{_id}}" selected="{{#if isDialogOptionListId _id}}selected{{/if}}") {{add @index 1}}. {{title}}
+
+  label {{_ 'cards'}}:
+  select.js-select-cards
+    each cards
+      option(value="{{_id}}") {{add @index 1}}. {{title}}
+
+  div
+    input(type="radio" name="position" value="above" checked id="position-above-move" style="display: inline")
+    label(for="position-above-move") {{_ 'above-selected-card'}}
+  div
+    input(type="radio" name="position" value="below" id="position-below-move" style="display: inline")
+    label(for="position-below-move") {{_ 'below-selected-card'}}
+
+  .edit-controls.clearfix
+    button.primary.confirm.js-done {{_ 'done'}}
+
+template(name="copySelectionPopup")
+  h3 {{_ 'copySelectionPopup-title'}}
+  label {{_ 'boards'}}:
+  select.js-select-boards
+    each boards
+      option(value="{{_id}}" selected="{{#if isDialogOptionBoardId _id}}selected{{/if}}") {{add @index 1}}. {{title}}
+
+  label {{_ 'swimlanes'}}:
+  select.js-select-swimlanes
+    each swimlanes
+      option(value="{{_id}}" selected="{{#if isDialogOptionSwimlaneId _id}}selected{{/if}}") {{add @index 1}}. {{isTitleDefault title}}
+
+  label {{_ 'lists'}}:
+  select.js-select-lists
+    each lists
+      option(value="{{_id}}" selected="{{#if isDialogOptionListId _id}}selected{{/if}}") {{add @index 1}}. {{title}}
+
+  label {{_ 'cards'}}:
+  select.js-select-cards
+    each cards
+      option(value="{{_id}}") {{add @index 1}}. {{title}}
+
+  div
+    input(type="radio" name="position" value="above" checked id="position-above-copy" style="display: inline")
+    label(for="position-above-copy") {{_ 'above-selected-card'}}
+  div
+    input(type="radio" name="position" value="below" id="position-below-copy" style="display: inline")
+    label(for="position-below-copy") {{_ 'below-selected-card'}}
+
+  .edit-controls.clearfix
+    button.primary.confirm.js-done {{_ 'done'}}
+
+template(name="setSelectionColorPopup")
+  h3 {{_ 'setSelectionColorPopup-title'}}
+  form.edit-label
+    .palette-colors: each colors
+      unless $eq color 'white'
+        span.card-label.palette-color.js-palette-color(class="card-details-{{color}}")
+          if(isSelected color)
+            i.fa.fa-check
+    button.primary.confirm.js-submit {{_ 'save'}}
+    button.js-remove-color.negate.wide.right {{_ 'unset-color'}}

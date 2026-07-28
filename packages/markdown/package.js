@@ -6,9 +6,9 @@ Package.describe({
 });
 
 Package.onUse(function (api) {
-	if(api.versionsFrom) api.versionsFrom('1.8.2');
-
+	api.versionsFrom(['2.16', '3.0']);
 	api.use('templating');
+	api.use('reactive-var', 'client');
 	api.use("ecmascript", ['server', 'client']);
 
 	api.export('Markdown', ['server', 'client']);

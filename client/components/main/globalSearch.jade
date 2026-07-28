@@ -4,6 +4,36 @@ template(name="globalSearchHeaderBar")
       i.fa.fa-search
       | {{_ 'globalSearch-title'}}
 
+    .board-header-btns.left
+      a.board-header-btn.js-global-search-view-change(title="{{_ 'globalSearchViewChange-title'}}")
+        i.fa.fa-caret-down
+        if $eq globalSearchView 'me'
+          i.fa.fa-user
+          | {{_ 'globalSearchViewChange-choice-me'}}
+        if $eq globalSearchView 'all'
+          i.fa.fa-users
+          | {{_ 'globalSearchViewChange-choice-all'}}
+
+template(name="globalSearchViewChangePopup")
+  if currentUser
+    ul.pop-over-list
+      li
+        a.js-global-search-view-me
+          i.fa.fa-user
+          | {{_ 'globalSearchViewChange-choice-me'}}
+          if $eq Utils.globalSearchView "me"
+            i.fa.fa-check
+      hr
+      li
+        a.js-global-search-view-all
+          i.fa.fa-users
+          | {{_ 'globalSearchViewChange-choice-all'}}
+          span.sub-name
+            +viewer
+              | {{_ 'globalSearchViewChange-choice-all-description' }}
+          if $eq Utils.globalSearchView "all"
+            i.fa.fa-check
+
 template(name="globalSearchModalTitle")
   if currentUser
     h2
@@ -11,66 +41,54 @@ template(name="globalSearchModalTitle")
       | {{_ 'globalSearch-title'}}
 
 template(name="resultsPaged")
-  if resultsHeading.get
-    h1
-      = resultsHeading.get
-      a.fa.fa-link(title="{{_ 'link-to-search' }}" href="{{ getSearchHref }}")
-  each card in results.get
+  if resultsHeading
+    h1= resultsHeading
+  each card in results
     +resultCard(card)
   table.global-search-footer
     tr
       td.global-search-previous-page
-        if hasPreviousPage.get
+        if hasPreviousPage
           button.js-previous-page
             | {{_ 'previous-page' }}
       td.global-search-next-page(align="right")
-        if hasNextPage.get
+        if hasNextPage
           button.js-next-page
             | {{_ 'next-page' }}
 
 template(name="globalSearch")
   if currentUser
-    .wrapper
-      form.global-search-page.js-search-query-form
+    //- `global-search-wrapper` gives this page a scoped hook so its CSS can undo
+      the `height: 100vh; overflow: hidden` that the All Boards stylesheet pins on
+      the GLOBAL `.wrapper` at phone widths - that clip is what hid this page's
+      lower content. With the clip gone the page's existing scroller (#content)
+      scrolls it, natively on touch, so no per-element dragscroll is needed.
+    .wrapper.global-search-wrapper(class=boardColorClass)
+      form.global-search-page.js-search-query-form(role="search" onsubmit="return false;")
+        label.sr-only(for="global-search-input") {{_ 'globalSearch-title'}}
         input.global-search-query-input(
-          style="{# if hasResults.get #}display: inline-block;{#/if#}"
+          style="display: inline-block;"
           id="global-search-input"
           type="text"
           name="searchQuery"
           placeholder="{{_ 'search-example'}}"
-          value="{{ query.get }}"
+          value="{{ queryValue }}"
+          aria-label="{{_ 'globalSearch-title'}}"
           autofocus dir="auto"
         )
-        a.js-new-search.fa.fa-eraser
-      if debug.get.show
-        h1 Debug
-        if debug.get.showSelector
-          h2 Selector
-            button.js-copy-debug-selector
-              = 'Copy'
-          pre(
-            id="debug-selector"
-          )
-            = sessionData.selector
-        if debug.get.showProjection
-          h2 Projection
-            button.js-copy-debug-projection
-              = 'Copy'
-          pre(
-            id="debug-projection"
-          )
-            = sessionData.projection
-      if searching.get
+        button.primary.js-new-search(type="submit" aria-label="{{_ 'trello-clear-job'}}")
+          | {{_ 'trello-clear-job'}}
+      if searching
         +spinner
-      else if hasResults.get
-        .global-search-results-list-wrapper
-          if hasQueryErrors.get
+      else if hasResults
+        .global-search-results-list-wrapper.global-search-results-list
+          if hasQueryErrors
             ul
               each msg in errorMessages
                 li.global-search-error-messages
                   = msg
-          +resultsPaged(this)
-      else if serverError.get
+          +resultsPaged getSearchData
+      else if serverError
         .global-search-page
           .global-search-help
             h1 {{_ 'server-error' }}
@@ -81,22 +99,22 @@ template(name="globalSearch")
           .global-search-help
             h2 {{_ 'boards' }}
             .lists-wrapper
-              each title in myBoardNames.get
+              each title in myBoardNames
                 span.card-label.list-title.js-board-title
                   = title
             h2 {{_ 'lists' }}
             .lists-wrapper
-              each title in myLists.get
+              each title in myLists
                 span.card-label.list-title.js-list-title
                   = title
             h2 {{_ 'label-colors' }}
             .palette-colors: each label in labelColors
               span.card-label.palette-color.js-label-color(class="card-label-{{label.color}}")
                 = label.name
-            if myLabelNames.get.length
+            if myLabelNames
               h2 {{_ 'label-names' }}
               .lists-wrapper
-                each name in myLabelNames.get
+                each name in myLabelNames
                   span.card-label.list-title.js-label-name
                     = name
           .global-search-instructions

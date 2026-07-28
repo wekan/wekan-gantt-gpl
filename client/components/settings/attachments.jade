@@ -1,96 +1,715 @@
 template(name="attachments")
   .setting-content.attachments-content
-    unless currentUser.isAdmin
+    //- Multitenancy option D (docs/Design/Multitenancy/Multitenancy.md, D.8): a
+    //- per-tenant Global Admin opens this page too, and gets one entry - Backup -
+    //- scoped to their own Organization. The server refuses every other scope.
+    unless currentUser.isAdminOrOrgAdmin
       | {{_ 'error-notAuthorized'}}
     else
+      //- No page-title bar. The Admin Panel top bar already names the section and
+      //- the left menu highlights the open pane, so a third line repeating the pane
+      //- name only cost vertical space. Admin Panel / Problems never had one.
       .content-body
-        .side-menu
-          ul
-            li
-              a.js-move-attachments(data-id="move-attachments")
-                i.fa.fa-arrow-right
-                | {{_ 'attachment-move'}}
-
+        +leftMenu(menuItems)
         .main-body
+          //- Every Admin Panel pane opens with the same heading, and it is the
+          //- open menu entry's own label (docs/Design/Page/Left-Menu.md).
+          +paneTitle(paneTitleData)
           if loading.get
             +spinner
-          else if showMoveAttachments.get
-            +moveAttachments
+          else if isMoveActive
+            ul#attachment-move-setting.setting-detail
+              li
+                +moveAttachments
+          else if isDefaultStorageActive
+            ul#attachment-default-storage-setting.setting-detail
+              li
+                .description {{_ 'default-save-storage-description'}}
+                .form-group
+                  select.wekan-form-control.js-default-save-storage
+                    each defaultStorageOptions
+                      option(value=value selected=selected) {{_ labelKey}}
+                .form-group
+                  button.js-save-default-storage.primary {{_ 'save'}}
+          else if isLimitsActive
+            ul#attachment-limits-setting.setting-detail
+              li
+                h3 {{_ 'attachment-transfer-limits-title'}}
+                .description {{_ 'attachment-transfer-limits-description'}}
+
+              li
+                .title {{_ 'attachment-upload-limit-label'}}
+                .form-group
+                  select.wekan-form-control.js-attachment-limit-mode(data-field="attachmentsUploadMaxBytes")
+                    each attachmentTransferLimitModeOptions 'attachmentsUploadMaxBytes'
+                      option(value=value selected=selected) {{_ labelKey}}
+                .form-group(class="{{#if isAttachmentLimitMode 'attachmentsUploadMaxBytes' 'max-size'}}{{else}}hide{{/if}}")
+                  input.wekan-form-control#attachments-upload-limit-value(type="number" min="1" step="any" value="{{attachmentTransferLimitValue 'attachmentsUploadMaxBytes'}}")
+                  select.wekan-form-control.js-attachment-limit-unit(data-field="attachmentsUploadMaxBytes")
+                    each attachmentTransferLimitUnitOptions 'attachmentsUploadMaxBytes'
+                      option(value=value selected=selected) {{_ labelKey}}
+
+              li
+                .title {{_ 'attachment-download-limit-label'}}
+                .form-group
+                  select.wekan-form-control.js-attachment-limit-mode(data-field="attachmentsDownloadMaxBytes")
+                    each attachmentTransferLimitModeOptions 'attachmentsDownloadMaxBytes'
+                      option(value=value selected=selected) {{_ labelKey}}
+                .form-group(class="{{#if isAttachmentLimitMode 'attachmentsDownloadMaxBytes' 'max-size'}}{{else}}hide{{/if}}")
+                  input.wekan-form-control#attachments-download-limit-value(type="number" min="1" step="any" value="{{attachmentTransferLimitValue 'attachmentsDownloadMaxBytes'}}")
+                  select.wekan-form-control.js-attachment-limit-unit(data-field="attachmentsDownloadMaxBytes")
+                    each attachmentTransferLimitUnitOptions 'attachmentsDownloadMaxBytes'
+                      option(value=value selected=selected) {{_ labelKey}}
+
+              li
+                .title {{_ 'api-upload-limit-label'}}
+                .form-group
+                  select.wekan-form-control.js-attachment-limit-mode(data-field="apiUploadMaxBytes")
+                    each attachmentTransferLimitModeOptions 'apiUploadMaxBytes'
+                      option(value=value selected=selected) {{_ labelKey}}
+                .form-group(class="{{#if isAttachmentLimitMode 'apiUploadMaxBytes' 'max-size'}}{{else}}hide{{/if}}")
+                  input.wekan-form-control#api-upload-limit-value(type="number" min="1" step="any" value="{{attachmentTransferLimitValue 'apiUploadMaxBytes'}}")
+                  select.wekan-form-control.js-attachment-limit-unit(data-field="apiUploadMaxBytes")
+                    each attachmentTransferLimitUnitOptions 'apiUploadMaxBytes'
+                      option(value=value selected=selected) {{_ labelKey}}
+
+              li
+                .title {{_ 'api-download-limit-label'}}
+                .form-group
+                  select.wekan-form-control.js-attachment-limit-mode(data-field="apiDownloadMaxBytes")
+                    each attachmentTransferLimitModeOptions 'apiDownloadMaxBytes'
+                      option(value=value selected=selected) {{_ labelKey}}
+                .form-group(class="{{#if isAttachmentLimitMode 'apiDownloadMaxBytes' 'max-size'}}{{else}}hide{{/if}}")
+                  input.wekan-form-control#api-download-limit-value(type="number" min="1" step="any" value="{{attachmentTransferLimitValue 'apiDownloadMaxBytes'}}")
+                  select.wekan-form-control.js-attachment-limit-unit(data-field="apiDownloadMaxBytes")
+                    each attachmentTransferLimitUnitOptions 'apiDownloadMaxBytes'
+                      option(value=value selected=selected) {{_ labelKey}}
+
+              li
+                .title {{_ 'avatars-upload-blocked-label'}}
+                .form-group
+                  a.flex.js-toggle-checkbox
+                    .materialCheckBox.js-avatars-upload-blocked(class="{{#if avatarsUploadBlocked}}is-checked{{/if}}")
+                    span {{_ 'avatars-upload-blocked-description'}}
+
+              li
+                button.js-save-attachment-transfer-limits.primary {{_ 'save'}}
+          else if isFilesystemActive
+            ul#attachment-filesystem-setting.setting-detail
+              li
+                .storage-rw-row
+                  .storage-rw-item
+                    a.flex.js-toggle-filesystem-read
+                      .materialCheckBox#filesystem-read(class="{{#if filesystemRead}}is-checked{{/if}}")
+                      span {{_ 'storage-read'}}
+
+                .form-group
+                  button.js-calculate-filesystem-stats.btn.btn-primary(type="button") {{_ 'calculate-file-counts'}}
+                  if filesystemStatsLoading
+                    p.form-text.text-muted {{_ 'calculating-counts'}}
+                  if filesystemStatsError
+                    p.form-text.text-danger {{filesystemStatsError}}
+                  if hasFilesystemStats
+                    table.gridfs-stats-table
+                      tr
+                        th {{_ 'stats-scope'}}
+                        th {{_ 'stats-count'}}
+                      tr
+                        td {{_ 'attachments'}}
+                        td {{filesystemStats.attachments}}
+                      tr
+                        td {{_ 'avatars'}}
+                        td {{filesystemStats.avatars}}
+
+                .form-group
+                  label {{_ 'writable-path'}}
+                  input.wekan-form-control#filesystem-path(type="text" value="{{filesystemPath}}" readonly)
+                  small.form-text.text-muted {{_ 'filesystem-path-description'}}
+
+                .form-group
+                  label {{_ 'attachments-path'}}
+                  input.wekan-form-control#attachments-path(type="text" value="{{attachmentsPath}}" readonly)
+                  small.form-text.text-muted {{_ 'attachments-path-description'}}
+
+                .form-group
+                  label {{_ 'avatars-path'}}
+                  input.wekan-form-control#avatars-path(type="text" value="{{avatarsPath}}" readonly)
+                  small.form-text.text-muted {{_ 'avatars-path-description'}}
+
+          else if isGridFsActive
+            ul#attachment-gridfs-setting.setting-detail
+              li
+                .description {{_ 'gridfs-move-collectionfs-note'}}
+                .storage-rw-row
+                  .storage-rw-item
+                    a.flex.js-toggle-gridfs-read
+                      .materialCheckBox#gridfs-read(class="{{#if gridfsRead}}is-checked{{/if}}")
+                      span {{_ 'storage-read'}}
+                .form-group
+                  button.js-calculate-gridfs-stats.btn.btn-primary(type="button") {{_ 'calculate-file-counts'}}
+                  if gridFsStatsLoading
+                    p.form-text.text-muted {{_ 'calculating-counts'}}
+                  if gridFsStatsError
+                    p.form-text.text-danger {{gridFsStatsError}}
+                  if hasGridFsStats
+                    table.gridfs-stats-table
+                      tr
+                        th {{_ 'stats-scope'}}
+                        th {{_ 'stats-collectionfs'}}
+                        th {{_ 'stats-mongo-files'}}
+                      tr
+                        td {{_ 'attachments'}}
+                        td {{gridFsStats.attachments.collectionFs}}
+                        td {{gridFsStats.attachments.mongoFiles}}
+                      tr
+                        td {{_ 'avatars'}}
+                        td {{gridFsStats.avatars.collectionFs}}
+                        td {{gridFsStats.avatars.mongoFiles}}
+                .form-group
+                  .compact-block
+                    h4 {{_ 'mongodb-compact'}}
+                    p.form-text {{_ 'mongodb-compact-description'}}
+                    p.form-text.text-muted {{_ 'mongodb-compact-warning'}}
+                    button.js-compact-mongodb-gridfs.btn.btn-warning(type="button") {{_ 'mongodb-compact-run'}}
+                    if compactLoading
+                      p.form-text.text-muted {{_ 'mongodb-compact-running'}}
+                    if compactError
+                      p.form-text.text-danger {{_ 'mongodb-compact-error'}} {{compactError}}
+                    if compactResult
+                      p.form-text.text-success {{_ 'mongodb-compact-success'}}
+                      ul.compact-result-list
+                        each item in compactResultItems
+                          li
+                            strong {{item.name}}
+                            | : {{item.status}}
+
+          else if isS3Active
+            ul#attachment-s3-setting.setting-detail
+              li
+                .description {{_ 's3-minio-storage-description'}}
+                .storage-rw-row
+                  .storage-rw-item
+                    a.flex.js-toggle-checkbox
+                      .materialCheckBox#s3-enabled(class="{{#if cloudEnabled.s3}}is-checked{{/if}}")
+                      span {{_ 'storage-enabled'}}
+                  .storage-rw-item
+                    a.flex.js-toggle-checkbox
+                      .materialCheckBox#s3-read(class="{{#if cloudRead.s3}}is-checked{{/if}}")
+                      span {{_ 'storage-read'}}
+
+                .form-group
+                  button.js-save-cloud-settings.btn.btn-primary(data-provider="s3") {{_ 'save'}}
+
+                .form-group
+                  button.js-calculate-s3-stats.btn.btn-primary(type="button") {{_ 'calculate-file-counts'}}
+                  if s3StatsLoading
+                    p.form-text.text-muted {{_ 'calculating-counts'}}
+                  if s3StatsError
+                    p.form-text.text-danger {{s3StatsError}}
+                  if hasS3Stats
+                    table.gridfs-stats-table
+                      tr
+                        th {{_ 'stats-scope'}}
+                        th {{_ 'stats-count'}}
+                      tr
+                        td {{_ 'attachments'}}
+                        td {{s3Stats.attachments}}
+                      tr
+                        td {{_ 'avatars'}}
+                        td {{s3Stats.avatars}}
+
+                .form-group
+                  label Endpoint
+                  small.form-text.cloud-input-label-tr {{_ 's3-endpoint'}}
+                  input.wekan-form-control#s3-endpoint(type="text" value=cloudValue.s3.endpoint)
+                  small.form-text.cloud-input-example https://s3.eu-west-1.amazonaws.com
+                  small.form-text.cloud-input-desc S3 endpoint URL (e.g., s3.amazonaws.com or minio.example.com)
+                  small.form-text.cloud-input-desc {{_ 's3-endpoint-description'}}
+                  small.form-text.cloud-input-path AWS: leave blank (uses the region endpoint). S3-compatible: the Endpoint URL from your MinIO / Cloudflare R2 / Backblaze B2 / Wasabi / DigitalOcean Spaces console.
+                  small.form-text.cloud-input-path {{_ 's3-endpoint-menu-path'}}
+                .form-group
+                  label AWS Region
+                  small.form-text.cloud-input-label-tr {{_ 's3-region'}}
+                  input.wekan-form-control#s3-region(type="text" value=cloudValue.s3.region)
+                  small.form-text.cloud-input-example eu-west-1
+                  small.form-text.cloud-input-desc AWS S3 region (e.g., us-east-1)
+                  small.form-text.cloud-input-desc {{_ 's3-region-description'}}
+                  small.form-text.cloud-input-path AWS Console → S3 → Buckets → your bucket → Properties → AWS Region.
+                  small.form-text.cloud-input-path {{_ 's3-region-menu-path'}}
+                .form-group
+                  label Bucket name
+                  small.form-text.cloud-input-label-tr {{_ 's3-bucket'}}
+                  input.wekan-form-control#s3-bucket(type="text" value=cloudValue.s3.bucket)
+                  small.form-text.cloud-input-example wekan-s3-test-369341155299-eu-west-1-an
+                  small.form-text.cloud-input-desc S3 bucket name for storing files
+                  small.form-text.cloud-input-desc {{_ 's3-bucket-description'}}
+                  small.form-text.cloud-input-path AWS Console → S3 → Buckets → your bucket name (or Create bucket → Bucket name).
+                  small.form-text.cloud-input-path {{_ 's3-bucket-menu-path'}}
+                .form-group
+                  label Access key ID
+                  small.form-text.cloud-input-label-tr {{_ 's3-access-key'}}
+                  input.wekan-form-control#s3-access-key(type="text" value=cloudValue.s3.accessKeyId)
+                  small.form-text.cloud-input-example AKIAIOSFODNN7EXAMPLE
+                  small.form-text.cloud-input-desc AWS S3 access key for authentication
+                  small.form-text.cloud-input-desc {{_ 's3-access-key-description'}}
+                  small.form-text.cloud-input-path AWS Console → IAM → Users → your user → Security credentials → Access keys → Create access key → choose use case 'Application running outside AWS' → Create access key. Shown as 'Access key ID'.
+                  small.form-text.cloud-input-path {{_ 's3-access-key-menu-path'}}
+                .form-group
+                  label Secret access key
+                  small.form-text.cloud-input-label-tr {{_ 's3-secret-key'}}
+                  input.wekan-form-control#s3-secret-key(type="password" placeholder=cloudSecretPlaceholder.s3.secretAccessKey)
+                  small.form-text.cloud-input-example wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                  small.form-text.cloud-input-desc Leave blank to keep the current value.
+                  small.form-text.cloud-input-desc {{_ 'cloud-secret-keep-blank'}}
+                  small.form-text.cloud-input-path Same screen as the Access key ID; 'Secret access key' is shown only once when the key is created — copy it then (or Download .csv).
+                  small.form-text.cloud-input-path {{_ 's3-secret-key-menu-path'}}
+                .form-group
+                  .storage-rw-item
+                    a.flex.js-toggle-checkbox
+                      .materialCheckBox#s3-force-path-style(class="{{#if cloudValue.s3.forcePathStyle}}is-checked{{/if}}")
+                      span {{_ 's3-force-path-style'}}
+                  small.form-text.text-muted {{_ 's3-force-path-style-description'}}
+
+                .form-group
+                  button.js-test-cloud-connection.btn.btn-secondary(data-provider="s3") {{_ 'test-cloud-connection'}}
+                  button.js-save-cloud-settings.btn.btn-primary(data-provider="s3") {{_ 'save'}}
+                  if cloudTestResult.s3
+                    p.form-text.text-success {{_ 'cloud-connection-success'}}
+                  if cloudTestError.s3
+                    p.form-text.text-danger {{_ 'cloud-connection-failed'}}: {{cloudTestError.s3}}
+
+          else if isAzureActive
+            ul#attachment-azure-setting.setting-detail
+              li
+                .storage-rw-row
+                  .storage-rw-item
+                    a.flex.js-toggle-checkbox
+                      .materialCheckBox#azure-enabled(class="{{#if cloudEnabled.azure}}is-checked{{/if}}")
+                      span {{_ 'storage-enabled'}}
+                  .storage-rw-item
+                    a.flex.js-toggle-checkbox
+                      .materialCheckBox#azure-read(class="{{#if cloudRead.azure}}is-checked{{/if}}")
+                      span {{_ 'storage-read'}}
+
+                .form-group
+                  button.js-save-cloud-settings.btn.btn-primary(data-provider="azure") {{_ 'save'}}
+
+                .form-group
+                  button.js-calculate-azure-stats.btn.btn-primary(type="button") {{_ 'calculate-file-counts'}}
+                  if azureStatsLoading
+                    p.form-text.text-muted {{_ 'calculating-counts'}}
+                  if azureStatsError
+                    p.form-text.text-danger {{azureStatsError}}
+                  if hasAzureStats
+                    table.gridfs-stats-table
+                      tr
+                        th {{_ 'stats-scope'}}
+                        th {{_ 'stats-count'}}
+                      tr
+                        td {{_ 'attachments'}}
+                        td {{azureStats.attachments}}
+                      tr
+                        td {{_ 'avatars'}}
+                        td {{azureStats.avatars}}
+
+                .form-group
+                  label Storage account name
+                  small.form-text.cloud-input-label-tr {{_ 'azure-account-name'}}
+                  input.wekan-form-control#azure-account-name(type="text" value=cloudValue.azure.accountName)
+                  small.form-text.cloud-input-example wekanstorage
+                  small.form-text.cloud-input-desc The name of your Azure Storage account.
+                  small.form-text.cloud-input-desc {{_ 'azure-account-name-description'}}
+                  small.form-text.cloud-input-path Azure Portal → Storage accounts → your account → name shown at the top (also under Security + networking → Access keys → Storage account name).
+                  small.form-text.cloud-input-path {{_ 'azure-account-name-menu-path'}}
+                .form-group
+                  label Storage account key
+                  small.form-text.cloud-input-label-tr {{_ 'azure-account-key'}}
+                  input.wekan-form-control#azure-account-key(type="password" placeholder=cloudSecretPlaceholder.azure.accountKey)
+                  small.form-text.cloud-input-example base64AccountKey==
+                  small.form-text.cloud-input-desc Leave blank to keep the current value.
+                  small.form-text.cloud-input-desc {{_ 'cloud-secret-keep-blank'}}
+                  small.form-text.cloud-input-path Azure Portal → Storage accounts → your account → Security + networking → Access keys → key1 → Show → Key.
+                  small.form-text.cloud-input-path {{_ 'azure-account-key-menu-path'}}
+                .form-group
+                  label Connection string
+                  small.form-text.cloud-input-label-tr {{_ 'azure-connection-string'}}
+                  input.wekan-form-control#azure-connection-string(type="password" placeholder=cloudSecretPlaceholder.azure.connectionString)
+                  small.form-text.cloud-input-example DefaultEndpointsProtocol=https;AccountName=wekanstorage;AccountKey=...;EndpointSuffix=core.windows.net
+                  small.form-text.cloud-input-desc Optional: use a full connection string instead of account name and key.
+                  small.form-text.cloud-input-desc {{_ 'azure-connection-string-description'}}
+                  small.form-text.cloud-input-path Azure Portal → Storage accounts → your account → Security + networking → Access keys → key1 → Connection string → Show.
+                  small.form-text.cloud-input-path {{_ 'azure-connection-string-menu-path'}}
+                .form-group
+                  label Container name
+                  small.form-text.cloud-input-label-tr {{_ 'azure-container'}}
+                  input.wekan-form-control#azure-bucket(type="text" value=cloudValue.azure.bucket)
+                  small.form-text.cloud-input-example wekan-attachments
+                  small.form-text.cloud-input-desc The blob container to store files in.
+                  small.form-text.cloud-input-desc {{_ 'azure-container-description'}}
+                  small.form-text.cloud-input-path Azure Portal → Storage accounts → your account → Data storage → Containers → your container (or + Container to create one).
+                  small.form-text.cloud-input-path {{_ 'azure-container-menu-path'}}
+
+                .form-group
+                  button.js-test-cloud-connection.btn.btn-secondary(data-provider="azure") {{_ 'test-cloud-connection'}}
+                  button.js-save-cloud-settings.btn.btn-primary(data-provider="azure") {{_ 'save'}}
+                  if cloudTestResult.azure
+                    p.form-text.text-success {{_ 'cloud-connection-success'}}
+                  if cloudTestError.azure
+                    p.form-text.text-danger {{_ 'cloud-connection-failed'}}: {{cloudTestError.azure}}
+
+          else if isGcsActive
+            ul#attachment-gcs-setting.setting-detail
+              li
+                .description Give WeKan's service account read/write access to the bucket: Google Cloud Console → Cloud Storage → Buckets → your bucket → Permissions → Grant access. In "New principals", paste the service account email — the "client_email" value from your JSON key — then choose the role "Storage Object Admin" and Save.
+                .description {{_ 'gcs-permissions-note'}}
+                .storage-rw-row
+                  .storage-rw-item
+                    a.flex.js-toggle-checkbox
+                      .materialCheckBox#gcs-enabled(class="{{#if cloudEnabled.gcs}}is-checked{{/if}}")
+                      span {{_ 'storage-enabled'}}
+                  .storage-rw-item
+                    a.flex.js-toggle-checkbox
+                      .materialCheckBox#gcs-read(class="{{#if cloudRead.gcs}}is-checked{{/if}}")
+                      span {{_ 'storage-read'}}
+
+                .form-group
+                  button.js-save-cloud-settings.btn.btn-primary(data-provider="gcs") {{_ 'save'}}
+
+                .form-group
+                  button.js-calculate-gcs-stats.btn.btn-primary(type="button") {{_ 'calculate-file-counts'}}
+                  if gcsStatsLoading
+                    p.form-text.text-muted {{_ 'calculating-counts'}}
+                  if gcsStatsError
+                    p.form-text.text-danger {{gcsStatsError}}
+                  if hasGcsStats
+                    table.gridfs-stats-table
+                      tr
+                        th {{_ 'stats-scope'}}
+                        th {{_ 'stats-count'}}
+                      tr
+                        td {{_ 'attachments'}}
+                        td {{gcsStats.attachments}}
+                      tr
+                        td {{_ 'avatars'}}
+                        td {{gcsStats.avatars}}
+
+                .form-group
+                  label Project ID
+                  small.form-text.cloud-input-label-tr {{_ 'gcs-project-id'}}
+                  input.wekan-form-control#gcs-project-id(type="text" value=cloudValue.gcs.projectId)
+                  small.form-text.cloud-input-example my-gcp-project-123456
+                  small.form-text.cloud-input-desc Your Google Cloud project id.
+                  small.form-text.cloud-input-desc {{_ 'gcs-project-id-description'}}
+                  small.form-text.cloud-input-path Google Cloud Console → project selector at the top → your project's ID (Cloud overview → Dashboard → Project info → Project ID).
+                  small.form-text.cloud-input-path {{_ 'gcs-project-id-menu-path'}}
+                .form-group
+                  label Bucket name
+                  small.form-text.cloud-input-label-tr {{_ 'gcs-bucket'}}
+                  input.wekan-form-control#gcs-bucket(type="text" value=cloudValue.gcs.bucket)
+                  small.form-text.cloud-input-example wekan-attachments
+                  small.form-text.cloud-input-desc The name of the Cloud Storage bucket to store files in.
+                  small.form-text.cloud-input-desc {{_ 'gcs-bucket-description'}}
+                  small.form-text.cloud-input-path Google Cloud Console → Cloud Storage → Buckets → your bucket name (or Create to make one).
+                  small.form-text.cloud-input-path {{_ 'gcs-bucket-menu-path'}}
+                .form-group
+                  label Service account key file path
+                  small.form-text.cloud-input-label-tr {{_ 'gcs-key-filename'}}
+                  input.wekan-form-control#gcs-key-filename(type="text" value=cloudValue.gcs.keyFilename)
+                  small.form-text.cloud-input-example /data/gcs-service-account.json
+                  small.form-text.cloud-input-desc Optional: path to a service account JSON key file on the server.
+                  small.form-text.cloud-input-desc {{_ 'gcs-key-filename-description'}}
+                  small.form-text.cloud-input-path Path on the WeKan server to the downloaded service account JSON key file (created below). Use this OR paste the JSON into the field below.
+                  small.form-text.cloud-input-path {{_ 'gcs-key-filename-menu-path'}}
+                .form-group
+                  label Service account key (JSON)
+                  small.form-text.cloud-input-label-tr {{_ 'gcs-credentials'}}
+                  textarea.wekan-form-control#gcs-credentials(rows="4" placeholder=cloudSecretPlaceholder.gcs.credentials)
+                  small.form-text.cloud-input-example { "type": "service_account", "project_id": "my-gcp-project", "client_email": "wekan@my-gcp-project.iam.gserviceaccount.com", "private_key": "-----BEGIN PRIVATE KEY-----..." }
+                  small.form-text.cloud-input-desc Optional: paste the service account JSON key. Leave blank to use the key file or default credentials.
+                  small.form-text.cloud-input-desc {{_ 'gcs-credentials-description'}}
+                  small.form-text.cloud-input-path Google Cloud Console → IAM & Admin → Service accounts → your service account → Keys → Add key → Create new key → JSON → Create (downloads the file). Paste its contents here, or save the file and set its path above.
+                  small.form-text.cloud-input-path {{_ 'gcs-credentials-menu-path'}}
+                  small.form-text.text-muted {{_ 'gcs-credentials-description'}}
+
+                .form-group
+                  button.js-test-cloud-connection.btn.btn-secondary(data-provider="gcs") {{_ 'test-cloud-connection'}}
+                  button.js-save-cloud-settings.btn.btn-primary(data-provider="gcs") {{_ 'save'}}
+                  if cloudTestResult.gcs
+                    p.form-text.text-success {{_ 'cloud-connection-success'}}
+                  if cloudTestError.gcs
+                    p.form-text.text-danger {{_ 'cloud-connection-failed'}}: {{cloudTestError.gcs}}
+
+          else if isDatabaseMigrationActive
+            ul#attachment-database-migration-setting.setting-detail
+              li
+                .description {{_ 'database-migration-description'}}
+                .form-group
+                  button.js-migrate-to-ferretdb.btn.btn-primary(type="button" disabled=migrateRunning) {{_ 'database-migrate-to-ferretdb'}}
+                  button.js-migrate-to-mongodb.btn.btn-primary(type="button" disabled=migrateRunning) {{_ 'database-migrate-to-mongodb'}}
+                if migrateStatus
+                  .move-progress-section
+                    .move-progress-counter
+                      | {{_ 'database-migration-phase'}}: {{migrateStatus.phase}}
+                      if migrateStatus.collection
+                        |  — {{migrateStatus.collection}} ({{migrateStatus.collDone}}/{{migrateStatus.collTotal}}), {{migrateStatus.collectionsDone}}/{{migrateStatus.collectionsTotal}}
+                    if migrateStatus.error
+                      p.form-text.text-danger {{migrateStatus.error}}
+                    if migrateSuccess
+                      p.form-text.text-success {{_ 'database-migration-done'}}
+
+          else if isBackupActive
+            ul#attachment-backup-setting.setting-detail
+              li
+                .description {{_ 'backup-description'}}
+                //- Multitenancy option D (D.8): WHAT is being backed up. The whole
+                //- instance (site admin only) or one Organization - its boards and
+                //- everything hanging off them, without accounts or instance
+                //- settings. The list comes from the server: a per-tenant Global
+                //- Admin is offered only their own Organizations, and the whole
+                //- instance is not among them.
+                if showBackupScope
+                  .form-group
+                    label {{_ 'backup-scope'}}
+                    select.wekan-form-control.js-backup-scope
+                      if isSiteAdmin
+                        option(value="") {{_ 'backup-scope-instance'}}
+                      each backupScopes
+                        option(value="{{_id}}") {{orgDisplayName}}
+                    span.form-text.text-muted {{_ 'backup-scope-description'}}
+                //- What to include: three checkboxes, each its own label, in one
+                //- row (settingBody.css .checkbox-row). They are the Admin Panel's
+                //- checkbox - the square when off, the green tick when on, animated
+                //- between - like Announcement's "Active System-Wide Announcement".
+                .form-group.checkbox-row
+                  a.flex.js-toggle-checkbox
+                    .materialCheckBox.js-backup-attachments.is-checked
+                    span {{_ 'attachments'}}
+                  a.flex.js-toggle-checkbox
+                    .materialCheckBox.js-backup-avatars.is-checked
+                    span {{_ 'avatars'}}
+                  a.flex.js-toggle-checkbox
+                    .materialCheckBox.js-backup-data.is-checked
+                    span {{_ 'backup-data'}}
+                .form-group
+                  label {{_ 'backup-storage'}}
+                  select.wekan-form-control.js-backup-storage
+                    option(value="filesystem") {{_ 'filesystem-storage'}}
+                    option(value="s3") {{_ 's3-minio-storage'}}
+                    option(value="azure") {{_ 'azure-blob-storage'}}
+                    option(value="gcs") {{_ 'gcs-storage'}}
+                .form-group
+                  button.js-run-backup.btn.btn-primary(type="button" disabled=backupRunning) {{_ 'backup-now'}}
+                if backupStatus
+                  p.form-text {{_ 'database-migration-phase'}}: {{backupStatus.phase}} {{backupStatus.detail}}
+                  if backupStatus.error
+                    p.form-text.text-danger {{backupStatus.error}}
+                  if backupSuccess
+                    p.form-text.text-success {{_ 'backup-done'}}: {{backupStatus.file}}
+
+                h4 {{_ 'backup-schedule'}}
+                .form-group
+                  label {{_ 'backup-frequency'}}
+                  select.wekan-form-control.js-backup-frequency
+                    option(value="off" selected=scheduleOff) {{_ 'backup-frequency-off'}}
+                    option(value="daily" selected=scheduleDaily) {{_ 'backup-frequency-daily'}}
+                    option(value="weekly" selected=scheduleWeekly) {{_ 'backup-frequency-weekly'}}
+                    option(value="monthly" selected=scheduleMonthly) {{_ 'backup-frequency-monthly'}}
+                .form-group
+                  label {{_ 'backup-time'}}
+                  input.wekan-form-control.js-backup-time(type="time" value=scheduleTime)
+                .form-group
+                  label {{_ 'backup-day-of-week'}}
+                  //- One button per day, in the reader's own language, instead of a
+                  //- text field that only ever accepted an English day name typed
+                  //- exactly right. The VALUE stays the English name - that is what
+                  //- the cron schedule is written in (models/lib/backupPaths.js
+                  //- scheduleText) - and only the label is translated.
+                  .schedule-day-buttons
+                    each backupDays
+                      a.schedule-day-btn.js-backup-dow-btn(
+                        data-day="{{day}}"
+                        class="{{#if selected}}active{{/if}}"
+                        role="button"
+                        aria-pressed="{{#if selected}}true{{else}}false{{/if}}") {{_ labelKey}}
+                .form-group
+                  label {{_ 'backup-day-of-month'}}
+                  //- One button per date, the same as the days above - a spin
+                  //- control makes you click 27 times to reach the end of the
+                  //- month, and hides which dates are even allowed. 1-28 only, so
+                  //- a monthly backup exists in February too.
+                  .schedule-day-buttons.schedule-day-numbers
+                    each backupMonthDays
+                      a.schedule-day-btn.js-backup-dom-btn(
+                        data-day="{{day}}"
+                        class="{{#if selected}}active{{/if}}"
+                        role="button"
+                        aria-pressed="{{#if selected}}true{{else}}false{{/if}}") {{day}}
+                .form-group
+                  button.js-save-backup-schedule.btn.btn-primary(type="button") {{_ 'save'}}
+
+                h4 {{_ 'backup-restore'}}
+                .form-group
+                  button.js-list-backups.btn.btn-secondary(type="button") {{_ 'backup-list'}}
+                if backupList
+                  table.gridfs-stats-table
+                    tr
+                      th
+                      th {{_ 'backup-scope'}}
+                      th {{_ 'backup-storage'}}
+                      th {{_ 'backup-datetime'}}
+                      th {{_ 'backup-path'}}
+                    each backupList
+                      tr
+                        td
+                          input.js-backup-select(type="radio" name="backup-select" value=path)
+                        //- An instance archive contains every tenant, so which kind
+                        //- an archive is has to be visible before restoring it. A
+                        //- per-tenant admin is only ever listed their own.
+                        td {{backupScopeName orgId}}
+                        td {{storage}}
+                        td {{datetime}}
+                        td {{path}}
+                  .form-group
+                    label {{_ 'backup-restore-mode'}}
+                    select.wekan-form-control.js-restore-mode
+                      option(value="add-missing") {{_ 'backup-restore-add-missing'}}
+                      option(value="replace-all") {{_ 'backup-restore-replace-all'}}
+                  .form-group
+                    button.js-restore-backup.btn.btn-warning(type="button" disabled=backupRunning) {{_ 'backup-restore'}}
+
+          //- Admin Panel / Attachments / Sandstorm - COMMENTED OUT ON PURPOSE,
+          //- together with its left-menu entry, its helpers, its state and its
+          //- click handler in attachments.js. Nothing of it runs.
+          //-
+          //- It only ever had content inside a Sandstorm grain: the one-time
+          //- MongoDB 3 -> FerretDB migration status and a button that DELETED the
+          //- raw MongoDB 3 files to reclaim grain disk. Compacting the MongoDB
+          //- database frees that space too, so deleting the raw database files is
+          //- not something WeKan needs to offer. Everything else on this page -
+          //- the Database migration pane, Backup, the storages and their stats -
+          //- is untouched and keeps working.
+          //-
+          //- Kept as a comment rather than deleted so the grain migration report
+          //- can be brought back if it is ever wanted; the server methods it
+          //- called (server/methods/sandstormMigration.js) are still there.
+          //- else if isSandstormActive
+          //-   ul#attachment-sandstorm-setting.setting-detail
+          //-     li
+          //-       .description {{_ 'sandstorm-migration-description'}}
+          //-       if sandstormStatus
+          //-         .form-group
+          //-           strong {{_ 'sandstorm-migration-status'}}
+          //-           if sandstormStatus.migrationSuccess
+          //-             span.text-success  {{_ 'sandstorm-migration-success'}}
+          //-           else if sandstormStatus.migrationDone
+          //-             span.text-danger  {{_ 'sandstorm-migration-failed'}}
+          //-           else
+          //-             span.text-muted  {{_ 'sandstorm-migration-pending'}}
+          //-           if sandstormStatus.status
+          //-             p.form-text.text-muted {{_ 'database-migration-phase'}}: {{sandstormStatus.status.phase}}
+          //-         table.gridfs-stats-table
+          //-           tr
+          //-             th {{_ 'sandstorm-storage-item'}}
+          //-             th {{_ 'sandstorm-disk-usage'}}
+          //-           tr
+          //-             td {{_ 'sandstorm-raw-mongodb'}}
+          //-             td {{rawMongoSize}}
+          //-           tr
+          //-             td FerretDB (SQLite)
+          //-             td {{ferretSize}}
+          //-           tr
+          //-             td {{_ 'attachments'}}
+          //-             td {{attachmentsSize}}
+          //-           tr
+          //-             td {{_ 'avatars'}}
+          //-             td {{avatarsSize}}
+          //-         if sandstormStatus.rawMongoExists
+          //-           .form-group
+          //-             .description {{_ 'sandstorm-delete-raw-mongodb-description'}}
+          //-             button.js-sandstorm-delete-raw-mongodb.btn.btn-warning(type="button" disabled=sandstormDeleteDisabled) {{_ 'sandstorm-delete-raw-mongodb'}}
+          //-             if sandstormDeleteResult
+          //-               p.form-text.text-success {{_ 'sandstorm-raw-mongodb-deleted'}} ({{sandstormDeleteFreed}})
+          //-             if sandstormDeleteError
+          //-               p.form-text.text-danger {{sandstormDeleteError}}
+          //-       else
+          //-         p.form-text.text-muted {{_ 'loading'}}
 
 template(name="moveAttachments")
-  .move-attachment-buttons
-    .js-move-attachment
-      button.js-move-all-attachments-to-fs {{_ 'move-all-attachments-to-fs'}}
-    .js-move-attachment
-      button.js-move-all-attachments-to-gridfs {{_ 'move-all-attachments-to-gridfs'}}
-    .js-move-attachment
-      button.js-move-all-attachments-to-s3 {{_ 'move-all-attachments-to-s3'}}
+  .move-storage-form
+    .move-storage-selects
+      .form-group
+        label {{_ 'move-scope'}}
+        select.wekan-form-control.js-move-scope
+          option(value="attachments") {{_ 'attachments'}}
+          option(value="avatars") {{_ 'move-scope-avatars'}}
+          option(value="both") {{_ 'move-scope-both'}}
+      .form-group
+        label {{_ 'move-source'}}
+        select.wekan-form-control.js-move-source-storage
+          option(value="all") {{_ 'move-storage-all'}}
+          option(value="collectionfs") {{_ 'move-storage-collectionfs'}}
+          option(value="gridfs") {{_ 'move-storage-gridfs'}}
+          option(value="fs") {{_ 'move-storage-fs'}}
+          option(value="s3") {{_ 'move-storage-s3'}}
+          option(value="azure") {{_ 'move-storage-azure'}}
+          option(value="gcs") {{_ 'move-storage-gcs'}}
+      .form-group
+        label {{_ 'move-destination'}}
+        select.wekan-form-control.js-move-dest-storage
+          option(value="gridfs") {{_ 'move-storage-gridfs'}}
+          option(value="fs") {{_ 'move-storage-fs'}}
+          option(value="s3") {{_ 'move-storage-s3'}}
+          option(value="azure") {{_ 'move-storage-azure'}}
+          option(value="gcs") {{_ 'move-storage-gcs'}}
+          option(value="collectionfs") {{_ 'move-storage-collectionfs'}}
+    button.js-move-all-attachments.btn.btn-primary {{_ 'move-all-attachments'}}
 
-  each board in getBoardsWithAttachments
-    +moveBoardAttachments board
+  if lastMove
+    .move-last-operation
+      span.emoji-icon
+      i.fa.fa-info-circle
+      |  {{_ 'attachment-last-move'}}: {{lastMoveText}}
 
-template(name="moveBoardAttachments")
-  hr
-  .board-description
-    table
-      tr
-        th {{_ 'board'}} ID
-        th {{_ 'board-title'}}
-      tr
-        td {{ _id }}
-        td {{ title }}
+  .move-repair-section
+    h4 {{_ 'attachment-repair-locations'}}
+    .description {{_ 'attachment-repair-locations-description'}}
+    button.js-repair-attachment-locations.btn.btn-secondary(type="button") {{_ 'attachment-repair-locations'}}
+    if repairLoading
+      p.form-text.text-muted {{_ 'attachment-repair-running'}}
+    if repairError
+      p.form-text.text-danger {{repairError}}
+    if repairResult
+      p.form-text.text-success {{_ 'attachment-repair-done'}}
+      table.gridfs-stats-table
+        tr
+          th {{_ 'stats-scope'}}
+          th {{_ 'attachment-repair-scanned'}}
+          th {{_ 'attachment-repair-repaired'}}
+          th {{_ 'attachment-repair-broken'}}
+        tr
+          td {{_ 'attachments'}}
+          td {{repairResult.attachments.scanned}}
+          td {{repairResult.attachments.repaired}}
+          td {{repairResult.attachments.broken}}
+        tr
+          td {{_ 'avatars'}}
+          td {{repairResult.avatars.scanned}}
+          td {{repairResult.avatars.repaired}}
+          td {{repairResult.avatars.broken}}
 
-  .move-attachment-buttons
-    .js-move-attachment
-      button.js-move-all-attachments-of-board-to-fs {{_ 'move-all-attachments-of-board-to-fs'}}
-    .js-move-attachment
-      button.js-move-all-attachments-of-board-to-gridfs {{_ 'move-all-attachments-of-board-to-gridfs'}}
-    .js-move-attachment
-      button.js-move-all-attachments-of-board-to-s3 {{_ 'move-all-attachments-of-board-to-s3'}}
-
-  .board-attachments
-    table
-      tr
-        th {{_ 'card'}}-Id
-        th {{_ 'attachment'}}-Id
-        th {{_ 'name'}}
-        th {{_ 'path'}}
-        th {{_ 'version-name'}}
-        th {{_ 'size'}}
-        th GridFsFileId
-        th S3FileId
-        th {{_ 'storage'}}
-        th {{_ 'action'}}
-
-      each attachment in attachments
-        +moveAttachment attachment
-
-template(name="moveAttachment")
-  each version in flatVersion
-    tr
-      td {{ meta.cardId }}
-      td {{ _id }}
-      td {{ name }}
-      td {{ version.path }}
-      td {{ version.versionName }}
-      td {{ fileSize version.size }}
-      td {{ version.meta.gridFsFileId }}
-      td {{ version.meta.s3FileId }}
-      td {{ version.storageName }}
-      td
-        if $neq version.storageName "fs"
-          button.js-move-storage-fs
-            i.fa.fa-arrow-right
-            | {{_ 'attachment-move-storage-fs'}}
-
-        if $neq version.storageName "gridfs"
-          if version.storageName
-            button.js-move-storage-gridfs
-              i.fa.fa-arrow-right
-              | {{_ 'attachment-move-storage-gridfs'}}
-
-        if $neq version.storageName "s3"
-          if version.storageName
-            button.js-move-storage-s3
-              i.fa.fa-arrow-right
-              | {{_ 'attachment-move-storage-s3'}}
+  if moveProgress
+    .move-progress-section
+      .move-progress-header
+        .move-progress-info
+          .move-progress-counter {{_ 'move-progress-file'}} {{moveProgress.current}} / {{moveProgress.total}}
+          .move-progress-filename {{moveProgress.name}} ({{moveProgressSize}})
+      .move-progress-bar-track
+        .move-progress-bar-fill(style="{{moveProgressBarStyle}}")
+      .move-progress-bar-track
+        .move-progress-bar-indeterminate
+      .move-progress-controls
+        if moveProgressPaused
+          button.js-resume-move.btn.btn-secondary {{_ 'move-progress-resume'}}
+        else
+          button.js-pause-move.btn.btn-secondary {{_ 'move-progress-pause'}}
+        button.js-cancel-move.btn.btn-danger {{_ 'move-progress-cancel'}}

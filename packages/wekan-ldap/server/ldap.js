@@ -1,6 +1,18 @@
-import ldapjs from 'ldapjs';
-import util from 'util';
+import { Client } from 'ldapts';
 import { Log } from 'meteor/logging';
+import { normalizeLdapEncryption } from './encryptionSetting';
+import { buildUserIdFilter } from './userIdFilter';
+
+// #4158: warn about a deprecated/invalid LDAP_ENCRYPTION value only once per
+// distinct message, not on every single login attempt (LDAP instantiates a
+// new connection per login).
+const encryptionWarningsShown = new Set();
+function warnOnceAboutEncryption(warning) {
+  if (warning && !encryptionWarningsShown.has(warning)) {
+    encryptionWarningsShown.add(warning);
+    Log.warn(warning);
+  }
+}
 
 // copied from https://github.com/ldapjs/node-ldapjs/blob/a113953e0d91211eb945d2a3952c84b7af6de41c/lib/filters/index.js#L167
 function escapedToHex (str) {
@@ -19,10 +31,32 @@ function escapedToHex (str) {
   }
 }
 
+// Convert hex string to LDAP escaped binary filter value
+// e.g. "0102ff" -> "\\01\\02\\ff"
+function hexToLdapEscaped(hex) {
+  return hex.match(/.{2}/g).map(h => '\\' + h).join('');
+}
+
+// #5236: RFC 4515 escaping for an LDAP filter assertion value, so a value taken
+// from the directory (e.g. a member DN or cn containing parentheses) cannot
+// break the filter ("illegal unescaped char: (") or be used for injection. The
+// backslash is escaped first; output uses single-backslash hex escapes (\28,
+// \29, …), matching escapedToHex so the existing filter post-processing treats
+// it the same way as the escaped username.
+function escapeLdapFilterValue(value) {
+  if (value === undefined || value === null) {
+    return value;
+  }
+  return String(value)
+    .replace(/\\/g, '\\5c')
+    .replace(/\*/g, '\\2a')
+    .replace(/\(/g, '\\28')
+    .replace(/\)/g, '\\29')
+    .replace(/\0/g, '\\00');
+}
+
 export default class LDAP {
   constructor() {
-    this.ldapjs = ldapjs;
-
     this.connected = false;
 
     this.options = {
@@ -32,7 +66,10 @@ export default class LDAP {
       timeout                            : this.constructor.settings_get('LDAP_TIMEOUT'),
       connect_timeout                    : this.constructor.settings_get('LDAP_CONNECT_TIMEOUT'),
       idle_timeout                       : this.constructor.settings_get('LDAP_IDLE_TIMEOUT'),
-      encryption                         : this.constructor.settings_get('LDAP_ENCRYPTION'),
+      // #4158: normalized to 'tls' (LDAPS), 'starttls' or 'off'. Accepts the
+      // documented 'true'/'starttls'/'false' plus the legacy 'ssl'/'tls'
+      // (deprecated but still working); anything else warns and means 'off'.
+      encryption                         : normalizeLdapEncryption(this.constructor.settings_get('LDAP_ENCRYPTION')).mode,
       ca_cert                            : this.constructor.settings_get('LDAP_CA_CERT'),
       reject_unauthorized                : this.constructor.settings_get('LDAP_REJECT_UNAUTHORIZED') !== undefined ? this.constructor.settings_get('LDAP_REJECT_UNAUTHORIZED') : true,
       Authentication                     : this.constructor.settings_get('LDAP_AUTHENTIFICATION'),
@@ -40,7 +77,7 @@ export default class LDAP {
       Authentication_Password            : this.constructor.settings_get('LDAP_AUTHENTIFICATION_PASSWORD'),
       Authentication_Fallback            : this.constructor.settings_get('LDAP_LOGIN_FALLBACK'),
       BaseDN                             : this.constructor.settings_get('LDAP_BASEDN'),
-      Internal_Log_Level                 : this.constructor.settings_get('INTERNAL_LOG_LEVEL'),
+      Internal_Log_Level                 : this.constructor.settings_get('INTERNAL_LOG_LEVEL'), //this setting does not have any effect any more and should be deprecated
       User_Authentication                : this.constructor.settings_get('LDAP_USER_AUTHENTICATION'),
       User_Authentication_Field          : this.constructor.settings_get('LDAP_USER_AUTHENTICATION_FIELD'),
       User_Attributes                    : this.constructor.settings_get('LDAP_USER_ATTRIBUTES'),
@@ -74,42 +111,8 @@ export default class LDAP {
     }
   }
 
-  connectSync(...args) {
-     if (!this._connectSync) {
-      this._connectSync = Meteor.wrapAsync(this.connectAsync, this);
-    }
-    return this._connectSync(...args);
-  }
-
-  searchAllSync(...args) {
-
-    if (!this._searchAllSync) {
-      this._searchAllSync = Meteor.wrapAsync(this.searchAllAsync, this);
-    }
-    return this._searchAllSync(...args);
-  }
-
-  connectAsync(callback) {
+  async connect() {
     Log.info('Init setup');
-
-    let replied = false;
-
-    const connectionOptions = {
-      url           : `${this.options.host}:${this.options.port}`,
-      timeout       : this.options.timeout,
-      connectTimeout: this.options.connect_timeout,
-      idleTimeout   : this.options.idle_timeout,
-      reconnect     : this.options.Reconnect,
-    };
-
-    if (this.options.Internal_Log_Level !== 'disabled') {
-      connectionOptions.log = new Bunyan({
-        name     : 'ldapjs',
-        component: 'client',
-        stream   : process.stderr,
-        level    : this.options.Internal_Log_Level,
-      });
-    }
 
     const tlsOptions = {
       rejectUnauthorized: this.options.reject_unauthorized,
@@ -130,81 +133,120 @@ export default class LDAP {
       tlsOptions.ca = ca;
     }
 
-    if (this.options.encryption === 'ssl') {
-      connectionOptions.url        = `ldaps://${connectionOptions.url}`;
-      connectionOptions.tlsOptions = tlsOptions;
+    // #4158: surface a deprecation notice for legacy values ('ssl', 'tls')
+    // and a clear warning for unknown values instead of failing silently.
+    warnOnceAboutEncryption(
+      normalizeLdapEncryption(this.constructor.settings_get('LDAP_ENCRYPTION')).warning,
+    );
+
+    let url;
+    if (this.options.encryption === 'tls') {
+      url = `ldaps://${this.options.host}:${this.options.port}`;
     } else {
-      connectionOptions.url = `ldap://${connectionOptions.url}`;
+      url = `ldap://${this.options.host}:${this.options.port}`;
     }
 
-    Log.info('Connecting', connectionOptions.url);
-    Log.debug(`connectionOptions${util.inspect(connectionOptions)}`);
+    Log.info(`Connecting ${url}`);
 
-    this.client = ldapjs.createClient(connectionOptions);
-
-    this.bindSync = Meteor.wrapAsync(this.client.bind, this.client);
-
-    this.client.on('error', (error) => {
-      Log.error('connection', error);
-      if (replied === false) {
-        replied = true;
-        callback(error, null);
-      }
-    });
-
-    this.client.on('idle', () => {
-      Log.info('Idle');
-      this.disconnect();
-    });
-
-    this.client.on('close', () => {
-      Log.info('Closed');
-    });
+    const clientOptions = {
+      url,
+      timeout       : this.options.timeout,
+      connectTimeout: this.options.connect_timeout,
+      strictDN      : false,
+    };
 
     if (this.options.encryption === 'tls') {
-      // Set host parameter for tls.connect which is used by ldapjs starttls. This shouldn't be needed in newer nodejs versions (e.g v5.6.0).
+      clientOptions.tlsOptions = tlsOptions;
+    }
+
+    Log.debug(`clientOptions ${JSON.stringify(clientOptions)}`);
+
+    this.client = new Client(clientOptions);
+
+    if (this.options.encryption === 'starttls') {
+      // Set host parameter for tls.connect which is used by starttls. This shouldn't be needed in newer nodejs versions (e.g v5.6.0).
       // https://github.com/RocketChat/Rocket.Chat/issues/2035
-      // https://github.com/mcavage/node-ldapjs/issues/349
       tlsOptions.host = this.options.host;
 
       Log.info('Starting TLS');
-      Log.debug('tlsOptions', tlsOptions);
+      Log.debug(`tlsOptions ${JSON.stringify(tlsOptions)}`);
 
-      this.client.starttls(tlsOptions, null, (error, response) => {
-        if (error) {
-          Log.error('TLS connection', error);
-          if (replied === false) {
-            replied = true;
-            callback(error, null);
-          }
-          return;
-        }
-
-        Log.info('TLS connected');
-        this.connected = true;
-        if (replied === false) {
-          replied = true;
-          callback(null, response);
-        }
-      });
-    } else {
-      this.client.on('connect', (response) => {
-        Log.info('LDAP connected');
-        this.connected = true;
-        if (replied === false) {
-          replied = true;
-          callback(null, response);
-        }
-      });
+      await this.client.startTLS(tlsOptions);
+      Log.info('TLS connected');
     }
 
-    setTimeout(() => {
-      if (replied === false) {
-        Log.error('connection time out', connectionOptions.connectTimeout);
-        replied = true;
-        callback(new Error('Timeout'));
+    this.connected = true;
+  }
+
+  async bind(dn, password) {
+    await this.client.bind(dn, password);
+  }
+
+  getBufferAttributes() {
+    const fields = [];
+    let uidField = this.constructor.settings_get('LDAP_UNIQUE_IDENTIFIER_FIELD');
+    if (uidField && uidField !== '') {
+      fields.push(...uidField.replace(/\s/g, '').split(','));
+    }
+    let searchField = this.constructor.settings_get('LDAP_USER_SEARCH_FIELD');
+    if (searchField && searchField !== '') {
+      fields.push(...searchField.replace(/\s/g, '').split(','));
+    }
+    return fields;
+  }
+
+  async searchAll(BaseDN, options) {
+    const searchOptions = {
+      filter: options.filter,
+      scope : options.scope || 'sub',
+    };
+
+    if (options.attributes) {
+      searchOptions.attributes = options.attributes;
+    }
+
+    if (options.sizeLimit) {
+      searchOptions.sizeLimit = options.sizeLimit;
+    }
+
+    if (options.paged) {
+      searchOptions.paged = {
+        pageSize: options.paged.pageSize || 250,
+      };
+    }
+
+    // Request unique identifier fields as Buffers so that
+    // getLdapUserUniqueID() in sync.js can call .toString('hex')
+    const bufferAttributes = this.getBufferAttributes();
+    if (bufferAttributes.length > 0) {
+      searchOptions.explicitBufferAttributes = bufferAttributes;
+    }
+
+    const { searchEntries } = await this.client.search(BaseDN, searchOptions);
+
+    Log.info(`Search result count ${searchEntries.length}`);
+    return searchEntries.map((entry) => this.extractLdapEntryData(entry));
+  }
+
+  extractLdapEntryData(entry) {
+    const values = {
+      _raw: {},
+    };
+
+    for (const key of Object.keys(entry)) {
+      const value = entry[key];
+      values._raw[key] = value;
+
+      if (!['thumbnailPhoto', 'jpegPhoto'].includes(key)) {
+        if (value instanceof Buffer) {
+          values[key] = value.toString();
+        } else {
+          values[key] = value;
+        }
       }
-    }, connectionOptions.connectTimeout);
+    }
+
+    return values;
   }
 
   getUserFilter(username) {
@@ -218,7 +260,9 @@ export default class LDAP {
       }
     }
 
-    const usernameFilter = this.options.User_Search_Field.split(',').map((item) => `(${item}=${username})`);
+    // Escape the username to prevent LDAP injection
+    const escapedUsername = escapedToHex(username);
+    const usernameFilter = this.options.User_Search_Field.split(',').map((item) => `(${item}=${escapedUsername})`);
 
     if (usernameFilter.length === 0) {
       Log.error('LDAP_LDAP_User_Search_Field not defined');
@@ -231,7 +275,7 @@ export default class LDAP {
     return `(&${filter.join('')})`;
   }
 
-  bindUserIfNecessary(username, password) {
+  async bindUserIfNecessary(username, password) {
 
     if (this.domainBinded === true) {
       return;
@@ -244,20 +288,22 @@ export default class LDAP {
     /* if SimpleAuth is configured, the BaseDN is not needed */
     if (!this.options.BaseDN && !this.options.AD_Simple_Auth) throw new Error('BaseDN is not provided');
 
+    // Escape the username to prevent LDAP injection in DN construction
+    const escapedUsername = escapedToHex(username);
     var userDn = "";
     if (this.options.AD_Simple_Auth === true || this.options.AD_Simple_Auth === 'true') {
-      userDn = `${username}@${this.options.Default_Domain}`;
+      userDn = `${escapedUsername}@${this.options.Default_Domain}`;
     } else {
-      userDn = `${this.options.User_Authentication_Field}=${username},${this.options.BaseDN}`;
+      userDn = `${this.options.User_Authentication_Field}=${escapedUsername},${this.options.BaseDN}`;
     }
 
-    Log.info('Binding with User', userDn);
+    Log.info(`Binding with User ${userDn}`);
 
-    this.bindSync(userDn, password);
+    await this.bind(userDn, password);
     this.domainBinded = true;
   }
 
-  bindIfNecessary() {
+  async bindIfNecessary() {
     if (this.domainBinded === true) {
       return;
     }
@@ -266,14 +312,14 @@ export default class LDAP {
       return;
     }
 
-    Log.info('Binding UserDN', this.options.Authentication_UserDN);
+    Log.info(`Binding UserDN ${this.options.Authentication_UserDN}`);
 
-    this.bindSync(this.options.Authentication_UserDN, this.options.Authentication_Password);
+    await this.bind(this.options.Authentication_UserDN, this.options.Authentication_Password);
     this.domainBinded = true;
   }
 
-  searchUsersSync(username, page) {
-    this.bindIfNecessary();
+  async searchUsers(username) {
+    await this.bindIfNecessary();
     const searchOptions = {
       filter   : this.getUserFilter(username),
       scope    : this.options.User_Search_Scope || 'sub',
@@ -284,44 +330,38 @@ export default class LDAP {
 
     if (this.options.Search_Page_Size > 0) {
       searchOptions.paged = {
-        pageSize : this.options.Search_Page_Size,
-        pagePause: !!page,
+        pageSize: this.options.Search_Page_Size,
       };
     }
 
-    Log.info('Searching user', username);
-    Log.debug('searchOptions', searchOptions);
-    Log.debug('BaseDN', this.options.BaseDN);
+    Log.info(`Searching user ${username}`);
+    Log.debug(`searchOptions ${searchOptions}`);
+    Log.debug(`BaseDN ${this.options.BaseDN}`);
 
-    if (page) {
-      return this.searchAllPaged(this.options.BaseDN, searchOptions, page);
-    }
-
-    return this.searchAllSync(this.options.BaseDN, searchOptions);
+    return await this.searchAll(this.options.BaseDN, searchOptions);
   }
 
-  getUserByIdSync(id, attribute) {
-    this.bindIfNecessary();
+  async getUserById(id, attribute) {
+    await this.bindIfNecessary();
 
-    const Unique_Identifier_Field = this.constructor.settings_get('LDAP_UNIQUE_IDENTIFIER_FIELD').split(',');
+    const escapedValue = hexToLdapEscaped(id);
 
-    let filter;
+    // #4654: the stored services.ldap.id may come from LDAP_UNIQUE_IDENTIFIER_FIELD
+    // or, when that is unset/empty, from LDAP_USER_SEARCH_FIELD (see
+    // getLdapUserUniqueID in sync.js), so search over both attribute lists.
+    // The old code read only LDAP_UNIQUE_IDENTIFIER_FIELD and crashed
+    // (undefined.split) or built the invalid filter "(|(=value))" when it was
+    // unset/empty, so background sync never updated existing users.
+    const filter = buildUserIdFilter(
+      attribute,
+      escapedValue,
+      this.constructor.settings_get('LDAP_UNIQUE_IDENTIFIER_FIELD'),
+      this.constructor.settings_get('LDAP_USER_SEARCH_FIELD'),
+    );
 
-    if (attribute) {
-      filter = new this.ldapjs.filters.EqualityFilter({
-        attribute,
-        value: Buffer.from(id, 'hex'),
-      });
-    } else {
-      const filters = [];
-      Unique_Identifier_Field.forEach((item) => {
-        filters.push(new this.ldapjs.filters.EqualityFilter({
-          attribute: item,
-          value    : Buffer.from(id, 'hex'),
-        }));
-      });
-
-      filter = new this.ldapjs.filters.OrFilter({ filters });
+    if (!filter) {
+      Log.error('Can\'t search user by id: neither LDAP_UNIQUE_IDENTIFIER_FIELD nor LDAP_USER_SEARCH_FIELD is configured');
+      return;
     }
 
     const searchOptions = {
@@ -329,51 +369,67 @@ export default class LDAP {
       scope: 'sub',
     };
 
-    Log.info('Searching by id', id);
-    Log.debug('search filter', searchOptions.filter.toString());
-    Log.debug('BaseDN', this.options.BaseDN);
+    Log.info(`Searching by id ${id}`);
+    Log.debug(`search filter ${searchOptions.filter}`);
+    Log.debug(`BaseDN ${this.options.BaseDN}`);
 
-    const result = this.searchAllSync(this.options.BaseDN, searchOptions);
+    const result = await this.searchAll(this.options.BaseDN, searchOptions);
 
     if (!Array.isArray(result) || result.length === 0) {
       return;
     }
 
     if (result.length > 1) {
-      Log.error('Search by id', id, 'returned', result.length, 'records');
+      Log.error(`Search by id ${id} returned ${result.length} records`);
     }
 
     return result[0];
   }
 
-  getUserByUsernameSync(username) {
-    this.bindIfNecessary();
+  async getUserByUsername(username) {
+    await this.bindIfNecessary();
 
     const searchOptions = {
       filter: this.getUserFilter(username),
       scope : this.options.User_Search_Scope || 'sub',
     };
 
-    Log.info('Searching user', username);
-    Log.debug('searchOptions', searchOptions);
-    Log.debug('BaseDN', this.options.BaseDN);
+    Log.info(`Searching user ${username}`);
+    Log.debug(`searchOptions ${searchOptions}`);
+    Log.debug(`BaseDN ${this.options.BaseDN}`);
 
-    const result = this.searchAllSync(this.options.BaseDN, searchOptions);
+    const result = await this.searchAll(this.options.BaseDN, searchOptions);
 
     if (!Array.isArray(result) || result.length === 0) {
       return;
     }
 
     if (result.length > 1) {
-      Log.error('Search by username', username, 'returned', result.length, 'records');
+      Log.error(`Search by username ${username} returned ${result.length} records`);
     }
 
     return result[0];
   }
 
-  getUserGroups(username, ldapUser) {
-    if (!this.options.group_filter_enabled) {
-      return true;
+  async getUserGroups(username, ldapUser) {
+    // The LDAP group search is needed by three independent features:
+    //   - the login restriction filter (LDAP_GROUP_FILTER_ENABLE, via isUserInGroup)
+    //   - admin status sync (LDAP_SYNC_ADMIN_STATUS / LDAP_SYNC_ADMIN_GROUPS)
+    //   - group->role sync (LDAP_SYNC_GROUP_ROLES)
+    // Previously this short-circuited on group_filter_enabled only, which made
+    // admin/role sync silently unreachable unless the login-restriction filter
+    // was also enabled. Gate on any consumer being enabled so the concerns are
+    // decoupled, while still skipping the query when no feature needs groups.
+    const groupFilterEnabled = this.options.group_filter_enabled;
+    const adminSyncEnabled    = this.constructor.settings_get('LDAP_SYNC_ADMIN_STATUS') === true;
+    const groupRolesSync      = this.constructor.settings_get('LDAP_SYNC_GROUP_ROLES') === true;
+    // #4737: org/team sync is another consumer of the user's groups.
+    const orgTeamSync         =
+      this.constructor.settings_get('LDAP_SYNC_ORGANIZATIONS') === true ||
+      this.constructor.settings_get('LDAP_SYNC_TEAMS') === true;
+
+    if (!groupFilterEnabled && !adminSyncEnabled && !groupRolesSync && !orgTeamSync) {
+      return [];
     }
 
     const filter = ['(&'];
@@ -383,22 +439,48 @@ export default class LDAP {
     }
 
     if (this.options.group_filter_group_member_attribute !== '') {
-      const format_value = ldapUser[this.options.group_filter_group_member_format];
-      if (format_value) {
-        filter.push(`(${this.options.group_filter_group_member_attribute}=${format_value})`);
+      // The one clause that says WHICH USER's groups these are. When the entry has
+      // no value for the configured member format, this clause used to be left
+      // OUT and the search ran without it - `(&(objectclass=group))`, which
+      // answers with EVERY group in the tree. Every user then "belonged to" every
+      // group: with LDAP_SYNC_ADMIN_STATUS on, everyone who logged in became an
+      // administrator (#6540), and a login restricted by group let everyone in.
+      //
+      // A directory that does not return the configured attribute is a
+      // misconfiguration, so it is named in the log - and the answer is NO groups,
+      // never all of them. The usual cause is the member FORMAT: `dn` is the
+      // common one, and some servers spell the same value objectName or
+      // distinguishedName, so those are accepted as a fallback before giving up.
+      const format = this.options.group_filter_group_member_format;
+      const format_value = ldapUser[format] || ldapUser.dn || ldapUser.objectName ||
+        ldapUser.distinguishedName;
+
+      if (!format_value) {
+        Log.error(
+          `LDAP group search: the user entry has no "${format}" (LDAP_GROUP_FILTER_GROUP_MEMBER_FORMAT), ` +
+          'and no dn/objectName/distinguishedName to use instead, so the user cannot be identified ' +
+          'in a group. Answering with NO groups - fix the format setting, or the search would ' +
+          'return every group in the directory.',
+        );
+
+        return [];
       }
+
+      filter.push(`(${this.options.group_filter_group_member_attribute}=${escapeLdapFilterValue(format_value)})`);
     }
 
     filter.push(')');
 
+    // Escape the username to prevent LDAP injection
+    const escapedUsername = escapedToHex(username);
     const searchOptions = {
-      filter: filter.join('').replace(/#{username}/g, username).replace("\\", "\\\\"),
+      filter: filter.join('').replace(/#{username}/g, escapedUsername),
       scope : 'sub',
     };
 
-    Log.debug('Group list filter LDAP:', searchOptions.filter);
+    Log.debug(`Group list filter LDAP: ${searchOptions.filter}`);
 
-    const result = this.searchAllSync(this.options.BaseDN, searchOptions);
+    const result = await this.searchAll(this.options.BaseDN, searchOptions);
 
     if (!Array.isArray(result) || result.length === 0) {
       return [];
@@ -407,19 +489,28 @@ export default class LDAP {
     const grp_identifier = this.options.group_filter_group_id_attribute || 'cn';
     const groups         = [];
     result.map((item) => {
-      groups.push(item[grp_identifier]);
+      // A group name attribute can be multi-valued (an array) or missing. Push the
+      // values, never an undefined: an undefined name compared equal to nothing
+      // useful and, with an empty configured admin list, compared equal to ''.
+      const value = item[grp_identifier];
+
+      if (Array.isArray(value)) {
+        value.forEach(name => { if (name) groups.push(name); });
+      } else if (value) {
+        groups.push(value);
+      }
     });
     Log.debug(`Groups: ${groups.join(', ')}`);
     return groups;
 
   }
 
-  isUserInGroup(username, ldapUser) {
+  async isUserInGroup(username, ldapUser) {
     if (!this.options.group_filter_enabled) {
       return true;
     }
 
-    const grps = this.getUserGroups(username, ldapUser);
+    const grps = await this.getUserGroups(username, ldapUser);
 
     const filter = ['(&'];
 
@@ -430,23 +521,39 @@ export default class LDAP {
     if (this.options.group_filter_group_member_attribute !== '') {
       const format_value = ldapUser[this.options.group_filter_group_member_format];
       if (format_value) {
-        filter.push(`(${this.options.group_filter_group_member_attribute}=${format_value})`);
+        filter.push(`(${this.options.group_filter_group_member_attribute}=${escapeLdapFilterValue(format_value)})`);
       }
     }
 
     if (this.options.group_filter_group_id_attribute !== '') {
-      filter.push(`(${this.options.group_filter_group_id_attribute}=${this.options.group_filter_group_name})`);
+      // #4036: LDAP_GROUP_FILTER_GROUP_NAME accepts a comma-separated list, and
+      // members of LDAP_SYNC_ADMIN_GROUPS may also log in when admin sync is on
+      // (previously an admin only in the admin group was locked out entirely).
+      const names = String(this.options.group_filter_group_name || '')
+        .split(',').map((s) => s.trim()).filter(Boolean);
+      if (this.constructor.settings_get('LDAP_SYNC_ADMIN_STATUS') === true) {
+        names.push(...String(this.constructor.settings_get('LDAP_SYNC_ADMIN_GROUPS') || '')
+          .split(',').map((s) => s.trim()).filter(Boolean));
+      }
+      const clauses = names.map((n) => `(${this.options.group_filter_group_id_attribute}=${n})`);
+      if (clauses.length === 1) {
+        filter.push(clauses[0]);
+      } else if (clauses.length > 1) {
+        filter.push(`(|${clauses.join('')})`);
+      }
     }
     filter.push(')');
 
+    // Escape the username to prevent LDAP injection
+    const escapedUsername = escapedToHex(username);
     const searchOptions = {
-      filter: filter.join('').replace(/#{username}/g, username).replace("\\", "\\\\"),
+      filter: filter.join('').replace(/#{username}/g, escapedUsername),
       scope : 'sub',
     };
 
-    Log.debug('Group filter LDAP:', searchOptions.filter);
+    Log.debug(`Group filter LDAP: ${searchOptions.filter}`);
 
-    const result = this.searchAllSync(this.options.BaseDN, searchOptions);
+    const result = await this.searchAll(this.options.BaseDN, searchOptions);
 
     if (!Array.isArray(result) || result.length === 0) {
       return false;
@@ -454,155 +561,38 @@ export default class LDAP {
     return true;
   }
 
-  extractLdapEntryData(entry) {
-    const values = {
-      _raw: entry.raw,
-    };
-
-    Object.keys(values._raw).forEach((key) => {
-      const value = values._raw[key];
-
-      if (!['thumbnailPhoto', 'jpegPhoto'].includes(key)) {
-        if (value instanceof Buffer) {
-          values[key] = value.toString();
-        } else {
-          values[key] = value;
-        }
-      }
-    });
-
-    return values;
-  }
-
-  searchAllPaged(BaseDN, options, page) {
-    this.bindIfNecessary();
-
-    const processPage = ({ entries, title, end, next }) => {
-      Log.info(title);
-      // Force LDAP idle to wait the record processing
-      this.client._updateIdle(true);
-      page(null, entries, {
-        end, next: () => {
-          // Reset idle timer
-          this.client._updateIdle();
-          next && next();
-        }
-      });
-    };
-
-    this.client.search(BaseDN, options, (error, res) => {
-      if (error) {
-        Log.error(error);
-        page(error);
-        return;
-      }
-
-      res.on('error', (error) => {
-        Log.error(error);
-        page(error);
-        return;
-      });
-
-      let entries = [];
-
-      const internalPageSize = options.paged && options.paged.pageSize > 0 ? options.paged.pageSize * 2 : 500;
-
-      res.on('searchEntry', (entry) => {
-        entries.push(this.extractLdapEntryData(entry));
-
-        if (entries.length >= internalPageSize) {
-          processPage({
-            entries,
-            title: 'Internal Page',
-            end  : false,
-          });
-          entries = [];
-        }
-      });
-
-      res.on('page', (result, next) => {
-        if (!next) {
-          this.client._updateIdle(true);
-          processPage({
-            entries,
-            title: 'Final Page',
-            end  : true,
-          });
-        } else if (entries.length) {
-          Log.info('Page');
-          processPage({
-            entries,
-            title: 'Page',
-            end  : false,
-            next,
-          });
-          entries = [];
-        }
-      });
-
-      res.on('end', () => {
-        if (entries.length) {
-          processPage({
-            entries,
-            title: 'Final Page',
-            end  : true,
-          });
-          entries = [];
-        }
-      });
-    });
-  }
-
-  searchAllAsync(BaseDN, options, callback) {
-    this.bindIfNecessary();
-
-    this.client.search(BaseDN, options, (error, res) => {
-      if (error) {
-        Log.error(error);
-        callback(error);
-        return;
-      }
-
-      res.on('error', (error) => {
-        Log.error(error);
-        callback(error);
-        return;
-      });
-
-      const entries = [];
-
-      res.on('searchEntry', (entry) => {
-        entries.push(this.extractLdapEntryData(entry));
-      });
-
-      res.on('end', () => {
-        Log.info('Search result count', entries.length);
-        callback(null, entries);
-      });
-    });
-  }
-
-  authSync(dn, password) {
-    Log.info('Authenticating', dn);
+  async auth(dn, password) {
+    Log.info(`Authenticating ${dn}`);
 
     try {
       if (password === '') {
         throw new Error('Password is not provided');
       }
-      this.bindSync(dn, password);
-      Log.info('Authenticated', dn);
+      await this.bind(dn, password);
+      Log.info(`Authenticated ${dn}`);
       return true;
     } catch (error) {
-      Log.info('Not authenticated', dn);
+      Log.info(`Not authenticated ${dn}`);
       Log.debug('error', error);
       return false;
     }
   }
 
-  disconnect() {
+  async disconnect() {
     this.connected    = false;
     this.domainBinded = false;
+    // #6467/#6469: disconnect() is now called in a finally on every login and
+    // sync exit path, including paths where connect() was never reached or
+    // failed early. Guard against a missing client so releasing the connection
+    // is always a safe no-op and can never throw over the original result.
+    if (!this.client) {
+      return;
+    }
     Log.info('Disconecting');
-    this.client.unbind();
+    try {
+      await this.client.unbind();
+    } catch (error) {
+      Log.debug('Error during disconnect', error);
+    }
   }
 }

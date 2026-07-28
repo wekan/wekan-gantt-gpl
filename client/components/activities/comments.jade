@@ -2,8 +2,83 @@ template(name="commentForm")
   .new-comment.js-new-comment(
     class="{{#if commentFormIsOpen}}is-open{{/if}}")
     +userAvatar(userId=currentUser._id noRemove=true)
+    if replyToComment
+      .comment-reply-banner.js-reply-banner
+        span.comment-reply-banner-label {{_ 'comment-in-reply-to'}}:
+        span.comment-reply-banner-text
+          +viewer
+            = replyToComment.text
+        a.js-cancel-reply(title="{{_ 'close' }}")
+          i.fa.fa-times-thin
     form.js-new-comment-form
       +editor(class="js-new-comment-input")
         | {{getUnsavedValue 'cardComment' currentCard._id}}
       .add-controls
         button.primary.confirm.clear.js-add-comment(type="submit") {{_ 'comment'}}
+
+template(name="comments")
+  .comments
+    each commentData in getComments
+      +comment(commentData)
+
+template(name="comment")
+  .comment(class="{{#if parentId}}is-reply{{/if}}")
+    +userAvatar(userId=userId)
+    p.comment-desc
+      span.comment-member
+        +memberName(user=user)
+
+      if parentComment
+        .comment-in-reply-to
+          span.comment-in-reply-to-label {{_ 'comment-in-reply-to'}}:
+          span.comment-in-reply-to-text
+            +viewer
+              = parentComment.text
+
+      +inlinedForm(classNames='js-edit-comment')
+        +editor(autofocus=true)
+          = text
+        .edit-controls
+          button.primary(type="submit") {{_ 'edit'}}
+          a.js-close-inlined-form(title="{{_ 'close' }}")
+            i.fa.fa-times-thin
+      else
+        .comment-text
+          +viewer
+            = text
+        +commentReactions(reactions=reactions commentId=_id)
+        span(title=createdAt).comment-meta {{ displayDate createdAt }}
+          if currentUser.isBoardMember
+            = ' - '
+            a.js-reply-comment {{_ "comment-reply"}}
+          if canEditThisComment
+            +editOrDeleteComment
+
+template(name="editOrDeleteComment")
+  = ' - '
+  a.js-open-inlined-form {{_ "edit"}}
+  = ' - '
+  a.js-delete-comment {{_ "delete"}}
+
+template(name="deleteCommentPopup")
+  p {{_ "comment-delete"}}
+  button.js-confirm.negate.full(type="submit") {{_ 'delete'}}
+
+template(name="commentReactions")
+  .reactions
+    each reaction in reactions
+      span.reaction(class="{{#if isSelected reaction.userIds}}selected{{/if}}" data-codepoint="#{reaction.reactionCodepoint}" title="{{userNames reaction.userIds}}")
+        span.reaction-codepoint !{reaction.reactionCodepoint}
+        span.reaction-count #{reaction.userIds.length}
+    if (currentUser.isBoardMember)
+      unless currentUser.isReadOnly
+        unless currentUser.isReadAssignedOnly
+          a.open-comment-reaction-popup(title="{{_ 'addReactionPopup-title'}}")
+            i.fa.fa-smile-o(title="{{_ 'reaction' }}")
+            i.fa.fa-plus(title="{{_ 'add' }}")
+
+template(name="addReactionPopup")
+  .reactions-popup
+    each codepoint in codepoints
+      span.add-comment-reaction(data-codepoint="#{codepoint}") !{codepoint}
+

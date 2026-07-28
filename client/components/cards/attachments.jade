@@ -34,10 +34,11 @@ template(name="attachmentViewer")
   #viewer-overlay.hidden
     #viewer-top-bar
       span#attachment-name
-      a#viewer-close.fa.fa-times-thin
+      a#viewer-close
+        i.fa.fa-times-thin
 
     #viewer-container
-      i.fa.fa-chevron-left.attachment-arrow#prev-attachment
+      i.fa.fa-caret-left#prev-attachment
       #viewer-content
         img#image-viewer.hidden
         video#video-viewer.hidden(controls="true")
@@ -45,35 +46,36 @@ template(name="attachmentViewer")
         object#pdf-viewer.hidden(type="application/pdf")
           span.pdf-preview-error {{_ 'preview-pdf-not-supported' }}
         object#txt-viewer.hidden(type="text/plain")
-      i.fa.fa-chevron-right.attachment-arrow#next-attachment
+      i.fa.fa-caret-right#next-attachment
 
 template(name="attachmentGallery")
 
   .attachment-gallery
 
-    a.attachment-item.add-attachment.js-add-attachment
-      i.fa.fa-plus.icon
+    if canModifyCard
+      a.attachment-item.add-attachment.js-add-attachment
+        i.fa.fa-plus
 
     each attachments
 
-      .attachment-item
+      .attachment-item(class="{{#if isAttachmentMigrating _id}}migrating{{/if}}")
         .attachment-thumbnail-container.open-preview(data-attachment-id="{{_id}}" data-card-id="{{ meta.cardId }}")
           if link
             if(isImage)
-              img.attachment-thumbnail(src="{{link}}" title="{{sanitize name}}")
+              img.attachment-thumbnail(src="{{link}}" title="{{cleanFilename name}}")
             else if($eq extension 'svg')
-              img.attachment-thumbnail(src="{{link}}" title="{{sanitize name}}" type="image/svg+xml")
+              img.attachment-thumbnail(src="{{link}}" title="{{cleanFilename name}}" type="image/svg+xml")
             else if($eq extension 'mp3')
-              video.attachment-thumbnail(title="{{sanitize name}}")
+              video.attachment-thumbnail(title="{{cleanFilename name}}")
                 source(src="{{link}}" type="audio/mpeg")
             else if($eq extension 'ogg')
-              video.attachment-thumbnail(title="{{sanitize name}}")
+              video.attachment-thumbnail(title="{{cleanFilename name}}")
                 source(src="{{link}}" type="video/ogg")
             else if($eq extension 'webm')
-              video.attachment-thumbnail(title="{{sanitize name}}")
+              video.attachment-thumbnail(title="{{cleanFilename name}}")
                 source(src="{{link}}" type="video/webm")
             else if($eq extension 'mp4')
-              video.attachment-thumbnail(title="{{sanitize name}}")
+              video.attachment-thumbnail(title="{{cleanFilename name}}")
                 source(src="{{link}}" type="video/mp4")
             else
               span.attachment-thumbnail-text= extension
@@ -81,33 +83,38 @@ template(name="attachmentGallery")
         .attachment-details-container
           .attachment-details
             div
-              b
-                = name
+              b {{ cleanFilename name }}
               span.file-size ({{fileSize size}})
+            if uploaderName
+              div.attachment-uploader {{uploaderName}}
+            if uploadedAt
+              div.attachment-uploaded-at {{uploadedAt}}
             .attachment-actions
-              a.js-download(href="{{link}}?download=true", download="{{name}}")
-                i.fa.fa-download.icon(title="{{_ 'download'}}")
+              a.js-download(href="{{link}}?download=true", download="{{downloadFilename name}}", title="{{_ 'download'}}")
+                i.fa.fa-arrow-down
               if currentUser.isBoardMember
                 unless currentUser.isCommentOnly
                   unless currentUser.isWorker
-                    a.js-rename
-                      i.fa.fa-pencil-square-o.icon(title="{{_ 'rename'}}")
-                    a.js-confirm-delete
-                      i.fa.fa-trash.icon(title="{{_ 'delete'}}")
-                    a.fa.fa-navicon.icon.js-open-attachment-menu(data-attachment-link="{{link}}" title="{{_ 'attachmentActionsPopup-title'}}")
-
+                    a.js-rename(title="{{_ 'rename'}}")
+                      i.fa.fa-pencil-square-o
+                    a.js-confirm-delete(title="{{_ 'delete'}}")
+                      i.fa.fa-trash
+                    a.js-open-attachment-menu(data-attachment-link="{{link}}", title="{{_ 'attachmentActionsPopup-title'}}")
+                      i.fa.fa-bars
+        // Migration spinner overlay
+        if isAttachmentMigrating _id
+          .attachment-migration-overlay
+            .migration-spinner
+              i.fa.fa-cog.fa-spin
+            .migration-text {{_ 'migrating-attachment'}}
 
 template(name="attachmentActionsPopup")
   ul.pop-over-list
     li
       if isImage
         a(class="{{#if isCover}}js-remove-cover{{else}}js-add-cover{{/if}}")
-          i.fa.fa-book
           i.fa.fa-picture-o
-          if isCover
-            | {{_ 'remove-cover'}}
-          else
-            | {{_ 'add-cover'}}
+          | {{#if isCover}}{{_ 'remove-cover'}}{{else}}{{_ 'add-cover'}}{{/if}}
       if currentUser.isBoardAdmin
         if isImage
           a(class="{{#if isBackgroundImage}}js-remove-background-image{{else}}js-add-background-image{{/if}}")
@@ -116,25 +123,6 @@ template(name="attachmentActionsPopup")
               | {{_ 'remove-background-image'}}
             else
               | {{_ 'add-background-image'}}
-        p.attachment-storage
-          | {{versions.original.storage}}
-
-        if $neq versions.original.storage "fs"
-          a.js-move-storage-fs
-            i.fa.fa-arrow-right
-            | {{_ 'attachment-move-storage-fs'}}
-
-        if $neq versions.original.storage "gridfs"
-          if versions.original.storage
-            a.js-move-storage-gridfs
-              i.fa.fa-arrow-right
-              | {{_ 'attachment-move-storage-gridfs'}}
-
-        if $neq versions.original.storage "s3"
-          if versions.original.storage
-            a.js-move-storage-s3
-              i.fa.fa-arrow-right
-              | {{_ 'attachment-move-storage-s3'}}
 
 template(name="attachmentRenamePopup")
   input.js-edit-attachment-name(type='text' autofocus value="{{getNameWithoutExtension}}" dir="auto")

@@ -32,6 +32,137 @@ a:focus {
   color: unset;
   text-decoration: unset;
 }
+/* Accessibility (WCAG 2.4.7 Focus Visible): the resets above strip focus
+ * outlines from every element, which leaves keyboard users with no indication
+ * of where focus is. Restore a clearly visible focus indicator for keyboard
+ * navigation. :focus-visible only paints the outline for keyboard focus, so
+ * mouse clicks stay visually unchanged. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible,
+[role="button"]:focus-visible,
+[contenteditable="true"]:focus-visible {
+  outline: 2px solid #1565c0;
+  outline-offset: 2px;
+  /* Add a light halo so the outline is visible on both light and dark colored
+   * board headers. */
+  box-shadow: 0 0 0 4px rgba(21, 101, 192, 0.35);
+  border-radius: 2px;
+}
+/* Browsers that do not support :focus-visible fall back to :focus so keyboard
+ * users are never left without an indicator. */
+.no-focus-visible-support a:focus,
+.no-focus-visible-support button:focus,
+.no-focus-visible-support [tabindex]:focus {
+  outline: 2px solid #1565c0;
+  outline-offset: 2px;
+}
+
+/* Screen-reader-only helper: visually hidden but available to assistive tech. */
+.sr-only {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Visually-hidden but still *activatable* controls (#459 accessible reordering).
+ * The plain `.sr-only` pattern clips its content to a 1x1 box with
+ * `clip: rect(0,0,0,0)` + `overflow:hidden`, which removes the element from the
+ * hit-test stack: a real pointer click (or Playwright's coordinate-based click)
+ * at the control's own position resolves to whatever sits *behind* it, so the
+ * click handler never fires. For interactive controls we instead keep a real,
+ * hit-testable box that is merely transparent and out of flow. Keyboard/AT users
+ * still reach it via Tab / the accessibility tree; sighted users don't see it. */
+.minicard-move-buttons.sr-only,
+.list-move-buttons.sr-only {
+  position: static !important;
+  width: auto;
+  height: auto;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  clip-path: none;
+  white-space: normal;
+  /* Keep the group flush so the (transparent) controls don't visibly nudge the
+   * surrounding layout. */
+  display: inline-flex;
+  vertical-align: top;
+  line-height: 0;
+}
+.minicard-move-buttons.sr-only a,
+.list-move-buttons.sr-only a {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  overflow: hidden;
+  text-indent: -9999px;
+  white-space: nowrap;
+  opacity: 0;
+  position: relative;
+  z-index: 30;
+}
+
+/* #6521: these controls are focusable but `opacity: 0`, and they sit at the
+   START of the card/list content. Tabbing therefore went: card (visible focus)
+   -> invisible -> invisible -> next card, so the focus ring kept vanishing and
+   reappearing at a position that looked like it had gone BACKWARDS. Reveal them
+   while focused - the same pattern the skip-to-content link below already uses -
+   so every tab stop is somewhere the eye can follow. They stay invisible to the
+   mouse, and :focus-visible keeps a mouse click from popping them open. */
+.minicard-move-buttons.sr-only a:focus,
+.list-move-buttons.sr-only a:focus,
+.minicard-move-buttons.sr-only a:focus-visible,
+.list-move-buttons.sr-only a:focus-visible {
+  opacity: 1;
+  width: auto;
+  height: auto;
+  min-width: 1.6em;
+  padding: 0 0.3em;
+  overflow: visible;
+  text-indent: 0;
+  line-height: 1.6;
+  border-radius: 3px;
+  background: var(--theme-accent, #01628c);
+  color: #fff;
+  outline: 2px solid var(--theme-accent, #01628c);
+  outline-offset: 1px;
+}
+
+/* Skip-to-content link (WCAG 2.4.1 Bypass Blocks): hidden until focused, then
+ * pinned to the top-left so keyboard users can jump past the header chrome. */
+.skip-link {
+  position: absolute;
+  inset-inline-start: -9999px;
+  top: 0;
+  z-index: 10000;
+  padding: 10px 16px;
+  background: #1565c0;
+  color: #fff;
+  font-weight: bold;
+  border-radius: 0 0 4px 0;
+  text-decoration: none;
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+  inset-inline-start: 0;
+  outline: 2px solid #fff;
+  outline-offset: -4px;
+}
+/* The skip-link target must not show a persistent outline when focused
+ * programmatically. */
+#content:focus {
+  outline: none;
+}
 .badge {
   display: unset;
   min-width: unset;
@@ -52,15 +183,31 @@ input,
 select,
 textarea,
 button {
+  /* #6465: back to the WeKan 6.09 desktop density. The clamp() introduced in
+     v7.98 (20e9cf114) and raised in v8.02 (67b078b80) resolved to 18px on any
+     window wider than 720px — +28.5% on EVERY font, input and button versus
+     6.09's 14px — which is the "everything is way too big" regression. Mobile
+     readability is handled by the mobile media queries, not by inflating the
+     desktop base font. */
   font: 14px Roboto, Poppins, "Helvetica Neue", Arial, Helvetica, sans-serif;
   line-height: 18px;
   color: #4d4d4d;
+  /* Improve text rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Better text selection */
+  -webkit-user-select: text;
+  user-select: text;
 }
 html {
   font-size: 100%;
   max-height: 100%;
-  user-select: none;
+  -webkit-user-select: text;
+  user-select: text;
+
   -webkit-text-size-adjust: 100%;
+text-size-adjust: 100%;
+
 }
 body {
   background: #dedede;
@@ -71,6 +218,34 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  /* iOS Safari fixes */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Mobile mode specific fixes for iOS Safari */
+body.mobile-mode {
+  overflow-x: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100vh;
+  /* #6488: `100vh` is the viewport with the browser's toolbars hidden, so a
+     `position: fixed` body sized that way reaches under them and the last part of
+     any page is unreachable. `100dvh` is the viewport as it is right now; the line
+     above stays as the fallback where `dvh` is not supported. */
+  height: 100dvh;
+  /* Prevent iOS Safari bounce scroll */
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Ensure content area is scrollable in mobile mode */
+body.mobile-mode #content {
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  height: calc(100vh - 48px);
+  height: calc(100dvh - 48px);
+  overscroll-behavior: contain;
 }
 #content {
   position: relative;
@@ -78,9 +253,11 @@ body {
   overflow-x: hidden;
 }
 #content .sk-spinner {
-  margin-top: 30vh;
+  margin-top: 270px;
 }
 #content > .wrapper {
+  /* #6465: 6.09 values; 18px/28px padding was ~21x38px on FullHD — the huge
+     empty header band on the All Boards page. */
   margin-top: 10px;
   padding: 15px;
 }
@@ -88,55 +265,78 @@ body {
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 0;
-  right: 0;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
   background: rgba(0,0,0,0.6);
   z-index: 100;
   overflow-y: auto;
 }
 #modal .modal-content {
-  width: 500px;
-  min-height: 160px;
-  margin: 42px auto;
-  padding: 12px;
-  border-radius: 4px;
+  width: min(500px, 90vw);
+  min-height: 180px;
+  margin: 45px auto;
+  padding: 18px 28px;
+  border-radius: 7px;
   background: #dedede;
   z-index: 110;
 }
 #modal .modal-content h2 {
-  margin-bottom: 25px;
+  margin-bottom: 27px;
 }
 #modal .modal-content .modal-close-btn {
   display: block;
-  float: right;
-  font-size: 24px;
+  float: inline-end;
+  font-size: 18px;
 }
 #modal .modal-content-wide {
-  width: 800px;
+  width: min(800px, 95vw);
   min-height: 0px;
-  margin: 42px auto;
-  padding: 12px;
-  border-radius: 4px;
+  margin: 45px auto;
+  padding: 18px 28px;
+  border-radius: 7px;
   background: #dedede;
   z-index: 110;
 }
 #modal .modal-content-wide h2 {
-  margin-bottom: 25px;
+  margin-bottom: 27px;
 }
 #modal .modal-content-wide .modal-close-btn {
   display: block;
-  float: right;
-  font-size: 24px;
+  float: inline-end;
+  font-size: 18px;
 }
+/* Archived boards modal: full-width panel that extends to the bottom of the browser
+   window (so archived boards show full width with maximum vertical space). It is the
+   only modal that contains .archived-lists. */
+#modal .modal-content:has(.archived-lists) {
+  width: 1344px;
+  max-width: 96vw;
+  /* The header bar(s) sit above the modal (higher z-index), so start the archive
+     panel BELOW them — otherwise its top (and the close X) is hidden under the top
+     header bar. ~96px clears both the quick-access bar and the board header bar; on
+     the All Boards page (one bar) this leaves a small top gap. Then extend to the
+     bottom of the browser window. */
+  margin: 96px auto 0;
+  min-height: calc(100vh - 106px);
+  box-sizing: border-box;
+}
+/* Each archived board is a full-width row. */
+#modal .modal-content .archived-lists,
+#modal .modal-content .archived-lists .archived-lists-item {
+  width: 100%;
+  box-sizing: border-box;
+}
+/* #6465: heading sizes back to the 6.09 values (22/18/16px) — the vw clamps
+   resolved to 24/20/18px on desktop and compounded the density regression. */
 h1 {
   font-size: 22px;
   line-height: 1.2em;
-  margin: 0 0 10px;
+  margin: 0 0 9px;
 }
 h2 {
   font-size: 18px;
   line-height: 1.2em;
-  margin: 0 0 9px;
+  margin: 0 0 7px;
 }
 h3,
 h4,
@@ -144,7 +344,7 @@ h5,
 h6 {
   font-size: 16px;
   line-height: 1.25em;
-  margin: 0 0 6px;
+  margin: 0 0 5px;
 }
 .quiet,
 .quiet a {
@@ -156,14 +356,14 @@ h6 {
 }
 .no-items-message {
   color: #666;
-  margin: 30px 0;
+  margin: 36px 0;
   text-align: center;
 }
 .warning {
   background: #f0ecdb;
-  border-radius: 3px;
+  border-radius: 6px;
   color: #aa8f09;
-  padding: 6px 8px;
+  padding: 9px 17px;
 }
 .warning a {
   color: #aa8f09;
@@ -188,7 +388,10 @@ strong {
   font-weight: bold;
 }
 p {
+  -webkit-user-select: text;
   user-select: text;
+
+
 }
 p a {
   text-decoration: underline;
@@ -196,24 +399,24 @@ p a {
 }
 table,
 p {
-  margin-bottom: 8px;
+  margin-bottom: 9px;
 }
 pre {
-  margin: 15px 0;
+  margin: 18px 0;
   white-space: pre;
-  max-height: 516px;
+  max-height: 60vh;
 }
 pre,
 code,
 tt {
   font-family: lucida console, monospace;
-  line-height: 1.25em;
+  line-height: 1.3em;
 }
 blockquote {
-  margin: 8px 0 8px 8px;
-  border-left: 1px solid #ccc;
+  margin: 9px 0 9px 14px;
+  border-inline-start: 1px solid #ccc;
   color: #666;
-  padding: 0 0 0 8px;
+  padding: 0 0 0 14px;
 }
 hr {
   height: 1px;
@@ -222,7 +425,7 @@ hr {
   width: 100%;
   background: #dbdbdb;
   color: #dbdbdb;
-  margin: 15px 0;
+  margin: 18px 0;
   padding: 0;
 }
 table,
@@ -230,12 +433,12 @@ td,
 th {
   vertical-align: top;
   border-top: 1px solid #ccc;
-  border-left: 1px solid #ccc;
+  border-inline-start: 1px solid #ccc;
 }
 td,
 th {
-  padding: 5px;
-  border-right: 1px solid #ccc;
+  padding: 7px 11px;
+  border-inline-end: 1px solid #ccc;
   border-bottom: 1px solid #ccc;
 }
 th {
@@ -250,20 +453,20 @@ tbody {
 }
 dl,
 dt {
-  margin-bottom: 8px;
+  margin-bottom: 9px;
 }
 dd {
-  margin: 0 0 16px 24px;
+  margin: 0 0 18px 42px;
 }
 kbd {
-  padding: 1px 3px;
-  margin: 3px;
+  padding: 2px 7px;
+  margin: 5px;
   font-weight: bold;
   background: #fafafa;
-  border-radius: 3px;
+  border-radius: 6px;
   border: 1px solid #e6e6e6;
   color: unset;
-  box-shadow: 0px 2px 3px rgba(0,0,0,0.15);
+  box-shadow: 0px 3px 5px rgba(0,0,0,0.15);
 }
 .clear {
   clear: both;
@@ -281,18 +484,18 @@ kbd {
   text-align: center;
 }
 .left {
-  float: left;
+  float: inline-start;
 }
 .right {
-  float: right;
+  float: inline-end;
 }
 .first {
-  margin-left: 0;
-  padding-left: 0;
+  margin-inline-start: 0;
+  padding-inline-start: 0;
 }
 .last {
-  margin-right: 0;
-  padding-right: 0;
+  margin-inline-end: 0;
+  padding-inline-end: 0;
 }
 .top {
   margin-top: 0;
@@ -303,7 +506,7 @@ kbd {
   padding-bottom: 0;
 }
 .wrapper {
-  width: calc(100% - 20px);
+  width: calc(100% - 28px);
   margin: 0 auto;
 }
 .relative {
@@ -394,23 +597,26 @@ a:not(.disabled).is-active i.fa {
 }
 .big-message {
   display: block;
-  margin: 75px auto;
+  margin: 90px auto;
   text-align: center;
-  max-width: 600px;
+  max-width: min(600px, 90vw);
 }
 .big-message h1 {
-  font-size: 26px;
-  margin-bottom: 24px;
+  font-size: 20px;
+  margin-bottom: 27px;
 }
 .big-message p {
-  font-size: 18px;
-  line-height: 22px;
+  font-size: 16px;
+  line-height: 1.3;
 }
 .gutter {
-  margin-left: 38px;
+  margin-inline-start: 70px;
 }
 .viewer {
-  min-height: 18px;
+  /* px, not vh: as a percentage of window HEIGHT this reserved an empty band
+     under every one-line text block, and the band grew as the window got taller
+     - see the two notes in minicard.css. */
+  min-height: 22px;
   display: block;
   word-wrap: break-word;
 }
@@ -420,18 +626,19 @@ a:not(.disabled).is-active i.fa {
 }
 .viewer ol {
   list-style-type: decimal;
-  padding-left: 20px;
-  padding-bottom: 10px;
+  padding-inline-start: 42px;
+  padding-bottom: 14px;
 }
 .viewer ul {
   list-style-type: initial;
-  padding-left: 20px;
-  padding-bottom: 10px;
+  padding-inline-start: 42px;
+  padding-bottom: 14px;
 }
 .viewer em {
   font-style: italic;
 }
-.viewer pre {
+.viewer pre,
+.viewer code {
   padding: 10px 12px 7px;
   background: #dedede;
   overflow-y: auto;
@@ -442,34 +649,385 @@ a:not(.disabled).is-active i.fa {
 .viewer a:hover {
   color: #333;
 }
+.basicTabs-container .tabs-list {
+  text-align: start;
+  width: 100%;
+}
+.basicTabs-container .tabs-list .tab-item {
+  font-weight: 600;
+  font-size: 13px;
+  display: inline-block;
+  padding: 13px 15px;
+  margin: 0;
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+}
+.basicTabs-container .tabs-list .tab-item.active {
+  border-radius: 5px 5px 0 0;
+  border: 1px solid #ddd;
+  border-bottom: none;
+  margin-bottom: -1px !important;
+  padding: 12px 14px 14px 14px !important;
+  background-color: #fff;
+  color: #333;
+}
 .basicTabs-container .tabs-content-container {
   padding: 0;
   padding-top: 15px;
+  border-top: 1px solid #ddd;
 }
-@media screen and (max-width: 800px) {
+.basicTabs-container .tabs-content {
+  display: none;
+}
+.basicTabs-container .tabs-content.active {
+  display: block;
+}
+.no-scrollbars {
+  scrollbar-width: none;
+}
+.no-scrollbars::-webkit-scrollbar {
+  display: none !important;
+}
+/* ========================================
+   MOBILE & TABLET RESPONSIVE IMPROVEMENTS
+   ======================================== */
+
+/* Mobile devices (up to 800px) and all iPhone models */
+@media screen and (max-width: 800px),
+       screen and (max-device-width: 932px) and (-webkit-min-device-pixel-ratio: 3) and (orientation: landscape),
+       screen and (max-device-width: 932px) and (-webkit-min-device-pixel-ratio: 3) and (orientation: portrait) {
   #content {
     margin: 1px 0px 0px 0px;
     height: calc(100% - 0px);
+    /* Improve touch scrolling */
+    -webkit-overflow-scrolling: touch;
   }
   #content > .wrapper {
     margin-top: 0px;
+    padding: 8px;
   }
   .wrapper {
     height: calc(100% - 31px);
     margin: 0px;
+    padding: 8px;
   }
   .panel-default {
-    width: 83vw;
+    width: 1330px;
+    max-width: 95vw;
+    margin: 0 auto;
+  }
+
+  /* Improve touch targets */
+  button, .btn, .js-toggle, .js-color-choice, .js-reaction, .close {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 12px 16px;
+    font-size: 16px; /* Prevent zoom on iOS */
+    touch-action: manipulation;
+  }
+
+  /* Form elements */
+  input, select, textarea {
+    font-size: 16px; /* Prevent zoom on iOS */
+    padding: 12px;
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+
+  /* Cards and lists */
+  .minicard {
+    min-height: 48px;
+    padding: 12px;
+    margin-bottom: 8px;
+    touch-action: manipulation;
+  }
+
+  .list {
+    margin: 0 8px;
+    min-width: 280px;
+  }
+
+  /* Board canvas */
+  .board-canvas {
+    padding: 0 8px 8px 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Header mobile layout */
+  #header {
+    padding: 8px;
+    /* Keep top bar on a single row on small screens */
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  #header-quick-access {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    /* Tight but still tappable spacing: on a 375px phone (iPhone 12 mini) the
+       gaps alone were 8px x 6 = 48px, an eighth of the whole bar. */
+    gap: 6px;
+    width: 100%;
+    /* ONE row. This used to wrap to a second row because the items did not fit:
+       the home link kept its full "All Boards" label, the logo was allowed 120px,
+       and TWO items had `margin-inline-start: auto`, each eating all remaining
+       space on its line and pushing everything after it down. Rather than let the
+       bar grow to two rows (or clip the right-hand items, which is what nowrap
+       did before that), the items below are made to FIT: icon-only home link,
+       smaller logo cap, one auto margin, tighter padding. */
+    flex-wrap: nowrap;
+    overflow: hidden;
+    height: auto;
+    min-height: 28px;
+  }
+
+  /* Hide elements that should move to the hamburger menu on mobile */
+  #header-quick-access .header-quick-access-list,
+  #header-quick-access #header-help {
+    display: none !important;
+  }
+
+  /* Home link: icon only. The label ("All Boards" / "Kaikki taulut" - it is
+     longer in most languages than in English) is the single widest item in the
+     bar, and the home icon on its own is unambiguous. The label is a bare text
+     node rather than a span, so it cannot be targeted directly: font-size:0 on
+     the link collapses it and the icon's own font-size brings the icon back.
+     The text stays in the DOM, so screen readers still announce it. */
+  #header-quick-access .home-icon {
+    margin-inline-end: 0;
+    flex-shrink: 0;
+  }
+  #header-quick-access .home-icon a {
+    display: inline-flex;
+    align-items: center;
+    max-width: none;
+    overflow: visible;
+    white-space: nowrap;
+    font-size: 0;
+    padding: 4px 6px;
+  }
+  #header-quick-access .home-icon a .fa-home {
+    font-size: 16px;
+    margin-inline-end: 0;
+  }
+  /* `.allBoards` is the same element as `.home-icon`; its 15px side padding is
+     desktop spacing. */
+  #header-quick-access .allBoards {
+    padding: 4px 6px;
+  }
+
+  /* Exactly ONE auto margin in the row. Two of them (zoom AND user bar) each
+     absorbed the remaining space on their line, which is what forced the wrap:
+     the first auto margin filled line 1, so everything after it started line 2.
+     The single one here right-aligns the user menu when there is space left and
+     collapses to 0 when there is not. */
+  #header-quick-access .zoom-controls {
+    margin-inline-start: 0;
+    margin-inline-end: 0;
+  }
+
+  .mobile-mode-toggle {
+    margin-inline-end: 0;
+  }
+
+  #header-user-bar {
+    margin-inline-start: auto;
+  }
+
+  /* Ensure header elements don't wrap on very small screens */
+  #header-quick-access {
+    min-width: 0; /* Allow flexbox to shrink */
+  }
+
+  /* Nothing on a phone may make the PAGE scroll sideways. The quick-access bar
+     is `overflow: visible` on purpose, so an item that does not fit spills - and
+     a spill is scrollable overflow: the page could be dragged left, taking the
+     board list with it, and the avatar lived out there past the right edge. The
+     bar's items are made to fit (header.css), and this is the guarantee that a
+     future item, a long translation or a custom logo cannot undo that. */
+  html {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
+  /* The logo is decorative here and was allowed a third of a 375px bar. */
+  #header-quick-access img {
+    max-height: 20px;
+    max-width: 84px;
+  }
+
+  /* Ensure zoom controls are compact on mobile */
+  .zoom-controls .zoom-level {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+
+  /* Modal mobile optimization */
+  #modal .modal-content,
+  #modal .modal-content-wide {
+    width: 1330px;
+    max-width: 95vw;
+    margin: 18px auto;
+    padding: 16px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  /* Table mobile optimization */
+  table {
+    font-size: 14px;
+    width: 100%;
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Admin panel mobile optimization.
+     Keep the side-by-side (row) layout from settingBody.css even on narrow
+     screens — do NOT switch to a stacked column layout, which left the menu
+     only 448px wide with empty space beside it and pushed the content off
+     screen. The side menu keeps a fixed basis and the main body fills the
+     rest, so both stay visible. */
+  .setting-content .content-body {
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .setting-content .content-body .main-body {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Tablet devices (768px - 1024px) */
+@media screen and (min-width: 768px) and (max-width: 1024px) {
+  #content > .wrapper {
+    padding: 12px;
+  }
+
+  .wrapper {
+    padding: 12px;
+  }
+
+  .panel-default {
+    width: 1260px;
+    max-width: 90vw;
+  }
+
+  /* Touch-friendly but more compact */
+  button, .btn, .js-toggle, .js-color-choice, .js-reaction, .close {
+    min-height: 48px;
+    min-width: 48px;
+    padding: 10px 14px;
+  }
+
+  .minicard {
+    min-height: 40px;
+    padding: 10px;
+  }
+
+  .list {
+    margin: 0 12px;
+    min-width: 300px;
+  }
+
+  .board-canvas {
+    padding: 0 12px 12px 0;
+  }
+
+  #header {
+    padding: 12px 16px;
+  }
+
+  #modal .modal-content {
+    width: 1120px;
+    max-width: 600px;
+  }
+
+  #modal .modal-content-wide {
+    width: 1260px;
+    max-width: 800px;
+  }
+
+  .setting-content .content-body {
+    gap: 20px;
+  }
+
+  .setting-content .content-body .side-menu {
+    width: 250px;
+  }
+
+  /* Responsive handling for quick-access description on tablets */
+  #header-quick-access ul.header-quick-access-list li.current.empty {
+    max-width: 300px;
+  }
+}
+
+/* Large displays and digital signage (1920px+) */
+@media screen and (min-width: 1920px) {
+  body {
+    font-size: 18px;
+  }
+
+  button, .btn, .js-toggle, .js-color-choice, .js-reaction, .close {
+    min-height: 56px;
+    min-width: 56px;
+    padding: 16px 20px;
+    font-size: 18px;
+  }
+
+  .minicard {
+    min-height: 56px;
+    padding: 16px;
+    font-size: 18px;
+  }
+
+  .list {
+    margin: 0 8px;
+    min-width: 360px;
+  }
+
+  .board-canvas {
+    padding: 0;
+  }
+
+  #header {
+    padding: 0 8px;
+  }
+
+  #content > .wrapper {
+    padding: 0;
+  }
+
+  #modal .modal-content {
+    width: 600px;
+  }
+
+  #modal .modal-content-wide {
+    width: 1000px;
+  }
+
+  .setting-content .content-body {
+    gap: 32px;
+  }
+
+  .setting-content .content-body .side-menu {
+    width: 320px;
   }
 }
 .inline-input {
   height: 37px;
   margin: 8px 10px 0 0;
-  width: 50px;
+  width: 100px;
 }
 .select-authentication {
   width: 100%;
 }
+.textBelowCustomLoginLogo,
 .auth-layout {
   display: flex;
   flex-direction: column;
@@ -508,56 +1066,56 @@ a:not(.disabled).is-active i.fa {
 }
 .lds-roller div:nth-child(1):after {
   top: 50px;
-  left: 50px;
+  inset-inline-start: 50px;
 }
 .lds-roller div:nth-child(2) {
   animation-delay: -0.072s;
 }
 .lds-roller div:nth-child(2):after {
   top: 54px;
-  left: 45px;
+  inset-inline-start: 45px;
 }
 .lds-roller div:nth-child(3) {
   animation-delay: -0.108s;
 }
 .lds-roller div:nth-child(3):after {
   top: 57px;
-  left: 39px;
+  inset-inline-start: 39px;
 }
 .lds-roller div:nth-child(4) {
   animation-delay: -0.144s;
 }
 .lds-roller div:nth-child(4):after {
   top: 58px;
-  left: 32px;
+  inset-inline-start: 32px;
 }
 .lds-roller div:nth-child(5) {
   animation-delay: -0.18s;
 }
 .lds-roller div:nth-child(5):after {
   top: 57px;
-  left: 25px;
+  inset-inline-start: 25px;
 }
 .lds-roller div:nth-child(6) {
   animation-delay: -0.216s;
 }
 .lds-roller div:nth-child(6):after {
   top: 54px;
-  left: 19px;
+  inset-inline-start: 19px;
 }
 .lds-roller div:nth-child(7) {
   animation-delay: -0.252s;
 }
 .lds-roller div:nth-child(7):after {
   top: 50px;
-  left: 14px;
+  inset-inline-start: 14px;
 }
 .lds-roller div:nth-child(8) {
   animation-delay: -0.288s;
 }
 .lds-roller div:nth-child(8):after {
   top: 45px;
-  left: 10px;
+  inset-inline-start: 10px;
 }
 .at-link {
   color: #17683a;
@@ -605,6 +1163,41 @@ a:not(.disabled).is-active i.fa {
 @keyframes flexGrowIn {
   from {
     height: 100%;
+  }
+}
+
+/* iOS Safari Mobile Mode Fixes */
+@media screen and (max-width: 800px) {
+  /* Prevent scrolling issues on iOS Safari when card popup is open */
+  body.mobile-mode {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  /* Fix z-index stacking for mobile Safari */
+  body.mobile-mode .board-wrapper {
+    z-index: 1;
+  }
+
+  body.mobile-mode .board-wrapper .board-canvas .board-overlay {
+    z-index: 17 !important;
+  }
+
+  body.mobile-mode .card-details {
+    z-index: 100 !important;
+  }
+
+  body.mobile-mode .pop-over {
+    z-index: 999;
+  }
+
+  /* Ensure smooth scrolling on iOS */
+  body.mobile-mode .card-details,
+  body.mobile-mode .pop-over .content-wrapper {
+    -webkit-overflow-scrolling: touch;
   }
 }
 @-moz-keyframes lds-roller {

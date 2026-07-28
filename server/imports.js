@@ -1,0 +1,348 @@
+// ============================================================================
+// WeKan Server — All Imports
+// Loaded by server/main.js after bootstrap (collectionHelpers) completes.
+// ============================================================================
+
+// ****IMPORTANT**** FIRST: a rejected promise must not end the process. SyncedCron
+// installs an `unhandledRejection` handler that calls process.exit(1), so one
+// write losing a race for the SQLite write lock killed the whole server and
+// systemd restarted it into a busier database (#6533). This decides what happens
+// instead, and must be loaded before SyncedCron.
+import '/server/00processErrors';
+
+// ...and guard every startup callback registered below, so a database that is
+// momentarily busy cannot turn a boot into a restart loop either (#6533). It must
+// come before anything that registers a Meteor.startup hook.
+import '/server/00startupResilience';
+
+// ****IMPORTANT**** Wait for MongoDB to be ready BEFORE anything else, so the
+// first index creation never crashes the server with "Topology is closed".
+// Registers the first Meteor.startup hook, so it runs before index-creating ones.
+import '/server/00waitForMongo';
+
+// ****IMPORTANT**** Initialize upload directories BEFORE models are loaded
+// This ensures ostrio:files can create necessary directories without permission errors
+import '/server/initializeDirs';
+
+// ----------------------------------------------------------------------------
+// 0. API middleware & auth routes (must register before model routes)
+// ----------------------------------------------------------------------------
+import '/server/apiMiddleware';
+import '/server/apiAuthRoutes';
+
+// ----------------------------------------------------------------------------
+// 1. Shared imports (i18n, utilities, reactive cache)
+// ----------------------------------------------------------------------------
+import '/imports/i18n/index';
+import '/imports/i18n/accounts';
+import '/imports/i18n/blaze';
+import '/imports/i18n/languages';
+import '/imports/i18n/moment';
+import '/imports/i18n/tap';
+import '/imports/lib/customHeadDefaults';
+import '/imports/lib/dateUtils';
+import '/imports/lib/secureDOMPurify';
+
+// ----------------------------------------------------------------------------
+// 2. Models — shared collections + server-only extensions
+// ----------------------------------------------------------------------------
+import '/imports/startup/shared-models';
+import '/models/attachments.server';
+import '/models/avatars.server';
+import '/server/boardBackgrounds';
+import '/models/fileValidation';
+
+// ----------------------------------------------------------------------------
+// 3. Shared runtime services
+// ----------------------------------------------------------------------------
+import '/imports/reactiveCache';
+
+// Models — server-only exporters
+import '/models/csvCreator';
+import '/models/export';
+import '/models/exportExcel';
+import '/models/exportExcelCard';
+import '/models/exportPDF';
+import '/models/exporter';
+
+// Models — server-only importers
+import '/models/import';
+import '/models/trelloCreator';
+import '/models/wekanCreator';
+import '/models/wekanmapper';
+
+// Models — lib (shared helpers)
+import '/models/lib/attachmentBackwardCompatibility';
+import '/models/lib/attachmentStoreStrategy';
+import '/models/lib/attachmentUrlValidation';
+import '/models/lib/fileStoreStrategy';
+import '/models/lib/fsHooks/createOnAfterUpload';
+import '/models/lib/grid/createBucket';
+import '/models/lib/grid/createObjectId';
+import '/models/lib/httpStream';
+import '/models/lib/universalUrlGenerator';
+import '/models/lib/userStorageHelpers';
+
+// Models — server-only sub-modules
+import '/models/server/createWorkbook';
+import '/models/server/ExporterCardPDF';
+import '/models/server/ExporterExcelCard';
+import '/models/server/ExporterExcel';
+import '/models/server/metrics';
+import '/server/lib/speedMiddleware';
+import '/server/lib/cpuMonitor';
+import '/server/lib/selfChecks';
+import '/server/models/actions';
+import '/server/models/activities';
+import '/server/models/attachmentStorageSettings';
+import '/server/models/boards';
+import '/server/models/cards';
+import '/server/models/dependencies';
+import '/server/models/cardComments';
+import '/server/models/checklistItems';
+import '/server/models/checklists';
+import '/server/models/collectionBootstrap';
+import '/server/models/customFields';
+import '/server/models/integrations';
+import '/server/models/lists';
+import '/server/models/org';
+import '/server/models/rules';
+import '/server/models/settings';
+import '/server/models/swimlanes';
+import '/server/models/team';
+import '/server/models/translation';
+import '/server/models/users';
+import '/server/models/userPositionHistory';
+// #5850/#4737: server-side method modules (this app uses an explicit server
+// mainModule, so files not imported here are never loaded / their methods are
+// not registered).
+import '/server/ldapGroupSync';
+import '/server/sharedTemplateTargets';
+import '/server/propagateOrgTeamMembers';
+
+// ----------------------------------------------------------------------------
+// 4. Config (shared)
+// ----------------------------------------------------------------------------
+import '/config/accounts';
+import '/config/const';
+import '/config/models';
+import '/config/query-classes';
+// router.js is client-only (FlowRouter route actions use client-only modules)
+import '/config/search-const';
+
+// ----------------------------------------------------------------------------
+// 5. Server — core startup & configuration
+// ----------------------------------------------------------------------------
+import '/server/00checkStartup';
+import '/server/accounts-common';
+import '/server/accounts-resume-login';
+import '/server/accounts-lockout-config';
+import '/server/authentication';
+import '/server/cors';
+import '/server/header-login';
+import '/server/max-image-pixel';
+import '/server/max-size';
+import '/server/policy';
+import '/server/richer-editor-setting-helper';
+import '/server/saml';
+import '/server/spinner';
+import '/server/statistics';
+
+// ----------------------------------------------------------------------------
+// 5. Server — attachment handling
+// ----------------------------------------------------------------------------
+import '/server/attachmentApi';
+import '/server/attachmentMigration';
+import '/server/attachmentMigrationStatus';
+import '/server/attachmentBulkMove';
+
+// ----------------------------------------------------------------------------
+// 6. Server — cron
+// ----------------------------------------------------------------------------
+// SyncedCron itself, used by the backup schedule (server/methods/backup.js) and
+// scheduled rules (server/scheduledRules.js). The old cron-driven MIGRATION
+// subsystem that also lived here was removed: it never ran (its
+// initializeCronJobs() was never called and the board-migration detector's
+// startup hook was commented out) and had no UI, while its client module still
+// subscribed and polled on every client. Migrations run from Admin Panel ->
+// Attachments and on board open instead, reported by the shared
+// migrationProgress dashboard.
+import '/server/cron/syncedCron';
+
+// ----------------------------------------------------------------------------
+// 7. Server — webhooks
+// ----------------------------------------------------------------------------
+import '/server/card-opened-webhook';
+import '/server/cards-loading';
+
+// ----------------------------------------------------------------------------
+// 8. Server — import helpers
+// ----------------------------------------------------------------------------
+import '/server/import-users-for-methods';
+import '/server/trelloApiImport';
+
+// ----------------------------------------------------------------------------
+// 9. Server — lib (utilities, sanitizers, guards)
+// ----------------------------------------------------------------------------
+import '/server/lib/customHeadRender';
+import '/server/lib/emailLocalization';
+import '/server/lib/importer';
+import '/server/lib/inputSanitizer';
+// Multitenancy option D: the host -> Organization resolver and the per-host runtime
+// config hook (docs/Design/Multitenancy/Multitenancy.md). Inert unless
+// MULTITENANCY=true.
+import '/server/lib/tenantResolver';
+import '/server/lib/ssrfGuard';
+import '/server/lib/ddpSessionSendGuard';
+import '/server/lib/databaseProblems';
+import '/server/lib/utils';
+
+// ----------------------------------------------------------------------------
+// 10. Server — methods
+// ----------------------------------------------------------------------------
+import '/server/methods/backup';
+import '/server/methods/fixDuplicateLists';
+import '/server/methods/icsImport';
+import '/server/methods/lockedUsers';
+import '/server/methods/lockoutSettings';
+import '/server/methods/migrateTextDatabase';
+import '/server/methods/repairBoardData';
+import '/server/methods/repairBrokenCards';
+import '/server/methods/systemStatus';
+import '/server/methods/positionHistory';
+import '/server/methods/sandstormMigration';
+import '/server/methods/tenant';
+import '/server/startup/repairBoardsOnStartup';
+
+// ----------------------------------------------------------------------------
+// 11. Server — migrations
+// ----------------------------------------------------------------------------
+// #6521: the per-swimlane-lists-era board migrations (comprehensiveBoardMigration,
+// fixMissingListsMigration, restoreLostCards, restoreAllArchived) are removed. They
+// converted today's board-wide SHARED lists (swimlaneId '') back into per-swimlane
+// DUPLICATE columns and created "Lost Cards" / "Restored Items" columns, moving
+// real cards into them (they even treated cards on archived lists as "orphaned" and
+// shared-swimlane cards as "lost"). That is exactly the damage the startup schema
+// step `merge-per-swimlane-lists` now UNDOES, and the board-open self-heal
+// (repairBoardData) fixes genuinely missing swimlaneId / orphaned cards correctly.
+// The migrations had no callers left (their admin migration dashboard was removed),
+// so they were dead, admin-callable footguns.
+import '/server/migrations/correctFileExtensions';
+import '/server/migrations/deleteDuplicateEmptyLists';
+import '/server/migrations/ensureValidSwimlaneIds';
+import '/server/migrations/fixAllFileUrls';
+import '/server/migrations/fixAvatarUrls';
+import '/server/migrations/migrateAttachments';
+// #6473: startup schema upgrade — checks what old-version data is already
+// migrated and migrates only the rest (all platforms, both databases).
+import '/server/startupSchemaUpgrade';
+
+// ----------------------------------------------------------------------------
+// 12. Server — notifications
+// ----------------------------------------------------------------------------
+import '/server/notifications/email';
+import '/server/notifications/notifications';
+import '/server/notifications/outgoing';
+import '/server/notifications/profile';
+import '/server/notifications/watch';
+
+// ----------------------------------------------------------------------------
+// 13. Server — publications
+// ----------------------------------------------------------------------------
+import '/server/publications/accessibilitySettings';
+import '/server/publications/accountSettings';
+import '/server/publications/activities';
+import '/server/publications/announcements';
+import '/server/publications/attachmentMigrationStatus';
+import '/server/publications/attachments';
+import '/server/publications/legacyAttachments';
+import '/server/publications/avatars';
+import '/server/publications/backgrounds';
+import '/server/publications/boards';
+import '/server/publications/cards';
+import '/server/publications/cardsWindow';
+import '/server/publications/customUI';
+import '/server/publications/impersonationReport';
+import '/server/publications/recoveryReport';
+import '/server/publications/recoveryMaintenance';
+import '/server/recovery';
+import '/server/publications/inviteToBoardRolesSettings';
+import '/server/publications/lockoutSettings';
+import '/server/publications/notifications';
+import '/server/publications/org';
+import '/server/publications/people';
+import '/server/publications/rules';
+import '/server/publications/settings';
+import '/server/publications/swimlanes';
+import '/server/publications/tableVisibilityModeSettings';
+import '/server/publications/team';
+import '/server/publications/translation';
+import '/server/publications/unsavedEdits';
+import '/server/publications/userDesktopDragHandles';
+import '/server/publications/users';
+import '/server/publications/trelloImportJobs';
+
+// ----------------------------------------------------------------------------
+// 14. Server — routes (REST API, file serving)
+// ----------------------------------------------------------------------------
+import '/server/routes/attachmentApi';
+import '/server/routes/avatarServer';
+import '/server/routes/customHeadAssets';
+import '/server/routes/importTrelloZip';
+import '/server/routes/legacyAttachments';
+import '/server/routes/universalFileServer';
+
+// ----------------------------------------------------------------------------
+// 15. Server — rules engine
+// ----------------------------------------------------------------------------
+import '/server/rulesHelper';
+import '/server/triggersDef';
+import '/server/scheduledRules';
+import '/server/rulesButton';
+
+// ----------------------------------------------------------------------------
+// 16. Server — collection permissions (allow/deny rules)
+// ----------------------------------------------------------------------------
+import '/server/permissions/accessibilitySettings';
+import '/server/permissions/accountSettings';
+import '/server/permissions/actions';
+import '/server/permissions/announcements';
+import '/server/permissions/attachments';
+import '/server/permissions/avatars';
+import '/server/permissions/boards';
+import '/server/permissions/cardCommentReactions';
+import '/server/permissions/cardComments';
+import '/server/permissions/cards';
+import '/server/permissions/checklistItems';
+import '/server/permissions/checklists';
+import '/server/permissions/customFields';
+import '/server/permissions/integrations';
+import '/server/permissions/invitationCodes';
+import '/server/permissions/inviteToBoardRolesSettings';
+import '/server/permissions/lists';
+import '/server/permissions/lockoutSettings';
+import '/server/permissions/org';
+import '/server/permissions/rules';
+import '/server/permissions/settings';
+import '/server/permissions/swimlanes';
+import '/server/permissions/tableVisibilityModeSettings';
+import '/server/permissions/team';
+import '/server/permissions/translation';
+import '/server/permissions/triggers';
+import '/server/permissions/unsavedEdits';
+import '/server/permissions/userPositionHistory';
+import '/server/permissions/users';
+
+// ----------------------------------------------------------------------------
+// External-avatar localization + imported-user reconciliation
+// ----------------------------------------------------------------------------
+// Register the Accounts.onLogin avatar-localization trigger and the imported-user
+// reconciliation Meteor methods. In mainModule mode a file that is not imported here is
+// never loaded, so its hooks/methods would silently never register.
+import '/server/avatarLocalizationOnLogin';
+import '/server/importedUserReconciliation';
+
+// ----------------------------------------------------------------------------
+// 17. Sandstorm integration
+// ----------------------------------------------------------------------------
+import '/sandstorm';

@@ -1,45 +1,40 @@
 import { ReactiveCache } from '/imports/reactiveCache';
 import { TAPi18n } from '/imports/i18n';
+import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
+import dragscroll from '@wekanteam/dragscroll';
+import getSlug from 'limax';
+import Boards from '/models/boards';
+import Swimlanes from '/models/swimlanes';
+import TableVisibilityModeSettings from '/models/tableVisibilityModeSettings';
+import { Filter } from '/client/lib/filter';
+import { MultiSelection } from '/client/lib/multiSelection';
+import { getSidebarInstance } from '/client/features/sidebar/service';
+import { Utils } from '/client/lib/utils';
 
 /*
 const DOWNCLS = 'fa-sort-down';
 const UPCLS = 'fa-sort-up';
 */
 const sortCardsBy = new ReactiveVar('');
-Template.boardMenuPopup.events({
-  'click .js-rename-board': Popup.open('boardChangeTitle'),
-  'click .js-custom-fields'() {
-    Sidebar.setView('customFields');
-    Popup.back();
-  },
-  'click .js-open-archives'() {
-    Sidebar.setView('archives');
-    Popup.back();
-  },
-  'click .js-change-board-color': Popup.open('boardChangeColor'),
-  'click .js-change-language': Popup.open('changeLanguage'),
-  'click .js-archive-board ': Popup.afterConfirm('archiveBoard', function() {
-    const currentBoard = Utils.getCurrentBoard();
-    currentBoard.archive();
-    // XXX We should have some kind of notification on top of the page to
-    // confirm that the board was successfully archived.
-    FlowRouter.go('home');
-  }),
-  'click .js-delete-board': Popup.afterConfirm('deleteBoard', function() {
-    const currentBoard = Utils.getCurrentBoard();
-    Popup.back();
-    Boards.remove(currentBoard._id);
-    FlowRouter.go('home');
-  }),
-  'click .js-outgoing-webhooks': Popup.open('outgoingWebhooks'),
-  'click .js-import-board': Popup.open('chooseBoardSource'),
-  'click .js-subtask-settings': Popup.open('boardSubtaskSettings'),
-  'click .js-card-settings': Popup.open('boardCardSettings'),
-  'click .js-minicard-settings': Popup.open('boardMinicardSettings'),
-});
+
+// Persist the card sort so it survives a page reload. Session is in-memory and
+// is reset on reload, which is why "sort by due date" kept reverting to the
+// default. See https://github.com/wekan/wekan/issues/5886
+const CARDS_SORT_BY_STORAGE_KEY = 'wekan-cards-sortBy';
+function setCardsSortBy(sortBy) {
+  Session.set('sortBy', sortBy);
+  try {
+    if (sortBy) {
+      window.localStorage.setItem(CARDS_SORT_BY_STORAGE_KEY, JSON.stringify(sortBy));
+    } else {
+      window.localStorage.removeItem(CARDS_SORT_BY_STORAGE_KEY);
+    }
+  } catch (e) {}
+}
 
 Template.boardChangeTitlePopup.events({
-  submit(event, templateInstance) {
+  async submit(event, templateInstance) {
+    event.preventDefault();
     const newTitle = templateInstance
       .$('.js-board-name')
       .val()
@@ -49,15 +44,42 @@ Template.boardChangeTitlePopup.events({
       .val()
       .trim();
     if (newTitle) {
-      this.rename(newTitle);
-      this.setDescription(newDesc);
+      const board = Utils.getCurrentBoard();
+      if (board) {
+        await board.rename(newTitle);
+        await board.setDescription(newDesc);
+      }
       Popup.back();
     }
-    event.preventDefault();
   },
 });
 
-BlazeComponent.extendComponent({
+Template.boardHeaderBar.onCreated(function () {
+  Meteor.subscribe('tableVisibilityModeSettings');
+  // Restore the persisted card sort after a reload (Session is in-memory), so
+  // both the sorting and the sort icon are remembered. See #5886.
+  if (!Session.get('sortBy')) {
+    try {
+      const stored = window.localStorage.getItem(CARDS_SORT_BY_STORAGE_KEY);
+      if (stored) {
+        Session.set('sortBy', JSON.parse(stored));
+      }
+    } catch (e) {}
+  }
+});
+
+Template.boardHeaderBar.helpers({
+  notDisplayThisBoard() {
+    const allowPrivateVisibilityOnly = TableVisibilityModeSettings.findOne('tableVisibilityMode-allowPrivateOnly');
+    const currentBoard = Utils.getCurrentBoard();
+    return (
+      allowPrivateVisibilityOnly !== undefined &&
+      allowPrivateVisibilityOnly.booleanValue &&
+      currentBoard &&
+      currentBoard.permission === 'public'
+    );
+  },
+
   watchLevel() {
     const currentBoard = Utils.getCurrentBoard();
     return currentBoard && currentBoard.getWatchLevel(Meteor.userId());
@@ -74,96 +96,132 @@ BlazeComponent.extendComponent({
     const currentBoard = Utils.getCurrentBoard();
     return currentBoard && currentBoard.stars >= 2;
   },
-  /*
-  showSort() {
-    return ReactiveCache.getCurrentUser().hasSortBy();
-  },
-  directionClass() {
-    return this.currentDirection() === -1 ? DOWNCLS : UPCLS;
-  },
-  changeDirection() {
-    const direction = 0 - this.currentDirection() === -1 ? '-' : '';
-    Meteor.call('setListSortBy', direction + this.currentListSortBy());
-  },
-  currentDirection() {
-    return ReactiveCache.getCurrentUser().getListSortByDirection();
-  },
-  currentListSortBy() {
-    return ReactiveCache.getCurrentUser().getListSortBy();
-  },
-  listSortShortDesc() {
-    return `list-label-short-${this.currentListSortBy()}`;
-  },
-  */
-  events() {
-    return [
-      {
-        'click .js-edit-board-title': Popup.open('boardChangeTitle'),
-        'click .js-star-board'() {
-          ReactiveCache.getCurrentUser().toggleBoardStar(Session.get('currentBoard'));
-        },
-        'click .js-open-board-menu': Popup.open('boardMenu'),
-        'click .js-change-visibility': Popup.open('boardChangeVisibility'),
-        'click .js-watch-board': Popup.open('boardChangeWatch'),
-        'click .js-open-archived-board'() {
-          Modal.open('archivedBoards');
-        },
-        'click .js-toggle-board-view': Popup.open('boardChangeView'),
-        'click .js-toggle-sidebar'() {
-          Sidebar.toggle();
-        },
-        'click .js-open-filter-view'() {
-          Sidebar.setView('filter');
-        },
-        'click .js-sort-cards': Popup.open('cardsSort'),
-        /*
-        'click .js-open-sort-view'(evt) {
-          const target = evt.target;
-          if (target.tagName === 'I') {
-            // click on the text, popup choices
-            this.changeDirection();
-          } else {
-            // change the sort order
-            Popup.open('listsort')(evt);
-          }
-        },
-        */
-        'click .js-filter-reset'(event) {
-          event.stopPropagation();
-          Sidebar.setView();
-          Filter.reset();
-        },
-        'click .js-sort-reset'() {
-          Session.set('sortBy', '');
-        },
-        'click .js-open-search-view'() {
-          Sidebar.setView('search');
-        },
-        'click .js-multiselection-activate'() {
-          const currentCard = Utils.getCurrentCardId();
-          MultiSelection.activate();
-          if (currentCard) {
-            MultiSelection.add(currentCard);
-          }
-        },
-        'click .js-multiselection-reset'(event) {
-          event.stopPropagation();
-          MultiSelection.disable();
-        },
-        'click .js-log-in'() {
-          FlowRouter.go('atSignIn');
-        },
-      },
-    ];
-  },
-}).register('boardHeaderBar');
 
-Template.boardHeaderBar.helpers({
   boardView() {
     return Utils.boardView();
   },
   isSortActive() {
     return Session.get('sortBy') ? true : false;
+  },
+  // A Font Awesome class name for the active sort, not an emoji.
+  sortCardsIcon() {
+    const sortBy = Session.get('sortBy');
+    if (!sortBy) {
+      return 'fa-sort'; // nothing chosen
+    }
+    if (sortBy.dueAt) {
+      return 'fa-clock-o'; // due date
+    } else if (sortBy.title) {
+      return 'fa-font'; // alphabetical
+    } else if (sortBy.createdAt) {
+      return sortBy.createdAt === 1 ? 'fa-arrow-up' : 'fa-arrow-down';
+    }
+    return 'fa-sort';
+  },
+});
+
+Template.boardHeaderBar.events({
+  'click .js-edit-board-title': Popup.open('boardChangeTitle'),
+  'click .js-star-board'() {
+    const boardId = Session.get('currentBoard');
+    if (boardId) {
+      Meteor.call('toggleBoardStar', boardId);
+    }
+  },
+  'click .js-change-visibility': Popup.open('boardChangeVisibility'),
+  'click .js-watch-board': Popup.open('boardChangeWatch'),
+  'click .js-open-archived-board'() {
+    Modal.open('archivedBoards');
+  },
+  'click .js-toggle-board-view': Popup.open('boardChangeView'),
+  'click .js-toggle-sidebar'() {
+    if (process.env.DEBUG === 'true') {
+      console.log('Hamburger menu clicked');
+    }
+    // Use the same approach as keyboard shortcuts
+    const sidebar = getSidebarInstance();
+    if (sidebar && typeof sidebar.toggle === 'function') {
+      if (process.env.DEBUG === 'true') {
+        console.log('Using Sidebar.toggle()');
+      }
+      sidebar.toggle();
+    } else {
+      if (process.env.DEBUG === 'true') {
+        console.warn('Sidebar not available, trying alternative approach');
+      }
+      // Try to trigger the sidebar through the global Blaze helper
+      if (typeof Blaze !== 'undefined' && Blaze._globalHelpers && Blaze._globalHelpers.Sidebar) {
+        const blazeSidebar = Blaze._globalHelpers.Sidebar();
+        if (blazeSidebar && typeof blazeSidebar.toggle === 'function') {
+          if (process.env.DEBUG === 'true') {
+            console.log('Using Blaze helper Sidebar.toggle()');
+          }
+          blazeSidebar.toggle();
+        }
+      }
+    }
+  },
+  'click .js-open-filter-view'() {
+    const sidebar = getSidebarInstance();
+    if (sidebar) {
+      sidebar.setView('filter');
+    } else {
+      console.warn('Sidebar not available for setView');
+    }
+  },
+  'click .js-sort-cards': Popup.open('cardsSort'),
+  /*
+  'click .js-open-sort-view'(evt) {
+    const target = evt.target;
+    if (target.tagName === 'I') {
+      // click on the text, popup choices
+      this.changeDirection();
+    } else {
+      // change the sort order
+      Popup.open('listsort')(evt);
+    }
+  },
+  */
+  'click .js-filter-reset'(event) {
+    event.stopPropagation();
+    const sidebar = getSidebarInstance();
+    if (sidebar) {
+      sidebar.setView();
+    } else {
+      console.warn('Sidebar not available for setView');
+    }
+    Filter.reset();
+  },
+  'click .js-sort-reset'() {
+    setCardsSortBy('');
+  },
+  'click .js-open-search-view'() {
+    const sidebar = getSidebarInstance();
+    if (sidebar) {
+      sidebar.setView('search');
+    } else {
+      console.warn('Sidebar not available for setView');
+    }
+  },
+  'click .js-toggle-dependencies'() {
+    const currentBoard = Utils.getCurrentBoard();
+    if (currentBoard) {
+      currentBoard.setShowDependencies(!currentBoard.showDependencies);
+    }
+  },
+  'click .js-multiselection-activate'() {
+    const currentCard = Utils.getCurrentCardId();
+    MultiSelection.activate();
+    if (currentCard) {
+      MultiSelection.add(currentCard);
+    }
+  },
+  'click .js-multiselection-reset'(event) {
+    event.stopPropagation();
+    MultiSelection.disable();
+  },
+  'click .js-log-in'() {
+    FlowRouter.go('atSignIn');
   },
 });
 
@@ -182,196 +240,246 @@ Template.boardChangeViewPopup.events({
   },
   'click .js-open-gantt-view'() {
     Utils.setBoardView('board-view-gantt');
-    Popup.close();
+    Popup.back();
+  },
+  'click .js-open-table-view'() {
+    Utils.setBoardView('board-view-table');
+    Popup.back();
+  },
+  'click .js-open-stats-view'() {
+    Utils.setBoardView('board-view-stats');
+    Popup.back();
   },
 });
 
-const CreateBoard = BlazeComponent.extendComponent({
-  template() {
-    return 'createBoard';
-  },
+// Shared setup for all create board popups
+function setupCreateBoardState(tpl) {
+  tpl.visibilityMenuIsOpen = new ReactiveVar(false);
+  tpl.visibility = new ReactiveVar('private');
+  tpl.boardId = new ReactiveVar('');
+  // #5850: default to creating a regular board; the dedicated
+  // createTemplateContainerPopup sets this true in its onRendered.
+  Session.set('createBoardAsTemplate', false);
+  Meteor.subscribe('tableVisibilityModeSettings');
+}
 
-  onCreated() {
-    this.visibilityMenuIsOpen = new ReactiveVar(false);
-    this.visibility = new ReactiveVar('private');
-    this.boardId = new ReactiveVar('');
-    Meteor.subscribe('tableVisibilityModeSettings');
-  },
+function createBoardHelpers() {
+  return {
+    visibilityMenuIsOpen() {
+      return Template.instance().visibilityMenuIsOpen.get();
+    },
+    visibility() {
+      return Template.instance().visibility.get();
+    },
+    notAllowPrivateVisibilityOnly() {
+      return !TableVisibilityModeSettings.findOne('tableVisibilityMode-allowPrivateOnly')?.booleanValue;
+    },
+    visibilityCheck() {
+      return Template.currentData() === Template.instance().visibility.get();
+    },
+  };
+}
 
-  notAllowPrivateVisibilityOnly(){
-    return !TableVisibilityModeSettings.findOne('tableVisibilityMode-allowPrivateOnly').booleanValue;
-  },
+async function createBoardSubmit(tpl, event) {
+  event.preventDefault();
+  const title = tpl.find('.js-new-board-title').value;
+  const slug = getSlug(title) || 'board';
 
-  visibilityCheck() {
-    return this.currentData() === this.visibility.get();
-  },
+  // #5850: template boards are created via the dedicated "Add Template Board"
+  // flow (createTemplateContainerPopup), signalled by this Session flag, rather
+  // than a checkbox on the generic Create Board popup. Consume it immediately.
+  const addTemplateContainer = Session.get('createBoardAsTemplate') === true;
+  Session.set('createBoardAsTemplate', false);
+  if (addTemplateContainer) {
+    tpl.boardId.set(
+      await Meteor.callAsync('createBoardWithInitialSwimlanes', {
+        title,
+        slug,
+        permission: 'private',
+        type: 'template-container',
+        migrationVersion: 1,
+        swimlanes: [
+          { title: 'Card Templates', sort: 1, type: 'template-container', role: 'card' },
+          { title: 'List Templates', sort: 2, type: 'template-container', role: 'list' },
+          { title: 'Board Templates', sort: 3, type: 'template-container', role: 'board' },
+        ],
+      }),
+    );
 
-  setVisibility(visibility) {
-    this.visibility.set(visibility);
-    this.visibilityMenuIsOpen.set(false);
-  },
-
-  toggleVisibilityMenu() {
-    this.visibilityMenuIsOpen.set(!this.visibilityMenuIsOpen.get());
-  },
-
-  toggleAddTemplateContainer() {
-    $('#add-template-container').toggleClass('is-checked');
-  },
-
-  onSubmit(event) {
-    event.preventDefault();
-    const title = this.find('.js-new-board-title').value;
-
-    const addTemplateContainer = $('#add-template-container.is-checked').length > 0;
-    if (addTemplateContainer) {
-      //const templateContainerId = Meteor.call('setCreateTemplateContainer');
-      //Utils.goBoardId(templateContainerId);
-      //alert('niinku template ' + Meteor.call('setCreateTemplateContainer'));
-
-      this.boardId.set(
-        Boards.insert({
-            // title: TAPi18n.__('templates'),
-            title: title,
-            permission: 'private',
-            type: 'template-container',
-          }),
-       );
-
-      // Insert the card templates swimlane
-      Swimlanes.insert({
-          // title: TAPi18n.__('card-templates-swimlane'),
-          title: 'Card Templates',
-          boardId: this.boardId.get(),
-          sort: 1,
-          type: 'template-container',
-        }),
-
-      // Insert the list templates swimlane
-      Swimlanes.insert(
-        {
-          // title: TAPi18n.__('list-templates-swimlane'),
-          title: 'List Templates',
-          boardId: this.boardId.get(),
-          sort: 2,
-          type: 'template-container',
-        },
-      );
-
-      // Insert the board templates swimlane
-      Swimlanes.insert(
-        {
-          //title: TAPi18n.__('board-templates-swimlane'),
-          title: 'Board Templates',
-          boardId: this.boardId.get(),
-          sort: 3,
-          type: 'template-container',
-        },
-      );
-
-      Utils.goBoardId(this.boardId.get());
-
-    } else {
-      const visibility = this.visibility.get();
-
-      this.boardId.set(
-        Boards.insert({
-          title,
-          permission: visibility,
-        }),
-      );
-
-      Swimlanes.insert({
-        title: 'Default',
-        boardId: this.boardId.get(),
+    // Assign to space if one was selected
+    const spaceId = Session.get('createBoardInWorkspace');
+    if (spaceId) {
+      Meteor.call('assignBoardToWorkspace', tpl.boardId.get(), spaceId, (err) => {
+        if (err) console.error('Error assigning board to space:', err);
       });
+      Session.set('createBoardInWorkspace', null); // Clear after use
+    }
 
-      Utils.goBoardId(this.boardId.get());
+    FlowRouter.go('board', { id: tpl.boardId.get(), slug });
+
+  } else {
+    const visibility = tpl.visibility.get();
+
+    tpl.boardId.set(
+      await Meteor.callAsync('createBoardWithInitialSwimlanes', {
+        title,
+        slug,
+        permission: visibility,
+        migrationVersion: 1,
+        swimlanes: [{ title: 'Default' }],
+      }),
+    );
+
+    // Assign to space if one was selected
+    const spaceId = Session.get('createBoardInWorkspace');
+    if (spaceId) {
+      Meteor.call('assignBoardToWorkspace', tpl.boardId.get(), spaceId, (err) => {
+        if (err) console.error('Error assigning board to space:', err);
+      });
+      Session.set('createBoardInWorkspace', null); // Clear after use
+    }
+
+    FlowRouter.go('board', { id: tpl.boardId.get(), slug });
+  }
+}
+
+function createBoardEvents() {
+  return {
+    'click .js-select-visibility'(event, tpl) {
+      tpl.visibility.set(this);
+      tpl.visibilityMenuIsOpen.set(false);
+    },
+    'click .js-change-visibility'(event, tpl) {
+      tpl.visibilityMenuIsOpen.set(!tpl.visibilityMenuIsOpen.get());
+    },
+    async 'submit'(event, tpl) {
+      await createBoardSubmit(tpl, event);
+    },
+    'click .js-import-board': Popup.open('chooseBoardSource'),
+    'click .js-board-template': Popup.open('searchElement'),
+  };
+}
+
+// createBoard (non-popup version)
+Template.createBoard.onCreated(function () {
+  setupCreateBoardState(this);
+});
+
+Template.createBoard.helpers(createBoardHelpers());
+
+Template.createBoard.events(createBoardEvents());
+
+// createBoardPopup
+Template.createBoardPopup.onCreated(function () {
+  setupCreateBoardState(this);
+});
+
+Template.createBoardPopup.helpers(createBoardHelpers());
+
+Template.createBoardPopup.events(createBoardEvents());
+
+// createTemplateContainerPopup
+Template.createTemplateContainerPopup.onCreated(function () {
+  setupCreateBoardState(this);
+});
+
+Template.createTemplateContainerPopup.onRendered(function () {
+  // #5850: this dedicated popup always creates a template board.
+  Session.set('createBoardAsTemplate', true);
+});
+
+Template.createTemplateContainerPopup.helpers(createBoardHelpers());
+
+Template.createTemplateContainerPopup.events(createBoardEvents());
+
+// headerBarCreateBoardPopup
+Template.headerBarCreateBoardPopup.onCreated(function () {
+  setupCreateBoardState(this);
+});
+
+Template.headerBarCreateBoardPopup.helpers(createBoardHelpers());
+
+Template.headerBarCreateBoardPopup.events({
+  'click .js-select-visibility'(event, tpl) {
+    tpl.visibility.set(this);
+    tpl.visibilityMenuIsOpen.set(false);
+  },
+  'click .js-change-visibility'(event, tpl) {
+    tpl.visibilityMenuIsOpen.set(!tpl.visibilityMenuIsOpen.get());
+  },
+  async submit(event, tpl) {
+    await createBoardSubmit(tpl, event);
+    // Immediately star boards created with the headerbar popup.
+    await ReactiveCache.getCurrentUser().toggleBoardStar(tpl.boardId.get());
+  },
+  'click .js-import-board': Popup.open('chooseBoardSource'),
+  'click .js-board-template': Popup.open('searchElement'),
+});
+
+Template.boardVisibilityList.helpers({
+  notAllowPrivateVisibilityOnly() {
+    return !TableVisibilityModeSettings.findOne('tableVisibilityMode-allowPrivateOnly')?.booleanValue;
+  },
+});
+
+Template.boardChangeVisibilityPopup.onCreated(function () {
+  Meteor.subscribe('tableVisibilityModeSettings');
+});
+
+Template.boardChangeVisibilityPopup.helpers({
+  notAllowPrivateVisibilityOnly(){
+    return !TableVisibilityModeSettings.findOne('tableVisibilityMode-allowPrivateOnly')?.booleanValue;
+  },
+  visibilityCheck() {
+    const currentBoard = Utils.getCurrentBoard();
+    return this === currentBoard.permission;
+  },
+});
+
+Template.boardChangeVisibilityPopup.events({
+  'click .js-select-visibility'() {
+    const currentBoard = Utils.getCurrentBoard();
+    const visibility = this;
+    if (typeof visibility === 'string') {
+      currentBoard.setVisibility(visibility);
+      Popup.back();
     }
   },
+});
 
-  events() {
-    return [
-      {
-        'click .js-select-visibility'() {
-          this.setVisibility(this.currentData());
-        },
-        'click .js-change-visibility': this.toggleVisibilityMenu,
-        'click .js-import': Popup.open('boardImportBoard'),
-        submit: this.onSubmit,
-        'click .js-import-board': Popup.open('chooseBoardSource'),
-        'click .js-board-template': Popup.open('searchElement'),
-        'click .js-toggle-add-template-container': this.toggleAddTemplateContainer,
-      },
-    ];
-  },
-}).register('createBoardPopup');
-
-(class HeaderBarCreateBoard extends CreateBoard {
-  onSubmit(event) {
-    super.onSubmit(event);
-    // Immediately star boards crated with the headerbar popup.
-    ReactiveCache.getCurrentUser().toggleBoardStar(this.boardId.get());
-  }
-}.register('headerBarCreateBoardPopup'));
-
-BlazeComponent.extendComponent({
-  notAllowPrivateVisibilityOnly(){
-    return !TableVisibilityModeSettings.findOne('tableVisibilityMode-allowPrivateOnly').booleanValue;
-  },
-  visibilityCheck() {
-    const currentBoard = Utils.getCurrentBoard();
-    return this.currentData() === currentBoard.permission;
-  },
-
-  selectBoardVisibility() {
-    const currentBoard = Utils.getCurrentBoard();
-    const visibility = this.currentData();
-    currentBoard.setVisibility(visibility);
-    Popup.back();
-  },
-
-  events() {
-    return [
-      {
-        'click .js-select-visibility': this.selectBoardVisibility,
-      },
-    ];
-  },
-}).register('boardChangeVisibilityPopup');
-
-BlazeComponent.extendComponent({
+Template.boardChangeWatchPopup.helpers({
   watchLevel() {
     const currentBoard = Utils.getCurrentBoard();
     return currentBoard.getWatchLevel(Meteor.userId());
   },
 
   watchCheck() {
-    return this.currentData() === this.watchLevel();
+    const currentBoard = Utils.getCurrentBoard();
+    return this === currentBoard.getWatchLevel(Meteor.userId());
   },
+});
 
-  events() {
-    return [
-      {
-        'click .js-select-watch'() {
-          const level = this.currentData();
-          Meteor.call(
-            'watch',
-            'board',
-            Session.get('currentBoard'),
-            level,
-            (err, ret) => {
-              if (!err && ret) Popup.back();
-            },
-          );
+Template.boardChangeWatchPopup.events({
+  'click .js-select-watch'() {
+    const level = this;
+    if (typeof level === 'string') {
+      Meteor.call(
+        'watch',
+        'board',
+        Session.get('currentBoard'),
+        level,
+        (err, ret) => {
+          if (!err && ret) Popup.back();
         },
-      },
-    ];
+      );
+    }
   },
-}).register('boardChangeWatchPopup');
+});
 
 /*
-BlazeComponent.extendComponent({
+// BlazeComponent.extendComponent was removed - this code is unused.
+// Original listsortPopup component:
+// {
   onCreated() {
     //this.sortBy = new ReactiveVar();
     ////this.sortDirection = new ReactiveVar();
@@ -439,46 +547,40 @@ BlazeComponent.extendComponent({
       },
     ];
   },
-}).register('listsortPopup');
+// }.register('listsortPopup');
 */
 
-BlazeComponent.extendComponent({
-  events() {
-    return [
-      {
-        'click .js-sort-due'() {
-          const sortBy = {
-            dueAt: 1,
-          };
-          Session.set('sortBy', sortBy);
-          sortCardsBy.set(TAPi18n.__('due-date'));
-          Popup.back();
-        },
-        'click .js-sort-title'() {
-          const sortBy = {
-            title: 1,
-          };
-          Session.set('sortBy', sortBy);
-          sortCardsBy.set(TAPi18n.__('title'));
-          Popup.back();
-        },
-        'click .js-sort-created-asc'() {
-          const sortBy = {
-            createdAt: 1,
-          };
-          Session.set('sortBy', sortBy);
-          sortCardsBy.set(TAPi18n.__('date-created-newest-first'));
-          Popup.back();
-        },
-        'click .js-sort-created-desc'() {
-          const sortBy = {
-            createdAt: -1,
-          };
-          Session.set('sortBy', sortBy);
-          sortCardsBy.set(TAPi18n.__('date-created-oldest-first'));
-          Popup.back();
-        },
-      },
-    ];
+Template.cardsSortPopup.events({
+  'click .js-sort-due'() {
+    const sortBy = {
+      dueAt: 1,
+    };
+    setCardsSortBy(sortBy);
+    sortCardsBy.set(TAPi18n.__('due-date'));
+    Popup.back();
   },
-}).register('cardsSortPopup');
+  'click .js-sort-title'() {
+    const sortBy = {
+      title: 1,
+    };
+    setCardsSortBy(sortBy);
+    sortCardsBy.set(TAPi18n.__('title'));
+    Popup.back();
+  },
+  'click .js-sort-created-asc'() {
+    const sortBy = {
+      createdAt: 1,
+    };
+    setCardsSortBy(sortBy);
+    sortCardsBy.set(TAPi18n.__('date-created-newest-first'));
+    Popup.back();
+  },
+  'click .js-sort-created-desc'() {
+    const sortBy = {
+      createdAt: -1,
+    };
+    setCardsSortBy(sortBy);
+    sortCardsBy.set(TAPi18n.__('date-created-oldest-first'));
+    Popup.back();
+  },
+});

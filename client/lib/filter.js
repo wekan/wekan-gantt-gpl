@@ -1,5 +1,43 @@
+import { Blaze } from 'meteor/blaze';
+import { Tracker } from 'meteor/tracker';
 import { ReactiveCache } from '/imports/reactiveCache';
-import moment from 'moment/min/moment-with-locales';
+import { 
+  formatDateTime, 
+  formatDate, 
+  formatTime, 
+  getISOWeek, 
+  isValidDate, 
+  isBefore, 
+  isAfter, 
+  isSame, 
+  add, 
+  subtract, 
+  startOf, 
+  endOf, 
+  format, 
+  parseDate, 
+  now, 
+  createDate, 
+  fromNow, 
+  calendar
+} from '/imports/lib/dateUtils';
+import {
+  tokenizeAdvancedFilter,
+  parseAdvancedFilterDate,
+  buildDateValueSelector,
+} from '/imports/lib/advancedFilter';
+import { weekRange } from '/models/lib/weekStart';
+import { Session } from 'meteor/session';
+import { boardScopedFilterSelector } from '/models/lib/boardScopedSelection';
+// Sidebar is imported late to avoid circular dependency (sidebar.js needs its
+// jade template loaded first, but router.js → filter.js would load it too early)
+let _Sidebar;
+function getSidebar() {
+  if (!_Sidebar) {
+    _Sidebar = require('/client/features/sidebar/service').getSidebarInstance;
+  }
+  return _Sidebar();
+}
 
 // Filtered view manager
 // We define local filter objects for each different type of field (SetFilter,
@@ -7,7 +45,7 @@ import moment from 'moment/min/moment-with-locales';
 // goal is to filter complete documents by using the local filters for each
 // fields.
 function showFilterSidebar() {
-  Sidebar.setView('filter');
+  getSidebar().setView('filter');
 }
 
 class DateFilter {
@@ -30,7 +68,7 @@ class DateFilter {
       this.reset();
       return;
     }
-    this._filter = { $lte: moment().toDate() };
+    this._filter = { $lte: now() };
     this._updateState('past');
   }
 
@@ -72,13 +110,8 @@ class DateFilter {
       return;
     }
 
-    var startDay = moment()
-        .startOf('day')
-        .toDate(),
-      endDay = moment()
-        .endOf('day')
-        .add(offset, 'day')
-        .toDate();
+    var startDay = startOf(now(), 'day'),
+      endDay = endOf(add(now(), offset, 'day'), 'day');
 
     if (offset >= 0) {
       this._filter = { $gte: startDay, $lte: endDay };
@@ -94,56 +127,33 @@ class DateFilter {
   // weeks up to today +/- offset. This considers the user's preferred
   // start of week day (as defined by Meteor).
   relativeWeek(offset, week) {
-    if (this._filterState == 'thisweek') {
+    // #4881: toggle per-week so clicking the same button again clears it, but
+    // clicking the OTHER week switches to it instead of just resetting (the old
+    // code reset on either state, so you could not go straight from "this week"
+    // to "next week").
+    const targetState = week === 'next' ? 'nextweek' : 'thisweek';
+    if (this._filterState === targetState) {
       this.reset();
       return;
     }
 
-    if (this._filterState == 'nextweek') {
-      this.reset();
-      return;
-    }
-
-    // getStartDayOfWeek returns the offset from Sunday of the user's
-    // preferred starting day of the week. This date should be added
-    // to the moment start of week to get the real start of week date.
-    // The default is 1, meaning Monday.
+    // #4881: the old window came from startOf(now(), 'week'), but native
+    // dateUtils.startOf() has no 'week' case, so it returned "now" unchanged and
+    // the window started at today + startDayOfWeek — i.e. it selected NEXT
+    // week's cards for "this week" and ignored the configured start weekday.
+    // weekRange() computes the correct window that CONTAINS today for the user's
+    // configured start day of week (0=Sunday..6=Saturday, default Monday).
     const currentUser = ReactiveCache.getCurrentUser();
     const weekStartDay = currentUser ? currentUser.getStartDayOfWeek() : 1;
+    const weekOffset = week === 'next' ? 1 : 0;
+    const { start: WeekStart, end: WeekEnd } = weekRange(now(), weekStartDay, weekOffset);
 
-    if (week === 'this') {
-      // Moments are mutable so they must be cloned before modification
-      var WeekStart = moment()
-        .startOf('day')
-        .startOf('week')
-        .add(weekStartDay, 'days');
-      var WeekEnd = WeekStart
-        .clone()
-        .add(6, 'days')
-        .endOf('day');
-
-      this._updateState('thisweek');
-    } else if (week === 'next') {
-      // Moments are mutable so they must be cloned before modification
-      var WeekStart = moment()
-        .startOf('day')
-        .startOf('week')
-        .add(weekStartDay + 7, 'days');
-      var WeekEnd = WeekStart
-        .clone()
-        .add(6, 'days')
-        .endOf('day');
-
-     this._updateState('nextweek');
-    }
-
-    var startDate = WeekStart.toDate();
-    var endDate = WeekEnd.toDate();
+    this._updateState(targetState);
 
     if (offset >= 0) {
-      this._filter = { $gte: startDate, $lte: endDate };
+      this._filter = { $gte: WeekStart, $lte: WeekEnd };
     } else {
-      this._filter = { $lte: startDate, $gte: endDate };
+      this._filter = { $lte: WeekStart, $gte: WeekEnd };
     }
   }
 
@@ -175,6 +185,17 @@ class DateFilter {
 
   _getMongoSelector() {
     this._dep.depend();
+    // #6483: cards with NO due/end/received date store the field as null — that
+    // is exactly what the noDate filter matches ({dueAt: null}). A comparison
+    // filter such as Overdue/"past" is `{$lte: now}`, and `$lte` MATCHES null
+    // under FerretDB and minimongo (null sorts before dates; neither implements
+    // MongoDB's type-bracketing), so "Overdue" listed every card that has no due
+    // date at all. Require a real, non-null value for any comparison selector so
+    // only actual dates match. The noDate filter (this._filter === null) returns
+    // null unchanged and is unaffected.
+    if (this._filter && typeof this._filter === 'object') {
+      return { ...this._filter, $ne: null };
+    }
     return this._filter;
   }
 
@@ -237,7 +258,6 @@ class SetFilter {
     if (this._indexOfVal(val) === -1) {
       this._selectedElements.push(val);
       this._dep.changed();
-      showFilterSidebar();
     }
   }
 
@@ -320,55 +340,9 @@ class AdvancedFilter {
   }
 
   _filterToCommands() {
-    const commands = [];
-    let current = '';
-    let string = false;
-    let regex = false;
-    let wasString = false;
-    let ignore = false;
-    for (let i = 0; i < this._filter.length; i++) {
-      const char = this._filter.charAt(i);
-      if (ignore) {
-        ignore = false;
-        current += char;
-        continue;
-      }
-      if (char === '/') {
-        string = !string;
-        if (string) regex = true;
-        current += char;
-        continue;
-      }
-      // eslint-disable-next-line quotes
-      if (char === "'") {
-        string = !string;
-        if (string) wasString = true;
-        continue;
-      }
-      if (char === '\\' && !string) {
-        ignore = true;
-        continue;
-      }
-      if (char === ' ' && !string) {
-        commands.push({
-          cmd: current,
-          string: wasString,
-          regex,
-        });
-        wasString = false;
-        current = '';
-        continue;
-      }
-      current += char;
-    }
-    if (current !== '') {
-      commands.push({
-        cmd: current,
-        string: wasString,
-        regex,
-      });
-    }
-    return commands;
+    // #2989: tokenizing lives in /imports/lib/advancedFilter.js so slashes
+    // inside quoted values (dates like '06/04/2020') stay literal strings.
+    return tokenizeAdvancedFilter(this._filter);
   }
 
   _fieldNameToId(field) {
@@ -393,6 +367,36 @@ class AdvancedFilter {
       }
     }
     return value;
+  }
+
+  // #2989: date custom fields store Date objects (the date picker calls
+  // card.setCustomField(id, date)), so comparing them against the typed
+  // string / parseInt() number can never match. When the field is date-typed
+  // and the value parses as a date, compare with a Date range instead.
+  // Returns the operator document for 'customFields.value', or null to fall
+  // back to the generic string/number selector.
+  _customFieldDateSelector(field, str, op) {
+    const found = ReactiveCache.getCustomField({
+      name: field,
+    });
+    if (!found || found.type !== 'date') return null;
+    // Disambiguate '06/04/2020' (both parts <= 12) with the user's date
+    // format preference: day-first formats (DD/MM/YYYY, DD.MM.YYYY) read it
+    // as 6 April, otherwise it is read month-first as 4 June.
+    let dayFirst = false;
+    try {
+      const user = ReactiveCache.getCurrentUser();
+      const dateFormat =
+        user && typeof user.getDateFormat === 'function'
+          ? user.getDateFormat()
+          : 'YYYY-MM-DD';
+      dayFirst = /^D/.test(dateFormat);
+    } catch (error) {
+      dayFirst = false;
+    }
+    const range = parseAdvancedFilterDate(str, { dayFirst });
+    if (!range) return null;
+    return buildDateValueSelector(op, range);
   }
 
   _arrayToSelector(commands) {
@@ -469,7 +473,11 @@ class AdvancedFilter {
             } else {
               commands[i] = {
                 'customFields._id': this._fieldNameToId(field),
-                'customFields.value': {
+                'customFields.value': this._customFieldDateSelector(
+                  field,
+                  str,
+                  commands[i].cmd,
+                ) || {
                   $in: [this._fieldValueToId(field, str), parseInt(str, 10)],
                 },
               };
@@ -498,7 +506,11 @@ class AdvancedFilter {
             } else {
               commands[i] = {
                 'customFields._id': this._fieldNameToId(field),
-                'customFields.value': {
+                'customFields.value': this._customFieldDateSelector(
+                  field,
+                  str,
+                  commands[i].cmd,
+                ) || {
                   $not: {
                     $in: [this._fieldValueToId(field, str), parseInt(str, 10)],
                   },
@@ -519,7 +531,11 @@ class AdvancedFilter {
             const str = commands[i + 1].cmd;
             commands[i] = {
               'customFields._id': this._fieldNameToId(field),
-              'customFields.value': {
+              'customFields.value': this._customFieldDateSelector(
+                field,
+                str,
+                commands[i].cmd,
+              ) || {
                 $gt: parseInt(str, 10),
               },
             };
@@ -538,7 +554,11 @@ class AdvancedFilter {
             const str = commands[i + 1].cmd;
             commands[i] = {
               'customFields._id': this._fieldNameToId(field),
-              'customFields.value': {
+              'customFields.value': this._customFieldDateSelector(
+                field,
+                str,
+                commands[i].cmd,
+              ) || {
                 $gte: parseInt(str, 10),
               },
             };
@@ -556,7 +576,11 @@ class AdvancedFilter {
             const str = commands[i + 1].cmd;
             commands[i] = {
               'customFields._id': this._fieldNameToId(field),
-              'customFields.value': {
+              'customFields.value': this._customFieldDateSelector(
+                field,
+                str,
+                commands[i].cmd,
+              ) || {
                 $lt: parseInt(str, 10),
               },
             };
@@ -575,7 +599,11 @@ class AdvancedFilter {
             const str = commands[i + 1].cmd;
             commands[i] = {
               'customFields._id': this._fieldNameToId(field),
-              'customFields.value': {
+              'customFields.value': this._customFieldDateSelector(
+                field,
+                str,
+                commands[i].cmd,
+              ) || {
                 $lte: parseInt(str, 10),
               },
             };
@@ -663,7 +691,7 @@ class AdvancedFilter {
 // XXX It would be possible to re-write this object more elegantly, and removing
 // the need to provide a list of `_fields`. We also should move methods into the
 // object prototype.
-Filter = {
+export const Filter = {
   // XXX I would like to rename this field into `labels` to be consistent with
   // the rest of the schema, but we need to set some migrations architecture
   // before changing the schema.
@@ -675,6 +703,8 @@ Filter = {
   dueAt: new DateFilter(),
   title: new StringFilter(),
   customFields: new SetFilter('_id'),
+  // #3392: filter cards by their dependency ("Red Strings") relation type.
+  cardDependencies: new SetFilter('type'),
   advanced: new AdvancedFilter(),
   lists: new AdvancedFilter(), // we need the ability to filter list by name as well
 
@@ -687,6 +717,7 @@ Filter = {
     'dueAt',
     'title',
     'customFields',
+    'cardDependencies',
   ],
 
   // We don't filter cards that have been added after the last filter change. To
@@ -697,7 +728,7 @@ Filter = {
 
   isActive() {
     return (
-      _.any(this._fields, fieldName => {
+      this._fields.some(fieldName => {
         return this[fieldName]._isActive();
       }) ||
       this.advanced._isActive() ||
@@ -740,7 +771,7 @@ Filter = {
     const selectors = [exceptionsSelector];
 
     if (
-      _.any(this._fields, fieldName => {
+      this._fields.some(fieldName => {
         return this[fieldName]._isActive();
       })
     )
@@ -767,11 +798,23 @@ Filter = {
 
   mongoSelector(additionalSelector) {
     const filterSelector = this._getMongoSelector();
-    if (_.isUndefined(additionalSelector)) return filterSelector;
-    else
-      return {
-        $and: [filterSelector, additionalSelector],
-      };
+    if (additionalSelector === undefined) {
+      // #2306: a call without an additional selector means "all cards
+      // matching the filter" (e.g. the filter sidebar's "To selection"
+      // button). The client cache may also hold cards from OTHER boards
+      // (a board being navigated away from, linked-board subscriptions,
+      // notifications, popup card data, ...), so scope the query to the
+      // board currently being viewed. Callers that pass an additional
+      // selector are already scoped to a list/swimlane/card of the current
+      // board.
+      return boardScopedFilterSelector(
+        filterSelector,
+        Session.get('currentBoard'),
+      );
+    }
+    return {
+      $and: [filterSelector, additionalSelector],
+    };
   },
 
   reset() {

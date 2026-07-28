@@ -1,42 +1,40 @@
-.main-body {
-  overflow: scroll;
-}
-table {
+/* Scrollbar styles are now handled by settingBody.css for all admin pages */
+
+/* These rules have no page in their selector: they are plain `table` rules in a
+   stylesheet that is bundled for the whole app, so they hit EVERY table in WeKan -
+   the People panes they were written for, but also Admin Panel / Version and
+   anything else with a <table> in it.
+
+   What they used to say was `min-width: 1200px !important; width: max-content
+   !important` with nowrap cells, to force a horizontal scrollbar. With
+   `!important` that beat even the shared table page's own layout, which is
+   width:100% + table-layout:fixed with equal, wrapping columns precisely so it
+   CANNOT grow past the panel (docs/Design/Page/Table.md): every table page in the
+   Admin Panel - Domains, Organizations, Teams, People, the Problems reports - had
+   its right-hand columns outside the window until you scrolled. The geometry is
+   gone; a table fits its panel and wraps (settingBody.css), and the People panes
+   are shared table pages now anyway. What is left here is the look - borders,
+   striping, padding - and the shared table page brings its own. */
+table:not(.table-page-table) {
   color: #000;
 }
-table td,
-table th {
+
+table:not(.table-page-table) td,
+table:not(.table-page-table) th {
   border: 1px solid #d2d0d0;
-  text-align: left;
+  text-align: start;
   padding: 8px;
 }
-table tr:nth-child(even) {
+table:not(.table-page-table) tr:nth-child(even) {
   background-color: #ddd;
 }
-.ext-box {
-  display: flex;
-  flex-direction: row;
-  height: 34px;
-}
-.ext-box .ext-box-left {
-  display: flex;
-  width: 100%;
-  gap: 10px;
-}
-.ext-box span {
-  vertical-align: center;
-  line-height: 34px;
-}
-.ext-box input,
-.ext-box button {
-  padding: 0;
-}
-.ext-box button {
-  min-width: 90px;
-}
-.content-wrapper {
-  margin-top: 10px;
-}
+/* `.content-wrapper` is not a People class - the ONLY element with that class in
+   WeKan is the scrolling body of a POPUP (client/components/main/popup.tpl.jade).
+   So this stray, unscoped rule (specificity 0,1,0, and nothing in popup.css sets a
+   margin on that element) added 10px above the content of EVERY popup: the gap over
+   the first row of Board Settings / Board View / Member Settings / Sort Cards /
+   Change Watch / Change Visibility / Swimlane Actions, and over the first field of
+   Rename Board. Removed - it never styled anything on this page. */
 .buttonsContainer {
   display: flex;
 }
@@ -49,7 +47,7 @@ table tr:nth-child(even) {
 .more-settings-user,
 .more-settings-team,
 .more-settings-org {
-  margin-left: 10px;
+  margin-inline-start: 10px;
 }
 .js-orgs,
 .js-orgsNewUser {
@@ -59,33 +57,210 @@ table tr:nth-child(even) {
 .js-teamsNewUser {
   display: none;
 }
+/* The People table's own checkboxes are the Admin Panel's one checkbox look
+   (settingBody.css): visible, square, WeKan's green tick. Only their placement in
+   the cell belongs here - the rule used to re-enable the BROWSER's rendering, which
+   drew a different checkbox from every other one in the panel. */
 .selectUserChkBox,
 .allUserChkBox {
-  position: static !important;
-  visibility: visible !important;
-  left: 0 !important;
-  display: block !important;
+  margin: 0 auto;
+}
+
+/* Make checkbox column fit content. Unscoped like the rules at the top of this
+   file, so the shared table page is excluded here too - its columns are an equal
+   share of the width by design. */
+table:not(.table-page-table) th:first-child,
+table:not(.table-page-table) td:first-child {
+  width: auto;
+  min-width: auto;
 }
 #divAddOrRemoveTeam {
-  background: #008000;
+  background: var(--theme-accent, #01628c);
   display: none;
 }
 #addOrRemoveTeam {
-  background: #008000;
+  background: var(--theme-accent, #01628c);
   color: #fff;
+}
+#addOrRemoveTeam:hover {
+  background: var(--theme-accent, #005377);
 }
 #divAddOrRemoveTeamContainer {
   display: none;
   margin: auto;
   width: 50%;
-  border: 3px solid #008000;
+  border: 3px solid var(--theme-accent, #01628c);
   padding: 10px;
 }
 #cancelBtn {
-  margin-left: 5% !important;
-  background: #ffa500;
+  margin-inline-start: 5% !important;
+  background: var(--theme-accent, #01628c);
   color: #fff;
 }
-#deleteAction {
-  margin-left: 5% !important;
+#cancelBtn:hover {
+  background: var(--theme-accent, #005377);
 }
+#deleteAction {
+  margin-inline-start: 5% !important;
+}
+
+.divLockedUsersFilter {
+  display: flex;
+  align-items: center;
+  margin: 0 15px;
+}
+
+.divLockedUsersFilter .flex-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.divLockedUsersFilter .people-filter {
+  margin-bottom: 0;
+  color: #777;
+  line-height: 34px;
+}
+
+.divLockedUsersFilter .user-filter {
+  border: 1px solid #ccc;
+  border-radius: 2px;
+  padding: 4px 8px;
+  background-color: white;
+}
+
+/* `.unlock-all-btn` is gone. "Unlock all users" is an action of the shared
+   controls row now (docs/Design/Page/Table.md), and this rule was written for the
+   old hand-written page header: a 20px top margin and a 28px height, next to a
+   "Teams" button that takes the shared 34px. In one flex row that put the two
+   buttons at visibly different heights AND on different baselines. The shared row
+   sizes and themes both, so neither carries geometry of its own any more. */
+
+.account-active-status {
+  width: auto;
+  text-align: center;
+}
+
+.js-toggle-active-status {
+  cursor: pointer;
+}
+
+.unlock-all-success {
+  position: fixed;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--theme-accent, #01628c);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 4px;
+  z-index: 9999;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  animation: fadeOut 3s ease-in forwards;
+}
+
+@keyframes fadeOut {
+  0% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.account-status {
+  width: auto;
+  text-align: center;
+}
+
+.text-green {
+  color: var(--theme-accent, #01628c);
+}
+
+.js-toggle-lock-status {
+  cursor: pointer;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Avatar styling - removed people-avatar column */
+
+/* Username column styling - displays avatar inline with username */
+.username a.js-edit-people-avatar {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  text-decoration: none;
+  margin-inline-end: 8px;
+  vertical-align: middle;
+}
+
+.username a.js-edit-people-avatar:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 50%;
+}
+
+.username .avatar {
+  height: 30px;
+  width: 30px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.username .avatar.avatar-initials {
+  background-color: #dbdbdb;
+  color: #444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.username .avatar img.avatar-image {
+  object-fit: cover;
+  object-position: center;
+  height: 100%;
+  width: 100%;
+}
+
+/* Roles tab. The .main-body scrolls horizontally and is wider than the visible
+   area (the side-menu takes ~250px), so by default a long description would run
+   off the right edge and only be fully readable at the smallest (mobile) width.
+   Pin the heading/description to the visible left edge and wrap them within the
+   viewport so they stay visible at every width. */
+.roles-settings {
+  padding: 0 10px;
+}
+.roles-settings h3,
+.roles-settings h4,
+.roles-settings .roles-description {
+  position: sticky;
+  inset-inline-start: 0;
+  /* Cap to ~60 characters, and never wider than the viewport, so the text wraps
+     into the visible left area at every width (desktop, mid and mobile) instead
+     of running off the horizontally-scrolling main-body. */
+  max-width: min(60ch, 88vw);
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+.roles-settings .roles-description {
+  margin-bottom: 1rem;
+}
+
+/* Admin Panel > People > Domains renders through the shared table page
+   (docs/Design/Page/Table.md), so its controls row, pagination and table are
+   styled there - and its pager is themed by paginationControls.css like every
+   other pager. Nothing pane-specific is needed here any more. */

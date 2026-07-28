@@ -22,10 +22,10 @@ const pkgdef :Spk.PackageDefinition = (
     appTitle = (defaultText = "Wekan"),
     # The name of the app as it is displayed to the user.
 
-    appVersion = 710,
+    appVersion = 1049,
     # Increment this for every release.
 
-    appMarketingVersion = (defaultText = "7.10.0~2023-09-29"),
+    appMarketingVersion = (defaultText = "10.49~2026-07-28"),
     # Human-readable presentation of the app version.
 
     minUpgradableAppVersion = 0,
@@ -241,7 +241,10 @@ const myCommand :Spk.Manifest.Command = (
     #---------------------------------------------------------------------
     (key = "NODE_OPTIONS", value = "--max_old_space_size=4096"),
     (key = "PATH", value = "/usr/local/bin:/usr/bin:/bin"),
-    (key = "WRITABLE_PATH", value = "/var/wekan-uploads"),
+    # Files root for the Node24/FerretDB build: attachments/, avatars/ and the
+    # FerretDB SQLite db/ live under /var/files (start.js also exports this). See
+    # docs/Platforms/FOSS/Sandstorm/Meteor3/Migration.md.
+    (key = "WRITABLE_PATH", value = "/var/files"),
     (key = "RESULTS_PER_PAGE", value = ""),
     (key = "WITH_API", value = "true"),
     (key = "RICHER_CARD_COMMENT_EDITOR", value="false"),
@@ -258,6 +261,7 @@ const myCommand :Spk.Manifest.Command = (
     (key = "OAUTH2_ENABLED", value="false"),
     (key = "OAUTH2_CA_CERT", value=""),
     (key = "OAUTH2_ADFS_ENABLED", value="false"),
+    (key = "OAUTH2_B2C_ENABLED", value="false"),
     (key = "OAUTH2_CLIENT_ID", value="false"),
     (key = "OAUTH2_SECRET", value=""),
     (key = "OAUTH2_SERVER_URL", value=""),

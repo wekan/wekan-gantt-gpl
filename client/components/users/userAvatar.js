@@ -1,29 +1,103 @@
 import { ReactiveCache } from '/imports/reactiveCache';
-import Cards from '/models/cards';
+import { ReactiveVar } from 'meteor/reactive-var';
+import { avatarUpdateCounter } from '/client/components/users/avatarUpdateCounter';
 import Avatars from '/models/avatars';
-import Users from '/models/users';
-import Org from '/models/org';
-import Team from '/models/team';
+import Presences from '/models/presences';
+import { Utils } from '/client/lib/utils';
 
 Template.userAvatar.helpers({
   userData() {
-    return ReactiveCache.getUser(this.userId, {
+    const user = ReactiveCache.getUser(this.userId, {
       fields: {
         profile: 1,
         username: 1,
+        authenticationMethod: 1,
+        isActive: 1,
       },
     });
+    return user;
+  },
+
+  // Distinguish, on the avatar itself, whether a real account backs this member:
+  //  - imported-member: an inert placeholder created by a board import that has not been
+  //    reconciled/mapped to a real account yet (dashed ring + "?" badge).
+  //  - inactive-member: deactivated on this board (e.g. a person not in LDAP after
+  //    reconciliation) (greyscale + dim).
+  // A placeholder is typically both. A real, active account gets neither.
+  memberAccountClass() {
+    const user = ReactiveCache.getUser(this.userId, {
+      fields: { authenticationMethod: 1, isActive: 1 },
+    });
+    if (!user) return '';
+    const classes = [];
+    if (user.authenticationMethod === 'imported') classes.push('imported-member');
+    let inactive = user.isActive === false;
+    if (!inactive) {
+      const board = Utils.getCurrentBoard && Utils.getCurrentBoard();
+      const m = board && Array.isArray(board.members)
+        ? board.members.find(x => x.userId === this.userId)
+        : null;
+      if (m && m.isActive === false) inactive = true;
+    }
+    if (inactive) classes.push('inactive-member');
+    return classes.join(' ');
+  },
+
+  isImportedMember() {
+    const user = ReactiveCache.getUser(this.userId, { fields: { authenticationMethod: 1 } });
+    return !!(user && user.authenticationMethod === 'imported');
+  },
+
+  isInactiveMember() {
+    const user = ReactiveCache.getUser(this.userId, { fields: { authenticationMethod: 1, isActive: 1 } });
+    if (!user) return false;
+    if (user.authenticationMethod === 'imported') return false; // shown via the imported badge
+    if (user.isActive === false) return true;
+    const board = Utils.getCurrentBoard && Utils.getCurrentBoard();
+    const m = board && Array.isArray(board.members)
+      ? board.members.find(x => x.userId === this.userId)
+      : null;
+    return !!(m && m.isActive === false);
+  },
+
+  avatarUrl() {
+    const user = ReactiveCache.getUser(this.userId, { fields: { profile: 1 } });
+    const base = (user && user.profile && user.profile.avatarUrl) || '';
+    if (!base) return '';
+    // Append current boardId when available so public viewers can access avatars on public boards
+    try {
+      const boardId = Utils.getCurrentBoardId && Utils.getCurrentBoardId();
+      if (boardId) {
+        const sep = base.includes('?') ? '&' : '?';
+        return `${base}${sep}boardId=${encodeURIComponent(boardId)}`;
+      }
+    } catch (_) {}
+    return base;
   },
 
   memberType() {
     const user = ReactiveCache.getUser(this.userId);
-    return user && user.isBoardAdmin() ? 'admin' : 'normal';
+    if (!user) return '';
+
+    const board = Utils.getCurrentBoard();
+    if (!board) return '';
+
+    // Return role in priority order: Admin, Normal, NormalAssignedOnly, NoComments, CommentOnly, CommentAssignedOnly, Worker, ReadOnly, ReadAssignedOnly
+    if (user.isBoardAdmin()) return 'admin';
+    if (board.hasReadAssignedOnly(user._id)) return 'read-assigned-only';
+    if (board.hasReadOnly(user._id)) return 'read-only';
+    if (board.hasWorker(user._id)) return 'worker';
+    if (board.hasCommentAssignedOnly(user._id)) return 'comment-assigned-only';
+    if (board.hasCommentOnly(user._id)) return 'comment-only';
+    if (board.hasNoComments(user._id)) return 'no-comments';
+    if (board.hasNormalAssignedOnly(user._id)) return 'normal-assigned-only';
+    return 'normal';
   },
 
 /*
   presenceStatusClassName() {
     const user = ReactiveCache.getUser(this.userId);
-    const userPresence = presences.findOne({ userId: this.userId });
+    const userPresence = Presences.findOne({ userId: this.userId });
     if (user && user.isInvitedTo(Session.get('currentBoard'))) return 'pending';
     else if (!userPresence) return 'disconnected';
     else if (Session.equals('currentBoard', userPresence.state.currentBoardId))
@@ -46,51 +120,36 @@ Template.userAvatarInitials.helpers({
   },
 });
 
-BlazeComponent.extendComponent({
-  onCreated() {
-    this.error = new ReactiveVar('');
-    this.loading = new ReactiveVar(false);
-    this.findOrgsOptions = new ReactiveVar({});
+Template.boardOrgRow.onCreated(function () {
+  this.error = new ReactiveVar('');
+  this.loading = new ReactiveVar(false);
+  this.findOrgsOptions = new ReactiveVar({});
 
-    this.page = new ReactiveVar(1);
-    this.autorun(() => {
-      const limitOrgs = this.page.get() * Number.MAX_SAFE_INTEGER;
-      this.subscribe('org', this.findOrgsOptions.get(), limitOrgs, () => {});
-    });
-  },
+  this.page = new ReactiveVar(1);
+  this.autorun(() => {
+    const limitOrgs = this.page.get() * Number.MAX_SAFE_INTEGER;
+    this.subscribe('org', this.findOrgsOptions.get(), limitOrgs, () => {});
+  });
+});
 
-  onRendered() {
-    this.setLoading(false);
-  },
-
-  setError(error) {
-    this.error.set(error);
-  },
-
-  setLoading(w) {
-    this.loading.set(w);
-  },
-
-  isLoading() {
-    return this.loading.get();
-  },
-
-  events() {
-    return [
-      {
-        'keyup input'() {
-          this.setError('');
-        },
-        'click .js-manage-board-removeOrg': Popup.open('removeBoardOrg'),
-      },
-    ];
-  },
-}).register('boardOrgRow');
+Template.boardOrgRow.onRendered(function () {
+  this.loading.set(false);
+});
 
 Template.boardOrgRow.helpers({
+  isLoading() {
+    return Template.instance().loading.get();
+  },
   orgData() {
     return ReactiveCache.getOrg(this.orgId);
   },
+});
+
+Template.boardOrgRow.events({
+  'keyup input'(event, tpl) {
+    tpl.error.set('');
+  },
+  'click .js-manage-board-removeOrg': Popup.open('removeBoardOrg'),
 });
 
 Template.boardOrgName.helpers({
@@ -105,51 +164,36 @@ Template.boardOrgName.helpers({
   },
 });
 
-BlazeComponent.extendComponent({
-  onCreated() {
-    this.error = new ReactiveVar('');
-    this.loading = new ReactiveVar(false);
-    this.findOrgsOptions = new ReactiveVar({});
+Template.boardTeamRow.onCreated(function () {
+  this.error = new ReactiveVar('');
+  this.loading = new ReactiveVar(false);
+  this.findOrgsOptions = new ReactiveVar({});
 
-    this.page = new ReactiveVar(1);
-    this.autorun(() => {
-      const limitTeams = this.page.get() * Number.MAX_SAFE_INTEGER;
-      this.subscribe('team', this.findOrgsOptions.get(), limitTeams, () => {});
-    });
-  },
+  this.page = new ReactiveVar(1);
+  this.autorun(() => {
+    const limitTeams = this.page.get() * Number.MAX_SAFE_INTEGER;
+    this.subscribe('team', this.findOrgsOptions.get(), limitTeams, () => {});
+  });
+});
 
-  onRendered() {
-    this.setLoading(false);
-  },
-
-  setError(error) {
-    this.error.set(error);
-  },
-
-  setLoading(w) {
-    this.loading.set(w);
-  },
-
-  isLoading() {
-    return this.loading.get();
-  },
-
-  events() {
-    return [
-      {
-        'keyup input'() {
-          this.setError('');
-        },
-        'click .js-manage-board-removeTeam': Popup.open('removeBoardTeam'),
-      },
-    ];
-  },
-}).register('boardTeamRow');
+Template.boardTeamRow.onRendered(function () {
+  this.loading.set(false);
+});
 
 Template.boardTeamRow.helpers({
+  isLoading() {
+    return Template.instance().loading.get();
+  },
   teamData() {
     return ReactiveCache.getTeam(this.teamId);
   },
+});
+
+Template.boardTeamRow.events({
+  'keyup input'(event, tpl) {
+    tpl.error.set('');
+  },
+  'click .js-manage-board-removeTeam': Popup.open('removeBoardTeam'),
 });
 
 Template.boardTeamName.helpers({
@@ -164,97 +208,148 @@ Template.boardTeamName.helpers({
   },
 });
 
-BlazeComponent.extendComponent({
-  onCreated() {
-    this.error = new ReactiveVar('');
-
-    Meteor.subscribe('my-avatars');
+// #5850: row showing a single board email-domain share, with a remove affordance.
+Template.boardDomainRow.helpers({
+  domainViewPortWidth() {
+    return ((this.domain && this.domain.length) || 1) * 12;
   },
+});
 
+Template.boardDomainRow.events({
+  // The row's data context is `{ domain }`, which becomes removeBoardDomainPopup's
+  // data context, so the popup can read `this.domain` directly.
+  'click .js-manage-board-removeDomain': Popup.open('removeBoardDomain'),
+});
+
+// Avatar links may carry a ?boardId= query parameter (added so public-board viewers
+// can load them), which must not affect "is this the avatar in use?" comparisons.
+function normalizeAvatarUrl(url) {
+  return url ? url.split('?')[0] : '';
+}
+
+Template.changeAvatarPopup.onCreated(function () {
+  this.error = new ReactiveVar('');
+  this.avatarUpdateCounter = new ReactiveVar(0);  // Trigger to force helper re-evaluation
+  // Whether an admin has blocked avatar uploads (Admin Panel > Attachments >
+  // Transfer limits). Default false (avatars enabled); when true the upload
+  // option is hidden and the upload is also rejected server-side.
+  this.avatarUploadBlocked = new ReactiveVar(false);
+  Meteor.call('isAvatarUploadBlocked', (err, blocked) => {
+    if (!err) this.avatarUploadBlocked.set(blocked === true);
+  });
+  Meteor.subscribe('my-avatars');
+});
+
+Template.changeAvatarPopup.helpers({
+  error() {
+    return Template.instance().error;
+  },
+  avatarUploadBlocked() {
+    return Template.instance().avatarUploadBlocked.get();
+  },
   uploadedAvatars() {
-    const ret = ReactiveCache.getAvatars({ userId: Meteor.userId() }, {}, true).each();
+    Template.instance().avatarUpdateCounter.get();  // Create dependency on update counter
+    const ret = ReactiveCache.getAvatars({ userId: Meteor.userId() }, {}, true);
     return ret;
   },
-
+  avatarLink() {
+    if (this && typeof this.link === 'function') {
+      return this.link();
+    }
+    return '';
+  },
   isSelected() {
+    Template.instance().avatarUpdateCounter.get();  // Create dependency on update counter
     const userProfile = ReactiveCache.getCurrentUser().profile;
     const avatarUrl = userProfile && userProfile.avatarUrl;
-    const currentAvatarUrl = `${this.currentData().link()}?auth=false&brokenIsFine=true`;
-    return avatarUrl === currentAvatarUrl;
+    const currentAvatarUrl = this.link && typeof this.link === 'function' ? this.link() : '';
+    return normalizeAvatarUrl(avatarUrl) === normalizeAvatarUrl(currentAvatarUrl);
   },
-
   noAvatarUrl() {
+    Template.instance().avatarUpdateCounter.get();  // Create dependency on update counter
     const userProfile = ReactiveCache.getCurrentUser().profile;
     const avatarUrl = userProfile && userProfile.avatarUrl;
     return !avatarUrl;
   },
-
-  setAvatar(avatarUrl) {
-    ReactiveCache.getCurrentUser().setAvatarUrl(avatarUrl);
-  },
-
-  setError(error) {
-    this.error.set(error);
-  },
-
-  events() {
-    return [
-      {
-        'click .js-upload-avatar'() {
-          this.$('.js-upload-avatar-input').click();
-        },
-        'change .js-upload-avatar-input'(event) {
-          const self = this;
-          if (event.currentTarget.files && event.currentTarget.files[0]) {
-            const uploader = Avatars.insert(
-              {
-                file: event.currentTarget.files[0],
-                chunkSize: 'dynamic',
-              },
-              false,
-            );
-            uploader.on('error', (error, fileData) => {
-              self.setError(error.reason);
-            });
-            uploader.start();
-          }
-        },
-        'click .js-select-avatar'() {
-          const avatarUrl = `${this.currentData().link()}?auth=false&brokenIsFine=true`;
-          this.setAvatar(avatarUrl);
-        },
-        'click .js-select-initials'() {
-          this.setAvatar('');
-        },
-        'click .js-delete-avatar'(event) {
-          Avatars.remove(this.currentData()._id);
-          event.stopPropagation();
-        },
-      },
-    ];
-  },
-}).register('changeAvatarPopup');
-
-Template.cardMembersPopup.helpers({
-  isCardMember() {
-    const card = Template.parentData();
-    const cardMembers = card.getMembers();
-
-    return _.contains(cardMembers, this.userId);
-  },
-
-  user() {
-    return ReactiveCache.getUser(this.userId);
-  },
 });
 
-Template.cardMembersPopup.events({
-  'click .js-select-member'(event) {
-    const card = Utils.getCurrentCard();
-    const memberId = this.userId;
-    card.toggleMember(memberId);
-    event.preventDefault();
+function changeAvatarSetAvatar(tpl, avatarUrl) {
+  Meteor.call('setAvatarUrl', avatarUrl, (err) => {
+    if (err) {
+      tpl.error.set(err.reason || 'Error setting avatar');
+    } else {
+      // Trigger a re-evaluation of helpers to show updated avatar selection
+      const counter = tpl.avatarUpdateCounter.get();
+      tpl.avatarUpdateCounter.set(counter + 1);
+      // Also increment global counter for admin people list updates
+      avatarUpdateCounter.set(avatarUpdateCounter.get() + 1);
+      // Clear input for next upload
+      tpl.$('.js-upload-avatar-input').val('');
+    }
+  });
+}
+
+Template.changeAvatarPopup.events({
+  'click .js-upload-avatar'(event, tpl) {
+    tpl.$('.js-upload-avatar-input').click();
   },
+  async 'change .js-upload-avatar-input'(event, tpl) {
+    if (event.currentTarget.files && event.currentTarget.files[0]) {
+      const uploader = await Avatars.insertAsync(
+        {
+          file: event.currentTarget.files[0],
+          chunkSize: 'dynamic',
+        },
+        false,
+      );
+      uploader.on('error', (error, fileData) => {
+        tpl.error.set(error.reason);
+      });
+      uploader.on('uploaded', (error, fileRef) => {
+        if (!error) {
+          // Trigger a re-evaluation of helpers to show new uploaded avatar
+          const counter = tpl.avatarUpdateCounter.get();
+          tpl.avatarUpdateCounter.set(counter + 1);
+          // Also increment global counter for admin people list updates
+          avatarUpdateCounter.set(avatarUpdateCounter.get() + 1);
+        } else {
+          tpl.error.set(error.reason);
+        }
+      });
+      uploader.start();
+    }
+  },
+  'click .js-select-avatar'(event, tpl) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (this && typeof this.link === 'function') {
+      const avatarUrl = this.link();
+      changeAvatarSetAvatar(tpl, avatarUrl);
+    }
+  },
+  'click .js-select-initials'(event, tpl) {
+    event.preventDefault();
+    event.stopPropagation();
+    changeAvatarSetAvatar(tpl, '');
+  },
+  'click .js-delete-avatar': Popup.afterConfirm('deleteAvatar', async function() {
+    // Inside the each loop, 'this' is the avatar object
+    const avatarId = this._id;
+    const deletedUrl = typeof this.link === 'function' ? this.link() : '';
+    if (avatarId) {
+      await Avatars.removeAsync(avatarId);
+    }
+    // Any uploaded avatar can be deleted now, including the one in use. Deleting
+    // the one in use would leave profile.avatarUrl pointing at a file that no
+    // longer exists (a broken image everywhere), so fall back to the initials.
+    const user = ReactiveCache.getCurrentUser();
+    const currentUrl = normalizeAvatarUrl(user && user.profile && user.profile.avatarUrl);
+    if (currentUrl && currentUrl === normalizeAvatarUrl(deletedUrl)) {
+      Meteor.call('setAvatarUrl', '');
+    }
+    avatarUpdateCounter.set(avatarUpdateCounter.get() + 1);
+    Popup.back();
+  }),
 });
 
 Template.cardMemberPopup.helpers({
@@ -269,4 +364,156 @@ Template.cardMemberPopup.events({
     Popup.back();
   },
   'click .js-edit-profile': Popup.open('editProfile'),
+});
+
+Template.adminChangeAvatarPopup.onCreated(function () {
+  this.error = new ReactiveVar('');
+  this.avatarUpdateCounter = new ReactiveVar(0);
+  const userId = this.data._id || (this.data.user && this.data.user._id);
+  this.targetUserId = userId;
+  if (userId) {
+    Meteor.subscribe('avatars-for-user', userId);
+  }
+});
+
+Template.adminChangeAvatarPopup.helpers({
+  error() {
+    return Template.instance().error;
+  },
+  userId() {
+    const instance = Template.instance();
+    return instance.targetUserId || (this._id || (this.user && this.user._id));
+  },
+  userData() {
+    return this.user || this;
+  },
+  uploadedAvatars() {
+    Template.instance().avatarUpdateCounter.get();
+    const instance = Template.instance();
+    const userId = instance.targetUserId || (this._id || (this.user && this.user._id));
+    if (!userId) return [];
+    const ret = ReactiveCache.getAvatars({ userId: userId }, {}, true);
+    return ret;
+  },
+  avatarLink() {
+    if (this && typeof this.link === 'function') {
+      return this.link();
+    }
+    return '';
+  },
+  currentEditingUser() {
+    Template.instance().avatarUpdateCounter.get();
+    const instance = Template.instance();
+    const userId = instance.targetUserId;
+    if (!userId) return null;
+    return ReactiveCache.getUser(userId);
+  },
+  isSelected() {
+    Template.instance().avatarUpdateCounter.get();
+    const instance = Template.instance();
+    const userId = instance.targetUserId;
+    if (!userId) return false;
+    const user = ReactiveCache.getUser(userId);
+    if (!user) return false;
+    const userProfile = user.profile;
+    const avatarUrl = userProfile && userProfile.avatarUrl;
+    const currentAvatarUrl = this.link && typeof this.link === 'function' ? this.link() : '';
+    return normalizeAvatarUrl(avatarUrl) === normalizeAvatarUrl(currentAvatarUrl);
+  },
+  noAvatarUrl() {
+    Template.instance().avatarUpdateCounter.get();
+    const instance = Template.instance();
+    const userId = instance.targetUserId;
+    if (!userId) return true;
+    const user = ReactiveCache.getUser(userId);
+    if (!user) return true;
+    const userProfile = user.profile;
+    const avatarUrl = userProfile && userProfile.avatarUrl;
+    return !avatarUrl;
+  },
+});
+
+function adminChangeAvatarSetAvatar(tpl, avatarUrl) {
+  const userId = tpl.targetUserId || (Template.currentData()._id || (Template.currentData().user && Template.currentData().user._id));
+  if (!userId) {
+    console.error('Cannot set avatar: no userId found');
+    return;
+  }
+  Meteor.call('adminSetAvatarUrl', userId, avatarUrl, (err) => {
+    if (err) {
+      tpl.error.set(err.reason || 'Error setting avatar');
+    } else {
+      const counter = tpl.avatarUpdateCounter.get();
+      tpl.avatarUpdateCounter.set(counter + 1);
+      // Also increment global counter to update admin people list
+      avatarUpdateCounter.set(avatarUpdateCounter.get() + 1);
+      tpl.$('.js-upload-avatar-input').val('');
+    }
+  });
+}
+
+Template.adminChangeAvatarPopup.events({
+  'click .js-upload-avatar'(event, tpl) {
+    tpl.$('.js-upload-avatar-input').click();
+  },
+  async 'change .js-upload-avatar-input'(event, tpl) {
+    if (event.currentTarget.files && event.currentTarget.files[0]) {
+      const userId = tpl.targetUserId || (this._id || (this.user && this.user._id));
+      const uploader = await Avatars.insertAsync(
+        {
+          file: event.currentTarget.files[0],
+          chunkSize: 'dynamic',
+          meta: {
+            adminUploadForUserId: userId,
+          },
+        },
+        false,
+      );
+      uploader.on('error', (error, fileData) => {
+        tpl.error.set(error.reason);
+      });
+      uploader.on('uploaded', (error, fileRef) => {
+        if (!error) {
+          const counter = tpl.avatarUpdateCounter.get();
+          tpl.avatarUpdateCounter.set(counter + 1);
+          // Also increment global counter to update admin people list
+          avatarUpdateCounter.set(avatarUpdateCounter.get() + 1);
+        } else {
+          tpl.error.set(error.reason);
+        }
+      });
+      uploader.start();
+    }
+  },
+  'click .js-select-avatar'(event, tpl) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (this && typeof this.link === 'function') {
+      const avatarUrl = this.link();
+      adminChangeAvatarSetAvatar(tpl, avatarUrl);
+    }
+  },
+  'click .js-select-initials'(event, tpl) {
+    event.preventDefault();
+    event.stopPropagation();
+    adminChangeAvatarSetAvatar(tpl, '');
+  },
+  'click .js-delete-avatar': Popup.afterConfirm('deleteAvatar', async function() {
+    // Inside the each loop, 'this' is the avatar object, which carries the userId
+    // of the person the admin is editing.
+    const avatarId = this._id;
+    const targetUserId = this.userId;
+    const deletedUrl = typeof this.link === 'function' ? this.link() : '';
+    if (avatarId) {
+      await Avatars.removeAsync(avatarId);
+    }
+    // Same as in changeAvatarPopup: never leave the user pointing at a deleted file.
+    const user = targetUserId && ReactiveCache.getUser(targetUserId);
+    const currentUrl = normalizeAvatarUrl(user && user.profile && user.profile.avatarUrl);
+    if (currentUrl && currentUrl === normalizeAvatarUrl(deletedUrl)) {
+      Meteor.call('adminSetAvatarUrl', targetUserId, '');
+    }
+    avatarUpdateCounter.set(avatarUpdateCounter.get() + 1);
+    Popup.back();
+  }),
 });

@@ -1,0 +1,202 @@
+'use strict';
+
+/**
+ * Spec 37 — card drag-sort reordering regressions.
+ *
+ * Uses the drag-sort harness (helpers/dragSort.js), which drives jQuery-UI
+ * sortable with a realistic stepped mouse gesture (Playwright's high-level
+ * dragTo() does not trigger jQuery-UI sortable).
+ *
+ *  - #3826: reordering cards in a list whose cards have a parent (sub-tasks) must
+ *           persist — it was reported that such cards "go back to their place".
+ *           Verified here that the new order is saved both for a few cards and at
+ *           scale.
+ */
+
+const { test, expect } = require('../fixtures');
+const db = require('../helpers/db');
+const { openBoard, waitForMeteor } = require('../helpers/auth');
+const { dragCardOnto } = require('../helpers/dragSort');
+
+async function dbOrder(boardId, listId) {
+  return db
+    .find('cards', { boardId, listId }, { title: 1, sort: 1 })
+    .sort((a, b) => a.sort - b.sort)
+    .map(c => c.title);
+}
+
+test.describe('Card drag-sort reordering', () => {
+  test('#3826 cards that have a parent can be reordered and the new order persists', async ({
+    loggedInPage,
+    user,
+    browserName,
+  }) => {
+    // The reorder logic is browser-independent; the jQuery-UI drag-sort harness
+    // is validated on Chromium. Scoped to Chromium so cross-browser drag-timing
+    // differences cannot flake the otherwise-green matrix.
+    test.skip(browserName !== 'chromium', 'drag-sort harness validated on Chromium');
+    // list 0 = parents, list 1 = sub-tasks (each given a parentId).
+    const board = db.seedBoard({
+      ownerId: user.id,
+      title: 'DragSort',
+      listCount: 2,
+      cardTitlesPerList: [['Parent P'], ['A Card', 'B Card', 'C Card', 'D Card']],
+    });
+    try {
+      const parentId = db.findOne('cards', { boardId: board.boardId, title: 'Parent P' }, { _id: 1 })._id;
+      const subListId = board.listIds[1];
+      db.updateMany('cards', { boardId: board.boardId, listId: subListId }, { $set: { parentId } });
+
+      await openBoard(loggedInPage, board.boardId, board.slug);
+      await waitForMeteor(loggedInPage);
+      const list = `#js-list-${subListId}`;
+      await loggedInPage.locator(`${list} .js-minicard`).first().waitFor({ timeout: 30_000 });
+
+      // Drag the last sub-task card to the front of the list.
+      await dragCardOnto(
+        loggedInPage,
+        loggedInPage.locator(`${list} .js-minicard`).filter({ hasText: 'D Card' }).first(),
+        loggedInPage.locator(`${list} .js-minicard`).filter({ hasText: 'A Card' }).first(),
+        { place: 'before' },
+      );
+
+      // The reorder must be saved (it used to revert for parented cards).
+      await expect
+        .poll(async () => (await dbOrder(board.boardId, subListId))[0], { timeout: 15_000 })
+        .toBe('D Card');
+    } finally {
+      db.cleanup({ boardIds: [board.boardId] });
+    }
+  });
+
+  // #6558 "Moving cards behaves weirdly": on a board with scrollbars in both
+  // directions, a card drag also panned the board - the list slid sideways under
+  // the pointer while the card followed it, so the drop landed somewhere else.
+  // Three drag-scroll implementations shared the pointer: the dragscroll library
+  // (bound to the canvas AND to every lane), the `mousedown .board-canvas` lane
+  // pan in swimlanes.js, and jQuery UI sortable, which is the one that is
+  // supposed to move the card.
+  //
+  // The drag must stay away from the lane and canvas EDGES. Within 40px of one
+  // (EDGE_SIZE in imports/lib/boardAutoScroll.js) the drag's own auto-scroll
+  // takes over by design and moves the lane 15px per mouse event, which is a
+  // FEATURE (#443: dragging a card toward an off-screen list scrolls the board).
+  // The first version of this test grabbed the first card of the first list,
+  // 8 moves x 15px scrolled the lane from 120 to exactly 0, and it read that as
+  // panning. Panning is 1:1 with the pointer and happens anywhere; edge
+  // auto-scroll only happens at an edge - so the honest way to tell them apart
+  // is to drag in the middle, where auto-scroll does not fire at all.
+  test('#6558 dragging a card does not pan the lane or the board', async ({
+    loggedInPage,
+    user,
+    browserName,
+  }) => {
+    test.skip(browserName !== 'chromium', 'drag-sort harness validated on Chromium');
+    // Enough lists that the lane overflows horizontally, which is the board the
+    // report is about, and cards in several of them so one can be found away
+    // from the edges.
+    const board = db.seedBoard({
+      ownerId: user.id,
+      title: 'DragNoPan',
+      listCount: 12,
+      cardTitlesPerList: [['One', 'Two'], ['Three', 'Four'], ['Five', 'Six'], ['Seven', 'Eight']],
+    });
+    try {
+      await openBoard(loggedInPage, board.boardId, board.slug);
+      await waitForMeteor(loggedInPage);
+      await loggedInPage.locator('.js-minicard').first().waitFor({ timeout: 30_000 });
+
+      // Pan the lane away from its left edge first, so a pan in EITHER direction
+      // during the drag is visible as a change (scrollLeft cannot go below 0).
+      const startScroll = await loggedInPage.evaluate(() => {
+        const lane = document.querySelector('.js-lists');
+        const canvas = document.querySelector('.board-canvas');
+        if (lane) lane.scrollLeft = 120;
+        return { lane: lane ? lane.scrollLeft : null, canvas: canvas ? canvas.scrollTop : null };
+      });
+      expect(startScroll.lane).toBeGreaterThan(0);
+
+      // The safest card to grab, and how far it may be moved: everything stays
+      // MARGIN px inside the lane and the canvas, so the edge auto-scroll never
+      // fires and any movement of the scroll positions is panning.
+      const MARGIN = 70;
+      const plan = await loggedInPage.evaluate(margin => {
+        const lane = document.querySelector('.js-lists');
+        const canvas = document.querySelector('.board-canvas');
+        if (!lane || !canvas) return null;
+        const l = lane.getBoundingClientRect();
+        const c = canvas.getBoundingClientRect();
+        const box = { left: l.left + margin, right: l.right - margin,
+                      top: Math.max(l.top, c.top) + margin,
+                      bottom: Math.min(l.bottom, c.bottom) - margin };
+        let best = null;
+        for (const el of document.querySelectorAll('.js-minicard')) {
+          const r = el.getBoundingClientRect();
+          const x = r.left + r.width / 2;
+          const y = r.top + 12;
+          const room = Math.min(x - box.left, box.right - x, y - box.top, box.bottom - y);
+          if (room > 0 && (!best || room > best.room)) best = { x, y, room, box };
+        }
+        return best;
+      }, MARGIN);
+      // A window too small to hold a drag that stays clear of every edge would
+      // measure the auto-scroll instead of panning, and would say nothing about
+      // the bug. Better skipped than misleading.
+      test.skip(!plan || plan.room < 30,
+        'no card sits far enough from the lane/canvas edges in this viewport');
+
+      // A short diagonal, entirely inside the safe box: the gesture that used to
+      // drag the card and pan the lane at the same time.
+      const steps = [];
+      for (let i = 1; i <= 8; i++) {
+        steps.push({
+          x: Math.min(plan.x + i * 6, plan.box.right),
+          y: Math.min(plan.y + 12 + i * 3, plan.box.bottom),
+        });
+      }
+
+      await loggedInPage.mouse.move(plan.x, plan.y);
+      await loggedInPage.mouse.down();
+      // Past jQuery UI's 7px distance threshold first.
+      await loggedInPage.mouse.move(plan.x, plan.y + 12, { steps: 4 });
+      for (const s of steps) {
+        await loggedInPage.mouse.move(s.x, s.y, { steps: 2 });
+        await loggedInPage.waitForTimeout(15);
+      }
+
+      const during = await loggedInPage.evaluate(() => {
+        const lane = document.querySelector('.js-lists');
+        const canvas = document.querySelector('.board-canvas');
+        return {
+          lane: lane ? lane.scrollLeft : null,
+          canvas: canvas ? canvas.scrollTop : null,
+          canvasPans: canvas ? canvas.classList.contains('dragscroll') : null,
+          lanePans: lane ? lane.classList.contains('dragscroll') : null,
+          dragging: !!document.querySelector('.ui-sortable-helper'),
+        };
+      });
+
+      await loggedInPage.mouse.up();
+      await loggedInPage.waitForTimeout(400);
+
+      expect(during.dragging).toBe(true); // the card really was being dragged
+      expect(during.canvasPans).toBe(false); // ... and nothing was panning with it
+      expect(during.lanePans).toBe(false);
+      expect(during.lane).toBe(startScroll.lane);
+      expect(during.canvas).toBe(startScroll.canvas);
+
+      // Panning is a feature: it comes back the moment the drag is over.
+      await expect
+        .poll(
+          () =>
+            loggedInPage.evaluate(
+              () => !!document.querySelector('.board-canvas.dragscroll'),
+            ),
+          { timeout: 5_000 },
+        )
+        .toBe(true);
+    } finally {
+      db.cleanup({ boardIds: [board.boardId] });
+    }
+  });
+});

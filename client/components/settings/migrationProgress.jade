@@ -1,0 +1,44 @@
+template(name="migrationProgress")
+  if isMigrating
+    .migration-progress-overlay
+      .migration-progress-modal
+        .migration-progress-header
+          h3.migration-progress-title
+            i.fa.fa-recycle
+            | {{productName}} {{_ 'migration-progress-title'}}
+          .migration-progress-close.js-close-migration-progress
+            i.fa.fa-times-thin
+
+        .migration-progress-content
+          .migration-progress-overall
+            .migration-progress-overall-label
+              | {{_ 'migration-progress-overall'}}: {{currentStep}} {{_ 'of'}} {{totalSteps}} {{_ 'steps'}}
+            .migration-progress-overall-bar
+              .migration-progress-overall-fill(style="{{progressBarStyle}}")
+            .migration-progress-overall-percentage
+              | {{overallProgress}}%
+
+          .migration-progress-current-step
+            .migration-progress-step-label
+              | {{_ 'migration-progress-current-step'}}: {{stepNameFormatted}}
+            .migration-progress-step-bar
+              .migration-progress-step-fill(style="{{stepProgressBarStyle}}")
+            .migration-progress-step-percentage
+              | {{stepProgress}}%
+
+          .migration-progress-status
+            .migration-progress-status-label
+              | {{_ 'migration-progress-status'}}:
+            .migration-progress-status-text
+              | {{stepStatus}}
+
+          if stepDetailsFormatted
+            .migration-progress-details
+              .migration-progress-details-label
+                | {{_ 'migration-progress-details'}}:
+              .migration-progress-details-text
+                | {{stepDetailsFormatted}}
+
+        .migration-progress-footer
+          .migration-progress-note
+            | {{_ 'migration-progress-note'}}

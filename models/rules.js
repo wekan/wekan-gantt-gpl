@@ -1,7 +1,9 @@
 import { ReactiveCache } from '/imports/reactiveCache';
+import { Mongo } from 'meteor/mongo';
 import { Meteor } from 'meteor/meteor';
+const { SimpleSchema } = require('/imports/simpleSchema');
 
-Rules = new Mongo.Collection('rules');
+const Rules = new Mongo.Collection('rules');
 
 Rules.attachSchema(
   new SimpleSchema({
@@ -21,6 +23,19 @@ Rules.attachSchema(
       type: String,
       optional: false,
     },
+    // Denormalised manual-button metadata (only present on button rules). The
+    // board view renders board/card buttons from the rule alone — see
+    // server/rulesButton.js (rules.createRule) for why the trigger document is
+    // not relied upon on the client.
+    buttonType: {
+      type: String,
+      optional: true,
+      allowedValues: ['card', 'board'],
+    },
+    buttonLabel: {
+      type: String,
+      optional: true,
+    },
     createdAt: {
       type: Date,
       optional: true,
@@ -37,7 +52,6 @@ Rules.attachSchema(
     },
     modifiedAt: {
       type: Date,
-      denyUpdate: false,
       // eslint-disable-next-line consistent-return
       autoValue() {
         if (this.isInsert || this.isUpsert || this.isUpdate) {
@@ -50,13 +64,10 @@ Rules.attachSchema(
   }),
 );
 
-Rules.mutations({
-  rename(description) {
-    return { $set: { description } };
-  },
-});
-
 Rules.helpers({
+  async rename(description) {
+    return await Rules.updateAsync(this._id, { $set: { description } });
+  },
   getAction() {
     return ReactiveCache.getAction(this.actionId);
   },
@@ -74,21 +85,13 @@ Rules.helpers({
   },
 });
 
-Rules.allow({
-  insert(userId, doc) {
-    return allowIsBoardAdmin(userId, ReactiveCache.getBoard(doc.boardId));
-  },
-  update(userId, doc) {
-    return allowIsBoardAdmin(userId, ReactiveCache.getBoard(doc.boardId));
-  },
-  remove(userId, doc) {
-    return allowIsBoardAdmin(userId, ReactiveCache.getBoard(doc.boardId));
-  },
-});
-
 if (Meteor.isServer) {
-  Meteor.startup(() => {
-    Rules._collection.createIndex({ modifiedAt: -1 });
+  // Admin Panel / Problems / Rules pages every rule sorted by board, and counts
+  // them with the same selector (server/publications/rules.js). Without an index
+  // that is a full-collection scan plus an in-memory sort for every page of ten.
+  const { ensureIndex } = require('/server/lib/mongoStartup');
+  Meteor.startup(async () => {
+    await ensureIndex(Rules, { boardId: 1 });
   });
 }
 

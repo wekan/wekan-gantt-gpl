@@ -1,15 +1,190 @@
+import { Meteor } from 'meteor/meteor';
+import { Session } from 'meteor/session';
+import { Tracker } from 'meteor/tracker';
 import { TAPi18n } from '/imports/i18n';
+import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
+import { ReactiveCache } from '/imports/reactiveCache';
+import { decideSandstormAutoOpen } from '/models/lib/sandstormAutoOpen';
+import { cardBoardRedirectTarget } from '/models/lib/cardLinkRedirect';
+import Settings from '/models/settings';
+import { EscapeActions } from '/client/lib/escapeActions';
+import { Filter } from '/client/lib/filter';
+import { Utils } from '/client/lib/utils';
 
 let previousPath;
+
+// On Sandstorm the grain is authenticated by the platform, not by a local WeKan
+// account. That login is delivered asynchronously over the DDP connection (via
+// connection.setUserId(), which — unlike a normal password login — does NOT set
+// Meteor.loggingIn()), so for the first moments after a grain opens Meteor.userId()
+// is still null even though the user is, and always will be, authenticated. There
+// is no local sign-in page in a grain. useraccounts' ensureSignedIn would bounce the
+// grain straight to the (nonexistent) atSignIn route on that brief null window,
+// stranding the user on a "Must be logged in" page instead of opening All Boards.
+const isSandstorm = Meteor.settings?.public?.sandstorm;
+
+// Drop-in replacement for AccountsTemplates.ensureSignedIn used as a route
+// triggersEnter: a no-op on Sandstorm (the platform guarantees authentication and
+// the route repopulates reactively once Meteor.userId() lands), and the normal
+// useraccounts guard everywhere else.
+function ensureSignedInUnlessSandstorm(context, redirect, stop) {
+  if (isSandstorm) {
+    return undefined;
+  }
+  return AccountsTemplates.ensureSignedIn(context, redirect, stop);
+}
+
 FlowRouter.triggers.exit([
   ({ path }) => {
     previousPath = path;
   },
 ]);
 
+// All Boards page. The left-menu sub-views (Templates, Remaining, Starred) are
+// addressable via their own URL suffixes (#5850) so they can be linked and
+// redirected to; the chosen view is passed to boardList through the
+// `boardListMenu` Session value.
+function renderBoardList(ctx, menu) {
+  // Redirect to sign-in if the user is not logged in — except on Sandstorm, where
+  // the platform authenticates asynchronously (see isSandstorm note above) and there
+  // is no sign-in page. Also do NOT bounce while a login is IN PROGRESS
+  // (Meteor.loggingIn(), e.g. auto-login from a stored token on a fresh page load, or
+  // the tick right after submitting the login form): the userId lands a moment later
+  // and the All Boards list fills in reactively, whereas bouncing here stranded a
+  // returning / just-logged-in user on the sign-in page showing only the language
+  // selector until a manual reload (WeKan 10.30 login regression).
+  if (!Meteor.userId() && !Meteor.loggingIn() && !isSandstorm) {
+    FlowRouter.go('atSignIn');
+    return;
+  }
+
+  Session.set('currentBoard', null);
+  Session.set('currentList', null);
+  Session.set('currentCard', null);
+  Session.set('popupCardId', null);
+  Session.set('popupCardBoardId', null);
+  Session.set('boardListMenu', menu);
+  Filter.reset();
+  Session.set('sortBy', '');
+  EscapeActions.executeAll();
+
+  Utils.manageCustomUI();
+  Utils.manageMatomo();
+
+  ctx.render('defaultLayout', {
+    headerBar: 'boardListHeaderBar',
+    content: 'boardList',
+  });
+}
+
+// #2220: on the FIRST landing on '/' this session (i.e. right after login), send
+// the user to their chosen default "home" board. Only once per session, so a
+// later click on "All Boards" stays on the list, and the choice is honoured again
+// on the next login / full reload. Returns true when it redirected.
+function maybeRedirectToDefaultBoard() {
+  if (Session.get('defaultBoardRedirectDone')) return false;
+  Session.set('defaultBoardRedirectDone', true);
+
+  if (!Meteor.userId()) return false;
+  const user = ReactiveCache.getCurrentUser();
+  const boardId = user && user.getDefaultBoardId && user.getDefaultBoardId();
+  if (!boardId) return false;
+
+  // Redirect by id right away — at login the board's own subscription may not have
+  // loaded yet, so use its real slug when it happens to be cached and a harmless
+  // placeholder otherwise (the board route resolves by :id). If the board was
+  // deleted / access was removed, the board route degrades gracefully and the
+  // "All Boards" link still works (this only redirects once per session).
+  const board = ReactiveCache.getBoard(boardId);
+  FlowRouter.go('board', { id: boardId, slug: (board && board.slug) || 'board' });
+  return true;
+}
+
+// #2220 on Sandstorm: a grain historically opened straight into its single board.
+// Restore that convenience — reactively, because a grain's login (Meteor.userId())
+// and its boards subscription both arrive asynchronously after '/' first renders.
+// Runs at most once per page load (grain session): a saved Home board wins; else
+// exactly one board just opens (nothing saved — choosing a Home board is the separate
+// explicit All Boards toggle); else (zero or many boards, nothing saved) we stay on
+// the All Boards list. The decision itself is the pure, unit-tested
+// decideSandstormAutoOpen(). Sandstorm-only (see the isSandstorm gate in the route).
+let sandstormAutoOpenStarted = false;
+function startSandstormAutoOpen() {
+  if (sandstormAutoOpenStarted) return;
+  sandstormAutoOpenStarted = true;
+
+  const boardsHandle = Meteor.subscribe('boards');
+  Tracker.autorun(computation => {
+    const userReady = !!Meteor.userId();
+    const user = userReady ? ReactiveCache.getCurrentUser() : null;
+    const savedDefaultId = user && user.getDefaultBoardId && user.getDefaultBoardId();
+    const boardsReady = boardsHandle.ready();
+
+    let boardCount = 0;
+    let onlyBoardId;
+    if (userReady && boardsReady) {
+      const boards = ReactiveCache.getBoards({
+        archived: false,
+        type: 'board',
+        'members.userId': Meteor.userId(),
+      });
+      boardCount = boards.length;
+      if (boardCount === 1) onlyBoardId = boards[0]._id;
+    }
+
+    const decision = decideSandstormAutoOpen({
+      userReady,
+      savedDefaultId,
+      boardsReady,
+      boardCount,
+      onlyBoardId,
+    });
+
+    if (decision.action === 'wait') return; // inputs not ready — keep watching
+    if (decision.action === 'redirect') {
+      // Just open the board — nothing is persisted here.
+      const board = ReactiveCache.getBoard(decision.boardId);
+      FlowRouter.go('board', { id: decision.boardId, slug: (board && board.slug) || 'board' });
+    }
+    computation.stop(); // decided (redirected or staying) — done for this page load
+  });
+}
+
 FlowRouter.route('/', {
   name: 'home',
-  triggersEnter: [AccountsTemplates.ensureSignedIn],
+  triggersEnter: [ensureSignedInUnlessSandstorm],
+  action() {
+    // On Sandstorm, render All Boards immediately and let the reactive auto-open
+    // (above) redirect once the grain login + boards have loaded, if appropriate.
+    if (isSandstorm) {
+      startSandstormAutoOpen();
+      renderBoardList(this, 'starred');
+      return;
+    }
+    if (maybeRedirectToDefaultBoard()) return;
+    renderBoardList(this, 'starred');
+  },
+});
+
+FlowRouter.route('/templates', {
+  name: 'allboards-templates',
+  triggersEnter: [ensureSignedInUnlessSandstorm],
+  action() {
+    renderBoardList(this, 'templates');
+  },
+});
+
+FlowRouter.route('/remaining', {
+  name: 'allboards-remaining',
+  triggersEnter: [ensureSignedInUnlessSandstorm],
+  action() {
+    renderBoardList(this, 'remaining');
+  },
+});
+
+FlowRouter.route('/public', {
+  name: 'public',
+  triggersEnter: [ensureSignedInUnlessSandstorm],
   action() {
     Session.set('currentBoard', null);
     Session.set('currentList', null);
@@ -24,16 +199,16 @@ FlowRouter.route('/', {
     Utils.manageCustomUI();
     Utils.manageMatomo();
 
-    BlazeLayout.render('defaultLayout', {
+    this.render('defaultLayout', {
       headerBar: 'boardListHeaderBar',
       content: 'boardList',
     });
   },
 });
 
-FlowRouter.route('/public', {
-  name: 'public',
-  triggersEnter: [AccountsTemplates.ensureSignedIn],
+FlowRouter.route('/accessibility', {
+  name: 'accessibility',
+  triggersEnter: [ensureSignedInUnlessSandstorm],
   action() {
     Session.set('currentBoard', null);
     Session.set('currentList', null);
@@ -48,9 +223,146 @@ FlowRouter.route('/public', {
     Utils.manageCustomUI();
     Utils.manageMatomo();
 
-    BlazeLayout.render('defaultLayout', {
-      headerBar: 'boardListHeaderBar',
-      content: 'boardList',
+    this.render('defaultLayout', {
+      headerBar: 'accessibilityHeaderBar',
+      content: 'accessibility',
+    });
+  },
+});
+
+FlowRouter.route('/support', {
+  name: 'support',
+  triggersEnter: [ensureSignedInUnlessSandstorm],
+  action() {
+    Session.set('currentBoard', null);
+    Session.set('currentList', null);
+    Session.set('currentCard', null);
+    Session.set('popupCardId', null);
+    Session.set('popupCardBoardId', null);
+
+    Filter.reset();
+    Session.set('sortBy', '');
+    EscapeActions.executeAll();
+
+    Utils.manageCustomUI();
+    Utils.manageMatomo();
+
+    this.render('defaultLayout', {
+      headerBar: 'supportHeaderBar',
+      content: 'support',
+    });
+  },
+});
+
+FlowRouter.route('/b/:id/:slug/rules', {
+  name: 'board-rules',
+  triggersEnter: [ensureSignedInUnlessSandstorm],
+  action(params) {
+    const currentBoard = params.id;
+    Session.set('currentBoard', currentBoard);
+    Session.set('currentCard', null);
+    Session.set('popupCardId', null);
+    Session.set('popupCardBoardId', null);
+
+    EscapeActions.executeUpTo('popup-close');
+
+    Utils.manageCustomUI();
+    Utils.manageMatomo();
+
+    this.render('defaultLayout', {
+      headerBar: 'rulesHeaderBar',
+      content: 'rulesMain',
+    });
+  },
+});
+
+// Card route MUST be registered BEFORE board route so it matches first
+// #4758: keep a card link working after the card is moved to another board. The
+// URL carries the OLD board, which no longer contains the card, so resolve the
+// card's CURRENT board via the permission-checked `card` publication and, if it
+// differs, redirect there. When the user cannot see the card's new board (or it
+// is gone) the subscription yields nothing and we stay on the URL's board. A
+// single pending check at a time; the probe subscription is released once the
+// board's own subscription owns the card.
+let movedCardCheck = null;
+function maybeRedirectMovedCard(urlBoardId, cardId) {
+  if (movedCardCheck) {
+    movedCardCheck.computation.stop();
+    movedCardCheck.sub.stop();
+    movedCardCheck = null;
+  }
+  if (!cardId) return;
+  const sub = Meteor.subscribe('card', cardId);
+  const computation = Tracker.autorun(c => {
+    if (!sub.ready()) return;
+    c.stop();
+    const target = cardBoardRedirectTarget(urlBoardId, ReactiveCache.getCard(cardId));
+    Meteor.defer(() => { try { sub.stop(); } catch (e) {} });
+    movedCardCheck = null;
+    if (target && FlowRouter.getParam('cardId') === cardId) {
+      const board = ReactiveCache.getBoard(target);
+      FlowRouter.go('card', {
+        boardId: target,
+        slug: (board && board.slug) || 'board',
+        cardId,
+      });
+    }
+  });
+  movedCardCheck = { computation, sub };
+}
+
+FlowRouter.route('/b/:boardId/:slug/:cardId', {
+  name: 'card',
+  action(params) {
+    Session.set('currentBoard', params.boardId);
+    Session.set('currentCard', params.cardId);
+    Session.set('popupCardId', null);
+    Session.set('popupCardBoardId', null);
+    // #4758: if the card was moved to another board, redirect to its current one.
+    maybeRedirectMovedCard(params.boardId, params.cardId);
+
+    // In desktop mode, add to openCards array to support multiple cards
+    const isMobile = Utils.getMobileMode();
+    if (!isMobile) {
+      const openCards = Session.get('openCards') || [];
+      if (!openCards.includes(params.cardId)) {
+        openCards.push(params.cardId);
+        Session.set('openCards', openCards);
+      }
+    }
+
+    Utils.manageCustomUI();
+    Utils.manageMatomo();
+
+    this.render('defaultLayout', {
+      headerBar: 'boardHeaderBar',
+      content: 'board',
+    });
+  },
+});
+
+
+FlowRouter.route('/b/:id', {
+  name: 'board-short',
+  action(params) {
+    const board = ReactiveCache.getBoard(params.id);
+
+    if (board && board.slug) {
+      FlowRouter.go('board', { id: board._id, slug: board.slug });
+      return;
+    }
+
+    Session.set('currentBoard', params.id);
+    Session.set('currentCard', null);
+    Session.set('popupCardId', null);
+    Session.set('popupCardBoardId', null);
+
+    Utils.manageCustomUI();
+    Utils.manageMatomo();
+
+    this.render('defaultLayout', {
+      headerBar: 'boardHeaderBar',
+      content: 'board',
     });
   },
 });
@@ -78,27 +390,7 @@ FlowRouter.route('/b/:id/:slug', {
     Utils.manageCustomUI();
     Utils.manageMatomo();
 
-    BlazeLayout.render('defaultLayout', {
-      headerBar: 'boardHeaderBar',
-      content: 'board',
-    });
-  },
-});
-
-FlowRouter.route('/b/:boardId/:slug/:cardId', {
-  name: 'card',
-  action(params) {
-    EscapeActions.executeUpTo('inlinedForm');
-
-    Session.set('currentBoard', params.boardId);
-    Session.set('currentCard', params.cardId);
-    Session.set('popupCardId', null);
-    Session.set('popupCardBoardId', null);
-
-    Utils.manageCustomUI();
-    Utils.manageMatomo();
-
-    BlazeLayout.render('defaultLayout', {
+    this.render('defaultLayout', {
       headerBar: 'boardHeaderBar',
       content: 'board',
     });
@@ -118,7 +410,7 @@ FlowRouter.route('/shortcuts', {
         onCloseGoTo: previousPath,
       });
     } else {
-      BlazeLayout.render('defaultLayout', {
+      this.render('defaultLayout', {
         headerBar: 'shortcutsHeaderBar',
         content: shortcutsTemplate,
       });
@@ -128,7 +420,7 @@ FlowRouter.route('/shortcuts', {
 
 FlowRouter.route('/b/templates', {
   name: 'template-container',
-  triggersEnter: [AccountsTemplates.ensureSignedIn],
+  triggersEnter: [ensureSignedInUnlessSandstorm],
   action() {
     Session.set('currentBoard', null);
     Session.set('currentList', null);
@@ -143,7 +435,7 @@ FlowRouter.route('/b/templates', {
     Utils.manageCustomUI();
     Utils.manageMatomo();
 
-    BlazeLayout.render('defaultLayout', {
+    this.render('defaultLayout', {
       headerBar: 'boardListHeaderBar',
       content: 'boardList',
     });
@@ -152,7 +444,7 @@ FlowRouter.route('/b/templates', {
 
 FlowRouter.route('/my-cards', {
   name: 'my-cards',
-  triggersEnter: [AccountsTemplates.ensureSignedIn],
+  triggersEnter: [ensureSignedInUnlessSandstorm],
   action() {
     Filter.reset();
     Session.set('sortBy', '');
@@ -162,7 +454,7 @@ FlowRouter.route('/my-cards', {
     Utils.manageCustomUI();
     Utils.manageMatomo();
 
-    BlazeLayout.render('defaultLayout', {
+    this.render('defaultLayout', {
       headerBar: 'myCardsHeaderBar',
       content: 'myCards',
     });
@@ -172,7 +464,7 @@ FlowRouter.route('/my-cards', {
 
 FlowRouter.route('/due-cards', {
   name: 'due-cards',
-  triggersEnter: [AccountsTemplates.ensureSignedIn],
+  triggersEnter: [ensureSignedInUnlessSandstorm],
   action() {
     Filter.reset();
     Session.set('sortBy', '');
@@ -182,7 +474,7 @@ FlowRouter.route('/due-cards', {
     Utils.manageCustomUI();
     Utils.manageMatomo();
 
-    BlazeLayout.render('defaultLayout', {
+    this.render('defaultLayout', {
       headerBar: 'dueCardsHeaderBar',
       content: 'dueCards',
     });
@@ -192,7 +484,7 @@ FlowRouter.route('/due-cards', {
 
 FlowRouter.route('/global-search', {
   name: 'global-search',
-  triggersEnter: [AccountsTemplates.ensureSignedIn],
+  triggersEnter: [ensureSignedInUnlessSandstorm],
   action() {
     Filter.reset();
     Session.set('sortBy', '');
@@ -201,7 +493,15 @@ FlowRouter.route('/global-search', {
 
     Utils.manageCustomUI();
     Utils.manageMatomo();
-    DocHead.setTitle(TAPi18n.__('globalSearch-title'));
+
+    // Set title with product name
+    const settings = Settings.findOne({});
+    const productName = (settings && settings.productName) ? settings.productName : 'Wekan';
+    try {
+      document.title = `${TAPi18n.__('globalSearch-title')} - ${productName}`;
+    } catch (e) {
+      document.title = `Search All Boards - ${productName}`;
+    }
 
     if (FlowRouter.getQueryParam('q')) {
       Session.set(
@@ -209,9 +509,28 @@ FlowRouter.route('/global-search', {
         decodeURIComponent(FlowRouter.getQueryParam('q')),
       );
     }
-    BlazeLayout.render('defaultLayout', {
+    this.render('defaultLayout', {
       headerBar: 'globalSearchHeaderBar',
       content: 'globalSearch',
+    });
+  },
+});
+
+// Mobile Bookmarks page
+FlowRouter.route('/bookmarks', {
+  name: 'bookmarks',
+  triggersEnter: [ensureSignedInUnlessSandstorm],
+  action() {
+    Filter.reset();
+    Session.set('sortBy', '');
+    EscapeActions.executeUpTo('popup-close');
+
+    Utils.manageCustomUI();
+    Utils.manageMatomo();
+
+    this.render('defaultLayout', {
+      headerBar: 'boardListHeaderBar',
+      content: 'boardList',
     });
   },
 });
@@ -229,7 +548,7 @@ FlowRouter.route('/broken-cards', {
     Utils.manageCustomUI();
     Utils.manageMatomo();
 
-    BlazeLayout.render('defaultLayout', {
+    this.render('defaultLayout', {
       headerBar: 'brokenCardsHeaderBar',
       content: brokenCardsTemplate,
     });
@@ -238,7 +557,7 @@ FlowRouter.route('/broken-cards', {
 
 FlowRouter.route('/import/:source', {
   name: 'import',
-  triggersEnter: [AccountsTemplates.ensureSignedIn],
+  triggersEnter: [ensureSignedInUnlessSandstorm],
   action(params) {
     if (Session.get('currentBoard')) {
       Session.set('fromBoard', Session.get('currentBoard'));
@@ -253,7 +572,7 @@ FlowRouter.route('/import/:source', {
     Filter.reset();
     Session.set('sortBy', '');
     EscapeActions.executeAll();
-    BlazeLayout.render('defaultLayout', {
+    this.render('defaultLayout', {
       headerBar: 'importHeaderBar',
       content: 'import',
     });
@@ -263,7 +582,7 @@ FlowRouter.route('/import/:source', {
 FlowRouter.route('/setting', {
   name: 'setting',
   triggersEnter: [
-    AccountsTemplates.ensureSignedIn,
+    ensureSignedInUnlessSandstorm,
     () => {
       Session.set('currentBoard', null);
       Session.set('currentList', null);
@@ -278,41 +597,37 @@ FlowRouter.route('/setting', {
   ],
   action() {
     Utils.manageCustomUI();
-    BlazeLayout.render('defaultLayout', {
+    this.render('defaultLayout', {
       headerBar: 'settingHeaderBar',
       content: 'setting',
     });
   },
 });
 
+// Version is the FIRST pane inside Admin Panel / Settings now, not a page of its
+// own - the same move Translation made. The old URL stays valid and redirects
+// there, so a bookmark does not land on a template that no longer exists.
+//
+// A trigger redirects with the `redirect` it is HANDED, not with FlowRouter.go():
+// go() from inside triggersEnter happens while this route is still entering and is
+// swallowed, so nothing was rendered at all and whatever page the browser was on
+// stayed on screen - /information showed All Boards. This is the same form the
+// redirections table at the bottom of this file uses.
 FlowRouter.route('/information', {
   name: 'information',
   triggersEnter: [
-    AccountsTemplates.ensureSignedIn,
-    () => {
-      Session.set('currentBoard', null);
-      Session.set('currentList', null);
-      Session.set('currentCard', null);
-      Session.set('popupCardId', null);
-      Session.set('popupCardBoardId', null);
-
-      Filter.reset();
-      Session.set('sortBy', '');
-      EscapeActions.executeAll();
+    (context, redirect) => {
+      Session.set('settingsOpenPane', 'version-setting');
+      redirect(FlowRouter.path('setting'));
     },
   ],
-  action() {
-    BlazeLayout.render('defaultLayout', {
-      headerBar: 'settingHeaderBar',
-      content: 'information',
-    });
-  },
+  action() {},
 });
 
 FlowRouter.route('/people', {
   name: 'people',
   triggersEnter: [
-    AccountsTemplates.ensureSignedIn,
+    ensureSignedInUnlessSandstorm,
     () => {
       Session.set('currentBoard', null);
       Session.set('currentList', null);
@@ -326,7 +641,7 @@ FlowRouter.route('/people', {
     },
   ],
   action() {
-    BlazeLayout.render('defaultLayout', {
+    this.render('defaultLayout', {
       headerBar: 'settingHeaderBar',
       content: 'people',
     });
@@ -336,7 +651,7 @@ FlowRouter.route('/people', {
 FlowRouter.route('/admin-reports', {
   name: 'admin-reports',
   triggersEnter: [
-    AccountsTemplates.ensureSignedIn,
+    ensureSignedInUnlessSandstorm,
     () => {
       Session.set('currentBoard', null);
       Session.set('currentList', null);
@@ -350,7 +665,7 @@ FlowRouter.route('/admin-reports', {
     },
   ],
   action() {
-    BlazeLayout.render('defaultLayout', {
+    this.render('defaultLayout', {
       headerBar: 'settingHeaderBar',
       content: 'adminReports',
     });
@@ -360,7 +675,7 @@ FlowRouter.route('/admin-reports', {
 FlowRouter.route('/attachments', {
   name: 'attachments',
   triggersEnter: [
-    AccountsTemplates.ensureSignedIn,
+    ensureSignedInUnlessSandstorm,
     () => {
       Session.set('currentBoard', null);
       Session.set('currentList', null);
@@ -374,42 +689,33 @@ FlowRouter.route('/attachments', {
     },
   ],
   action() {
-    BlazeLayout.render('defaultLayout', {
+    this.render('defaultLayout', {
       headerBar: 'settingHeaderBar',
       content: 'attachments',
     });
   },
 });
 
+// Translation is a pane inside Admin Panel / Settings now, not a page of its own.
+// The old URL stays valid and redirects there, so a bookmark does not land on a
+// template that no longer exists.
 FlowRouter.route('/translation', {
   name: 'translation',
   triggersEnter: [
-    AccountsTemplates.ensureSignedIn,
-    () => {
-      Session.set('currentBoard', null);
-      Session.set('currentList', null);
-      Session.set('currentCard', null);
-      Session.set('popupCardId', null);
-      Session.set('popupCardBoardId', null);
-
-      Filter.reset();
-      Session.set('sortBy', '');
-      EscapeActions.executeAll();
+    (context, redirect) => {
+      // ...and it opens ON Translation, which is the pane the old URL meant.
+      Session.set('settingsOpenPane', 'translation-setting');
+      redirect(FlowRouter.path('setting'));
     },
   ],
-  action() {
-    BlazeLayout.render('defaultLayout', {
-      headerBar: 'settingHeaderBar',
-      content: 'translation',
-    });
-  },
+  action() {},
 });
 
-FlowRouter.notFound = {
+FlowRouter.route('*', {
   action() {
-    BlazeLayout.render('defaultLayout', { content: 'notFound' });
+    this.render('defaultLayout', { content: 'notFound' });
   },
-};
+});
 
 // We maintain a list of redirections to ensure that we don't break old URLs
 // when we change our routing scheme.
@@ -420,7 +726,7 @@ const redirections = {
   '/import': '/import/trello',
 };
 
-_.each(redirections, (newPath, oldPath) => {
+Object.entries(redirections).forEach(([oldPath, newPath]) => {
   FlowRouter.route(oldPath, {
     triggersEnter: [
       (context, redirect) => {

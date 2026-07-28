@@ -1,14 +1,22 @@
+//- `themeColorClass` is the active theme: the user's own override, the board's
+//- colour, or the site theme (docs/Design/Page/Theme.md). This used to read the
+//- board's colour only, so every popup outside a board - the whole Admin Panel -
+//- kept the stock blue whatever theme was chosen.
 .pop-over.js-pop-over(
   class="{{#unless title}}miniprofile{{/unless}}"
-  class=currentBoard.colorClass
+  class=themeColorClass
   class="{{#unless title}}no-title{{/unless}}"
-  style="left:{{offset.left}}px; top:{{offset.top}}px;")
+  class="{{#if offset.maxHeight}}pop-over--bounded{{/if}}"
+  data-popup="{{popupName}}"
+  role="dialog"
+  aria-label="{{#if title}}{{title}}{{else}}{{_ 'modal-title'}}{{/if}}"
+  style="left:{{offset.left}}px; top:{{offset.top}}px;{{#if offset.maxHeight}} max-height:{{offset.maxHeight}}px;{{/if}}")
   .header
-    a.back-btn.js-back-view(class="{{#unless hasPopupParent}}is-hidden{{/unless}}")
-      i.fa.fa-chevron-left
+    a.back-btn.js-back-view(class="{{#unless hasPopupParent}}is-hidden{{/unless}}" aria-label="{{_ 'go-back'}}")
+      i.fa.fa-caret-left(aria-hidden="true")
     span.header-title= title
-    a.close-btn.js-close-pop-over
-      i.fa.fa-times-thin
+    a.close-btn.js-close-pop-over(aria-label="{{_ 'close-popup'}}")
+      i.fa.fa-times-thin(aria-hidden="true")
   .content-wrapper
     //-
       We display the all stack of popup content next to each other and move

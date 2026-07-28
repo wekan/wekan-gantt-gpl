@@ -1,10 +1,11 @@
 #header #header-main-bar .setting-header-btn {
+  border-radius: 3px;
   color: #f2f2f2;
-  margin-left: 20px;
-  padding-right: 10px;
+  margin-inline-start: 20px;
+  padding-inline-end: 10px;
   height: 28px;
   font-size: 13px;
-  float: left;
+  float: inline-start;
   overflow: hidden;
   line-height: 28px;
   margin: 0 2px;
@@ -14,7 +15,7 @@
   background: rgba(0,0,0,0.15);
 }
 #header #header-main-bar .setting-header-btn i.fa {
-  float: left;
+  float: inline-start;
   display: block;
   line-height: 28px;
   color: #f2f2f2;
@@ -23,5 +24,100 @@
 #header #header-main-bar .setting-header-btn + span {
   display: inline-block;
   margin-top: 1px;
-  margin-right: 10px;
+  margin-inline-end: 10px;
+}
+
+/* Keep all admin tabs (Settings, People, Reports, Attachments, Translation,
+   Version) visible on narrow screens. The bar is a fixed 40px tall and the
+   tabs float, so on narrow widths they wrapped below the bar and were clipped
+   (disappeared). Let the bar grow and wrap the tabs to as many rows as needed
+   so none are ever hidden. Scoped via :has() so the board header is untouched. */
+#header #header-main-bar:has(.setting-header-btns) {
+  height: auto;
+  min-height: 40px;
+  padding-bottom: 6px;
+  overflow: visible;
+}
+#header #header-main-bar .setting-header-btns.left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  float: none;
+}
+#header #header-main-bar .setting-header-btn {
+  float: none;
+  margin: 2px 0;
+}
+
+/* #6419: the admin panel's 2nd top bar (settingHeaderBar) is rendered inside
+   #header-quick-access, whose mobile rules scale ALL text/icons 2x
+   (`#header-quick-access * { font-size: inherit }` + `.fa { font-size: 2em }`).
+   That made the admin tab buttons 28px text / 56px icons — huge, overlapping the
+   "Version" label and the content below. Cap them at a normal touch size on small
+   screens. Selectors are more specific than the 2em rules (and repeated for the
+   .iphone-device JS-detection fallback) so they win. */
+@media screen and (max-width: 800px) {
+  #header-quick-access .setting-header-btns .setting-header-btn,
+  #header #header-main-bar .setting-header-btns .setting-header-btn,
+  #header-quick-access .setting-header-btns .setting-header-btn span,
+  #header #header-main-bar .setting-header-btns .setting-header-btn span {
+    font-size: 15px !important;
+  }
+  #header-quick-access .setting-header-btns .setting-header-btn i.fa,
+  #header #header-main-bar .setting-header-btns .setting-header-btn i.fa {
+    font-size: 18px !important;
+  }
+}
+.iphone-device #header-quick-access .setting-header-btns .setting-header-btn,
+.iphone-device #header-quick-access .setting-header-btns .setting-header-btn span {
+  font-size: 15px !important;
+}
+.iphone-device #header-quick-access .setting-header-btns .setting-header-btn i.fa {
+  font-size: 18px !important;
+}
+
+/* Admin Panel problem banner (Reports → Security/Speed/Tests new-problem info).
+   Design: docs/Security/Remediation/WeKan.md. Shown under the settingHeaderBar h1;
+   each area names its menu path + new count and has an Acknowledge button. */
+.admin-problem-banner {
+  margin: 6px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.admin-problem-banner .admin-problem-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  background: #fdecea;
+  color: #611a15;
+  border: 1px solid #f5c6cb;
+}
+.admin-problem-banner .admin-problem-item .fa-exclamation-triangle {
+  color: #c0392b;
+}
+.admin-problem-banner .admin-problem-path {
+  font-weight: bold;
+}
+.admin-problem-banner .admin-problem-count {
+  margin-inline-start: auto;
+}
+.admin-problem-banner .js-ack-problems {
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Problems button turns red when there are new (unacknowledged) Security/Speed/
+   Tests problems (settingHeader.js problemsClass). */
+.setting-header-btn.problems.has-problems,
+.setting-header-btn.problems.has-problems:hover {
+  background-color: #c0392b;
+  color: #fff;
+}
+.setting-header-btn.problems.has-problems i,
+.setting-header-btn.problems.has-problems span {
+  color: #fff;
 }

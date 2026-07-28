@@ -8,57 +8,147 @@
 .card-date.is-active {
   background-color: #b3b3b3;
 }
-.card-date.current,
-.card-date.almost-due,
-.card-date.due,
-.card-date.long-overdue {
-  color: #fff;
+/* Date status colors - red = overdue, amber = due soon, no shade = not due.
+ * These status rules use !important so they override the date-type base
+ * colours below (e.g. .card-date.due-date yellow). Without this, an overdue
+ * due-date badge in the card detail showed yellow/amber instead of red, while
+ * the minicard (which already used !important) showed red - issue #5965. */
+.card-date.overdue {
+  background-color: #ff4444 !important; /* Red for overdue */
+  color: #fff !important;
 }
+.card-date.overdue:hover,
+.card-date.overdue.is-active {
+  background-color: #cc3333 !important;
+}
+
+.card-date.due-soon {
+  background-color: #ffaa00 !important; /* Amber for due soon */
+  color: #000 !important;
+}
+.card-date.due-soon:hover,
+.card-date.due-soon.is-active {
+  background-color: #e69900 !important;
+}
+
+.card-date.not-due {
+  /* No special background - uses default date type colors */
+}
+
 .card-date.current {
-  background-color: #5ba639;
+  background-color: #5ba639 !important; /* Green for current/active */
+  color: #fff !important;
 }
 .card-date.current:hover,
 .card-date.current.is-active {
-  background-color: #46802c;
+  background-color: #46802c !important;
 }
-.card-date.almost-due {
-  background-color: #edc909;
+
+.card-date.completed {
+  background-color: #90ee90 !important; /* Light green for completed */
+  color: #000 !important;
 }
-.card-date.almost-due:hover,
-.card-date.almost-due.is-active {
-  background-color: #bc9f07;
+.card-date.completed:hover,
+.card-date.completed.is-active {
+  background-color: #7dd87d !important;
 }
-.card-date.due {
-  background-color: #fa3f00;
+
+.card-date.completed-early {
+  background-color: #4caf50 !important; /* Green for completed early */
+  color: #fff !important;
 }
-.card-date.due:hover,
-.card-date.due.is-active {
-  background-color: #c73200;
+.card-date.completed-early:hover,
+.card-date.completed-early.is-active {
+  background-color: #45a049 !important;
 }
-.card-date.long-overdue {
-  background-color: #fd5d47;
+
+.card-date.completed-late {
+  background-color: #ff9800 !important; /* Orange for completed late */
+  color: #fff !important;
 }
-.card-date.long-overdue:hover,
-.card-date.long-overdue.is-active {
-  background-color: #fd3e24;
+.card-date.completed-late:hover,
+.card-date.completed-late.is-active {
+  background-color: #f57c00 !important;
+}
+
+.card-date.completed-on-time {
+  background-color: #2196f3 !important; /* Blue for completed on time */
+  color: #fff !important;
+}
+.card-date.completed-on-time:hover,
+.card-date.completed-on-time.is-active {
+  background-color: #1976d2 !important;
+}
+
+/* Date type specific colors */
+.card-date.received-date {
+  background-color: #dbdbdb; /* Light grey for received */
+}
+
+.card-date.received-date:hover,
+.card-date.received-date.is-active {
+  background-color: #b3b3b3;
+}
+
+.card-date.start-date {
+  background-color: #90ee90; /* Light green for start */
+  color: #000; /* Black text for start */
+}
+
+.card-date.start-date:hover,
+.card-date.start-date.is-active {
+  background-color: #7dd87d;
+}
+
+.card-date.due-date {
+  background-color: #ffd700; /* Yellow for due */
+  color: #000; /* Black text for due */
+}
+
+.card-date.due-date:hover,
+.card-date.due-date.is-active {
+  background-color: #e6c200;
+}
+
+.card-date.end-date {
+  background-color: #ffb3b3; /* Light red for end */
+  color: #000; /* Black text for end */
+}
+
+.card-date.end-date:hover,
+.card-date.end-date.is-active {
+  background-color: #ff9999;
+}
+/* Font Awesome glyphs, not emoji: the emoji were the last of the 8.00-8.24
+   colourful-emoji icon set, they render differently on every platform, and the
+   "Grey Icons" setting existed only to grey them. `time` is not an `.fa`
+   element, so the font is named here. */
+.card-date time::before {
+  font-family: FontAwesome;
+  font-weight: normal;
+  font-style: normal;
+  text-decoration: inherit;
 }
 .card-date.end-date time::before {
-  content: "\f253";
+  content: "\f11e"; /* fa-flag-checkered - end/completion */
 }
 .card-date.due-date time::before {
-  content: "\f090";
+  content: "\f017"; /* fa-clock-o - due/deadline */
 }
 .card-date.start-date time::before {
-  content: "\f251";
+  content: "\f135"; /* fa-rocket - start/launch */
 }
 .card-date.received-date time::before {
-  content: "\f08b";
+  content: "\f01c"; /* fa-inbox - received/incoming */
 }
+
+/* Generic date badge and custom field date: no glyph of its own. (It used to
+   carry a commented-out calendar emoji; the icon set is Font Awesome now, so if
+   one is ever wanted here it is a codepoint like the four above.) */
 .card-date time::before {
-  font: normal normal normal 14px/1 FontAwesome;
   font-size: inherit;
-  -webkit-font-smoothing: antialiased;
-  margin-right: 0.3em;
+  margin-inline-end: 0.3em;
+  display: inline-block;
 }
 .customfield-date {
   display: block;

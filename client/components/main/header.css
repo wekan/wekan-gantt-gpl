@@ -5,20 +5,66 @@
   z-index: 17;
 }
 #header #header-main-bar {
-  height: 40px;
-  padding: 7px 10px 0;
+  /* Flex row (was float-based) so the right button group — which ends with the
+     sidebar hamburger — is always pinned to the right edge at every window width,
+     instead of drifting to the middle as floats wrap. */
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  min-height: 40px;
+  /* No right padding: the right gap is owned by the hamburger's margin so it can
+     match the ~8px gap to the right of the top-bar user name.
+     The block padding is SYMMETRIC: with 7px above and none below, `align-items:
+     center` centred every item inside a content box that was itself 7px low, which
+     put the board title - the tallest item, so the one that shows it - visibly above
+     the middle of the bar. (top right bottom left) */
+  padding: 4px 0 4px 10px;
+  /* Space between the rows when the bar wraps; it used to be a top margin on the
+     button groups, which also pushed them below the title's centre line. */
+  row-gap: 4px;
 }
 #header #header-main-bar h1 {
   font-size: 20px;
-  line-height: 1.7em;
+  /* A flex box with its own centred line, so the title sits on the bar's middle with
+     everything else instead of on the middle of a line box far taller than its text. */
+  display: flex;
+  align-items: center;
+  line-height: 1.3;
   padding: 0 10px;
   margin: 0;
-  margin-right: 10px;
-  float: left;
+  margin-inline-end: 10px;
+  float: inline-start;
   border-radius: 3px;
+  /* A title longer than the whole bar wraps inside the h1 instead of overflowing
+     the viewport (flex items do not shrink below min-content without min-width:0). */
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
+/* The board bar's button groups are ONE flex item (see boardHeader.jade), so a
+   board title long enough to fill the row pushes ALL the buttons down to the second
+   row together, under the title, instead of leaving the left group beside the title
+   and wrapping only the right group. When the title is short, title + buttons still
+   share one line exactly as before: this item's base size is its content width, so
+   it only moves down when it genuinely does not fit beside the title. */
+#header #header-main-bar .board-header-btns-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+/* The sidebar hamburger comes right after the title in the markup, so that on a
+   phone it can share the first row with it (see boardHeader.css). On a wide screen
+   `order` puts it back at the end of the bar, and the auto start margin pins it to
+   the right edge - visually identical to when it lived inside the right group. */
+#header #header-main-bar .board-header-sidebar-toggle {
+  order: 1;
+  flex: 0 0 auto;
+  margin-inline-start: auto;
 }
 #header #header-main-bar h1 .board-header-watch-icon {
-  padding-left: 7px;
+  padding-inline-start: 7px;
 }
 #header #header-main-bar h1 a.fa,
 #header #header-main-bar h1 a i.fa {
@@ -26,28 +72,33 @@
 }
 #header #header-main-bar h1 .back-btn {
   font-size: 0.9em;
-  margin-right: 10px;
+  margin-inline-end: 10px;
 }
 #header #header-main-bar .wekan-logo {
   margin: 3px auto auto;
   width: 97px;
   opacity: 0.6;
   transition: opacity 0.15s;
-  float: right;
+  float: inline-end;
 }
 #header #header-main-bar .wekan-logo:hover {
   opacity: 0.9;
 }
 #header #header-main-bar .board-header-btns {
-  display: block;
-  margin-top: 3px;
+  /* Flex so the buttons inside each group lay out (their float is ignored inside a
+     flex container) and the groups themselves are flex items of the header bar. */
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  /* No top margin: a margin on one flex item is not centring, it is a shift, and it
+     is what set the buttons below the title. The bar's `row-gap` separates wrapped
+     rows instead. */
+  margin-top: 0;
   width: auto;
 }
-#header #header-main-bar .board-header-btns.left {
-  float: left;
-}
 #header #header-main-bar .board-header-btns.right {
-  float: right;
+  /* Always hug the right edge (and, if the row wraps, the right of its row). */
+  margin-inline-start: auto;
 }
 #header #header-main-bar .board-header-btn {
   border-radius: 3px;
@@ -55,13 +106,23 @@
   padding: 0;
   height: 28px;
   font-size: 13px;
-  float: left;
+  float: inline-start;
   overflow: hidden;
   line-height: 28px;
-  margin: 0 2px;
+  margin: 0 12px;
+}
+/* The sidebar hamburger sits at the far right; drop its wide 12px side margins so
+   there is no button-sized empty space to its left or right. The cog before it also
+   drops its right margin so the two sit snugly together at the edge. */
+#header #header-main-bar .board-header-btn.js-toggle-sidebar {
+  /* Equal side margins, so the button is CENTRED in the space between the divider
+     and the end of the bar. With 8px at the end and 2px at the start it sat left of
+     that middle, with an empty strip to its right. */
+  margin-inline-start: 2px;
+  margin-inline-end: 2px;
 }
 #header #header-main-bar .board-header-btn i.fa {
-  float: left;
+  float: inline-start;
   display: block;
   line-height: 28px;
   color: #f2f2f2;
@@ -70,13 +131,21 @@
 #header #header-main-bar .board-header-btn i.fa + span {
   display: inline-block;
   margin-top: 1px;
-  margin-right: 10px;
+  margin-inline-end: 10px;
 }
 #header #header-main-bar .board-header-btn .board-header-btn-close {
-  float: right;
+  float: inline-end;
 }
 #header #header-main-bar .board-header-btn .board-header-btn-close i.fa {
   margin: 0 6px;
+}
+#header #header-main-bar .board-header-btn .board-header-btn-icon {
+  float: inline-start;
+  display: block;
+  line-height: 28px;
+  color: #27ae60;
+  margin: 0 10px;
+  cursor: pointer;
 }
 #header #header-main-bar .board-header-btn.is-active,
 #header #header-main-bar h1.is-clickable.is-active,
@@ -84,12 +153,39 @@
 #header #header-main-bar h1.is-clickable:hover:not(.is-disabled) {
   background: rgba(0,0,0,0.15);
 }
+#header #header-main-bar .board-header-btn.js-multiselection-active {
+  background: #1a5080;
+}
+#header #header-main-bar .board-header-btn.js-multiselection-active:hover {
+  background: #0f3a5f;
+}
 #header #header-main-bar .separator {
   margin: 2px 4px;
-  border-left: 1px solid rgba(255,255,255,0.3);
+  border-inline-start: 1px solid rgba(255,255,255,0.3);
   height: 24px;
-  float: left;
+  float: inline-start;
 }
+
+/* On non-board pages (All Boards / home, public, my cards, …) the second bar
+   holds only a title (e.g. "My Boards"). The fixed 40px bar height plus the
+   floated h1 with a 1.7em line-height clipped the bottom of the text on iOS
+   Safari. Vertically center the title in a bar that can grow so it is never
+   cut off. Scoped to non-board-view so the board header (floated buttons) is
+   untouched. */
+body:not(.board-view) #header #header-main-bar {
+  display: flex;
+  align-items: center;
+  height: auto;
+  min-height: 40px;
+  /* No padding override here: the bar's own symmetric block padding is what makes
+     `align-items: center` centre on the bar's true middle (see the rule above).
+     Zeroing it here - `.board-view` is set on <body> by nothing, so this selector
+     matches on EVERY page - is what kept the board title sitting high. */
+}
+body:not(.board-view) #header #header-main-bar h1 {
+  float: none;
+}
+
 #header-quick-access {
   color: #fff;
   transition: background-color 0.4s;
@@ -99,10 +195,97 @@
   display: flex;
   z-index: 1000;
   padding: 10px 0px;
+  align-items: center;
+  flex-wrap: nowrap; /* Prevent wrapping to keep single row */
+  min-height: 28px;
+  overflow: hidden; /* Prevent content from overflowing */
 }
+/* Mobile mode: everything in BOTH top bars sits on the vertical centre of its row.
+   The quick-access bar declares `height: 28px`, and with box-sizing globally unset
+   that 28px is the CONTENT box. Its children are taller than that on a phone (the
+   mode toggle and the action buttons are ~40-44px for touch), so they overflowed a
+   short box, were clipped by its `overflow: hidden`, and read as sitting high. Let
+   the bar take its content's height with a floor instead of pinning it. */
+.mobile-mode #header-quick-access {
+  height: auto;
+  min-height: 48px;
+  /* Symmetric, so `align-items: center` centres on the bar's true middle. */
+  padding-block: 4px;
+  align-items: center;
+}
+
+/* Same for the board bar: it centred its items inside a content box that had 7px of
+   padding above and none below, which put everything half that distance high. */
+.mobile-mode #header #header-main-bar {
+  padding-block: 4px;
+  align-items: center;
+}
+
+/* The board title is a flex item of that bar, so it centres with the rest - but only
+   if its own line box does not tower over the text. */
+.mobile-mode #header #header-main-bar h1 {
+  display: flex;
+  align-items: center;
+  line-height: 1.3;
+  margin-block: 0;
+}
+
+#header-quick-access .home-icon {
+  display: flex;
+  align-items: center;
+  margin-inline-end: 1rem;
+  flex-shrink: 0;
+}
+
+#header-quick-access .home-icon a {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+#header-quick-access .home-icon a:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+#header-quick-access .home-icon .fa-home {
+  font-size: 16px;
+  margin-inline-end: 4px;
+}
+
 #header-quick-access .allBoards {
   font-size: 14px;
   padding: 4px 15px;
+}
+
+/* Mobile mode: the home ICON only, never the "All Boards" label.
+   `body.mobile-mode` is set by Utils.applyMobileMode() from the phone/desktop
+   toggle in this same bar, so it is a deliberate user choice and applies at ANY
+   viewport width - a narrow-viewport media query would miss it on a wide screen
+   in mobile mode, and miss the point: the user asked for mobile MODE, not for a
+   width. The label is the widest item in the bar and longer still in most
+   languages ("Kaikki taulut"), and the house icon alone is unambiguous.
+
+   The label is a bare text node inside the link, not a span, so it cannot be
+   selected on its own: font-size:0 on the link collapses it, and the icon's own
+   font-size brings the icon back. The text stays in the DOM, so screen readers
+   and the accessibility tree still announce "All Boards". */
+body.mobile-mode #header-quick-access .home-icon a {
+  font-size: 0;
+  padding: 4px 6px;
+}
+
+body.mobile-mode #header-quick-access .home-icon a .fa-home,
+body.mobile-mode #header-quick-access .home-icon .fa-home {
+  font-size: 16px;
+  margin-inline-end: 0;
+}
+
+body.mobile-mode #header-quick-access .allBoards {
+  padding: 4px 6px;
 }
 #header-quick-access a {
   text-decoration: none;
@@ -112,6 +295,10 @@
 }
 #header-quick-access i.fa:hover {
   color: #ccc;
+}
+/* Drag-handle toggle icons 30% smaller than the other quick-access icons. */
+#header-quick-access .js-toggle-desktop-drag-handles .fa {
+  font-size: 0.7em;
 }
 #header-quick-access #header-user-bar,
 #header-quick-access #header-new-board-icon,
@@ -133,18 +320,34 @@
 }
 #header-quick-access ul.header-quick-access-list {
   transition: opacity 0.2s;
-  overflow-x: auto;
-  overflow-y: hidden;
   white-space: nowrap;
   padding: 10px;
-  margin: -10px;
+  margin: 10px;
+  flex: 1; /* Take up available space */
+  min-width: 0; /* Allow shrinking below content size */
+  display: flex; /* Use flexbox for better control */
+  align-items: center;
+  overflow-x: auto;
+  scrollbar-color: white #2573a7;
+}
+
+/* Hide scrollbar completely */
+#header-quick-access ul.header-quick-access-list::-webkit-scrollbar {
+  display: flex;
+}
+
+#header-quick-access ul.header-quick-access-list {
+  -ms-overflow-style: thin; /* IE and Edge */
+  scrollbar-width: thin; /* Firefox */
 }
 #header-quick-access ul.header-quick-access-list li {
-  display: inline;
+  display: inline-block; /* Keep inline-block for proper spacing */
   width: auto;
   color: #d9d9d9;
   padding: 12px 0px;
   margin: -10px 0px;
+  flex-shrink: 0; /* Prevent items from shrinking */
+  white-space: nowrap; /* Prevent text wrapping within items */
 }
 #header-quick-access ul.header-quick-access-list li a {
   padding: 12px 10px;
@@ -163,13 +366,20 @@
 }
 #header-quick-access ul.header-quick-access-list li.current.empty {
   padding: 12px 10px 12px 10px;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: default;
+  opacity: 0.85;
+  font-style: italic;
 }
 #header-quick-access ul.header-quick-access-list li:first-child .fa-home,
 #header-quick-access ul.header-quick-access-list li:nth-child(3) .fa-globe {
-  margin-right: 5px;
+  margin-inline-end: 5px;
 }
 #header-quick-access ul.header-quick-access-list li a.js-create-board {
-  margin-left: 5px;
+  margin-inline-start: 5px;
 }
 #header-quick-access #header-user-bar,
 #header-quick-access #header-new-board-icon {
@@ -179,10 +389,10 @@
   margin: 2px 0;
 }
 #header-quick-access #header-user-bar .header-user-bar-avatar {
-  float: left;
+  float: inline-start;
   position: relative;
   top: -5px;
-  margin-right: 5px;
+  margin-inline-end: 5px;
 }
 #header-quick-access #header-user-bar .header-user-bar-avatar .member,
 #header-quick-access #header-help {
@@ -191,30 +401,274 @@
   margin: 0;
   margin-top: 1px;
 }
+
 #header-quick-access #header-user-bar .header-user-bar-name,
 #header-quick-access #header-help  {
   margin: 4px 8px 0 0;
-  float: left;
+  float: inline-start;
 }
+
+/* Zoom Controls in Header */
+/* #6465: compact fixed-pixel pill. The vh/vw padding+shadow made the pill
+   taller than the 28px overflow-hidden quick-access row, so it rendered cut
+   off at every window size. */
+#header-quick-access .zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 2px 8px;
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  margin: 0 8px;
+  max-height: 24px;
+  float: inline-start;
+}
+
+#header-quick-access .zoom-controls .board-header-btn {
+  padding: 5px 11px !important;
+  border-radius: 4px !important;
+  background: #fff !important;
+  border: 1px solid #000 !important;
+  transition: all 0.2s ease !important;
+  color: #000 !important;
+  height: auto !important;
+  line-height: normal !important;
+  margin: 0 !important;
+  float: none !important;
+  overflow: visible !important;
+  text-decoration: none !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+#header-quick-access .zoom-controls .board-header-btn i {
+  color: #000 !important;
+  float: none !important;
+  display: inline !important;
+  line-height: normal !important;
+  margin: 0 !important;
+}
+
+#header-quick-access .zoom-controls .board-header-btn:hover {
+  background: #000 !important;
+  border-color: #000 !important;
+  color: #fff !important;
+}
+
+#header-quick-access .zoom-controls .board-header-btn:hover i {
+  color: #fff !important;
+}
+
+#header-quick-access .zoom-controls .zoom-level {
+  font-weight: bold;
+  color: #333;
+  min-width: 42px;
+  text-align: center;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 3px 7px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#header-quick-access .zoom-controls .zoom-level:hover {
+  background: #f0f0f0;
+  color: #000;
+}
+
+#header-quick-access .zoom-controls .zoom-display {
+  display: inline-block;
+}
+
+    #header-quick-access .zoom-controls .zoom-input {
+      background: #fff;
+      color: #000;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 3px 7px;
+      font-weight: bold;
+      text-align: center;
+      width: 100%;
+      min-width: 42px;
+      font-size: 12px;
+      box-sizing: border-box;
+      -webkit-appearance: none;
+      appearance: none;
+      flex: 0 0 auto;
+    }
+
+    /* Make zoom input wider on all mobile screens */
+    @media screen and (max-width: 800px),
+       screen and (max-device-width: 932px) and (-webkit-min-device-pixel-ratio: 3) {
+      #header-quick-access .zoom-controls .zoom-input {
+        min-width: 80px !important; /* Wider on mobile to show 3 digits */
+        width: 80px !important; /* Fixed width to show 100 fully */
+        font-size: 16px !important; /* Slightly larger text */
+        flex: 0 0 80px !important; /* Prevent shrinking in flex */
+      }
+    }
+
+#header-quick-access .zoom-controls .zoom-input:focus {
+  outline: 2px solid #005fcc;
+  outline-offset: 1px;
+}
+
+/* Mobile Mode Toggle in Header */
+#header-quick-access .mobile-mode-toggle {
+  display: flex;
+  align-items: center;
+  margin: 0 14px;
+  float: inline-start;
+}
+
+#header-quick-access .mobile-mode-toggle .board-header-btn {
+  padding: 5px 11px !important;
+  border-radius: 4px !important;
+  background: #fff !important;
+  border: 1px solid #000 !important;
+  transition: all 0.2s ease !important;
+  color: #000 !important;
+  height: auto !important;
+  line-height: normal !important;
+  margin: 0 !important;
+  float: none !important;
+  overflow: visible !important;
+  text-decoration: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  position: relative !important;
+}
+
+#header-quick-access .mobile-mode-toggle .board-header-btn i {
+  color: #666 !important;
+  float: none !important;
+  display: inline !important;
+  line-height: normal !important;
+  margin: 0 !important;
+  transition: all 0.2s ease !important;
+  font-size: 14px !important;
+}
+
+#header-quick-access .mobile-mode-toggle .board-header-btn i.active {
+  color: #000 !important;
+  font-weight: bold !important;
+  transform: scale(1.1) !important;
+}
+
+#header-quick-access .mobile-mode-toggle .board-header-btn:hover {
+  background: #000 !important;
+  border-color: #000 !important;
+  color: #fff !important;
+}
+
+#header-quick-access .mobile-mode-toggle .board-header-btn:hover i {
+  color: #ccc !important;
+}
+
+#header-quick-access .mobile-mode-toggle .board-header-btn:hover i.active {
+  color: #fff !important;
+}
+
+#header-quick-access .mobile-mode-toggle .board-header-btn.mobile-active {
+  background: #fff !important;
+  border-color: #000 !important;
+  color: #000 !important;
+}
+
+#header-quick-access .mobile-mode-toggle .board-header-btn.mobile-active i.mobile-icon {
+  color: #000 !important;
+  font-weight: bold !important;
+  transform: scale(1.1) !important;
+}
+
+#header-quick-access .mobile-mode-toggle .board-header-btn.mobile-active i.desktop-icon {
+  color: #666 !important;
+}
+
+#header-quick-access .mobile-mode-toggle .board-header-btn.desktop-active {
+  background: #fff !important;
+  border-color: #000 !important;
+  color: #000 !important;
+}
+
+#header-quick-access .mobile-mode-toggle .board-header-btn.desktop-active i.mobile-icon {
+  color: #666 !important;
+}
+
+#header-quick-access .mobile-mode-toggle .board-header-btn.desktop-active i.desktop-icon {
+  color: #000 !important;
+  font-weight: bold !important;
+  transform: scale(1.1) !important;
+}
+/* Which mode is ON, at a glance. The two icons differed only by colour - black
+   for the active one, #666 for the other - which on a phone, at 14px, is no
+   difference at all: the button showed a phone and a monitor and told you
+   nothing. The current mode is now a filled chip in the theme's own accent
+   colour and the other side is faded, so the answer is the shape that is lit. */
+#header-quick-access .mobile-mode-toggle .board-header-btn i.mobile-icon,
+#header-quick-access .mobile-mode-toggle .board-header-btn i.desktop-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 3px 6px !important;
+  border-radius: 4px !important;
+  opacity: 0.35 !important;
+  transition: opacity 0.2s ease, background-color 0.2s ease !important;
+}
+
+#header-quick-access .mobile-mode-toggle .board-header-btn.mobile-active i.mobile-icon,
+#header-quick-access .mobile-mode-toggle .board-header-btn.desktop-active i.desktop-icon,
+#header-quick-access .mobile-mode-toggle .board-header-btn i.mobile-icon.active,
+#header-quick-access .mobile-mode-toggle .board-header-btn i.desktop-icon.active {
+  opacity: 1 !important;
+  /* The active theme, like the rest of the bar; the stock blue where no theme
+     has published an accent. */
+  background: var(--theme-accent, #2980b9) !important;
+}
+
+#header-quick-access .mobile-mode-toggle .board-header-btn.mobile-active i.mobile-icon .fa,
+#header-quick-access .mobile-mode-toggle .board-header-btn.desktop-active i.desktop-icon .fa,
+#header-quick-access .mobile-mode-toggle .board-header-btn i.mobile-icon.active .fa,
+#header-quick-access .mobile-mode-toggle .board-header-btn i.desktop-icon.active .fa {
+  color: #fff !important;
+}
+
 #header-quick-access #header-user-bar .header-user-bar-name i.fa-chevron-down {
-  margin-right: 4px;
+  margin-inline-end: 4px;
 }
 #header-quick-access #header-new-board-icon {
   flex-grow: 1;
   margin: 6px 5px 0;
   width: 12px;
 }
-@media screen and (max-width: 800px) {
+@media screen and (max-width: 800px),
+       screen and (max-device-width: 932px) and (-webkit-min-device-pixel-ratio: 3) {
   #header #header-main-bar {
-    height: 40px;
+    /* #6419: taller bar so the action icons can use ~44px touch targets.
+       min-height, NOT height: the bar wraps to a second row when the board title and
+       the buttons do not fit on one, and a fixed height CLIPPED that second row - on
+       a phone the title or the icons simply were not there. It still sits on one row
+       whenever they fit, which is the normal case. */
+    min-height: 48px;
   }
   #header #header-main-bar .board-header-btns {
     margin-top: 0px;
   }
   #header #header-main-bar .board-header-btn {
-    height: 32px;
-    line-height: 32px;
-    font-size: 15px;
+    /* #6419: 32px tall / 15px was below the comfortable mobile touch-target and
+       readable-font minimum (~44px / 16px). Enlarged vertically + bigger font;
+       width is unchanged so this does not worsen the horizontal icon crowding. */
+    height: 44px;
+    line-height: 44px;
+    font-size: 16px;
   }
   #header #header-main-bar .board-header-btn i.fa {
     line-height: 32px;
@@ -226,10 +680,658 @@
     transition: background-color 0.4s;
     width: 100%;
     z-index: 30;
+    flex-wrap: nowrap !important; /* Force single row on mobile */
+    overflow: hidden; /* Prevent content overflow */
   }
+
+  /* Mobile home icon styling */
+  #header-quick-access .home-icon {
+    margin-inline-end: 0.5rem;
+  }
+
+  #header-quick-access .home-icon .fa-home {
+    font-size: 16px;
+    margin-inline-end: 4px;
+  }
+
+  #header-quick-access .home-icon a {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+
+  /* Ensure All Boards text is visible on mobile */
+  #header-quick-access .home-icon.allBoards {
+    display: flex;
+    align-items: center;
+  }
+
+  /* Adjust for very small screens */
+  @media screen and (max-width: 480px) {
+    #header-quick-access .home-icon a {
+      font-size: 11px;
+      padding: 3px 6px;
+    }
+
+    #header-quick-access .home-icon .fa-home {
+      font-size: 14px;
+      margin-inline-end: 3px;
+    }
+  }
+
+  /* Mobile - keep header text/icons at normal size (reverted #6426 oversizing) */
+  @media screen and (max-width: 800px),
+         screen and (max-device-width: 800px),
+         screen and (-webkit-min-device-pixel-ratio: 2) and (max-width: 800px),
+         screen and (max-width: 800px) and (orientation: portrait),
+         screen and (max-width: 800px) and (orientation: landscape) {
+    #header-quick-access {
+      height: 48px !important; /* Fixed height for mobile */
+      min-height: 48px !important; /* Minimum height for mobile */
+      flex-wrap: nowrap !important; /* Force single row */
+      align-items: center !important; /* Center align items */
+      padding: 8px 0px !important; /* Adjust padding for mobile */
+      overflow: hidden !important; /* Prevent content overflow */
+    }
+    #header-quick-access {
+      font-size: 1em !important; /* Normal size (reverted #6426 oversizing) */
+    }
+
+    #header-quick-access * {
+      font-size: inherit !important; /* Inherit the 2x scaling */
+    }
+
+    #header-quick-access .fa,
+    #header-quick-access .icon {
+      font-size: 1em !important; /* Normal icon size (reverted #6426 oversizing) */
+    }
+
+    #header-quick-access .home-icon a {
+      font-size: 1em !important; /* Use inherited 2x scaling */
+    }
+
+    #header-quick-access .home-icon .fa-home {
+      font-size: 1em !important; /* Use inherited 2x scaling */
+    }
+
+    #header-quick-access .zoom-controls {
+      font-size: 1em !important; /* Use inherited 2x scaling */
+    }
+
+    #header-quick-access .zoom-controls .zoom-level {
+      font-size: 1em !important; /* Use inherited 2x scaling */
+    }
+
+    #header-quick-access .zoom-controls .zoom-input {
+      font-size: 1em !important; /* Use inherited 2x scaling */
+    }
+
+    #header-quick-access .mobile-mode-toggle .board-header-btn {
+      font-size: 1em !important; /* Use inherited 2x scaling */
+    }
+
+    #header-quick-access .mobile-mode-toggle .board-header-btn i {
+      font-size: 1em !important; /* Use inherited 2x scaling */
+    }
+
+    /* Mobile header wrapping and spacing */
+    #header-quick-access .home-icon {
+      flex-shrink: 0 !important;
+      margin-inline-end: 0.5rem !important;
+      margin-bottom: 4px !important;
+    }
+
+    #header-quick-access .zoom-controls {
+      flex-shrink: 0 !important;
+      margin: 0 0.5rem !important;
+      margin-bottom: 4px !important;
+    }
+
+    #header-quick-access .mobile-mode-toggle {
+      flex-shrink: 0 !important;
+      margin: 0 0.5rem !important;
+      margin-bottom: 4px !important;
+    }
+
+    #header-quick-access #notifications {
+      flex-shrink: 0 !important;
+      margin: 0 0.5rem !important;
+      margin-bottom: 4px !important;
+    }
+
+    #header-quick-access #header-user-bar {
+      flex-shrink: 0 !important;
+      margin: 0 0.5rem !important;
+      margin-bottom: 4px !important;
+    }
+
+    #header-quick-access ul.header-quick-access-list {
+      flex-shrink: 0 !important;
+      margin: 0 0.5rem !important;
+      margin-bottom: 4px !important;
+      width: auto !important;
+    }
+  }
+
+  /* Mobile All Boards page - keep logo row at normal size (reverted #6426 oversizing) */
+  @media screen and (max-width: 800px),
+         screen and (max-device-width: 800px),
+         screen and (-webkit-min-device-pixel-ratio: 2) and (max-width: 800px),
+         screen and (max-width: 800px) and (orientation: portrait),
+         screen and (max-width: 800px) and (orientation: landscape) {
+    .wrapper ~ #header-quick-access,
+    body:not(.board-view) #header-quick-access {
+      font-size: 1em !important; /* Normal size (reverted #6426 oversizing) */
+    }
+
+    /* iPhone 12 Mini specific - keep All Boards logo row at normal size (reverted #6426) */
+    @media screen and (device-width: 375px) and (device-height: 812px), /* iPhone 12 Mini exact */
+           screen and (max-width: 375px) and (max-height: 812px), /* iPhone 12 Mini viewport */
+           screen and (-webkit-min-device-pixel-ratio: 3) and (max-width: 375px) /* iPhone 12 Mini Retina */ {
+      .wrapper ~ #header-quick-access,
+      body:not(.board-view) #header-quick-access {
+        font-size: 1em !important; /* Normal size (reverted #6426 oversizing) */
+      }
+    }
+
+    .wrapper ~ #header-quick-access *,
+    body:not(.board-view) #header-quick-access * {
+      font-size: inherit !important; /* Inherit the 2x scaling */
+    }
+
+    .wrapper ~ #header-quick-access .fa,
+    .wrapper ~ #header-quick-access .icon,
+    body:not(.board-view) #header-quick-access .fa,
+    body:not(.board-view) #header-quick-access .icon {
+      font-size: 1em !important; /* Normal icon size (reverted #6426 oversizing) */
+    }
+
+    .wrapper ~ #header-quick-access .home-icon a,
+    body:not(.board-view) #header-quick-access .home-icon a {
+      font-size: 1em !important; /* Use inherited 2x scaling */
+    }
+
+    .wrapper ~ #header-quick-access .home-icon .fa-home,
+    body:not(.board-view) #header-quick-access .home-icon .fa-home {
+      font-size: 1em !important; /* Use inherited 2x scaling */
+    }
+
+    .wrapper ~ #header-quick-access .zoom-controls,
+    body:not(.board-view) #header-quick-access .zoom-controls {
+      font-size: 1em !important; /* Use inherited 2x scaling */
+    }
+
+    .wrapper ~ #header-quick-access .zoom-controls .zoom-level,
+    body:not(.board-view) #header-quick-access .zoom-controls .zoom-level {
+      font-size: 1em !important; /* Use inherited 2x scaling */
+    }
+
+    .wrapper ~ #header-quick-access .zoom-controls .zoom-input,
+    body:not(.board-view) #header-quick-access .zoom-controls .zoom-input {
+      font-size: 1em !important; /* Use inherited 2x scaling */
+    }
+
+    .wrapper ~ #header-quick-access .mobile-mode-toggle .board-header-btn,
+    body:not(.board-view) #header-quick-access .mobile-mode-toggle .board-header-btn {
+      font-size: 1em !important; /* Use inherited 2x scaling */
+    }
+
+    .wrapper ~ #header-quick-access .mobile-mode-toggle .board-header-btn i,
+    body:not(.board-view) #header-quick-access .mobile-mode-toggle .board-header-btn i {
+      font-size: 1em !important; /* Use inherited 2x scaling */
+    }
+
+    .wrapper ~ #header-quick-access #notifications,
+    body:not(.board-view) #header-quick-access #notifications {
+      font-size: 1em !important; /* Use inherited 2x scaling */
+    }
+
+    .wrapper ~ #header-quick-access #notifications .fa,
+    body:not(.board-view) #header-quick-access #notifications .fa {
+      font-size: 1em !important; /* Use inherited 2x scaling */
+    }
+
+    .wrapper ~ #header-quick-access #header-user-bar,
+    body:not(.board-view) #header-quick-access #header-user-bar {
+      font-size: 1em !important; /* Use inherited 2x scaling */
+    }
+
+    .wrapper ~ #header-quick-access #header-user-bar .fa,
+    body:not(.board-view) #header-quick-access #header-user-bar .fa {
+      font-size: 1em !important; /* Use inherited 2x scaling */
+    }
+  }
+
+  /* iPhone 12 Mini specific - keep the header a normal compact single row */
+  @media screen and (device-width: 375px) and (device-height: 812px), /* iPhone 12 Mini exact */
+         screen and (max-width: 375px) and (max-height: 812px), /* iPhone 12 Mini viewport */
+         screen and (-webkit-min-device-pixel-ratio: 3) and (max-width: 375px), /* iPhone 12 Mini Retina */
+         screen and (max-width: 375px) and (orientation: portrait), /* iPhone 12 Mini portrait */
+         screen and (max-width: 375px) and (orientation: landscape) /* iPhone 12 Mini landscape */ {
+    #header-quick-access {
+      font-size: 1em !important; /* Normal size (reverted #6426 oversizing) */
+      height: 48px !important;
+      min-height: 48px !important;
+      flex-wrap: nowrap !important;
+      align-items: center !important;
+      padding: 8px 0px !important;
+    }
+
+    #header-quick-access * {
+      font-size: inherit !important; /* Inherit the 2x scaling */
+    }
+
+    #header-quick-access .fa,
+    #header-quick-access .icon {
+      font-size: 1em !important; /* Normal icon size (reverted #6426 oversizing) */
+    }
+
+    #header-quick-access .home-icon a {
+      font-size: 1em !important; /* Use inherited 2x scaling */
+    }
+
+    #header-quick-access .home-icon .fa-home {
+      font-size: 1em !important; /* Use inherited 2x scaling */
+    }
+
+    #header-quick-access .zoom-controls {
+      font-size: 1em !important; /* Use inherited 2x scaling */
+    }
+
+    #header-quick-access .zoom-controls .zoom-level {
+      font-size: 1em !important; /* Use inherited 2x scaling */
+    }
+
+    #header-quick-access .zoom-controls .zoom-input {
+      font-size: 1em !important; /* Use inherited 2x scaling */
+    }
+
+    #header-quick-access .mobile-mode-toggle .board-header-btn {
+      font-size: 1em !important; /* Use inherited 2x scaling */
+    }
+
+    #header-quick-access .mobile-mode-toggle .board-header-btn i {
+      font-size: 1em !important; /* Use inherited 2x scaling */
+    }
+
+    #header-quick-access #notifications {
+      font-size: 1em !important; /* Use inherited 2x scaling */
+    }
+
+    #header-quick-access #notifications .fa {
+      font-size: 1em !important; /* Use inherited 2x scaling */
+    }
+
+    #header-quick-access #header-user-bar {
+      font-size: 1em !important; /* Use inherited 2x scaling */
+    }
+
+    #header-quick-access #header-user-bar .fa {
+      font-size: 1em !important; /* Use inherited 2x scaling */
+    }
+
+    /* iPhone 12 Mini header wrapping and spacing */
+    #header-quick-access .home-icon {
+      flex-shrink: 0 !important;
+      margin-inline-end: 0.5rem !important;
+      margin-bottom: 6px !important;
+    }
+
+    #header-quick-access .zoom-controls {
+      flex-shrink: 0 !important;
+      margin: 0 0.5rem !important;
+      margin-bottom: 6px !important;
+    }
+
+    #header-quick-access .mobile-mode-toggle {
+      flex-shrink: 0 !important;
+      margin: 0 0.5rem !important;
+      margin-bottom: 6px !important;
+    }
+
+    #header-quick-access #notifications {
+      flex-shrink: 0 !important;
+      margin: 0 0.5rem !important;
+      margin-bottom: 6px !important;
+    }
+
+    #header-quick-access #header-user-bar {
+      flex-shrink: 0 !important;
+      margin: 0 0.5rem !important;
+      margin-bottom: 6px !important;
+    }
+
+    #header-quick-access ul.header-quick-access-list {
+      flex-shrink: 0 !important;
+      margin: 0 0.5rem !important;
+      margin-bottom: 6px !important;
+      width: auto !important;
+    }
+  }
+
+  /* iPhone 12 Mini and very small screens - header element sizing */
+  @media screen and (max-width: 400px) and (max-height: 900px),
+         screen and (max-device-width: 400px) and (max-device-height: 900px),
+         screen and (-webkit-min-device-pixel-ratio: 2) and (max-width: 400px),
+         screen and (max-width: 400px) and (orientation: portrait),
+         screen and (max-width: 400px) and (orientation: landscape),
+         screen and (max-width: 430px) and (max-height: 950px), /* iPhone 12 Mini range */
+         screen and (max-width: 450px) and (max-height: 1000px), /* iPhone range */
+         screen and (-webkit-min-device-pixel-ratio: 3) and (max-width: 450px), /* Retina displays */
+         screen and (device-width: 375px) and (device-height: 812px), /* iPhone 12 Mini exact */
+         screen and (device-width: 390px) and (device-height: 844px), /* iPhone 12/13 */
+         screen and (device-width: 428px) and (device-height: 926px) /* iPhone 12 Pro Max */ {
+    #header-quick-access {
+      height: 40px !important; /* Taller header */
+      padding: 12px 0px !important;
+    }
+
+    #header-quick-access .home-icon a {
+      font-size: 16px !important; /* Much larger text */
+      padding: 8px 12px !important;
+    }
+
+    #header-quick-access .home-icon .fa-home {
+      font-size: 20px !important; /* Much larger icon */
+      margin-inline-end: 6px !important;
+    }
+
+    #header-quick-access .home-icon {
+      margin-inline-end: 1rem !important;
+    }
+
+    /* Make zoom controls larger */
+    #header-quick-access .zoom-controls {
+      padding: 7px 21px !important;
+      margin: 0 21px !important;
+    }
+
+    #header-quick-access .zoom-controls .zoom-level {
+      font-size: 16px !important; /* Larger zoom text */
+      padding: 5px 11px !important;
+      min-width: 56px !important;
+    }
+
+    #header-quick-access .zoom-controls .zoom-input {
+      font-size: 16px !important; /* Larger input text */
+      padding: 5px 11px !important;
+      min-width: 80px !important; /* Wider to fit 100 */
+      width: 80px !important; /* Fixed width to show 100 fully */
+      flex: 0 0 80px !important; /* Prevent shrinking in flex */
+    }
+
+    /* Make mobile mode toggle larger */
+    #header-quick-access .mobile-mode-toggle .board-header-btn {
+      padding: 7px 17px !important;
+      font-size: 16px !important;
+    }
+
+    #header-quick-access .mobile-mode-toggle .board-header-btn i {
+      font-size: 18px !important;
+    }
+  }
+
+  /* Fallback for iPhone devices using JavaScript detection */
+  .iphone-device #header-quick-access {
+    font-size: 1em !important; /* Normal size (reverted #6426 oversizing) */
+    height: 48px !important;
+    min-height: 48px !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    padding: 8px 0px !important;
+  }
+
+  .iphone-device #header-quick-access * {
+    font-size: inherit !important; /* Inherit the 2x scaling */
+  }
+
+  .iphone-device #header-quick-access .fa,
+  .iphone-device #header-quick-access .icon {
+    font-size: 1em !important; /* Normal icon size (reverted #6426 oversizing) */
+  }
+
+  .iphone-device #header-quick-access .home-icon a {
+    font-size: 1em !important; /* Use inherited 2x scaling */
+  }
+
+  .iphone-device #header-quick-access .home-icon .fa-home {
+    font-size: 1em !important; /* Use inherited 2x scaling */
+  }
+
+  .iphone-device #header-quick-access .zoom-controls {
+    font-size: 1em !important; /* Use inherited 2x scaling */
+  }
+
+  .iphone-device #header-quick-access .zoom-controls .zoom-level {
+    font-size: 1em !important; /* Use inherited 2x scaling */
+  }
+
+  .iphone-device #header-quick-access .zoom-controls .zoom-input {
+    font-size: 1em !important; /* Use inherited 2x scaling */
+  }
+
+  .iphone-device #header-quick-access .mobile-mode-toggle .board-header-btn {
+    font-size: 1em !important; /* Use inherited 2x scaling */
+  }
+
+  .iphone-device #header-quick-access .mobile-mode-toggle .board-header-btn i {
+    font-size: 1em !important; /* Use inherited 2x scaling */
+  }
+
+  /* iPhone device header wrapping and spacing */
+  .iphone-device #header-quick-access .home-icon {
+    flex-shrink: 0 !important;
+    margin-inline-end: 0.5rem !important;
+    margin-bottom: 4px !important;
+  }
+
+  .iphone-device #header-quick-access .zoom-controls {
+    flex-shrink: 0 !important;
+    margin: 0 0.5rem !important;
+    margin-bottom: 4px !important;
+  }
+
+  .iphone-device #header-quick-access .mobile-mode-toggle {
+    flex-shrink: 0 !important;
+    margin: 0 0.5rem !important;
+    margin-bottom: 4px !important;
+  }
+
+  .iphone-device #header-quick-access #notifications {
+    flex-shrink: 0 !important;
+    margin: 0 0.5rem !important;
+    margin-bottom: 4px !important;
+  }
+
+  .iphone-device #header-quick-access #header-user-bar {
+    flex-shrink: 0 !important;
+    margin: 0 0.5rem !important;
+    margin-bottom: 4px !important;
+  }
+
+  .iphone-device #header-quick-access ul.header-quick-access-list {
+    flex-shrink: 0 !important;
+    margin: 0 0.5rem !important;
+    margin-bottom: 4px !important;
+    width: auto !important;
+  }
+
+  /* iPhone 12 Mini specific - JavaScript detection fallback (normal compact row) */
+  .iphone-device #header-quick-access {
+    font-size: 1em !important; /* Normal size (reverted #6426 oversizing) */
+    height: 48px !important;
+    min-height: 48px !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    padding: 8px 0px !important;
+  }
+
+  .iphone-device #header-quick-access * {
+    font-size: inherit !important; /* Inherit the 2x scaling */
+  }
+
+  .iphone-device #header-quick-access .fa,
+  .iphone-device #header-quick-access .icon {
+    font-size: 1em !important; /* Normal icon size (reverted #6426 oversizing) */
+  }
+
+  .iphone-device #header-quick-access .home-icon a {
+    font-size: 1em !important; /* Use inherited 2x scaling */
+  }
+
+  .iphone-device #header-quick-access .home-icon .fa-home {
+    font-size: 1em !important; /* Use inherited 2x scaling */
+  }
+
+  .iphone-device #header-quick-access .zoom-controls {
+    font-size: 1em !important; /* Use inherited 2x scaling */
+  }
+
+  .iphone-device #header-quick-access .zoom-controls .zoom-level {
+    font-size: 1em !important; /* Use inherited 2x scaling */
+  }
+
+  .iphone-device #header-quick-access .zoom-controls .zoom-input {
+    font-size: 1em !important; /* Use inherited 2x scaling */
+  }
+
+  .iphone-device #header-quick-access .mobile-mode-toggle .board-header-btn {
+    font-size: 1em !important; /* Use inherited 2x scaling */
+  }
+
+  .iphone-device #header-quick-access .mobile-mode-toggle .board-header-btn i {
+    font-size: 1em !important; /* Use inherited 2x scaling */
+  }
+
+  .iphone-device #header-quick-access #notifications {
+    font-size: 1em !important; /* Use inherited 2x scaling */
+  }
+
+  .iphone-device #header-quick-access #notifications .fa {
+    font-size: 1em !important; /* Use inherited 2x scaling */
+  }
+
+  .iphone-device #header-quick-access #header-user-bar {
+    font-size: 1em !important; /* Use inherited 2x scaling */
+  }
+
+  .iphone-device #header-quick-access #header-user-bar .fa {
+    font-size: 1em !important; /* Use inherited 2x scaling */
+  }
+
+  /* iPhone 12 Mini header wrapping and spacing - JavaScript fallback */
+  .iphone-device #header-quick-access .home-icon {
+    flex-shrink: 0 !important;
+    margin-inline-end: 0.5rem !important;
+    margin-bottom: 6px !important;
+  }
+
+  .iphone-device #header-quick-access .zoom-controls {
+    flex-shrink: 0 !important;
+    margin: 0 0.5rem !important;
+    margin-bottom: 6px !important;
+  }
+
+  .iphone-device #header-quick-access .mobile-mode-toggle {
+    flex-shrink: 0 !important;
+    margin: 0 0.5rem !important;
+    margin-bottom: 6px !important;
+  }
+
+  .iphone-device #header-quick-access #notifications {
+    flex-shrink: 0 !important;
+    margin: 0 0.5rem !important;
+    margin-bottom: 6px !important;
+  }
+
+  .iphone-device #header-quick-access #header-user-bar {
+    flex-shrink: 0 !important;
+    margin: 0 0.5rem !important;
+    margin-bottom: 6px !important;
+  }
+
+  .iphone-device #header-quick-access ul.header-quick-access-list {
+    flex-shrink: 0 !important;
+    margin: 0 0.5rem !important;
+    margin-bottom: 6px !important;
+    width: auto !important;
+  }
+
+  /* iPhone 12 Mini All Boards page - keep logo row at normal size (reverted #6426) */
+  .iphone-device .wrapper ~ #header-quick-access,
+  .iphone-device body:not(.board-view) #header-quick-access {
+    font-size: 1em !important; /* Normal size (reverted #6426 oversizing) */
+  }
+
+  .iphone-device .wrapper ~ #header-quick-access *,
+  .iphone-device body:not(.board-view) #header-quick-access * {
+    font-size: inherit !important; /* Inherit the 2x scaling */
+  }
+
+  .iphone-device .wrapper ~ #header-quick-access .fa,
+  .iphone-device .wrapper ~ #header-quick-access .icon,
+  .iphone-device body:not(.board-view) #header-quick-access .fa,
+  .iphone-device body:not(.board-view) #header-quick-access .icon {
+    font-size: 1em !important; /* Normal icon size (reverted #6426 oversizing) */
+  }
+
+  .iphone-device .wrapper ~ #header-quick-access .home-icon a,
+  .iphone-device body:not(.board-view) #header-quick-access .home-icon a {
+    font-size: 1em !important; /* Use inherited 2x scaling */
+  }
+
+  .iphone-device .wrapper ~ #header-quick-access .home-icon .fa-home,
+  .iphone-device body:not(.board-view) #header-quick-access .home-icon .fa-home {
+    font-size: 1em !important; /* Use inherited 2x scaling */
+  }
+
+  .iphone-device .wrapper ~ #header-quick-access .zoom-controls,
+  .iphone-device body:not(.board-view) #header-quick-access .zoom-controls {
+    font-size: 1em !important; /* Use inherited 2x scaling */
+  }
+
+  .iphone-device .wrapper ~ #header-quick-access .zoom-controls .zoom-level,
+  .iphone-device body:not(.board-view) #header-quick-access .zoom-controls .zoom-level {
+    font-size: 1em !important; /* Use inherited 2x scaling */
+  }
+
+  .iphone-device .wrapper ~ #header-quick-access .zoom-controls .zoom-input,
+  .iphone-device body:not(.board-view) #header-quick-access .zoom-controls .zoom-input {
+    font-size: 1em !important; /* Use inherited 2x scaling */
+  }
+
+  .iphone-device .wrapper ~ #header-quick-access .mobile-mode-toggle .board-header-btn,
+  .iphone-device body:not(.board-view) #header-quick-access .mobile-mode-toggle .board-header-btn {
+    font-size: 1em !important; /* Use inherited 2x scaling */
+  }
+
+  .iphone-device .wrapper ~ #header-quick-access .mobile-mode-toggle .board-header-btn i,
+  .iphone-device body:not(.board-view) #header-quick-access .mobile-mode-toggle .board-header-btn i {
+    font-size: 1em !important; /* Use inherited 2x scaling */
+  }
+
+  .iphone-device .wrapper ~ #header-quick-access #notifications,
+  .iphone-device body:not(.board-view) #header-quick-access #notifications {
+    font-size: 1em !important; /* Use inherited 2x scaling */
+  }
+
+  .iphone-device .wrapper ~ #header-quick-access #notifications .fa,
+  .iphone-device body:not(.board-view) #header-quick-access #notifications .fa {
+    font-size: 1em !important; /* Use inherited 2x scaling */
+  }
+
+  .iphone-device .wrapper ~ #header-quick-access #header-user-bar,
+  .iphone-device body:not(.board-view) #header-quick-access #header-user-bar {
+    font-size: 1em !important; /* Use inherited 2x scaling */
+  }
+
+  .iphone-device .wrapper ~ #header-quick-access #header-user-bar .fa,
+  .iphone-device body:not(.board-view) #header-quick-access #header-user-bar .fa {
+    font-size: 1em !important; /* Use inherited 2x scaling */
+  }
+
   #header-quick-access ul {
     width: calc(100% - 60px);
-    margin-right: 10px;
+    margin-inline-end: 10px;
   }
   #header-quick-access ul li {
     height: 100%;
@@ -237,19 +1339,181 @@
   #header-quick-access ul li a {
     height: 100%;
   }
-  #header-quick-access span .fa-home {
-    font-size: 26px;
-    margin-top: -2px;
-    margin-right: 10px;
-    margin-left: 10px;
-  }
   #header-quick-access #header-new-board-icon {
     display: none;
   }
   #header-quick-access #header-user-bar {
-    right: 0px;
+    inset-inline-end: auto;
     padding: 10px;
-    margin: -8px 0 -10px -10px;
+    margin: 0 0.5rem;
+  }
+
+  /* ---- Small-screen quick-access bar (ALL browsers, width-based) ----
+     These rules use width-based selectors (not the .iphone-device class) so
+     they apply to every browser at small width — Fairphone/Android, narrow
+     desktop and iPhone alike.
+
+     This used to force `flex-wrap: wrap !important` ("so ~7 items fit in two
+     wrapped rows"), which was the reason the avatar dropped to a second line
+     even with space left beside the bell: an !important wrap beats any nowrap,
+     and a wrapping row breaks BEFORE the last item rather than shrinking. The
+     items are now made to fit instead (icon-only home link, capped logo, trimmed
+     bell and username hidden below), so the bar can stay one row: ~320px of a
+     375px iPhone 12 mini bar. `overflow: visible` stays, so if a translation or
+     a custom logo ever does overflow, the items spill rather than disappear. */
+  #header-quick-access {
+    height: auto !important;
+    min-height: 28px !important;
+    overflow: visible !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    row-gap: 4px !important;
+  }
+  /* The All Boards page scales this bar up to 2em-3em for every browser, which
+     is too big. Tame it to a moderate size so ~7 items fit in two wrapped rows.
+     (.iphone-device variants also cover the board view on detected iPhones.) */
+  body:not(.board-view) #header-quick-access,
+  .wrapper ~ #header-quick-access,
+  .iphone-device #header-quick-access,
+  .iphone-device .wrapper ~ #header-quick-access,
+  .iphone-device body:not(.board-view) #header-quick-access {
+    font-size: 1em !important;
+  }
+  body:not(.board-view) #header-quick-access .fa,
+  body:not(.board-view) #header-quick-access .icon,
+  .wrapper ~ #header-quick-access .fa,
+  .wrapper ~ #header-quick-access .icon,
+  .iphone-device #header-quick-access .fa,
+  .iphone-device #header-quick-access .icon,
+  .iphone-device .wrapper ~ #header-quick-access .fa,
+  .iphone-device .wrapper ~ #header-quick-access .icon,
+  .iphone-device body:not(.board-view) #header-quick-access .fa,
+  .iphone-device body:not(.board-view) #header-quick-access .icon {
+    font-size: 1.2em !important;
+  }
+  /* Zoom (100%), drag-handle toggle and mobile/desktop toggle 30% smaller than
+     the other quick-access controls at small width — for all browsers. */
+  body:not(.board-view) #header-quick-access .js-toggle-desktop-drag-handles .fa,
+  body:not(.board-view) #header-quick-access .mobile-mode-toggle .fa,
+  .wrapper ~ #header-quick-access .js-toggle-desktop-drag-handles .fa,
+  .wrapper ~ #header-quick-access .mobile-mode-toggle .fa,
+  .iphone-device #header-quick-access .js-toggle-desktop-drag-handles .fa,
+  .iphone-device #header-quick-access .mobile-mode-toggle .fa,
+  .iphone-device .wrapper ~ #header-quick-access .js-toggle-desktop-drag-handles .fa,
+  .iphone-device .wrapper ~ #header-quick-access .mobile-mode-toggle .fa,
+  .iphone-device body:not(.board-view) #header-quick-access .js-toggle-desktop-drag-handles .fa,
+  .iphone-device body:not(.board-view) #header-quick-access .mobile-mode-toggle .fa {
+    font-size: 1.05em !important; /* ~30% smaller than the 1.5em icons */
+  }
+  body:not(.board-view) #header-quick-access .zoom-controls,
+  body:not(.board-view) #header-quick-access .zoom-controls .zoom-level,
+  body:not(.board-view) #header-quick-access .zoom-controls .zoom-input,
+  .wrapper ~ #header-quick-access .zoom-controls,
+  .wrapper ~ #header-quick-access .zoom-controls .zoom-level,
+  .wrapper ~ #header-quick-access .zoom-controls .zoom-input,
+  .iphone-device #header-quick-access .zoom-controls,
+  .iphone-device #header-quick-access .zoom-controls .zoom-level,
+  .iphone-device #header-quick-access .zoom-controls .zoom-input,
+  .iphone-device .wrapper ~ #header-quick-access .zoom-controls,
+  .iphone-device .wrapper ~ #header-quick-access .zoom-controls .zoom-level,
+  .iphone-device .wrapper ~ #header-quick-access .zoom-controls .zoom-input,
+  .iphone-device body:not(.board-view) #header-quick-access .zoom-controls,
+  .iphone-device body:not(.board-view) #header-quick-access .zoom-controls .zoom-level,
+  .iphone-device body:not(.board-view) #header-quick-access .zoom-controls .zoom-input {
+    /* Was `0.7em`, which on a 12px bar is ~8px: the zoom number was smaller than
+       anything else in the bar and hard to read on a phone. A fixed 14px is the
+       size the rest of the bar's text is, and it still keeps the pill narrow. */
+    font-size: 14px !important;
+  }
+
+  /* ── One-row quick-access bar on phones (#6522) ─────────────────────────────
+     The bar wrapped to two rows on an iPhone 12 mini: the home link carried its
+     full "All Boards" label (longer still in most languages), the logo was
+     allowed 120px of a 375px bar, and several items had 0.5rem margins on BOTH
+     sides. layouts.css now makes the row fit; these repeat it for the
+     `.iphone-device` fallback, which sets font-size and per-item margins with
+     !important and would otherwise re-expand the bar straight back to two rows.
+     `.iphone-device` is added by boardBody.js, so it is present on a board page
+     and absent on All Boards - both paths have to agree, or the header would
+     change height when navigating between them.
+
+     The home LABEL is a bare text node, not a span, so it cannot be selected:
+     font-size:0 on the link collapses it and the icon's own size brings the icon
+     back. The text stays in the DOM, so screen readers still announce it. */
+  .iphone-device #header-quick-access .home-icon a {
+    font-size: 0 !important;
+    padding: 4px 6px !important;
+  }
+  .iphone-device #header-quick-access .home-icon a .fa-home,
+  .iphone-device #header-quick-access .home-icon .fa-home {
+    font-size: 16px !important;
+    margin-inline-end: 0 !important;
+  }
+  /* 0.5rem on both sides of five items was ~80px of a 375px bar. */
+  .iphone-device #header-quick-access .home-icon,
+  .iphone-device #header-quick-access .zoom-controls,
+  .iphone-device #header-quick-access .mobile-mode-toggle,
+  .iphone-device #header-quick-access #notifications,
+  .iphone-device #header-quick-access #header-user-bar {
+    margin: 0 3px !important;
+  }
+  /* One auto margin, so the user menu still sits at the end when there is room
+     and collapses to nothing when there is not. */
+  .iphone-device #header-quick-access #header-user-bar {
+    margin-inline-start: auto !important;
+  }
+  .iphone-device #header-quick-access img {
+    max-height: 20px !important;
+    max-width: 84px !important;
+  }
+
+}
+
+/* ── Tablet widths: keep the board bar (second bar) on ONE line ──────────────
+   Reported on iPad landscape: the board title, edit, visibility, watch, star and
+   sort sat on the first row and Filter / Search / view / dependencies /
+   multi-selection / hamburger wrapped onto a second row.
+
+   Measured from that screenshot (1180 CSS px viewport): the two rows needed
+   ~613px + ~691px = ~1304px on one line, i.e. ~124px more than the viewport. But
+   most of that is per-button CHROME, not text - every .board-header-btn carries
+   12px side margins (24px), its icon another 10px on each side (20px) and a 10px
+   gap after the label: ~54px of empty space around a ~60px icon+label. Halving
+   that chrome frees ~295px, which puts the bar on one line at 1180px with room to
+   spare for languages whose labels are longer than the Finnish ones.
+
+   Only the empty space shrinks - icon and label sizes are untouched, so a button
+   is still a comfortable target, and rows below 801px keep the existing phone
+   treatment (that block already hides the labels and grows the buttons to 44px).
+   Bounded at 1400px so wide desktops, which have never wrapped, look exactly as
+   before; 1400px covers iPad Pro 12.9" landscape (1366px). */
+@media screen and (min-width: 801px) and (max-width: 1400px) {
+  #header #header-main-bar .board-header-btn {
+    margin: 0 6px;
+  }
+  #header #header-main-bar .board-header-btn i.fa {
+    margin: 0 5px;
+  }
+  #header #header-main-bar .board-header-btn i.fa + span {
+    margin-inline-end: 5px;
+  }
+  #header #header-main-bar h1 {
+    padding: 0 5px;
+    margin-inline-end: 5px;
+  }
+  #header #header-main-bar .separator {
+    margin: 2px 2px;
+  }
+}
+
+/* Tablet PORTRAIT (e.g. iPad 820px, iPad Pro 12.9" 1024px is wide enough for the
+   labels): even with the chrome halved above, ~1009px of icons+labels does not
+   fit. Drop the labels to icons only - the same thing the phone block does below
+   801px - so the bar still holds one line instead of wrapping. The title, the
+   tooltips and the popups are unchanged, so nothing becomes unreachable. */
+@media screen and (min-width: 801px) and (max-width: 1000px) {
+  #header #header-main-bar .board-header-btn i.fa + span {
+    display: none;
   }
 }
 @media print {
@@ -262,7 +1526,7 @@
     display: none;
   }
   #header #header-user-bar {
-    float: right;
+    float: inline-end;
   }
 }
 .announcement .viewer {
@@ -284,4 +1548,341 @@
 }
 #headerIsSettingDatabaseCallDone {
   display: none;
+}
+
+/* ── Small screens: home ICON only, never the "All Boards" label ─────────────
+   This block is last in the file on purpose.
+
+   The label lives in the quick-access bar as a BARE TEXT NODE inside the home
+   link (not a span), so it cannot be selected on its own. Collapsing the link's
+   font-size hides it and the icon's own font-size brings the icon back; the text
+   stays in the DOM, so screen readers still announce "All Boards".
+
+   Doing that needs !important and the last word, because eleven other rules in
+   this file set a font-size on the same link and most of them are !important -
+   including three that target the All Boards page specifically via
+   `body:not(.board-view)` / `.wrapper ~`, and one that sets 16px "Much larger
+   text". A plain rule (which is what the first attempt at this used) loses to
+   every one of them, so the label kept showing on exactly the page it was
+   reported on. Each competing selector shape is repeated here so that where
+   specificity ties, source order decides in favour of hiding.
+
+   Width, not mobile MODE: this is for "all smartphones, small width". The
+   separate `body.mobile-mode` rule above covers the explicit phone/desktop
+   toggle at any width. */
+@media screen and (max-width: 800px) {
+  #header-quick-access .home-icon a,
+  .wrapper ~ #header-quick-access .home-icon a,
+  body:not(.board-view) #header-quick-access .home-icon a,
+  .iphone-device #header-quick-access .home-icon a,
+  .iphone-device .wrapper ~ #header-quick-access .home-icon a,
+  .iphone-device body:not(.board-view) #header-quick-access .home-icon a {
+    font-size: 0 !important;
+    padding: 4px 6px !important;
+  }
+
+  #header-quick-access .home-icon a .fa-home,
+  #header-quick-access .home-icon .fa-home,
+  .wrapper ~ #header-quick-access .home-icon .fa-home,
+  body:not(.board-view) #header-quick-access .home-icon .fa-home,
+  .iphone-device #header-quick-access .home-icon .fa-home,
+  .iphone-device .wrapper ~ #header-quick-access .home-icon .fa-home,
+  .iphone-device body:not(.board-view) #header-quick-access .home-icon .fa-home {
+    font-size: 16px !important;
+    margin-inline-end: 0 !important;
+    padding: 0 !important;
+  }
+
+  #header-quick-access .home-icon,
+  #header-quick-access .allBoards {
+    margin-inline-end: 0 !important;
+    padding-inline-start: 0 !important;
+    padding-inline-end: 0 !important;
+  }
+
+  /* The notification bell sat in 36px of margin around a 28px icon: 10px on each
+     side of the button itself (notifications.css) PLUS 0.5rem on each side of its
+     `#notifications` wrapper, applied by several of the mobile blocks above. That
+     is more empty space than icon, and on a 375px bar it is space the other
+     buttons need. Both layers are trimmed here; 2px each side keeps the icons
+     from touching without wasting a tenth of the bar. */
+  #header-quick-access #notifications,
+  .wrapper ~ #header-quick-access #notifications,
+  body:not(.board-view) #header-quick-access #notifications,
+  .iphone-device #header-quick-access #notifications,
+  .iphone-device .wrapper ~ #header-quick-access #notifications,
+  .iphone-device body:not(.board-view) #header-quick-access #notifications {
+    margin: 0 !important;
+  }
+
+  #header-quick-access #notifications .notifications-drawer-toggle,
+  .iphone-device #header-quick-access #notifications .notifications-drawer-toggle {
+    margin: 0 2px !important;
+  }
+
+  /* Avatar only - no username/full name beside it. The template already hides it
+     `unless isMiniScreen`, but that is a JS/Session decision (Utils.isMiniScreen
+     also weighs mobile mode and device), so it can be true while the bar is
+     narrow. A full name is easily 100px+ of a 375px bar, which is what pushed the
+     avatar onto a second row. Same bare-text-node situation as the home link:
+     font-size:0 on the link collapses the name, and the avatar has its own size,
+     so it is unaffected. The name stays in the DOM for screen readers. */
+  #header-quick-access #header-user-bar .header-user-bar-name,
+  .wrapper ~ #header-quick-access #header-user-bar .header-user-bar-name,
+  body:not(.board-view) #header-quick-access #header-user-bar .header-user-bar-name,
+  .iphone-device #header-quick-access #header-user-bar .header-user-bar-name,
+  .iphone-device body:not(.board-view) #header-quick-access #header-user-bar .header-user-bar-name {
+    font-size: 0 !important;
+    gap: 0 !important;
+    padding-inline-end: 0 !important;
+  }
+
+  #header-quick-access #header-user-bar .header-user-bar-avatar,
+  .iphone-device #header-quick-access #header-user-bar .header-user-bar-avatar {
+    font-size: 12px !important;
+    margin-inline-end: 0 !important;
+  }
+}
+
+/* ── Trailing group hugs the END of the top bar (LTR right, RTL left) ─────────
+   The zoom %, notification bell and user/avatar menu are the last items in the
+   quick-access bar. When the middle starred-boards list is shown it fills the
+   gap (`flex: 1`) and pushes them to the end; but that list is `display: none`
+   on a phone, so with nothing filling the middle the group bunched at the START
+   (left in LTR) with empty bar to its right.
+
+   `margin-inline-start: auto` on the FIRST item of the group (the zoom control)
+   pushes the whole group - zoom, bell, avatar - to the end. It is a LOGICAL
+   margin, so it is the RIGHT edge in LTR and the LEFT edge in RTL automatically,
+   which is exactly the requested behaviour. There must be exactly ONE auto
+   margin in the row, so any auto margin an earlier rule put on the user bar is
+   cleared here - two autos would split the free space and separate the group.
+   Last in the file, so it wins on source order at equal specificity. */
+#header-quick-access .zoom-controls {
+  margin-inline-start: auto !important;
+}
+#header-quick-access #notifications,
+#header-quick-access #header-user-bar {
+  margin-inline-start: 0 !important;
+}
+
+/* ── The quick-access bar must FIT the phone ─────────────────────────────────
+   On a small screen this bar is `flex-wrap: nowrap` with `overflow: visible`
+   (deliberately, above: an item that does not fit should spill rather than
+   disappear) and every item declares `flex-shrink: 0 !important`. Nothing could
+   give way, so the row was simply wider than the screen - and a visible overflow
+   is scrollable overflow: the whole PAGE could be dragged sideways, the avatar
+   sat past the right edge, and the board list under it moved with the page.
+
+   So the widest items give way instead. The zoom pill was the biggest by far:
+   an 80px fixed input plus its own padding took ~113px of a 375px bar, more than
+   the home icon, the mode toggle and the bell together. "100%" needs about half
+   of that. The bell and the avatar never shrink - they are the two the user came
+   for, and they are last in the row, so they are what an overflow pushes out.
+
+   The pill itself must NOT shrink below its contents, only be smaller: letting it
+   (`flex: 0 1 auto; min-width: 0`) put the white rounded background at one width
+   and the number at another - "100%" was laid out to the RIGHT of the white area,
+   in tiny type, half of it under the notification bell. The pill is sized by what
+   is in it, and what is in it is made small: a compact "100%" at the bar's own
+   text size, and a 46px input for when it is clicked to be edited. */
+@media screen and (max-width: 800px),
+       screen and (max-device-width: 800px),
+       screen and (max-device-width: 932px) and (-webkit-min-device-pixel-ratio: 3) {
+  #header-quick-access .zoom-controls {
+    margin: 0 4px !important;
+    /* `!important` throughout: the "Make zoom controls larger" block above sets
+       21px of padding and 21px of margin with `!important` at this very width. */
+    padding: 2px 6px !important;
+    /* Exactly as wide as the number inside it - never narrower. */
+    flex: 0 0 auto !important;
+    justify-content: center !important;
+    /* The base rule caps the pill at 24px, which is shorter than 14px text with
+       padding, so the number sat against the top edge of the white area. */
+    max-height: none !important;
+    align-items: center !important;
+  }
+
+  #header-quick-access .zoom-controls .zoom-input {
+    /* Was a fixed 80 pixels; three digits need about half of that. */
+    width: 46px !important;
+    min-width: 46px !important;
+    flex: 0 0 46px !important;
+    padding: 3px 2px;
+    font-size: 14px !important;
+  }
+
+  /* The number the user reads. It is the pill's whole content when the input is
+     hidden, so it sets the pill's width: readable, and no wider than it needs. */
+  #header-quick-access .zoom-controls .zoom-level {
+    flex: 0 0 auto !important;
+    min-width: 40px !important;
+    padding: 2px 4px !important;
+    font-size: 14px !important;
+    line-height: 1.2 !important;
+    white-space: nowrap;
+  }
+
+  #header-quick-access .zoom-controls .zoom-display {
+    font-size: 14px !important;
+    white-space: nowrap;
+  }
+
+  #header-quick-access .mobile-mode-toggle {
+    margin: 0 4px !important;
+  }
+
+  /* The bell and the avatar sit the SAME way in both modes, and the free space
+     of the row is shared around them: one auto margin on each side of the bell
+     puts it midway between the zoom pill and the avatar, and the avatar keeps a
+     small, fixed gap to the right edge instead of being flung against it. The
+     `.iphone-device` variants are named because that fallback sets these margins
+     with `!important` and one class more, so it would win outright. */
+  #header-quick-access #notifications,
+  .iphone-device #header-quick-access #notifications,
+  .wrapper ~ #header-quick-access #notifications,
+  body:not(.board-view) #header-quick-access #notifications,
+  .iphone-device .wrapper ~ #header-quick-access #notifications,
+  .iphone-device body:not(.board-view) #header-quick-access #notifications {
+    margin-inline-start: auto !important;
+    margin-inline-end: auto !important;
+    margin-block: 0 !important;
+    flex-shrink: 0 !important;
+  }
+
+  #header-quick-access #header-user-bar,
+  .iphone-device #header-quick-access #header-user-bar,
+  .wrapper ~ #header-quick-access #header-user-bar,
+  body:not(.board-view) #header-quick-access #header-user-bar,
+  .iphone-device .wrapper ~ #header-quick-access #header-user-bar,
+  .iphone-device body:not(.board-view) #header-quick-access #header-user-bar {
+    /* No second auto margin: two of them would each swallow half the row and
+       push the pair apart again. */
+    margin-inline-start: 0 !important;
+    margin-inline-end: 12px !important;
+    /* The mobile blocks above give these items a 4-6px BOTTOM margin, which in a
+       centred row lifts them by half of it - the avatar sat visibly higher than
+       the bell and the zoom pill beside it. With no block margin the row's own
+       `align-items: center` puts it where it belongs. */
+    margin-block: 0 !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* The avatar is lifted 5px by `top: -5px` on its wrapper (a leftover from the
+     desktop bar, where the username sits beside it), so on a phone it floated
+     above the bell it is supposed to line up with. It sits on the row's own
+     centre line now.
+
+     And it is moved LEFT: the wrapper's 10px of padding is 20px of a 375px bar
+     spent on nothing, which is what pushed the avatar against - and past - the
+     right edge. The 12px end margin on the bar is the gap to the edge; the
+     padding here only ate into it. */
+  #header-quick-access #header-user-bar .header-user-bar-avatar,
+  .iphone-device #header-quick-access #header-user-bar .header-user-bar-avatar {
+    top: 0 !important;
+    margin-inline-end: 0 !important;
+  }
+
+  #header-quick-access #header-user-bar,
+  .iphone-device #header-quick-access #header-user-bar,
+  .iphone-device body:not(.board-view) #header-quick-access #header-user-bar {
+    padding: 0 !important;
+  }
+
+  /* The chips behind the mode-toggle icons cost width too - enough of it to be
+     the difference between the row fitting and the avatar being cut off. Small
+     enough to still read as a filled chip. */
+  #header-quick-access .mobile-mode-toggle .board-header-btn i.mobile-icon,
+  #header-quick-access .mobile-mode-toggle .board-header-btn i.desktop-icon {
+    padding: 2px 4px !important;
+  }
+
+  /* The button GROUPS are `display: contents`, so each button is a flex item of
+     the BAR: they start immediately to the right of the title and wrap as
+     individual buttons. As one group they were a single unbreakable item, so the
+     whole set dropped below the title and the hamburger after them ended up on a
+     row of its own - four rows for a title and eleven icons.
+
+     This too has to be in THIS file: boardHeader.css says the same thing, but
+     `#header #header-main-bar .board-header-btns-group { display: flex }` a few
+     hundred lines above here has equal specificity and this file loads later, so
+     the flex won and the groups never became contents. Not the hamburger: it is
+     positioned, and `display: contents` would remove the box being positioned. */
+  #header #header-main-bar .board-header-btns-group,
+  #header #header-main-bar .board-header-btns:not(.board-header-sidebar-toggle) {
+    display: contents !important;
+  }
+
+  /* The board bar's buttons, sized HERE rather than in boardHeader.css: Meteor
+     loads client/components/boards/ before client/components/main/, so at equal
+     specificity this file wins, and the `margin: 0 6px` a few blocks above would
+     otherwise beat the 2px written there. `!important` also settles it against
+     `.mobile-mode .board-header-btn`, which gives every one of these buttons
+     9px/21px of padding - 42px of a 375px bar per button.
+
+     44px target + 2px each side = 48px, so seven fit a row and eleven icons take
+     two rows, in BOTH modes. */
+  #header #header-main-bar .board-header-btn {
+    margin: 0 2px !important;
+    padding: 0 !important;
+    min-width: 44px !important;
+    height: 44px !important;
+    line-height: 44px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  #header #header-main-bar .board-header-btn i.fa {
+    margin: 0 !important;
+    line-height: 1 !important;
+    float: none !important;
+  }
+
+  /* The drag-handle toggle in the TOP bar is a `.board-header-btn` too, so in
+     mobile mode it picked up that same 9px/21px padding - 42px of the row for one
+     icon, which is what pushed the avatar off the right edge there while desktop
+     mode fitted. It is the size it looks in both modes now. */
+  #header-quick-access .js-toggle-desktop-drag-handles {
+    padding: 4px 6px !important;
+    min-width: 0 !important;
+    height: auto !important;
+    line-height: 1 !important;
+  }
+
+  /* The logo is the one item that may lose width without losing meaning. */
+  #header-quick-access img {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  /* The drag-handle toggle is ONE button: a four-arrows glyph and the check or
+     ban that says whether handles are on. They were breaking onto two lines,
+     which reads as two buttons and makes the bar taller than its own row. */
+  #header-quick-access .js-toggle-desktop-drag-handles {
+    white-space: nowrap !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 2px;
+  }
+
+  /* What is left of the overflow that pushed the avatar off the right edge. The
+     mode toggle is the widest item after the zoom pill - 21px of padding on each
+     side of two icons at this width - and the logo is decorative. Together they
+     give back about 60px of a 375px bar, which is what the avatar needs to be
+     whole. */
+  #header-quick-access .mobile-mode-toggle .board-header-btn {
+    padding: 5px 8px !important;
+  }
+
+  #header-quick-access img,
+  .iphone-device #header-quick-access img,
+  .wrapper ~ #header-quick-access img,
+  body:not(.board-view) #header-quick-access img {
+    /* The `.iphone-device` fallback sets 84px with `!important` and one class more
+       than a bare `#header-quick-access img`, so it has to be named here or it
+       simply wins. */
+    max-width: 64px !important;
+    max-height: 20px !important;
+  }
 }

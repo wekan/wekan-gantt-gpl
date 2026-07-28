@@ -1,6 +1,8 @@
+import { Mongo } from 'meteor/mongo';
 import { ReactiveCache } from '/imports/reactiveCache';
+const { SimpleSchema } = require('/imports/simpleSchema');
 
-Team = new Mongo.Collection('team');
+const Team = new Mongo.Collection('team');
 
 /**
  * A Team in Wekan. Organization in Trello.
@@ -45,6 +47,29 @@ Team.attachSchema(
       type: Boolean,
       optional: true,
     },
+    teamSharedTemplates: {
+      /**
+       * #5850: members may drag personal Template Boards onto this team to share
+       * (per-team form of "Shared Templates for Teams"). Off by default.
+       */
+      type: Boolean,
+      optional: true,
+    },
+    teamPropagateMembersToBoards: {
+      /**
+       * #4737: add this team's members to the boards that list this team. Off by default.
+       */
+      type: Boolean,
+      optional: true,
+    },
+    teamSyncMembersFromAuth: {
+      /**
+       * #4737: this team's membership is maintained by the authentication
+       * provider's group/membership sync (LDAP, OAuth2/OIDC, SAML, etc.). Off by default.
+       */
+      type: Boolean,
+      optional: true,
+    },
     createdAt: {
       /**
        * creation date of the team
@@ -63,7 +88,6 @@ Team.attachSchema(
     },
     modifiedAt: {
       type: Date,
-      denyUpdate: false,
       // eslint-disable-next-line consistent-return
       autoValue() {
         if (this.isInsert || this.isUpsert || this.isUpdate) {
@@ -75,193 +99,5 @@ Team.attachSchema(
     },
   }),
 );
-
-if (Meteor.isServer) {
-  Team.allow({
-    insert(userId, doc) {
-      const user = ReactiveCache.getUser(userId) || ReactiveCache.getCurrentUser();
-      if (user?.isAdmin)
-        return true;
-      if (!user) {
-        return false;
-      }
-      return doc._id === userId;
-    },
-    update(userId, doc) {
-      const user = ReactiveCache.getUser(userId) || ReactiveCache.getCurrentUser();
-      if (user?.isAdmin)
-        return true;
-      if (!user) {
-        return false;
-      }
-      return doc._id === userId;
-    },
-    remove(userId, doc) {
-      const user = ReactiveCache.getUser(userId) || ReactiveCache.getCurrentUser();
-      if (user?.isAdmin)
-        return true;
-      if (!user) {
-        return false;
-      }
-      return doc._id === userId;
-    },
-    fetch: [],
-  });
-
-  Meteor.methods({
-    setCreateTeam(
-      teamDisplayName,
-      teamDesc,
-      teamShortName,
-      teamWebsite,
-      teamIsActive,
-    ) {
-      if (ReactiveCache.getCurrentUser()?.isAdmin) {
-        check(teamDisplayName, String);
-        check(teamDesc, String);
-        check(teamShortName, String);
-        check(teamWebsite, String);
-        check(teamIsActive, Boolean);
-
-        const nTeamNames = ReactiveCache.getTeams({ teamShortName }).length;
-        if (nTeamNames > 0) {
-          throw new Meteor.Error('teamname-already-taken');
-        } else {
-          Team.insert({
-            teamDisplayName,
-            teamDesc,
-            teamShortName,
-            teamWebsite,
-            teamIsActive,
-          });
-        }
-      }
-    },
-    setCreateTeamFromOidc(
-      teamDisplayName,
-      teamDesc,
-      teamShortName,
-      teamWebsite,
-      teamIsActive,
-    ) {
-      check(teamDisplayName, String);
-      check(teamDesc, String);
-      check(teamShortName, String);
-      check(teamWebsite, String);
-      check(teamIsActive, Boolean);
-      const nTeamNames = ReactiveCache.getTeams({ teamShortName }).length;
-      if (nTeamNames > 0) {
-        throw new Meteor.Error('teamname-already-taken');
-      } else {
-        Team.insert({
-          teamDisplayName,
-          teamDesc,
-          teamShortName,
-          teamWebsite,
-          teamIsActive,
-        });
-      }
-    },
-    setTeamDisplayName(team, teamDisplayName) {
-      if (ReactiveCache.getCurrentUser()?.isAdmin) {
-        check(team, Object);
-        check(teamDisplayName, String);
-        Team.update(team, {
-          $set: { teamDisplayName: teamDisplayName },
-        });
-        Meteor.call('setUsersTeamsTeamDisplayName', team._id, teamDisplayName);
-      }
-    },
-
-    setTeamDesc(team, teamDesc) {
-      if (ReactiveCache.getCurrentUser()?.isAdmin) {
-        check(team, Object);
-        check(teamDesc, String);
-        Team.update(team, {
-          $set: { teamDesc: teamDesc },
-        });
-      }
-    },
-
-    setTeamShortName(team, teamShortName) {
-      if (ReactiveCache.getCurrentUser()?.isAdmin) {
-        check(team, Object);
-        check(teamShortName, String);
-        Team.update(team, {
-          $set: { teamShortName: teamShortName },
-        });
-      }
-    },
-
-    setTeamIsActive(team, teamIsActive) {
-      if (ReactiveCache.getCurrentUser()?.isAdmin) {
-        check(team, Object);
-        check(teamIsActive, Boolean);
-        Team.update(team, {
-          $set: { teamIsActive: teamIsActive },
-        });
-      }
-    },
-    setTeamAllFieldsFromOidc(
-      team,
-      teamDisplayName,
-      teamDesc,
-      teamShortName,
-      teamWebsite,
-      teamIsActive,
-    ) {
-        check(team, Object);
-        check(teamDisplayName, String);
-        check(teamDesc, String);
-        check(teamShortName, String);
-        check(teamWebsite, String);
-        check(teamIsActive, Boolean);
-        Team.update(team, {
-          $set: {
-            teamDisplayName: teamDisplayName,
-            teamDesc: teamDesc,
-            teamShortName: teamShortName,
-            teamWebsite: teamWebsite,
-            teamIsActive: teamIsActive,
-          },
-        });
-        Meteor.call('setUsersTeamsTeamDisplayName', team._id, teamDisplayName);
-      },
-    setTeamAllFields(
-      team,
-      teamDisplayName,
-      teamDesc,
-      teamShortName,
-      teamWebsite,
-      teamIsActive,
-    ) {
-      if (ReactiveCache.getCurrentUser()?.isAdmin) {
-        check(team, Object);
-        check(teamDisplayName, String);
-        check(teamDesc, String);
-        check(teamShortName, String);
-        check(teamWebsite, String);
-        check(teamIsActive, Boolean);
-        Team.update(team, {
-          $set: {
-            teamDisplayName: teamDisplayName,
-            teamDesc: teamDesc,
-            teamShortName: teamShortName,
-            teamWebsite: teamWebsite,
-            teamIsActive: teamIsActive,
-          },
-        });
-        Meteor.call('setUsersTeamsTeamDisplayName', team._id, teamDisplayName);
-      }
-    },
-  });
-}
-
-if (Meteor.isServer) {
-  // Index for Team name.
-  Meteor.startup(() => {
-    Team._collection.createIndex({ teamDisplayName: 1 });
-  });
-}
 
 export default Team;

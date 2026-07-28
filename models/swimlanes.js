@@ -1,7 +1,17 @@
+import { Meteor } from 'meteor/meteor';
+import { Mongo } from 'meteor/mongo';
 import { ReactiveCache } from '/imports/reactiveCache';
-import { ALLOWED_COLORS } from '/config/const';
+import { SWIMLANE_COLORS } from '/models/metadata/colors';
+import { isHexColor, contrastText } from '/models/lib/contrastColor';
+import PositionHistory from './positionHistory';
+import Activities from '/models/activities';
+import Boards from '/models/boards';
+import Cards from '/models/cards';
+import Lists, { normalizeListColor } from '/models/lists';
+import { remapLabelIds } from '/server/lib/labelRemap';
+const { SimpleSchema } = require('/imports/simpleSchema');
 
-Swimlanes = new Mongo.Collection('swimlanes');
+const Swimlanes = new Mongo.Collection('swimlanes');
 
 /**
  * A swimlane is an line in the kaban board.
@@ -60,7 +70,6 @@ Swimlanes.attachSchema(
        * the sort value of the swimlane
        */
       type: Number,
-      decimal: true,
       // XXX We should probably provide a default
       optional: true,
     },
@@ -70,8 +79,15 @@ Swimlanes.attachSchema(
        */
       type: String,
       optional: true,
-      // silver is the default, so it is left out
-      allowedValues: ALLOWED_COLORS,
+      // silver is the default
+      // #5514: accept a named palette color OR a custom '#rrggbb' hex chosen
+      // from the color wheel (instead of a fixed allowedValues enum).
+      custom() {
+        const v = this.value;
+        if (v === undefined || v === null || v === '') return undefined;
+        if (SWIMLANE_COLORS.includes(v) || isHexColor(v)) return undefined;
+        return 'notAllowed';
+      },
     },
     updatedAt: {
       /**
@@ -90,7 +106,6 @@ Swimlanes.attachSchema(
     },
     modifiedAt: {
       type: Date,
-      denyUpdate: false,
       // eslint-disable-next-line consistent-return
       autoValue() {
         if (this.isInsert || this.isUpsert || this.isUpdate) {
@@ -107,50 +122,219 @@ Swimlanes.attachSchema(
       type: String,
       defaultValue: 'swimlane',
     },
+    height: {
+      /**
+       * The height of the swimlane in pixels.
+       * -1 = auto-height (default)
+       * 50-2000 = fixed height in pixels
+       */
+      type: Number,
+      optional: true,
+      defaultValue: -1,
+      custom() {
+        const h = this.value;
+        if (h !== -1 && (h < 50 || h > 2000)) {
+          return 'heightOutOfRange';
+        }
+      },
+    },
+    // NOTE: collapsed state is per-user only, stored in user profile.collapsedSwimlanes
+    // and localStorage for non-logged-in users
+    // NOTE: height is per-board (shared with all users), stored in swimlanes.height
   }),
 );
 
-Swimlanes.allow({
-  insert(userId, doc) {
-    return allowIsBoardMemberCommentOnly(userId, ReactiveCache.getBoard(doc.boardId));
-  },
-  update(userId, doc) {
-    return allowIsBoardMemberCommentOnly(userId, ReactiveCache.getBoard(doc.boardId));
-  },
-  remove(userId, doc) {
-    return allowIsBoardMemberCommentOnly(userId, ReactiveCache.getBoard(doc.boardId));
-  },
-  fetch: ['boardId'],
-});
-
 Swimlanes.helpers({
-  copy(boardId) {
+  async copy(boardId, targetSwimlaneId = null, position = 'below', title = '', cardIdMap = null) {
     const oldId = this._id;
     const oldBoardId = this.boardId;
+    const desiredTitle = typeof title === 'string' && title.trim().length > 0
+      ? title.trim()
+      : this.title;
     this.boardId = boardId;
-    delete this._id;
-    const _id = Swimlanes.insert(this);
 
-    const query = {
-      swimlaneId: { $in: [oldId, ''] },
-      archived: false,
-    };
-    if (oldBoardId) {
-      query.boardId = oldBoardId;
+    if (process.env.DEBUG === 'true') {
+      console.log('[copySwimlane] start', {
+        oldSwimlaneId: oldId,
+        oldBoardId,
+        boardId,
+        targetSwimlaneId,
+        position,
+        desiredTitle,
+      });
     }
 
+    const boardSwimlanes = (await ReactiveCache.getSwimlanes(
+      { boardId, archived: false },
+      { sort: { sort: 1 } },
+    ))
+      .sort((a, b) => a.sort - b.sort);
+
+    let targetSort = boardSwimlanes.length;
+    if (targetSwimlaneId) {
+      const targetIndex = boardSwimlanes.findIndex(
+        swimlane => swimlane._id === targetSwimlaneId,
+      );
+      if (targetIndex >= 0) {
+        const selected = boardSwimlanes[targetIndex];
+        if (position === 'above') {
+          const prev = boardSwimlanes[targetIndex - 1];
+          targetSort =
+            prev && Number.isFinite(prev.sort)
+              ? (prev.sort + selected.sort) / 2
+              : selected.sort - 1;
+        } else {
+          const next = boardSwimlanes[targetIndex + 1];
+          targetSort =
+            next && Number.isFinite(next.sort)
+              ? (selected.sort + next.sort) / 2
+              : selected.sort + 1;
+        }
+      }
+    }
+
+    this.sort = targetSort;
+    this.title = desiredTitle;
+    delete this._id;
+    const newSwimlaneId = await Swimlanes.insertAsync(this);
+
+    const sourceBoard = oldBoardId ? await ReactiveCache.getBoard(oldBoardId) : null;
+    // Use the ASYNC default-swimlane getter here (this runs on the server): the
+    // sync getDefaultSwimline() self-heals a swimlane-less board via a synchronous
+    // Swimlanes.upsert(), which throws "update is not available on the server.
+    // Please use updateAsync() instead." on Meteor 3 and aborted the whole board
+    // copy (POST /api/boards/:id/copy). getDefaultSwimlineAsync() does the same
+    // pick + idempotent upsertAsync self-heal.
+    const sourceDefaultSwimlane =
+      sourceBoard && typeof sourceBoard.getDefaultSwimlineAsync === 'function'
+        ? await sourceBoard.getDefaultSwimlineAsync()
+        : null;
+    const sourceDefaultSwimlaneId = sourceDefaultSwimlane?._id;
+    const isDefaultSourceSwimlane = sourceDefaultSwimlaneId === oldId;
+
+    const listQuery = {
+      boardId: oldBoardId,
+      archived: false,
+      swimlaneId: isDefaultSourceSwimlane ? { $in: [oldId, '', null] } : oldId,
+    };
+
     // Copy all lists in swimlane
-    ReactiveCache.getLists(query).forEach(list => {
-      list.type = 'list';
-      list.swimlaneId = oldId;
-      list.boardId = boardId;
-      list.copy(boardId, _id);
-    });
+    const sourceLists = (await ReactiveCache.getLists(listQuery, { sort: { sort: 1 } }))
+      .sort((a, b) => a.sort - b.sort);
+
+    if (process.env.DEBUG === 'true') {
+      console.log('[copySwimlane] source lists found', {
+        count: sourceLists.length,
+        listQuery,
+      });
+    }
+
+    // #5158 "Copy Swimlane does not copy labels".
+    // Card.copy() remaps each card's labels to the destination board BY NAME,
+    // but it never CREATES labels that are missing on the destination board, so
+    // when a swimlane is copied to ANOTHER board those label assignments are
+    // silently lost. Pre-create the missing labels here (by name + color) so the
+    // per-card remap inside card.copy() finds a match for every label.
+    if (oldBoardId && oldBoardId !== boardId) {
+      const sourceBoardLabels =
+        (sourceBoard && sourceBoard.labels) || [];
+      const destBoard = await ReactiveCache.getBoard(boardId);
+      if (destBoard) {
+        // Collect every label id referenced by the cards being copied.
+        const referencedLabelIds = new Set();
+        for (const sourceList of sourceLists) {
+          const cards = await ReactiveCache.getCards({
+            listId: sourceList._id,
+            archived: false,
+            swimlaneId: isDefaultSourceSwimlane ? { $in: [oldId, '', null] } : oldId,
+          });
+          for (const card of cards) {
+            for (const labelId of card.labelIds || []) {
+              referencedLabelIds.add(labelId);
+            }
+          }
+        }
+
+        const { missingNames } = remapLabelIds(
+          sourceBoardLabels,
+          [...referencedLabelIds],
+          destBoard.labels || [],
+        );
+
+        for (const name of missingNames) {
+          const sourceLabel = sourceBoardLabels.find(
+            label => label && label.name === name,
+          );
+          await destBoard.addLabel(name, sourceLabel && sourceLabel.color);
+        }
+      }
+    }
+
+    for (const sourceList of sourceLists) {
+      // Always create a new list for the copied swimlane, even if title already exists.
+      const newListId = await Lists.insertAsync({
+        title: sourceList.title,
+        boardId,
+        sort: sourceList.sort,
+        type: sourceList.type || 'list',
+        archived: false,
+        wipLimit: sourceList.wipLimit,
+        swimlaneId: newSwimlaneId,
+        color: sourceList.color,
+        width: sourceList.width,
+      });
+
+      const cardQuery = {
+        listId: sourceList._id,
+        archived: false,
+        swimlaneId: isDefaultSourceSwimlane ? { $in: [oldId, '', null] } : oldId,
+      };
+      const cards = await ReactiveCache.getCards(cardQuery, { sort: { sort: 1 } });
+
+      for (const card of cards) {
+        await card.copy(boardId, newSwimlaneId, newListId, cardIdMap);
+      }
+    }
+
+    return newSwimlaneId;
   },
 
-  move(toBoardId) {
-    this.lists().forEach(list => {
-      const toList = ReactiveCache.getList({
+  async move(toBoardId, targetSwimlaneId = null, position = 'below', title = '') {
+    const desiredTitle = typeof title === 'string' && title.trim().length > 0
+      ? title.trim()
+      : this.title;
+    const boardSwimlanes = (await ReactiveCache.getSwimlanes(
+      { boardId: toBoardId, archived: false },
+      { sort: { sort: 1 } },
+    ))
+      .filter(swimlane => swimlane._id !== this._id)
+      .sort((a, b) => a.sort - b.sort);
+
+    let targetSort = boardSwimlanes.length;
+    if (targetSwimlaneId) {
+      const targetIndex = boardSwimlanes.findIndex(
+        swimlane => swimlane._id === targetSwimlaneId,
+      );
+      if (targetIndex >= 0) {
+        const selected = boardSwimlanes[targetIndex];
+        if (position === 'above') {
+          const prev = boardSwimlanes[targetIndex - 1];
+          targetSort =
+            prev && Number.isFinite(prev.sort)
+              ? (prev.sort + selected.sort) / 2
+              : selected.sort - 1;
+        } else {
+          const next = boardSwimlanes[targetIndex + 1];
+          targetSort =
+            next && Number.isFinite(next.sort)
+              ? (selected.sort + next.sort) / 2
+              : selected.sort + 1;
+        }
+      }
+    }
+
+    for (const list of await this.lists()) {
+      const toList = await ReactiveCache.getList({
         boardId: toBoardId,
         title: list.title,
         archived: false,
@@ -160,31 +344,35 @@ Swimlanes.helpers({
       if (toList) {
         toListId = toList._id;
       } else {
-        toListId = Lists.insert({
+        toListId = await Lists.insertAsync({
           title: list.title,
           boardId: toBoardId,
           type: list.type,
           archived: false,
           wipLimit: list.wipLimit,
+          swimlaneId: this._id,
         });
       }
 
-      ReactiveCache.getCards({
+      const cards = await ReactiveCache.getCards({
         listId: list._id,
         swimlaneId: this._id,
-      }).forEach(card => {
-        card.move(toBoardId, this._id, toListId);
       });
-    });
+      for (const card of cards) {
+        await card.move(toBoardId, this._id, toListId);
+      }
+    }
 
-    Swimlanes.update(this._id, {
+    await Swimlanes.updateAsync(this._id, {
       $set: {
         boardId: toBoardId,
+        sort: targetSort,
+        title: desiredTitle,
       },
     });
 
     // make sure there is a default swimlane
-    this.board().getDefaultSwimline();
+    (await this.board()).getDefaultSwimline();
   },
 
   cards() {
@@ -202,29 +390,65 @@ Swimlanes.helpers({
     return this.draggableLists();
   },
   newestLists() {
-    // sorted lists from newest to the oldest, by its creation date or its cards' last modification date
+    // Revert to shared lists across swimlanes: filter by board only
     return ReactiveCache.getLists(
       {
         boardId: this.boardId,
-        swimlaneId: { $in: [this._id, ''] },
         archived: false,
       },
       { sort: { modifiedAt: -1 } },
     );
   },
   draggableLists() {
+    // Revert to shared lists across swimlanes: filter by board only
     return ReactiveCache.getLists(
       {
         boardId: this.boardId,
-        swimlaneId: { $in: [this._id, ''] },
         //archived: false,
+        deletedAt: null, // soft delete: hide deleted lists (docs/Features/Undo/Undo.md)
       },
       { sort: ['sort'] },
     );
   },
 
   myLists() {
-    return ReactiveCache.getLists({ swimlaneId: this._id });
+    // Return per-swimlane lists: this swimlane's own lists.
+    // Also include "shared" / pre-migration lists whose swimlaneId is empty or
+    // null — they existed before the per-swimlane model and should remain
+    // visible in EVERY swimlane as a fallback (matching old shared-list
+    // behaviour) without requiring a database migration.
+    return ReactiveCache.getLists(
+      {
+        boardId: this.boardId,
+        $or: [
+          { swimlaneId: this._id },
+          { swimlaneId: null },   // null covers null AND missing field
+          { swimlaneId: '' },     // empty string from old shared-lists era
+        ],
+        archived: false,
+        deletedAt: null, // soft delete: hide deleted lists
+      },
+      { sort: ['sort'] },
+    );
+  },
+
+  // Lists whose swimlaneId references a swimlane that no longer exists
+  // (e.g. the swimlane was deleted after the per-swimlane migration).
+  // These are collected separately so the template can display them in the
+  // first swimlane as a fallback — keeping them visible without touching DB.
+  orphanedSwimlaneLists(validSwimlaneIds) {
+    // validSwimlaneIds: array of _id strings for currently-existing swimlanes.
+    // A list is "orphaned" when its swimlaneId is a non-empty string that is
+    // not among the valid IDs (so it can never appear via myLists()).
+    const excluded = [...validSwimlaneIds, null, ''];
+    return ReactiveCache.getLists(
+      {
+        boardId: this.boardId,
+        archived: false,
+        swimlaneId: { $nin: excluded },
+      },
+      { sort: ['sort'] },
+    );
   },
 
   allCards() {
@@ -232,12 +456,43 @@ Swimlanes.helpers({
     return ret;
   },
 
+  isCollapsed() {
+    if (Meteor.isClient) {
+      const user = ReactiveCache.getCurrentUser();
+      if (user && user.getCollapsedSwimlaneFromStorage) {
+        const stored = user.getCollapsedSwimlaneFromStorage(this.boardId, this._id);
+        if (typeof stored === 'boolean') {
+          return stored;
+        }
+      }
+      if (!user && Users.getPublicCollapsedSwimlane) {
+        const stored = Users.getPublicCollapsedSwimlane(this.boardId, this._id);
+        if (typeof stored === 'boolean') {
+          return stored;
+        }
+      }
+    }
+    return this.collapsed === true;
+  },
+
   board() {
     return ReactiveCache.getBoard(this.boardId);
   },
 
   colorClass() {
-    if (this.color) return `swimlane-${this.color}`;
+    // #5514: a custom '#rrggbb' hex has no CSS class; it is applied inline via
+    // colorStyle(). Named palette colors keep using their `swimlane-<name>` class.
+    if (this.color && !isHexColor(this.color)) return `swimlane-${this.color}`;
+    return '';
+  },
+
+  colorStyle() {
+    // #5514: for a custom hex color, set the background inline plus an
+    // automatically readable text color (contrastText) so the header title
+    // stays visible. Empty for named colors (their CSS class sets both).
+    if (isHexColor(this.color)) {
+      return `background-color:${this.color} !important;color:${contrastText(this.color)} !important;`;
+    }
     return '';
   },
 
@@ -264,304 +519,171 @@ Swimlanes.helpers({
     return (user.profile || {}).boardTemplatesSwimlaneId === this._id;
   },
 
-  remove() {
-    Swimlanes.remove({ _id: this._id });
+  async remove() {
+    return await Swimlanes.removeAsync({ _id: this._id });
+  },
+
+  async rename(title) {
+    return await Swimlanes.updateAsync(this._id, { $set: { title } });
+  },
+
+  // NOTE: collapse() removed - collapsed state is per-user only
+  // Use user.setCollapsedSwimlane(boardId, swimlaneId, collapsed) instead
+
+  async archive() {
+    if (this.isTemplateSwimlane()) {
+      for (const list of await this.myLists()) {
+        await list.archive();
+      }
+    }
+    // #2292: archive the swimlane's cards WITH it, mirroring the card cascade
+    // of Lists.archive() (models/lists.js). Without this the cards stayed
+    // `archived: false` under an archived swimlane — invisible in every board
+    // view AND in the Archive sidebar, and reassigned to another swimlane by
+    // the startup rescue of #1959/#1971 (server/lib/schemaUpgradeSteps.js),
+    // so restoring the swimlane later found it empty. The swimlane's
+    // archivedAt is captured BEFORE the per-card archive() calls stamp each
+    // card's archivedAt, so restore() below can recognise the cards that were
+    // archived with the swimlane. Cards already archived by the user keep
+    // their own archivedAt (see models/lib/swimlaneArchive.js).
+    const { cardsToArchiveWithSwimlane } = require('./lib/swimlaneArchive');
+    const archivedAt = new Date();
+    for (const card of cardsToArchiveWithSwimlane(await this.allCards())) {
+      await card.archive();
+    }
+    return await Swimlanes.updateAsync(this._id, { $set: { archived: true, archivedAt } });
+  },
+
+  async restore() {
+    if (this.isTemplateSwimlane()) {
+      for (const list of await this.myLists()) {
+        await list.restore();
+      }
+    }
+    // #2292: restore the cards that were archived WITH this swimlane by
+    // archive() above (their archivedAt is at/after the swimlane's),
+    // mirroring the card cascade of Lists.restore() (models/lists.js). Cards
+    // the user archived individually BEFORE archiving the swimlane stay
+    // archived (see models/lib/swimlaneArchive.js).
+    const { cardsToRestoreWithSwimlane } = require('./lib/swimlaneArchive');
+    for (const card of cardsToRestoreWithSwimlane(await this.allCards(), this.archivedAt)) {
+      await card.restore();
+    }
+    return await Swimlanes.updateAsync(this._id, { $set: { archived: false } });
+  },
+
+  async setColor(newColor) {
+    // Normalize so an offered-but-unsupported color (or a removal) becomes None
+    // instead of being silently saved as the wrong color or rejected (#5382).
+    // normalizeListColor returns '' for None; store null so the optional,
+    // allowedValues-constrained schema field accepts it (as cards do).
+    const color = normalizeListColor(newColor) || null;
+    return await Swimlanes.updateAsync(this._id, { $set: { color } });
   },
 });
 
-Swimlanes.mutations({
-  rename(title) {
-    return { $set: { title } };
-  },
-
-  archive() {
-    if (this.isTemplateSwimlane()) {
-      this.myLists().forEach(list => {
-        return list.archive();
-      });
-    }
-    return { $set: { archived: true, archivedAt: new Date() } };
-  },
-
-  restore() {
-    if (this.isTemplateSwimlane()) {
-      this.myLists().forEach(list => {
-        return list.restore();
-      });
-    }
-    return { $set: { archived: false } };
-  },
-
-  setColor(newColor) {
-    if (newColor === 'silver') {
-      newColor = null;
-    }
-    return {
-      $set: {
-        color: newColor,
-      },
-    };
-  },
-});
-
-Swimlanes.userArchivedSwimlanes = userId => {
-  return ReactiveCache.getSwimlanes({
-    boardId: { $in: Boards.userBoardIds(userId, null) },
+Swimlanes.userArchivedSwimlanes = async userId => {
+  return await ReactiveCache.getSwimlanes({
+    boardId: { $in: await Boards.userBoardIds(userId, null) },
     archived: true,
   })
 };
 
-Swimlanes.userArchivedSwimlaneIds = () => {
-  return Swimlanes.userArchivedSwimlanes().map(swim => { return swim._id; });
+// The userId is what makes this the USER's archived swimlanes: it was declared
+// with no parameter and called the finder with none either, so the finder asked
+// for the boards of `undefined` and the answer was always empty - the archived
+// half of a global search matched nothing (#6537).
+Swimlanes.userArchivedSwimlaneIds = async userId => {
+  const swimlanes = await Swimlanes.userArchivedSwimlanes(userId);
+  return swimlanes.map(swim => { return swim._id; });
 };
 
-Swimlanes.archivedSwimlanes = () => {
-  return ReactiveCache.getSwimlanes({ archived: true });
+Swimlanes.archivedSwimlanes = async () => {
+  return await ReactiveCache.getSwimlanes({ archived: true });
 };
 
-Swimlanes.archivedSwimlaneIds = () => {
-  return Swimlanes.archivedSwimlanes().map(swim => {
+Swimlanes.archivedSwimlaneIds = async () => {
+  const swimlanes = await Swimlanes.archivedSwimlanes();
+  return swimlanes.map(swim => {
     return swim._id;
   });
 };
 
 Swimlanes.hookOptions.after.update = { fetchPrevious: false };
 
-if (Meteor.isServer) {
-  Meteor.startup(() => {
-    Swimlanes._collection.createIndex({ modifiedAt: -1 });
-    Swimlanes._collection.createIndex({ boardId: 1 });
-  });
-
-  Swimlanes.after.insert((userId, doc) => {
-    Activities.insert({
-      userId,
-      type: 'swimlane',
-      activityType: 'createSwimlane',
-      boardId: doc.boardId,
-      swimlaneId: doc._id,
-    });
-  });
-
-  Swimlanes.before.remove(function(userId, doc) {
-    const lists = ReactiveCache.getLists(
-      {
-        boardId: doc.boardId,
-        swimlaneId: { $in: [doc._id, ''] },
-        archived: false,
+// Position history tracking methods
+Swimlanes.helpers({
+  /**
+   * Track the original position of this swimlane
+   */
+  trackOriginalPosition() {
+    const selector = {
+      boardId: this.boardId,
+      entityType: 'swimlane',
+      entityId: this._id,
+    };
+    const document = {
+      boardId: this.boardId,
+      entityType: 'swimlane',
+      entityId: this._id,
+      originalPosition: {
+        sort: this.sort,
+        title: this.title,
       },
-      { sort: ['sort'] },
-    );
+      originalTitle: this.title,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
 
-    if (lists.length < 2) {
-      lists.forEach(list => {
-        list.remove();
-      });
-    } else {
-      Cards.remove({ swimlaneId: doc._id });
-    }
-
-    Activities.insert({
-      userId,
-      type: 'swimlane',
-      activityType: 'removeSwimlane',
-      boardId: doc.boardId,
-      swimlaneId: doc._id,
-      title: doc.title,
-    });
-  });
-
-  Swimlanes.after.update((userId, doc) => {
-    if (doc.archived) {
-      Activities.insert({
-        userId,
-        type: 'swimlane',
-        activityType: 'archivedSwimlane',
-        swimlaneId: doc._id,
-        boardId: doc.boardId,
+    if (Meteor.isServer) {
+      return PositionHistory.findOneAsync(selector).then(existingHistory => {
+        if (!existingHistory) {
+          return PositionHistory.insertAsync(document);
+        }
+        return existingHistory;
       });
     }
-  });
-}
 
-//SWIMLANE REST API
-if (Meteor.isServer) {
-  /**
-   * @operation get_all_swimlanes
-   *
-   * @summary Get the list of swimlanes attached to a board
-   *
-   * @param {string} boardId the ID of the board
-   * @return_type [{_id: string,
-   *                title: string}]
-   */
-  JsonRoutes.add('GET', '/api/boards/:boardId/swimlanes', function(req, res) {
-    try {
-      const paramBoardId = req.params.boardId;
-      Authentication.checkBoardAccess(req.userId, paramBoardId);
-
-      JsonRoutes.sendResult(res, {
-        code: 200,
-        data: ReactiveCache.getSwimlanes({ boardId: paramBoardId, archived: false }).map(
-          function(doc) {
-            return {
-              _id: doc._id,
-              title: doc.title,
-            };
-          },
-        ),
-      });
-    } catch (error) {
-      JsonRoutes.sendResult(res, {
-        code: 200,
-        data: error,
-      });
+    const existingHistory = PositionHistory.findOne(selector);
+    if (!existingHistory) {
+      PositionHistory.insert(document);
     }
-  });
+  },
 
   /**
-   * @operation get_swimlane
-   *
-   * @summary Get a swimlane
-   *
-   * @param {string} boardId the ID of the board
-   * @param {string} swimlaneId the ID of the swimlane
-   * @return_type Swimlanes
+   * Get the original position history for this swimlane
    */
-  JsonRoutes.add('GET', '/api/boards/:boardId/swimlanes/:swimlaneId', function(
-    req,
-    res,
-  ) {
-    try {
-      const paramBoardId = req.params.boardId;
-      const paramSwimlaneId = req.params.swimlaneId;
-      Authentication.checkBoardAccess(req.userId, paramBoardId);
-
-      JsonRoutes.sendResult(res, {
-        code: 200,
-        data: ReactiveCache.getSwimlane({
-          _id: paramSwimlaneId,
-          boardId: paramBoardId,
-          archived: false,
-        }),
-      });
-    } catch (error) {
-      JsonRoutes.sendResult(res, {
-        code: 200,
-        data: error,
-      });
+  getOriginalPosition() {
+    const selector = {
+      boardId: this.boardId,
+      entityType: 'swimlane',
+      entityId: this._id,
+    };
+    if (Meteor.isServer) {
+      return PositionHistory.findOneAsync(selector);
     }
-  });
+    return PositionHistory.findOne(selector);
+  },
 
   /**
-   * @operation new_swimlane
-   *
-   * @summary Add a swimlane to a board
-   *
-   * @param {string} boardId the ID of the board
-   * @param {string} title the new title of the swimlane
-   * @return_type {_id: string}
+   * Check if this swimlane has moved from its original position
    */
-  JsonRoutes.add('POST', '/api/boards/:boardId/swimlanes', function(req, res) {
-    try {
-      const paramBoardId = req.params.boardId;
-      Authentication.checkBoardAccess(req.userId, paramBoardId);
+  hasMovedFromOriginalPosition() {
+    const history = this.getOriginalPosition();
+    if (!history) return false;
 
-      const board = ReactiveCache.getBoard(paramBoardId);
-      const id = Swimlanes.insert({
-        title: req.body.title,
-        boardId: paramBoardId,
-        sort: board.swimlanes().length,
-      });
-      JsonRoutes.sendResult(res, {
-        code: 200,
-        data: {
-          _id: id,
-        },
-      });
-    } catch (error) {
-      JsonRoutes.sendResult(res, {
-        code: 200,
-        data: error,
-      });
-    }
-  });
+    return history.originalPosition.sort !== this.sort;
+  },
 
   /**
-   * @operation edit_swimlane
-   *
-   * @summary Edit the title of a swimlane
-   *
-   * @param {string} boardId the ID of the board
-   * @param {string} swimlaneId the ID of the swimlane to edit
-   * @param {string} title the new title of the swimlane
-   * @return_type {_id: string}
+   * Get a description of the original position
    */
-  JsonRoutes.add('PUT', '/api/boards/:boardId/swimlanes/:swimlaneId', function(req, res) {
-    try {
-      const paramBoardId = req.params.boardId;
-      const paramSwimlaneId = req.params.swimlaneId;
-      Authentication.checkBoardAccess(req.userId, paramBoardId);
-      const board = ReactiveCache.getBoard(paramBoardId);
-      const swimlane = ReactiveCache.getSwimlane({
-        _id: paramSwimlaneId,
-        boardId: paramBoardId,
-      });
-      if (!swimlane) {
-        throw new Meteor.Error('not-found', 'Swimlane not found');
-      }
-      Swimlanes.direct.update(
-        { _id: paramSwimlaneId },
-        { $set: { title: req.body.title } }
-      );
-      JsonRoutes.sendResult(res, {
-        code: 200,
-        data: {
-          _id: paramSwimlaneId,
-        },
-      });
-    } catch (error) {
-      JsonRoutes.sendResult(res, {
-        code: 200,
-        data: error,
-      });
-    }
-  });
+  getOriginalPositionDescription() {
+    const history = this.getOriginalPosition();
+    if (!history) return 'No original position data';
 
-  /**
-   * @operation delete_swimlane
-   *
-   * @summary Delete a swimlane
-   *
-   * @description The swimlane will be deleted, not moved to the recycle bin
-   *
-   * @param {string} boardId the ID of the board
-   * @param {string} swimlaneId the ID of the swimlane
-   * @return_type {_id: string}
-   */
-  JsonRoutes.add(
-    'DELETE',
-    '/api/boards/:boardId/swimlanes/:swimlaneId',
-    function(req, res) {
-      try {
-        const paramBoardId = req.params.boardId;
-        const paramSwimlaneId = req.params.swimlaneId;
-        Authentication.checkBoardAccess(req.userId, paramBoardId);
-        Swimlanes.remove({ _id: paramSwimlaneId, boardId: paramBoardId });
-        JsonRoutes.sendResult(res, {
-          code: 200,
-          data: {
-            _id: paramSwimlaneId,
-          },
-        });
-      } catch (error) {
-        JsonRoutes.sendResult(res, {
-          code: 200,
-          data: error,
-        });
-      }
-    },
-  );
-}
+    return `Original position: ${history.originalPosition.sort || 0}`;
+  },
+});
 
 export default Swimlanes;

@@ -1,6 +1,6 @@
 Package.describe({
   name: 'wekan-ldap',
-  version: '0.0.2',
+  version: '0.1.0',
   // Brief, one-line summary of the package.
   summary: 'Basic meteor login with ldap',
   // URL to the Git repository containing the source code for this package.
@@ -12,17 +12,23 @@ Package.describe({
 
 
 Package.onUse(function(api) {
-  api.versionsFrom('2.7');
-	api.use('yasaricli:slugify');
+	api.versionsFrom(['2.16', '3.0']);
 	api.use('ecmascript');
-	api.use('underscore');
 	api.use('sha');
 	api.use('templating', 'client');
 
 	api.use('accounts-base', 'server');
 	api.use('accounts-password', 'server');
-	api.use('percolate:synced-cron', 'server');
+	// DDP._CurrentMethodInvocation: server/sync.js clears the inherited login
+	// invocation context so the org/team sync method call is server-to-server.
+	api.use('ddp', 'server');
+	api.use('quave:synced-cron', 'server');
 	api.addFiles('client/loginHelper.js', 'client');
 
 	api.mainModule('server/index.js', 'server');
+});
+
+Npm.depends({
+	'ldapts': '4.2.6',
+	'limax': '4.1.0'
 });

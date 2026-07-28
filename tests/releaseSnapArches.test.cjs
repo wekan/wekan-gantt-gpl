@@ -1,0 +1,207 @@
+'use strict';
+
+// Plain-Node guard (no Meteor) for how release-all.yml builds the snap for each
+// CPU architecture. Run: node tests/releaseSnapArches.test.cjs
+//
+// The failure this pins: ppc64el and s390x were built by a `snap-qemu` job using
+// diddlesnaps/snapcraft-multiarch-action, which hardcodes a maximum base of
+// core22 and is unmaintained. WeKan's snapcraft.yaml is `base: core24`, so BOTH
+// legs died before building anything - "Your build requires a base that this tool
+// does not support (core24)" - on every single release. They now build on
+// Launchpad, which is the only mechanism that does core24 on an arch with no
+// native GitHub runner. See docs/Design/Autoupdate/Forks/Snap-Core.md.
+
+const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
+
+const repoRoot = path.resolve(__dirname, '..');
+const read = rel => fs.readFileSync(path.join(repoRoot, rel), 'utf8');
+
+const workflow = read('.github/workflows/release-all.yml');
+const snapcraft = read('snapcraft.yaml');
+
+let passed = 0;
+function test(name, fn) {
+  try {
+    fn();
+    passed++;
+    console.log(`  ok - ${name}`);
+  } catch (err) {
+    console.error(`  FAIL - ${name}\n    ${err.message}`);
+    process.exitCode = 1;
+  }
+}
+
+// A comment in a YAML `run:` block is text the shell never sees, and this file
+// has been fooled by it before: a comment that QUOTES the old broken code (kept
+// on purpose, so the next reader knows what the fix was for) reads exactly like
+// the code it replaced. Assertions about what the shell DOES use this.
+function code(text) {
+  return text.split('\n').filter(l => !/^\s*#/.test(l)).join('\n');
+}
+
+// The body of one top-level job: from "  <name>:" to the next job at the same
+// indentation. Good enough to ask which matrix and which options are ITS own.
+function job(name) {
+  const start = workflow.indexOf(`\n  ${name}:\n`);
+  assert.notStrictEqual(start, -1, `release-all.yml has no ${name} job`);
+  const rest = workflow.slice(start + 1);
+  const next = rest.slice(1).search(/\n {2}[a-z][\w-]*:\n/);
+  return next === -1 ? rest : rest.slice(0, next + 1);
+}
+
+test('the QEMU snap job is gone, and so is the action that could not build core24', () => {
+  assert.ok(!/\n {2}snap-qemu:/.test(workflow), 'snap-qemu must be deleted, not disabled');
+  assert.ok(!/uses: diddlesnaps\/snapcraft-multiarch-action/.test(workflow),
+    'the action caps at core22; nothing may USE it while snapcraft.yaml is core24 '
+    + '(the comment explaining why is allowed to name it)');
+  assert.ok(/^base: core24$/m.test(snapcraft),
+    'this guard exists because the snap is core24 - if that changed, re-read Snap-Core.md');
+});
+
+test('every platform in snapcraft.yaml is built by some snap job', () => {
+  // The platforms: block lists what the snap claims to support. An arch listed
+  // there and built by no job is a snap that never appears in the store.
+  // The block ends at the next top-level key (parts:, hooks:, ...).
+  let block = snapcraft.slice(snapcraft.indexOf('\nplatforms:') + 1);
+  const nextKey = block.slice(1).search(/\n[a-z][\w-]*:/);
+  if (nextKey !== -1) block = block.slice(0, nextKey + 1);
+  const platforms = [...block.matchAll(/^ {2}([a-z0-9]+):$/gm)].map(m => m[1]);
+  assert.deepStrictEqual(platforms.sort(),
+    ['amd64', 'arm64', 'ppc64el', 'riscv64', 's390x'],
+    'the platform list changed - the two jobs below must cover the new list');
+
+  const native = job('snap-native');
+  const launchpad = job('snap-launchpad');
+  const built = new Set([
+    ...[...native.matchAll(/arch: ([a-z0-9]+)/g)].map(m => m[1]),
+    ...(launchpad.match(/arch: \[([^\]]+)\]/) || [, ''])[1]
+      .split(',').map(a => a.trim()).filter(Boolean),
+  ]);
+  const missing = platforms.filter(p => !built.has(p));
+  assert.deepStrictEqual(missing, [], 'these platforms are in no snap job');
+});
+
+test('the mainstream arches build natively, the exotic ones on Launchpad', () => {
+  const native = job('snap-native');
+  assert.ok(/arch: amd64\s+runner: ubuntu-24\.04\b/.test(native), 'amd64 on a native runner');
+  assert.ok(/arch: arm64\s+runner: ubuntu-24\.04-arm\b/.test(native), 'arm64 on a native runner');
+  assert.ok(native.includes('snapcore/action-build'), 'built with the official action');
+
+  const launchpad = job('snap-launchpad');
+  const arches = (launchpad.match(/arch: \[([^\]]+)\]/) || [, ''])[1]
+    .split(',').map(a => a.trim());
+  assert.deepStrictEqual(arches, ['ppc64el', 's390x', 'riscv64'],
+    'ppc64el and s390x belong here: no native runner, and QEMU cannot do core24');
+  assert.ok(/snapcraft remote-build/.test(launchpad), 'built with remote-build');
+});
+
+test('a slow Launchpad arch can neither fail the release nor cancel another arch', () => {
+  // This is the whole trade of using Launchpad: a build can queue for hours.
+  const launchpad = job('snap-launchpad');
+  assert.ok(/continue-on-error: true/.test(launchpad), 'continue-on-error');
+  assert.ok(/fail-fast: false/.test(launchpad), 'fail-fast: false');
+  const timeout = launchpad.match(/timeout-minutes: (\d+)/);
+  assert.ok(timeout, 'timeout-minutes must bound a stuck build');
+  assert.ok(Number(timeout[1]) >= 120,
+    `timeout-minutes: ${timeout[1]} is too short for a Launchpad queue`);
+});
+
+test('it names the secret it is missing, and the one Launchpad refused', () => {
+  // A remote build needs BOTH: SNAP_AUTH to upload, LP_CREDENTIALS to build. The
+  // arches that just moved here did not need LP_CREDENTIALS before, so a missing
+  // one would otherwise read as an ordinary build failure.
+  const launchpad = job('snap-launchpad');
+  for (const secret of ['SNAP_AUTH', 'LP_CREDENTIALS']) {
+    assert.ok(launchpad.includes(`missing="$missing ${secret}"`),
+      `the first step must name ${secret} when it is unset`);
+  }
+  assert.ok(/base64 -d/.test(launchpad), 'and decode LP_CREDENTIALS rather than trust it');
+  assert.ok(/LP_CREDENTIALS may not work/.test(launchpad),
+    'and say so when Launchpad answers unauthorized');
+  // Changed deliberately after v10.48: the upload step used to print "SNAP_AUTH
+  // did not work" for a snap that was never built, because its existence test was
+  // a literal filename in an array (see the test below). "The build produced
+  // nothing" and "the store said no" are two different problems with two different
+  // owners, so they are now two different messages - and the store one still names
+  // the secret and the command that re-exports it.
+  assert.ok(/This is NOT a SNAP_AUTH problem/.test(launchpad),
+    'a missing artifact must NOT be reported as a credential failure');
+  assert.ok(/The Snap Store refused the upload/.test(launchpad),
+    'and a real refusal by the store is its own message');
+  assert.ok(/re-export SNAP_AUTH with: snapcraft export-login/.test(launchpad),
+    'which says how to fix it');
+});
+
+test('a remote build that produced no .snap is a failure, not a silent success', () => {
+  // remote-build can exit 0 having only downloaded logs. Uploading nothing is how
+  // "is not a valid file" (snapcraft upload, exit 64) used to end a release.
+  const launchpad = job('snap-launchpad');
+  assert.ok(/No wekan_\$\{VERSION\}_\$\{\{ matrix\.arch \}\}\.snap to upload/.test(launchpad),
+    'the upload step must refuse to run without the file');
+  assert.ok(/failed after \$attempts attempts/.test(launchpad), 'and the build step must retry');
+
+  // v10.48: every one of those tests was `snaps=( wekan_${VERSION}_<arch>.snap )`
+  // followed by a count. That string has no wildcard, so it is a literal filename,
+  // `shopt -s nullglob` cannot empty a literal, and the count was ALWAYS 1 - s390x
+  // reported "succeeded" over an empty artifact list and uploaded a file that did
+  // not exist. Every array built from a .snap name must therefore be a real GLOB.
+  const arrays = [...code(launchpad).matchAll(/snaps=\(([^)]*)\)/g)].map(m => m[1].trim());
+  assert.ok(arrays.length >= 3, 'the build, upload and attach steps each look for the file');
+  for (const a of arrays) {
+    assert.ok(a.includes('*'),
+      `"snaps=( ${a} )" has no wildcard, so it is a literal filename that always `
+      + 'exists as a string - nullglob cannot empty it and the count is always 1');
+  }
+  // And the count alone is not enough: an empty file passes it.
+  assert.ok(/\[ -s "\$\{snaps\[0\]\}" \]/.test(code(launchpad)),
+    'the file must also be non-empty before it is uploaded or attached');
+});
+
+test('the Launchpad build log is printed whenever there is no snap', () => {
+  // It is downloaded by remote-build and is the only thing that says WHY a build
+  // stopped. v10.48 fetched it, exited 0 (see above) and threw it away, so three
+  // "Stopped" builds left no trace of their reason anywhere.
+  const launchpad = job('snap-launchpad');
+  const build = launchpad.slice(launchpad.indexOf('Build the ${{ matrix.arch }} snap on Launchpad'));
+  const loop = build.slice(0, build.indexOf('- name: Push'));
+  assert.ok(/for log in snapcraft-wekan-\*\.txt/.test(loop), 'the downloaded log is read');
+  assert.ok(/exited 0 but produced NO \.snap/.test(loop),
+    'and the "exit 0, no artifact" case says so in words instead of passing');
+  assert.ok(loop.indexOf('for log in snapcraft-wekan-*.txt') > loop.indexOf('exited 0 but produced NO .snap'),
+    'the log is printed on that path too, not only when snapcraft exits non-zero');
+});
+
+test('every snap the release publishes is core24, and goes to all four channels', () => {
+  // core24 is a released base, so the snap may carry `grade: stable` and be
+  // accepted by the stable and candidate channels. core26 is still experimental:
+  // `build-base: devel` forces `grade: devel`, and a devel-grade snap is refused
+  // by stable and candidate - it can only go to beta and edge. So the release
+  // builds core24, and publishes stable + candidate + beta + edge everywhere:
+  // the default snap on native arches, the Launchpad arches, and the wekan-ondra
+  // / wekan-gantt-gpl variants.
+  assert.ok(/^base: core24$/m.test(snapcraft), 'snapcraft.yaml is built on core24');
+  assert.ok(/^grade: stable$/m.test(snapcraft), 'and is grade: stable, or stable refuses it');
+  assert.ok(!/^build-base:/m.test(snapcraft), 'a build-base would force grade: devel');
+
+  const publishes = [...code(workflow).matchAll(/(?:--release=|release: )([a-z,]+)/g)]
+    .map(m => m[1]);
+  assert.ok(publishes.length >= 3,
+    'the native, Launchpad and variant snap jobs each publish somewhere');
+  for (const channels of publishes) {
+    assert.deepStrictEqual(channels.split(',').sort(), ['beta', 'candidate', 'edge', 'stable'],
+      `"${channels}" is not all four channels`);
+  }
+
+  // And nothing BUILDS the core26 file, which could only reach beta/edge. The
+  // variant sync renames the snap inside it, which is the one line that may
+  // mention it.
+  const mentions = code(workflow).split('\n').filter(l => l.includes('snapcraft-core26.yaml'));
+  for (const line of mentions) {
+    assert.ok(/for f in |sed /.test(line),
+      `snapcraft-core26.yaml is only renamed, never built:\n      ${line.trim()}`);
+  }
+});
+
+console.log(`\n${passed} tests passed`);

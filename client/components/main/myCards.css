@@ -1,27 +1,27 @@
 .my-cards-board-wrapper {
-  border-radius: 0 0 4px 4px;
-  min-width: 400px;
-  margin-bottom: 2rem;
-  margin-right: auto;
-  margin-left: auto;
-  border-width: 2px;
+  border-radius: 0 0 7px 7px;
+  min-width: min(400px, 52vw);
+  margin-bottom: 23px;
+  margin-inline-end: auto;
+  margin-inline-start: auto;
+  border-width: 4px;
   border-style: solid;
   border-color: #a2a2a2;
 }
 .my-cards-board-title {
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   font-weight: bold;
-  padding: 0.5rem;
+  padding: 6px 10px;
   background-color: #808080;
   color: #fff;
 }
 .my-cards-swimlane-title {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: bold;
-  padding: 0.5rem;
-  padding-bottom: 0.4rem;
+  padding: 6px 10px;
+  padding-bottom: 5px;
   margin-top: 0;
-  margin-bottom: 0.5rem;
+  margin-bottom: 6px;
   text-align: center;
 }
 .swimlane-default-color {
@@ -29,25 +29,25 @@
 }
 .my-cards-list-title {
   font-weight: bold;
-  font-size: 1.1rem;
+  font-size: 1rem;
   text-align: center;
-  margin-bottom: 0.7rem;
+  margin-bottom: 8px;
 }
 .my-cards-list-wrapper {
-  margin: 1rem;
-  border-radius: 5px;
+  margin: 12px 18px;
+  border-radius: 10px;
   display: inline-grid;
-  min-width: 250px;
-  max-width: 350px;
+  min-width: min(250px, 32vw);
+  max-width: min(350px, 45vw);
 }
 .my-cards-card-wrapper {
   margin-top: 0;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 .my-cards-dueat-list-wrapper {
-  max-width: 500px;
-  margin-right: auto;
-  margin-left: auto;
+  max-width: min(500px, 65vw);
+  margin-inline-end: auto;
+  margin-inline-start: auto;
 }
 .my-cards-board-table thead {
   border-bottom: 3px solid #4d4d4d;
@@ -62,13 +62,13 @@
 }
 .my-cards-card-title-table {
   font-weight: bold;
-  padding-left: 2px;
+  padding-inline-start: 2px;
   max-width: 243px;
 }
 .my-cards-board-badge {
   width: 36px;
   height: 24px;
-  float: left;
+  float: inline-start;
   border-radius: 5px;
-  margin-right: 5px;
+  margin-inline-end: 5px;
 }

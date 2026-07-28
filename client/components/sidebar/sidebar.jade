@@ -1,36 +1,72 @@
 template(name="sidebar")
-  .board-sidebar.sidebar(class="{{#if isOpen}}is-open{{/if}}")
+  .board-sidebar.sidebar(class="{{#if isOpen}}is-open{{/if}} {{#unless isVerticalScrollbars}}no-scrollbars{{/unless}}")
+    //- Drag the sidebar's LEFT edge to resize its width (desktop only; hidden on
+      mobile where the sidebar is full width). Saved to the user profile (or
+      localStorage for anonymous users on a public board).
+    .sidebar-resize-handle.js-sidebar-resize-handle.nodragscroll(title="{{_ 'drag-to-resize-sidebar'}}")
     //a.sidebar-tongue.js-toggle-sidebar(
-    //  class="{{#if isTongueHidden}}is-hidden{{/if}}",
-    //  title="{{showTongueTitle}}")
-    //  i.fa.fa-navicon
-    .sidebar-shadow
-      a.sidebar-xmark.js-close-sidebar &#10005;
-      .sidebar-content.js-board-sidebar-content
-        //a.hide-btn.js-hide-sidebar
-        //  i.fa.fa-navicon
-        unless isDefaultView
-          h2
-            a.fa.fa-chevron-left.js-back-home
-            = getViewTitle
-        if isOpen
-          +Template.dynamic(template=getViewTemplate)
+    //
+      class="{{#if isTongueHidden}}is-hidden{{/if}}",
+    //
+      title="{{showTongueTitle}}")
+    //
+      i.fa.fa-navicon
+    .sidebar-actions
+      .sidebar-shortcuts
+        a.sidebar-btn.js-shortcuts(title="{{_ 'keyboard-shortcuts' }}")
+          i.fa.fa-keyboard-o
+          span {{_ 'keyboard-shortcuts' }}
+        a.sidebar-btn.js-keyboard-shortcuts-toggle(
+          title="{{#if isKeyboardShortcuts}}{{_ 'keyboard-shortcuts-enabled'}}{{else}}{{_ 'keyboard-shortcuts-disabled'}}{{/if}}")
+          i.fa(class="{{#if isKeyboardShortcuts}}fa-check{{else}}fa-ban{{/if}}")
+      if isAccessibilityEnabled
+        a.sidebar-accessibility
+          i.fa.fa-universal-access
+          span {{_ 'accessibility'}}
+      a.sidebar-xmark.js-close-sidebar(aria-label="{{_ 'close'}}") &#10005;
+    .sidebar-content.js-board-sidebar-content
+      //a.hide-btn.js-hide-sidebar
+      //
+        i.fa.fa-navicon
+      unless isDefaultView
+        h2
+          a.fa.fa-arrow-left.js-back-home(aria-label="{{_ 'go-back'}}")
+          = getViewTitle
+      if isOpen
+        +Template.dynamic(template=getViewTemplate)
 
 template(name='homeSidebar')
-  hr
   +membersWidget
   hr
   +labelsWidget
+  hr
   ul#cards.label-text-hidden
     a.flex.js-toggle-minicard-label-text(title="{{_ 'hide-minicard-label-text'}}")
+      i.fa(class="{{#if hiddenMinicardLabelText}}fa-check{{else}}fa-square-o{{/if}}")
       span {{_ 'hide-minicard-label-text'}}
-      b &nbsp;
-      .materialCheckBox(class="{{#if hiddenMinicardLabelText}}is-checked{{/if}}")
+  if currentUser
+    ul#cards.vertical-scrollbars-toggle
+      a.flex.js-vertical-scrollbars-toggle(title="{{_ 'enable-vertical-scrollbars'}}")
+        i.fa(class="{{#if isVerticalScrollbars}}fa-check{{else}}fa-square-o{{/if}}")
+        span {{_ 'enable-vertical-scrollbars'}}
+  ul#cards.show-week-of-year-toggle
+    a.flex.js-show-week-of-year-toggle(title="{{_ 'show-week-of-year'}}")
+      i.fa(class="{{#if isShowWeekOfYear}}fa-check{{else}}fa-square-o{{/if}}")
+      span {{_ 'show-week-of-year'}}
   hr
-  unless currentUser.isNoComments
-    h3
-      i.fa.fa-comments-o
+  if currentUser.isBoardAdmin
+    h3.activity-title
+      i.fa.fa-comment-o
       | {{_ 'activities'}}
+
+      if showActivities
+        a.flex.activities-eye-toggle.js-toggle-show-activities(title="{{_ 'hide-activities'}}" aria-label="{{_ 'hide-activities'}}")
+          i.fa.fa-eye.eye-icon
+          span {{_ 'hide-activities'}}
+      else
+        a.flex.activities-eye-toggle.js-toggle-show-activities(title="{{_ 'show-activities'}}" aria-label="{{_ 'show-activities'}}")
+          i.fa.fa-eye-slash.eye-slash-icon
+          span {{_ 'show-activities'}}
     +activities(mode="board")
 
 template(name="membersWidget")
@@ -38,13 +74,8 @@ template(name="membersWidget")
     unless currentUser.isWorker
       h3
         a.board-header-btn.js-open-board-menu(title="{{_ 'boardMenuPopup-title'}}")
-          i.board-header-btn-icon.fa.fa-cog
+          i.fa.fa-cog
           | {{_ 'boardMenuPopup-title'}}
-  .board-widget.board-widget-members
-      .sidebar-shortcuts
-        a.board-header-btn.js-shortcuts(title="{{_ 'keyboard-shortcuts' }}")
-          i.fa.fa-keyboard-o
-          span {{_ 'keyboard-shortcuts' }}
   hr
   h3
     i.fa.fa-users
@@ -54,90 +85,108 @@ template(name="membersWidget")
         unless currentUser.isWorker
           p.quiet
         .board-widget-content
-          each currentBoard.activeMembers
-            +userAvatar(userId=this.userId showStatus=true)
-          if isSandstorm
-            if currentUser.isBoardMember
-              a.member.add-member.sandstorm-powerbox-request-identity(title="{{_ 'add-members'}}")
+          if currentBoard.isAnyTemplateBoard
+            +userAvatar(userId=currentBoard.userId showStatus=true)
+            .clearfix
+          else
+            each currentBoard.membersForSidebar
+              +userAvatar(userId=this.userId showStatus=true)
+            if isSandstorm
+              if currentUser.isBoardMember
+                a.member.add-member.sandstorm-powerbox-request-identity(title="{{_ 'add-members'}}")
+                  i.fa.fa-plus
+            else if currentUser.canInviteToBoard
+              a.member.add-member.js-manage-board-members(title="{{_ 'add-members'}}")
                 i.fa.fa-plus
-          else if currentUser.isBoardAdmin
-            a.member.add-member.js-manage-board-members(title="{{_ 'add-members'}}")
-              i.fa.fa-plus
-          .clearfix
-          if isInvited
-            hr
-            p
-              i.fa.fa-exclamation-circle
-              | {{_ 'just-invited'}}
-            button.js-member-invite-accept.primary {{_ 'accept'}}
-            button.js-member-invite-decline {{_ 'decline'}}
+            .clearfix
+            if isInvited
+              hr
+              p
+                i.fa.fa-exclamation-triangle
+                | {{_ 'just-invited'}}
+              button.js-member-invite-accept.primary {{_ 'accept'}}
+              button.js-member-invite-decline {{_ 'decline'}}
       +tabContent(slug='organizations')
         unless currentUser.isWorker
           p.quiet
-        if AtLeastOneOrgWasCreated
-          .board-widget.board-widget-members
-            .board-widget-content
-              +boardOrgGeneral
-              .clearfix
+        .board-widget-content
+          +boardOrgGeneral
+          .clearfix
       +tabContent(slug="teams")
         unless currentUser.isWorker
           p.quiet
-        if AtLeastOneTeamWasCreated
-          .board-widget.board-widget-members
-            .board-widget-content
-              +boardTeamGeneral
-              .clearfix
+        .board-widget-content
+          +boardTeamGeneral
+          .clearfix
+      +tabContent(slug="domains")
+        unless currentUser.isWorker
+          p.quiet
+        .board-widget-content
+          +boardDomainGeneral
+          .clearfix
 
 template(name="boardOrgGeneral")
-  table
-    tbody
-      tr
-        th
-          | {{_ 'add-organizations'}}
-          br
-          i.addOrganizationsLabel
-            | {{_ 'to-create-organizations-contact-admin'}}
-          br
-          i.addOrganizationsLabel
-            | {{_ 'add-organizations-label'}}
-        th
-          if currentUser.isBoardAdmin
-            a.member.orgOrTeamMember.add-member.js-manage-board-addOrg(title="{{_ 'add-members'}}")
-              i.addTeamFaPlus.fa.fa-plus
-            .divaddfaplusminus
-              | {{_ 'add'}}
-      each org in currentBoard.activeOrgs
-        +boardOrgRow(orgId=org.orgId)
+  each org in currentBoard.activeOrgs
+    +boardOrgRow(orgId=org.orgId)
+  if currentUser.isBoardAdmin
+    a.member.orgOrTeamMember.add-member.js-manage-board-addOrg(title="{{_ 'add-members'}}")
+      i.fa.fa-plus
 
 template(name="boardTeamGeneral")
-  table
-    tbody
-      tr
-        th
-          | {{_ 'add-teams'}}
-          br
-          i.addTeamsLabel
-            | {{_ 'to-create-teams-contact-admin'}}
-          br
-          i.addTeamsLabel
-            | {{_ 'add-teams-label'}}
-        th
-          if currentUser.isBoardAdmin
-            a.member.orgOrTeamMember.add-member.js-manage-board-addTeam(title="{{_ 'add-members'}}")
-              i.addTeamFaPlus.fa.fa-plus
-            .divaddfaplusminus
-              | {{_ 'add'}}
-      each currentBoard.activeTeams
-        +boardTeamRow(teamId=this.teamId)
+  each currentBoard.activeTeams
+    +boardTeamRow(teamId=this.teamId)
+  if currentUser.isBoardAdmin
+    a.member.orgOrTeamMember.add-member.js-manage-board-addTeam(title="{{_ 'add-members'}}")
+      i.fa.fa-plus
+
+template(name="boardDomainGeneral")
+  each currentBoard.activeDomains
+    +boardDomainRow(domain=this.domain)
+  if currentUser.isBoardAdmin
+    a.member.orgOrTeamMember.add-member.js-manage-board-addDomain(title="{{_ 'add-domain'}}")
+      i.fa.fa-plus
+
+template(name="boardDomainRow")
+  a.member.orgOrTeamMember.js-manage-board-removeDomain(title="{{domain}}" data-domain="{{domain}}")
+    svg.avatar.avatar-initials(viewBox="0 0 {{domainViewPortWidth}} 15")
+      text(x="50%" y="11" text-anchor="middle" dominant-baseline="middle" font-size="16")= domain
 
 template(name="boardChangeColorPopup")
-  .board-backgrounds-list.clearfix
-    each backgroundColors
-      .board-background-select.js-select-background
-        span.background-box(class="board-color-{{this}}")
-          span {{this}}
-          if isSelected
-            i.fa.fa-check
+  //- docs/Theme/Theme.md: category + theme dropdowns with custom color wheels for
+    the flat/clear categories, shared with Member Settings / Change Color.
+  +themeColorPicker(scope="board")
+
+template(name="boardBackgroundsPopup")
+  .board-backgrounds-manage
+    input.js-bg-upload-input.hide(type="file" name="file" accept="image/*")
+    a.primary.wide.js-bg-upload-button
+      i.fa.fa-plus
+      = ' '
+      | {{_ 'upload-background'}}
+    if uploading.get
+      +spinner
+    if error.get
+      .warning {{_ error.get}}
+    .board-backgrounds-grid.clearfix
+      each backgrounds
+        .board-bg-item(class="{{#if isActiveBackground}}is-active{{/if}}")
+          .board-bg-thumb(style="background-image: url('{{link}}');")
+            if isActiveBackground
+              i.fa.fa-check.board-bg-active-check
+          .board-bg-actions
+            unless isActiveBackground
+              a.js-set-board-background(title="{{_ 'set-as-active'}}")
+                i.fa.fa-check-circle-o
+            a.js-download-board-background(href="{{link}}?download=true" download="{{name}}" title="{{_ 'download'}}")
+              i.fa.fa-arrow-down
+            a.js-delete-board-background(title="{{_ 'delete'}}")
+              i.fa.fa-trash-o
+
+template(name="deleteBoardBackgroundPopup")
+  p {{_ 'board-background-delete-pop'}}
+  button.js-confirm.negate.full(type="submit")
+    i.fa.fa-trash-o
+    | {{_ 'delete'}}
 
 template(name="boardChangeBackgroundImagePopup")
   form
@@ -161,200 +210,338 @@ template(name="boardInfoOnMyBoardsPopup")
     unless currentSetting.hideCardCounterList
       div.check-div
         a.flex.js-field-has-cardcounterlist(class="{{#if allowsCardCounterList}}is-checked{{/if}}")
-          .materialCheckBox(class="{{#if allowsCardCounterList}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsCardCounterList}}fa-check{{else}}fa-square-o{{/if}}")
           span
-            i.fa.fa-sign-out
+            i.fa.fa-sign-in
             | {{_ 'show-card-counter-per-list'}}
+    div.check-div
+      a.flex.js-field-has-cardaging(class="{{#if cardAging}}is-checked{{/if}}")
+        i.fa(class="{{#if cardAging}}fa-check{{else}}fa-square-o{{/if}}")
+        span
+          i.fa.fa-clock-o
+          | {{_ 'card-aging'}}
+      if cardAging
+        div.card-aging-days
+          span {{_ 'card-aging-days'}}
+          input.js-card-aging-days(type="number" min="1" value="{{cardAgingDays1}}" title="{{_ 'card-aging-tier1'}}")
+          input.js-card-aging-days(type="number" min="1" value="{{cardAgingDays2}}" title="{{_ 'card-aging-tier2'}}")
+          input.js-card-aging-days(type="number" min="1" value="{{cardAgingDays3}}" title="{{_ 'card-aging-tier3'}}")
     unless currentSetting.hideBoardMemberList
       div.check-div
         a.flex.js-field-has-boardmemberlist(class="{{#if allowsBoardMemberList}}is-checked{{/if}}")
-          .materialCheckBox(class="{{#if allowsBoardMemberList}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsBoardMemberList}}fa-check{{else}}fa-square-o{{/if}}")
           span
-            i.fa.fa-hourglass-start
+            i.fa.fa-hourglass
             | {{_ 'show-board_members-avatar'}}
+    div.check-div
+      a.flex.js-field-has-personal-list-width(title="{{_ 'personal-list-width-description'}}" class="{{#if allowsPersonalListWidth}}is-checked{{/if}}")
+        i.fa(class="{{#if allowsPersonalListWidth}}fa-check{{else}}fa-square-o{{/if}}")
+        span
+          i.fa.fa-arrows-h
+          | {{_ 'personal-list-width'}}
 
 template(name="boardCardSettingsPopup")
   form.board-card-settings
-    h3 {{_ 'show-on-card'}}
-    div.check-div
-      a.flex.js-field-has-receiveddate(class="{{#if allowsReceivedDate}}is-checked{{/if}}")
-        .materialCheckBox(class="{{#if allowsReceivedDate}}is-checked{{/if}}")
+    .card-settings-grid
+      .card-settings-column
+        h4 {{_ 'show-on-card'}}
+      .card-settings-column
+        h4 {{_ 'show-on-minicard'}}
+      .card-settings-column
+        h4 {{_ 'description'}}
+    .card-settings-row
+      .card-settings-column
+        a.flex.js-field-has-receiveddate(title="{{_ 'card-received'}}" class="{{#if allowsReceivedDate}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsReceivedDate}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
+        a.flex.js-field-has-receiveddate-on-minicard(title="{{_ 'card-received'}}" class="{{#if allowsReceivedDateOnMinicard}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsReceivedDateOnMinicard}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
         span
-          i.fa.fa-sign-out
+          i.fa.fa-sign-in
           | {{_ 'card-received'}}
-    div.check-div
-      a.flex.js-field-has-startdate(class="{{#if allowsStartDate}}is-checked{{/if}}")
-        .materialCheckBox(class="{{#if allowsStartDate}}is-checked{{/if}}")
+    .card-settings-row
+      .card-settings-column
+        a.flex.js-field-has-startdate(title="{{_ 'card-start'}}" class="{{#if allowsStartDate}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsStartDate}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
+        a.flex.js-field-has-startdate-on-minicard(title="{{_ 'card-start'}}" class="{{#if allowsStartDateOnMinicard}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsStartDateOnMinicard}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
         span
-          i.fa.fa-hourglass-start
+          i.fa.fa-hourglass
           | {{_ 'card-start'}}
-    div.check-div
-      a.flex.js-field-has-duedate(class="{{#if allowsDueDate}}is-checked{{/if}}")
-        .materialCheckBox(class="{{#if allowsDueDate}}is-checked{{/if}}")
+    .card-settings-row
+      .card-settings-column
+        a.flex.js-field-has-duedate(title="{{_ 'card-due'}}" class="{{#if allowsDueDate}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsDueDate}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
+        a.flex.js-field-has-duedate-on-minicard(title="{{_ 'card-due'}}" class="{{#if allowsDueDateOnMinicard}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsDueDateOnMinicard}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
         span
           i.fa.fa-sign-in
           | {{_ 'card-due'}}
-    div.check-div
-      a.flex.js-field-has-enddate(class="{{#if allowsEndDate}}is-checked{{/if}}")
-        .materialCheckBox(class="{{#if allowsEndDate}}is-checked{{/if}}")
+    .card-settings-row
+      .card-settings-column
+        a.flex.js-field-has-enddate(title="{{_ 'card-end'}}" class="{{#if allowsEndDate}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsEndDate}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
+        a.flex.js-field-has-enddate-on-minicard(title="{{_ 'card-end'}}" class="{{#if allowsEndDateOnMinicard}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsEndDateOnMinicard}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
         span
-          i.fa.fa-hourglass-end
+          i.fa.fa-clock-o
           | {{_ 'card-end'}}
-    div.check-div
-      a.flex.js-field-has-members(class="{{#if allowsMembers}}is-checked{{/if}}")
-        .materialCheckBox(class="{{#if allowsMembers}}is-checked{{/if}}")
+    .card-settings-row
+      .card-settings-column
+        a.flex.js-field-has-duecomplete(title="{{_ 'card-mark-complete'}}" class="{{#if allowsDueComplete}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsDueComplete}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
+        a.flex.js-field-has-duecomplete-on-minicard(title="{{_ 'card-mark-complete'}}" class="{{#if allowsDueCompleteOnMinicard}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsDueCompleteOnMinicard}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
+        span
+          i.fa.fa-check-square-o
+          | {{_ 'card-mark-complete'}}
+    .card-settings-row
+      .card-settings-column
+        a.flex.js-field-has-members(title="{{_ 'members'}}" class="{{#if allowsMembers}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsMembers}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
+        a.flex.js-field-has-members-on-minicard(title="{{_ 'members'}}" class="{{#if allowsMembersOnMinicard}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsMembersOnMinicard}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
         span
           i.fa.fa-users
           | {{_ 'members'}}
-
-    div.check-div
-      a.flex.js-field-has-creator(class="{{#if allowsCreator}}is-checked{{/if}}")
-        .materialCheckBox(class="{{#if allowsCreator}}is-checked{{/if}}")
+    .card-settings-row
+      .card-settings-column
+        a.flex.js-field-has-creator(title="{{_ 'creator'}}" class="{{#if allowsCreator}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsCreator}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
+        a.flex.js-field-has-creator-on-minicard(title="{{_ 'creator'}}" class="{{#if allowsCreatorOnMinicard}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsCreatorOnMinicard}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
         span
           i.fa.fa-user
           | {{_ 'creator'}}
-
-    div.check-div
-      a.flex.js-field-has-assignee(class="{{#if allowsAssignee}}is-checked{{/if}}")
-        .materialCheckBox(class="{{#if allowsAssignee}}is-checked{{/if}}")
+    .card-settings-row
+      .card-settings-column
+        a.flex.js-field-has-assignee(title="{{_ 'assignee'}}" class="{{#if allowsAssignee}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsAssignee}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
+        a.flex.js-field-has-assignee-on-minicard(title="{{_ 'assignee'}}" class="{{#if allowsAssigneeOnMinicard}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsAssigneeOnMinicard}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
         span
           i.fa.fa-user
           | {{_ 'assignee'}}
-    div.check-div
-      a.flex.js-field-has-assigned-by(class="{{#if allowsAssignedBy}}is-checked{{/if}}")
-        .materialCheckBox(class="{{#if allowsAssignedBy}}is-checked{{/if}}")
+    .card-settings-row
+      .card-settings-column
+        a.flex.js-field-has-assigned-by(title="{{_ 'assigned-by'}}" class="{{#if allowsAssignedBy}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsAssignedBy}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
+        a.flex.js-field-has-assigned-by-on-minicard(title="{{_ 'assigned-by'}}" class="{{#if allowsAssignedByOnMinicard}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsAssignedByOnMinicard}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
         span
           i.fa.fa-shopping-cart
           | {{_ 'assigned-by'}}
-    div.check-div
-      a.flex.js-field-has-requested-by(class="{{#if allowsRequestedBy}}is-checked{{/if}}")
-        .materialCheckBox(class="{{#if allowsRequestedBy}}is-checked{{/if}}")
+    .card-settings-row
+      .card-settings-column
+        a.flex.js-field-has-requested-by(title="{{_ 'requested-by'}}" class="{{#if allowsRequestedBy}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsRequestedBy}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
+        a.flex.js-field-has-requested-by-on-minicard(title="{{_ 'requested-by'}}" class="{{#if allowsRequestedByOnMinicard}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsRequestedByOnMinicard}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
         span
-          i.fa.fa-user-plus
+          i.fa.fa-user
+          i.fa.fa-plus
           | {{_ 'requested-by'}}
-    div.check-div
-      a.flex.js-field-has-card-sorting-by-number(class="{{#if allowsCardSortingByNumber}}is-checked{{/if}}")
-        .materialCheckBox(class="{{#if allowsCardSortingByNumber}}is-checked{{/if}}")
+    .card-settings-row
+      .card-settings-column
+        a.flex.js-field-has-card-sorting-by-number(title="{{_ 'card-sorting-by-number'}}" class="{{#if allowsCardSortingByNumber}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsCardSortingByNumber}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
+        a.flex.js-field-has-card-sorting-by-number-on-minicard(title="{{_ 'card-sorting-by-number'}}" class="{{#if allowsCardSortingByNumberOnMinicard}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsCardSortingByNumberOnMinicard}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
         span
-          i.fa.fa-sort
+          i.fa.fa-sort-numeric-asc
           | {{_ 'card-sorting-by-number'}}
-    div.check-div
-      a.flex.js-field-has-card-show-lists(class="{{#if allowsShowLists}}is-checked{{/if}}")
-        .materialCheckBox(class="{{#if allowsShowLists}}is-checked{{/if}}")
+    .card-settings-row
+      .card-settings-column
+        a.flex.js-field-has-card-show-lists(title="{{_ 'card-show-lists'}}" class="{{#if allowsShowLists}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsShowLists}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
+        a.flex.js-field-has-card-show-lists-on-minicard(title="{{_ 'card-show-lists'}}" class="{{#if allowsShowListsOnMinicard}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsShowListsOnMinicard}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
         span
           i.fa.fa-list
           | {{_ 'card-show-lists'}}
-    div.check-div
-      a.flex.js-field-has-labels(class="{{#if allowsLabels}}is-checked{{/if}}")
-        .materialCheckBox(class="{{#if allowsLabels}}is-checked{{/if}}")
+    .card-settings-row
+      .card-settings-column
+        a.flex.js-field-has-labels(title="{{_ 'labels'}}" class="{{#if allowsLabels}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsLabels}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
+        a.flex.js-field-has-labels-on-minicard(title="{{_ 'labels'}}" class="{{#if allowsLabelsOnMinicard}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsLabelsOnMinicard}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
         span
-          i.fa.fa-tags
+          i.fa.fa-tag
           | {{_ 'labels'}}
-    div.check-div
-      a.flex.js-field-has-card-number(class="{{#if allowsCardNumber}}is-checked{{/if}}")
-        .materialCheckBox(class="{{#if allowsCardNumber}}is-checked{{/if}}")
+    .card-settings-row
+      .card-settings-column
+        a.flex.js-field-has-card-number(title="{{_ 'card'}} {{_ 'number'}}" class="{{#if allowsCardNumber}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsCardNumber}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
+        a.flex.js-field-has-card-number-on-minicard(title="{{_ 'card'}} {{_ 'number'}}" class="{{#if allowsCardNumberOnMinicard}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsCardNumberOnMinicard}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
         span
           i.fa.fa-hashtag
           | {{_ 'card'}}
           | {{_ 'number'}}
-    div.check-div
-      a.flex.js-field-has-description-title(class="{{#if allowsDescriptionTitle}}is-checked{{/if}}")
-        .materialCheckBox(class="{{#if allowsDescriptionTitle}}is-checked{{/if}}")
+    .card-settings-row
+      .card-settings-column
+        a.flex.js-field-has-description-title(title="{{_ 'description'}} {{_ 'title'}}" class="{{#if allowsDescriptionTitle}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsDescriptionTitle}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
+        a.flex.js-field-has-description-title-on-minicard(title="{{_ 'description'}} {{_ 'title'}}" class="{{#if allowsDescriptionTitleOnMinicard}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsDescriptionTitleOnMinicard}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
         span
-          i.fa.fa-align-left
+          i.fa.fa-file-text-o
           | {{_ 'description'}}
           | {{_ 'title'}}
-    div.check-div
-      a.flex.js-field-has-description-text(class="{{#if allowsDescriptionText}}is-checked{{/if}}")
-        .materialCheckBox(class="{{#if allowsDescriptionText}}is-checked{{/if}}")
+    .card-settings-row
+      .card-settings-column
+        a.flex.js-field-has-description-text(title="{{_ 'description'}} {{_ 'custom-field-text'}}" class="{{#if allowsDescriptionText}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsDescriptionText}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
+        a.flex.js-field-has-description-text-on-minicard(title="{{_ 'description'}} {{_ 'custom-field-text'}}" class="{{#if allowsDescriptionTextOnMinicard}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsDescriptionTextOnMinicard}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
         span
-          i.fa.fa-align-left
+          i.fa.fa-file-text-o
           | {{_ 'description'}}
           | {{_ 'custom-field-text'}}
-    div.check-div
-      a.flex.js-field-has-checklists(class="{{#if allowsChecklists}}is-checked{{/if}}")
-        .materialCheckBox(class="{{#if allowsChecklists}}is-checked{{/if}}")
+    .card-settings-row
+      .card-settings-column
+        a.flex.js-field-has-checklists(title="{{_ 'checklists'}}" class="{{#if allowsChecklists}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsChecklists}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
+        a.flex.js-field-has-checklists-on-minicard(title="{{_ 'checklists'}}" class="{{#if allowsChecklistsOnMinicard}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsChecklistsOnMinicard}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
         span
           i.fa.fa-check
           | {{_ 'checklists'}}
-    div.check-div
-      a.flex.js-field-has-subtasks(class="{{#if allowsSubtasks}}is-checked{{/if}}")
-        .materialCheckBox(class="{{#if allowsSubtasks}}is-checked{{/if}}")
+    .card-settings-row
+      .card-settings-column
+        a.flex.js-field-has-checklist-count(title="{{_ 'checklist-count'}}" class="{{#if allowsChecklistCountBadgeOnCard}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsChecklistCountBadgeOnCard}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
+        a.flex.js-field-has-checklist-count-on-minicard(title="{{_ 'checklist-count'}}" class="{{#if allowsChecklistCountBadgeOnMinicard}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsChecklistCountBadgeOnMinicard}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
         span
-          i.fa.fa-sitemap
+          i.fa.fa-check-square-o
+          | {{_ 'checklist-count'}}
+    .card-settings-row
+      .card-settings-column
+        a.flex.js-field-has-subtasks(title="{{_ 'subtasks'}}" class="{{#if allowsSubtasks}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsSubtasks}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
+        a.flex.js-field-has-subtasks-on-minicard(title="{{_ 'subtasks'}}" class="{{#if allowsSubtasksOnMinicard}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsSubtasksOnMinicard}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
+        span
+          i.fa.fa-globe
           | {{_ 'subtasks'}}
-    div.check-div
-      a.flex.js-field-has-attachments(class="{{#if allowsAttachments}}is-checked{{/if}}")
-        .materialCheckBox(class="{{#if allowsAttachments}}is-checked{{/if}}")
+    .card-settings-row
+      .card-settings-column
+        a.flex.js-field-has-attachments(title="{{_ 'attachments'}}" class="{{#if allowsAttachments}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsAttachments}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
+        a.flex.js-field-has-attachments-on-minicard(title="{{_ 'attachments'}}" class="{{#if allowsAttachmentsOnMinicard}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsAttachmentsOnMinicard}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
         span
           i.fa.fa-paperclip
           | {{_ 'attachments'}}
-    //div.check-div
-    //  a.flex.js-field-has-comments(class="{{#if allowsComments}}is-checked{{/if}}")
-    //    .materialCheckBox(class="{{#if allowsComments}}is-checked{{/if}}")
-    //    span
-    //      i.fa.fa-comment-o
-    //      | {{_ 'comment'}}
-    //div.check-div
-    //  a.flex.js-field-has-activities(class="{{#if allowsActivities}}is-checked{{/if}}")
-    //    .materialCheckBox(class="{{#if allowsActivities}}is-checked{{/if}}")
-    //    span
-    //      i.fa.fa-history
-    //      | {{_ 'activities'}}
-
-template(name="boardMinicardSettingsPopup")
-  form.board-minicard-settings
-    h3 {{_ 'show-on-minicard'}}
-    div.check-div
-      a.flex.js-field-has-description-text-on-minicard(class="{{#if allowsDescriptionTextOnMinicard}}is-checked{{/if}}")
-        .materialCheckBox(class="{{#if allowsDescriptionTextOnMinicard}}is-checked{{/if}}")
-        span
-          i.fa.fa-align-left
-          | {{_ 'description-on-minicard'}}
-    div.check-div
-      a.flex.js-field-has-cover-attachment-on-minicard(class="{{#if allowsCoverAttachmentOnMinicard}}is-checked{{/if}}")
-        .materialCheckBox(class="{{#if allowsCoverAttachmentOnMinicard}}is-checked{{/if}}")
-        span
-          i.fa.fa-book
-          i.fa.fa-picture-o
-          | {{_ 'cover-attachment-on-minicard'}}
-    div.check-div
-      a.flex.js-field-has-badge-attachment-on-minicard(class="{{#if allowsBadgeAttachmentOnMinicard}}is-checked{{/if}}")
-        .materialCheckBox(class="{{#if allowsBadgeAttachmentOnMinicard}}is-checked{{/if}}")
+    .card-settings-row
+      .card-settings-column
+        a.flex.js-field-has-attachment-count(title="{{_ 'attachment-count'}}" class="{{#if allowsAttachmentCountOnCard}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsAttachmentCountOnCard}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
+        a.flex.js-field-has-badge-attachment-on-minicard(title="{{_ 'attachment-count'}}" class="{{#if allowsBadgeAttachmentOnMinicard}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsBadgeAttachmentOnMinicard}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
         span
           i.fa.fa-paperclip
-          | {{_ 'badge-attachment-on-minicard'}}
-    div.check-div
-      a.flex.js-field-has-card-sorting-by-number-on-minicard(class="{{#if allowsCardSortingByNumberOnMinicard}}is-checked{{/if}}")
-        .materialCheckBox(class="{{#if allowsCardSortingByNumberOnMinicard}}is-checked{{/if}}")
+          | {{_ 'attachment-count'}}
+    .card-settings-row
+      .card-settings-column
+        a.flex.js-field-has-cover-attachment-on-card(title="{{_ 'cover-image'}}" class="{{#if allowsCoverAttachmentOnCard}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsCoverAttachmentOnCard}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
+        a.flex.js-field-has-cover-attachment-on-minicard(title="{{_ 'cover-image'}}" class="{{#if allowsCoverAttachmentOnMinicard}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsCoverAttachmentOnMinicard}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
         span
-          i.fa.fa-sort
-          | {{_ 'card-sorting-by-number-on-minicard'}}
+          i.fa.fa-picture-o
+          | {{_ 'cover-image'}}
+    //div.check-div
+    //
+      a.flex.js-field-has-comments(class="{{#if allowsComments}}is-checked{{/if}}")
+    //
+        .materialCheckBox(class="{{#if allowsComments}}is-checked{{/if}}")
+    //
+        span
+    //
+          i.fa.fa-comment-o
+    //
+          | {{_ 'comment'}}
+    //div.check-div
+    //
+      a.flex.js-field-has-activities(class="{{#if allowsActivities}}is-checked{{/if}}")
+    //
+        .materialCheckBox(class="{{#if allowsActivities}}is-checked{{/if}}")
+    //
+        span
+    //
+          i.fa.fa-history
+    //
+          | {{_ 'activities'}}
 
 template(name="boardSubtaskSettingsPopup")
   form.board-subtask-settings
     h3 {{_ 'show-parent-in-minicard'}}
-      a#prefix-with-full-path.flex.js-field-show-parent-in-minicard(class="{{#if $eq presentParentTask 'prefix-with-full-path'}}is-checked{{/if}}")
-        .materialCheckBox(class="{{#if $eq presentParentTask 'prefix-with-full-path'}}is-checked{{/if}}")
+      a#prefix-with-full-path.flex.js-field-show-parent-in-minicard(title="{{_ 'prefix-with-full-path'}}" class="{{#if $eq presentParentTask 'prefix-with-full-path'}}is-checked{{/if}}")
+        i.fa(class="{{#if $eq presentParentTask 'prefix-with-full-path'}}fa-check{{else}}fa-square-o{{/if}}")
         span {{_ 'prefix-with-full-path'}}
-      a#prefix-with-parent.flex.js-field-show-parent-in-minicard(class="{{#if $eq presentParentTask 'prefix-with-parent'}}is-checked{{/if}}")
-        .materialCheckBox(class="{{#if $eq presentParentTask 'prefix-with-parent'}}is-checked{{/if}}")
+      a#prefix-with-parent.flex.js-field-show-parent-in-minicard(title="{{_ 'prefix-with-parent'}}" class="{{#if $eq presentParentTask 'prefix-with-parent'}}is-checked{{/if}}")
+        i.fa(class="{{#if $eq presentParentTask 'prefix-with-parent'}}fa-check{{else}}fa-square-o{{/if}}")
         span {{_ 'prefix-with-parent'}}
-      a#subtext-with-full-path.flex.js-field-show-parent-in-minicard(class="{{#if $eq presentParentTask 'subtext-with-full-path'}}is-checked{{/if}}")
-        .materialCheckBox(class="{{#if $eq presentParentTask 'subtext-with-full-path'}}is-checked{{/if}}")
+      a#subtext-with-full-path.flex.js-field-show-parent-in-minicard(title="{{_ 'subtext-with-full-path'}}" class="{{#if $eq presentParentTask 'subtext-with-full-path'}}is-checked{{/if}}")
+        i.fa(class="{{#if $eq presentParentTask 'subtext-with-full-path'}}fa-check{{else}}fa-square-o{{/if}}")
         span {{_ 'subtext-with-full-path'}}
-      a#subtext-with-parent.flex.js-field-show-parent-in-minicard(class="{{#if $eq presentParentTask 'subtext-with-parent'}}is-checked{{/if}}")
-        .materialCheckBox(class="{{#if $eq presentParentTask 'subtext-with-parent'}}is-checked{{/if}}")
+      a#subtext-with-parent.flex.js-field-show-parent-in-minicard(title="{{_ 'subtext-with-parent'}}" class="{{#if $eq presentParentTask 'subtext-with-parent'}}is-checked{{/if}}")
+        i.fa(class="{{#if $eq presentParentTask 'subtext-with-parent'}}fa-check{{else}}fa-square-o{{/if}}")
         span {{_ 'subtext-with-parent'}}
-      a#no-parent.flex.js-field-show-parent-in-minicard(class="{{#if $eq presentParentTask 'no-parent'}}is-checked{{/if}}")
-        .materialCheckBox(class="{{#if $eq presentParentTask 'no-parent'}}is-checked{{/if}}")
+      a#no-parent.flex.js-field-show-parent-in-minicard(title="{{_ 'no-parent'}}" class="{{#if $eq presentParentTask 'no-parent'}}is-checked{{/if}}")
+        i.fa(class="{{#if $eq presentParentTask 'no-parent'}}fa-check{{else}}fa-square-o{{/if}}")
         span {{_ 'no-parent'}}
     div
       hr
 
     div.check-div
-      a.flex.js-field-has-subtasks(class="{{#if allowsSubtasks}}is-checked{{/if}}")
-        .materialCheckBox(class="{{#if allowsSubtasks}}is-checked{{/if}}")
+      a.flex.js-field-has-subtasks(title="{{_ 'show-subtasks-field'}}" class="{{#if allowsSubtasks}}is-checked{{/if}}")
+        i.fa(class="{{#if allowsSubtasks}}fa-check{{else}}fa-square-o{{/if}}")
         span {{_ 'show-subtasks-field'}}
 
     label
@@ -381,14 +568,53 @@ template(name="boardSubtaskSettingsPopup")
             else
               option(value=_id) {{title}}
 
-template(name="chooseBoardSource")
+template(name="chooseBoardSourcePopup")
   ul.pop-over-list
     li
-      a(href="{{pathFor '/import/trello'}}") {{_ 'from-trello'}}
+      a(href="{{pathFor '/import/trello'}}") {{_ 'import'}} / Trello
     li
-      a(href="{{pathFor '/import/wekan'}}") {{_ 'from-wekan'}}
+      a(href="{{pathFor '/import/wekan'}}") {{_ 'import'}} / JSON
     li
-      a(href="{{pathFor '/import/csv'}}") {{_ 'from-csv'}}
+      a(href="{{pathFor '/import/csv'}}") {{_ 'import'}} / CSV-TSV
+    li
+      a(href="{{pathFor '/import/excel'}}") {{_ 'import'}} / Excel
+    li
+      a(href="{{pathFor '/import/jira'}}") {{_ 'import'}} / Jira
+    li
+      a(href="{{pathFor '/import/kanboard'}}") {{_ 'import'}} / Kanboard
+    li
+      a(href="{{pathFor '/import/deck'}}") {{_ 'import'}} / NextCloud Deck
+    li
+      a(href="{{pathFor '/import/openproject'}}") {{_ 'import'}} / OpenProject
+    li
+      a(href="{{pathFor '/import/github'}}") {{_ 'import'}} / GitHub
+    li
+      a(href="{{pathFor '/import/gitlab'}}") {{_ 'import'}} / GitLab
+    li
+      a(href="{{pathFor '/import/gitea'}}") {{_ 'import'}} / Gitea
+    li
+      a(href="{{pathFor '/import/forgejo'}}") {{_ 'import'}} / Forgejo
+    li
+      a(href="{{pathFor '/import/asana'}}") {{_ 'import'}} / Asana
+    li
+      a(href="{{pathFor '/import/zenkit'}}") {{_ 'import'}} / Zenkit
+    li
+      a.js-import-dependencies {{_ 'import'}} / {{_ 'card-dependencies'}} (JSON/SVG)
+
+template(name="importDependenciesPopup")
+  form.js-import-dependencies-form
+    label
+      | {{_ 'r-board'}}
+      select.js-import-dependencies-board
+        each boardsForDependencyImport
+          option(value="{{_id}}") {{title}}
+    label
+      | {{_ 'import-dependencies-file'}}
+      input.js-import-dependencies-file(type="file" accept=".json,.svg,application/json,image/svg+xml")
+    textarea.js-import-dependencies-text(rows="6" placeholder="{{_ 'import-dependencies-placeholder'}}")
+    button.primary.confirm.js-import-dependencies-submit(type="submit") {{_ 'import'}}
+    if importResult
+      p.quiet.js-import-dependencies-result {{importResult}}
 
 template(name="archiveBoardPopup")
   p {{_ 'close-board-pop'}}
@@ -396,13 +622,18 @@ template(name="archiveBoardPopup")
     i.fa.fa-archive
     | {{_ 'archive'}}
 
+template(name="deleteDuplicateListsPopup")
+  p {{_ 'delete-duplicate-lists-confirm'}}
+  button.js-confirm.negate.full(type="submit")
+    i.fa.fa-trash
+    | {{_ 'delete'}}
+
 template(name="outgoingWebhooksPopup")
   each integrations
     form.integration-form
-      a.flex
-        span {{_ 'disable-webhook'}}
-        b &nbsp;
+      a.flex.js-toggle-webhook-enabled
         .materialCheckBox(class="{{#unless enabled}}is-checked{{/unless}}")
+        span {{_ 'disable-webhook'}}
       input.js-outgoing-webhooks-title(placeholder="{{_ 'webhook-title'}}" type="text" name="title" value=title)
       input.js-outgoing-webhooks-url(type="text" name="url" value=url)
       input.js-outgoing-webhooks-token(placeholder="{{_ 'webhook-token' }}" type="text" value=token name="token")
@@ -434,7 +665,7 @@ template(name="boardMenuPopup")
     if currentUser.isBoardAdmin
       li
         a.js-custom-fields
-          i.fa.fa-list-alt
+          i.fa.fa-file-text-o
           | {{_ 'custom-fields'}}
     li
       a.js-open-archives
@@ -449,21 +680,32 @@ template(name="boardMenuPopup")
         a.js-change-background-image
           i.fa.fa-picture-o
           | {{_ 'board-change-background-image'}}
+      li
+        a.js-manage-board-backgrounds
+          i.fa.fa-image
+          | {{_ 'board-backgrounds'}}
     //Bug Board icons random dance https://github.com/wekan/wekan/issues/4214
     //if currentUser.isBoardAdmin
-    //  unless currentSetting.hideBoardMemberList
-    //    unless currentSetting.hideCardCounterList
-    //      li
-    //        a.js-board-info-on-my-boards(title="{{_ 'board-info-on-my-boards'}}")
-    //          i.fa.fa-id-card-o
-    //          | {{_ 'board-info-on-my-boards'}}
+    //
+      unless currentSetting.hideBoardMemberList
+    //
+        unless currentSetting.hideCardCounterList
+    //
+          li
+    //
+            a.js-board-info-on-my-boards(title="{{_ 'board-info-on-my-boards'}}")
+    //
+              i.fa.fa-id-card-o
+    //
+              | {{_ 'board-info-on-my-boards'}}
   hr
   ul.pop-over-list
     if withApi
-      li
-        a.js-export-board
-          i.fa.fa-share-alt
-          | {{_ 'export-board'}}
+      unless exportDisabled
+        li
+          a.js-export-board
+            i.fa.fa-upload
+            | {{_ 'export-board'}}
     if currentUser.isBoardAdmin
       li
         a.js-outgoing-webhooks
@@ -471,61 +713,123 @@ template(name="boardMenuPopup")
           | {{_ 'outgoing-webhooks'}}
       li
         a.js-card-settings
-          i.fa.fa-id-card-o
+          i.fa.fa-id-card
           | {{_ 'card-settings'}}
       li
-        a.js-minicard-settings
-          i.fa.fa-id-card-o
-          | {{_ 'minicard-settings'}}
-      li
         a.js-subtask-settings
-          i.fa.fa-sitemap
+          i.fa.fa-globe
           | {{_ 'subtask-settings'}}
   unless currentBoard.isTemplatesBoard
     if currentUser.isBoardAdmin
       hr
       ul.pop-over-list
+        // li
+        //
+           a.js-delete-duplicate-lists
+        //
+             i.fa.fa-trash
+        //
+             | {{_ 'delete-duplicate-lists'}}
         li
           a.js-archive-board
-            i.fa.fa-arrow-right
             i.fa.fa-archive
             | {{_ 'archive-board'}}
 
-template(name="exportBoard")
+template(name="exportBoardPopup")
   ul.pop-over-list
     li
       a.download-json-link(href="{{exportUrl}}", download="{{exportJsonFilename}}")
-        i.fa.fa-share-alt
-        | {{_ 'export-board-json'}}
+        i.fa.fa-upload
+        | {{_ 'export'}} / JSON
+    li
+      a.download-json-link(href="{{exportUrlNoAttachments}}", download="{{exportJsonFilename}}")
+        i.fa.fa-upload
+        | {{_ 'export'}} / JSON ({{_ 'export-board-without-attachments'}})
     li
       a(href="{{exportUrlExcel}}", download="{{exportFilenameExcel}}")
-        i.fa.fa-share-alt
-        | {{_ 'export-board-excel'}}
+        i.fa.fa-upload
+        | {{_ 'export'}} / Excel
     li
       a(href="{{exportCsvUrl}}", download="{{exportCsvFilename}}")
-        i.fa.fa-share-alt
-        | {{_ 'export-board-csv'}} ,
+        i.fa.fa-upload
+        | {{_ 'export'}} / CSV (,)
     li
       a(href="{{exportScsvUrl}}", download="{{exportCsvFilename}}")
-        i.fa.fa-share-alt
-        | {{_ 'export-board-csv'}} ;
+        i.fa.fa-upload
+        | {{_ 'export'}} / CSV (;)
     li
       a(href="{{exportTsvUrl}}", download="{{exportTsvFilename}}")
-        i.fa.fa-share-alt
-        | {{_ 'export-board-tsv'}}
+        i.fa.fa-upload
+        | {{_ 'export'}} / TSV
+    li
+      a(href="{{exportUrlPDF}}", download="{{exportFilenamePDF}}")
+        i.fa.fa-upload
+        | {{_ 'export'}} / PDF
+    li
+      a(href="{{exportUrlKanboard}}", download="{{exportFilenameKanboard}}")
+        i.fa.fa-upload
+        | {{_ 'export'}} / JSON / Kanboard
+    li
+      a(href="{{exportUrlExternal 'trello'}}", download="{{exportFilenameExternal 'trello'}}")
+        i.fa.fa-upload
+        | {{_ 'export'}} / JSON / Trello
+    li
+      a(href="{{exportUrlExternal 'jira'}}", download="{{exportFilenameExternal 'jira'}}")
+        i.fa.fa-upload
+        | {{_ 'export'}} / JSON / Jira
+    li
+      a(href="{{exportUrlExternal 'deck'}}", download="{{exportFilenameExternal 'deck'}}")
+        i.fa.fa-upload
+        | {{_ 'export'}} / JSON / NextCloud Deck
+    li
+      a(href="{{exportUrlExternal 'openproject'}}", download="{{exportFilenameExternal 'openproject'}}")
+        i.fa.fa-upload
+        | {{_ 'export'}} / JSON / OpenProject
+    li
+      a(href="{{exportUrlExternal 'github'}}", download="{{exportFilenameExternal 'github'}}")
+        i.fa.fa-upload
+        | {{_ 'export'}} / JSON / GitHub
+    li
+      a(href="{{exportUrlExternal 'gitlab'}}", download="{{exportFilenameExternal 'gitlab'}}")
+        i.fa.fa-upload
+        | {{_ 'export'}} / JSON / GitLab
+    li
+      a(href="{{exportUrlExternal 'gitea'}}", download="{{exportFilenameExternal 'gitea'}}")
+        i.fa.fa-upload
+        | {{_ 'export'}} / JSON / Gitea
+    li
+      a(href="{{exportUrlExternal 'forgejo'}}", download="{{exportFilenameExternal 'forgejo'}}")
+        i.fa.fa-upload
+        | {{_ 'export'}} / JSON / Forgejo
+    li
+      a(href="{{exportUrlExternal 'asana'}}", download="{{exportFilenameExternal 'asana'}}")
+        i.fa.fa-upload
+        | {{_ 'export'}} / JSON / Asana
+    li
+      a(href="{{exportUrlExternal 'zenkit'}}", download="{{exportFilenameExternal 'zenkit'}}")
+        i.fa.fa-upload
+        | {{_ 'export'}} / JSON / Zenkit
     li
       a.html-export-board
         i.fa.fa-archive
-        | {{_ 'export-board-html'}}
+        | {{_ 'export'}} / HTML
+    li
+      a.js-export-dependencies-json
+        i.fa.fa-link
+        | {{_ 'export'}} / {{_ 'card-dependencies'}} / JSON
+    li
+      a.js-export-dependencies-svg
+        i.fa.fa-link
+        | {{_ 'export'}} / {{_ 'card-dependencies'}} / SVG
 
 template(name="labelsWidget")
   .board-widget.board-widget-labels
     h3
-      i.fa.fa-tags
+      i.fa.fa-tag
       | {{_ 'labels'}}
     .board-widget-content
       each currentBoard.labels
-          a.card-label(class="card-label-{{color}}"
+          a.card-label(class="{{labelColorClass color}}" style="{{labelColorStyle color}}"
             class="{{#if currentUser.isNotCommentOnly}}{{#if currentUser.isNotWorker}}js-label{{/if}}{{/if}}")
             span.card-label-name
               +viewer
@@ -544,7 +848,7 @@ template(name="memberPopup")
         p.quiet @#{user.username}
         if isInvited
           p
-            i.fa.fa-exclamation-circle
+            i.fa.fa-exclamation-triangle
             | {{_ 'not-accepted-yet'}}
 
     ul.pop-over-list
@@ -555,12 +859,36 @@ template(name="memberPopup")
           a.js-change-role
             | {{_ 'change-permissions'}}
             span.quiet (#{memberType})
+        if isImportedMember
+          li
+            a.js-map-imported-member
+              i.fa.fa-user-plus
+              | {{_ 'map-to-existing-user'}}
       unless currentUser.isWorker
         li
           if $eq currentUser._id userId
             a.js-leave-member {{_ 'leave-board'}}
           else if currentUser.isBoardAdmin
             a.js-remove-member {{_ 'remove-from-board'}}
+
+template(name="mapImportedMemberPopup")
+  p.quiet {{_ 'map-to-existing-user-desc'}}
+  .js-map-target-search
+    input.js-map-target-search-input(type="text" placeholder="{{_ 'map-to-existing-user-search'}}" autocomplete="off")
+  if searching
+    .map-target-status.quiet {{_ 'loading'}}
+  ul.pop-over-list
+    each u in mapTargets
+      li
+        a.js-pick-map-target(data-id="{{u._id}}")
+          +userAvatar(userId=u._id)
+          span.full-name= u.profile.fullname
+          |  (@#{u.username})
+          unless u.isBoardMember
+            span.quiet  — {{_ 'map-to-existing-user-not-member'}}
+    unless hasMapTargets
+      li
+        p.quiet {{mapTargetsEmptyText}}
 
 template(name="removeMemberPopup")
   p {{_ 'remove-member-pop' name=user.profile.fullname username=user.username boardTitle=board.title}}
@@ -604,32 +932,57 @@ template(name="removeBoardTeamPopup")
     input.primary.wide.leaveBoardBtn#leaveBoardTeamBtn(type="submit" value="{{_ 'confirm-btn'}}")
     input.primary.wide.cancelLeaveBoardBtn#cancelLeaveBoardTeamBtn(type="submit" value="{{_ 'cancel'}}")
 
+template(name="addBoardDomainPopup")
+  form.js-add-board-domain
+    label
+      | {{_ 'domain'}}
+      input.js-board-domain-input#jsBoardDomainInput(type="text" autofocus placeholder="example.com")
+    if error.get
+      .warning {{_ error.get}}
+    div.buttonsContainer
+      input.primary.wide#jsAddBoardDomainBtn(type="submit" value="{{_ 'add-domain'}}")
+
+template(name="removeBoardDomainPopup")
+  form
+    input.hide#hideDomain(type="text" value=domain)
+    label
+      | {{_ 'remove-domain-from-board'}}
+  br
+  hr
+  div.buttonsContainer
+    input.primary.wide.leaveBoardBtn#leaveBoardDomainBtn(type="submit" value="{{_ 'confirm-btn'}}")
+    input.primary.wide.cancelLeaveBoardBtn#cancelLeaveBoardDomainBtn(type="submit" value="{{_ 'cancel'}}")
+
 template(name="addMemberPopup")
   .js-search-member
-    +EasySearch.Input(index=searchIndex)
-
+    input.js-search-member-input(type="text" placeholder="{{_ 'email-address'}}")
   if loading.get
     +spinner
   else if error.get
     .warning {{_ error.get}}
   else
     ul.pop-over-list
-      +EasySearch.Each(index=searchIndex)
-        li.item.js-member-item(class="{{#if isBoardMember}}disabled{{/if}}")
+      each searchResults
+        li.item.js-member-item
           a.name.js-select-member(title="{{profile.fullname}} ({{username}})")
-            +userAvatar(userId=__originalId)
+            +userAvatar(userId=_id)
             span.full-name
               = profile.fullname
               | (<span class="username">{{username}}</span>)
-            if isBoardMember
-              .quiet ({{_ 'joined'}})
+    button.js-email-invite.primary.full {{_ 'email-invite'}}
 
-      +EasySearch.IfSearching(index=searchIndex)
-        +spinner
 
-      +EasySearch.IfNoResults(index=searchIndex)
-        .manage-member-section
-          p.quiet {{_ 'no-results'}}
+template(name="addMemberPopupTest")
+  .js-search-member
+    input.js-search-member-input(type="text" placeholder="{{_ 'email-address'}}")
+  ul.pop-over-list
+    each searchResults
+      li.item.js-member-item
+        a.name.js-select-member(title="{{profile.fullname}} ({{username}})")
+          +userAvatar(userId=_id)
+          span.full-name
+            = profile.fullname
+            | (<span class="username">{{username}}</span>)
     button.js-email-invite.primary.full {{_ 'email-invite'}}
 
 template(name="changePermissionsPopup")
@@ -647,6 +1000,12 @@ template(name="changePermissionsPopup")
           i.fa.fa-check
         span.sub-name {{_ 'normal-desc'}}
     li
+      a(class="{{#if isLastAdmin}}disabled{{else}}js-set-normal-assigned-only{{/if}}")
+        | {{_ 'normal-assigned-only'}}
+        if isNormalAssignedOnly
+          i.fa.fa-check
+        span.sub-name {{_ 'normal-assigned-only-desc'}}
+    li
       a(class="{{#if isLastAdmin}}disabled{{else}}js-set-no-comments{{/if}}")
         | {{_ 'no-comments'}}
         if isNoComments
@@ -659,11 +1018,29 @@ template(name="changePermissionsPopup")
           i.fa.fa-check
         span.sub-name {{_ 'comment-only-desc'}}
     li
+      a(class="{{#if isLastAdmin}}disabled{{else}}js-set-comment-assigned-only{{/if}}")
+        | {{_ 'comment-assigned-only'}}
+        if isCommentAssignedOnly
+          i.fa.fa-check
+        span.sub-name {{_ 'comment-assigned-only-desc'}}
+    li
       a(class="{{#if isLastAdmin}}disabled{{else}}js-set-worker{{/if}}")
         | {{_ 'worker'}}
         if isWorker
           i.fa.fa-check
         span.sub-name {{_ 'worker-desc'}}
+    li
+      a(class="{{#if isLastAdmin}}disabled{{else}}js-set-read-only{{/if}}")
+        | {{_ 'read-only'}}
+        if isReadOnly
+          i.fa.fa-check
+        span.sub-name {{_ 'read-only-desc'}}
+    li
+      a(class="{{#if isLastAdmin}}disabled{{else}}js-set-read-assigned-only{{/if}}")
+        | {{_ 'read-assigned-only'}}
+        if isReadAssignedOnly
+          i.fa.fa-check
+        span.sub-name {{_ 'read-assigned-only-desc'}}
   if isLastAdmin
     hr
     p.quiet.bottom {{_ 'last-admin-desc'}}

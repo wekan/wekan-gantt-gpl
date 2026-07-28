@@ -2,18 +2,128 @@
 
 # If you want to restart even on crash, uncomment while and done lines.
 #while true; do
+    #-------------------- LOCAL MONGODB SETTINGS (RUN SEPARATELY) --------------------
+    # This script starts only Wekan app. Start local mongod with these settings:
+    # mongod --storageEngine wiredTiger --wiredTigerCacheSizeGB 32 \
+    #   --timeZoneInfo /usr/share/zoneinfo \
+    #   --setParameter logicalSessionRefreshMillis=900000 \
+    #   --setParameter localLogicalSessionTimeoutMinutes=45 \
+    #   --oplogSize 20480 --replSet rs0 --bind_ip 127.0.0.1 --port 27017
+    #-------------------------------------------------------------------------------
+      #-------------------- INITIALIZE REPLICA SET IF NEEDED --------------------
+      # Change Streams require MongoDB to run as a replica set.
+      # This checks if the replica set is already initialized, and if not, initializes it.
+      # MongoDB must already be running at 127.0.0.1:27017.
+      # Replica-set init/readiness use db-eval (Node.js + the `mongodb` driver from
+      # node_modules) instead of mongosh, so no mongosh binary is required.
+      SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+      NODE_BIN="$(command -v node || true)"
+      DB_EVAL_JS="$SCRIPT_DIR/snap-src/bin/db-eval.mjs"
+      RS_URL="mongodb://127.0.0.1:27017/?directConnection=true"
+      db_eval() { NODE_PATH="$SCRIPT_DIR/node_modules" "$NODE_BIN" "$DB_EVAL_JS" "$@"; }
+      if [ -n "$NODE_BIN" ] && [ -f "$DB_EVAL_JS" ]; then
+          echo "Checking MongoDB replica set status..."
+          if db_eval rs-conf-host "$RS_URL" 2>/dev/null | grep -q "^OK:"; then
+              echo "Replica set already initialized."
+          else
+              echo "Initializing replica set rs0..."
+              db_eval rs-initiate "$RS_URL" "127.0.0.1:27017" || true
+              sleep 3
+              echo "Replica set rs0 initialized."
+          fi
+          USE_CHANGE_STREAMS=true
+      else
+          echo "node/db-eval not found. Skipping replica set initialization. Using polling."
+          USE_CHANGE_STREAMS=false
+      fi
+      #----------------------------------------------------------------------
+      #-------------------- WAIT FOR MONGODB TO BE READY --------------------
+      # Do not start WeKan until MongoDB is reachable and a primary is elected,
+      # otherwise the first index creation crashes with "Topology is closed".
+      # After WEKAN_DB_WAIT_TIMEOUT seconds (default 120) the upgrade guidance
+      # below is printed once (English only); WeKan keeps retrying after that.
+      if [ -n "$NODE_BIN" ] && [ -f "$DB_EVAL_JS" ]; then
+          WEKAN_DB_WAIT_TIMEOUT=${WEKAN_DB_WAIT_TIMEOUT:-120}
+          db_waited=0
+          db_hint_shown=false
+          echo "Waiting for MongoDB to be ready at 127.0.0.1:27017..."
+          until db_eval primary "$RS_URL" > /dev/null 2>&1; do
+              if [ "$db_hint_shown" != "true" ] && [ "$db_waited" -ge "$WEKAN_DB_WAIT_TIMEOUT" ]; then
+                  echo ""
+                  echo "========================================================================"
+                  echo "WeKan: still cannot connect to MongoDB."
+                  echo ""
+                  echo "If you just upgraded WeKan or MongoDB, the existing database may have"
+                  echo "been created by an OLDER MongoDB version that the new MongoDB cannot"
+                  echo "open, so MongoDB never finishes starting and WeKan keeps waiting here."
+                  echo ""
+                  echo "Upgrade the database (dump with the old version, restore with the new):"
+                  echo "  1. Start the OLD, previously-working MongoDB version."
+                  echo "  2. Back up:   mongodump --archive=wekan.archive --gzip"
+                  echo "  3. Stop old MongoDB. Start the NEW MongoDB on an EMPTY data dir."
+                  echo "  4. Restore:   mongorestore --archive=wekan.archive --gzip --drop"
+                  echo "  5. Start WeKan again."
+                  echo ""
+                  echo "Attachments and avatars are stored ON DISK under WRITABLE_PATH, NOT"
+                  echo "in MongoDB, so when moving to a new server ALSO copy that whole"
+                  echo "directory (it contains 'files', 'attachments' and 'avatars'):"
+                  echo "  - Snap:   /var/snap/wekan/common/files"
+                  echo "  - Docker: the 'wekan-files' volume mounted at /data"
+                  echo "  - Source: the WRITABLE_PATH configured in start-wekan.sh"
+                  echo ""
+                  echo "Also check the MongoDB log for the real reason (incompatible"
+                  echo "featureCompatibilityVersion, wrong mongod version, or an unclean"
+                  echo "shutdown needing 'mongod --repair'). WeKan keeps retrying every 5s."
+                  echo "========================================================================"
+                  echo ""
+                  db_hint_shown=true
+              fi
+              echo "MongoDB not ready yet, retrying in 5 seconds..."
+              sleep 5
+              db_waited=$((db_waited + 5))
+          done
+          echo "MongoDB is ready."
+      fi
+      #----------------------------------------------------------------------
       cd .build/bundle
+      #-------------------- USING MONGODB CHANGE STREAMS WITH REPLICA SETS AT CURRENT DATABASE --------------------
+      # If you would not like to use Change Streams and replica set for improving speed, change to use polling:
+      #export METEOR_REACTIVITY_ORDER=polling
+      # https://forums.meteor.com/t/meteor-3-5-beta-change-streams-performance-improvements/64461#change-streams-setup-3
+      # https://github.com/meteor/meteor/blob/release-3.5/v3-docs/docs/performance/change-streams-observer-driver.md#choosing-the-reactivity-driver-order
+      # Keep oplog/polling fallback available for deployments that cannot use Change Streams:
+      # https://github.com/wekan/wekan/issues/6307#issuecomment-4299349231
+      # Later change to: METEOR_REACTIVITY_ORDER=changeStreams,oplog,polling
+      if [ "$USE_CHANGE_STREAMS" = "true" ]; then
+          export METEOR_REACTIVITY_ORDER=changeStreams,oplog,polling
+          export DDP_TRANSPORT=uws
+          #export DDP_TRANSPORT=sockjs
+      else
+          export METEOR_REACTIVITY_ORDER=polling
+      fi
       #-------------------- REQUIRED SETTINGS START --------------------
       # WRITEABLE PATH REQUIRED TO EXISTS AND BE WRITABLE FOR ATTACHMENTS TO WORK
       export WRITABLE_PATH=..
       #-----------------------------------------------------------------
       # MongoDB database URL required
       export MONGO_URL=mongodb://127.0.0.1:27017/wekan
+      # MONGO_PASSWORD_FILE : MongoDB password file (Docker secrets)
+      # example : export MONGO_PASSWORD_FILE=/run/secrets/mongo_password
+      #export MONGO_PASSWORD_FILE=
+      #-----------------------------------------------------------------
+      # MONGO_OPLOG_URL: MongoDB oplog connection for real-time reactivity
+      # Required for Change Streams and OpLog tailing to work.
+      # For local MongoDB replica set named 'rs0':
+      if [ "$USE_CHANGE_STREAMS" = "true" ]; then
+          export MONGO_OPLOG_URL=mongodb://127.0.0.1:27017/local?replicaSet=rs0
+      fi
+      # For production with credentials and remote MongoDB:
+      #   export MONGO_OPLOG_URL=mongodb://<user>:<password>@<host>:<port>/local?authSource=admin&replicaSet=rsWekan
       #-----------------------------------------------------------------
       # If port is 80, must change ROOT_URL to: http://YOUR-WEKAN-SERVER-IPv4-ADDRESS , like http://192.168.0.100
       # If port is not 80, must change ROOT_URL to: http://YOUR-WEKAN-SERVER-IPv4-ADDRESS:YOUR-PORT-NUMBER , like http://192.168.0.100:2000
       # If ROOT_URL is not correct, these do not work: translations, uploading attachments.
-      export ROOT_URL=http://localhost:2000
+      export ROOT_URL=${ROOT_URL:-http://localhost:2000}
       # If at public Internet, required different SSL/TLS settings:
       # - https://github.com/wekan/wekan/wiki/Settings
       # - Also at wiki: SSL/TLS config for Caddy/Nginx/Apache
@@ -37,6 +147,9 @@
       #   ap-southeast-1,ap-northeast-1,sa-east-1
       #
       #export S3='{"s3":{"key": "xxx", "secret": "xxx", "bucket": "xxx", "region": "xxx"}}'
+      # S3_SECRET_FILE : S3 secret file (Docker secrets)
+      # example : export S3_SECRET_FILE=/run/secrets/s3_secret
+      #export S3_SECRET_FILE=
       #-----------------------------------------------------------------
       # https://github.com/wekan/wekan/wiki/Troubleshooting-Mail
       # https://github.com/wekan/wekan-mongodb/blob/master/docker-compose.yml
@@ -46,6 +159,9 @@
       #export MAIL_SERVICE=Outlook365
       #export MAIL_SERVICE_USER=firstname.lastname@hotmail.com
       #export MAIL_SERVICE_PASSWORD=SecretPassword
+      # MAIL_SERVICE_PASSWORD_FILE : Password file for mail service (Docker secrets)
+      # example : export MAIL_SERVICE_PASSWORD_FILE=/run/secrets/mail_service_password
+      #export MAIL_SERVICE_PASSWORD_FILE=
       #---------------------------------------------
       #export KADIRA_OPTIONS_ENDPOINT=http://127.0.0.1:11011
       #---------------------------------------------
@@ -119,6 +235,11 @@
       # c) Disabled
       export BIGEVENTS_PATTERN=NONE
       #---------------------------------------------------------------
+      # ==== NOTIFY ON ASSIGN =====
+      # Notify the user directly when they are added as a card member or
+      # assignee. Set false to disable.
+      #export NOTIFY_ON_ASSIGN=true
+      #---------------------------------------------------------------
       # ==== EMAIL DUE DATE NOTIFICATION =====
       # https://github.com/wekan/wekan/pull/2536
       # System timelines will be showing any user modification for
@@ -177,6 +298,12 @@
       # ==== AUTOLOGIN WITH OIDC/OAUTH2 ====
       # https://github.com/wekan/wekan/wiki/autologin
       #export OIDC_REDIRECTION_ENABLED=true
+      # OIDC RP-initiated logout endpoint (end_session_endpoint). When set, "Log Out"
+      # ends the identity provider session and returns the user to Wekan (ROOT_URL)
+      # via post_logout_redirect_uri, instead of landing on the provider home page
+      # (which errors for non-admin users). See https://github.com/wekan/wekan/issues/6158
+      # Keycloak example:
+      #export OAUTH2_LOGOUT_ENDPOINT=/realms/<keycloak realm>/protocol/openid-connect/logout
       #---------------------------------------------
       # OAUTH2 ORACLE on premise identity manager OIM
       #export ORACLE_OIM_ENABLED=true
@@ -195,6 +322,26 @@
       # Use OAuth2 ADFS additional changes. Also needs OAUTH2_ENABLED=true setting.
       #export OAUTH2_ADFS_ENABLED=false
       #
+      # Azure AD B2C. https://github.com/wekan/wekan/issues/5242
+      #export OAUTH2_B2C_ENABLED=false
+      #
+      # SECURITY (GHSA-mp7g-hj5q-gxhq): Link an OIDC login to a pre-existing
+      # Wekan account (password/LDAP) that has the same email address. OFF by
+      # default. When false, an OIDC login whose email already belongs to
+      # another account is rejected instead of merged, preventing account
+      # takeover via spoofed email claims. Only enable if you fully trust your
+      # OIDC provider's email claims; even then the provider must send
+      # email_verified=true for the merge to happen.
+      #export OAUTH2_MERGE_EXISTING_USERS=false
+      #
+      # When false, OAuth2/OIDC login is refused for users that do not already
+      # have a Wekan account (matched by verified email).
+      #export OAUTH2_AUTO_REGISTRATION=true
+      #
+      # Comma/space separated OAuth2/OIDC group names whose members become Wekan
+      # admins. Empty = off.
+      #export OAUTH2_ADMIN_GROUPS=
+      #
       # OAuth2 docs: https://github.com/wekan/wekan/wiki/OAuth2
       # OAuth2 login style: popup or redirect.
       #export OAUTH2_LOGIN_STYLE=redirect
@@ -204,6 +351,9 @@
       #
       # Secret key generated during app registration:
       #export OAUTH2_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      # OAUTH2_SECRET_FILE : Secret key file for OAuth2 (Docker secrets)
+      # example : export OAUTH2_SECRET_FILE=/run/secrets/oauth2_secret
+      #export OAUTH2_SECRET_FILE=
       #export OAUTH2_SERVER_URL=https://login.microsoftonline.com/
       #export OAUTH2_AUTH_ENDPOINT=/oauth2/v2.0/authorize
       #export OAUTH2_USERINFO_ENDPOINT=https://graph.microsoft.com/oidc/userinfo
@@ -227,11 +377,15 @@
       # OAuth2 login style: popup or redirect.
       #export OAUTH2_LOGIN_STYLE=redirect
       #export OAUTH2_CLIENT_ID=<Keycloak create Client ID>
-      #export OAUTH2_SERVER_URL=<Keycloak server name>/auth
+      #export OAUTH2_SERVER_URL=<Keycloak server URL - https://keycloak.example.com>
       #export OAUTH2_AUTH_ENDPOINT=/realms/<keycloak realm>/protocol/openid-connect/auth
       #export OAUTH2_USERINFO_ENDPOINT=/realms/<keycloak realm>/protocol/openid-connect/userinfo
       #export OAUTH2_TOKEN_ENDPOINT=/realms/<keycloak realm>/protocol/openid-connect/token
       #export OAUTH2_SECRET=<keycloak client secret>
+      #export OAUTH2_ID_MAP=sub
+      #export OAUTH2_USERNAME_MAP=preferred_username
+      #export OAUTH2_EMAIL_MAP=email
+      #export OAUTH2_FULLNAME_MAP=name
       #-----------------------------------------------------------------
       # ==== OAUTH2 DOORKEEPER ====
       # OAuth2 docs: https://github.com/wekan/wekan/wiki/OAuth2
@@ -368,6 +522,9 @@
       # LDAP_AUTHENTIFICATION_PASSWORD : The password for the search user
       # example : AUTHENTIFICATION_PASSWORD=admin
       #export LDAP_AUTHENTIFICATION_PASSWORD=
+      # LDAP_AUTHENTIFICATION_PASSWORD_FILE : The password file for the search user (Docker secrets)
+      # example : export LDAP_AUTHENTIFICATION_PASSWORD_FILE=/run/secrets/ldap_auth_password
+      #export LDAP_AUTHENTIFICATION_PASSWORD_FILE=
       #
       # LDAP_LOG_ENABLED : Enable logs for the module
       # example :  export LDAP_LOG_ENABLED=true
@@ -378,6 +535,9 @@
       #export LDAP_BACKGROUND_SYNC=false
       #
       # LDAP_BACKGROUND_SYNC_INTERVAL : At which interval does the background task sync in milliseconds
+      # The format must be as specified in:
+      # https://bunkat.github.io/later/parsers.html#text
+      #export LDAP_BACKGROUND_SYNC_INTERVAL=every 1 hours
       # At which interval does the background task sync in milliseconds.
       # Leave this unset, so it uses default, and does not crash.
       # https://github.com/wekan/wekan/issues/2354#issuecomment-515305722
@@ -390,6 +550,11 @@
       # LDAP_BACKGROUND_SYNC_IMPORT_NEW_USERS :
       # example :  export LDAP_BACKGROUND_SYNC_IMPORT_NEW_USERS=true
       #export LDAP_BACKGROUND_SYNC_IMPORT_NEW_USERS=false
+      #
+      # LDAP_BACKGROUND_SYNC_DISABLE_NONEXISTANT_USERS : When true, the LDAP
+      # background sync disables users no longer present in LDAP (and re-enables
+      # them when they reappear).
+      #export LDAP_BACKGROUND_SYNC_DISABLE_NONEXISTANT_USERS=false
       #
       # LDAP_ENCRYPTION : If using LDAPS
       # example :  export LDAP_ENCRYPTION=ssl
@@ -423,7 +588,15 @@
       # example :  export LDAP_SEARCH_SIZE_LIMIT=12345
       #export LDAP_SEARCH_SIZE_LIMIT=0
       #
-      # LDAP_GROUP_FILTER_ENABLE : Enable group filtering
+      # LDAP_GROUP_FILTER_ENABLE : Enable the login restriction group filter.
+      # When true, only members of LDAP_GROUP_FILTER_GROUP_NAME are allowed to log in.
+      # NOTE: This flag ONLY controls the login restriction. Admin status sync
+      # (LDAP_SYNC_ADMIN_STATUS / LDAP_SYNC_ADMIN_GROUPS) and group->role sync
+      # (LDAP_SYNC_GROUP_ROLES) query LDAP groups independently and do NOT require
+      # this flag to be true. The group filter metadata below
+      # (LDAP_GROUP_FILTER_OBJECTCLASS, LDAP_GROUP_FILTER_GROUP_MEMBER_ATTRIBUTE,
+      # LDAP_GROUP_FILTER_GROUP_MEMBER_FORMAT, LDAP_GROUP_FILTER_GROUP_ID_ATTRIBUTE)
+      # must still be configured for any group search to work.
       # example :  export LDAP_GROUP_FILTER_ENABLE=true
       #export LDAP_GROUP_FILTER_ENABLE=false
       #
@@ -499,10 +672,30 @@
       #export LDAP_SYNC_GROUP_ROLES=
       #
       # Enable/Disable syncing of admin status based on ldap groups:
+      # NOTE: Admin status sync and group->role sync (LDAP_SYNC_GROUP_ROLES) query
+      # LDAP groups on their own. They no longer require LDAP_GROUP_FILTER_ENABLE=true,
+      # which only controls the login restriction filter. The group filter metadata
+      # (LDAP_GROUP_FILTER_OBJECTCLASS, LDAP_GROUP_FILTER_GROUP_MEMBER_ATTRIBUTE,
+      # LDAP_GROUP_FILTER_GROUP_MEMBER_FORMAT, LDAP_GROUP_FILTER_GROUP_ID_ATTRIBUTE)
+      # must still be configured for the group search to work.
       #export LDAP_SYNC_ADMIN_STATUS=true
       #
       # Comma separated list of admin group names to sync.
       #export LDAP_SYNC_ADMIN_GROUPS=group1,group2
+      #
+      # LDAP_SYNC_ORGANIZATIONS : When true, sync a user's LDAP groups as Wekan Organizations.
+      #export LDAP_SYNC_ORGANIZATIONS=false
+      #
+      # LDAP_SYNC_ORGANIZATIONS_GROUPS : Comma separated allowlist of LDAP group
+      # names to sync as Organizations. Empty = all of the user's groups.
+      #export LDAP_SYNC_ORGANIZATIONS_GROUPS=
+      #
+      # LDAP_SYNC_TEAMS : When true, sync a user's LDAP groups as Wekan Teams.
+      #export LDAP_SYNC_TEAMS=false
+      #
+      # LDAP_SYNC_TEAMS_GROUPS : Comma separated allowlist of LDAP group names to
+      # sync as Teams. Empty = all of the user's groups.
+      #export LDAP_SYNC_TEAMS_GROUPS=
       #---------------------------------------------------------------------
       # Login to LDAP automatically with HTTP header.
       # In below example for siteminder, at right side of = is header name.
@@ -510,6 +703,18 @@
       #export HEADER_LOGIN_FIRSTNAME=HEADERFIRSTNAME
       #export HEADER_LOGIN_LASTNAME=HEADERLASTNAME
       #export HEADER_LOGIN_EMAIL=HEADEREMAILADDRESS
+      # SECURITY (GHSA-jggc-qvfc-jr6x): comma-separated allowlist of source IPs
+      # allowed to use header login. The source IP is the real TCP peer of the
+      # connection (your reverse proxy), NOT the spoofable X-Forwarded-For header.
+      # REQUIRED when header login is enabled: if empty/unset, header login fails
+      # CLOSED and authenticates no one.
+      #export HEADER_LOGIN_TRUSTED_IPS=127.0.0.1,10.0.0.2
+      # Optional: if WeKan is behind MULTIPLE proxy hops, list the intermediate
+      # proxy IPs here. X-Forwarded-For is then honored ONLY when the immediate
+      # TCP peer is one of these trusted proxies, and the right-most hop that is
+      # not itself a trusted proxy (the real client) is matched against
+      # HEADER_LOGIN_TRUSTED_IPS above.
+      #export HEADER_LOGIN_TRUSTED_PROXIES=10.0.0.1,10.0.0.2
       #---------------------------------------------------------------------
       # LOGOUT_WITH_TIMER : Enables or not the option logout with timer
       # example : LOGOUT_WITH_TIMER=true
@@ -524,6 +729,12 @@
       #---------------------------------------------------------------------
       # PASSWORD_LOGIN_ENABLED : Enable or not the password login form.
       #export PASSWORD_LOGIN_ENABLED=true
+      #---------------------------------------------------------------------
+      # DEFAULT_AUTHENTICATION_METHOD : default authentication method used when a
+      # user does not exist, to create and authenticate. Can be set as ldap.
+      # (Set properly in the Admin Panel; changing this does not remove the
+      # Password login option.)
+      #export DEFAULT_AUTHENTICATION_METHOD=ldap
       #---------------------------------------------------------------------
       #export CAS_ENABLED=true
       #export CAS_BASE_URL=https://cas.example.com/cas
@@ -552,6 +763,7 @@
       #bash -c "ulimit -s 65500; exec node --stack-size=65500 --trace-deprecation main.js"
       #bash -c "ulimit -s 65500; exec node --stack-size=65500 main.js"
       #-------------------- OPTIONAL SETTINGS END ----------------------
+      #bash -c "ulimit -s 65500; exec node --stack-size=65500 --max-old-space-size=8192 main.js"
       bash -c "ulimit -s 65500; exec node main.js"
       #node main.js
       #---------------------------------------------------------------------

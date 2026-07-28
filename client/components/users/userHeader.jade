@@ -27,25 +27,41 @@ template(name="memberMenuPopup")
           | {{_ 'globalSearch-title'}}
       li
         a(href="{{pathFor 'home'}}")
-          span.fa.fa-home
+          i.fa.fa-home
           | {{_ 'all-boards'}}
       li
         a(href="{{pathFor 'public'}}")
-          span.fa.fa-globe
+          i.fa.fa-globe
           | {{_ 'public'}}
       li
         a.board-header-btn.js-open-archived-board
           i.fa.fa-archive
           span {{_ 'archives'}}
+      //- Notifications removed from the member menu: same as the header bell icon.
+      if currentSetting.customHelpLinkUrl
+        li
+          a(href="{{currentSetting.customHelpLinkUrl}}", title="{{_ 'help'}}", target="_blank", rel="noopener noreferrer")
+            i.fa.fa-question-circle
+            | {{_ 'help'}}
       unless currentUser.isWorker
         ul.pop-over-list
           li
-            a(href="{{pathFor 'board' id=templatesBoardId slug=templatesBoardSlug}}")
-              i.fa.fa-clone
+            a(href="{{pathFor 'allboards-templates'}}")
+              i.fa.fa-list
               | {{_ 'templates'}}
+      //- Multitenancy option D (D.7): the Admin Panel link is also for a per-tenant
+      //- Global Admin, whose panel is the same one with only their own
+      //- Organization's panes in it. A site admin lands on Settings as before; a
+      //- per-tenant admin's Settings tab does not exist, so they are sent to
+      //- People, which is the first tab they have.
       if currentUser.isAdmin
         li
           a.js-go-setting(href="{{pathFor 'setting'}}")
+            i.fa.fa-lock
+            | {{_ 'admin-panel'}}
+      else if currentUser.isOrgAdmin
+        li
+          a.js-go-setting(href="{{pathFor 'people'}}")
             i.fa.fa-lock
             | {{_ 'admin-panel'}}
       hr
@@ -64,9 +80,17 @@ template(name="memberMenuPopup")
           i.fa.fa-cog
           | {{_ 'change-settings'}}
       li
+        a.js-change-color
+          i.fa.fa-paint-brush
+          | {{_ 'change-color'}}
+      li
+        a.js-change-font
+          i.fa.fa-font
+          | {{_ 'change-font'}}
+      li
         a.js-change-avatar
           i.fa.fa-picture-o
-          | {{_ 'edit-avatar'}}
+          | {{_ 'change-avatar'}}
       unless isSandstorm
         if isNotOAuth2AuthenticationMethod
           li
@@ -77,6 +101,11 @@ template(name="memberMenuPopup")
         a.js-change-language
           i.fa.fa-flag
           | {{_ 'changeLanguagePopup-title'}}
+      if isSupportPageEnabled
+        li
+          a(href="{{pathFor 'support'}}")
+            i.fa.fa-question-circle
+            | {{_ 'support'}}
   unless isSandstorm
     hr
     ul.pop-over-list
@@ -139,6 +168,13 @@ template(name="editProfilePopup")
         div
         input#deleteButton.primary.wide(type="button" value="{{_ 'delete'}}")
 
+
+template(name="supportPopup")
+  ul.pop-over-list
+    li
+      +viewer
+        = currentSetting.supportPopupText
+
 template(name="changePasswordPopup")
   +atForm(state='changePwd')
 
@@ -147,24 +183,72 @@ template(name="changeLanguagePopup")
     each languages
       li(class="{{# if isCurrentLanguage}}active{{/if}}")
         a.js-set-language
-          = name
+          span.emoji-icon {{languageFlag}}
+          | {{name}}
+          if rtl
+            |  (RTL)
           if isCurrentLanguage
             i.fa.fa-check
 
+template(name="changeColorPopup")
+  //- #5778: global theme color override, saved to the user profile. Works like
+    Board Settings / Change Color, but applies to the whole UI (All Boards, Search,
+    Admin Panel, etc). The shared picker (docs/Theme/Theme.md) offers category +
+    theme dropdowns and custom color wheels for flat/clear themes.
+  +themeColorPicker(scope="global")
+
+template(name="changeFontPopup")
+  //- #4759: pick a UI font that ALREADY EXISTS in this browser. One button per
+    detected font, each shown in its OWN font (names are plain text, Blaze-escaped,
+    validated to a curated whitelist server-side). Font size is a row of buttons
+    (smaller on the left, 100% in the middle, larger on the right). Clicking a font
+    or size applies it IMMEDIATELY (no Save button).
+  form.change-font.edit-label
+    label {{_ 'font'}}
+    .ui-font-buttons
+      a.ui-font-btn.js-ui-font-btn(data-font="" class="{{#if isNoneSelected}}active{{/if}}") {{_ 'font-default'}}
+      each detectedFonts
+        a.ui-font-btn.js-ui-font-btn(data-font="{{name}}" style="{{optionStyle}}" class="{{#if selected}}active{{/if}}") {{name}}
+    //- Preview (pangram + numbers) right below the font-name buttons.
+    .font-preview(style=previewStyle) {{_ 'font-preview-text'}}
+    label {{_ 'font-size'}}
+    .ui-font-size-buttons
+      each fontSizes
+        a.ui-font-size-btn.js-ui-font-size-btn(data-size="{{key}}" class="{{#if selected}}active{{/if}}") {{label}}
+    //- #4759: text + text-background color from a color wheel, each unsettable.
+    //- Applied immediately when the wheel is committed / reset.
+    label {{_ 'text-color'}}
+    .color-wheel-wrap
+      input.js-ui-text-color(type="color" value=textColorHex title="{{_ 'text-color'}}")
+      a.js-reset-text-color(class="{{#unless hasTextColor}}disabled{{/unless}}") {{_ 'unset-color'}}
+    label {{_ 'text-background-color'}}
+    .color-wheel-wrap
+      input.js-ui-bg-color(type="color" value=bgColorHex title="{{_ 'text-background-color'}}")
+      a.js-reset-bg-color(class="{{#unless hasBgColor}}disabled{{/unless}}") {{_ 'unset-color'}}
+
 template(name="changeSettingsPopup")
   ul.pop-over-list
-    //li
-    //  a.js-toggle-system-messages
-    //    i.fa.fa-comments-o
-    //    | {{_ 'hide-system-messages'}}
-    //    if hiddenSystemMessages
-    //      i.fa.fa-check
-    //li
-    //  a.js-toggle-desktop-drag-handles
-    //    i.fa.fa-arrows
-    //    | {{_ 'show-desktop-drag-handles'}}
-    //    if isShowDesktopDragHandles
-    //      i.fa.fa-check
+    li
+      a.js-toggle-desktop-drag-handles
+        i.fa.fa-arrows
+        | {{_ 'show-desktop-drag-handles'}}
+        if isShowDesktopDragHandles
+          i.fa.fa-check
+    li
+      a.js-toggle-submit-on-enter(title="{{_ 'submit-on-enter-description'}}")
+        i.fa.fa-level-down
+        | {{_ 'submit-on-enter'}}
+        if isSubmitOnEnter
+          i.fa.fa-check
+    li
+      //- #6531: off by default - a click opens the card it was aimed at and closes
+      //- the one before it. Turned on, every clicked card stays open in its own
+      //- draggable window.
+      a.js-toggle-open-many-cards-at-once(title="{{_ 'open-many-cards-at-once-description'}}")
+        i.fa.fa-clone
+        | {{_ 'open-many-cards-at-once'}}
+        if isOpenManyCardsAtOnce
+          i.fa.fa-check
     unless currentUser.isWorker
       li
         label.bold.clear

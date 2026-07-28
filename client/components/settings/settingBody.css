@@ -7,87 +7,667 @@
   display: -moz-flex;
   display: -ms-flexbox;
   display: flex;
+  height: 100%;
 }
 .setting-content {
   color: #727479;
   background: #dedede;
   width: 100%;
-  position: absolute;
-}
-.setting-content .content-title {
-  font-size: 20px;
-}
-.setting-content .content-body {
-  display: flex;
-  padding-top: 15px;
   height: 100%;
-  gap: 10px;
+  position: absolute;
+}.setting-content .content-body {
+  display: flex;
+  /* Always keep the menu (left) and content (right) side by side, even on
+     narrow windows. The side menu has a fixed basis and the main body fills
+     the rest, so both stay visible without switching to a stacked layout. */
+  flex-direction: row;
+  flex-wrap: nowrap;
+  padding-top: 18px;
+  height: 100%;
+  gap: 18px;
 }
 .setting-content .content-body .side-menu {
   background-color: #f7f7f7;
   border: 1px solid #f0f0f0;
-  border-radius: 4px;
-  width: 250px;
-  box-shadow: inset -1px -1px 3px rgba(0,0,0,0.05);
+  border-radius: 7px;
+  width: min(250px, 32vw);
+  /* Never let the menu be squeezed away on narrow windows; keep it visible. */
+  flex: 0 0 auto;
+  /* No X offset: an inset shadow offset sideways is a PHYSICAL direction and does
+     not mirror under dir=rtl, so it shaded the wrong inner edge once the menu moved
+     to the right. See docs/Design/Page/Left-Menu.md. */
+  box-shadow: inset 0 -2px 4px rgba(0,0,0,0.05);
+  /* A long menu SCROLLS inside the panel instead of spilling out of it.
+     The menu is a flex item stretched to the row's height, so its box - and with it
+     its background, border and rounded corners - stops at the bottom of the page.
+     With the default `overflow: visible` the entries kept rendering past that edge,
+     which is why Admin Panel / Problems, the longest menu, showed its last four
+     entries sitting on the page's grey with no panel behind them.
+     min-height:0 because a flex item will not shrink below its content otherwise, and
+     an overflow that never engages leaves the spill exactly as it was. */
+  overflow-y: auto;
+  min-height: 0;
 }
 .setting-content .content-body .side-menu ul li {
-  margin: 0.1rem 0.2rem;
+  margin: 2px 4px;
 }
 .setting-content .content-body .side-menu ul li.active {
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 3px rgba(0,0,0,0.15);
+}
+/* The entry you are on is filled with the theme colour and its label and icon go
+   white - the same treatment the selected tab gets in the Admin Panel bar above
+   (settingHeader.css: `.setting-header-btn.active`, white text on the header's own
+   colour). One selected-thing look in both places.
+   The colour is the per-user theme accent (Member Settings -> Change color sets
+   --theme-accent on :root); the fallback is the WeKan header blue, so with no chosen
+   colour the menu matches the bar exactly. See docs/Design/Page/Left-Menu.md.
+   `:hover` is listed too: `li:hover` below sets a white background at the SAME
+   specificity as `li.active`, and being later in the file it would otherwise wash the
+   selected entry back to white as soon as the pointer crossed it. */
+.setting-content .content-body .side-menu ul li.active,
+.setting-content .content-body .side-menu ul li.active:hover {
+  background: var(--theme-accent, #2980b9);
+}
+
+/* …and when a THEME is active, the row is painted by that theme's own #header rule
+   instead (boardColors.css names this selector in every theme's header rule), so the
+   selected row and the second header bar are the same colour - and the same colour
+   SLIDE, for a theme like clearblue whose bar is a gradient. The rule above stays as
+   the answer for an instance with no theme at all. */
+.setting-content .content-body .side-menu ul li.active > a,
+.setting-content .content-body .side-menu ul li.active > a i {
+  /* Not `inherit`: that is what made the selected entry the same grey as every
+     unselected one, on a background that is now dark. */
+  color: #fff;
 }
 .setting-content .content-body .side-menu ul li:hover {
   background: #fff;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 3px rgba(0,0,0,0.15);
 }
+/* Two rows that are NOT entries: the rule between groups, and the title above a
+   group. Neither is clickable, so both opt out of the hover treatment below -
+   `li:hover` would otherwise light them up like a row you can open. The heading
+   is quieter and smaller than an entry: it names the group, it is not one of them.
+   (The Problems page used to style its separator from adminReports.css with a
+   class the shared menu does not render, so the rule never applied at all.) */
+.setting-content .content-body .side-menu ul li.left-menu-separator {
+  margin: 6px 4px;
+}
+.setting-content .content-body .side-menu ul li.left-menu-separator hr {
+  margin: 0;
+  border: 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.15);
+}
+.setting-content .content-body .side-menu ul li.left-menu-heading {
+  padding-block: 8px 4px;
+  padding-inline-start: 18px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.6;
+  cursor: default;
+}
+.setting-content .content-body .side-menu ul li.left-menu-separator:hover,
+.setting-content .content-body .side-menu ul li.left-menu-heading:hover {
+  background: transparent;
+  box-shadow: none;
+}
+
 .setting-content .content-body .side-menu ul li a {
-  padding: 1rem 0 1rem 1rem;
+  /* Logical, so the indent follows the reading direction instead of staying on
+     the left when the menu mirrors to the right. */
+  padding-block: 12px;
+  padding-inline-start: 18px;
+  padding-inline-end: 0;
   width: 95%;
 }
 .setting-content .content-body .side-menu ul li a span {
   font-size: 13px;
 }
 .setting-content .content-body .side-menu ul li a i {
-  margin-right: 20px;
+  margin-inline-end: 20px;
 }
 .setting-content .content-body .main-body {
   -webkit-user-select: text;
   -moz-user-select: text;
   -ms-user-select: text;
   user-select: text;
+  max-height: 100%;
+  /* auto, not scroll: a page whose content fits - which every shared table page now
+     does - showed a horizontal scrollbar with nothing to scroll to. The wide admin
+     tables (GridFS stats, Version, Translation) still get one when they need it, and
+     scrollbar-gutter keeps the layout from jumping as it appears. */
+  overflow-x: auto !important;
+  overflow-y: scroll !important;
+  scrollbar-gutter: stable;
+  /* Grow into the space left next to the side menu. flex-basis MUST be 0 here: this
+     element can hold a min-width:1200px table, so a content-based (auto) basis is
+     huge and, as an overflow flex item, resolves unpredictably (collapsing the
+     panel). Basis 0 + grow makes the width = container - side menu,
+     deterministically. min-width:0 lets it shrink so the side menu is never pushed
+     out on narrow windows. */
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Ensure scrollbars are always visible with proper styling for all admin pages */
+.setting-content .content-body .main-body::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+  display: block !important;
+  visibility: visible !important;
+}
+
+.setting-content .content-body .main-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 6px;
+  display: block !important;
+  visibility: visible !important;
+}
+
+.setting-content .content-body .main-body::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 6px;
+  display: block !important;
+  visibility: visible !important;
+}
+
+.setting-content .content-body .main-body::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.setting-content .content-body .main-body::-webkit-scrollbar-corner {
+  background: #f1f1f1;
+}
+
+/* NO admin table is forced wider than the panel any more.
+
+   These rules used to be the opposite: `min-width: 1200px !important` with
+   `width: max-content` and nowrap cells, to GUARANTEE a horizontal scrollbar for
+   the wide data tables. What that guaranteed in practice was a table whose right
+   part is off screen - reported on Domains, and just as true on Admin Panel /
+   Version, a two-column table where "WeKan ® Version" and its value sat ~1000px
+   apart with the value cut off at the window edge. A 1200px floor is not a
+   property of the DATA; it was a property of the browser window someone had open.
+   The phone-width exception that used to undo it (at ≤ 800px) is now simply the
+   rule at every width.
+
+   So: fit the panel, wrap the text, and let a genuinely wide table scroll inside
+   `.main-body`, which keeps `overflow-x: auto` for exactly that. The shared table
+   page (docs/Design/Page/Table.md) already does this for itself - width:100% +
+   table-layout:fixed with equal, wrapping columns - and is excluded so its equal
+   columns are not turned back into content-sized ones. */
+.setting-content .content-body .main-body table:not(.table-page-table) {
+  width: 100%;
+  max-width: 100%;
+  table-layout: auto;
+}
+
+/* Long unbroken values - version strings, paths, URLs, ids - break inside their
+   cell instead of widening the column and pushing the table off screen again. */
+.setting-content .content-body .main-body table:not(.table-page-table) td,
+.setting-content .content-body .main-body table:not(.table-page-table) th {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* #6465: headers may wrap — nowrap on long header labels (e.g. the org/team
+   feature columns) blew the column widths up to the whole label length. */
+.setting-content .content-body .main-body table:not(.table-page-table) th {
+  max-width: 240px;
+}
+
+/* Ensure there's enough content to trigger vertical scrolling */
+.setting-content .content-body .main-body {
+  min-height: calc(100vh - 200px);
+  padding-bottom: 50px;
+}
+
+/* The pane title: ONE size and weight for the heading at the top of every Admin
+   Panel pane, whether that pane is a shared table page (Domains, People, the
+   Problems reports - their h1 carries this class too, see tablePage.jade) or a form
+   (Login, Announcement, Accessibility, PWA). Before this, only the table pages had a
+   title at all, so half the panes opened with no heading and the other half with an
+   unstyled browser-default h1 twice the size of anything around it.
+   Sized in rem so it follows the user's browser font size, and `color: inherit` so
+   it stays readable on a dark theme. */
+.admin-pane-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: inherit;
+}
+
+/* A pane that is not a table page has no row gap of its own, so the heading brings
+   its own space below it. The shared table page is a flex column with a 12px gap,
+   which is why the rule is scoped to a title that IS the direct child. */
+.setting-content .content-body .main-body > .admin-pane-title {
+  margin-bottom: 12px;
+}
+
+/* ── Checkboxes ──────────────────────────────────────────────────────────────
+   ONE checkbox for the whole Admin Panel: the same one the rest of WeKan draws
+   (`.materialCheckBox`, forms.css), which is what Admin Panel / Settings /
+   Announcement shows for "Active System-Wide Announcement".
+
+   Two problems this fixes at once.
+
+   1. Some panes - the storage Read toggles, the Organizations and Teams feature
+      columns, the Backup checkboxes, Attachments / Limits / Avatars, the Problems
+      summary - use a NATIVE <input type="checkbox">. forms.css hides every native
+      checkbox app-wide (WeKan draws its own), so those either did not show at all,
+      or were re-enabled pane by pane and then drawn by the BROWSER: on Ubuntu a big
+      orange box, which has nothing to do with the chosen theme (it was orange even
+      under clearblue) and matched nothing else on the page.
+   2. Each pane that re-enabled them picked its own size, so no two agreed.
+
+   The declarations below are `.materialCheckBox` and `.materialCheckBox.is-checked`
+   applied to the input itself - the SAME grey square when unchecked, the SAME morph
+   into a green tick when checked, and the same `transition: 0.2s` that animates
+   between them. Not a tick drawn over the box with a pseudo-element: that gets the
+   checked state right and loses both the unchecked square and the animation.
+
+   `appearance: none` is the one addition, to take the browser's own rendering out
+   of it. If these panes ever move to the `.materialCheckBox` markup, this whole
+   block can go. */
+.setting-content input[type="checkbox"] {
+  /* Beat the app-wide "hide the native checkbox" rule for the Admin Panel only.
+   * That rule hides in three ways at once - display, visibility, AND a
+   * `inset-inline-start: -9999px` offset - so all three have to be undone. Undoing
+   * two of them leaves the box on screen but 9999px to the side: invisible when
+   * unchecked, and visible when checked ONLY because the checked state below sets
+   * its own -3px offset. That is exactly what "only the tick shows" was. */
+  visibility: visible;
+  display: inline-block;
+  inset-inline-start: auto;
+  top: auto;
+  appearance: none;
+  -webkit-appearance: none;
+  box-sizing: content-box;
+  /* forms.css styles every input that is not a file input as a FORM FIELD:
+   * `min-height: 41px`, a grey background, a 6px radius, 9px padding and a 14px
+   * bottom margin. Everything but the min-height is overridden by the material
+   * declarations below - but a 41px floor turns a 13px box into a tall rectangle,
+   * and stretches the tick it becomes. `input[type="radio"]` resets it the same way
+   * a few lines further down that file, for the same reason. */
+  min-height: 0;
+  min-width: 0;
+  /* …then exactly .materialCheckBox. */
+  position: relative;
+  width: 13px;
+  height: 13px;
+  z-index: 0;
+  border: 2px solid #5a5a5a;
+  border-radius: 1px;
+  transition: 0.2s;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  flex-shrink: 0;
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+/* …and exactly .materialCheckBox.is-checked: the square becomes the tick, which is
+   what the transition above animates. */
+.setting-content input[type="checkbox"]:checked {
+  top: -4px;
+  inset-inline-start: -3px;
+  width: 7px;
+  height: 15px;
+  margin-inline-end: 6px;
+  border-top: 2px solid transparent;
+  border-inline-start: 2px solid transparent;
+  border-bottom: 2px solid #3cb500;
+  border-inline-end: 2px solid #3cb500;
+  border-radius: 0;
+  transform: rotate(40deg);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform-origin: 100% 100%;
+}
+
+.setting-content input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--theme-accent, #2980b9);
+  outline-offset: 2px;
+}
+
+.setting-content input[type="checkbox"]:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* A checkbox written as `label > input + text` (Attachments / Limits / Avatars,
+   the Backup checkboxes) needs the gap the `.materialCheckBox` markup gets from its
+   own layout, or the box and its words touch. The checked state adds its own
+   margin - the same one the material checkbox adds - so this is the unchecked one. */
+.setting-content label > input[type="checkbox"] {
+  margin-inline-end: 6px;
+}
+
+/* Admin Panel / Attachments / Backup, the schedule's day: buttons, not a field.
+   The weekly one is seven days in the reader's own language - the text field it
+   replaces only ever accepted an English day name typed exactly right. The monthly
+   one is the 28 dates a monthly backup can safely run on - a spin control made you
+   click 27 times to reach the end of the month, and never showed that the 29th to
+   the 31st are not offered at all (they would skip February).
+   Both wrap onto further lines rather than squeezing, and the chosen one is filled
+   with the theme colour, the way the selected left-menu entry and the selected tab
+   are. */
+.setting-content .schedule-day-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.setting-content .schedule-day-btn {
+  display: inline-block;
+  padding: 6px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+  background: #fff;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.setting-content .schedule-day-btn:hover {
+  background: #f2f2f2;
+  text-decoration: none;
+}
+
+.setting-content .schedule-day-btn.active {
+  background: var(--theme-accent, #2980b9);
+  border-color: var(--theme-accent, #2980b9);
+  color: #fff;
+}
+
+.setting-content .schedule-day-btn:focus-visible {
+  outline: 2px solid var(--theme-accent, #2980b9);
+  outline-offset: 2px;
+}
+
+/* The 28 dates are a grid of equal squares, so the numbers line up in columns
+   instead of drifting with their own width. */
+.setting-content .schedule-day-numbers .schedule-day-btn {
+  min-width: 2.4em;
+  padding-inline: 6px;
+  text-align: center;
+}
+
+/* Several such checkboxes side by side - Attachments / Backup's "Attachments,
+   Avatars, Data" - are one row, each label holding its box and its words together.
+   Inline labels would let a label wrap away from its own checkbox, and the checked
+   box shifts a few pixels as it turns into the tick, which unaligned text follows. */
+.setting-content .checkbox-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 18px;
+}
+
+/* One item of that row: a label around a native checkbox, or - since #6465 - the
+   `a.flex > .materialCheckBox + span` the rest of WeKan uses. Both keep their box
+   and their words together, so a row can wrap between items and never inside one. */
+.setting-content .checkbox-row label,
+.setting-content .checkbox-row a.flex {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  cursor: pointer;
+  /* The anchor is one item of the row, not a full-height column: `.flex` gives it
+     `height: 100%`, which stretched the box away from its words. */
+  height: auto;
+}
+
+/* A GROUP title inside a pane - "All Boards", "URL", "Product name", "Logo" on
+   Visibility. Deliberately smaller than the pane title above it, so the page reads
+   as one heading with groups under it rather than as several pages stacked. */
+.admin-pane-group-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: inherit;
+}
+
+/* Admin Panel / Settings / Visibility / Wait Spinner: the dropdown and a live
+   preview of the spinner it names, side by side - and the preview drops BELOW the
+   dropdown when there is not enough room for both. flex-wrap does that on its own,
+   at whatever width the pane happens to have, so no breakpoint has to be guessed. */
+.spinner-select-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.spinner-select-row > select {
+  flex: 0 1 auto;
+  max-width: 100%;
+}
+
+/* A fixed box the spinner is centred in, so switching between spinners of different
+   sizes does not move the dropdown. The spinners are written for a full-page
+   loading screen (`margin: 100px auto 0`, up to 70px wide), so their margin is
+   dropped and the whole thing scaled down to fit beside a form field. */
+.spinner-select-row .spinner-preview {
+  flex: 0 0 auto;
+  width: 72px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.spinner-select-row .spinner-preview .sk-spinner {
+  margin: 0 auto !important;
+  transform: scale(0.5);
+  transform-origin: center center;
+}
+
+/* A SUB-title under a group title - one line saying what that group's setting
+   reaches (Visibility / Change color says the site admin's colour is what every
+   Organization without one of its own inherits). Smaller and quieter than the group
+   title above it, so it reads as a note, not as another group. */
+.admin-pane-subgroup-title {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
+  font-weight: 400;
+  line-height: 1.3;
+  opacity: 0.75;
+  color: inherit;
+}
+
+/* The first group starts right under the pane title; every later one needs air
+   above it, and the rule between two groups is the pane's own, not a menu rule. */
+.setting-detail li + li > .admin-pane-group-title {
+  margin-top: 14px;
+}
+
+.setting-detail li.admin-pane-group-separator {
+  margin: 14px 0 0;
+}
+
+.setting-detail li.admin-pane-group-separator hr {
+  margin: 0;
+  border: 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+/* ── Save ────────────────────────────────────────────────────────────────────
+   One Save button look for the whole Admin Panel: the panes' own Save (People /
+   Login, People / E-mail, Visibility, …) and the Save inside every Admin Panel
+   popup - Edit and New for User, Organization, Team and Translation.
+
+   The panes' Save is a `button.primary`, which forms.css themes. A popup's is an
+   `input[type=submit].primary.wide` sitting in a flex `.buttonsContainer` - and
+   `.wide` never reached it, because the rule for it in forms.css is written as a
+   DESCENDANT selector (`input[type="submit"] .wide`), which matches nothing: an
+   input has no children. So a popup's Save was the same colour but a different,
+   cramped size, wherever it landed in the row.
+
+   Both are listed here with the same declarations, taken from what the panes' Save
+   already looks like, so the two cannot drift apart again. The popups are named one
+   by one on purpose: `.buttonsContainer` is board-sidebar and member-menu markup
+   too, and those are not Admin Panel buttons. */
+.setting-content .content-body .main-body .setting-detail button.primary,
+.pop-over[data-popup='editUserPopup'] .buttonsContainer input[type="submit"].primary,
+.pop-over[data-popup='editOrgPopup'] .buttonsContainer input[type="submit"].primary,
+.pop-over[data-popup='editTeamPopup'] .buttonsContainer input[type="submit"].primary,
+.pop-over[data-popup='newUserPopup'] .buttonsContainer input[type="submit"].primary,
+.pop-over[data-popup='newOrgPopup'] .buttonsContainer input[type="submit"].primary,
+.pop-over[data-popup='newTeamPopup'] .buttonsContainer input[type="submit"].primary,
+.pop-over[data-popup='editTranslationPopup'] .buttonsContainer input[type="submit"].primary,
+.pop-over[data-popup='newTranslationPopup'] .buttonsContainer input[type="submit"].primary {
+  background: var(--theme-accent, #005377);
+  color: #fff;
+  border: none;
+  font-weight: 700;
+  line-height: 1.3;
+  padding: 9px 35px;
+  cursor: pointer;
+}
+
+.setting-content .content-body .main-body .setting-detail button.primary:hover,
+.setting-content .content-body .main-body .setting-detail button.primary:focus,
+.pop-over[data-popup='editUserPopup'] .buttonsContainer input[type="submit"].primary:hover,
+.pop-over[data-popup='editOrgPopup'] .buttonsContainer input[type="submit"].primary:hover,
+.pop-over[data-popup='editTeamPopup'] .buttonsContainer input[type="submit"].primary:hover,
+.pop-over[data-popup='newUserPopup'] .buttonsContainer input[type="submit"].primary:hover,
+.pop-over[data-popup='newOrgPopup'] .buttonsContainer input[type="submit"].primary:hover,
+.pop-over[data-popup='newTeamPopup'] .buttonsContainer input[type="submit"].primary:hover,
+.pop-over[data-popup='editTranslationPopup'] .buttonsContainer input[type="submit"].primary:hover,
+.pop-over[data-popup='newTranslationPopup'] .buttonsContainer input[type="submit"].primary:hover,
+.pop-over[data-popup='editUserPopup'] .buttonsContainer input[type="submit"].primary:focus,
+.pop-over[data-popup='editOrgPopup'] .buttonsContainer input[type="submit"].primary:focus,
+.pop-over[data-popup='editTeamPopup'] .buttonsContainer input[type="submit"].primary:focus,
+.pop-over[data-popup='newUserPopup'] .buttonsContainer input[type="submit"].primary:focus,
+.pop-over[data-popup='newOrgPopup'] .buttonsContainer input[type="submit"].primary:focus,
+.pop-over[data-popup='newTeamPopup'] .buttonsContainer input[type="submit"].primary:focus,
+.pop-over[data-popup='editTranslationPopup'] .buttonsContainer input[type="submit"].primary:focus,
+.pop-over[data-popup='newTranslationPopup'] .buttonsContainer input[type="submit"].primary:focus {
+  background: var(--theme-accent, #004766);
+  color: #fff;
+}
+
+.setting-content .content-body .main-body .setting-detail button.primary:active,
+.pop-over[data-popup='editUserPopup'] .buttonsContainer input[type="submit"].primary:active,
+.pop-over[data-popup='editOrgPopup'] .buttonsContainer input[type="submit"].primary:active,
+.pop-over[data-popup='editTeamPopup'] .buttonsContainer input[type="submit"].primary:active,
+.pop-over[data-popup='newUserPopup'] .buttonsContainer input[type="submit"].primary:active,
+.pop-over[data-popup='newOrgPopup'] .buttonsContainer input[type="submit"].primary:active,
+.pop-over[data-popup='newTeamPopup'] .buttonsContainer input[type="submit"].primary:active,
+.pop-over[data-popup='editTranslationPopup'] .buttonsContainer input[type="submit"].primary:active,
+.pop-over[data-popup='newTranslationPopup'] .buttonsContainer input[type="submit"].primary:active {
+  background: var(--theme-accent, #01628c);
+  color: #fff;
+}
+
+/* A popup's Save is the only thing in its row, so it takes the row - which is what
+   `.wide` was for. It stops well short of a wide popup's full width so it stays a
+   button rather than a bar. */
+.pop-over[data-popup='editUserPopup'] .buttonsContainer,
+.pop-over[data-popup='editOrgPopup'] .buttonsContainer,
+.pop-over[data-popup='editTeamPopup'] .buttonsContainer,
+.pop-over[data-popup='newUserPopup'] .buttonsContainer,
+.pop-over[data-popup='newOrgPopup'] .buttonsContainer,
+.pop-over[data-popup='newTeamPopup'] .buttonsContainer,
+.pop-over[data-popup='editTranslationPopup'] .buttonsContainer,
+.pop-over[data-popup='newTranslationPopup'] .buttonsContainer {
+  margin-top: 6px;
+}
+
+.pop-over[data-popup='editUserPopup'] .buttonsContainer input[type="submit"].primary,
+.pop-over[data-popup='editOrgPopup'] .buttonsContainer input[type="submit"].primary,
+.pop-over[data-popup='editTeamPopup'] .buttonsContainer input[type="submit"].primary,
+.pop-over[data-popup='newUserPopup'] .buttonsContainer input[type="submit"].primary,
+.pop-over[data-popup='newOrgPopup'] .buttonsContainer input[type="submit"].primary,
+.pop-over[data-popup='newTeamPopup'] .buttonsContainer input[type="submit"].primary,
+.pop-over[data-popup='editTranslationPopup'] .buttonsContainer input[type="submit"].primary,
+.pop-over[data-popup='newTranslationPopup'] .buttonsContainer input[type="submit"].primary {
+  flex: 1 1 auto;
+  max-width: 320px;
+}
+
+/* Admin panel buttons should use theme darker color */
+.setting-content .content-body .main-body .setting-detail button.btn {
+  background: var(--theme-accent, #005377);
+  color: #fff;
+  border: none;
+}
+
+.setting-content .content-body .main-body .setting-detail button.btn:hover,
+.setting-content .content-body .main-body .setting-detail button.btn:focus {
+  background: var(--theme-accent, #004766);
+  color: #fff;
+}
+
+.setting-content .content-body .main-body .setting-detail button.btn:active {
+  background: var(--theme-accent, #01628c);
+  color: #fff;
+}
+
+/* Force horizontal scrollbar to always be visible at bottom */
+.setting-content .content-body .main-body {
+  position: relative;
+}
+
+/* Add invisible content to force horizontal scrolling when needed */
+.setting-content .content-body .main-body::after {
+  content: '';
+  display: block;
+  /* 100%, not 100vw: this is absolutely positioned INSIDE .main-body, so a
+     viewport-wide hairline stuck out past it and made the page scroll sideways. */
+  width: 100%;
+  height: 1px;
+  position: absolute;
+  bottom: 0;
+  inset-inline-start: 0;
+  pointer-events: none;
 }
 .setting-content .content-body .main-body ul li {
   padding: 0.5rem 0.5rem;
 }
 .setting-content .content-body .main-body ul li a .is-checked {
-  border-bottom: 2px solid #2980b9;
-  border-right: 2px solid #2980b9;
+  border-bottom: 2px solid #3cb500;
+  border-inline-end: 2px solid #3cb500;
 }
 .setting-content .content-body .main-body ul li a span {
   padding: 0 0.5rem;
 }
 .setting-content .content-body .main-body ul li .admin-announcement,
+.setting-content .content-body .main-body ul li .admin-accessibility,
 .setting-content .content-body .main-body ul li .invite-people,
 .setting-content .content-body .main-body ul li .layout {
-  padding-left: 20px;
+  padding-inline-start: 20px;
 }
 .setting-content .content-body .main-body ul li .admin-announcement li,
+.setting-content .content-body .main-body ul li .admin-accessibility li,
 .setting-content .content-body .main-body ul li .invite-people li,
 .setting-content .content-body .main-body ul li .layout li {
   min-width: 500px;
 }
 .setting-content .content-body .main-body ul li .admin-announcement li ul.no-margin-bottom,
+.setting-content .content-body .main-body ul li .admin-accessibility li ul.no-margin-bottom,
 .setting-content .content-body .main-body ul li .invite-people li ul.no-margin-bottom,
 .setting-content .content-body .main-body ul li .layout li ul.no-margin-bottom {
   margin-bottom: 0;
 }
 .setting-content .content-body .main-body ul li .admin-announcement li .bg-white a,
+.setting-content .content-body .main-body ul li .admin-accessibility li .bg-white a,
 .setting-content .content-body .main-body ul li .invite-people li .bg-white a,
 .setting-content .content-body .main-body ul li .layout li .bg-white a {
   background: #f7f7f7;
 }
 .setting-content .content-body .main-body ul li .admin-announcement li .bg-white a.is-checked,
+.setting-content .content-body .main-body ul li .admin-accessibility li .bg-white a.is-checked,
 .setting-content .content-body .main-body ul li .invite-people li .bg-white a.is-checked,
 .setting-content .content-body .main-body ul li .layout li .bg-white a.is-checked {
   background: #fff;
@@ -125,4 +705,100 @@ li.has-error {
 li.has-error .form-group .wekan-form-control {
   border-color: #a94442;
   box-shadow: inset 0 1px 1px rgba(0,0,0,0.075);
+}
+
+/* Constrain textarea elements with balanced left/right spacing */
+.setting-content .content-body .main-body textarea.wekan-form-control {
+  width: calc(100% - 20px);
+  margin: 0 10px;
+  max-width: calc(100vw - 320px);
+  box-sizing: border-box;
+}
+
+/* For nested custom head/manifest/assetlinks sections */
+.setting-content .content-body .main-body .custom-head-settings textarea.wekan-form-control,
+.setting-content .content-body .main-body .custom-manifest-settings textarea.wekan-form-control,
+.setting-content .content-body .main-body .custom-assetlinks-settings textarea.wekan-form-control {
+  width: calc(100% - 20px);
+  margin-inline-start: 0;
+  margin-inline-end: 10px;
+  max-width: calc(100vw - 240px);
+  box-sizing: border-box;
+}
+
+.setting-content .content-body .main-body .attachment-limit-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 560px;
+}
+
+.setting-content .content-body .main-body .attachment-limit-row input.wekan-form-control {
+  flex: 1;
+  min-width: 200px;
+}
+
+.setting-content .content-body .main-body .attachment-limit-row select.wekan-form-control {
+  width: 120px;
+  min-width: 120px;
+}
+
+/* #6419: on phones the admin settings forced a side-by-side menu+content layout
+   (flex-direction: row "even on narrow windows"), so the ~127px side menu and the
+   content were crammed together and the long (e.g. Finnish) menu labels overflowed
+   the menu box rightward, visually overlapping the content. Stack them on small
+   screens: a full-width compact menu on top, full-width content below. */
+@media screen and (max-width: 800px) {
+  .setting-content {
+    position: relative;
+    height: auto;
+    min-height: 100%;
+  }
+  .setting-content .content-body {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 8px;
+    height: auto;
+    padding-top: 9px;
+  }
+  .setting-content .content-body .side-menu {
+    width: 100%;
+    flex: 0 0 auto;
+    border-radius: 6px;
+  }
+  /* Menu items as a wrapping horizontal row so the menu stays compact on top. */
+  .setting-content .content-body .side-menu ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 4px;
+  }
+  .setting-content .content-body .side-menu ul li {
+    flex: 0 0 auto;
+    margin: 0;
+  }
+  .setting-content .content-body .side-menu ul li a {
+    width: auto;
+    white-space: nowrap;
+    padding: 10px 12px;
+  }
+  .setting-content .content-body .main-body {
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: 540px;
+    overflow-x: auto !important;
+  }
+}
+
+/* ── Admin tables on a phone ─────────────────────────────────────────────────
+   "Fit the width, wrap the text" is the rule at EVERY width now (see the table
+   rules above), so this block no longer has to undo a 1200px floor. What is still
+   phone-specific is the label column: on a narrow screen a two-column table like
+   Admin Panel / Version needs its label side pinned to a share of the width, or a
+   long value squeezes the labels down to one character per line. */
+@media screen and (max-width: 800px) {
+  .setting-content .content-body .main-body table:not(.table-page-table) th {
+    width: 45%;
+    max-width: none;
+  }
 }

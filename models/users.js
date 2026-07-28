@@ -1,16 +1,104 @@
-import { ReactiveCache } from '/imports/reactiveCache';
-import { SyncedCron } from 'meteor/percolate:synced-cron';
-import { TAPi18n } from '/imports/i18n';
-import ImpersonatedUsers from './impersonatedUsers';
-import { Index, MongoDBEngine } from 'meteor/easy:search';
+import { Meteor } from 'meteor/meteor';
+import { ReactiveCache, ReactiveMiniMongoIndex } from '/imports/reactiveCache';
+import Boards from '/models/boards';
+import InviteToBoardRolesSettings, {
+  INVITE_TO_BOARD_ROLES_ID,
+  INVITE_TO_BOARD_ROLES_DEFAULT,
+} from '/models/inviteToBoardRolesSettings';
+// #5659: the default/minimum list width must be the SAME on every resolution
+// path (it used to be 270 here but 272 in the client and the lists schema, so
+// lists could fall back to different "defaults" on public boards).
+import {
+  DEFAULT_LIST_WIDTH,
+  MIN_LIST_WIDTH,
+  normalizeListWidth,
+} from '/models/lib/listWidth';
+// import { Index, MongoDBEngine } from 'meteor/easy:search'; // Temporarily disabled due to compatibility issues
+const { SimpleSchema } = require('/imports/simpleSchema');
+// Multitenancy option D: the per-tenant Global Admin rules, pure and shared by the
+// client, the server and the tests (docs/Design/Multitenancy/Multitenancy.md).
+import * as tenantAdmin from '/models/lib/tenantAdmin';
+const Users = Meteor.users;
+const getUtils = () => require('/client/lib/utils').Utils;
 
-// Sandstorm context is detected using the METEOR_SETTINGS environment variable
-// in the package definition.
-const isSandstorm =
-  Meteor.settings && Meteor.settings.public && Meteor.settings.public.sandstorm;
-Users = Meteor.users;
+// Public-board collapse persistence helpers (cookie-based for non-logged-in users)
+if (Meteor.isClient) {
+  const readCookieMap = name => {
+    try {
+      const stored = typeof document !== 'undefined' ? document.cookie : '';
+      const cookies = stored.split(';').map(c => c.trim());
+      let json = '{}';
+      for (const c of cookies) {
+        if (c.startsWith(name + '=')) {
+          json = decodeURIComponent(c.substring(name.length + 1));
+          break;
+        }
+      }
+      return JSON.parse(json || '{}');
+    } catch (e) {
+      console.warn('Error parsing collapse cookie', name, e);
+      return {};
+    }
+  };
 
-const allowedSortValues = [
+  const writeCookieMap = (name, data) => {
+    try {
+      const serialized = encodeURIComponent(JSON.stringify(data || {}));
+      const maxAge = 60 * 60 * 24 * 365; // 1 year
+      document.cookie = `${name}=${serialized}; path=/; max-age=${maxAge}`;
+    } catch (e) {
+      console.warn('Error writing collapse cookie', name, e);
+    }
+  };
+
+  Users.getPublicCollapsedList = (boardId, listId) => {
+    if (!boardId || !listId) return null;
+    const data = readCookieMap('wekan-collapsed-lists');
+    if (data[boardId] && typeof data[boardId][listId] === 'boolean') {
+      return data[boardId][listId];
+    }
+    return null;
+  };
+
+  Users.setPublicCollapsedList = (boardId, listId, collapsed) => {
+    if (!boardId || !listId) return false;
+    const data = readCookieMap('wekan-collapsed-lists');
+    if (!data[boardId]) data[boardId] = {};
+    data[boardId][listId] = !!collapsed;
+    writeCookieMap('wekan-collapsed-lists', data);
+    return true;
+  };
+
+  Users.getPublicCollapsedSwimlane = (boardId, swimlaneId) => {
+    if (!boardId || !swimlaneId) return null;
+    const data = readCookieMap('wekan-collapsed-swimlanes');
+    if (data[boardId] && typeof data[boardId][swimlaneId] === 'boolean') {
+      return data[boardId][swimlaneId];
+    }
+    return null;
+  };
+
+  Users.setPublicCollapsedSwimlane = (boardId, swimlaneId, collapsed) => {
+    if (!boardId || !swimlaneId) return false;
+    const data = readCookieMap('wekan-collapsed-swimlanes');
+    if (!data[boardId]) data[boardId] = {};
+    data[boardId][swimlaneId] = !!collapsed;
+    writeCookieMap('wekan-collapsed-swimlanes', data);
+    return true;
+  };
+
+  Users.getPublicCardCollapsed = () => {
+    const data = readCookieMap('wekan-card-collapsed');
+    return typeof data.state === 'boolean' ? data.state : null;
+  };
+
+  Users.setPublicCardCollapsed = collapsed => {
+    writeCookieMap('wekan-card-collapsed', { state: !!collapsed });
+    return true;
+  };
+}
+
+export const allowedSortValues = [
   '-modifiedAt',
   'modifiedAt',
   '-title',
@@ -19,6 +107,10 @@ const allowedSortValues = [
   'sort',
 ];
 const defaultSortBy = allowedSortValues[0];
+
+// #5799: sort modes for the All Boards page. 'custom' is the existing per-user
+// manual drag order; the other two sort alphabetically by board title.
+export const allowedAllBoardsSortValues = ['custom', 'title-asc', 'title-desc'];
 
 /**
  * A User in wekan
@@ -45,8 +137,11 @@ Users.attachSchema(
       /**
        * the list of organizations that a user belongs to
        */
-      type: [Object],
+      type: Array,
       optional: true,
+    },
+    'orgs.$': {
+      type: Object,
     },
     'orgs.$.orgId': {
       /**
@@ -60,12 +155,27 @@ Users.attachSchema(
        */
       type: String,
     },
+    'orgs.$.isAdmin': {
+      /**
+       * Multitenancy option D (docs/Design/Multitenancy/Multitenancy.md): this user
+       * is a per-tenant Global Admin OF THIS ORGANIZATION - they may administer its
+       * people and its backups, and nothing else. It is deliberately a flag on the
+       * membership the user already has rather than a second membership list.
+       * It NEVER implies the site-wide `isAdmin` flag, and a per-tenant admin can
+       * never grant that one (models/lib/tenantAdmin.js).
+       */
+      type: Boolean,
+      optional: true,
+    },
     teams: {
       /**
        * the list of teams that a user belongs to
        */
-      type: [Object],
+      type: Array,
       optional: true,
+    },
+    'teams.$': {
+      type: Object,
     },
     'teams.$.teamId': {
       /**
@@ -83,8 +193,11 @@ Users.attachSchema(
       /**
        * the list of emails attached to a user
        */
-      type: [Object],
+      type: Array,
       optional: true,
+    },
+    'emails.$': {
+      type: Object,
     },
     'emails.$.address': {
       /**
@@ -119,7 +232,6 @@ Users.attachSchema(
     },
     modifiedAt: {
       type: Date,
-      denyUpdate: false,
       // eslint-disable-next-line consistent-return
       autoValue() {
         if (this.isInsert || this.isUpsert || this.isUpdate) {
@@ -155,8 +267,11 @@ Users.attachSchema(
       /**
        * list of email buffers of the user
        */
-      type: [String],
+      type: Array,
       optional: true,
+    },
+    'profile.emailBuffer.$': {
+      type: String,
     },
     'profile.fullname': {
       /**
@@ -172,16 +287,122 @@ Users.attachSchema(
       type: Boolean,
       optional: true,
     },
-    'profile.hideCheckedItems': {
+    'profile.submitOnEnter': {
       /**
-       * does the user want to hide checked checklist items?
+       * per-user preference: in multi-line editors (card title/description and
+       * other inlined forms) submit on plain Enter (Shift+Enter for a newline)
+       * instead of the default Ctrl/Cmd+Enter. Off by default. See #4236/#6480.
        */
       type: Boolean,
+      optional: true,
+    },
+    'profile.openManyCardsAtOnce': {
+      /**
+       * #6531: per-user preference. OFF by default, which is what clicking a card
+       * has always been expected to do - open THAT card, closing the one that was
+       * open. Turned on, every clicked card stays open as its own draggable window,
+       * which is what WeKan did unconditionally and what the issue reported as a
+       * bug: the previous card simply never closed.
+       */
+      type: Boolean,
+      optional: true,
+    },
+    'profile.globalThemeColor': {
+      /**
+       * #5778: optional per-user GLOBAL theme color override. When set to one of
+       * the board color names, that color theme is applied to the WHOLE UI (All
+       * Boards, Search, Admin Panel, My Cards, etc.) via a `board-color-<name>`
+       * class on <body> and the header — letting a user pick e.g. a dark theme
+       * everywhere. Absent = no override (default appearance). A specific board
+       * still shows its own Board Settings color while you are on that board.
+       */
+      type: String,
+      optional: true,
+    },
+    'profile.globalThemeCustomColors': {
+      /**
+       * Custom colors for the global theme when it is a flat (1 color) or clear
+       * (2 colors) theme — see docs/Theme/Theme.md. Each is a validated #rrggbb hex.
+       */
+      type: Array,
+      optional: true,
+    },
+    'profile.globalThemeCustomColors.$': {
+      type: String,
+      custom() {
+        return /^#[0-9a-fA-F]{6}$/.test(this.value) ? undefined : 'notAHexColor';
+      },
+    },
+    'profile.uiFont': {
+      /**
+       * Member Settings / Font (#4759): the user's chosen UI font — one of the
+       * curated UI_FONTS (models/lib/uiFonts.js) detected as installed in their
+       * browser. Plain text, validated on the server; absent = default font.
+       */
+      type: String,
+      optional: true,
+    },
+    'profile.uiFontSize': {
+      /**
+       * Member Settings / Font / Size (#4759): a named preset size key (one of
+       * UI_FONT_SIZES, e.g. 'large'), never a free number. Absent / 'default' =
+       * the stock size. Validated on the server.
+       */
+      type: String,
+      optional: true,
+    },
+    'profile.uiTextColor': {
+      /**
+       * Member Settings / Font / Color (#4759): custom UI text color, chosen from a
+       * color wheel. A validated #rrggbb hex; absent = default text color.
+       */
+      type: String,
+      optional: true,
+      custom() {
+        // Skip when unset: an optional field's custom() still runs on insert, and
+        // /regex/.test(undefined) would wrongly reject every user with no color set.
+        if (this.value === undefined || this.value === null || this.value === '') return undefined;
+        return /^#[0-9a-fA-F]{6}$/.test(this.value) ? undefined : 'notAHexColor';
+      },
+    },
+    'profile.uiTextBgColor': {
+      /**
+       * Member Settings / Font / Color (#4759): custom UI text background color.
+       * A validated #rrggbb hex; absent = default (transparent) background.
+       */
+      type: String,
+      optional: true,
+      custom() {
+        if (this.value === undefined || this.value === null || this.value === '') return undefined;
+        return /^#[0-9a-fA-F]{6}$/.test(this.value) ? undefined : 'notAHexColor';
+      },
+    },
+    'profile.dismissedAnnouncementVersion': {
+      /**
+       * version string of the global announcement the user has permanently
+       * dismissed (#6051). When the admin changes the announcement text its
+       * version changes, so the banner reappears for everyone.
+       */
+      type: String,
       optional: true,
     },
     'profile.cardMaximized': {
       /**
        * has user clicked maximize card?
+       */
+      type: Boolean,
+      optional: true,
+    },
+    'profile.cardCollapsed': {
+      /**
+       * has user collapsed the card details?
+       */
+      type: Boolean,
+      optional: true,
+    },
+    'profile.showActivities': {
+      /**
+       * does the user want to show activities in card details?
        */
       type: Boolean,
       optional: true,
@@ -193,9 +414,11 @@ Users.attachSchema(
       type: Boolean,
       optional: true,
     },
-    'profile.hiddenSystemMessages': {
+    'profile.trelloApiSaved': {
       /**
-       * does the user want to hide system messages?
+       * Has the user saved Trello API credentials (key + token) for importing?
+       * The credentials themselves are stored server-side only (never published
+       * to the client); this is just the published "saved" indicator.
        */
       type: Boolean,
       optional: true,
@@ -214,12 +437,38 @@ Users.attachSchema(
       type: String,
       optional: true,
     },
+    'profile.boardWorkspacesTree': {
+      /**
+       * Per-user spaces tree for All Boards page
+       */
+      type: Array,
+      optional: true,
+    },
+    'profile.boardWorkspacesTree.$': {
+      /**
+       * Space node: { id: String, name: String, children: Array<node> }
+       */
+      type: Object,
+      blackbox: true,
+      optional: true,
+    },
+    'profile.boardWorkspaceAssignments': {
+      /**
+       * Per-user map of boardId -> spaceId
+       */
+      type: Object,
+      optional: true,
+      blackbox: true,
+    },
     'profile.invitedBoards': {
       /**
        * board IDs the user has been invited to
        */
-      type: [String],
+      type: Array,
       optional: true,
+    },
+    'profile.invitedBoards.$': {
+      type: String,
     },
     'profile.language': {
       /**
@@ -227,6 +476,17 @@ Users.attachSchema(
        */
       type: String,
       optional: true,
+    },
+    'profile.mapProvider': {
+      /**
+       * which map service the card "Open in map" links use, grouped by region:
+       * USA: 'google', 'bing', 'apple', 'waze';
+       * Europe: 'openstreetmap' (default), 'here', 'yandex', 'mapy', '2gis';
+       * Asia: 'baidu', 'amap'.
+       */
+      type: String,
+      optional: true,
+      allowedValues: ['openstreetmap', 'google', 'bing', 'apple'],
     },
     'profile.moveAndCopyDialog': {
       /**
@@ -236,24 +496,6 @@ Users.attachSchema(
       optional: true,
       blackbox: true,
     },
-    'profile.moveAndCopyDialog.$.boardId': {
-      /**
-       * last selected board id
-       */
-      type: String,
-    },
-    'profile.moveAndCopyDialog.$.swimlaneId': {
-      /**
-       * last selected swimlane id
-       */
-      type: String,
-    },
-    'profile.moveAndCopyDialog.$.listId': {
-      /**
-       * last selected list id
-       */
-      type: String,
-    },
     'profile.moveChecklistDialog': {
       /**
        * move checklist dialog
@@ -261,30 +503,6 @@ Users.attachSchema(
       type: Object,
       optional: true,
       blackbox: true,
-    },
-    'profile.moveChecklistDialog.$.boardId': {
-      /**
-       * last selected board id
-       */
-      type: String,
-    },
-    'profile.moveChecklistDialog.$.swimlaneId': {
-      /**
-       * last selected swimlane id
-       */
-      type: String,
-    },
-    'profile.moveChecklistDialog.$.listId': {
-      /**
-       * last selected list id
-       */
-      type: String,
-    },
-    'profile.moveChecklistDialog.$.cardId': {
-      /**
-       * last selected card id
-       */
-      type: String,
     },
     'profile.copyChecklistDialog': {
       /**
@@ -294,36 +512,15 @@ Users.attachSchema(
       optional: true,
       blackbox: true,
     },
-    'profile.copyChecklistDialog.$.boardId': {
-      /**
-       * last selected board id
-       */
-      type: String,
-    },
-    'profile.copyChecklistDialog.$.swimlaneId': {
-      /**
-       * last selected swimlane id
-       */
-      type: String,
-    },
-    'profile.copyChecklistDialog.$.listId': {
-      /**
-       * last selected list id
-       */
-      type: String,
-    },
-    'profile.copyChecklistDialog.$.cardId': {
-      /**
-       * last selected card id
-       */
-      type: String,
-    },
     'profile.notifications': {
       /**
        * enabled notifications for the user
        */
-      type: [Object],
+      type: Array,
       optional: true,
+    },
+    'profile.notifications.$': {
+      type: Object,
     },
     'profile.notifications.$.activity': {
       /**
@@ -363,7 +560,18 @@ Users.attachSchema(
       /**
        * list of starred board IDs
        */
-      type: [String],
+      type: Array,
+      optional: true,
+    },
+    'profile.starredBoards.$': {
+      type: String,
+    },
+    'profile.defaultBoardId': {
+      /**
+       * #2220: the board that opens automatically after logging in (the user's
+       * "home" board). Empty/unset means land on the All Boards page as before.
+       */
+      type: String,
       optional: true,
     },
     'profile.icode': {
@@ -384,6 +592,8 @@ Users.attachSchema(
         'board-view-lists',
         'board-view-cal',
         'board-view-gantt',
+        'board-view-table',
+        'board-view-stats',
       ],
     },
     'profile.listSortBy': {
@@ -395,11 +605,27 @@ Users.attachSchema(
       defaultValue: defaultSortBy,
       allowedValues: allowedSortValues,
     },
+    'profile.allBoardsSortBy': {
+      /**
+       * How the All Boards page is sorted for this user (#5799):
+       * 'custom' keeps the manual drag order (default), 'title-asc' / 'title-desc'
+       * sort boards alphabetically by title.
+       */
+      type: String,
+      optional: true,
+      defaultValue: 'custom',
+      allowedValues: allowedAllBoardsSortValues,
+    },
     'profile.templatesBoardId': {
       /**
        * Reference to the templates board
        */
       type: String,
+      // Optional: when the Template Container board is deleted these pointers are
+      // cleared (boardRemover $unset). Without optional:true, SimpleSchema strips
+      // the empty string and then fails the required check ("Templates board ID
+      // is required"), which made deleting a Template Container board throw.
+      optional: true,
       defaultValue: '',
     },
     'profile.cardTemplatesSwimlaneId': {
@@ -407,6 +633,7 @@ Users.attachSchema(
        * Reference to the card templates swimlane Id
        */
       type: String,
+      optional: true,
       defaultValue: '',
     },
     'profile.listTemplatesSwimlaneId': {
@@ -414,6 +641,7 @@ Users.attachSchema(
        * Reference to the list templates swimlane Id
        */
       type: String,
+      optional: true,
       defaultValue: '',
     },
     'profile.boardTemplatesSwimlaneId': {
@@ -421,12 +649,71 @@ Users.attachSchema(
        * Reference to the board templates swimlane Id
        */
       type: String,
+      optional: true,
       defaultValue: '',
+    },
+    'profile.sidebarWidth': {
+      /**
+       * User-specified width (px) of the right board sidebar, set by dragging its
+       * left edge (desktop only; mobile is always full width). Unset = CSS default.
+       */
+      type: Number,
+      optional: true,
     },
     'profile.listWidths': {
       /**
        * User-specified width of each list (or nothing if default).
        * profile[boardId][listId] = width;
+       */
+      type: Object,
+      defaultValue: {},
+      blackbox: true,
+    },
+    'profile.listConstraints': {
+      /**
+       * User-specified constraint of each list (or nothing if default).
+       * profile[boardId][listId] = constraint;
+       */
+      type: Object,
+      defaultValue: {},
+      blackbox: true,
+    },
+    'profile.autoWidthBoards': {
+      /**
+       * User-specified flag for enabling auto-width for boards (false is the default).
+       * profile[boardId][listId] = constraint;
+       */
+      type: Object,
+      defaultValue: {},
+      blackbox: true,
+    },
+    'profile.boardSortIndex': {
+      /**
+       * #6439: per-user manual board order on the All Boards page, set by drag-
+       * reorder. profile.boardSortIndex[boardId] = sortIndex. Missing before, so
+       * a reorder write was rejected by the schema (INVALID [400]) since
+       * `profile` enumerates its subfields and is not blackbox.
+       */
+      type: Object,
+      defaultValue: {},
+      blackbox: true,
+      optional: true,
+    },
+    'profile.fixedListWidthBoards': {
+      /**
+       * #5729 Per-user flag enabling "same width for all lists" (fixed width)
+       * mode for a board (false is the default).
+       * profile.fixedListWidthBoards[boardId] = true|false
+       */
+      type: Object,
+      defaultValue: {},
+      blackbox: true,
+    },
+    'profile.fixedListWidths': {
+      /**
+       * #5729 Per-user single width applied to every list of a board when fixed
+       * width mode is enabled.
+       * profile.fixedListWidths[boardId] = width
        */
       type: Object,
       defaultValue: {},
@@ -440,6 +727,85 @@ Users.attachSchema(
       type: Object,
       defaultValue: {},
       blackbox: true,
+    },
+    'profile.collapsedLists': {
+      /**
+       * Per-user collapsed state for lists.
+       * profile[boardId][listId] = true|false
+       */
+      type: Object,
+      defaultValue: {},
+      blackbox: true,
+    },
+    'profile.collapsedSwimlanes': {
+      /**
+       * Per-user collapsed state for swimlanes.
+       * profile[boardId][swimlaneId] = true|false
+       */
+      type: Object,
+      defaultValue: {},
+      blackbox: true,
+    },
+    'profile.keyboardShortcuts': {
+      /**
+       * User-specified state of keyboard shortcut activation.
+       */
+      type: Boolean,
+      defaultValue: false,
+    },
+    'profile.verticalScrollbars': {
+      /**
+       * User-specified state of vertical scrollbars visibility.
+       */
+      type: Boolean,
+      defaultValue: true,
+    },
+    'profile.showWeekOfYear': {
+      /**
+       * User-specified state of week-of-year in date displays.
+       */
+      type: Boolean,
+      defaultValue: true,
+    },
+    'profile.dateFormat': {
+      /**
+       * User-specified date format for displaying dates (includes time HH:MM).
+       */
+      type: String,
+      optional: true,
+      allowedValues: ['YYYY-MM-DD', 'DD-MM-YYYY', 'MM-DD-YYYY'],
+      defaultValue: 'YYYY-MM-DD',
+    },
+    'profile.zoomLevel': {
+      /**
+       * User-specified zoom level for board view (1.0 = 100%, 1.5 = 150%, etc.)
+       */
+      type: Number,
+      defaultValue: 1.0,
+      min: 0.5,
+      max: 3.0,
+    },
+    'profile.mobileMode': {
+      /**
+       * User-specified mobile/desktop mode toggle.
+       * #6419: must be OPTIONAL with NO default. A defaultValue of false set
+       * mobileMode=false on every user, so Utils.getMobileMode() always returned
+       * the profile value and the viewport-based auto-detection below it never
+       * ran — every user was locked to desktop-mode even on a phone. Left unset,
+       * it stays undefined until the user explicitly toggles, so phones
+       * auto-detect mobile mode.
+       */
+      type: Boolean,
+      optional: true,
+    },
+    'profile.cardZoom': {
+      /**
+       * User-specified zoom level for card details (1.0 = 100%, 1.5 = 150%, etc.)
+       */
+      type: Number,
+      defaultValue: 1.0,
+      min: 0.5,
+      max: 3.0,
     },
     services: {
       /**
@@ -510,8 +876,11 @@ Users.attachSchema(
       /**
        * username for imported
        */
-      type: [String],
+      type: Array,
       optional: true,
+    },
+    'importUsernames.$': {
+      type: String,
     },
     lastConnectionDate: {
       type: Date,
@@ -520,67 +889,86 @@ Users.attachSchema(
   }),
 );
 
-Users.allow({
-  update(userId, doc) {
-    const user = ReactiveCache.getUser(userId) || ReactiveCache.getCurrentUser();
-    if (user?.isAdmin)
-      return true;
-    if (!user) {
-      return false;
-    }
-    return doc._id === userId;
-  },
-  remove(userId, doc) {
-    const adminsNumber = ReactiveCache.getUsers({
-      isAdmin: true,
-    }).length;
-    const isAdmin = ReactiveCache.getUser(
-      {
-        _id: userId,
-      },
-      {
-        fields: {
-          isAdmin: 1,
-        },
-      },
-    );
+// Security helpers for user updates
+export const USER_UPDATE_ALLOWED_EXACT = ['username', 'profile', 'modifiedAt'];
+export const USER_UPDATE_ALLOWED_PREFIXES = ['profile.'];
+export const USER_UPDATE_FORBIDDEN_PREFIXES = [
+  'services',
+  'emails',
+  'roles',
+  'isAdmin',
+  'createdThroughApi',
+  'orgs',
+  'teams',
+  'loginDisabled',
+  'authenticationMethod',
+  'sessionData',
+];
 
-    // Prevents remove of the only one administrator
-    if (adminsNumber === 1 && isAdmin && userId === doc._id) {
-      return false;
-    }
+export function isUserUpdateAllowed(fields) {
+  const result = fields.every((f) =>
+    USER_UPDATE_ALLOWED_EXACT.includes(f) || USER_UPDATE_ALLOWED_PREFIXES.some((p) => f.startsWith(p))
+  );
+  return result;
+}
 
-    // If it's the user or an admin
-    return userId === doc._id || isAdmin;
-  },
-  fetch: [],
-});
+export function hasForbiddenUserUpdateField(fields) {
+  const result = fields.some((f) => USER_UPDATE_FORBIDDEN_PREFIXES.some((p) => f === p || f.startsWith(p + '.')));
+  return result;
+}
 
-// Non-Admin users can not change to Admin
-Users.deny({
-  update(userId, board, fieldNames) {
-    return _.contains(fieldNames, 'isAdmin') && !ReactiveCache.getCurrentUser().isAdmin;
-  },
-  fetch: [],
-});
+// Custom MongoDB engine that enforces field restrictions
+// TODO: Re-enable when easy:search compatibility is fixed
+// class SecureMongoDBEngine extends MongoDBEngine {
+//   getSearchCursor(searchObject, options) {
+//     // Always enforce field projection to prevent data leakage
+//     const secureProjection = {
+//       _id: 1,
+//       username: 1,
+//       'profile.fullname': 1,
+//       'profile.avatarUrl': 1,
+//     };
 
+//     // Override any projection passed in options
+//     const secureOptions = {
+//       ...options,
+//       projection: secureProjection,
+//     };
+
+//     return super.getSearchCursor(searchObject, secureOptions);
+//   }
+// }
 
 // Search a user in the complete server database by its name, username or emails adress. This
 // is used for instance to add a new user to a board.
-UserSearchIndex = new Index({
-  collection: Users,
-  fields: ['username', 'profile.fullname', 'profile.avatarUrl'],
-  allowedFields: ['username', 'profile.fullname', 'profile.avatarUrl'],
-  engine: new MongoDBEngine({
-    fields: function (searchObject, options) {
-      return {
+// TODO: Fix easy:search compatibility issue - temporarily disabled
+// UserSearchIndex = new Index({
+//   collection: Users,
+//   fields: ['username', 'profile.fullname', 'profile.avatarUrl'],
+//   engine: new MongoDBEngine(),
+// });
+
+// Temporary fallback - create a simple search index object
+export const UserSearchIndex = {
+  search: function(query, options) {
+    // Simple fallback search using MongoDB find
+    const searchRegex = new RegExp(query, 'i');
+    return Users.find({
+      $or: [
+        { username: searchRegex },
+        { 'profile.fullname': searchRegex }
+      ]
+    }, {
+      fields: {
+        _id: 1,
         username: 1,
         'profile.fullname': 1,
-        'profile.avatarUrl': 1,
-      };
-    },
-  }),
-});
+        'profile.avatarUrl': 1
+      },
+      limit: options?.limit || 20
+    });
+  }
+};
 
 Users.safeFields = {
   _id: 1,
@@ -588,6 +976,8 @@ Users.safeFields = {
   'profile.fullname': 1,
   'profile.avatarUrl': 1,
   'profile.initials': 1,
+  'profile.zoomLevel': 1,
+  'profile.mobileMode': 1,
   orgs: 1,
   teams: 1,
   authenticationMethod: 1,
@@ -597,11 +987,13 @@ Users.safeFields = {
 if (Meteor.isClient) {
   Users.helpers({
     isBoardMember() {
+      const Utils = getUtils();
       const board = Utils.getCurrentBoard();
       return board && board.hasMember(this._id);
     },
 
     isNotNoComments() {
+      const Utils = getUtils();
       const board = Utils.getCurrentBoard();
       return (
         board && board.hasMember(this._id) && !board.hasNoComments(this._id)
@@ -609,11 +1001,13 @@ if (Meteor.isClient) {
     },
 
     isNoComments() {
+      const Utils = getUtils();
       const board = Utils.getCurrentBoard();
       return board && board.hasNoComments(this._id);
     },
 
     isNotCommentOnly() {
+      const Utils = getUtils();
       const board = Utils.getCurrentBoard();
       return (
         board && board.hasMember(this._id) && !board.hasCommentOnly(this._id)
@@ -621,16 +1015,31 @@ if (Meteor.isClient) {
     },
 
     isCommentOnly() {
+      const Utils = getUtils();
       const board = Utils.getCurrentBoard();
       return board && board.hasCommentOnly(this._id);
     },
 
+    isReadOnly() {
+      const Utils = getUtils();
+      const board = Utils.getCurrentBoard();
+      return board && board.hasReadOnly(this._id);
+    },
+
+    isReadAssignedOnly() {
+      const Utils = getUtils();
+      const board = Utils.getCurrentBoard();
+      return board && board.hasReadAssignedOnly(this._id);
+    },
+
     isNotWorker() {
+      const Utils = getUtils();
       const board = Utils.getCurrentBoard();
       return board && board.hasMember(this._id) && !board.hasWorker(this._id);
     },
 
     isWorker() {
+      const Utils = getUtils();
       const board = Utils.getCurrentBoard();
       return board && board.hasWorker(this._id);
     },
@@ -640,9 +1049,32 @@ if (Meteor.isClient) {
       if (boardId) {
         board = ReactiveCache.getBoard(boardId);
       } else {
+        const Utils = getUtils();
         board = Utils.getCurrentBoard();
       }
       return board && board.hasAdmin(this._id);
+    },
+
+    // Whether this user may invite members to the board, mirroring the
+    // server-side check in the inviteUserToBoard method: global site admins and
+    // board admins always may; other board roles only if allowed by the
+    // Admin Panel / People / Roles policy. Used to gate the UI add-member button.
+    canInviteToBoard(boardId) {
+      if (this.isAdmin) return true;
+      let board;
+      if (boardId) {
+        board = ReactiveCache.getBoard(boardId);
+      } else {
+        const Utils = getUtils();
+        board = Utils.getCurrentBoard();
+      }
+      if (!board) return false;
+      if (board.hasAdmin(this._id)) return true;
+      const role = board.memberRole(this._id);
+      if (!role) return false;
+      const doc = InviteToBoardRolesSettings.findOne(INVITE_TO_BOARD_ROLES_ID);
+      const allowed = (doc && doc.allowedRoles) || INVITE_TO_BOARD_ROLES_DEFAULT;
+      return allowed.includes(role);
     },
   });
 }
@@ -676,6 +1108,79 @@ Users.helpers({
     }
     return [];
   },
+  // Multitenancy option D: the orgs this user is a PER-TENANT Global Admin of, and
+  // the questions the Admin Panel asks about them. The rules themselves live in
+  // models/lib/tenantAdmin.js so the client, the server and the tests all use one
+  // copy - these helpers only make them reachable from Blaze as
+  // `currentUser.isOrgAdmin` etc.
+  adminOrgIds() {
+    return tenantAdmin.adminOrgIds(this);
+  },
+  isOrgAdminOf(orgId) {
+    return tenantAdmin.isOrgAdmin(this, orgId);
+  },
+  isOrgAdmin() {
+    return tenantAdmin.isTenantAdmin(this);
+  },
+  // The Admin Panel opens for the site admin and for a per-tenant admin; the panes
+  // and tabs each of them sees are decided by tenantAdmin too.
+  isAdminOrOrgAdmin() {
+    return tenantAdmin.canOpenAdminPanel(this);
+  },
+  // #6116: does this user share an Organization / a Team with `otherUser`? The
+  // restriction is two admin settings now - one per kind, each beside the thing it
+  // is about (Admin Panel / People / Organizations and / Teams) - so the two
+  // questions have to be answerable separately.
+  sharesOrgWith(otherUser) {
+    if (!otherUser) {
+      return false;
+    }
+    const myOrgs = new Set(this.orgIds());
+    const otherOrgs =
+      typeof otherUser.orgIds === 'function'
+        ? otherUser.orgIds()
+        : (otherUser.orgs || []).map(org => org.orgId);
+    return otherOrgs.some(orgId => myOrgs.has(orgId));
+  },
+  sharesTeamWith(otherUser) {
+    if (!otherUser) {
+      return false;
+    }
+    const myTeams = new Set(this.teamIds());
+    const otherTeams =
+      typeof otherUser.teamIds === 'function'
+        ? otherUser.teamIds()
+        : (otherUser.teams || []).map(team => team.teamId);
+    return otherTeams.some(teamId => myTeams.has(teamId));
+  },
+  // True when the user shares at least one of the ENABLED kinds. With both enabled
+  // this is the "Organization OR Team" rule the single setting had.
+  sharesRestrictedOrgOrTeamWith(otherUser, { org = false, team = false } = {}) {
+    return (
+      (org && this.sharesOrgWith(otherUser)) ||
+      (team && this.sharesTeamWith(otherUser))
+    );
+  },
+  // Kept for callers that ask the old question: an Organization OR a Team.
+  sharesOrgOrTeamWith(otherUser) {
+    return this.sharesOrgWith(otherUser) || this.sharesTeamWith(otherUser);
+  },
+  // #5850: the email-address domain(s) of this user, used for domain-based board
+  // sharing (board.domains). Lower-cased; primary email's domain.
+  emailDomains() {
+    const domains = [];
+    (this.emails || []).forEach((email) => {
+      const addr = (email && email.address) || '';
+      const at = addr.lastIndexOf('@');
+      if (at !== -1) {
+        const domain = addr.slice(at + 1).toLowerCase().trim();
+        if (domain && !domains.includes(domain)) {
+          domains.push(domain);
+        }
+      }
+    });
+    return domains;
+  },
   orgsUserBelongs() {
     if (this.orgs) {
       return this.orgs
@@ -688,14 +1193,11 @@ Users.helpers({
     return '';
   },
   orgIdsUserBelongs() {
+    let ret = '';
     if (this.orgs) {
-      return this.orgs
-        .map(function (org) {
-          return org.orgId;
-        })
-        .join(',');
+      ret = this.orgs.map(org => org.orgId).join(',');
     }
-    return '';
+    return ret;
   },
   teamsUserBelongs() {
     if (this.teams) {
@@ -709,47 +1211,61 @@ Users.helpers({
     return '';
   },
   teamIdsUserBelongs() {
+    let ret = '';
     if (this.teams) {
-      return this.teams
-        .map(function (team) {
-          return team.teamId;
-        })
-        .join(',');
+      ret = this.teams.map(team => team.teamId).join(',');
     }
-    return '';
+    return ret;
   },
   boards() {
-    return Boards.userBoards(this._id, null, {}, { sort: { sort: 1 } });
+    // Fetch unsorted; sorting is per-user via profile.boardSortIndex
+    return Boards.userBoards(this._id, null, {}, {});
   },
 
   starredBoards() {
     const { starredBoards = [] } = this.profile || {};
-    return Boards.userBoards(
-      this._id,
-      false,
-      { _id: { $in: starredBoards } },
-      { sort: { sort: 1 } },
-    );
+    return Boards.userBoards(this._id, false, { _id: { $in: starredBoards } }, {});
   },
 
   hasStarred(boardId) {
     const { starredBoards = [] } = this.profile || {};
-    return _.contains(starredBoards, boardId);
+    return starredBoards.includes(boardId);
+  },
+
+  // #2220: the user's default "home" board opened after login.
+  getDefaultBoardId() {
+    return (this.profile && this.profile.defaultBoardId) || null;
+  },
+
+  isDefaultBoard(boardId) {
+    return this.getDefaultBoardId() === boardId;
+  },
+
+  isAutoWidth(boardId) {
+    const { autoWidthBoards = {} } = this.profile || {};
+    return autoWidthBoards[boardId] === true;
+  },
+
+  // #5729 "Same width for all lists" (fixed width) mode is per-user/per-board.
+  isFixedListWidth(boardId) {
+    const { fixedListWidthBoards = {} } = this.profile || {};
+    return fixedListWidthBoards[boardId] === true;
+  },
+
+  // #5729 The single width applied to every list when fixed width mode is on.
+  getFixedListWidth(boardId) {
+    const { fixedListWidths = {} } = this.profile || {};
+    return normalizeListWidth(fixedListWidths[boardId]);
   },
 
   invitedBoards() {
     const { invitedBoards = [] } = this.profile || {};
-    return Boards.userBoards(
-      this._id,
-      false,
-      { _id: { $in: invitedBoards } },
-      { sort: { sort: 1 } },
-    );
+    return Boards.userBoards(this._id, false, { _id: { $in: invitedBoards } }, {});
   },
 
   isInvitedTo(boardId) {
     const { invitedBoards = [] } = this.profile || {};
-    return _.contains(invitedBoards, boardId);
+    return invitedBoards.includes(boardId);
   },
 
   _getListSortBy() {
@@ -762,6 +1278,51 @@ Users.helpers({
       ret[1] = RegExp.$1 ? -1 : 1;
     }
     return ret;
+  },
+  /**
+   * Get per-user board sort index for a board, or null when not set
+   */
+  getBoardSortIndex(boardId) {
+    const mapping = (this.profile && this.profile.boardSortIndex) || {};
+    const v = mapping[boardId];
+    return typeof v === 'number' ? v : null;
+  },
+  /**
+   * #5799: the user's chosen sort mode for the All Boards page.
+   * One of 'custom' (manual drag order, default), 'title-asc', 'title-desc'.
+   */
+  getAllBoardsSortBy() {
+    const value = this.profile && this.profile.allBoardsSortBy;
+    return allowedAllBoardsSortValues.includes(value) ? value : 'custom';
+  },
+  /**
+   * Sort an array of boards for this user. In 'title-asc' / 'title-desc' mode
+   * (#5799) boards are ordered alphabetically by title; otherwise the per-user
+   * manual drag order (profile.boardSortIndex) is used, falling back to title.
+   */
+  sortBoardsForUser(boardsArr) {
+    const arr = (boardsArr || []).slice();
+    const mode = this.getAllBoardsSortBy();
+    const byTitle = (a, b) =>
+      (a.title || '').localeCompare(b.title || '', undefined, {
+        sensitivity: 'base',
+      });
+    if (mode === 'title-asc') {
+      arr.sort(byTitle);
+      return arr;
+    }
+    if (mode === 'title-desc') {
+      arr.sort((a, b) => byTitle(b, a));
+      return arr;
+    }
+    const mapping = (this.profile && this.profile.boardSortIndex) || {};
+    arr.sort((a, b) => {
+      const ia = typeof mapping[a._id] === 'number' ? mapping[a._id] : Number.POSITIVE_INFINITY;
+      const ib = typeof mapping[b._id] === 'number' ? mapping[b._id] : Number.POSITIVE_INFINITY;
+      if (ia !== ib) return ia - ib;
+      return byTitle(a, b);
+    });
+    return arr;
   },
   hasSortBy() {
     // if use doesn't have dragHandle, then we can let user to choose sort list by different order
@@ -778,15 +1339,37 @@ Users.helpers({
   },
 
   getListWidths() {
-    const { listWidths = {} } = this.profile || {};
+    const { listWidths = {}, } = this.profile || {};
     return listWidths;
+  },
+  // Right board sidebar width (px), or undefined for the CSS default. Set by
+  // dragging the sidebar's left edge (desktop only).
+  getSidebarWidth() {
+    return (this.profile || {}).sidebarWidth;
+  },
+  async setSidebarWidth(width) {
+    return await Users.updateAsync(this._id, { $set: { 'profile.sidebarWidth': width } });
   },
   getListWidth(boardId, listId) {
     const listWidths = this.getListWidths();
     if (listWidths[boardId] && listWidths[boardId][listId]) {
-      return listWidths[boardId][listId];
+      // #5659: normalize so an out-of-range stored value can not make one
+      // list's width differ from the shared default everyone else sees.
+      return normalizeListWidth(listWidths[boardId][listId]);
     } else {
-      return 270; //TODO(mark-i-m): default?
+      return DEFAULT_LIST_WIDTH;
+    }
+  },
+  getListConstraints() {
+    const { listConstraints = {} } = this.profile || {};
+    return listConstraints;
+  },
+  getListConstraint(boardId, listId) {
+    const listConstraints = this.getListConstraints();
+    if (listConstraints[boardId] && listConstraints[boardId][listId]) {
+      return listConstraints[boardId][listId];
+    } else {
+      return 550;
     }
   },
 
@@ -800,6 +1383,52 @@ Users.helpers({
       return swimlaneHeights[boardId][listId];
     } else {
       return -1;
+    }
+  },
+
+  getSwimlaneHeightFromStorage(boardId, swimlaneId) {
+    // For logged-in users, get from profile
+    if (this._id) {
+      return this.getSwimlaneHeight(boardId, swimlaneId);
+    }
+
+    // For non-logged-in users, get from localStorage
+    try {
+      const stored = localStorage.getItem('wekan-swimlane-heights');
+      if (stored) {
+        const heights = JSON.parse(stored);
+        if (heights[boardId] && heights[boardId][swimlaneId]) {
+          return heights[boardId][swimlaneId];
+        }
+      }
+    } catch (e) {
+      console.warn('Error reading swimlane heights from localStorage:', e);
+    }
+
+    return -1;
+  },
+
+  setSwimlaneHeightToStorage(boardId, swimlaneId, height) {
+    // For logged-in users, save to profile
+    if (this._id) {
+      return this.setSwimlaneHeight(boardId, swimlaneId, height);
+    }
+
+    // For non-logged-in users, save to localStorage
+    try {
+      const stored = localStorage.getItem('wekan-swimlane-heights');
+      let heights = stored ? JSON.parse(stored) : {};
+
+      if (!heights[boardId]) {
+        heights[boardId] = {};
+      }
+      heights[boardId][swimlaneId] = height;
+
+      localStorage.setItem('wekan-swimlane-heights', JSON.stringify(heights));
+      return true;
+    } catch (e) {
+      console.warn('Error saving swimlane height to localStorage:', e);
+      return false;
     }
   },
 
@@ -838,12 +1467,12 @@ Users.helpers({
 
   hasTag(tag) {
     const { tags = [] } = this.profile || {};
-    return _.contains(tags, tag);
+    return tags.includes(tag);
   },
 
   hasNotification(activityId) {
     const { notifications = [] } = this.profile || {};
-    return _.contains(notifications, activityId);
+    return notifications.includes(activityId);
   },
 
   notifications() {
@@ -853,11 +1482,17 @@ Users.helpers({
       const notification = notifications[index];
       // this preserves their db sort order for editing
       notification.dbIndex = index;
-      notification.activity = ReactiveCache.getActivity(notification.activity);
+      if (!notification.activityObj && typeof(notification.activity) === 'string') {
+        notification.activityObj = ReactiveMiniMongoIndex.getActivityWithId(notification.activity);
+      }
     }
-    // this sorts them newest to oldest to match Trello's behavior
-    notifications.reverse();
-    return notifications;
+    // #5325: drop notifications whose activity no longer exists (e.g. the card or
+    // board it referenced was deleted). The notifications drawer dereferences
+    // activityObj (activity.user, activity._id, …), so a single orphaned entry
+    // threw and broke the whole notifications popup.
+    // newest first. don't use reverse() because it changes the array inplace, so sometimes the array is reversed twice and oldest items at top again
+    const ret = notifications.filter(notification => notification.activityObj).toReversed();
+    return ret;
   },
 
   hasShowDesktopDragHandles() {
@@ -865,14 +1500,28 @@ Users.helpers({
     return profile.showDesktopDragHandles || false;
   },
 
-  hasHideCheckedItems() {
+  hasSubmitOnEnter() {
     const profile = this.profile || {};
-    return profile.hideCheckedItems || false;
+    return profile.submitOnEnter || false;
   },
 
-  hasHiddenSystemMessages() {
+  // #6531: does this user want several cards open at once? Off by default, so a
+  // click opens the card it was aimed at and closes the previous one.
+  hasOpenManyCardsAtOnce() {
     const profile = this.profile || {};
-    return profile.hiddenSystemMessages || false;
+    return profile.openManyCardsAtOnce || false;
+  },
+
+
+  getDismissedAnnouncementVersion() {
+    const profile = this.profile || {};
+    return profile.dismissedAnnouncementVersion || null;
+  },
+
+  hasDismissedAnnouncement(announcement) {
+    const { announcementVersion } = require('/models/announcements');
+    const version = announcementVersion(announcement);
+    return !!version && this.getDismissedAnnouncementVersion() === version;
   },
 
   hasCustomFieldsGrid() {
@@ -883,6 +1532,11 @@ Users.helpers({
   hasCardMaximized() {
     const profile = this.profile || {};
     return profile.cardMaximized || false;
+  },
+
+  hasShowActivities() {
+    const profile = this.profile || {};
+    return profile.showActivities || false;
   },
 
   hasHiddenMinicardLabelText() {
@@ -920,6 +1574,11 @@ Users.helpers({
     return profile.showCardsCountAt;
   },
 
+  getMapProvider() {
+    const profile = this.profile || {};
+    return profile.mapProvider || 'openstreetmap';
+  },
+
   getName() {
     const profile = this.profile || {};
     return profile.fullname || this.username;
@@ -939,6 +1598,11 @@ Users.helpers({
     return profile.startDayOfWeek;
   },
 
+  getDateFormat() {
+    const profile = this.profile || {};
+    return profile.dateFormat || 'YYYY-MM-DD';
+  },
+
   getTemplatesBoardId() {
     return (this.profile || {}).templatesBoardId;
   },
@@ -948,1648 +1612,644 @@ Users.helpers({
     return 'templates';
   },
 
+  isKeyboardShortcuts() {
+    const { keyboardShortcuts = true } = this.profile || {};
+    return keyboardShortcuts;
+  },
+
+  isVerticalScrollbars() {
+    const { verticalScrollbars = true } = this.profile || {};
+    return verticalScrollbars;
+  },
+
+  isShowWeekOfYear() {
+    const { showWeekOfYear = true } = this.profile || {};
+    return showWeekOfYear;
+  },
+
   remove() {
-    User.remove({
+    return User.removeAsync({
       _id: this._id,
     });
   },
-});
 
-Users.mutations({
-  /** set the confirmed board id/swimlane id/list id of a board
-   * @param boardId the current board id
-   * @param options an object with the confirmed field values
-   */
-  setMoveAndCopyDialogOption(boardId, options) {
-    let currentOptions = this.getMoveAndCopyDialogOptions();
-    currentOptions[boardId] = options;
-    return {
-      $set: {
-        'profile.moveAndCopyDialog': currentOptions,
-      },
-    };
-  },
-  /** set the confirmed board id/swimlane id/list id/card id of a board (move checklist)
-   * @param boardId the current board id
-   * @param options an object with the confirmed field values
-   */
-  setMoveChecklistDialogOption(boardId, options) {
-    let currentOptions = this.getMoveChecklistDialogOptions();
-    currentOptions[boardId] = options;
-    return {
-      $set: {
-        'profile.moveChecklistDialog': currentOptions,
-      },
-    };
-  },
-  /** set the confirmed board id/swimlane id/list id/card id of a board (copy checklist)
-   * @param boardId the current board id
-   * @param options an object with the confirmed field values
-   */
-  setCopyChecklistDialogOption(boardId, options) {
-    let currentOptions = this.getCopyChecklistDialogOptions();
-    currentOptions[boardId] = options;
-    return {
-      $set: {
-        'profile.copyChecklistDialog': currentOptions,
-      },
-    };
-  },
-  toggleBoardStar(boardId) {
-    const queryKind = this.hasStarred(boardId) ? '$pull' : '$addToSet';
-    return {
-      [queryKind]: {
-        'profile.starredBoards': boardId,
-      },
-    };
-  },
-
-  addInvite(boardId) {
-    return {
-      $addToSet: {
-        'profile.invitedBoards': boardId,
-      },
-    };
-  },
-
-  removeInvite(boardId) {
-    return {
-      $pull: {
-        'profile.invitedBoards': boardId,
-      },
-    };
-  },
-
-  addTag(tag) {
-    return {
-      $addToSet: {
-        'profile.tags': tag,
-      },
-    };
-  },
-
-  removeTag(tag) {
-    return {
-      $pull: {
-        'profile.tags': tag,
-      },
-    };
-  },
-
-  toggleTag(tag) {
-    if (this.hasTag(tag)) this.removeTag(tag);
-    else this.addTag(tag);
-  },
-
-  setListSortBy(value) {
-    return {
-      $set: {
-        'profile.listSortBy': value,
-      },
-    };
-  },
-
-  setName(value) {
-    return {
-      $set: {
-        'profile.fullname': value,
-      },
-    };
-  },
-
-  toggleDesktopHandles(value = false) {
-    return {
-      $set: {
-        'profile.showDesktopDragHandles': !value,
-      },
-    };
-  },
-
-  toggleHideCheckedItems() {
-    const value = this.hasHideCheckedItems();
-    return {
-      $set: {
-        'profile.hideCheckedItems': !value,
-      },
-    };
-  },
-
-  toggleSystem(value = false) {
-    return {
-      $set: {
-        'profile.hiddenSystemMessages': !value,
-      },
-    };
-  },
-
-  toggleFieldsGrid(value = false) {
-    return {
-      $set: {
-        'profile.customFieldsGrid': !value,
-      },
-    };
-  },
-
-  toggleCardMaximized(value = false) {
-    return {
-      $set: {
-        'profile.cardMaximized': !value,
-      },
-    };
-  },
-
-  toggleLabelText(value = false) {
-    return {
-      $set: {
-        'profile.hiddenMinicardLabelText': !value,
-      },
-    };
-  },
-  toggleRescueCardDescription(value = false) {
-    return {
-      $set: {
-        'profile.rescueCardDescription': !value,
-      },
-    };
-  },
-
-  addNotification(activityId) {
-    return {
-      $addToSet: {
-        'profile.notifications': {
-          activity: activityId,
-        },
-      },
-    };
-  },
-
-  removeNotification(activityId) {
-    return {
-      $pull: {
-        'profile.notifications': {
-          activity: activityId,
-        },
-      },
-    };
-  },
-
-  addEmailBuffer(text) {
-    return {
-      $addToSet: {
-        'profile.emailBuffer': text,
-      },
-    };
-  },
-
-  clearEmailBuffer() {
-    return {
-      $set: {
-        'profile.emailBuffer': [],
-      },
-    };
-  },
-
-  setAvatarUrl(avatarUrl) {
-    return {
-      $set: {
-        'profile.avatarUrl': avatarUrl,
-      },
-    };
-  },
-
-  setShowCardsCountAt(limit) {
-    return {
-      $set: {
-        'profile.showCardsCountAt': limit,
-      },
-    };
-  },
-
-  setStartDayOfWeek(startDay) {
-    return {
-      $set: {
-        'profile.startDayOfWeek': startDay,
-      },
-    };
-  },
-
-  setBoardView(view) {
-    return {
-      $set: {
-        'profile.boardView': view,
-      },
-    };
-  },
-
-  setListWidth(boardId, listId, width) {
-    let currentWidths = this.getListWidths();
-    if (!currentWidths[boardId]) {
-      currentWidths[boardId] = {};
+  getListWidthFromStorage(boardId, listId) {
+    // For logged-in users, get from profile
+    if (this._id) {
+      return this.getListWidth(boardId, listId);
     }
-    currentWidths[boardId][listId] = width;
-    return {
-      $set: {
-        'profile.listWidths': currentWidths,
-      },
-    };
-  },
 
-  setSwimlaneHeight(boardId, swimlaneId, height) {
-    let currentHeights = this.getSwimlaneHeights();
-    if (!currentHeights[boardId]) {
-      currentHeights[boardId] = {};
+    // For non-logged-in users, get from validated localStorage
+    if (typeof localStorage !== 'undefined' && typeof getValidatedLocalStorageData === 'function') {
+      try {
+        const widths = getValidatedLocalStorageData('wekan-list-widths', validators.listWidths);
+        if (widths[boardId] && widths[boardId][listId]) {
+          const width = widths[boardId][listId];
+          // Validate it's a valid number
+          if (validators.isValidNumber(width, MIN_LIST_WIDTH, 1000)) {
+            return width;
+          }
+        }
+      } catch (e) {
+        console.warn('Error reading list widths from localStorage:', e);
+      }
     }
-    currentHeights[boardId][swimlaneId] = height;
-    return {
-      $set: {
-        'profile.swimlaneHeights': currentHeights,
-      },
-    };
-  },
-});
 
-Meteor.methods({
-  setListSortBy(value) {
-    check(value, String);
-    ReactiveCache.getCurrentUser().setListSortBy(value);
+    // #5659: same default as every other width-resolution path.
+    return DEFAULT_LIST_WIDTH;
   },
-  toggleDesktopDragHandles() {
-    const user = ReactiveCache.getCurrentUser();
-    user.toggleDesktopHandles(user.hasShowDesktopDragHandles());
-  },
-  toggleHideCheckedItems() {
-    const user = ReactiveCache.getCurrentUser();
-    user.toggleHideCheckedItems();
-  },
-  toggleSystemMessages() {
-    const user = ReactiveCache.getCurrentUser();
-    user.toggleSystem(user.hasHiddenSystemMessages());
-  },
-  toggleCustomFieldsGrid() {
-    const user = ReactiveCache.getCurrentUser();
-    user.toggleFieldsGrid(user.hasCustomFieldsGrid());
-  },
-  toggleCardMaximized() {
-    const user = ReactiveCache.getCurrentUser();
-    user.toggleCardMaximized(user.hasCardMaximized());
-  },
-  toggleMinicardLabelText() {
-    const user = ReactiveCache.getCurrentUser();
-    user.toggleLabelText(user.hasHiddenMinicardLabelText());
-  },
-  toggleRescueCardDescription() {
-    const user = ReactiveCache.getCurrentUser();
-    user.toggleRescueCardDescription(user.hasRescuedCardDescription());
-  },
-  changeLimitToShowCardsCount(limit) {
-    check(limit, Number);
-    ReactiveCache.getCurrentUser().setShowCardsCountAt(limit);
-  },
-  changeStartDayOfWeek(startDay) {
-    check(startDay, Number);
-    ReactiveCache.getCurrentUser().setStartDayOfWeek(startDay);
-  },
-  applyListWidth(boardId, listId, width) {
-    check(boardId, String);
-    check(listId, String);
-    check(width, Number);
-    const user = Meteor.user();
-    user.setListWidth(boardId, listId, width);
-  },
-  applySwimlaneHeight(boardId, swimlaneId, height) {
-    check(boardId, String);
-    check(swimlaneId, String);
-    check(height, Number);
-    const user = Meteor.user();
-    user.setSwimlaneHeight(boardId, swimlaneId, height);
-  },
-});
 
-if (Meteor.isServer) {
-  Meteor.methods({
-    setAllUsersHideSystemMessages() {
-      if (ReactiveCache.getCurrentUser()?.isAdmin) {
-        // If setting is missing, add it
-        Users.update(
-          {
-            'profile.hiddenSystemMessages': {
-              $exists: false,
-            },
-          },
-          {
-            $set: {
-              'profile.hiddenSystemMessages': true,
-            },
-          },
-          {
-            multi: true,
-          },
-        );
-        // If setting is false, set it to true
-        Users.update(
-          {
-            'profile.hiddenSystemMessages': false,
-          },
-          {
-            $set: {
-              'profile.hiddenSystemMessages': true,
-            },
-          },
-          {
-            multi: true,
-          },
-        );
-        return true;
-      } else {
+  setListWidthToStorage(boardId, listId, width) {
+    // For logged-in users, save to profile
+    if (this._id) {
+      return this.setListWidth(boardId, listId, width);
+    }
+
+    // Validate width before storing
+    if (!validators.isValidNumber(width, MIN_LIST_WIDTH, 1000)) {
+      console.warn('Invalid list width:', width);
+      return false;
+    }
+
+    // For non-logged-in users, save to validated localStorage
+    if (typeof localStorage !== 'undefined' && typeof setValidatedLocalStorageData === 'function') {
+      try {
+        const widths = getValidatedLocalStorageData('wekan-list-widths', validators.listWidths);
+
+        if (!widths[boardId]) {
+          widths[boardId] = {};
+        }
+        widths[boardId][listId] = width;
+
+        return setValidatedLocalStorageData('wekan-list-widths', widths, validators.listWidths);
+      } catch (e) {
+        console.warn('Error saving list width to localStorage:', e);
         return false;
       }
-    },
-    setCreateUser(
-      fullname,
-      username,
-      initials,
-      password,
-      isAdmin,
-      isActive,
-      email,
-      importUsernames,
-      userOrgsArray,
-      userTeamsArray,
-    ) {
-      check(fullname, String);
-      check(username, String);
-      check(initials, String);
-      check(password, String);
-      check(isAdmin, String);
-      check(isActive, String);
-      check(email, String);
-      check(importUsernames, Array);
-      check(userOrgsArray, Array);
-      check(userTeamsArray, Array);
-      if (ReactiveCache.getCurrentUser()?.isAdmin) {
-        const nUsersWithUsername = ReactiveCache.getUsers({
-          username,
-        }).length;
-        const nUsersWithEmail = ReactiveCache.getUsers({
-          email,
-        }).length;
-        if (nUsersWithUsername > 0) {
-          throw new Meteor.Error('username-already-taken');
-        } else if (nUsersWithEmail > 0) {
-          throw new Meteor.Error('email-already-taken');
-        } else {
-          Accounts.createUser({
-            username,
-            password,
-            isAdmin,
-            isActive,
-            email: email.toLowerCase(),
-            from: 'admin',
-          });
-          const user =
-            ReactiveCache.getUser(username) ||
-            ReactiveCache.getUser({ username });
-          if (user) {
-            Users.update(user._id, {
-              $set: {
-                'profile.fullname': fullname,
-                importUsernames,
-                'profile.initials': initials,
-                orgs: userOrgsArray,
-                teams: userTeamsArray,
-              },
-            });
-          }
-        }
-      }
-    },
-    setUsername(username, userId) {
-      check(username, String);
-      check(userId, String);
-      if (ReactiveCache.getCurrentUser()?.isAdmin) {
-        const nUsersWithUsername = ReactiveCache.getUsers({
-          username,
-        }).length;
-        if (nUsersWithUsername > 0) {
-          throw new Meteor.Error('username-already-taken');
-        } else {
-          Users.update(userId, {
-            $set: {
-              username,
-            },
-          });
-        }
-      }
-    },
-    setEmail(email, userId) {
-      check(email, String);
-      check(username, String);
-      if (ReactiveCache.getCurrentUser()?.isAdmin) {
-        if (Array.isArray(email)) {
-          email = email.shift();
-        }
-        const existingUser = ReactiveCache.getUser(
-          {
-            'emails.address': email,
-          },
-          {
-            fields: {
-              _id: 1,
-            },
-          },
-        );
-        if (existingUser) {
-          throw new Meteor.Error('email-already-taken');
-        } else {
-          Users.update(userId, {
-            $set: {
-              emails: [
-                {
-                  address: email,
-                  verified: false,
-                },
-              ],
-            },
-          });
-        }
-      }
-    },
-    setUsernameAndEmail(username, email, userId) {
-      check(username, String);
-      check(email, String);
-      check(userId, String);
-      if (ReactiveCache.getCurrentUser()?.isAdmin) {
-        if (Array.isArray(email)) {
-          email = email.shift();
-        }
-        Meteor.call('setUsername', username, userId);
-        Meteor.call('setEmail', email, userId);
-      }
-    },
-    setPassword(newPassword, userId) {
-      check(userId, String);
-      check(newPassword, String);
-      if (ReactiveCache.getCurrentUser()?.isAdmin) {
-        Accounts.setPassword(userId, newPassword);
-      }
-    },
-    setEmailVerified(email, verified, userId) {
-      check(email, String);
-      check(verified, Boolean);
-      check(userId, String);
-      if (ReactiveCache.getCurrentUser()?.isAdmin) {
-        Users.update(userId, {
-          $set: {
-            emails: [
-              {
-                address: email,
-                verified,
-              },
-            ],
-          },
-        });
-      }
-    },
-    setInitials(initials, userId) {
-      check(initials, String);
-      check(userId, String);
-      if (ReactiveCache.getCurrentUser()?.isAdmin) {
-        Users.update(userId, {
-          $set: {
-            'profile.initials': initials,
-          },
-        });
-      }
-    },
-    // we accept userId, username, email
-    inviteUserToBoard(username, boardId) {
-      check(username, String);
-      check(boardId, String);
+    }
+    return false;
+  },
 
-      const inviter = ReactiveCache.getCurrentUser();
-      const board = ReactiveCache.getBoard(boardId);
-      const allowInvite =
-        inviter &&
-        board &&
-        board.members &&
-        _.contains(_.pluck(board.members, 'userId'), inviter._id) &&
-        _.where(board.members, {
-          userId: inviter._id,
-        })[0].isActive;
-      // GitHub issue 2060
-      //_.where(board.members, { userId: inviter._id })[0].isAdmin;
-      if (!allowInvite) throw new Meteor.Error('error-board-notAMember');
-
-      this.unblock();
-
-      const posAt = username.indexOf('@');
-      let user = null;
-      if (posAt >= 0) {
-        user = ReactiveCache.getUser({
-          emails: {
-            $elemMatch: {
-              address: username,
-            },
-          },
-        });
-      } else {
-        user =
-          ReactiveCache.getUser(username) ||
-          ReactiveCache.getUser({ username });
-      }
-      if (user) {
-        if (user._id === inviter._id)
-          throw new Meteor.Error('error-user-notAllowSelf');
-      } else {
-        if (posAt <= 0) throw new Meteor.Error('error-user-doesNotExist');
-        if (ReactiveCache.getCurrentSetting().disableRegistration) {
-          throw new Meteor.Error('error-user-notCreated');
-        }
-        // Set in lowercase email before creating account
-        const email = username.toLowerCase();
-        username = email.substring(0, posAt);
-        const newUserId = Accounts.createUser({
-          username,
-          email,
-        });
-        if (!newUserId) throw new Meteor.Error('error-user-notCreated');
-        // assume new user speak same language with inviter
-        if (inviter.profile && inviter.profile.language) {
-          Users.update(newUserId, {
-            $set: {
-              'profile.language': inviter.profile.language,
-            },
-          });
-        }
-        Accounts.sendEnrollmentEmail(newUserId);
-        user = ReactiveCache.getUser(newUserId);
-      }
-
-      board.addMember(user._id);
-      user.addInvite(boardId);
-
-      //Check if there is a subtasks board
-      if (board.subtasksDefaultBoardId) {
-        const subBoard = ReactiveCache.getBoard(board.subtasksDefaultBoardId);
-        //If there is, also add user to that board
-        if (subBoard) {
-          subBoard.addMember(user._id);
-          user.addInvite(subBoard._id);
-        }
-      }
-
-      try {
-        const fullName =
-          inviter.profile !== undefined &&
-            inviter.profile.fullname !== undefined
-            ? inviter.profile.fullname
-            : '';
-        const userFullName =
-          user.profile !== undefined && user.profile.fullname !== undefined
-            ? user.profile.fullname
-            : '';
-        const params = {
-          user:
-            userFullName != ''
-              ? userFullName + ' (' + user.username + ' )'
-              : user.username,
-          inviter:
-            fullName != ''
-              ? fullName + ' (' + inviter.username + ' )'
-              : inviter.username,
-          board: board.title,
-          url: board.absoluteUrl(),
-        };
-        const lang = user.getLanguage();
-
-        /*
-        if (process.env.MAIL_SERVICE !== '') {
-          let transporter = nodemailer.createTransport({
-            service: process.env.MAIL_SERVICE,
-            auth: {
-              user: process.env.MAIL_SERVICE_USER,
-              pass: process.env.MAIL_SERVICE_PASSWORD
-            },
-          })
-          let info = transporter.sendMail({
-            to: user.emails[0].address.toLowerCase(),
-            from: Accounts.emailTemplates.from,
-            subject: TAPi18n.__('email-invite-subject', params, lang),
-            text: TAPi18n.__('email-invite-text', params, lang),
-          })
-        } else {
-          Email.send({
-            to: user.emails[0].address.toLowerCase(),
-            from: Accounts.emailTemplates.from,
-            subject: TAPi18n.__('email-invite-subject', params, lang),
-            text: TAPi18n.__('email-invite-text', params, lang),
-          });
-        }
-*/
-        Email.send({
-          to: user.emails[0].address.toLowerCase(),
-          from: Accounts.emailTemplates.from,
-          subject: TAPi18n.__('email-invite-subject', params, lang),
-          text: TAPi18n.__('email-invite-text', params, lang),
-        });
-      } catch (e) {
-        throw new Meteor.Error('email-fail', e.message);
-      }
-      return {
-        username: user.username,
-        email: user.emails[0].address,
-      };
-    },
-    impersonate(userId) {
-      check(userId, String);
-
-      if (!ReactiveCache.getUser(userId))
-        throw new Meteor.Error(404, 'User not found');
-      if (!ReactiveCache.getCurrentUser().isAdmin)
-        throw new Meteor.Error(403, 'Permission denied');
-
-      ImpersonatedUsers.insert({
-        adminId: ReactiveCache.getCurrentUser()._id,
-        userId: userId,
-        reason: 'clickedImpersonate',
-      });
-      this.setUserId(userId);
-    },
-    isImpersonated(userId) {
-      check(userId, String);
-      const isImpersonated = ReactiveCache.getImpersonatedUser({ userId: userId });
-      return isImpersonated;
-    },
-    setUsersTeamsTeamDisplayName(teamId, teamDisplayName) {
-      check(teamId, String);
-      check(teamDisplayName, String);
-      if (ReactiveCache.getCurrentUser()?.isAdmin) {
-        ReactiveCache.getUsers({
-          teams: {
-            $elemMatch: { teamId: teamId },
-          },
-        }).forEach((user) => {
-          Users.update(
-            {
-              _id: user._id,
-              teams: {
-                $elemMatch: { teamId: teamId },
-              },
-            },
-            {
-              $set: {
-                'teams.$.teamDisplayName': teamDisplayName,
-              },
-            },
-          );
-        });
-      }
-    },
-    setUsersOrgsOrgDisplayName(orgId, orgDisplayName) {
-      check(orgId, String);
-      check(orgDisplayName, String);
-      if (ReactiveCache.getCurrentUser()?.isAdmin) {
-        ReactiveCache.getUsers({
-          orgs: {
-            $elemMatch: { orgId: orgId },
-          },
-        }).forEach((user) => {
-          Users.update(
-            {
-              _id: user._id,
-              orgs: {
-                $elemMatch: { orgId: orgId },
-              },
-            },
-            {
-              $set: {
-                'orgs.$.orgDisplayName': orgDisplayName,
-              },
-            },
-          );
-        });
-      }
-    },
-  });
-  Accounts.onCreateUser((options, user) => {
-    const userCount = ReactiveCache.getUsers({}, {}, true).count();
-    user.isAdmin = userCount === 0;
-
-    if (user.services.oidc) {
-      let email = user.services.oidc.email;
-      if (Array.isArray(email)) {
-        email = email.shift();
-      }
-      email = email.toLowerCase();
-      user.username = user.services.oidc.username;
-      user.emails = [
-        {
-          address: email,
-          verified: true,
-        },
-      ];
-      const initials = user.services.oidc.fullname
-        .split(/\s+/)
-        .reduce((memo, word) => {
-          return memo + word[0];
-        }, '')
-        .toUpperCase();
-      user.profile = {
-        initials,
-        fullname: user.services.oidc.fullname,
-        boardView: 'board-view-swimlanes',
-      };
-      user.authenticationMethod = 'oauth2';
-
-      // see if any existing user has this email address or username, otherwise create new
-      const existingUser = ReactiveCache.getUser({
-        $or: [
-          {
-            'emails.address': email,
-          },
-          {
-            username: user.username,
-          },
-        ],
-      });
-      if (!existingUser) return user;
-
-      // copy across new service info
-      const service = _.keys(user.services)[0];
-      existingUser.services[service] = user.services[service];
-      existingUser.emails = user.emails;
-      existingUser.username = user.username;
-      existingUser.profile = user.profile;
-      existingUser.authenticationMethod = user.authenticationMethod;
-
-      Meteor.users.remove({
-        _id: user._id,
-      });
-      Meteor.users.remove({
-        _id: existingUser._id,
-      }); // is going to be created again
-      return existingUser;
+  getListConstraintFromStorage(boardId, listId) {
+    // For logged-in users, get from profile
+    if (this._id) {
+      return this.getListConstraint(boardId, listId);
     }
 
-    if (options.from === 'admin') {
-      user.createdThroughApi = true;
-      return user;
+    // For non-logged-in users, get from localStorage
+    try {
+      const stored = localStorage.getItem('wekan-list-constraints');
+      if (stored) {
+        const constraints = JSON.parse(stored);
+        if (constraints[boardId] && constraints[boardId][listId]) {
+          return constraints[boardId][listId];
+        }
+      }
+    } catch (e) {
+      console.warn('Error reading list constraints from localStorage:', e);
     }
 
-    const disableRegistration = ReactiveCache.getCurrentSetting().disableRegistration;
-    // If this is the first Authentication by the ldap and self registration disabled
-    if (disableRegistration && options && options.ldap) {
-      user.authenticationMethod = 'ldap';
-      return user;
+    return 550; // Return default constraint instead of -1
+  },
+
+  setListConstraintToStorage(boardId, listId, constraint) {
+    // For logged-in users, save to profile
+    if (this._id) {
+      return this.setListConstraint(boardId, listId, constraint);
     }
 
-    // If self registration enabled
-    if (!disableRegistration) {
-      return user;
+    // For non-logged-in users, save to localStorage
+    try {
+      const stored = localStorage.getItem('wekan-list-constraints');
+      let constraints = stored ? JSON.parse(stored) : {};
+
+      if (!constraints[boardId]) {
+        constraints[boardId] = {};
+      }
+      constraints[boardId][listId] = constraint;
+
+      localStorage.setItem('wekan-list-constraints', JSON.stringify(constraints));
+      return true;
+    } catch (e) {
+      console.warn('Error saving list constraint to localStorage:', e);
+      return false;
+    }
+  },
+
+  getSwimlaneHeightFromStorage(boardId, swimlaneId) {
+    // For logged-in users, get from profile
+    if (this._id) {
+      return this.getSwimlaneHeight(boardId, swimlaneId);
     }
 
-    if (!options || !options.profile) {
-      throw new Meteor.Error(
-        'error-invitation-code-blank',
-        'The invitation code is required',
-      );
+    // For non-logged-in users, get from localStorage
+    try {
+      const stored = localStorage.getItem('wekan-swimlane-heights');
+      if (stored) {
+        const heights = JSON.parse(stored);
+        if (heights[boardId] && heights[boardId][swimlaneId]) {
+          return heights[boardId][swimlaneId];
+        }
+      }
+    } catch (e) {
+      console.warn('Error reading swimlane heights from localStorage:', e);
     }
-    const invitationCode = ReactiveCache.getInvitationCode({
-      code: options.profile.invitationcode,
-      email: options.email,
-      valid: true,
-    });
-    if (!invitationCode) {
-      throw new Meteor.Error(
-        'error-invitation-code-not-exist',
-        // eslint-disable-next-line quotes
-        "The invitation code doesn't exist",
-      );
+
+    return -1; // Return -1 if not found
+  },
+
+  setSwimlaneHeightToStorage(boardId, swimlaneId, height) {
+    // For logged-in users, save to profile
+    if (this._id) {
+      return this.setSwimlaneHeight(boardId, swimlaneId, height);
+    }
+
+    // For non-logged-in users, save to localStorage
+    try {
+      const stored = localStorage.getItem('wekan-swimlane-heights');
+      let heights = stored ? JSON.parse(stored) : {};
+
+      if (!heights[boardId]) {
+        heights[boardId] = {};
+      }
+      heights[boardId][swimlaneId] = height;
+
+      localStorage.setItem('wekan-swimlane-heights', JSON.stringify(heights));
+      return true;
+    } catch (e) {
+      console.warn('Error saving swimlane height to localStorage:', e);
+      return false;
+    }
+  },
+  // Per-user collapsed state helpers for lists/swimlanes
+  getCollapsedList(boardId, listId) {
+    const { collapsedLists = {} } = this.profile || {};
+    if (collapsedLists[boardId] && typeof collapsedLists[boardId][listId] === 'boolean') {
+      return collapsedLists[boardId][listId];
+    }
+    return null;
+  },
+  getCollapsedSwimlane(boardId, swimlaneId) {
+    const { collapsedSwimlanes = {} } = this.profile || {};
+    if (collapsedSwimlanes[boardId] && typeof collapsedSwimlanes[boardId][swimlaneId] === 'boolean') {
+      return collapsedSwimlanes[boardId][swimlaneId];
+    }
+    return null;
+  },
+  setCollapsedListToStorage(boardId, listId, collapsed) {
+    // Logged-in users: save to profile
+    if (this._id) {
+      return this.setCollapsedList(boardId, listId, collapsed);
+    }
+    // Public users: save to cookie
+    try {
+      const name = 'wekan-collapsed-lists';
+      const stored = (typeof document !== 'undefined') ? document.cookie : '';
+      const cookies = stored.split(';').map(c => c.trim());
+      let json = '{}';
+      for (const c of cookies) {
+        if (c.startsWith(name + '=')) {
+          json = decodeURIComponent(c.substring(name.length + 1));
+          break;
+        }
+      }
+      let data = {};
+      try { data = JSON.parse(json || '{}'); } catch (e) { data = {}; }
+      if (!data[boardId]) data[boardId] = {};
+      data[boardId][listId] = !!collapsed;
+      const serialized = encodeURIComponent(JSON.stringify(data));
+      const maxAge = 60 * 60 * 24 * 365; // 1 year
+      document.cookie = `${name}=${serialized}; path=/; max-age=${maxAge}`;
+      return true;
+    } catch (e) {
+      console.warn('Error saving collapsed list to cookie:', e);
+      return false;
+    }
+  },
+  getCollapsedListFromStorage(boardId, listId) {
+    // Logged-in users: read from profile
+    if (this._id) {
+      const v = this.getCollapsedList(boardId, listId);
+      return v;
+    }
+    // Public users: read from cookie
+    try {
+      const name = 'wekan-collapsed-lists';
+      const stored = (typeof document !== 'undefined') ? document.cookie : '';
+      const cookies = stored.split(';').map(c => c.trim());
+      let json = '{}';
+      for (const c of cookies) {
+        if (c.startsWith(name + '=')) {
+          json = decodeURIComponent(c.substring(name.length + 1));
+          break;
+        }
+      }
+      const data = JSON.parse(json || '{}');
+      if (data[boardId] && typeof data[boardId][listId] === 'boolean') {
+        return data[boardId][listId];
+      }
+    } catch (e) {
+      console.warn('Error reading collapsed list from cookie:', e);
+    }
+    return null;
+  },
+  setCollapsedSwimlaneToStorage(boardId, swimlaneId, collapsed) {
+    // Logged-in users: save to profile
+    if (this._id) {
+      return this.setCollapsedSwimlane(boardId, swimlaneId, collapsed);
+    }
+    // Public users: save to cookie
+    try {
+      const name = 'wekan-collapsed-swimlanes';
+      const stored = (typeof document !== 'undefined') ? document.cookie : '';
+      const cookies = stored.split(';').map(c => c.trim());
+      let json = '{}';
+      for (const c of cookies) {
+        if (c.startsWith(name + '=')) {
+          json = decodeURIComponent(c.substring(name.length + 1));
+          break;
+        }
+      }
+      let data = {};
+      try { data = JSON.parse(json || '{}'); } catch (e) { data = {}; }
+      if (!data[boardId]) data[boardId] = {};
+      data[boardId][swimlaneId] = !!collapsed;
+      const serialized = encodeURIComponent(JSON.stringify(data));
+      const maxAge = 60 * 60 * 24 * 365; // 1 year
+      document.cookie = `${name}=${serialized}; path=/; max-age=${maxAge}`;
+      return true;
+    } catch (e) {
+      console.warn('Error saving collapsed swimlane to cookie:', e);
+      return false;
+    }
+  },
+  getCollapsedSwimlaneFromStorage(boardId, swimlaneId) {
+    // Logged-in users: read from profile
+    if (this._id) {
+      const v = this.getCollapsedSwimlane(boardId, swimlaneId);
+      return v;
+    }
+    // Public users: read from cookie
+    try {
+      const name = 'wekan-collapsed-swimlanes';
+      const stored = (typeof document !== 'undefined') ? document.cookie : '';
+      const cookies = stored.split(';').map(c => c.trim());
+      let json = '{}';
+      for (const c of cookies) {
+        if (c.startsWith(name + '=')) {
+          json = decodeURIComponent(c.substring(name.length + 1));
+          break;
+        }
+      }
+      const data = JSON.parse(json || '{}');
+      if (data[boardId] && typeof data[boardId][swimlaneId] === 'boolean') {
+        return data[boardId][swimlaneId];
+      }
+    } catch (e) {
+      console.warn('Error reading collapsed swimlane from cookie:', e);
+    }
+    return null;
+  },
+
+  async setMoveAndCopyDialogOption(boardId, options) {
+    let currentOptions = this.getMoveAndCopyDialogOptions();
+    currentOptions[boardId] = options;
+    return await Users.updateAsync(this._id, { $set: { 'profile.moveAndCopyDialog': currentOptions } });
+  },
+
+  async setMoveChecklistDialogOption(boardId, options) {
+    let currentOptions = this.getMoveChecklistDialogOptions();
+    currentOptions[boardId] = options;
+    return await Users.updateAsync(this._id, { $set: { 'profile.moveChecklistDialog': currentOptions } });
+  },
+
+  async setCopyChecklistDialogOption(boardId, options) {
+    let currentOptions = this.getCopyChecklistDialogOptions();
+    currentOptions[boardId] = options;
+    return await Users.updateAsync(this._id, { $set: { 'profile.copyChecklistDialog': currentOptions } });
+  },
+
+  async toggleBoardStar(boardId) {
+    const queryKind = this.hasStarred(boardId) ? '$pull' : '$addToSet';
+    return await Users.updateAsync(this._id, { [queryKind]: { 'profile.starredBoards': boardId } });
+  },
+
+  // #2220: toggle this board as the user's default "home" board (opened after
+  // login). Clicking the current default clears it (back to the All Boards page).
+  async toggleDefaultBoard(boardId) {
+    if (this.isDefaultBoard(boardId)) {
+      return await Users.updateAsync(this._id, { $unset: { 'profile.defaultBoardId': '' } });
+    }
+    return await Users.updateAsync(this._id, { $set: { 'profile.defaultBoardId': boardId } });
+  },
+
+  async setBoardSortIndex(boardId, sortIndex) {
+    const mapping = (this.profile && this.profile.boardSortIndex) || {};
+    mapping[boardId] = sortIndex;
+    return await Users.updateAsync(this._id, { $set: { 'profile.boardSortIndex': mapping } });
+  },
+
+  // #6439: persist a whole boardSortIndex mapping in one write. Used by the
+  // All Boards page after a drag-reorder recomputes the manual order.
+  async setBoardSortIndexes(mapping) {
+    const merged = Object.assign({}, (this.profile && this.profile.boardSortIndex) || {}, mapping || {});
+    return await Users.updateAsync(this._id, { $set: { 'profile.boardSortIndex': merged } });
+  },
+
+  async toggleAutoWidth(boardId) {
+    const { autoWidthBoards = {} } = this.profile || {};
+    autoWidthBoards[boardId] = !autoWidthBoards[boardId];
+    return await Users.updateAsync(this._id, { $set: { 'profile.autoWidthBoards': autoWidthBoards } });
+  },
+
+  // #5729 Enable/disable "same width for all lists" mode for a board.
+  async setFixedListWidthEnabled(boardId, enabled) {
+    const { fixedListWidthBoards = {} } = this.profile || {};
+    fixedListWidthBoards[boardId] = !!enabled;
+    return await Users.updateAsync(this._id, { $set: { 'profile.fixedListWidthBoards': fixedListWidthBoards } });
+  },
+
+  // #5729 Set the single width used by every list in fixed width mode.
+  async setFixedListWidth(boardId, width) {
+    const { fixedListWidths = {} } = this.profile || {};
+    fixedListWidths[boardId] = width;
+    return await Users.updateAsync(this._id, { $set: { 'profile.fixedListWidths': fixedListWidths } });
+  },
+
+  async toggleKeyboardShortcuts() {
+    const { keyboardShortcuts = true } = this.profile || {};
+    return await Users.updateAsync(this._id, { $set: { 'profile.keyboardShortcuts': !keyboardShortcuts } });
+  },
+
+  async toggleVerticalScrollbars() {
+    const { verticalScrollbars = true } = this.profile || {};
+    return await Users.updateAsync(this._id, { $set: { 'profile.verticalScrollbars': !verticalScrollbars } });
+  },
+
+  async toggleShowWeekOfYear() {
+    const { showWeekOfYear = true } = this.profile || {};
+    return await Users.updateAsync(this._id, { $set: { 'profile.showWeekOfYear': !showWeekOfYear } });
+  },
+
+  async addInvite(boardId) {
+    return await Users.updateAsync(this._id, { $addToSet: { 'profile.invitedBoards': boardId } });
+  },
+
+  async removeInvite(boardId) {
+    return await Users.updateAsync(this._id, { $pull: { 'profile.invitedBoards': boardId } });
+  },
+
+  async addTag(tag) {
+    return await Users.updateAsync(this._id, { $addToSet: { 'profile.tags': tag } });
+  },
+
+  async removeTag(tag) {
+    return await Users.updateAsync(this._id, { $pull: { 'profile.tags': tag } });
+  },
+
+  async toggleTag(tag) {
+    if (this.hasTag(tag)) {
+      return await this.removeTag(tag);
     } else {
-      user.profile = {
-        icode: options.profile.invitationcode,
-      };
-      user.profile.boardView = 'board-view-swimlanes';
-
-      // Deletes the invitation code after the user was created successfully.
-      setTimeout(
-        Meteor.bindEnvironment(() => {
-          InvitationCodes.remove({
-            _id: invitationCode._id,
-          });
-        }),
-        200,
-      );
-      return user;
+      return await this.addTag(tag);
     }
-  });
-}
+  },
 
-const addCronJob = _.debounce(
-  Meteor.bindEnvironment(function notificationCleanupDebounced() {
-    // passed in the removeAge has to be a number standing for the number of days after a notification is read before we remove it
-    const envRemoveAge =
-      process.env.NOTIFICATION_TRAY_AFTER_READ_DAYS_BEFORE_REMOVE;
-    // default notifications will be removed 2 days after they are read
-    const defaultRemoveAge = 2;
-    const removeAge = parseInt(envRemoveAge, 10) || defaultRemoveAge;
+  async setListSortBy(value) {
+    return await Users.updateAsync(this._id, { $set: { 'profile.listSortBy': value } });
+  },
 
-    SyncedCron.add({
-      name: 'notification_cleanup',
-      schedule: (parser) => parser.text('every 1 days'),
-      job: () => {
-        for (const user of ReactiveCache.getUsers()) {
-          if (!user.profile || !user.profile.notifications) continue;
-          for (const notification of user.profile.notifications) {
-            if (notification.read) {
-              const removeDate = new Date(notification.read);
-              removeDate.setDate(removeDate.getDate() + removeAge);
-              if (removeDate <= new Date()) {
-                user.removeNotification(notification.activity);
-              }
-            }
-          }
-        }
-      },
+  async setAllBoardsSortBy(value) {
+    return await Users.updateAsync(this._id, { $set: { 'profile.allBoardsSortBy': value } });
+  },
+
+  async setName(value) {
+    return await Users.updateAsync(this._id, { $set: { 'profile.fullname': value } });
+  },
+
+  async toggleDesktopHandles(value = false) {
+    return await Users.updateAsync(this._id, { $set: { 'profile.showDesktopDragHandles': !value } });
+  },
+
+  async toggleFieldsGrid(value = false) {
+    return await Users.updateAsync(this._id, { $set: { 'profile.customFieldsGrid': !value } });
+  },
+
+  async toggleCardMaximized(value = false) {
+    return await Users.updateAsync(this._id, { $set: { 'profile.cardMaximized': !value } });
+  },
+
+  async toggleCardCollapsed(value = false) {
+    return await Users.updateAsync(this._id, { $set: { 'profile.cardCollapsed': !value } });
+  },
+
+  async toggleShowActivities(value = false) {
+    return await Users.updateAsync(this._id, { $set: { 'profile.showActivities': !value } });
+  },
+
+  async toggleLabelText(value = false) {
+    return await Users.updateAsync(this._id, { $set: { 'profile.hiddenMinicardLabelText': !value } });
+  },
+
+  async toggleRescueCardDescription(value = false) {
+    return await Users.updateAsync(this._id, { $set: { 'profile.rescueCardDescription': !value } });
+  },
+
+
+  // #5778: the user's optional global theme color override (a board color name),
+  // or null when unset.
+  getGlobalThemeColor() {
+    return (this.profile && this.profile.globalThemeColor) || null;
+  },
+
+  // The custom colors for a flat/clear global theme (docs/Theme/Theme.md), or [].
+  getGlobalThemeCustomColors() {
+    return (this.profile && this.profile.globalThemeCustomColors) || [];
+  },
+
+  // #4759: the user's chosen UI font (a curated font name), or null when unset.
+  getUiFont() {
+    return (this.profile && this.profile.uiFont) || null;
+  },
+
+  // #4759: the user's chosen UI font-size preset key, or null (default size).
+  getUiFontSize() {
+    return (this.profile && this.profile.uiFontSize) || null;
+  },
+
+  // #4759: custom UI text color / text background color (hex), or null when unset.
+  getUiTextColor() {
+    return (this.profile && this.profile.uiTextColor) || null;
+  },
+  getUiTextBgColor() {
+    return (this.profile && this.profile.uiTextBgColor) || null;
+  },
+
+  // The CSS class the global override maps to, or '' when unset. Used by the header
+  // template on non-board pages and by the <body> autorun.
+  globalThemeColorClass() {
+    const color = this.getGlobalThemeColor();
+    return color ? `board-color-${color}` : '';
+  },
+
+  async setGlobalThemeColor(color) {
+    if (color) {
+      return await Users.updateAsync(this._id, { $set: { 'profile.globalThemeColor': color } });
+    }
+    return await Users.updateAsync(this._id, { $unset: { 'profile.globalThemeColor': '' } });
+  },
+
+  async setDismissedAnnouncementVersion(version) {
+    return await Users.updateAsync(this._id, {
+      $set: { 'profile.dismissedAnnouncementVersion': version },
     });
+  },
 
-    SyncedCron.start();
-  }),
-  500,
-);
+  async addNotification(activityId) {
+    return await Users.updateAsync(this._id, {
+      $addToSet: { 'profile.notifications': { activity: activityId, read: null } },
+    });
+  },
+
+  async removeNotification(activityId) {
+    return await Users.updateAsync(this._id, {
+      $pull: { 'profile.notifications': { activity: activityId } },
+    });
+  },
+
+  async addEmailBuffer(text) {
+    return await Users.updateAsync(this._id, { $addToSet: { 'profile.emailBuffer': text } });
+  },
+
+  async clearEmailBuffer() {
+    return await Users.updateAsync(this._id, { $set: { 'profile.emailBuffer': [] } });
+  },
+
+  async setAvatarUrl(avatarUrl) {
+    return await Users.updateAsync(this._id, { $set: { 'profile.avatarUrl': avatarUrl } });
+  },
+
+  async setShowCardsCountAt(limit) {
+    return await Users.updateAsync(this._id, { $set: { 'profile.showCardsCountAt': limit } });
+  },
+
+  async setStartDayOfWeek(startDay) {
+    return await Users.updateAsync(this._id, { $set: { 'profile.startDayOfWeek': startDay } });
+  },
+
+  async setDateFormat(dateFormat) {
+    return await Users.updateAsync(this._id, { $set: { 'profile.dateFormat': dateFormat } });
+  },
+
+  async setBoardView(view) {
+    return await Users.updateAsync(this._id, { $set: { 'profile.boardView': view } });
+  },
+
+  async setListWidth(boardId, listId, width) {
+    let currentWidths = this.getListWidths();
+    if (!currentWidths[boardId]) currentWidths[boardId] = {};
+    currentWidths[boardId][listId] = width;
+    return await Users.updateAsync(this._id, { $set: { 'profile.listWidths': currentWidths } });
+  },
+
+  async setListConstraint(boardId, listId, constraint) {
+    let currentConstraints = this.getListConstraints();
+    if (!currentConstraints[boardId]) currentConstraints[boardId] = {};
+    currentConstraints[boardId][listId] = constraint;
+    return await Users.updateAsync(this._id, { $set: { 'profile.listConstraints': currentConstraints } });
+  },
+
+  async setSwimlaneHeight(boardId, swimlaneId, height) {
+    let currentHeights = this.getSwimlaneHeights();
+    if (!currentHeights[boardId]) currentHeights[boardId] = {};
+    currentHeights[boardId][swimlaneId] = height;
+    return await Users.updateAsync(this._id, { $set: { 'profile.swimlaneHeights': currentHeights } });
+  },
+
+  async setCollapsedList(boardId, listId, collapsed) {
+    const current = (this.profile && this.profile.collapsedLists) || {};
+    if (!current[boardId]) current[boardId] = {};
+    current[boardId][listId] = !!collapsed;
+    return await Users.updateAsync(this._id, { $set: { 'profile.collapsedLists': current } });
+  },
+
+  async setCollapsedSwimlane(boardId, swimlaneId, collapsed) {
+    const current = (this.profile && this.profile.collapsedSwimlanes) || {};
+    if (!current[boardId]) current[boardId] = {};
+    current[boardId][swimlaneId] = !!collapsed;
+    return await Users.updateAsync(this._id, { $set: { 'profile.collapsedSwimlanes': current } });
+  },
+
+  async setZoomLevel(level) {
+    return await Users.updateAsync(this._id, { $set: { 'profile.zoomLevel': level } });
+  },
+
+  async setMobileMode(enabled) {
+    return await Users.updateAsync(this._id, { $set: { 'profile.mobileMode': enabled } });
+  },
+
+  async setCardZoom(level) {
+    return await Users.updateAsync(this._id, { $set: { 'profile.cardZoom': level } });
+  },
+});
 
 if (Meteor.isServer) {
-  // Let mongoDB ensure username unicity
-  Meteor.startup(() => {
-    allowedSortValues.forEach((value) => {
-      Lists._collection.createIndex(value);
-    });
-    Users._collection.createIndex({
-      modifiedAt: -1,
-    });
-    /* Commented out extra index because of IndexOptionsConflict.
-    Users._collection.createIndex(
-      {
-        username: 1,
-      },
-      {
-        unique: true,
-      },
-    );
-*/
-    Meteor.defer(() => {
-      addCronJob();
-    });
-  });
-
-  // OLD WAY THIS CODE DID WORK: When user is last admin of board,
-  // if admin is removed, board is removed.
-  // NOW THIS IS COMMENTED OUT, because other board users still need to be able
-  // to use that board, and not have board deleted.
-  // Someone can be later changed to be admin of board, by making change to database.
-  // TODO: Add UI for changing someone as board admin.
-  //Users.before.remove((userId, doc) => {
-  //  Boards
-  //    .find({members: {$elemMatch: {userId: doc._id, isAdmin: true}}})
-  //    .forEach((board) => {
-  //      // If only one admin for the board
-  //      if (board.members.filter((e) => e.isAdmin).length === 1) {
-  //        Boards.remove(board._id);
-  //      }
-  //    });
-  //});
-
-  // Each board document contains the de-normalized number of users that have
-  // starred it. If the user star or unstar a board, we need to update this
-  // counter.
-  // We need to run this code on the server only, otherwise the incrementation
-  // will be done twice.
-  Users.after.update(function (userId, user, fieldNames) {
-    // The `starredBoards` list is hosted on the `profile` field. If this
-    // field hasn't been modificated we don't need to run this hook.
-    if (!_.contains(fieldNames, 'profile')) return;
-
-    // To calculate a diff of board starred ids, we get both the previous
-    // and the newly board ids list
-    function getStarredBoardsIds(doc) {
-      return doc.profile && doc.profile.starredBoards;
-    }
-
-    const oldIds = getStarredBoardsIds(this.previous);
-    const newIds = getStarredBoardsIds(user);
-
-    // The _.difference(a, b) method returns the values from a that are not in
-    // b. We use it to find deleted and newly inserted ids by using it in one
-    // direction and then in the other.
-    function incrementBoards(boardsIds, inc) {
-      boardsIds.forEach((boardId) => {
-        Boards.update(boardId, {
-          $inc: {
-            stars: inc,
-          },
-        });
-      });
-    }
-
-    incrementBoards(_.difference(oldIds, newIds), -1);
-    incrementBoards(_.difference(newIds, oldIds), +1);
-  });
-
-  // Override getUserId so that we can TODO get the current userId
-  const fakeUserId = new Meteor.EnvironmentVariable();
-  const getUserId = CollectionHooks.getUserId;
-  CollectionHooks.getUserId = () => {
-    return fakeUserId.get() || getUserId();
-  };
-  if (!isSandstorm) {
-    Users.after.insert((userId, doc) => {
-      const fakeUser = {
-        extendAutoValueContext: {
-          userId: doc._id,
-        },
-      };
-
-      fakeUserId.withValue(doc._id, () => {
-        /*
-
-        // Insert the Welcome Board
-        Boards.insert({
-          title: TAPi18n.__('welcome-board'),
-          permission: 'private',
-        }, fakeUser, (err, boardId) => {
-
-          Swimlanes.insert({
-            title: TAPi18n.__('welcome-swimlane'),
-            boardId,
-            sort: 1,
-          }, fakeUser);
-
-          ['welcome-list1', 'welcome-list2'].forEach((title, titleIndex) => {
-            Lists.insert({title: TAPi18n.__(title), boardId, sort: titleIndex}, fakeUser);
-          });
-        });
-        */
-
-        // Insert Template Container
-        const Future = require('fibers/future');
-        const future1 = new Future();
-        const future2 = new Future();
-        const future3 = new Future();
-        Boards.insert(
-          {
-            title: TAPi18n.__('templates'),
-            permission: 'private',
-            type: 'template-container',
-          },
-          fakeUser,
-          (err, boardId) => {
-            // Insert the reference to our templates board
-            Users.update(fakeUserId.get(), {
-              $set: {
-                'profile.templatesBoardId': boardId,
-              },
-            });
-
-            // Insert the card templates swimlane
-            Swimlanes.insert(
-              {
-                title: TAPi18n.__('card-templates-swimlane'),
-                boardId,
-                sort: 1,
-                type: 'template-container',
-              },
-              fakeUser,
-              (err, swimlaneId) => {
-                // Insert the reference to out card templates swimlane
-                Users.update(fakeUserId.get(), {
-                  $set: {
-                    'profile.cardTemplatesSwimlaneId': swimlaneId,
-                  },
-                });
-                future1.return();
-              },
-            );
-
-            // Insert the list templates swimlane
-            Swimlanes.insert(
-              {
-                title: TAPi18n.__('list-templates-swimlane'),
-                boardId,
-                sort: 2,
-                type: 'template-container',
-              },
-              fakeUser,
-              (err, swimlaneId) => {
-                // Insert the reference to out list templates swimlane
-                Users.update(fakeUserId.get(), {
-                  $set: {
-                    'profile.listTemplatesSwimlaneId': swimlaneId,
-                  },
-                });
-                future2.return();
-              },
-            );
-
-            // Insert the board templates swimlane
-            Swimlanes.insert(
-              {
-                title: TAPi18n.__('board-templates-swimlane'),
-                boardId,
-                sort: 3,
-                type: 'template-container',
-              },
-              fakeUser,
-              (err, swimlaneId) => {
-                // Insert the reference to out board templates swimlane
-                Users.update(fakeUserId.get(), {
-                  $set: {
-                    'profile.boardTemplatesSwimlaneId': swimlaneId,
-                  },
-                });
-                future3.return();
-              },
-            );
-          },
-        );
-        // HACK
-        future1.wait();
-        future2.wait();
-        future3.wait();
-        // End of Insert Template Container
-      });
-    });
-  }
-
-  Users.after.insert((userId, doc) => {
-    // HACK
-    doc = ReactiveCache.getUser(doc._id);
-    if (doc.createdThroughApi) {
-      // The admin user should be able to create a user despite disabling registration because
-      // it is two different things (registration and creation).
-      // So, when a new user is created via the api (only admin user can do that) one must avoid
-      // the disableRegistration check.
-      // Issue : https://github.com/wekan/wekan/issues/1232
-      // PR    : https://github.com/wekan/wekan/pull/1251
-      Users.update(doc._id, {
-        $set: {
-          createdThroughApi: '',
-        },
-      });
-      return;
-    }
-
-    //invite user to corresponding boards
-    const disableRegistration = ReactiveCache.getCurrentSetting().disableRegistration;
-    // If ldap, bypass the inviation code if the self registration isn't allowed.
-    // TODO : pay attention if ldap field in the user model change to another content ex : ldap field to connection_type
-    if (doc.authenticationMethod !== 'ldap' && disableRegistration) {
-      let invitationCode = null;
-      if (doc.authenticationMethod.toLowerCase() == 'oauth2') {
-        // OIDC authentication mode
-        invitationCode = ReactiveCache.getInvitationCode({
-          email: doc.emails[0].address.toLowerCase(),
-          valid: true,
-        });
-      } else {
-        invitationCode = ReactiveCache.getInvitationCode({
-          code: doc.profile.icode,
-          valid: true,
-        });
-      }
-      if (!invitationCode) {
-        throw new Meteor.Error('error-invitation-code-not-exist');
-      } else {
-        invitationCode.boardsToBeInvited.forEach((boardId) => {
-          const board = ReactiveCache.getBoard(boardId);
-          board.addMember(doc._id);
-        });
-        if (!doc.profile) {
-          doc.profile = {};
-        }
-        doc.profile.invitedBoards = invitationCode.boardsToBeInvited;
-        Users.update(doc._id, {
-          $set: {
-            profile: doc.profile,
-          },
-        });
-        InvitationCodes.update(invitationCode._id, {
-          $set: {
-            valid: false,
-          },
-        });
-      }
-    }
-  });
-}
-
-// USERS REST API
-if (Meteor.isServer) {
-  // Middleware which checks that API is enabled.
-  JsonRoutes.Middleware.use(function (req, res, next) {
-    const api = req.url.startsWith('/api');
-    if ((api === true && process.env.WITH_API === 'true') || api === false) {
-      return next();
-    } else {
-      res.writeHead(301, {
-        Location: '/',
-      });
-      return res.end();
-    }
-  });
-
-  /**
-   * @operation get_current_user
-   *
-   * @summary returns the current user
-   * @return_type Users
-   */
-  JsonRoutes.add('GET', '/api/user', function (req, res) {
+  // #1289 ("Error after deleting a user"): deleting a user (Admin Panel
+  // `removeUser` method, self-service account delete, or
+  // DELETE /api/users/:userId) removed only the users document and left
+  // dangling references everywhere — "ghost" board members with empty
+  // avatars, stale card members/assignees and watcher entries — that
+  // previously had to be cleaned up by hand or by editing the database.
+  // This after.remove hook runs for every deletion path (they all go through
+  // Users.removeAsync / Meteor.users.removeAsync on this same collection) and
+  // prunes those references. Activities/comments are intentionally kept so
+  // history stays readable; see models/lib/userDeletionCleanup.js.
+  const {
+    buildUserDeletionCleanupPlan,
+    applyUserDeletionCleanup,
+  } = require('/models/lib/userDeletionCleanup');
+  Users.after.remove(async function(currentUserId, doc) {
     try {
-      Authentication.checkLoggedIn(req.userId);
-      const data = ReactiveCache.getUser({
-        _id: req.userId,
+      const plan = buildUserDeletionCleanupPlan(doc && doc._id);
+      if (!plan) return;
+      await applyUserDeletionCleanup(plan, {
+        boards: Boards,
+        // Required lazily: cards/lists/avatars are not imported at the top of
+        // this shared model, and avatars.js must only resolve server-side
+        // config when actually needed here.
+        cards: require('/models/cards').default,
+        lists: require('/models/lists').default,
+        avatars: require('/models/avatars').default,
       });
-      delete data.services;
-
-      // get all boards where the user is member of
-      let boards = ReactiveCache.getBoards(
-        {
-          type: 'board',
-          'members.userId': req.userId,
-        },
-        {
-          fields: {
-            _id: 1,
-            members: 1,
-          },
-        },
+    } catch (error) {
+      console.error(
+        '[userDeletionCleanup] Failed to prune references of deleted user',
+        doc && doc._id,
+        error,
       );
-      boards = boards.map((b) => {
-        const u = b.members.find((m) => m.userId === req.userId);
-        delete u.userId;
-        u.boardId = b._id;
-        return u;
-      });
-
-      data.boards = boards;
-      JsonRoutes.sendResult(res, {
-        code: 200,
-        data,
-      });
-    } catch (error) {
-      JsonRoutes.sendResult(res, {
-        code: 200,
-        data: error,
-      });
     }
   });
 
-  /**
-   * @operation get_all_users
-   *
-   * @summary return all the users
-   *
-   * @description Only the admin user (the first user) can call the REST API.
-   * @return_type [{ _id: string,
-   *                 username: string}]
-   */
-  JsonRoutes.add('GET', '/api/users', function (req, res) {
-    try {
-      Authentication.checkUserId(req.userId);
-      JsonRoutes.sendResult(res, {
-        code: 200,
-        data: Meteor.users.find({}).map(function (doc) {
-          return {
-            _id: doc._id,
-            username: doc.username,
-          };
-        }),
-      });
-    } catch (error) {
-      JsonRoutes.sendResult(res, {
-        code: 200,
-        data: error,
-      });
-    }
-  });
-
-  /**
-   * @operation get_user
-   *
-   * @summary get a given user
-   *
-   * @description Only the admin user (the first user) can call the REST API.
-   *
-   * @param {string} userId the user ID or username
-   * @return_type Users
-   */
-  JsonRoutes.add('GET', '/api/users/:userId', function (req, res) {
-    try {
-      Authentication.checkUserId(req.userId);
-      let id = req.params.userId;
-      let user = ReactiveCache.getUser({
-        _id: id,
-      });
-      if (!user) {
-        user = ReactiveCache.getUser({
-          username: id,
-        });
-        id = user._id;
+  Meteor.methods({
+    // Permanently dismiss the current global announcement for the logged-in
+    // user (#6051). The version is computed server-side from the current
+    // announcement so the client cannot dismiss an arbitrary/future version.
+    async dismissAnnouncement() {
+      if (!this.userId) {
+        throw new Meteor.Error('not-logged-in', 'User must be logged in');
       }
-
-      // get all boards where the user is member of
-      let boards = ReactiveCache.getBoards(
-        {
-          type: 'board',
-          'members.userId': id,
-        },
-        {
-          fields: {
-            _id: 1,
-            members: 1,
-          },
-        },
-      );
-      boards = boards.map((b) => {
-        const u = b.members.find((m) => m.userId === id);
-        delete u.userId;
-        u.boardId = b._id;
-        return u;
-      });
-
-      user.boards = boards;
-      JsonRoutes.sendResult(res, {
-        code: 200,
-        data: user,
-      });
-    } catch (error) {
-      JsonRoutes.sendResult(res, {
-        code: 200,
-        data: error,
-      });
-    }
-  });
-
-  /**
-   * @operation edit_user
-   *
-   * @summary edit a given user
-   *
-   * @description Only the admin user (the first user) can call the REST API.
-   *
-   * Possible values for *action*:
-   * - `takeOwnership`: The admin takes the ownership of ALL boards of the user (archived and not archived) where the user is admin on.
-   * - `disableLogin`: Disable a user (the user is not allowed to login and his login tokens are purged)
-   * - `enableLogin`: Enable a user
-   *
-   * @param {string} userId the user ID
-   * @param {string} action the action
-   * @return_type {_id: string,
-   *               title: string}
-   */
-  JsonRoutes.add('PUT', '/api/users/:userId', function (req, res) {
-    try {
-      Authentication.checkUserId(req.userId);
-      const id = req.params.userId;
-      const action = req.body.action;
-      let data = ReactiveCache.getUser({
-        _id: id,
-      });
-      if (data !== undefined) {
-        if (action === 'takeOwnership') {
-          data = ReactiveCache.getBoards(
-            {
-              'members.userId': id,
-              'members.isAdmin': true,
-            },
-            {
-              sort: {
-                sort: 1 /* boards default sorting */,
-              },
-            },
-          ).map(function (board) {
-            if (board.hasMember(req.userId)) {
-              board.removeMember(req.userId);
-            }
-            board.changeOwnership(id, req.userId);
-            return {
-              _id: board._id,
-              title: board.title,
-            };
-          });
-        } else {
-          if (action === 'disableLogin' && id !== req.userId) {
-            Users.update(
-              {
-                _id: id,
-              },
-              {
-                $set: {
-                  loginDisabled: true,
-                  'services.resume.loginTokens': '',
-                },
-              },
-            );
-          } else if (action === 'enableLogin') {
-            Users.update(
-              {
-                _id: id,
-              },
-              {
-                $set: {
-                  loginDisabled: '',
-                },
-              },
-            );
-          }
-          data = ReactiveCache.getUser(id);
-        }
+      const Announcements = require('/models/announcements').default;
+      const { announcementVersion } = require('/models/announcements');
+      const announcement = await Announcements.findOneAsync();
+      const version = announcementVersion(announcement);
+      if (!version) {
+        return null;
       }
-      JsonRoutes.sendResult(res, {
-        code: 200,
-        data,
+      await Users.updateAsync(this.userId, {
+        $set: { 'profile.dismissedAnnouncementVersion': version },
       });
-    } catch (error) {
-      JsonRoutes.sendResult(res, {
-        code: 200,
-        data: error,
-      });
-    }
-  });
-
-  /**
-   * @operation add_board_member
-   * @tag Boards
-   *
-   * @summary Add New Board Member with Role
-   *
-   * @description Only the admin user (the first user) can call the REST API.
-   *
-   * **Note**: see [Boards.set_board_member_permission](#set_board_member_permission)
-   * to later change the permissions.
-   *
-   * @param {string} boardId the board ID
-   * @param {string} userId the user ID
-   * @param {string} action the action (needs to be `add`)
-   * @param {boolean} isAdmin is the user an admin of the board
-   * @param {boolean} isNoComments disable comments
-   * @param {boolean} isCommentOnly only enable comments
-   * @param {boolean} isWorker is the user a board worker
-   * @return_type {_id: string,
-   *               title: string}
-   */
-  JsonRoutes.add(
-    'POST',
-    '/api/boards/:boardId/members/:userId/add',
-    function (req, res) {
-      try {
-        Authentication.checkUserId(req.userId);
-        const userId = req.params.userId;
-        const boardId = req.params.boardId;
-        const action = req.body.action;
-        const { isAdmin, isNoComments, isCommentOnly, isWorker } = req.body;
-        let data = ReactiveCache.getUser(userId);
-        if (data !== undefined) {
-          if (action === 'add') {
-            data = ReactiveCache.getBoards({
-              _id: boardId,
-            }).map(function (board) {
-              if (!board.hasMember(userId)) {
-                board.addMember(userId);
-
-                function isTrue(data) {
-                  return data.toLowerCase() === 'true';
-                }
-                board.setMemberPermission(
-                  userId,
-                  isTrue(isAdmin),
-                  isTrue(isNoComments),
-                  isTrue(isCommentOnly),
-                  isTrue(isWorker),
-                  userId,
-                );
-              }
-              return {
-                _id: board._id,
-                title: board.title,
-              };
-            });
-          }
-        }
-        JsonRoutes.sendResult(res, { code: 200, data });
-      } catch (error) {
-        JsonRoutes.sendResult(res, {
-          code: 200,
-          data: error,
-        });
-      }
+      return version;
     },
-  );
-
-  /**
-   * @operation remove_board_member
-   * @tag Boards
-   *
-   * @summary Remove Member from Board
-   *
-   * @description Only the admin user (the first user) can call the REST API.
-   *
-   * @param {string} boardId the board ID
-   * @param {string} userId the user ID
-   * @param {string} action the action (needs to be `remove`)
-   * @return_type {_id: string,
-   *               title: string}
-   */
-  JsonRoutes.add(
-    'POST',
-    '/api/boards/:boardId/members/:userId/remove',
-    function (req, res) {
-      try {
-        Authentication.checkUserId(req.userId);
-        const userId = req.params.userId;
-        const boardId = req.params.boardId;
-        const action = req.body.action;
-        let data = ReactiveCache.getUser(userId);
-        if (data !== undefined) {
-          if (action === 'remove') {
-            data = ReactiveCache.getBoards({
-              _id: boardId,
-            }).map(function (board) {
-              if (board.hasMember(userId)) {
-                board.removeMember(userId);
-              }
-              return {
-                _id: board._id,
-                title: board.title,
-              };
-            });
-          }
-        }
-        JsonRoutes.sendResult(res, { code: 200, data });
-      } catch (error) {
-        JsonRoutes.sendResult(res, {
-          code: 200,
-          data: error,
-        });
-      }
-    },
-  );
-
-  /**
-   * @operation new_user
-   *
-   * @summary Create a new user
-   *
-   * @description Only the admin user (the first user) can call the REST API.
-   *
-   * @param {string} username the new username
-   * @param {string} email the email of the new user
-   * @param {string} password the password of the new user
-   * @return_type {_id: string}
-   */
-  JsonRoutes.add('POST', '/api/users/', function (req, res) {
-    try {
-      Authentication.checkUserId(req.userId);
-      const id = Accounts.createUser({
-        username: req.body.username,
-        email: req.body.email,
-        password: req.body.password,
-        from: 'admin',
-      });
-      JsonRoutes.sendResult(res, {
-        code: 200,
-        data: {
-          _id: id,
-        },
-      });
-    } catch (error) {
-      JsonRoutes.sendResult(res, {
-        code: 200,
-        data: error,
-      });
-    }
-  });
-
-  /**
-   * @operation delete_user
-   *
-   * @summary Delete a user
-   *
-   * @description Only the admin user (the first user) can call the REST API.
-   *
-   * @param {string} userId the ID of the user to delete
-   * @return_type {_id: string}
-   */
-  JsonRoutes.add('DELETE', '/api/users/:userId', function (req, res) {
-    try {
-      Authentication.checkUserId(req.userId);
-      const id = req.params.userId;
-      // Delete user is enabled, but is still has bug of leaving empty user avatars
-      // to boards: boards members, card members and assignees have
-      // empty users. So it would be better to delete user from all boards before
-      // deleting user.
-      // See:
-      // - wekan/client/components/settings/peopleBody.jade deleteButton
-      // - wekan/client/components/settings/peopleBody.js deleteButton
-      // - wekan/client/components/sidebar/sidebar.js Popup.afterConfirm('removeMember'
-      //   that does now remove member from board, card members and assignees correctly,
-      //   but that should be used to remove user from all boards similarly
-      // - wekan/models/users.js Delete is not enabled
-      Meteor.users.remove({ _id: id });
-      JsonRoutes.sendResult(res, {
-        code: 200,
-        data: {
-          _id: id,
-        },
-      });
-    } catch (error) {
-      JsonRoutes.sendResult(res, {
-        code: 200,
-        data: error,
-      });
-    }
-  });
-
-  /**
-   * @operation create_user_token
-   *
-   * @summary Create a user token
-   *
-   * @description Only the admin user (the first user) can call the REST API.
-   *
-   * @param {string} userId the ID of the user to create token for.
-   * @return_type {_id: string}
-   */
-  JsonRoutes.add('POST', '/api/createtoken/:userId', function (req, res) {
-    try {
-      Authentication.checkUserId(req.userId);
-      const id = req.params.userId;
-      const token = Accounts._generateStampedLoginToken();
-      Accounts._insertLoginToken(id, token);
-
-      JsonRoutes.sendResult(res, {
-        code: 200,
-        data: {
-          _id: id,
-          authToken: token.token,
-        },
-      });
-    } catch (error) {
-      JsonRoutes.sendResult(res, {
-        code: 200,
-        data: error,
-      });
-    }
-  });
-
-  /**
-   * @operation delete_user_token
-   *
-   * @summary Delete one or all user token.
-   *
-   * @description Only the admin user (the first user) can call the REST API.
-   *
-   * @param {string} userId the user ID
-   * @param {string} token the user hashedToken
-   * @return_type {message: string}
-   */
-  JsonRoutes.add('POST', '/api/deletetoken', function (req, res) {
-    try {
-      const { userId, token } = req.body;
-      Authentication.checkUserId(req.userId);
-
-      let data = {
-        message: 'Expected a userId to be set but received none.',
-      };
-
-      if (token && userId) {
-        Accounts.destroyToken(userId, token);
-        data.message = 'Delete token: [' + token + '] from user: ' + userId;
-      } else if (userId) {
-        check(userId, String);
-        Users.update(
-          {
-            _id: userId,
-          },
-          {
-            $set: {
-              'services.resume.loginTokens': '',
-            },
-          },
-        );
-        data.message = 'Delete all token from user: ' + userId;
-      }
-
-      JsonRoutes.sendResult(res, {
-        code: 200,
-        data,
-      });
-    } catch (error) {
-      JsonRoutes.sendResult(res, {
-        code: 200,
-        data: error,
-      });
-    }
   });
 }
 

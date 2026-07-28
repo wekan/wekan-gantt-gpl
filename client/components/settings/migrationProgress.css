@@ -1,0 +1,304 @@
+/* Migration Progress Styles */
+.migration-progress-overlay {
+  position: fixed;
+  top: 0;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+}
+
+.migration-progress-modal {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow: hidden;
+  animation: migrationModalSlideIn 0.3s ease-out;
+}
+
+@keyframes migrationModalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.migration-progress-header {
+  /* WeKan blue (matches the main header #2980b9) */
+  background: linear-gradient(135deg, #2980b9 0%, #1a5276 100%);
+  color: white;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.migration-progress-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.migration-progress-close {
+  cursor: pointer;
+  font-size: 16px;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.migration-progress-close:hover {
+  opacity: 1;
+}
+
+.migration-progress-content {
+  padding: 30px;
+}
+
+.migration-progress-overall {
+  margin-bottom: 25px;
+}
+
+.migration-progress-overall-label {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.migration-progress-overall-bar {
+  background: #e9ecef;
+  border-radius: 10px;
+  height: 12px;
+  overflow: hidden;
+  margin-bottom: 5px;
+}
+
+.migration-progress-overall-fill {
+  /* WeKan blue */
+  background: linear-gradient(90deg, #2980b9, #3498db);
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.3s ease;
+  position: relative;
+}
+
+.migration-progress-overall-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: migrationProgressShimmer 2s infinite;
+}
+
+@keyframes migrationProgressShimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.migration-progress-overall-percentage {
+  text-align: end;
+  font-size: 12px;
+  color: #666;
+  font-weight: 600;
+}
+
+.migration-progress-current-step {
+  margin-bottom: 25px;
+}
+
+.migration-progress-step-label {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.migration-progress-step-bar {
+  background: #e9ecef;
+  border-radius: 8px;
+  height: 8px;
+  overflow: hidden;
+  margin-bottom: 5px;
+}
+
+.migration-progress-step-fill {
+  /* WeKan blue */
+  background: linear-gradient(90deg, #3498db, #2980b9);
+  height: 100%;
+  border-radius: 8px;
+  transition: width 0.3s ease;
+}
+
+.migration-progress-step-percentage {
+  text-align: end;
+  font-size: 12px;
+  color: #666;
+  font-weight: 600;
+}
+
+.migration-progress-status {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border-inline-start: 4px solid #2980b9;
+}
+
+.migration-progress-status-label {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 5px;
+  font-size: 13px;
+}
+
+.migration-progress-status-text {
+  color: #555;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.migration-progress-details {
+  margin-bottom: 20px;
+  padding: 12px;
+  background: #e3f2fd;
+  border-radius: 6px;
+  border-inline-start: 4px solid #2196f3;
+}
+
+.migration-progress-details-label {
+  font-weight: 600;
+  color: #1976d2;
+  margin-bottom: 5px;
+  font-size: 13px;
+}
+
+.migration-progress-details-text {
+  color: #1565c0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.migration-progress-footer {
+  padding: 20px 30px;
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+}
+
+.migration-progress-note {
+  text-align: center;
+  color: #666;
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* Responsive design */
+@media (max-width: 600px) {
+  .migration-progress-modal {
+    width: 95%;
+    margin: 20px;
+  }
+
+  .migration-progress-content {
+    padding: 20px;
+  }
+
+  .migration-progress-header {
+    padding: 15px;
+  }
+
+  .migration-progress-title {
+    font-size: 16px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .migration-progress-modal {
+    background: #2d3748;
+    color: #e2e8f0;
+  }
+
+  .migration-progress-overall-label,
+  .migration-progress-step-label,
+  .migration-progress-status-label {
+    color: #e2e8f0;
+  }
+
+  .migration-progress-status {
+    background: #4a5568;
+    border-inline-start-color: #63b3ed;
+  }
+
+  .migration-progress-status-text {
+    color: #cbd5e0;
+  }
+
+  .migration-progress-details {
+    background: #2b6cb0;
+    border-inline-start-color: #4299e1;
+  }
+
+  .migration-progress-details-label {
+    color: #bee3f8;
+  }
+
+  .migration-progress-details-text {
+    color: #90cdf4;
+  }
+
+  .migration-progress-footer {
+    background: #4a5568;
+    border-top-color: #718096;
+  }
+
+  .migration-progress-note {
+    color: #a0aec0;
+  }
+}
+/* Attachment migration styles */
+.attachment-item.migrating {
+  position: relative;
+  opacity: 0.7;
+}
+
+.attachment-migration-overlay {
+  position: absolute;
+  top: 0;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  border-radius: 4px;
+}
+
+.migration-spinner {
+  font-size: 24px;
+  color: #007cba;
+  margin-bottom: 8px;
+}
+
+.migration-text {
+  font-size: 12px;
+  color: #666;
+  text-align: center;
+}

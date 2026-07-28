@@ -1,27 +1,89 @@
+/* Scrollable room below the form on Sign In / Register, so the bottom of the
+   dialog - and the language selector under it - can be scrolled clear of the
+   window edge, and of the on-screen keyboard on a phone. A fixed height, not
+   vh: this is spacing, and spacing must not change with the window (see
+   tests/noViewportSpacing.test.cjs). */
+.auth-bottom-space {
+  flex: 0 0 auto;
+  height: 96px;
+}
 .auth-layout .at-form-landing-logo {
-  width: 249px;
+  width: min(249px, 32vw);
   margin: auto;
-  margin-top: 50px;
-  margin-bottom: 20px;
+  margin-top: 54px;
+  margin-bottom: 22px;
 }
 .auth-layout .auth-dialog {
-  width: 275px;
-  padding: 25px;
+  width: min(275px, 36vw);
+  padding: 24px 24px;
   margin: auto;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
   background: #fff;
   border-radius: 3px;
   border: 1px solid #dbdbdb;
   border-bottom-color: #c2c2c2;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 7px rgba(0,0,0,0.3);
 }
 .auth-layout .auth-dialog .at-form .at-link {
   color: #17683a;
 }
 .auth-layout .auth-dialog .at-form label {
-  margin-bottom: 3px;
+  margin-bottom: 4px;
 }
 .auth-layout .auth-dialog .at-form input {
+  width: 100%;
+}
+.password-input-container {
+  display: flex;
+  align-self: stretch;
+  align-items: stretch;
+  column-gap: 0.5rem;
+}
+.password-input-container input {
+  width: 100%;
+  box-sizing: border-box;
+}
+/* The show/hide password button is a square: its width and height match the
+   password input field height, and the field flex-grows to fill the space the
+   narrower button frees up on the right. */
+.password-input-container .password-field {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.auth-layout .auth-dialog .at-form .password-input-container .password-toggle-btn {
+  position: static;
+  transform: none;
+  flex: 0 0 auto;
+  align-self: stretch;
+  aspect-ratio: 1 / 1;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1;
+}
+.auth-layout .auth-dialog .at-form .password-input-container .password-toggle-btn .fa {
+  display: block;
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+  vertical-align: middle;
+}
+.auth-layout .auth-dialog .at-form .password-input-container .password-field {
+  padding-inline-end: 0;
+}
+body.mobile-mode .password-input-container {
+  flex-direction: column;
+  align-items: stretch;
+}
+body.mobile-mode .auth-layout .auth-dialog .at-form .password-input-container .password-toggle-btn {
+  aspect-ratio: auto;
   width: 100%;
 }
 .auth-layout .auth-dialog .at-form button {
@@ -31,9 +93,9 @@
 }
 .auth-layout .auth-dialog .at-form .at-title {
   background: #f7f7f7;
-  margin: -25px;
-  padding: 15px 25px 5px;
-  margin-bottom: 20px;
+  margin: -24px -24px;
+  padding: 18px 24px 6px;
+  margin-bottom: 22px;
   border-bottom: 1px solid #dcdcdc;
   color: #4d4d4d;
   font-weight: bold;
@@ -42,8 +104,21 @@
 .auth-layout .auth-dialog .at-form .at-signin-link,
 .auth-layout .auth-dialog .at-form .at-forgotPwd {
   font-size: 0.9em;
-  margin-top: 15px;
+  margin-top: 18px;
   color: #4d4d4d;
+}
+/* #4394 (security): when registration / forgot-password are disabled in the
+   Admin Panel, keep the corresponding links hidden even after useraccounts
+   re-renders the form on a failed login. The class lives on the stable <body>
+   ancestor (set in layouts.js), so this rule re-hides every recreated copy of
+   the link — unlike a one-shot inline display:none that the re-render dropped. */
+body.registration-disabled .at-signup-link,
+body.registration-disabled .at-signUp {
+  display: none !important;
+}
+body.forgotpwd-disabled .at-pwd-link,
+body.forgotpwd-disabled .at-forgotPwd {
+  display: none !important;
 }
 .auth-layout .auth-dialog .at-form .at-signup-link .at-signUp,
 .auth-layout .auth-dialog .at-form .at-signin-link .at-signUp,
@@ -60,6 +135,21 @@
   width: 100%;
   margin-top: 10px;
 }
+/* Auth pages (login / register) must scroll as a normal document on mobile so
+   the content below the form — the sign-up / sign-in link, legal notice and
+   language selector — is reachable, including when the on-screen keyboard is
+   open. body.mobile-mode otherwise locks <body> to position:fixed + 100vh (an
+   iOS board-view anti-bounce fix); the auth layout has no inner #content
+   scroller, so that lock traps the page at viewport height and the on-screen
+   keyboard hides the bottom. .userform-layout is added by userFormsLayout while
+   these pages are mounted (see layouts.js). */
+body.mobile-mode.userform-layout {
+  position: static !important;
+  height: auto !important;
+  min-height: 100vh;
+  overflow-y: auto !important;
+}
+
 @media screen and (max-width: 800px) {
   .auth-layout {
     width: 100%;
@@ -67,11 +157,19 @@
     margin: 0px;
     padding: 0px;
   }
+  /* Let the auth layout/dialog grow to their content instead of being pinned to
+     the viewport height, so everything below the form scrolls into view. */
+  body.userform-layout .auth-layout {
+    height: auto;
+  }
+  body.userform-layout .auth-layout .auth-dialog {
+    height: auto;
+  }
   .auth-layout .at-form-landing-logo {
     width: 125px;
     position: absolute;
     top: 0px;
-    right: 20px;
+    inset-inline-end: 20px;
     margin-top: 5px;
     margin-bottom: 5px;
   }

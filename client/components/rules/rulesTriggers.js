@@ -1,35 +1,41 @@
 import { ReactiveCache } from '/imports/reactiveCache';
 
-BlazeComponent.extendComponent({
-  onCreated() {
-    this.showBoardTrigger = new ReactiveVar(true);
-    this.showCardTrigger = new ReactiveVar(false);
-    this.showChecklistTrigger = new ReactiveVar(false);
+Template.rulesTriggers.onCreated(function () {
+  this.showBoardTrigger = new ReactiveVar(true);
+  this.showCardTrigger = new ReactiveVar(false);
+  this.showChecklistTrigger = new ReactiveVar(false);
+  this.showScheduledTrigger = new ReactiveVar(false);
+  this.showButtonTrigger = new ReactiveVar(false);
+});
+
+Template.rulesTriggers.helpers({
+  ruleNameStr() {
+    const rn = Template.currentData() && Template.currentData().ruleName;
+    try {
+      return rn && typeof rn.get === 'function' ? rn.get() : '';
+    } catch (_) {
+      return '';
+    }
   },
 
-  setBoardTriggers() {
-    this.showBoardTrigger.set(true);
-    this.showCardTrigger.set(false);
-    this.showChecklistTrigger.set(false);
-    $('.js-set-card-triggers').removeClass('active');
-    $('.js-set-board-triggers').addClass('active');
-    $('.js-set-checklist-triggers').removeClass('active');
+  showBoardTrigger() {
+    return Template.instance().showBoardTrigger;
   },
-  setCardTriggers() {
-    this.showBoardTrigger.set(false);
-    this.showCardTrigger.set(true);
-    this.showChecklistTrigger.set(false);
-    $('.js-set-card-triggers').addClass('active');
-    $('.js-set-board-triggers').removeClass('active');
-    $('.js-set-checklist-triggers').removeClass('active');
+
+  showCardTrigger() {
+    return Template.instance().showCardTrigger;
   },
-  setChecklistTriggers() {
-    this.showBoardTrigger.set(false);
-    this.showCardTrigger.set(false);
-    this.showChecklistTrigger.set(true);
-    $('.js-set-card-triggers').removeClass('active');
-    $('.js-set-board-triggers').removeClass('active');
-    $('.js-set-checklist-triggers').addClass('active');
+
+  showChecklistTrigger() {
+    return Template.instance().showChecklistTrigger;
+  },
+
+  showScheduledTrigger() {
+    return Template.instance().showScheduledTrigger;
+  },
+
+  showButtonTrigger() {
+    return Template.instance().showButtonTrigger;
   },
 
   rules() {
@@ -38,21 +44,46 @@ BlazeComponent.extendComponent({
   },
 
   name() {
-    // console.log(this.data());
+    // console.log(Template.currentData());
   },
-  events() {
-    return [
-      {
-        'click .js-set-board-triggers'() {
-          this.setBoardTriggers();
-        },
-        'click .js-set-card-triggers'() {
-          this.setCardTriggers();
-        },
-        'click .js-set-checklist-triggers'() {
-          this.setChecklistTriggers();
-        },
-      },
-    ];
+});
+
+// Show only the chosen trigger category and highlight its side-menu item.
+function selectTriggerTab(tpl, active) {
+  const tabs = {
+    board: tpl.showBoardTrigger,
+    card: tpl.showCardTrigger,
+    checklist: tpl.showChecklistTrigger,
+    scheduled: tpl.showScheduledTrigger,
+    button: tpl.showButtonTrigger,
+  };
+  Object.keys(tabs).forEach(key => tabs[key].set(key === active));
+  const classes = {
+    board: '.js-set-board-triggers',
+    card: '.js-set-card-triggers',
+    checklist: '.js-set-checklist-triggers',
+    scheduled: '.js-set-scheduled-triggers',
+    button: '.js-set-button-triggers',
+  };
+  Object.keys(classes).forEach(key =>
+    $(classes[key]).toggleClass('active', key === active),
+  );
+}
+
+Template.rulesTriggers.events({
+  'click .js-set-board-triggers'(event, tpl) {
+    selectTriggerTab(tpl, 'board');
   },
-}).register('rulesTriggers');
+  'click .js-set-card-triggers'(event, tpl) {
+    selectTriggerTab(tpl, 'card');
+  },
+  'click .js-set-checklist-triggers'(event, tpl) {
+    selectTriggerTab(tpl, 'checklist');
+  },
+  'click .js-set-scheduled-triggers'(event, tpl) {
+    selectTriggerTab(tpl, 'scheduled');
+  },
+  'click .js-set-button-triggers'(event, tpl) {
+    selectTriggerTab(tpl, 'button');
+  },
+});

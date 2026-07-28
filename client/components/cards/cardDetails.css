@@ -1,16 +1,46 @@
+/* Date Format Selector */
+.card-details-item-date-format {
+  margin-bottom: 12px;
+}
+
+.card-details-item-date-format .card-details-item-title {
+  font-size: 15px;
+  font-weight: bold;
+  margin-bottom: 6px;
+  color: #333;
+  letter-spacing: 0.03em;
+}
+
+.card-details-item-date-format .js-date-format-selector {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.card-details-item-date-format .js-date-format-selector:focus {
+  outline: none;
+  border-color: #007cba;
+  box-shadow: 0 0 0 2px rgba(0, 124, 186, 0.2);
+}
+
 .assignee {
-  border-radius: 3px;
   display: block;
   position: relative;
-  float: left;
-  height: 30px;
-  width: 30px;
-  margin: 0 4px 4px 0;
+  float: inline-start;
+  height: 24px;
+  width: 24px;
+  margin: 3px;
   cursor: pointer;
   user-select: none;
   z-index: 1;
   text-decoration: none;
   border-radius: 50%;
+  box-shadow: 0 1px 2px 0 rgba(0,0,0,0.04);
 }
 .assignee .avatar {
   overflow: hidden;
@@ -23,12 +53,18 @@
   background-color: #dbdbdb;
   color: #444;
   position: absolute;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
 }
 .assignee .avatar.avatar-image {
   object-fit: cover;
   object-position: center;
   height: 100%;
   width: 100%;
+  display: block;
 }
 .assignee .assignee-presence-status {
   background-color: #b3b3b3;
@@ -37,9 +73,8 @@
   height: 7px;
   width: 7px;
   position: absolute;
-  right: -1px;
+  inset-inline-end: -1px;
   bottom: -1px;
-  border: 1px solid #fff;
   z-index: 15;
 }
 .assignee .assignee-presence-status.active {
@@ -63,6 +98,7 @@
   align-items: center;
   justify-content: center;
   box-shadow: 0 0 0 2px #bfbfbf inset;
+  transition: box-shadow 0.12s;
 }
 .assignee.add-assignee:hover,
 .assignee.add-assignee.is-active {
@@ -70,47 +106,171 @@
 }
 .copied-tooltip {
   display: none;
-  padding: 0px 10px;
+  padding: 0 18px;
   background-color: rgba(0,0,0,0.875);
   color: #fff;
-  border-radius: 5px;
+  border-radius: 10px;
+  font-size: 0.98em;
 }
+
 .card-details {
   padding: 0;
   flex-shrink: 0;
-  flex-basis: 600px;
+  flex-basis: min(600px, 80vw);
   will-change: flex-basis;
-  overflow-y: scroll;
+  overflow-y: auto;
   overflow-x: hidden;
   background: #f7f7f7;
-  border-radius: bottom 3px;
+  border-radius: 0 0 6px 6px;
   z-index: 30;
   animation: flexGrowIn 0.1s;
-  box-shadow: 0 0 7px 0 #b3b3b3;
-  transition: flex-basis 0.1s;
+  box-shadow: 0 0 8px 0 #b3b3b3;
+  transition: flex-basis 0.1s, box-shadow 0.15s;
   box-sizing: border-box;
 }
+
+/* Desktop mode: position card below board header.
+   #6465: the floating window used to span nearly the whole board (insets
+   20px/20px from BOTH edges, top-left anchored) — right on top of the card it
+   belongs to, with big rounded borders. Dock it to the END edge (right in LTR)
+   like the classic 6.09 side panel instead: the board and the card stay
+   visible, and the drag handle still moves it anywhere. */
+body.desktop-mode .card-details:not(.card-details-popup) {
+  position: fixed;
+  width: auto;
+  max-width: 520px; /* #6465: narrower dock (was 800px, ~1/4 screen) */
+  flex-basis: auto;
+  border-radius: 3px;
+  z-index: 2001;
+}
+
+/* Default position for first card or when dragged */
+body.desktop-mode .card-details:not(.card-details-popup):not([style*="left"]):not([style*="top"]) {
+  top: 8px;
+  inset-inline-start: auto;
+  inset-inline-end: 8px;
+  width: min(650px, 90vw);
+  bottom: 8px;
+}
+
+/* Stagger positions for multiple cards using nth-of-type (from the end edge) */
+body.desktop-mode .card-details:not(.card-details-popup):nth-of-type(1) {
+  top: 8px;
+  inset-inline-end: 8px;
+}
+body.desktop-mode .card-details:not(.card-details-popup):nth-of-type(2) {
+  top: 38px;
+  inset-inline-end: 38px;
+}
+body.desktop-mode .card-details:not(.card-details-popup):nth-of-type(3) {
+  top: 68px;
+  inset-inline-end: 68px;
+}
+body.desktop-mode .card-details:not(.card-details-popup):nth-of-type(4) {
+  top: 98px;
+  inset-inline-end: 98px;
+}
+body.desktop-mode .card-details:not(.card-details-popup):nth-of-type(5) {
+  top: 128px;
+  inset-inline-end: 128px;
+}
+
+/* For expanded cards, set dimensions */
+body.desktop-mode .card-details:not(.card-details-popup):not(.card-details-collapsed) {
+  bottom: 8px;
+}
+
+/* #4822: the MAXIMIZED card must be anchored to the VIEWPORT (position: fixed
+   with viewport insets), never laid out inside — or measured from — the
+   scrolled swimlane/board container. Historically the maximized pane was an
+   in-flow flex/float item of its swimlane, so after scrolling down in the
+   swimlanes view it rendered at the swimlane's position in the tall scrolled
+   canvas (off-screen) instead of over the viewport.
+   All four insets are !important for two reasons:
+   1. The floating-window rules above (top: 8px / inset-inline-end: 8px /
+      width: min(650px, 90vw), specificity up to 0,5,1) otherwise override the
+      lower-specificity .card-details-maximized geometry entirely, leaving the
+      Maximize button a no-op.
+   2. The drag handle writes inline left/top styles onto the card; a card that
+      was dragged and then maximized must not keep the stale dragged offsets
+      (an off-viewport inline top is exactly the "wrong place" of #4822).
+      Only !important declarations beat inline styles. */
+body.desktop-mode .card-details.card-details-maximized:not(.card-details-popup):not(.card-details-collapsed) {
+  position: fixed !important;
+  top: 8px !important;
+  inset-inline-start: 8px !important;
+  inset-inline-end: 8px !important;
+  bottom: 8px !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: none !important;
+  resize: none;
+}
+
+/* Collapsed card state - hide content and set height to title row only */
+.card-details.card-details-collapsed .card-details-canvas > *:not(.card-details-header) {
+  display: none !important;
+}
+.card-details.card-details-collapsed {
+  height: auto !important;
+  bottom: auto !important;
+  overflow: visible;
+}
+body.desktop-mode .card-details.card-details-collapsed {
+  bottom: auto !important;
+}
 .card-details .mCustomScrollBox {
-  padding-left: 0;
+  padding-inline-start: 0;
 }
 .card-details .card-details-canvas {
   width: auto;
+  /* #6465: fixed 20px as in 6.09 — 35px was ~48px of white border per side
+     on a FullHD screen. */
   padding: 0 20px;
 }
 .card-details .card-details-header {
   margin: 0 -20px 5px;
-  padding: 7px 20px;
+  padding: 8px 20px;
   background: #ededed;
   border-bottom: 1px solid #dbdbdb;
   position: sticky;
   top: 0px;
   z-index: 500;
+  display: flow-root;
+  min-height: 44px;
 }
 .card-details .card-details-header .card-number {
   color: #b3b3b3;
   display: inline-block;
-  margin-right: 5px;
+  margin-inline-end: 6px;
 }
+
+/* Collapse toggle triangle */
+.card-details .card-details-header .card-collapse-toggle {
+  float: inline-start;
+  font-size: 20px;
+  padding: 7px 10px;
+  margin-inline-start: -10px;
+  margin-inline-end: 5px;
+  cursor: pointer;
+  user-select: none;
+  color: #000;
+  vertical-align: middle;
+  line-height: 1.2;
+}
+
+.card-details .card-details-header .card-drag-handle {
+  font-size: 20px;
+  padding: 8px 10px;
+  margin-inline-end: 10px;
+  cursor: move;
+  user-select: none;
+  display: inline-block;
+  float: inline-end;
+  vertical-align: middle;
+  line-height: 1.2;
+}
+
 .card-details .card-details-header .close-card-details,
 .card-details .card-details-header .maximize-card-details,
 .card-details .card-details-header .minimize-card-details,
@@ -120,49 +280,82 @@
 .card-details .card-details-header .close-card-details-mobile-web,
 .card-details .card-details-header .card-details-menu-mobile-web,
 .card-details .card-details-header .copied-tooltip {
-  float: right;
+  float: inline-end;
 }
 .card-details .card-details-header .close-card-details,
 .card-details .card-details-header .maximize-card-details,
 .card-details .card-details-header .minimize-card-details {
   font-size: 24px;
   padding: 5px 10px 5px 10px;
-  margin-right: -8px;
+  margin-inline-end: -8px;
+  cursor: pointer;
+  user-select: none;
+  vertical-align: middle;
+  line-height: 1.2;
+  transition: color 0.13s;
 }
-.card-details .card-details-header .close-card-details-mobile-web {
+.card-details .card-details-header .close-card-details-mobile-web,
+.card-details .card-details-header .card-mobile-desktop-toggle {
   font-size: 24px;
   padding: 5px;
-  margin-right: 40px;
+  margin-inline-end: 5px;
+  cursor: pointer;
+  user-select: none;
 }
 .card-details .card-details-header .card-copy-button {
   font-size: 17px;
   padding: 10px;
-  margin-right: 10px;
+  margin-inline-end: 10px;
 }
 .card-details .card-details-header .card-copy-mobile-button {
   font-size: 17px;
   padding: 10px;
-  margin-right: 10px;
+  margin-inline-end: 10px;
 }
 .card-details .card-details-header .card-details-menu {
   font-size: 17px;
   padding: 10px;
+  vertical-align: middle;
+  line-height: 1.2;
 }
 .card-details .card-details-header .card-details-menu-mobile-web {
   font-size: 17px;
   padding: 10px;
-  margin-right: 30px;
+  margin-inline-end: 30px;
+}
+.card-details .card-details-header .card-mobile-desktop-toggle,
+.card-details .card-details-header .card-zoom-in,
+.card-details .card-details-header .card-zoom-out {
+  font-size: 24px;
+  padding: 5px 10px 5px 10px;
+  margin-inline-end: 5px;
+  cursor: pointer;
+  user-select: none;
+  float: inline-end;
+}
+
+/* #6465: the "unify all card text to match title size" block (v8.18) forced
+   EVERY element in card details to the base font size with line-height 1.5,
+   flattening the 6.09 hierarchy where labels/metadata were smaller than body
+   text — a big part of the "card window is WAAAY too big" complaint. Removed:
+   components keep their own sizes again. */
+.card-details {
+  font-size: 1em;
 }
 .card-details .card-details-header .card-details-watch {
   font-size: 17px;
-  padding-left: 7px;
+  padding-inline-start: 7px;
   color: #a6a6a6;
 }
 .card-details .card-details-header .card-details-title {
   font-weight: bold;
-  font-size: 1.33em;
+  font-size: 1.35em;
   margin: 7px 0 0;
   padding: 0;
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
 }
 .card-details .card-details-header .linked-card-location {
   font-style: italic;
@@ -177,10 +370,10 @@
   margin-bottom: 10px;
 }
 .card-details .card-details-header form.inlined-form .copied-tooltip {
-  padding: 0px 10px;
+  padding: 0 10px;
 }
 .card-details .card-details-header .card-details-list {
-  font-size: 0.85em;
+  font-size: 0.9em;
   margin-bottom: 3px;
 }
 .card-details .card-details-header .card-details-list a.card-details-list-title {
@@ -190,26 +383,31 @@
   display: inline-block;
   background: #e6e6e6;
   border-radius: 3px;
-  padding: 0px 5px;
+  padding: 0 5px;
 }
 .card-details .card-details-header .copied-tooltip {
-  margin-right: 10px;
+  margin-inline-end: 10px;
   padding: 10px;
+}
+.card-details .card-description i.fa.fa-pencil-square-o {
+  float: inline-end;
 }
 .card-details .card-description textarea {
   min-height: 100px;
+  resize: vertical;
 }
 .card-details .card-details-items {
   display: flex;
   flex-wrap: wrap;
   margin: 15px 0;
+  gap: 0.5em;
 }
 .card-details .card-details-items .card-details-item {
-  margin-right: 0.5em;
+  margin-inline-end: 0.5em;
   flex-grow: 1;
 }
 .card-details .card-details-items .card-details-item:last-child {
-  margin-right: 0;
+  margin-inline-end: 0;
 }
 .card-details .card-details-items .card-details-item.card-details-item-labels {
   display: block;
@@ -234,7 +432,7 @@
   max-width: 28%;
 }
 .card-details .card-details-items .card-details-item.custom-fields {
-  padding-left: 10px;
+  padding-inline-start: 10px;
 }
 .card-details .card-details-item-title {
   font-size: 16px;
@@ -245,42 +443,65 @@
   padding-top: 10px;
 }
 @media screen and (min-width: 801px) {
-  .card-details-maximized {
+  .card-details {
     top: 97px;
-    left: 0;
-    right:0;
+    inset-inline-start: calc(50% - (520px / 2)); /* #6465: narrower card (was 600px) */
+    width: 520px;
     bottom: 0;
     position: fixed;
     resize: both;
   }
+
+  /* Override for mobile mode even on larger screens */
+  body.mobile-mode .card-details {
+    width: 100vw !important;
+    top: 0 !important;
+    inset-inline-start: 0 !important;
+    inset-inline-end: 0 !important;
+    bottom: 0 !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    resize: none !important;
+  }
+
   .card-details-maximized {
     padding: 0;
     flex-shrink: 0;
     flex-basis: calc(100% - 20px);
     will-change: flex-basis;
-    overflow-y: scroll;
-    overflow-x: scroll;
+    /* #4822: declare the position strategy explicitly. The maximized pane must
+       be fixed to the viewport in its own right — never an in-flow flex/float
+       item of the scrolled swimlane container, and never dependent on the
+       sibling .card-details rule (or the body.desktop-mode rules) happening to
+       supply position: fixed. */
+    position: fixed;
+    overflow-y: auto;
+    overflow-x: auto;
     background: #f7f7f7;
-    border-radius: bottom 3px;
+    border-radius: 0 0 3px 3px;
     z-index: 100;
     animation: flexGrowIn 0.1s;
     box-shadow: 0 0 7px 0 #b3b3b3;
     transition: flex-basis 0.1s;
     box-sizing: border-box;
-    float: left;
+    top: 97px;
+    inset-inline-start: 0px;
+    height: calc(100% - 100px);
+    width: calc(100% - 20px);
+    float: inline-start;
   }
   .card-details-maximized .card-details-left {
-    float: left;
+    float: inline-start;
     top: 60px;
-    left: 20px;
+    inset-inline-start: 20px;
     width: 47%;
-    border-right: solid 2px #dbdbdb;
-    padding-right: 10px;
+    border-inline-end: solid 2px #dbdbdb;
+    padding-inline-end: 10px;
   }
   .card-details-maximized .card-details-right {
     position: absolute;
-    float: right;
-    left: 50%;
+    float: inline-end;
+    inset-inline-start: 50%;
     margin: 15px 0;
   }
   .card-details-maximized .card-details-header {
@@ -288,40 +509,78 @@
   }
 }
 input[type="text"].attachment-add-link-input {
-  float: left;
+  float: inline-start;
   margin: 0 0 8px;
   width: 80%;
 }
 input[type="submit"].attachment-add-link-submit {
-  float: left;
+  float: inline-start;
   margin: 0 0 8px 4px;
   padding: 6px 12px;
   width: 18%;
 }
 @media screen and (max-width: 800px) {
   .card-details {
-    width: calc(100% - 1px);
-    padding: 0px 20px 0px 20px;
-    margin: 0px;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
     transition: none;
-    overflow-y: revert;
-    overflow-x: revert;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    position: fixed !important;
+    top: 0 !important;
+    inset-inline-start: 0 !important;
+    inset-inline-end: 0 !important;
+    bottom: 0 !important;
+    /* #6419: the open card is a full-screen takeover on mobile, so it must sit
+       ABOVE the app header bar (#header-main-bar is z-index 1000) — otherwise the
+       header overlaps the top of the card and hides the close (X) button, making
+       it impossible to close the card. Kept below popups (z-index 2000+) so card
+       menus / date pickers still open over the card. */
+    z-index: 1100 !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* Ensure card details are above the app header on mobile (#6419) */
+  body.mobile-mode .card-details {
+    z-index: 1100 !important;
+    width: 100vw !important;
+    inset-inline-start: 0 !important;
+    inset-inline-end: 0 !important;
   }
   .card-details .card-details-canvas {
     width: 100%;
-    padding-left: 0px;
+    padding-inline-start: 0px;
+    padding: 0 15px;
   }
   .card-details .card-details-header .close-card-details {
-    margin-right: 0px;
+    margin-inline-end: 0px;
+    display: block !important;
+  }
+  .card-details .card-details-header .close-card-details-mobile-web {
+    display: block !important;
+    margin-inline-end: 5px !important;
+  }
+  .card-details .card-details-header .card-mobile-desktop-toggle {
+    display: block !important;
+    margin-inline-end: 5px !important;
+  }
+  .card-details .card-details-header .card-mobile-desktop-toggle {
+    display: block !important;
+    margin-inline-end: 5px !important;
   }
   .card-details .card-details-header .card-details-menu {
-    margin-right: 40px;
+    margin-inline-end: 40px;
   }
   .card-details .card-details-header .maximize-card-details {
-    margin-right: 40px;
+    margin-inline-end: 40px;
   }
   .card-details .card-details-header .minimize-card-details {
-    margin-right: 40px;
+    margin-inline-end: 40px;
   }
   .card-details-popup {
     padding: 0px 10px;
@@ -338,6 +597,63 @@ input[type="submit"].attachment-add-link-submit {
   .pop-over > .content-wrapper > .popup-container-depth-0 .card-details-header {
     margin: 0;
   }
+  /* iPhone mobile: enlarge header buttons and increase spacing */
+  body.mobile-mode.iphone-device .card-details .card-details-header {
+    padding-inline-end: 16px;
+  }
+  body.mobile-mode.iphone-device .card-details .card-details-header .close-card-details,
+  body.mobile-mode.iphone-device .card-details .card-details-header .maximize-card-details,
+  body.mobile-mode.iphone-device .card-details .card-details-header .minimize-card-details,
+  body.mobile-mode.iphone-device .card-details .card-details-header .card-details-menu-mobile-web,
+  body.mobile-mode.iphone-device .card-details .card-details-header .card-copy-mobile-button,
+  body.mobile-mode.iphone-device .card-details .card-details-header .card-mobile-desktop-toggle,
+  body.mobile-mode.iphone-device .card-details .card-details-header .card-zoom-in,
+  body.mobile-mode.iphone-device .card-details .card-details-header .card-zoom-out {
+    font-size: 2em !important; /* 2x bigger */
+    padding: 0.3em !important;
+    margin-inline-end: 0.75em !important; /* 2x space compared to default */
+    margin-inline-start: 0 !important;
+  }
+  /* Avoid clipping of the close button on the right edge */
+  body.mobile-mode.iphone-device .card-details .card-details-header .close-card-details {
+    margin-inline-end: 0.75em !important;
+  }
+  /* Enlarge the header title too */
+  body.mobile-mode.iphone-device .card-details .card-details-header .card-details-title {
+    font-size: 1.2em !important;
+    font-weight: bold;
+  }
+}
+
+/* Mobile mode styles - apply when body has mobile-mode class regardless of screen size */
+body.mobile-mode .card-details {
+  width: 100vw !important;
+  padding: 0px !important;
+  margin: 0px !important;
+  position: fixed !important;
+  top: 0 !important;
+  inset-inline-start: 0 !important;
+  inset-inline-end: 0 !important;
+  bottom: 0 !important;
+  /* #6419: above the app header (#header-main-bar z-index 1000), below popups. */
+  z-index: 1100 !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+body.mobile-mode .card-details .card-details-canvas {
+  width: 100% !important;
+  padding: 0 15px !important;
+}
+
+body.mobile-mode .card-details .card-details-header .close-card-details,
+body.mobile-mode .card-details .card-details-header .close-card-details-mobile-web {
+  display: block !important;
 }
 .card-details-white {
   background: #fff !important;
@@ -446,13 +762,15 @@ input[type="submit"].attachment-add-link-submit {
 .vote-title {
   display: flex;
   justify-content: space-between;
+  align-items: center;
 }
 .vote-title .js-edit-date {
-  align-self: baseline;
-  margin-left: 5px;
+  align-self: flex-start;
+  margin-inline-start: 6px;
 }
 .vote-result {
   display: flex;
+  gap: 6px;
 }
 .js-show-positive-votes {
   cursor: pointer;
@@ -463,29 +781,33 @@ input[type="submit"].attachment-add-link-submit {
 .poker-title {
   display: flex;
   justify-content: space-between;
+  align-items: center;
 }
 .poker-title .js-edit-date {
-  align-self: baseline;
-  margin-left: 5px;
+  align-self: flex-start;
+  margin-inline-start: 6px;
 }
 .poker-result {
   display: flex;
-  flex-flow: row wrap;
+  flex-wrap: wrap;
+  gap: 7px;
 }
 .js-show-positive-poker-votes {
   cursor: pointer;
 }
 .poker-deck {
   display: grid;
-  flex-direction: column;
+  grid-auto-flow: row;
   text-align: center;
+  gap: 6px;
 }
 .poker-card-result {
-  width: 32px;
+  width: 34px;
   font-size: 1em;
   font-weight: bold;
-  padding: 4px 2px 4px 2px;
+  padding: 4px 2px;
   cursor: default;
+  border-radius: 3px;
 }
 .winner {
   font-weight: bold;
@@ -496,6 +818,7 @@ input[type="submit"].attachment-add-link-submit {
 }
 .responsive-table {
   overflow-x: auto;
+  width: 100%;
 }
 .poker-table {
   display: table;
@@ -539,11 +862,11 @@ input[type="submit"].attachment-add-link-submit {
   display: inline-block;
 }
 .poker-table-side-right {
-  padding-left: 10px;
+  padding-inline-start: 10px;
 }
 @media (max-width: 400px) {
   .poker-table-side-right {
-    padding-left: 0px;
+    padding-inline-start: 0px;
   }
 }
 .estimation-add {
@@ -554,20 +877,24 @@ input[type="submit"].attachment-add-link-submit {
 }
 .estimation-add input {
   display: inline-block;
-  float: right;
+  float: inline-end;
   margin: auto;
-  margin-right: 10px;
+  margin-inline-end: 10px;
   width: 100px;
+  border-radius: 2px;
+  padding: 3px 6px;
 }
 .estimation-add button {
   display: inline-block;
-  float: right;
+  float: inline-end;
   margin: auto;
+  border-radius: 2px;
+  padding: 3px 10px;
 }
 .poker-card {
   width: 48px;
   height: 72px;
-  float: left;
+  float: inline-start;
   background: #fff;
   border-radius: 5px;
   display: table;
@@ -581,6 +908,7 @@ input[type="submit"].attachment-add-link-submit {
   text-align: center;
   position: relative;
   cursor: pointer;
+  transition: box-shadow 0.12s;
 }
 .poker-card .inner {
   display: table-cell;
@@ -588,4 +916,214 @@ input[type="submit"].attachment-add-link-submit {
   border-radius: 5px;
   overflow: hidden;
   background-color: #cecece;
+}
+
+/* Drag and drop file upload visual feedback */
+.js-card-details.is-dragging-over {
+  border: 2px dashed #0079bf;
+  background-color: #e3f2fd !important;
+  transform: scale(1.01);
+  transition: all 0.2s ease;
+}
+
+/* Sticker picker + card-detail stickers + due-complete toggle */
+.card-stickers-picker {
+  max-width: 320px;
+}
+.card-sticker-select {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin: 2px;
+  border-radius: 3px;
+  font-size: 18px;
+  color: #4d4d4d;
+  cursor: pointer;
+  position: relative;
+}
+.card-sticker-select:hover {
+  background: #e0e0e0;
+}
+.card-sticker-select.active {
+  background: #d6ecd2;
+  color: #3cb500;
+}
+.card-sticker-select .card-sticker-check {
+  position: absolute;
+  bottom: 1px;
+  inset-inline-end: 2px;
+  font-size: 10px;
+  color: #3cb500;
+}
+.card-stickers .card-sticker {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 8px 4px 0;
+  font-size: 18px;
+}
+.card-sticker .card-sticker-remove {
+  margin-inline-start: 3px;
+  font-size: 11px;
+  color: #999;
+  cursor: pointer;
+}
+.card-sticker .card-sticker-remove:hover {
+  color: #eb4646;
+}
+.card-due-complete-toggle {
+  display: inline-flex;
+  align-items: center;
+  margin-inline-start: 8px;
+  vertical-align: middle;
+}
+
+/* Trello-style "mark complete" toggle, left of the card title */
+.card-details-complete-toggle {
+  float: inline-start;
+  display: flex;
+  align-items: center;
+  /* Title is 1.35em with 1.3 line-height (~28px box) and margin-top 7px; push
+     the 13px checkbox down so it lands at the vertical middle of the title. */
+  margin: 14px 10px 0 0;
+  cursor: pointer;
+}
+
+/* Card locations: multiple locations, each editable with a remove button */
+.card-details-item-location .card-locations {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.card-details-item-location .card-location {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  background: #fff;
+  border: 1px solid #e3e3e3;
+  border-radius: 4px;
+  padding: 6px 8px;
+}
+.card-details-item-location .card-location-info {
+  flex: 1;
+}
+.card-details-item-location .js-edit-location {
+  cursor: pointer;
+}
+.card-details-item-location .card-location-name {
+  font-weight: bold;
+}
+.card-details-item-location .card-location-address {
+  color: #4d4d4d;
+}
+.card-details-item-location .card-location-remove {
+  margin-inline-start: 8px;
+  color: #8c8c8c;
+  cursor: pointer;
+}
+.card-details-item-location .card-location-remove:hover {
+  color: #eb4646;
+}
+
+/* Sticker icon highlight styles (used instead of colour): taco pack => underline,
+   pete pack => round (ring around the icon). Icon keeps its normal colour. */
+.card-sticker i.sticker-underline {
+  border-bottom: 2px solid currentColor;
+  padding-bottom: 1px;
+  line-height: 1;
+}
+.card-sticker i.sticker-round {
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6em;
+  height: 1.6em;
+  line-height: 1;
+  box-sizing: border-box;
+}
+
+/* "Open map links at" provider selector in the location popup */
+.js-card-location-form .map-provider-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.js-card-location-form .map-provider-row .js-map-provider {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+/* Opened card (card details popup) docks to the very top of the window and
+   overlays the global + board header bars instead of opening below them. The
+   base .pop-over is position:absolute with a small margin/top offset, which left
+   the card's top behind the fixed header bars; fix it to the viewport top with a
+   z-index above every header (headers top out around z-index 1000-2000). */
+/* The card details content (.card-details) is always position:fixed (see the
+   min-width:801px and max-width:800px media queries above), so it renders as its
+   own framed, viewport-positioned box and escapes this .pop-over wrapper. That
+   leaves the generic .pop-over chrome (white background, border, shadow, header
+   and ~380px width) visible as a redundant empty second popup at the top of the
+   page. Collapse the wrapper to nothing and make it invisible; the fixed card
+   descendant still renders normally on top of the page. Closing is handled by
+   the card's own close button (.js-close-card-details), clicking outside, or
+   pressing Escape. */
+.pop-over[data-popup="cardDetailsPopup"] {
+  position: fixed !important;
+  top: 0 !important;
+  inset-inline-start: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  z-index: 100000 !important;
+}
+
+.pop-over[data-popup="cardDetailsPopup"] > .header {
+  display: none !important;
+}
+
+.pop-over[data-popup="cardDetailsPopup"] > .content-wrapper {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+/* Sticker highlight styles inside the sticker picker (mascot = underline,
+   computer = round), matching how they render on the card. */
+.card-sticker-select i.sticker-underline {
+  border-bottom: 2px solid currentColor;
+  padding-bottom: 1px;
+  line-height: 1;
+}
+.card-sticker-select i.sticker-round {
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6em;
+  height: 1.6em;
+  line-height: 1;
+  box-sizing: border-box;
+}
+
+/* #6431 follow-up: cover image on the opened card (Card Settings > Cover image
+   on card, opt-in). Mirrors the minicard cover but taller. */
+.card-details-cover {
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  height: 200px;
+  user-select: none;
+  margin: 8px 0;
 }

@@ -1,17 +1,21 @@
 template(name="rulesTriggers")
   h2
     i.fa.fa-magic
-    | {{_ 'r-rule' }} "#{data.ruleName.get}" - {{_ 'r-add-trigger'}}
+    | {{_ 'r-rule' }} "{{ruleNameStr}}" - {{_ 'r-add-trigger'}}
   .triggers-content
     .triggers-body
       .triggers-side-menu
         ul
           li.active.js-set-board-triggers
-            i.fa.fa-columns
+            i.fa.fa-bar-chart
           li.js-set-card-triggers
-            i.fa.fa-sticky-note
+            i.fa.fa-file-text-o
           li.js-set-checklist-triggers
             i.fa.fa-check
+          li.js-set-scheduled-triggers(title="{{_ 'r-set-scheduled-triggers'}}")
+            i.fa.fa-clock-o
+          li.js-set-button-triggers(title="{{_ 'r-set-button-triggers'}}")
+            i.fa.fa-hand-pointer-o
       .triggers-main-body
         if showBoardTrigger.get
           +boardTriggers
@@ -19,7 +23,11 @@ template(name="rulesTriggers")
           +cardTriggers
         else if showChecklistTrigger.get
           +checklistTriggers
+        else if showScheduledTrigger.get
+          +scheduledTriggers
+        else if showButtonTrigger.get
+          +buttonTriggers
   div.rules-back
-        button.js-goback
-          i.fa.fa-chevron-left
+      button.primary.wide.js-goback(type="submit")
+          i.fa.fa-arrow-left
           | {{_ 'back'}}

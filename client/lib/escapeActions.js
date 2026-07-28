@@ -1,9 +1,11 @@
-// Pressing `Escape` should close the last opened “element” and only the last
+const hotkeys = require('hotkeys-js').default;
+
+// Pressing `Escape` should close the last opened "element" and only the last
 // one. Components can register themselves using a label a condition, and an
 // action. This is used by Popup or inlinedForm for instance. When we press
 // escape we execute the action which have a valid condition and his the highest
 // in the label hierarchy.
-EscapeActions = {
+export const EscapeActions = {
   _nextclickPrevented: false,
 
   _actions: [],
@@ -27,25 +29,22 @@ EscapeActions = {
     }
 
     let enabledOnClick = options.enabledOnClick;
-    if (_.isUndefined(enabledOnClick)) {
+    if (enabledOnClick === undefined) {
       enabledOnClick = true;
     }
 
     const noClickEscapeOn = options.noClickEscapeOn;
 
-    this._actions = _.sortBy(
-      [
-        ...this._actions,
-        {
-          priority,
-          condition,
-          action,
-          noClickEscapeOn,
-          enabledOnClick,
-        },
-      ],
-      action => action.priority,
-    );
+    this._actions = [
+      ...this._actions,
+      {
+        priority,
+        condition,
+        action,
+        noClickEscapeOn,
+        enabledOnClick,
+      },
+    ].sort((a, b) => a.priority - b.priority);
   },
 
   executeLowest() {
@@ -86,7 +85,7 @@ EscapeActions = {
   },
 
   _stopClick(action, clickTarget) {
-    if (!_.isString(action.noClickEscapeOn)) return false;
+    if (typeof action.noClickEscapeOn !== 'string') return false;
     else return $(clickTarget).closest(action.noClickEscapeOn).length > 0;
   },
 
@@ -119,9 +118,9 @@ EscapeActions = {
   },
 };
 
-// Pressing escape to execute one escape action. We use `bindGloabal` vecause
-// the shortcut sould work on textarea and inputs as well.
-Mousetrap.bindGlobal('esc', () => {
+// Pressing escape to execute one escape action. ESC is allowed globally
+// in the hotkeys filter (keyboard.js) so it works in textarea and inputs.
+hotkeys('escape', () => {
   EscapeActions.executeLowest();
 });
 

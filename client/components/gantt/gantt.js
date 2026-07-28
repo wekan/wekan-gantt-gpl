@@ -1,223 +1,223 @@
-import moment from 'moment/min/moment-with-locales';
+import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
+import Cards from '/models/cards';
+
+// Add click handler to ganttView for card titles
+Template.ganttView.events({
+  'click .js-gantt-card-title'(event, template) {
+    event.preventDefault();
+    // Get card ID from the closest row's data attribute
+    const $row = template.$(event.currentTarget).closest('tr');
+    const cardId = $row.data('card-id');
+
+    if (cardId) {
+      template.selectedCardId.set(cardId);
+    }
+  },
+});
+import { Template } from 'meteor/templating';
+import { Utils } from '/client/lib/utils';
+
+// Blaze template helpers for ganttView
+function getISOWeekInfo(d) {
+	const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+	const dayNum = date.getUTCDay() || 7;
+	date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+	const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+	const week = Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+	return { year: date.getUTCFullYear(), week };
+}
+function startOfISOWeek(d) {
+	const date = new Date(d);
+	const day = date.getDay() || 7;
+	if (day !== 1) date.setDate(date.getDate() - (day - 1));
+	date.setHours(0,0,0,0);
+	return date;
+}
+
+Template.ganttView.helpers({
+	weeks() {
+		const board = Utils.getCurrentBoard();
+		if (!board) return [];
+		const cards = Cards.find({ boardId: board._id }, { sort: { startAt: 1, dueAt: 1 } }).fetch();
+		const weeksMap = new Map();
+		const relevantCards = cards.filter(c => c.receivedAt || c.startAt || c.dueAt || c.endAt);
+		relevantCards.forEach(card => {
+			['receivedAt','startAt','dueAt','endAt'].forEach(field => {
+				if (card[field]) {
+					const dt = new Date(card[field]);
+					const info = getISOWeekInfo(dt);
+					const key = `${info.year}-W${info.week}`;
+					if (!weeksMap.has(key)) {
+						weeksMap.set(key, { year: info.year, week: info.week, start: startOfISOWeek(dt) });
+					}
+				}
+			});
+		});
+		return Array.from(weeksMap.values()).sort((a,b) => a.start - b.start);
+	},
+	weekDays(week) {
+		const weekStart = new Date(week.start);
+		return Array.from({length:7}, (_,i) => {
+			const d = new Date(weekStart);
+			d.setDate(d.getDate() + i);
+			d.setHours(0,0,0,0);
+			return d;
+		});
+	},
+	weekdayLabel(day) {
+		const weekdayKeys = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+		return TAPi18n.__(weekdayKeys[day.getDay() === 0 ? 6 : day.getDay() - 1]);
+	},
+	formattedDate(day) {
+		const currentUser = ReactiveCache.getCurrentUser && ReactiveCache.getCurrentUser();
+		const dateFormat = currentUser ? currentUser.getDateFormat() : 'YYYY-MM-DD';
+		return formatDateByUserPreference(day, dateFormat, false);
+	},
+	cardsInWeek(week) {
+		const board = Utils.getCurrentBoard();
+		if (!board) return [];
+		const cards = Cards.find({ boardId: board._id }).fetch();
+		return cards.filter(card => {
+			return ['receivedAt','startAt','dueAt','endAt'].some(field => {
+				if (card[field]) {
+					const dt = new Date(card[field]);
+					const info = getISOWeekInfo(dt);
+					return info.week === week.week && info.year === week.year;
+				}
+				return false;
+			});
+		});
+	},
+	cardTitle(card) {
+		return card.title;
+	},
+	cardId(card) {
+		return card._id;
+	},
+	cardUrl(card) {
+		if (!card) return '#';
+		const board = ReactiveCache.getBoard(card.boardId);
+		if (!board) return '#';
+		return FlowRouter.path('card', {
+			boardId: card.boardId,
+			slug: board.slug,
+			cardId: card._id,
+		});
+	},
+	 cellContentClass(card, day) {
+		 const cardDates = {
+			 receivedAt: card.receivedAt ? new Date(card.receivedAt) : null,
+			 startAt: card.startAt ? new Date(card.startAt) : null,
+			 dueAt: card.dueAt ? new Date(card.dueAt) : null,
+			 endAt: card.endAt ? new Date(card.endAt) : null,
+		 };
+		 if (cardDates.receivedAt && cardDates.receivedAt.toDateString() === day.toDateString()) return 'ganttview-received';
+		 if (cardDates.startAt && cardDates.startAt.toDateString() === day.toDateString()) return 'ganttview-start';
+		 if (cardDates.dueAt && cardDates.dueAt.toDateString() === day.toDateString()) return 'ganttview-due';
+		 if (cardDates.endAt && cardDates.endAt.toDateString() === day.toDateString()) return 'ganttview-end';
+		 return '';
+	 },
+	 cellContent(card, day) {
+		 const cardDates = {
+			 receivedAt: card.receivedAt ? new Date(card.receivedAt) : null,
+			 startAt: card.startAt ? new Date(card.startAt) : null,
+			 dueAt: card.dueAt ? new Date(card.dueAt) : null,
+			 endAt: card.endAt ? new Date(card.endAt) : null,
+		 };
+		 // Font Awesome class names, rendered as <i class="fa ..."> by gantt.jade -
+		 // the emoji these used to be were the last of the 8.00-8.24 icon set.
+		 if (cardDates.receivedAt && cardDates.receivedAt.toDateString() === day.toDateString()) return 'fa-inbox';
+		 if (cardDates.startAt && cardDates.startAt.toDateString() === day.toDateString()) return 'fa-rocket';
+		 if (cardDates.dueAt && cardDates.dueAt.toDateString() === day.toDateString()) return 'fa-clock-o';
+		 if (cardDates.endAt && cardDates.endAt.toDateString() === day.toDateString()) return 'fa-flag-checkered';
+		 return '';
+	 },
+	isToday(day) {
+		const today = new Date();
+		return day.toDateString() === today.toDateString();
+	},
+	isWeekend(day) {
+		const idx = day.getDay();
+		return idx === 0 || idx === 6;
+	},
+	hasSelectedCard() {
+		return Template.instance().selectedCardId.get() !== null;
+	},
+	selectedCard() {
+		const cardId = Template.instance().selectedCardId.get();
+		return cardId ? ReactiveCache.getCard(cardId) : null;
+	},
+	cellClasses(card, day) {
+		// Get the base class from cellContentClass logic
+		const cardDates = {
+			receivedAt: card.receivedAt ? new Date(card.receivedAt) : null,
+			startAt: card.startAt ? new Date(card.startAt) : null,
+			dueAt: card.dueAt ? new Date(card.dueAt) : null,
+			endAt: card.endAt ? new Date(card.endAt) : null,
+		};
+		let classes = '';
+		if (cardDates.receivedAt && cardDates.receivedAt.toDateString() === day.toDateString()) classes = 'ganttview-received';
+		else if (cardDates.startAt && cardDates.startAt.toDateString() === day.toDateString()) classes = 'ganttview-start';
+		else if (cardDates.dueAt && cardDates.dueAt.toDateString() === day.toDateString()) classes = 'ganttview-due';
+		else if (cardDates.endAt && cardDates.endAt.toDateString() === day.toDateString()) classes = 'ganttview-end';
+
+		// Add conditional classes
+		const today = new Date();
+		if (day.toDateString() === today.toDateString()) classes += ' ganttview-today';
+		const idx = day.getDay();
+		if (idx === 0 || idx === 6) classes += ' ganttview-weekend';
+		if (classes.trim()) classes += ' js-gantt-date-icon';
+
+		return classes.trim();
+	}
+});
+
+Template.ganttView.onCreated(function() {
+	this.selectedCardId = new ReactiveVar(null);
+	// Provide properties expected by cardDetails component
+	this.showOverlay = new ReactiveVar(false);
+	this.mouseHasEnterCardDetails = false;
+});
+
+// Blaze onRendered logic for ganttView
+Template.ganttView.onRendered(function() {
+	const self = this;
+	this.autorun(() => {
+		// If you have legacy imperative rendering, keep it here
+		if (typeof renderGanttChart === 'function') {
+			renderGanttChart();
+		}
+	});
+	// Add click handler for date cells (Received, Start, Due, End)
+	this.$('.gantt-table').on('click', '.js-gantt-date-icon', function(e) {
+		e.preventDefault();
+		e.stopPropagation();
+		const $cell = self.$(this);
+		const cardId = $cell.data('card-id');
+		let dateType = $cell.data('date-type');
+		// Remove 'ganttview-' prefix to match popup map
+		if (typeof dateType === 'string' && dateType.startsWith('ganttview-')) {
+			dateType = dateType.replace('ganttview-', '');
+		}
+		const popupMap = {
+			received: 'editCardReceivedDate',
+			start: 'editCardStartDate',
+			due: 'editCardDueDate',
+			end: 'editCardEndDate',
+		};
+		const popupName = popupMap[dateType];
+		if (!popupName || typeof Popup === 'undefined' || typeof Popup.open !== 'function') return;
+		const card = ReactiveCache.getCard(cardId);
+		if (!card) return;
+		const openFn = Popup.open(popupName);
+		openFn.call({ currentData: () => card }, e, { dataContextIfCurrentDataIsUndefined: card });
+	});
+
+});
+
+import markdownit from 'markdown-it';
 import { TAPi18n } from '/imports/i18n';
-import gantt from 'dhtmlx-gantt';
-import 'dhtmlx-gantt/codebase/dhtmlxgantt.css';
+import { formatDateByUserPreference } from '/imports/lib/dateUtils';
+import { ReactiveCache } from '/imports/reactiveCache';
 
-BlazeComponent.extendComponent({
-  isGanttInitialized: false,
-
-  onCreated() {
-    //Meteor.subscribe("cards");
-  },
-
-  onRendered() {
-    if (this.isGanttInitialized) {
-      return;
-    }
-
-    this.isGanttInitialized = true;
-
-    const currentBoard = Boards.findOne(Session.get('currentBoard'));
-    const currentUser = Meteor.user();
-    const boards = Boards.find({
-      'members.userId': currentUser._id,
-      type: 'board',
-    });
-
-    //Tooltips
-    gantt.plugins({
-      tooltip: true,
-    });
-
-    gantt.templates.tooltip_text = function(start, end, task) {
-      return `<b>${TAPi18n.__('task')}:</b> ${task.text}<br/><b>${TAPi18n.__(
-        'description',
-      )}:</b> ${task.description}`;
-    };
-
-    gantt.init('ganttEl');
-
-    // Retain links created between tasks
-    // https://github.com/wekan/wekan/issues/2870#issuecomment-857115753
-    // Code part 3: Adding this to gantt.js which will fire during the events specified.
-    // https://github.com/wekan/wekan/issues/2870#issuecomment-857171127
-    gantt.attachEvent("onLinkCreated", function(link){
-      const c = Cards.findOne(link.source);
-      var sourceTask = gantt.getTask(link.source);
-      var targetTask = gantt.getTask(link.target);
-
-      c.setGanttTargetId(sourceTask.id, targetTask.id, link.type, link.id);
-      return true;
-    });
-
-    gantt.attachEvent("onBeforeLinkDelete", function(id,item){
-      const c = Cards.findOne(item.source);
-
-      c.removeGanttTargetId(item.source, item.target, item.type, id)
-      return true;
-    });
-
-    //Clicking on task will show the card
-    gantt.attachEvent('onTaskClick', function(id, e) {
-      const path = FlowRouter.current();
-      e.cancelBubble = true;
-
-      FlowRouter.go('card', {
-        boardId: path.params.id,
-        slug: path.params.slug,
-        cardId: id,
-      });
-      return e;
-    });
-
-    //Update start/end date
-    gantt.attachEvent('onAfterTaskUpdate', function(id, item) {
-      const c = Cards.findOne(id);
-      if (c) {
-        c.setStart(item.start_date);
-        c.setEnd(item.end_date);
-      }
-    });
-
-    //Delete task
-    gantt.attachEvent('onAfterTaskDelete', function(id) {
-      Cards.remove(id);
-    });
-
-    //Suppress doubleclicks
-    gantt.attachEvent('onTaskDblClick', function(id, e) {
-      e.cancelBubble = true;
-      return e;
-    });
-
-    gantt.attachEvent('onTaskCreated', function(item) {
-      let html = `<label>${TAPi18n.__('select-board')}</label>`;
-      html += '<select style="width:100%;">';
-      boards.forEach(b => {
-        html += `<option value="${b._id}">${b.title}</option>`;
-      });
-      html += '</select>';
-
-      const modal = gantt.modalbox({
-        title: `${TAPi18n.__('create-task')}`,
-        text: html,
-        buttons: [`${TAPi18n.__('ok')}`, `${TAPi18n.__('cancel')}`],
-        callback(result) {
-          if (result !== 0) {
-            return;
-          }
-
-          const bId = $(modal)
-            .find('select')
-            .val();
-          let board = null;
-
-          boards.forEach(b => {
-            if (b._id === bId) {
-              board = b;
-            }
-          });
-
-          if (!board) {
-            return;
-          }
-
-          const swimlaneId = board.getDefaultSwimline()._id;
-          const lists = board.lists().fetch();
-          let listId;
-          if (lists.length > 0) {
-            listId = lists[0]._id;
-          } else {
-            listId = Lists.insert({
-              title: 'List',
-              boardId: board._id,
-              sort: 0,
-              type: 'list',
-              swimlaneId,
-            });
-          }
-          const startDate = new Date();
-          let endDate = new Date(startDate.getTime());
-          endDate = endDate.setDate(endDate.getDate() + item.duration);
-          const cardId = Cards.insert({
-            title: item.text,
-            members: [],
-            labelIds: [],
-            listId,
-            startAt: startDate,
-            endAt: endDate,
-            boardId: board._id,
-            sort: 1,
-            swimlaneId,
-            type: 'cardType-card',
-            linkedId: '',
-          });
-
-          Meteor.setTimeout(() => {
-            FlowRouter.go('card', {
-              boardId: board._id,
-              slug: board.slug,
-              cardId,
-            });
-          }, 50);
-        },
-      });
-    });
-
-    this.autorun(() => {
-      const events = [];
-      // https://github.com/wekan/wekan/issues/2870#issuecomment-857171127 part 4
-      const LinksDate = [];
-      currentBoard.cards().forEach(c => {
-        if (!c.startAt || !c.endAt) {
-          return;
-        }
-
-        const event = {
-          id: c._id,
-          text: c.title,
-          description: c.description,
-          start_date: moment(c.startAt).format('DD-MM-YYYY'),
-          due_date: moment(c.endAt).format('YYYY-MM-DD'),
-          duration: moment.duration(moment(c.endAt).diff(c.startAt)).asDays(),
-          // type: projectTask,
-        };
-
-        if(c.targetId_gantt) {
-          for (var i = 0; i < c.targetId_gantt.length; i++) {
-            var cardLink = c.targetId_gantt[i];
-            var linkType = c.linkType_gantt[i];
-            var linkId = c.linkId_gantt[i];
-
-            const LinkInfo= {
-              id: linkId,
-              source: c._id,
-              target: cardLink,
-              type: linkType,
-            };
-          LinksDate.push(LinkInfo);
-          }
-        }
-
-        events.push(event);
-        //LinksDate.push(links);
-      });
-
-      gantt.clearAll();
-
-      gantt.parse({
-        data: events,
-        links: LinksDate,
-      });
-    });
-  },
-
-  isViewGantt() {
-    currentUser = Meteor.user();
-    if (currentUser) {
-      return (currentUser.profile || {}).boardView === 'board-view-gantt';
-    } else {
-      return cookies.get('boardView') === 'board-view-gantt';
-    }
-  },
-}).register('ganttView');
+const md = markdownit({ breaks: true, linkify: true });

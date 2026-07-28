@@ -1,0 +1,223 @@
+#!/bin/bash
+
+if [[ "$PATH" != *"$SNAP_INSTANCE_NAME"* ]]; then
+  export PATH="${PATH/\/snap\/wekan\//\/snap\/$SNAP_INSTANCE_NAME\/}"
+fi
+
+# FerretDB Control Script
+# Starts FerretDB v1 (the wekan/FerretDB fork) with its embedded pure-Go SQLite
+# backend, which speaks the MongoDB wire protocol. It is the MongoDB-compatible
+# alternative database, selected with:  snap set wekan database=ferretdb
+#
+# Only one database runs at a time. This service starts FerretDB only when
+# `database` is set to ferretdb; otherwise it disables itself (mirroring how
+# mongodb-control handles DISABLE_MONGODB). The configure hook flips the two
+# services when the `database` setting changes.
+
+# get wekan/mongo settings
+echo "Reading snap settings..."
+source $SNAP/bin/wekan-read-settings
+
+# Maintenance mode: if $SNAP_COMMON/.wekan-maintenance exists, do NOT self-disable; start
+# FerretDB regardless of the `database` setting, so an admin can run FerretDB by hand
+# (`snap start wekan.ferretdb`) to reach the data over the MongoDB wire protocol. Toggle with
+# `snap run wekan.maintenance on|off`. FerretDB and MongoDB share port 27019 - run one at a time.
+WEKAN_MAINTENANCE="$SNAP_COMMON/.wekan-maintenance"
+if [ -f "$WEKAN_MAINTENANCE" ]; then
+    echo "MAINTENANCE MODE (.wekan-maintenance present): starting FerretDB directly, ignoring the"
+    echo "database setting. Stop with 'snap stop wekan.ferretdb'."
+fi
+
+# The `database` snap setting is AUTHORITATIVE (see wekan-control): FerretDB runs only when
+# database=ferretdb. This lets an admin keep WeKan on MongoDB (`snap run wekan.database mongodb`)
+# while a migration is being fixed, instead of being force-switched to FerretDB just because a
+# SQLite file exists. A successful migration sets database=ferretdb itself (finish_success).
+if [ ! -f "$WEKAN_MAINTENANCE" ] && [ "ferretdb" != "${DATABASE}" ]; then
+    echo "database is '${DATABASE:-mongodb}', not 'ferretdb'. Disabling ferretdb service."
+    snapctl stop --disable ${SNAP_NAME}.ferretdb 2>/dev/null || true
+    exit 0
+fi
+
+# The FerretDB binary is shipped inside the WeKan bundle and staged to the snap
+# root by the wekan part (bundle/ferretdb -> $SNAP/ferretdb).
+FERRETDB_BIN="$SNAP/ferretdb"
+if [ ! -x "$FERRETDB_BIN" ]; then
+    echo "ERROR: FerretDB binary not found or not executable at $FERRETDB_BIN"
+    exit 1
+fi
+
+# #6458: run FerretDB through cpu-exec, which exec's it directly when the CPU has
+# every instruction-set feature it needs and falls back to bundled qemu-user when
+# it does not (AVX masked by a hypervisor, an old CPU, ARMv8.0). FerretDB is a
+# baseline Go build and declares no required features, so this is a plain exec
+# today - the point is that the launch is feature-safe if a future build stops
+# being baseline. mongodb-control already does this for mongod. Falls back to a
+# direct exec when cpu-exec is missing (older snap revisions).
+CPU_EXEC="$SNAP/bin/cpu-exec"
+[ -x "$CPU_EXEC" ] || CPU_EXEC=""
+
+# FerretDB binds the same address WeKan's MONGO_URL points at (wekan-control
+# builds mongodb://$MONGODB_BIND_IP:$MONGODB_PORT/wekan), so no other setting
+# needs to change to switch backends.
+BIND_IP="${MONGODB_BIND_IP:-127.0.0.1}"
+PORT="${MONGODB_PORT:-27019}"
+
+# Storage backend. Default 'sqlite' (embedded, zero-dependency). 'postgresql' / 'mysql'
+# run FerretDB against an EXTERNAL database YOU host (the snap bundles no server):
+#   snap set wekan wekan-ferretdb-handler=postgresql \
+#            wekan-ferretdb-url="postgres://user:pass@HOST:5432/ferretdb"
+# Meteor still tails the OpLog on any backend when WEKAN_FERRETDB_OPLOG=true (the
+# reactivity code is backend-agnostic). The SQLite-file steps further below (rotating
+# backup, restore, reset-oplog) apply ONLY to the sqlite backend, so this branch execs
+# FerretDB directly and skips them.
+FERRETDB_HANDLER="${WEKAN_FERRETDB_HANDLER:-sqlite}"
+if [ "sqlite" != "${FERRETDB_HANDLER}" ]; then
+    case "${FERRETDB_HANDLER}" in
+        postgresql) URL_FLAG="--postgresql-url"; DEFAULT_URL="postgres://127.0.0.1:5432/ferretdb" ;;
+        mysql)      URL_FLAG="--mysql-url";      DEFAULT_URL="mysql://127.0.0.1:3306/ferretdb" ;;
+        hana)       URL_FLAG="--hana-url";       DEFAULT_URL="" ;;  # best-effort; set wekan-ferretdb-url
+        *)
+            echo "ERROR: unsupported wekan-ferretdb-handler '${FERRETDB_HANDLER}' (use sqlite, postgresql, mysql or hana)."
+            exit 1
+            ;;
+    esac
+    DB_URL="${WEKAN_FERRETDB_URL:-$DEFAULT_URL}"
+
+    # Same OpLog gate as the sqlite path: create the replica set / OpLog only when the
+    # admin opts in (wekan-ferretdb-oplog=true); otherwise run standalone (polling).
+    if [ "true" = "${WEKAN_FERRETDB_OPLOG:-false}" ]; then
+        REPL_SET_ARGS=(--repl-set-name="${WEKAN_FERRETDB_REPL_SET:-rs0}")
+        OPLOG_MODE="OpLog enabled (replSet ${WEKAN_FERRETDB_REPL_SET:-rs0})"
+    else
+        REPL_SET_ARGS=()
+        OPLOG_MODE="polling only (no OpLog)"
+    fi
+
+    echo "Starting FerretDB v1 (${FERRETDB_HANDLER}) on ${BIND_IP}:${PORT} -> external ${DB_URL} (${OPLOG_MODE}) ..."
+    exec ${CPU_EXEC:+bash "$CPU_EXEC"} "$FERRETDB_BIN" \
+        --handler="${FERRETDB_HANDLER}" \
+        "${URL_FLAG}=${DB_URL}" \
+        --listen-addr="${BIND_IP}:${PORT}" \
+        "${REPL_SET_ARGS[@]}" \
+        --telemetry=disable \
+        --log-level=error
+fi
+
+# SQLite data lives next to attachments/avatars at $SNAP_COMMON/files/db (the
+# "files/<name>" layout), so it survives snap refreshes and is where the
+# MongoDB 3 → FerretDB migration (migration-control) wrote it.
+SQLITE_DIR="${SNAP_COMMON}/files/db"
+mkdir -p "$SQLITE_DIR"
+
+# Telemetry off: --telemetry=disable both disables AND locks it (FerretDB won't
+# let it be re-enabled). DO_NOT_TRACK/FERRETDB_TELEMETRY are belt-and-suspenders.
+export DO_NOT_TRACK=1 FERRETDB_TELEMETRY=disable
+
+# #6480/#6481: a replica-set name makes FerretDB v1 auto-create the capped
+# local.oplog.rs and advertise the replica-set hello handshake, so WeKan's Meteor
+# CAN tail the OpLog. But the OpLog is only useful when WeKan is ACTUALLY tailing it
+# (WEKAN_FERRETDB_OPLOG=true). In the default polling-only mode (wekan/wekan#6503)
+# maintaining the OpLog is pure overhead: a second write per mutation, a
+# once-a-minute capped-cleanup ticker, and — worst — a leftover tailable cursor
+# whose SQLite awaitData re-scan can peg FerretDB CPU (300%+) even while node is
+# idle. So enable the replica set / OpLog ONLY in OpLog mode; in polling-only mode
+# run FerretDB STANDALONE, with no OpLog at all. This matches the WEKAN_FERRETDB_OPLOG
+# gate in wekan-control (which unsets MONGO_OPLOG_URL in the same mode), so neither
+# side keeps an OpLog alive by default. Repl-set name overridable via
+# WEKAN_FERRETDB_REPL_SET.
+REPL_SET_NAME="${WEKAN_FERRETDB_REPL_SET:-rs0}"
+if [ "true" = "${WEKAN_FERRETDB_OPLOG:-false}" ]; then
+    REPL_SET_ARGS=(--repl-set-name="${REPL_SET_NAME}")
+    OPLOG_MODE="OpLog enabled (replSet ${REPL_SET_NAME})"
+else
+    REPL_SET_ARGS=()
+    OPLOG_MODE="polling only (standalone, no OpLog)"
+fi
+
+# #6492 recovery: perform a REQUESTED restore of the text-data database BEFORE FerretDB
+# opens the files, when the live database has been detected corrupt. Triggered by the
+# WEKAN_FORCE_RESTORE env or a marker file (${SQLITE_DIR}/RESTORE_REQUESTED containing
+# "backup", "prev" or "remigrate"). A restore copies a known-good backup INTO the live
+# database (and drops the live database's stale WAL side-files so the copy is used
+# cleanly) — the backup copies are never deleted, and the main wekan.sqlite is only
+# ever overwritten by the copy, never removed. Re-migration is delegated to
+# migration-control. The action is recorded for Admin Panel / Problems / Recovery.
+_restore_mode="${WEKAN_FORCE_RESTORE:-}"
+if [ -z "${_restore_mode}" ] && [ -f "${SQLITE_DIR}/RESTORE_REQUESTED" ]; then
+    _restore_mode="$(head -n1 "${SQLITE_DIR}/RESTORE_REQUESTED" 2>/dev/null | tr -cd 'a-z')"
+fi
+if [ -n "${_restore_mode}" ] && [ -n "${SQLITE_DIR}" ]; then
+    _rbk="${SQLITE_DIR}/backup"
+    _rsrc=""
+    case "${_restore_mode}" in
+        backup) [ -f "${_rbk}/wekan.sqlite" ] && _rsrc="${_rbk}" ;;
+        prev)   [ -f "${_rbk}/prev/wekan.sqlite" ] && _rsrc="${_rbk}/prev" ;;
+    esac
+    _ts="$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo '')"
+    # Mark recovery in progress so the WeKan server shows a maintenance spinner until it
+    # confirms the database is healthy again (the server clears this marker).
+    printf 'recovery %s\n' "${_restore_mode}" > "${SQLITE_DIR}/RECOVERY_IN_PROGRESS" 2>/dev/null || true
+    if [ -n "${_rsrc}" ]; then
+        rm -f "${SQLITE_DIR}/wekan.sqlite-wal" "${SQLITE_DIR}/wekan.sqlite-shm"
+        cp -f "${_rsrc}"/wekan.sqlite* "${SQLITE_DIR}/" 2>/dev/null || true
+        printf '{"type":"restore-%s","db":"wekan","severity":"warning","source":"startup","detail":"Restored wekan.sqlite from a backup copy","ts":"%s"}\n' \
+            "${_restore_mode}" "${_ts}" >> "${SQLITE_DIR}/recovery-events.jsonl" 2>/dev/null || true
+        echo "Recovery: restored text-data database from ${_rsrc}."
+    elif [ "${_restore_mode}" = "remigrate" ]; then
+        printf '{"type":"remigrate","db":"wekan","severity":"warning","source":"startup","detail":"Re-migration of text data from MongoDB requested","ts":"%s"}\n' \
+            "${_ts}" >> "${SQLITE_DIR}/recovery-events.jsonl" 2>/dev/null || true
+        echo "Recovery: re-migration from MongoDB requested (handled by migration-control)."
+    fi
+    rm -f "${SQLITE_DIR}/RESTORE_REQUESTED"
+fi
+
+# #6492 safety: keep a rotating backup of the TEXT-DATA database (wekan.sqlite*) in a
+# "backup" subfolder of the same data dir, so a known copy is ready to restore if the
+# live database is ever detected corrupt. Made at rest, BEFORE FerretDB opens the
+# files. This only ever COPIES from the live database — it is never moved or deleted —
+# and it copies only wekan.sqlite* (attachments and avatars live on the filesystem and
+# are left as-is). The previous backup generation is kept under backup/prev, so a bad
+# copy never overwrites the last good one on its own. Set WEKAN_SQLITE_BACKUP=false to
+# disable.
+if [ "${WEKAN_SQLITE_BACKUP:-true}" = "true" ] && [ -n "${SQLITE_DIR}" ] && [ -f "${SQLITE_DIR}/wekan.sqlite" ]; then
+    _bk="${SQLITE_DIR}/backup"
+    mkdir -p "${_bk}"
+    if [ -f "${_bk}/wekan.sqlite" ]; then
+        rm -rf "${_bk}/prev"
+        mkdir -p "${_bk}/prev"
+        cp -f "${_bk}"/wekan.sqlite* "${_bk}/prev/" 2>/dev/null || true
+    fi
+    cp -f "${SQLITE_DIR}"/wekan.sqlite* "${_bk}/" 2>/dev/null || true
+    echo "Backed up text-data database (wekan.sqlite*) to ${_bk} (previous kept in ${_bk}/prev)."
+    # Record the action so it shows in Admin Panel / Problems / Recovery. The WeKan
+    # server imports these JSON lines on startup. Only fixed strings (no user input),
+    # so no escaping is needed.
+    printf '{"type":"backup-created","db":"wekan","severity":"info","source":"startup","detail":"Backed up wekan.sqlite to backup/","ts":"%s"}\n' \
+        "$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo '')" >> "${SQLITE_DIR}/recovery-events.jsonl" 2>/dev/null || true
+fi
+
+# #6492: reset the FerretDB simulated OpLog on start. FerretDB v1's SQLite OpLog
+# (local.oplog.rs, stored in the `local` database = local.sqlite) is not reliably
+# capped, so over time it BLOATS or CORRUPTS; Meteor then busy-polls it and FerretDB
+# CPU pegs at 300%+ even when idle (reporters confirmed that deleting local.sqlite*
+# drops CPU straight back to ~10%). The `local` database is transient SYSTEM data —
+# the OpLog + replica-set metadata, NOT user data (boards/cards live in wekan.sqlite)
+# — so discarding it is safe: FerretDB recreates a fresh, correctly-capped OpLog from
+# --repl-set-name below, and Meteor re-tails it from the start. This prevents a
+# corrupt/bloated OpLog from ever persisting across a restart. Set
+# WEKAN_FERRETDB_RESET_OPLOG=false to keep the existing OpLog instead.
+if [ "${WEKAN_FERRETDB_RESET_OPLOG:-true}" = "true" ] && [ -n "${SQLITE_DIR}" ]; then
+    echo "Resetting FerretDB OpLog (local database) to prevent bloat/corruption ..."
+    rm -f "${SQLITE_DIR}/local.sqlite" "${SQLITE_DIR}/local.sqlite-wal" \
+          "${SQLITE_DIR}/local.sqlite-shm" "${SQLITE_DIR}/local.sqlite-journal"
+fi
+
+echo "Starting FerretDB v1 (SQLite) on ${BIND_IP}:${PORT} (${OPLOG_MODE}) ..."
+echo "  SQLite data dir: ${SQLITE_DIR}"
+exec ${CPU_EXEC:+bash "$CPU_EXEC"} "$FERRETDB_BIN" \
+    --handler=sqlite \
+    --sqlite-url="file:${SQLITE_DIR}/" \
+    --listen-addr="${BIND_IP}:${PORT}" \
+    "${REPL_SET_ARGS[@]}" \
+    --telemetry=disable \
+    --log-level=error

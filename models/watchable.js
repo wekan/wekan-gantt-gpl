@@ -1,9 +1,16 @@
+import Boards from '/models/boards';
+import Lists from '/models/lists';
+import Cards from '/models/cards';
+
 // simple version, only toggle watch / unwatch
 const simpleWatchable = collection => {
   collection.attachSchema({
     watchers: {
-      type: [String],
+      type: Array,
       optional: true,
+    },
+    'watchers.$': {
+      type: String,
     },
   });
 
@@ -17,15 +24,15 @@ const simpleWatchable = collection => {
     },
 
     findWatcher(userId) {
-      return _.contains(this.watchers, userId);
+      return (this.watchers || []).includes(userId);
     },
-  });
 
-  collection.mutations({
-    setWatcher(userId, level) {
+    async setWatcher(userId, level) {
       // if level undefined or null or false, then remove
-      if (!level) return { $pull: { watchers: userId } };
-      return { $addToSet: { watchers: userId } };
+      if (!level) {
+        return await collection.updateAsync(this._id, { $pull: { watchers: userId } });
+      }
+      return await collection.updateAsync(this._id, { $addToSet: { watchers: userId } });
     },
   });
 };
@@ -36,6 +43,13 @@ const complexWatchDefault = 'muted';
 
 const complexWatchable = collection => {
   collection.attachSchema({
+    watchers: {
+      type: Array,
+      optional: true,
+    },
+    'watchers.$': {
+      type: Object,
+    },
     'watchers.$.userId': {
       type: String,
     },
@@ -55,31 +69,31 @@ const complexWatchable = collection => {
     },
 
     watcherIndex(userId) {
-      return _.pluck(this.watchers, 'userId').indexOf(userId);
+      return (this.watchers || []).map(x => x.userId).indexOf(userId);
     },
 
     findWatcher(userId) {
-      return _.findWhere(this.watchers, { userId });
+      return (this.watchers || []).find(w => w.userId === userId);
     },
 
     getWatchLevel(userId) {
       const watcher = this.findWatcher(userId);
       return watcher ? watcher.level : complexWatchDefault;
     },
-  });
 
-  collection.mutations({
-    setWatcher(userId, level) {
+    async setWatcher(userId, level) {
       // if level undefined or null or false, then remove
       if (level === complexWatchDefault) level = null;
-      if (!level) return { $pull: { watchers: { userId } } };
+      if (!level) {
+        return await collection.updateAsync(this._id, { $pull: { watchers: { userId } } });
+      }
       const index = this.watcherIndex(userId);
-      if (index < 0) return { $push: { watchers: { userId, level } } };
-      return {
-        $set: {
-          [`watchers.${index}.level`]: level,
-        },
-      };
+      if (index < 0) {
+        return await collection.updateAsync(this._id, { $push: { watchers: { userId, level } } });
+      }
+      return await collection.updateAsync(this._id, {
+        $set: { [`watchers.${index}.level`]: level },
+      });
     },
   });
 };

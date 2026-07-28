@@ -1,16 +1,225 @@
 import { ReactiveCache } from '/imports/reactiveCache';
+import { once } from '/imports/lib/collectionHelpers';
+import {
+  suspendBoardDragscroll,
+  resumeBoardDragscroll,
+  isBoardDragscrollSuspended,
+} from '/client/lib/boardDragscroll';
+import Lists from '/models/lists';
+import { CSSEvents } from '/client/lib/cssEvents';
+import { Filter } from '/client/lib/filter';
+import { EscapeActions } from '/client/lib/escapeActions';
+import { Utils } from '/client/lib/utils';
+import { TAPi18n } from '/imports/i18n';
+import { defaultSwimlaneIdForBoard } from '/client/components/lists/listAddHelpers';
 const { calculateIndex } = Utils;
+
+function saveSorting(ui) {
+  // #5462 (defense in depth): a logged-in user without write access must never
+  // persist a list reorder, even if a sortable was left enabled. Anonymous
+  // users on public boards fall through to the localStorage path below.
+  if (Meteor.userId() && !Utils.canModifyBoard()) {
+    return;
+  }
+  // To attribute the new index number, we need to get the DOM element
+  // of the previous and the following list -- if any.
+  // Use prevAll/nextAll (not prev/next) so non-list siblings between lists do
+  // not break neighbour detection: the lists container also renders the
+  // +addListInline composer and, when a card is open, a +cardDetails element.
+  // jQuery's .prev('.js-list') only matches an *immediately* adjacent sibling,
+  // so an interspersed composer/cardDetails made calculateIndex mis-detect the
+  // first/last position and compute a wrong sort, so the reordered list landed
+  // elsewhere and looked like it did not persist. See
+  // https://github.com/wekan/wekan/issues/5997
+  const prevListDom = ui.item.prevAll('.js-list:not(.js-list-composer)').get(0);
+  const nextListDom = ui.item.nextAll('.js-list:not(.js-list-composer)').get(0);
+  const sortIndex = calculateIndex(prevListDom, nextListDom, 1);
+
+  const listDomElement = ui.item.get(0);
+  if (!listDomElement) {
+    return;
+  }
+
+  let list;
+  try {
+    list = Blaze.getData(listDomElement);
+  } catch (error) {
+    return;
+  }
+
+  if (!list) {
+    return;
+  }
+
+  // Detect if the list was dropped in a different swimlane
+  const targetSwimlaneDom = ui.item.closest('.js-swimlane');
+  let targetSwimlaneId = null;
+
+  if (targetSwimlaneDom.length > 0) {
+    // List was dropped in a swimlane
+    try {
+      targetSwimlaneId = targetSwimlaneDom.attr('id').replace('swimlane-', '');
+    } catch (error) {
+      return;
+    }
+  } else {
+    // List was dropped in lists view (not swimlanes view)
+    // In this case, keep the original swimlane
+    targetSwimlaneId = list.getEffectiveSwimlaneId ? list.getEffectiveSwimlaneId() : (list.swimlaneId || null);
+  }
+
+  // Get the original swimlane ID of the list (handle backward compatibility)
+  const originalSwimlaneId = list.getEffectiveSwimlaneId ? list.getEffectiveSwimlaneId() : (list.swimlaneId || null);
+
+  // Prepare update object
+  const updateData = {
+    sort: sortIndex.base,
+  };
+
+  // Check if the list was dropped in a different swimlane.
+  //
+  // #6484: only rebind a list to a swimlane when it was ALREADY swimlane-scoped
+  // (originalSwimlaneId set) and actually crossed into a DIFFERENT swimlane. A
+  // board-wide list has swimlaneId === null / getEffectiveSwimlaneId() === null
+  // and renders under EVERY swimlane (see filterCardsByListAndSwimlane and
+  // currentListIsInThisSwimlane: a null swimlaneId matches every swimlane). Since
+  // targetSwimlaneId is ALWAYS the swimlane the list is shown under in swimlanes
+  // view, the old `targetSwimlaneId !== originalSwimlaneId` was true for ANY nudge
+  // of a board-wide list, so it set list.swimlaneId AND moved every card to that
+  // one swimlane — the list then vanished from all the other swimlanes. Requiring
+  // originalSwimlaneId keeps board-wide lists board-wide; genuinely
+  // swimlane-scoped lists can still be moved between swimlanes.
+  const isDifferentSwimlane =
+    originalSwimlaneId &&
+    targetSwimlaneId &&
+    targetSwimlaneId !== originalSwimlaneId;
+
+  // If the list was dropped in a different swimlane, update the swimlaneId
+  if (isDifferentSwimlane) {
+    // #6478: moving a list to a DIFFERENT swimlane is high-impact — it re-homes
+    // every card in the list — and is easy to trigger accidentally on touch (the
+    // reporter merged lists this way and needed ~15 min to recover). Confirm on
+    // touch/small screens before applying; on decline, revert the drag by
+    // re-rendering from the server and abort. (Ctrl+Z can also undo it after the
+    // fact — see userPositionHistory.undoLast.)
+    if (
+      (Utils.isMiniScreen() || Utils.isTouchScreenOrShowDesktopDragHandles()) &&
+      typeof window !== 'undefined' &&
+      typeof window.confirm === 'function' &&
+      // eslint-disable-next-line no-alert
+      !window.confirm(TAPi18n.__('confirm-move-list-to-swimlane'))
+    ) {
+      Meteor.subscribe('board', list.boardId, false);
+      resumeBoardDragscroll(); // #6558: the drag is over, panning comes back
+      return;
+    }
+    updateData.swimlaneId = targetSwimlaneId;
+
+    // Move all cards in the list to the new swimlane
+    const cardsInList = ReactiveCache.getCards({
+      listId: list._id,
+      archived: false
+    });
+
+    cardsInList.forEach(card => {
+      card.move(list.boardId, targetSwimlaneId, list._id);
+    });
+
+    // Don't cancel the sortable when moving to a different swimlane
+    // The DOM move should be allowed to complete
+  }
+  // Allow reordering within the same swimlane by not canceling the sortable
+
+  // Do not update the restricted collection on the client; rely on the server method below.
+
+  // Save to localStorage for non-logged-in users (backup)
+  if (!Meteor.userId()) {
+    try {
+      const boardId = list.boardId;
+      const listId = list._id;
+      const listOrderKey = `wekan-list-order-${boardId}`;
+
+      let listOrder = JSON.parse(localStorage.getItem(listOrderKey) || '{}');
+      if (!listOrder.lists) listOrder.lists = [];
+
+      const listIndex = listOrder.lists.findIndex(l => l.id === listId);
+      if (listIndex >= 0) {
+        listOrder.lists[listIndex].sort = sortIndex.base;
+        listOrder.lists[listIndex].swimlaneId = updateData.swimlaneId;
+        listOrder.lists[listIndex].updatedAt = new Date().toISOString();
+      } else {
+        listOrder.lists.push({
+          id: listId,
+          sort: sortIndex.base,
+          swimlaneId: updateData.swimlaneId
+        });
+      }
+
+      localStorage.setItem(listOrderKey, JSON.stringify(listOrder));
+    } catch (e) {
+    }
+  }
+
+  // Persist to server
+  Meteor.call('updateListSort', list._id, list.boardId, updateData, function (error) {
+    if (error) {
+      Meteor.subscribe('board', list.boardId, false);
+    }
+  });
+
+  // Try to get board component
+  try {
+    const boardBodyEl = ui.item[0]?.closest?.('.board-body') || document.querySelector('.board-body');
+    const boardView = boardBodyEl && Blaze.getView(boardBodyEl, 'Template.boardBody');
+    const boardComponent = boardView?.templateInstance?.();
+    if (boardComponent && boardComponent.setIsDragging) {
+      if (boardComponent) boardComponent.setIsDragging(false);
+    }
+  } catch (e) {
+    // Silent fail
+  }
+
+  // Re-enable dragscroll after list dragging is complete - the swimlanes AND
+  // the canvas, exactly as they were tagged before the drag (#6558).
+  resumeBoardDragscroll();
+}
 
 function currentListIsInThisSwimlane(swimlaneId) {
   const currentList = Utils.getCurrentList();
-  return (
-    currentList &&
-    (currentList.swimlaneId === swimlaneId || currentList.swimlaneId === '')
+  if (!currentList) return false;
+  // Match the list's own swimlane, or shared/orphaned lists (empty/null
+  // swimlaneId are visible in every swimlane as a fallback).
+  if (currentList.swimlaneId === swimlaneId || !currentList.swimlaneId) {
+    return true;
+  }
+  // Also match when the list has an orphaned swimlaneId (references a deleted
+  // swimlane) and THIS is the first swimlane — orphaned lists are shown there.
+  const currentBoard = Utils.getCurrentBoard();
+  if (!currentBoard) return false;
+  const allSwimlanes = ReactiveCache.getSwimlanes(
+    { boardId: currentBoard._id, archived: false },
+    { sort: ['sort'] },
   );
+  if (!allSwimlanes.length || allSwimlanes[0]._id !== swimlaneId) return false;
+  const validIds = new Set(allSwimlanes.map(s => s._id));
+  return !validIds.has(currentList.swimlaneId);
 }
 
 function currentCardIsInThisList(listId, swimlaneId) {
   const currentCard = Utils.getCurrentCard();
+  if (!currentCard) return false;
+  // On desktop a clicked card is shown as a draggable popup via the openCards
+  // list (rendered once in boardBody). Don't ALSO render it inline here, or the
+  // card opens twice — the inline copy sits under the popup and becomes visible
+  // when the popup is dragged away by its titlebar handle. Direct card-URL
+  // navigation sets only currentCard (not openCards), so those still render
+  // inline as before.
+  if (!Utils.isMiniScreen()) {
+    const openCards = Session.get('openCards') || [];
+    if (openCards.includes(currentCard._id)) {
+      return false;
+    }
+  }
   //const currentUser = ReactiveCache.getCurrentUser();
   if (
     //currentUser &&
@@ -20,7 +229,10 @@ function currentCardIsInThisList(listId, swimlaneId) {
     return (
       currentCard &&
       currentCard.listId === listId &&
-      currentCard.swimlaneId === swimlaneId
+      // Match cards for this swimlane, AND orphaned/shared cards that have no
+      // swimlaneId assigned (null/empty) — they are shown in every swimlane as
+      // a fallback so no content is ever invisible.
+      (currentCard.swimlaneId === swimlaneId || !currentCard.swimlaneId)
     );
   else if (
     //currentUser &&
@@ -42,12 +254,65 @@ function currentCardIsInThisList(listId, swimlaneId) {
   //          without using currentuser above, because currentuser is null.
 }
 
+function syncListOrderFromStorage(boardId) {
+  if (Meteor.userId()) {
+    // Logged-in users: don't use localStorage, trust server
+    return;
+  }
+
+  try {
+    const listOrderKey = `wekan-list-order-${boardId}`;
+    const storageData = localStorage.getItem(listOrderKey);
+
+    if (!storageData) return;
+
+    const listOrder = JSON.parse(storageData);
+    if (!listOrder.lists || listOrder.lists.length === 0) return;
+
+    // Compare each list's order in localStorage with database
+    listOrder.lists.forEach(storedList => {
+      const dbList = Lists.findOne(storedList.id);
+      if (dbList) {
+        // Check if localStorage has newer data (compare timestamps)
+        const storageTime = new Date(storedList.updatedAt).getTime();
+        const dbTime = new Date(dbList.modifiedAt).getTime();
+
+        // If storage is newer OR db is missing the field, use storage value
+        if (storageTime > dbTime || dbList.sort !== storedList.sort) {
+          console.debug(`Restoring list ${storedList.id} sort from localStorage (storage: ${storageTime}, db: ${dbTime})`);
+
+          // Update local minimongo first
+          Lists.update(storedList.id, {
+            $set: {
+              sort: storedList.sort,
+              swimlaneId: storedList.swimlaneId,
+            },
+          });
+        }
+      }
+    });
+  } catch (e) {
+    console.warn('Failed to sync list order from localStorage:', e);
+  }
+};
+
 function initSortable(boardComponent, $listsDom) {
+  // Safety check: ensure we have valid DOM elements
+  if (!$listsDom || $listsDom.length === 0) {
+    console.error('initSortable: No valid DOM elements provided');
+    return;
+  }
+
+  // Check if sortable is already initialized
+  if ($listsDom.data('uiSortable') || $listsDom.data('sortable')) {
+    $listsDom.sortable('destroy');
+  }
+
   // We want to animate the card details window closing. We rely on CSS
   // transition for the actual animation.
   $listsDom._uihooks = {
     removeElement(node) {
-      const removeNode = _.once(() => {
+      const removeNode = once(() => {
         node.parentNode.removeChild(node);
       });
       if ($(node).hasClass('js-card-details')) {
@@ -62,87 +327,404 @@ function initSortable(boardComponent, $listsDom) {
     },
   };
 
-  $listsDom.sortable({
-    connectWith: '.board-canvas',
-    tolerance: 'pointer',
-    helper: 'clone',
-    items: '.js-list:not(.js-list-composer)',
-    placeholder: 'js-list placeholder',
-    distance: 7,
-    start(evt, ui) {
-      ui.placeholder.height(ui.helper.height());
-      ui.placeholder.width(ui.helper.width());
-      EscapeActions.executeUpTo('popup-close');
-      boardComponent.setIsDragging(true);
-    },
-    stop(evt, ui) {
-      // To attribute the new index number, we need to get the DOM element
-      // of the previous and the following card -- if any.
-      const prevListDom = ui.item.prev('.js-list').get(0);
-      const nextListDom = ui.item.next('.js-list').get(0);
-      const sortIndex = calculateIndex(prevListDom, nextListDom, 1);
 
-      $listsDom.sortable('cancel');
-      const listDomElement = ui.item.get(0);
-      const list = Blaze.getData(listDomElement);
-
-      /*
-            Reverted incomplete change list width,
-            removed from below Lists.update:
-             https://github.com/wekan/wekan/issues/4558
-                $set: {
-                  width: list._id.width(),
-                  height: list._id.height(),
-      */
-
-      Lists.update(list._id, {
-        $set: {
-          sort: sortIndex.base,
-        },
-      });
-
-      boardComponent.setIsDragging(false);
-    },
+  // Add click debugging for drag handles
+  $listsDom.on('mousedown', '.js-list-handle', function(e) {
+    e.stopPropagation();
   });
 
-  boardComponent.autorun(() => {
-    if (Utils.isTouchScreenOrShowDesktopDragHandles()) {
-      $listsDom.sortable({
-        handle: '.js-list-handle',
+  $listsDom.on('mousedown', '.js-list-header', function(e) {
+  });
+
+  // Add debugging for any mousedown on lists
+  $listsDom.on('mousedown', '.js-list', function(e) {
+  });
+
+  // Add debugging for sortable events
+  $listsDom.on('sortstart', function(e, ui) {
+  });
+
+  $listsDom.on('sortbeforestop', function(e, ui) {
+  });
+
+  $listsDom.on('sortstop', function(e, ui) {
+  });
+
+  try {
+    $listsDom.sortable({
+      connectWith: '.js-swimlane, .js-lists',
+      tolerance: 'pointer',
+      appendTo: '.board-canvas',
+      helper(evt, item) {
+        const helper = item.clone();
+        helper.css('z-index', 1000);
+        return helper;
+      },
+      items: '.js-list:not(.js-list-composer)',
+      placeholder: 'list placeholder',
+      distance: 3,
+      forcePlaceholderSize: true,
+      cursor: 'move',
+      // #5462: only users with write access may reorder lists. Without this,
+      // read-only / comment-only members could drag lists, firing a server
+      // write that is denied with `403 Access denied` (and the list snaps
+      // back). The two other list sortables already gate on canModifyBoard().
+      disabled: !Utils.canModifyBoard(),
+      start(evt, ui) {
+        ui.helper.css('z-index', 1000);
+        ui.placeholder.height(ui.helper.height());
+        ui.placeholder.width(ui.helper.width());
+        EscapeActions.executeUpTo('popup-close');
+        if (boardComponent) boardComponent.setIsDragging(true);
+
+        // Add visual feedback for list being dragged
+        ui.item.addClass('ui-sortable-helper');
+
+        // #6558: no panning while a list is dragged. This used to call
+        // dragscroll.reset() FIRST and remove the class afterwards, which does
+        // nothing - reset() binds to whatever carries the class at that moment,
+        // so the listeners stayed - and it left `.board-canvas` tagged anyway.
+        suspendBoardDragscroll();
+      },
+      beforeStop(evt, ui) {
+        // Clean up visual feedback
+        ui.item.removeClass('ui-sortable-helper');
+      },
+      stop(evt, ui) {
+        saveSorting(ui);
+      }
+    });
+  } catch (error) {
+    console.error('Error initializing list sortable:', error);
+    return;
+  }
+
+
+  // Check if drag handles exist
+  const dragHandles = $listsDom.find('.js-list-handle');
+
+  // Check if lists exist
+  const lists = $listsDom.find('.js-list');
+
+  // Skip the complex autorun and options for now
+}
+
+Template.swimlane.onCreated(function () {
+  this.draggingActive = new ReactiveVar(false);
+  this._isDragging = false;
+  this._lastDragPositionX = 0;
+});
+
+Template.swimlane.onRendered(function () {
+  const tpl = this;
+  const boardBodyEl = tpl.firstNode?.parentElement?.closest?.('.board-body') || document.querySelector('.board-body');
+  const boardView = boardBodyEl && Blaze.getView(boardBodyEl, 'Template.boardBody');
+  const boardComponent = boardView?.templateInstance?.();
+  const $listsDom = tpl.$('.js-lists');
+  // Sync list order from localStorage on board load
+  const boardId = Session.get('currentBoard');
+  if (boardId) {
+    // Small delay to allow pubsub to settle
+    Meteor.setTimeout(() => {
+      syncListOrderFromStorage(boardId);
+    }, 500);
+  }
+
+  if (!Utils.getCurrentCardId() && boardComponent) {
+    boardComponent.scrollLeft();
+  }
+
+  // Try a simpler approach - initialize sortable directly like cards do
+  initializeSwimlaneResize(tpl);
+
+  // Wait for DOM to be ready
+  setTimeout(() => {
+    const handleSelector = Utils.isTouchScreenOrShowDesktopDragHandles()
+      ? '.js-list-handle'
+      : '.js-list-header';
+    const $parent = tpl.$('.js-lists');
+
+    if ($parent.length > 0) {
+
+      // Check for drag handles
+      const $handles = $parent.find('.js-list-handle');
+
+      // Test if drag handles are clickable
+      $handles.on('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
       });
-    } else {
-      $listsDom.sortable({
-        handle: '.js-list-header',
+
+      $parent.sortable({
+        connectWith: '.js-swimlane, .js-lists',
+        tolerance: 'pointer',
+        appendTo: '.board-canvas',
+        helper: 'clone',
+        items: '.js-list:not(.js-list-composer)',
+        placeholder: 'list placeholder',
+        distance: 7,
+        handle: handleSelector,
+        disabled: !Utils.canModifyBoard(),
+        dropOnEmpty: true,
+        start(evt, ui) {
+          ui.helper.css('z-index', 1000);
+          ui.placeholder.height(ui.helper.height());
+          ui.placeholder.width(ui.helper.width());
+          EscapeActions.executeUpTo('popup-close');
+          if (boardComponent) boardComponent.setIsDragging(true);
+          suspendBoardDragscroll(); // #6558
+        },
+        stop(evt, ui) {
+          resumeBoardDragscroll(); // #6558
+          if (boardComponent) boardComponent.setIsDragging(false);
+          saveSorting(ui);
+        },
       });
+      // Reactively update handle when user toggles desktop drag handles
+      tpl.autorun(() => {
+        const newHandle = Utils.isTouchScreenOrShowDesktopDragHandles()
+          ? '.js-list-handle'
+          : '.js-list-header';
+        if ($parent.data('uiSortable') || $parent.data('sortable')) {
+          try {
+            $parent.sortable('option', 'handle', newHandle);
+          } catch (e) {}
+        }
+      });
+    }
+  }, 100);
+});
+
+function initializeSwimlaneResize(tpl, retryCount = 0) {
+  // Avoid accessing Template.currentData() here: this function can run in setTimeout
+  // callbacks outside a current Blaze view context.
+  if (!tpl || tpl.isDestroyed) {
+    return;
+  }
+
+  const swimlane = tpl.data;
+  if (!swimlane || !swimlane._id) {
+    return;
+  }
+
+  const $swimlane = $(`#swimlane-${swimlane._id}`);
+  const $resizeHandle = $swimlane.find('.js-swimlane-resize-handle');
+
+  // Check if elements exist
+  if (!$swimlane.length || !$resizeHandle.length) {
+    // Retry briefly while DOM settles, then stop to avoid noisy loops.
+    if (retryCount >= 20) {
+      return;
+    }
+    Meteor.setTimeout(() => {
+      if (!tpl.isDestroyed) {
+        initializeSwimlaneResize(tpl, retryCount + 1);
+      }
+    }, 100);
+    return;
+  }
+
+  if ($resizeHandle.length === 0) {
+    return;
+  }
+
+  let isResizing = false;
+  let startY = 0;
+  let startHeight = 0;
+  const minHeight = 100;
+  const maxHeight = 2000;
+
+  // Read the vertical page coordinate from either a jQuery mouse event or a
+  // native touch event (touchstart/move expose `touches`, touchend exposes
+  // `changedTouches`).
+  const getEventPageY = (e) => {
+    const oe = e.originalEvent || e;
+    if (oe.touches && oe.touches.length) return oe.touches[0].pageY;
+    if (oe.changedTouches && oe.changedTouches.length) return oe.changedTouches[0].pageY;
+    return e.pageY;
+  };
+
+  const startResize = (e) => {
+    isResizing = true;
+    startY = getEventPageY(e);
+    startHeight = parseInt($swimlane.css('height')) || 300;
+
+    $swimlane.addClass('swimlane-resizing');
+    $('body').addClass('swimlane-resizing-active');
+    $('body').css('user-select', 'none');
+
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const doResize = (e) => {
+    if (!isResizing) {
+      return;
     }
 
-    const $listDom = $listsDom;
-    if ($listDom.data('uiSortable') || $listDom.data('sortable')) {
-      $listsDom.sortable(
-        'option',
-        'disabled',
-        !ReactiveCache.getCurrentUser()?.isBoardAdmin(),
-      );
+    const currentY = getEventPageY(e);
+    const deltaY = currentY - startY;
+    const newHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + deltaY));
+
+    // Apply the new height immediately for real-time feedback
+    $swimlane[0].style.setProperty('--swimlane-height', `${newHeight}px`);
+    $swimlane[0].style.setProperty('height', `${newHeight}px`);
+    $swimlane[0].style.setProperty('min-height', `${newHeight}px`);
+    $swimlane[0].style.setProperty('max-height', `${newHeight}px`);
+    $swimlane[0].style.setProperty('flex', 'none');
+    $swimlane[0].style.setProperty('flex-basis', 'auto');
+    $swimlane[0].style.setProperty('flex-grow', '0');
+    $swimlane[0].style.setProperty('flex-shrink', '0');
+
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const stopResize = (e) => {
+    if (!isResizing) return;
+
+    isResizing = false;
+
+    // Calculate final height
+    const currentY = getEventPageY(e);
+    const deltaY = currentY - startY;
+    const finalHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + deltaY));
+
+    // Ensure the final height is applied
+    $swimlane[0].style.setProperty('--swimlane-height', `${finalHeight}px`);
+    $swimlane[0].style.setProperty('height', `${finalHeight}px`);
+    $swimlane[0].style.setProperty('min-height', `${finalHeight}px`);
+    $swimlane[0].style.setProperty('max-height', `${finalHeight}px`);
+    $swimlane[0].style.setProperty('flex', 'none');
+    $swimlane[0].style.setProperty('flex-basis', 'auto');
+    $swimlane[0].style.setProperty('flex-grow', '0');
+    $swimlane[0].style.setProperty('flex-shrink', '0');
+
+    // Remove visual feedback but keep the height
+    $swimlane.removeClass('swimlane-resizing');
+    $('body').removeClass('swimlane-resizing-active');
+    $('body').css('user-select', '');
+
+    // Save the new height using the existing system
+    const boardId = swimlane.boardId;
+    const swimlaneId = swimlane._id;
+
+    if (process.env.DEBUG === 'true') {
     }
+
+    const currentUser = ReactiveCache.getCurrentUser();
+    if (currentUser) {
+      // For logged-in users, use server method
+      Meteor.call('applySwimlaneHeightToStorage', boardId, swimlaneId, finalHeight, (error, result) => {
+        if (error) {
+          console.error('Error saving swimlane height:', error);
+        } else {
+          if (process.env.DEBUG === 'true') {
+          }
+        }
+      });
+    } else {
+      // For non-logged-in users, save to localStorage directly
+      try {
+        const stored = localStorage.getItem('wekan-swimlane-heights');
+        let heights = stored ? JSON.parse(stored) : {};
+
+        if (!heights[boardId]) {
+          heights[boardId] = {};
+        }
+        heights[boardId][swimlaneId] = finalHeight;
+
+        localStorage.setItem('wekan-swimlane-heights', JSON.stringify(heights));
+
+        if (process.env.DEBUG === 'true') {
+        }
+      } catch (e) {
+        console.warn('Error saving swimlane height to localStorage:', e);
+      }
+    }
+
+    e.preventDefault();
+  };
+
+  // Mouse events
+  $resizeHandle.on('mousedown', startResize);
+  $(document).on('mousemove', doResize);
+  $(document).on('mouseup', stopResize);
+
+  // Touch events for mobile.
+  // NOTE: jQuery's .on() does not accept an addEventListener-style options
+  // object — passing { passive: false } made jQuery bind the object itself as
+  // the handler, throwing "handler.apply is not a function" on every touch.
+  // Use the native API so { passive: false } actually applies and
+  // preventDefault() works during the resize.
+  $resizeHandle[0].addEventListener('touchstart', startResize, { passive: false });
+  document.addEventListener('touchmove', doResize, { passive: false });
+  document.addEventListener('touchend', stopResize, { passive: false });
+
+  // Prevent dragscroll interference
+  $resizeHandle.on('mousedown', (e) => {
+    e.stopPropagation();
   });
 }
 
-BlazeComponent.extendComponent({
-  onRendered() {
-    const boardComponent = this.parentComponent();
-    const $listsDom = this.$('.js-lists');
-
-    if (!Utils.getCurrentCardId()) {
-      boardComponent.scrollLeft();
-    }
-
-    initSortable(boardComponent, $listsDom);
+Template.swimlane.helpers({
+  canSeeAddList() {
+    return ReactiveCache.getCurrentUser()?.isBoardAdmin();
   },
-  onCreated() {
-    this.draggingActive = new ReactiveVar(false);
+  lists() {
+    const swimlane = this;
+    // myLists() already covers:
+    //   • lists owned by this swimlane (swimlaneId === this._id)
+    //   • shared / pre-migration lists (swimlaneId empty or null)
+    const regularLists = swimlane.myLists();
 
-    this._isDragging = false;
-    this._lastDragPositionX = 0;
+    // Additionally, detect lists whose swimlaneId references a swimlane that
+    // no longer exists ("orphaned-swimlane" lists).  These would be invisible
+    // in every swimlane without this fallback.  Show them in the FIRST swimlane
+    // on the board so they are always accessible without a DB migration.
+    const allSwimlanes = ReactiveCache.getSwimlanes(
+      { boardId: swimlane.boardId, archived: false },
+      { sort: ['sort'] },
+    );
+    // Only the first swimlane picks up orphaned-swimlane lists.
+    if (!allSwimlanes.length || allSwimlanes[0]._id !== swimlane._id) {
+      return regularLists;
+    }
+    const validIds = allSwimlanes.map(s => s._id);
+    const orphaned = swimlane.orphanedSwimlaneLists(validIds);
+    if (!orphaned.length) return regularLists;
+
+    // Merge, deduplicating by _id (regularLists may already contain some).
+    const seen = new Set(regularLists.map(l => l._id));
+    const combined = [...regularLists];
+    for (const l of orphaned) {
+      if (!seen.has(l._id)) {
+        seen.add(l._id);
+        combined.push(l);
+      }
+    }
+    return combined;
+  },
+  // #6465: the add-list composer is no longer a standing column. It opens AFTER a
+  // specific list when that list's header add-list button is clicked (the target
+  // list _id is kept in Session 'wekan-add-list-after'). Rendered after the list
+  // in the DOM, it appears to the RIGHT of the list in LTR and to the LEFT in RTL
+  // (the lists lane is a flex row that reverses under dir=rtl).
+  isAddListAfter(listId) {
+    return Session.get('wekan-add-list-after') === listId;
+  },
+  // Empty swimlane / empty board: there are no list headers to host the button,
+  // so offer a + button that reveals the inline composer only when clicked.
+  swimlaneHasNoLists() {
+    return !this.myLists || this.myLists().length === 0;
+  },
+  // #6465: is the empty-state create-list form open for this swimlane? (Set by the
+  // + button; until then only the button shows.)
+  isEmptyAddListOpen(swimlaneId) {
+    return Session.get('wekan-add-list-empty') === swimlaneId;
+  },
+  collapseSwimlane() {
+    return Utils.getSwimlaneCollapseState(this);
   },
   id() {
     return this._id;
@@ -155,7 +737,6 @@ BlazeComponent.extendComponent({
   },
   visible(list) {
     if (list.archived) {
-      // Show archived list only when filter archive is on
       if (!Filter.archive.isSelected()) {
         return false;
       }
@@ -166,139 +747,230 @@ BlazeComponent.extendComponent({
       }
     }
     if (Filter.hideEmpty.isSelected()) {
-      const swimlaneId = this.parentComponent()
-        .parentComponent()
-        .data()._id;
-      const cards = list.cards(swimlaneId);
+      // Pass the current swimlane ID so we only count cards belonging to
+      // this swimlane (not cards in other swimlanes that happen to match).
+      const cards = list.cards(this._id);
       if (cards.length === 0) {
         return false;
       }
     }
     return true;
   },
-  events() {
-    return [
-      {
-        // Click-and-drag action
-        'mousedown .board-canvas'(evt) {
-          // Translating the board canvas using the click-and-drag action can
-          // conflict with the build-in browser mechanism to select text. We
-          // define a list of elements in which we disable the dragging because
-          // the user will legitimately expect to be able to select some text with
-          // his mouse.
-
-          const noDragInside = ['a', 'input', 'textarea', 'p'].concat(
-            Utils.isTouchScreenOrShowDesktopDragHandles()
-              ? ['.js-list-handle', '.js-swimlane-header-handle']
-              : ['.js-list-header'],
-          );
-
-          if (
-            $(evt.target).closest(noDragInside.join(',')).length === 0 &&
-            this.$('.swimlane').prop('clientHeight') > evt.offsetY
-          ) {
-            this._isDragging = true;
-            this._lastDragPositionX = evt.clientX;
-          }
-        },
-        mouseup() {
-          if (this._isDragging) {
-            this._isDragging = false;
-          }
-        },
-        mousemove(evt) {
-          if (this._isDragging) {
-            // Update the canvas position
-            this.listsDom.scrollLeft -= evt.clientX - this._lastDragPositionX;
-            this._lastDragPositionX = evt.clientX;
-            // Disable browser text selection while dragging
-            evt.stopPropagation();
-            evt.preventDefault();
-            // Don't close opened card or inlined form at the end of the
-            // click-and-drag.
-            EscapeActions.executeUpTo('popup-close');
-            EscapeActions.preventNextClick();
-          }
-        },
-      },
-    ];
-  },
-
   swimlaneHeight() {
-    const user = Meteor.user();
+    const user = ReactiveCache.getCurrentUser();
     const swimlane = Template.currentData();
-    const height = user.getSwimlaneHeight(swimlane.boardId, swimlane._id);
-    return height == -1 ? "auto" : (height + "px");
-  },
-}).register('swimlane');
 
-BlazeComponent.extendComponent({
-  onCreated() {
-    this.currentBoard = Utils.getCurrentBoard();
-    this.isListTemplatesSwimlane =
-      this.currentBoard.isTemplatesBoard() &&
-      this.currentData().isListTemplatesSwimlane();
-    this.currentSwimlane = this.currentData();
-  },
-
-  // Proxy
-  open() {
-    this.childComponents('inlinedForm')[0].open();
-  },
-
-  events() {
-    return [
-      {
-        submit(evt) {
-          evt.preventDefault();
-          const lastList = this.currentBoard.getLastList();
-          const titleInput = this.find('.list-name-input');
-          const title = titleInput.value.trim();
-          let sortIndex = 0
-          if (lastList) {
-            const positionInput = this.find('.list-position-input');
-            const position = positionInput.value.trim();
-            const ret = ReactiveCache.getList({ boardId: Utils.getCurrentBoardId(), _id: position, archived: false })
-            sortIndex = parseInt(JSON.stringify(ret['sort']))
-            sortIndex = sortIndex+1
+    let height;
+    if (user) {
+      height = user.getSwimlaneHeightFromStorage(swimlane.boardId, swimlane._id);
+    } else {
+      try {
+        const stored = localStorage.getItem('wekan-swimlane-heights');
+        if (stored) {
+          const heights = JSON.parse(stored);
+          if (heights[swimlane.boardId] && heights[swimlane.boardId][swimlane._id]) {
+            height = heights[swimlane.boardId][swimlane._id];
           } else {
-            sortIndex = Utils.calculateIndexData(lastList, null).base;
+            height = -1;
           }
+        } else {
+          height = -1;
+        }
+      } catch (e) {
+        console.warn('Error reading swimlane height from localStorage:', e);
+        height = -1;
+      }
+    }
 
-          if (title) {
-            Lists.insert({
-              title,
-              boardId: Session.get('currentBoard'),
-              sort: sortIndex,
-              type: this.isListTemplatesSwimlane ? 'template-list' : 'list',
-              swimlaneId: this.currentBoard.isTemplatesBoard()
-                ? this.currentSwimlane._id
-                : '',
-            });
-
-            titleInput.value = '';
-            titleInput.focus();
-          }
-        },
-        'click .js-list-template': Popup.open('searchElement'),
-      },
-    ];
-  },
-}).register('addListForm');
-
-Template.swimlane.helpers({
-  canSeeAddList() {
-    return Meteor.user().isBoardAdmin();
+    return height == -1 ? "auto" : (height + 5 + "px");
   },
 });
 
-BlazeComponent.extendComponent({
+// #6465: open the empty-state create-list form for a swimlane (shared by the
+// Swimlanes and Lists views). Until clicked, an empty swimlane/board shows only the
+// + button; this reveals the inline composer, scoped to the clicked swimlane.
+function openEmptyAddList(event) {
+  event.preventDefault();
+  const swimlaneId = $(event.currentTarget).data('swimlane') || null;
+  Session.set('wekan-add-list-after', null);
+  Session.set('wekan-add-list-swimlane', swimlaneId);
+  Session.set('wekan-add-list-empty', swimlaneId);
+}
+
+Template.swimlane.events({
+  'click .js-open-empty-add-list': openEmptyAddList,
+  // Click-and-drag action
+  'mousedown .board-canvas'(evt, tpl) {
+    const noDragInside = ['a', 'input', 'textarea', 'p'].concat(
+      Utils.isTouchScreenOrShowDesktopDragHandles()
+        ? ['.js-list-handle', '.js-swimlane-header-handle']
+        : ['.js-list-header'],
+    ).concat([
+      '.js-list-resize-handle',
+      '.js-swimlane-resize-handle',
+      // #6558: everything that is a DRAG SOURCE rather than a pan surface.
+      // This lane-panning handler is a second implementation of drag-scroll,
+      // and it used to ignore the `nodragscroll` marker the dragscroll library
+      // honours - so pressing a card (which carries `nodragscroll` when the
+      // card itself is the sortable's handle) started a horizontal lane pan
+      // that ran ALONGSIDE the card drag: the card followed the pointer while
+      // the list slid sideways under it, and the drop landed somewhere else.
+      // `.handle` covers the card/list/swimlane drag handles when handles are
+      // on, `.nodragscroll` covers the minicards, resize handles, checklists
+      // and anything else already marked as not-for-panning.
+      '.nodragscroll',
+      '.handle',
+    ]);
+
+    const isResizeHandle = $(evt.target).closest('.js-list-resize-handle, .js-swimlane-resize-handle').length > 0;
+    const isInNoDragArea = $(evt.target).closest(noDragInside.join(',')).length > 0;
+
+    if (isResizeHandle) {
+      return;
+    }
+
+    if (
+      !isInNoDragArea &&
+      tpl.$('.swimlane').prop('clientHeight') > evt.offsetY
+    ) {
+      tpl._isDragging = true;
+      tpl._lastDragPositionX = evt.clientX;
+    }
+  },
+  mouseup(evt, tpl) {
+    if (tpl._isDragging) {
+      tpl._isDragging = false;
+    }
+  },
+  mousemove(evt, tpl) {
+    // #6558: a card / list / swimlane drag has taken over the pointer - stop
+    // panning, whatever started it.
+    if (tpl._isDragging && isBoardDragscrollSuspended()) {
+      tpl._isDragging = false;
+      return;
+    }
+    if (tpl._isDragging) {
+      // Update the canvas position
+      tpl.listsDom.scrollLeft -= evt.clientX - tpl._lastDragPositionX;
+      tpl._lastDragPositionX = evt.clientX;
+      // Disable browser text selection while dragging
+      evt.stopPropagation();
+      evt.preventDefault();
+      // Don't close opened card or inlined form at the end of the
+      // click-and-drag.
+      EscapeActions.executeUpTo('popup-close');
+      EscapeActions.preventNextClick();
+    }
+  },
+});
+
+
+// #6465: the inline add-list composer that opens after a specific list (or at the
+// start of an empty swimlane). Its data context is the swimlane it creates the
+// list in; the target list (for positioning) is Session 'wekan-add-list-after'.
+Template.addListInline.onCreated(function () {
+  this.currentSwimlane = Template.currentData();
+});
+
+Template.addListInline.helpers({
+  // #6465 follow-up: the lists of the swimlane this composer opens in, so the
+  // "add after which list" position selector (restored) can be shown.
+  swimlaneLists() {
+    const swimlaneId =
+      Session.get('wekan-add-list-swimlane') ||
+      Template.instance().currentSwimlane?._id;
+    if (!swimlaneId) return [];
+    return ReactiveCache.getLists(
+      { swimlaneId, archived: false },
+      { sort: { sort: 1 } },
+    );
+  },
+  // Pre-select the list whose header add-list button opened this composer.
+  isDefaultAfterList(listId) {
+    return Session.get('wekan-add-list-after') === listId;
+  },
+});
+
+Template.addListInline.events({
+  async submit(evt, tpl) {
+    evt.preventDefault();
+    const titleInput = tpl.find('.list-name-input');
+    const title = titleInput?.value.trim();
+    if (!title) return;
+
+    // Position: honour the explicit "add after list" selector when present
+    // (its options mirror the swimlane's lists, defaulting to the one whose
+    // header opened this composer), and derive nextListId from the following
+    // option so the new list is inserted between them. Fall back to the header
+    // button's target (Session) for the empty-board/start case.
+    const positionInput = tpl.find('.list-position-input');
+    let afterListId;
+    let nextListId = null;
+    if (positionInput && positionInput.value) {
+      afterListId = positionInput.value.trim();
+      const next = positionInput.options[positionInput.selectedIndex + 1];
+      nextListId = next ? next.value : null;
+    } else {
+      afterListId = Session.get('wekan-add-list-after') || null;
+    }
+
+    try {
+      await Meteor.callAsync('createListAfter', {
+        title,
+        boardId: Session.get('currentBoard'),
+        // The header button records the swimlane the list is displayed in; the
+        // empty-swimlane composer falls back to its own swimlane data context.
+        swimlaneId: Session.get('wekan-add-list-swimlane') || tpl.currentSwimlane?._id,
+        afterListId,
+        nextListId,
+        type: 'list',
+      });
+      titleInput.value = '';
+      titleInput.focus();
+      // Empty-state flow: the swimlane now has a list, so drop the empty-composer
+      // flag — if it becomes empty again the + button (not the form) shows first.
+      Session.set('wekan-add-list-empty', null);
+    } catch (error) {
+      console.error('Failed to create list:', error);
+    }
+  },
+  // Restore the "or template" option: create the list from a template.
+  'click .js-list-template': Popup.open('searchElement'),
+  'click .js-close-add-list-inline'() {
+    Session.set('wekan-add-list-after', null);
+    Session.set('wekan-add-list-swimlane', null);
+    Session.set('wekan-add-list-empty', null);
+  },
+});
+
+Template.listsGroup.helpers({
+  // Issue #6142: the add-list composer needs a swimlane as its data context
+  // (it creates the list in that swimlane). In Lists mode the listsGroup data
+  // context is the board, not a swimlane, so resolve the board's default
+  // swimlane here, for the empty-board + button and the inline composer.
+  defaultSwimlane() {
+    const board = Template.currentData();
+    const swimlaneId = defaultSwimlaneIdForBoard(board);
+    if (!swimlaneId) return null;
+    return ReactiveCache.getSwimlane({ _id: swimlaneId });
+  },
+  // #6465: same add-list-after-a-list behaviour as the swimlanes view.
+  isAddListAfter(listId) {
+    return Session.get('wekan-add-list-after') === listId;
+  },
+  boardHasNoLists() {
+    const board = Template.currentData();
+    return !board || !board.lists || board.lists().length === 0;
+  },
+  // #6465: is the empty-board create-list form open? (Set by the + button.)
+  isEmptyAddListOpen(swimlaneId) {
+    return Session.get('wekan-add-list-empty') === swimlaneId;
+  },
   currentCardIsInThisList(listId, swimlaneId) {
     return currentCardIsInThisList(listId, swimlaneId);
   },
   visible(list) {
     if (list.archived) {
-      // Show archived list only when filter archive is on
       if (!Filter.archive.isSelected()) {
         return false;
       }
@@ -309,76 +981,233 @@ BlazeComponent.extendComponent({
       }
     }
     if (Filter.hideEmpty.isSelected()) {
-      const swimlaneId = this.parentComponent()
-        .parentComponent()
-        .data()._id;
-      const cards = list.cards(swimlaneId);
+      const cards = list.cards();
       if (cards.length === 0) {
         return false;
       }
     }
     return true;
   },
-  onRendered() {
-    const boardComponent = this.parentComponent();
-    const $listsDom = this.$('.js-lists');
+});
 
-    if (!Utils.getCurrentCardId()) {
-      boardComponent.scrollLeft();
-    }
+Template.listsGroup.events({
+  // #6465: empty board (Lists view) + button reveals the inline composer.
+  'click .js-open-empty-add-list': openEmptyAddList,
+});
 
-    initSortable(boardComponent, $listsDom);
-  },
-}).register('listsGroup');
+Template.listsGroup.onRendered(function () {
+  const tpl = this;
+  const boardBodyEl2 = tpl.firstNode?.parentElement?.closest?.('.board-body') || document.querySelector('.board-body');
+  const boardView2 = boardBodyEl2 && Blaze.getView(boardBodyEl2, 'Template.boardBody');
+  const boardComponent = boardView2?.templateInstance?.();
+  const $listsDom = tpl.$('.js-lists');
 
-class MoveSwimlaneComponent extends BlazeComponent {
-  serverMethod = 'moveSwimlane';
-
-  onCreated() {
-    this.currentSwimlane = this.currentData();
+  if (!Utils.getCurrentCardId() && boardComponent) {
+    boardComponent.scrollLeft();
   }
 
+  // Wait for DOM to be ready
+  setTimeout(() => {
+    const handleSelector = Utils.isTouchScreenOrShowDesktopDragHandles()
+      ? '.js-list-handle'
+      : '.js-list-header';
+    const $parent = $listsDom;
+
+    // Initialize sortable even if there are no lists (to allow dropping into empty swimlanes)
+    if ($parent.length > 0 && $parent.hasClass('js-lists')) {
+      if ($parent.data('uiSortable') || $parent.data('sortable')) {
+        try {
+          $parent.sortable('destroy');
+        } catch (e) {}
+      }
+
+      // Check for drag handles
+      const $handles = $parent.find('.js-list-handle');
+
+      // Test if drag handles are clickable
+      $handles.on('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+
+      $parent.sortable({
+        connectWith: '.js-swimlane, .js-lists',
+        tolerance: 'pointer',
+        appendTo: '.board-canvas',
+        helper: 'clone',
+        items: '.js-list:not(.js-list-composer)',
+        placeholder: 'list placeholder',
+        distance: 7,
+        handle: handleSelector,
+        disabled: !Utils.canModifyBoard(),
+        dropOnEmpty: true,
+        start(evt, ui) {
+          ui.helper.css('z-index', 1000);
+          ui.placeholder.height(ui.helper.height());
+          ui.placeholder.width(ui.helper.width());
+          EscapeActions.executeUpTo('popup-close');
+          if (boardComponent) boardComponent.setIsDragging(true);
+          suspendBoardDragscroll(); // #6558
+        },
+        stop(evt, ui) {
+          resumeBoardDragscroll(); // #6558
+          if (boardComponent) boardComponent.setIsDragging(false);
+          saveSorting(ui);
+        },
+      });
+      // Reactively update handle when user toggles desktop drag handles
+      tpl.autorun(() => {
+        const newHandle = Utils.isTouchScreenOrShowDesktopDragHandles()
+          ? '.js-list-handle'
+          : '.js-list-header';
+        if ($parent.data('uiSortable') || $parent.data('sortable')) {
+          try {
+            $parent.sortable('option', 'handle', newHandle);
+          } catch (e) {}
+        }
+      });
+    }
+  }, 100);
+});
+
+
+function swimlaneBoardsSelector(excludeCurrentBoard) {
+  const selector = {
+    archived: false,
+    'members.userId': Meteor.userId(),
+    type: 'board',
+  };
+  if (excludeCurrentBoard) {
+    selector._id = { $ne: Utils.getCurrentBoard()._id };
+  }
+  return selector;
+}
+
+function swimlaneToBoards(excludeCurrentBoard) {
+  return ReactiveCache.getBoards(
+    swimlaneBoardsSelector(excludeCurrentBoard),
+    { sort: { title: 1 } },
+  );
+}
+
+function getSwimlanesForBoard(boardId) {
+  if (!boardId) {
+    return [];
+  }
+  return ReactiveCache.getSwimlanes(
+    { boardId, archived: false },
+    { sort: { sort: 1 } },
+  );
+}
+
+function setFirstSelectedSwimlane(tpl) {
+  const swimlanes = getSwimlanesForBoard(tpl.selectedBoardId.get());
+  const firstSwimlaneId = swimlanes[0]?._id || '';
+  tpl.selectedSwimlaneId.set(firstSwimlaneId);
+}
+
+function swimlaneDoneEvent(serverMethod, tpl) {
+  const bSelect = tpl.$('.js-select-boards')[0];
+  const sSelect = tpl.$('.js-select-swimlanes')[0];
+  if (!bSelect) {
+    Popup.back();
+    return;
+  }
+
+  const boardId = bSelect.options[bSelect.selectedIndex].value;
+  const swimlaneId = sSelect?.options[sSelect.selectedIndex]?.value || null;
+  const position = tpl.$('input[name="swimlane-position"]:checked').val() || 'below';
+  const titleInputId = serverMethod === 'copySwimlane' ? '#copy-swimlane-title' : '#move-swimlane-title';
+  const title = tpl.$(titleInputId).val().trim();
+  Meteor.call(
+    serverMethod,
+    tpl.currentSwimlane._id,
+    boardId,
+    swimlaneId,
+    position,
+    title,
+    err => {
+      if (err) {
+        console.error(`${serverMethod} failed`, err);
+        return;
+      }
+      Popup.back();
+    },
+  );
+}
+
+Template.moveSwimlanePopup.onCreated(function () {
+  this.currentSwimlane = Template.currentData();
+  this.selectedBoardId = new ReactiveVar(Utils.getCurrentBoard()._id);
+  this.selectedSwimlaneId = new ReactiveVar('');
+  setFirstSelectedSwimlane(this);
+});
+
+Template.moveSwimlanePopup.helpers({
   board() {
     return Utils.getCurrentBoard();
-  }
-
-  toBoardsSelector() {
-    return {
-      archived: false,
-      'members.userId': Meteor.userId(),
-      type: 'board',
-      _id: { $ne: this.board()._id },
-    };
-  }
-
+  },
   toBoards() {
-    const ret = ReactiveCache.getBoards(this.toBoardsSelector(), { sort: { title: 1 } });
-    return ret;
-  }
+    return swimlaneToBoards(false);
+  },
+  toSwimlanes() {
+    return getSwimlanesForBoard(Template.instance().selectedBoardId.get());
+  },
+  isSelectedBoard(boardId) {
+    return Template.instance().selectedBoardId.get() === boardId;
+  },
+  isSelectedSwimlane(swimlaneId) {
+    return Template.instance().selectedSwimlaneId.get() === swimlaneId;
+  },
+});
 
-  events() {
-    return [
-      {
-        'click .js-done'() {
-          const bSelect = $('.js-select-boards')[0];
-          let boardId;
-          if (bSelect) {
-            boardId = bSelect.options[bSelect.selectedIndex].value;
-            Meteor.call(this.serverMethod, this.currentSwimlane._id, boardId);
-          }
-          Popup.back();
-        },
-      },
-    ];
-  }
-}
-MoveSwimlaneComponent.register('moveSwimlanePopup');
+Template.moveSwimlanePopup.events({
+  'click .js-done'(event, tpl) {
+    swimlaneDoneEvent('moveSwimlane', tpl);
+  },
+  'change .js-select-boards'(event, tpl) {
+    tpl.selectedBoardId.set($(event.currentTarget).val());
+    setFirstSelectedSwimlane(tpl);
+  },
+  'change .js-select-swimlanes'(event, tpl) {
+    tpl.selectedSwimlaneId.set($(event.currentTarget).val());
+  },
+});
 
-(class extends MoveSwimlaneComponent {
-  serverMethod = 'copySwimlane';
-  toBoardsSelector() {
-    const selector = super.toBoardsSelector();
-    delete selector._id;
-    return selector;
-  }
-}.register('copySwimlanePopup'));
+Template.copySwimlanePopup.onCreated(function () {
+  this.currentSwimlane = Template.currentData();
+  this.selectedBoardId = new ReactiveVar(Utils.getCurrentBoard()._id);
+  this.selectedSwimlaneId = new ReactiveVar('');
+  setFirstSelectedSwimlane(this);
+});
+
+Template.copySwimlanePopup.helpers({
+  board() {
+    return Utils.getCurrentBoard();
+  },
+  toBoards() {
+    return swimlaneToBoards(false);
+  },
+  toSwimlanes() {
+    return getSwimlanesForBoard(Template.instance().selectedBoardId.get());
+  },
+  isSelectedBoard(boardId) {
+    return Template.instance().selectedBoardId.get() === boardId;
+  },
+  isSelectedSwimlane(swimlaneId) {
+    return Template.instance().selectedSwimlaneId.get() === swimlaneId;
+  },
+});
+
+Template.copySwimlanePopup.events({
+  'click .js-done'(event, tpl) {
+    swimlaneDoneEvent('copySwimlane', tpl);
+  },
+  'change .js-select-boards'(event, tpl) {
+    tpl.selectedBoardId.set($(event.currentTarget).val());
+    setFirstSelectedSwimlane(tpl);
+  },
+  'change .js-select-swimlanes'(event, tpl) {
+    tpl.selectedSwimlaneId.set($(event.currentTarget).val());
+  },
+});

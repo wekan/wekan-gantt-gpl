@@ -32,7 +32,17 @@ template(name="dueCards")
               span.global-search-error-messages
                 = msg
         else
-          +resultsPaged(this)
+          .due-cards-results-header
+            h1
+              = resultsText
+          .due-cards-list
+            each card in dueCardsList
+              +resultCard(card)
+    else
+      .global-search-results-list-wrapper
+        .no-results
+          h3 {{_ 'dueCards-noResults-title'}}
+          p {{_ 'dueCards-noResults-description'}}
 
 template(name="dueCardsViewChangePopup")
   if currentUser
@@ -40,7 +50,7 @@ template(name="dueCardsViewChangePopup")
       li
         with "dueCardsViewChange-choice-me"
           a.js-due-cards-view-me
-            i.fa.fa-user.colorful
+            i.fa.fa-user
             | {{_ 'dueCardsViewChange-choice-me'}}
             if $eq Utils.dueCardsView "me"
               i.fa.fa-check
@@ -48,7 +58,7 @@ template(name="dueCardsViewChangePopup")
       li
         with "dueCardsViewChange-choice-all"
           a.js-due-cards-view-all
-            i.fa.fa-users.colorful
+            i.fa.fa-users
             | {{_ 'dueCardsViewChange-choice-all'}}
             span.sub-name
               +viewer

@@ -65,14 +65,18 @@ def get_req_body_elems(obj, elems):
     elif obj.type in ('LogicalExpression', 'BinaryExpression', 'AssignmentExpression'):
         get_req_body_elems(obj.left, elems)
         get_req_body_elems(obj.right, elems)
+    elif obj.type == 'ChainExpression':
+        get_req_body_elems(obj.expression, elems)
     elif obj.type in ('ReturnStatement', 'UnaryExpression'):
-        get_req_body_elems(obj.argument, elems)
+        if obj.argument is not None:
+            get_req_body_elems(obj.argument, elems)
     elif obj.type == 'Identifier':
         return obj.name
     elif obj.type in ['Literal', 'FunctionDeclaration', 'ThrowStatement']:
         pass
     else:
-        print(obj)
+        # Log to stderr so it never contaminates the YAML written to stdout.
+        logger.debug('unhandled AST node type: %s', getattr(obj, 'type', type(obj).__name__))
     return ''
 
 
@@ -100,7 +104,7 @@ class JS2jsonDecoder(json.JSONDecoder):
         return self._decode(result)
 
     def _decode(self, o):
-        if isinstance(o, str) or isinstance(o, unicode):
+        if isinstance(o, str):
             try:
                 return int(o)
             except ValueError:
@@ -124,15 +128,49 @@ def load_return_type_jsdoc_json(data):
     return json.loads(data)
 
 
+def static_route_path(node):
+    '''Return the URL path string for a route's path-argument AST node, or None
+    if it cannot be resolved statically.
+
+    Handles plain string literals (`'/api/...'`) and template literals
+    (`` `/api/boards/:boardId/export/${format}` ``): a `${identifier}` segment
+    becomes a `:identifier` path parameter (which the existing `:name` -> `{name}`
+    conversion then turns into an OpenAPI path parameter). A template literal with
+    a non-identifier interpolation cannot be documented and yields None.'''
+    if node is None:
+        return None
+    value = getattr(node, 'value', None)
+    if value is not None:
+        return value
+    if getattr(node, 'type', None) == 'TemplateLiteral':
+        quasis = getattr(node, 'quasis', None) or []
+        exprs = getattr(node, 'expressions', None) or []
+        parts = []
+        for i, quasi in enumerate(quasis):
+            parts.append((quasi.value.cooked if quasi.value else '') or '')
+            if i < len(exprs):
+                expr = exprs[i]
+                if getattr(expr, 'type', None) == 'Identifier':
+                    parts.append(':' + expr.name)
+                else:
+                    return None
+        return ''.join(parts)
+    return None
+
+
 class EntryPoint(object):
-    def __init__(self, schema, statements):
+    def __init__(self, schema, method_name, path_node, body_node, loc_node):
         self.schema = schema
-        self.method, self._path, self.body = statements
+        self._path = path_node
+        self.body = body_node
+        # loc_node is the AST node whose source location is used to attach the
+        # JSDoc comment that precedes this entry point (the call expression).
+        self.loc_node = loc_node
         self._jsdoc = None
         self._doc = {}
         self._raw_doc = None
         self.path = self.compute_path()
-        self.method_name = self.method.value.lower()
+        self.method_name = method_name.lower()
         self.body_params = []
         if self.method_name in ('post', 'put'):
             get_req_body_elems(self.body, self.body_params)
@@ -158,7 +196,7 @@ class EntryPoint(object):
         schema.used = True
 
     def compute_path(self):
-        return self._path.value.rstrip('/')
+        return static_route_path(self._path).rstrip('/')
 
     def log(self, message, level):
         if self._raw_doc is None:
@@ -394,7 +432,7 @@ class EntryPoint(object):
             print('{}items:'.format(' ' * indent))
             self.print_openapi_return(obj[0], indent + 2)
 
-        elif isinstance(obj, str) or isinstance(obj, unicode):
+        elif isinstance(obj, str):
             rtype = 'type: ' + obj
             if obj == self.schema.name:
                 rtype = '$ref: "#/definitions/{}"'.format(obj)
@@ -462,6 +500,7 @@ class SchemaProperty(object):
         self.statement = statement
         self.name = statement.key.name or statement.key.value
         self.type = 'object'
+        self.elements = []
         self.blackbox = False
         self.required = True
         imports = {}
@@ -599,16 +638,56 @@ class SchemaProperty(object):
                                                  '*' if self.required else '',
                                                  self.doc)
 
+    def array_elements(self):
+        '''Element type(s) of an array property. `type: [Object]` records them
+        directly in self.elements. The SimpleSchema `type: Array` idiom instead
+        declares the element type in a sibling `<name>.$` field, so infer it
+        from there ('object' refers to a generated sub-schema, primitives map to
+        their own type).'''
+        if self.elements:
+            return self.elements
+
+        fields = getattr(self.schema, 'fields', None) or []
+        sub_name = self.name + '.$'
+        for f in fields:
+            if f.name == sub_name:
+                t = f.type
+                if t in ('enum', 'date'):
+                    return ['string']
+                if t == 'object':
+                    return ['object']
+                return [t]
+        # nested object array declared as '<name>.$.<key>' fields
+        prefix = self.name + '.$.'
+        if any(f.name.startswith(prefix) for f in fields):
+            return ['object']
+        return ['object']
+
     def print_openapi(self, indent, current_schema, required_properties):
         schema_name = self.schema.name
         name = self.name
 
         # deal with subschemas
         if '.' in name:
-            subschema = name.split('.')[0]
-            subschema = subschema.capitalize()
+            # The sub-schema that owns this property is every path segment
+            # except the last (the property name). Joining all leading segments
+            # — not just the first — keeps deeply nested objects such as
+            # 'storageConfig.filesystem.enabled' and 'storageConfig.gridfs.enabled'
+            # in distinct sub-schemas (StorageconfigFilesystem / StorageconfigGridfs)
+            # instead of collapsing their leaf keys into one mapping, which would
+            # emit duplicate 'enabled'/'read'/'write' keys and break strict YAML
+            # parsers (e.g. @redocly/cli). The '$' branches below reassign this.
+            subschema = ''.join([s.capitalize() for s in name.split('.')[:-1]])
 
             if name.endswith('$'):
+                # An explicit array-element marker such as `'labels.$': {type:
+                # Object}`. When sibling `'labels.$.xxx'` property fields exist
+                # they define the element sub-schema, so this marker is
+                # redundant — skip it to avoid emitting the sub-schema twice.
+                prefix = self.name + '.'
+                if any(f.name.startswith(prefix) for f in (self.schema.fields or [])):
+                    return current_schema
+
                 # reference in reference
                 subschema = ''.join([n.capitalize() for n in self.name.split('.')[:-1]])
                 subschema = self.schema.name + subschema
@@ -662,7 +741,7 @@ class SchemaProperty(object):
 
         if self.type == 'array':
             print('{}  items:'.format(' ' * indent))
-            for elem in self.elements:
+            for elem in self.array_elements():
                 if elem == 'object':
                     print('{}    $ref: "#/definitions/{}"'.format(' ' * indent, schema_name + name.capitalize()))
                 else:
@@ -760,6 +839,14 @@ class Schemas(object):
         current = None
         required_properties = []
         properties = [f for f in self.fields if '.' in f.name and not '$' in f.name]
+        # Emit each sub-schema's fields contiguously. The loop opens a new
+        # sub-schema header whenever the owning schema changes, so interleaved
+        # nested objects (e.g. 'a.filesystem', 'a.filesystem.x', 'a.gridfs',
+        # 'a.gridfs.x') would otherwise reopen the parent schema 'a' multiple
+        # times — duplicate mapping keys that break strict YAML parsers. Group
+        # by the owning path (every segment but the last). The sort is stable,
+        # so single-level schemas keep their original field order.
+        properties.sort(key=lambda f: tuple(f.name.split('.')[:-1]))
         for prop in properties:
             current = prop.print_openapi(6, current, required_properties)
 
@@ -779,6 +866,27 @@ class Schemas(object):
                 print('      - {}'.format(f))
 
 
+def downlevel_js(data):
+    '''Rewrite a few ES2020+ constructs that the (unmaintained, ES2017-era)
+    esprima Python parser cannot handle into equivalent older forms, so the AST
+    can still be extracted. Replacements are length-neutral per line and never
+    add or remove newlines, so reported line numbers stay accurate for JSDoc and
+    route matching.
+
+      foo?.()  -> foo ()      (optional call)
+      foo?.[i] -> foo [i]     (optional index)
+      foo?.bar -> foo .bar    (optional member)
+      a ??= b  -> a   = b     (nullish assignment)
+      a ?? b   -> a || b      (nullish coalescing)
+    '''
+    data = data.replace('?.(', '  (')
+    data = data.replace('?.[', '  [')
+    data = data.replace('?.', ' .')
+    data = data.replace('??=', '  =')
+    data = data.replace('??', '||')
+    return data
+
+
 class Context(object):
     def __init__(self, path):
         self.path = path
@@ -787,11 +895,12 @@ class Context(object):
             self._txt = f.readlines()
 
         data = ''.join(self._txt)
-        self.program = esprima.parseModule(data,
-                                           options={
-                                               'comment': True,
-                                               'loc': True
-                                           })
+        options = {'comment': True, 'loc': True}
+        try:
+            self.program = esprima.parseModule(data, options=options)
+        except Exception:
+            # esprima only understands ES2017; downlevel newer syntax and retry.
+            self.program = esprima.parseModule(downlevel_js(data), options=options)
 
     def txt_for(self, statement):
         return self.text_at(statement.loc.start.line, statement.loc.end.line)
@@ -809,88 +918,206 @@ def parse_file(path):
 
     return context
 
-def parse_schemas(schemas_dir):
+
+def _get(node, *attrs):
+    '''Safely walk nested attributes of an esprima node, returning None as soon
+    as any link in the chain is missing. Avoids AttributeError on optional
+    fields of heterogeneous AST nodes.'''
+    for attr in attrs:
+        if node is None:
+            return None
+        node = getattr(node, attr, None)
+    return node
+
+
+# HTTP verbs recognised on the Meteor 3 `WebApp.handlers.<verb>()` routing API.
+HTTP_METHODS = ('get', 'post', 'put', 'delete', 'patch')
+
+
+def extract_route(call):
+    '''Return (method_name, path_node, body_node) when `call` registers a REST
+    API entry point, otherwise None. Two routing styles are recognised:
+
+      * legacy json-routes:  JsonRoutes.add('GET', '/api/...', fn)
+      * Meteor 3 webapp:     WebApp.handlers.get('/api/...', fn)
+    '''
+    if getattr(call, 'type', None) != 'CallExpression':
+        return None
+    callee = call.callee
+    if _get(callee, 'type') != 'MemberExpression':
+        return None
+
+    # legacy: JsonRoutes.add('METHOD', '/path', fn)
+    if (_get(callee, 'object', 'name') == 'JsonRoutes' and
+            _get(callee, 'property', 'name') == 'add'):
+        args = call.arguments
+        if len(args) >= 3 and getattr(args[0], 'value', None):
+            return (args[0].value, args[1], args[2])
+        return None
+
+    # Meteor 3: WebApp.handlers.<method>('/path', fn)
+    if (_get(callee, 'object', 'object', 'name') == 'WebApp' and
+            _get(callee, 'object', 'property', 'name') == 'handlers' and
+            _get(callee, 'property', 'name') in HTTP_METHODS):
+        args = call.arguments
+        if len(args) >= 2:
+            return (callee.property.name, args[0], args[1])
+        return None
+
+    return None
+
+
+def iter_route_calls(node):
+    '''Recursively yield CallExpression nodes that may register a route, in
+    source order. Routes appear at the top level (Meteor 3 style) or wrapped in
+    one of the server-only guards Wekan uses — `if (Meteor.isServer) { ... }`,
+    `runOnServer(function () { ... })`, `Meteor.startup(...)`, try blocks — so we
+    descend through those constructs and into callback function bodies.'''
+    if node is None:
+        return
+    if isinstance(node, list):
+        for n in node:
+            yield from iter_route_calls(n)
+        return
+
+    ntype = getattr(node, 'type', None)
+    if ntype == 'CallExpression':
+        yield node
+        # descend into function arguments such as runOnServer(function(){...})
+        for arg in getattr(node, 'arguments', None) or []:
+            if getattr(arg, 'type', None) in ('FunctionExpression', 'ArrowFunctionExpression'):
+                yield from iter_route_calls(arg.body)
+    elif ntype == 'ExpressionStatement':
+        yield from iter_route_calls(node.expression)
+    elif ntype == 'IfStatement':
+        yield from iter_route_calls(node.consequent)
+        yield from iter_route_calls(node.alternate)
+    elif ntype == 'BlockStatement':
+        yield from iter_route_calls(node.body)
+    elif ntype == 'TryStatement':
+        yield from iter_route_calls(node.block)
+    elif ntype in ('FunctionDeclaration', 'FunctionExpression', 'ArrowFunctionExpression'):
+        yield from iter_route_calls(node.body)
+
+
+def is_attach_schema(statement):
+    '''True for `<Collection>.attachSchema(new SimpleSchema({...}))` statements.'''
+    if getattr(statement, 'type', None) != 'ExpressionStatement':
+        return False
+    expr = statement.expression
+    if (_get(expr, 'callee', 'property', 'name') != 'attachSchema' or
+            not getattr(expr, 'arguments', None)):
+        return False
+    arg0 = expr.arguments[0]
+    return (_get(arg0, 'type') == 'NewExpression' and
+            _get(arg0, 'callee', 'name') == 'SimpleSchema')
+
+
+def schema_name_for_file(filename, schemas):
+    '''When a route file has no in-file schema (Meteor 3 splits routes into
+    server/models/ while schemas stay in models/), associate it with the schema
+    named after the file, e.g. boards.js -> Boards. Returns None if no match.'''
+    base = os.path.splitext(os.path.basename(filename))[0]
+    if not base:
+        return None
+    candidate = base[0].upper() + base[1:]
+    if candidate in schemas:
+        return candidate
+    for name in schemas:
+        if name.lower() == base.lower():
+            return name
+    return None
+
+
+def parse_schemas(schemas_dirs):
+    if isinstance(schemas_dirs, str):
+        schemas_dirs = [schemas_dirs]
 
     schemas = {}
     entry_points = []
 
-    for root, dirs, files in os.walk(schemas_dir):
-        files.sort()
-        for filename in files:
-            path = os.path.join(root, filename)
-            context = parse_file(path)
+    # Collect every parseable file across all directories first. Schemas
+    # (SimpleSchema definitions) live in models/ while the REST routes that use
+    # them now live in server/models/, so we register all schemas before
+    # associating them with entry points.
+    parsed = []
+    for schemas_dir in schemas_dirs:
+        for root, dirs, files in os.walk(schemas_dir):
+            files.sort()
+            for filename in files:
+                if not filename.endswith('.js'):
+                    continue
+                path = os.path.join(root, filename)
+                context = parse_file(path)
+                if context is None:
+                    # the file doesn't contain valid JS (see parse_file)
+                    continue
+                jsdocs = [c for c in context.program.comments
+                          if c.type == 'Block' and c.value.startswith('*\n')]
+                parsed.append((path, filename, context, jsdocs))
 
-            if context is None:
-              # the file doesn't contain a schema (see above)
-              continue
+    # Pass 1: register every schema, remembering which file each came from so
+    # in-file routes (legacy single-file layout) keep their original grouping.
+    schemas_in_file = {}
+    for path, filename, context, jsdocs in parsed:
+        try:
+            for statement in context.program.body:
+                if is_attach_schema(statement):
+                    schema = Schemas(context, statement, jsdocs)
+                    schemas[schema.name] = schema
+                    schemas_in_file.setdefault(path, []).append(schema.name)
+        except TypeError:
+            logger.error('{}: can not parse schema'.format(path))
+            raise
 
-            program = context.program
+    # Pass 2: register every entry point and attach it to a schema.
+    for path, filename, context, jsdocs in parsed:
+        route_calls = []
+        for call in iter_route_calls(context.program.body):
+            route = extract_route(call)
+            if route is not None:
+                method_name, path_node, body_node = route
+                if static_route_path(path_node) is None:
+                    logger.warning(
+                        '%s: skipping route with a non-static path that cannot be '
+                        'documented (dynamic template literal).', path)
+                    continue
+                route_calls.append((method_name, path_node, body_node, call))
 
-            current_schema = None
-            jsdocs = [c for c in program.comments
-                      if c.type == 'Block' and c.value.startswith('*\n')]
+        if not route_calls:
+            continue
 
-            try:
+        # Resolve the schema to group these routes under: the first schema
+        # declared in the same file, else the schema named after the file, else
+        # a stub keyed by the filename (no definitions, no auto tag).
+        names_here = schemas_in_file.get(path)
+        if names_here:
+            schema_name = names_here[0]
+        else:
+            schema_name = schema_name_for_file(filename, schemas)
+            if schema_name is None:
+                schema_name = filename
+                schemas[schema_name] = Schemas(context, name=schema_name)
+        schema = schemas[schema_name]
 
-                for statement in program.body:
+        try:
+            schema_entry_points = [EntryPoint(schema, method_name, path_node, body_node, call)
+                                   for (method_name, path_node, body_node, call) in route_calls]
+        except TypeError:
+            logger.error('{}: can not parse routes'.format(path))
+            raise
+        entry_points.extend(schema_entry_points)
 
-                    # find the '<ITEM>.attachSchema(new SimpleSchema(<data>)'
-                    # those are the schemas
-                    if (statement.type == 'ExpressionStatement' and
-                       statement.expression.callee is not None and
-                       statement.expression.callee.property is not None and
-                       statement.expression.callee.property.name == 'attachSchema' and
-                       statement.expression.arguments[0].type == 'NewExpression' and
-                       statement.expression.arguments[0].callee.name == 'SimpleSchema'):
-
-                        schema = Schemas(context, statement, jsdocs)
-                        current_schema = schema.name
-                        schemas[current_schema] = schema
-
-                    # find all the 'if (Meteor.isServer) { JsonRoutes.add('
-                    # those are the entry points of the API
-                    elif (statement.type == 'IfStatement' and
-                          statement.test.type == 'MemberExpression' and
-                          statement.test.object.name == 'Meteor' and
-                          statement.test.property.name == 'isServer'):
-                            data = [s.expression.arguments
-                                    for s in statement.consequent.body
-                                    if (s.type == 'ExpressionStatement' and
-                                        s.expression.type == 'CallExpression' and
-                                        s.expression.callee.object.name == 'JsonRoutes')]
-
-                            # we found at least one entry point, keep them
-                            if len(data) > 0:
-                                if current_schema is None:
-                                    current_schema = filename
-                                    schemas[current_schema] = Schemas(context, name=current_schema)
-
-                                schema_entry_points = [EntryPoint(schemas[current_schema], d)
-                                                       for d in data]
-                                entry_points.extend(schema_entry_points)
-
-                                end_of_previous_operation = -1
-
-                                # try to match JSDoc to the operations
-                                for entry_point in schema_entry_points:
-                                    operation = entry_point.method  # POST/GET/PUT/DELETE
-
-                                    # find all jsdocs that end before the current operation,
-                                    # the last item in the list is the one we need
-                                    jsdoc = [j for j in jsdocs
-                                             if j.loc.end.line + 1 <= operation.loc.start.line and
-                                                j.loc.start.line > end_of_previous_operation]
-                                    if bool(jsdoc):
-                                        entry_point.doc = jsdoc[-1]
-
-                                    end_of_previous_operation = operation.loc.end.line
-            except TypeError:
-                logger.warning(context.txt_for(statement))
-                logger.error('{}:{}-{} can not parse {}'.format(path,
-                                                                statement.loc.start.line,
-                                                                statement.loc.end.line,
-                                                                statement.type))
-                raise
+        # try to match the JSDoc block that precedes each operation
+        end_of_previous_operation = -1
+        for entry_point in schema_entry_points:
+            loc = entry_point.loc_node.loc
+            jsdoc = [j for j in jsdocs
+                     if j.loc.end.line + 1 <= loc.start.line and
+                        j.loc.start.line > end_of_previous_operation]
+            if bool(jsdoc):
+                entry_point.doc = jsdoc[-1]
+            end_of_previous_operation = loc.end.line
 
     return schemas, entry_points
 
@@ -929,47 +1156,63 @@ paths:
       operationId: login
       summary: Login with REST API
       consumes:
-        - application/x-www-form-urlencoded
         - application/json
+        - application/x-www-form-urlencoded
       tags:
         - Login
       parameters:
-        - name: username
-          in: formData
+        - name: loginRequest
+          in: body
           required: true
-          description: |
-            Your username
-          type: string
-        - name: password
-          in: formData
-          required: true
-          description: |
-            Your password
-          type: string
-          format: password
+          description: Login credentials
+          schema:
+            type: object
+            required:
+              - username
+              - password
+            properties:
+              username:
+                description: |
+                  Your username
+                type: string
+              password:
+                description: |
+                  Your password
+                type: string
+                format: password
       responses:
         200:
           description: |-
             Successful authentication
           schema:
-            items:
-              properties:
-                id:
-                  type: string
-                token:
-                  type: string
-                tokenExpires:
-                  type: string
+            type: object
+            required:
+              - id
+              - token
+              - tokenExpires
+            properties:
+              id:
+                type: string
+                description: User ID
+              token:
+                type: string
+                description: |
+                  Authentication token
+              tokenExpires:
+                type: string
+                format: date-time
+                description: |
+                  Token expiration date
         400:
           description: |
             Error in authentication
           schema:
-            items:
-              properties:
-                error:
-                  type: number
-                reason:
-                  type: string
+            type: object
+            properties:
+              error:
+                type: string
+              reason:
+                type: string
         default:
           description: |
             Error in authentication
@@ -1050,6 +1293,14 @@ paths:
         for ep in methods[path]:
             ep.print_openapi()
 
+    # Append hand-written paths for endpoints that cannot be auto-discovered
+    # (e.g. the file/attachment API registered via WebApp.handlers.use()).
+    extra_paths = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                               'extra_paths.yml')
+    if os.path.exists(extra_paths):
+        with open(extra_paths) as f:
+            sys.stdout.write(f.read())
+
     print('definitions:')
     for schema in schemas.values():
         # do not export the objects if there is no API attached
@@ -1062,13 +1313,17 @@ paths:
 def main():
     parser = argparse.ArgumentParser(description='Generate an OpenAPI 2.0 from the given JS schemas.')
     script_dir = os.path.dirname(os.path.realpath(__file__))
+    default_dirs = [os.path.abspath('{}/../models'.format(script_dir)),
+                    os.path.abspath('{}/../server/models'.format(script_dir))]
     parser.add_argument('--release', default='git-master', nargs=1,
                         help='the current version of the API, can be retrieved by running `git describe --tags --abbrev=0`')
-    parser.add_argument('dir', default=os.path.abspath('{}/../models'.format(script_dir)), nargs='?',
-                        help='the directory where to look for schemas')
+    parser.add_argument('dirs', default=default_dirs, nargs='*',
+                        help='the directories where to look for schemas and REST routes '
+                             '(default: models server/models)')
 
     args = parser.parse_args()
-    schemas, entry_points = parse_schemas(args.dir)
+    dirs = args.dirs if args.dirs else default_dirs
+    schemas, entry_points = parse_schemas(dirs)
     generate_openapi(schemas, entry_points, args.release[0])
 
 

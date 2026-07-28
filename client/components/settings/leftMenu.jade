@@ -1,0 +1,59 @@
+//- The ONE left menu used by every Admin Panel page.
+//- Design + the list of pages that use it: docs/Design/Page/Left-Menu.md
+//-
+//- "Left" is the reading order, not a side: under a right-to-left language the
+//- whole panel mirrors and this menu sits on the RIGHT. That comes from logical
+//- CSS on .side-menu, not from anything here — see the design doc.
+//-
+//- The three icon shapes below are the ones the pages already used, reproduced
+//- exactly so converting a page changes no pixel:
+//-   emoji:true            an empty span.emoji-icon before the icon (Settings,
+//-                         Features) — the span carries its own font-size rule
+//-   iconWrapCls:'text-red' the icon wrapped in a coloured span.emoji-icon
+//-                         (People → Locked users)
+//-   neither               a bare i.fa (Problems, People, Translation, Info)
+//-
+//- Data context: { items } from buildMenuItems() in models/lib/leftMenu.js.
+template(name="leftMenu")
+  .side-menu
+    ul
+      each items
+        if separator
+          li.left-menu-separator
+            hr
+        else if heading
+          //- A group title: text, not a row. No anchor, so there is nothing to
+          //- click and nothing for the page's click handler to read a data-id from.
+          li.left-menu-heading
+            if labelKey
+              | {{_ labelKey}}
+            else
+              | {{label}}
+        else
+          li(class="{{#if active}}active{{/if}} {{cls}}")
+            a.js-left-menu-item(class="{{jsClass}}" data-id="{{id}}")
+              if iconWrapCls
+                span.emoji-icon(class="{{iconWrapCls}}")
+                  i.fa(class="{{icon}}")
+              else
+                if emoji
+                  span.emoji-icon
+                i.fa(class="{{icon}}")
+              if labelKey
+                | {{_ labelKey}}
+              else
+                | {{label}}
+
+//- The title of the open pane, at the top of the content beside the menu. Its text
+//- is the ACTIVE menu entry's own label (paneTitle() in models/lib/leftMenu.js), so
+//- every Admin Panel pane has a heading, in the same words as the row that opened
+//- it and - through the one .admin-pane-title class - at the same size. The shared
+//- table page puts that class on its own title, so a table pane and a form pane
+//- look the same.
+//-
+//- Data context: { titleKey } or { label } from paneTitle().
+template(name="paneTitle")
+  if titleKey
+    h1.admin-pane-title {{_ titleKey}}
+  else if label
+    h1.admin-pane-title {{label}}

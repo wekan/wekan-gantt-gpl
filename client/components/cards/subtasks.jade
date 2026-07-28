@@ -1,6 +1,6 @@
 template(name="subtasks")
   h3.card-details-item-title
-    i.fa.fa-sitemap
+    i.fa.fa-globe
     | {{_ 'subtasks'}}
   if currentUser.isBoardAdmin
     if toggleDeleteDialog.get
@@ -35,12 +35,16 @@ template(name="subtaskDetail")
           h2.title
             +viewer
                 = subtask.title
+        if subtaskStatus
+          span.subtask-status(title="{{_ 'list'}}")
+            i.fa.fa-list-ul
+            | {{ subtaskStatus }}
 
 template(name="addSubtaskItemForm")
   textarea.js-add-subtask-item(rows='1' autofocus dir="auto")
   .edit-controls.clearfix
     button.primary.confirm.js-submit-add-subtask-item-form(type="submit") {{_ 'save'}}
-    a.fa.fa-times-thin.js-close-inlined-form
+    a.fa.fa-times-thin.js-close-inlined-form(title="{{_ 'close-add-checklist-item'}}")
 
 template(name="editSubtaskItemForm")
   textarea.js-edit-subtask-item(rows='1' autofocus dir="auto")
@@ -50,8 +54,8 @@ template(name="editSubtaskItemForm")
       = subtask.title
   .edit-controls.clearfix
     button.primary.confirm.js-submit-edit-subtask-item-form(type="submit") {{_ 'save'}}
-    a.fa.fa-times-thin.js-close-inlined-form
-    span(title=createdAt) {{ moment createdAt }}
+    a.fa.fa-times-thin.js-close-inlined-form(title="{{_ 'close-edit-checklist-item'}}")
+    span(title=createdAt) {{ displayDate createdAt }}
     if canModifyCard
       if currentUser.isBoardAdmin
         a.js-delete-subtask-item {{_ "delete"}}...
@@ -74,12 +78,13 @@ template(name="subtasksItems")
 template(name='subtaskItemDetail')
   .js-subtasks-item.subtasks-item
     if canModifyCard
-      .check-box.materialCheckBox(class="{{#if item.isFinished }}is-checked{{/if}}")
+      .check-box-container
+        .check-box.materialCheckBox(class="{{#if item.isFinished}}is-checked{{/if}}")
       .item-title.js-open-inlined-form.is-editable(class="{{#if item.isFinished }}is-checked{{/if}}")
         +viewer
           = item.title
     else
-      .materialCheckBox(class="{{#if item.isFinished }}is-checked{{/if}}")
+      .materialCheckBox(class="{{#if item.isFinished}}is-checked{{/if}}")
       .item-title(class="{{#if item.isFinished }}is-checked{{/if}}")
         +viewer
           = item.title
@@ -94,6 +99,10 @@ template(name="subtaskActionsPopup")
       a.js-view-subtask(title="{{ subtask.title }}")
         i.fa.fa-eye
         | {{_ "view-it"}}
+    li
+      a.js-go-to-subtask-board
+        i.fa.fa-folder
+        | {{_ "go-to-board"}}
       if currentUser.isBoardAdmin
         a.js-delete-subtask.delete-subtask
           i.fa.fa-trash

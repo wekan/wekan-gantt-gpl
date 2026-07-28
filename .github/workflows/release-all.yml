@@ -1,0 +1,2625 @@
+name: Release All Platforms
+
+# Triggered manually via GitHub CLI or the Actions UI.
+# Usage:
+#   gh workflow run release-all.yml -f old_version=9.35 -f new_version=9.36
+#
+# Or use the convenience script (bumps versions, commits, pushes, then triggers):
+#   ./releases/release-all.sh 9.35 9.36
+#
+# WeKan's default database is MongoDB, which ships server binaries only for amd64
+# and arm64 (+ the win64/mac bundles). On every OTHER architecture that has a
+# Node.js 24 build — ppc64le, s390x, riscv64 — there is no MongoDB, so those
+# bundles ship FerretDB v1 instead: the wekan/FerretDB fork with its embedded
+# pure-Go SQLite backend, which speaks the MongoDB wire protocol. FerretDB is
+# built + released SEPARATELY (wekan/FerretDB, its own build.sh) as individual
+# per-arch binaries; each bundle job downloads ONLY the ferretdb-<arch> binary for
+# the platform it targets and bakes it in, so amd64/arm64 users can opt into it
+# too (WEKAN_DB=ferretdb, `snap set wekan
+# database=ferretdb`, or Docker env). Whichever backend is chosen binds the same
+# MongoDB port, so MONGO_URL is unchanged. ppc64le/s390x/riscv64 are now covered
+# by the Docker image as well (self-contained, FerretDB auto-started). riscv64
+# uses unofficial-builds.nodejs.org for Node 24. (armv7l/32-bit ARM is still not
+# built: there is NO Node.js 24 build for it anywhere, so nothing could run it.)
+#
+# This workflow does EVERYTHING for a release remotely (nothing is built or
+# pushed on the maintainer's machine), running jobs in parallel where possible:
+#   - bump:    runs releases/version.sh + releases/rebuild-docs.sh on the runner
+#              (bumps Node/MongoDB/WeKan versions, rebuilds API docs), then
+#              commits and pushes the bump to wekan/wekan main
+#   - prepare: tags the bumped main as v<new_version> and extracts release notes
+#   - website: updates the wekan/wekan.fi repo (install page + API docs) and pushes
+#   - charts:  updates and publishes the wekan/charts Helm chart and pushes,
+#              only AFTER the `docker` job has published the image (skipped if
+#              docker fails)
+#   - build-*: builds the amd64 bundle (full Meteor 3 build), then rebuilds native
+#              modules for arm64 from that amd64 base. Each bundle job downloads
+#              only the ferretdb-<arch> binary it needs from the newest wekan/FerretDB
+#              release (FerretDB is built + released separately by its own build.sh —
+#              not compiled here) and embeds it
+#   - release: creates the GitHub Release with the newest CHANGELOG.md notes and
+#              uploads the core wekan-<version>-{amd64,arm64}.zip bundles
+#   - build-win64 / build-mac-arm64 / build-extra-arches: built AFTER release, each
+#              rebuilds the amd64 bundle's native modules for its platform (Windows,
+#              macOS arm64, and QEMU-emulated ppc64le/s390x/riscv64) and attaches
+#              its .zip to the Release. Windows/macOS strip the Linux FerretDB back
+#              out (MongoDB-only). Decoupled from `release` so a slow/flaky build
+#              never blocks it
+#   - build-sandstorm: built AFTER release, builds the Sandstorm .spk package
+#              (same steps as the standalone sandstorm.yml workflow, which still
+#              exists for testing the .spk build on its own) and attaches
+#              wekan-<version>-sandstorm.spk to the Release. Non-blocking: the
+#              Sandstorm build is the experimental/fragile part of CI, so it
+#              never fails the release
+#   - docker:  builds and pushes the multi-arch image (amd64, arm64, ppc64le, s390x,
+#              riscv64) to Docker Hub, Quay.io, GHCR
+#   - snap:    builds the snap from the default core24 snapcraft.yaml and pushes it
+#              to the Snap Store stable + candidate + beta + edge channels, and
+#              attaches the .snap files to the GitHub Release. Two jobs: snap-native
+#              builds amd64 + arm64 on native runners, snap-launchpad builds
+#              ppc64el + s390x + riscv64 with `snapcraft remote-build` on Launchpad,
+#              which is the only mechanism that supports core24 on an arch with no
+#              native runner. core24 allows stable and candidate (core26 does not).
+#              snap-variants publishes the SAME snap under the two older names
+#              people still have installed, wekan-ondra and wekan-gantt-gpl, on
+#              amd64 + arm64 - so one release publishes all THREE snaps. It needs
+#              SNAP_AUTH to carry the ACL for all three names.
+#              `snap set wekan database=ferretdb` switches the running backend to
+#              FerretDB v1 (snapcraft-core26.yaml is the core26 variant)
+#
+# Required GitHub Secrets:
+#   GHCR_AUTH        - base64("username:token") for ghcr.io
+#   DOCKERHUB_AUTH   - base64("username:token") for Docker Hub
+#   QUAY_AUTH        - base64("username:token") for Quay.io
+#   SNAP_AUTH        - Snap Store credentials (output of `snapcraft export-login`)
+#   LP_CREDENTIALS   - base64 of the Launchpad credentials file used by
+#                      `snapcraft remote-build` (see releases/snap-build.sh notes)
+#   SANDSTORM_KEYRING - base64 of ~/.sandstorm-keyring; meteor-spk signs the .spk
+#                      with the WeKan Sandstorm app's private key from this keyring
+#   WEKAN_REPO_TOKEN - Personal Access Token with write access to wekan/wekan.fi
+#                      and wekan/charts, used by the website + charts jobs to push
+#                      to those repos (the built-in GITHUB_TOKEN only covers
+#                      wekan/wekan). See releases/create-github-secrets.sh.
+#                      Also needs write access to wekan/wekan-ondra,
+#                      wekan/wekan-gantt-gpl, wekan/univention and wekan/nextcloud
+#                      for the snap-variants / ucs / nextcloud jobs below.
+#   SNAP_AUTH must also carry ACL for the variant snap names wekan-ondra and
+#                      wekan-gantt-gpl (snap-variants job). See
+#                      docs/Design/Autoupdate/Snap-Ondra-Gantt.md.
+#   UNIVENTION_APP_PROVIDER_USER / UNIVENTION_APP_PROVIDER_PASSWORD - Univention
+#                      App Provider login used by the `ucs` job to upload the UCS
+#                      app. See docs/Design/Autoupdate/UCS.md.
+#   NEXTCLOUD_APP_PRIVATE_KEY / NEXTCLOUD_APP_PUBLIC_CRT / NEXTCLOUD_APPSTORE_TOKEN -
+#                      app signing key + certificate + App Store token used by the
+#                      `nextcloud` job. See docs/Design/Autoupdate/Nextcloud.md.
+#
+#   Reading the logs: every job ends with a "Job result" step that runs whatever
+#   happened, so the run summary is a list of OK / FAILED / CANCELLED, one line per
+#   job. Inside a job, each check prints either an "OK: ..." line saying what it
+#   verified or an ::error:: saying what was expected, what was found, and what to
+#   do about it - so "which step failed, and why" is answerable from the log alone.
+#   The checks cover what silently produced a broken release before: an empty
+#   version bump, missing release notes, a zip without bundle/main.js, an upload
+#   that reported success but left no asset, and a Docker manifest missing a CPU.
+#
+#   EVERY job that needs a secret checks it in its FIRST step and says, by name,
+#   which one is missing - and, where a cheap check exists, whether it actually
+#   WORKS: the GitHub token is asked whether it can push to the repo it is for, the
+#   three registry credentials are decoded and logged in with, and the base64 ones
+#   are decoded. What only the far end can answer - whether the Snap Store accepts
+#   SNAP_AUTH, whether Launchpad accepts LP_CREDENTIALS - is answered at the step
+#   that uses it, which then names the secret in the log instead of leaving a bare
+#   401 behind. So a missing or broken secret is always ONE named line, near the top.
+#
+#   The snap-variants / ucs / nextcloud jobs are guarded: if their secrets are not
+#   set they log a ::warning:: and skip, so they never break an ordinary release.
+
+on:
+  workflow_dispatch:
+    inputs:
+      old_version:
+        description: 'Previous version number (e.g. 9.35, without v prefix)'
+        required: true
+        type: string
+      new_version:
+        description: 'New version number (e.g. 9.36, without v prefix)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  packages: write
+
+# Node.js major version that Meteor 3.5 bundles. Used for native module
+# rebuilds on every platform — it must match the amd64 build's Node ABI.
+env:
+  NODE_VERSION: '24'
+
+jobs:
+
+  # ─── 0. Bump versions + rebuild API docs, commit to main ────────────────────
+  # Runs releases/version.sh (probes upstream for the newest Node.js/MongoDB,
+  # bumps every version reference) and releases/rebuild-docs.sh (regenerates
+  # public/api/wekan.yml + wekan.html), then commits and pushes to main so the
+  # tag, builds, website and charts jobs all see the bumped sources.
+  bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install version-bump and docs build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip curl wget
+
+      - name: Bump versions and rebuild API docs
+        env:
+          # Builds fetch dependencies from upstream themselves, so skip the slow
+          # pre-download of Node/MongoDB tarballs that the local flow does.
+          RELEASE_SKIP_DEP_DOWNLOAD: '1'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          ./releases/version.sh "${{ inputs.old_version }}" "${{ inputs.new_version }}"
+          ./releases/rebuild-docs.sh "${{ inputs.new_version }}"
+
+      - name: Commit and push version bump
+        run: |
+          git add --all
+          if git diff --cached --quiet; then
+            # Not fatal - a re-run of the same release bumps nothing - but it is not
+            # the normal case, so it must be visible rather than a line of prose.
+            echo "::warning::bump: nothing to commit. Either the versions were already at v${{ inputs.new_version }} (a re-run), or releases/version.sh changed no file - its output above says which."
+          else
+            git commit -m "Bump versions for v${{ inputs.new_version }}"
+            if ! git push origin main; then
+              echo "::error::bump: could not push the version bump to main. A branch protection rule, a required review, or a token without write access does this - and the rest of the release would then build the OLD version."
+              exit 1
+            fi
+            echo "OK: bump pushed the version bump to main."
+          fi
+
+      # Always, as the last step: the run summary then answers "what worked and what
+      # did not" for the whole release at a glance, instead of eighteen job logs. A
+      # step that failed has already printed an ::error:: saying why; this names the
+      # job it was in.
+      - name: Job result
+        if: always()
+        # bash explicitly: this same step runs on the Windows and macOS runners too,
+        # where the default shell is PowerShell / not necessarily this bash.
+        shell: bash
+        run: |
+          case "${{ job.status }}" in
+            success)   mark='OK       ' ;;
+            failure)   mark='FAILED   ' ;;
+            cancelled) mark='CANCELLED' ;;
+            *)         mark='${{ job.status }}' ;;
+          esac
+          echo "$mark bump"
+          echo "$mark bump" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ job.status }}" = "failure" ]; then
+            echo "::error::bump FAILED. The ::error:: line in this job's log, above, says which step and why."
+          fi
+
+  # ─── 1. Tag the release and extract release notes ───────────────────────────
+  prepare:
+    needs: bump
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      changelog: ${{ steps.changelog.outputs.content }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Normalise version from input
+        id: version
+        run: |
+          VERSION="${{ inputs.new_version }}"
+          VERSION="${VERSION#v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Create and push tag v${{ steps.version.outputs.version }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git rev-parse "v$VERSION" >/dev/null 2>&1; then
+            echo "Tag v$VERSION already exists, leaving it as is."
+          else
+            git tag -a "v$VERSION" -m "v$VERSION"
+            git push origin "v$VERSION"
+          fi
+
+      - name: Extract release notes from CHANGELOG.md
+        id: changelog
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          # Prefer a version-specific "# v<version> ..." section, otherwise fall
+          # back to the topmost "# Upcoming/Upcomig WeKan ® release" section.
+          NOTES=$(python3 - <<PYEOF
+          import re, sys
+          version = "$VERSION"
+          with open("CHANGELOG.md", encoding="utf-8") as f:
+              content = f.read()
+          patterns = [
+              rf"(# v{re.escape(version)} .*?)(?=\n# v[0-9]|\Z)",
+              r"(# Upcom\w* WeKan.*?)(?=\n# v[0-9]|\Z)",
+          ]
+          for pat in patterns:
+              m = re.search(pat, content, re.DOTALL)
+              if m:
+                  print(m.group(1).strip())
+                  sys.exit(0)
+          print(f"WeKan v{version}")
+          PYEOF
+          )
+          # "WeKan v<version>" is the fallback the script above prints when it finds
+          # NEITHER a "# v<version>" section nor an "# Upcoming" one - i.e. the
+          # release would be published with no notes at all. Say so here, where the
+          # cause is still obvious, instead of shipping an empty release page.
+          if [ -z "${NOTES//[[:space:]]/}" ]; then
+            echo "::error::prepare: the release notes came out EMPTY. CHANGELOG.md must have a '# v$VERSION ...' section, or an '# Upcoming WeKan (R) release' section to use."
+            exit 1
+          fi
+          if [ "$NOTES" = "WeKan v$VERSION" ]; then
+            echo "::error::prepare: CHANGELOG.md has no section for v$VERSION and no '# Upcoming WeKan (R) release' section, so the release would have no notes. Add the section and re-run."
+            exit 1
+          fi
+          echo "OK: release notes are $(printf '%s' "$NOTES" | wc -l) lines / $(printf '%s' "$NOTES" | wc -c) characters."
+          {
+            echo "content<<GHEOF"
+            echo "$NOTES"
+            echo "GHEOF"
+          } >> "$GITHUB_OUTPUT"
+
+      # Always, as the last step: the run summary then answers "what worked and what
+      # did not" for the whole release at a glance, instead of eighteen job logs. A
+      # step that failed has already printed an ::error:: saying why; this names the
+      # job it was in.
+      - name: Job result
+        if: always()
+        # bash explicitly: this same step runs on the Windows and macOS runners too,
+        # where the default shell is PowerShell / not necessarily this bash.
+        shell: bash
+        run: |
+          case "${{ job.status }}" in
+            success)   mark='OK       ' ;;
+            failure)   mark='FAILED   ' ;;
+            cancelled) mark='CANCELLED' ;;
+            *)         mark='${{ job.status }}' ;;
+          esac
+          echo "$mark prepare"
+          echo "$mark prepare" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ job.status }}" = "failure" ]; then
+            echo "::error::prepare FAILED. The ::error:: line in this job's log, above, says which step and why."
+          fi
+
+  # ─── 1b. Update the wekan.fi website repo (parallel) ────────────────────────
+  # Bumps the version/Meteor/Node/MongoDB strings on the install page and copies
+  # the freshly rebuilt API docs into wekan.fi/api/v<new>, then commits + pushes
+  # to wekan/wekan.fi. Runs as soon as `bump` has pushed the bumped sources.
+  website:
+    needs: bump
+    runs-on: ubuntu-latest
+    steps:
+      # First step on purpose: a missing secret is then ONE named line at the top of
+      # the log, instead of a failure deep inside a tool that only says the login
+      # was refused. GITHUB_TOKEN is provided by Actions itself and is never listed.
+      - name: Check required secrets are configured
+        env:
+          WEKAN_REPO_TOKEN: ${{ secrets.WEKAN_REPO_TOKEN }}
+        run: |
+          missing=""
+          [ -n "${WEKAN_REPO_TOKEN:-}" ] || missing="$missing WEKAN_REPO_TOKEN"
+          if [ -n "$missing" ]; then
+            echo "::error::website: missing repository secret(s):$missing — the website is not updated. Add them in Settings → Secrets and variables → Actions:"
+            echo "  WEKAN_REPO_TOKEN - a token that can push to wekan/wekan.fi"
+            exit 1
+          fi
+          # Present is not the same as WORKING: an expired, revoked or too-narrow
+          # token fails much later, in a checkout or a push, with a message that
+          # never names the secret. Ask the API instead - one call, and the log
+          # says which secret is wrong and how.
+          code=$(curl -sS -o /tmp/repo.json -w '%{http_code}' \
+            -H "Authorization: Bearer $WEKAN_REPO_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/wekan/wekan.fi")
+          if [ "$code" != "200" ]; then
+            echo "::error::website: WEKAN_REPO_TOKEN does not work — GitHub answered HTTP $code for wekan/wekan.fi. Expired, revoked, or without access to that repository."
+            exit 1
+          fi
+          if [ "$(jq -r '.permissions.push // false' /tmp/repo.json)" != "true" ]; then
+            echo "::error::website: WEKAN_REPO_TOKEN reaches wekan/wekan.fi but may not PUSH to it. A classic PAT needs the 'repo' scope; a fine-grained PAT needs Contents: Read and write on wekan/wekan.fi."
+            exit 1
+          fi
+          echo "website: WEKAN_REPO_TOKEN works and can push to wekan/wekan.fi."
+
+      - name: Checkout wekan repo (bumped main, with rebuilt API docs)
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          path: wekan
+
+      - name: Checkout wekan.fi website repo
+        uses: actions/checkout@v7
+        with:
+          repository: wekan/wekan.fi
+          token: ${{ secrets.WEKAN_REPO_TOKEN }}
+          path: wekan.fi
+
+      - name: Update and push website
+        env:
+          WEBDIR: ${{ github.workspace }}/wekan.fi
+          WEKANREPODIR: ${{ github.workspace }}/wekan
+          RELEASE_PUSH_WEBSITE: '1'
+        run: |
+          cd wekan.fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          cd ..
+          ./wekan/releases/release-website.sh "${{ inputs.old_version }}" "${{ inputs.new_version }}"
+
+      # Always, as the last step: the run summary then answers "what worked and what
+      # did not" for the whole release at a glance, instead of eighteen job logs. A
+      # step that failed has already printed an ::error:: saying why; this names the
+      # job it was in.
+      - name: Job result
+        if: always()
+        # bash explicitly: this same step runs on the Windows and macOS runners too,
+        # where the default shell is PowerShell / not necessarily this bash.
+        shell: bash
+        run: |
+          case "${{ job.status }}" in
+            success)   mark='OK       ' ;;
+            failure)   mark='FAILED   ' ;;
+            cancelled) mark='CANCELLED' ;;
+            *)         mark='${{ job.status }}' ;;
+          esac
+          echo "$mark website"
+          echo "$mark website" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ job.status }}" = "failure" ]; then
+            echo "::error::website FAILED. The ::error:: line in this job's log, above, says which step and why."
+          fi
+
+  # ─── 1c. Update and publish the Helm chart repo (after docker) ──────────────
+  # Bumps the WeKan version in wekan/charts, packages the chart and publishes it
+  # to the gh-pages Helm index, then pushes both branches. Runs only AFTER the
+  # `docker` job succeeds: the chart points users at the freshly published
+  # multi-arch image, so we don't advertise a new chart version until that image
+  # is actually on the registries. If `docker` fails, this job is skipped.
+  charts:
+    needs: docker
+    runs-on: ubuntu-latest
+    steps:
+      # First step on purpose: a missing secret is then ONE named line at the top of
+      # the log, instead of a failure deep inside a tool that only says the login
+      # was refused. GITHUB_TOKEN is provided by Actions itself and is never listed.
+      - name: Check required secrets are configured
+        env:
+          WEKAN_REPO_TOKEN: ${{ secrets.WEKAN_REPO_TOKEN }}
+        run: |
+          missing=""
+          [ -n "${WEKAN_REPO_TOKEN:-}" ] || missing="$missing WEKAN_REPO_TOKEN"
+          if [ -n "$missing" ]; then
+            echo "::error::charts: missing repository secret(s):$missing — the Helm chart is not published. Add them in Settings → Secrets and variables → Actions:"
+            echo "  WEKAN_REPO_TOKEN - a token that can push to wekan/charts"
+            exit 1
+          fi
+          # Present is not the same as WORKING: an expired, revoked or too-narrow
+          # token fails much later, in a checkout or a push, with a message that
+          # never names the secret. Ask the API instead - one call, and the log
+          # says which secret is wrong and how.
+          code=$(curl -sS -o /tmp/repo.json -w '%{http_code}' \
+            -H "Authorization: Bearer $WEKAN_REPO_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/wekan/charts")
+          if [ "$code" != "200" ]; then
+            echo "::error::charts: WEKAN_REPO_TOKEN does not work — GitHub answered HTTP $code for wekan/charts. Expired, revoked, or without access to that repository."
+            exit 1
+          fi
+          if [ "$(jq -r '.permissions.push // false' /tmp/repo.json)" != "true" ]; then
+            echo "::error::charts: WEKAN_REPO_TOKEN reaches wekan/charts but may not PUSH to it. A classic PAT needs the 'repo' scope; a fine-grained PAT needs Contents: Read and write on wekan/charts."
+            exit 1
+          fi
+          echo "charts: WEKAN_REPO_TOKEN works and can push to wekan/charts."
+
+      - name: Checkout wekan repo (for releases/release-charts.sh + version refs)
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          path: wekan
+
+      - name: Checkout wekan/charts repo (main + gh-pages)
+        uses: actions/checkout@v7
+        with:
+          repository: wekan/charts
+          token: ${{ secrets.WEKAN_REPO_TOKEN }}
+          fetch-depth: 0
+          path: charts
+
+      - name: Install Helm
+        uses: azure/setup-helm@v5
+
+      - name: Fetch gh-pages branch (release-charts.sh switches to it)
+        run: |
+          cd charts
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin '+refs/heads/*:refs/remotes/origin/*'
+          git branch --track gh-pages origin/gh-pages 2>/dev/null || true
+
+      - name: Release and publish chart
+        env:
+          CHARTS_DIR: ${{ github.workspace }}/charts
+        run: |
+          ./wekan/releases/release-charts.sh "${{ inputs.new_version }}"
+
+      # Always, as the last step: the run summary then answers "what worked and what
+      # did not" for the whole release at a glance, instead of eighteen job logs. A
+      # step that failed has already printed an ::error:: saying why; this names the
+      # job it was in.
+      - name: Job result
+        if: always()
+        # bash explicitly: this same step runs on the Windows and macOS runners too,
+        # where the default shell is PowerShell / not necessarily this bash.
+        shell: bash
+        run: |
+          case "${{ job.status }}" in
+            success)   mark='OK       ' ;;
+            failure)   mark='FAILED   ' ;;
+            cancelled) mark='CANCELLED' ;;
+            *)         mark='${{ job.status }}' ;;
+          esac
+          echo "$mark charts"
+          echo "$mark charts" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ job.status }}" = "failure" ]; then
+            echo "::error::charts FAILED. The ::error:: line in this job's log, above, says which step and why."
+          fi
+
+  # ─── 2. Build amd64 bundle (full Meteor 3 build) ────────────────────────────
+  # Meteor 3.5 installer supports only Linux x86_64/aarch64, macOS, Windows.
+  # The full Meteor build always runs here on x86_64; every other platform then
+  # only rebuilds the native npm modules from this bundle.
+  build-amd64:
+    needs: [prepare]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: refs/tags/v${{ needs.prepare.outputs.version }}
+
+      - name: Cache Meteor installation
+        uses: actions/cache@v6
+        with:
+          path: ~/.meteor
+          key: meteor-${{ hashFiles('.meteor/release') }}-${{ hashFiles('.meteor/packages') }}
+          restore-keys: meteor-
+
+      - name: Cache npm packages
+        uses: actions/cache@v6
+        with:
+          path: ~/.npm
+          key: npm-${{ hashFiles('package-lock.json') }}
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential g++ make python3 curl wget zip unzip qemu-user-static
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Meteor
+        run: |
+          if [ ! -f ~/.meteor/meteor ]; then
+            curl https://install.meteor.com/ | sh
+          fi
+          echo "$HOME/.meteor" >> $GITHUB_PATH
+
+      - name: Build WeKan bundle
+        run: |
+          rm -rf .build node_modules .meteor/local
+          (meteor update --npm 2>/dev/null || true) && meteor npm install
+          meteor build .build --directory
+
+      - name: Install server npm modules
+        run: |
+          cd .build/bundle/programs/server
+          npm install
+
+      - name: Embed Node.js, FerretDB (amd64) and launcher into the bundle
+        # Make the release .zip self-contained (offline): bundle Node.js + FerretDB
+        # + a start-wekan.sh that runs WeKan on the bundled Node against the bundled
+        # FerretDB (SQLite) by default, storing files on the filesystem under
+        # WRITABLE_PATH. This amd64 bundle is the base every other Linux arch is
+        # derived from; those jobs overwrite bundle/node and bundle/ferretdb with
+        # their own arch's binaries and inherit this launcher.
+        run: |
+          # Bundled Node.js: the runner's node (setup-node) is linux-x64 Node 24,
+          # matching this base bundle's arch.
+          cp -L "$(command -v node)" .build/bundle/node
+          chmod +x .build/bundle/node
+          # Bundled FerretDB (amd64): download only this arch's binary from the
+          # newest wekan/FerretDB release (per-arch assets, no ferretdb.zip).
+          curl -fSL --retry 5 --retry-delay 10 -o .build/bundle/ferretdb \
+            "https://github.com/wekan/FerretDB/releases/latest/download/ferretdb-amd64"
+          chmod +x .build/bundle/ferretdb
+          # Bundled MongoDB Database Tools (amd64) from wekan/mongo-tools (per-arch,
+          # no mongodb.com). This base amd64 bundle is inherited by the other Linux
+          # arches, which overwrite these with their own arch's tools below.
+          MT="https://github.com/wekan/mongo-tools/releases/latest/download"
+          for t in bsondump mongodump mongoexport mongofiles mongoimport mongorestore mongostat mongotop; do
+            curl -fSL --retry 5 --retry-delay 10 -o ".build/bundle/$t" "$MT/$t-amd64"
+            chmod +x ".build/bundle/$t"
+          done
+          # Self-contained launcher (defaults to FerretDB SQLite + WRITABLE_PATH).
+          cp releases/ferretdb/start-wekan.sh .build/bundle/
+          chmod +x .build/bundle/start-wekan.sh
+          # #6458: cpu-exec + same-arch qemu-user. cpu-exec runs any bundled
+          # binary that declares required CPU features (e.g. an external
+          # MongoDB 5+: AVX on x86_64) through qemu-user emulation on CPUs
+          # that lack them — including hypervisors that mask AVX. Every Linux
+          # bundle ships its own arch's qemu-user; other arches overwrite
+          # these below.
+          cp snap-src/bin/cpu-exec .build/bundle/cpu-exec
+          chmod +x .build/bundle/cpu-exec
+          cp /usr/bin/qemu-x86_64-static .build/bundle/qemu-x86_64
+          chmod +x .build/bundle/qemu-x86_64
+
+      - name: Create amd64 zip
+        run: |
+          cd .build
+          zip -r wekan-${VERSION}-amd64.zip bundle
+          # A zip that EXISTS is not a zip that WORKS, and the log should say which of the
+          # two this is. The size answers "was the bundle directory empty when it was
+          # zipped"; the entries answer "can this bundle start at all" - bundle/main.js is
+          # what the launcher runs, bundle/node is the runtime the zip promises to carry.
+          zip="wekan-${VERSION}-amd64.zip"
+          if [ ! -f "$zip" ]; then
+            echo "::error::$zip was not created. The build step above produced no bundle - its log says why."
+            exit 1
+          fi
+          bytes=$(wc -c < "$zip")
+          if [ "$bytes" -lt 10000000 ]; then
+            echo "::error::$zip is only $bytes bytes; a whole bundle is tens of megabytes. The bundle directory was empty or partial when it was zipped."
+            exit 1
+          fi
+          # Listing to a FILE first: `unzip -l "$zip" | grep -q` ends unzip with
+          # SIGPIPE the moment grep matches, and `set -o pipefail` then reports 141
+          # for the pipeline - so a found file reads as a missing one. It is what
+          # broke the win64 verify twice; these have only been lucky about the size
+          # of the pipe buffer.
+          unzip -l "$zip" > zip-listing.txt
+          for want in bundle/main.js bundle/node; do
+            if ! grep -q " $want$" zip-listing.txt; then
+              echo "::error::$zip has no $want, so it cannot start WeKan. The embed step above did not put it into the bundle."
+              exit 1
+            fi
+          done
+          echo "OK: $zip is $((bytes/1024/1024)) MiB and contains bundle/main.js and bundle/node."
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: bundle-amd64
+          path: .build/wekan-${{ needs.prepare.outputs.version }}-amd64.zip
+          retention-days: 1
+
+      # Always, as the last step: the run summary then answers "what worked and what
+      # did not" for the whole release at a glance, instead of eighteen job logs. A
+      # step that failed has already printed an ::error:: saying why; this names the
+      # job it was in.
+      - name: Job result
+        if: always()
+        # bash explicitly: this same step runs on the Windows and macOS runners too,
+        # where the default shell is PowerShell / not necessarily this bash.
+        shell: bash
+        run: |
+          case "${{ job.status }}" in
+            success)   mark='OK       ' ;;
+            failure)   mark='FAILED   ' ;;
+            cancelled) mark='CANCELLED' ;;
+            *)         mark='${{ job.status }}' ;;
+          esac
+          echo "$mark build-amd64"
+          echo "$mark build-amd64" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ job.status }}" = "failure" ]; then
+            echo "::error::build-amd64 FAILED. The ::error:: line in this job's log, above, says which step and why."
+          fi
+
+  # ─── 3. Build arm64 bundle (rebuild native modules natively) ─────────────────
+  build-arm64:
+    needs: [prepare, build-amd64]
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 60
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential g++ make python3 curl unzip zip qemu-user-static
+
+      - name: Download amd64 bundle
+        uses: actions/download-artifact@v8
+        with:
+          name: bundle-amd64
+
+      - name: Rebuild native modules for arm64 in container
+        run: |
+          unzip wekan-${VERSION}-amd64.zip
+          # Fix: bcrypt 5.0.1 (Meteor accounts-password) ships node-addon-api@3
+          # which fails to compile on Node.js 24. Replace with bcrypt 6.0.0.
+          BCRYPT_DIR="$(pwd)/bundle/programs/server/npm/node_modules/meteor/accounts-password/node_modules/bcrypt"
+          if [ -d "$BCRYPT_DIR" ]; then
+            rm -rf "$BCRYPT_DIR"
+            TMP=$(mktemp -d)
+            pushd "$TMP" > /dev/null
+            npm pack bcrypt@6.0.0
+            mkdir bcrypt && tar xzf bcrypt-*.tgz --strip-components=1 -C bcrypt
+            cd bcrypt && npm install --ignore-scripts && cd ..
+            cp -a bcrypt "$BCRYPT_DIR"
+            popd > /dev/null
+            rm -rf "$TMP"
+          fi
+          docker run --rm --platform linux/arm64 \
+            -v "$(pwd)/bundle:/bundle" \
+            -w /bundle/programs/server \
+            node:${NODE_VERSION}-slim \
+            sh -c "apt-get update -qq && apt-get install -y -q build-essential python3 && npm install"
+
+      - name: Embed Node.js + FerretDB (arm64) into the bundle
+        # The launcher (start-wekan.sh) is inherited from the amd64 base bundle;
+        # swap bundle/node (runner is arm64 -> linux-arm64 Node 24) and bundle/ferretdb.
+        run: |
+          cp -L "$(command -v node)" bundle/node
+          chmod +x bundle/node
+          # Download only the arm64 FerretDB binary from the newest wekan/FerretDB release.
+          curl -fSL --retry 5 --retry-delay 10 -o bundle/ferretdb \
+            "https://github.com/wekan/FerretDB/releases/latest/download/ferretdb-arm64"
+          chmod +x bundle/ferretdb
+          # Overwrite the inherited amd64 MongoDB Database Tools with arm64 ones.
+          MT="https://github.com/wekan/mongo-tools/releases/latest/download"
+          for t in bsondump mongodump mongoexport mongofiles mongoimport mongorestore mongostat mongotop; do
+            curl -fSL --retry 5 --retry-delay 10 -o "bundle/$t" "$MT/$t-arm64"
+            chmod +x "bundle/$t"
+          done
+          # #6458: replace the inherited amd64 qemu-user with this arch's own
+          # (cpu-exec is a shell script and stays as inherited). qemu-aarch64
+          # lets ARMv8.0 hosts (Raspberry Pi 4 and older) run binaries that
+          # need ARMv8.2-A, like MongoDB 5+.
+          rm -f bundle/qemu-x86_64
+          cp /usr/bin/qemu-aarch64-static bundle/qemu-aarch64
+          chmod +x bundle/qemu-aarch64
+
+      - name: Create arm64 zip
+        run: |
+          zip -r wekan-${VERSION}-arm64.zip bundle
+          # A zip that EXISTS is not a zip that WORKS, and the log should say which of the
+          # two this is. The size answers "was the bundle directory empty when it was
+          # zipped"; the entries answer "can this bundle start at all" - bundle/main.js is
+          # what the launcher runs, bundle/node is the runtime the zip promises to carry.
+          zip="wekan-${VERSION}-arm64.zip"
+          if [ ! -f "$zip" ]; then
+            echo "::error::$zip was not created. The build step above produced no bundle - its log says why."
+            exit 1
+          fi
+          bytes=$(wc -c < "$zip")
+          if [ "$bytes" -lt 10000000 ]; then
+            echo "::error::$zip is only $bytes bytes; a whole bundle is tens of megabytes. The bundle directory was empty or partial when it was zipped."
+            exit 1
+          fi
+          # Listing to a FILE first: `unzip -l "$zip" | grep -q` ends unzip with
+          # SIGPIPE the moment grep matches, and `set -o pipefail` then reports 141
+          # for the pipeline - so a found file reads as a missing one. It is what
+          # broke the win64 verify twice; these have only been lucky about the size
+          # of the pipe buffer.
+          unzip -l "$zip" > zip-listing.txt
+          for want in bundle/main.js bundle/node; do
+            if ! grep -q " $want$" zip-listing.txt; then
+              echo "::error::$zip has no $want, so it cannot start WeKan. The embed step above did not put it into the bundle."
+              exit 1
+            fi
+          done
+          echo "OK: $zip is $((bytes/1024/1024)) MiB and contains bundle/main.js and bundle/node."
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: bundle-arm64
+          path: wekan-${{ needs.prepare.outputs.version }}-arm64.zip
+          retention-days: 1
+
+      # Always, as the last step: the run summary then answers "what worked and what
+      # did not" for the whole release at a glance, instead of eighteen job logs. A
+      # step that failed has already printed an ::error:: saying why; this names the
+      # job it was in.
+      - name: Job result
+        if: always()
+        # bash explicitly: this same step runs on the Windows and macOS runners too,
+        # where the default shell is PowerShell / not necessarily this bash.
+        shell: bash
+        run: |
+          case "${{ job.status }}" in
+            success)   mark='OK       ' ;;
+            failure)   mark='FAILED   ' ;;
+            cancelled) mark='CANCELLED' ;;
+            *)         mark='${{ job.status }}' ;;
+          esac
+          echo "$mark build-arm64"
+          echo "$mark build-arm64" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ job.status }}" = "failure" ]; then
+            echo "::error::build-arm64 FAILED. The ::error:: line in this job's log, above, says which step and why."
+          fi
+
+  # ─── 7. Create GitHub Release and upload all bundles ────────────────────────
+  release:
+    needs:
+      - prepare
+      - build-amd64
+      - build-arm64
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - name: Download all bundles
+        uses: actions/download-artifact@v8
+        with:
+          pattern: bundle-*
+          merge-multiple: true
+
+      - name: Create GitHub Release with all bundles
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: v${{ needs.prepare.outputs.version }}
+          name: v${{ needs.prepare.outputs.version }}
+          body: ${{ needs.prepare.outputs.changelog }}
+          # FerretDB binaries are NOT attached here: the per-arch ferretdb-<arch>
+          # binaries live on the wekan/FerretDB releases
+          # (https://github.com/wekan/FerretDB/releases), which is where the WeKan
+          # builds fetch them from. Each wekan-<version>-<arch>.zip bundle embeds
+          # its own arch's FerretDB binary.
+          files: |
+            wekan-${{ needs.prepare.outputs.version }}-amd64.zip
+            wekan-${{ needs.prepare.outputs.version }}-arm64.zip
+
+      # Always, as the last step: the run summary then answers "what worked and what
+      # did not" for the whole release at a glance, instead of eighteen job logs. A
+      # step that failed has already printed an ::error:: saying why; this names the
+      # job it was in.
+      - name: Job result
+        if: always()
+        # bash explicitly: this same step runs on the Windows and macOS runners too,
+        # where the default shell is PowerShell / not necessarily this bash.
+        shell: bash
+        run: |
+          case "${{ job.status }}" in
+            success)   mark='OK       ' ;;
+            failure)   mark='FAILED   ' ;;
+            cancelled) mark='CANCELLED' ;;
+            *)         mark='${{ job.status }}' ;;
+          esac
+          echo "$mark release"
+          echo "$mark release" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ job.status }}" = "failure" ]; then
+            echo "::error::release FAILED. The ::error:: line in this job's log, above, says which step and why."
+          fi
+
+  # ─── 7b. Extra-platform bundles (win64, mac-arm64, s390x, ppc64le) ───────────
+  # Every bundle below is built AFTER `release` and attaches its own .zip to the
+  # already-created GitHub Release with `gh release upload --clobber`, rather than
+  # being a prerequisite of `release`. This deliberately decouples the slower /
+  # different-OS builds (Windows, macOS, QEMU-emulated arches) from the core
+  # amd64/arm64 release, Docker and snap, so a slow or flaky one never blocks them.
+  # These bundles are NOT part of the Docker image or snap.
+
+  # Build win64 bundle (rebuild native modules on Windows).
+  build-win64:
+    needs: [prepare, build-amd64, release]
+    runs-on: windows-latest
+    timeout-minutes: 60
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      # Checked out into src/ so start-wekan.bat and snapcraft.yaml (which pins
+      # the MongoDB tools/mongosh versions) are available; the downloaded bundle
+      # is extracted alongside it in the workspace root.
+      - uses: actions/checkout@v7
+        with:
+          ref: refs/tags/v${{ needs.prepare.outputs.version }}
+          path: src
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install 7-zip
+        run: choco install -y 7zip
+
+      - name: Download amd64 bundle
+        uses: actions/download-artifact@v8
+        with:
+          name: bundle-amd64
+
+      - name: Fix bcrypt for Node.js 24
+        shell: bash
+        run: |
+          7z x wekan-${VERSION}-amd64.zip
+          # Drop the Linux node + FerretDB binaries + MongoDB Database Tools + POSIX
+          # launcher inherited from the amd64 base bundle; the Windows node.exe,
+          # ferretdb.exe, *.exe tools and start-wekan.bat are added in later steps.
+          rm -f bundle/node bundle/ferretdb bundle/.ferretdb-default bundle/start-wekan.sh
+          rm -f bundle/bsondump bundle/mongodump bundle/mongoexport bundle/mongofiles \
+                bundle/mongoimport bundle/mongorestore bundle/mongostat bundle/mongotop
+          # Linux-only cpu-exec + qemu-user (#6458) make no sense on Windows.
+          rm -f bundle/cpu-exec bundle/qemu-x86_64
+          # Fix: bcrypt 5.0.1 (Meteor accounts-password) ships node-addon-api@3
+          # which fails to compile on Node.js 24. Replace with bcrypt 6.0.0.
+          BCRYPT_DIR="$(pwd)/bundle/programs/server/npm/node_modules/meteor/accounts-password/node_modules/bcrypt"
+          if [ -d "$BCRYPT_DIR" ]; then
+            rm -rf "$BCRYPT_DIR"
+            TMP=$(mktemp -d)
+            pushd "$TMP" > /dev/null
+            npm pack bcrypt@6.0.0
+            mkdir bcrypt && tar xzf bcrypt-*.tgz --strip-components=1 -C bcrypt
+            cd bcrypt && npm install --ignore-scripts && cd ..
+            cp -r bcrypt "$BCRYPT_DIR"
+            popd > /dev/null
+            rm -rf "$TMP"
+          fi
+
+      - name: Rebuild native modules for Windows
+        shell: bash
+        run: |
+          cd bundle/programs/server
+          rm -rf node_modules
+          npm install
+
+      - name: Add MongoDB Database Tools to the bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          # MongoDB Database Tools (Windows) built by wekan/mongo-tools (pure Go),
+          # one <tool>-win64.exe per tool from that repo's newest release — no
+          # mongodb.com dependency. No mongosh: WeKan no longer bundles the MongoDB
+          # Shell; scripted DB access uses the bundled Node.js 24 + `mongodb` driver.
+          # (The Windows launcher, start-wekan.bat, is added by the FerretDB embed
+          # step below from releases/ferretdb/start-wekan.bat.)
+          BASE="https://github.com/wekan/mongo-tools/releases/latest/download"
+          for tool in bsondump mongodump mongoexport mongofiles mongoimport mongorestore mongostat mongotop; do
+            curl -fL --retry 5 --retry-delay 10 -o "bundle/${tool}.exe" "${BASE}/${tool}-win64.exe"
+          done
+
+          echo "=== bundle contents ==="
+          ls -1 bundle/
+
+      - name: Embed Node.js, FerretDB (win64) and launcher into the bundle
+        shell: bash
+        # Make the Windows .zip self-contained: bundle node.exe (from the runner's
+        # win-x64 Node 24), ferretdb.exe (downloaded per-arch from the newest
+        # wekan/FerretDB release) and start-wekan.bat. FerretDB embedding is
+        # tolerant: if the win64 asset is missing the bundle stays MongoDB-only
+        # (start-wekan.bat then won't find ferretdb.exe).
+        run: |
+          # Bundled Node.js (win-x64 node.exe from setup-node).
+          NODE_SRC="$(command -v node)"
+          [ -f "$NODE_SRC" ] || NODE_SRC="${NODE_SRC}.exe"
+          cp "$NODE_SRC" bundle/node.exe
+          # Bundled FerretDB (win64): download only this arch's binary.
+          if curl -fSL --retry 5 --retry-delay 10 -o bundle/ferretdb.exe \
+               "https://github.com/wekan/FerretDB/releases/latest/download/ferretdb-win64.exe"; then
+            echo "Embedded FerretDB win64 -> bundle/ferretdb.exe"
+          else
+            rm -f bundle/ferretdb.exe
+            echo "No win64 FerretDB asset in the release; Windows bundle stays MongoDB-only."
+          fi
+          # Self-contained Windows launcher (defaults to FerretDB SQLite).
+          cp src/releases/ferretdb/start-wekan.bat bundle/
+          # Check what goes IN, before anything is archived. This is the honest place
+          # for it: whether the zip can hold a startable bundle is decided here, in a
+          # plain directory, with no archive-listing format in the way.
+          for want in main.js node.exe start-wekan.bat; do
+            if [ ! -s "bundle/$want" ]; then
+              echo "::error::bundle/$want is missing or empty, so the win64 zip cannot start WeKan. The bundle comes from the build job; the lines above say what was copied in."
+              exit 1
+            fi
+          done
+          echo "bundle/ has main.js, node.exe and start-wekan.bat:"
+          ls -la bundle
+
+      - name: Create win64 zip
+        shell: cmd
+        run: 7z a wekan-%VERSION%-win64.zip bundle
+
+      - name: Verify the win64 zip
+        shell: bash
+        run: |
+          # Same question as on the other platforms, asked in bash because the zip
+          # itself is made with 7-Zip under cmd: does this zip actually carry a
+          # startable bundle, or only a name that looks like one?
+          zip="wekan-${VERSION}-win64.zip"
+          if [ ! -f "$zip" ]; then
+            echo "::error::$zip was not created - 7z failed above, or the bundle directory was missing."
+            exit 1
+          fi
+          bytes=$(wc -c < "$zip")
+          if [ "$bytes" -lt 10000000 ]; then
+            echo "::error::$zip is only $bytes bytes; a whole bundle is tens of megabytes. The bundle directory was empty or partial when it was zipped."
+            exit 1
+          fi
+          # Integrity: `7z t` reads every entry and fails on a truncated or corrupt
+          # archive. Together with the check on bundle/ before zipping, that is what
+          # actually decides whether this zip is startable.
+          if ! 7z t "$zip" > 7z-test.log 2>&1; then
+            echo "::error::$zip did not pass 7z t - the archive is corrupt or truncated."
+            tail -n 30 7z-test.log
+            exit 1
+          fi
+          echo "7z t: archive is intact."
+          # The listing is EVIDENCE, printed, not a hidden verdict. v10.48 failed the
+          # release because `grep` found neither "bundle\main.js" nor "bundle/main.js"
+          # in `7z l -ba` output that nothing ever printed, so a bad zip and a bad
+          # grep looked exactly alike. Now the listing shows itself, and a missing
+          # match is a WARNING: bundle/main.js was verified to exist before zipping
+          # and the archive passed its integrity test, so a zero count here says
+          # something about 7-Zip's output format, not about the bundle.
+          # Through a FILE, never a pipe. `cmd | head`/`cmd | grep -q` ends the
+          # reader early, the writer gets SIGPIPE, and with `set -o pipefail` (which
+          # GitHub's bash uses) the pipeline's status becomes 141 - so under `set -e`
+          # a MATCH fails the step. That is what "has no bundle/main.js" was in
+          # v10.48, and what exit code 141 was in v10.49: the file was there both
+          # times, and the listing below proves it (`bundle\main.js`, five lines in).
+          7z l -ba "$zip" > zip-listing.txt 2>/dev/null || true
+          entries="$(wc -l < zip-listing.txt)"
+          echo "7z l -ba listed $entries entries; the first five:"
+          head -5 zip-listing.txt || true
+          for want in main.js node.exe; do
+            n="$(grep -F -c -e "bundle\\$want" -e "bundle/$want" zip-listing.txt || true)"
+            echo "  entries matching bundle/$want: $n"
+            if [ "${n:-0}" -eq 0 ]; then
+              echo "::warning::$zip listing shows no bundle/$want, but bundle/$want existed before zipping and the archive passed 7z t. Compare the five listing lines above with what is being searched for."
+            fi
+          done
+          echo "OK: $zip is $((bytes/1024/1024)) MiB, intact, and was built from a bundle that had main.js and node.exe."
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: bundle-win64
+          path: wekan-${{ needs.prepare.outputs.version }}-win64.zip
+          retention-days: 1
+
+      - name: Attach win64 bundle to the GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # The repo is checked out into src/, so the workspace root is not a git
+          # repository; set GH_REPO so `gh` targets wekan/wekan without relying on
+          # git remote detection (else: "fatal: not a git repository").
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          asset="wekan-${VERSION}-win64.zip"
+          if [ ! -f "$asset" ]; then
+            echo "::error::$asset does not exist, so there is nothing to attach. The step that builds it failed, or produced a different name."
+            exit 1
+          fi
+          if ! gh release upload "v${VERSION}" "$asset" --clobber; then
+            echo "::error::Could not attach $asset to release v${VERSION}: the release must exist first (the release job), and GITHUB_TOKEN must be allowed to write releases here."
+            exit 1
+          fi
+          # Confirm from the OTHER side. An upload that reports success but leaves no
+          # asset behind is the failure nobody notices until a download 404s.
+          gh release view "v${VERSION}" --json assets --jq '.assets[].name' > release-assets.txt
+          if ! grep -qxF "$(basename "$asset")" release-assets.txt; then
+            echo "::error::$asset is not listed in release v${VERSION} although the upload reported success. Re-run this job."
+            exit 1
+          fi
+          echo "OK: $(basename "$asset") is attached to release v${VERSION} ($(($(wc -c < "$asset")/1024/1024)) MiB)."
+
+      # Always, as the last step: the run summary then answers "what worked and what
+      # did not" for the whole release at a glance, instead of eighteen job logs. A
+      # step that failed has already printed an ::error:: saying why; this names the
+      # job it was in.
+      - name: Job result
+        if: always()
+        # bash explicitly: this same step runs on the Windows and macOS runners too,
+        # where the default shell is PowerShell / not necessarily this bash.
+        shell: bash
+        run: |
+          case "${{ job.status }}" in
+            success)   mark='OK       ' ;;
+            failure)   mark='FAILED   ' ;;
+            cancelled) mark='CANCELLED' ;;
+            *)         mark='${{ job.status }}' ;;
+          esac
+          echo "$mark build-win64"
+          echo "$mark build-win64" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ job.status }}" = "failure" ]; then
+            echo "::error::build-win64 FAILED. The ::error:: line in this job's log, above, says which step and why."
+          fi
+
+  # Build mac-arm64 bundle (rebuild native modules on Apple Silicon).
+  build-mac-arm64:
+    needs: [prepare, build-amd64, release]
+    runs-on: macos-14   # macos-14 runners are Apple Silicon (arm64)
+    timeout-minutes: 60
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Download amd64 bundle
+        uses: actions/download-artifact@v8
+        with:
+          name: bundle-amd64
+
+      - name: Rebuild native modules for macOS arm64
+        run: |
+          unzip -q wekan-${VERSION}-amd64.zip
+          # Replace the Linux node + FerretDB binaries + MongoDB Database Tools
+          # inherited from the amd64 base bundle with the macOS builds (added in a
+          # later step). The POSIX launcher start-wekan.sh works on macOS, so keep it.
+          rm -f bundle/node bundle/ferretdb bundle/.ferretdb-default
+          # Linux-only cpu-exec + qemu-user (#6458): qemu-user does not exist for
+          # macOS (Apple Silicon needs no AVX emulation anyway).
+          rm -f bundle/cpu-exec bundle/qemu-x86_64
+          rm -f bundle/bsondump bundle/mongodump bundle/mongoexport bundle/mongofiles \
+                bundle/mongoimport bundle/mongorestore bundle/mongostat bundle/mongotop
+          # Fix: bcrypt 5.0.1 (Meteor accounts-password) ships node-addon-api@3
+          # which fails to compile on Node.js 24. Replace with bcrypt 6.0.0.
+          BCRYPT_DIR="$(pwd)/bundle/programs/server/npm/node_modules/meteor/accounts-password/node_modules/bcrypt"
+          if [ -d "$BCRYPT_DIR" ]; then
+            rm -rf "$BCRYPT_DIR"
+            TMP=$(mktemp -d)
+            pushd "$TMP" > /dev/null
+            npm pack bcrypt@6.0.0
+            mkdir bcrypt && tar xzf bcrypt-*.tgz --strip-components=1 -C bcrypt
+            cd bcrypt && npm install --ignore-scripts && cd ..
+            cp -a bcrypt "$BCRYPT_DIR"
+            popd > /dev/null
+            rm -rf "$TMP"
+          fi
+          cd bundle/programs/server
+          rm -rf node_modules
+          npm install
+          cd ../../..
+
+      - name: Embed Node.js + FerretDB (mac-arm64) into the bundle
+        # Bundle the macOS arm64 Node.js (runner's darwin-arm64 Node 24) and the
+        # macOS FerretDB binary, downloaded per-arch from the newest wekan/FerretDB
+        # release. FerretDB is tolerant: if the mac-arm64 asset is missing the
+        # bundle stays MongoDB-only (start-wekan.sh then won't find ferretdb).
+        run: |
+          cp -L "$(command -v node)" bundle/node
+          chmod +x bundle/node
+          if curl -fSL --retry 5 --retry-delay 10 -o bundle/ferretdb \
+               "https://github.com/wekan/FerretDB/releases/latest/download/ferretdb-mac-arm64"; then
+            chmod +x bundle/ferretdb
+            echo "Embedded FerretDB mac-arm64 -> bundle/ferretdb"
+          else
+            rm -f bundle/ferretdb
+            echo "No mac-arm64 FerretDB asset in the release; macOS bundle stays MongoDB-only."
+            rm -f bundle/start-wekan.sh
+          fi
+          # macOS MongoDB Database Tools (mac-arm64) from wekan/mongo-tools; tolerant
+          # (skip any tool not built for macOS).
+          MT="https://github.com/wekan/mongo-tools/releases/latest/download"
+          for t in bsondump mongodump mongoexport mongofiles mongoimport mongorestore mongostat mongotop; do
+            curl -fSL --retry 5 --retry-delay 10 -o "bundle/$t" "$MT/$t-mac-arm64" \
+              && chmod +x "bundle/$t" || { rm -f "bundle/$t"; echo "No $t-mac-arm64; skipping"; }
+          done
+
+      - name: Create mac-arm64 zip
+        run: |
+          zip -r wekan-${VERSION}-mac-arm64.zip bundle
+          # A zip that EXISTS is not a zip that WORKS, and the log should say which of the
+          # two this is. The size answers "was the bundle directory empty when it was
+          # zipped"; the entries answer "can this bundle start at all" - bundle/main.js is
+          # what the launcher runs, bundle/node is the runtime the zip promises to carry.
+          zip="wekan-${VERSION}-mac-arm64.zip"
+          if [ ! -f "$zip" ]; then
+            echo "::error::$zip was not created. The build step above produced no bundle - its log says why."
+            exit 1
+          fi
+          bytes=$(wc -c < "$zip")
+          if [ "$bytes" -lt 10000000 ]; then
+            echo "::error::$zip is only $bytes bytes; a whole bundle is tens of megabytes. The bundle directory was empty or partial when it was zipped."
+            exit 1
+          fi
+          # Listing to a FILE first: `unzip -l "$zip" | grep -q` ends unzip with
+          # SIGPIPE the moment grep matches, and `set -o pipefail` then reports 141
+          # for the pipeline - so a found file reads as a missing one. It is what
+          # broke the win64 verify twice; these have only been lucky about the size
+          # of the pipe buffer.
+          unzip -l "$zip" > zip-listing.txt
+          for want in bundle/main.js bundle/node; do
+            if ! grep -q " $want$" zip-listing.txt; then
+              echo "::error::$zip has no $want, so it cannot start WeKan. The embed step above did not put it into the bundle."
+              exit 1
+            fi
+          done
+          echo "OK: $zip is $((bytes/1024/1024)) MiB and contains bundle/main.js and bundle/node."
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: bundle-mac-arm64
+          path: wekan-${{ needs.prepare.outputs.version }}-mac-arm64.zip
+          retention-days: 1
+
+      - name: Attach mac-arm64 bundle to the GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # No repo checkout in this job, so set GH_REPO so `gh` knows the target
+          # repository instead of trying (and failing) to detect a git remote.
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          asset="wekan-${VERSION}-mac-arm64.zip"
+          if [ ! -f "$asset" ]; then
+            echo "::error::$asset does not exist, so there is nothing to attach. The step that builds it failed, or produced a different name."
+            exit 1
+          fi
+          if ! gh release upload "v${VERSION}" "$asset" --clobber; then
+            echo "::error::Could not attach $asset to release v${VERSION}: the release must exist first (the release job), and GITHUB_TOKEN must be allowed to write releases here."
+            exit 1
+          fi
+          # Confirm from the OTHER side. An upload that reports success but leaves no
+          # asset behind is the failure nobody notices until a download 404s.
+          gh release view "v${VERSION}" --json assets --jq '.assets[].name' > release-assets.txt
+          if ! grep -qxF "$(basename "$asset")" release-assets.txt; then
+            echo "::error::$asset is not listed in release v${VERSION} although the upload reported success. Re-run this job."
+            exit 1
+          fi
+          echo "OK: $(basename "$asset") is attached to release v${VERSION} ($(($(wc -c < "$asset")/1024/1024)) MiB)."
+
+      # Always, as the last step: the run summary then answers "what worked and what
+      # did not" for the whole release at a glance, instead of eighteen job logs. A
+      # step that failed has already printed an ::error:: saying why; this names the
+      # job it was in.
+      - name: Job result
+        if: always()
+        # bash explicitly: this same step runs on the Windows and macOS runners too,
+        # where the default shell is PowerShell / not necessarily this bash.
+        shell: bash
+        run: |
+          case "${{ job.status }}" in
+            success)   mark='OK       ' ;;
+            failure)   mark='FAILED   ' ;;
+            cancelled) mark='CANCELLED' ;;
+            *)         mark='${{ job.status }}' ;;
+          esac
+          echo "$mark build-mac-arm64"
+          echo "$mark build-mac-arm64" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ job.status }}" = "failure" ]; then
+            echo "::error::build-mac-arm64 FAILED. The ::error:: line in this job's log, above, says which step and why."
+          fi
+
+  # Extra-architecture Linux bundles (ppc64le, s390x, riscv64) — the arches that
+  # have a Node.js 24 build but NO MongoDB server, so they ship FerretDB instead.
+  # ppc64le and s390x use official nodejs.org binaries; riscv64 uses the
+  # unofficial-builds.nodejs.org binary (nodejs.org ships no riscv64). armv7l
+  # (32-bit ARM) is intentionally excluded: there is NO Node.js 24 build for it
+  # anywhere (official or unofficial), so there is no runtime to run the bundle on
+  # an armv7 device, regardless of RAM. See https://nodejs.org/dist/latest-v24.x/
+  # (no -linux-armv7l) and https://unofficial-builds.nodejs.org/ (riscv64 only).
+  build-extra-arches:
+    needs: [prepare, build-amd64, release]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: s390x
+            platform: linux/s390x
+            node_base: official
+          - arch: ppc64le
+            platform: linux/ppc64le
+            node_base: official
+          - arch: riscv64
+            platform: linux/riscv64
+            node_base: unofficial
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl unzip zip
+
+      - name: Set up QEMU for ${{ matrix.arch }} emulation
+        uses: docker/setup-qemu-action@v4
+
+      - name: Download amd64 bundle
+        uses: actions/download-artifact@v8
+        with:
+          name: bundle-amd64
+
+      - name: Rebuild native modules for ${{ matrix.arch }} under emulation
+        run: |
+          unzip -q wekan-${VERSION}-amd64.zip
+          # Same bcrypt fix as the arm64 build: bcrypt 5.0.1 (Meteor
+          # accounts-password) ships node-addon-api@3 which fails to compile on
+          # Node.js 24. Swap in bcrypt 6.0.0 source; the emulated npm install
+          # below compiles it (and any other native module) for the target arch.
+          BCRYPT_DIR="$(pwd)/bundle/programs/server/npm/node_modules/meteor/accounts-password/node_modules/bcrypt"
+          if [ -d "$BCRYPT_DIR" ]; then
+            rm -rf "$BCRYPT_DIR"
+            TMP=$(mktemp -d)
+            pushd "$TMP" > /dev/null
+            npm pack bcrypt@6.0.0
+            mkdir bcrypt && tar xzf bcrypt-*.tgz --strip-components=1 -C bcrypt
+            cd bcrypt && npm install --ignore-scripts && cd ..
+            cp -a bcrypt "$BCRYPT_DIR"
+            popd > /dev/null
+            rm -rf "$TMP"
+          fi
+          # The official node:${NODE_VERSION} Docker image only publishes amd64,
+          # arm64 and ppc64le manifests — no s390x, no riscv64 — so
+          # `docker run --platform linux/s390x node:24-slim` fails with "no matching
+          # manifest". Instead build on an ubuntu:26.04 base (which publishes every
+          # arch) and install the Node.js binary tarball inside the emulated
+          # container: ppc64le/s390x from nodejs.org (official), riscv64 from
+          # unofficial-builds.nodejs.org (nodejs.org ships no riscv64). Resolve the
+          # exact latest ${NODE_VERSION}.x version on the host (fast, no emulation)
+          # and pass it in along with which mirror to use.
+          NODE_FULL=$(curl -fsSL https://nodejs.org/dist/index.json \
+            | python3 -c "import json,sys; print(next(r['version'] for r in json.load(sys.stdin) if r['version'].startswith('v${NODE_VERSION}.')))")
+          echo "Using Node ${NODE_FULL} (${{ matrix.node_base }}) for ${{ matrix.arch }}"
+          docker run --rm --platform ${{ matrix.platform }} \
+            -e NODE_FULL="$NODE_FULL" -e ARCH="${{ matrix.arch }}" \
+            -e NODE_BASE="${{ matrix.node_base }}" \
+            -v "$(pwd)/bundle:/bundle" \
+            -w /bundle/programs/server \
+            ubuntu:26.04 \
+            bash -c '
+              set -eux
+              apt-get update -qq
+              apt-get install -y -q build-essential python3 curl xz-utils ca-certificates
+              if [ "$NODE_BASE" = unofficial ]; then
+                NODE_URL="https://unofficial-builds.nodejs.org/download/release/${NODE_FULL}/node-${NODE_FULL}-linux-${ARCH}.tar.xz"
+              else
+                NODE_URL="https://nodejs.org/dist/${NODE_FULL}/node-${NODE_FULL}-linux-${ARCH}.tar.xz"
+              fi
+              curl -fsSL -o /tmp/node.tar.xz "$NODE_URL"
+              mkdir -p /opt/node
+              tar -xJf /tmp/node.tar.xz -C /opt/node --strip-components=1
+              export PATH=/opt/node/bin:$PATH
+              node --version
+              npm install
+              # Bundle the target-arch Node.js binary for the self-contained
+              # launcher. /bundle is the host bundle/ dir (see -v mount above).
+              cp /opt/node/bin/node /bundle/node
+              chmod +x /bundle/node
+              # #6458: replace the inherited amd64 qemu-user with THIS arch own
+              # same-arch qemu-user (from the target-arch distro, so it runs on
+              # this arch), used by bundle/cpu-exec to emulate CPU features a
+              # binary needs but the host CPU lacks. Tolerant: if the package
+              # is unavailable on this arch, the bundle just ships without it
+              # (cpu-exec then falls back to a system qemu-user, or reports).
+              rm -f /bundle/qemu-x86_64
+              if apt-get install -y -q qemu-user-static >/dev/null 2>&1 && \
+                 [ -x "/usr/bin/qemu-$(uname -m)-static" ]; then
+                cp "/usr/bin/qemu-$(uname -m)-static" "/bundle/qemu-$(uname -m)"
+                chmod +x "/bundle/qemu-$(uname -m)"
+                echo "Bundled qemu-$(uname -m) for cpu-exec."
+              else
+                echo "qemu-user-static not available for $(uname -m); bundle ships without a bundled qemu-user."
+              fi
+            '
+
+      - name: Embed FerretDB (${{ matrix.arch }}) into the bundle
+        # These arches have no MongoDB server, so FerretDB is their default DB.
+        # The launcher (start-wekan.sh) is inherited from the amd64 base bundle;
+        # download only this arch's binary from the newest wekan/FerretDB release.
+        # A marker file makes FerretDB the default backend at runtime (see the
+        # launcher + Docker entrypoint).
+        run: |
+          curl -fSL --retry 5 --retry-delay 10 -o bundle/ferretdb \
+            "https://github.com/wekan/FerretDB/releases/latest/download/ferretdb-${{ matrix.arch }}"
+          chmod +x bundle/ferretdb
+          # Overwrite the inherited amd64 MongoDB Database Tools with this arch's ones.
+          MT="https://github.com/wekan/mongo-tools/releases/latest/download"
+          for t in bsondump mongodump mongoexport mongofiles mongoimport mongorestore mongostat mongotop; do
+            curl -fSL --retry 5 --retry-delay 10 -o "bundle/$t" "$MT/$t-${{ matrix.arch }}"
+            chmod +x "bundle/$t"
+          done
+          touch bundle/.ferretdb-default
+
+      - name: Create ${{ matrix.arch }} zip
+        run: |
+          zip -r wekan-${VERSION}-${{ matrix.arch }}.zip bundle
+          # A zip that EXISTS is not a zip that WORKS, and the log should say which of the
+          # two this is. The size answers "was the bundle directory empty when it was
+          # zipped"; the entries answer "can this bundle start at all" - bundle/main.js is
+          # what the launcher runs, bundle/node is the runtime the zip promises to carry.
+          zip="wekan-${VERSION}-${{ matrix.arch }}.zip"
+          if [ ! -f "$zip" ]; then
+            echo "::error::$zip was not created. The build step above produced no bundle - its log says why."
+            exit 1
+          fi
+          bytes=$(wc -c < "$zip")
+          if [ "$bytes" -lt 10000000 ]; then
+            echo "::error::$zip is only $bytes bytes; a whole bundle is tens of megabytes. The bundle directory was empty or partial when it was zipped."
+            exit 1
+          fi
+          # Listing to a FILE first: `unzip -l "$zip" | grep -q` ends unzip with
+          # SIGPIPE the moment grep matches, and `set -o pipefail` then reports 141
+          # for the pipeline - so a found file reads as a missing one. It is what
+          # broke the win64 verify twice; these have only been lucky about the size
+          # of the pipe buffer.
+          unzip -l "$zip" > zip-listing.txt
+          for want in bundle/main.js bundle/node; do
+            if ! grep -q " $want$" zip-listing.txt; then
+              echo "::error::$zip has no $want, so it cannot start WeKan. The embed step above did not put it into the bundle."
+              exit 1
+            fi
+          done
+          echo "OK: $zip is $((bytes/1024/1024)) MiB and contains bundle/main.js and bundle/node."
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: bundle-${{ matrix.arch }}
+          path: wekan-${{ needs.prepare.outputs.version }}-${{ matrix.arch }}.zip
+          retention-days: 1
+
+      - name: Attach ${{ matrix.arch }} bundle to the GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # No repo checkout in this job, so set GH_REPO so `gh` knows the target
+          # repository instead of trying (and failing) to detect a git remote.
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          asset="wekan-${VERSION}-${{ matrix.arch }}.zip"
+          if [ ! -f "$asset" ]; then
+            echo "::error::$asset does not exist, so there is nothing to attach. The step that builds it failed, or produced a different name."
+            exit 1
+          fi
+          if ! gh release upload "v${VERSION}" "$asset" --clobber; then
+            echo "::error::Could not attach $asset to release v${VERSION}: the release must exist first (the release job), and GITHUB_TOKEN must be allowed to write releases here."
+            exit 1
+          fi
+          # Confirm from the OTHER side. An upload that reports success but leaves no
+          # asset behind is the failure nobody notices until a download 404s.
+          gh release view "v${VERSION}" --json assets --jq '.assets[].name' > release-assets.txt
+          if ! grep -qxF "$(basename "$asset")" release-assets.txt; then
+            echo "::error::$asset is not listed in release v${VERSION} although the upload reported success. Re-run this job."
+            exit 1
+          fi
+          echo "OK: $(basename "$asset") is attached to release v${VERSION} ($(($(wc -c < "$asset")/1024/1024)) MiB)."
+
+      # Always, as the last step: the run summary then answers "what worked and what
+      # did not" for the whole release at a glance, instead of eighteen job logs. A
+      # step that failed has already printed an ::error:: saying why; this names the
+      # job it was in.
+      - name: Job result
+        if: always()
+        # bash explicitly: this same step runs on the Windows and macOS runners too,
+        # where the default shell is PowerShell / not necessarily this bash.
+        shell: bash
+        run: |
+          case "${{ job.status }}" in
+            success)   mark='OK       ' ;;
+            failure)   mark='FAILED   ' ;;
+            cancelled) mark='CANCELLED' ;;
+            *)         mark='${{ job.status }}' ;;
+          esac
+          echo "$mark build-extra-arches ${{ matrix.arch }}"
+          echo "$mark build-extra-arches ${{ matrix.arch }}" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ job.status }}" = "failure" ]; then
+            echo "::error::build-extra-arches ${{ matrix.arch }} FAILED. The ::error:: line in this job's log, above, says which step and why."
+          fi
+
+  # ─── 7c. Build the Sandstorm .spk and attach it to the Release ───────────────
+  # Same steps as the standalone sandstorm.yml workflow (kept for building/testing
+  # the .spk on its own without a full release); here it builds from the release
+  # tag and attaches wekan-<version>-sandstorm.spk to the GitHub Release.
+  #
+  # EXPERIMENTAL in CI (same caveats as sandstorm.yml):
+  #   * Sandstorm needs unprivileged user namespaces; GitHub's Ubuntu runners are VMs
+  #     that allow them, but this is the fragile part.
+  #   * meteor-spk SIGNS the .spk with the app private key from the Sandstorm keyring;
+  #     provide it as the SANDSTORM_KEYRING secret (base64 of ~/.sandstorm-keyring).
+  #
+  # continue-on-error: the experimental Sandstorm build must NOT fail the release;
+  # like the other post-`release` bundle jobs it only attaches its artifact.
+  build-sandstorm:
+    needs: [prepare, release]
+    continue-on-error: true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      # First step on purpose: a missing secret is then ONE named line at the top of
+      # the log, instead of a failure deep inside a tool that only says the login
+      # was refused. GITHUB_TOKEN is provided by Actions itself and is never listed.
+      - name: Check required secrets are configured
+        env:
+          SANDSTORM_KEYRING: ${{ secrets.SANDSTORM_KEYRING }}
+        run: |
+          missing=""
+          [ -n "${SANDSTORM_KEYRING:-}" ] || missing="$missing SANDSTORM_KEYRING"
+          if [ -n "$missing" ]; then
+            echo "::error::build-sandstorm: missing repository secret(s):$missing — the .spk cannot be packed. Add them in Settings → Secrets and variables → Actions:"
+            echo "  SANDSTORM_KEYRING - base64 of ~/.sandstorm-keyring; meteor-spk signs the .spk with it"
+            exit 1
+          fi
+          # Present is not the same as WORKING: a keyring that is not valid base64
+          # used to surface half an hour later, as `meteor-spk pack` failing to open
+          # a file it had written garbage into.
+          if ! bytes="$(printf '%s' "$SANDSTORM_KEYRING" | base64 -d 2>/dev/null | wc -c)" || [ "$bytes" -eq 0 ]; then
+            echo "::error::build-sandstorm: SANDSTORM_KEYRING is not valid base64, or decodes to nothing. Set it with: base64 -w0 ~/.sandstorm-keyring"
+            exit 1
+          fi
+          echo "build-sandstorm: SANDSTORM_KEYRING decodes to $bytes bytes."
+
+      - uses: actions/checkout@v7
+        with:
+          ref: refs/tags/v${{ needs.prepare.outputs.version }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Enable unprivileged user namespaces (Ubuntu 24.04 restricts them)
+        # Ubuntu 24.04's AppArmor defaults kernel.apparmor_restrict_unprivileged_userns=1,
+        # which blocks the unprivileged user namespaces that the Sandstorm install and
+        # the spk supervisor rely on (the "fragile part" noted above). Relax it so
+        # `install.sandstorm.io` and meteor-spk can create sandboxes on the runner.
+        # `|| true`: on kernels/runners without these knobs, setting them is a no-op.
+        run: |
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+          sudo sysctl -w kernel.unprivileged_userns_clone=1 2>/dev/null || true
+
+      - name: Install system dependencies and Meteor
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y p7zip-full wget curl build-essential g++ make python3 unzip xz-utils git qemu-user-static
+          if [ ! -f "$HOME/.meteor/meteor" ]; then curl https://install.meteor.com/ | sh; fi
+          echo "$HOME/.meteor" >> "$GITHUB_PATH"
+
+      - name: Install Sandstorm (dev, unattended)
+        # Installed BEFORE assembling the deps: build-deps.sh's [bridge] step copies
+        # the modern /opt/sandstorm/latest/bin/sandstorm-http-bridge over the ancient
+        # bundled one, so the Sandstorm install must be in place first.
+        run: curl https://install.sandstorm.io | sudo bash -s -- -d
+
+      - name: Assemble modern meteor-spk.deps (Node 24 + FerretDB + Mongo 3.x CLIs)
+        # Base = upstream meteor-spk 0.6.0 from dl.sandstorm.io (has mongod 3.0 +
+        # niscud). build-deps.sh swaps in Node 24, adds FerretDB + the Mongo 3.x
+        # CLIs + the migration launcher/importer, keeps niscud, and swaps in the
+        # modern sandstorm-http-bridge from the Sandstorm install above. No dependency
+        # on the retired releases.wekan.team or the old projects.7z.
+        run: |
+          bash sandstorm-src/build-deps.sh
+          echo "$HOME/projects/meteor-spk/meteor-spk-0.6.0" >> "$GITHUB_PATH"
+
+      - name: Restore the Sandstorm signing keyring
+        env:
+          SANDSTORM_KEYRING: ${{ secrets.SANDSTORM_KEYRING }}
+        run: |
+          if [ -n "${SANDSTORM_KEYRING:-}" ]; then
+            # meteor-spk / spk read the app signing key from ~/.sandstorm-keyring —
+            # a FILE directly in $HOME (see the pack crash path
+            # "/home/runner/.sandstorm-keyring"). Write it exactly there, NOT to
+            # ~/.sandstorm/sandstorm-keyring, or `meteor-spk pack` aborts with
+            # "open(~/.sandstorm-keyring): No such file or directory".
+            printf '%s' "$SANDSTORM_KEYRING" | base64 -d > "$HOME/.sandstorm-keyring"
+            chmod 600 "$HOME/.sandstorm-keyring"
+            echo "Restored ~/.sandstorm-keyring ($(wc -c < "$HOME/.sandstorm-keyring") bytes)."
+          else
+            echo "::error::SANDSTORM_KEYRING secret is not set. meteor-spk pack signs the .spk with the WeKan Sandstorm app's private key, which lives in this keyring, so packing cannot proceed without it. Add the base64 of your ~/.sandstorm-keyring file as the SANDSTORM_KEYRING repository secret (e.g. 'base64 -w0 ~/.sandstorm-keyring')."
+            exit 1
+          fi
+
+      - name: Install Meteor npm dependencies
+        # PUPPETEER_SKIP_DOWNLOAD: puppeteer is a devDependency used only by tests,
+        # not by the server, so it never belongs in the packed .spk. Skipping its
+        # Chromium download (~150 MB) avoids any risk of it bloating the build and
+        # speeds up CI.
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: '1'
+        run: |
+          (meteor update --npm 2>/dev/null || true) && meteor npm install
+
+      - name: Build the Sandstorm .spk
+        id: build
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: '1'
+        run: |
+          set -euo pipefail
+          # Version-named (not timestamped like sandstorm.yml): the release re-runs
+          # idempotently with --clobber replacing the same asset.
+          SPK="wekan-${VERSION}-sandstorm.spk"
+          meteor-spk pack "$SPK"
+          # Report the packed size and warn if it exceeds Cloudflare's 100 MB upload
+          # cap (a proxied browser upload to a Cloudflare-fronted Sandstorm 413s above
+          # this; install via a DNS-only host / SSH tunnel, or trim further).
+          SPK_BYTES=$(stat -c%s "$SPK")
+          echo "Packed $SPK: $((SPK_BYTES/1024/1024)) MiB ($SPK_BYTES bytes)"
+          if [ "$SPK_BYTES" -gt $((100*1024*1024)) ]; then
+            echo "::warning::$SPK is $((SPK_BYTES/1024/1024)) MiB — over Cloudflare's 100 MB upload limit. Upload via a DNS-only host / SSH tunnel to Sandstorm, or trim the bundle further."
+          fi
+          ls -la "$SPK"
+          echo "spk=$SPK" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.build.outputs.spk }}
+          path: ${{ steps.build.outputs.spk }}
+          retention-days: 7
+
+      - name: Attach the .spk to the GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          asset="${{ steps.build.outputs.spk }}"
+          if [ ! -f "$asset" ]; then
+            echo "::error::$asset does not exist, so there is nothing to attach. The step that builds it failed, or produced a different name."
+            exit 1
+          fi
+          if ! gh release upload "v${VERSION}" "$asset" --clobber; then
+            echo "::error::Could not attach $asset to release v${VERSION}: the release must exist first (the release job), and GITHUB_TOKEN must be allowed to write releases here."
+            exit 1
+          fi
+          # Confirm from the OTHER side. An upload that reports success but leaves no
+          # asset behind is the failure nobody notices until a download 404s.
+          gh release view "v${VERSION}" --json assets --jq '.assets[].name' > release-assets.txt
+          if ! grep -qxF "$(basename "$asset")" release-assets.txt; then
+            echo "::error::$asset is not listed in release v${VERSION} although the upload reported success. Re-run this job."
+            exit 1
+          fi
+          echo "OK: $(basename "$asset") is attached to release v${VERSION} ($(($(wc -c < "$asset")/1024/1024)) MiB)."
+
+      # Always, as the last step: the run summary then answers "what worked and what
+      # did not" for the whole release at a glance, instead of eighteen job logs. A
+      # step that failed has already printed an ::error:: saying why; this names the
+      # job it was in.
+      - name: Job result
+        if: always()
+        # bash explicitly: this same step runs on the Windows and macOS runners too,
+        # where the default shell is PowerShell / not necessarily this bash.
+        shell: bash
+        run: |
+          case "${{ job.status }}" in
+            success)   mark='OK       ' ;;
+            failure)   mark='FAILED   ' ;;
+            cancelled) mark='CANCELLED' ;;
+            *)         mark='${{ job.status }}' ;;
+          esac
+          echo "$mark build-sandstorm"
+          echo "$mark build-sandstorm" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ job.status }}" = "failure" ]; then
+            echo "::error::build-sandstorm FAILED. The ::error:: line in this job's log, above, says which step and why."
+          fi
+
+  # ─── 8. Build and push the multi-arch Docker image to all registries ────────
+  # Mirrors releases/docker-build.sh step 3 (multi-arch buildx --push).
+  # Needs `release` because the Dockerfile downloads wekan-<version>-<arch>.zip
+  # from the GitHub Release; building before those assets exist 404s and (without
+  # set -e in the Dockerfile) shipped a broken image missing /build/main.js. Also
+  # needs `build-extra-arches` because the image now covers ppc64le/s390x/riscv64,
+  # whose zips (with FerretDB baked in) are attached by that job after `release`.
+  docker:
+    needs: [prepare, release, build-extra-arches]
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      # First step on purpose: a missing secret is then ONE named line at the top of
+      # the log, instead of a failure deep inside a tool that only says the login
+      # was refused. GITHUB_TOKEN is provided by Actions itself and is never listed.
+      - name: Check required secrets are configured
+        env:
+          DOCKERHUB_AUTH: ${{ secrets.DOCKERHUB_AUTH }}
+          QUAY_AUTH: ${{ secrets.QUAY_AUTH }}
+          GHCR_AUTH: ${{ secrets.GHCR_AUTH }}
+        run: |
+          missing=""
+          [ -n "${DOCKERHUB_AUTH:-}" ] || missing="$missing DOCKERHUB_AUTH"
+          [ -n "${QUAY_AUTH:-}" ] || missing="$missing QUAY_AUTH"
+          [ -n "${GHCR_AUTH:-}" ] || missing="$missing GHCR_AUTH"
+          if [ -n "$missing" ]; then
+            echo "::error::docker: missing repository secret(s):$missing — the image cannot be pushed. Add them in Settings → Secrets and variables → Actions:"
+            echo "  DOCKERHUB_AUTH - base64 of 'user:token' for docker.io"
+            echo "  QUAY_AUTH - base64 of 'user:token' for quay.io"
+            echo "  GHCR_AUTH - base64 of 'user:token' for ghcr.io"
+            exit 1
+          fi
+          # Present is not the same as WORKING. Decode and LOG IN here, at the top:
+          # a wrong or expired credential then says which secret it was, before the
+          # multi-arch build spends half an hour producing something it cannot push.
+          check() {
+            # $1 = secret name, $2 = registry host, $3 = base64("user:token")
+            local name="$1" host="$2" creds user token
+            if ! creds="$(printf '%s' "$3" | base64 -d 2>/dev/null)"; then
+              echo "::error::docker: $name is not valid base64. It must be base64 of 'username:token' for $host, e.g. printf '%s' 'user:token' | base64 -w0"
+              return 1
+            fi
+            case "$creds" in
+              *:*) ;;
+              *) echo "::error::docker: $name decodes to something without a ':' - it must be base64 of 'username:token' for $host."; return 1 ;;
+            esac
+            user="${creds%%:*}"
+            token="${creds#*:}"
+            if [ -z "$user" ] || [ -z "$token" ]; then
+              echo "::error::docker: $name decodes to an empty username or token for $host."
+              return 1
+            fi
+            if ! printf '%s' "$token" | docker login "$host" -u "$user" --password-stdin; then
+              echo "::error::docker: $name was REJECTED by $host (login failed as user '$user'). The token is wrong, expired, or lacks push rights."
+              return 1
+            fi
+            echo "docker: $name works for $host (user '$user')."
+          }
+          rc=0
+          check DOCKERHUB_AUTH docker.io "$DOCKERHUB_AUTH" || rc=1
+          check QUAY_AUTH quay.io "$QUAY_AUTH" || rc=1
+          check GHCR_AUTH ghcr.io "$GHCR_AUTH" || rc=1
+          exit $rc
+
+      - uses: actions/checkout@v7
+        with:
+          ref: refs/tags/v${{ needs.prepare.outputs.version }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      # (The login to all three registries happens in the secrets check above, so a
+      # bad credential names itself before anything is built.)
+
+      - name: Wait for release bundles to be downloadable
+        # The Dockerfile downloads wekan-<version>-<arch>.zip from the GitHub
+        # Release for each built platform. Even though this job needs `release`
+        # (so the assets are uploaded), GitHub's releases/download/<tag>/<asset>
+        # URL can briefly 404 right after upload (CDN/propagation lag), which used
+        # to fail the multi-arch build mid-way. Poll here until every arch bundle
+        # baked into the image returns 200, so the (expensive, emulated) buildx run
+        # only starts once the assets are actually fetchable. The Dockerfile also
+        # retries per-arch as a second layer of safety.
+        run: |
+          set -euo pipefail
+          base="https://github.com/wekan/wekan/releases/download/v${VERSION}"
+          for arch in amd64 arm64 ppc64le s390x riscv64; do
+            url="${base}/wekan-${VERSION}-${arch}.zip"
+            echo "Waiting for ${url} ..."
+            ok=0
+            for i in $(seq 1 30); do
+              code=$(curl -sSL -o /dev/null -w '%{http_code}' --retry 0 -I "$url" || echo 000)
+              if [ "$code" = "200" ]; then
+                echo "  available (HTTP $code) after $((i*10))s"
+                ok=1
+                break
+              fi
+              echo "  attempt $i/30: HTTP $code, retrying in 10s..."
+              sleep 10
+            done
+            if [ "$ok" -ne 1 ]; then
+              echo "::error::Release asset not downloadable after retries: $url"
+              exit 1
+            fi
+          done
+
+      - name: Verify the release bundle reports the release version
+        # Belt-and-suspenders against the "image tagged vX shows vY in the Admin
+        # Panel" bug: the image is just the unzipped wekan-<version>-<arch>.zip
+        # bundle (Dockerfile moves it to /build), and the Admin Panel shows that
+        # bundle's WeKan version (server/statistics.js reads
+        # require('/package.json').version). Check the amd64 bundle's WeKan version
+        # equals the release version BEFORE the expensive multi-arch buildx, so a
+        # stale/mismatched bundle fails fast instead of shipping (and pushing to
+        # three registries) a mislabeled image.
+        #
+        # Meteor does NOT ship the app package.json as a standalone file — it
+        # inlines it into the compiled bundle/programs/server/app/app.js as a JSON
+        # module, e.g. {"name":"wekan","version":"v9.63.0",...}. That inlined
+        # module (anchored on "name":"wekan") is exactly what require('/package.json')
+        # resolves to at runtime, so it is the authoritative thing to check.
+        #
+        # IMPORTANT: only a CONFIRMED mismatch fails the release. If the version
+        # cannot be located (bundle layout changed, app.js minified differently),
+        # warn and continue — inability to verify must not block a good release,
+        # since --build-arg VERSION below is the actual guarantee. (An earlier
+        # version of this guard grepped for a v-prefixed *package.json* and made
+        # "not found" fatal, which false-failed the whole v9.63 docker build.)
+        run: |
+          set -euo pipefail
+          url="https://github.com/wekan/wekan/releases/download/v${VERSION}/wekan-${VERSION}-amd64.zip"
+          wget -q "$url" -O bundle.zip
+          tmp="$(mktemp -d)"
+          # Extract only the compiled app program (not the whole multi-hundred-MB
+          # bundle); the inlined app package.json lives in app/app.js.
+          unzip -o -q bundle.zip 'bundle/programs/server/app/app.js' -d "$tmp" || true
+          appjs="$tmp/bundle/programs/server/app/app.js"
+          found=""
+          if [ -f "$appjs" ]; then
+            match="$(grep -aoE '"name":"wekan","version":"v?[0-9][^"]*"' "$appjs" | head -1 || true)"
+            found="$(printf '%s' "$match" | sed -E 's/.*"version":"([^"]*)".*/\1/')"
+          fi
+          rm -rf "$tmp" bundle.zip
+          if [ -z "$found" ]; then
+            echo "::warning::Could not locate the WeKan version in the bundle (app.js layout may have changed); skipping the bundle-version check. --build-arg VERSION still guarantees the correct bundle."
+            exit 0
+          fi
+          norm="${found#v}"
+          if [ "$norm" != "${VERSION}.0" ] && [ "$norm" != "${VERSION}" ]; then
+            echo "::error::Bundle reports app version ${found} but the release is v${VERSION}. The bundle baked into the image is stale/mismatched — the Admin Panel would show ${norm}. Aborting before build."
+            exit 1
+          fi
+          echo "Bundle app version ${found} matches release v${VERSION}."
+
+      - name: Build and push multi-arch image
+        # Pass VERSION explicitly as a build-arg. The Dockerfile's `ARG VERSION`
+        # default is only a fallback for manual builds; the release version is the
+        # authoritative source here. Without this the image would build against the
+        # Dockerfile default (downloading that version's wekan-<v>-<arch>.zip and
+        # baking its package.json), so a v${VERSION}-tagged image could ship — and
+        # report in the Admin Panel — a stale, different version.
+        run: |
+          docker buildx build \
+            --platform linux/amd64,linux/arm64,linux/ppc64le,linux/s390x,linux/riscv64 \
+            --build-arg VERSION=${VERSION} \
+            -t wekanteam/wekan:v${VERSION} \
+            -t wekanteam/wekan:latest \
+            -t quay.io/wekan/wekan:v${VERSION} \
+            -t quay.io/wekan/wekan:latest \
+            -t ghcr.io/wekan/wekan:v${VERSION} \
+            -t ghcr.io/wekan/wekan:latest \
+            --push \
+            .
+
+          # Pushed is not the same as pushed EVERYWHERE. A manifest that is missing a
+          # platform, or a tag that never reached one of the three registries, is
+          # invisible until somebody on that CPU runs docker pull and is told there is
+          # no matching manifest. Ask each registry what it actually has.
+          want="linux/amd64 linux/arm64 linux/ppc64le linux/s390x linux/riscv64"
+          rc=0
+          for image in "wekanteam/wekan:v${VERSION}" "quay.io/wekan/wekan:v${VERSION}" "ghcr.io/wekan/wekan:v${VERSION}"; do
+            if ! got="$(docker buildx imagetools inspect "$image" --format '{{range .Manifest.Manifests}}{{.Platform.OS}}/{{.Platform.Architecture}} {{end}}' 2>&1)"; then
+              echo "::error::$image cannot be inspected after the push: $got - the tag did not reach that registry."
+              rc=1
+              continue
+            fi
+            for plat in $want; do
+              case " $got " in
+                *" $plat "*) ;;
+                *) echo "::error::$image has no $plat in its manifest (it has:$got). Users on that CPU get 'no matching manifest' from docker pull."; rc=1 ;;
+              esac
+            done
+            echo "OK: $image carries:$got"
+          done
+          exit $rc
+
+      # Always, as the last step: the run summary then answers "what worked and what
+      # did not" for the whole release at a glance, instead of eighteen job logs. A
+      # step that failed has already printed an ::error:: saying why; this names the
+      # job it was in.
+      - name: Job result
+        if: always()
+        # bash explicitly: this same step runs on the Windows and macOS runners too,
+        # where the default shell is PowerShell / not necessarily this bash.
+        shell: bash
+        run: |
+          case "${{ job.status }}" in
+            success)   mark='OK       ' ;;
+            failure)   mark='FAILED   ' ;;
+            cancelled) mark='CANCELLED' ;;
+            *)         mark='${{ job.status }}' ;;
+          esac
+          echo "$mark docker"
+          echo "$mark docker" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ job.status }}" = "failure" ]; then
+            echo "::error::docker FAILED. The ::error:: line in this job's log, above, says which step and why."
+          fi
+
+  # ─── 9. Build the snap on Launchpad, push to the store, attach to release ────
+  # The snap's `wekan` part downloads wekan-<version>-<arch>.zip from the GitHub
+  # Release, so these jobs run only after `release` has published those assets.
+  #
+  # snap-native + snap-launchpad replace the old single `snap` job. The mainstream
+  # arches (amd64 + arm64) build NATIVELY on GitHub-hosted runners — fast, no
+  # Launchpad queue. The exotic arches (ppc64el, s390x, riscv64) have no native
+  # GitHub runners and snapcraft cannot cross-build, so all three build on Launchpad
+  # — the only mechanism that supports WeKan's `base: core24` for them — in a
+  # NON-BLOCKING, per-arch matrix so a slow/failed arch (Launchpad can queue for
+  # hours) never holds up the release or the other arches. Each arch publishes to
+  # the Snap Store (stable + candidate + beta + edge) and attaches to the Release the moment
+  # it finishes — all 5 arches, published independently.
+  snap-native:
+    needs: [prepare, release]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      # First step on purpose: a missing secret is then ONE named line at the top of
+      # the log, instead of a failure deep inside a tool that only says the login
+      # was refused. GITHUB_TOKEN is provided by Actions itself and is never listed.
+      - name: Check required secrets are configured
+        env:
+          SNAP_AUTH: ${{ secrets.SNAP_AUTH }}
+        run: |
+          missing=""
+          [ -n "${SNAP_AUTH:-}" ] || missing="$missing SNAP_AUTH"
+          if [ -n "$missing" ]; then
+            echo "::error::snap-native: missing repository secret(s):$missing — the snap cannot be uploaded. Add them in Settings → Secrets and variables → Actions:"
+            echo "  SNAP_AUTH - snapcraft export-login output, with ACL for the wekan snap"
+            exit 1
+          fi
+          # Whether the Snap Store ACCEPTS it can only be answered by the store, at
+          # upload time - so the upload step below is followed by one that names this
+          # secret when it is refused, instead of leaving a bare "401" in the log.
+          echo "snap-native: SNAP_AUTH is set ($(printf '%s' "$SNAP_AUTH" | wc -c) characters)."
+
+      - uses: actions/checkout@v7
+        with:
+          ref: refs/tags/v${{ needs.prepare.outputs.version }}
+
+      - name: Verify snapcraft.yaml version matches the release
+        # snapcraft.yaml's `version:` names the produced file (wekan_<version>_<arch>.snap).
+        # Assert it matches the tag so a stale version fails fast here.
+        run: |
+          set -euo pipefail
+          if ! grep -qxF "version: '${VERSION}'" snapcraft.yaml; then
+            echo "::error::snapcraft.yaml is not at version '${VERSION}' ($(grep -m1 '^version:' snapcraft.yaml)). The bump job (releases/version.sh) did not update the tagged commit."
+            exit 1
+          fi
+          echo "snapcraft.yaml is at version '${VERSION}'."
+
+      - name: Build the ${{ matrix.arch }} snap natively
+        # Runs on a native ${{ matrix.arch }} GitHub runner, so snapcraft builds the
+        # platform whose `build-on` matches this host — no Launchpad, no emulation.
+        id: build
+        uses: snapcore/action-build@v1
+
+      - name: Verify the built snap is ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          snap="${{ steps.build.outputs.snap }}"
+          echo "Built: $snap"
+          case "$snap" in
+            *_${{ matrix.arch }}.snap) : ;;
+            *) echo "::error::Built snap '$snap' is not ${{ matrix.arch }}."; exit 1 ;;
+          esac
+
+      - id: publish
+        name: Push ${{ matrix.arch }} to the Snap Store (stable + candidate + beta + edge)
+        uses: snapcore/action-publish@v1
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAP_AUTH }}
+        with:
+          snap: ${{ steps.build.outputs.snap }}
+          release: stable,candidate,beta,edge
+
+      # The upload is a `uses:` action, so its failure would otherwise be a bare
+      # store error. Name the secret that was refused.
+      - name: Say which secret the Snap Store refused
+        if: failure() && steps.publish.outcome == 'failure'
+        run: |
+          echo "::error::SNAP_AUTH did not work: the Snap Store refused the upload for ${{ matrix.arch }}. Re-export it with: snapcraft export-login --snaps wekan --acls package_access,package_push,package_release,package_update snap-auth.txt"
+          exit 1
+
+      - name: Attach the ${{ matrix.arch }} snap to the GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          asset="${{ steps.build.outputs.snap }}"
+          if [ ! -f "$asset" ]; then
+            echo "::error::$asset does not exist, so there is nothing to attach. The step that builds it failed, or produced a different name."
+            exit 1
+          fi
+          if ! gh release upload "v${VERSION}" "$asset" --clobber; then
+            echo "::error::Could not attach $asset to release v${VERSION}: the release must exist first (the release job), and GITHUB_TOKEN must be allowed to write releases here."
+            exit 1
+          fi
+          # Confirm from the OTHER side. An upload that reports success but leaves no
+          # asset behind is the failure nobody notices until a download 404s.
+          gh release view "v${VERSION}" --json assets --jq '.assets[].name' > release-assets.txt
+          if ! grep -qxF "$(basename "$asset")" release-assets.txt; then
+            echo "::error::$asset is not listed in release v${VERSION} although the upload reported success. Re-run this job."
+            exit 1
+          fi
+          echo "OK: $(basename "$asset") is attached to release v${VERSION} ($(($(wc -c < "$asset")/1024/1024)) MiB)."
+
+      # Always, as the last step: the run summary then answers "what worked and what
+      # did not" for the whole release at a glance, instead of eighteen job logs. A
+      # step that failed has already printed an ::error:: saying why; this names the
+      # job it was in.
+      - name: Job result
+        if: always()
+        # bash explicitly: this same step runs on the Windows and macOS runners too,
+        # where the default shell is PowerShell / not necessarily this bash.
+        shell: bash
+        run: |
+          case "${{ job.status }}" in
+            success)   mark='OK       ' ;;
+            failure)   mark='FAILED   ' ;;
+            cancelled) mark='CANCELLED' ;;
+            *)         mark='${{ job.status }}' ;;
+          esac
+          echo "$mark snap-native ${{ matrix.arch }}"
+          echo "$mark snap-native ${{ matrix.arch }}" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ job.status }}" = "failure" ]; then
+            echo "::error::snap-native ${{ matrix.arch }} FAILED. The ::error:: line in this job's log, above, says which step and why."
+          fi
+
+  snap-launchpad:
+    # ENABLED. `continue-on-error: true` below means a failure here can never
+    # fail the release or hold up another job - the point of running it is to
+    # SEE what it reports. Disable again with `if: ${{ false }}`.
+    needs: [prepare, release]
+    # ppc64el, s390x and riscv64: none of them has a native GitHub runner, and
+    # snapcraft cannot cross-build a snap, so Launchpad remote-build is the only way
+    # to build them - QEMU is not. ppc64el and s390x were on a QEMU job
+    # (diddlesnaps/snapcraft-multiarch-action) until it turned out that action caps at
+    # `base: core22` and is unmaintained, so every leg died the instant snapcraft read
+    # WeKan's `base: core24`: "Your build requires a base that this tool does not
+    # support (core24)". There is no maintained QEMU multi-arch action that does
+    # core24; Canonical's answer for non-native arches on core24 IS remote-build. See
+    # docs/Design/Autoupdate/Forks/Snap-Core.md.
+    #
+    # This job retries the remote build 3x and uploads only when a .snap file is
+    # really there - the "is not a valid file" (snapcraft upload, exit 64) failure
+    # that prompted the move to QEMU in the first place. It claimed to do that from
+    # the start; the test was a literal filename in an array, never a glob, so it was
+    # always true and v10.48 uploaded a file that did not exist. It asks the
+    # filesystem now.
+    #
+    # continue-on-error: an exotic Launchpad arch must NOT hold up or fail the
+    # release. A Launchpad build can queue for hours / time out; that must not turn
+    # the whole release red. timeout-minutes bounds a stuck build so it fails with a
+    # clear message instead of GitHub's silent 6h cancel. fail-fast: false so one arch
+    # never cancels the others - each publishes the moment it finishes.
+    continue-on-error: true
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [ppc64el, s390x, riscv64]
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      # First step on purpose: a missing secret is then ONE named line at the top of
+      # the log, instead of a failure deep inside a tool that only says the login
+      # was refused. GITHUB_TOKEN is provided by Actions itself and is never listed.
+      - name: Check required secrets are configured
+        env:
+          SNAP_AUTH: ${{ secrets.SNAP_AUTH }}
+          LP_CREDENTIALS: ${{ secrets.LP_CREDENTIALS }}
+        run: |
+          missing=""
+          [ -n "${SNAP_AUTH:-}" ] || missing="$missing SNAP_AUTH"
+          [ -n "${LP_CREDENTIALS:-}" ] || missing="$missing LP_CREDENTIALS"
+          if [ -n "$missing" ]; then
+            echo "::error::snap-launchpad: missing repository secret(s):$missing — the remote build cannot run. Add them in Settings → Secrets and variables → Actions:"
+            echo "  SNAP_AUTH - snapcraft export-login output, with ACL for the wekan snap"
+            echo "  LP_CREDENTIALS - base64 of the Launchpad credentials file for snapcraft remote-build"
+            exit 1
+          fi
+          if ! bytes="$(printf '%s' "$LP_CREDENTIALS" | base64 -d 2>/dev/null | wc -c)" || [ "$bytes" -eq 0 ]; then
+            echo "::error::snap-launchpad: LP_CREDENTIALS is not valid base64, or decodes to nothing. Set it with: base64 -w0 ~/.local/share/snapcraft/launchpad-credentials"
+            exit 1
+          fi
+          echo "snap-launchpad: SNAP_AUTH is set and LP_CREDENTIALS decodes to $bytes bytes."
+
+      - uses: actions/checkout@v7
+        with:
+          ref: refs/tags/v${{ needs.prepare.outputs.version }}
+          # remote-build (Launchpad) rejects shallow clones, so fetch full history
+          fetch-depth: 0
+
+      - name: Install snapcraft
+        # The Snap Store intermittently rejects the install with a 429-style rate
+        # limit; retry so one transient throttle does not fail the build.
+        run: |
+          set -uo pipefail
+          for i in 1 2 3 4 5; do
+            sudo snap install snapcraft --classic && exit 0
+            echo "snapcraft install attempt $i/5 failed (Snap Store throttle?); retrying in 30s..."
+            sleep 30
+          done
+          echo "::error::snapcraft install failed after 5 attempts (Snap Store rate limit)."
+          exit 1
+
+      - name: Provide Launchpad credentials for remote-build
+        env:
+          LP_CREDENTIALS: ${{ secrets.LP_CREDENTIALS }}
+        run: |
+          mkdir -p ~/.local/share/snapcraft
+          printf '%s' "$LP_CREDENTIALS" | base64 -d > ~/.local/share/snapcraft/launchpad-credentials
+          chmod 600 ~/.local/share/snapcraft/launchpad-credentials
+
+      - name: Verify snapcraft.yaml version matches the release
+        run: |
+          set -euo pipefail
+          if ! grep -qxF "version: '${VERSION}'" snapcraft.yaml; then
+            echo "::error::snapcraft.yaml is not at version '${VERSION}' ($(grep -m1 '^version:' snapcraft.yaml)). The bump job (releases/version.sh) did not update the tagged commit."
+            exit 1
+          fi
+          echo "snapcraft.yaml is at version '${VERSION}'."
+
+      - name: Build the ${{ matrix.arch }} snap on Launchpad
+        # --build-for ${{ matrix.arch }}: build ONLY this leg's arch so a slow/failed
+        # arch never blocks the others. remote-build can exit 0 without producing a
+        # .snap (it just downloads logs), so require the file. Retry a few times to
+        # survive transient TLS drops to Launchpad.
+        #
+        # The file test used to be `snaps=( wekan_${VERSION}_<arch>.snap )` and then
+        # `[ ${#snaps[@]} -gt 0 ]`. That string has no wildcard in it, so it is not a
+        # glob - it is a literal filename, `shopt -s nullglob` cannot empty a literal,
+        # and the count was ALWAYS 1 whether or not the file existed. v10.48 s390x
+        # therefore reported "succeeded" over an empty `Artifacts:` list and walked
+        # into `'wekan_10.48_s390x.snap' is not a valid file` in the upload step - a
+        # missing file, blamed on SNAP_AUTH. Ask the filesystem instead.
+        run: |
+          set -uo pipefail
+          shopt -s nullglob
+          attempts=3
+          for i in $(seq 1 "$attempts"); do
+            echo "::group::Remote build ${{ matrix.arch }} attempt $i/$attempts"
+            snapcraft remote-build --launchpad-accept-public-upload \
+              --build-for ${{ matrix.arch }} && rc=0 || rc=$?
+            echo "::endgroup::"
+            # A real glob, so nullglob can empty it, plus any name Launchpad chose.
+            snaps=( wekan_${VERSION}_${{ matrix.arch }}*.snap *_${{ matrix.arch }}.snap )
+            if [ "$rc" -eq 0 ] && [ "${#snaps[@]}" -gt 0 ] && [ -s "${snaps[0]}" ]; then
+              echo "Remote build ${{ matrix.arch }} succeeded on attempt $i: ${snaps[*]}"
+              exit 0
+            fi
+            if [ "$rc" -eq 0 ]; then
+              echo "Attempt $i: snapcraft exited 0 but produced NO .snap for ${{ matrix.arch }} - the Launchpad build did not finish (a 'Stopped' build downloads logs and no artifact). Everything in the directory:"
+            else
+              echo "Attempt $i: snapcraft exit=$rc, .snap files produced=${#snaps[@]}."
+            fi
+            ls -la
+            # The Launchpad build log is the only thing that says WHY a build stopped,
+            # and it is downloaded here. Print it whenever there is no snap - not only
+            # when snapcraft's exit code is non-zero, which is how v10.48 fetched it
+            # and threw it away.
+            for log in snapcraft-wekan-*.txt; do
+              echo "::group::Launchpad build log: $log (last 150 lines)"
+              tail -n 150 "$log"
+              echo "::endgroup::"
+            done
+            if [ "$i" -lt "$attempts" ]; then
+              echo "Retrying in 60s..."
+              sleep 60
+            fi
+          done
+          echo "::error::Remote build ${{ matrix.arch }} failed after $attempts attempts (no wekan_${VERSION}_${{ matrix.arch }}.snap produced). The Launchpad build log printed above says why; the builds are also at https://launchpad.net/~xet7/+snaps" >&2
+          # The one cause that leaves NO trace in the build log, because it is not a
+          # build problem at all: remote-build files every build under an
+          # auto-generated Launchpad PROJECT (xet7-craft-remote-build). A project
+          # with "Licence: None specified" does not qualify for Launchpad's free
+          # hosting - the page says "Purchasing a commercial subscription is
+          # required" - and its builds end as "Stopped" without an artifact, which is
+          # exactly what v10.48 did on ppc64el and s390x.
+          echo "::error::If the build ended as 'Stopped' with no artifact: open https://launchpad.net/xet7-craft-remote-build and check its Licence. 'None specified' means the project does not qualify for free hosting and Launchpad stops its builds. WeKan is MIT (LICENSE, package.json, snapcraft.yaml) - set the licence to MIT / X/Expat and re-run." >&2
+          # The commonest cause after a plain build error is the credential: Launchpad
+          # answers 401/403 for an expired or wrong LP_CREDENTIALS, which reads as an
+          # ordinary build failure unless the log says so.
+          if grep -qiE 'unauthoriz|401|403|invalid credentials|not logged in' snapcraft-wekan-*.txt 2>/dev/null; then
+            echo "::error::LP_CREDENTIALS may not work: Launchpad answered unauthorized. Re-create it (snapcraft remote-build once locally) and set: base64 -w0 ~/.local/share/snapcraft/launchpad-credentials" >&2
+          fi
+          exit 1
+
+      - name: Push ${{ matrix.arch }} to the Snap Store (stable + candidate + beta + edge)
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAP_AUTH }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          snaps=( wekan_${VERSION}_${{ matrix.arch }}*.snap *_${{ matrix.arch }}.snap )
+          # "No file" and "the store said no" are two different problems with two
+          # different owners, so they are two different messages. v10.48 printed the
+          # SNAP_AUTH one for a file that was never built.
+          if [ "${#snaps[@]}" -eq 0 ] || [ ! -s "${snaps[0]}" ]; then
+            echo "::error::No wekan_${VERSION}_${{ matrix.arch }}.snap to upload - the Launchpad build produced no artifact. This is NOT a SNAP_AUTH problem; see the build step above."
+            exit 1
+          fi
+          # base: core24 allows publishing to stable and candidate (core26 does not).
+          for f in "${snaps[@]}"; do
+            echo "Uploading $f to the Snap Store (stable,candidate,beta,edge)..."
+            if ! snapcraft upload --release=stable,candidate,beta,edge "$f"; then
+              echo "::error::The Snap Store refused the upload of $f. If it says the file is invalid, the build is broken; if it says unauthorized, re-export SNAP_AUTH with: snapcraft export-login --snaps wekan --acls package_access,package_push,package_release,package_update snap-auth.txt"
+              exit 1
+            fi
+          done
+
+      - name: Attach the ${{ matrix.arch }} snap to the GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          snaps=( wekan_${VERSION}_${{ matrix.arch }}*.snap *_${{ matrix.arch }}.snap )
+          if [ "${#snaps[@]}" -gt 0 ] && [ -s "${snaps[0]}" ]; then
+            gh release upload "v${VERSION}" "${snaps[@]}" --clobber
+          else
+            echo "No ${{ matrix.arch }} snap to attach - the build produced none."
+          fi
+
+      # Always, as the last step: the run summary then answers "what worked and what
+      # did not" for the whole release at a glance, instead of eighteen job logs. A
+      # step that failed has already printed an ::error:: saying why; this names the
+      # job it was in.
+      - name: Job result
+        if: always()
+        # bash explicitly: this same step runs on the Windows and macOS runners too,
+        # where the default shell is PowerShell / not necessarily this bash.
+        shell: bash
+        run: |
+          case "${{ job.status }}" in
+            success)   mark='OK       ' ;;
+            failure)   mark='FAILED   ' ;;
+            cancelled) mark='CANCELLED' ;;
+            *)         mark='${{ job.status }}' ;;
+          esac
+          echo "$mark snap-launchpad ${{ matrix.arch }}"
+          echo "$mark snap-launchpad ${{ matrix.arch }}" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ job.status }}" = "failure" ]; then
+            echo "::error::snap-launchpad ${{ matrix.arch }} FAILED. The ::error:: line in this job's log, above, says which step and why."
+          fi
+
+  # ─── Variant snaps: wekan-ondra, wekan-gantt-gpl ────────────────────────────
+  # Publish two extra snaps that are the newest wekan code under a different snap
+  # name. DORMANT until SNAP_AUTH carries ACL for the variant names and
+  # WEKAN_REPO_TOKEN can push to the variant repos.
+  # See docs/Design/Autoupdate/Snap-Ondra-Gantt.md.
+  snap-variants:
+    # The SAME WeKan snap, published under the two older names people still have
+    # installed: wekan-ondra and wekan-gantt-gpl. One release publishes all three
+    # snaps - wekan from snap-native (and snap-launchpad for the exotic arches),
+    # these two from here - so nobody is left on a stale package because their
+    # snap has a different name.
+    #
+    # Building and publishing the snap needs SNAP_AUTH and NOTHING ELSE. Keeping
+    # the wekan/<variant> GitHub repositories in step with wekan/wekan is a
+    # separate, optional thing that needs WEKAN_REPO_TOKEN; it used to gate the
+    # whole job, so a token without push rights meant no variant snaps at all
+    # (v10.48, v10.49). The two are independent now: an unpushable repository
+    # costs a warning, not the release of a snap.
+    #
+    # `continue-on-error: true`: a variant must never fail or hold up the release.
+    needs: [prepare, release]
+    continue-on-error: true
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - repo: wekan-ondra
+            snapname: wekan-ondra
+            title: "Wekan Ondra"
+            arch: amd64
+            runner: ubuntu-24.04
+          - repo: wekan-ondra
+            snapname: wekan-ondra
+            title: "Wekan Ondra"
+            arch: arm64
+            runner: ubuntu-24.04-arm
+          - repo: wekan-gantt-gpl
+            snapname: wekan-gantt-gpl
+            title: "Wekan Gantt GPL"
+            arch: amd64
+            runner: ubuntu-24.04
+          - repo: wekan-gantt-gpl
+            snapname: wekan-gantt-gpl
+            title: "Wekan Gantt GPL"
+            arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - name: Check required secrets are configured
+        id: guard
+        env:
+          REPO_TOKEN: ${{ secrets.WEKAN_REPO_TOKEN }}
+          SNAP_AUTH: ${{ secrets.SNAP_AUTH }}
+        run: |
+          # SNAP_AUTH decides whether this job can do its job at all. It must carry
+          # the ACL for THIS snap name as well as for `wekan`:
+          #   snapcraft export-login --snaps wekan,wekan-ondra,wekan-gantt-gpl \
+          #     --acls package_access,package_push,package_release,package_update \
+          #     snap-auth.txt
+          if [ -z "$SNAP_AUTH" ]; then
+            echo "snap=false" >> "$GITHUB_OUTPUT"
+            echo "sync=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::snap-variants (${{ matrix.snapname }} ${{ matrix.arch }}) skipped — SNAP_AUTH is not set, so the snap cannot be published. See docs/Design/Autoupdate/Snap-Ondra-Gantt.md."
+            exit 0
+          fi
+          echo "snap=true" >> "$GITHUB_OUTPUT"
+
+          # Everything below only decides whether the GitHub repository is synced.
+          # It can never stop the snap from being built and published.
+          if [ -z "$REPO_TOKEN" ]; then
+            echo "sync=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::snap-variants (${{ matrix.snapname }}): WEKAN_REPO_TOKEN is not set, so wekan/${{ matrix.repo }} is not updated. The snap is still built and published."
+            exit 0
+          fi
+          code=$(curl -sS -o /tmp/variant.json -w '%{http_code}' \
+            -H "Authorization: Bearer $REPO_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/wekan/${{ matrix.repo }}")
+          if [ "$code" = "404" ]; then
+            echo "sync=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::snap-variants (${{ matrix.snapname }}): wekan/${{ matrix.repo }} does not exist, or WEKAN_REPO_TOKEN cannot see it, so it is not updated. The snap is still built and published."
+          elif [ "$code" != "200" ]; then
+            echo "sync=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::snap-variants (${{ matrix.snapname }}): GitHub answered HTTP $code for wekan/${{ matrix.repo }} (expired or revoked WEKAN_REPO_TOKEN), so it is not updated. The snap is still built and published."
+          else
+            # `.permissions.push` from the repos API is NOT the answer, and this is
+            # where v10.48 went wrong: that field describes the authenticated USER's
+            # role in the repository, not what this token may do, so a fine-grained
+            # PAT that was never scoped to the repo still reads push=true. The guard
+            # passed, and the next step got
+            #   remote: Permission to wekan/${{ matrix.repo }}.git denied to xet7
+            #
+            # So ask the endpoint that actually refuses: the receive-pack
+            # advertisement, which is the first thing a real `git push` requests and
+            # which GitHub answers 403 to for a token without write. It writes
+            # nothing, and it needs no local clone (this step runs before checkout).
+            # The token goes in -u, never in the URL, so it cannot land in the log.
+            rp=$(curl -sS -o /dev/null -w '%{http_code}' \
+              -u "x-access-token:$REPO_TOKEN" \
+              "https://github.com/wekan/${{ matrix.repo }}.git/info/refs?service=git-receive-pack")
+            if [ "$rp" = "200" ]; then
+              echo "sync=true" >> "$GITHUB_OUTPUT"
+              echo "WEKAN_REPO_TOKEN may push to wekan/${{ matrix.repo }} (receive-pack answered 200)."
+            elif [ "$rp" = "403" ] || [ "$rp" = "401" ]; then
+              echo "sync=false" >> "$GITHUB_OUTPUT"
+              echo "::warning::snap-variants (${{ matrix.snapname }}): WEKAN_REPO_TOKEN can READ wekan/${{ matrix.repo }} but may NOT push to it (receive-pack answered HTTP $rp), so the repository is not updated - the snap is still built and published. A classic PAT needs the 'repo' scope and its account must have write access to that repository; a fine-grained PAT needs wekan/${{ matrix.repo }} in its repository list with Contents: Read and write. See docs/Design/Autoupdate/Snap-Ondra-Gantt.md."
+            else
+              echo "sync=false" >> "$GITHUB_OUTPUT"
+              echo "::warning::snap-variants (${{ matrix.snapname }}): the push pre-flight for wekan/${{ matrix.repo }} answered HTTP $rp, which is neither a yes nor a permission refusal. The repository is not updated; the snap is still built and published."
+            fi
+          fi
+
+      - name: Checkout wekan at the release tag
+        if: steps.guard.outputs.snap == 'true'
+        uses: actions/checkout@v7
+        with:
+          ref: refs/tags/v${{ needs.prepare.outputs.version }}
+          path: wekan
+
+      - name: Build the ${{ matrix.snapname }} tree from wekan
+        id: tree
+        if: steps.guard.outputs.snap == 'true'
+        run: |
+          set -euo pipefail
+          # The variant IS wekan, with a different snap name - so it is built from
+          # the release tag that was just checked out, not from whatever the
+          # variant repository happens to contain. No clone is needed for this,
+          # which is what makes the snap independent of the repository sync.
+          rsync -a --exclude='.git' wekan/ variant/
+          cd variant
+          # BOTH snapcraft files: snapcraft.yaml is what this job builds, and
+          # snapcraft-core26.yaml is the same snap on the next base. Renaming only
+          # the first left the core26 file saying `name: wekan`, so a core26 build
+          # from the variant repository would try to publish itself as the DEFAULT
+          # WeKan snap.
+          for f in snapcraft.yaml snapcraft-core26.yaml; do
+            [ -f "$f" ] || continue
+            sed -i "s/^name: wekan$/name: ${{ matrix.snapname }}/" "$f"
+            sed -i "s/^title: .*/title: ${{ matrix.title }}/" "$f"
+          done
+          if ! grep -qxF "name: ${{ matrix.snapname }}" snapcraft.yaml; then
+            echo "::error::snapcraft.yaml was not renamed to ${{ matrix.snapname }} ($(grep -m1 '^name:' snapcraft.yaml)) - it would publish itself as the default wekan snap."
+            exit 1
+          fi
+          if ! grep -qxF "version: '${VERSION}'" snapcraft.yaml; then
+            echo "::error::snapcraft.yaml is not at version '${VERSION}' ($(grep -m1 '^version:' snapcraft.yaml)). The bump job (releases/version.sh) did not update the tagged commit."
+            exit 1
+          fi
+          echo "${{ matrix.snapname }} ${{ matrix.arch }}: snapcraft.yaml is $(grep -m1 '^name:' snapcraft.yaml), $(grep -m1 '^version:' snapcraft.yaml), $(grep -m1 '^base:' snapcraft.yaml)."
+
+      - name: Push the synced tree to wekan/${{ matrix.repo }}
+        # Optional, and only once per variant (the arm64 leg builds the same tree).
+        # A repository that cannot be pushed to has already said so in a warning.
+        if: steps.guard.outputs.snap == 'true' && steps.guard.outputs.sync == 'true' && matrix.arch == 'amd64'
+        env:
+          GH_TOKEN: ${{ secrets.WEKAN_REPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/wekan/${{ matrix.repo }}.git" variant-repo
+          rsync -a --delete --exclude='.git' variant/ variant-repo/
+          cd variant-repo
+          git config user.name  'wekan-release-bot'
+          git config user.email 'release@wekan.team'
+          git add -A
+          git commit -m "Sync wekan v${VERSION} as ${{ matrix.snapname }}" || echo "no changes"
+          git tag -f "v${VERSION}"
+          git push origin HEAD:main
+          git push -f origin "v${VERSION}"
+
+      - name: Build the ${{ matrix.snapname }} snap (${{ matrix.arch }})
+        id: build
+        if: steps.guard.outputs.snap == 'true'
+        uses: snapcore/action-build@v1
+        with:
+          path: variant
+
+      - name: Verify the built snap is ${{ matrix.snapname }}
+        if: steps.guard.outputs.snap == 'true'
+        run: |
+          set -euo pipefail
+          snap="${{ steps.build.outputs.snap }}"
+          base="$(basename "$snap")"
+          case "$base" in
+            ${{ matrix.snapname }}_*) ;;
+            *)
+              echo "::error::the build produced $base, which is not a ${{ matrix.snapname }} snap - publishing it would overwrite another snap in the store."
+              exit 1
+              ;;
+          esac
+          echo "OK: $base"
+
+      - name: Publish ${{ matrix.snapname }} to the Snap Store (all channels)
+        if: steps.guard.outputs.snap == 'true'
+        uses: snapcore/action-publish@v1
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAP_AUTH }}
+        with:
+          snap: ${{ steps.build.outputs.snap }}
+          # base: core24, grade: stable - so all four channels accept it, exactly
+          # as they do for the default wekan snap.
+          release: stable,candidate,beta,edge
+
+      # Always, as the last step: the run summary then answers "what worked and what
+      # did not" for the whole release at a glance, instead of eighteen job logs. A
+      # step that failed has already printed an ::error:: saying why; this names the
+      # job it was in.
+      - name: Job result
+        if: always()
+        shell: bash
+        run: |
+          case "${{ job.status }}" in
+            success)   mark='OK       ' ;;
+            failure)   mark='FAILED   ' ;;
+            cancelled) mark='CANCELLED' ;;
+            *)         mark='${{ job.status }}' ;;
+          esac
+          echo "$mark snap-variants ${{ matrix.snapname }} ${{ matrix.arch }}"
+          echo "$mark snap-variants ${{ matrix.snapname }} ${{ matrix.arch }}" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ job.status }}" = "failure" ]; then
+            echo "::error::snap-variants ${{ matrix.snapname }} ${{ matrix.arch }} FAILED. The ::error:: line in this job's log, above, says which step and why."
+          fi
+
+  ucs:
+    # ENABLED. `continue-on-error: true` below means a failure here can never
+    # fail the release or hold up another job - the point of running it is to
+    # SEE what it reports. Disable again with `if: ${{ false }}`.
+    needs: [prepare, release, docker]
+    continue-on-error: true
+    timeout-minutes: 45
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - name: Check required secrets are configured
+        id: guard
+        env:
+          REPO_TOKEN: ${{ secrets.WEKAN_REPO_TOKEN }}
+          UCS_USER: ${{ secrets.UNIVENTION_APP_PROVIDER_USER }}
+          UCS_PASS: ${{ secrets.UNIVENTION_APP_PROVIDER_PASSWORD }}
+        run: |
+          if [ -z "$REPO_TOKEN" ] || [ -z "$UCS_USER" ] || [ -z "$UCS_PASS" ]; then
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::ucs skipped — set WEKAN_REPO_TOKEN, UNIVENTION_APP_PROVIDER_USER, UNIVENTION_APP_PROVIDER_PASSWORD. See docs/Design/Autoupdate/UCS.md."
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout the wekan/univention app repo
+        if: steps.guard.outputs.ok == 'true'
+        uses: actions/checkout@v7
+        with:
+          repository: wekan/univention
+          token: ${{ secrets.WEKAN_REPO_TOKEN }}
+          path: univention
+
+      - name: Update the app to WeKan ${{ needs.prepare.outputs.version }}
+        if: steps.guard.outputs.ok == 'true'
+        run: |
+          set -euo pipefail
+          cd univention
+          # Bump the WeKan image tag in the compose (image is mirrored by the App
+          # Provider from the public wekanteam/wekan image). The FerretDB compose +
+          # migration hook is the larger change from docs/Design/Autoupdate/UCS.md.
+          sed -i "s#\(wekan-wekan:\)[^ ]*#\1${VERSION}#g" component/compose || true
+          git config user.name  'wekan-release-bot'
+          git config user.email 'release@wekan.team'
+          git add -A
+          git commit -m "WeKan ${VERSION} for UCS" || echo "no changes"
+          git push origin HEAD:master
+
+      - name: Upload the app to the Univention App Provider
+        if: steps.guard.outputs.ok == 'true'
+        env:
+          UNIVENTION_APPCENTER_USER: ${{ secrets.UNIVENTION_APP_PROVIDER_USER }}
+          UNIVENTION_APPCENTER_PASSWORD: ${{ secrets.UNIVENTION_APP_PROVIDER_PASSWORD }}
+        run: |
+          set -euo pipefail
+          # univention-appcenter-control is the App Provider CLI. Fetch it and
+          # upload the app metadata/component. The exact app-version id and file
+          # arguments depend on the App Provider account — see UCS.md.
+          if ! curl -fsSL -o univention-appcenter-control \
+                https://provider-portal.software-univention.de/appcenter-selfservice/univention-appcenter-control; then
+            echo "::warning::Could not fetch univention-appcenter-control; upload skipped (fill in per account)."
+            exit 0
+          fi
+          chmod +x univention-appcenter-control
+          echo "Fetched univention-appcenter-control. Intended upload:"
+          echo "  ./univention-appcenter-control upload \"wekan_${VERSION}\" univention/meta/* univention/component/*"
+
+      # Always, as the last step: the run summary then answers "what worked and what
+      # did not" for the whole release at a glance, instead of eighteen job logs. A
+      # step that failed has already printed an ::error:: saying why; this names the
+      # job it was in.
+      - name: Job result
+        if: always()
+        # bash explicitly: this same step runs on the Windows and macOS runners too,
+        # where the default shell is PowerShell / not necessarily this bash.
+        shell: bash
+        run: |
+          case "${{ job.status }}" in
+            success)   mark='OK       ' ;;
+            failure)   mark='FAILED   ' ;;
+            cancelled) mark='CANCELLED' ;;
+            *)         mark='${{ job.status }}' ;;
+          esac
+          echo "$mark ucs"
+          echo "$mark ucs" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ job.status }}" = "failure" ]; then
+            echo "::error::ucs FAILED. The ::error:: line in this job's log, above, says which step and why."
+          fi
+          # ./univention-appcenter-control upload "wekan_${VERSION}" univention/meta/* univention/component/* \
+          #   || echo "::warning::App Provider upload failed (check account/app id)."
+
+  # ─── Nextcloud App Store (ExApp) ────────────────────────────────────────────
+  # Build the WeKan ExApp image and publish the app to apps.nextcloud.com.
+  # DORMANT until the ExApp repo (wekan/nextcloud) and the signing/App Store
+  # secrets exist. See docs/Design/Autoupdate/Nextcloud.md.
+  nextcloud:
+    # ENABLED. `continue-on-error: true` below means a failure here can never
+    # fail the release or hold up another job - the point of running it is to
+    # SEE what it reports. Disable again with `if: ${{ false }}`.
+    needs: [prepare, release, docker]
+    continue-on-error: true
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - name: Check required secrets are configured
+        id: guard
+        env:
+          REPO_TOKEN: ${{ secrets.WEKAN_REPO_TOKEN }}
+          NC_KEY: ${{ secrets.NEXTCLOUD_APP_PRIVATE_KEY }}
+          NC_CRT: ${{ secrets.NEXTCLOUD_APP_PUBLIC_CRT }}
+          NC_TOKEN: ${{ secrets.NEXTCLOUD_APPSTORE_TOKEN }}
+        run: |
+          if [ -z "$REPO_TOKEN" ] || [ -z "$NC_KEY" ] || [ -z "$NC_CRT" ] || [ -z "$NC_TOKEN" ]; then
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::nextcloud skipped — set WEKAN_REPO_TOKEN, NEXTCLOUD_APP_PRIVATE_KEY, NEXTCLOUD_APP_PUBLIC_CRT, NEXTCLOUD_APPSTORE_TOKEN. See docs/Design/Autoupdate/Nextcloud.md."
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout the wekan/nextcloud ExApp repo
+        if: steps.guard.outputs.ok == 'true'
+        uses: actions/checkout@v7
+        with:
+          repository: wekan/nextcloud
+          token: ${{ secrets.WEKAN_REPO_TOKEN }}
+          path: exapp
+
+      - name: Log in to ghcr.io
+        if: steps.guard.outputs.ok == 'true'
+        env:
+          GHCR_AUTH: ${{ secrets.GHCR_AUTH }}
+        run: |
+          set -euo pipefail
+          user="$(printf '%s' "$GHCR_AUTH" | base64 -d | cut -d: -f1)"
+          printf '%s' "$GHCR_AUTH" | base64 -d | cut -d: -f2- | docker login ghcr.io -u "$user" --password-stdin
+
+      - name: Build and push the WeKan ExApp image
+        if: steps.guard.outputs.ok == 'true'
+        run: |
+          set -euo pipefail
+          cd exapp
+          docker buildx build --push \
+            -t ghcr.io/wekan/wekan-exapp:v${VERSION} \
+            -t ghcr.io/wekan/wekan-exapp:latest \
+            --build-arg WEKAN_VERSION=${VERSION} .
+
+      - name: Update info.xml version and image tag, push
+        if: steps.guard.outputs.ok == 'true'
+        run: |
+          set -euo pipefail
+          cd exapp
+          sed -i "s#<version>[^<]*</version>#<version>${VERSION}</version>#" appinfo/info.xml
+          sed -i "s#<image-tag>[^<]*</image-tag>#<image-tag>v${VERSION}</image-tag>#" appinfo/info.xml
+          git config user.name  'wekan-release-bot'
+          git config user.email 'release@wekan.team'
+          git add -A
+          git commit -m "WeKan ExApp ${VERSION}" || echo "no changes"
+          git push origin HEAD:main
+
+      - name: Package, sign and publish to the Nextcloud App Store
+        if: steps.guard.outputs.ok == 'true'
+        env:
+          APP_PRIVATE_KEY: ${{ secrets.NEXTCLOUD_APP_PRIVATE_KEY }}
+          APPSTORE_TOKEN: ${{ secrets.NEXTCLOUD_APPSTORE_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          APP_ID="$(grep -m1 -oP '(?<=<id>)[^<]+' exapp/appinfo/info.xml)"
+          # Package the app folder as <app-id>.tar.gz (must contain appinfo/info.xml).
+          tar -czf "${APP_ID}.tar.gz" --transform "s,^\./,${APP_ID}/," -C exapp .
+          printf '%s' "$APP_PRIVATE_KEY" > app.key
+          SIGN="$(openssl dgst -sha512 -sign app.key "${APP_ID}.tar.gz" | openssl base64 -A)"
+          rm -f app.key
+          # The App Store fetches the tarball from a download URL, so attach it to
+          # the GitHub Release first, then register the release.
+          gh release upload "v${VERSION}" "${APP_ID}.tar.gz" --clobber
+          DL="https://github.com/wekan/wekan/releases/download/v${VERSION}/${APP_ID}.tar.gz"
+          curl -fsSL -X POST https://apps.nextcloud.com/api/v1/apps/releases \
+            -H "Authorization: Token ${APPSTORE_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"download\":\"${DL}\",\"signature\":\"${SIGN}\",\"nightly\":false}" \
+            || echo "::warning::Nextcloud App Store upload failed (check token/cert/app registration)."
+
+      # Always, as the last step: the run summary then answers "what worked and what
+      # did not" for the whole release at a glance, instead of eighteen job logs. A
+      # step that failed has already printed an ::error:: saying why; this names the
+      # job it was in.
+      - name: Job result
+        if: always()
+        # bash explicitly: this same step runs on the Windows and macOS runners too,
+        # where the default shell is PowerShell / not necessarily this bash.
+        shell: bash
+        run: |
+          case "${{ job.status }}" in
+            success)   mark='OK       ' ;;
+            failure)   mark='FAILED   ' ;;
+            cancelled) mark='CANCELLED' ;;
+            *)         mark='${{ job.status }}' ;;
+          esac
+          echo "$mark nextcloud"
+          echo "$mark nextcloud" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ job.status }}" = "failure" ]; then
+            echo "::error::nextcloud FAILED. The ::error:: line in this job's log, above, says which step and why."
+          fi

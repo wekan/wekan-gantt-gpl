@@ -1,72 +1,71 @@
+import { Meteor } from 'meteor/meteor';
+import { ReactiveVar } from 'meteor/reactive-var';
 import { ReactiveCache } from '/imports/reactiveCache';
-import { DialogWithBoardSwimlaneList } from '/client/lib/dialogWithBoardSwimlaneList';
+import { BoardSwimlaneListDialog } from '/client/lib/dialogWithBoardSwimlaneList';
 
-export class DialogWithBoardSwimlaneListCard extends DialogWithBoardSwimlaneList {
-  getDefaultOption(boardId) {
-    const ret = {
-      'boardId' : "",
-      'swimlaneId' : "",
-      'listId' : "",
-      'cardId': "",
-    }
-    return ret;
+/**
+ * Extension of BoardSwimlaneListDialog that adds card selection.
+ * Used by popup templates that need board + swimlane + list + card selectors.
+ */
+export class BoardSwimlaneListCardDialog extends BoardSwimlaneListDialog {
+  constructor(tpl, callbacks = {}) {
+    super(tpl, callbacks);
+    this.selectedCardId = new ReactiveVar('');
   }
 
-  /** returns if the card id was the last confirmed one
-   * @param cardId check this card id
-   * @return if the card id was the last confirmed one
-   */
-  isDialogOptionCardId(cardId) {
-    let ret = this.cardOption.cardId == cardId;
-    return ret;
+  getDefaultOption() {
+    return {
+      boardId: '',
+      swimlaneId: '',
+      listId: '',
+      cardId: '',
+    };
+  }
+
+  /** Override to also set cardId if available */
+  setOption(boardId) {
+    super.setOption(boardId);
+    if (this.cardOption && this.cardOption.cardId && this.selectedCardId) {
+      this.selectedCardId.set(this.cardOption.cardId);
+    }
   }
 
   /** returns all available cards of the current list */
   cards() {
-    const list = ReactiveCache.getList(this.selectedListId.get());
-    let ret = [];
-    if (list) {
-      ret = list.cards(this.selectedSwimlaneId.get());
+    const list = ReactiveCache.getList({
+      _id: this.selectedListId.get(),
+      boardId: this.selectedBoardId.get(),
+    });
+    const swimlaneId = this.selectedSwimlaneId.get();
+    if (list && swimlaneId) {
+      return list.cards(swimlaneId).sort((a, b) => a.sort - b.sort);
+    } else {
+      return [];
     }
-    return ret;
   }
 
-  events() {
-    return [
-      {
-        'click .js-done'() {
-          const boardSelect = this.$('.js-select-boards')[0];
-          const boardId = boardSelect.options[boardSelect.selectedIndex].value;
+  /** returns if the card id was the last confirmed one */
+  isDialogOptionCardId(cardId) {
+    return this.cardOption.cardId == cardId;
+  }
 
-          const listSelect = this.$('.js-select-lists')[0];
-          const listId = listSelect.options[listSelect.selectedIndex].value;
+  /** Override to also reset card id on board change */
+  getBoardData(boardId) {
+    const self = this;
+    Meteor.subscribe('board', boardId, false, {
+      onReady() {
+        const sameBoardId = self.selectedBoardId.get() == boardId;
+        self.selectedBoardId.set(boardId);
 
-          const swimlaneSelect = this.$('.js-select-swimlanes')[0];
-          const swimlaneId = swimlaneSelect.options[swimlaneSelect.selectedIndex].value;
-
-          const cardSelect = this.$('.js-select-cards')[0];
-          const cardId = cardSelect.options[cardSelect.selectedIndex].value;
-
-          const options = {
-            'boardId' : boardId,
-            'swimlaneId' : swimlaneId,
-            'listId' : listId,
-            'cardId': cardId,
+        if (!sameBoardId) {
+          self.setFirstSwimlaneId();
+          self.setFirstListId();
+          if (self.selectedCardId) {
+            self.selectedCardId.set('');
           }
-          this.setDone(cardId, options);
-          Popup.back(2);
-        },
-        'change .js-select-boards'(event) {
-          const boardId = $(event.currentTarget).val();
-          this.getBoardData(boardId);
-        },
-        'change .js-select-swimlanes'(event) {
-          this.selectedSwimlaneId.set($(event.currentTarget).val());
-        },
-        'change .js-select-lists'(event) {
-          this.selectedListId.set($(event.currentTarget).val());
-        },
+        }
       },
-    ];
+    });
   }
+
 }

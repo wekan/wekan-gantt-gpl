@@ -1,9 +1,18 @@
 import { ReactiveCache } from '/imports/reactiveCache';
-import { ObjectID } from 'bson';
+import { attachmentKind } from '/models/lib/attachmentKind';
+import { ObjectId } from 'bson';
 import DOMPurify from 'dompurify';
+import { sanitizeHTML, sanitizeText } from '/imports/lib/secureDOMPurify';
+import uploadProgressManager from '../../lib/uploadProgressManager';
+import { attachmentMigrationManager } from '/client/lib/attachmentMigrationManager';
+import Attachments from '/models/attachments';
+import { Utils } from '/client/lib/utils';
+const { cleanFileName } = require('/imports/lib/fileNameDisplay');
+import { formatDateTime } from '/imports/lib/dateUtils';
+import { EscapeActions } from '/client/lib/escapeActions';
 
-const filesize = require('filesize');
-const prettyMilliseconds = require('pretty-ms');
+const { filesize } = require('filesize');
+import prettyMilliseconds from 'pretty-ms';
 
 // We store current card ID and the ID of currently opened attachment in a
 // global var. This is used so that we know what's the next attachment to open
@@ -16,7 +25,7 @@ let touchStartCoords = null;
 let touchEndCoords = null;
 
 // Stores link to the attachment for which attachment actions popup was opened
-attachmentActionsLink = null;
+let attachmentActionsLink = null;
 
 Template.attachmentGallery.events({
   'click .open-preview'(event) {
@@ -37,9 +46,20 @@ Template.attachmentGallery.events({
     attachmentActionsLink = event.currentTarget.getAttribute("data-attachment-link");
   },
   'click .js-rename': Popup.open('attachmentRename'),
-  'click .js-confirm-delete': Popup.afterConfirm('attachmentDelete', function() {
-      Attachments.remove(this._id);
-      Popup.back(2);
+  'click .js-confirm-delete': Popup.afterConfirm('attachmentDelete', async function() {
+      const card = this.meta && this.meta.cardId ? ReactiveCache.getCard(this.meta.cardId) : null;
+      if (card && card.coverId === this._id) {
+        await card.unsetCover();
+      }
+      // #5282 (same class as #3252 for comments/checklists): only remove if the
+      // doc is still in the local cache. Under publication churn the attachment
+      // can already be evicted from Minimongo, and removing a missing _id
+      // throws "Removed nonexistent document" even though the delete itself
+      // succeeded on the server.
+      if (this._id && ReactiveCache.getAttachment(this._id)) {
+        await Attachments.removeAsync(this._id);
+      }
+      Popup.back();
   }),
 });
 
@@ -68,14 +88,23 @@ function getPrevAttachmentId(currentAttachmentId, offset = 0) {
 }
 
 function attachmentCanBeOpened(attachment) {
+  // #6532: a migrated attachment can arrive without these flags, so ask the
+  // shared helper - which derives them from the mime type or the file name -
+  // rather than the raw document. Otherwise an image that renders as a
+  // thumbnail still refuses to open in the viewer.
+  const kind = attachmentKind(attachment);
   return (
-    attachment.isImage ||
-    attachment.isPDF ||
-    attachment.isText ||
-    attachment.isJSON ||
-    attachment.isVideo ||
-    attachment.isAudio
+    kind.isImage ||
+    kind.isPDF ||
+    kind.isText ||
+    kind.isJSON ||
+    kind.isVideo ||
+    kind.isAudio
   );
+}
+
+function getAttachmentUrl(attachment) {
+  return attachment && typeof attachment.link === 'function' ? attachment.link() : '';
 }
 
 function openAttachmentViewer(attachmentId) {
@@ -92,41 +121,44 @@ function openAttachmentViewer(attachmentId) {
     - implement cleanup in the closeAttachmentViewer() function, if necessary
     - mark attachment type as openable by adding a new condition to the attachmentCanBeOpened function
   */
+  const kind = attachmentKind(attachment);
   switch(true){
-    case (attachment.isImage):
-      $("#image-viewer").attr("src", attachment.link());
+    case (kind.isImage):
+      $("#image-viewer").attr("src", getAttachmentUrl(attachment));
       $("#image-viewer").removeClass("hidden");
       break;
-    case (attachment.isPDF):
-      $("#pdf-viewer").attr("data", attachment.link());
+    case (kind.isPDF):
+      $("#pdf-viewer").attr("data", getAttachmentUrl(attachment));
       $("#pdf-viewer").removeClass("hidden");
       break;
-    case (attachment.isVideo):
+    case (kind.isVideo):
       // We have to create a new <source> DOM element and append it to the video
       // element, otherwise the video won't load
       let videoSource = document.createElement('source');
-      videoSource.setAttribute('src', attachment.link());
+      videoSource.setAttribute('src', getAttachmentUrl(attachment));
       $("#video-viewer").append(videoSource);
 
       $("#video-viewer").removeClass("hidden");
       break;
-    case (attachment.isAudio):
+    case (kind.isAudio):
       // We have to create a new <source> DOM element and append it to the audio
       // element, otherwise the audio won't load
       let audioSource = document.createElement('source');
-      audioSource.setAttribute('src', attachment.link());
+      audioSource.setAttribute('src', getAttachmentUrl(attachment));
       $("#audio-viewer").append(audioSource);
 
       $("#audio-viewer").removeClass("hidden");
       break;
-    case (attachment.isText):
-    case (attachment.isJSON):
-      $("#txt-viewer").attr("data", attachment.link());
+    case (kind.isText):
+    case (kind.isJSON):
+      $("#txt-viewer").attr("data", getAttachmentUrl(attachment));
       $("#txt-viewer").removeClass("hidden");
       break;
   }
 
-  $('#attachment-name').text(attachment.name);
+  // Show the cleaned name: URL-decoded, homoglyphs folded, invisible characters
+  // and exploit markup removed (plain text; .text() escapes, so never HTML).
+  $('#attachment-name').text(cleanFileName(attachment.name));
   $('#viewer-overlay').removeClass('hidden');
 }
 
@@ -193,8 +225,6 @@ function processTouch(){
   xDist = touchEndCoords.x - touchStartCoords.x;
   yDist = touchEndCoords.y - touchStartCoords.y;
 
-  console.log("xDist: " + xDist);
-
   // Left swipe
   if (Math.abs(xDist) > Math.abs(yDist) && xDist < 0) {
     openNextAttachment();
@@ -214,14 +244,12 @@ function processTouch(){
 
 Template.attachmentViewer.events({
   'touchstart #viewer-container'(event) {
-    console.log("touchstart")
     touchStartCoords = {
       x: event.changedTouches[0].screenX,
       y: event.changedTouches[0].screenY
     }
   },
   'touchend #viewer-container'(event) {
-    console.log("touchend")
     touchEndCoords = {
       x: event.changedTouches[0].screenX,
       y: event.changedTouches[0].screenY
@@ -260,15 +288,69 @@ Template.attachmentViewer.events({
 });
 
 Template.attachmentGallery.helpers({
+  attachments() {
+    const card = Template.currentData();
+    if (!card) return [];
+    const cardId = typeof card.getRealId === 'function' ? card.getRealId() : card._id;
+    if (!cardId) return [];
+    const filesCursor = Attachments.find(
+      { 'meta.cardId': cardId },
+      { sort: { uploadedAt: -1 } },
+    );
+    // Call fetch() on the underlying Mongo cursor to establish a reactive
+    // dependency directly inside this Blaze computation. Without this,
+    // .each() (which calls cursor.map()) would not register reactivity and
+    // newly-uploaded attachments would not appear until a page reload.
+    if (filesCursor && filesCursor.cursor) {
+      filesCursor.cursor.fetch();
+    }
+    return filesCursor.each();
+  },
   isBoardAdmin() {
-    return ReactiveCache.getCurrentUser().isBoardAdmin();
+    return ReactiveCache.getCurrentUser()?.isBoardAdmin();
   },
   fileSize(size) {
     const ret = filesize(size);
     return ret;
   },
   sanitize(value) {
-    return DOMPurify.sanitize(value);
+    return sanitizeHTML(value);
+  },
+  uploaderName() {
+    const uploaderId = this.userId;
+    if (!uploaderId) return '';
+    const uploader = ReactiveCache.getUser(uploaderId);
+    if (!uploader) return '';
+    return uploader.profile && uploader.profile.fullname
+      ? uploader.profile.fullname
+      : uploader.username || '';
+  },
+  // #6532: the template asks `if(isImage)` and prints `extension` - both of
+  // which a migrated attachment can be missing, which drew an empty white box
+  // where the picture should be. A helper wins over the data context in Blaze,
+  // so these answer for every attachment, derived when the document is silent.
+  isImage() {
+    return attachmentKind(this).isImage;
+  },
+  isVideo() {
+    return attachmentKind(this).isVideo;
+  },
+  isAudio() {
+    return attachmentKind(this).isAudio;
+  },
+  extension() {
+    return attachmentKind(this).extension;
+  },
+  uploadedAt() {
+    if (this.uploadedAtOstrio) {
+      return formatDateTime(this.uploadedAtOstrio);
+    }
+    // Fall back to ObjectId timestamp (first 4 bytes = Unix seconds)
+    try {
+      const ts = parseInt(this._id.substring(0, 8), 16) * 1000;
+      if (!isNaN(ts)) return formatDateTime(new Date(ts));
+    } catch (_) {}
+    return '';
   },
 });
 
@@ -291,48 +373,18 @@ Template.cardAttachmentsPopup.helpers({
 });
 
 Template.cardAttachmentsPopup.events({
-  'change .js-attach-file'(event, templateInstance) {
+  async 'change .js-attach-file'(event, templateInstance) {
+    event.stopPropagation();
     const card = this;
     const files = event.currentTarget.files;
     if (files) {
       let uploads = [];
-      for (const file of files) {
-        const fileId = new ObjectID().toString();
-        let fileName = DOMPurify.sanitize(file.name);
+      const uploaders = await handleFileUpload(card, files);
 
-        // If sanitized filename is not same as original filename,
-        // it could be XSS that is already fixed with sanitize,
-        // or just normal mistake, so it is not a problem.
-        // That is why here is no warning.
-        if (fileName !== file.name) {
-          // If filename is empty, only in that case add some filename
-          if (fileName.length === 0) {
-            fileName = 'Empty-filename-after-sanitize.txt';
-          }
-        }
-
-        const config = {
-          file: file,
-          fileId: fileId,
-          fileName: fileName,
-          meta: Utils.getCommonAttachmentMetaFrom(card),
-          chunkSize: 'dynamic',
-        };
-        config.meta.fileId = fileId;
-        const uploader = Attachments.insert(
-          config,
-          false,
-        );
+      uploaders.forEach(uploader => {
         uploader.on('start', function() {
           uploads.push(this);
           templateInstance.uploads.set(uploads);
-        });
-        uploader.on('uploaded', (error, fileRef) => {
-          if (!error) {
-            if (fileRef.isImage) {
-              card.setCover(fileRef._id);
-            }
-          }
         });
         uploader.on('end', (error, fileRef) => {
           uploads = uploads.filter(_upload => _upload.config.fileId != fileRef._id);
@@ -341,11 +393,14 @@ Template.cardAttachmentsPopup.events({
             Popup.back();
           }
         });
-        uploader.start();
-      }
+      });
     }
   },
   'click .js-computer-upload'(event, templateInstance) {
+    // Prevent the click fired when the OS file-picker dialog closes from
+    // triggering EscapeActions and closing the popup before the upload starts.
+    // Same pattern as swimlanes.js after drag operations.
+    EscapeActions.preventNextClick();
     templateInstance.find('.js-attach-file').click();
     event.preventDefault();
   },
@@ -355,6 +410,115 @@ Template.cardAttachmentsPopup.events({
 const MAX_IMAGE_PIXEL = Utils.MAX_IMAGE_PIXEL;
 const COMPRESS_RATIO = Utils.IMAGE_COMPRESS_RATIO;
 let pastedResults = null;
+
+// Shared upload logic for drag-and-drop functionality
+export async function handleFileUpload(card, files) {
+  if (!files || files.length === 0) {
+    return [];
+  }
+
+  // Check if board allows attachments
+  const board = card.board();
+  if (!board || !board.allowsAttachments) {
+    if (process.env.DEBUG === 'true') {
+      console.warn('Attachments not allowed on this board');
+    }
+    return [];
+  }
+
+  // Check if user can modify the card
+  if (!Utils.canModifyCard()) {
+    if (process.env.DEBUG === 'true') {
+      console.warn('User does not have permission to modify this card');
+    }
+    return [];
+  }
+
+  const uploads = [];
+
+  for (const file of files) {
+    // Basic file validation
+    if (!file || !file.name) {
+      if (process.env.DEBUG === 'true') {
+        console.warn('Invalid file object');
+      }
+      continue;
+    }
+
+    const fileId = new ObjectId().toString();
+    let fileName = sanitizeText(file.name);
+
+    // If sanitized filename is not same as original filename,
+    // it could be XSS that is already fixed with sanitize,
+    // or just normal mistake, so it is not a problem.
+    // That is why here is no warning.
+    if (fileName !== file.name) {
+      // If filename is empty, only in that case add some filename
+      if (fileName.length === 0) {
+        fileName = 'Empty-filename-after-sanitize.txt';
+      }
+    }
+
+    const config = {
+      file: file,
+      fileId: fileId,
+      fileName: fileName,
+      meta: Utils.getCommonAttachmentMetaFrom(card),
+      chunkSize: 'dynamic',
+      // Use HTTP transport (a dedicated fetch POST per chunk) rather than DDP,
+      // which floods the WebSocket channel and causes repeated reconnects in
+      // Safari (the "Loading, please wait" offline banner, stalling at ~95%).
+      // EXCEPT on Sandstorm: the grain's sandstorm-http-bridge strips Meteor-Files'
+      // custom upload headers — x-start/x-mtok/x-chunkid/x-fileid/x-eof are not on
+      // Sandstorm's request-header whitelist — so the server never sees x-start,
+      // treats every request as a chunk continuation, and fails with "Can't
+      // continue upload, session expired" [408]. DDP uploads go over method calls
+      // (no custom HTTP headers), so they work through the bridge.
+      transport: Meteor.settings?.public?.sandstorm ? 'ddp' : 'http',
+    };
+    config.meta.fileId = fileId;
+
+    try {
+      const uploader = await Attachments.insertAsync(
+        config,
+        false,
+      );
+
+      // Add to progress manager for tracking
+      const uploadId = uploadProgressManager.addUpload(card._id, uploader, file);
+
+      uploader.on('uploaded', (error, fileRef) => {
+        if (!error) {
+          if (fileRef.isImage) {
+            card.setCover(fileRef._id);
+            if (process.env.DEBUG === 'true') {
+              console.log(`Set cover image for card ${card._id}: ${fileRef.name}`);
+            }
+          }
+        } else {
+          if (process.env.DEBUG === 'true') {
+            console.error('Upload error:', error);
+          }
+        }
+      });
+
+      uploader.on('error', (error) => {
+        if (process.env.DEBUG === 'true') {
+          console.error('Upload error:', error);
+        }
+      });
+
+      uploads.push(uploader);
+      uploader.start();
+    } catch (error) {
+      if (process.env.DEBUG === 'true') {
+        console.error('Failed to create uploader:', error);
+      }
+    }
+  }
+
+  return uploads;
+}
 
 Template.previewClipboardImagePopup.onRendered(() => {
   // we can paste image from clipboard
@@ -390,21 +554,24 @@ Template.previewClipboardImagePopup.onRendered(() => {
 });
 
 Template.previewClipboardImagePopup.events({
-  'click .js-upload-pasted-image'() {
+  async 'click .js-upload-pasted-image'() {
     const card = this;
     if (pastedResults && pastedResults.file) {
       const file = pastedResults.file;
       window.oPasted = pastedResults;
-      const fileId = new ObjectID().toString();
+      const fileId = new ObjectId().toString();
       const config = {
         file,
         fileId: fileId,
         meta: Utils.getCommonAttachmentMetaFrom(card),
         fileName: file.name || file.type.replace('image/', 'clipboard.'),
         chunkSize: 'dynamic',
+        // DDP on Sandstorm (its bridge strips Meteor-Files' x-* upload headers),
+        // HTTP elsewhere — see the note in the other upload handler above.
+        transport: Meteor.settings?.public?.sandstorm ? 'ddp' : 'http',
       };
       config.meta.fileId = fileId;
-      const uploader = Attachments.insert(
+      const uploader = await Attachments.insertAsync(
         config,
         false,
       );
@@ -425,9 +592,14 @@ Template.previewClipboardImagePopup.events({
   },
 });
 
-BlazeComponent.extendComponent({
+Template.attachmentActionsPopup.helpers({
+  // The "add cover" / "add background image" entries are shown `if isImage`
+  // too - same derivation, or a migrated image could not be made a cover.
+  isImage() {
+    return attachmentKind(this).isImage;
+  },
   isCover() {
-    const ret = ReactiveCache.getCard(this.data().meta.cardId).coverId == this.data()._id;
+    const ret = ReactiveCache.getCard(this.meta.cardId).coverId == this._id;
     return ret;
   },
   isBackgroundImage() {
@@ -435,75 +607,74 @@ BlazeComponent.extendComponent({
     //return currentBoard.backgroundImageURL === $(".attachment-thumbnail-img").attr("src");
     return false;
   },
-  events() {
-    return [
-      {
-        'click .js-add-cover'() {
-          ReactiveCache.getCard(this.data().meta.cardId).setCover(this.data()._id);
-          Popup.back();
-        },
-        'click .js-remove-cover'() {
-          ReactiveCache.getCard(this.data().meta.cardId).unsetCover();
-          Popup.back();
-        },
-        'click .js-add-background-image'() {
-          const currentBoard = Utils.getCurrentBoard();
-          currentBoard.setBackgroundImageURL(attachmentActionsLink);
-          Utils.setBackgroundImage(attachmentActionsLink);
-          Popup.back();
-          event.preventDefault();
-        },
-        'click .js-remove-background-image'() {
-          const currentBoard = Utils.getCurrentBoard();
-          currentBoard.setBackgroundImageURL("");
-          Utils.setBackgroundImage("");
-          Popup.back();
-          Utils.reload();
-          event.preventDefault();
-        },
-        'click .js-move-storage-fs'() {
-          Meteor.call('moveAttachmentToStorage', this.data()._id, "fs");
-          Popup.back();
-        },
-        'click .js-move-storage-gridfs'() {
-          Meteor.call('moveAttachmentToStorage', this.data()._id, "gridfs");
-          Popup.back();
-        },
-        'click .js-move-storage-s3'() {
-          Meteor.call('moveAttachmentToStorage', this.data()._id, "s3");
-          Popup.back();
-        },
-      }
-    ]
-  }
-}).register('attachmentActionsPopup');
+});
 
-BlazeComponent.extendComponent({
+Template.attachmentActionsPopup.events({
+  'click .js-add-cover'() {
+    ReactiveCache.getCard(this.meta.cardId).setCover(this._id);
+    Popup.back();
+  },
+  'click .js-remove-cover'() {
+    ReactiveCache.getCard(this.meta.cardId).unsetCover();
+    Popup.back();
+  },
+  'click .js-add-background-image'(event) {
+    const currentBoard = Utils.getCurrentBoard();
+    currentBoard.setBackgroundImageURL(attachmentActionsLink);
+    Utils.setBackgroundImage(attachmentActionsLink);
+    Popup.back();
+    event.preventDefault();
+  },
+  'click .js-remove-background-image'(event) {
+    const currentBoard = Utils.getCurrentBoard();
+    currentBoard.setBackgroundImageURL("");
+    Utils.setBackgroundImage("");
+    Popup.back();
+    Utils.reload();
+    event.preventDefault();
+  },
+});
+
+Template.attachmentRenamePopup.helpers({
   getNameWithoutExtension() {
-    const ret = this.data().name.replace(new RegExp("\." + this.data().extension + "$"), "");
+    const ret = this.name.replace(new RegExp("\\." + this.extension + "$"), "");
     return ret;
   },
-  events() {
-    return [
-      {
-        'keydown input.js-edit-attachment-name'(evt) {
-          // enter = save
-          if (evt.keyCode === 13) {
-            this.find('button[type=submit]').click();
-          }
-        },
-        'click button.js-submit-edit-attachment-name'(event) {
-          // save button pressed
-          event.preventDefault();
-          const name = this.$('.js-edit-attachment-name')[0]
-            .value
-            .trim() + this.data().extensionWithDot;
-          if (name === DOMPurify.sanitize(name)) {
-            Meteor.call('renameAttachment', this.data()._id, name);
-          }
-          Popup.back(2);
-        },
-      }
-    ]
-  }
-}).register('attachmentRenamePopup');
+});
+
+Template.attachmentRenamePopup.events({
+  'keydown input.js-edit-attachment-name'(evt, tpl) {
+    // enter = save
+    if (evt.keyCode === 13) {
+      tpl.find('button[type=submit]').click();
+    }
+  },
+  'click button.js-submit-edit-attachment-name'(event, tpl) {
+    // save button pressed
+    event.preventDefault();
+    const name = tpl.$('.js-edit-attachment-name')[0]
+      .value
+      .trim() + this.extensionWithDot;
+    if (name === sanitizeText(name)) {
+      Meteor.call('renameAttachment', this._id, name);
+    }
+    Popup.back();
+  },
+});
+
+// Template helpers for attachment migration status
+Template.registerHelper('attachmentMigrationStatus', function(attachmentId) {
+  return attachmentMigrationManager.getAttachmentMigrationStatus(attachmentId);
+});
+
+Template.registerHelper('isAttachmentMigrating', function(attachmentId) {
+  return attachmentMigrationManager.isAttachmentBeingMigrated(attachmentId);
+});
+
+Template.registerHelper('attachmentMigrationProgress', function() {
+  return attachmentMigrationManager.attachmentMigrationProgress.get();
+});
+
+Template.registerHelper('attachmentMigrationStatusText', function() {
+  return attachmentMigrationManager.attachmentMigrationStatus.get();
+});

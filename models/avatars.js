@@ -1,54 +1,34 @@
-import { ReactiveCache } from '/imports/reactiveCache';
 import { Meteor } from 'meteor/meteor';
 import { FilesCollection } from 'meteor/ostrio:files';
-import { formatFleURL } from 'meteor/ostrio:files/lib';
-import { isFileValid } from './fileValidation';
-import { createBucket } from './lib/grid/createBucket';
-import { TAPi18n } from '/imports/i18n';
-import fs from 'fs';
-import path from 'path';
-import FileStoreStrategyFactory, { FileStoreStrategyFilesystem, FileStoreStrategyGridFs, STORAGE_NAME_FILESYSTEM } from '/models/lib/fileStoreStrategy';
+import { generateUniversalAvatarUrl } from '/models/lib/universalUrlGenerator';
 
-const filesize = require('filesize');
+const { filesize } = require('filesize');
+const getTAPi18n = () => require('/imports/i18n').TAPi18n;
 
-let avatarsUploadExternalProgram;
-let avatarsUploadMimeTypes = [];
 let avatarsUploadSize = 72000;
-let avatarsBucket;
-let storagePath;
 
-if (Meteor.isServer) {
-  if (process.env.AVATARS_UPLOAD_MIME_TYPES) {
-    avatarsUploadMimeTypes = process.env.AVATARS_UPLOAD_MIME_TYPES.split(',');
-    avatarsUploadMimeTypes = avatarsUploadMimeTypes.map(value => value.trim());
+// Compute storage path:
+// - Docker (WRITABLE_PATH=/data): /data/files/avatars
+// - Snap (WRITABLE_PATH=$SNAP_COMMON/files): $SNAP_COMMON/files/avatars
+const computeAvatarStoragePath = () => {
+  const basePath = process.env.WRITABLE_PATH || process.cwd();
+  const endsWithFiles = basePath.endsWith('/files') || basePath.endsWith('\\files');
+  if (endsWithFiles) {
+    // Snap: WRITABLE_PATH already includes /files
+    return basePath + '/avatars';
+  } else {
+    // Docker & Dev: append /files/avatars
+    return basePath + '/files/avatars';
   }
+};
 
-  if (process.env.AVATARS_UPLOAD_MAX_SIZE) {
-    avatarsUploadSize_ = parseInt(process.env.AVATARS_UPLOAD_MAX_SIZE);
+const storagePath = Meteor.isServer ? computeAvatarStoragePath() : 'assets/app/uploads/avatars';
 
-    if (_.isNumber(avatarsUploadSize_) && avatarsUploadSize_ > 0) {
-      avatarsUploadSize = avatarsUploadSize_;
-    }
-  }
-
-  if (process.env.AVATARS_UPLOAD_EXTERNAL_PROGRAM) {
-    avatarsUploadExternalProgram = process.env.AVATARS_UPLOAD_EXTERNAL_PROGRAM;
-
-    if (!avatarsUploadExternalProgram.includes("{file}")) {
-      avatarsUploadExternalProgram = undefined;
-    }
-  }
-
-  avatarsBucket = createBucket('avatars');
-  storagePath = path.join(process.env.WRITABLE_PATH, 'avatars');
-}
-
-const fileStoreStrategyFactory = new FileStoreStrategyFactory(FileStoreStrategyFilesystem, storagePath, FileStoreStrategyGridFs, avatarsBucket);
-
-Avatars = new FilesCollection({
+const Avatars = new FilesCollection({
   debug: false, // Change to `true` for debugging
   collectionName: 'avatars',
   allowClientCode: true,
+  storagePath: storagePath,
   namingFunction(opts) {
     let filenameWithoutExtension = ""
     let fileId = "";
@@ -72,79 +52,87 @@ Avatars = new FilesCollection({
       filenameWithoutExtension = Math.random().toString(36).slice(2);
       fileId = Math.random().toString(36).slice(2);
     }
-    const ret = fileId + "-original-" + filenameWithoutExtension;
-    // remove fileId from meta, it was only stored there to have this information here in the namingFunction function
+    // Strip shell metacharacters and path-traversal sequences from the
+    // user-supplied portion of the filename.  The result is used as part of
+    // the on-disk path passed to external commands, so only safe characters
+    // (alphanumerics, hyphens, underscores, and dots) are kept.
+    const safeName = filenameWithoutExtension.replace(/[^a-zA-Z0-9_.\-]/g, '_');
+    const ret = fileId + "-original-" + safeName;
     return ret;
   },
   sanitize(str, max, replacement) {
-    // keep the original filename
-    return str;
-  },
-  storagePath() {
-    const ret = fileStoreStrategyFactory.storagePath;
-    return ret;
+    // Strip characters that are dangerous in shell contexts and filesystem paths.
+    return str.replace(/[^a-zA-Z0-9_.\-]/g, '_');
   },
   onBeforeUpload(file) {
+    // Block SVG files for avatars to prevent XSS attacks
+    if (file.name && file.name.toLowerCase().endsWith('.svg')) {
+      if (process.env.DEBUG === 'true') {
+        console.warn('Blocked SVG file upload for avatar:', file.name);
+      }
+      return 'SVG files are not allowed for avatars due to security reasons. Please use PNG, JPG, or GIF format.';
+    }
+
+    if (file.type === 'image/svg+xml') {
+      if (process.env.DEBUG === 'true') {
+        console.warn('Blocked SVG MIME type upload for avatar:', file.type);
+      }
+      return 'SVG files are not allowed for avatars due to security reasons. Please use PNG, JPG, or GIF format.';
+    }
+
     if (file.size <= avatarsUploadSize && file.type.startsWith('image/')) {
       return true;
     }
-    return TAPi18n.__('avatar-too-big', {size: filesize(avatarsUploadSize)});
-  },
-  onAfterUpload(fileObj) {
-    // current storage is the filesystem, update object and database
-    Object.keys(fileObj.versions).forEach(versionName => {
-      fileObj.versions[versionName].storage = STORAGE_NAME_FILESYSTEM;
-    });
-
-    Avatars.update({ _id: fileObj._id }, { $set: { "versions": fileObj.versions } });
-
-    const isValid = Promise.await(isFileValid(fileObj, avatarsUploadMimeTypes, avatarsUploadSize, avatarsUploadExternalProgram));
-
-    if (isValid) {
-      ReactiveCache.getUser(fileObj.userId).setAvatarUrl(`${formatFleURL(fileObj)}?auth=false&brokenIsFine=true`);
-    } else {
-      Avatars.remove(fileObj._id);
-    }
-  },
-  interceptDownload(http, fileObj, versionName) {
-    const ret = fileStoreStrategyFactory.getFileStrategy(fileObj, versionName).interceptDownload(http, this.cacheControl);
-    return ret;
-  },
-  onBeforeRemove(files) {
-    files.forEach(fileObj => {
-      if (fileObj.userId) {
-        ReactiveCache.getUser(fileObj.userId).setAvatarUrl('');
-      }
-    });
-
-    return true;
-  },
-  onAfterRemove(files) {
-    files.forEach(fileObj => {
-      Object.keys(fileObj.versions).forEach(versionName => {
-        fileStoreStrategyFactory.getFileStrategy(fileObj, versionName).onAfterRemove();
-      });
-    });
+    return getTAPi18n().__('avatar-too-big', {size: filesize(avatarsUploadSize)});
   },
 });
 
-function isOwner(userId, doc) {
-  return userId && userId === doc.userId;
+function normalizeRemovedFiles(filesInput) {
+  if (!filesInput) {
+    return [];
+  }
+
+  if (Array.isArray(filesInput)) {
+    return filesInput;
+  }
+
+  if (typeof filesInput.fetch === 'function') {
+    return filesInput.fetch();
+  }
+
+  if (Array.isArray(filesInput.files)) {
+    return filesInput.files;
+  }
+
+  if (typeof filesInput === 'string') {
+    return Avatars.find({ _id: filesInput }).fetch();
+  }
+
+  if (filesInput && typeof filesInput === 'object') {
+    if (filesInput._id && (filesInput.versions || filesInput.userId)) {
+      return [filesInput];
+    }
+
+    return Avatars.find(filesInput).fetch();
+  }
+
+  return [];
 }
 
-if (Meteor.isServer) {
-  Avatars.allow({
-    insert: isOwner,
-    update: isOwner,
-    remove: isOwner,
-    fetch: ['userId'],
-  });
+// Export normalizeRemovedFiles and avatarsUploadSize setter for use in server file
+export { normalizeRemovedFiles };
 
-  Meteor.startup(() => {
-    const storagePath = fileStoreStrategyFactory.storagePath;
-    if (!fs.existsSync(storagePath)) {
-      console.log("create storagePath because it doesn't exist: " + storagePath);
-      fs.mkdirSync(storagePath, { recursive: true });
+export function setAvatarsUploadSize(size) {
+  avatarsUploadSize = size;
+}
+
+// Override the link method to use universal URLs
+if (Meteor.isClient) {
+  // Add custom link method to avatar documents
+  Avatars.collection.helpers({
+    link(version = 'original') {
+      // Use universal URL generator for consistent, URL-agnostic URLs
+      return generateUniversalAvatarUrl(this._id, version);
     }
   });
 }

@@ -1,0 +1,198 @@
+'use strict';
+
+// General filename DISPLAY handling (imports/lib/fileNameDisplay.js). Every
+// filename shown anywhere in WeKan (card attachments, admin Files report, download
+// headers) goes through cleanFileName(), which:
+//   - URL-decodes a percent-encoded name when it decodes cleanly;
+//   - folds confusable homoglyphs (NFKC + Cyrillic/Greek look-alikes) to the
+//     standard character in a predominantly-Latin name (anti-typosquatting);
+//   - removes invisible / control / bidi characters;
+//   - strips exploit markup (HTML/JS/XML/template-injection);
+//   - collapses whitespace.
+//
+// Run: node tests/fileNameDisplay.test.cjs
+
+const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
+const {
+  hasInvisibleChars,
+  decodeFileNameSafe,
+  stripExploitPatterns,
+  classifyExploitKinds,
+  cleanFileName,
+  sanitizeDownloadFileName,
+} = require('../imports/lib/fileNameDisplay.js');
+
+let passed = 0;
+function check(name, fn) { fn(); passed += 1; console.log('  ok -', name); }
+const read = rel => fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
+
+const ZW = '​';   // zero-width space
+const RLO = '‮';  // right-to-left override (bidi)
+const BOM = '﻿';
+
+console.log('fileNameDisplay:');
+
+check('hasInvisibleChars flags zero-width / control / bidi, not normal text or CJK', () => {
+  assert.strictEqual(hasInvisibleChars('normal.png'), false);
+  assert.strictEqual(hasInvisibleChars('Nihongo 日本語.txt'), false); // CJK ok
+  assert.strictEqual(hasInvisibleChars('evil' + ZW + '.png'), true);
+  assert.strictEqual(hasInvisibleChars('tab\tname.txt'), true);
+  assert.strictEqual(hasInvisibleChars('bom' + BOM + '.txt'), true);
+});
+
+check('decodeFileNameSafe decodes only clean percent-encoding', () => {
+  assert.strictEqual(decodeFileNameSafe('%D0%93%D1%80.txt'), 'Гр.txt');
+  assert.strictEqual(decodeFileNameSafe('plain.txt'), 'plain.txt');
+  assert.strictEqual(decodeFileNameSafe('100%done.txt'), '100%done.txt'); // not encoded
+  assert.strictEqual(decodeFileNameSafe('bad%ZZ.txt'), 'bad%ZZ.txt');     // malformed
+});
+
+check('cleanFileName removes invisible characters', () => {
+  assert.strictEqual(cleanFileName('evil' + ZW + '.png'), 'evil.png');
+  assert.strictEqual(cleanFileName('doc' + RLO + 'fdp.exe'), 'docfdp.exe');
+  assert.strictEqual(cleanFileName(BOM + 'report.pdf'), 'report.pdf');
+});
+
+check('cleanFileName URL-decodes', () => {
+  assert.strictEqual(cleanFileName('%D0%93%D1%80.txt'), 'Гр.txt');
+});
+
+check('cleanFileName folds confusable homoglyphs in a Latin-majority name (typosquat)', () => {
+  assert.strictEqual(cleanFileName('pаypal.exe'), 'paypal.exe');    // Cyrillic a
+  assert.strictEqual(cleanFileName('gооgle.com'), 'google.com'); // Cyrillic o
+  assert.strictEqual(cleanFileName('invоice.pdf'), 'invoice.pdf'); // Cyrillic o among Latin
+});
+
+check('cleanFileName preserves a genuinely non-Latin name (no Latin majority)', () => {
+  // All-Cyrillic base (even one that spells Latin-looking letters) must NOT be
+  // folded — there is no Latin majority, so it is treated as a real foreign name.
+  assert.strictEqual(cleanFileName('Гр.txt'), 'Гр.txt');
+  assert.strictEqual(cleanFileName('документ.txt'), 'документ.txt');
+  assert.strictEqual(cleanFileName('АВС.txt'), 'АВС.txt'); // all-Cyrillic caps, preserved
+});
+
+check('cleanFileName applies NFKC (fullwidth -> ASCII)', () => {
+  assert.strictEqual(cleanFileName('ＡＢＣ.txt'), 'ABC.txt'); // ＡＢＣ
+});
+
+check('cleanFileName strips exploit markup', () => {
+  assert.strictEqual(cleanFileName('<script>alert(1)</script>.png'), 'alert(1).png');
+  assert.strictEqual(cleanFileName('a<b>c.txt'), 'ac.txt');
+  assert.strictEqual(cleanFileName('file{{7*7}}.pdf'), 'file.pdf');
+  assert.strictEqual(cleanFileName('x javascript:alert.svg'), 'x alert.svg');
+  assert.strictEqual(cleanFileName('<?php echo 1;?>note.txt'), 'note.txt');
+});
+
+check('cleanFileName leaves a plain accented Latin name intact', () => {
+  assert.strictEqual(cleanFileName('café.pdf'), 'café.pdf');
+});
+
+check('stripExploitPatterns removes tags, PIs, CDATA, templates, dangerous URIs', () => {
+  assert.ok(!/[<>]/.test(stripExploitPatterns('<a href="x">y</a>')));
+  assert.strictEqual(stripExploitPatterns('${process}'), '');
+  assert.strictEqual(stripExploitPatterns('<![CDATA[x]]>'), '');
+  assert.ok(!/javascript:/i.test(stripExploitPatterns('javascript:alert(1)')));
+});
+
+// Completeness (CodeQL js/incomplete-multi-character-sanitization, alert #426): the
+// output must NEVER contain "<script", an angle bracket, or a surviving handler,
+// for closed, UNCLOSED, and SPLICED tags — the tag strip is a single replacement
+// looped to a fixpoint, then any stray angle bracket is dropped.
+check('stripExploitPatterns is complete for unclosed and spliced tags', () => {
+  const nasty = [
+    '<script',                    // unclosed: no '>' to match the tag regex
+    '<script src=x',              // unclosed with attrs
+    '<scr<x>ipt>alert(1)',        // inner removal must not re-form <script>
+    '<scr<script>ipt>',           // classic splice
+    '<<script>>',                 // doubled brackets
+    '<img src=x onerror=alert(1)>',
+    'a<b>c<d',                    // mixed closed + trailing unclosed
+    '<%= evil %>',                // ASP template
+  ];
+  for (const s of nasty) {
+    const out = stripExploitPatterns(s);
+    assert.ok(!out.includes('<'), `no '<' left in ${JSON.stringify(out)} (from ${JSON.stringify(s)})`);
+    assert.ok(!out.includes('>'), `no '>' left in ${JSON.stringify(out)} (from ${JSON.stringify(s)})`);
+    assert.ok(!/<script/i.test(out), `no '<script' in ${JSON.stringify(out)}`);
+  }
+});
+
+check('classifyExploitKinds names the exploit kind (for the Problems log)', () => {
+  assert.deepStrictEqual(classifyExploitKinds('<!DOCTYPE x><!ENTITY y>'), ['XML loop (billion laughs)']);
+  assert.deepStrictEqual(classifyExploitKinds('<?xml version="1.0"?>'), ['XML code']);
+  assert.deepStrictEqual(classifyExploitKinds('<script>alert(1)</script>'), ['JavaScript code']);
+  assert.deepStrictEqual(classifyExploitKinds('onerror=alert(1)'), ['JavaScript code']);
+  assert.deepStrictEqual(classifyExploitKinds('<?php echo 1;?>'), ['server-side code (PHP/ASP)']);
+  assert.deepStrictEqual(classifyExploitKinds('a{{7*7}}'), ['template injection']);
+  assert.deepStrictEqual(classifyExploitKinds('<b>hi</b>'), ['HTML code']);
+  assert.deepStrictEqual(classifyExploitKinds('clean.png'), []);
+});
+
+check('sanitizeDownloadFileName never returns empty', () => {
+  assert.strictEqual(sanitizeDownloadFileName('good.pdf'), 'good.pdf');
+  assert.strictEqual(sanitizeDownloadFileName('<>'), 'download');
+  assert.strictEqual(sanitizeDownloadFileName(ZW + ZW), 'download');
+  assert.strictEqual(sanitizeDownloadFileName(''), 'download');
+  assert.strictEqual(sanitizeDownloadFileName(null), 'download');
+});
+
+// ── wired everywhere: global helpers, card attachments, admin report, downloads ─
+check('global filename helpers registered and used across the UI', () => {
+  const js = read('client/components/main/safeFilename.js');
+  assert.ok(/registerHelper\('cleanFilename'/.test(js) && /registerHelper\('downloadFilename'/.test(js),
+    'cleanFilename + downloadFilename helpers registered');
+  const cards = read('client/components/cards/attachments.jade');
+  assert.ok(/\{\{ cleanFilename name \}\}/.test(cards), 'card attachment name uses cleanFilename');
+  assert.ok(/download="\{\{downloadFilename name\}\}"/.test(cards), 'download uses the clean name');
+  assert.ok(/title="\{\{cleanFilename name\}\}"/.test(cards), 'thumbnail titles use cleanFilename');
+  // The Files report renders through the shared table page, so its filename
+  // cell is a column spec calling cleanFileName() rather than markup calling the
+  // {{cleanFilename}} helper. Same function, same guarantee.
+  assert.ok(/cleanFileName\(d\.name\)/.test(read('client/components/settings/adminReports.js')),
+    'Files report uses cleanFileName');
+});
+
+check('download routes sanitize the Content-Disposition filename', () => {
+  for (const f of ['server/routes/universalFileServer.js', 'server/routes/legacyAttachments.js']) {
+    assert.ok(/sanitizeDownloadFileName/.test(read(f)), `${f} must sanitize the download name`);
+  }
+});
+
+// ── the removed invisible-filter feature must be gone ────────────────────────
+check('the old invisible-character filter / warning / legend are fully removed', () => {
+  // The Files report's markup now lives in the shared table page
+  // (docs/Design/Page/Table.md), so check BOTH files - against adminReports.jade
+  // alone this guard would pass no matter what, because that file no longer holds
+  // any report markup at all.
+  const jade = read('client/components/settings/adminReports.jade')
+    + read('client/components/settings/tablePage.jade');
+  const js = read('client/components/settings/adminReports.js');
+  const pub = read('server/publications/attachments.js');
+  assert.ok(!/js-files-invisible-filter/.test(jade) && !/admin-report-legend/.test(jade), 'no filter button / legend');
+  assert.ok(!/filesInvisibleOnly|filesInvisibleActive/.test(js), 'no invisible-only client state');
+  assert.ok(!/invisibleOnly/.test(pub), 'publication no longer takes invisibleOnly');
+});
+
+// #6493: the {{cleanFilename}} / {{downloadFilename}} global helpers are registered by
+// client/components/main/safeFilename.js. That module must be IMPORTED on the client, or
+// the helpers are never registered and every template using them (card attachment
+// thumbnails, the admin Files report) throws "No such function: cleanFilename" during
+// render — which aborted card rendering (cards would not open).
+check('safeFilename helper module is imported on the client (registers cleanFilename)', () => {
+  const reg = read('client/components/main/safeFilename.js');
+  assert.ok(/registerHelper\('cleanFilename'/.test(reg), 'safeFilename registers cleanFilename');
+  assert.ok(/registerHelper\('downloadFilename'/.test(reg), 'safeFilename registers downloadFilename');
+
+  const main = read('client/features/main.js');
+  assert.ok(/import\s+'\/client\/components\/main\/safeFilename\.js'/.test(main),
+    'client/features/main.js must import safeFilename.js so the helpers are registered');
+
+  // The helpers are actually used in templates — guard that the usage still exists so
+  // this test stays meaningful.
+  const att = read('client/components/cards/attachments.jade');
+  assert.ok(/cleanFilename/.test(att), 'card attachments template uses cleanFilename');
+});
+
+console.log(`\nfileNameDisplay: ${passed} checks passed`);

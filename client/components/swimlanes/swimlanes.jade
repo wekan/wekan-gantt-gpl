@@ -1,90 +1,179 @@
 template(name="swimlane")
-  .swimlane
+  .swimlane.nodragscroll
     +swimlaneHeader
   unless collapseSwimlane
-    .swimlane.js-lists.js-swimlane(id="swimlane-{{_id}}"
+    .swimlane.js-lists.js-swimlane.dragscroll(id="swimlane-{{_id}}"
                                    style="height:{{swimlaneHeight}};")
+      .swimlane-resize-handle.js-swimlane-resize-handle.nodragscroll
       if isMiniScreen
         if currentListIsInThisSwimlane _id
           +list(currentList)
         unless currentList
-          if currentUser.isBoardMember
-            unless currentUser.isCommentOnly
-              +addListForm
+          //- #6465 in mobile mode too: no standing "Add List" row of its own. The
+          //- + lives in each list header (between the caret and the drag handle),
+          //- and opens the inline composer after that list - the same behaviour as
+          //- desktop. An empty swimlane has no list header to host a +, so it keeps
+          //- one of its own; without it the first list could never be created.
+          if swimlaneHasNoLists
+            if currentUser.isBoardMember
+              unless currentUser.isCommentOnly
+                if isEmptyAddListOpen _id
+                  +addListInline
+                else
+                  .list.list-composer.js-list-composer.js-empty-add-list-button.mini-list
+                    .list-header-add
+                      a.open-list-composer.js-open-empty-add-list(title="{{_ 'add-list'}}" data-swimlane="{{_id}}")
+                        i.fa.fa-plus
           each lists
             +miniList(this)
+            if isAddListAfter _id
+              +addListInline
       else
-        if currentUser.isBoardMember
-          unless currentUser.isCommentOnly
-            +addListForm
+        //- #6465: no standing Add List column. Empty swimlane gets the inline
+        //- composer at the start; otherwise it opens after a list via its header
+        //- add-list button (see isAddListAfter).
+        if swimlaneHasNoLists
+          if currentUser.isBoardMember
+            unless currentUser.isCommentOnly
+              //- #6465: an empty swimlane shows only a + button; the create-list
+              //- form appears only after it is clicked. (Non-empty swimlanes use
+              //- the per-list-header add-list button instead.)
+              if isEmptyAddListOpen _id
+                +addListInline
+              else
+                .list.list-composer.js-list-composer.js-empty-add-list-button(class="{{#if isMiniScreen}}mini-list{{/if}}")
+                  .list-header-add
+                    a.open-list-composer.js-open-empty-add-list(title="{{_ 'add-list'}}" data-swimlane="{{_id}}")
+                      i.fa.fa-plus
         each lists
           if visible this
             +list(this)
+          if isAddListAfter _id
+            +addListInline
           if currentCardIsInThisList _id ../_id
             +cardDetails(currentCard)
 
 template(name="listsGroup")
-  .swimlane.list-group.js-lists
+  .swimlane.list-group.js-lists.dragscroll
     if isMiniScreen
       if currentList
         +list(currentList)
       else
-        if currentUser.isBoardMember
-          unless currentUser.isCommentOnly
-            +addListForm
+        //- Issue #6142: adding a list is possible in Lists (board-view-lists) mode
+        //- too - now from each list header's + rather than a standing row, as in
+        //- the swimlane view above and on desktop.
+        if boardHasNoLists
+          if defaultSwimlane
+            if currentUser.isBoardMember
+              unless currentUser.isCommentOnly
+                if isEmptyAddListOpen defaultSwimlane._id
+                  +addListInline
+                else
+                  .list.list-composer.js-list-composer.js-empty-add-list-button.mini-list
+                    .list-header-add
+                      a.open-list-composer.js-open-empty-add-list(title="{{_ 'add-list'}}" data-swimlane="{{defaultSwimlane._id}}")
+                        i.fa.fa-plus
         each lists
           +miniList(this)
+          if isAddListAfter _id
+            +addListInline
     else
-      if currentUser.isBoardMember
-        unless currentUser.isCommentOnly
-          +addListForm
+      //- #6465: Lists view — empty board gets the inline composer at the start;
+      //- otherwise it opens after a list via that list's header add-list button.
+      if boardHasNoLists
+        if defaultSwimlane
+          if currentUser.isBoardMember
+            unless currentUser.isCommentOnly
+              //- #6465: empty board shows only a + button; the create-list form
+              //- appears only after clicking it.
+              if isEmptyAddListOpen defaultSwimlane._id
+                +addListInline(defaultSwimlane)
+              else
+                .list.list-composer.js-list-composer.js-empty-add-list-button(class="{{#if isMiniScreen}}mini-list{{/if}}")
+                  .list-header-add
+                    a.open-list-composer.js-open-empty-add-list(title="{{_ 'add-list'}}" data-swimlane="{{defaultSwimlane._id}}")
+                      i.fa.fa-plus
       each lists
         if visible this
           +list(this)
+        if isAddListAfter _id
+          +addListInline(defaultSwimlane)
         if currentCardIsInThisList _id null
           +cardDetails(currentCard)
 
-template(name="addListForm")
-  unless currentUser.isWorker
-    .list.list-composer.js-list-composer(class="{{#if isMiniScreen}}mini-list{{/if}}")
-      if currentUser.isBoardAdmin
-        .list-header-add
-          +inlinedForm(autoclose=false)
-            input.list-name-input.full-line(type="text" placeholder="{{_ 'add-list'}}"
-              autocomplete="off" autofocus)
-            if currentBoard.getLastList
-              | {{_ 'add-after-list'}}
-              select.list-position-input.full-line
-                each currentBoard.lists
-                  option(value="{{_id}}" selected=currentBoard.getLastList.title) {{title}}
-            .edit-controls.clearfix
-              button.primary.confirm(type="submit") {{_ 'save'}}
-              .fa.fa-times-thin.js-close-inlined-form
-              unless currentBoard.isTemplatesBoard
-                unless currentBoard.isTemplateBoard
-                  span.quiet
-                    | {{_ 'or'}}
-                    a.js-list-template {{_ 'template'}}
-          else
-            a.open-list-composer.js-open-inlined-form(title="{{_ 'add-list'}}")
-              i.fa.fa-plus
+//- #6465: always-open inline Add List composer, rendered AFTER a list (right in
+//- LTR / left in RTL, via the flex-row lists lane) when that list's header
+//- add-list button is clicked, or at the start of an empty swimlane/board.
+template(name="addListInline")
+  .list.list-composer.js-list-composer.js-add-list-inline(class="{{#if isMiniScreen}}mini-list{{/if}}")
+    .list-header-add
+      form.js-add-list-inline-form
+        input.list-name-input.full-line(type="text" placeholder="{{_ 'add-list'}}"
+          autocomplete="off" autofocus)
+        //- #6465 follow-up: restore the previous "add after which list"
+        //- position selector, pre-selecting the list whose header button opened
+        //- this composer, so the position can still be chosen explicitly.
+        if swimlaneLists.length
+          | {{_ 'add-after-list'}}
+          select.list-position-input.full-line
+            each swimlaneLists
+              option(value="{{_id}}" selected="{{#if isDefaultAfterList _id}}selected{{/if}}") {{title}}
+        .edit-controls.clearfix
+          button.primary.confirm(type="submit") {{_ 'save'}}
+          a.js-close-add-list-inline(title="{{_ 'close'}}")
+            i.fa.fa-times-thin
+          unless currentBoard.isTemplatesBoard
+            unless currentBoard.isTemplateBoard
+              span.quiet
+                | {{_ 'or'}}
+                a.js-list-template {{_ 'template'}}
 
 template(name="moveSwimlanePopup")
-  unless currentUser.isWorker
-    label {{_ 'boards'}}:
-    select.js-select-boards(autofocus)
-      each toBoard in toBoards
-        option(value="{{toBoard._id}}") {{toBoard.title}}
+  if currentUser
+    unless currentUser.isWorker
+      label(for='move-swimlane-title') {{_ 'title'}}:
+      input#move-swimlane-title.full-line(type="text" value="{{title}}" autofocus)
+      label {{_ 'boards'}}:
+      select.js-select-boards(autofocus)
+        each toBoard in toBoards
+          option(value="{{toBoard._id}}" selected="{{#if isSelectedBoard toBoard._id}}selected{{/if}}") {{toBoard.title}}
 
-  .edit-controls.clearfix
-    button.primary.confirm.js-done {{_ 'done'}}
+      label {{_ 'swimlanes'}}:
+      select.js-select-swimlanes
+        each swimlane in toSwimlanes
+          option(value="{{swimlane._id}}" selected="{{#if isSelectedSwimlane swimlane._id}}selected{{/if}}") {{swimlane.title}}
+
+      div
+        input(type="radio" name="swimlane-position" value="above" checked id="swimlane-position-above" style="display: inline")
+        label(for="swimlane-position-above") {{_ 'above-selected-swimlane'}}
+      div
+        input(type="radio" name="swimlane-position" value="below" id="swimlane-position-below" style="display: inline")
+        label(for="swimlane-position-below") {{_ 'below-selected-swimlane'}}
+
+      .edit-controls.clearfix
+        button.primary.confirm.js-done {{_ 'done'}}
 
 template(name="copySwimlanePopup")
-  unless currentUser.isWorker
-    label {{_ 'boards'}}:
-    select.js-select-boards(autofocus)
-      each toBoard in toBoards
-        option(value="{{toBoard._id}}" selected="{{#if $eq toBoard.title board.title}}1{{/if}}") {{toBoard.title}}
+  if currentUser
+    unless currentUser.isWorker
+      label(for='copy-swimlane-title') {{_ 'title'}}:
+      input#copy-swimlane-title.full-line(type="text" value="{{title}}" autofocus)
+      label {{_ 'boards'}}:
+      select.js-select-boards(autofocus)
+        each toBoard in toBoards
+          option(value="{{toBoard._id}}" selected="{{#if isSelectedBoard toBoard._id}}selected{{/if}}") {{toBoard.title}}
 
-  .edit-controls.clearfix
-    button.primary.confirm.js-done {{_ 'done'}}
+      label {{_ 'swimlanes'}}:
+      select.js-select-swimlanes
+        each swimlane in toSwimlanes
+          option(value="{{swimlane._id}}" selected="{{#if isSelectedSwimlane swimlane._id}}selected{{/if}}") {{swimlane.title}}
+
+      div
+        input(type="radio" name="swimlane-position" value="above" checked id="swimlane-position-above" style="display: inline")
+        label(for="swimlane-position-above") {{_ 'above-selected-swimlane'}}
+      div
+        input(type="radio" name="swimlane-position" value="below" id="swimlane-position-below" style="display: inline")
+        label(for="swimlane-position-below") {{_ 'below-selected-swimlane'}}
+
+      .edit-controls.clearfix
+        button.primary.confirm.js-done {{_ 'done'}}
