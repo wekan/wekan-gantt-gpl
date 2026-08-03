@@ -543,6 +543,12 @@ jobs:
           cd .build/bundle/programs/server
           npm install
 
+      - name: Check the binaries the amd64 bundle needs exist
+        run: |
+          set -euo pipefail
+          bash releases/require-binaries.sh 'amd64 bundle' \
+            'https://github.com/wekan/FerretDB/releases/latest/download/ferretdb-amd64'
+
       - name: Embed Node.js, FerretDB (amd64) and launcher into the bundle
         # Make the release .zip self-contained (offline): bundle Node.js + FerretDB
         # + a start-wekan.sh that runs WeKan on the bundled Node against the bundled
@@ -586,6 +592,17 @@ jobs:
         run: |
           cd .build
           zip -r wekan-${VERSION}-amd64.zip bundle
+          # A checksum beside the bundle, so a download can be checked.
+          sha256sum "wekan-${VERSION}-amd64.zip" > "wekan-${VERSION}-amd64.zip.sha256sum"
+          cat "wekan-${VERSION}-amd64.zip.sha256sum"
+          # Where this bundle's binaries came from, for the release notes.
+          mkdir -p provenance
+          PROVENANCE_FILE=provenance/amd64.tsv bash releases/record-provenance.sh \
+            'amd64' 'Node.js' 'GitHub runner (setup-node)' "$(node --version)" \
+            'https://github.com/actions/setup-node' || true
+          PROVENANCE_FILE=provenance/amd64.tsv bash releases/record-provenance.sh \
+            'amd64' 'FerretDB' 'wekan/FerretDB' 'latest' \
+            'https://github.com/wekan/FerretDB/releases/latest/download/ferretdb-amd64' || true
           # A zip that EXISTS is not a zip that WORKS, and the log should say which of the
           # two this is. The size answers "was the bundle directory empty when it was
           # zipped"; the entries answer "can this bundle start at all" - bundle/main.js is
@@ -613,6 +630,12 @@ jobs:
             fi
           done
           echo "OK: $zip is $((bytes/1024/1024)) MiB and contains bundle/main.js and bundle/node."
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: provenance-amd64
+          path: provenance/
+          if-no-files-found: warn
 
       - uses: actions/upload-artifact@v7
         with:
@@ -683,6 +706,12 @@ jobs:
             node:${NODE_VERSION}-slim \
             sh -c "apt-get update -qq && apt-get install -y -q build-essential python3 && npm install"
 
+      - name: Check the binaries the arm64 bundle needs exist
+        run: |
+          set -euo pipefail
+          bash releases/require-binaries.sh 'arm64 bundle' \
+            'https://github.com/wekan/FerretDB/releases/latest/download/ferretdb-arm64'
+
       - name: Embed Node.js + FerretDB (arm64) into the bundle
         # The launcher (start-wekan.sh) is inherited from the amd64 base bundle;
         # swap bundle/node (runner is arm64 -> linux-arm64 Node 24) and bundle/ferretdb.
@@ -710,6 +739,17 @@ jobs:
       - name: Create arm64 zip
         run: |
           zip -r wekan-${VERSION}-arm64.zip bundle
+          # A checksum beside the bundle, so a download can be checked.
+          sha256sum "wekan-${VERSION}-arm64.zip" > "wekan-${VERSION}-arm64.zip.sha256sum"
+          cat "wekan-${VERSION}-arm64.zip.sha256sum"
+          # Where this bundle's binaries came from, for the release notes.
+          mkdir -p provenance
+          PROVENANCE_FILE=provenance/arm64.tsv bash releases/record-provenance.sh \
+            'arm64' 'Node.js' 'GitHub runner (setup-node)' "$(node --version)" \
+            'https://github.com/actions/setup-node' || true
+          PROVENANCE_FILE=provenance/arm64.tsv bash releases/record-provenance.sh \
+            'arm64' 'FerretDB' 'wekan/FerretDB' 'latest' \
+            'https://github.com/wekan/FerretDB/releases/latest/download/ferretdb-arm64' || true
           # A zip that EXISTS is not a zip that WORKS, and the log should say which of the
           # two this is. The size answers "was the bundle directory empty when it was
           # zipped"; the entries answer "can this bundle start at all" - bundle/main.js is
@@ -737,6 +777,12 @@ jobs:
             fi
           done
           echo "OK: $zip is $((bytes/1024/1024)) MiB and contains bundle/main.js and bundle/node."
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: provenance-arm64
+          path: provenance/
+          if-no-files-found: warn
 
       - uses: actions/upload-artifact@v7
         with:
@@ -782,12 +828,35 @@ jobs:
           pattern: bundle-*
           merge-multiple: true
 
+      # Where every binary in every bundle came from, and whether its download
+      # was checked. It varies per release and per CPU - nodejs.org builds some
+      # architectures, unofficial-builds others, the wekan/node fork the ones
+      # neither of them does, and not all of them publish a checksum - so it is
+      # written down here rather than left in a build log that expires.
+      - uses: actions/checkout@v4
+
+      - name: Collect where the binaries came from
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          pattern: provenance-*
+          path: provenance
+          merge-multiple: true
+
+      - name: Compose the release notes, provenance first
+        run: |
+          set -euo pipefail
+          bash releases/provenance-table.sh > release-notes.md || true
+          printf '%s\n' "${{ needs.prepare.outputs.changelog }}" >> release-notes.md
+          echo "----- release notes -----"
+          head -40 release-notes.md
+
       - name: Create GitHub Release with all bundles
         uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ needs.prepare.outputs.version }}
           name: v${{ needs.prepare.outputs.version }}
-          body: ${{ needs.prepare.outputs.changelog }}
+          body_path: release-notes.md
           # FerretDB binaries are NOT attached here: the per-arch ferretdb-<arch>
           # binaries live on the wekan/FerretDB releases
           # (https://github.com/wekan/FerretDB/releases), which is where the WeKan
@@ -889,6 +958,12 @@ jobs:
           rm -rf node_modules
           npm install
 
+      - name: Check the binaries the win64 bundle needs exist
+        run: |
+          set -euo pipefail
+          bash releases/require-binaries.sh 'win64 bundle' \
+            'https://github.com/wekan/FerretDB/releases/latest/download/ferretdb-win64.exe'
+
       - name: Add MongoDB Database Tools to the bundle
         shell: bash
         run: |
@@ -956,6 +1031,9 @@ jobs:
             echo "::error::$zip was not created - 7z failed above, or the bundle directory was missing."
             exit 1
           fi
+          # A checksum beside the bundle, so a download can be checked.
+          sha256sum "$zip" > "${zip}.sha256sum"
+          cat "${zip}.sha256sum"
           bytes=$(wc -c < "$zip")
           if [ "$bytes" -lt 10000000 ]; then
             echo "::error::$zip is only $bytes bytes; a whole bundle is tens of megabytes. The bundle directory was empty or partial when it was zipped."
@@ -1017,7 +1095,12 @@ jobs:
             echo "::error::$asset does not exist, so there is nothing to attach. The step that builds it failed, or produced a different name."
             exit 1
           fi
-          if ! gh release upload "v${VERSION}" "$asset" --clobber; then
+          # The checksum goes up with it, so a download can be checked. It is
+          # built beside the zip by the step above; older jobs that do not make
+          # one still upload cleanly.
+          up=("$asset")
+          [ -f "${asset}.sha256sum" ] && up+=("${asset}.sha256sum")
+          if ! gh release upload "v${VERSION}" "${up[@]}" --clobber; then
             echo "::error::Could not attach $asset to release v${VERSION}: the release must exist first (the release job), and GITHUB_TOKEN must be allowed to write releases here."
             exit 1
           fi
@@ -1100,6 +1183,12 @@ jobs:
           npm install
           cd ../../..
 
+      - name: Check the binaries the mac-arm64 bundle needs exist
+        run: |
+          set -euo pipefail
+          bash releases/require-binaries.sh 'mac-arm64 bundle' \
+            'https://github.com/wekan/FerretDB/releases/latest/download/ferretdb-mac-arm64'
+
       - name: Embed Node.js + FerretDB (mac-arm64) into the bundle
         # Bundle the macOS arm64 Node.js (runner's darwin-arm64 Node 24) and the
         # macOS FerretDB binary, downloaded per-arch from the newest wekan/FerretDB
@@ -1128,6 +1217,9 @@ jobs:
       - name: Create mac-arm64 zip
         run: |
           zip -r wekan-${VERSION}-mac-arm64.zip bundle
+          # A checksum beside the bundle, so a download can be checked.
+          sha256sum "wekan-${VERSION}-mac-arm64.zip" > "wekan-${VERSION}-mac-arm64.zip.sha256sum"
+          cat "wekan-${VERSION}-mac-arm64.zip.sha256sum"
           # A zip that EXISTS is not a zip that WORKS, and the log should say which of the
           # two this is. The size answers "was the bundle directory empty when it was
           # zipped"; the entries answer "can this bundle start at all" - bundle/main.js is
@@ -1175,7 +1267,12 @@ jobs:
             echo "::error::$asset does not exist, so there is nothing to attach. The step that builds it failed, or produced a different name."
             exit 1
           fi
-          if ! gh release upload "v${VERSION}" "$asset" --clobber; then
+          # The checksum goes up with it, so a download can be checked. It is
+          # built beside the zip by the step above; older jobs that do not make
+          # one still upload cleanly.
+          up=("$asset")
+          [ -f "${asset}.sha256sum" ] && up+=("${asset}.sha256sum")
+          if ! gh release upload "v${VERSION}" "${up[@]}" --clobber; then
             echo "::error::Could not attach $asset to release v${VERSION}: the release must exist first (the release job), and GITHUB_TOKEN must be allowed to write releases here."
             exit 1
           fi
@@ -1210,14 +1307,24 @@ jobs:
             echo "::error::build-mac-arm64 FAILED. The ::error:: line in this job's log, above, says which step and why."
           fi
 
-  # Extra-architecture Linux bundles (ppc64le, s390x, riscv64) — the arches that
-  # have a Node.js 24 build but NO MongoDB server, so they ship FerretDB instead.
-  # ppc64le and s390x use official nodejs.org binaries; riscv64 uses the
-  # unofficial-builds.nodejs.org binary (nodejs.org ships no riscv64). armv7l
-  # (32-bit ARM) is intentionally excluded: there is NO Node.js 24 build for it
-  # anywhere (official or unofficial), so there is no runtime to run the bundle on
-  # an armv7 device, regardless of RAM. See https://nodejs.org/dist/latest-v24.x/
-  # (no -linux-armv7l) and https://unofficial-builds.nodejs.org/ (riscv64 only).
+  # Extra-architecture Linux bundles — every Linux arch wekan/FerretDB builds for
+  # that has NO MongoDB server, so they ship FerretDB v1 as their database.
+  #
+  # Each one needs a Node.js 24 for its CPU, and there are three places one can
+  # come from. They are tried IN ORDER, by the resolver in the build step below,
+  # and the log says which one served:
+  #
+  #   1. https://nodejs.org/dist/<version>/                    (official)
+  #   2. https://unofficial-builds.nodejs.org/download/release/ (unofficial)
+  #   3. https://github.com/wekan/node/releases                 (this project's
+  #      fork, built by node.yml in the wekan/node repo for the platforms the
+  #      first two do not publish at all: i386, armhf/armv7, loong64)
+  #
+  # An arch is listed here only when one of those three has a runtime for it. The
+  # one FerretDB target deliberately absent is armel (ARMv5, soft-float): V8 has
+  # not supported ARMv5 for many years - nobody publishes a Node.js for it and
+  # this fork cannot build one either - so there would be nothing to run the
+  # bundle with. See docs/Design/Autoupdate/Platforms.md.
   build-extra-arches:
     needs: [prepare, build-amd64, release]
     runs-on: ubuntu-24.04
@@ -1226,15 +1333,55 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # `node_arch` is what the Node.js download is called, which is not
+          # always what we call the platform: Node says x86 where Debian, snap
+          # and FerretDB all say i386, and armv7l where they say armhf.
+          # `ferretdb_arch` is the asset name in the wekan/FerretDB release.
+          #
+          # `image` is the base image the emulated container runs, and it has to
+          # be one that PUBLISHES this platform. ubuntu:26.04 does not build 386,
+          # so `docker run --platform linux/386 ubuntu:26.04` answers "no matching
+          # manifest for linux/386 in the manifest list entries" - which is how
+          # the i386 and loong64 jobs failed. debian:trixie publishes 386, amd64,
+          # arm/v5, arm/v7, arm64, ppc64le, riscv64 and s390x, so it covers every
+          # architecture here. The preflight step checks it rather than trusting
+          # this table.
           - arch: s390x
             platform: linux/s390x
-            node_base: official
+            image: debian:trixie
+            node_arch: s390x
+            ferretdb_arch: s390x
           - arch: ppc64le
             platform: linux/ppc64le
-            node_base: official
+            image: debian:trixie
+            node_arch: ppc64le
+            ferretdb_arch: ppc64le
           - arch: riscv64
             platform: linux/riscv64
-            node_base: unofficial
+            image: debian:trixie
+            node_arch: riscv64
+            ferretdb_arch: riscv64
+          - arch: i386
+            platform: linux/386
+            image: debian:trixie
+            node_arch: x86
+            ferretdb_arch: i386
+          - arch: armhf
+            platform: linux/arm/v7
+            image: debian:trixie
+            node_arch: armv7l
+            ferretdb_arch: armhf
+          # loong64 has NO base image on Docker Hub - not debian, not ubuntu, at
+          # any tag - so there is no loong64 userland to rebuild the native
+          # modules in. node-loong64 and ferretdb-loong64 both exist; the
+          # container does not. The preflight step stops the job saying exactly
+          # that, and it is left in the matrix so it stays visible on every run
+          # instead of the architecture quietly vanishing from the release.
+          - arch: loong64
+            platform: linux/loong64
+            image: debian:trixie
+            node_arch: loong64
+            ferretdb_arch: loong64
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
     steps:
@@ -1246,83 +1393,94 @@ jobs:
       - name: Set up QEMU for ${{ matrix.arch }} emulation
         uses: docker/setup-qemu-action@v4
 
+      # BEFORE the artifact download, and it has to be here at all: this job
+      # runs releases/check-arch-binaries.sh, releases/record-provenance.sh and
+      # mounts $(pwd)/releases into the container, none of which exist without a
+      # checkout - the job would stop at "No such file or directory". It goes
+      # first because actions/checkout cleans the workspace, which would remove
+      # the bundle the next step downloads.
+      - uses: actions/checkout@v4
+
       - name: Download amd64 bundle
         uses: actions/download-artifact@v8
         with:
           name: bundle-amd64
 
-      - name: Rebuild native modules for ${{ matrix.arch }} under emulation
+      # Everything this bundle needs from another project's releases, checked
+      # BEFORE any of it is used: a base image for this CPU, a Node.js build for
+      # it, the FerretDB binary, the MongoDB tools. Any of them can be absent - a
+      # fork build that has not finished, a release that skipped an architecture
+      # - and when one is, the job should stop here naming WHICH file is missing
+      # and WHERE it should be published, rather than an hour later inside an
+      # emulated container with a 404 in the middle of an npm install.
+      - name: Check the binaries ${{ matrix.arch }} needs exist
+        id: preflight
         run: |
-          unzip -q wekan-${VERSION}-amd64.zip
-          # Same bcrypt fix as the arm64 build: bcrypt 5.0.1 (Meteor
-          # accounts-password) ships node-addon-api@3 which fails to compile on
-          # Node.js 24. Swap in bcrypt 6.0.0 source; the emulated npm install
-          # below compiles it (and any other native module) for the target arch.
+          set -euo pipefail
+          bash releases/check-arch-binaries.sh \
+            '${{ matrix.arch }}' \
+            '${{ matrix.node_arch }}' \
+            '${{ matrix.ferretdb_arch }}' \
+            "$NODE_VERSION" \
+            '${{ matrix.image }}' \
+            '${{ matrix.platform }}' \
+            | tee /tmp/preflight.txt
+          grep -E '^(node_full|node_from|node_url|node_sha256)=' /tmp/preflight.txt >> "$GITHUB_OUTPUT"
+
+      - name: Record where this bundle's Node.js came from
+        env:
+          NODE_FULL: ${{ steps.preflight.outputs.node_full }}
+          NODE_FROM: ${{ steps.preflight.outputs.node_from }}
+          NODE_URL: ${{ steps.preflight.outputs.node_url }}
+          NODE_SHA256: ${{ steps.preflight.outputs.node_sha256 }}
+        run: |
+          set -euo pipefail
+          bash releases/record-provenance.sh '${{ matrix.arch }}' 'Node.js' \
+            "$NODE_FROM" "$NODE_FULL" "$NODE_URL" "${NODE_SHA256:-}"
+
+      - name: Rebuild native modules for ${{ matrix.arch }} under emulation
+        env:
+          NODE_FULL: ${{ steps.preflight.outputs.node_full }}
+          NODE_FROM: ${{ steps.preflight.outputs.node_from }}
+          NODE_URL: ${{ steps.preflight.outputs.node_url }}
+          NODE_SHA256: ${{ steps.preflight.outputs.node_sha256 }}
+        run: |
+          set -euo pipefail
+          # bcrypt 5.0.1 (Meteor accounts-password) ships node-addon-api@3 which
+          # fails to compile on Node 24; the npm install inside the container
+          # compiles it (and any other native module) for the target arch.
           BCRYPT_DIR="$(pwd)/bundle/programs/server/npm/node_modules/meteor/accounts-password/node_modules/bcrypt"
           if [ -d "$BCRYPT_DIR" ]; then
-            rm -rf "$BCRYPT_DIR"
-            TMP=$(mktemp -d)
-            pushd "$TMP" > /dev/null
-            npm pack bcrypt@6.0.0
-            mkdir bcrypt && tar xzf bcrypt-*.tgz --strip-components=1 -C bcrypt
-            cd bcrypt && npm install --ignore-scripts && cd ..
-            cp -a bcrypt "$BCRYPT_DIR"
-            popd > /dev/null
-            rm -rf "$TMP"
+            (cd "$BCRYPT_DIR" && npm install --no-save node-addon-api@^8 >/dev/null 2>&1 || true)
           fi
-          # The official node:${NODE_VERSION} Docker image only publishes amd64,
-          # arm64 and ppc64le manifests — no s390x, no riscv64 — so
-          # `docker run --platform linux/s390x node:24-slim` fails with "no matching
-          # manifest". Instead build on an ubuntu:26.04 base (which publishes every
-          # arch) and install the Node.js binary tarball inside the emulated
-          # container: ppc64le/s390x from nodejs.org (official), riscv64 from
-          # unofficial-builds.nodejs.org (nodejs.org ships no riscv64). Resolve the
-          # exact latest ${NODE_VERSION}.x version on the host (fast, no emulation)
-          # and pass it in along with which mirror to use.
-          NODE_FULL=$(curl -fsSL https://nodejs.org/dist/index.json \
-            | python3 -c "import json,sys; print(next(r['version'] for r in json.load(sys.stdin) if r['version'].startswith('v${NODE_VERSION}.')))")
-          echo "Using Node ${NODE_FULL} (${{ matrix.node_base }}) for ${{ matrix.arch }}"
+
+          # The official node:${NODE_VERSION} image publishes only amd64 and
+          # arm64, so `docker run --platform linux/s390x node:24-slim` fails with
+          # "no matching manifest". Run a plain distribution image that does
+          # publish this architecture and install Node.js inside it.
+          echo "Using Node ${NODE_FULL} (${{ matrix.node_arch }}) for ${{ matrix.arch }}, from ${NODE_FROM}"
+
+          # The container script is a FILE, mounted in. It used to be an inline
+          # `bash -c '...'` and it contains apostrophes - which a single-quoted
+          # shell argument cannot hold. The first one ENDED the string, the rest
+          # of the script became separate words, and ${NODE_ARCH} was left to the
+          # RUNNER's shell, which does not have it. So every one of these jobs
+          # asked nodejs.org for "node-v24.18.1-linux-.tar.xz", with an empty
+          # architecture, and died on the 404 - four of the six failures in the
+          # v10.57 run. A file has no quoting layer to get wrong, and `bash -n`
+          # can check it.
           docker run --rm --platform ${{ matrix.platform }} \
-            -e NODE_FULL="$NODE_FULL" -e ARCH="${{ matrix.arch }}" \
-            -e NODE_BASE="${{ matrix.node_base }}" \
+            -e NODE_FULL="$NODE_FULL" \
+            -e NODE_FROM="$NODE_FROM" \
+            -e NODE_URL="$NODE_URL" \
+            -e NODE_SHA256="$NODE_SHA256" \
+            -e ARCH='${{ matrix.arch }}' \
+            -e NODE_ARCH='${{ matrix.node_arch }}' \
             -v "$(pwd)/bundle:/bundle" \
+            -v "$(pwd)/releases:/releases:ro" \
             -w /bundle/programs/server \
-            ubuntu:26.04 \
-            bash -c '
-              set -eux
-              apt-get update -qq
-              apt-get install -y -q build-essential python3 curl xz-utils ca-certificates
-              if [ "$NODE_BASE" = unofficial ]; then
-                NODE_URL="https://unofficial-builds.nodejs.org/download/release/${NODE_FULL}/node-${NODE_FULL}-linux-${ARCH}.tar.xz"
-              else
-                NODE_URL="https://nodejs.org/dist/${NODE_FULL}/node-${NODE_FULL}-linux-${ARCH}.tar.xz"
-              fi
-              curl -fsSL -o /tmp/node.tar.xz "$NODE_URL"
-              mkdir -p /opt/node
-              tar -xJf /tmp/node.tar.xz -C /opt/node --strip-components=1
-              export PATH=/opt/node/bin:$PATH
-              node --version
-              npm install
-              # Bundle the target-arch Node.js binary for the self-contained
-              # launcher. /bundle is the host bundle/ dir (see -v mount above).
-              cp /opt/node/bin/node /bundle/node
-              chmod +x /bundle/node
-              # #6458: replace the inherited amd64 qemu-user with THIS arch own
-              # same-arch qemu-user (from the target-arch distro, so it runs on
-              # this arch), used by bundle/cpu-exec to emulate CPU features a
-              # binary needs but the host CPU lacks. Tolerant: if the package
-              # is unavailable on this arch, the bundle just ships without it
-              # (cpu-exec then falls back to a system qemu-user, or reports).
-              rm -f /bundle/qemu-x86_64
-              if apt-get install -y -q qemu-user-static >/dev/null 2>&1 && \
-                 [ -x "/usr/bin/qemu-$(uname -m)-static" ]; then
-                cp "/usr/bin/qemu-$(uname -m)-static" "/bundle/qemu-$(uname -m)"
-                chmod +x "/bundle/qemu-$(uname -m)"
-                echo "Bundled qemu-$(uname -m) for cpu-exec."
-              else
-                echo "qemu-user-static not available for $(uname -m); bundle ships without a bundled qemu-user."
-              fi
-            '
+            ${{ matrix.image }} \
+            bash /releases/install-node-for-arch.sh
 
       - name: Embed FerretDB (${{ matrix.arch }}) into the bundle
         # These arches have no MongoDB server, so FerretDB is their default DB.
@@ -1331,14 +1489,45 @@ jobs:
         # A marker file makes FerretDB the default backend at runtime (see the
         # launcher + Docker entrypoint).
         run: |
-          curl -fSL --retry 5 --retry-delay 10 -o bundle/ferretdb \
-            "https://github.com/wekan/FerretDB/releases/latest/download/ferretdb-${{ matrix.arch }}"
+          # `ferretdb_arch`, not `arch`: FerretDB names the 32-bit ARM asset armhf
+          # and the 32-bit x86 one i386, which is what we call them too - but the
+          # two names are kept separate here so a platform whose Node.js name,
+          # FerretDB name and our own name disagree cannot silently download the
+          # wrong CPU's binary.
+          FERRET_URL="https://github.com/wekan/FerretDB/releases/latest/download/ferretdb-${{ matrix.ferretdb_arch }}"
+          curl -fSL --retry 5 --retry-delay 10 -o bundle/ferretdb "$FERRET_URL"
           chmod +x bundle/ferretdb
+          # wekan/FerretDB publishes a .sha256sum beside each binary now. Older
+          # releases do not, so a missing one is recorded as unverified rather
+          # than failing the build - the binary IS available, which is the test.
+          FERRET_SHA=""
+          if curl -fsSL "${FERRET_URL}.sha256sum" -o /tmp/ferretdb.sha256sum 2>/dev/null; then
+            FERRET_SHA="$(awk '{print $1; exit}' /tmp/ferretdb.sha256sum)"
+            GOT="$(sha256sum bundle/ferretdb | cut -d' ' -f1)"
+            if [ "$GOT" != "$FERRET_SHA" ]; then
+              echo "::error::FerretDB for ${{ matrix.ferretdb_arch }} does not match its published SHA256 (published $FERRET_SHA, got $GOT)."
+              exit 1
+            fi
+            echo "FerretDB SHA256 verified: $GOT"
+          else
+            echo "::warning::wekan/FerretDB publishes no checksum for ferretdb-${{ matrix.ferretdb_arch }} on this release, so it is unverified."
+          fi
+          FERRET_TAG="$(curl -fsSL https://api.github.com/repos/wekan/FerretDB/releases/latest | python3 -c 'import json,sys; print(json.load(sys.stdin).get("tag_name",""))' || true)"
+          bash releases/record-provenance.sh '${{ matrix.arch }}' 'FerretDB' \
+            'wekan/FerretDB' "${FERRET_TAG:-latest}" "$FERRET_URL" "$FERRET_SHA"
           # Overwrite the inherited amd64 MongoDB Database Tools with this arch's ones.
+          # Tolerant per tool: wekan/mongo-tools does not publish every arch this
+          # bundle is built for, and a missing mongodump is a missing convenience,
+          # not a broken bundle - FerretDB is the database and the launcher does
+          # not need these to start. A silently-amd64 tool would be worse.
           MT="https://github.com/wekan/mongo-tools/releases/latest/download"
           for t in bsondump mongodump mongoexport mongofiles mongoimport mongorestore mongostat mongotop; do
-            curl -fSL --retry 5 --retry-delay 10 -o "bundle/$t" "$MT/$t-${{ matrix.arch }}"
-            chmod +x "bundle/$t"
+            if curl -fSL --retry 3 --retry-delay 5 -o "bundle/$t" "$MT/$t-${{ matrix.ferretdb_arch }}"; then
+              chmod +x "bundle/$t"
+            else
+              echo "::warning::No $t for ${{ matrix.ferretdb_arch }} in wekan/mongo-tools; removing the inherited amd64 one rather than shipping it."
+              rm -f "bundle/$t"
+            fi
           done
           touch bundle/.ferretdb-default
 
@@ -1379,6 +1568,22 @@ jobs:
           path: wekan-${{ needs.prepare.outputs.version }}-${{ matrix.arch }}.zip
           retention-days: 1
 
+
+      - name: Checksum the ${{ matrix.arch }} zip and collect provenance
+        run: |
+          set -euo pipefail
+          zip="wekan-${VERSION}-${{ matrix.arch }}.zip"
+          sha256sum "$zip" > "${zip}.sha256sum"
+          cat "${zip}.sha256sum"
+          mkdir -p provenance
+          [ -f provenance.tsv ] && mv provenance.tsv "provenance/${{ matrix.arch }}.tsv" || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: provenance-${{ matrix.arch }}
+          path: provenance/
+          if-no-files-found: warn
+
       - name: Attach ${{ matrix.arch }} bundle to the GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -1392,7 +1597,12 @@ jobs:
             echo "::error::$asset does not exist, so there is nothing to attach. The step that builds it failed, or produced a different name."
             exit 1
           fi
-          if ! gh release upload "v${VERSION}" "$asset" --clobber; then
+          # The checksum goes up with it, so a download can be checked. It is
+          # built beside the zip by the step above; older jobs that do not make
+          # one still upload cleanly.
+          up=("$asset")
+          [ -f "${asset}.sha256sum" ] && up+=("${asset}.sha256sum")
+          if ! gh release upload "v${VERSION}" "${up[@]}" --clobber; then
             echo "::error::Could not attach $asset to release v${VERSION}: the release must exist first (the release job), and GITHUB_TOKEN must be allowed to write releases here."
             exit 1
           fi
@@ -1577,7 +1787,12 @@ jobs:
             echo "::error::$asset does not exist, so there is nothing to attach. The step that builds it failed, or produced a different name."
             exit 1
           fi
-          if ! gh release upload "v${VERSION}" "$asset" --clobber; then
+          # The checksum goes up with it, so a download can be checked. It is
+          # built beside the zip by the step above; older jobs that do not make
+          # one still upload cleanly.
+          up=("$asset")
+          [ -f "${asset}.sha256sum" ] && up+=("${asset}.sha256sum")
+          if ! gh release upload "v${VERSION}" "${up[@]}" --clobber; then
             echo "::error::Could not attach $asset to release v${VERSION}: the release must exist first (the release job), and GITHUB_TOKEN must be allowed to write releases here."
             exit 1
           fi
@@ -1779,7 +1994,7 @@ jobs:
         # report in the Admin Panel — a stale, different version.
         run: |
           docker buildx build \
-            --platform linux/amd64,linux/arm64,linux/ppc64le,linux/s390x,linux/riscv64 \
+            --platform linux/amd64,linux/arm64,linux/ppc64le,linux/s390x,linux/riscv64,linux/386,linux/arm/v7 \
             --build-arg VERSION=${VERSION} \
             -t wekanteam/wekan:v${VERSION} \
             -t wekanteam/wekan:latest \
@@ -1794,7 +2009,10 @@ jobs:
           # platform, or a tag that never reached one of the three registries, is
           # invisible until somebody on that CPU runs docker pull and is told there is
           # no matching manifest. Ask each registry what it actually has.
-          want="linux/amd64 linux/arm64 linux/ppc64le linux/s390x linux/riscv64"
+          # The same list as --platform above. linux/loong64 is NOT here: the
+          # bundle is built for it, but buildx and the three registries do not
+          # agree on loong64 yet, so it ships as a .zip and not as an image.
+          want="linux/amd64 linux/arm64 linux/ppc64le linux/s390x linux/riscv64 linux/386 linux/arm/v7"
           rc=0
           for image in "wekanteam/wekan:v${VERSION}" "quay.io/wekan/wekan:v${VERSION}" "ghcr.io/wekan/wekan:v${VERSION}"; do
             if ! got="$(docker buildx imagetools inspect "$image" --format '{{range .Manifest.Manifests}}{{.Platform.OS}}/{{.Platform.Architecture}} {{end}}' 2>&1)"; then
@@ -1847,8 +2065,109 @@ jobs:
   # hours) never holds up the release or the other arches. Each arch publishes to
   # the Snap Store (stable + candidate + beta + edge) and attaches to the Release the moment
   # it finishes — all 5 arches, published independently.
+  # ── Does SNAP_AUTH actually work? Asked ONCE, before anything is built ──────
+  #
+  # v10.53 built the amd64 snap, the arm64 snap and both variant snaps - forty
+  # minutes of runner time - and then every one of them died at the upload with
+  # the same red X, because the credential was not usable. Nothing before that
+  # point had asked the store anything: the per-job check only tested that the
+  # secret is non-empty and longer than 100 characters, which a broken, revoked
+  # or long-expired credential also is.
+  #
+  # `snapcraft whoami` is the question. It costs one runner-minute, answers from
+  # the store itself, and its answer distinguishes the causes that the failure at
+  # upload time cannot:
+  #
+  #   cannot be parsed  -> the secret is not an exported login at all (mangled,
+  #                        truncated, or the terminal OUTPUT of export-login
+  #                        instead of the file it wrote)
+  #   expired           -> it WAS valid. An exported login expires, one year by
+  #                        default, and this is the cause the upload-time error
+  #                        message never mentioned
+  #   missing a name    -> it is valid but not scoped to every snap this release
+  #                        publishes, so some jobs would work and others not
+  #
+  # It is deliberately a hard failure: a release that cannot publish its snaps is
+  # a broken release, and finding out in a minute is the whole point.
+  snap-auth-check:
+    needs: [prepare]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Ask the Snap Store whether SNAP_AUTH is usable
+        env:
+          SNAP_AUTH: ${{ secrets.SNAP_AUTH }}
+          # Every snap name this workflow publishes. snap-native and
+          # snap-launchpad publish `wekan`; snap-variants publishes the two
+          # older names people still have installed.
+          SNAP_NAMES: wekan wekan-ondra wekan-gantt-gpl
+        run: |
+          set -uo pipefail
+          fix="snapcraft export-login --snaps wekan,wekan-ondra,wekan-gantt-gpl --acls package_access,package_push,package_release,package_update snap-auth.txt && gh secret set SNAP_AUTH --repo wekan/wekan < snap-auth.txt"
+
+          if [ -z "${SNAP_AUTH:-}" ]; then
+            echo "::error::SNAP_AUTH is not set, so no snap can be published. Add it in Settings → Secrets and variables → Actions: $fix"
+            exit 1
+          fi
+          case "$SNAP_AUTH" in
+            *"Exported login"*|*"export-login"*)
+              echo "::error::SNAP_AUTH contains snapcraft's own banner text ('Exported login ...'), so it is the terminal OUTPUT rather than the file contents. Re-set it from the file: gh secret set SNAP_AUTH --repo wekan/wekan < snap-auth.txt"
+              exit 1
+              ;;
+          esac
+
+          sudo snap install snapcraft --classic
+
+          # whoami writes its answer to stdout and its complaint to stderr; both
+          # matter, so both are captured.
+          set +e
+          out="$(SNAPCRAFT_STORE_CREDENTIALS="$SNAP_AUTH" snapcraft whoami 2>&1)"
+          rc=$?
+          set -e
+          # The credential is never echoed - only what the store said about it.
+          echo "$out"
+
+          if [ "$rc" -ne 0 ]; then
+            case "$out" in
+              *"could not be parsed"*|*"not valid"*|*"Cannot parse"*)
+                echo "::error::SNAP_AUTH is not a readable exported login - the store was never asked. It is mangled, truncated, or the terminal output of export-login instead of the file it wrote. Fix: $fix"
+                ;;
+              *xpired*)
+                echo "::error::SNAP_AUTH has EXPIRED. An exported login lasts one year by default, so this one worked until it did not. Fix: $fix"
+                ;;
+              *401*|*403*|*nauthoriz*|*"not authorized"*)
+                echo "::error::The Snap Store refused SNAP_AUTH (401/403). The credential is readable but does not carry the ACL it needs. Fix: $fix"
+                ;;
+              *)
+                echo "::error::snapcraft whoami failed (exit $rc); its output is above. Fix, if it is the credential: $fix"
+                ;;
+            esac
+            exit 1
+          fi
+
+          # It authenticates. Does it carry every snap name this release
+          # publishes? A credential exported for `wekan` alone lets snap-native
+          # succeed and snap-variants fail, which reads as two unrelated bugs.
+          missing=""
+          for name in $SNAP_NAMES; do
+            case "$out" in
+              *"$name"*) : ;;
+              *) missing="$missing $name" ;;
+            esac
+          done
+          # `packages: no restrictions` is a credential scoped to every snap the
+          # account owns, which covers all three.
+          case "$out" in
+            *"no restrictions"*) missing="" ;;
+          esac
+          if [ -n "$missing" ]; then
+            echo "::error::SNAP_AUTH authenticates, but is not scoped to:$missing — those snaps would fail to publish while the others succeeded. Re-export for ALL THREE names: $fix"
+            exit 1
+          fi
+          echo "SNAP_AUTH is usable, and carries every snap name this release publishes."
+
   snap-native:
-    needs: [prepare, release]
+    needs: [prepare, release, snap-auth-check]
     strategy:
       fail-fast: false
       matrix:
@@ -1878,7 +2197,26 @@ jobs:
           # Whether the Snap Store ACCEPTS it can only be answered by the store, at
           # upload time - so the upload step below is followed by one that names this
           # secret when it is refused, instead of leaving a bare "401" in the log.
-          echo "snap-native: SNAP_AUTH is set ($(printf '%s' "$SNAP_AUTH" | wc -c) characters)."
+          #
+          # What CAN be checked here is that it is a credential at all. v10.50 built
+          # every snap and then died on
+          #   Credentials could not be parsed. Expected valid Ubuntu One credentials.
+          # which is not the store refusing anything - it is snapcraft unable to read
+          # the secret. The commonest cause is pasting what `snapcraft export-login`
+          # PRINTED instead of the file it WROTE. Only unambiguous breakage is
+          # rejected here; the format itself is snapcraft's business.
+          chars=$(printf '%s' "$SNAP_AUTH" | wc -c)
+          if [ "$chars" -lt 100 ]; then
+            echo "::error::snap-native: SNAP_AUTH is only $chars characters, which is far too short for an exported login. Set it to the CONTENTS OF THE FILE that snapcraft wrote: snapcraft export-login --snaps wekan,wekan-ondra,wekan-gantt-gpl --acls package_access,package_push,package_release,package_update snap-auth.txt && gh secret set SNAP_AUTH --repo wekan/wekan < snap-auth.txt"
+            exit 1
+          fi
+          case "$SNAP_AUTH" in
+            *"Exported login"*|*"export-login"*)
+              echo "::error::snap-native: SNAP_AUTH contains snapcraft's own banner text ('Exported login ...'), so it is the terminal OUTPUT rather than the file contents. Re-set it from the file: gh secret set SNAP_AUTH --repo wekan/wekan < snap-auth.txt"
+              exit 1
+              ;;
+          esac
+          echo "snap-native: SNAP_AUTH is set ($chars characters)."
 
       - uses: actions/checkout@v7
         with:
@@ -1925,7 +2263,14 @@ jobs:
       - name: Say which secret the Snap Store refused
         if: failure() && steps.publish.outcome == 'failure'
         run: |
-          echo "::error::SNAP_AUTH did not work: the Snap Store refused the upload for ${{ matrix.arch }}. Re-export it with: snapcraft export-login --snaps wekan --acls package_access,package_push,package_release,package_update snap-auth.txt"
+          # Two different failures wear the same red X here, and the line snapcraft
+          # printed just above in the log says which:
+          #   "Credentials could not be parsed"  -> SNAP_AUTH is not a readable
+          #      exported login: it was mangled, truncated, or is the terminal
+          #      output instead of the file contents. Nothing to do with the store.
+          #   401 / 403 / "not authorized"       -> the credential is fine but does
+          #      not carry the ACL for this snap NAME.
+          echo "::error::The ${{ matrix.arch }} snap was built but not published. Read the snapcraft line above: 'Credentials could not be parsed' means SNAP_AUTH is not a readable exported login (mangled, or the terminal output instead of the file contents); 401/403/not authorized means it lacks the ACL for this snap name. Both are fixed by re-exporting for ALL THREE names: snapcraft export-login --snaps wekan,wekan-ondra,wekan-gantt-gpl --acls package_access,package_push,package_release,package_update snap-auth.txt && gh secret set SNAP_AUTH --repo wekan/wekan < snap-auth.txt"
           exit 1
 
       - name: Attach the ${{ matrix.arch }} snap to the GitHub Release
@@ -1938,7 +2283,12 @@ jobs:
             echo "::error::$asset does not exist, so there is nothing to attach. The step that builds it failed, or produced a different name."
             exit 1
           fi
-          if ! gh release upload "v${VERSION}" "$asset" --clobber; then
+          # The checksum goes up with it, so a download can be checked. It is
+          # built beside the zip by the step above; older jobs that do not make
+          # one still upload cleanly.
+          up=("$asset")
+          [ -f "${asset}.sha256sum" ] && up+=("${asset}.sha256sum")
+          if ! gh release upload "v${VERSION}" "${up[@]}" --clobber; then
             echo "::error::Could not attach $asset to release v${VERSION}: the release must exist first (the release job), and GITHUB_TOKEN must be allowed to write releases here."
             exit 1
           fi
@@ -1977,7 +2327,7 @@ jobs:
     # ENABLED. `continue-on-error: true` below means a failure here can never
     # fail the release or hold up another job - the point of running it is to
     # SEE what it reports. Disable again with `if: ${{ false }}`.
-    needs: [prepare, release]
+    needs: [prepare, release, snap-auth-check]
     # ppc64el, s390x and riscv64: none of them has a native GitHub runner, and
     # snapcraft cannot cross-build a snap, so Launchpad remote-build is the only way
     # to build them - QEMU is not. ppc64el and s390x were on a QEMU job
@@ -2005,7 +2355,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [ppc64el, s390x, riscv64]
+        # The snap architectures Launchpad builds and the store accepts. i386 and
+        # armhf join the three that were here: both are real snapd arches and
+        # both now have a bundle to build from. loong64 is deliberately absent -
+        # it is not a snap architecture at all.
+        arch: [ppc64el, s390x, riscv64, i386, armhf]
     runs-on: ubuntu-latest
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
@@ -2112,7 +2466,26 @@ jobs:
               tail -n 150 "$log"
               echo "::endgroup::"
             done
+            # ...and there is no Launchpad build log at all when the build never
+            # STARTED. v10.55 riscv64 failed three times on
+            #   "Git operation failed with: Could not push 'HEAD' to
+            #    git.launchpad.net/.../+git/snapcraft-wekan-<hash>"
+            # and that one line was everything the job printed: snapcraft
+            # swallows git's own message and writes it to its execution log,
+            # whose path it names and nobody reads. Read it.
+            for sclog in "$HOME"/.local/state/snapcraft/log/*.log; do
+              [ -e "$sclog" ] || continue
+              echo "::group::snapcraft execution log: $(basename "$sclog") (last 120 lines)"
+              tail -n 120 "$sclog"
+              echo "::endgroup::"
+            done
             if [ "$i" -lt "$attempts" ]; then
+              # Start the next attempt from nothing. snapcraft keeps a local
+              # clone of the Launchpad repository under ~/.cache, and a retry
+              # that reuses a half-pushed one repeats the same failure - which is
+              # what three identical attempts sixteen minutes apart look like.
+              echo "Clearing snapcraft's remote-build cache before retrying."
+              rm -rf "$HOME/.cache/snapcraft/remote-build"
               echo "Retrying in 60s..."
               sleep 60
             fi
@@ -2152,7 +2525,7 @@ jobs:
           for f in "${snaps[@]}"; do
             echo "Uploading $f to the Snap Store (stable,candidate,beta,edge)..."
             if ! snapcraft upload --release=stable,candidate,beta,edge "$f"; then
-              echo "::error::The Snap Store refused the upload of $f. If it says the file is invalid, the build is broken; if it says unauthorized, re-export SNAP_AUTH with: snapcraft export-login --snaps wekan --acls package_access,package_push,package_release,package_update snap-auth.txt"
+              echo "::error::The Snap Store refused the upload of $f. The snapcraft line above says which: 'is not a valid file' means the build produced nothing usable; 'Credentials could not be parsed' means SNAP_AUTH is not a readable exported login; 401/403 means it lacks the ACL for this snap name. The last two are fixed by re-exporting for all three names: snapcraft export-login --snaps wekan,wekan-ondra,wekan-gantt-gpl --acls package_access,package_push,package_release,package_update snap-auth.txt"
               exit 1
             fi
           done
@@ -2212,7 +2585,7 @@ jobs:
     # costs a warning, not the release of a snap.
     #
     # `continue-on-error: true`: a variant must never fail or hold up the release.
-    needs: [prepare, release]
+    needs: [prepare, release, snap-auth-check]
     continue-on-error: true
     timeout-minutes: 90
     strategy:
@@ -2623,3 +2996,48 @@ jobs:
           if [ "${{ job.status }}" = "failure" ]; then
             echo "::error::nextcloud FAILED. The ::error:: line in this job's log, above, says which step and why."
           fi
+
+  # ── The provenance table, completed ─────────────────────────────────────────
+  #
+  # The release is CREATED before win64, mac-arm64 and the extra architectures
+  # are built - those jobs need a release to upload their bundles to - so the
+  # table it is created with can only cover amd64 and arm64. This runs after all
+  # of them and rewrites the notes with every bundle's rows in.
+  #
+  # always(): a platform that failed should not cost the release its table for
+  # the platforms that succeeded.
+  release-notes:
+    name: complete the release notes
+    needs:
+      - prepare
+      - release
+      - build-amd64
+      - build-arm64
+      - build-win64
+      - build-mac-arm64
+      - build-extra-arches
+    if: ${{ always() && needs.release.result == 'success' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: provenance-*
+          path: provenance
+          merge-multiple: true
+
+      - name: Rewrite the notes with every bundle in the table
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          rows=$(find provenance -name '*.tsv' 2>/dev/null | wc -l)
+          echo "Provenance files collected: $rows"
+          bash releases/provenance-table.sh > release-notes.md || true
+          printf '%s\n' "${{ needs.prepare.outputs.changelog }}" >> release-notes.md
+          gh release edit "v${VERSION}" --notes-file release-notes.md
+          echo "Release notes updated with the provenance of every bundle built."
+          head -40 release-notes.md
