@@ -239,8 +239,8 @@ jobs:
 
           chmod +x "dist/${name}.AppImage"
           ( cd dist
-            md5sum    "${name}.AppImage" > "${name}.md5sum"
-            sha256sum "${name}.AppImage" > "${name}.sha256sum" )
+            md5sum    "${name}.AppImage" > "${name}.AppImage.md5sum"
+            sha256sum "${name}.AppImage" > "${name}.AppImage.sha256sum" )
           ls -lh dist
 
       - name: Check that it starts

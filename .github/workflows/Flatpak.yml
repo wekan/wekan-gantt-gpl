@@ -265,8 +265,8 @@ jobs:
           flatpak build-bundle repo "dist/${name}.flatpak" \
             --arch='${{ matrix.flatpak_arch }}' io.github.wekan.WeKan stable
           ( cd dist
-            md5sum    "${name}.flatpak" > "${name}.md5sum"
-            sha256sum "${name}.flatpak" > "${name}.sha256sum" )
+            md5sum    "${name}.flatpak" > "${name}.flatpak.md5sum"
+            sha256sum "${name}.flatpak" > "${name}.flatpak.sha256sum" )
           ls -lh dist
 
       - uses: actions/upload-artifact@v4
