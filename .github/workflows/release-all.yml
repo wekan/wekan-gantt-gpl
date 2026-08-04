@@ -844,10 +844,14 @@ jobs:
           merge-multiple: true
 
       - name: Compose the release notes, provenance first
+        # CHANGELOG through the environment, not inline ${{ }}: a backtick in
+        # an entry would run as a command in the script otherwise.
+        env:
+          CHANGELOG: ${{ needs.prepare.outputs.changelog }}
         run: |
           set -euo pipefail
           bash releases/provenance-table.sh > release-notes.md || true
-          printf '%s\n' "${{ needs.prepare.outputs.changelog }}" >> release-notes.md
+          printf '%s\n' "$CHANGELOG" >> release-notes.md
           echo "----- release notes -----"
           head -40 release-notes.md
 
@@ -3032,12 +3036,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ needs.prepare.outputs.version }}
+          CHANGELOG: ${{ needs.prepare.outputs.changelog }}
         run: |
           set -euo pipefail
           rows=$(find provenance -name '*.tsv' 2>/dev/null | wc -l)
           echo "Provenance files collected: $rows"
           bash releases/provenance-table.sh > release-notes.md || true
-          printf '%s\n' "${{ needs.prepare.outputs.changelog }}" >> release-notes.md
+          printf '%s\n' "$CHANGELOG" >> release-notes.md
           gh release edit "v${VERSION}" --notes-file release-notes.md
           echo "Release notes updated with the provenance of every bundle built."
           head -40 release-notes.md
