@@ -833,7 +833,14 @@ jobs:
       # architectures, unofficial-builds others, the wekan/node fork the ones
       # neither of them does, and not all of them publish a checksum - so it is
       # written down here rather than left in a build log that expires.
+      #
+      # clean: false is CRITICAL: this checkout runs AFTER "Download all
+      # bundles" put wekan-<version>-*.zip in the workspace, and checkout's default
+      # clean removes those untracked zips, so the release would ship with no
+      # bundles and every downstream job 404s on them. Keep the bundles.
       - uses: actions/checkout@v4
+        with:
+          clean: false
 
       - name: Collect where the binaries came from
         continue-on-error: true
