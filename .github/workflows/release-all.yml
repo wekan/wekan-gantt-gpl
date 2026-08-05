@@ -838,7 +838,7 @@ jobs:
       # bundles" put wekan-<version>-*.zip in the workspace, and checkout's default
       # clean removes those untracked zips, so the release would ship with no
       # bundles and every downstream job 404s on them. Keep the bundles.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           clean: false
 
@@ -1410,7 +1410,7 @@ jobs:
       # checkout - the job would stop at "No such file or directory". It goes
       # first because actions/checkout cleans the workspace, which would remove
       # the bundle the next step downloads.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Download amd64 bundle
         uses: actions/download-artifact@v8
@@ -3030,7 +3030,7 @@ jobs:
     if: ${{ always() && needs.release.result == 'success' }}
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/download-artifact@v4
         continue-on-error: true
