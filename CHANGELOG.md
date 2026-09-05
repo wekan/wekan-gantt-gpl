@@ -8263,6 +8263,352 @@ when this release is made.
 | mac-x64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.xz) | v24.19.0 | `d35e95230f46f6f0751df497c56622c6735e05d5e1fb1630996a005b9d328fe4` |
 | mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
 
+# v11.52 2026-09-06 WeKan ® release
+
+**In short:** **Release builds** create the Windows single EXE on Windows, sync
+variant repositories without replacing their workflows, and leave bounded,
+named diagnostics for every workflow failure. **Build menus** return immediately
+after completed commands while keeping real menu and argument prompts.
+**Mobile regression coverage** follows the header and drag-handle structure.
+**Security coverage** accounts for all 94 Hall of Fame names, blocks
+SheetColorBleed CSS injection, reports attributable ScannerBleed and integrity
+attempts, and prevents weak FerretDB password hashes.
+**Verified recovery** checks and restores FerretDB SQLite snapshots or retained
+MongoDB source, preserves failed requests for retry, verifies history and stored
+files, and schedules non-urgent checksum work during sustained low CPU usage.
+**Import/export security** shares DOMPurify validation across transports and
+resumes Trello jobs.
+
+| Platform | Binary | From | Version | SHA256 |
+| --- | --- | --- | --- | --- |
+| amd64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.xz) | v24.19.0 | `14b342e71204f811bde6153be8e04b62aef63c236fef92b55f9c83154b409647` |
+| amd64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-amd64) | v1.53.0 | `eae1f0a8f73bfc979738bfff7284d40fd1bc55de2cc56514721fc155c3624f7d` |
+| arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-arm64.tar.xz) | v24.19.0 | `01443c1e1a29e531ccad5a46fefa6df490d2189c49f7955904aecdbb0fe86fdc` |
+| arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-arm64) | v1.53.0 | `bdc50caee3ac28495b42d2130b94a042a9dd6d3a38f732cac02b648f36c891da` |
+| mac-arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-arm64.tar.xz) | v24.19.0 | `3f1cf157479c1480352083105e13faf9d008ede98e7e157746b6df940d197b94` |
+| mac-arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-arm64) | v1.53.0 | `cb14ffe93e285903e5a8a9c1821687ddb5b8a979a11c584bf4af534b272c6d3e` |
+| mac-x64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.xz) | v24.19.0 | `d35e95230f46f6f0751df497c56622c6735e05d5e1fb1630996a005b9d328fe4` |
+| mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
+
+This release fixes the following SECURITY ISSUES found by GitHub CodeQL code
+scanning:
+
+<details>
+<summary><a href="https://github.com/wekan/FerretDB/commit/bd29823d">Stop creating SCRAM-SHA-1 credentials</a>. Thanks to GitHub CodeQL and xet7.</summary>
+
+New FerretDB users and password changes now create only salted,
+15,000-iteration PBKDF2-SHA-256 credentials. An explicit SCRAM-SHA-1 request is
+rejected, and the MD5 password-preparation function is removed instead of being
+hidden behind an ineffective CodeQL annotation, resolving alert 46 (CWE-327,
+CWE-328 and CWE-916). Existing stored SCRAM-SHA-1 credentials remain readable
+only for authentication, so an administrator can migrate a legacy account by
+changing its password. Positive SHA-256 creation/update tests and negative
+SHA-1 creation/update tests pass with the full FerretDB unit, vet and SQLite/TLS
+integration suites.
+
+</details>
+
+**Safeguards** - Security, recovery, build and mobile regression protections.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/71ad5447a">Secure and resume import/export operations</a>. Thanks to xet7.</summary>
+
+One common server boundary now validates and clones imported and exported object
+graphs, removes prototype-pollution keys and accessors, rejects cycles and
+resource-limit abuse, normalizes invalid scalars, strips secret fields from
+exports, and sends active markup, script URLs and CSS payloads through WeKan's
+existing DOMPurify sanitizer. UI/DDP, REST, streamed ZIP, Excel-cell and live
+Trello imports use it, as do canonical and external-format exports. Rejected and
+sanitized attempts report their source, affected paths, user and address when
+available in Admin Panel Problems → Security. CSV/TSV formula escaping remains
+enabled for every row.
+
+Live Trello imports now use atomic expiring leases with an in-flight heartbeat,
+reclaim unfinished jobs on startup, and adopt a board whose durable import
+activity proves that its side effect completed before a crash. Requests have
+timeouts and response-size limits, retry transient HTTP 408/425/429/5xx and
+honour `Retry-After`; SSRF verdicts remain non-retryable. Positive and negative
+regression tests cover the common boundary, every transport connection,
+prototype pollution, accessors, cycles, limits, DOM sanitization, spreadsheet
+formula prefixes, restart reclaim, idempotency, leases, retries and timeouts.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/69db6a372">Sanitize streamed board exports</a>. Thanks to xet7.</summary>
+
+The constant-memory JSON exporter now applies the same shared validation,
+DOMPurify and secret-removal boundary separately to the board, every streamed
+collection document, attachment metadata and user. Attachment bytes remain a
+direct base64 stream, avoiding both executable interpretation and unbounded
+memory use. Regression coverage prevents this large-board export path from
+bypassing the common security boundary.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1eb273bf1">Make workflow failures diagnosable</a>. Thanks to xet7.</summary>
+
+Every directly executed GitHub Actions job now has a timeout, including the
+smaller Docker, Flatpak, chart, dependency-review and repair workflows. A stuck
+external service or command therefore ends as a bounded timeout instead of
+requiring an unexplained manual cancellation.
+
+A repository-wide regression test checks every active workflow: shell commands
+must have a descriptive step name, explicit nonzero exits must print a nearby
+`::error::`, every job must be time-bounded, and `continue-on-error` jobs must
+still print their final result. This keeps both fatal and deliberately tolerated
+failures visible in the Actions log.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0bce2330a">Fix Windows and variant release builds</a>. Thanks to xet7.</summary>
+
+The Windows single-EXE manifest now normalizes the backslash-separated member
+names printed by Windows `tar`, so executables, native addons and startup files
+are included instead of producing an empty C array. An empty manifest fails with
+its cause before compilation. Regression coverage checks both Windows paths and
+the fail-closed behavior.
+
+Ondra and Gantt repository synchronization now retains each variant's own Actions
+workflows instead of copying WeKan's release workflows. Their existing Contents
+token can therefore push ordinary source updates without the unrelated GitHub PAT
+`workflow` scope, and the variants cannot accidentally run the main release flow.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e54b123c1">Validate XLSX sheet colors before CSS serialization</a>. Thanks to rbbjinioeq and xet7.</summary>
+
+An XLSX workbook's unvalidated sheet-tab color was interpolated into the
+viewer's complete `style.cssText`. A board member could append CSS declarations,
+cover another authorized member's attachment preview and trigger a CSS resource
+request when that member opened the workbook (SheetColorBleed,
+GHSA-crq2-phg8-4xvg; CWE-79 and CWE-116). No script execution, response reading,
+credential access or authenticated state change was demonstrated.
+
+The vendored viewer now accepts only canonical `#RRGGBB` immediately before the
+CSS serialization boundary. Regression coverage retains a valid color and rejects
+the disclosure payload, short/alpha/named colors, non-hex input and empty values.
+The security inventory and Hall of Fame now account for all 94 published names.
+
+The same change resolves CodeQL alert 447 in a release-version test by comparing
+the exact expected Dockerfile string instead of constructing a partly escaped
+regular expression. That alert did not reach application runtime or untrusted data.
+SheetColorBleed is normalized during an ordinary preview rather than refused, so
+there is no attributable attack-only event to report in Problems → Security; logging
+the preview would falsely identify the viewer rather than the workbook uploader.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/506c2697a">Add verified recovery and low-load integrity audits</a>. Thanks to xet7.</summary>
+
+FerretDB launch paths now integrity-check SQLite before opening it, create staged,
+compressed and SHA-256-verified snapshots in the same data directory, check free
+space, restore latest then previous verified generations, and re-run a retained
+MongoDB migration when no snapshot survives. Snapshot manifests retain byte/hash
+change evidence, and every outcome reaches Problems → Recovery.
+
+New change-history rows form a SHA-256 predecessor chain. Restore, undo and redo
+refuse changed, missing or forked history and report the available row, board,
+username and address evidence in Problems → Security. A low-load background audit
+also checks whole chains. Regression tests prove there is no direct client
+publication, REST mutation API or collection write permission for history.
+
+The existing signed attachment/avatar inventory now also scans registered logs and
+recovery generations. Missing or changed files report expected and observed sizes
+and checksums in Problems → Security. CPU-intensive background audits wait for
+consecutive low samples, recheck load between paced operations and defer when the
+quiet window ends. Problems → Speed shows rolling minimum, average, maximum, sample
+count and lowest-load time so the chosen maintenance window is visible.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1cb52ee21">Build menus exit immediately after completed commands</a>. Thanks to xet7.</summary>
+
+`build.sh` silently waited for Enter after a release command, and `build.bat`
+displayed an acknowledgement pause after release scripts, release commands,
+command-list output and a missing-Bash error. Those waits did not monitor the
+command or the remote release; they only consumed an extra line or keystroke.
+
+Both scripts now exit to the shell or command prompt as soon as a selected
+process finishes. They wait for terminal input only while displaying a menu or
+a visible question that collects a real command argument. Focused regression
+coverage checks the prompt and exit control flow in both scripts.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/bfac4c842">Mobile layout regressions test the current header and subpixel alignment</a>. Thanks to xet7.</summary>
+
+The full test run still expected Mobile Mode to copy list names into the top
+header, even though that switcher was removed to keep the header height and
+other swimlanes stable. Another static check searched for the drag handle only
+inside a removed coarse-pointer media query instead of the mode-based rule used
+by every browser.
+
+Those checks now pin the current structure. The Firefox browser test also
+accepts less than half a CSS pixel of glyph-centre rounding; it had failed on a
+0.0083-pixel difference while Chromium and WebKit passed. A real positioning
+regression of half a pixel or more still fails.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/90158d501">Audit security coverage and recovery failure reporting</a>. Thanks to xet7.</summary>
+
+The Hall of Fame audit had been looking only in an obsolete companion-repository
+location, so it silently skipped the real `.tools/wekan.fi` catalog. The security
+regression inventory also stopped at 62 vulnerabilities. It now accounts for all
+93 published names: 71 have named regression coverage and the remaining 22 older
+fixes are explicit gaps. Scanner command injection payloads have focused positive
+and negative coverage, and rejected scanner filenames appear as ScannerBleed in
+Admin Panel → Problems → Security. Response-only protections remain deliberately
+silent where normal use cannot be distinguished from an attack.
+
+All three FerretDB launch paths previously ignored a failed backup or restore
+copy, reported success anyway, and removed a failed restore request. They now
+report `backup-failed`, `restore-failed` or `manual-required` in Admin Panel →
+Problems → Recovery, never claim that a failed copy succeeded, and retain failed
+restore requests for the next restart. The recovery documentation now separates
+implemented automatic mitigation from operator-requested text-database restore
+and records the remaining portable integrity-check gap instead of describing an
+unused decision function as production automation.
+
+</details>
+
+**Developer documentation** - recovery and data-transfer guarantees have an
+explicit implementation contract and format inventory.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/175eea981">Design restart-safe durable operations</a>. Thanks to xet7.</summary>
+
+The Problems documentation now defines persistent operation records, bounded
+leases, checkpoints, idempotency keys, startup reclaim, cancellation and
+terminal failure reporting for background work. It also specifies
+rate-limit-aware retries and the evidence each recovery outcome must retain,
+making the remaining implementation work distinguishable from completed
+automatic recovery. The Problems index links the new contract.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5154939a4">Design complete restart-safe import and export</a>. Thanks to xet7.</summary>
+
+The import/export documentation inventories WeKan, Trello, Jira, Kanboard,
+Nextcloud Deck, OpenProject, GitHub, GitLab, Gitea, Forgejo, Asana and Zenkit
+formats against their maintained APIs. It defines per-format field coverage,
+explicit loss accounting, restart checkpoints, stable source identities,
+idempotent writes, attachment streaming, external-service timeouts and
+`Retry-After` handling.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f06794343">Design shared import/export sanitization</a>. Thanks to xet7.</summary>
+
+Every structured transfer now has one documented trust boundary for structural
+validation, prototype-key rejection, resource limits, DOMPurify cleanup,
+secret removal and spreadsheet-formula neutralization. The contract requires
+both sanitized and blocked attempts to retain attributable evidence in Problems
+→ Security and requires every new adapter to reuse the shared boundary.
+
+</details>
+
+# v11.51 2026-09-05 WeKan ® release
+
+**In short:** **Windows single EXE builds** now run their packer on Windows and
+generate the native launcher's required header. **Release version updates** now
+publish Meteor from its canonical build pin and stop before publishing if any
+release-critical version remains stale. **Git mirror updates** also work from
+WeKan's documented Linux, macOS and Windows checkout locations, keep every related
+clone below the active checkout's ignored `.tools` directory, and update existing
+mirrors on repeat runs.
+
+| Platform | Binary | From | Version | SHA256 |
+| --- | --- | --- | --- | --- |
+| amd64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.xz) | v24.19.0 | `14b342e71204f811bde6153be8e04b62aef63c236fef92b55f9c83154b409647` |
+| amd64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-amd64) | v1.53.0 | `eae1f0a8f73bfc979738bfff7284d40fd1bc55de2cc56514721fc155c3624f7d` |
+| arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-arm64.tar.xz) | v24.19.0 | `01443c1e1a29e531ccad5a46fefa6df490d2189c49f7955904aecdbb0fe86fdc` |
+| arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-arm64) | v1.53.0 | `bdc50caee3ac28495b42d2130b94a042a9dd6d3a38f732cac02b648f36c891da` |
+| mac-arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-arm64.tar.xz) | v24.19.0 | `3f1cf157479c1480352083105e13faf9d008ede98e7e157746b6df940d197b94` |
+| mac-arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-arm64) | v1.53.0 | `cb14ffe93e285903e5a8a9c1821687ddb5b8a979a11c584bf4af534b272c6d3e` |
+| mac-x64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.xz) | v24.19.0 | `d35e95230f46f6f0751df497c56622c6735e05d5e1fb1630996a005b9d328fe4` |
+| mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4fae0377e">Windows single EXE builds generate the native launcher's required header</a>. Thanks to xet7.</summary>
+
+The packer's command-line entry check constructed a `file://` URL by joining a
+prefix to the resolved script path. That happened to match Node's module URL on
+POSIX, but a Windows drive-letter path produced a different URL. The packer then
+silently exited successfully without generating `wekan-real-files.h`, and the C
+compiler failed because that header did not exist.
+
+The entry check now uses Node's platform-aware path-to-file-URL conversion. Its
+regression test requires that conversion and rejects the Windows-incompatible
+hand-built URL, alongside the existing manifest, generated-header and workflow
+checks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5ca13e2fa">Website releases publish Meteor from the version the build actually uses</a>. Thanks to xet7.</summary>
+
+WeKan v11.50 was built from `.meteor/release`, which contained
+`METEOR@3.5.2-rc.0`, but `wekan.fi/version.txt` reported `3.5.2-beta.0`. The
+website generator did not read the build pin; it read a duplicated
+`METEOR_RELEASE` value in `Dockerfile`, and that copy had not changed when Meteor
+advanced from beta to release candidate.
+
+The manifest now reads `.meteor/release` directly, while every release bump also
+synchronizes Docker's runtime metadata from that canonical file. Current Docker
+metadata is corrected to `3.5.2-rc.0`. Regression coverage deliberately gives the
+generator a stale beta Dockerfile beside an rc Meteor pin and verifies both
+`version.txt` and the install page publish the rc version.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f2bb456be">The release workflow rejects every stale release-critical version</a>. Thanks to xet7.</summary>
+
+`release-all.yml` previously trusted that `version.sh` had found and rewritten every
+copy before committing the bump. A missed pattern could therefore pass silently and
+be consumed later by one platform or the website. The bump job now runs one shared,
+read-only consistency gate before its commit step. It verifies the WeKan version in
+`package.json`, both package-lock roots, Docker, Snap, Stacker and Sandstorm; every
+Snap bundle URL; and Docker's Meteor metadata against `.meteor/release`.
+
+Each mismatch produces a named Actions error and stops the workflow before the bump
+is pushed or any publishing job starts. Positive coverage runs the verifier against
+the current checkout, while negative fixtures prove that stale Snap and Meteor
+values fail the release.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/509662948">Git mirror updates work from the documented Linux, macOS and Windows checkouts</a>. Thanks to xet7.</summary>
+
+The Unix mirror script used a quoted `~/repos/wekan` path, whose tilde could not
+expand, and kept the entire update workflow inside the condition that created
+`.tools`; after the directory existed, later runs did nothing. It now derives the
+active checkout from the script location, working at `~/repos/wekan` on Linux and
+`~/Documents/repos/wekan` on macOS, and always keeps the GitLab and Codeberg mirror
+clones below that checkout's ignored `.tools` directory. Existing clones are updated
+on every run, and a missing `upstream` remote is added safely.
+
+The matching Windows batch script uses
+`%USERPROFILE%\Downloads\repos\wekan\.tools`, checks every Git operation and performs
+the same clone, pull, upstream fetch, merge and push sequence. Non-network regression
+coverage pins all three checkout roots, both mirror destinations, repeat-run updates
+and the absence of the quoted-tilde fault. These remain human-run publishing scripts;
+the tests inspect them without contacting a remote.
+
+</details>
+
 # v11.50 2026-09-05 WeKan ® release
 
 **In short:** **Undo** stops being position-only: it now reads a new universal

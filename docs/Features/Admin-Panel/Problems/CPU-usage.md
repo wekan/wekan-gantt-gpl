@@ -13,6 +13,13 @@ other software. This subsystem (1) **watches** system-wide CPU and reports susta
 high-CPU periods, and (2) lets long operations **slow down** and yield when the
 machine is already busy.
 
+The low-load maintenance scheduler and rolling statistics shown in Problems →
+Speed are specified in
+[Verified FerretDB SQLite recovery](../../../Databases/FerretDB/1/Verified-Recovery.md#low-load-scheduling-and-cpu-statistics).
+CPU-intensive snapshots, checksums, migration comparisons and history audits must
+use that scheduler; corruption recovery needed to make startup safe is the urgent
+exception.
+
 ## 1. Requirements
 
 1. While WeKan (and FerretDB alongside it) run, watch that CPU usage does not go too
@@ -136,6 +143,13 @@ The `cpu` value is added to `EVENT_STREAMS` (`models/eventLog.js`); the report r
 the generic `eventStreamReport` (`stream="cpu"`) and its `eventLogPage` method, so it
 gets search + pagination like Security/Speed/Tests. A "CPU usage" item is added to
 the Admin Panel → Problems side menu.
+
+The monitor also retains a bounded rolling sample window (720 samples by default)
+and exposes minimum, average, maximum, sample count and the time of the lowest sample
+in both Problems → Speed and Problems → CPU usage. `runWhenCpuLow()` grants one heavy
+maintenance lease only after three consecutive below-threshold samples; another job
+waits, and a job whose window never arrives is deferred. The current activity label
+and existing governor remain active throughout the lease.
 
 ## 3. Tuning (environment variables)
 

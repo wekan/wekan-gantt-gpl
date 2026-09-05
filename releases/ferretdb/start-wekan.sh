@@ -139,6 +139,17 @@ CPU_EXEC="$DIR/cpu-exec"
 while true; do
   if [ "$want_ferret" = true ]; then
     export DO_NOT_TRACK=1 FERRETDB_TELEMETRY=disable
+    # Verified recovery runs while SQLite is at rest. Exit 3 means the live DB
+    # and both local snapshot generations are unusable; a retained MongoDB source
+    # (snap migration) is then the only automatic source, which bundles do not own.
+    if [ -f "$DIR/sqlite-recovery.mjs" ]; then
+      _recovery_rc=0
+      "$NODE" "$DIR/sqlite-recovery.mjs" startup "$FERRETDB_SQLITE_DIR" "$FERRETDB_BIN" || _recovery_rc=$?
+      if [ "$_recovery_rc" -ne 0 ]; then
+        echo "Recovery could not produce a verified SQLite database (status $_recovery_rc)." >&2
+        exit "$_recovery_rc"
+      fi
+    fi
     # #6492 recovery: perform a REQUESTED restore before FerretDB opens the files, when
     # the live database has been detected corrupt (WEKAN_FORCE_RESTORE env or a
     # RESTORE_REQUESTED marker containing backup/prev/remigrate). Copies a known-good
@@ -158,17 +169,27 @@ while true; do
       _ts="$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo '')"
       printf 'recovery %s\n' "$_restore_mode" > "$FERRETDB_SQLITE_DIR/RECOVERY_IN_PROGRESS" 2>/dev/null || true
       if [ -n "$_rsrc" ]; then
-        rm -f "$FERRETDB_SQLITE_DIR/wekan.sqlite-wal" "$FERRETDB_SQLITE_DIR/wekan.sqlite-shm"
-        cp -f "$_rsrc"/wekan.sqlite* "$FERRETDB_SQLITE_DIR/" 2>/dev/null || true
-        printf '{"type":"restore-%s","db":"wekan","severity":"warning","source":"startup","detail":"Restored wekan.sqlite from a backup copy","ts":"%s"}\n' \
-          "$_restore_mode" "$_ts" >> "$FERRETDB_SQLITE_DIR/recovery-events.jsonl" 2>/dev/null || true
-        echo "Recovery: restored text-data database from $_rsrc."
+        if cp -f "$_rsrc"/wekan.sqlite* "$FERRETDB_SQLITE_DIR/" 2>/dev/null; then
+          rm -f "$FERRETDB_SQLITE_DIR/wekan.sqlite-wal" "$FERRETDB_SQLITE_DIR/wekan.sqlite-shm"
+          printf '{"type":"restore-%s","db":"wekan","severity":"warning","source":"startup","detail":"Restored wekan.sqlite from a backup copy","ts":"%s"}\n' \
+            "$_restore_mode" "$_ts" >> "$FERRETDB_SQLITE_DIR/recovery-events.jsonl" 2>/dev/null || true
+          echo "Recovery: restored text-data database from $_rsrc."
+          rm -f "$FERRETDB_SQLITE_DIR/RESTORE_REQUESTED"
+        else
+          printf '{"type":"restore-failed","db":"wekan","severity":"error","source":"startup","detail":"Could not copy the requested backup; request retained for retry","ts":"%s"}\n' \
+            "$_ts" >> "$FERRETDB_SQLITE_DIR/recovery-events.jsonl" 2>/dev/null || true
+          echo "Recovery: restore copy failed; request retained for retry." >&2
+        fi
       elif [ "$_restore_mode" = "remigrate" ]; then
         printf '{"type":"remigrate","db":"wekan","severity":"warning","source":"startup","detail":"Re-migration of text data from MongoDB requested","ts":"%s"}\n' \
           "$_ts" >> "$FERRETDB_SQLITE_DIR/recovery-events.jsonl" 2>/dev/null || true
         echo "Recovery: re-migration from MongoDB requested."
+        rm -f "$FERRETDB_SQLITE_DIR/RESTORE_REQUESTED"
+      else
+        printf '{"type":"manual-required","db":"wekan","severity":"error","source":"startup","detail":"Requested recovery source is invalid or missing; request retained for retry","ts":"%s"}\n' \
+          "$_ts" >> "$FERRETDB_SQLITE_DIR/recovery-events.jsonl" 2>/dev/null || true
+        echo "Recovery: requested source is invalid or missing; request retained." >&2
       fi
-      rm -f "$FERRETDB_SQLITE_DIR/RESTORE_REQUESTED"
     fi
     # #6492 safety: rotating backup of the TEXT-DATA database (wekan.sqlite*) into a
     # "backup" subfolder of the same data dir, so a known copy is ready to restore if
@@ -176,17 +197,22 @@ while true; do
     # the files. Only ever COPIES from the live database (never moved/deleted) and only
     # wekan.sqlite* (attachments/avatars live on the filesystem). The previous backup
     # is kept under backup/prev. Set WEKAN_SQLITE_BACKUP=false to disable.
-    if [ "${WEKAN_SQLITE_BACKUP:-true}" = "true" ] && [ -n "$FERRETDB_SQLITE_DIR" ] && [ -f "$FERRETDB_SQLITE_DIR/wekan.sqlite" ]; then
+    if [ ! -f "$DIR/sqlite-recovery.mjs" ] && [ "${WEKAN_SQLITE_BACKUP:-true}" = "true" ] && [ -n "$FERRETDB_SQLITE_DIR" ] && [ -f "$FERRETDB_SQLITE_DIR/wekan.sqlite" ]; then
       _bk="$FERRETDB_SQLITE_DIR/backup"
       mkdir -p "$_bk"
       if [ -f "$_bk/wekan.sqlite" ]; then
         rm -rf "$_bk/prev"; mkdir -p "$_bk/prev"
         cp -f "$_bk"/wekan.sqlite* "$_bk/prev/" 2>/dev/null || true
       fi
-      cp -f "$FERRETDB_SQLITE_DIR"/wekan.sqlite* "$_bk/" 2>/dev/null || true
-      echo "Backed up text-data database (wekan.sqlite*) to $_bk (previous kept in $_bk/prev)."
-      printf '{"type":"backup-created","db":"wekan","severity":"info","source":"startup","detail":"Backed up wekan.sqlite to backup/","ts":"%s"}\n' \
-        "$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo '')" >> "$FERRETDB_SQLITE_DIR/recovery-events.jsonl" 2>/dev/null || true
+      if cp -f "$FERRETDB_SQLITE_DIR"/wekan.sqlite* "$_bk/" 2>/dev/null; then
+        echo "Backed up text-data database (wekan.sqlite*) to $_bk (previous kept in $_bk/prev)."
+        printf '{"type":"backup-created","db":"wekan","severity":"info","source":"startup","detail":"Backed up wekan.sqlite to backup/","ts":"%s"}\n' \
+          "$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo '')" >> "$FERRETDB_SQLITE_DIR/recovery-events.jsonl" 2>/dev/null || true
+      else
+        printf '{"type":"backup-failed","db":"wekan","severity":"error","source":"startup","detail":"Could not copy wekan.sqlite to backup/; previous backup was retained","ts":"%s"}\n' \
+          "$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo '')" >> "$FERRETDB_SQLITE_DIR/recovery-events.jsonl" 2>/dev/null || true
+        echo "Recovery: text-data backup failed; previous backup retained." >&2
+      fi
     fi
     echo "Starting bundled FerretDB v1 (SQLite) on $FERRETDB_LISTEN_ADDR (data: $FERRETDB_SQLITE_DIR) ..."
     ${CPU_EXEC:+"$CPU_EXEC"} "$FERRETDB_BIN" \

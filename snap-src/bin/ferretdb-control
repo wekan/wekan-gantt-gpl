@@ -119,6 +119,34 @@ mkdir -p "$SQLITE_DIR"
 # let it be re-enabled). DO_NOT_TRACK/FERRETDB_TELEMETRY are belt-and-suspenders.
 export DO_NOT_TRACK=1 FERRETDB_TELEMETRY=disable
 
+# Verify the live database and automatically restore the newest usable local
+# snapshot before FerretDB opens SQLite. If no SQLite generation survives but
+# raw MongoDB migration data is retained, hand the next service start back to
+# migration-control instead of serving known-corrupt data.
+if [ -f "$SNAP/sqlite-recovery.mjs" ]; then
+    _recovery_rc=0
+    "$SNAP/bin/node" "$SNAP/sqlite-recovery.mjs" startup "$SQLITE_DIR" "$FERRETDB_BIN" || _recovery_rc=$?
+    if [ "$_recovery_rc" -eq 3 ]; then
+        if [ -f "$SNAP_COMMON/WiredTiger" ] || ls "$SNAP_COMMON"/collection-*.wt >/dev/null 2>&1; then
+            _quarantine="$SQLITE_DIR/.recovery/quarantine-$(date -u +%Y%m%dT%H%M%SZ)"
+            mkdir -p "$_quarantine"
+            for _damaged in "$SQLITE_DIR"/wekan.sqlite "$SQLITE_DIR"/wekan.sqlite-wal "$SQLITE_DIR"/wekan.sqlite-shm; do
+                [ -e "$_damaged" ] && mv "$_damaged" "$_quarantine/"
+            done
+            rm -f "$SNAP_COMMON/.migration-to-ferretdb-done"
+            touch "$SNAP_COMMON/.migration-retry"
+            printf '{"type":"remigrate","db":"wekan","severity":"warning","source":"startup","detail":"All verified SQLite generations failed; damaged files quarantined and retained MongoDB source scheduled","ts":"%s"}\n' \
+                "$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo '')" >> "$SQLITE_DIR/recovery-events.jsonl" 2>/dev/null || true
+            echo "Recovery: local SQLite generations failed; retained MongoDB source scheduled for automatic re-migration."
+            snapctl start --enable "${SNAP_NAME}.mongodb" 2>/dev/null || true
+            snapctl restart "${SNAP_NAME}.wekan" 2>/dev/null || true
+        fi
+        exit 3
+    elif [ "$_recovery_rc" -ne 0 ]; then
+        exit "$_recovery_rc"
+    fi
+fi
+
 # #6480/#6481: a replica-set name makes FerretDB v1 auto-create the capped
 # local.oplog.rs and advertise the replica-set hello handshake, so WeKan's Meteor
 # CAN tail the OpLog. But the OpLog is only useful when WeKan is ACTUALLY tailing it
@@ -158,17 +186,27 @@ if [ -n "${_restore_mode}" ] && [ -n "${SQLITE_DIR}" ]; then
     # confirms the database is healthy again (the server clears this marker).
     printf 'recovery %s\n' "${_restore_mode}" > "${SQLITE_DIR}/RECOVERY_IN_PROGRESS" 2>/dev/null || true
     if [ -n "${_rsrc}" ]; then
-        rm -f "${SQLITE_DIR}/wekan.sqlite-wal" "${SQLITE_DIR}/wekan.sqlite-shm"
-        cp -f "${_rsrc}"/wekan.sqlite* "${SQLITE_DIR}/" 2>/dev/null || true
-        printf '{"type":"restore-%s","db":"wekan","severity":"warning","source":"startup","detail":"Restored wekan.sqlite from a backup copy","ts":"%s"}\n' \
-            "${_restore_mode}" "${_ts}" >> "${SQLITE_DIR}/recovery-events.jsonl" 2>/dev/null || true
-        echo "Recovery: restored text-data database from ${_rsrc}."
+        if cp -f "${_rsrc}"/wekan.sqlite* "${SQLITE_DIR}/" 2>/dev/null; then
+            rm -f "${SQLITE_DIR}/wekan.sqlite-wal" "${SQLITE_DIR}/wekan.sqlite-shm"
+            printf '{"type":"restore-%s","db":"wekan","severity":"warning","source":"startup","detail":"Restored wekan.sqlite from a backup copy","ts":"%s"}\n' \
+                "${_restore_mode}" "${_ts}" >> "${SQLITE_DIR}/recovery-events.jsonl" 2>/dev/null || true
+            echo "Recovery: restored text-data database from ${_rsrc}."
+            rm -f "${SQLITE_DIR}/RESTORE_REQUESTED"
+        else
+            printf '{"type":"restore-failed","db":"wekan","severity":"error","source":"startup","detail":"Could not copy the requested backup; request retained for retry","ts":"%s"}\n' \
+                "${_ts}" >> "${SQLITE_DIR}/recovery-events.jsonl" 2>/dev/null || true
+            echo "Recovery: restore copy failed; request retained for retry." >&2
+        fi
     elif [ "${_restore_mode}" = "remigrate" ]; then
         printf '{"type":"remigrate","db":"wekan","severity":"warning","source":"startup","detail":"Re-migration of text data from MongoDB requested","ts":"%s"}\n' \
             "${_ts}" >> "${SQLITE_DIR}/recovery-events.jsonl" 2>/dev/null || true
         echo "Recovery: re-migration from MongoDB requested (handled by migration-control)."
+        rm -f "${SQLITE_DIR}/RESTORE_REQUESTED"
+    else
+        printf '{"type":"manual-required","db":"wekan","severity":"error","source":"startup","detail":"Requested recovery source is invalid or missing; request retained for retry","ts":"%s"}\n' \
+            "${_ts}" >> "${SQLITE_DIR}/recovery-events.jsonl" 2>/dev/null || true
+        echo "Recovery: requested source is invalid or missing; request retained." >&2
     fi
-    rm -f "${SQLITE_DIR}/RESTORE_REQUESTED"
 fi
 
 # #6492 safety: keep a rotating backup of the TEXT-DATA database (wekan.sqlite*) in a
@@ -179,7 +217,7 @@ fi
 # are left as-is). The previous backup generation is kept under backup/prev, so a bad
 # copy never overwrites the last good one on its own. Set WEKAN_SQLITE_BACKUP=false to
 # disable.
-if [ "${WEKAN_SQLITE_BACKUP:-true}" = "true" ] && [ -n "${SQLITE_DIR}" ] && [ -f "${SQLITE_DIR}/wekan.sqlite" ]; then
+if [ ! -f "$SNAP/sqlite-recovery.mjs" ] && [ "${WEKAN_SQLITE_BACKUP:-true}" = "true" ] && [ -n "${SQLITE_DIR}" ] && [ -f "${SQLITE_DIR}/wekan.sqlite" ]; then
     _bk="${SQLITE_DIR}/backup"
     mkdir -p "${_bk}"
     if [ -f "${_bk}/wekan.sqlite" ]; then
@@ -187,13 +225,15 @@ if [ "${WEKAN_SQLITE_BACKUP:-true}" = "true" ] && [ -n "${SQLITE_DIR}" ] && [ -f
         mkdir -p "${_bk}/prev"
         cp -f "${_bk}"/wekan.sqlite* "${_bk}/prev/" 2>/dev/null || true
     fi
-    cp -f "${SQLITE_DIR}"/wekan.sqlite* "${_bk}/" 2>/dev/null || true
-    echo "Backed up text-data database (wekan.sqlite*) to ${_bk} (previous kept in ${_bk}/prev)."
-    # Record the action so it shows in Admin Panel / Problems / Recovery. The WeKan
-    # server imports these JSON lines on startup. Only fixed strings (no user input),
-    # so no escaping is needed.
-    printf '{"type":"backup-created","db":"wekan","severity":"info","source":"startup","detail":"Backed up wekan.sqlite to backup/","ts":"%s"}\n' \
-        "$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo '')" >> "${SQLITE_DIR}/recovery-events.jsonl" 2>/dev/null || true
+    if cp -f "${SQLITE_DIR}"/wekan.sqlite* "${_bk}/" 2>/dev/null; then
+        echo "Backed up text-data database (wekan.sqlite*) to ${_bk} (previous kept in ${_bk}/prev)."
+        printf '{"type":"backup-created","db":"wekan","severity":"info","source":"startup","detail":"Backed up wekan.sqlite to backup/","ts":"%s"}\n' \
+            "$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo '')" >> "${SQLITE_DIR}/recovery-events.jsonl" 2>/dev/null || true
+    else
+        printf '{"type":"backup-failed","db":"wekan","severity":"error","source":"startup","detail":"Could not copy wekan.sqlite to backup/; previous backup was retained","ts":"%s"}\n' \
+            "$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo '')" >> "${SQLITE_DIR}/recovery-events.jsonl" 2>/dev/null || true
+        echo "Recovery: text-data backup failed; previous backup retained." >&2
+    fi
 fi
 
 # #6492: reset the FerretDB simulated OpLog on start. FerretDB v1's SQLite OpLog

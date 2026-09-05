@@ -233,6 +233,22 @@ async function main() {
       'and iterate it rather than guessing at a pattern');
   });
 
+  check('Windows tar paths produce real-file manifest entries', () => {
+    const names = payload.archiveMemberNames(
+      'bundle\\node.exe\r\nbundle\\programs\\server\\native\\addon.node\r\n');
+    const members = payload.realFileMembers(names);
+    assert.deepEqual(members, [
+      'bundle/node.exe',
+      'bundle/programs/server/native/addon.node',
+    ]);
+    assert.match(payload.manifestHeader(members), /WEKAN_REAL_FILE_COUNT 2/);
+  });
+
+  check('an empty real-file manifest fails before the C compiler', () => {
+    assert.throws(() => payload.manifestHeader([]),
+      /no executable, native addon, or startup member/);
+  });
+
   // ---- the launcher --------------------------------------------------------
   check('the launcher verifies, unpacks only those members, and mounts the rest', () => {
     assert.match(launcher, /BCRYPT_SHA256_ALGORITHM/,
@@ -344,6 +360,13 @@ async function main() {
       'the payload ZIP must match the checksum published beside it');
     assert.match(workflow, /'wekan-vfs\.cjs'\)\) \{|'wekan-vfs\.cjs'/,
       'the payload must contain the in-process mount the EXE preloads');
+  });
+
+  check('the packer CLI starts on Windows paths as well as POSIX paths', () => {
+    assert.match(packer, /pathToFileURL\(process\.argv\[1\]\)\.href/,
+      'Node must convert the entry path to a platform-correct file URL');
+    assert.doesNotMatch(packer, /`file:\/\/\$\{path\.resolve\(process\.argv\[1\]\)\}`/,
+      'a hand-built file URL prevents the CLI body from running on Windows');
   });
 
   // Negative: 11.48 shipped because start-wekan.bat restarts WeKan every three

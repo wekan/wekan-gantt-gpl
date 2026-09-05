@@ -16,13 +16,16 @@ const RecoveryEvents = new Mongo.Collection('recoveryEvents');
 RecoveryEvents.types = {
   CORRUPTION_DETECTED: 'corruption-detected',
   BACKUP_CREATED: 'backup-created',
+  BACKUP_FAILED: 'backup-failed',
   BACKUP_VERIFIED: 'backup-verified',
   RESTORE_BACKUP: 'restore-backup',
   RESTORE_PREV: 'restore-prev',
+  RESTORE_FAILED: 'restore-failed',
   REMIGRATE: 'remigrate',
   BLOAT_REPAIRED: 'bloat-repaired',
   INTEGRITY_OK: 'integrity-ok',
   MANUAL_REQUIRED: 'manual-required',
+  HISTORY_INTEGRITY_FAILED: 'history-integrity-failed',
   PERMANENT_DELETE_SETTING_CHANGED: 'permanent-delete-setting-changed',
   BOARD_PERMANENTLY_DELETED: 'board-permanently-deleted',
 };

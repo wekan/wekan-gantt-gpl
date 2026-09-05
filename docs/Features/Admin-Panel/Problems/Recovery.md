@@ -4,7 +4,7 @@
 > The layout, search, pagination, column spec and per-page data loading are defined
 > there and are not repeated here.
 
-Status: **Implemented** · Owner: xet7 · Related (#6492):
+Status: **Implemented for bundled FerretDB SQLite launch paths** · Owner: xet7 · Related (#6492):
 `models/lib/recoveryPlan.js`, `models/lib/recoveryEventsJsonl.js`,
 `models/recoveryEvents.js`, `server/recovery.js`,
 `server/publications/recoveryReport.js`, `client/components/settings/adminProblems.*`,
@@ -12,12 +12,23 @@ Status: **Implemented** · Owner: xet7 · Related (#6492):
 (`internal/backends/sqlite/metadata/pool/opendb.go`,
 `internal/handler/handler.go`).
 
+The implementation target and safety invariants are defined first in
+[Verified FerretDB SQLite recovery](../../../Databases/FerretDB/1/Verified-Recovery.md).
+That document is authoritative for snapshot format, checksums, disk-space gates,
+automatic source selection, migration fallback and low-load scheduling.
+
+All work that may still be running when the process stops also follows the
+[restart-safe background and external operations](Durable-Operations.md) design.
+That contract defines persisted checkpoints and leases, idempotent replay,
+shutdown behavior, external-service timeouts, rate-limit-aware backoff and the
+Recovery evidence required when work is reclaimed after a restart.
+
 When WeKan stores its data in FerretDB v1 (SQLite), the text data lives in
 `wekan.sqlite`. Attachments and avatars live on the **filesystem**, not in the
 database. This subsystem keeps that text data safe: it prevents the database from
-bloating, detects corruption, keeps a ready-to-use backup, can restore or re-migrate
-automatically, and shows the whole remediation history in Admin Panel → Problems →
-**Recovery**.
+bloating, detects corruption, keeps a ready-to-use backup, restores or re-migrates
+when an operator requests it, and shows the remediation history in Admin Panel →
+Problems → **Recovery**.
 
 ## What each layer does
 
@@ -54,10 +65,35 @@ bundled release `start-wekan.sh`, the Docker `wekan-entrypoint.sh`):
 
 ### The recovery decision
 
-`models/lib/recoveryPlan.js` (`decideRecovery`) is the pure, unit-tested brain: given
+`models/lib/recoveryPlan.js` (`decideRecovery`) is the pure, unit-tested policy: given
 the integrity result and what backups / MongoDB are available, it chooses the
 least-invasive recovery — latest good backup → previous backup → re-migrate → (else)
 manual. It never chooses anything destructive unless the database is **known corrupt**.
+The launch scripts implement this policy through `sqlite-recovery.mjs` and FerretDB's
+read-only `check-sqlite` command. They verify the live file before FerretDB opens it,
+then restore and re-check latest or previous compressed snapshots. Snap quarantines
+unusable SQLite files and re-runs migration when retained MongoDB source files exist.
+
+## Failure coverage and recovery ownership
+
+| Failure | Mitigation / recovery | Problems → Recovery |
+| --- | --- | --- |
+| Transient OpLog is corrupt or bloated | Removed at startup and recreated automatically | Startup output; text-data events are separate |
+| Text database is corrupt | Startup tries latest, previous, then retained MongoDB migration source | `corruption-detected`, then the automatic outcome |
+| Requested backup is missing or mode is invalid | Live data is left in place and the request is retained | `manual-required` |
+| Restore copy fails | No success is reported; marker and request remain for retry | `restore-failed` |
+| Backup copy fails | Startup continues and the prior generation remains available | `backup-failed` |
+| Recovery succeeds but database remains unreadable | Maintenance state remains instead of exposing a broken app | `manual-required` |
+| Bundled WeKan process exits | Bundle supervisor loop starts it again | Process logs; no database remediation is claimed |
+| Container or snap process exits | Docker/snap service manager owns restart policy | Service-manager logs; no false Recovery row |
+| Background job process exits | An expired persisted lease is reclaimed and execution continues at its last verified unit | `job-reclaimed-after-restart` and subsequent outcome |
+| External service throttles or times out | Persist `nextAttemptAt`, honor `Retry-After`, and retry with bounded exponential jitter | Attempt, provider, checkpoint and next retry |
+
+Verified snapshots are gzip-compressed below `<sqlite-dir>/.recovery`, carry SHA-256
+and byte counts for compressed and uncompressed forms, and are published only after a
+staged decompression verifies. Free space is checked without assuming compression.
+Non-urgent creation waits for a low-load startup window; corrupt startup recovery is
+urgent and does not leave the application serving known-corrupt text data.
 
 ### What users see during a recovery
 
@@ -93,9 +129,10 @@ collection (`server/recovery.js`), and the **Recovery** report
 same search + pagination as the other admin reports. Admins can also record a manual
 event with the `recordRecoveryEvent` method.
 
-Event types include `backup-created`, `corruption-detected`, `restore-backup`,
-`restore-prev`, `remigrate`, `bloat-repaired`, `integrity-ok`, `manual-required`, each
-with a severity (info / warning / error).
+Event types include `snapshot-created`, `snapshot-deferred`, `snapshot-failed`,
+`backup-created`, `backup-failed`, `corruption-detected`,
+`restore-backup`, `restore-prev`, `restore-failed`, `remigrate`, `bloat-repaired`,
+`integrity-ok`, `manual-required`, each with a severity (info / warning / error).
 
 Recovery also keeps the audit trail for irreversible board deletion. Changing
 Admin Panel → Problems → Delete records `permanent-delete-setting-changed` with
@@ -156,6 +193,7 @@ Recovery report.
   cannot produce success records.
 - `tests/ferretdbTextDataBackup.test.cjs` — the backup/restore scripts (critical
   negatives: never delete the live text data or a backup copy, never copy
-  attachments/avatars).
+  attachments/avatars, never report a failed copy as success, and retain failed
+  restore requests for automatic retry on restart).
 - FerretDB: `opendb_test.go` (corruption check + bloat `VACUUM`) and
   `msg_replset_test.go` (OpLog cap).
