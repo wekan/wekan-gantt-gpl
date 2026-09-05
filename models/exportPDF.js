@@ -9,6 +9,58 @@ runOnServer(function() {
   // it here we use runOnServer to have it inside a function instead of an
   // if (Meteor.isServer) block
   const { ExporterCardPDF, ExporterBoardPDF } = require('./server/ExporterCardPDF');
+
+  const { CARD_EXPORT_FIELD_KEYS, BOARD_EXPORT_FIELD_KEYS, parseExportFields, parseExportScope } =
+    require('/models/lib/exportFields');
+
+  // What formatDateByUserPreference understands, and nothing else.
+  const DATE_FORMATS = ['YYYY-MM-DD', 'DD-MM-YYYY', 'MM-DD-YYYY'];
+
+  // #1173: the popup's checkboxes, and - for the board export - which swimlane
+  // or list was asked for, since those menus offer the same export.
+  const exportSelection = (req, allowed) => ({
+    fields: parseExportFields(req.query && req.query.fields, allowed),
+    scope: parseExportScope(req.query),
+  });
+
+  // #6586: the two things the export needs about the reader and the server
+  // cannot know on its own.
+  //
+  // The LANGUAGE is the profile's, and `?lang=` is the fallback - a PUBLIC board
+  // has no logged-in user to read one off. Loading the bundle is what makes the
+  // labels come out translated; an unsupported tag falls back to English rather
+  // than failing the download. Same order, and the same silent fallback, as the
+  // Excel card export.
+  //
+  // The TIMEZONE is `?tz=` and nothing else: dates are stored in UTC, a WeKan
+  // profile carries no zone, and printing UTC to a reader in Berlin is the
+  // reported "-2h wrong". The browser sends its IANA name; an export URL
+  // without it prints UTC and says UTC.
+  const exportLocale = async (req, user) => {
+    let language = (user && user.profile && user.profile.language)
+      || (req.query && req.query.lang)
+      || 'en';
+    try {
+      await TAPi18n.loadLanguage(language);
+    } catch (error) {
+      language = 'en';
+    }
+    const timezone = (req.query && typeof req.query.tz === 'string' && req.query.tz.length <= 64)
+      ? req.query.tz
+      : '';
+
+    // The DATE FORMAT the opened card is showing. The client sends it because
+    // for a reader who is not logged in it lives in localStorage, which no
+    // profile lookup here can reach; the profile is the fallback. Only the three
+    // formats formatDateByUserPreference understands are accepted, so a query
+    // string cannot put arbitrary text where a date belongs.
+    const requested = req.query && req.query.dateFormat;
+    const dateFormat = DATE_FORMATS.includes(requested)
+      ? requested
+      : ((user && user.profile && user.profile.dateFormat) || 'YYYY-MM-DD');
+
+    return { language, timezone, dateFormat };
+  };
   const { WebApp } = require('meteor/webapp');
   const { safeRoute } = require('/server/apiMiddleware');
   const { Authentication } = require('/server/authentication');
@@ -52,10 +104,15 @@ runOnServer(function() {
     // If board is public, skip expensive authentication operations
     if (board.isPublic()) {
       // Public boards don't require authentication - skip hash operations
+      const { language, timezone, dateFormat } = await exportLocale(req, null);
       const exporterCardPDF = new ExporterCardPDF(
         boardId,
         paramListId,
         paramCardId,
+        language,
+        timezone,
+        dateFormat,
+        exportSelection(req, CARD_EXPORT_FIELD_KEYS).fields,
       );
       await exporterCardPDF.build(res);
       return;
@@ -99,10 +156,15 @@ runOnServer(function() {
       });
     }
 
+    const { language, timezone, dateFormat } = await exportLocale(req, user);
     const exporterCardPDF = new ExporterCardPDF(
       boardId,
       paramListId,
       paramCardId,
+      language,
+      timezone,
+      dateFormat,
+      exportSelection(req, CARD_EXPORT_FIELD_KEYS).fields,
     );
     if (await exporterCardPDF.canExport(user)) {
       if (impersonateDone) {
@@ -139,7 +201,14 @@ runOnServer(function() {
     }
 
     if (board.isPublic()) {
-      await new ExporterBoardPDF(boardId).build(res);
+      const { language, timezone, dateFormat } = await exportLocale(req, null);
+      const selection = exportSelection(req, BOARD_EXPORT_FIELD_KEYS);
+      const publicExporter = new ExporterBoardPDF(
+        boardId, language, timezone, dateFormat, selection.fields, selection.scope);
+      // On ONE line, and awaited: tests/excelExport.test.cjs reads it line by
+      // line because an un-awaited build(res) is #6591 - a rejection that goes
+      // nowhere and a response that is never ended.
+      await publicExporter.build(res);
       return;
     }
 
@@ -171,7 +240,10 @@ runOnServer(function() {
       user = await ReactiveCache.getUser({ _id: req.userId });
     }
 
-    const exporter = new ExporterBoardPDF(boardId);
+    const { language, timezone, dateFormat } = await exportLocale(req, user);
+    const selection = exportSelection(req, BOARD_EXPORT_FIELD_KEYS);
+    const exporter = new ExporterBoardPDF(
+      boardId, language, timezone, dateFormat, selection.fields, selection.scope);
     if (await exporter.canExport(user)) {
       await exporter.build(res);
     } else {

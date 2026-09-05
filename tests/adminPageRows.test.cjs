@@ -72,7 +72,7 @@ function test(name, fn) { fn(); passed += 1; console.log('  ok -', name); }
     assert.deepStrictEqual(sent[0][2], { ids: ['x'] });
   });
 
-  test('People: the server names the page with the publication\'s own window', () => {
+  test('#4897 People: the server names the page with the publication\'s own window', () => {
     const server = read('server/models/users.js');
     const at = server.indexOf('async getPeoplePageIds(');
     assert.ok(at !== -1, 'the method must exist');
@@ -93,7 +93,17 @@ function test(name, fn) { fn(); passed += 1; console.log('  ok -', name); }
     assert.ok(/fields: \{ _id: 1 \}/.test(method), 'ids only - the documents come from the publication');
   });
 
-  test('People: the table renders that page and nothing else', () => {
+  test('#4897 People: every row publishes stable identity and account fields', () => {
+    const pub = read('server/publications/people.js');
+    for (const field of ['emails', 'createdAt', 'authenticationMethod']) {
+      assert.ok(new RegExp(`\\b${field}: 1`).test(pub),
+        `the People publication must include ${field}`);
+    }
+    assert.ok(/sort: \{ createdAt: -1 \}/.test(pub),
+      'the publication order must stay stable while the admin scrolls or pages');
+  });
+
+  test('#4897 People: the table renders that page and nothing else', () => {
     const client = read('client/components/settings/peopleBody.js');
     assert.ok(/Meteor\.call\('getPeoplePageIds'/.test(client), 'it asks which users the page holds');
     assert.ok(/_id: \{ \$in: ids \}/.test(client), 'and looks up exactly those');
@@ -233,7 +243,7 @@ function test(name, fn) { fn(); passed += 1; console.log('  ok -', name); }
   });
 
   test('Problems: and the pane renders the named page', () => {
-    const client = read('client/components/settings/adminReports.js');
+    const client = read('client/components/settings/adminProblems.js');
     // From REPORT_TABLES on: each report id appears earlier in reportConfig too.
     const tables = client.slice(client.indexOf('const REPORT_TABLES = {'));
     for (const reportId of ['report-broken', 'report-cards', 'report-boards']) {
@@ -246,8 +256,21 @@ function test(name, fn) { fn(); passed += 1; console.log('  ok -', name); }
         `${reportId} must not render everything the collection happens to hold`);
     }
     // The client side of the DDP-only index collection, from the shared name.
-    assert.ok(/new Mongo\.Collection\(REPORT_PAGE_COLLECTION\)/.test(client),
+    // It USED to be declared here; it moved to client/lib/reportPages.js because
+    // `new Mongo.Collection(name)` throws if the name is taken, so the second page
+    // to need it (/public, docs/Features/Page/Public.md) could not have one. What
+    // this guards is unchanged: declared once, from the shared constant, never
+    // from a typed string.
+    const shared = read('client/lib/reportPages.js');
+    assert.ok(/new Mongo\.Collection\(REPORT_PAGE_COLLECTION\)/.test(shared),
       'the index collection is declared from the shared constant, not a typed string');
+    assert.ok(/import \{ ReportPages \} from '\/client\/lib\/reportPages'/.test(client),
+      'and the Problems pane imports that one rather than declaring its own');
+    // On the CODE: the comment there names the call to explain why it moved, and
+    // a guard that reads its own explanation fails on it.
+    const clientCode = client.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+    assert.ok(!/new Mongo\.Collection\(/.test(clientCode),
+      'a second declaration of the same name would throw at load');
     assert.ok(/docsByIds\(ids, collection\.find\(\{ _id: \{ \$in: ids \} \}\)\.fetch\(\)\)/.test(client),
       'and the page is looked up by those ids, in that order');
   });

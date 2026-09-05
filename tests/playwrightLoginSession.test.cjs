@@ -36,6 +36,17 @@ function test(name, fn) {
 
 console.log('playwrightLoginSession:');
 
+test('token login seeds the native HttpOnly cookie before navigating', () => {
+  const cookie = auth.indexOf("name: 'meteor_login_token'");
+  const login = auth.indexOf('Meteor.loginWithToken(tok');
+  assert.ok(cookie > 0 && cookie < login,
+    'the persistent cookie must exist before login and later navigations');
+  assert.match(auth.slice(cookie, login), /httpOnly: true/,
+    'browser JavaScript must not be able to read the test credential');
+  assert.match(auth.slice(cookie, login), /sameSite: 'Lax'/,
+    'the test cookie must use the production cross-site boundary');
+});
+
 // The body of the init script passed to page.addInitScript(...).
 function initScript() {
   const at = auth.indexOf('page.addInitScript');
@@ -95,6 +106,19 @@ test('openBoard is what the fixture times out in, so it must still retry and rep
   assert.ok(/continue;/.test(fn), 'and a failed one moves to the next attempt');
   assert.ok(/last navigation error/.test(fn),
     'so the two failure modes can be told apart afterwards');
+});
+
+
+test('the final navigation waits for the expected resumed user', () => {
+  const at = auth.indexOf("await navigateInApp(page, '/')",
+    auth.indexOf('async function loginWithToken'));
+  const tail = auth.slice(at, auth.indexOf('async function loginWithCredentials'));
+  assert.ok(/navigateInApp\(page, '\/'\)[\s\S]*page\.waitForFunction\(/.test(tail),
+    'the live authenticated app navigates before checking Accounts identity');
+  assert.ok(/Meteor\.userId\(\) === expectedId/.test(tail),
+    'loginWithToken must not return while the final navigation is still anonymous');
+  assert.ok(/userId,[\s\S]*timeout: 15_000/.test(tail),
+    'the expected id is passed to a bounded wait so a real resume failure surfaces');
 });
 
 console.log(`\n${passed} tests passed`);

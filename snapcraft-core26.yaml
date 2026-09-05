@@ -19,6 +19,7 @@ base: core26
 build-base: devel
 confinement: strict
 grade: devel
+compression: lzo
 summary: Open Source kanban
 description: |
    WeKan ® is an Open Source and collaborative kanban board application.
@@ -37,7 +38,7 @@ contact: https://github.com/wekan/wekan/issues
 license: MIT
 donation: https://wekan.fi/commercial-support/
 issues: https://github.com/wekan/wekan/issues
-source-code: https://github.com/wekan/wekan
+source-code: https://github.com/wekan/wekan-gantt-gpl
 website: https://wekan.fi
 
 environment:
@@ -64,6 +65,25 @@ platforms:
   riscv64:
     build-on: riscv64
     build-for: riscv64
+  # 32-bit ARM, FerretDB-only for the same reason as the three above: MongoDB
+  # ships no server for it. armhf's Node.js comes from the bundle like every
+  # other arch's does - the wekan-armhf.zip carries the right one already, built
+  # by wekan/node-patches, which is the only one of WeKan's three Node.js
+  # sources that builds 32-bit ARM.
+  #
+  # It is here because THIS FILE IS THE NEXT BASE. snapcraft.yaml (core24) has
+  # all six architectures; this one had five, and the missing one does not
+  # announce itself - the day core26 becomes the base, armhf would simply stop
+  # being published and the store column would go stale exactly like
+  # wekan-ondra's did. tests/releaseSnapArches.test.cjs now requires the two
+  # files to declare the same set.
+  #
+  # There is NO i386 entry here either: no modern base has an i386 port, and
+  # `build-on: i386` is a PARSE error that fails every architecture's build, not
+  # only i386's. i386 users are served by the .deb and the AppImage.
+  armhf:
+    build-on: armhf
+    build-for: armhf
 
 plugs:
   mongodb-plug:
@@ -94,11 +114,12 @@ apps:
         daemon: simple
         plugs: [network, network-bind]
 
-    # Alternative MongoDB-compatible database: FerretDB v1 (the wekan/FerretDB
-    # fork) with its embedded SQLite backend. Only one of mongodb / ferretdb runs
-    # at a time; switch with `snap set wekan database=ferretdb` (the configure
-    # hook stops mongod and starts this, and vice-versa). The ferretdb binary is
-    # shipped inside the WeKan bundle (staged to $SNAP/ferretdb by the wekan part).
+    # The database WeKan runs on: FerretDB v1 (the wekan/FerretDB fork) with its
+    # embedded SQLite backend. The mongodb service beside it runs only while a
+    # migration is still owed - it is the source that is READ - and
+    # bin/database-role says which of the two that is, from the data. Both bind
+    # the same port, so one runs at a time. The ferretdb binary is shipped inside
+    # the WeKan bundle (staged to $SNAP/ferretdb by the wekan part).
     ferretdb:
         command: ./bin/ferretdb-control
         daemon: simple
@@ -120,6 +141,17 @@ apps:
     database-list-backups:
         command: ./bin/database-list-backups
 
+    # #6583/#6585: two copies of the data, and the snap serving the older one.
+    # compare says what each holds (changing nothing); merge inserts the missing
+    # documents into the copy WeKan serves.
+    database-compare:
+        command: ./bin/database-compare
+        plugs: [network, network-bind]
+
+    database-merge:
+        command: ./bin/database-merge
+        plugs: [network, network-bind]
+
     database-restore:
         command: ./bin/mongodb-restore
         plugs: [network, network-bind]
@@ -139,18 +171,19 @@ apps:
         command: ./bin/wekan-maintenance
         plugs: [network, network-bind]
 
-    database:
-        command: ./bin/wekan-database
-        plugs: [network, network-bind]
-
 
 parts:
     mongodb:
         plugin: nil
         #source: https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-ubuntu2204-7.0.34.tgz
+        # The t64 names, exactly as in snapcraft.yaml - see the long note there
+        # for why. Short version: Ubuntu's 64-bit time_t transition renamed
+        # these, the 64-bit architectures kept a compatibility Provides so the
+        # old spelling still resolves, and armhf did NOT - so the old names fail
+        # on armhf alone, which is the architecture added to this file above.
         stage-packages:
-            - libssl3
-            - libcurl4
+            - libssl3t64
+            - libcurl4t64
             - libstemmer0d
             - zlib1g
             - libsnappy1v5
@@ -161,7 +194,7 @@ parts:
             - libboost-iostreams1.83.0
             - libboost-filesystem1.83.0
             - libboost-program-options1.83.0
-            - libgoogle-perftools4
+            - libgoogle-perftools4t64
         override-build: |
             set -eu
             case "${CRAFT_ARCH_BUILD_FOR}" in
@@ -189,7 +222,7 @@ parts:
     # Node.js 24 + the `mongodb` driver via $SNAP/bin/db-eval (see snap-src/bin).
 
     # No separate mongotools part: the per-arch MongoDB Database Tools are already
-    # embedded in the wekan-<arch>.zip bundle (built from wekan/mongo-tools by
+    # embedded in the wekan-<arch>.zip bundle (built from wekan/mongo-tools-patches by
     # release-all.yml) and the wekan part above moves them from the bundle into
     # $SNAP/bin. This keeps the snap bundle-centric — every binary comes from the
     # one wekan-<arch>.zip — and avoids downloading the tools twice.
@@ -228,21 +261,14 @@ parts:
 
     wekan:
         source: .
-        plugin: npm
-        npm-node-version: 24.18.0
-        npm-include-node: true
+        # The release bundle is already rebuilt for this architecture, pruned,
+        # and carries its own Node.js. Launchpad used to delete its completed
+        # node_modules tree and repeat npm install on the slow exotic builder.
+        plugin: nil
         build-packages:
-            - build-essential
             - ca-certificates
-            - apt-utils
-            - python3
-            - g++
-            - capnproto
-            - curl
             - wget
             - unzip
-            - nodejs
-            - npm
         stage-packages:
             - libfontconfig1
         override-build: |
@@ -264,34 +290,18 @@ parts:
             wget "https://github.com/wekan/wekan/releases/download/v9.85/${WEKAN_ZIP}"
             unzip "${WEKAN_ZIP}"
             rm "${WEKAN_ZIP}"
-            # Fix: bcrypt 5.0.1 (Meteor accounts-password) ships node-addon-api@3
-            # which fails to compile on Node.js 24. Replace with bcrypt 6.0.0.
-            BCRYPT_DIR="bundle/programs/server/npm/node_modules/meteor/accounts-password/node_modules/bcrypt"
-            if [ -d "$BCRYPT_DIR" ]; then
-              rm -rf "$BCRYPT_DIR"
-              TMP=$(mktemp -d)
-              pushd "$TMP" > /dev/null
-              npm pack bcrypt@6.0.0
-              mkdir bcrypt && tar xzf bcrypt-*.tgz --strip-components=1 -C bcrypt
-              cd bcrypt && npm install --ignore-scripts && cd ..
-              popd > /dev/null
-              cp -a "$TMP/bcrypt" "$BCRYPT_DIR"
-              rm -rf "$TMP"
-            fi
-            cd bundle/programs/server
-            rm -rf node_modules
-            npm install
-            cd ../../../..
             # Copy to Snap. Use the bundle's OWN arch-correct Node.js: the
             # wekan-<arch>.zip already ships the right node for this platform
             # (nodejs.org for amd64/arm64/s390x/ppc64le, unofficial-builds.nodejs.org
-            # for riscv64), so the snap needs no separate node download and works on
-            # every arch the bundle is built for.
+            # for riscv64/loong64, wekan/node-patches for the 32-bit ones nobody
+            # else builds), so the snap needs no separate node download and works
+            # on every arch the bundle is built for - and only on those, since an
+            # arch with no Node.js anywhere has no bundle to take one from.
             mkdir -p $SNAPCRAFT_PART_INSTALL/bin
-            cp -p .build/bundle/node $SNAPCRAFT_PART_INSTALL/bin/node
+            cp -p bundle/node $SNAPCRAFT_PART_INSTALL/bin/node
             chmod +x $SNAPCRAFT_PART_INSTALL/bin/node
-            cp -r .build/bundle/* $SNAPCRAFT_PART_INSTALL/
-            cp .build/bundle/.node_version.txt $SNAPCRAFT_PART_INSTALL/
+            cp -r bundle/* $SNAPCRAFT_PART_INSTALL/
+            cp bundle/.node_version.txt $SNAPCRAFT_PART_INSTALL/
             rm -f $SNAPCRAFT_PART_INSTALL/lib/node_modules/wekan
             # The snap uses its own bin/node (copied from the bundle above) and
             # wekan-control, so drop the bundle's root-level node + self-contained
@@ -306,7 +316,9 @@ parts:
             done
             # Bundle the MongoDB -> FerretDB migrator (run by migration-control on
             # first boot when upgrading from an old MongoDB-based snap).
-            cp releases/migrate-mongodb-to-ferretdb.mjs $SNAPCRAFT_PART_INSTALL/bin/
+            # override-build is currently inside .build, so the repository's
+            # releases directory is one level up.
+            cp ../releases/migrate-mongodb-to-ferretdb.mjs $SNAPCRAFT_PART_INSTALL/bin/
 
         organize:
             README: README.wekan
@@ -340,7 +352,25 @@ parts:
                 s390x)   CADDY_ARCH=s390x ;;
                 ppc64el) CADDY_ARCH=ppc64le ;;   # Caddy uses ppc64le, not Debian's ppc64el
                 riscv64) CADDY_ARCH=riscv64 ;;
-                *) CADDY_ARCH="${CRAFT_ARCH_BUILD_FOR}" ;;
+                # Caddy is built by Go and its release assets carry GO's names,
+                # not Debian's: there is no linux_armhf archive, the 32-bit ARM
+                # ones are armv5, armv6 and armv7. The identical gap in
+                # snapcraft.yaml failed the whole armhf snap with a 404, and
+                # armhf is a platform of this file too now, so this branch is
+                # reached rather than merely prepared.
+                # armv7, not armv6: Debian armhf's baseline is ARMv7-A with
+                # VFPv3-D16, which is exactly Go's GOARM=7.
+                armhf)   CADDY_ARCH=armv7 ;;
+                *)
+                    # Not a guess. Passing the Debian name straight through
+                    # builds a URL that cannot exist, and the 404 then reads as
+                    # Caddy having dropped the architecture.
+                    echo "caddy: no Caddy architecture is mapped for '${CRAFT_ARCH_BUILD_FOR}'." >&2
+                    echo "  Caddy publishes linux_amd64, linux_arm64, linux_armv5, linux_armv6," >&2
+                    echo "  linux_armv7, linux_ppc64le, linux_riscv64 and linux_s390x - Go's names," >&2
+                    echo "  not Debian's. Add a branch above rather than guessing here." >&2
+                    exit 1
+                    ;;
             esac
             echo "Downloading Caddy ${CADDY_VERSION} (linux/${CADDY_ARCH}) from GitHub releases..."
             curl -fsSL -o /tmp/caddy.tar.gz \

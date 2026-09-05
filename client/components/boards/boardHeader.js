@@ -1,15 +1,23 @@
 import { ReactiveCache } from '/imports/reactiveCache';
 import { TAPi18n } from '/imports/i18n';
 import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
+const { allBoardsPath, SECTION_ARCHIVE } = require('/models/lib/allBoardsUrls');
 import dragscroll from '@wekanteam/dragscroll';
 import getSlug from 'limax';
 import Boards from '/models/boards';
 import Swimlanes from '/models/swimlanes';
 import TableVisibilityModeSettings from '/models/tableVisibilityModeSettings';
 import { Filter } from '/client/lib/filter';
+// Which way a button that opens a sidebar view goes on a click - one answer,
+// in one place, for both Filter and Search.
+import {
+  SIDEBAR_VIEW_CLOSE,
+  sidebarViewButtonAction,
+} from '/models/lib/sidebarViewButton';
 import { MultiSelection } from '/client/lib/multiSelection';
 import { getSidebarInstance } from '/client/features/sidebar/service';
 import { Utils } from '/client/lib/utils';
+import { toggleFold } from '/client/lib/foldState';
 
 /*
 const DOWNCLS = 'fa-sort-down';
@@ -44,7 +52,16 @@ Template.boardChangeTitlePopup.events({
       .val()
       .trim();
     if (newTitle) {
-      const board = Utils.getCurrentBoard();
+      // The board this popup was opened FOR, when it was opened for one: the
+      // All Boards Table view opens this same popup from a row whose data
+      // context is that row's board (docs/Features/Page/All-Boards.md), and on
+      // that page there is no "current board" at all. The board header opens it
+      // with the current board as its context, so that side is unchanged.
+      const context = Template.currentData();
+      const board =
+        context && context._id && typeof context.rename === 'function'
+          ? context
+          : Utils.getCurrentBoard();
       if (board) {
         await board.rename(newTitle);
         await board.setDescription(newDesc);
@@ -54,7 +71,7 @@ Template.boardChangeTitlePopup.events({
   },
 });
 
-Template.boardHeaderBar.onCreated(function () {
+Template.boardHeaderButtons.onCreated(function () {
   Meteor.subscribe('tableVisibilityModeSettings');
   // Restore the persisted card sort after a reload (Session is in-memory), so
   // both the sorting and the sort icon are remembered. See #5886.
@@ -68,7 +85,7 @@ Template.boardHeaderBar.onCreated(function () {
   }
 });
 
-Template.boardHeaderBar.helpers({
+Template.boardHeaderButtons.helpers({
   notDisplayThisBoard() {
     const allowPrivateVisibilityOnly = TableVisibilityModeSettings.findOne('tableVisibilityMode-allowPrivateOnly');
     const currentBoard = Utils.getCurrentBoard();
@@ -83,18 +100,6 @@ Template.boardHeaderBar.helpers({
   watchLevel() {
     const currentBoard = Utils.getCurrentBoard();
     return currentBoard && currentBoard.getWatchLevel(Meteor.userId());
-  },
-
-  isStarred() {
-    const boardId = Session.get('currentBoard');
-    const user = ReactiveCache.getCurrentUser();
-    return user && user.hasStarred(boardId);
-  },
-
-  // Only show the star counter if the number of star is greater than 2
-  showStarCounter() {
-    const currentBoard = Utils.getCurrentBoard();
-    return currentBoard && currentBoard.stars >= 2;
   },
 
   boardView() {
@@ -120,54 +125,90 @@ Template.boardHeaderBar.helpers({
   },
 });
 
-Template.boardHeaderBar.events({
-  'click .js-edit-board-title': Popup.open('boardChangeTitle'),
-  'click .js-star-board'() {
+// The board star, in its own template because the first header bar places it
+// beside the starred-boards dropdown. A Blaze event map only sees events inside
+// its own template, so its helpers and its click come with its markup.
+Template.boardStarButton.helpers({
+  isStarred() {
+    const boardId = Session.get('currentBoard');
+    const user = ReactiveCache.getCurrentUser();
+    return user && user.hasStarred(boardId);
+  },
+
+  // Only show the star counter if the number of stars is greater than 2.
+  showStarCounter() {
+    const currentBoard = Utils.getCurrentBoard();
+    return currentBoard && currentBoard.stars >= 2;
+  },
+
+  currentBoard() {
+    return Utils.getCurrentBoard();
+  },
+});
+
+Template.boardStarButton.events({
+  async 'click .js-star-board'() {
     const boardId = Session.get('currentBoard');
     if (boardId) {
-      Meteor.call('toggleBoardStar', boardId);
+      try {
+        await Meteor.callAsync('toggleBoardStar', boardId);
+      } catch (error) {
+        console.error('Could not toggle board favorite:', error);
+      }
     }
+  },
+});
+
+// Open the sidebar on `view`, or shut it when it is already showing that view.
+// `mustStayOpen` is Filter's exception: see models/lib/sidebarViewButton.js.
+function toggleSidebarView(view, mustStayOpen) {
+  const sidebar = getSidebarInstance();
+  if (!sidebar) {
+    console.warn('Sidebar not available for setView');
+    return;
+  }
+  // Open AND on this view: a sidebar open on Activities is showing neither, and
+  // clicking either button there has to switch to it rather than close.
+  const isShowingView = sidebar.isOpen() && sidebar.getView() === view;
+  if (sidebarViewButtonAction(isShowingView, mustStayOpen) === SIDEBAR_VIEW_CLOSE) {
+    sidebar.hide();
+    return;
+  }
+  sidebar.setView(view);
+}
+
+Template.boardHeaderButtons.events({
+  // The board's controls fold into the caret at the start of the group. Named
+  // by the words the app already has for it - Collapse and Uncollapse - rather
+  // than a key of its own in 147 language files. client/lib/foldState.js
+  'click .js-toggle-fold'(event) {
+    event.preventDefault();
+    toggleFold(event.currentTarget.dataset.fold);
+  },
+  'keydown .js-toggle-fold'(event) {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    toggleFold(event.currentTarget.dataset.fold);
   },
   'click .js-change-visibility': Popup.open('boardChangeVisibility'),
   'click .js-watch-board': Popup.open('boardChangeWatch'),
+  // Boards in Archive is a SECTION of All Boards, not a page of its own: the
+  // row in its left menu. `/archive` is the full-width page that section
+  // replaced. docs/Features/Page/Archive.md
   'click .js-open-archived-board'() {
-    Modal.open('archivedBoards');
+    FlowRouter.go(allBoardsPath(SECTION_ARCHIVE, []));
   },
-  'click .js-toggle-board-view': Popup.open('boardChangeView'),
-  'click .js-toggle-sidebar'() {
-    if (process.env.DEBUG === 'true') {
-      console.log('Hamburger menu clicked');
-    }
-    // Use the same approach as keyboard shortcuts
-    const sidebar = getSidebarInstance();
-    if (sidebar && typeof sidebar.toggle === 'function') {
-      if (process.env.DEBUG === 'true') {
-        console.log('Using Sidebar.toggle()');
-      }
-      sidebar.toggle();
-    } else {
-      if (process.env.DEBUG === 'true') {
-        console.warn('Sidebar not available, trying alternative approach');
-      }
-      // Try to trigger the sidebar through the global Blaze helper
-      if (typeof Blaze !== 'undefined' && Blaze._globalHelpers && Blaze._globalHelpers.Sidebar) {
-        const blazeSidebar = Blaze._globalHelpers.Sidebar();
-        if (blazeSidebar && typeof blazeSidebar.toggle === 'function') {
-          if (process.env.DEBUG === 'true') {
-            console.log('Using Blaze helper Sidebar.toggle()');
-          }
-          blazeSidebar.toggle();
-        }
-      }
-    }
-  },
+  // The button that opens the filter sidebar also shuts it. It only ever
+  // opened, so a second click did nothing visible and the only way back was the
+  // sidebar's own X - somewhere else on screen from the thing you just clicked.
+  //
+  // Not while a filter is ON, though: the sidebar is then the one place that
+  // says what is being hidden from the board, and closing it would leave a
+  // board showing a subset of its cards with nothing on screen to say so. The X
+  // beside this button is what clears the filter.
+  // models/lib/sidebarViewButton.js
   'click .js-open-filter-view'() {
-    const sidebar = getSidebarInstance();
-    if (sidebar) {
-      sidebar.setView('filter');
-    } else {
-      console.warn('Sidebar not available for setView');
-    }
+    toggleSidebarView('filter', Filter.isActive());
   },
   'click .js-sort-cards': Popup.open('cardsSort'),
   /*
@@ -195,13 +236,11 @@ Template.boardHeaderBar.events({
   'click .js-sort-reset'() {
     setCardsSortBy('');
   },
+  // Search shuts what it opened too, with no exception: its results are inside
+  // the panel, so closing it hides nothing from the board the way closing an
+  // active filter's panel would. models/lib/sidebarViewButton.js
   'click .js-open-search-view'() {
-    const sidebar = getSidebarInstance();
-    if (sidebar) {
-      sidebar.setView('search');
-    } else {
-      console.warn('Sidebar not available for setView');
-    }
+    toggleSidebarView('search', false);
   },
   'click .js-toggle-dependencies'() {
     const currentBoard = Utils.getCurrentBoard();
@@ -265,6 +304,9 @@ function setupCreateBoardState(tpl) {
 
 function createBoardHelpers() {
   return {
+    createBoardOwner() {
+      return Template.instance();
+    },
     visibilityMenuIsOpen() {
       return Template.instance().visibilityMenuIsOpen.get();
     },
@@ -282,7 +324,9 @@ function createBoardHelpers() {
 
 async function createBoardSubmit(tpl, event) {
   event.preventDefault();
-  const title = tpl.find('.js-new-board-title').value;
+  const titleInput = event.currentTarget.querySelector('.js-new-board-title');
+  if (!titleInput) return;
+  const title = titleInput.value;
   const slug = getSlug(title) || 'board';
 
   // #5850: template boards are created via the dedicated "Add Template Board"
@@ -343,22 +387,35 @@ async function createBoardSubmit(tpl, event) {
   }
 }
 
-function createBoardEvents() {
-  return {
-    'click .js-select-visibility'(event, tpl) {
-      tpl.visibility.set(this);
-      tpl.visibilityMenuIsOpen.set(false);
-    },
-    'click .js-change-visibility'(event, tpl) {
-      tpl.visibilityMenuIsOpen.set(!tpl.visibilityMenuIsOpen.get());
-    },
-    async 'submit'(event, tpl) {
-      await createBoardSubmit(tpl, event);
-    },
-    'click .js-import-board': Popup.open('chooseBoardSource'),
-    'click .js-board-template': Popup.open('searchElement'),
-  };
+function createBoardOwner(tpl) {
+  return tpl.data && tpl.data.owner;
 }
+
+// Blaze events are scoped to the template whose rendered DOM contains the
+// selector. The form is an included child template, so attaching submit to its
+// parent popup leaves the Create button inert. Keep state on the parent, but
+// attach the shared form's events here and explicitly pass its owner in.
+Template.createBoardForm.events({
+  'click .js-select-visibility'(event, tpl) {
+    const owner = createBoardOwner(tpl);
+    owner.visibility.set(this);
+    owner.visibilityMenuIsOpen.set(false);
+  },
+  'click .js-change-visibility'(event, tpl) {
+    const owner = createBoardOwner(tpl);
+    owner.visibilityMenuIsOpen.set(!owner.visibilityMenuIsOpen.get());
+  },
+  async submit(event, tpl) {
+    const owner = createBoardOwner(tpl);
+    const starAfterCreate = tpl.data.starAfterCreate === true;
+    await createBoardSubmit(owner, event);
+    if (starAfterCreate) {
+      await Meteor.callAsync('toggleBoardStar', owner.boardId.get());
+    }
+  },
+  'click .js-import-board': Popup.open('chooseBoardSource'),
+  'click .js-board-template': Popup.open('searchElement'),
+});
 
 // createBoard (non-popup version)
 Template.createBoard.onCreated(function () {
@@ -367,16 +424,12 @@ Template.createBoard.onCreated(function () {
 
 Template.createBoard.helpers(createBoardHelpers());
 
-Template.createBoard.events(createBoardEvents());
-
 // createBoardPopup
 Template.createBoardPopup.onCreated(function () {
   setupCreateBoardState(this);
 });
 
 Template.createBoardPopup.helpers(createBoardHelpers());
-
-Template.createBoardPopup.events(createBoardEvents());
 
 // createTemplateContainerPopup
 Template.createTemplateContainerPopup.onCreated(function () {
@@ -390,31 +443,12 @@ Template.createTemplateContainerPopup.onRendered(function () {
 
 Template.createTemplateContainerPopup.helpers(createBoardHelpers());
 
-Template.createTemplateContainerPopup.events(createBoardEvents());
-
 // headerBarCreateBoardPopup
 Template.headerBarCreateBoardPopup.onCreated(function () {
   setupCreateBoardState(this);
 });
 
 Template.headerBarCreateBoardPopup.helpers(createBoardHelpers());
-
-Template.headerBarCreateBoardPopup.events({
-  'click .js-select-visibility'(event, tpl) {
-    tpl.visibility.set(this);
-    tpl.visibilityMenuIsOpen.set(false);
-  },
-  'click .js-change-visibility'(event, tpl) {
-    tpl.visibilityMenuIsOpen.set(!tpl.visibilityMenuIsOpen.get());
-  },
-  async submit(event, tpl) {
-    await createBoardSubmit(tpl, event);
-    // Immediately star boards created with the headerbar popup.
-    await ReactiveCache.getCurrentUser().toggleBoardStar(tpl.boardId.get());
-  },
-  'click .js-import-board': Popup.open('chooseBoardSource'),
-  'click .js-board-template': Popup.open('searchElement'),
-});
 
 Template.boardVisibilityList.helpers({
   notAllowPrivateVisibilityOnly() {
@@ -461,18 +495,38 @@ Template.boardChangeWatchPopup.helpers({
 
 Template.boardChangeWatchPopup.events({
   'click .js-select-watch'() {
-    const level = this;
-    if (typeof level === 'string') {
-      Meteor.call(
-        'watch',
-        'board',
-        Session.get('currentBoard'),
-        level,
-        (err, ret) => {
-          if (!err && ret) Popup.back();
-        },
-      );
-    }
+    // `this` is the data context of the clicked row - the string from the
+    // enclosing {{#with "watching"}}. Blaze can hand that back as a boxed
+    // String, so read it through String() rather than refusing anything that is
+    // not typeof 'string'.
+    const level = this === null || this === undefined ? '' : String(this);
+    if (!level) return;
+    Meteor.call(
+      'watch',
+      'board',
+      Session.get('currentBoard'),
+      level,
+      (err, ret) => {
+        if (!err && ret) {
+          Popup.back();
+          return;
+        }
+        // AN ERROR MUST NOT BE SILENT. It was: the callback closed the popup on
+        // success and did nothing at all otherwise, so a refusal looked exactly
+        // like a broken button - "Silent does not respond. If we try to change
+        // it does not change. Nothing happens." (email, 2026-08-13). The server
+        // refuses for two reasons an admin can act on: the watch feature is
+        // turned off in the Admin Panel, and the board is not visible to this
+        // user.
+        const reason = err && (err.error || err.reason || err.message);
+        const message = reason === 'error-watch-disabled'
+          ? TAPi18n.__('error-watch-disabled')
+          : TAPi18n.__('error-board-notAMember');
+        // eslint-disable-next-line no-alert
+        if (typeof window !== 'undefined' && window.alert) window.alert(message);
+        if (process.env.DEBUG === 'true') console.error('watch failed:', err);
+      },
+    );
   },
 });
 
@@ -584,3 +638,33 @@ Template.cardsSortPopup.events({
     Popup.back();
   },
 });
+
+// The board's view menu is its own template in the FIRST header bar now, so its
+// handler is here rather than on the second bar that used to draw it.
+// docs/Features/Page/Header.md
+Template.boardViewMenu.events({
+  'click .js-toggle-board-view': Popup.open('boardChangeView'),
+});
+
+Template.boardViewMenu.helpers({
+  boardView() {
+    return Utils.boardView();
+  },
+  // The tooltip: the name of the view that is ON. The button is icon only, so
+  // this is the only place the name appears. docs/Features/Page/Header.md
+  boardViewName() {
+    const names = {
+      'board-view-swimlanes': 'swimlanes',
+      'board-view-lists': 'lists',
+      'board-view-cal': 'calendar',
+      'board-view-gantt': 'gantt',
+      'board-view-table': 'board-view-table',
+      'board-view-stats': 'board-view-stats',
+    };
+    return TAPi18n.__(names[Utils.boardView()] || 'board-view');
+  },
+});
+
+// The board is renamed by clicking its NAME in the first header bar, which is
+// handled where that bar is: client/components/main/header.js. The pencil that
+// used to be here is gone with the template it lived in.

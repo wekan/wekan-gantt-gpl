@@ -3,6 +3,9 @@ const { filesize } = require('filesize');
 
 Template.statistics.onCreated(function () {
   this.info = new ReactiveVar({});
+  this.versionManifest = new ReactiveVar('');
+  this.versionCheckError = new ReactiveVar('');
+  this.versionCheckRunning = new ReactiveVar(false);
   Meteor.call('getStatistics', (error, ret) => {
     if (!error && ret) {
       this.info.set(ret);
@@ -11,12 +14,24 @@ Template.statistics.onCreated(function () {
 });
 
 // No page template and no menu of its own any more: Version is the first pane of
-// Admin Panel / Settings, whose menu (docs/Design/Page/Left-Menu.md) carries the
+// Admin Panel / Settings, whose menu (docs/Features/Page/Left-Menu.md) carries the
 // entry that opens it. This file is just the statistics pane now.
 
 Template.statistics.helpers({
   statistics() {
     return Template.instance().info.get();
+  },
+
+  versionCheckRunning() {
+    return Template.instance().versionCheckRunning.get();
+  },
+
+  versionCheckError() {
+    return Template.instance().versionCheckError.get();
+  },
+
+  versionManifestText() {
+    return Template.instance().versionManifest.get();
   },
 
   humanReadableTime(time) {
@@ -54,5 +69,26 @@ Template.statistics.helpers({
 
   formatBoolean(value) {
     return value ? TAPi18n.__('yes') : TAPi18n.__('no');
+  },
+});
+
+Template.statistics.events({
+  'click .js-check-newest-versions'(event, instance) {
+    event.preventDefault();
+    if (instance.versionCheckRunning.get()) return;
+    instance.versionCheckRunning.set(true);
+    instance.versionCheckError.set('');
+    instance.versionManifest.set('');
+    Meteor.call('checkNewestVersions', (error, result) => {
+      instance.versionCheckRunning.set(false);
+      if (error || !result) {
+        // Never show an upstream body or exception: GitHub's reply is untrusted,
+        // and offline, timeout, HTTP and invalid-version failures are equivalent
+        // to the administrator using this on-demand check.
+        instance.versionCheckError.set(TAPi18n.__('version-check-failed'));
+        return;
+      }
+      instance.versionManifest.set(result.text);
+    });
   },
 });

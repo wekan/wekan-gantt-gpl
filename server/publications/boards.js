@@ -5,6 +5,7 @@
 import { ReactiveCache } from '/imports/reactiveCache';
 import { publishComposite } from 'meteor/reywood:publish-composite';
 import { publishReportPage } from '/models/lib/reportPageIndex';
+const { notHelperBoardTitle } = require('/models/lib/helperBoards');
 import { findWhere } from '/imports/lib/collectionHelpers';
 import Users from "../../models/users";
 import Org from "../../models/org";
@@ -14,6 +15,7 @@ import Boards from '/models/boards';
 import Cards from '/models/cards';
 import { localizeBoardMemberAvatars } from '/server/lib/localizeAvatar';
 import { collectAncestorIds } from '/server/lib/subtaskAncestors';
+import { visibleBoardIds } from '/server/lib/visibleBoardIds';
 import {
   showsCardCounterList,
   countCardsByListId,
@@ -24,6 +26,7 @@ const {
   DEFAULT_LAZY_THRESHOLD,
 } = require('/models/lib/cardsLoading');
 const { boardCardScope } = require('/models/lib/boardCardScope');
+const { boardVisibilitySelectors } = require('/models/lib/boardVisibilitySelectors');
 
 // Card-loading mode (Admin Panel / Features): 'all' ships every card/checklist to
 // minimongo; 'lazy' ships none (each list loads its visible window via the
@@ -34,6 +37,29 @@ const globalCardsMode = () =>
 const globalLazyThreshold = () => {
   const n = Number(Meteor.settings.public && Meteor.settings.public.cardsLoadingLazyThreshold);
   return Number.isFinite(n) && n >= 0 ? n : DEFAULT_LAZY_THRESHOLD;
+};
+
+// Fields needed by All Boards, rule board pickers and the Sandstorm auto-open
+// decision. The open-board `board` publication supplies the full document.
+const BOARD_LIST_FIELDS = {
+  title: 1,
+  slug: 1,
+  color: 1,
+  backgroundImageURL: 1,
+  description: 1,
+  type: 1,
+  permission: 1,
+  members: 1,
+  orgs: 1,
+  teams: 1,
+  domains: 1,
+  sort: 1,
+  archived: 1,
+  createdAt: 1,
+  modifiedAt: 1,
+  dateLastActivity: 1,
+  allowsCardCounterList: 1,
+  allowsBoardMemberList: 1,
 };
 
 publishComposite('boards', function() {
@@ -56,72 +82,168 @@ publishComposite('boards', function() {
       if (!user) {
         return [];
       }
+      const clauses = boardVisibilitySelectors({
+        userId,
+        orgIds: user.orgIds(),
+        teamIds: user.teamIds(),
+        emailDomains: user.emailDomains(),
+        // Public means anybody may open the board, not that it belongs in this
+        // user's All Boards list. `/public` and the singular board publication
+        // retain public discovery and direct-link access.
+        includePublic: false,
+      });
       const selector = {
         archived: false,
-        // #5850: also publish the user's template boards (template-container) so
-        // the All Boards / Templates view can list them; the client filters by
-        // type per sub-view.
-        type: { $in: ['board', 'template-container'] },
-        $or: [
-          { permission: 'public' },
-          { members: { $elemMatch: { userId, isActive: true } } },
-          { orgs: { $elemMatch: { orgId: { $in: user.orgIds() }, isActive: true } } },
-          { teams: { $elemMatch: { teamId: { $in: user.teamIds() }, isActive: true } } },
-          // #5850: domain-based board sharing.
-          { domains: { $elemMatch: { domain: { $in: user.emailDomains() }, isActive: true } } },
-        ],
+        type: 'board',
+        // GHSA-gwc4-fw7p-gw58: one builder answers "which boards may this user
+        // see", everywhere. This used to be a hand-written copy of the same
+        // array - and the `board` publication's copy was the one that forgot
+        // isActive and served revoked shares.
+        $or: clauses,
       };
       return await ReactiveCache.getBoards(
         selector,
         {
           sort: { sort: 1 /* boards default sorting */ },
+          fields: BOARD_LIST_FIELDS,
         },
         true,
       );
     },
-    children: [
-      {
-        async find(board) {
-          // Publish lists with extended fields for proper sync
-          // Including swimlaneId, modifiedAt, and _updatedAt for list order changes
-          return await ReactiveCache.getLists(
-            { boardId: board._id, archived: false },
-            {
-              fields: {
-                _id: 1,
-                title: 1,
-                boardId: 1,
-                swimlaneId: 1,
-                archived: 1,
-                sort: 1,
-                color: 1,
-                modifiedAt: 1,
-                _updatedAt: 1,  // Hidden field to trigger updates
-              }
-            },
-            true,
-          );
-        }
-      },
-      {
-        async find(board) {
-          return await ReactiveCache.getCards(
-            { boardId: board._id, archived: false },
-            {
-              fields: {
-                _id: 1,
-                boardId: 1,
-                listId: 1,
-                archived: 1,
-                sort: 1
-              }
-            },
-            true,
-          );
-        }
-      }
-    ]
   };
+});
+
+// Move/copy dialogs must not depend on the long-lived All Boards composite
+// subscription being populated. Publish exactly what their client-side picker
+// has always offered: non-archived boards where this user is an active member.
+Meteor.publish('boardDestinations', async function() {
+  const userId = this.userId;
+  if (!Match.test(userId, String) || !userId) return [];
+  return await ReactiveCache.getBoards(
+    {
+      archived: false,
+      type: 'board',
+      members: { $elemMatch: { userId, isActive: true } },
+    },
+    { sort: { sort: 1 }, fields: BOARD_LIST_FIELDS },
+    true,
+  );
+});
+
+// Template containers are numerous on long-lived LDAP instances and are only
+// needed by All Boards / Templates. Keep this live so imports appear without a
+// reload, but do not make every page poll and decode them.
+Meteor.publish('boardTemplates', async function() {
+  const userId = this.userId;
+  if (!Match.test(userId, String) || !userId) return [];
+  const user = await ReactiveCache.getUser(userId);
+  if (!user) return [];
+  return ReactiveCache.getBoards(
+    {
+      archived: false,
+      type: 'template-container',
+      $or: boardVisibilitySelectors({
+        userId,
+        orgIds: user.orgIds(),
+        teamIds: user.teamIds(),
+        emailDomains: user.emailDomains(),
+      }),
+    },
+    { sort: { sort: 1 }, fields: BOARD_LIST_FIELDS },
+    true,
+  );
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// /public — one page of the boards anybody may open.
+// Design: docs/Features/Page/Public.md, which is the Table page design.
+//
+// The selector is built HERE and takes nothing from the client: a public board is
+// public, so this needs no login, and a page that needs no login must not let the
+// caller choose what it sees. The only thing the client says is which page it
+// wants and what it is searching for.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// The boards /public may show: public, not archived, a real board rather than a
+// template container, and not one of WeKan's internal helper boards.
+function publicBoardsSelector(searchTerm) {
+  const query = {
+    permission: 'public',
+    archived: false,
+    type: 'board',
+    title: notHelperBoardTitle(),
+  };
+  if (searchTerm) {
+    // The title clause is already taken by the helper-board exclusion, so the
+    // search goes in as its own $and term rather than replacing it - a search
+    // that dropped that exclusion would put the ^Subtasks^ boards back.
+    query.$and = [
+      { title: new RegExp(searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') },
+    ];
+  }
+  return query;
+}
+
+Meteor.publish('publicBoards', async function(searchTerm = '', limit = 10, skip = 0) {
+  check(searchTerm, Match.OneOf(String, null, undefined));
+  check(limit, Number);
+  check(skip, Match.OneOf(Number, null, undefined));
+
+  const perPage = Math.max(1, Math.min(Math.floor(limit) || 10, 100));
+
+  // Published MANUALLY (fetch + this.added + this.ready) for the same reason as
+  // boardsReport below: a returned sorted+limited cursor triggers a LIMITED live
+  // observe that hangs on FerretDB's OpLog and leaves the page on its spinner.
+  // The pane re-subscribes on every page and search change, so it needs no live
+  // cursor.
+  // SIX fields, for a page of ten boards. Not the whole board document: the table
+  // has two columns, and a board carries its members, its labels, its subtask and
+  // card settings, its background and every allows* flag - none of which this page
+  // draws, all of which would cross the wire for every row.
+  //
+  //   title, description  the two columns;
+  //   slug                the link the row is;
+  //   color, backgroundImageURL
+  //                       the row's own colours, which is how a board is
+  //                       recognised here the way it is on All Boards (#5157).
+  //
+  // `members` in particular is deliberately absent: it is the largest field on a
+  // busy board and this page shows no avatars.
+  const boards = await ReactiveCache.getBoards(
+    publicBoardsSelector(searchTerm),
+    {
+      fields: {
+        _id: 1,
+        slug: 1,
+        title: 1,
+        description: 1,
+        color: 1,
+        backgroundImageURL: 1,
+      },
+      sort: { sort: 1 },
+      limit: perPage,
+      skip: skip || 0,
+    },
+    false,
+  );
+
+  for (const doc of boards) { const { _id, ...fields } = doc; this.added('boards', _id, fields); }
+  // WHICH boards this page is, in this order: the visitor's own boards are in
+  // minimongo whatever page is open, so the pane must render the named page only.
+  publishReportPage(this, 'public-boards', boards);
+  this.ready();
+});
+
+Meteor.methods({
+  async getPublicBoardsCount(searchTerm = '') {
+    check(searchTerm, Match.OneOf(String, null, undefined));
+    // No authorization check, deliberately: this counts PUBLIC boards, which is
+    // the same set the publication above will send to the same caller.
+    const cursor = await ReactiveCache.getBoards(publicBoardsSelector(searchTerm), {}, true);
+    return typeof cursor.countAsync === 'function'
+      ? await cursor.countAsync()
+      : cursor.count();
+  },
 });
 
 Meteor.publish('boardsReport', async function(searchTerm = '', limit, skip = 0) {
@@ -259,16 +381,19 @@ Meteor.methods({
     const menu = params.menu || 'remaining';
 
     // Same visibility selector as the live `boards` publication.
+    const clauses = boardVisibilitySelectors({
+      userId,
+      orgIds: user.orgIds(),
+      teamIds: user.teamIds(),
+      emailDomains: user.emailDomains(),
+      includePublic: false,
+    });
     const selector = {
       archived: false,
-      type: { $in: ['board', 'template-container'] },
-      $or: [
-        { permission: 'public' },
-        { members: { $elemMatch: { userId, isActive: true } } },
-        { orgs: { $elemMatch: { orgId: { $in: user.orgIds() }, isActive: true } } },
-        { teams: { $elemMatch: { teamId: { $in: user.teamIds() }, isActive: true } } },
-        { domains: { $elemMatch: { domain: { $in: user.emailDomains() }, isActive: true } } },
-      ],
+      type: search || menu === 'templates'
+        ? { $in: ['board', 'template-container'] }
+        : 'board',
+      ...(clauses.length === 1 ? clauses[0] : { $or: clauses }),
     };
     if (search) {
       selector.title = new RegExp(
@@ -277,48 +402,34 @@ Meteor.methods({
       );
     }
 
-    // Lightweight fetch: only the fields needed to filter/sort/paginate. The
-    // board icons themselves are rendered client-side from the live `boards`
-    // subscription, keyed by the ids returned here.
-    let boards = await ReactiveCache.getBoards(
-      selector,
-      { fields: { _id: 1, title: 1, type: 1 } },
-      true,
-    );
-    boards = typeof boards.fetchAsync === 'function'
-      ? await boards.fetchAsync()
-      : (typeof boards.fetch === 'function' ? boards.fetch() : boards);
-
-    // Menu / workspace filtering uses the user's profile maps. A search spans
-    // every category, so it skips the menu filter (matching the client).
+    // Encode the selected menu in Mongo before pagination. A search spans every
+    // category, preserving the existing behavior.
     const profile = user.profile || {};
     const assignments = profile.boardWorkspaceAssignments || {};
     const starred = profile.starredBoards || [];
     if (!search) {
       if (menu === 'starred') {
-        boards = boards.filter(b => starred.includes(b._id));
+        selector._id = { $in: starred };
       } else if (menu === 'templates') {
-        boards = boards.filter(b => b.type === 'template-container');
+        selector.type = 'template-container';
       } else if (menu === 'remaining') {
-        boards = boards.filter(
-          b => !assignments[b._id] && b.type !== 'template-container',
-        );
+        selector._id = { $nin: Object.keys(assignments) };
       } else {
-        // menu is a workspace id
-        boards = boards.filter(b => assignments[b._id] === menu);
+        selector._id = {
+          $in: Object.keys(assignments).filter(id => assignments[id] === menu),
+        };
       }
     }
 
-    boards.sort((a, b) => {
-      const cmp = (a.title || '').localeCompare(b.title || '', undefined, {
-        sensitivity: 'base',
-      });
-      return sortBy === 'title-desc' ? -cmp : cmp;
+    const total = await Boards.find(selector).countAsync();
+    const cursor = Boards.find(selector, {
+      fields: { _id: 1 },
+      sort: { title: sortBy === 'title-desc' ? -1 : 1, _id: 1 },
+      skip: (page - 1) * perPage,
+      limit: perPage,
     });
-
-    const total = boards.length;
-    const start = (page - 1) * perPage;
-    const ids = boards.slice(start, start + perPage).map(b => b._id);
+    const boards = await cursor.fetchAsync();
+    const ids = boards.map(board => board._id);
     return { ids, total };
   },
 
@@ -351,13 +462,12 @@ Meteor.methods({
     const selector = {
       archived: false,
       type: 'board',
-      $or: [
-        { permission: 'public' },
-        { members: { $elemMatch: { userId, isActive: true } } },
-        { orgs: { $elemMatch: { orgId: { $in: user.orgIds() }, isActive: true } } },
-        { teams: { $elemMatch: { teamId: { $in: user.teamIds() }, isActive: true } } },
-        { domains: { $elemMatch: { domain: { $in: user.emailDomains() }, isActive: true } } },
-      ],
+      $or: boardVisibilitySelectors({
+        userId,
+        orgIds: user.orgIds(),
+        teamIds: user.teamIds(),
+        emailDomains: user.emailDomains(),
+      }),
     };
 
     let boards = await ReactiveCache.getBoards(
@@ -455,6 +565,18 @@ Meteor.publish('archivedBoards', async function(searchTerm = '', limit = 30, ski
         createdAt: 1,
         modifiedAt: 1,
         archivedAt: 1,
+        // The Archive is drawn as board ICONS now, the same tiles Remaining
+        // uses, so the fields a tile reads have to be here: its colour, what
+        // kind of board it is, its description, and its members - the last for
+        // the star and the multi-selection checkbox. Sending seven fields to a
+        // template that reads twelve renders grey, nameless tiles.
+        // docs/Features/Page/Archive.md
+        color: 1,
+        type: 1,
+        description: 1,
+        permission: 1,
+        members: 1,
+        stars: 1,
       },
       sort: { archivedAt: -1, modifiedAt: -1 },
       limit,
@@ -467,8 +589,18 @@ Meteor.publish('archivedBoards', async function(searchTerm = '', limit = 30, ski
 
 Meteor.methods({
   async getArchivedBoardsCount(searchTerm = '') {
-    if (!Match.test(this.userId, String)) return 0;
+    // check() FIRST, then authorise. Meteor audits that every argument was
+    // checked, and returning early for a signed-out caller skipped the check
+    // entirely - so the method threw "Did not check() all arguments" instead of
+    // answering 0. Nothing tripped it until All Boards began asking for this
+    // count from onCreated, which can run before the user is established; the
+    // archive page had always called it after its subscription was ready.
+    //
+    // Validating the shape of what you were given before deciding whether the
+    // caller may have it is the right order anyway, and it is the order
+    // getPublicBoardsCount above already uses.
     check(searchTerm, Match.OneOf(String, null, undefined));
+    if (!Match.test(this.userId, String)) return 0;
     const cursor = await ReactiveCache.getBoards(archivedBoardsSelector(this.userId, searchTerm), {}, true);
     return typeof cursor.countAsync === 'function' ? await cursor.countAsync() : cursor.count();
   },
@@ -488,7 +620,7 @@ Meteor.methods({
 //
 // If isArchived = false, this will only return board elements which are not archived.
 // If isArchived = true, this will only return board elements which are archived.
-publishComposite('board', async function(boardId, isArchived) {
+publishComposite('board', async function(boardId, isArchived, generation) {
   // A subscription's arguments come from the CLIENT, so they can be anything -
   // including a null board id from a page that subscribed before it knew which
   // board it was on. `check()` throws for that, and a throw inside an ASYNC
@@ -509,8 +641,10 @@ publishComposite('board', async function(boardId, isArchived) {
   // below it.
   check(boardId, Match.Any);
   check(isArchived, Match.Any);
+  check(generation, Match.Any);
   if (!Match.test(boardId, String) || !boardId) return;
   if (!Match.test(isArchived, Boolean)) return;
+  if (generation !== undefined && !Match.test(generation, Number)) return;
 
   // Best-effort, fire-and-forget: copy any board member's external avatar (Sandstorm
   // profile picture, LDAP/OAuth2/OIDC, a pasted URL) into WeKan's own files/avatars so
@@ -519,7 +653,6 @@ publishComposite('board', async function(boardId, isArchived) {
   localizeBoardMemberAvatars(boardId).catch(() => {});
 
   const thisUserId = this.userId;
-  const $or = [{ permission: 'public' }];
 
   let currUser = (!Match.test(thisUserId, String) || !thisUserId) ? 'undefined' : await ReactiveCache.getUser(thisUserId);
   let orgIdsUserBelongs = currUser !== 'undefined' && currUser.teams !== 'undefined' ? currUser.orgIdsUserBelongs() : '';
@@ -538,12 +671,104 @@ publishComposite('board', async function(boardId, isArchived) {
     teamsIds = teamIdsUserBelongs.split(',');
   }
 
-  if (thisUserId) {
-    $or.push({ members: { $elemMatch: { userId: thisUserId, isActive: true } } });
-    $or.push({ 'orgs.orgId': { $in: orgsIds } });
-    $or.push({ 'teams.teamId': { $in: teamsIds } });
-    $or.push({ 'domains.domain': { $in: emailDomains } });
-  }
+  // GHSA-gwc4-fw7p-gw58: this used to match org/team/domain shares with a
+  // dotted `'orgs.orgId': { $in: [...] }`, which says nothing about isActive -
+  // the flag a board admin flips to REVOKE a share. A revoked user disappeared
+  // from All Boards (that list uses the $elemMatch form) yet could still
+  // subscribe here with a boardId they remembered and receive the whole private
+  // board. Both now come from the one builder, which requires isActive: true.
+  const $or = boardVisibilitySelectors({
+    userId: thisUserId,
+    orgIds: orgsIds,
+    teamIds: teamsIds,
+    emailDomains,
+  });
+
+  // The linked cards of this board, MINUS the ones whose board this subscriber
+  // may not see.
+  //
+  // GHSA-jvv9-498p-hxrg was reported against the ancestor (parentId) cursor, and
+  // the linked-card cursors below had the identical hole - worse, in fact, since
+  // they publish the linked card's comments, attachments, checklists and
+  // checklist items as well. A `cardType-linkedCard` names a card by id, that
+  // card may live on any board, and creating one requires read access to that
+  // board (server/models/cards.js) - but the person who created it is not the
+  // person this publication is sending to. Every subscriber of THIS board was
+  // getting the linked card's full document and all of its children, whether or
+  // not they may see the board it lives on.
+  //
+  // A linked card whose source board the subscriber cannot see is simply not
+  // sent, exactly as an invisible ancestor is not sent. Cards on THIS board are
+  // their own answer - they are already going to this subscriber.
+  //
+  // The five cursors used to repeat this preamble verbatim; sharing it is also
+  // what stops the next one from being written without the check.
+  const cardScopeFor = board => {
+    const cardSelector = {
+      ...boardCardScope(board),
+      archived: isArchived,
+    };
+    if (thisUserId && board.members) {
+      const member = findWhere(board.members, { userId: thisUserId, isActive: true });
+      if (member && (member.isNormalAssignedOnly || member.isCommentAssignedOnly || member.isReadAssignedOnly)) {
+        cardSelector.assignees = { $in: [thisUserId] };
+      }
+    }
+    return cardSelector;
+  };
+
+  // publishComposite passes the same parent document object to its sibling
+  // child cursors during one evaluation. WeakMap shares their discovery work
+  // only at that boundary: a later parent evaluation has a new document object
+  // and therefore recomputes cards and authorization. There is deliberately no
+  // TTL or board-id cache that could serve stale access after a revoke.
+  const cardIndexByParent = new WeakMap();
+  const visibleLinkedByParent = new WeakMap();
+
+  const boardCardIndex = board => {
+    let compute = cardIndexByParent.get(board);
+    if (compute) return compute;
+
+    compute = Promise.all([
+      ReactiveCache.getCards(
+        { ...cardScopeFor(board), type: 'cardType-linkedCard' },
+        { fields: { _id: 1, linkedId: 1 } },
+        false,
+      ),
+      ReactiveCache.getCards(
+        { ...cardScopeFor(board), parentId: { $exists: true, $ne: null } },
+        { fields: { _id: 1, parentId: 1 } },
+        false,
+      ),
+    ]).then(([links, children]) => ({
+      linkedIds: [...new Set((links || []).map(card => card.linkedId).filter(Boolean))],
+      parentIds: [...new Set((children || []).map(card => card.parentId).filter(Boolean))],
+    }));
+    cardIndexByParent.set(board, compute);
+    return compute;
+  };
+
+  const visibleLinkedCardIds = board => {
+    let compute = visibleLinkedByParent.get(board);
+    if (compute) return compute;
+
+    compute = (async () => {
+      const { linkedIds } = await boardCardIndex(board);
+      if (linkedIds.length === 0) return [];
+
+      const linked = await ReactiveCache.getCards(
+        { _id: { $in: linkedIds } },
+        { fields: { _id: 1, boardId: 1 } },
+        false,
+      );
+      const linkedBoardIds = [...new Set((linked || []).map(c => c.boardId).filter(Boolean))];
+      const allowedBoardIds = await visibleBoardIds(thisUserId, linkedBoardIds);
+      allowedBoardIds.add(board._id);
+      return (linked || []).filter(c => allowedBoardIds.has(c.boardId)).map(c => c._id);
+    })();
+    visibleLinkedByParent.set(board, compute);
+    return compute;
+  };
 
   // Per-board adaptive card-loading decision. In 'auto' mode we count this board's
   // (non-archived) cards ONCE and decide lazy vs eager from the threshold; the
@@ -567,10 +792,19 @@ publishComposite('board', async function(boardId, isArchived) {
       return await ReactiveCache.getBoards(
         {
           _id: boardId,
-          // Template boards are always accessible regardless of archived state.
-          // $nor is used because $or is already taken by the access control below.
-          $nor: [{ archived: true, type: { $nin: ['template-container', 'template-board'] } }],
-          // If the board is not public the user has to be a member of it to see it.
+          // An ARCHIVED board is published too. This used to exclude one unless
+          // it was a template, so opening a board from the Archive answered
+          // "board not found" - the document was withheld from a caller who had
+          // asked for it by id and was entitled to see it.
+          //
+          // Archived is not a permission. What decides whether this board may be
+          // sent is the `$or` below: public, or the user is a member. That is
+          // unchanged, and it is the whole of the access control here.
+          //
+          // `isArchived` still governs the CONTENTS - the lists, swimlanes and
+          // cards fetched by the children below - so an archived board opens
+          // showing its live lists, exactly as it did before it was archived.
+          // docs/Features/Page/Archive.md
           $or,
         },
         { limit: 1, sort: { sort: 1 /* boards default sorting */ } },
@@ -752,22 +986,7 @@ publishComposite('board', async function(boardId, isArchived) {
       // Parent cards (for subtasks)
       {
         async find(board) {
-          const cardSelector = {
-            ...boardCardScope(board),
-            archived: isArchived,
-          };
-
-          if (thisUserId && board.members) {
-            const member = findWhere(board.members, { userId: thisUserId, isActive: true });
-            if (member && (member.isNormalAssignedOnly || member.isCommentAssignedOnly || member.isReadAssignedOnly)) {
-              cardSelector.assignees = { $in: [thisUserId] };
-            }
-          }
-
-          const cards = await ReactiveCache.getCards(cardSelector, { fields: { _id: 1, parentId: 1 } }, false);
-          if (!cards || cards.length === 0) return null;
-
-          const parentIds = cards.filter(c => c.parentId).map(c => c.parentId);
+          const { parentIds } = await boardCardIndex(board);
           if (parentIds.length === 0) return null;
 
           // #3453: the 'prefix-with-full-path' subtask setting renders the
@@ -783,53 +1002,168 @@ publishComposite('board', async function(boardId, isArchived) {
               false,
             ),
           );
+          if (ancestorIds.length === 0) return null;
 
-          return await ReactiveCache.getCards({ _id: { $in: ancestorIds } }, {}, true);
+          // GHSA-jvv9-498p-hxrg: an ancestor may live on ANOTHER board, and
+          // being able to write on THIS board says nothing about being allowed
+          // to read that one. Anyone who can set a parentId (a member with
+          // write access, or the REST API) could otherwise point a card at a
+          // card on a private board and have this cursor publish that board's
+          // full card documents - title, description, custom fields - to every
+          // subscriber here. Publish only the ancestors whose board this
+          // subscriber may actually see.
+          const ancestors = await ReactiveCache.getCards(
+            { _id: { $in: ancestorIds } },
+            { fields: { _id: 1, boardId: 1 } },
+            false,
+          );
+          const ancestorBoardIds = [...new Set((ancestors || []).map(c => c.boardId).filter(Boolean))];
+          const allowedBoardIds = await visibleBoardIds(thisUserId, ancestorBoardIds);
+          // This board is being published to this subscriber already, so its own
+          // cards need no second decision.
+          allowedBoardIds.add(board._id);
+
+          const allowedAncestorIds = (ancestors || [])
+            .filter(c => allowedBoardIds.has(c.boardId))
+            .map(c => c._id);
+          if (allowedAncestorIds.length === 0) return null;
+
+          return await ReactiveCache.getCards({ _id: { $in: allowedAncestorIds } }, {}, true);
         }
       },
       // Linked cards (cardType-linkedCard)
       {
         async find(board) {
-          const cardSelector = {
-            ...boardCardScope(board),
-            archived: isArchived,
-          };
-
-          if (thisUserId && board.members) {
-            const member = findWhere(board.members, { userId: thisUserId, isActive: true });
-            if (member && (member.isNormalAssignedOnly || member.isCommentAssignedOnly || member.isReadAssignedOnly)) {
-              cardSelector.assignees = { $in: [thisUserId] };
-            }
-          }
-
-          const cards = await ReactiveCache.getCards(cardSelector, { fields: { _id: 1, type: 1, linkedId: 1 } }, false);
-          if (!cards || cards.length === 0) return null;
-
-          const linkedCardIds = cards.filter(c => c.type === 'cardType-linkedCard' && c.linkedId).map(c => c.linkedId);
+          // Only the linked cards whose board this subscriber may see
+          // (GHSA-jvv9-498p-hxrg class).
+          const linkedCardIds = await visibleLinkedCardIds(board);
           if (linkedCardIds.length === 0) return null;
 
           return await ReactiveCache.getCards({ _id: { $in: linkedCardIds }, archived: isArchived }, {}, true);
         }
       },
+      // Source-board display metadata for linked cards. The source card itself
+      // carries label ids and custom-field values, but their definitions live
+      // on its board. Without these cursors a link looked complete only until
+      // reload (while the board-picker subscription happened to remain alive).
+      {
+        async find(board) {
+          const linkedCardIds = await visibleLinkedCardIds(board);
+          if (linkedCardIds.length === 0) return null;
+          const linkedCards = await ReactiveCache.getCards(
+            { _id: { $in: linkedCardIds } },
+            { fields: { boardId: 1 } },
+            false,
+          );
+          const sourceBoardIds = [...new Set(linkedCards.map(card => card.boardId))];
+          return await ReactiveCache.getBoards(
+            { _id: { $in: sourceBoardIds } },
+            { fields: { title: 1, slug: 1, labels: 1 } },
+            true,
+          );
+        }
+      },
+      {
+        async find(board) {
+          const linkedCardIds = await visibleLinkedCardIds(board);
+          if (linkedCardIds.length === 0) return null;
+          const linkedCards = await ReactiveCache.getCards(
+            { _id: { $in: linkedCardIds } },
+            { fields: { boardId: 1 } },
+            false,
+          );
+          const sourceBoardIds = [...new Set(linkedCards.map(card => card.boardId))];
+          return await ReactiveCache.getCustomFields(
+            { boardIds: { $in: sourceBoardIds } },
+            { sort: { name: 1 } },
+            true,
+          );
+        }
+      },
+      // Avatars used by source-card creator/member/assignee fields.
+      {
+        async find(board) {
+          const linkedCardIds = await visibleLinkedCardIds(board);
+          if (linkedCardIds.length === 0) return null;
+          const linkedCards = await ReactiveCache.getCards(
+            { _id: { $in: linkedCardIds } },
+            { fields: { userId: 1, members: 1, assignees: 1 } },
+            false,
+          );
+          const userIds = [...new Set(linkedCards.flatMap(card => [
+            card.userId,
+            ...(card.members || []),
+            ...(card.assignees || []),
+          ]).filter(id => id && id !== thisUserId))];
+          if (userIds.length === 0) return null;
+          return await ReactiveCache.getUsers(
+            { _id: { $in: userIds } },
+            { fields: {
+              username: 1,
+              'profile.fullname': 1,
+              'profile.avatarUrl': 1,
+              'profile.initials': 1,
+            } },
+            true,
+          );
+        }
+      },
+      // Subtasks displayed by a linked source card.
+      {
+        async find(board) {
+          const linkedCardIds = await visibleLinkedCardIds(board);
+          if (linkedCardIds.length === 0) return null;
+          const linkedCards = await ReactiveCache.getCards(
+            { _id: { $in: linkedCardIds } },
+            { fields: { boardId: 1 } },
+            false,
+          );
+          const sourceBoardIds = [...new Set(linkedCards.map(card => card.boardId))];
+          return await ReactiveCache.getCards(
+            {
+              parentId: { $in: linkedCardIds },
+              boardId: { $in: sourceBoardIds },
+            },
+            {},
+            true,
+          );
+        }
+      },
+      // Cards named by the linked source card's dependency field. Constrain
+      // them to the already-authorized source boards; a malformed dependency
+      // id must not become a bridge into another private board.
+      {
+        async find(board) {
+          const linkedCardIds = await visibleLinkedCardIds(board);
+          if (linkedCardIds.length === 0) return null;
+          const linkedCards = await ReactiveCache.getCards(
+            { _id: { $in: linkedCardIds } },
+            { fields: { boardId: 1, cardDependencies: 1 } },
+            false,
+          );
+          const sourceBoardIds = [...new Set(linkedCards.map(card => card.boardId))];
+          const dependencyIds = [...new Set(linkedCards.flatMap(card =>
+            (card.cardDependencies || []).map(dependency =>
+              typeof dependency === 'string' ? dependency : dependency && dependency.cardId,
+            ),
+          ).filter(Boolean))];
+          if (dependencyIds.length === 0) return null;
+          return await ReactiveCache.getCards(
+            {
+              _id: { $in: dependencyIds },
+              boardId: { $in: sourceBoardIds },
+            },
+            {},
+            true,
+          );
+        }
+      },
       // Comments for linked cards
       {
         async find(board) {
-          const cardSelector = {
-            ...boardCardScope(board),
-            archived: isArchived,
-          };
-
-          if (thisUserId && board.members) {
-            const member = findWhere(board.members, { userId: thisUserId, isActive: true });
-            if (member && (member.isNormalAssignedOnly || member.isCommentAssignedOnly || member.isReadAssignedOnly)) {
-              cardSelector.assignees = { $in: [thisUserId] };
-            }
-          }
-
-          const cards = await ReactiveCache.getCards(cardSelector, { fields: { _id: 1, type: 1, linkedId: 1 } }, false);
-          if (!cards || cards.length === 0) return null;
-
-          const linkedCardIds = cards.filter(c => c.type === 'cardType-linkedCard' && c.linkedId).map(c => c.linkedId);
+          // Only the linked cards whose board this subscriber may see
+          // (GHSA-jvv9-498p-hxrg class).
+          const linkedCardIds = await visibleLinkedCardIds(board);
           if (linkedCardIds.length === 0) return null;
 
           return await ReactiveCache.getCardComments({ cardId: { $in: linkedCardIds } }, {}, true);
@@ -838,22 +1172,9 @@ publishComposite('board', async function(boardId, isArchived) {
       // Attachments for linked cards
       {
         async find(board) {
-          const cardSelector = {
-            ...boardCardScope(board),
-            archived: isArchived,
-          };
-
-          if (thisUserId && board.members) {
-            const member = findWhere(board.members, { userId: thisUserId, isActive: true });
-            if (member && (member.isNormalAssignedOnly || member.isCommentAssignedOnly || member.isReadAssignedOnly)) {
-              cardSelector.assignees = { $in: [thisUserId] };
-            }
-          }
-
-          const cards = await ReactiveCache.getCards(cardSelector, { fields: { _id: 1, type: 1, linkedId: 1 } }, false);
-          if (!cards || cards.length === 0) return null;
-
-          const linkedCardIds = cards.filter(c => c.type === 'cardType-linkedCard' && c.linkedId).map(c => c.linkedId);
+          // Only the linked cards whose board this subscriber may see
+          // (GHSA-jvv9-498p-hxrg class).
+          const linkedCardIds = await visibleLinkedCardIds(board);
           if (linkedCardIds.length === 0) return null;
 
           const result = await ReactiveCache.getAttachments({ 'meta.cardId': { $in: linkedCardIds } }, {}, true);
@@ -863,22 +1184,9 @@ publishComposite('board', async function(boardId, isArchived) {
       // Checklists for linked cards
       {
         async find(board) {
-          const cardSelector = {
-            ...boardCardScope(board),
-            archived: isArchived,
-          };
-
-          if (thisUserId && board.members) {
-            const member = findWhere(board.members, { userId: thisUserId, isActive: true });
-            if (member && (member.isNormalAssignedOnly || member.isCommentAssignedOnly || member.isReadAssignedOnly)) {
-              cardSelector.assignees = { $in: [thisUserId] };
-            }
-          }
-
-          const cards = await ReactiveCache.getCards(cardSelector, { fields: { _id: 1, type: 1, linkedId: 1 } }, false);
-          if (!cards || cards.length === 0) return null;
-
-          const linkedCardIds = cards.filter(c => c.type === 'cardType-linkedCard' && c.linkedId).map(c => c.linkedId);
+          // Only the linked cards whose board this subscriber may see
+          // (GHSA-jvv9-498p-hxrg class).
+          const linkedCardIds = await visibleLinkedCardIds(board);
           if (linkedCardIds.length === 0) return null;
 
           return await ReactiveCache.getChecklists({ cardId: { $in: linkedCardIds } }, {}, true);
@@ -887,22 +1195,9 @@ publishComposite('board', async function(boardId, isArchived) {
       // ChecklistItems for linked cards
       {
         async find(board) {
-          const cardSelector = {
-            ...boardCardScope(board),
-            archived: isArchived,
-          };
-
-          if (thisUserId && board.members) {
-            const member = findWhere(board.members, { userId: thisUserId, isActive: true });
-            if (member && (member.isNormalAssignedOnly || member.isCommentAssignedOnly || member.isReadAssignedOnly)) {
-              cardSelector.assignees = { $in: [thisUserId] };
-            }
-          }
-
-          const cards = await ReactiveCache.getCards(cardSelector, { fields: { _id: 1, type: 1, linkedId: 1 } }, false);
-          if (!cards || cards.length === 0) return null;
-
-          const linkedCardIds = cards.filter(c => c.type === 'cardType-linkedCard' && c.linkedId).map(c => c.linkedId);
+          // Only the linked cards whose board this subscriber may see
+          // (GHSA-jvv9-498p-hxrg class).
+          const linkedCardIds = await visibleLinkedCardIds(board);
           if (linkedCardIds.length === 0) return null;
 
           return await ReactiveCache.getChecklistItems({ cardId: { $in: linkedCardIds } }, {}, true);

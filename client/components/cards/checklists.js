@@ -8,6 +8,7 @@ import { BoardSwimlaneListCardDialog } from '/client/lib/dialogWithBoardSwimlane
 import { EscapeActions } from '/client/lib/escapeActions';
 import { Utils } from '/client/lib/utils';
 import autosize from 'autosize';
+import { isChecklistShownAtMinicard } from '/models/lib/minicardChecklistVisibility';
 
 // SubsManager removed for Meteor 3 migration
 const { calculateIndexData } = Utils;
@@ -81,6 +82,47 @@ Template.checklistDetail.helpers({
   finishedPercent() {
     const ret = this.checklist.finishedPercent();
     return ret;
+  },
+  /** #1591: is this checklist folded for THIS user?
+   *
+   * Per-user, keyed by card and checklist, exactly like collapsed lists and
+   * swimlanes - not the checklist's own hideAllChecklistItems, which is a field
+   * on the checklist and so changes what everyone on the board sees. `null` from
+   * the getter means "never set", which is what makes the default (expanded)
+   * distinguishable from somebody having deliberately expanded it. */
+  checklistCollapsed() {
+    const checklist = this.checklist;
+    if (!checklist || !checklist._id) return false;
+    const user = ReactiveCache.getCurrentUser();
+    if (!user) return false;
+    const cardId = (this.card && this.card._id) || checklist.cardId;
+    const stored = user.getCollapsedCardSection(
+      cardId, user.checklistSectionKey(checklist._id));
+    return stored === true;
+  },
+});
+
+Template.checklistDetail.events({
+  'click .js-collapse-checklist'(event) {
+    // The caret sits inside the title, which opens the inline rename form when
+    // clicked - so this must not reach it.
+    event.preventDefault();
+    event.stopPropagation();
+    const checklist = this.checklist;
+    const user = ReactiveCache.getCurrentUser();
+    if (!checklist || !checklist._id || !user) return;
+    const cardId = (this.card && this.card._id) || checklist.cardId;
+    const key = user.checklistSectionKey(checklist._id);
+    const collapsed = user.getCollapsedCardSection(cardId, key) === true;
+    user.setCollapsedCardSection(cardId, key, !collapsed);
+  },
+  'keydown .js-collapse-checklist'(event) {
+    // It is a link acting as a button, so it has to answer the keys a button
+    // answers or it is unreachable without a mouse.
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    event.stopPropagation();
+    $(event.currentTarget).trigger('click');
   },
 });
 
@@ -256,7 +298,26 @@ Template.addChecklistItemForm.events({
   },
 });
 
+// The board default this checklist's own setting overrides. Read here rather than
+// in the model helper, because the model runs on the server too, where looking a
+// board up is asynchronous - and a Blaze helper has to answer now.
+function boardAllowsChecklistsOnMinicard(checklist) {
+  if (!checklist) return false;
+  const board = ReactiveCache.getBoard(checklist.boardId);
+  return !!(board && board.allowsChecklistsOnMinicard);
+}
+
+Template.checklistActionsPopup.helpers({
+  // What the "Show on minicard" switch draws: whether the checklist is on the
+  // minicard right now, board default included.
+  shownAtMinicard() {
+    const checklist = this.checklist;
+    return isChecklistShownAtMinicard(checklist, boardAllowsChecklistsOnMinicard(checklist));
+  },
+});
+
 Template.checklistActionsPopup.events({
+  'click .js-export-checklist': Popup.open('exportChecklist'),
   'click .js-delete-checklist': Popup.afterConfirm('checklistDelete', function () {
     Popup.back(2);
     const checklist = this.checklist;
@@ -279,7 +340,12 @@ Template.checklistActionsPopup.events({
   },
   'click .js-show-checklist-at-minicard'(event) {
     event.preventDefault();
-    Template.currentData().checklist.toggleShowChecklistAtMinicard();
+    const checklist = Template.currentData().checklist;
+    // The board's setting is the default this one overrides, so the toggle has to
+    // flip what is ON SCREEN, not the raw field. Flipping the field is what made
+    // the first click do nothing while the board default was on (false -> true,
+    // still shown) - reported by email.
+    checklist.toggleShowChecklistAtMinicard(boardAllowsChecklistsOnMinicard(checklist));
     Popup.back();
   },
 });

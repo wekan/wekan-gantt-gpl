@@ -5,49 +5,55 @@
 //- templates are global) inside the Settings page, which brings the left menu, the
 //- pane title and the admin check with it. The /information URL redirects to
 //- Settings, the same way the old /translation URL does.
+//-
+//- ONE table, in FIVE categories. This was a single flat list of 40 rows in which
+//- the WeKan version, the OS load average, the DDP transport and a V8 heap counter
+//- were the same kind of thing, read top to bottom, with no way to jump to the part
+//- you came for. It is grouped now - what this IS (version and packaging), what it
+//- runs ON, how Meteor is talking to the client, what the database is, and finally
+//- Node's own memory - and each group is introduced by a row of its own that SPANS
+//- BOTH COLUMNS, in bold.
+//-
+//- One table rather than five, because five tables size their columns
+//- independently: "WeKan ® Version" made the first one's label column wide and
+//- "OS Type" made the next one's narrow, so the values started at a different x
+//- in every group and the pane read as five unrelated things. One table with a
+//- colgroup of two 50% columns puts every label and every value in the same place
+//- (.info-table in informationBody.css).
 template(name='statistics')
-    table
+    .version-check
+      button.js-check-newest-versions.primary(type="button" disabled=versionCheckRunning)
+        i.fa.fa-refresh
+        | {{_ 'check-version'}}
+      if versionCheckRunning
+        span.version-check-state {{_ 'loading'}}
+      if versionCheckError
+        span.version-check-state.error {{versionCheckError}}
+      if versionManifestText
+        pre.version-check-results {{versionManifestText}}
+    table.info-table
+      //- Two equal columns, stated once here rather than left to the widest cell:
+        with table-layout fixed these are what the browser uses, so the labels and
+        the values line up down the whole pane no matter which group is longest.
+      colgroup
+        col
+        col
       tbody
+        tr.info-category
+          th(colspan="2") {{_ 'Platform'}}
         tr
           th WeKan ® {{_ 'info'}}
           td {{statistics.version}}
+        //- The LABEL is translated; the VALUE never is. bundle.zip, Snap, Docker
+          and Sandstorm are the names of the things themselves - a package
+          format, a store, a product - not words describing them, and a reader
+          reporting an issue, searching the docs or grepping a log needs the same
+          four strings in every language. See models/lib/platformPackaging.js.
         tr
-          th {{_ 'Meteor_version'}}
-          td {{statistics.meteor.meteorVersion}}
-        tr
-          th {{_ 'Node_version'}}
-          td {{statistics.process.nodeVersion}}
-        tr
-          th {{_ 'Database_type'}}
-          td {{statistics.mongo.databaseType}}
-        tr
-          th {{_ 'MongoDB_version'}}
-          td {{statistics.mongo.mongoVersion}}
-        tr
-          th {{_ 'Database_commit'}}
-          td {{statistics.mongo.databaseCommit}}
-        if statistics.mongo.ferretdbVersion
-          tr
-            th {{_ 'FerretDB_version'}}
-            td {{statistics.mongo.ferretdbVersion}}
-          tr
-            th {{_ 'FerretDB_commit'}}
-            td {{statistics.mongo.ferretdbCommit}}
-        tr
-          th {{_ 'MongoDB_storage_engine'}}
-          td {{statistics.mongo.mongoStorageEngine}}
-        tr
-          th {{_ 'MongoDB_Oplog_enabled'}}
-          td {{formatBoolean statistics.mongo.mongoOplogEnabled}}
-        tr
-          th {{_ 'Reactivity_mode'}}
-          td {{statistics.mongo.reactivity}}
-        tr
-          th {{_ 'Reactivity_order'}}
-          td {{statistics.mongo.reactivityOrder}}
-        tr
-          th {{_ 'DDP_transport'}}
-          td {{statistics.mongo.ddpTransport}}
+          th {{_ 'package'}}
+          td {{statistics.platform.packaging}}
+        tr.info-category
+          th(colspan="2") {{_ 'OS'}}
         tr
           th {{_ 'OS_Type'}}
           td {{statistics.os.type}}
@@ -75,6 +81,62 @@ template(name='statistics')
         tr
           th {{_ 'OS_Cpus'}}
           td {{statistics.os.cpus.length}}
+        tr.info-category
+          th(colspan="2") {{_ 'Meteor'}}
+        tr
+          th {{_ 'Meteor_version'}}
+          td {{statistics.meteor.meteorVersion}}
+        //- Reactivity and DDP are Meteor's, not the database's: what is LIVE
+          (reactivity), what was ASKED for (reactivity order), and how the client
+          is connected (DDP transport). Whether an OpLog exists to tail is a
+          property of the database and stays in that table.
+        tr
+          th {{_ 'Reactivity_mode'}}
+          td {{statistics.mongo.reactivity}}
+        tr
+          th {{_ 'Reactivity_order'}}
+          td {{statistics.mongo.reactivityOrder}}
+        tr
+          th {{_ 'DDP_transport'}}
+          td {{statistics.mongo.ddpTransport}}
+        tr.info-category
+          th(colspan="2") {{_ 'Database'}}
+        tr
+          th {{_ 'Database_type'}}
+          td {{statistics.mongo.databaseType}}
+        tr
+          th {{_ 'MongoDB_version'}}
+          td {{statistics.mongo.mongoVersion}}
+        tr
+          th {{_ 'Database_commit'}}
+          td {{statistics.mongo.databaseCommit}}
+        //- Only when FerretDB is what answered: on MongoDB these two rows have
+          nothing to say, and an empty row reads as a missing value.
+        if statistics.mongo.ferretdbVersion
+          tr
+            th {{_ 'FerretDB_version'}}
+            td {{statistics.mongo.ferretdbVersion}}
+          tr
+            th {{_ 'FerretDB_commit'}}
+            td {{statistics.mongo.ferretdbCommit}}
+        tr
+          th {{_ 'MongoDB_storage_engine'}}
+          td {{statistics.mongo.mongoStorageEngine}}
+        tr
+          th {{_ 'MongoDB_Oplog_enabled'}}
+          td {{formatBoolean statistics.mongo.mongoOplogEnabled}}
+        unless isSandstorm
+          tr
+            th {{_ 'Mongo_sessions_count'}}
+            td {{statistics.session.sessionsCount}}
+        tr.info-category
+          th(colspan="2") {{_ 'Node'}}
+        tr
+          th {{_ 'Node_version'}}
+          td {{statistics.process.nodeVersion}}
+        //- A Sandstorm grain has no V8 heap figures collected for it (see
+          server/statistics.js), so the version above is all this table can say
+          there.
         unless isSandstorm
           tr
             th {{_ 'Node_heap_total_heap_size'}}
@@ -121,6 +183,3 @@ template(name='statistics')
           tr
             th {{_ 'Node_memory_usage_external'}}
             td {{fileSize statistics.nodeMemoryUsage.external}}
-          tr
-            th {{_ 'Mongo_sessions_count'}}
-            td {{statistics.session.sessionsCount}}

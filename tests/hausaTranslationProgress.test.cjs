@@ -1,0 +1,119 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { spawnSync } = require('node:child_process');
+
+const root = path.resolve(__dirname, '..');
+const fillScript = path.join(root, 'releases/translations/fill-translations.mjs');
+const result = spawnSync(process.execPath, [fillScript, '--list', 'ha'], {
+  cwd: root,
+  encoding: 'utf8',
+});
+assert.equal(result.status, 0, result.stderr);
+const remaining = JSON.parse(result.stdout);
+assert.equal(Object.keys(remaining).length, 0);
+
+const english = JSON.parse(fs.readFileSync(path.join(root, 'imports/i18n/data/en.i18n.json'), 'utf8'));
+const hausa = JSON.parse(fs.readFileSync(path.join(root, 'imports/i18n/data/ha.i18n.json'), 'utf8'));
+const tokens = (value) => [...value.matchAll(/__[A-Za-z0-9_]+__|%[A-Za-z]|%{[A-Za-z0-9]+}|{{[A-Za-z0-9]+}}/g)].map(([token]) => token).sort();
+const tags = (value) => [...value.matchAll(/<\/?[A-Za-z][^>]*>/g)].map(([tag]) => tag).sort();
+
+for (const [key, value] of Object.entries(hausa)) {
+  if (value !== english[key]) assert.deepEqual(tokens(value), tokens(english[key]), key);
+  assert.deepEqual(tags(value), tags(english[key]), key);
+}
+
+assert.equal(hausa.accept, 'Karɓa');
+assert.match(hausa['act-createBoard'], /allo/i);
+assert.match(hausa['act-createCard'], /kati/i);
+assert.equal(hausa.Database_type, "Nau'in ma'ajiyar bayanai");
+assert.match(hausa['org-domains-description'], /MULTITENANCY=true/);
+assert.equal(hausa['active-person'], 'Mutum mai aiki');
+assert.equal(hausa['default-subtasks-board'], 'Ƙananan ayyuka na allon __board__');
+assert.equal(hausa['boardDeletePopup-title'], 'A share allo?');
+assert.deepEqual(tokens(hausa['activity-added-label']), ['%s', '%s']);
+assert.deepEqual(tokens(hausa['activity-set-customfield']), ['%s', '%s', '%s']);
+assert.equal(hausa['r-w-every-day-at'], 'Kowace rana da __time__');
+assert.equal(hausa['r-import-done'], "An shigo da ƙa'idoji __count__");
+assert.equal(hausa['r-import-unmapped'], 'Ba a iya daidaita layuka __count__ ba');
+assert.match(hausa['r-import-workflow-note'], /n8n.*Node-RED.*WeKan/);
+assert.equal(hausa['r-for-n-days'], 'na kwanaki N');
+assert.equal(hausa['r-d-move-to-top-gen'], 'Matsar da kati zuwa saman jerinsa');
+assert.equal(hausa['r-d-move-to-bottom-spec'], 'Matsar da kati zuwa ƙasan jeri');
+assert.equal(hausa['r-d-send-email'], 'Aika imel');
+assert.equal(hausa['r-items-list'], 'abu1,abu2,abu3');
+assert.match(hausa['custom-head-manifest-content'], /JSON/);
+assert.equal(hausa['authentication-method'], 'Hanyar tantancewa');
+assert.deepEqual(tags(hausa['add-custom-html-after-body-start']), ['<body>']);
+assert.deepEqual(tokens(hausa['act-a-dueAt']),
+  ['__card__', '__timeOldValue__', '__timeValue__']);
+assert.deepEqual(tokens(hausa['act-atUserComment']),
+  ['__board__', '__card__', '__comment__', '__list__', '__swimlane__']);
+assert.equal(hausa.monday, 'Litinin');
+assert.equal(hausa.sunday, 'Lahadi');
+assert.match(hausa['roles-info'], /Shafin Gudanarwa/);
+assert.equal(hausa['globalSearchViewChange-choice-me'], 'Katunana');
+assert.deepEqual(tokens(hausa['board-title-not-found']), ['%s']);
+assert.match(hausa['shared-templates-info'], /Ƙungiya.*Tawaga/);
+assert.deepEqual(tokens(hausa['n-n-of-n-cards-found']),
+  ['__end__', '__start__', '__total__']);
+assert.equal(hausa['operator-board'], 'allo');
+assert.equal(hausa['predicate-overdue'], 'ya-wuce-lokaci');
+assert.deepEqual(tokens(hausa['operator-number-expected']),
+  ['__operator__', '__value__']);
+assert.match(hausa['globalSearch-instructions-description'], /__operator_list__/);
+assert.match(hausa['globalSearch-instructions-notes-3'], /\*AND\*/);
+assert.deepEqual(tokens(hausa['import-dependencies-done']),
+  ['__imported__', '__unmatched__']);
+assert.deepEqual(tokens(hausa['background-too-big']), ['{{size}}']);
+assert.equal(hausa['dependency-type-blocks'], 'Yana hana');
+assert.deepEqual(tokens(hausa['custom-field-stringtemplate-format']), ['%{value}']);
+assert.match(hausa['server-error-troubleshooting'], /sudo snap logs wekan\.wekan/);
+assert.match(hausa['office-report-desc'], /IPv4.*IPv6/);
+assert.match(hausa['api-no-calls'], /REST API.*WITH_API=true/);
+assert.match(hausa['recovery-report-desc'], /MongoDB/);
+assert.equal(hausa['ticket-number'], 'Lambar tikiti');
+assert.match(hausa.Node_heap_total_heap_size, /Node/);
+assert.equal(hausa['attachment-move-storage-gridfs'], 'Matsar da maƙala zuwa GridFS');
+assert.equal(hausa['attachment-move-storage-s3'], 'Matsar da maƙala zuwa S3');
+assert.match(hausa['attachment-repair-locations-description'], /GridFS/);
+assert.match(hausa['mongodb-compact-warning'], /replica set.*oplog.*Meteor/);
+assert.equal(hausa['gridfs-file-id'], 'ID na fayil ɗin GridFS');
+assert.equal(hausa['drag-board-to-workspace'],
+  'Ja allo don sanya shi ga __workspaces__ (ajiye a wurin aiki cikin mashigin gefe)');
+assert.match(hausa['import-board-zip'], /\.zip.*JSON/);
+assert.equal(hausa.accessibility, 'Samun dama');
+assert.match(hausa['accounts-lockout-info'], /hare-haren/);
+assert.equal(hausa['accounts-lockout-period'], 'Lokacin kullewa (daƙiƙu)');
+assert.equal(hausa['cron-jobs'], 'Ayyukan da aka tsara');
+assert.deepEqual(tokens(hausa['database-migration-confirm']), ['__db__']);
+assert.match(hausa['database-migration-description'],
+  /WEKAN_FERRETDB_URL.*WEKAN_MONGODB_URL.*MONGO_URL/);
+assert.match(hausa['sandstorm-migration-description'], /Sandstorm.*FerretDB/);
+assert.match(hausa['cards-loading-description'],
+  /CARDS_LOADING.*CARDS_LOADING_LAZY_THRESHOLD/);
+assert.deepEqual(tags(hausa['render-links-as-plain-text-description']), ['<a href>']);
+assert.match(hausa['backup-description'], /backup\/YYYY\/MM\/DD\/HH_MM_SS\/backup\.zip/);
+assert.equal(hausa['gcs-bucket'], 'Rumbun ajiya');
+assert.match(hausa['gcs-permissions-note'], /client_email.*Storage Object Admin/);
+assert.match(hausa['gcs-credentials-menu-path'], /IAM & Admin.*JSON/);
+assert.equal(hausa['gridfs-enabled'], 'An kunna GridFS');
+assert.match(hausa['gridfs-move-collectionfs-note'], /CollectionFS/);
+assert.match(hausa['s3-ssl-enabled-description'], /SSL\/TLS.*S3/);
+assert.match(hausa['restore-lost-cards-migration-description'], /swimlaneId.*listId/);
+assert.match(hausa['run-restore-all-archived-migration-confirm'], /DUKKAN/);
+assert.equal(hausa['step-validate-migration'], 'Tabbatar da ingancin ƙaura');
+assert.equal(hausa['step-fix-missing-ids'], 'Gyara ID da suka ɓace');
+assert.equal(hausa['cpu-usage'], 'Amfani da CPU');
+assert.equal(hausa['gridfs-attachments'], 'Maƙalolin GridFS');
+assert.match(hausa['migration-cpu-threshold-description'], /CPU.*10-90/);
+assert.equal(hausa['migration-delay-ms'], 'Jinkiri (ms)');
+assert.equal(hausa['total-attachments'], 'Jimillar maƙaloli');
+assert.equal(hausa.otp, 'Lambar OTP');
+assert.deepEqual(tokens(hausa['repair-broken-cards-done-unfixable']),
+  ['__fixed__', '__unfixable__']);
+assert.match(hausa['problems-in-progress-help'], /CPU/);
+assert.equal(hausa['event-ipv4'], 'Adireshin IPv4');
+assert.equal(hausa['event-ipv6'], 'Adireshin IPv6');
+assert.deepEqual(tokens(hausa['globalSearch-instructions-operator-number']),
+  ['__operator_number__']);

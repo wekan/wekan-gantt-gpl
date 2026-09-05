@@ -48,7 +48,7 @@
 }
 .pop-over .header .header-title {
   display: block;
-  line-height: 36px;
+  line-height: calc(36px * var(--wekan-ui-font-scale, 1));
   padding-top: 5px;
   margin: 0 18px;
   font-weight: bold;
@@ -259,6 +259,125 @@
   visibility: hidden !important;
 }
 
+
+/* History: the panel's height has to REACH THE TABLE, at every width.
+ *
+ * This is deliberately outside the desktop media query below, because the width
+ * where it matters most is the small one. Above 801px the panel is given a
+ * height directly; under it, popup.css already lays every popup out as a
+ * full-screen sheet - so the box is the right size in both cases and the only
+ * question is whether the three wrappers between the shell and the template
+ * pass that size down. They did not, and the symptom was the horizontal
+ * scrollbar sitting halfway up a full-screen panel with blank space beneath it,
+ * because the rows box was only as tall as its one row.
+ *
+ * Measured at 375x812, the chain broke in two places, both of them percentage
+ * heights meeting an indefinite parent:
+ *   .content-container stopped at 588px - `max-height: calc(70vh + 20px)` from
+ *     the base rule, which is 70% of 812 plus 20, and the `.pop-over--bounded`
+ *     override that normally cancels it does not apply here: that class is set
+ *     from the inline max-height, and popupOffset.js sends none to a
+ *     full-screen sheet.
+ *   .content collapsed to 10px - its `height: calc(100% - 20px)` had nothing
+ *     definite to be a percentage OF, so it resolved to the padding alone.
+ *
+ * So this uses FLEX rather than percentages the whole way down. A flex item
+ * that may grow and shrink needs no parent height to resolve against, which is
+ * the property percentages lack, and `min-height: 0` is what actually lets it
+ * shrink - a flex item defaults to `min-height: auto`, its content, so without
+ * it a long table pushes the panel taller instead of scrolling inside it. */
+.pop-over[data-popup='historyPopup'] {
+  display: flex;
+  flex-direction: column;
+  /* The base rule caps EVERY popup at `max-height: 90vh !important`, which on a
+     full-screen sheet leaves a tenth of the screen empty under it - 731px of an
+     812px phone, measured. The mobile block already tries to undo that with
+     `max-height: 100% !important` on `.pop-over` and loses, because the two have
+     the same specificity and 90vh is written later in this file.
+     `[data-popup=...]` adds an attribute selector, so this one wins on
+     specificity instead of on position - and the desktop height further down,
+     which shares this specificity, still wins there by being written after it. */
+  max-height: 100% !important;
+  /* So the stated height IS the outer height. This file's reset makes `*`
+     `box-sizing: unset`, i.e. content-box, and `.pop-over` carries a 1px
+     border, so `height: calc(100vh - 20px)` drew a box 2px taller than it says
+     and the gap below came out 8px against 10px above. `.pop-over--bounded`
+     sets border-box and would have covered it, but that class is applied from
+     the inline max-height popupOffset.js sends, and it does not send one
+     whenever it takes its mini-screen branch - which can happen at widths where
+     the desktop CSS above is still in force. Stating it here does not depend on
+     the two agreeing. */
+  box-sizing: border-box;
+}
+.pop-over[data-popup='historyPopup'] .content-wrapper,
+.pop-over[data-popup='historyPopup'] .content-container,
+.pop-over[data-popup='historyPopup'] .content:not(.no-height) {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  height: auto;
+  /* The 70vh cap above, cancelled where it would clip the panel short. */
+  max-height: none;
+  min-height: 0;
+}
+
+/* `:not(.no-height)` above, and this, are the same point twice, because getting
+   it wrong is invisible until you look INSIDE the panel.
+   `.content-container` holds the whole popup STACK - one `.content` per entry,
+   with the ones you are not looking at collapsed by `.content.no-height {
+   height: 0 }`. A flex item ignores that: `flex: 1 1 auto` says grow, and
+   `height: 0` is only the basis it grows from. So the card or board menu that
+   History was opened over stayed in the layout, took half the panel, and left a
+   band of empty space above the search box - while the gaps outside the panel
+   still measured correctly, which is why measuring only the frame missed it. */
+.pop-over[data-popup='historyPopup'] .content.no-height {
+  /* `!important` because the rule it has to beat carries one: `.pop-over
+     .content { flex: 1 1 auto !important }`. Without it the collapsed entry
+     computed `flex: 1 1 auto` and grew to 336px of an 925px window, whatever
+     `height: 0` said. */
+  flex: 0 0 0 !important;
+}
+/* The wrapper is the one that must not scroll: the rows box inside it does its
+   own scrolling, and two nested scrollers put the horizontal bar in the middle
+   of the panel instead of at the foot of it. */
+.pop-over[data-popup='historyPopup'] .content-wrapper {
+  overflow: hidden;
+}
+
+/* Select Color (Member Settings and Board Settings) is wide enough for several
+ * columns of swatches, the same idea as the language popup below: width buys
+ * columns, and the picker's grid (customTheme.css) takes as many as fit.
+ *
+ * Desktop only. Below 800px popup.css lays every popup out as a full-screen
+ * sheet, and an !important width here would fight that rule and win.
+ *
+ * 720px is mirrored in client/lib/popupOffset.js: the JS clamps a popup into the
+ * viewport using its width, and computed for the default 380px it would place a
+ * wide popup opened near the right edge with a third of itself off the screen.
+ * Change one and change the other. */
+@media screen and (min-width: 801px) {
+  .pop-over[data-popup='changeColorPopup'],
+  .pop-over[data-popup='boardChangeColorPopup'],
+  /* Stickers, for the same reason as the colours: the picker is a GRID, and
+     width buys columns. At the default 380px it was eight icons per row and a
+     hundred and fifty stickers made a column taller than the screen, so
+     choosing one meant scrolling past most of them. */
+  .pop-over[data-popup='cardStickersPopup'] {
+    width: min(90vw, 720px) !important;
+    max-width: 90vw !important;
+  }
+
+  /* Show on Card / Show on Minicard: two dozen settings, and with one of the
+     two checkbox columns hidden each row is half as wide as it was. Width here
+     buys COLUMNS of rows (sidebar.css), which is what turns a list you scroll
+     into a table you read. */
+  .pop-over[data-popup='showOnCardPopup'],
+  .pop-over[data-popup='showOnMinicardPopup'] {
+    width: min(90vw, 900px) !important;
+    max-width: 90vw !important;
+  }
+}
+
 /* Make language popup extend to bottom of browser window */
 .pop-over[data-popup='changeLanguagePopup'] {
   position: fixed !important;
@@ -368,7 +487,7 @@
   padding: 8px !important;
   border: 1px solid #ccc !important;
   border-radius: 4px !important;
-  font-size: 14px !important;
+  font-size: calc(14px * var(--wekan-ui-font-scale, 1)) !important;
   box-sizing: border-box !important;
 }
 
@@ -607,7 +726,7 @@
   margin: 0;
   text-decoration: none;
   overflow: hidden;
-  line-height: 33px;
+  line-height: calc(33px * var(--wekan-ui-font-scale, 1));
   display: flex;
   /*  flex-wrap:wrap;*/
   gap: 5px;
@@ -623,9 +742,44 @@
   width: auto;
   padding-inline-end: 22px;
 }
+/* Custom Fields, from the card's own section: a row is the field's name with the
+   checkbox that puts it on this card, and the pencil that edits the field at the
+   far end of the same line. Every other pop-over list has ONE anchor per row, so
+   `li` is a block and the anchor fills it; two anchors in a block stack, which
+   put the pencil on a line of its own under the name. The row is the flex
+   container here, and the name takes the space the pencil does not.
+   client/components/cards/cardCustomFields.jade */
+.pop-over[data-popup='cardCustomFieldsPopup'] .pop-over-list li.item {
+  display: flex;
+  align-items: center;
+}
+
+.pop-over[data-popup='cardCustomFieldsPopup'] .pop-over-list li.item > a.name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pop-over[data-popup='cardCustomFieldsPopup'] .pop-over-list li.item > a.js-edit-custom-field {
+  flex: 0 0 auto;
+}
+
+/* The highlighted row is the SAME highlight the All Boards left menu gives its
+   selected entry, and the Admin Panel gives its own: the theme accent, with the
+   label AND the icon in white. It was a fixed dark navy (#005377), so Member
+   Settings highlighted "My Cards" in a colour that appeared nowhere else on the
+   page and stayed navy however the user had themed WeKan.
+
+   The fallback is the WeKan header blue, so with no chosen theme the row matches
+   the bar above it exactly. `!important` on the colour because the base rule
+   above pins every row's text to `#000 !important`; the icon is named separately
+   for the same reason. */
 .pop-over-list li > a:not(.disabled):hover {
-  background-color: #005377;
-  color: #fff;
+  background-color: var(--theme-accent, #2980b9);
+  color: #fff !important;
+}
+.pop-over-list li > a:not(.disabled):hover i,
+.pop-over-list li > a:not(.disabled):hover i.fa {
+  color: #fff !important;
 }
 .pop-over-list li > a:not(.disabled):hover .sub-name,
 .pop-over-list li > a:not(.disabled):hover .quiet {
@@ -637,9 +791,9 @@
 .pop-over-list li > a .sub-name {
   color: #8c8c8c;
   display: block;
-  font-size: 12px;
+  font-size: calc(12px * var(--wekan-ui-font-scale, 1));
   font-weight: 400;
-  line-height: 15px;
+  line-height: calc(15px * var(--wekan-ui-font-scale, 1));
 }
 
 /* A menu whose rows are "icon - name - description" (Change Visibility, Change
@@ -794,7 +948,7 @@
     top: 0px;
   }
   .pop-over .header .header-title {
-    font-size: 20px;
+    font-size: calc(20px * var(--wekan-ui-font-scale, 1));
     font-weight: normal;
     padding-top: 8px;
   }
@@ -809,7 +963,7 @@
     padding: 10px 12px;
   }
   .pop-over .header .close-btn i.fa {
-    font-size: 24px;
+    font-size: calc(24px * var(--wekan-ui-font-scale, 1));
     color: #fff;
   }
   .pop-over .content-wrapper {
@@ -874,14 +1028,29 @@ body.mobile-mode .pop-over {
   inset-inline-end: 0 !important;
   bottom: 0 !important;
   width: 100vw !important;
-  height: 100vh !important;
   max-width: 100vw !important;
+  /* #6488. `100vh` is the viewport with the browser's toolbars HIDDEN, so a
+     `position: fixed` box sized that way reaches under them: on a phone the
+     bottom of this popup is off screen, and being fixed there is no gesture that
+     brings it back. `100dvh` is the viewport as it is right now. The `vh` pair
+     stays first as the fallback where `dvh` is unknown - the same fix
+     body.mobile-mode already carries in layouts.css. */
+  height: 100vh !important;
   max-height: 100vh !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
 }
 body.mobile-mode .pop-over .content-wrapper {
   width: 100% !important;
-  height: calc(100vh - 48px) !important;
-  max-height: calc(100vh - 48px) !important;
+  /* #6488. This was `calc(100vh - 48px)`, which is two guesses at once: the
+     viewport measured with the toolbars hidden, minus a fixed 48px for the
+     popup's own title bar. When the title wraps - a long board name, a
+     translated label - the bar is taller than 48px and the list inside this
+     wrapper ends below the screen, so its last rows cannot be scrolled to.
+     Nothing needs measuring: `.pop-over` above is a flex column of exactly one
+     viewport, `.pop-over .header` is `flex-shrink: 0`, and this wrapper is
+     already `flex: 1 1 auto; min-height: 0` - so it is whatever the title bar
+     leaves, at whatever height the title bar really is. */
   overflow-y: auto !important;
   overflow-x: hidden !important;
 }
@@ -941,4 +1110,189 @@ body.mobile-mode .pop-over .content-wrapper {
   .pop-over[data-popup="listActionsPopup"] .content-wrapper {
     max-height: calc(100vh - 48px) !important;
   }
+}
+
+/* The heading over the starred PAGES in the star dropdown. The dropdown lists
+   two kinds of destination - boards and pages - and a flat list of both leaves
+   the reader working out which rows are which. Quiet: it is a label on a group,
+   not a row you can click. docs/Features/Board/Starred.md */
+.pop-over .pop-over-list-title {
+  padding: 4px 12px;
+  font-size: calc(12px * var(--wekan-ui-font-scale, 1));
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.6;
+}
+
+/* EVERY export popup - board, swimlane, list, card - two panes when the window
+   has room for them. They are one popup with one scope each (#1173), so the
+   layout is written once, against the `.export-board-panes` the shared body
+   draws, rather than against the board popup's name.
+   WHAT to include on one side, what to export TO on the other, so the whole
+   menu is visible at once instead of being a column somebody scrolls past
+   twenty entries of. The same idea as the language list - width buys layout -
+   taken one step further, because this menu has two different KINDS of thing in
+   it and they read better side by side than stacked.
+
+   They are grid COLUMNS, which is what makes the right-to-left case free: a
+   mirrored page puts the first column on the right, so the selection lands on
+   the right and the formats on the left with no second rule to write or forget.
+
+   Desktop only. Below 800px popup.css lays every popup out as a full-screen
+   sheet and the panes stack, which is what a phone should get anyway.
+
+   1100px is mirrored in client/lib/popupOffset.js, which clamps a popup into
+   the viewport using its width - computed for the default 380px, a wide popup
+   opened near the right edge lands most of the way off the screen. Change one
+   and change the other. */
+@media screen and (min-width: 801px) {
+  /* THE History panel: the 10px gutter, and DESKTOP ONLY.
+     Below 801px popup.css lays every popup out as a full-screen sheet flush to
+     all four edges, and so does `body.mobile-mode` at any width. That is what a
+     phone should get and it stays that way - the gutter is a desktop thing. The
+     height chain further up is NOT in a media query, on purpose: the sheet still
+     has to pass its height down to the table, or the horizontal scrollbar ends
+     up halfway up the panel.
+
+     FIXED, not absolute. Every other popup is positioned in DOCUMENT
+     coordinates: #5667 has popupOffset.js clamp in viewport coordinates and add
+     the scroll back, which is right for a menu hung off a button, because the
+     menu should travel with the button as the page scrolls. This one is not
+     hung off anything - it is sized FROM the viewport, so it must be positioned
+     from the viewport too. Opened on a page scrolled 53px down and then
+     scrolled back, it stayed at document y=63: 63px below the window with 43px
+     of itself past the bottom.
+
+     The offsets are logical, and BOTH ends are named: the template writes an
+     inline `left:` in document coordinates, so setting only the start would
+     leave RTL positioned from two sides at once - the logical start resolving
+     to `right` while the inline `left` still applied.
+
+     Every 10px here, and the 20px that is two of them, is `viewportPadding` in
+     client/lib/popupOffset.js. Change one and change the other. */
+  .pop-over[data-popup='historyPopup'] {
+    position: fixed !important;
+    top: 10px !important;
+    inset-inline-start: 10px !important;
+    inset-inline-end: auto !important;
+    width: calc(100vw - 20px) !important;
+    max-width: calc(100vw - 20px) !important;
+    /* `height` and not just `max-height`: popupOffset.js already sends a maximum
+       of this size, and a maximum alone lets a short table stay short - a
+       two-row table sat in the top eighth of the window, the rest blank. */
+    height: calc(100vh - 20px) !important;
+    max-height: calc(100vh - 20px) !important;
+    /* No `margin-top: 6px`. The base rule adds it as the gap between a menu and
+       the button that opened it; this panel is pinned, not hung, so it was added
+       to a position already final - and on a box exactly `100vh - 20px` tall it
+       pushed 6px past the bottom: 16px above against 4px below. */
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  .pop-over[data-popup='exportBoardPopup'],
+  .pop-over[data-popup='exportSwimlanePopup'],
+  .pop-over[data-popup='exportListPopup'],
+  .pop-over[data-popup='exportCardPopup'] {
+    /* The FULL width of the window, less the 10px gutter every popup is kept
+       inside - not "up to 1100px". It is a panel with two panes, and anchored
+       to its button at 1100 its trailing edge went past the edge of the window,
+       taking the pop-over's own X with it. client/lib/popupOffset.js pins it to
+       that same gutter at the top of the viewport, so the whole panel - header,
+       X and both panes - is always on screen. The 20px is the 10px inset on
+       each side; keep it in step with `viewportPadding` there. */
+    width: calc(100vw - 20px) !important;
+    max-width: calc(100vw - 20px) !important;
+  }
+
+
+  /* No `margin-top: 6px` on a panel that is pinned rather than hung.
+     The base `.pop-over` rule adds that margin as the little gap between a menu
+     and the button that opened it. These five are not hung off a button -
+     popupOffset.js pins them to the viewport's own 10px gutter - so the margin
+     is added to a position that was already final, and every one of them sat
+     16px from the top of the window while its own comment said 10.
+
+     History showed how wrong it can get: it is the one with a stated HEIGHT, so
+     6px added to the top of a box exactly `100vh - 20px` tall pushed 6px of it
+     past the bottom - 16px above against 4px below. It clears the margin in its
+     own block above, which is not inside a media query; these four are
+     desktop-only panels and clear it here. */
+  .pop-over[data-popup='exportBoardPopup'],
+  .pop-over[data-popup='exportSwimlanePopup'],
+  .pop-over[data-popup='exportListPopup'],
+  .pop-over[data-popup='exportCardPopup'] {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  .pop-over .export-board-panes {
+    display: grid;
+    /* The selection is a checkbox list and stays narrower than the formats,
+       which are three groups under three headings. */
+    grid-template-columns: minmax(260px, 0.8fr) minmax(340px, 1.2fr);
+    column-gap: 18px;
+    align-items: start;
+  }
+  /* A rule between the panes rather than under each section: the two sides are
+     one menu, and the line says where one ends. `border-inline-start` mirrors
+     itself, like everything else here. */
+  .pop-over .export-board-pane-formats {
+    border-inline-start: 1px solid rgba(0, 0, 0, 0.12);
+    padding-inline-start: 18px;
+  }
+  /* Inside a pane, lists still fill their width with as many columns as fit -
+     so a very wide window gives the formats two columns rather than one long
+     one, and the checkboxes two or three. */
+  .pop-over .export-board-pane .pop-over-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    align-content: start;
+    column-gap: 4px;
+  }
+  .pop-over .export-board-pane .pop-over-list li {
+    min-width: 0;
+  }
+}
+
+/* A row in "select what to include": the box, then the label, with the box
+   against the FIRST line when the label wraps.
+
+   These labels are long and several of them wrap in any language with compound
+   words - "Board-Informationen (Board, Liste, Swimlane)", "Daten (Erstellt,
+   Empfangen, Start, Fällig, Ende)" - and a box that centres itself against two
+   lines of text reads as belonging to neither of them. Aligning to the start
+   puts it where a checkbox belongs, beside the first line, and `fa-fw` keeps
+   every box the same width so the labels line up down the column. */
+.pop-over .export-board-pane .pop-over-list.export-scope-select a {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+/* THE BOX KEEPS ITS SHAPE next to a long label.
+   `.materialCheckBox` is 13x13, but as a flex item it may be SHRUNK, and these
+   labels are long enough to do it - "Kortin tiedot (jokainen kortti kuten kortin
+   viennissä)" squeezed the unchecked square into a thin vertical sliver while
+   "Taulu" beside it stayed square. `flex: 0 0 auto` takes it out of the
+   shrinking, and the explicit box-sizing keeps the 2px border inside the 13px
+   rather than adding to it.
+   The CHECKED state is deliberately a different shape - forms.css turns the
+   square into a rotated tick - so this fixes the size of the box, not of the
+   mark inside it. */
+.pop-over .export-board-pane .pop-over-list.export-scope-select a > .materialCheckBox {
+  /* Only the optical nudge that puts the box on the FIRST line of a label that
+     wraps - the shape is forms.css's business (`flex: none` there), and a
+     `box-sizing` here would have made these boxes smaller than every other
+     checkbox in WeKan, since box-sizing is not global in this app. */
+  margin-top: 3px;
+}
+
+/* The rule above each subheading in the Export board menu. Tighter than the
+   default so a group's heading stays visually attached to the list under it
+   rather than floating between two gaps. */
+.pop-over .export-board-pane hr {
+  margin: 10px 0 0 0;
+  border: none;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
 }

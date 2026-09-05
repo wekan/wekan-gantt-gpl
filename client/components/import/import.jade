@@ -1,16 +1,46 @@
-template(name="importHeaderBar")
-  h1
-    a.back-btn(href="{{pathFor 'home'}}")
-      i.fa-arrow-left
-    | {{title}}
-
 template(name="import")
-  .wrapper
+  .wrapper.import-page
     if error.get
       .warning {{_ error.get}}
     if zipImporting
       .warning {{_ 'import-trello-zip-progress'}}
-    +Template.dynamic(template=currentTemplate)
+    //- #1173: ONE import page. Every source used to be its own address reached
+      from its own link in the board sidebar, and the page never said which
+      others existed - so "where do I import a Jira export" was answered by a
+      menu somewhere else. The source is picked HERE, the parts are picked with
+      the same checkboxes every export uses, and the boards inside a file that
+      holds several are picked below that.
+    //- The two questions side by side when the page is wide enough: which
+      source, and what to take from it. They are asked in that order and
+      answered in either, so reading them as two columns beats scrolling past
+      fourteen sources to reach the parts. client/components/import/import.css
+    .import-columns
+      .import-sources
+        h2 {{_ 'import-source-heading'}}
+        ul.import-source-list
+          each importSources
+            li
+              //- The same green tick every checkbox in the app uses
+                (`.materialCheckBox`, forms.css) - the one Admin Panel /
+                Announcement has. Nothing is chosen to begin with, and choosing
+                one un-chooses the last: an import reads ONE file in one format,
+                so this is a radio wearing the app's own checkbox.
+              a.flex.js-select-import-source(data-source="{{key}}" href="#")
+                .materialCheckBox(class="{{#if selected}}is-checked{{/if}}")
+                span {{name}}
+      if hasImportSource
+        .import-parts
+          h2 {{_ 'export-select-what-to-include'}}
+          p.quiet {{_ 'import-parts-instruction'}}
+          ul.import-part-list
+            each importParts
+              li
+                a.flex.js-import-part-toggle(data-field="{{field}}" href="#")
+                  .materialCheckBox(class="{{#if checked}}is-checked{{/if}}")
+                  span {{_ label}}
+    if hasImportSource
+      hr
+      +Template.dynamic(template=currentTemplate)
 
 template(name="importTextarea")
   form
@@ -22,6 +52,14 @@ template(name="importTextarea")
     else
       textarea.js-import-json(id='import-textarea' placeholder="{{_ importPlaceHolder}}" autofocus)
         | {{jsonText}}
+    if isWekanImport
+      //- #1173: a WeKan export can be a .json or a .zip - the .zip is the one to
+        use when a board's attachments are too large to sit inside one JSON
+        string. Both land in the same place; the .zip is unpacked in the browser
+        and its files are put back on their metadata rows.
+      p.import-file-row
+        label(for='import-wekan-file') {{_ 'import-wekan-file'}}
+        input.js-import-json-file(id='import-wekan-file' type="file" accept=".json,.zip,application/json,application/zip")
     if isTrelloImport
       p.import-file-row
         label(for='import-json-file') {{_ 'import-trello-json-file'}}
@@ -35,7 +73,7 @@ template(name="importTextarea")
         label(for='import-workspace-name') {{_ 'import-trello-workspace'}}
         input.js-import-workspace-name(id='import-workspace-name' type="text" placeholder="{{_ 'import-trello-workspace-placeholder'}}")
     input.primary.wide(type="submit" value="{{_ 'import'}}")
-    button.wide.js-import-without-mapping(type="button") {{_ 'import-without-mapping-members'}}
+    button.primary.wide.js-import-without-mapping(type="button") {{_ 'import-without-mapping-members'}}
   if isTrelloImport
     hr
     +importTrelloApi
@@ -164,7 +202,7 @@ template(name="importMapMembers")
         .mapping-item.ghost-item
       form
         input.primary.wide(type="submit" value="{{_ 'done'}}")
-        button.wide.js-import-skip-mapping(type="button") {{_ 'import-without-mapping-members'}}
+        button.primary.wide.js-import-skip-mapping(type="button") {{_ 'import-without-mapping-members'}}
   else
     +spinner
 

@@ -1,13 +1,13 @@
 # Design: SQLite corruption/bloat safety, automatic recovery, and Admin Panel → Problems → Recovery
 
-> **This page uses the shared [Table Page](../../../Design/Page/Table.md) design.**
+> **This page uses the shared [Table Page](../../../Features/Page/Table.md) design.**
 > The layout, search, pagination, column spec and per-page data loading are defined
 > there and are not repeated here.
 
 Status: **Implemented** · Owner: xet7 · Related (#6492):
 `models/lib/recoveryPlan.js`, `models/lib/recoveryEventsJsonl.js`,
 `models/recoveryEvents.js`, `server/recovery.js`,
-`server/publications/recoveryReport.js`, `client/components/settings/adminReports.*`,
+`server/publications/recoveryReport.js`, `client/components/settings/adminProblems.*`,
 `snap-src/bin/ferretdb-control`, `releases/ferretdb/*`, and the FerretDB fork
 (`internal/backends/sqlite/metadata/pool/opendb.go`,
 `internal/handler/handler.go`).
@@ -97,6 +97,41 @@ Event types include `backup-created`, `corruption-detected`, `restore-backup`,
 `restore-prev`, `remigrate`, `bloat-repaired`, `integrity-ok`, `manual-required`, each
 with a severity (info / warning / error).
 
+Recovery also keeps the audit trail for irreversible board deletion. Changing
+Admin Panel → Problems → Delete records `permanent-delete-setting-changed` with
+the Global Admin username, user ID and whether the setting was enabled or
+disabled. Every successfully purged archived board records
+`board-permanently-deleted` with that actor, the board ID and its title. No-op,
+unauthorized and failed operations are not logged as successful actions.
+
+Attempted setting changes and board purges are always recorded with a Boolean
+`done`, the user ID and username when known, and the proxy-aware IPv4 or IPv6
+address resolved through `HTTP_FORWARDED_COUNT`. Board attempts also keep
+bounded `boardIds` and `boardTitles` arrays; an ID that does not resolve uses an
+unknown-title marker rather than disappearing from the audit.
+
+The Recovery table begins with **Done**. `true` renders a green check, `false` a
+red warning triangle, and a successful operation that physically deleted data
+adds a yellow trashcan. A batch that partly completes therefore shows yellow
+successful rows for the boards already removed and a red failed-attempt row for
+the whole requested batch.
+
+The filter dropdown above the table selects **All**, **Done**, **Failed** or
+**Deleted** events. Filtering is applied by the server before counting and
+pagination, and combines with the search term. Older events written before the
+`done` field existed count as Done because those event types represented completed
+recovery actions.
+
+Below the existing database-recovery description, the pane has a second paragraph
+explaining that Recovery also records permanent-delete setting changes and every
+successful, failed or unauthorized purge attempt, together with its Done status,
+actor, trusted address and attempted board IDs and titles.
+
+Admin Panel → Problems → **Delete** repeats that same paragraph immediately below
+its existing permanent-delete setting description. Both panes use one shared source
+sentence, so the explanation at the control and the explanation at its audit trail
+cannot drift apart.
+
 ## Manual recovery
 
 To force a restore on the next start, set `WEKAN_FORCE_RESTORE=backup` (or `prev`, or
@@ -111,10 +146,14 @@ Recovery report.
   → manual, non-destructive).
 - `tests/recoveryEventsJsonl.test.cjs` — the JSONL parser (skips junk, normalizes
   severity, bounds line size; never throws).
-- `tests/recoveryReportQuery.test.cjs` — the report search selector (escapes regex
-  metacharacters).
+- `tests/recoveryReportQuery.test.cjs` — the report search and outcome selectors
+  (including combined filters, legacy Done rows and escaped regex metacharacters).
 - `tests/recoveryReportWiring.test.cjs` — the Recovery report is wired and the
   publication/count/method are admin-gated.
+- `tests/permanentDeleteRecoveryAudit.test.cjs` — permanent-delete setting
+  changes and board-purge attempts record status, actor, address and affected
+  boards; it also pins the Done/deletion icons and proves failed operations
+  cannot produce success records.
 - `tests/ferretdbTextDataBackup.test.cjs` — the backup/restore scripts (critical
   negatives: never delete the live text data or a backup copy, never copy
   attachments/avatars).

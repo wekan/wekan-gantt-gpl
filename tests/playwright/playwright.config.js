@@ -1,9 +1,19 @@
 // @ts-check
 const { defineConfig, devices } = require('@playwright/test');
 const { execFileSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 
 const BASE_URL = process.env.WEKAN_BASE_URL || 'http://localhost:3000';
 const RUN_ALL_BROWSERS = process.env.WEKAN_PLAYWRIGHT_ALL === '1';
+const SELECTED_BROWSER = process.env.WEKAN_PLAYWRIGHT_PROJECT || '';
+// Flatpak exposes only the repository, so browsers installed by the sandbox
+// bootstrap live here rather than under the real home cache. Honour an explicit
+// caller path first; otherwise make direct npx runs use the existing local cache.
+const LOCAL_BROWSER_CACHE = path.join(__dirname, '..', '..', '.tools', 'ms-playwright');
+if (!process.env.PLAYWRIGHT_BROWSERS_PATH && fs.existsSync(LOCAL_BROWSER_CACHE)) {
+  process.env.PLAYWRIGHT_BROWSERS_PATH = LOCAL_BROWSER_CACHE;
+}
 
 // WPE WebKit (the `webkit` project) aborts its WPEWebProcess renderer in headless
 // software-GL environments — notably ARM hosts using Mesa llvmpipe (observed
@@ -52,13 +62,24 @@ function canLaunch(browserName) {
 }
 
 function browserProjects() {
-  const candidates = RUN_ALL_BROWSERS
+  const candidates = SELECTED_BROWSER
+    ? [{ name: SELECTED_BROWSER, use: { ...devices[SELECTED_BROWSER === 'chromium' ? 'Desktop Chrome' : SELECTED_BROWSER === 'firefox' ? 'Desktop Firefox' : 'Desktop Safari'] } }]
+    : RUN_ALL_BROWSERS
     ? [
         { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
         { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
         { name: 'webkit', use: { ...devices['Desktop Safari'] } },
       ]
     : [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }];
+
+  // WebKit can occasionally terminate a renderer after hundreds of tests and
+  // report only "WebKit encountered an internal error". One local retry gets a
+  // fresh Playwright worker/browser. A real application failure repeats and
+  // still fails; CI keeps its broader two-retry policy below.
+  if (!process.env.CI) {
+    const webkitProject = candidates.find(project => project.name === 'webkit');
+    if (webkitProject) webkitProject.retries = 1;
+  }
 
   if (!SHOULD_PROBE) {
     return candidates;
@@ -89,7 +110,7 @@ module.exports = defineConfig({
   timeout: 60_000,
   expect: { timeout: 15_000 },
   fullyParallel: false,
-  workers: 1,
+  workers: Math.max(1, Number(process.env.WEKAN_PLAYWRIGHT_WORKERS || 1)),
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI
     ? [['github'], ['html', { outputFolder: 'playwright-report', open: 'never' }]]

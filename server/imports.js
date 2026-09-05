@@ -15,6 +15,15 @@ import '/server/00processErrors';
 // come before anything that registers a Meteor.startup hook.
 import '/server/00startupResilience';
 
+// ...and retry the writes themselves, so a write that lost the race for SQLite's
+// single writer is retried instead of failing the user's edit (#6533). Loaded here
+// so it wraps the collection prototype OUTSIDE collection2 / collection-hooks.
+import '/server/00retryBusyWrites';
+
+// Yandex Browser is a modern browser: say so, or `modern-browsers` serves it the
+// legacy bundle because it has no minimum for that family name (#6557).
+import '/server/modernBrowsers';
+
 // ****IMPORTANT**** Wait for MongoDB to be ready BEFORE anything else, so the
 // first index creation never crashes the server with "Topology is closed".
 // Registers the first Meteor.startup hook, so it runs before index-creating ones.
@@ -86,10 +95,12 @@ import '/models/lib/userStorageHelpers';
 // Models — server-only sub-modules
 import '/models/server/createWorkbook';
 import '/models/server/ExporterCardPDF';
+import '/models/importZip';
 import '/models/server/ExporterExcelCard';
 import '/models/server/ExporterExcel';
 import '/models/server/metrics';
 import '/server/lib/speedMiddleware';
+import '/server/lib/debugSpeed';
 import '/server/lib/cpuMonitor';
 import '/server/lib/selfChecks';
 import '/server/models/actions';
@@ -135,8 +146,10 @@ import '/config/search-const';
 // ----------------------------------------------------------------------------
 import '/server/00checkStartup';
 import '/server/accounts-common';
-import '/server/accounts-resume-login';
 import '/server/accounts-lockout-config';
+// Fold the per-event eventlog rows an older WeKan wrote into problem summaries
+// (server/lib/eventLogSummaryMigration.js). Idempotent and once.
+import '/server/eventLogSummaryStartup';
 import '/server/authentication';
 import '/server/cors';
 import '/server/header-login';
@@ -195,6 +208,11 @@ import '/server/lib/tenantResolver';
 import '/server/lib/ssrfGuard';
 import '/server/lib/ddpSessionSendGuard';
 import '/server/lib/databaseProblems';
+// What the FILESYSTEM said, and whether this server stopped cleanly last time
+// (docs/Security/Remediation/WeKan.md §13). Both write to the 'integrity' event
+// stream, shown in Admin Panel / Problems / Filesystem integrity.
+import '/server/lib/fileIntegrityScan';
+import '/server/lib/uptimeWatch';
 import '/server/lib/utils';
 
 // ----------------------------------------------------------------------------
@@ -207,7 +225,13 @@ import '/server/methods/lockedUsers';
 import '/server/methods/lockoutSettings';
 import '/server/methods/migrateTextDatabase';
 import '/server/methods/repairBoardData';
+import '/server/models/changeHistory';
+import '/server/models/changeHistoryHooks';
 import '/server/methods/repairBrokenCards';
+import '/server/methods/restoreListSwimlanes';
+// Removes the "Templates" container boards made for accounts that never used
+// them (pre-v10.00 signups). Dry run by default; see the method for why.
+import '/server/methods/cleanupTemplateContainers';
 import '/server/methods/systemStatus';
 import '/server/methods/positionHistory';
 import '/server/methods/sandstormMigration';
@@ -340,6 +364,10 @@ import '/server/permissions/users';
 // reconciliation Meteor methods. In mainModule mode a file that is not imported here is
 // never loaded, so its hooks/methods would silently never register.
 import '/server/avatarLocalizationOnLogin';
+// Where each account logs in from, and who logs in from each address - the
+// office groupings in Admin Panel (server/lib/loginTally.js).
+import '/server/loginTallyOnLogin';
+import '/server/methods/loginOffices';
 import '/server/importedUserReconciliation';
 
 // ----------------------------------------------------------------------------

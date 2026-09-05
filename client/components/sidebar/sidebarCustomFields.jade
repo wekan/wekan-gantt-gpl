@@ -17,6 +17,12 @@ template(name="customFieldsSidebar")
             i.fa.fa-plus
             span {{_ 'createCustomField'}}
 
+//- The board's list of custom fields as a right-sidebar view. Nothing opens it
+  any more: every custom field of the board is listed - with a tick when it is
+  on this card, a pencil, and "Add custom field" - by the hamburger at the end
+  of the card's own Custom Fields heading, which is where the fields are shown.
+  The templates below are the forms both used, and they are still opened from
+  there. client/components/cards/cardCustomFields.jade
 template(name="createCustomFieldPopup")
     form
         label

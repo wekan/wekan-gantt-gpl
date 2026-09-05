@@ -1,8 +1,11 @@
 import { Meteor } from 'meteor/meteor';
 import { WebApp } from 'meteor/webapp';
+import { getUserIdFromRequest } from '/server/lib/requestUser';
 import { ReactiveCache } from '/imports/reactiveCache';
 import { getAttachmentWithBackwardCompatibility, getOldAttachmentStream } from '/models/lib/attachmentBackwardCompatibility';
+import { canReadBoard } from '/models/lib/boardVisibility';
 const { sanitizeDownloadFileName } = require('/imports/lib/fileNameDisplay');
+const { fileResponsePolicy } = require('/models/lib/fileResponseSafety');
 
 // Ensure this file is loaded
 if (process.env.DEBUG === 'true') {
@@ -88,27 +91,26 @@ if (Meteor.isServer) {
       }
 
       // Check if user has permission to download
-      const userId = Meteor.userId();
-      if (!board.isPublic() && (!userId || !board.hasMember(userId))) {
+      // From the REQUEST, not Meteor.userId(): this is a WebApp handler, where
+      // that throws rather than returning null (see server/lib/requestUser.js).
+      const userId = await getUserIdFromRequest(req);
+      if (!canReadBoard(userId, board)) {
         res.writeHead(403);
         res.end('Access denied');
         return;
       }
 
       // Set appropriate headers
-      res.setHeader('Content-Type', attachment.type || 'application/octet-stream');
       res.setHeader('Content-Length', attachment.size || 0);
 
-      // Force attachment disposition for SVG files to prevent XSS attacks
+      // Treat every browser-executable MIME type like SVG: serve it as an
+      // opaque download under a sandbox, regardless of untrusted stored type.
       const isSvgFile = attachment.name && attachment.name.toLowerCase().endsWith('.svg');
-      const disposition = isSvgFile ? 'attachment' : 'attachment'; // Always use attachment for legacy files
-      res.setHeader('Content-Disposition', buildContentDispositionHeader(disposition, sanitizeFilenameForHeader(attachment.name)));
-
-      // Add security headers for SVG files
-      if (isSvgFile) {
-        res.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'none'; object-src 'none';");
-        res.setHeader('X-Content-Type-Options', 'nosniff');
-        res.setHeader('X-Frame-Options', 'DENY');
+      const policy = fileResponsePolicy(attachment.type, isSvgFile);
+      res.setHeader('Content-Type', policy.contentType);
+      res.setHeader('Content-Disposition', buildContentDispositionHeader('attachment', sanitizeFilenameForHeader(attachment.name)));
+      for (const [name, value] of Object.entries(policy.headers)) {
+        res.setHeader(name, value);
       }
 
       // Get GridFS stream for legacy attachment

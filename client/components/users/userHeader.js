@@ -7,6 +7,7 @@ import { Utils } from '/client/lib/utils';
 import { ReactiveVar } from 'meteor/reactive-var';
 import { detectAvailableFonts } from '/client/lib/fontDetector';
 import { fontFamilyValue, fontSizeValue, UI_FONT_SIZES, isHexColor6, colorValue } from '/models/lib/uiFonts';
+const { allBoardsPath, SECTION_ARCHIVE } = require('/models/lib/allBoardsUrls');
 
 Template.headerUserBar.events({
   'click .js-open-header-member-menu': Popup.open('memberMenu'),
@@ -69,8 +70,14 @@ Template.memberMenuPopup.events({
   'click .js-due-cards'() {
     Popup.back();
   },
+  // Boards in Archive is a SECTION of All Boards - the row in its left menu -
+  // not a page of its own. This sent the reader to `/archive`, the full-width
+  // page that section replaced: the same list, but with no menu beside it and
+  // no way to step across to Starred or Remaining without going back first.
+  // docs/Features/Page/Archive.md
   'click .js-open-archived-board'() {
-    Modal.open('archivedBoards');
+    FlowRouter.go(allBoardsPath(SECTION_ARCHIVE, []));
+    Popup.back();
   },
   'click .js-invite-people': Popup.open('invitePeople'),
   'click .js-edit-profile': Popup.open('editProfile'),
@@ -168,15 +175,18 @@ Template.editProfilePopup.events({
     const email = templateInstance.find('.js-profile-email').value.trim();
     let isChangeUserName = false;
     let isChangeEmail = false;
-    Users.update(Meteor.userId(), {
-      $set: {
-        'profile.fullname': fullname,
-        'profile.initials': initials,
-      },
+    Meteor.call('setOwnProfile', fullname, initials, error => {
+      if (error) console.error('Could not save profile:', error);
     });
-    isChangeUserName = username !== ReactiveCache.getCurrentUser().username;
+    const currentUser = ReactiveCache.getCurrentUser();
+    const primaryEmail =
+      Array.isArray(currentUser.emails) && currentUser.emails.length
+        ? currentUser.emails[0]
+        : null;
+    isChangeUserName = username !== currentUser.username;
     isChangeEmail =
-      email.toLowerCase() !== ReactiveCache.getCurrentUser().emails[0].address.toLowerCase();
+      email.toLowerCase() !==
+      (primaryEmail ? primaryEmail.address.toLowerCase() : '');
     if (isChangeUserName && isChangeEmail) {
       Meteor.call(
         'setUsernameAndEmail',
@@ -280,7 +290,7 @@ Template.changeLanguagePopup.helpers({
       'ca': '🇪🇸', 'eu': '🇪🇸', 'gl': '🇪🇸', 'cy': '🇬🇧', 'ga': '🇮🇪', 'mt': '🇲🇹', 'is': '🇮🇸',
       'mk': '🇲🇰', 'sq': '🇦🇱', 'sr': '🇷🇸', 'bs': '🇧🇦', 'me': '🇲🇪', 'fa': '🇮🇷', 'ur': '🇵🇰',
       'bn': '🇧🇩', 'ta': '🇮🇳', 'te': '🇮🇳', 'ml': '🇮🇳', 'kn': '🇮🇳', 'gu': '🇮🇳', 'pa': '🇮🇳',
-      'or': '🇮🇳', 'as': '🇮🇳', 'ne': '🇳🇵', 'si': '🇱🇰', 'my': '🇲🇲', 'km': '🇰🇭', 'lo': '🇱🇦',
+      'mr': '🇮🇳', 'or': '🇮🇳', 'as': '🇮🇳', 'ne': '🇳🇵', 'si': '🇱🇰', 'my': '🇲🇲', 'km': '🇰🇭', 'lo': '🇱🇦',
       'ka': '🇬🇪', 'hy': '🇦🇲', 'az': '🇦🇿', 'kk': '🇰🇿', 'ky': '🇰🇬', 'uz': '🇺🇿', 'mn': '🇲🇳',
       'bo': '🇨🇳', 'dz': '🇧🇹', 'ug': '🇨🇳', 'ii': '🇨🇳', 'za': '🇨🇳', 'yue': '🇭🇰', 'zh-HK': '🇭🇰',
       'zh-TW': '🇹🇼', 'zh-CN': '🇨🇳', 'id': '🇮🇩', 'ms': '🇲🇾', 'tl': '🇵🇭', 'ceb': '🇵🇭',
@@ -289,7 +299,16 @@ Template.changeLanguagePopup.helpers({
       'ig': '🇳🇬', 'zu': '🇿🇦', 'xh': '🇿🇦', 'af': '🇿🇦', 'st': '🇿🇦', 'tn': '🇿🇦', 'ss': '🇿🇦',
       've': '🇿🇦', 'ts': '🇿🇦', 'nr': '🇿🇦', 'nso': '🇿🇦', 'wo': '🇸🇳', 'ff': '🇸🇳', 'dy': '🇲🇱',
       'bm': '🇲🇱', 'tw': '🇬🇭', 'ak': '🇬🇭', 'lg': '🇺🇬', 'rw': '🇷🇼', 'rn': '🇧🇮', 'ny': '🇲🇼',
-      'sn': '🇿🇼', 'nd': '🇿🇼'
+      'sn': '🇿🇼', 'nd': '🇿🇼',
+      'ace': '🇮🇩', 'ary': '🇲🇦', 'ast': '🇪🇸', 'br': '🇫🇷', 'cmn': '🇨🇳', 'fy': '🇳🇱', 'nb': '🇳🇴', 'oc': '🇫🇷', 'tk': '🇹🇲', 'vl': '🇧🇪', 'wa': '🇧🇪', 'wuu': '🇨🇳', 'yi': '🇮🇱', 'zgh': '🇲🇦',
+      'jv': '🇮🇩', 'ps': '🇦🇫', 'lb': '🇱🇺', 'tg': '🇹🇯', 'la': '🇻🇦',
+      'tt': '🇷🇺',
+      'ku': '🇮🇶', 'sd': '🇵🇰',
+      'ee': '🇬🇭', 'ba': '🇷🇺', 'cv': '🇷🇺', 'sah': '🇷🇺',
+      'qu': '🇵🇪', 'gn': '🇵🇾', 'ay': '🇧🇴', 'fo': '🇫🇴', 'se': '🇳🇴', 'gd': '🏴󠁧󠁢󠁳󠁣󠁴󠁿', 'kw': '🏴󠁧󠁢󠁥󠁮󠁧󠁿', 'gv': '🇮🇲',
+      'ht': '🇭🇹', 'pap': '🇨🇼', 'tpi': '🇵🇬', 'bi': '🇻🇺', 'co': '🇫🇷', 'sc': '🇮🇹', 'scn': '🇮🇹', 'nap': '🇮🇹', 'fur': '🇮🇹', 'rm': '🇨🇭', 'hsb': '🇩🇪',
+      'kl': '🇬🇱', 'iu': '🇨🇦', 'chr': '🇺🇸', 'nah': '🇲🇽', 'bua': '🇷🇺', 'csb': '🇵🇱', 'szl': '🇵🇱', 'an': '🇪🇸', 'lld': '🇮🇹', 'rup': '🇬🇷',
+      'mai': '🇮🇳', 'bho': '🇮🇳', 'kok': '🇮🇳', 'ks': '🇮🇳', 'ckb': '🇮🇶', 'tig': '🇪🇷', 'wal': '🇪🇹'
     };
     return flagMap[this.tag] || '🌐';
   },
@@ -297,10 +316,8 @@ Template.changeLanguagePopup.helpers({
 
 Template.changeLanguagePopup.events({
   'click .js-set-language'(event) {
-    Users.update(Meteor.userId(), {
-      $set: {
-        'profile.language': this.tag,
-      },
+    Meteor.call('setLanguage', this.tag, error => {
+      if (error) console.error(`Could not save language ${this.tag}:`, error);
     });
     // setLanguage is async; surface a failed load instead of silently leaving
     // the UI in English (#5756).
@@ -445,7 +462,6 @@ Template.changeFontPopup.onCreated(function () {
   this.selectedSize = new ReactiveVar((user && user.getUiFontSize && user.getUiFontSize()) || 'default');
   // null = use default (unset); a hex string = custom color.
   this.textColor = new ReactiveVar((user && user.getUiTextColor && user.getUiTextColor()) || null);
-  this.bgColor = new ReactiveVar((user && user.getUiTextBgColor && user.getUiTextBgColor()) || null);
 });
 
 Template.changeFontPopup.helpers({
@@ -475,34 +491,29 @@ Template.changeFontPopup.helpers({
   textColorHex() {
     return Template.instance().textColor.get() || '#000000';
   },
-  bgColorHex() {
-    return Template.instance().bgColor.get() || '#ffffff';
-  },
   hasTextColor() {
     return !!Template.instance().textColor.get();
   },
-  hasBgColor() {
-    return !!Template.instance().bgColor.get();
-  },
-  // Preview reflects the chosen font, size, text color and background color.
+  // Preview reflects the chosen font, size and text color.
   previewStyle() {
     const tpl = Template.instance();
     const family = fontFamilyValue(tpl.selected.get());
     const size = fontSizeValue(tpl.selectedSize.get());
     const color = colorValue(tpl.textColor.get());
-    const bg = colorValue(tpl.bgColor.get());
     return [
       family && `font-family: ${family};`,
       size && `font-size: ${size};`,
       color && `color: ${color};`,
-      bg && `background-color: ${bg};`,
     ].filter(Boolean).join('');
   },
 });
 
-// Apply the current text/background colors immediately (no Save button).
+// Apply the chosen text colour immediately (no Save button). The second
+// argument is the removed text-background colour: the method still takes it so
+// an older client cannot fail, and it UNSETS it whatever is passed, so a value
+// stored before the feature was removed is cleared the next time this runs.
 function applyUiColors(tpl) {
-  Meteor.call('setUiColors', tpl.textColor.get(), tpl.bgColor.get(), err => {
+  Meteor.call('setUiColors', tpl.textColor.get(), null, err => {
     if (err && process.env.DEBUG === 'true') console.error('setUiColors error', err);
   });
 }
@@ -531,29 +542,15 @@ Template.changeFontPopup.events({
     const v = event.currentTarget.value;
     if (isHexColor6(v)) tpl.textColor.set(v);
   },
-  'input .js-ui-bg-color'(event, tpl) {
-    const v = event.currentTarget.value;
-    if (isHexColor6(v)) tpl.bgColor.set(v);
-  },
   // ...and apply the color when the wheel is committed.
   'change .js-ui-text-color'(event, tpl) {
     const v = event.currentTarget.value;
     if (isHexColor6(v)) tpl.textColor.set(v);
     applyUiColors(tpl);
   },
-  'change .js-ui-bg-color'(event, tpl) {
-    const v = event.currentTarget.value;
-    if (isHexColor6(v)) tpl.bgColor.set(v);
-    applyUiColors(tpl);
-  },
   'click .js-reset-text-color'(event, tpl) {
     event.preventDefault();
     tpl.textColor.set(null); // back to default
-    applyUiColors(tpl);
-  },
-  'click .js-reset-bg-color'(event, tpl) {
-    event.preventDefault();
-    tpl.bgColor.set(null);
     applyUiColors(tpl);
   },
 });

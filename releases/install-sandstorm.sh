@@ -1,7 +1,10 @@
 #!/bin/bash
+if [ -n "${ZSH_VERSION:-}" ]; then exec /bin/bash "$0" "$@"; fi
 
 echo "INSTALLING WEKAN SANDSTORM VERSION RELATED FILES:"
-sudo apt-get -y install p7zip-full wget curl
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$SCRIPT_DIR/ensure-tools.sh"
+ensure_archive_tools
 cd ~
 wget https://releases.wekan.team/dev/meteor-spk/projects.7z
 7z x projects.7z

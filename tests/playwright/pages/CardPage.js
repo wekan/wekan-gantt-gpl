@@ -39,7 +39,14 @@ class CardPage {
   }
 
   async editTitle(newTitle) {
-    await this.root.locator('.js-card-title.js-open-inlined-form').click();
+    // The title splits: `span.card-details-title-edit-zone.js-open-inlined-form`
+    // is the leading half that opens the editor, and the rest of the `h2` drags
+    // the window. Both classes used to be on the `h2` itself, so a selector that
+    // wants them on ONE element matches nothing now - it has to be a descendant.
+    await this.root
+      .locator('.js-card-title .js-open-inlined-form, .card-details-title-edit-zone')
+      .first()
+      .click();
     const input = this.root.locator('.js-card-details-title textarea, .js-card-details-title input');
     await input.fill(newTitle);
     // #4236: plain Enter now inserts a newline in the card title (consistent
@@ -299,10 +306,17 @@ class CardPage {
   // --- Custom fields ---
 
   async openCustomFields() {
-    // .js-custom-fields is inside cardDetailsActionsPopup, not directly in the card panel.
-    await this.openActionsMenu();
-    await this.clickAction('.js-custom-fields');
-    await this.page.locator('.js-pop-over').waitFor();
+    // The single home for custom fields is the hamburger at the end of the
+    // card's own Custom Fields heading: the picker of which fields are on this
+    // card, a pencil each, and "Add custom field". The card menu's entry and the
+    // Board Settings row were removed when it moved there, and the old
+    // `a.js-custom-fields` anchor lost its label and then the tag - so this is
+    // the only way in, and it is what the test has to click.
+    await this.root
+      .locator('.js-open-custom-fields-settings')
+      .first()
+      .click({ timeout: 10_000 });
+    await this.page.locator('.js-pop-over').waitFor({ timeout: 5_000 });
   }
 
   // --- Attachments ---
@@ -331,8 +345,48 @@ class CardPage {
 
   // --- Copy link (open in new tab) ---
 
-  copyLinkButton() {
-    return this.root.locator('.js-copy-link, a.card-copy-button').first();
+  /**
+   * The row that copies the card's link, INSIDE the card's actions menu.
+   *
+   * The card's title header used to carry this as an `<a href>` named only by a
+   * tooltip. It is a named row of the hamburger menu now, beside the swimlane's
+   * and the list's, and it copies with JavaScript rather than being a link -
+   * so there is no `href` to read. docs/Features/Page/Board-Item-Links.md
+   */
+  copyLinkRow() {
+    return this.page.locator('.js-pop-over .js-copy-card-link').first();
+  }
+
+  /**
+   * Open the actions menu and copy the card's link. Returns what the page put
+   * on the clipboard, which is the ABSOLUTE url - a relative path is only a
+   * link inside this page.
+   *
+   * The clipboard is RECORDED, not read back. Reading it needs a `clipboard-read`
+   * permission that only Chromium can be granted, so a test that read it would
+   * pass on one browser of the three. WeKan copies through
+   * `navigator.clipboard.writeText` (client/lib/utils.js), so wrapping that
+   * captures the real value in every browser - and still proves the button
+   * copied, rather than merely that clicking it threw nothing.
+   */
+  async copyLink() {
+    await this.page.evaluate(() => {
+      window.__wekanCopied = null;
+      const real = navigator.clipboard && navigator.clipboard.writeText;
+      if (real) {
+        navigator.clipboard.writeText = text => {
+          window.__wekanCopied = text;
+          return real.call(navigator.clipboard, text).catch(() => {});
+        };
+      }
+    });
+    await this.openActionsMenu();
+    const row = this.copyLinkRow();
+    await row.waitFor({ timeout: 15_000 });
+    await row.click();
+    await this.page.waitForFunction(() => window.__wekanCopied !== null, null,
+      { timeout: 15_000 });
+    return this.page.evaluate(() => window.__wekanCopied);
   }
 
   // --- Due dates ---

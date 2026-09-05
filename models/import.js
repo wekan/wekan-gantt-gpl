@@ -19,6 +19,18 @@ function importDeadlineMs() {
   return Number.isFinite(ms) ? ms : 120000;
 }
 
+function recordAnonymousImportAttempt(method, connection) {
+  if (!Meteor.isServer) return;
+  const { record } = require('/server/lib/securityLog');
+  record({
+    key: 'authn.import',
+    action: 'blocked',
+    source: 'ddp:' + method,
+    ip: connection && connection.clientAddress,
+    detail: 'Anonymous board import denied',
+  });
+}
+
 // Parse an uploaded .xlsx (base64) into the row-array shape the CsvCreator
 // consumes (board[0] is the header row). Excel import reuses the CSV creator.
 async function parseXlsxToRows(excelBase64) {
@@ -41,13 +53,20 @@ Meteor.methods({
   async importBoard(board, data, importSource, currentBoard) {
     // All check() calls must run BEFORE the first `await`: Meteor's
     // audit-argument-checks tracks checked arguments on the current async context,
-    // and awaiting first makes later check()s (e.g. `board` in the switch below) not
-    // count — throwing "Did not check() all arguments". So check `board` up front
-    // here (the per-source switch still does its more specific check).
+    // and an early throw before checking them replaces the intended error with
+    // "Did not check() all arguments". These checks validate types only; no parser,
+    // feature lookup, creator or write is reached before authentication.
     check(board, Match.OneOf(Object, Array));
     check(data, Object);
     check(importSource, String);
     check(currentBoard, Match.Maybe(String));
+    // ImportBleed (GHSA-qp32-wqxw-wq3h): this method reaches direct collection
+    // writes, so authentication is rejected immediately after Meteor's mandatory
+    // argument audit and before feature checks, parsing or creator construction.
+    if (!this.userId) {
+      recordAnonymousImportAttempt('importBoard', this.connection);
+      throw new Meteor.Error('error-notAuthorized');
+    }
     // Admin Panel / Features / Security: master switch to disable all import.
     await assertImportEnabled();
     let creator;
@@ -111,6 +130,54 @@ Meteor.methods({
       );
     }
     return await creator.create(importedBoard, currentBoard);
+  },
+});
+
+Meteor.methods({
+  // #1173: import INTO the board that is open, beside the thing whose menu was
+  // used - a swimlane below that swimlane, a list after that list, a card below
+  // that card. The document is the same one the export writes, and `fields` is
+  // the same selection popup; on this side it means what to BRING IN.
+  async importScoped(target, doc, fields) {
+    check(target, Object);
+    check(target.boardId, String);
+    check(target.swimlaneId, Match.Maybe(String));
+    check(target.listId, Match.Maybe(String));
+    check(target.cardId, Match.Maybe(String));
+    check(doc, Object);
+    check(fields, Match.Maybe([String]));
+    // Keep the scoped sibling explicit too. Board helpers are authorization
+    // checks for an authenticated user; they are not an authentication guard.
+    if (!this.userId) {
+      recordAnonymousImportAttempt('importScoped', this.connection);
+      throw new Meteor.Error('error-notAuthorized');
+    }
+    const userId = this.userId;
+    await assertImportEnabled();
+
+    const board = await ReactiveCache.getBoard(target.boardId);
+    if (!board) throw new Meteor.Error('board-not-found', 'Board not found');
+    // Importing WRITES to this board, so it is not the export's "can you see
+    // it": it is "may you change it".
+    if (!board.isVisibleBy(await ReactiveCache.getCurrentUser())
+      || !board.isBoardMember()) {
+      throw new Meteor.Error('forbidden', 'Not allowed to import into this board');
+    }
+    if (doc._format && doc._format !== 'wekan-board-1.0.0') {
+      throw new Meteor.Error('invalid-format', `Unknown export format: ${doc._format}`);
+    }
+
+    if (!Meteor.isServer) return null;
+    const { ScopedImporter } = require('./server/scopedImporter');
+    const importer = new ScopedImporter(target, doc, {
+      userId,
+      fields,
+    });
+    return withDeadline(
+      importer.run(),
+      importDeadlineMs(),
+      () => new Meteor.Error('import-timeout', 'Import took too long and was aborted'),
+    );
   },
 });
 

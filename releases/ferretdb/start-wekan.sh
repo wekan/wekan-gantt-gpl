@@ -11,7 +11,7 @@
 # By default it starts FerretDB v1 (SQLite) as the database, storing all data —
 # and attachments/avatars on the filesystem — under WRITABLE_PATH (./data next to
 # this script unless you set WRITABLE_PATH). No separate MongoDB or Node install
-# is required. See docs/Platforms/Propietary/Windows/Offline.md for the Windows
+# is required. See docs/Platforms/Propietary/OS/Windows/Offline.md for the Windows
 # equivalent (start-wekan.bat).
 #
 # Override anything via environment variables: WRITABLE_PATH, PORT, ROOT_URL,
@@ -20,6 +20,20 @@
 # ─────────────────────────────────────────────────────────────────────────────
 set -eu
 
+# ── DDP transport ────────────────────────────────────────────────────────────
+# WeKan ships NO uWebSockets.js on any platform: ddp-server requires that module
+# only inside the uws transport's setup(), which a sockjs server never calls,
+# and it is 121M of prebuilt binaries for OS/CPU/ABI combinations one machine
+# cannot use. uws is also not reliable enough yet to be what a default points
+# at. A deployment whose compose file or config still says uws would otherwise
+# die on a missing module, so it is coerced here - loudly, so the log says why
+# the setting did not take - rather than left to crash-loop.
+if [ "${DDP_TRANSPORT:-}" = "uws" ]; then
+  echo "WeKan: DDP_TRANSPORT=uws is not available in this build - it ships no uWebSockets.js. Using sockjs."
+  DDP_TRANSPORT=sockjs
+fi
+export DDP_TRANSPORT="${DDP_TRANSPORT:-sockjs}"
+
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # Bundled Node.js, falling back to a node on PATH if the bundled one is absent.
@@ -27,6 +41,22 @@ NODE="$DIR/node"
 [ -x "$NODE" ] || NODE="$(command -v node || true)"
 [ -n "$NODE" ] || { echo "ERROR: no bundled ./node and no node found on PATH" >&2; exit 1; }
 
+# Bound the two bundled runtimes relative to available RAM; explicit overrides win.
+_memory_mb=$(awk '/^MemTotal:/{print int($2/1024)}' /proc/meminfo 2>/dev/null || echo 2048)
+for _f in /sys/fs/cgroup/memory.max /sys/fs/cgroup/memory/memory.limit_in_bytes; do [ -r "$_f" ] || continue; _b=$(cat "$_f" 2>/dev/null || true); case "$_b" in ''|max|*[!0-9]*) continue;; esac; _m=$((_b/1048576)); [ "$_m" -gt 0 ] && [ "$_m" -lt "$_memory_mb" ] && _memory_mb=$_m; break; done
+_heap_mb=$((_memory_mb*3/5)); [ "$_heap_mb" -gt 4096 ] && _heap_mb=4096
+# A 32-bit Node has only a 4 GiB virtual address space for the executable,
+# shared libraries, stacks and V8. Asking it for the 4 GiB 64-bit ceiling can
+# make V8 die while deserializing its startup snapshot, before main.js runs.
+# `file` describes the binary itself (unlike getconf/uname, which describe the
+# host and are 64-bit when an i386 bundle runs on x86_64).
+if command -v file >/dev/null 2>&1 && file "$NODE" | grep -q 'ELF 32-bit'; then
+  [ "$_heap_mb" -gt 1024 ] && _heap_mb=1024
+fi
+_go_mb=$((_memory_mb/5)); [ "$_go_mb" -gt 1024 ] && _go_mb=1024
+export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=$_heap_mb}"
+export GOMEMLIMIT="${GOMEMLIMIT:-${_go_mb}MiB}"
+echo "WeKan memory budget: Node ${_heap_mb} MiB; FerretDB Go ${_go_mb} MiB; available ${_memory_mb} MiB."
 FERRETDB_BIN="$DIR/ferretdb"
 export WRITABLE_PATH="${WRITABLE_PATH:-$DIR/data}"
 # Files layout: <files>/attachments, <files>/avatars, <files>/db (FerretDB SQLite).
@@ -38,10 +68,27 @@ FERRETDB_LISTEN_ADDR="${FERRETDB_LISTEN_ADDR:-127.0.0.1:27017}"
 export PORT="${PORT:-8080}"
 export ROOT_URL="${ROOT_URL:-http://localhost:$PORT}"
 export MONGO_URL="${MONGO_URL:-mongodb://$FERRETDB_LISTEN_ADDR/wekan}"
+# EXPORTING NEEDS THE API, and that is not obvious from the name.
+#
+# Every export in the interface - a board or a card to PDF, Excel, JSON, .zip,
+# CSV, or any of the "export for another tool" formats - is a download from an
+# `/api/...` address, and server/apiMiddleware.js refuses every one of those
+# unless WITH_API is exactly "true". So on a bundle started without it, clicking
+# "PDF" saved WeKan's own HTML page under the name `<card>.pdf`: the request was
+# redirected to `/`, and the browser wrote whatever came back to the file the
+# download link had named.
+#
+# The snap has defaulted this to true for years (snap-src/bin/config), and every
+# docker-compose*.yml in this repository sets it. This launcher was the one
+# platform that did not, which is why the bundle was the one platform where
+# exporting produced an HTML file. Set WITH_API=false to turn the REST API - and
+# with it the exports - off.
+export WITH_API="${WITH_API:-true}"
+
 # Card loading: 'all' (default, every card into the browser) or 'lazy' (each list
 # loads only the visible cards on demand — for boards with thousands of cards).
 # Also changeable at runtime in Admin Panel / Features.
-export CARDS_LOADING="${CARDS_LOADING:-all}"
+export CARDS_LOADING="${CARDS_LOADING:-auto}"
 
 # Store attachments and avatars on the filesystem (default), next to the DB.
 mkdir -p "$FILES/attachments" "$FILES/avatars" "$FERRETDB_SQLITE_DIR"
@@ -69,51 +116,16 @@ FERRET_PID=""
 stop_ferret() { [ -n "$FERRET_PID" ] && kill "$FERRET_PID" 2>/dev/null || true; }
 trap 'stop_ferret; exit 0' INT TERM
 
-# #6503/#6480/#6481: FerretDB v1 CAN tail an OpLog (auto-created capped
-# local.oplog.rs + replica-set hello handshake), but on the SQLite backend the
-# tailable+awaitData OpLog tail keeps FerretDB CPU pinned (reporters saw ~190–390%
-# even idle) and a struggling tail shows as "oplog catching up took too long" and
-# stalls loading, so the DEFAULT is now POLLING ONLY. Opt into OpLog tailing with
-# WEKAN_FERRETDB_OPLOG=true if you specifically want it.
-# The polling settings apply either way. #6467/#6468: Meteor's defaults (re-poll
+# FerretDB v1 SQLite is standalone and polling-only. Replica sets and OpLog
+# tailing belong to real MongoDB deployments. #6467/#6468: Meteor's defaults (re-poll
 # 50 ms after any write, at least every 10 s) hammer the database; calmer defaults
 # re-poll at most every 2 s / 30 s. Overridable by exporting values before running.
-WEKAN_FERRETDB_OPLOG="${WEKAN_FERRETDB_OPLOG:-false}"
-WEKAN_FERRETDB_REPL_SET="${WEKAN_FERRETDB_REPL_SET:-rs0}"
-FERRET_REPL_ARG=""
 if [ "$want_ferret" = true ]; then
   export METEOR_POLLING_THROTTLE_MS="${METEOR_POLLING_THROTTLE_MS:-2000}"
   export METEOR_POLLING_INTERVAL_MS="${METEOR_POLLING_INTERVAL_MS:-30000}"
-  if [ "$WEKAN_FERRETDB_OPLOG" = true ]; then
-    FERRET_REPL_ARG="--repl-set-name=$WEKAN_FERRETDB_REPL_SET"
-    export MONGO_OPLOG_URL="${MONGO_OPLOG_URL:-mongodb://$FERRETDB_LISTEN_ADDR/local?replicaSet=$WEKAN_FERRETDB_REPL_SET}"
-    # Prefer OpLog but ALWAYS keep polling as the final fallback: Meteor uses
-    # OpLog only when tailing actually works, otherwise polling — a broken/absent
-    # OpLog never stops WeKan starting. Admin Panel / Version ("Reactivity mode")
-    # shows which one is live.
-    # FerretDB (v1 SQLite fork) does NOT implement MongoDB change streams: a
-    # $changeStream aggregate returns "not implemented" and Meteor busy-loops
-    # retrying it (high FerretDB CPU, cards never open). Force changeStreams out
-    # of the reactivity order no matter how it was passed in, keeping oplog,polling.
-    _reactivity="${METEOR_REACTIVITY_ORDER:-oplog,polling}"
-    _reactivity="$(printf '%s' "${_reactivity}" | tr ',' '\n' | grep -vixE 'changeStreams?' | tr '\n' ',' | sed 's/,,*/,/g; s/^,//; s/,$//')"
-    [ -z "${_reactivity}" ] && _reactivity="oplog,polling"
-    export METEOR_REACTIVITY_ORDER="${_reactivity}"
-    export DEFAULT_METEOR_REACTIVITY_ORDER="oplog,polling"
-    echo "FerretDB OpLog enabled (polling fallback): MONGO_OPLOG_URL=$MONGO_OPLOG_URL METEOR_REACTIVITY_ORDER=$METEOR_REACTIVITY_ORDER"
-  else
-    # FerretDB has no change streams; polling-only here, but still strip any
-    # changeStreams that was passed in so it can never enter the order.
-    # #6498: also UNSET MONGO_OPLOG_URL — merely having it set makes Meteor start an
-    # OpLog tail at boot that polls FerretDB continuously (high CPU even with no
-    # clients), regardless of the reactivity order. Clearing it makes polling-only real.
-    unset MONGO_OPLOG_URL
-    _reactivity="${METEOR_REACTIVITY_ORDER:-polling}"
-    _reactivity="$(printf '%s' "${_reactivity}" | tr ',' '\n' | grep -vixE 'changeStreams?' | tr '\n' ',' | sed 's/,,*/,/g; s/^,//; s/,$//')"
-    [ -z "${_reactivity}" ] && _reactivity="polling"
-    export METEOR_REACTIVITY_ORDER="${_reactivity}"
-    export DEFAULT_METEOR_REACTIVITY_ORDER="polling"
-  fi
+  unset MONGO_OPLOG_URL
+  export METEOR_REACTIVITY_ORDER="polling"
+  export DEFAULT_METEOR_REACTIVITY_ORDER="polling"
 fi
 
 # #6458: $DIR/cpu-exec runs a binary through the bundled same-arch qemu-user
@@ -176,21 +188,11 @@ while true; do
       printf '{"type":"backup-created","db":"wekan","severity":"info","source":"startup","detail":"Backed up wekan.sqlite to backup/","ts":"%s"}\n' \
         "$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo '')" >> "$FERRETDB_SQLITE_DIR/recovery-events.jsonl" 2>/dev/null || true
     fi
-    # #6492: reset the simulated OpLog (the transient `local` database) before each
-    # FerretDB start so a bloated/corrupt OpLog can never persist and drive FerretDB
-    # CPU to 300%+. Boards/cards live in wekan.sqlite, NOT local.sqlite, so this is
-    # safe; FerretDB recreates a fresh, correctly-capped OpLog. Set
-    # WEKAN_FERRETDB_RESET_OPLOG=false to keep the existing OpLog.
-    if [ "${WEKAN_FERRETDB_RESET_OPLOG:-true}" = "true" ] && [ -n "$FERRETDB_SQLITE_DIR" ]; then
-      rm -f "$FERRETDB_SQLITE_DIR/local.sqlite" "$FERRETDB_SQLITE_DIR/local.sqlite-wal" \
-            "$FERRETDB_SQLITE_DIR/local.sqlite-shm" "$FERRETDB_SQLITE_DIR/local.sqlite-journal"
-    fi
     echo "Starting bundled FerretDB v1 (SQLite) on $FERRETDB_LISTEN_ADDR (data: $FERRETDB_SQLITE_DIR) ..."
     ${CPU_EXEC:+"$CPU_EXEC"} "$FERRETDB_BIN" \
       --handler=sqlite \
       --sqlite-url="file:$FERRETDB_SQLITE_DIR/" \
       --listen-addr="$FERRETDB_LISTEN_ADDR" \
-      ${FERRET_REPL_ARG:+"$FERRET_REPL_ARG"} \
       --telemetry=disable \
       --log-level=error &
     FERRET_PID=$!

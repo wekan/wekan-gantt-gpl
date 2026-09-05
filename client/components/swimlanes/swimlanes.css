@@ -63,7 +63,7 @@
   margin: 0;
 }
 .swimlane .swimlane-header-wrap .swimlane-header {
-  font-size: 14px;
+  font-size: calc(14px * var(--wekan-ui-font-scale, 1));
   padding: 0;
   font-weight: bold;
   min-height: 33px;
@@ -101,7 +101,7 @@
   align-items: center;
   padding: 0;
   margin: 0;
-  font-size: 22px;
+  font-size: calc(22px * var(--wekan-ui-font-scale, 1));
   line-height: 1;
   z-index: 20;
   pointer-events: auto;
@@ -122,16 +122,16 @@
 .swimlane .swimlane-header-wrap .swimlane-header-plus-icon {
   padding: 5px;
   margin-inline-start: 20px;
-  font-size: 22px;
+  font-size: calc(22px * var(--wekan-ui-font-scale, 1));
   color: #a6a6a6;
 }
 .swimlane .swimlane-header-wrap .swimlane-header-menu-icon {
   padding-inline-start: 5px;
-  font-size: 22px;
+  font-size: calc(22px * var(--wekan-ui-font-scale, 1));
 }
 .swimlane .swimlane-header-wrap .swimlane-header-handle {
   padding: 2px 5px;
-  font-size: 16px;
+  font-size: calc(16px * var(--wekan-ui-font-scale, 1));
   display: inline-block;
   vertical-align: middle;
   margin-inline-start: 30px;
@@ -142,7 +142,7 @@
 }
 .swimlane .swimlane-header-wrap .swimlane-header-miniscreen-handle {
   padding: 2px 5px;
-  font-size: 24px;
+  font-size: calc(24px * var(--wekan-ui-font-scale, 1));
   display: inline-block;
   vertical-align: middle;
   margin-inline-start: 30px;
@@ -161,7 +161,7 @@
   border-radius: 0;
   background-color: transparent;
   cursor: pointer;
-  font-size: 18px;
+  font-size: calc(18px * var(--wekan-ui-font-scale, 1));
   line-height: 1.2;
   text-align: center;
   text-decoration: none;
@@ -398,4 +398,32 @@ body.swimlane-resizing-active {
 
 body.swimlane-resizing-active * {
   cursor: row-resize !important;
+}
+
+/* The swimlane or list a link named, for a moment after it is scrolled to.
+   A scroll that lands mid-board gives no sign of WHICH of the things now on
+   screen the link was about; this says so and then gets out of the way. The
+   class is removed after the animation by client/lib/revealBoardItem.js, so
+   nothing is left highlighted for the rest of the session.
+
+   `outline`, not `border` or `box-shadow`: it is drawn outside the box and so
+   moves neither the swimlane's rows nor the list's cards by a pixel. */
+.is-revealed {
+  outline: 3px solid #2980b9;
+  outline-offset: -3px;
+  animation: wekan-reveal-fade 2s ease-out forwards;
+}
+
+@keyframes wekan-reveal-fade {
+  0% { outline-color: #2980b9; }
+  70% { outline-color: #2980b9; }
+  100% { outline-color: transparent; }
+}
+
+/* Somebody who asked not to be animated gets the outline without the fade -
+   the point is to say which one, and that does not need movement. */
+@media (prefers-reduced-motion: reduce) {
+  .is-revealed {
+    animation: none;
+  }
 }

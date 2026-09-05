@@ -3,7 +3,6 @@ import {
   setupDatePicker,
   datePickerRendered,
   datePickerHelpers,
-  datePickerEvents,
 } from '/client/lib/datepicker';
 import { ReactiveCache } from '/imports/reactiveCache';
 import {
@@ -30,10 +29,56 @@ import {
 import { CustomFieldStringTemplate } from '/client/lib/customFields'
 import { getCurrentCardFromContext } from '/client/lib/currentCard';
 import { formatNumberValue } from '/imports/lib/customNumberFormat';
-import { EscapeActions } from '/client/lib/escapeActions';
-import { getSidebarInstance } from '/client/features/sidebar/service';
+import { Utils } from '/client/lib/utils';
+import { subscribeDateNowTicker } from '/client/lib/dateNowTicker';
+
+Template.customFieldCopyButton.events({
+  'click .js-copy-custom-field'(event, tpl) {
+    event.preventDefault();
+    event.stopPropagation();
+    const form = event.currentTarget.closest('form');
+    const checkbox = form?.querySelector('input[type="checkbox"]');
+    const select = form?.querySelector('select');
+    const date = form?.querySelector('input[type="date"]');
+    const time = form?.querySelector('input[type="time"]');
+    const stringItems = form?.querySelectorAll(
+      '.js-card-customfield-stringtemplate-item',
+    );
+    const editor = form?.querySelector(
+      'textarea, input[type="text"], input[type="number"]',
+    );
+    let rawValue = Template.currentData()?.value;
+    if (checkbox) {
+      rawValue = checkbox.checked;
+    } else if (select) {
+      rawValue = select.selectedOptions[0]?.textContent?.trim() ?? '';
+    } else if (date) {
+      rawValue = [date.value, time?.value].filter(Boolean).join(' ');
+    } else if (stringItems?.length) {
+      rawValue = Array.from(stringItems)
+        .map(input => input.value)
+        .filter(value => value.trim());
+    } else if (editor) {
+      rawValue = editor.value;
+    }
+    let value;
+    if (rawValue instanceof Date) {
+      value = rawValue.toISOString();
+    } else if (Array.isArray(rawValue)) {
+      value = rawValue.join('\n');
+    } else {
+      value = rawValue == null ? '' : String(rawValue);
+    }
+    const promise = Utils.copyTextToClipboard(value);
+    Utils.showCopied(promise, tpl.$('.copied-tooltip'));
+  },
+});
 
 Template.cardCustomFieldsPopup.helpers({
+  board() {
+    const card = getCurrentCardFromContext();
+    return card?.getRealBoard ? card.getRealBoard() : card?.board?.();
+  },
   hasCustomField() {
     const card = getCurrentCardFromContext();
     if (!card) return false;
@@ -43,20 +88,32 @@ Template.cardCustomFieldsPopup.helpers({
 });
 
 Template.cardCustomFieldsPopup.events({
-  'click .js-select-field'(event) {
+  async 'click .js-select-field'(event) {
+    event.preventDefault();
     const card = getCurrentCardFromContext();
     if (!card) return;
     const customFieldId = this._id;
-    card.toggleCustomField(customFieldId);
-    event.preventDefault();
-  },
-  'click .js-settings'(event) {
-    EscapeActions.executeUpTo('detailsPane');
-    const sidebar = getSidebarInstance();
-    if (sidebar) {
-      sidebar.setView('customFields');
+    const assigned = card.customFieldIndex(customFieldId) < 0;
+    try {
+      await Meteor.callAsync(
+        'setCardCustomFieldAssigned', card.getRealId(), customFieldId, assigned);
+    } catch (error) {
+      alert(error.reason || error.message || TAPi18n.__('server-error'));
     }
-    event.preventDefault();
+  },
+  // Editing a field, and making one, open in this same pop-over on top of the
+  // list, so the back arrow returns to it and the card stays open behind. They
+  // are the board's own forms - the same templates the sidebar list opens - so
+  // there is one create form and one edit form, not a second pair for cards.
+  // client/components/sidebar/sidebarCustomFields.jade
+  'click .js-edit-custom-field': Popup.open('editCustomField'),
+  // "Add custom field" sits OUTSIDE the list, so its data context is this
+  // popup's own - which is the CARD. The form reads its context as the field
+  // being edited, and a card has an `_id`, so it was read as an edit of a
+  // custom field that does not exist and the new field was never inserted.
+  // A new field is made from nothing, so it is handed nothing.
+  'click .js-open-create-custom-field'(event) {
+    Popup.open('createCustomField').call({}, event);
   },
 });
 
@@ -72,10 +129,57 @@ Template.cardCustomField.onCreated(function () {
   this.customFieldId = Template.currentData()._id;
 });
 
+function openCustomFieldValueEditor(event, tpl) {
+  // The Checkbox square is the direct on/off control. Only its surrounding row
+  // uses this shared editor route.
+  if (event.target.closest('.check-box-container')) return;
+  event.preventDefault();
+  event.stopPropagation();
+  const trigger = tpl.find('.js-custom-field-edit-trigger');
+  if (trigger) trigger.click();
+}
+
+function openCustomFieldValueEditorFromKeyboard(event) {
+  if (event.currentTarget.matches('a, button')) return;
+  if (event.key !== 'Enter' && event.key !== ' ') return;
+  event.preventDefault();
+  event.currentTarget.click();
+}
+
+Template.cardCustomField.events({
+  'click .js-edit-card-custom-field-value': openCustomFieldValueEditor,
+  'keydown .js-edit-card-custom-field-value': openCustomFieldValueEditorFromKeyboard,
+});
+
+function persistedEditValue() {
+  return Template.instance().data?.value;
+}
+
+// Titles belong to Template.cardCustomField, while displayed values belong to
+// these nested type templates. Register on both sides of the Blaze boundary so
+// every title, value and type-specific empty edit area behaves consistently.
+[
+  'text',
+  'number',
+  'checkbox',
+  'currency',
+  'dropdown',
+  'stringtemplate',
+].forEach(type => {
+  Template[`cardCustomField-${type}`].events({
+    'click .js-edit-card-custom-field-value': openCustomFieldValueEditor,
+    'keydown .js-edit-card-custom-field-value': openCustomFieldValueEditorFromKeyboard,
+  });
+});
+
 // cardCustomField-text
 Template['cardCustomField-text'].onCreated(function () {
   this.card = getCurrentCardFromContext();
   this.customFieldId = Template.currentData()._id;
+});
+
+Template['cardCustomField-text'].helpers({
+  editValue: persistedEditValue,
 });
 
 Template['cardCustomField-text'].events({
@@ -93,6 +197,7 @@ Template['cardCustomField-number'].onCreated(function () {
 });
 
 Template['cardCustomField-number'].helpers({
+  editValue: persistedEditValue,
   // Render blank / cleared / non-numeric values as empty instead of "NaN" (#2091).
   formattedValue() {
     return formatNumberValue(this.value);
@@ -117,9 +222,45 @@ Template['cardCustomField-checkbox'].onCreated(function () {
   this.customFieldId = Template.currentData()._id;
 });
 
+Template['cardCustomField-checkbox'].helpers({
+  editValue: persistedEditValue,
+});
+
 Template['cardCustomField-checkbox'].events({
-  'click .js-checklist-item .check-box-container'(event, tpl) {
-    tpl.card.setCustomField(tpl.customFieldId, !Template.currentData().value);
+  'change .js-card-customfield-checkbox-input'(event, tpl) {
+    // Editing is staged until Save, but its square must still show the staged
+    // value immediately. The persisted `value` remains unchanged until submit,
+    // so update only the editor's visual checkbox here.
+    tpl.$('.js-card-customfield-checkbox-editor .materialCheckBox')
+      .toggleClass('is-checked', event.currentTarget.checked);
+  },
+  async 'submit .js-card-customfield-checkbox-editor'(event, tpl) {
+    event.preventDefault();
+    const value = Boolean(
+      tpl.find('.js-card-customfield-checkbox-input')?.checked,
+    );
+    try {
+      await Meteor.callAsync(
+        'setCardCustomFieldCheckbox', tpl.card.getRealId(), tpl.customFieldId, value);
+    } catch (error) {
+      alert(error.reason || error.message || TAPi18n.__('server-error'));
+    }
+  },
+  async 'click .js-card-custom-field-checkbox .check-box-container'(event, tpl) {
+    event.preventDefault();
+    event.stopPropagation();
+    // This template context is rebuilt from customFieldsWD whenever the saved
+    // value changes. Using the Card object captured at onCreated kept the old
+    // value after the first click, so a second click tried to save true again.
+    const currentField = Template.currentData();
+    if (!currentField || currentField._id !== tpl.customFieldId) return;
+    const value = !Boolean(currentField.value);
+    try {
+      await Meteor.callAsync(
+        'setCardCustomFieldCheckbox', tpl.card.getRealId(), tpl.customFieldId, value);
+    } catch (error) {
+      alert(error.reason || error.message || TAPi18n.__('server-error'));
+    }
   },
 });
 
@@ -131,6 +272,7 @@ Template['cardCustomField-currency'].onCreated(function () {
 });
 
 Template['cardCustomField-currency'].helpers({
+  editValue: persistedEditValue,
   formattedValue() {
     const locale = TAPi18n.getLanguage();
     const tpl = Template.instance();
@@ -142,11 +284,21 @@ Template['cardCustomField-currency'].helpers({
 });
 
 Template['cardCustomField-currency'].events({
-  'submit .js-card-customfield-currency'(event, tpl) {
+  async 'submit .js-card-customfield-currency'(event, tpl) {
     event.preventDefault();
     // To allow input separated by comma, the comma is replaced by a period.
-    const value = Number(tpl.find('input').value.replace(/,/i, '.'), 10);
-    tpl.card.setCustomField(tpl.customFieldId, value);
+    const value = Number(tpl.find('input').value.trim().replace(/,/g, '.'));
+    if (!Number.isFinite(value)) return;
+    try {
+      await Meteor.callAsync(
+        'setCardCustomFieldCurrency',
+        tpl.card.getRealId(),
+        tpl.customFieldId,
+        value,
+      );
+    } catch (error) {
+      alert(error.reason || error.message || TAPi18n.__('server-error'));
+    }
   },
 });
 
@@ -156,10 +308,9 @@ Template['cardCustomField-date'].onCreated(function () {
   this.customFieldId = Template.currentData()._id;
   const self = this;
   self.date = ReactiveVar();
-  self.now = ReactiveVar(now());
-  window.setInterval(() => {
-    self.now.set(now());
-  }, 60000);
+  const dateNowTicker = subscribeDateNowTicker();
+  self.now = dateNowTicker.now;
+  self.view.onViewDestroyed(dateNowTicker.unsubscribe);
 
   self.autorun(() => {
     self.date.set(new Date(Template.currentData().value));
@@ -200,6 +351,9 @@ Template['cardCustomField-date'].helpers({
   },
 });
 
+// Date keeps its original direct popup opener. Clicking the title activates
+// this same visible element through `.js-custom-field-edit-trigger`, while a
+// click on the displayed datetime is handled here without a template hop.
 Template['cardCustomField-date'].events({
   'click .js-edit-date': Popup.open('cardCustomField-date'),
 });
@@ -209,10 +363,11 @@ Template['cardCustomField-datePopup'].onCreated(function () {
   const data = Template.currentData();
   setupDatePicker(this, {
     initialDate: data.value ? data.value : undefined,
+    storeDate: (date, card) => card.setCustomField(data._id, date),
+    deleteDate: card => card.setCustomField(data._id, ''),
   });
-  // Override card and store customFieldId for store/delete callbacks
+  // A custom-field popup's data is the field definition, not the card.
   this.datePicker.card = getCurrentCardFromContext();
-  this.customFieldId = data._id;
 });
 
 Template['cardCustomField-datePopup'].onRendered(function () {
@@ -221,20 +376,12 @@ Template['cardCustomField-datePopup'].onRendered(function () {
 
 Template['cardCustomField-datePopup'].helpers(datePickerHelpers());
 
-Template['cardCustomField-datePopup'].events(datePickerEvents({
-  storeDate(date) {
-    this.datePicker.card.setCustomField(this.customFieldId, date);
-  },
-  deleteDate() {
-    this.datePicker.card.setCustomField(this.customFieldId, '');
-  },
-}));
-
 // cardCustomField-dropdown
 Template['cardCustomField-dropdown'].onCreated(function () {
+  const data = Template.currentData();
   this.card = getCurrentCardFromContext();
-  this.customFieldId = Template.currentData()._id;
-  this._items = Template.currentData().definition.settings.dropdownItems;
+  this.customFieldId = data._id;
+  this._items = data.definition.settings.dropdownItems;
   this.items = this._items.slice(0);
   this.items.unshift({
     _id: '',
@@ -245,6 +392,9 @@ Template['cardCustomField-dropdown'].onCreated(function () {
 Template['cardCustomField-dropdown'].helpers({
   items() {
     return Template.instance().items;
+  },
+  isSelectedItem(itemId) {
+    return (Template.instance().data.value ?? '') === itemId;
   },
   selectedItem() {
     const tpl = Template.instance();

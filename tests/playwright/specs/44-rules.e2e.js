@@ -13,7 +13,7 @@
 
 const { test, expect } = require('../fixtures');
 const db = require('../helpers/db');
-const { loginWithToken } = require('../helpers/auth');
+const { loginWithToken, navigateInApp } = require('../helpers/auth');
 
 const BASE_URL = process.env.WEKAN_BASE_URL || 'http://localhost:3000';
 
@@ -58,7 +58,7 @@ test.describe('Board Rules', () => {
     const ids = seedRules(board.boardId);
     try {
       await loginWithToken(page, adminUser.id, adminUser.token);
-      await page.goto(`${BASE_URL}/b/${board.boardId}/${board.slug}/rules`, { waitUntil: 'networkidle' });
+      await navigateInApp(page, `/b/${board.boardId}/${board.slug}/rules`);
 
       // Both rules are listed (default = list view).
       const items = page.locator('ul.rules-list li.rules-lists-item');
@@ -97,10 +97,17 @@ test.describe('Board Rules', () => {
     const board = await db.seedBoard({ ownerId: adminUser.id, title: 'Rules Workflow Board' });
     try {
       await loginWithToken(page, adminUser.id, adminUser.token);
-      await page.goto(`${BASE_URL}/b/${board.boardId}/${board.slug}/rules`, { waitUntil: 'networkidle' });
+      await navigateInApp(page, `/b/${board.boardId}/${board.slug}/rules`);
 
       // Switch to the Workflow view.
-      await page.locator('.js-rules-toggle-view').click();
+      // The view toggle is in the page's right sidebar now, not in a second
+      // header bar. docs/Features/Page/Header.md
+      const toggle = page.locator('.js-rules-toggle-view');
+      if (!(await toggle.isVisible().catch(() => false))) {
+        await page.locator('.js-toggle-page-sidebar').first().click();
+        await toggle.waitFor({ timeout: 15_000 });
+      }
+      await toggle.click();
 
       // The palette renders with LABELLED chips. This is the exact signature of the
       // #6489 bug: before the import fix, paletteLabel() threw "ReferenceError:

@@ -200,7 +200,9 @@ update_releases_node_versions() {
   local files=()
 
   # Only touch files that clearly contain Node.js release references.
-  mapfile -t files < <(grep -RIlE 'nodejs\.org/dist|node-v24\.[0-9]+\.[0-9]+-linux-|npm-node-version: 24\.' releases || true)
+  # Portable read loop instead of `mapfile` (bash 4+ only; macOS ships bash 3.2).
+  files=()
+  while IFS= read -r f; do files+=("$f"); done < <(grep -RIlE 'nodejs\.org/dist|node-v24\.[0-9]+\.[0-9]+-linux-|npm-node-version: 24\.' releases || true)
   if [ ${#files[@]} -eq 0 ]; then
     echo "[DEBUG] No Node.js references found under releases/."
     return 0
@@ -209,7 +211,7 @@ update_releases_node_versions() {
   echo "[DEBUG] Updating Node.js references in ${#files[@]} releases files..."
   local f
   for f in "${files[@]}"; do
-    # Update the explicit, stable Node.js dist path (e.g. nodejs.org/dist/v24.18.0).
+    # Update the explicit, stable Node.js dist path (e.g. nodejs.org/dist/v24.20.0).
     # The old floating `latest-v24.x/` path is intentionally NOT handled here: it
     # only ever holds the single newest v24 release, so a pinned filename under it
     # 404s once upstream advances — that is what broke the snap build. snapcraft.yaml
@@ -233,8 +235,10 @@ update_releases_mongo_versions() {
 
   # Only the MongoDB 7 server (mongod) is version-managed now: mongosh is no longer
   # bundled, and the MongoDB Database Tools come unversioned from the newest
-  # wekan/mongo-tools release, so neither is pinned in any releases/ file.
-  mapfile -t files < <(grep -RIlE 'mongodb-linux-' releases || true)
+  # wekan/mongo-tools-patches release, so neither is pinned in any releases/ file.
+  # Portable read loop instead of `mapfile` (bash 4+ only; macOS ships bash 3.2).
+  files=()
+  while IFS= read -r f; do files+=("$f"); done < <(grep -RIlE 'mongodb-linux-' releases || true)
   if [ ${#files[@]} -eq 0 ]; then
     echo "[DEBUG] No MongoDB server artifact references found under releases/."
     return 0
@@ -306,7 +310,7 @@ version_bump_logic() {
 
     # mongosh and the MongoDB Database Tools are no longer probed from mongodb.com:
     # mongosh is not bundled anymore (WeKan uses the bundled Node.js + `mongodb`
-    # driver), and the Database Tools come from the wekan/mongo-tools fork's newest
+    # driver), and the Database Tools come from wekan/mongo-tools-patches' newest
     # release (no version pinned in snapcraft.yaml). Only the MongoDB 7 server
     # (mongod, amd64/arm64) is still version-managed here.
   fi
@@ -405,7 +409,7 @@ version_bump_logic() {
   # snapcraft.yaml so the doc's download links re-point to v$NEW_VERSION from any
   # stale value. Only warn (don't fail the release) on a miss — a stale doc link
   # is cosmetic, unlike the snap/Docker bundles above.
-  OFFLINE_DOC="docs/Platforms/Propietary/Windows/Offline.md"
+  OFFLINE_DOC="docs/Platforms/Propietary/OS/Windows/Offline.md"
   sedi -E "s#wekan-[0-9]+\.[0-9]+(\.[0-9]+)?-#wekan-${NEW_VERSION}-#g" "$OFFLINE_DOC"
   sedi -E "s#(releases/download/)v[0-9]+\.[0-9]+(\.[0-9]+)?/#\1v${NEW_VERSION}/#g" "$OFFLINE_DOC"
   if grep -qE "wekan-[0-9]+\.[0-9]+(\.[0-9]+)?-" "$OFFLINE_DOC" \
@@ -430,19 +434,21 @@ version_bump_logic() {
     ensure_cache_or_download "mongodb-linux-aarch64-ubuntu2204-${MONGO_VER}.tgz" "https://fastdl.mongodb.org/linux/mongodb-linux-aarch64-ubuntu2204-${MONGO_VER}.tgz"
 
     # mongosh is no longer bundled; the MongoDB Database Tools come from the
-    # wekan/mongo-tools release, so nothing is fetched from mongodb.com for them.
+    # wekan/mongo-tools-patches release, so nothing is fetched from mongodb.com for them.
   fi
 
   # 8. Update Wekan website (manual/local flow only; the remote flow handles the
   # wekan.fi and charts repos in dedicated parallel GitHub Actions jobs). These
   # blocks no-op in CI because the sibling repos are not checked out there.
-  if [ -d "../w/wekan.fi" ]; then
-    INSTALL_PAGE="../w/wekan.fi/install/index.html"
+  if [ -d ".tools/wekan.fi" ]; then
+    INSTALL_PAGE=".tools/wekan.fi/install/index.html"
     METEOR_VER=$(grep -o 'METEOR@[^ "\\]*' .meteor/release | head -1 | sed 's/.*@//')
     NPM_VER=$(grep -o 'NPM_VERSION=[^ "\\]*' Dockerfile | head -1 | cut -d= -f2 | tr -d '"')
     NODE_VER=$(grep -o 'NODE_VERSION=[^ "\\]*' Dockerfile | head -1 | cut -d= -f2 | tr -d '"')
 
-    (cd ../w/wekan.fi && git pull)
+    (cd .tools/wekan.fi && git pull)
+    bash releases/update-website-version-info.sh \
+      ".tools/wekan.fi" "$PWD" "$NEW_VERSION"
     sedi "s|<span id=\"meteor-version\">[^<]*</span>|<span id=\"meteor-version\">$METEOR_VER</span>|g" "$INSTALL_PAGE"
     sedi "s|<span id=\"node-version\">[^<]*</span>|<span id=\"node-version\">$NODE_VER</span>|g" "$INSTALL_PAGE"
     # Node.js download URL paths: OFFICIAL nodejs.org (amd64/arm64/s390x/ppc64le)
@@ -455,10 +461,10 @@ version_bump_logic() {
     # the page still gets re-normalized to v$NEW_VERSION (see release-website.sh).
     sedi -E "s#(<span class=\"version-number\">)v[0-9][^<]*(</span>)#\1v${NEW_VERSION}\2#g" "$INSTALL_PAGE"
     (
-      cd ../w/wekan.fi
+      cd .tools/wekan.fi
       git add --all
       if git diff --cached --quiet; then
-        echo "[INFO] No website changes to commit in ../w/wekan.fi."
+        echo "[INFO] No website changes to commit in .tools/wekan.fi."
       else
         git commit -m "Updates"
         git push
@@ -487,7 +493,9 @@ version_bump_logic() {
 # If manual arguments are missing, parse CHANGELOG.md
 if [ -z "${1:-}" ] || [ -z "${2:-}" ]; then
   echo "No arguments. Detecting versions from CHANGELOG.md..."
-  mapfile -t RELEASE_LINES < <(grep -E '^# v[0-9]+\.[0-9]+(\.[0-9]+)?[ -]+[0-9]{4}-[0-9]{2}-[0-9]{2}' CHANGELOG.md | head -2)
+  # Portable read loop instead of `mapfile` (bash 4+ only; macOS ships bash 3.2).
+  RELEASE_LINES=()
+  while IFS= read -r line; do RELEASE_LINES+=("$line"); done < <(grep -E '^# v[0-9]+\.[0-9]+(\.[0-9]+)?[ -]+[0-9]{4}-[0-9]{2}-[0-9]{2}' CHANGELOG.md | head -2)
   NEW_VERSION=$(echo "${RELEASE_LINES[0]:-}" | grep -oE 'v[0-9]+\.[0-9]+(\.[0-9]+)?' | head -1 | sed 's/^v//')
   OLD_VERSION=$(echo "${RELEASE_LINES[1]:-}" | grep -oE 'v[0-9]+\.[0-9]+(\.[0-9]+)?' | head -1 | sed 's/^v//')
   if [ -z "${NEW_VERSION:-}" ] || [ -z "${OLD_VERSION:-}" ]; then

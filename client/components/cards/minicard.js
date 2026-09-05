@@ -7,11 +7,16 @@ import { Utils } from '/client/lib/utils';
 import ChecklistItems from '/models/checklistItems';
 import Cards from '/models/cards';
 import { resolveCoverId } from '/models/lib/linkedCardCover';
+import { isChecklistShownAtMinicard } from '/models/lib/minicardChecklistVisibility';
 import {
   parseChecklistItemTitles,
   buildChecklistItemPayload,
 } from '/models/lib/checklistItemTitles';
-import { normalizeDependencies } from '/models/metadata/dependencies';
+import { setCardMenuSource } from '/client/lib/cardMenuSource';
+import {
+  hiddenMinicardLabelText,
+  toggleMinicardLabelText,
+} from '/client/lib/minicardLabelText';
 
 function getMinicardFlag(board, onMinicardField, legacyField, defaultValue) {
   if (!board) return false;
@@ -29,6 +34,10 @@ function getMinicardFlag(board, onMinicardField, legacyField, defaultValue) {
 // });
 
 Template.minicard.helpers({
+  showCustomFieldsOnMinicard() {
+    const board = this.board();
+    return board?.allowsCustomFieldsOnMinicard === true;
+  },
   // True exactly when the drag handle is rendered (see minicard.jade): the user
   // may move the card AND drag handles are on. On a coarse pointer the handle is
   // a 48px strip down the leading edge, so the card's own content needs matching
@@ -48,7 +57,7 @@ Template.minicard.helpers({
   // when a card has dependencies: the first dependency's icon and color plus the
   // total count.
   dependencyBadge() {
-    const deps = normalizeDependencies(this.cardDependencies);
+    const deps = this.getDependencies();
     if (deps.length === 0) return null;
     return {
       icon: deps[0].icon,
@@ -59,9 +68,10 @@ Template.minicard.helpers({
   // #3984: visual card aging — fade cards that have not been touched recently,
   // based on dateLastActivity, when the board has card aging enabled.
   agingClass() {
+    const card = this.getRealCard();
     const board = ReactiveCache.getBoard(this.boardId);
     if (!board || !board.cardAging) return '';
-    const last = this.dateLastActivity || this.modifiedAt || this.createdAt;
+    const last = card.dateLastActivity || card.modifiedAt || card.createdAt;
     if (!last) return '';
     const days = (Date.now() - new Date(last).getTime()) / 86400000;
     // #3984: thresholds are board-configurable (board settings / cardSettings API),
@@ -75,29 +85,44 @@ Template.minicard.helpers({
     return '';
   },
   formattedCurrencyCustomFieldValue(definition) {
-    const customField = this
-      .customFieldsWD()
-      .find(f => f._id === definition._id);
-    const customFieldTrueValue =
-      customField && customField.trueValue ? customField.trueValue : '';
-
+    // This helper is called from `each customFieldsWD`, so `this` is already
+    // the rendered custom-field row, not the Card. Calling this.customFieldsWD
+    // threw and prevented minicards with Currency fields from rendering.
+    const field = this || {};
+    const fieldDefinition = definition || field.definition || {};
+    const customFieldTrueValue = field.trueValue;
+    if (customFieldTrueValue === '' || customFieldTrueValue == null) return '';
+    const currencyCode = fieldDefinition.settings?.currencyCode || 'USD';
     const locale = TAPi18n.getLanguage();
-    return new Intl.NumberFormat(locale, {
-      style: 'currency',
-      currency: definition.settings.currencyCode,
-    }).format(customFieldTrueValue);
+    try {
+      const number = typeof customFieldTrueValue === 'number'
+        ? customFieldTrueValue
+        : Number(customFieldTrueValue);
+      if (!Number.isFinite(number)) return String(customFieldTrueValue);
+      return new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: currencyCode,
+      }).format(number);
+    } catch (error) {
+      return `${currencyCode} ${customFieldTrueValue}`;
+    }
   },
 
   formattedStringtemplateCustomFieldValue(definition) {
-    const customField = this
-      .customFieldsWD()
-      .find(f => f._id === definition._id);
-
-    const customFieldTrueValue =
-      customField && customField.trueValue ? customField.trueValue : [];
-
-    const ret = new CustomFieldStringTemplate(definition).getFormattedValue(customFieldTrueValue);
-    return ret;
+    // As above, the current row already carries the resolved linked/source
+    // value and definition. Never reach back through a nonexistent Card API.
+    const field = this || {};
+    const fieldDefinition = definition || field.definition;
+    const customFieldTrueValue = Array.isArray(field.trueValue)
+      ? field.trueValue
+      : [];
+    if (!fieldDefinition) return customFieldTrueValue.join(' ');
+    try {
+      return new CustomFieldStringTemplate(fieldDefinition)
+        .getFormattedValue(customFieldTrueValue);
+    } catch (error) {
+      return customFieldTrueValue.join(' ');
+    }
   },
 
   showCreatorOnMinicard() {
@@ -110,7 +135,7 @@ Template.minicard.helpers({
     return ret;
   },
   isWatching() {
-    return this.findWatcher(Meteor.userId());
+    return this.getRealCard().findWatcher(Meteor.userId());
   },
 
   showMembers() {
@@ -166,15 +191,9 @@ Template.minicard.helpers({
     return !!(board && board.allowsChecklistCountBadgeOnMinicard);
   },
 
-  hiddenMinicardLabelText() {
-    const currentUser = ReactiveCache.getCurrentUser();
-    if (currentUser) {
-      return (currentUser.profile || {}).hiddenMinicardLabelText;
-    } else if (window.localStorage.getItem('hiddenMinicardLabelText')) {
-      return true;
-    } else {
-      return false;
-    }
+  hiddenMinicardLabelText,
+  stickers() {
+    return this.getStickers();
   },
   cover() {
     // #5666: for a linked card the cover lives on the real card it points at, so
@@ -200,13 +219,13 @@ Template.minicard.helpers({
   },
   // Upload progress helpers
   hasActiveUploads() {
-    return uploadProgressManager.hasActiveUploads(this._id);
+    return uploadProgressManager.hasActiveUploads(this.getRealId());
   },
   uploads() {
-    return uploadProgressManager.getUploadsForCard(this._id);
+    return uploadProgressManager.getUploadsForCard(this.getRealId());
   },
   uploadCount() {
-    return uploadProgressManager.getUploadCountForCard(this._id);
+    return uploadProgressManager.getUploadCountForCard(this.getRealId());
   },
   listName() {
     const list = this.list();
@@ -219,7 +238,7 @@ Template.minicard.helpers({
     // 2. This specific card has the setting enabled
     const currentBoard = this.board();
     if (!currentBoard) return false;
-    return currentBoard.allowsShowListsOnMinicard || this.showListOnMinicard;
+    return currentBoard.allowsShowListsOnMinicard || this.getRealCard().showListOnMinicard;
   },
 
   shouldShowChecklistAtMinicard() {
@@ -231,14 +250,13 @@ Template.minicard.helpers({
     const visibleChecklists = [];
 
     checklists.forEach(checklist => {
-      // Show checklist if either:
-      // 1. Board-wide setting is enabled, OR
-      // 2. This specific checklist has the setting enabled
-      // #5565: use the same board field the sidebar toggle writes
-      // (`allowsChecklistsOnMinicard`); this previously checked a different,
-      // UI-less field (`allowsChecklistAtMinicard`), so the board toggle to show
-      // checklists on minicards had no effect.
-      if (currentBoard.allowsChecklistsOnMinicard || checklist.showChecklistAtMinicard) {
+      // The board setting is the DEFAULT and the checklist's own setting is an
+      // OVERRIDE. This was an OR - board || checklist - and the board setting
+      // (`allowsChecklistsOnMinicard`, #5565) defaults to TRUE, so unchecking
+      // "Show on minicard" on a checklist could never hide it: reported by email
+      // with a screenshot of a checklist still on the minicard after the toggle
+      // was switched off. See models/lib/minicardChecklistVisibility.js.
+      if (isChecklistShownAtMinicard(checklist, currentBoard.allowsChecklistsOnMinicard)) {
         visibleChecklists.push(checklist);
       }
     });
@@ -270,6 +288,51 @@ function moveCardBy(card, delta) {
 }
 
 Template.minicard.events({
+  /* Direct title editing on the minicard is disabled. The title must remain a
+   * drag surface: it moves the card without handles and pans the board with
+   * handles. Keep the former handlers commented for possible future reuse.
+  'keydown .minicard-title-text.js-open-inlined-form'(event) {
+    // The title container replaced an anchor overlay in #6639 so markdown
+    // anchors can receive clicks. Retain the overlay's keyboard behavior on
+    // the container itself without turning nested rendered links into editors.
+    if (
+      event.target === event.currentTarget &&
+      (event.key === 'Enter' || event.key === ' ')
+    ) {
+      event.preventDefault();
+      event.currentTarget.click();
+    }
+  },
+  // #4990: the title is edited in place. The minicard sits inside the wrapper
+  // LINK to the card, so every click inside the open form would otherwise
+  // navigate away mid-edit. Cancelling the click's default stops that - except
+  // on the save button, whose own default IS the submit (the innermost element
+  // with an activation behaviour is the one that runs, so the link does not
+  // follow when the button is clicked).
+  'click .js-minicard-title-form'(event) {
+    event.stopPropagation();
+    if (!$(event.target).closest('button[type=submit]').length) {
+      event.preventDefault();
+    }
+  },
+  async 'submit .js-minicard-title-form'(event, templateInstance) {
+    event.preventDefault();
+    event.stopPropagation();
+    // #6604: `this` is the nested inlinedForm's data context
+    // ({ classNames: 'js-minicard-title-form' }), not the Card. The enclosing
+    // minicard template instance keeps the Card it was created with.
+    const card = templateInstance.data;
+    const title = templateInstance
+      .$('.js-edit-minicard-title')
+      .val()
+      ?.trim();
+    // An empty title would leave a card with nothing to click, so an empty
+    // save is a no-op rather than a way to lose the card - same as a list.
+    if (card && title && title !== card.getTitle()) {
+      await card.setTitle(title);
+    }
+  },
+  */
   'click .js-linked-link'() {
     if (this.isLinkedCard()) Utils.goCardId(this.linkedId);
     else if (this.isLinkedBoard())
@@ -297,23 +360,35 @@ Template.minicard.events({
     }
     this.setDueComplete(!this.getDueComplete());
   },
+  // The minicard's own copy of this only ever wrote localStorage, so a
+  // logged-in user toggling it here set something nothing reads. One module
+  // now, for reading and for writing. client/lib/minicardLabelText.js
   'click .js-toggle-minicard-label-text'() {
-    if (window.localStorage.getItem('hiddenMinicardLabelText')) {
-      window.localStorage.removeItem('hiddenMinicardLabelText'); //true
-    } else {
-      window.localStorage.setItem('hiddenMinicardLabelText', 'true'); //true
-    }
+    toggleMinicardLabelText();
   },
   'click span.badge-icon.fa.fa-sort, click span.badge-text.check-list-sort' : Popup.open("editCardSortOrder"),
-  'click .minicard-labels'(event, tpl) {
-    if (tpl.find('.js-card-label:hover')) {
-      Popup.open("cardLabels")(event, {dataContextIfCurrentDataIsUndefined: Template.currentData()});
+  // A label on a minicard opens the card's labels, and ONLY that. The click used
+  // to reach the minicard as well, so the card details opened behind the popup:
+  // two things for one click, and the one you asked for on top of the one you
+  // did not.
+  //
+  // Which label was clicked is read from the EVENT rather than from `:hover`.
+  // `:hover` answers about the pointer, and on a touch screen it can still be
+  // true for whatever was tapped last - so a tap anywhere in the labels area
+  // could open the labels of a label nobody touched.
+  'click .minicard-labels'(event) {
+    if (!$(event.target).closest('.js-card-label').length) {
+      return; // not a label - let the click be the card's, as before
     }
+    event.preventDefault();
+    event.stopPropagation();
+    Popup.open("cardLabels")(event, {dataContextIfCurrentDataIsUndefined: Template.currentData()});
   },
   'click .js-open-minicard-details-menu'(event, tpl) {
     event.preventDefault();
     event.stopPropagation();
     const card = Template.currentData();
+    setCardMenuSource('minicard');
     Popup.open('cardDetailsActions').call({currentData: () => card}, event);
   },
   // Drag and drop file upload handlers
@@ -375,6 +450,18 @@ Template.minicard.events({
 });
 
 Template.minicardChecklist.helpers({
+  /** #1591: folded for THIS user, under the same key the opened card uses, so
+   * the two agree. `this.checklist || this` because this template is called both
+   * with an explicit checklist and with one as the data context. */
+  checklistCollapsed() {
+    const checklist = this.checklist || this;
+    if (!checklist || !checklist._id) return false;
+    const user = ReactiveCache.getCurrentUser();
+    if (!user) return false;
+    const cardId = (this.card && this.card._id) || checklist.cardId;
+    return user.getCollapsedCardSection(
+      cardId, user.checklistSectionKey(checklist._id)) === true;
+  },
   visibleItems() {
     const checklist = this.checklist || this;
     const items = checklist.items();
@@ -416,6 +503,26 @@ function addMinicardChecklistItems(textarea, checklist) {
 }
 
 Template.minicardChecklist.events({
+  'click .js-collapse-checklist'(event) {
+    // A minicard is a link to the card, and the title opens the rename form -
+    // neither must happen because somebody folded a checklist.
+    event.preventDefault();
+    event.stopPropagation();
+    const data = Template.currentData();
+    const checklist = (data && data.checklist) || data || this;
+    const user = ReactiveCache.getCurrentUser();
+    if (!checklist || !checklist._id || !user) return;
+    const cardId = (data && data.card && data.card._id) || checklist.cardId;
+    const key = user.checklistSectionKey(checklist._id);
+    const collapsed = user.getCollapsedCardSection(cardId, key) === true;
+    user.setCollapsedCardSection(cardId, key, !collapsed);
+  },
+  'keydown .js-collapse-checklist'(event) {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    event.stopPropagation();
+    $(event.currentTarget).trigger('click');
+  },
   'click .js-convert-checklist-item-to-card'(event) {
     event.stopPropagation();
     const formData = Blaze.getData(event.currentTarget);

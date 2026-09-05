@@ -1,4 +1,5 @@
 #!/bin/bash
+if [ -n "${ZSH_VERSION:-}" ]; then exec /bin/bash "$0" "$@"; fi
 
 # Build WeKan armhf (arm/v7) bundle - Meteor 3 style (no fibers needed).
 #
@@ -19,11 +20,10 @@ fi
 
 VERSION=$1
 
-# Install build dependencies
-if command -v apt-get &>/dev/null; then
-  sudo apt-get update
-  sudo apt-get install -y build-essential g++ make python3 curl wget zip unzip
-fi
+# Install build dependencies for the detected Linux family.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$SCRIPT_DIR/ensure-tools.sh"
+ensure_build_toolchain
 
 # Remove old files
 rm -rf bundle

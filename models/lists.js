@@ -6,7 +6,12 @@ import { isHexColor, contrastText } from '/models/lib/contrastColor';
 import PositionHistory from './positionHistory';
 import Boards from '/models/boards';
 import Cards from '/models/cards';
-import { listCardsSelector } from '/models/lib/swimlaneFilter';
+import {
+  listCardsSelector,
+  otherSwimlaneIdsForFirstActive,
+} from '/models/lib/swimlaneFilter';
+import { planListCopy, copiedCardSwimlaneId } from './lib/listCopyPlan';
+import { planListMove } from './lib/listMovePlan';
 const { SimpleSchema } = require('/imports/simpleSchema');
 
 const Lists = new Mongo.Collection('lists');
@@ -283,65 +288,126 @@ Lists.attachSchema(
 
 Lists.helpers({
   async copy(boardId, swimlaneId, cardIdMap = null) {
+    // What this does is decided in models/lib/listCopyPlan.js, where it can be
+    // unit-tested - the copy-side twin of List.move's planner. Two faults lived
+    // in these lines, and both are described there:
+    //
+    // - the cards were selected by `swimlaneId: this.swimlaneId || null`, so a
+    //   board-wide list (an empty or missing swimlaneId, which is every list on
+    //   a board predating per-swimlane lists) asked for cards with NO swimlane
+    //   while its cards carry real ones - the selector matched nothing and the
+    //   copy came out EMPTY;
+    // - the target board was searched for a same-titled list to reuse without
+    //   first asking whether that board IS this list's own board. On a
+    //   same-board copy the search finds THIS list, so the "copy" wrote the
+    //   cards back into the source list and returned the source list's id.
     const oldId = this._id;
-    const oldSwimlaneId = this.swimlaneId || null;
-    this.boardId = boardId;
-    this.swimlaneId = swimlaneId;
+    const sameBoard = boardId === this.boardId;
+    const existing = sameBoard
+      ? null
+      : await ReactiveCache.getList({
+        boardId,
+        title: this.title,
+        archived: false,
+      });
 
-    let _id = null;
-    const existingListWithSameName = await ReactiveCache.getList({
-      boardId,
-      title: this.title,
-      archived: false,
+    const plan = planListCopy({
+      listId: oldId,
+      listBoardId: this.boardId,
+      targetBoardId: boardId,
+      targetSwimlaneId: swimlaneId,
+      existingListId: existing ? existing._id : null,
     });
-    if (existingListWithSameName) {
-      _id = existingListWithSameName._id;
-    } else {
+
+    let _id = plan.listId;
+    if (plan.action === 'create') {
+      this.boardId = boardId;
+      this.swimlaneId = plan.swimlaneId; // Set the target swimlane for the copied list
       delete this._id;
-      this.swimlaneId = swimlaneId; // Set the target swimlane for the copied list
       _id = await Lists.insertAsync(this);
     }
 
-    // Copy all cards in list
-    const cards = await ReactiveCache.getCards({
-      swimlaneId: oldSwimlaneId,
-      listId: oldId,
-      archived: false,
-    });
+    // Copy all cards in list. Every card of the source list travels, whatever
+    // swimlane each one is in - a list is the unit of a copy, exactly as in
+    // List.move - and each one lands in the swimlane the plan gives it: the
+    // chosen one, or its own when a same-board copy named no swimlane.
+    const cards = await ReactiveCache.getCards(plan.cardSelector);
     for (const card of cards) {
-      await card.copy(boardId, swimlaneId, _id, cardIdMap);
+      await card.copy(boardId, copiedCardSwimlaneId(plan, card), _id, cardIdMap);
     }
 
     return _id;
   },
 
   async move(boardId, swimlaneId) {
-    const boardList = await ReactiveCache.getList({
-      boardId,
-      title: this.title,
-      archived: false,
+    // #6670: what this does is decided in models/lib/listMovePlan.js, where it
+    // can be unit-tested. The short version: a move within the SAME board is a
+    // re-bind of this list to the chosen swimlane. It used to search the target
+    // board for "a list with this title" to merge into - which on the same board
+    // finds THIS list - and the merge branch was the one branch that never wrote
+    // a swimlaneId, so choosing a swimlane for a list silently did nothing and
+    // the list stayed board-wide under every swimlane.
+    const targetSwimlaneId = typeof swimlaneId === 'string' ? swimlaneId : '';
+    const sameBoard = boardId === this.boardId;
+    const existing = sameBoard
+      ? null
+      : await ReactiveCache.getList({
+        boardId,
+        title: this.title,
+        archived: false,
+      });
+
+    const plan = planListMove({
+      listId: this._id,
+      listBoardId: this.boardId,
+      listSwimlaneId: this.swimlaneId,
+      targetBoardId: boardId,
+      targetSwimlaneId,
+      existingListId: existing ? existing._id : null,
     });
-    let listId;
-    if (boardList) {
-      listId = boardList._id;
-      for (const card of await this.cards()) {
-        await card.move(boardId, this._id, boardList._id);
+
+    let listId = plan.listId;
+    if (plan.action === 'create') {
+      // A list with no usable title cannot be inserted: `title` is required by
+      // the schema, so the insert fails validation - and collection2's own error
+      // formatter then reads a property of the undefined field and throws
+      //   ValidationError: Failed validation
+      //   Cannot read properties of undefined (reading 'title')
+      // which is what an admin actually saw in Admin Panel / Problems /
+      // Database problems: an opaque crash naming neither the list nor the
+      // real problem. Say what is wrong instead, and say it before the insert.
+      if (typeof this.title !== 'string' || this.title.trim().length === 0) {
+        throw new Meteor.Error(
+          'list-has-no-title',
+          'This list has no title, so it cannot be moved to another board. ' +
+            'Give it a title first.',
+        );
       }
-    } else {
-      console.log('list.title:', this.title);
-      console.log('boardList:', boardList);
       listId = await Lists.insertAsync({
         title: this.title,
         boardId,
         type: this.type,
         archived: false,
         wipLimit: this.wipLimit,
-        swimlaneId: swimlaneId, // Set the target swimlane for the moved list
+        swimlaneId: plan.swimlaneId, // Set the target swimlane for the moved list
       });
+    } else if (plan.rebind) {
+      await Lists.updateAsync(this._id, { $set: { swimlaneId: plan.swimlaneId } });
+      this.swimlaneId = plan.swimlaneId;
     }
 
-    for (const card of await this.cards(swimlaneId)) {
-      await card.move(boardId, swimlaneId, listId);
+    // Every card in the list travels with it, into the chosen swimlane.
+    //
+    // Two bugs used to live in these few lines. The merge branch called
+    // `card.move(boardId, this._id, boardList._id)` - Card.move's second
+    // argument is a swimlaneId, so this set every card's swimlaneId to a LIST
+    // id, i.e. to a swimlane that does not exist, and the cards became the
+    // "orphaned cards" the board-open repair then has to rescue. And the second
+    // loop selected `this.cards(swimlaneId)`, filtering the SOURCE list's cards
+    // by a swimlaneId belonging to the TARGET board, which on a cross-board move
+    // matches nothing and left the cards behind.
+    for (const card of await this.cards()) {
+      await card.move(boardId, plan.swimlaneId, listId);
     }
   },
 
@@ -354,14 +420,13 @@ Lists.helpers({
       return undefined;
     }
     // Only the first swimlane surfaces orphaned cards.
-    const pick = (swimlanes) => {
-      if (!swimlanes || !swimlanes.length || swimlanes[0]._id !== swimlaneId) {
-        return undefined;
-      }
-      return swimlanes.map(s => s._id).filter(id => id !== swimlaneId);
-    };
+    const pick = swimlanes =>
+      otherSwimlaneIdsForFirstActive(swimlanes, swimlaneId);
     const swimlanes = ReactiveCache.getSwimlanes(
-      { boardId: this.boardId, archived: false },
+      // Include archived swimlanes in the exclusion list. A card on one still
+      // has a valid home and must not surface as an orphan in the first active
+      // swimlane (#6659).
+      { boardId: this.boardId },
       { sort: ['sort'] },
     );
     // On the SERVER ReactiveCache.getSwimlanes returns a Promise; reading
@@ -497,13 +562,21 @@ Lists.helpers({
     return this.collapsed === true;
   },
 
-  absoluteUrl() {
-    const card = ReactiveCache.getCard({ listId: this._id });
-    return card && card.absoluteUrl();
+  // The list's OWN address, not a card's. This used to answer with the URL of
+  // whichever card the cache returned first for this list, so "link to this
+  // list" went to a card - and to nothing at all when the list was empty.
+  // models/lib/boardItemUrl.js
+  originRelativeUrl(board) {
+    const { buildListRelativeUrl } = require('./lib/boardItemUrl');
+    return buildListRelativeUrl(this, board || this.board());
   },
-  originRelativeUrl() {
-    const card = ReactiveCache.getCard({ listId: this._id });
-    return card && card.originRelativeUrl();
+  absoluteUrl(board) {
+    // Built from the relative path rather than FlowRouter.url(): FlowRouter is
+    // client-only and answers with a generic link on the server.
+    // Meteor.absoluteUrl() works on both sides and expects no leading slash.
+    const relativeUrl = this.originRelativeUrl(board);
+    if (!relativeUrl) return undefined;
+    return Meteor.absoluteUrl(relativeUrl.replace(/^\//, ''));
   },
   async remove() {
     return await Lists.removeAsync({ _id: this._id });

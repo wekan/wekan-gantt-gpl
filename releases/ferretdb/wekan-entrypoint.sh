@@ -19,6 +19,43 @@
 # ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
+# ── DDP transport ────────────────────────────────────────────────────────────
+# WeKan ships NO uWebSockets.js on any platform: ddp-server requires that module
+# only inside the uws transport's setup(), which a sockjs server never calls,
+# and it is 121M of prebuilt binaries for OS/CPU/ABI combinations one machine
+# cannot use. uws is also not reliable enough yet to be what a default points
+# at. A deployment whose compose file or config still says uws would otherwise
+# die on a missing module, so it is coerced here - loudly, so the log says why
+# the setting did not take - rather than left to crash-loop.
+if [ "${DDP_TRANSPORT:-}" = "uws" ]; then
+  echo "WeKan: DDP_TRANSPORT=uws is not available in this build - it ships no uWebSockets.js. Using sockjs."
+  DDP_TRANSPORT=sockjs
+fi
+export DDP_TRANSPORT="${DDP_TRANSPORT:-sockjs}"
+
+# Give V8 a deliberate share of the CONTAINER limit. Node 24's automatic
+# cgroup heuristic capped a 1 GiB Helm pod at about 640 MiB; the server bundle
+# can cross that while linking and creating its startup indexes, so v10.96+
+# died before the first application log (#6606). Keep forty percent for native
+# allocations (and the bundled FerretDB when this image runs it), cap the heap
+# at the long-standing 4 GiB recommendation, and respect an administrator's
+# NODE_OPTIONS unchanged.
+if [ -z "${NODE_OPTIONS:-}" ] || [ -z "${GOMEMLIMIT:-}" ]; then
+  _memory_bytes=""
+  if [ -r /sys/fs/cgroup/memory.max ]; then _memory_bytes=$(cat /sys/fs/cgroup/memory.max 2>/dev/null || true)
+  elif [ -r /sys/fs/cgroup/memory/memory.limit_in_bytes ]; then _memory_bytes=$(cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null || true); fi
+  case "$_memory_bytes" in ''|max|*[!0-9]*) _mem_kb=$(awk '/^MemTotal:/{print $2}' /proc/meminfo 2>/dev/null || true); case "$_mem_kb" in ''|*[!0-9]*) _mem_kb=2097152;; esac; _memory_bytes=$((_mem_kb*1024));; esac
+  if [ -z "${NODE_OPTIONS:-}" ]; then
+    _heap_mb=$((_memory_bytes/1024/1024*3/5)); [ "$_heap_mb" -gt 4096 ] && _heap_mb=4096
+    export NODE_OPTIONS="--max-old-space-size=$_heap_mb"
+    echo "WeKan: Node heap limit ${_heap_mb} MiB (60% of available memory, capped at 4096 MiB)."
+  fi
+  if [ -z "${GOMEMLIMIT:-}" ]; then
+    _go_mb=$((_memory_bytes/1024/1024/5)); [ "$_go_mb" -gt 1024 ] && _go_mb=1024
+    export GOMEMLIMIT="${_go_mb}MiB"
+  fi
+fi
+
 FERRETDB_BIN="/build/ferretdb"
 FERRETDB_MARKER="/build/.ferretdb-default"
 FERRETDB_LISTEN_ADDR="${FERRETDB_LISTEN_ADDR:-127.0.0.1:27017}"
@@ -47,42 +84,11 @@ if [ "$want_ferret" = true ]; then
   fi
   export MONGO_URL="${MONGO_URL:-mongodb://$FERRETDB_LISTEN_ADDR/wekan}"
   mkdir -p "$FERRETDB_SQLITE_DIR"
-  # #6503/#6480/#6481: FerretDB v1 CAN tail an OpLog (auto-created capped
-  # local.oplog.rs + replica-set hello handshake), but on the SQLite backend the
-  # tailable+awaitData tail keeps FerretDB CPU pinned (~190–390% even idle) and a
-  # struggling tail shows as "oplog catching up took too long" and stalls loading,
-  # so the DEFAULT is now POLLING ONLY. Opt into OpLog tailing with
-  # WEKAN_FERRETDB_OPLOG=true if you specifically want it.
-  WEKAN_FERRETDB_OPLOG="${WEKAN_FERRETDB_OPLOG:-false}"
-  REPL_SET_NAME="${WEKAN_FERRETDB_REPL_SET:-rs0}"
-  if [ "$WEKAN_FERRETDB_OPLOG" = "true" ]; then
-    export MONGO_OPLOG_URL="${MONGO_OPLOG_URL:-mongodb://$FERRETDB_LISTEN_ADDR/local?replicaSet=$REPL_SET_NAME}"
-    # Prefer OpLog but ALWAYS keep polling as the final fallback: Meteor uses
-    # OpLog only when tailing actually works, otherwise polling — a broken/absent
-    # OpLog never stops WeKan starting. Admin Panel / Version ("Reactivity mode")
-    # shows which one is live.
-    # FerretDB (v1 SQLite fork) does NOT implement MongoDB change streams: a
-    # $changeStream aggregate returns "not implemented" and Meteor busy-loops
-    # retrying it (high FerretDB CPU, cards never open). Force changeStreams out
-    # of the reactivity order no matter how it was passed in, keeping oplog,polling.
-    _reactivity="${METEOR_REACTIVITY_ORDER:-oplog,polling}"
-    _reactivity="$(printf '%s' "${_reactivity}" | tr ',' '\n' | grep -vixE 'changeStreams?' | tr '\n' ',' | sed 's/,,*/,/g; s/^,//; s/,$//')"
-    [ -z "${_reactivity}" ] && _reactivity="oplog,polling"
-    export METEOR_REACTIVITY_ORDER="${_reactivity}"
-    export DEFAULT_METEOR_REACTIVITY_ORDER="oplog,polling"
-  else
-    # FerretDB has no change streams; polling-only here, but still strip any
-    # changeStreams that was passed in so it can never enter the order.
-    # #6498: also UNSET MONGO_OPLOG_URL — merely having it set makes Meteor start an
-    # OpLog tail at boot that polls FerretDB continuously (high CPU even with no
-    # clients), regardless of the reactivity order. Clearing it makes polling-only real.
-    unset MONGO_OPLOG_URL
-    _reactivity="${METEOR_REACTIVITY_ORDER:-polling}"
-    _reactivity="$(printf '%s' "${_reactivity}" | tr ',' '\n' | grep -vixE 'changeStreams?' | tr '\n' ',' | sed 's/,,*/,/g; s/^,//; s/,$//')"
-    [ -z "${_reactivity}" ] && _reactivity="polling"
-    export METEOR_REACTIVITY_ORDER="${_reactivity}"
-    export DEFAULT_METEOR_REACTIVITY_ORDER="polling"
-  fi
+  # Bundled FerretDB v1 SQLite is standalone and polling-only. Replica sets,
+  # change streams and OpLog tailing are reserved for external MongoDB.
+  unset MONGO_OPLOG_URL
+  export METEOR_REACTIVITY_ORDER="polling"
+  export DEFAULT_METEOR_REACTIVITY_ORDER="polling"
   # Telemetry off: --telemetry=disable both disables AND locks it (FerretDB won't
   # let it be re-enabled). DO_NOT_TRACK/FERRETDB_TELEMETRY are belt-and-suspenders.
   export DO_NOT_TRACK=1 FERRETDB_TELEMETRY=disable
@@ -135,16 +141,7 @@ if [ "$want_ferret" = true ]; then
     printf '{"type":"backup-created","db":"wekan","severity":"info","source":"startup","detail":"Backed up wekan.sqlite to backup/","ts":"%s"}\n' \
       "$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo '')" >> "$FERRETDB_SQLITE_DIR/recovery-events.jsonl" 2>/dev/null || true
   fi
-  # #6492: reset the simulated OpLog (the transient `local` database) before starting
-  # FerretDB so a bloated/corrupt OpLog can never persist and drive FerretDB CPU to
-  # 300%+. Boards/cards live in wekan.sqlite, NOT local.sqlite, so this is safe;
-  # FerretDB recreates a fresh, correctly-capped OpLog. Set
-  # WEKAN_FERRETDB_RESET_OPLOG=false to keep the existing OpLog.
-  if [ "${WEKAN_FERRETDB_RESET_OPLOG:-true}" = "true" ] && [ -n "$FERRETDB_SQLITE_DIR" ]; then
-    rm -f "$FERRETDB_SQLITE_DIR/local.sqlite" "$FERRETDB_SQLITE_DIR/local.sqlite-wal" \
-          "$FERRETDB_SQLITE_DIR/local.sqlite-shm" "$FERRETDB_SQLITE_DIR/local.sqlite-journal"
-  fi
-  echo "Starting bundled FerretDB v1 (SQLite) on $FERRETDB_LISTEN_ADDR (replSet $REPL_SET_NAME, OpLog enabled) ..."
+  echo "Starting bundled FerretDB v1 (SQLite) on $FERRETDB_LISTEN_ADDR (standalone polling) ..."
   # #6458: /build/cpu-exec runs a binary through the bundled same-arch
   # qemu-user when the CPU lacks features the binary declares (via
   # WEKAN_REQUIRED_CPU_FEATURES, e.g. "x86_64=avx"). node and ferretdb are
@@ -155,7 +152,6 @@ if [ "$want_ferret" = true ]; then
       --handler=sqlite \
       --sqlite-url="file:$FERRETDB_SQLITE_DIR/" \
       --listen-addr="$FERRETDB_LISTEN_ADDR" \
-      --repl-set-name="$REPL_SET_NAME" \
       --telemetry=disable \
       --log-level=error &
   else
@@ -163,7 +159,6 @@ if [ "$want_ferret" = true ]; then
       --handler=sqlite \
       --sqlite-url="file:$FERRETDB_SQLITE_DIR/" \
       --listen-addr="$FERRETDB_LISTEN_ADDR" \
-      --repl-set-name="$REPL_SET_NAME" \
       --telemetry=disable \
       --log-level=error &
   fi
@@ -187,6 +182,72 @@ if [ -f "$FERRETDB_SQLITE_DIR/RECOVERY_IN_PROGRESS" ] && [ -f /build/recovery-br
   done
   kill "$_rpid" 2>/dev/null || true
   wait "$_rpid" 2>/dev/null || true
+fi
+
+# #6595: WAIT FOR THE DATABASE BEHIND A PAGE, not behind a closed port.
+#
+# WeKan does not open its web port until the database answers. In a container
+# nothing else was listening while it waited, so a reverse proxy in front
+# returned "Gateway timeout" - and that is the same symptom for two completely
+# different faults: WeKan is broken, or the database has simply not come up yet.
+# "We upgraded to 10.91 ... Gateway timeout appears" is that report. The snap
+# has served a page for this since 10.91 (snap-src/bin/wekan-control); this is
+# the container's half of it.
+#
+# The wait is NOT a timeout on the database: a database can take minutes to come
+# up after an update, and giving up on it would be worse than waiting. What is
+# bounded is the PAGE - once WeKan starts it needs the port - so after
+# WEKAN_DB_WAIT_MAX_SECONDS the page stops and WeKan starts anyway and keeps
+# waiting itself, exactly as before this. Set WEKAN_DB_WAIT_PAGE=false to keep
+# the old behaviour.
+if [ "${WEKAN_DB_WAIT_PAGE:-true}" = "true" ] && [ -f /build/db-ready.mjs ] \
+   && [ -f /build/recovery-bridge.mjs ] && [ -n "${MONGO_URL:-}" ]; then
+  _db_node_path="/build/programs/server/node_modules"
+  # The FIRST probe's reason is printed, not discarded. It used to go to
+  # /dev/null, so a MONGO_URL the driver refuses outright - a replica-set seed
+  # list, say - looked exactly like a database that had not started yet, and the
+  # log said "not answering" about a database that was answering everyone else.
+  # The poll below stays quiet; one reason is a diagnosis, one every three
+  # seconds is a wall of text.
+  _db_why="$(NODE_PATH="$_db_node_path" node /build/db-ready.mjs "$MONGO_URL" 2>&1 >/dev/null)"
+  NODE_PATH="$_db_node_path" node /build/db-ready.mjs "$MONGO_URL"
+  _db_rc=$?
+  # 0 = answering, 1 = not answering, 2 = the probe could not ask at all.
+  #
+  # 2 MUST NOT put a page in front of the database. "I could not ask" is not
+  # evidence that anything is wrong, and a page shown on that basis hides a
+  # perfectly healthy WeKan for ten minutes - which is exactly what a missing
+  # driver did. Start WeKan; it waits for its own database as it always did.
+  if [ "$_db_rc" = "2" ]; then
+    echo "Cannot check whether the database is answering (${_db_why:-no reason given}); starting WeKan without the waiting page."
+  elif [ "$_db_rc" != "0" ]; then
+    _wait_max="${WEKAN_DB_WAIT_MAX_SECONDS:-600}"
+    echo "The database is not answering yet; serving the 'waiting for database' page on port ${PORT:-8080} while it comes up."
+    # The reason goes on the PAGE too. Whoever is waiting is looking at a
+    # browser, not at `docker logs`, and the driver's own message names the host
+    # it could not reach.
+    WEKAN_BRIDGE_REASON=database WEKAN_BRIDGE_DETAIL="$_db_why" \
+      PORT="${PORT:-8080}" PRODUCT_NAME="${PRODUCT_NAME:-WeKan}" \
+      node /build/recovery-bridge.mjs &
+    _dbpid=$!
+    _dbw=0
+    while [ "$_dbw" -lt "$_wait_max" ]; do
+      sleep 3; _dbw=$((_dbw + 3))
+      if NODE_PATH="$_db_node_path" node /build/db-ready.mjs "$MONGO_URL" 2>/dev/null; then
+        echo "The database is answering; starting WeKan."
+        break
+      fi
+    done
+    if [ "$_dbw" -ge "$_wait_max" ]; then
+      echo "The database has not answered in ${_wait_max}s; starting WeKan anyway, which will keep waiting for it."
+      # The last reason, printed: after ten minutes of a page, "why" is the only
+      # useful thing left to say.
+      NODE_PATH="$_db_node_path" node /build/db-ready.mjs "$MONGO_URL" || true
+    fi
+    # The page holds the web port, so it has to be gone before WeKan binds it.
+    kill "$_dbpid" 2>/dev/null || true
+    wait "$_dbpid" 2>/dev/null || true
+  fi
 fi
 
 ulimit -s 65500

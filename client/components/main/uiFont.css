@@ -14,27 +14,62 @@ body.has-ui-font .wekan-form-control {
 
 /* Font size preset (#4759): scale the root font size. Elements using relative units
  * (em/rem/%) scale with it; the variable is a percentage set by uiFont.js only for a
- * known preset. 'default'/unset removes it. */
-body.has-ui-font-size {
+ * known preset. 'default'/unset removes it.
+ *
+ * #6587: this is on <html>, and it used to be on <body>. `rem` is measured against
+ * the ROOT element, so a size on body never reached it — and a board's type is
+ * written in rem (px would not follow this setting at all, and vw would change with
+ * the window), which is why minicards were the part of the UI that ignored the
+ * preset. Everything relative to body still scales, because body inherits from the
+ * root; putting the size on BOTH would compound the two. */
+html.has-ui-font-size {
   font-size: var(--wekan-ui-font-size) !important;
 }
 
-/* Text color (#4759): the variable is a validated hex set by uiFont.js. Icon fonts
- * keep their own color rules; this recolors ordinary UI text + form controls. */
+/* ...and that percentage is only half of it, because it can only reach text
+ * whose size is written in a RELATIVE unit. WeKan writes most of its sizes in
+ * px, and px is absolute: no root percentage moves it. So the setting scaled the
+ * minicards and the page headings - the parts written in rem - and left the
+ * header bar, the left menu, the lists and every popup exactly as they were.
+ * `html, body, input, select, textarea, button` even re-stated 14px, so the body
+ * took the stock size straight back off the scaled root.
+ *
+ * Every px `font-size` and `line-height` in the client stylesheets is therefore
+ * written
+ *
+ *     font-size: calc(14px * var(--wekan-ui-font-scale, 1));
+ *
+ * and uiFont.js publishes the preset as that number. The fallback is 1 and the
+ * variable is REMOVED for 'default', so an instance where nobody touched the
+ * setting computes exactly the sizes it always did. line-height is scaled with
+ * the size on purpose: 21px of type in an 18px line box is the same setting
+ * half-applied. tests/uiFonts.test.cjs fails on any bare px text size, so a new
+ * one cannot quietly opt out of the setting. */
+
+/* Text color (#4759): the variable is a validated hex set by uiFont.js.
+ *
+ * EVERY element, not just <body> and the form controls. Colour is inherited, so
+ * setting it on the body reached only text that had no colour of its own - and
+ * WeKan gives most of its text a colour of its own: the header bar's buttons,
+ * the left menu's rows, a minicard's title, a list header. Choosing green
+ * recoloured the page heading and the menu and left the rest exactly as it was,
+ * which is the same "half a setting" the size preset had.
+ *
+ * `.fa` is left out because it is not text: those elements are Font Awesome
+ * GLYPHS, drawn with `color` because that is how an icon font works. The ones
+ * that are meant to follow their label already say `color: inherit` and so
+ * follow this anyway; the ones with a colour of their own - a red alert, a
+ * green tick - keep saying what they mean. */
 body.has-ui-text-color,
-body.has-ui-text-color button,
-body.has-ui-text-color input,
-body.has-ui-text-color textarea,
-body.has-ui-text-color select,
-body.has-ui-text-color .wekan-form-control {
+body.has-ui-text-color *:not(.fa) {
   color: var(--wekan-ui-text-color) !important;
 }
 
-/* Text background color (#4759). */
-body.has-ui-bg-color,
-body.has-ui-bg-color input,
-body.has-ui-bg-color textarea,
-body.has-ui-bg-color select,
-body.has-ui-bg-color .wekan-form-control {
-  background-color: var(--wekan-ui-bg-color) !important;
-}
+/* There was a "text background color" here (#4759), a colour painted behind the
+ * text. It is REMOVED. A background needs elements to sit on, and neither choice
+ * of them looks right: on the boxes (its first form, `body`) it painted the whole
+ * window - the board canvas, the space under the lists - which is a page
+ * background and not a text one; on the elements that carry text it striped every
+ * heading, menu row and paragraph with a full-width band. A setting that cannot be
+ * made to look good is worse than no setting, so it is gone rather than tuned
+ * again. The text COLOUR above stays. */

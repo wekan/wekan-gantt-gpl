@@ -115,7 +115,7 @@ OAUTH2_REQUEST_PERMISSIONS="openid https://www.googleapis.com/auth/userinfo.prof
 OAUTH2_SECRET=topsecret
 OAUTH2_TOKEN_ENDPOINT=https://oauth2.googleapis.com/token
 OAUTH2_USERINFO_ENDPOINT=https://openidconnect.googleapis.com/v1/userinfo
-OAUTH2_USERNAME_MAP=nickname
+OAUTH2_USERNAME_MAP=email
 MONGO_LOG_DESTINATION=mongodb-log.txt
 MONGODB_PORT=27017
 ROOT_URL=https://boards.example.com
@@ -158,13 +158,13 @@ sudo systemctl enable wekan
 sudo systemctl start wekan
 ```
 For SSL/TLS, I run Caddy at front of Node.js:
-[Caddy](../../../Webserver/Caddy.md)
+[Caddy](../../../Platforms/Webserver/Caddy.md)
 
 Related is docs about Raspberry Pi:
-[Raspberry Pi](../../../Platforms/FOSS/RaspberryPi/Raspberry-Pi.md)
+[Raspberry Pi](../../../Platforms/FOSS/HW/RaspberryPi/Raspberry-Pi.md)
 
 And also about Windows bundle:
-[Offline](../../../Platforms/Propietary/Windows/Offline.md)
+[Offline](../../../Platforms/Propietary/OS/Windows/Offline.md)
 
 ## Notes
 

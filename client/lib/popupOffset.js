@@ -52,8 +52,78 @@ function computePopupOffset(params) {
     return { left: 0, top: 0 };
   }
 
-  // Actual popup width from CSS: min(380px, 55vw).
-  const popupWidth = Math.min(380, viewportWidth * 0.55);
+  // Actual popup width from CSS: min(380px, 55vw)...
+  //
+  // ...except for the popups that lay their content out in COLUMNS, which are
+  // given more width in popup.css so more of it is visible at once. The clamp
+  // below has to know the REAL width: computed for 380px, a 720px popup opened
+  // from a button near the right edge is placed with 340px of itself off the
+  // screen. Keep these in step with the width rules in popup.css.
+  const WIDE_POPUP_WIDTHS = {
+    // Select Color: the swatches are a grid, so width buys columns.
+    changeColorPopup: 720,       // Member Settings / Change Color
+    boardChangeColorPopup: 720,  // Board Settings / Change Color
+    // Stickers: the same, and more of them - a hundred and fifty icons.
+    cardStickersPopup: 720,      // Card / Stickers
+    // Show on Card / Show on Minicard: two dozen settings laid out in columns
+    // instead of one long list. Same numbers as popup.css.
+    showOnCardPopup: 900,
+    showOnMinicardPopup: 900,
+  };
+  // The export popups are one popup with one scope each (#1173): same panes,
+  // same formats table, same panel.
+  // History is one panel too - a contributor pane beside the table - and is
+  // opened from menus that sit at the right-hand edge of a list or a card, which
+  // is exactly where an anchored panel loses its own X off the screen.
+  const FULL_WIDTH_POPUPS = [
+    'exportBoardPopup', 'exportSwimlanePopup', 'exportListPopup', 'exportCardPopup',
+    'historyPopup',
+  ];
+  const wide = WIDE_POPUP_WIDTHS[popupName];
+  const popupWidth = wide
+    ? Math.min(wide, viewportWidth * 0.9)
+    : Math.min(380, viewportWidth * 0.55);
+
+  // Every export popup - board, swimlane, list, card: a full-width PANEL, not a
+  // menu hanging off its button. It has
+  // two panes - what to include, and what to export to - and anchored to its
+  // button its trailing edge went past the edge of the window, taking the
+  // pop-over's own X with it: the only way to shut it was Escape or clicking
+  // away. Pinned to the viewport's own padding at the top left, and given
+  // `calc(100vw - 20px)` by popup.css - the same 10px on each side - so the
+  // whole panel, header and X included, is always on screen.
+  if (FULL_WIDTH_POPUPS.includes(popupName)) {
+    return {
+      left: viewportPadding + scrollLeft,
+      top: viewportPadding + scrollTop,
+      maxHeight: viewportHeight - viewportPadding * 2,
+    };
+  }
+
+  // #6636: date editors are forms, not menus attached to the date badge. Keep
+  // their fixed-width shell centred in the visible viewport. Anchoring one to a
+  // date near either card edge made the form look off-centre and, together with
+  // its formerly non-shrinking fields, exposed a horizontal scrollbar.
+  const DATE_EDITOR_POPUPS = [
+    'editCardReceivedDatePopup',
+    'editCardStartDatePopup',
+    'editCardDueDatePopup',
+    'editCardEndDatePopup',
+    'editVoteEndDatePopup',
+    'editPokerEndDatePopup',
+    'cardCustomField-datePopup',
+  ];
+  if (DATE_EDITOR_POPUPS.includes(popupName)) {
+    // popup.css gives these forms a 400px desktop shell, wider than the
+    // ordinary 380px popup used above. Centre the width the browser actually
+    // renders; using the default width shifts the shell right by 10px.
+    const dateEditorWidth = Math.min(400, viewportWidth * 0.9);
+    return {
+      left: Math.max(viewportPadding, (viewportWidth - dateEditorWidth) / 2) + scrollLeft,
+      top: viewportPadding + scrollTop,
+      maxHeight: viewportHeight - viewportPadding * 2,
+    };
+  }
 
   // Card details popup: docked to the top of the viewport (CSS also forces
   // top:0) so it overlays the header bars instead of opening from the minicard.
@@ -100,7 +170,15 @@ function computePopupOffset(params) {
 
   const spaceBelow = viewportHeight - openerBottomVp - viewportPadding;
   const spaceAbove = openerTopVp - viewportPadding;
-  const preferBelow = spaceBelow >= spaceAbove;
+  // People pickers belong directly under the + they edit. Choosing the larger
+  // side made Requested/Assigned By jump to the top of the card while Members
+  // and Assignee happened to stay below, despite being the same control.
+  const BELOW_OPENER_POPUPS = [
+    'cardMembersPopup', 'cardAssigneesPopup',
+    'cardRequestedByPopup', 'cardAssignedByPopup',
+  ];
+  const preferBelow = BELOW_OPENER_POPUPS.includes(popupName)
+    || spaceBelow >= spaceAbove;
 
   // Language popup: fixed-ish height below the opener, capped at 50% viewport.
   if (isLanguagePopup) {

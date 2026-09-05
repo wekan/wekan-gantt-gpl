@@ -1,4 +1,5 @@
 #!/bin/bash
+if [ -n "${ZSH_VERSION:-}" ]; then exec /bin/bash "$0" "$@"; fi
 
 # Update node version.
 
@@ -14,24 +15,20 @@ fi
 
 NODE_VERSION=$(node -v)
 
-
-# If installed node is not newest version
-if [ "$(uname)" = "Darwin" ]; then
-  if ! command -v brew >/dev/null 2>&1; then
-    echo "Homebrew not found. Installing Homebrew..."
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  fi
-  if ! command -v volta >/dev/null 2>&1; then
-    echo "volta not found. Installing volta with brew..."
-    brew install volta
-  fi
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$SCRIPT_DIR/ensure-tools.sh"
+if [ "$(_et_os)" = macos ]; then
+  _et_brew_ensure
+  command -v volta >/dev/null 2>&1 || brew install volta
 else
+  ensure_tools curl
   if ! command -v volta >/dev/null 2>&1; then
-    echo "volta not found. Installing volta with apt-get..."
-    sudo apt-get update && sudo apt-get install -y volta
+    echo "volta not found. Installing Volta with its official installer..."
+    curl -fsSL https://get.volta.sh | bash
   fi
+  export VOLTA_HOME="${VOLTA_HOME:-$HOME/.volta}"
+  export PATH="$VOLTA_HOME/bin:$PATH"
 fi
-
 if [ $NODE_VERSION != v$2 ]; then
   echo "8) Upgrading installed node to newest version"
   volta install node@12

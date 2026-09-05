@@ -1,0 +1,154 @@
+#!/bin/bash
+# ferretdb-migration-stale — exit 0 if the completed MongoDB -> FerretDB migration
+# is OLDER than the MongoDB data it was made from, i.e. MongoDB has been written
+# to since. Exit 1 when it is current, when there is no completed migration, or
+# when it cannot be told.
+#
+# WHY THIS EXISTS (wekan/wekan#6583: "Missing Data after Upgrade from v6").
+#
+# The migration copies MongoDB into FerretDB's SQLite and writes
+# .migration-to-ferretdb-done. That copy is a SNAPSHOT, taken once. Nothing keeps
+# it in step afterwards - so if MongoDB goes on being used after a migration
+# completed, the SQLite beside it silently falls behind, by as long as that goes
+# on.
+#
+# Which is exactly what a `snap revert` produces. Revert to a revision that runs
+# mongod and WeKan carries on writing to MongoDB, for days or weeks, while the
+# finished FerretDB copy sits frozen at the date it was made. Refresh forward
+# again and mongodb-control saw a marker plus a non-empty SQLite, called that a
+# completed migration and switched the snap to it - serving the frozen snapshot.
+# Every board, card and comment written since the migration was still on disk in
+# MongoDB and simply not being shown, which reads exactly like the reported
+# "changes made in recent days were lost ... the state of the data from days ago".
+#
+# The database directory is $SNAP_COMMON, which is shared across revisions and NOT
+# rolled back by `snap revert` - so the data was never in danger. What was wrong
+# was WHICH of the two copies got served, and nothing compared their ages.
+#
+# HOW IT DECIDES. mongod rewrites its WiredTiger files whenever it commits, so the
+# newest mtime under the data directory is when MongoDB was last written to. If
+# that is later than when the migration finished, MongoDB has moved on.
+#
+# THAT ON ITS OWN IS NOT ENOUGH, and the first version of this script got it wrong
+# (wekan/wekan#6583, comment 5259638482):
+#
+#   "A couple of weeks ago, I did a snap revert ... but then completed the
+#    migration successfully. Today, my database suddenly reverted to an old
+#    version from what looks like weeks ago. Upgrading to 10.83 did not fix the
+#    problem automatically."
+#
+# Their FerretDB was the LIVE database and had been for two weeks. MongoDB was the
+# frozen one. But starting mongod at all rewrites its WiredTiger files - recovery
+# and the startup checkpoint - so a single service start during a refresh moved
+# MongoDB's newest mtime to today, hours after a marker from two weeks ago. This
+# script called the live copy "stale", wekan-control switched the snap back to
+# database=mongodb, and the admin lost sight of two weeks of work. Every start
+# re-applied it, which is why upgrading did not help: the upgrade WAS the cause.
+#
+# So an mtime cannot tell "somebody used this database" from "this database was
+# started". The way out is to ask it of BOTH copies, because the case this exists
+# for has a shape the mistaken one does not:
+#
+#   the migrated copy is untouched since the migration, and MongoDB moved on
+#     -> STALE (exit 0). Nothing has used FerretDB; MongoDB has the newer data.
+#   the migrated copy moved on and MongoDB did not
+#     -> CURRENT (exit 1). The normal state after a successful switch.
+#   BOTH moved on
+#     -> AMBIGUOUS (exit 2). Two databases have been written to since they were
+#        copies of each other, and an mtime cannot say which holds more. Do not
+#        switch anything; say so and let the admin choose.
+#
+# Only exit 0 may be acted on automatically, and callers that test with `if` get
+# that for free. It is deliberately the narrow answer: preferring the wrong copy
+# is the whole bug, in both directions.
+#
+# The margin exists because the migration itself touches MongoDB on the way out:
+# it starts a temporary mongod to read from and stops it again, and that shutdown
+# writes to the data directory a moment after the marker appears. The same margin
+# covers FerretDB being started by the switch that follows a successful migration.
+# A few minutes of slack tells those apart from the case this is for, which is
+# days or weeks.
+#
+# Usage:  ferretdb-migration-stale [data-dir] [sqlite-dir]
+# Exit:   0 = migrated copy is behind   1 = current / cannot tell   2 = ambiguous
+# Env:    FERRETDB_STALE_MARGIN_SECONDS   default 600
+
+DBPATH="${1:-${SNAP_COMMON:-/var/snap/${SNAP_INSTANCE_NAME:-${SNAP_NAME:-wekan}}/common}}"
+SQLITE_DIR="${2:-$DBPATH/files/db}"
+MARKER="$DBPATH/.migration-to-ferretdb-done"
+MARGIN="${FERRETDB_STALE_MARGIN_SECONDS:-600}"
+
+# No completed migration means nothing to be stale about. Both halves are needed:
+# the marker is also written when the migration finishes with no data at all.
+[ -f "$MARKER" ] || exit 1
+have_sqlite=1
+for f in "$SQLITE_DIR"/*.sqlite; do
+    if [ -f "$f" ] && [ -s "$f" ]; then have_sqlite=0; break; fi
+done
+[ "$have_sqlite" -eq 0 ] || exit 1
+
+mtime() { stat -c %Y "$1" 2>/dev/null || stat -f %m "$1" 2>/dev/null || echo ""; }
+
+marker_at="$(mtime "$MARKER")"
+case "$marker_at" in ''|*[!0-9]*) exit 1 ;; esac
+
+# The MongoDB data files, and only those: a log or a pid file in the same
+# directory is touched by starting the snap and says nothing about whether the
+# DATABASE was written to.
+newest=0
+newest_file=""
+for f in "$DBPATH"/WiredTiger "$DBPATH"/WiredTiger.wt "$DBPATH"/WiredTiger.turtle \
+         "$DBPATH"/_mdb_catalog.wt "$DBPATH"/sizeStorer.wt \
+         "$DBPATH"/collection-*.wt "$DBPATH"/index-*.wt \
+         "$DBPATH"/journal/WiredTigerLog.* ; do
+    [ -f "$f" ] || continue
+    m="$(mtime "$f")"
+    case "$m" in ''|*[!0-9]*) continue ;; esac
+    if [ "$m" -gt "$newest" ]; then newest="$m"; newest_file="$f"; fi
+done
+
+# No MongoDB data at all: a FerretDB-only install, nothing to be behind.
+[ "$newest" -gt 0 ] || exit 1
+
+# And the same question of the migrated copy: has anything touched it since it was
+# made? The -wal and -shm sidecars count - a running FerretDB writes there first,
+# so on a live database they are usually the newest thing in the directory and the
+# .sqlite itself can lag behind by a checkpoint.
+ferret_at=0
+for f in "$SQLITE_DIR"/*.sqlite "$SQLITE_DIR"/*.sqlite-wal "$SQLITE_DIR"/*.sqlite-shm; do
+    [ -f "$f" ] || continue
+    m="$(mtime "$f")"
+    case "$m" in ''|*[!0-9]*) continue ;; esac
+    if [ "$m" -gt "$ferret_at" ]; then ferret_at="$m"; fi
+done
+
+fmt() { date -d "@$1" '+%Y-%m-%d %H:%M' 2>/dev/null || echo "$1"; }
+
+mongo_moved_on=1
+[ "$newest" -gt "$((marker_at + MARGIN))" ] && mongo_moved_on=0
+ferret_moved_on=1
+[ "$ferret_at" -gt "$((marker_at + MARGIN))" ] && ferret_moved_on=0
+
+# MongoDB alone moved on: the migrated copy has sat untouched since it was made,
+# so nothing has been using it and MongoDB holds everything added since.
+if [ "$mongo_moved_on" -eq 0 ] && [ "$ferret_moved_on" -eq 1 ]; then
+    behind=$(( (newest - marker_at) / 86400 ))
+    echo "The FerretDB migration finished $(fmt "$marker_at")," >&2
+    echo "but MongoDB was written to as recently as $(fmt "$newest") ($(basename "$newest_file"))" >&2
+    echo "- about ${behind} day(s) later, and nothing has written to the migrated copy since" >&2
+    echo "it was made. The migrated copy is BEHIND the MongoDB data." >&2
+    exit 0
+fi
+
+# Both moved on. Two databases have been written to since they were copies of each
+# other; an mtime says when a file was touched, not how much is in it, so there is
+# no answer here - only a choice, and it is the admin's.
+if [ "$mongo_moved_on" -eq 0 ] && [ "$ferret_moved_on" -eq 0 ]; then
+    echo "BOTH databases have been written to since the migration finished $(fmt "$marker_at"):" >&2
+    echo "  MongoDB  last written $(fmt "$newest") ($(basename "$newest_file"))" >&2
+    echo "  FerretDB last written $(fmt "$ferret_at")" >&2
+    echo "Which one holds the work you want cannot be told from timestamps. Nothing has" >&2
+    echo "been changed or switched." >&2
+    exit 2
+fi
+exit 1

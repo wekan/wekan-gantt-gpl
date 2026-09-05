@@ -19,9 +19,78 @@ npm-packages/
 # ENOSPC from inotify_add_watch means "watch limit reached", NOT a full disk.
 /.tools/
 
-# The FerretDB v1 fork checkout: a complete Go project + its docs, 9,148 more
-# directories. Nothing in WeKan imports from it - the FerretDB binary is
-# downloaded from its GitHub releases at build time - so Meteor has no reason to
-# watch or scan it. Both are already in .gitignore, but the watcher only honours
-# .meteorignore.
-/FerretDB/
+# DO NOT ADD /_build/ OR /_build-local-test/ HERE. They look like build output
+# that should be ignored - they are gitignored, and they are the first two
+# entries of the 296 KB pattern list above - and excluding them breaks the
+# build outright:
+#
+#   error: Could not find mainModule for 'os' architecture:
+#   _build/main-prod/server-meteor.js
+#   Check the "meteor" section of your package.json file?
+#
+# They are not leftovers, they are the HANDOFF. rspack compiles the app into
+# _build/main-prod/ (and _build/test/ for a test run), and Meteor then reads
+# _build/main-prod/server-meteor.js and client-meteor.js as the application's
+# main modules - package.json names client/main.js and server/main.js, and the
+# rspack integration repoints mainModule at its own output. Ignoring them hides
+# the files Meteor is about to be handed. They cost 3 directories each, so there
+# was nothing to win here anyway.
+
+# Local build and test logs. WEKAN_LOG_ROOT prefers ../log/<datetime>/, but
+# falls back to ./log when the parent is not writable - which is exactly the
+# case inside the Flatpak sandbox, so this directory does appear here.
+/log/
+
+# Everything below is NOT application source: no file in client/, server/,
+# models/, imports/, config/ or packages/ imports anything from any of them
+# (checked, not assumed). Meteor watches what it does not ignore, one inotify
+# watch per directory, and the per-user limit is shared with every other watcher
+# on the machine - which is the same limit .tools/ above was added for. Ignoring
+# them costs nothing and stops the docs tree, the packaging trees and the
+# release tooling being scanned on every rebuild.
+#
+# NOT ignored here, deliberately, and each for a reason:
+#   config/           imported by the app (9 places)
+#   private/ public/  Meteor's own asset directories
+#   packages/         the local Meteor packages
+#   _build/           rspack's handoff - see the note above; ignoring it breaks
+#                     the build outright
+# The RELEASE bundle. `meteor build .build --directory` writes it inside the
+# source tree, and Meteor says so itself on every release build:
+#
+#   WARNING: The output directory is under your source tree.
+#            Your generated files may get interpreted as source code!
+#
+# This entry does NOT silence that warning, and nothing here can: the warning is
+# a plain path comparison on the output ARGUMENT, done before any file is
+# written - tools/cli/commands.js asks whether pathRelative(appDir, outputPath)
+# starts with '..', and prints it when it does not. It fires on every build into
+# .build/ whatever this file says. Silencing it would mean building outside the
+# tree (`meteor build ../output`), which every caller in build.sh, build.bat and
+# the release workflows would have to agree on.
+#
+# What this entry does is the SECOND half of the warning - "may get interpreted
+# as source code". The next `meteor run` would otherwise scan a whole bundled
+# copy of the app, so ignoring it is worth doing on its own. Unlike _build/
+# above, nothing hands these files back to Meteor: .build/bundle is the finished
+# output, read by the deploy and test steps, never by the compiler.
+/.build/
+
+/docs/
+/meta/
+/old-CHANGELOG/
+/openapi/
+/sandstorm-src/
+/snap-src/
+/snap-base-debian/
+/stacksmith/
+/releases/
+/scripts/
+/tools/
+/secrets/
+/.github/
+/.vscode/
+/.devcontainer/
+/.claude/
+/.codex/
+/.tx/

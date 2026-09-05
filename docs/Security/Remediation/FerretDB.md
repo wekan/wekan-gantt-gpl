@@ -1,6 +1,6 @@
 # Design: FerretDB automatic security & speed remediation, logging and reports
 
-Status: **Design for approval** · Owner: xet7 · Related: [WeKan.md](WeKan.md) (the WeKan side and
+Status: **Implemented and audited 2026-08-23** · Owner: xet7 · Related: [WeKan.md](WeKan.md) (the WeKan side and
 the shared on-disk layout), [Snap-Core](../../Design/Autoupdate/Forks/Snap-Core.md).
 
 This is the FerretDB (v1, SQLite backend — the `wekan/FerretDB` fork on `main-v1`) counterpart of
@@ -14,9 +14,24 @@ WeKan (as an error/warning on the operation, or via its log stream), and **WeKan
 `eventlog` collection with a normal Meteor JavaScript query** ([WeKan.md](WeKan.md) §3). This keeps
 storage DB-agnostic — the feature works identically whether WeKan runs on FerretDB or MongoDB — and
 there is **no separate FerretDB UI or logger DB**; events appear in WeKan's
-**Admin Panel → Reports → Security / Speed**.
+**Admin Panel → Problems → Security / Speed**.
 
 ---
+
+## Implementation audit (2026-08-23)
+
+Implemented in the current `main-v1` fork: SQLite pragmas, bounded idle pools,
+unlimited open connections where parked cursors require them, slow-query warnings,
+SQL injection guards, canary markers and the WeKan-side database error classifier.
+The classifier reports disk-full, authentication, permission, connection, timeout,
+contention, unsupported-operation and backend SQL failures in Problems → Database.
+
+The current fork does **not** emit structured markers for no-pushdown, WAL growth,
+slow checkpoints or pool waits. Those remain audit follow-ups below and must not be
+described as already visible in Problems. Slow-query warnings are observable in the
+FerretDB service log; only errors reaching the MongoDB wire client are currently
+recorded automatically by WeKan.
+
 
 ## 1. Threat model (what FerretDB can remediate)
 
@@ -52,7 +67,7 @@ WeKan**, and WeKan saves it:
 
 So every FerretDB event ends up as a document in the **same `eventlog` collection** WeKan writes
 (rows labelled by `source` = `sqlite…`/`ferretdb…` vs WeKan's `localizeAvatar`/`setAvatarUrl`),
-shown on WeKan's one Reports screen. No `statfs` file guard and no separate summary are needed —
+shown on WeKan's one Problems screen. No `statfs` file guard and no separate summary are needed —
 storage and counting are the WeKan DB's job (WeKan.md §3, §5).
 
 ## 3. The reporting surface in FerretDB (no logger package)
@@ -69,6 +84,86 @@ problem *observable* to WeKan; the recording is WeKan's job. Concretely:
 
 WeKan maps these to `eventlog` documents via the category catalog
 (`models/lib/securityCategories.js`) using `source:'sqlite.*'`.
+
+---
+
+## 3b. Canary tokens — operations the client never issues
+
+The database is reached over a **local socket by one application**, whose driver
+is a Meteor 3 one. That makes a class of operations interesting **by their mere
+presence**: server-side JavaScript evaluation, an aggregation writing its result
+into a collection, dropping a database, a server-administration command. The
+driver does not send them. A request that does is either a bug or somebody who
+has reached the socket and is looking around — and both are worth telling the
+operator about.
+
+`internal/util/canary` (paired with `tests` in the same package) is the FerretDB
+half of [WeKan.md §12](WeKan.md), and it keeps the same three properties:
+
+- **SILENT.** A tripped canary returns the ordinary *"operation not supported by
+  this build"* refusal — the same answer an unimplemented command gets. The id is
+  appended as `canary:<id>`, which the client parses and the operator reads;
+  nothing in it says that anything was detected or recorded, so a probe cannot
+  tell a watched operation from an unimplemented one and route around the watched
+  ones. A Go test asserts the message contains none of *detect*, *record*, *log*,
+  *alert*.
+- **BOUNDED.** The package writes **nothing** — no file, no table, no counter. It
+  is a map lookup and an error value, so a caller hammering it in a loop costs
+  this process one string comparison per request and this package **no memory at
+  all**. This is what §2's "FerretDB does not write to any database or file"
+  means for canaries, and a Go test asserts the package is stateless.
+- **ATTRIBUTED.** The marker names *which* canary, so the operator's report says
+  "tried to run server-side JavaScript" rather than "an error".
+
+The canaries:
+
+| Id | Operations | Why the client never sends it |
+| --- | --- | --- |
+| `db.javascript` | `eval`, `$where`, `$function`, `$accumulator`, `mapReduce` | the driver has no feature that evaluates JavaScript in the database |
+| `db.result-to-collection` | `$out`, `$merge` | aggregation results are read, never persisted by the database |
+| `db.drop-database` | `dropDatabase`, `dropAllDatabases` | the application drops collections it owns; dropping the database is an operator action taken with the database's own tools |
+| `db.server-admin` | `shutdown`, `setParameter`, `getParameter`, `profile`, `logRotate` | these manage the server, not the data |
+
+`Check(op)` returns `nil` for everything else, and a Go test pins the ordinary
+vocabulary — `find`, `insert`, `update`, `aggregate`, `$match`, `$group`,
+`$lookup`, … — as **not** tripping. A canary that fires on normal traffic is
+worse than no canary: it buries the real ones.
+
+### How it reaches the operator
+
+Exactly as §2 describes for every other FerretDB event — the database reports,
+the client records:
+
+```
+FerretDB                                     WeKan
+  Check(op) → canary:<id> in the error   ──►  recordDatabaseProblem()
+                                                │ databaseCanaryId() reads the marker
+                                                ▼
+                                              tripCanary('database.canary')   ← rate-limited,
+                                                │                               aggregated,
+                                                ▼                               attributed
+                                              eventlog (stream:'security')
+                                                │
+                                                ▼
+                                     Admin Panel → Problems → Security
+```
+
+Two things that are deliberate on the WeKan side
+(`server/lib/databaseProblems.js`):
+
+1. The id is **not trusted as a category**. It is matched against a known list,
+   and anything else is recorded generically. An error string is
+   attacker-influenced, and a marker parsed out of one must never be able to
+   choose which security category it lands in — or to inject anything, which is
+   why the extractor accepts only `[a-z][a-z0-9.-]{0,60}`.
+2. A canary goes to the **security** stream and does **not** fall through to the
+   `database` stream. Filing it under "the database said something" would put an
+   intrusion attempt in the list of things to triage as configuration problems.
+
+On **MongoDB** there is no FerretDB to mark anything, and these operations simply
+never appear — the WeKan side is inert, and the feature degrades to nothing
+rather than misbehaving. That is the same property as §2: storage and reporting
+are WeKan's job, so nothing here depends on which database is underneath.
 
 ## 4. Security remediation points → logger
 
@@ -90,47 +185,45 @@ Each is a place where FerretDB **already** does the safe thing (mostly shipped f
 **Auto-remediated (already shipped for #6480 and follow-ups):**
 
 - SQLite connection pragmas as defaults (operator override wins): `synchronous(normal)` (fewer
-  fsyncs under WAL), `cache_size(-16384)`, `mmap_size(134217728)`, `temp_store(memory)`,
+  fsyncs under WAL), `cache_size(-65536)`, `mmap_size(268435456)`, `temp_store(memory)`,
   `busy_timeout(30000)`, `journal_mode(wal)` — see
   `internal/backends/sqlite/metadata/pool/uri.go`.
 - Filter pushdown (`$in`/`$regex`/ranges) turning WeKan's whole-collection scans into indexed
   lookups; bounded warm connection pool; unlimited open connections to avoid cursor starvation.
 
-**Detected-but-not-auto-fixed → reported to WeKan, which records a `speed` event (source `sqlite.*`):**
+**Observable now:** operation errors carrying classifiable wire messages are recorded
+by WeKan in Problems → Database. Slow statements emit bounded, value-free WARN
+lines in the FerretDB service log.
 
-- A statement at or above `FERRETDB_SLOW_QUERY_THRESHOLD` (default 1s) — the existing slow-query
-  WARN (`internal/util/fsql`) is surfaced to WeKan, which records a `speed` event
-  (`category:'slow-query'`, `source:'sqlite.query'`).
-- A query that could **not** be pushed down and fell back to a full scan + in-Go filter
-  (`category:'no-pushdown'`).
-- WAL file growth beyond a threshold, or a checkpoint taking too long
-  (`category:'wal-growth'` / `'slow-checkpoint'`).
-- Connection-pool wait time above a threshold (`category:'pool-wait'`).
-
-Each carries a short `Detail` (statement shape — **not** its bound argument values) and is counted
-per category, summarized like [WeKan.md](WeKan.md) §5, and shown in WeKan's **Reports → Speed**.
+**Audit follow-ups, not yet automatic Problems events:** structured markers for a
+no-pushdown fallback, WAL growth or a slow checkpoint, connection-pool wait time,
+and ingestion of slow-query WARN lines. These require a bounded authenticated bridge
+from the separate database process; claiming they are recorded before that bridge
+exists would be misleading. When implemented, each event must carry statement shape,
+never bound values, and be counted per category in Problems → Speed.
 
 ---
 
 ## 6. Tests & negative tests
 
-- Go tests assert the remediation paths return the precise, classifiable errors WeKan keys on (
-  drop + counter), the summary tally (counts per category/`Bleed`/severity), `Detail`
-  truncation/newline-stripping, and the non-blocking drop-on-full-channel path. Negative tests:
-  malformed event, oversize detail, unwritable directory (no panic, event dropped).
-- Extend the slow-query test (`internal/util/fsql/slow_test.go`) to assert a slow statement also
-  produces a speed event.
-- Because this sandbox has **no Go runtime**, the logic is additionally validated with a Python
-  mirror (path builder, disk-guard arithmetic, tally) that is actually run, per the project rule;
-  the Go tests are for the maintainer to run with `go test ./...`.
+- Current Go tests cover canary silence, bounded stateless behavior, SQL guarding,
+  slow-query threshold parsing, SQLite pragmas and pool limits. WeKan Node tests
+  cover marker parsing, error classification, credential redaction and Admin
+  Problems wiring.
+- Positive and negative runtime-health tests cover healthy and pressured heap and
+  disk states. Future structured performance markers require Go producer tests and
+  WeKan ingestion tests before this document may call them implemented.
 
 ---
 
 ## 7. Relationship to WeKan.md
 
-- Same directory tree and disk-space discipline; different filename prefix (`ferretdb-`).
-- WeKan's **Reports → Security / Speed / Tests** read the one `eventlog` collection, so **one** admin
-  screen shows both processes, each row labelled by `source` (`wekan…` vs `sqlite…`/`ferretdb…`).
-- Category/`*Bleed` naming is shared; FerretDB adds a few DB-specific generic names
-  (`OrphanTableBleed`, `NonFiniteBleed`, `SlowQueryBleed`) that do not (yet) have hall-of-fame
-  pages — the Report shows the general category alongside them.
+FerretDB writes no event database or report file. It returns bounded, classifiable
+errors or service-log warnings; WeKan owns storage, aggregation, acknowledgment and
+the Admin Panel Problems UI. The shared platform launchers allocate proportional
+memory to Node and Go, while explicit administrator limits win.
+
+Database-independent Problems reporting works with MongoDB and every FerretDB SQL
+backend. SQLite-specific pragmas and filesystem checks apply only to SQLite; backend
+authentication, permission, syntax, connection and timeout errors use the shared
+classifier.

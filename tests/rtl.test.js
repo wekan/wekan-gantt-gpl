@@ -24,6 +24,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
+const { parseLanguageMetadata } = require('./lib/languageRegistrySource.cjs');
 
 // Find the repo root by walking up from process.cwd()/PWD, NOT from the bare `__dirname`
 // global: this file is also loaded by `meteor test`, where referencing `__dirname` makes
@@ -50,11 +51,9 @@ const read = rel => fs.readFileSync(path.join(repoRoot, rel), 'utf8');
 function parseRtlFlags() {
   const src = read('imports/i18n/languages.js');
   const flags = {};
-  // Each entry looks like: tag: "ar-EG", ... rtl: true,
-  const re = /tag:\s*"([^"]+)"[\s\S]*?rtl:\s*(true|false)/g;
-  let m;
-  while ((m = re.exec(src))) {
-    flags[m[1]] = m[2] === 'true';
+  // Compact rows are [key, code, tag, native name, rtl].
+  for (const row of parseLanguageMetadata(src)) {
+    flags[row[2]] = row[4];
   }
   return flags;
 }
@@ -91,7 +90,12 @@ const EXPECTED_RTL = [
   'ar-DZ', 'ar-EG', 'ar', 'ary', // Arabic + variants
   'fa-IR', 'fa', // Persian / Farsi
   'he-IL', 'he', // Hebrew
+  'ckb', // Kurdish (Sorani)
+  'ks', // Kashmiri
+  'ps', // Pashto
+  'sd', // Sindhi
   'ug', // Uyghur
+  'ur', // Urdu
   'uz-AR', // Uzbek (Arabic script)
   'yi', // Yiddish
 ];

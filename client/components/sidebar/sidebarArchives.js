@@ -4,6 +4,7 @@ import Lists from '/models/lists';
 import Swimlanes from '/models/swimlanes';
 import Cards from '/models/cards';
 import { Utils } from '/client/lib/utils';
+import { tabIndexForKey } from '/client/lib/accessibility';
 
 const ARCHIVE_PAGE_SIZE = 30;
 const ARCHIVE_SCROLL_THRESHOLD_PX = 120;
@@ -203,6 +204,18 @@ Template.archivesSidebar.events({
     if (slug) {
       t.activeTab.set(slug);
     }
+  },
+  'keydown .tab-item'(event, template) {
+    const tabs = ['cards', 'lists', 'swimlanes'];
+    const current = event.currentTarget.getAttribute('data-tab');
+    const currentIndex = tabs.indexOf(current);
+    if (currentIndex < 0) return;
+    const nextIndex = tabIndexForKey(event, currentIndex, tabs.length);
+    if (nextIndex === null) return;
+    event.preventDefault();
+    const slug = tabs[nextIndex];
+    template.activeTab.set(slug);
+    Tracker.afterFlush(() => template.find(`#archive-tab-${slug}`)?.focus());
   },
 
   async 'click .js-restore-card'(evt) {
@@ -507,4 +520,3 @@ Template.restoreArchivedListToSwimlanePopup.events({
     Popup.back();
   },
 });
-

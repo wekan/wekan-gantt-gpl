@@ -56,8 +56,33 @@ function baseNameForMime(mimeType) {
   return 'file';
 }
 
+// A MIME type that says NOTHING about the file. `application/octet-stream` is
+// what a browser sends for a type it does not know and what `file` reports for
+// anything it cannot identify - it is the absence of an answer, not an answer.
+//
+// #6589: a .drawio upload came in as application/octet-stream, and correcting
+// the extension "to the type" turned it into "sso-proconnect-keycloak.drawio.bin"
+// - unopenable, and the rename that would have repaired it failed too. Anything
+// unrecognised - .drawio, .kdbx, .ova, a new format, an internal one - was
+// renamed to .bin the same way. mime.extension('application/octet-stream') is
+// 'bin', and that is the only reason.
+const UNINFORMATIVE_MIME = new Set([
+  'application/octet-stream',
+  'binary/octet-stream',
+  'application/binary',
+  'application/x-binary',
+  'application/unknown',
+  '*/*',
+]);
+
+function mimeSaysNothing(mimeType) {
+  const t = String(mimeType || '').toLowerCase().trim();
+  return !t || UNINFORMATIVE_MIME.has(t);
+}
+
 // The correct extension (with leading dot) for a MIME type, or '' if unknown.
 function extensionForMime(mimeType) {
+  if (mimeSaysNothing(mimeType)) return '';
   const ext = mime.extension(String(mimeType || '').toLowerCase());
   return ext ? '.' + ext : '';
 }
@@ -94,8 +119,15 @@ function sanitizeUploadFileName(name, mimeType) {
     return truncateFilenameChars(baseNameForMime(mimeType) + wantExt);
   }
   if (wantExt) {
+    const dot = n.lastIndexOf('.');
+    const curExt = dot > 0 ? n.slice(dot).toLowerCase() : '';
     const curMime = mime.lookup(n); // false when there is no recognized extension
-    if (curMime === wantMime) {
+    // JFIF is JPEG content, but many desktop file associations (and the
+    // mime-types database used here) do not recognize .jfif. Use the portable
+    // canonical extension instead of producing "photo.jfif.jpeg".
+    if (wantMime === 'image/jpeg' && curExt === '.jfif') {
+      n = n.slice(0, dot) + wantExt;
+    } else if (curMime === wantMime) {
       // extension already matches the type (handles .jpg vs .jpeg) — keep it
     } else if (curMime) {
       // recognized but WRONG extension -> replace it
@@ -163,6 +195,7 @@ module.exports = {
   sanitizationReasons,
   baseNameForMime,
   extensionForMime,
+  mimeSaysNothing,
   filenameLooksLikeExploit,
   sanitizeUploadFileName,
 };

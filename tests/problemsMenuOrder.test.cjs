@@ -1,7 +1,8 @@
 'use strict';
 
-// Admin Panel / Problems: the menu order, the Security Report rename, and the three
-// panes that moved here from Admin Panel / Features.
+// Admin Panel / Problems: the menu order, the Security Report rename, the three
+// panes that moved here from Admin Panel / Features, and the Delete setting added
+// after that page was removed.
 //
 // Requested:
 //   * "Security" renamed to "Security Report" and moved ABOVE "Broken Cards"
@@ -33,12 +34,12 @@ function test(name, fn) { fn(); passed += 1; console.log('  ok -', name); }
 const root = path.join(__dirname, '..');
 const read = rel => fs.readFileSync(path.join(root, rel), 'utf8');
 
-const reportsJs = read('client/components/settings/adminReports.js');
-const reportsJade = read('client/components/settings/adminReports.jade');
+const reportsJs = read('client/components/settings/adminProblems.js');
+const reportsJade = read('client/components/settings/adminProblems.jade');
 // Admin Panel / Features was removed once its last three panes moved here, so the
 // panes and their handlers live with the page that renders them.
-const featuresJs = read('client/components/settings/adminReports.js');
-const featuresJade = read('client/components/settings/adminReports.jade');
+const featuresJs = read('client/components/settings/adminProblems.js');
+const featuresJade = read('client/components/settings/adminProblems.jade');
 const en = JSON.parse(read('imports/i18n/data/en.i18n.json'));
 
 const menu = reportsJs.slice(reportsJs.indexOf('const PROBLEMS_MENU'),
@@ -71,9 +72,9 @@ test('the report is called Security Report, in the source string', () => {
 });
 
 test('the menu is two named groups: Settings, then Reports', () => {
-  // Summary, then a rule and a "Settings" title over the two panes that came from
-  // Admin Panel / Features, then a rule and a "Reports" title over everything else.
-  for (const id of ['features-security', 'features-notifications']) {
+  // Summary, then a rule and a "Settings" title over the server-wide switches,
+  // then a rule and a "Reports" title over everything else.
+  for (const id of ['features-security', 'features-delete', 'features-notifications']) {
     assert.ok(at(id) > -1, `${id} must be a Problems entry`);
     assert.ok(at(id) > at('report-summary'), `${id} must be below Summary`);
   }
@@ -83,6 +84,10 @@ test('the menu is two named groups: Settings, then Reports', () => {
     'the Settings title comes after Summary');
   assert.ok(headingAt('settings') < at('features-security'),
     'and above the settings panes it names');
+  assert.ok(at('features-security') < at('features-delete'),
+    'Delete is below Security');
+  assert.ok(at('features-delete') < at('features-notifications'),
+    'Delete is immediately above Notifications');
   assert.ok(at('features-notifications') < headingAt('reports'),
     'the Reports title comes after them');
   assert.ok(headingAt('reports') < at('report-security'),
@@ -108,31 +113,55 @@ test('Performance sits with the streams it is about, below Impersonation Report'
     'the four sit together, above the remaining reports');
 });
 
-test('Problems renders all three right-hand pages', () => {
-  for (const [flag, tpl] of [['showFeaturesPerformance', 'featuresPerformance'],
-    ['showFeaturesSecurity', 'featuresSecurity'],
-    ['showFeaturesNotifications', 'featuresNotifications']]) {
-    assert.ok(new RegExp(`else if ${flag}\\.get\\s*\\n\\s*\\+${tpl}`).test(reportsJade),
-      `${tpl} must be rendered`);
-    // With the state behind it, or the branch is never true.
-    assert.ok(reportsJs.includes(`this.${flag} = new ReactiveVar(false)`), `${flag} must exist`);
-    assert.ok(reportsJs.includes(`tmpl.${flag}.set(false)`), `${flag} must be reset on a switch`);
-    assert.ok(reportsJs.includes(`tmpl.${flag}.set(true)`), `${flag} must be set by its entry`);
-    assert.ok(new RegExp(`  ${flag}\\(\\) \\{`).test(reportsJs), `${flag} needs a helper`);
-  }
-  // And the templates they render must exist.
-  for (const tpl of ['featuresPerformance', 'featuresSecurity', 'featuresNotifications']) {
-    assert.ok(featuresJade.includes(`template(name="${tpl}")`), `template ${tpl} must exist`);
-  }
+test('EVERY pane in the menu is rendered, and has something behind it', () => {
+  // This replaced a check on three named panes and their ReactiveVars. The state
+  // is one `activeReport` id now, so the invariant can be stated for ALL of them:
+  // a menu entry must be rendered by the template, and must either load itself
+  // or have a report config. Missing either is what made a pane render blank -
+  // the menu set a variable, the template asked for a helper that did not exist,
+  // and an undefined helper is simply falsy.
+  const ids = [...reportsJs.matchAll(/^\s*\{ id: '([\w-]+)'/gm)].map(m => m[1]);
+  assert.ok(ids.length > 10, `expected the menu, found ${ids.length} entries`);
+
+  const selfLoading = /const SELF_LOADING_PANES = \[([\s\S]*?)\];/.exec(reportsJs);
+  assert.ok(selfLoading, 'the self-loading pane list must exist');
+  const selfLoadingIds = [...selfLoading[1].matchAll(/'([\w-]+)'/g)].map(m => m[1]);
+  const configured = [...reportsJs.matchAll(/^\s*'([\w-]+)': \{ page: /gm)].map(m => m[1]);
+
+  const unrendered = ids.filter(id => !reportsJade.includes(`isPane '${id}'`)
+    && !configured.includes(id));
+  assert.deepStrictEqual(unrendered, [],
+    `these menu entries render nothing: ${unrendered.join(', ')}`);
+
+  const unloaded = ids.filter(id => !selfLoadingIds.includes(id) && !configured.includes(id));
+  assert.deepStrictEqual(unloaded, [],
+    'these panes neither load themselves nor have a report config, so opening one '
+    + `spins for ever: ${unloaded.join(', ')}`);
 });
 
-test('each pane took its helpers and handlers with it', () => {
+test('no pane keeps its own ReactiveVar any more (negative)', () => {
+  // Eleven booleans said what one id already said, and each pane needed seven
+  // edits to add. A new `this.showX = new ReactiveVar` is that pattern coming
+  // back.
+  // The CODE, not the comment above it that records why the pattern went.
+  const code = reportsJs.split('\n').filter(l => !/^\s*(\/\/|\*)/.test(l)).join('\n');
+  const flags = [...code.matchAll(/this\.(show[A-Z]\w*) = new ReactiveVar/g)].map(m => m[1]);
+  assert.deepStrictEqual(flags, [],
+    `these duplicate activeReport: ${flags.join(', ')}`);
+});
+
+
+test('each settings pane has its helpers and handlers', () => {
   // The half that fails silently: the pane renders, every checkbox reads as unchecked
   // and no click does anything.
   assert.ok(/const featurePaneHelpers = \{/.test(featuresJs), 'the pane helpers are their own object');
   assert.ok(/const featurePaneEvents = \{/.test(featuresJs), 'and so are the handlers');
-  assert.ok(/for \(const tpl of \[Template\.featuresPerformance, Template\.featuresSecurity,[\s\S]{0,80}tpl\.helpers\(featurePaneHelpers\);[\s\S]{0,40}tpl\.events\(featurePaneEvents\);/
-    .test(featuresJs), 'registered on all three pane templates');
+  assert.ok(/for \(const tpl of \[Template\.featuresPerformance, Template\.featuresSecurity,[\s\S]{0,140}tpl\.helpers\(featurePaneHelpers\);[\s\S]{0,40}tpl\.events\(featurePaneEvents\);/
+    .test(featuresJs), 'registered on every settings pane template');
+  assert.ok(featuresJs.includes("toggleSettingField('enablePermanentDelete')"),
+    'the Delete checkbox writes the permanent-delete setting');
+  assert.ok(/Template\.featuresDelete/.test(featuresJs),
+    'the Delete pane receives the shared helpers and handlers');
   // They must NOT be left on the page template.
   // There is no page template left to leave them on: the pane templates are the only
   // place they can be.

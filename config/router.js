@@ -7,9 +7,31 @@ import { ReactiveCache } from '/imports/reactiveCache';
 import { decideSandstormAutoOpen } from '/models/lib/sandstormAutoOpen';
 import { cardBoardRedirectTarget } from '/models/lib/cardLinkRedirect';
 import Settings from '/models/settings';
+// The swimlane and list routes, whose paths are built beside the URLs they
+// match so the two cannot disagree. models/lib/boardItemUrl.js
+import { SWIMLANE_ROUTE_PATH, LIST_ROUTE_PATH } from '/models/lib/boardItemUrl';
 import { EscapeActions } from '/client/lib/escapeActions';
 import { Filter } from '/client/lib/filter';
 import { Utils } from '/client/lib/utils';
+// The Admin Panel's per-pane URLs: /admin/settings/version,
+// /admin/people/login, /admin/problems/database and so on - the panel, the
+// page and the pane, all three named in the address.
+// docs/Features/Page/Admin-Panel-URLs.md
+import {
+  ADMIN_PAGES,
+  resolvePaneId,
+  adminPath,
+  adminRoutePath,
+} from '/models/lib/adminUrls';
+// The All Boards page's URLs: /allboards/starred, /allboards/templates,
+// /allboards/remaining, /allboards/workspaces/<name>/<sub-name>.
+// docs/Features/Page/All-Boards-URLs.md
+import {
+  SECTION_WORKSPACES,
+  resolveSection,
+  splitWorkspacePath,
+  allBoardsPath,
+} from '/models/lib/allBoardsUrls';
 
 let previousPath;
 
@@ -63,7 +85,8 @@ function renderBoardList(ctx, menu) {
   Session.set('currentCard', null);
   Session.set('popupCardId', null);
   Session.set('popupCardBoardId', null);
-  Session.set('boardListMenu', menu);
+  // `null` when the address named no section, so the page can choose one.
+  Session.set('boardListMenu', menu || null);
   Filter.reset();
   Session.set('sortBy', '');
   EscapeActions.executeAll();
@@ -72,7 +95,6 @@ function renderBoardList(ctx, menu) {
   Utils.manageMatomo();
 
   ctx.render('defaultLayout', {
-    headerBar: 'boardListHeaderBar',
     content: 'boardList',
   });
 }
@@ -158,27 +180,92 @@ FlowRouter.route('/', {
     // (above) redirect once the grain login + boards have loaded, if appropriate.
     if (isSandstorm) {
       startSandstormAutoOpen();
-      renderBoardList(this, 'starred');
+      renderBoardList(this, null);
       return;
     }
     if (maybeRedirectToDefaultBoard()) return;
-    renderBoardList(this, 'starred');
+    // `null`, not 'starred': `/` names no section, so which one to open is the
+    // PAGE's to decide - Starred when the user has starred boards, Remaining
+    // when they have none. The router runs before the user document has
+    // necessarily loaded and cannot answer that.
+    // models/lib/allBoardsUrls.js, client/components/boards/boardsList.js
+    renderBoardList(this, null);
   },
 });
 
+// The old section URLs. They keep working, as redirects to the new structure -
+// the same move /setting made. docs/Features/Page/All-Boards-URLs.md
 FlowRouter.route('/templates', {
   name: 'allboards-templates',
-  triggersEnter: [ensureSignedInUnlessSandstorm],
-  action() {
-    renderBoardList(this, 'templates');
-  },
+  triggersEnter: [
+    (context, redirect) => {
+      redirect(allBoardsPath('templates', []));
+    },
+  ],
+  action() {},
 });
 
 FlowRouter.route('/remaining', {
   name: 'allboards-remaining',
+  triggersEnter: [
+    (context, redirect) => {
+      redirect(allBoardsPath('remaining', []));
+    },
+  ],
+  action() {},
+});
+
+// All Boards, with a URL per left-menu entry - including the workspaces tree,
+// which had none at all. `:path*` captures the whole rest of the address, so a
+// workspace nests as deep as its tree does:
+// /allboards/workspaces/engineering/backend. docs/Features/Page/All-Boards-URLs.md
+//
+// The WORKSPACE is resolved by the page, not here: the tree lives on the user
+// document, which the router cannot read before the page has it. The router
+// hands over the slugs; the page turns them into a workspace id once the tree
+// has loaded, and falls back to Workspaces if they name nothing.
+FlowRouter.route('/allboards/:section?/:path*', {
+  name: 'allboards',
   triggersEnter: [ensureSignedInUnlessSandstorm],
+  action(params) {
+    const section = resolveSection(params && params.section);
+    Session.set(
+      'boardListWorkspacePath',
+      section === SECTION_WORKSPACES ? splitWorkspacePath(params && params.path) : [],
+    );
+    renderBoardList(this, section);
+  },
+});
+
+// Boards in Archive: a PAGE, not a modal.
+//
+// It was `Modal.open('archivedBoards')` from three menus, so the one place that
+// lists every archived board - with its own search and its own pager - was a box
+// floating over whatever you happened to be looking at, could not be linked or
+// bookmarked, and closed if you pressed Escape while reading it. It is a page
+// like any other now, with the same second top header bar, which is what
+// "restore a board I archived last month" deserves.
+FlowRouter.route('/archive', {
+  name: 'archive',
+  triggersEnter: [
+    ensureSignedInUnlessSandstorm,
+    () => {
+      Session.set('currentBoard', null);
+      Session.set('currentList', null);
+      Session.set('currentCard', null);
+      Session.set('popupCardId', null);
+      Session.set('popupCardBoardId', null);
+
+      Filter.reset();
+      Session.set('sortBy', '');
+      EscapeActions.executeAll();
+    },
+  ],
   action() {
-    renderBoardList(this, 'remaining');
+    Utils.manageCustomUI();
+    this.render('defaultLayout', {
+      content: 'archivedBoards',
+    });
   },
 });
 
@@ -199,9 +286,15 @@ FlowRouter.route('/public', {
     Utils.manageCustomUI();
     Utils.manageMatomo();
 
+    // /public is its own page now, not All Boards with a different query
+    // (docs/Features/Page/Public.md): a read-only, paginated table of the boards
+    // anybody may open. Rendering `boardList` here brought the Starred /
+    // Templates / Remaining menu, the workspaces tree, Multi-Selection with its
+    // archive and duplicate actions and an "Add board" tile with it — none of
+    // which means anything for somebody else's public boards, and some of which
+    // offered actions the visitor has no rights to.
     this.render('defaultLayout', {
-      headerBar: 'boardListHeaderBar',
-      content: 'boardList',
+      content: 'publicBoards',
     });
   },
 });
@@ -224,7 +317,6 @@ FlowRouter.route('/accessibility', {
     Utils.manageMatomo();
 
     this.render('defaultLayout', {
-      headerBar: 'accessibilityHeaderBar',
       content: 'accessibility',
     });
   },
@@ -248,7 +340,6 @@ FlowRouter.route('/support', {
     Utils.manageMatomo();
 
     this.render('defaultLayout', {
-      headerBar: 'supportHeaderBar',
       content: 'support',
     });
   },
@@ -270,7 +361,6 @@ FlowRouter.route('/b/:id/:slug/rules', {
     Utils.manageMatomo();
 
     this.render('defaultLayout', {
-      headerBar: 'rulesHeaderBar',
       content: 'rulesMain',
     });
   },
@@ -311,11 +401,63 @@ function maybeRedirectMovedCard(urlBoardId, cardId) {
   movedCardCheck = { computation, sub };
 }
 
+// A swimlane and a list have an address of their own, so either can be linked
+// the way a card can. FIVE segments against the card route's four, which is what
+// keeps the three apart: a card route cannot match these and these cannot match
+// a card. models/lib/boardItemUrl.js
+//
+// The route cannot scroll anything: it runs before the board has rendered, and
+// on a board that is already open it runs without re-creating anything. So it
+// names what to REVEAL in a Session value, and the board body reveals it once
+// the element exists. docs/Features/Page/Board-Item-Links.md
+FlowRouter.route(SWIMLANE_ROUTE_PATH, {
+  name: 'swimlane',
+  action(params) {
+    Session.set('currentBoard', params.boardId);
+    Session.set('currentCard', null);
+    Session.set('popupCardId', null);
+    Session.set('popupCardBoardId', null);
+    Session.set('revealSwimlaneId', params.swimlaneId);
+    Session.set('revealListId', null);
+
+    Utils.manageCustomUI();
+    Utils.manageMatomo();
+
+    this.render('defaultLayout', {
+      content: 'board',
+    });
+  },
+});
+
+FlowRouter.route(LIST_ROUTE_PATH, {
+  name: 'list',
+  action(params) {
+    Session.set('currentBoard', params.boardId);
+    Session.set('currentCard', null);
+    Session.set('popupCardId', null);
+    Session.set('popupCardBoardId', null);
+    Session.set('revealListId', params.listId);
+    Session.set('revealSwimlaneId', null);
+
+    Utils.manageCustomUI();
+    Utils.manageMatomo();
+
+    this.render('defaultLayout', {
+      content: 'board',
+    });
+  },
+});
+
 FlowRouter.route('/b/:boardId/:slug/:cardId', {
   name: 'card',
   action(params) {
     Session.set('currentBoard', params.boardId);
     Session.set('currentCard', params.cardId);
+    // A reveal is about the address you just followed, so following another
+    // one cancels it: without this, opening a card after a list link would
+    // scroll the board away from the card it just opened.
+    Session.set('revealSwimlaneId', null);
+    Session.set('revealListId', null);
     Session.set('popupCardId', null);
     Session.set('popupCardBoardId', null);
     // #4758: if the card was moved to another board, redirect to its current one.
@@ -335,7 +477,6 @@ FlowRouter.route('/b/:boardId/:slug/:cardId', {
     Utils.manageMatomo();
 
     this.render('defaultLayout', {
-      headerBar: 'boardHeaderBar',
       content: 'board',
     });
   },
@@ -361,7 +502,6 @@ FlowRouter.route('/b/:id', {
     Utils.manageMatomo();
 
     this.render('defaultLayout', {
-      headerBar: 'boardHeaderBar',
       content: 'board',
     });
   },
@@ -374,6 +514,8 @@ FlowRouter.route('/b/:id/:slug', {
     const previousBoard = Session.get('currentBoard');
     Session.set('currentBoard', currentBoard);
     Session.set('currentCard', null);
+    Session.set('revealSwimlaneId', null);
+    Session.set('revealListId', null);
     Session.set('popupCardId', null);
     Session.set('popupCardBoardId', null);
 
@@ -391,7 +533,6 @@ FlowRouter.route('/b/:id/:slug', {
     Utils.manageMatomo();
 
     this.render('defaultLayout', {
-      headerBar: 'boardHeaderBar',
       content: 'board',
     });
   },
@@ -411,7 +552,6 @@ FlowRouter.route('/shortcuts', {
       });
     } else {
       this.render('defaultLayout', {
-        headerBar: 'shortcutsHeaderBar',
         content: shortcutsTemplate,
       });
     }
@@ -436,7 +576,6 @@ FlowRouter.route('/b/templates', {
     Utils.manageMatomo();
 
     this.render('defaultLayout', {
-      headerBar: 'boardListHeaderBar',
       content: 'boardList',
     });
   },
@@ -455,7 +594,6 @@ FlowRouter.route('/my-cards', {
     Utils.manageMatomo();
 
     this.render('defaultLayout', {
-      headerBar: 'myCardsHeaderBar',
       content: 'myCards',
     });
     // }
@@ -475,7 +613,6 @@ FlowRouter.route('/due-cards', {
     Utils.manageMatomo();
 
     this.render('defaultLayout', {
-      headerBar: 'dueCardsHeaderBar',
       content: 'dueCards',
     });
     // }
@@ -510,7 +647,6 @@ FlowRouter.route('/global-search', {
       );
     }
     this.render('defaultLayout', {
-      headerBar: 'globalSearchHeaderBar',
       content: 'globalSearch',
     });
   },
@@ -529,7 +665,6 @@ FlowRouter.route('/bookmarks', {
     Utils.manageMatomo();
 
     this.render('defaultLayout', {
-      headerBar: 'boardListHeaderBar',
       content: 'boardList',
     });
   },
@@ -549,8 +684,33 @@ FlowRouter.route('/broken-cards', {
     Utils.manageMatomo();
 
     this.render('defaultLayout', {
-      headerBar: 'brokenCardsHeaderBar',
       content: brokenCardsTemplate,
+    });
+  },
+});
+
+// #1173: the import page with no source chosen yet. The page picks the source
+// itself now, so the address does not have to carry one - but /import/:source
+// below still works, so every existing link, bookmark and back button does.
+FlowRouter.route('/import', {
+  name: 'import-start',
+  triggersEnter: [ensureSignedInUnlessSandstorm],
+  action() {
+    if (Session.get('currentBoard')) {
+      Session.set('fromBoard', Session.get('currentBoard'));
+    }
+    Session.set('currentBoard', null);
+    Session.set('currentList', null);
+    Session.set('currentCard', null);
+    Session.set('popupCardId', null);
+    Session.set('popupCardBoardId', null);
+    Session.set('importSource', null);
+
+    Filter.reset();
+    Session.set('sortBy', '');
+    EscapeActions.executeAll();
+    this.render('defaultLayout', {
+      content: 'import',
     });
   },
 });
@@ -573,13 +733,21 @@ FlowRouter.route('/import/:source', {
     Session.set('sortBy', '');
     EscapeActions.executeAll();
     this.render('defaultLayout', {
-      headerBar: 'importHeaderBar',
       content: 'import',
     });
   },
 });
 
-FlowRouter.route('/setting', {
+// Admin Panel / Settings. Every left-menu entry has its own URL -
+// /admin/settings/version, /admin/settings/visibility,
+// /admin/settings/global-webhooks - so a pane can be linked, bookmarked,
+// opened in a second tab and reached with the back button, and the address
+// says which pane it is showing rather than leaving the first one unnamed.
+// docs/Features/Page/Admin-Panel-URLs.md
+//
+// The pane is REQUIRED in the path. A bare page address is a redirect to its
+// default pane's own address (below), not a second address for the same view.
+FlowRouter.route(adminRoutePath('settings'), {
   name: 'setting',
   triggersEnter: [
     ensureSignedInUnlessSandstorm,
@@ -595,13 +763,51 @@ FlowRouter.route('/setting', {
       EscapeActions.executeAll();
     },
   ],
-  action() {
+  action(params) {
     Utils.manageCustomUI();
+    // An unknown slug falls back to the default pane rather than rendering a
+    // panel with nothing in it - a URL is something a person types.
+    Session.set('settingsOpenPane', resolvePaneId('settings', params && params.pane));
     this.render('defaultLayout', {
-      headerBar: 'settingHeaderBar',
       content: 'setting',
     });
   },
+});
+
+// Where the panel's pages used to live, kept so bookmarks and old links keep
+// working: the bare new address, the bare old one, and the old two-segment
+// form with a pane in it. `/setting` - the singular odd one out - is in the
+// list too.
+//
+// A trigger redirects with the `redirect` it is HANDED, never with
+// FlowRouter.go(): go() from inside triggersEnter happens while this route is
+// still entering and is swallowed, so nothing renders and the browser stays on
+// whatever page it was showing.
+Object.keys(ADMIN_PAGES).forEach(page => {
+  const cfg = ADMIN_PAGES[page];
+  const toDefault = (context, redirect) => redirect(adminPath(page, cfg.defaultSlug));
+  // The bare new address: /admin/settings -> /admin/settings/version.
+  FlowRouter.route(cfg.base, { triggersEnter: [toDefault], action() {} });
+  // The bare old one: /settings -> /admin/settings/version.
+  FlowRouter.route(cfg.legacyBase, { triggersEnter: [toDefault], action() {} });
+  // The old form WITH a pane: /settings/global-webhooks keeps its pane, and an
+  // unknown one falls back to the default rather than 404ing a bookmark.
+  FlowRouter.route(`${cfg.legacyBase}/:pane`, {
+    triggersEnter: [
+      (context, redirect) => redirect(adminPath(page, (context.params || {}).pane)),
+    ],
+    action() {},
+  });
+});
+
+// The singular path the Settings page used to answer on.
+FlowRouter.route('/setting', {
+  triggersEnter: [
+    (context, redirect) => {
+      redirect(adminPath('settings', 'version-setting'));
+    },
+  ],
+  action() {},
 });
 
 // Version is the FIRST pane inside Admin Panel / Settings now, not a page of its
@@ -617,14 +823,15 @@ FlowRouter.route('/information', {
   name: 'information',
   triggersEnter: [
     (context, redirect) => {
-      Session.set('settingsOpenPane', 'version-setting');
-      redirect(FlowRouter.path('setting'));
+      // The pane it meant now HAS an address, so redirect to it instead of
+      // asking the page for it through the Session.
+      redirect(adminPath('settings', 'version-setting'));
     },
   ],
   action() {},
 });
 
-FlowRouter.route('/people', {
+FlowRouter.route(adminRoutePath('people'), {
   name: 'people',
   triggersEnter: [
     ensureSignedInUnlessSandstorm,
@@ -640,16 +847,18 @@ FlowRouter.route('/people', {
       EscapeActions.executeAll();
     },
   ],
-  action() {
+  action(params) {
+    // Which left-menu pane this URL means. An unknown slug falls back to the
+    // page's default. docs/Features/Page/Admin-Panel-URLs.md
+    Session.set('peopleOpenPane', resolvePaneId('people', params && params.pane));
     this.render('defaultLayout', {
-      headerBar: 'settingHeaderBar',
       content: 'people',
     });
   },
 });
 
-FlowRouter.route('/admin-reports', {
-  name: 'admin-reports',
+FlowRouter.route(adminRoutePath('problems'), {
+  name: 'problems',
   triggersEnter: [
     ensureSignedInUnlessSandstorm,
     () => {
@@ -664,15 +873,17 @@ FlowRouter.route('/admin-reports', {
       EscapeActions.executeAll();
     },
   ],
-  action() {
+  action(params) {
+    // Which left-menu pane this URL means. An unknown slug falls back to the
+    // page's default. docs/Features/Page/Admin-Panel-URLs.md
+    Session.set('problemsOpenPane', resolvePaneId('problems', params && params.pane));
     this.render('defaultLayout', {
-      headerBar: 'settingHeaderBar',
-      content: 'adminReports',
+      content: 'adminProblems',
     });
   },
 });
 
-FlowRouter.route('/attachments', {
+FlowRouter.route(adminRoutePath('attachments'), {
   name: 'attachments',
   triggersEnter: [
     ensureSignedInUnlessSandstorm,
@@ -688,9 +899,11 @@ FlowRouter.route('/attachments', {
       EscapeActions.executeAll();
     },
   ],
-  action() {
+  action(params) {
+    // Which left-menu pane this URL means. An unknown slug falls back to the
+    // page's default. docs/Features/Page/Admin-Panel-URLs.md
+    Session.set('attachmentsOpenPane', resolvePaneId('attachments', params && params.pane));
     this.render('defaultLayout', {
-      headerBar: 'settingHeaderBar',
       content: 'attachments',
     });
   },
@@ -703,9 +916,7 @@ FlowRouter.route('/translation', {
   name: 'translation',
   triggersEnter: [
     (context, redirect) => {
-      // ...and it opens ON Translation, which is the pane the old URL meant.
-      Session.set('settingsOpenPane', 'translation-setting');
-      redirect(FlowRouter.path('setting'));
+      redirect(adminPath('settings', 'translation-setting'));
     },
   ],
   action() {},

@@ -31,7 +31,46 @@ EventLog.attachSchema(
     source:   { type: String, optional: true },     // guard/module/test name (wekan… or sqlite…/ferretdb…)
     cwe:      { type: String, optional: true },
     userId:   { type: String, optional: true },
+    // WHO and FROM WHERE. A security event that says only "something was
+    // blocked" cannot be acted on: the admin needs the account and the address
+    // to decide whether to lock it, and to recognise the same actor across
+    // several events. Denormalised at write time on purpose - the username is
+    // what the account was CALLED when it tried, which a later rename must not
+    // rewrite, and a deleted account must not erase.
+    username: { type: String, optional: true },
+    ip:       { type: String, optional: true },
+    // ONE ROW PER PROBLEM. `count` is how many times this problem has happened,
+    // `firstAt` when it was first seen and `at` when it was last seen - so a row
+    // answers "what, how much, and between when and when" on its own. See
+    // models/lib/eventLogSummary.js for what makes two events the same problem
+    // (the kind of thing that happened) and what does not (who did it - those
+    // fields describe the most recent occurrence).
+    //
+    // A row per EVENT is what this replaced: a guard on a path an attacker
+    // controls fires as fast as they can send, so the collection grew with the
+    // attack and the Problems page became a scroll of identical lines.
+    count:    { type: Number, optional: true },
+    firstAt:  { type: Date, optional: true },
+    // WHO, and how many times each - read out as `username1 25,
+    // 100.100.100.100 30`. A username and an address are counted separately:
+    // they answer different questions, and an unauthenticated attempt has an
+    // address and no name. Capped (models/lib/eventLogSummary.js MAX_ACTORS) so
+    // an attacker rotating addresses cannot grow the row with the attack, with
+    // the remainder counted in actorsOverflow - which is itself the signal that
+    // the source is spread rather than single.
+    actors:   { type: Object, optional: true, blackbox: true },
+    actorsOverflow: { type: Number, optional: true },
     detail:   { type: String, optional: true },
+    // The 'database' stream's own four fields (server/lib/databaseProblems.js).
+    // They MUST be declared here: collection2 cleans every insert against this
+    // schema with `filter: true`, so a field the schema does not know is dropped
+    // silently — which is why a database problem used to arrive in Admin Panel /
+    // Problems / Database problems with an empty Category, Name and Action and
+    // with the message it told the admin to read missing altogether.
+    type:     { type: String, optional: true },  // the classifier's rule id
+    db:       { type: String, optional: true },  // mongodb|sqlite|postgresql|mysql|mariadb|hana
+    kind:     { type: String, optional: true },  // disk|auth|syntax|timeout|…
+    message:  { type: String, optional: true },  // what the database itself said
   }),
 );
 
@@ -52,7 +91,10 @@ EventLogAcks.attachSchema(
 // (MongoDB, or FerretDB over SQLite/PostgreSQL/MySQL/MariaDB/SAP HANA), what the
 // message means, and what an admin should do about it. See
 // models/lib/databaseErrors.js and server/lib/databaseProblems.js.
-export const EVENT_STREAMS = ['security', 'speed', 'tests', 'cpu', 'database'];
+// 'integrity' is what the FILESYSTEM said: a stored file that is not the file
+// WeKan stored (server/lib/fileIntegrityScan.js), and whether this server
+// stopped cleanly last time (server/lib/uptimeWatch.js).
+export const EVENT_STREAMS = ['security', 'speed', 'tests', 'cpu', 'database', 'integrity'];
 
 if (Meteor.isServer) {
   // The Security/Speed/Tests report pages filter by `stream` and sort by `at`
@@ -80,7 +122,23 @@ if (Meteor.isServer) {
     const selector = { stream };
     if (search) {
       const rx = { $regex: String(search).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' };
-      selector.$or = [{ category: rx }, { bleed: rx }, { source: rx }, { detail: rx }];
+      // Every text column the table shows, including the four the 'database'
+      // stream puts in those columns instead - searching for "postgresql" or for
+      // a phrase out of the database's own message has to find the row that
+      // displays it.
+      selector.$or = [
+        { category: rx }, { bleed: rx }, { source: rx }, { detail: rx },
+        { db: rx }, { kind: rx }, { type: rx }, { message: rx },
+        // WHO and FROM WHERE are the two things an admin looking at a security
+        // event actually wants to pivot on: every other event from this address,
+        // every other event from this account. Searching the table for either
+        // has to find the rows that DISPLAY it, so both columns are searched.
+        { username: rx }, { ip: rx },
+        // The `api` stream's own column: an admin looking at API use searches
+        // for the endpoint - "boards", "export", "POST" - and has to find the
+        // rows that display it.
+        { api: rx },
+      ];
     }
     return selector;
   }
@@ -145,7 +203,11 @@ if (Meteor.isServer) {
       check(search, Match.Optional(String));
       await requireAdmin(this);
       return EventLog.find(streamSelector(stream, search), {
-        sort: { at: -1 },
+        // Newest first for the problem streams, because a problem is news. The
+        // `api` stream is not news - it is a usage report, and its question is
+        // "what is used MOST", so it sorts by count and keeps `at` as the
+        // tie-break.
+        sort: stream === 'api' ? { count: -1, at: -1 } : { at: -1 },
         limit: Math.max(1, Math.min(200, limit)),
         skip: Math.max(0, skip),
       }).fetchAsync();

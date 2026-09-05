@@ -1,9 +1,4 @@
 template(name="archivedBoards")
-  h2
-    span(title="{{_ 'archived-boards'}}")
-      i.fa.fa-archive
-    | {{_ 'archived-boards'}}
-
   .table-page-controls
     input.js-archived-boards-search(type="search" placeholder="{{_ 'search'}}")
     .table-page-pagination
@@ -16,9 +11,6 @@ template(name="archivedBoards")
     each archivedBoards
       li.archived-lists-item
         div.board-header-btns
-          button.primary.board-header-btn.js-delete-board(type="submit")
-            i.fa.fa-trash
-            | {{_ 'delete-board'}}
           button.primary.board-header-btn.js-restore-board(type="submit")
             i.fa.fa-undo
             | {{_ 'restore-board'}}
@@ -26,7 +18,3 @@ template(name="archivedBoards")
         span {{ displayDate archivedAt 'LLL' }}
     else
       li.no-items-message {{_ 'no-archived-boards'}}
-
-template(name="boardDeletePopup")
-  p {{_ 'delete-board-confirm-popup'}}
-  button.js-confirm.negate.full(type="submit") {{_ 'delete'}}

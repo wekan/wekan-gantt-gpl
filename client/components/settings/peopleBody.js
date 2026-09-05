@@ -1,4 +1,5 @@
 import { ReactiveCache } from '/imports/reactiveCache';
+import { Session } from 'meteor/session';
 import { leftMenuData, paneTitle } from '/models/lib/leftMenu';
 // buildFilters and buildActions are imported like the rest of them. The People
 // pane declares its filter dropdown and its two action buttons to the shared
@@ -7,11 +8,13 @@ import { leftMenuData, paneTitle } from '/models/lib/leftMenu';
 // rendering nothing. That is what left Admin Panel / People / People with no
 // table, no search box and no pager, while Organizations, Teams and Domains -
 // which use neither function - drew theirs normally.
-import { buildActions, buildFilters, buildHeader, buildRows, docsByIds, pageInfo, TABLE_PAGE_ROWS_PER_PAGE } from "/models/lib/tablePage";
+import { adjacentPage, buildActions, buildFilters, buildHeader, buildRows, docsByIds, pageInfo, TABLE_PAGE_ROWS_PER_PAGE } from "/models/lib/tablePage";
 import { avatarUpdateCounter } from '/client/components/users/avatarUpdateCounter';
 import { InfiniteScrolling } from '/client/lib/infiniteScrolling';
 import LockoutSettings from '/models/lockoutSettings';
 import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
+// The per-pane URLs of the Admin Panel. docs/Features/Page/Admin-Panel-URLs.md
+import { adminPath } from '/models/lib/adminUrls';
 import Org from '/models/org';
 import Settings from '/models/settings';
 import Team from '/models/team';
@@ -19,10 +22,20 @@ import Users from '/models/users';
 // Multitenancy option D: the per-tenant Global Admin rules, the same module the
 // publications and methods use (docs/Design/Multitenancy/Multitenancy.md).
 import * as tenantAdmin from '/models/lib/tenantAdmin';
+// Is this account locked, and why. The lockout is per source address
+// (GHSA-rf3w-rj48-jxcc), so one place knows the shape.
+const { isUserLocked: lockoutIsUserLocked } = require('/models/lib/accountLockout');
 import InviteToBoardRolesSettings, {
   INVITE_TO_BOARD_ROLES,
   INVITE_TO_BOARD_ROLES_ID,
 } from '/models/inviteToBoardRolesSettings';
+// The one capability table the server allow rules and the client's canModify*
+// helpers also read, so the Roles Status pane cannot show a permission that is
+// not enforced.
+const {
+  BOARD_ROLES,
+  ROLE_CAPABILITIES,
+} = require('/models/lib/boardRoleCapabilities');
 
 // Multitenancy option D (D.2/D.9): the org fields that make an Organization a
 // tenant - its hostnames plus the branding that overrides the instance branding on
@@ -40,7 +53,7 @@ const TENANT_ORG_FIELDS = [
   'orgLegalNotice',
 ];
 
-// One rows-per-page for the whole app (docs/Design/Page/Table.md): these four
+// One rows-per-page for the whole app (docs/Features/Page/Table.md): these four
 // panes page exactly like every other paginated page in WeKan.
 const orgsPerPage = TABLE_PAGE_ROWS_PER_PAGE;
 const teamsPerPage = TABLE_PAGE_ROWS_PER_PAGE;
@@ -58,8 +71,35 @@ function peopleListChanged() {
 }
 let userOrgsTeamsAction = ""; //poosible actions 'addOrg', 'addTeam', 'removeOrg' or 'removeTeam' when adding or modifying a user
 let selectedUserChkBoxUserIds = [];
+let activePeopleTemplate = null;
+
+// Paging state for the active People subpage, including the location drill-down.
+function activePeoplePager(tpl) {
+  if (tpl.loginLocationReport.get()) {
+    const report = tpl.loginLocationReport.get();
+    const country = report.countries.find(
+      item => item.country === tpl.loginLocationCountry.get());
+    return {
+      page: tpl.loginLocationPage,
+      total: (country && country.rows.length) || 0,
+      perPage: TABLE_PAGE_ROWS_PER_PAGE,
+    };
+  }
+  return {
+    'org-setting': { page: tpl.orgPage, total: tpl.numberOrgs.get(), perPage: orgsPerPage },
+    'team-setting': { page: tpl.teamPage, total: tpl.numberTeams.get(), perPage: teamsPerPage },
+    'people-setting': { page: tpl.peoplePage, total: tpl.numberPeople.get(), perPage: usersPerPage },
+  }[tpl.activeMenuId.get()];
+}
+
+function moveActivePeoplePage(tpl, direction) {
+  const pager = activePeoplePager(tpl);
+  if (!pager) return;
+  pager.page.set(adjacentPage(pager.total, pager.page.get(), direction, pager.perPage));
+}
 
 Template.people.onCreated(function () {
+  activePeopleTemplate = this;
   this.infiniteScrolling = new InfiniteScrolling();
 
   this.error = new ReactiveVar('');
@@ -88,6 +128,34 @@ Template.people.onCreated(function () {
   // record is always in minimongo - so the table renders this list, not everything
   // a `Users.find()` happens to match. See getPeoplePageIds in server/models/users.js.
   this.peoplePageIds = new ReactiveVar([]);
+  this.peopleLoginLocations = new ReactiveVar({});
+  this.loginLocationReport = new ReactiveVar(null);
+  this.loginLocationCountry = new ReactiveVar('');
+  this.loginLocationSearch = new ReactiveVar('');
+  this.loginLocationPage = new ReactiveVar(1);
+  this.peopleLoginLocationsRequest = 0;
+  this.loadPeopleLoginLocations = userIds => {
+    const request = ++this.peopleLoginLocationsRequest;
+    Meteor.call('peopleLoginLocations', userIds, (error, reports) => {
+      if (request !== this.peopleLoginLocationsRequest) return;
+      if (error) {
+        console.error('Failed to load people login locations:', error);
+        return;
+      }
+      const byUser = {};
+      (reports || []).forEach(report => { byUser[report.userId] = report; });
+      this.peopleLoginLocations.set(byUser);
+    });
+  };
+  this.openLoginLocationReport = (userId, country) => {
+    const report = this.peopleLoginLocations.get()[userId];
+    if (!report || !report.countries || !report.countries.length) return;
+    this.loginLocationReport.set(report);
+    const requested = report.countries.find(item => item.country === country);
+    this.loginLocationCountry.set((requested || report.countries[0]).country);
+    this.loginLocationSearch.set('');
+    this.loginLocationPage.set(1);
+  };
   this.userFilterType = new ReactiveVar('all');
   // The search box lives in the shared controls row now, so keep the term in
   // state rather than reading it back out of a DOM id.
@@ -251,7 +319,7 @@ Template.people.onCreated(function () {
     switch (filterType) {
       case 'locked':
         // Show only locked users
-        query['services.accounts-lockout.unlockTime'] = { $gt: currentTime };
+        query['services.accounts-lockout.lockedUntil'] = { $gt: currentTime };
         break;
       case 'active':
         // Show only active users (loginDisabled is false or undefined)
@@ -276,7 +344,7 @@ Template.people.onCreated(function () {
   };
 
   // Which pane is open. The seven booleans below are derived from it; the shared
-  // left menu (docs/Design/Page/Left-Menu.md) renders the active row from it, so
+  // left menu (docs/Features/Page/Left-Menu.md) renders the active row from it, so
   // the menu no longer has to be highlighted by hand.
   this.activeMenuId = new ReactiveVar('registration-setting');
 
@@ -299,11 +367,11 @@ Template.people.onCreated(function () {
     this.activeMenuId.set(openPaneId);
   });
 
-  this.switchMenu = (event) => {
-    // data-id is on the anchor; event.target may be the icon inside it.
-    const target = $(event.currentTarget || event.target).closest('.js-left-menu-item');
-    const targetID = target.data('id');
-    // Re-clicking the open pane must do nothing. The active row is rendered from
+  // Open a pane BY ID. Split out of switchMenu so the URL can open one too -
+  // every left-menu entry has an address now (/people/roles, /people/domains).
+  // docs/Features/Page/Admin-Panel-URLs.md
+  this.openPane = (targetID) => {
+    // Re-opening the open pane must do nothing. The active row is rendered from
     // activeMenuId now, so compare ids instead of reading a DOM class.
     if (targetID && targetID !== this.activeMenuId.get()) {
       this.activeMenuId.set(targetID);
@@ -331,6 +399,19 @@ Template.people.onCreated(function () {
       }
     }
   };
+
+  this.switchMenu = (event) => {
+    // data-id is on the anchor; event.target may be the icon inside it.
+    const target = $(event.currentTarget || event.target).closest('.js-left-menu-item');
+    this.openPane(target.data('id'));
+  };
+
+  // The pane the URL asks for. The route resolved it, so it is always a real
+  // pane id; a bare /people opens the page's default.
+  this.autorun(() => {
+    const paneId = Session.get('peopleOpenPane');
+    if (paneId) this.openPane(paneId);
+  });
 
   this.autorun(() => {
     const limitOrgs = orgsPerPage;
@@ -373,6 +454,7 @@ Template.people.onCreated(function () {
           return;
         }
         this.peoplePageIds.set(Array.isArray(ids) ? ids : []);
+        this.loadPeopleLoginLocations(Array.isArray(ids) ? ids : []);
         // The total moves with the page's contents, so it is refreshed here too:
         // the subscription's ready callback only fires the first time.
         this.refreshUsersCount();
@@ -392,7 +474,11 @@ Template.people.onCreated(function () {
   });
 });
 
-// The People side menu, as data (docs/Design/Page/Left-Menu.md). Locked users
+Template.people.onDestroyed(function () {
+  if (activePeopleTemplate === this) activePeopleTemplate = null;
+});
+
+// The People side menu, as data (docs/Features/Page/Left-Menu.md). Locked users
 // keeps the red lock it always had, via the coloured icon wrapper.
 // A function, not a bare array: the E-mail entry depends on whether this is a
 // Sandstorm deployment, which has to be read at call time from Meteor.settings.
@@ -435,15 +521,15 @@ function firstPeoplePaneId(user) {
   return items.length ? items[0].id : 'people-setting';
 }
 
-// Organizations through the shared table page (docs/Design/Page/Table.md). Its
+// Organizations through the shared table page (docs/Features/Page/Table.md). Its
 // rows are interactive - inline checkboxes and edit links - so it supplies a
 // rowTemplate instead of a text-cell spec, and three of its headers carry a
 // select-all pair, supplied as headerTemplate. Everything else - the layout, the
 // pager, the search, the total - comes from the shared page.
 // Teams: same shape as Organizations - interactive rows, three headers carrying
-// a select-all pair. Same two slots (docs/Design/Page/Table.md).
+// a select-all pair. Same two slots (docs/Features/Page/Table.md).
 // People: interactive rows again, and two of its headers are templates - the
-// new-user row and the select-all checkbox (docs/Design/Page/Table.md).
+// new-user row and the select-all checkbox (docs/Features/Page/Table.md).
 // One page of users: the ones the server put on this page, in its order.
 //
 // The 'people' publication applies limit/skip sorted createdAt:-1 server-side, so
@@ -480,9 +566,20 @@ const PEOPLE_COLUMNS = [
   { labelKey: 'email' },
   { labelKey: 'admin' },
   { labelKey: 'active-person' },
+  { labelKey: 'location' },
   { labelKey: 'accounts-lockout-status' },
   { labelKey: 'createdAt' },
   { headerTemplate: 'selectAllUser' },
+];
+
+const LOGIN_LOCATION_COLUMNS = [
+  { labelKey: 'office-location', value: row => row.city },
+  { labelKey: 'event-ipv4', nowrap: true, value: row => row.ipv4 },
+  { labelKey: 'event-ipv6', nowrap: true, value: row => row.ipv6 },
+  { labelKey: 'office-first-seen', nowrap: true,
+    value: row => (row.firstAt ? new Date(row.firstAt).toLocaleString() : '') },
+  { labelKey: 'office-last-seen', nowrap: true,
+    value: row => (row.at ? new Date(row.at).toLocaleString() : '') },
 ];
 
 const TEAM_COLUMNS = [
@@ -525,7 +622,7 @@ Template.people.helpers({
     const totalPages = Math.max(1, Math.ceil(total / usersPerPage));
     return {
       // No titleKey: the pane heading is rendered once for every Admin Panel pane
-      // from the open menu entry (docs/Design/Page/Left-Menu.md), so a title here
+      // from the open menu entry (docs/Features/Page/Left-Menu.md), so a title here
       // would print the same words a second time.
       emptyKey: 'no-items-message',
       searchTerm: tpl.peopleSearchTerm.get(),
@@ -553,7 +650,10 @@ Template.people.helpers({
       ]),
       header: buildHeader(PEOPLE_COLUMNS),
       rowTemplate: 'peopleRow',
-      docs: users.map(user => ({ user })),
+      docs: users.map(user => ({
+        user,
+        countries: (tpl.peopleLoginLocations.get()[user._id] || {}).countries || [],
+      })),
       rowCount: users.length,
       page: tpl.peoplePage.get(),
       totalPages,
@@ -572,7 +672,7 @@ Template.people.helpers({
     const totalPages = Math.max(1, Math.ceil(total / teamsPerPage));
     return {
       // No titleKey: the pane heading is rendered once for every Admin Panel pane
-      // from the open menu entry (docs/Design/Page/Left-Menu.md), so a title here
+      // from the open menu entry (docs/Features/Page/Left-Menu.md), so a title here
       // would print the same words a second time.
       searchTerm: tpl.teamSearchTerm.get(),
       emptyKey: 'no-items-message',
@@ -599,7 +699,7 @@ Template.people.helpers({
     const totalPages = Math.max(1, Math.ceil(total / orgsPerPage));
     return {
       // No titleKey: the pane heading is rendered once for every Admin Panel pane
-      // from the open menu entry (docs/Design/Page/Left-Menu.md), so a title here
+      // from the open menu entry (docs/Features/Page/Left-Menu.md), so a title here
       // would print the same words a second time.
       searchTerm: tpl.orgSearchTerm.get(),
       emptyKey: 'no-items-message',
@@ -620,8 +720,56 @@ Template.people.helpers({
     return leftMenuData(peopleMenu(ReactiveCache.getCurrentUser()),
       Template.instance().activeMenuId.get());
   },
+  loginLocationReportOpen() {
+    return !!Template.instance().loginLocationReport.get();
+  },
+  loginLocationMenuItems() {
+    const tpl = Template.instance();
+    const report = tpl.loginLocationReport.get();
+    const items = (report && report.countries || []).map(country => ({
+      id: `login-country-${country.country}`,
+      icon: 'fa-map-marker',
+      label: `${country.flag} ${country.country} (${country.count})`,
+    }));
+    return leftMenuData(items, `login-country-${tpl.loginLocationCountry.get()}`);
+  },
+  loginLocationPaneTitle() {
+    const tpl = Template.instance();
+    const report = tpl.loginLocationReport.get();
+    const country = report && report.countries.find(
+      item => item.country === tpl.loginLocationCountry.get());
+    return { label: report && country
+      ? `${report.username} — ${country.flag} ${country.country}` : '' };
+  },
+  loginLocationTablePageData() {
+    const tpl = Template.instance();
+    const report = tpl.loginLocationReport.get();
+    const country = report && report.countries.find(
+      item => item.country === tpl.loginLocationCountry.get());
+    const term = tpl.loginLocationSearch.get().trim().toLowerCase();
+    const all = (country && country.rows || []).filter(row => !term
+      || [row.city, row.ipv4, row.ipv6].some(value =>
+        String(value || '').toLowerCase().includes(term)));
+    const info = pageInfo(all.length, tpl.loginLocationPage.get());
+    const pageRows = all.slice((info.page - 1) * TABLE_PAGE_ROWS_PER_PAGE,
+      info.page * TABLE_PAGE_ROWS_PER_PAGE);
+    return {
+      searchTerm: tpl.loginLocationSearch.get(),
+      actions: buildActions([{ id: 'back-from-login-locations', icon: 'fa-arrow-left',
+        labelKey: 'back' }]),
+      emptyKey: 'no-items-message',
+      header: buildHeader(LOGIN_LOCATION_COLUMNS),
+      rows: buildRows(pageRows, LOGIN_LOCATION_COLUMNS),
+      rowCount: pageRows.length,
+      page: info.page,
+      totalPages: info.totalPages,
+      hasPrev: info.hasPrev,
+      hasNext: info.hasNext,
+      total: all.length,
+    };
+  },
   // The heading above the pane: the open menu entry's own label
-  // (docs/Design/Page/Left-Menu.md). Every Admin Panel page renders one, so no pane
+  // (docs/Features/Page/Left-Menu.md). Every Admin Panel page renders one, so no pane
   // has to write a title of its own - and the table panes stopped passing a
   // titleKey to the shared table page, which would have printed it a second time.
   paneTitleData() {
@@ -804,6 +952,12 @@ Template.people.events({
   'keydown .js-table-page-search'(event, tpl) {
     if (event.keyCode !== 13 || event.shiftKey) return;
     const value = $(event.currentTarget).val() || '';
+    if (tpl.loginLocationReport.get()) {
+      event.preventDefault();
+      tpl.loginLocationSearch.set(value);
+      tpl.loginLocationPage.set(1);
+      return;
+    }
     // One search box, three panes. They all render inside this template and carry
     // the same class, so the open pane decides what the box searches - the same way
     // the pager and the filters are scoped.
@@ -834,8 +988,14 @@ Template.people.events({
   },
   'click .js-table-page-action'(event, tpl) {
     if (tpl.activeMenuId.get() !== 'people-setting') return;
-    event.preventDefault();
     const action = event.currentTarget.getAttribute('data-action');
+    if (action === 'back-from-login-locations') {
+      event.preventDefault();
+      tpl.loginLocationReport.set(null);
+      tpl.loginLocationCountry.set('');
+      return;
+    }
+    event.preventDefault();
     if (action === 'add-remove-teams') {
       document.getElementById('divAddOrRemoveTeamContainer').style.display = 'block';
     } else if (action === 'unlock-all') {
@@ -858,30 +1018,12 @@ Template.people.events({
   // Teams gains a working PREV in the process: it had a prev button in its old
   // markup and no handler behind it, so paging back was silently dead.
   'click .js-table-page-prev'(event, tpl) {
-    const pane = tpl.activeMenuId.get();
     event.preventDefault();
-    if (pane === 'org-setting' && tpl.orgPage.get() > 1) {
-      tpl.orgPage.set(tpl.orgPage.get() - 1);
-    } else if (pane === 'team-setting' && tpl.teamPage.get() > 1) {
-      tpl.teamPage.set(tpl.teamPage.get() - 1);
-    } else if (pane === 'people-setting' && tpl.peoplePage.get() > 1) {
-      tpl.peoplePage.set(tpl.peoplePage.get() - 1);
-    }
+    moveActivePeoplePage(tpl, -1);
   },
   'click .js-table-page-next'(event, tpl) {
-    const pane = tpl.activeMenuId.get();
     event.preventDefault();
-    const pages = (total, per) => Math.max(1, Math.ceil((total || 0) / per));
-    if (pane === 'org-setting') {
-      const totalPages = pages(tpl.numberOrgs.get(), orgsPerPage);
-      if (tpl.orgPage.get() < totalPages) tpl.orgPage.set(tpl.orgPage.get() + 1);
-    } else if (pane === 'team-setting') {
-      const totalPages = pages(tpl.numberTeams.get(), teamsPerPage);
-      if (tpl.teamPage.get() < totalPages) tpl.teamPage.set(tpl.teamPage.get() + 1);
-    } else if (pane === 'people-setting') {
-      const totalPages = pages(tpl.numberPeople.get(), usersPerPage);
-      if (tpl.peoplePage.get() < totalPages) tpl.peoplePage.set(tpl.peoplePage.get() + 1);
-    }
+    moveActivePeoplePage(tpl, 1);
   },
 
   'click #newOrgButton'() {
@@ -898,7 +1040,17 @@ Template.people.events({
   // The per-pane extras (reset to page 1, refresh that pane's total) stay.
   'click .js-left-menu-item'(event, tpl) {
     const targetID = $(event.currentTarget).data('id');
+    if (tpl.loginLocationReport.get() && String(targetID).startsWith('login-country-')) {
+      event.preventDefault();
+      tpl.loginLocationCountry.set(String(targetID).slice('login-country-'.length));
+      tpl.loginLocationSearch.set('');
+      tpl.loginLocationPage.set(1);
+      return;
+    }
     tpl.switchMenu(event);
+    // ...and into the address bar, so the pane can be linked and bookmarked.
+    const path = adminPath('people', targetID);
+    if (path && FlowRouter.current().path !== path) FlowRouter.go(path);
     if (targetID === 'org-setting') {
       tpl.orgPage.set(1);
       tpl.refreshOrgsCount();
@@ -915,6 +1067,11 @@ Template.people.events({
 Template.rolesGeneral.onCreated(function () {
   // Working copy of the allowed-roles set; null until the published doc loads.
   this.workingRoles = new ReactiveVar(null);
+  // Roles Status: the shared table page's search term and page. There are nine
+  // roles and no server paging - the set is a constant of the code, not data -
+  // but the shared controls row is part of the design, so they work.
+  this.statusSearch = new ReactiveVar('');
+  this.statusPage = new ReactiveVar(1);
   this.autorun(() => {
     if (this.workingRoles.get() === null) {
       const doc = InviteToBoardRolesSettings.findOne(INVITE_TO_BOARD_ROLES_ID);
@@ -925,7 +1082,81 @@ Template.rolesGeneral.onCreated(function () {
   });
 });
 
+// ── Roles Status ────────────────────────────────────────────────────────────
+//
+// The read-only table under the Save button: what each board role may do. Its
+// rows come from models/lib/boardRoleCapabilities.js — the same table the server
+// allow rules and the client's canModify* helpers decide with — so this pane
+// cannot show a permission the code does not enforce.
+//
+// Every string is a translation key, including the Yes/No of each cell: the
+// values are booleans, and a hard-coded "Yes" would be English on every one of
+// WeKan's languages.
+//
+// The "Invite to board" column is the one thing here that is a SETTING rather
+// than a capability, and it reads the pane's WORKING copy — the checkboxes above
+// the Save button — not the saved document. That is deliberate: the table is
+// there to show what the checkboxes mean, so it has to follow them as they are
+// ticked, before saving.
+const ROLES_STATUS_COLUMNS = [
+  { labelKey: 'roles-status-role', value: doc => TAPi18n.__(doc.roleKey) },
+  { labelKey: 'roles-status-invite', value: doc => yesNo(doc.invite) },
+  {
+    labelKey: 'roles-status-sees',
+    value: doc =>
+      TAPi18n.__(doc.seesAllCards ? 'roles-status-sees-all' : 'roles-status-sees-assigned'),
+  },
+  { labelKey: 'roles-status-comment', value: doc => yesNo(doc.comment) },
+  { labelKey: 'roles-status-write', value: doc => yesNo(doc.write) },
+  { labelKey: 'roles-status-manage', value: doc => yesNo(doc.manageBoard) },
+];
+
+function yesNo(value) {
+  return TAPi18n.__(value ? 'yes' : 'no');
+}
+
 Template.rolesGeneral.helpers({
+  // The shared table page's data context (docs/Features/Page/Table.md).
+  rolesStatusTable() {
+    const tpl = Template.instance();
+    const working = tpl.workingRoles.get() || [];
+    const term = (tpl.statusSearch.get() || '').trim().toLowerCase();
+
+    const all = BOARD_ROLES.map(roleKey => ({
+      _id: roleKey,
+      roleKey,
+      // Only the roles offered for invitation carry the setting; the rest are
+      // not part of that list at all, so they read as not invitable rather than
+      // as "unticked".
+      invite: INVITE_TO_BOARD_ROLES.includes(roleKey) && working.includes(roleKey),
+      ...ROLE_CAPABILITIES[roleKey],
+    }));
+
+    // The shared controls row always renders a search box, so it searches -
+    // on the role's TRANSLATED name, which is what the reader sees.
+    const docs = term
+      ? all.filter(doc => TAPi18n.__(doc.roleKey).toLowerCase().includes(term))
+      : all;
+
+    const info = pageInfo(docs.length, tpl.statusPage.get());
+    const page = docs.slice(info.skip, info.skip + TABLE_PAGE_ROWS_PER_PAGE);
+
+    return {
+      titleKey: 'roles-status',
+      descKey: 'roles-status-desc',
+      header: buildHeader(ROLES_STATUS_COLUMNS),
+      rows: buildRows(page, ROLES_STATUS_COLUMNS),
+      rowCount: page.length,
+      total: docs.length,
+      searchTerm: tpl.statusSearch.get(),
+      page: info.page,
+      totalPages: info.totalPages,
+      hasPrev: info.hasPrev,
+      hasNext: info.hasNext,
+      emptyKey: 'roles-status-empty',
+    };
+  },
+
   roleOptions() {
     const working = Template.instance().workingRoles.get() || [];
     // The role key doubles as the i18n key. 'board-admin' renders as
@@ -966,6 +1197,25 @@ Template.rolesGeneral.events({
     InviteToBoardRolesSettings.update(INVITE_TO_BOARD_ROLES_ID, {
       $set: { allowedRoles: tpl.workingRoles.get() || [] },
     });
+  },
+
+  // Roles Status controls. The table is read-only, so these are the only
+  // interactions it has: search on Enter (like every other table page) and the
+  // pager. No row is clickable and no cell is editable — a role's capabilities
+  // are a property of the code, not a setting.
+  'keydown .js-table-page-search'(event, tpl) {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    tpl.statusSearch.set(event.currentTarget.value || '');
+    tpl.statusPage.set(1);
+  },
+  'click .js-table-page-prev'(event, tpl) {
+    event.preventDefault();
+    tpl.statusPage.set(Math.max(1, tpl.statusPage.get() - 1));
+  },
+  'click .js-table-page-next'(event, tpl) {
+    event.preventDefault();
+    tpl.statusPage.set(tpl.statusPage.get() + 1);
   },
 });
 
@@ -1119,6 +1369,10 @@ Template.teamRow.helpers({
 });
 
 Template.peopleRow.helpers({
+  loginCountries() {
+    const userId = this.user && this.user._id;
+    return (this.countries || []).map(country => ({ ...country, userId }));
+  },
   userData() {
     // Depend on global avatar update counter to reactively update when avatars change
     avatarUpdateCounter.get();
@@ -1157,18 +1411,10 @@ Template.peopleRow.helpers({
   isUserLocked() {
     const user = this.user || ReactiveCache.getUser(this.userId);
     if (!user) return false;
-
-    // Check if user has accounts-lockout with unlockTime property
-    if (user.services &&
-        user.services['accounts-lockout'] &&
-        user.services['accounts-lockout'].unlockTime) {
-
-      // Check if unlockTime is in the future
-      const currentTime = Number(new Date());
-      return user.services['accounts-lockout'].unlockTime > currentTime;
-    }
-
-    return false;
+    // GHSA-rf3w-rj48-jxcc moved the lockout to one counter per (user, source
+    // address). This read the flat field that fix removed, so every account
+    // showed as unlocked; models/lib/accountLockout.js knows the shape now.
+    return lockoutIsUserLocked(user);
   }
 });
 
@@ -1382,6 +1628,14 @@ Template.teamRow.events({
 });
 
 Template.peopleRow.events({
+  'click .js-open-login-country'(event) {
+    event.preventDefault();
+    if (activePeopleTemplate) {
+      activePeopleTemplate.openLoginLocationReport(
+        event.currentTarget.getAttribute('data-user-id'),
+        event.currentTarget.getAttribute('data-country'));
+    }
+  },
   'click a.edit-user'(event) {
     // Get the user ID from the data attribute
     const userId = event.currentTarget.getAttribute('data-user-id');
@@ -1441,10 +1695,7 @@ Template.peopleRow.events({
       if (!user) return;
 
       // Check if user is currently locked
-      const isLocked = user.services &&
-          user.services['accounts-lockout'] &&
-          user.services['accounts-lockout'].unlockTime &&
-          user.services['accounts-lockout'].unlockTime > Number(new Date());
+      const isLocked = lockoutIsUserLocked(user);
 
       if (isLocked) {
         // Unlock the user
@@ -2347,7 +2598,7 @@ Template.domainGeneral.onCreated(function () {
   });
 });
 
-// Domains renders through the shared table page (docs/Design/Page/Table.md):
+// Domains renders through the shared table page (docs/Features/Page/Table.md):
 // one column spec instead of its own controls row, pagination markup and table.
 const DOMAIN_COLUMNS = [
   { labelKey: "domain", value: d => d.domain },
@@ -2364,7 +2615,7 @@ Template.domainGeneral.helpers({
     const info = pageInfo(data.total || 0, tpl.page.get());
     return {
       // No titleKey: the pane heading is rendered once for every Admin Panel pane
-      // from the open menu entry (docs/Design/Page/Left-Menu.md), so a title here
+      // from the open menu entry (docs/Features/Page/Left-Menu.md), so a title here
       // would print the same words a second time.
       emptyKey: "no-items-message",
       searchTerm: tpl.searchQuery.get(),

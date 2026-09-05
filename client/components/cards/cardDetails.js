@@ -1,5 +1,6 @@
 import { ReactiveCache } from '/imports/reactiveCache';
 import { TAPi18n } from '/imports/i18n';
+import { ReactiveDict } from 'meteor/reactive-dict';
 import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
 import { ReactiveVar } from 'meteor/reactive-var';
 import {
@@ -10,6 +11,7 @@ import {
 } from '/models/metadata/dependencies';
 import { canArchiveCard } from '/client/lib/archivePermission';
 import { isTextSelectionInsideCard } from '/client/lib/cardCloseGuard';
+import { placeCardDetailsX, MARGIN } from '/client/lib/cardDetailsPlacement';
 
 // Which dependency the icon picker should apply its choice to. The icon popup's
 // own data context is the dependency row (not the source card), so we capture
@@ -20,7 +22,6 @@ import {
   setupDatePicker,
   datePickerRendered,
   datePickerHelpers,
-  datePickerEvents,
 } from '/client/lib/datepicker';
 import {
   formatDateTime,
@@ -71,91 +72,20 @@ import { EscapeActions } from '/client/lib/escapeActions';
 import { MultiSelection } from '/client/lib/multiSelection';
 import { Utils } from '/client/lib/utils';
 import autosize from 'autosize';
+import { cardMenuSource, setCardMenuSource } from '/client/lib/cardMenuSource';
+import { caretClassFor } from '/client/lib/sectionCaret';
+const { openCardIsUnavailable } = require('/models/lib/openCardPresence');
 
 // Id of the location currently being edited in the cardLocationsPopup; null
 // when adding a new location.
 const editingLocationId = new ReactiveVar(null);
 
-// Chinese datum conversions ("eviltransform" algorithm). Baidu Maps uses BD-09
-// and Amap (Gaode) uses GCJ-02; both are offset from the WGS-84 coordinates
-// Wekan stores, so a raw lat/lon would land a few hundred metres off. Convert on
-// the way out (mapLinkFor) and back (parseMapLink). Coordinates outside mainland
-// China use no offset, so every non-Chinese provider is unaffected.
-const GCJ = (() => {
-  const PI = Math.PI;
-  const A = 6378245.0; // Krasovsky 1940 semi-major axis
-  const EE = 0.00669342162296594323; // eccentricity squared
-  const XPI = (PI * 3000.0) / 180.0;
-  const outOfChina = (lat, lon) =>
-    lon < 72.004 || lon > 137.8347 || lat < 0.8293 || lat > 55.8271;
-  const tLat = (x, y) => {
-    let r = -100 + 2 * x + 3 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * Math.sqrt(Math.abs(x));
-    r += ((20 * Math.sin(6 * x * PI) + 20 * Math.sin(2 * x * PI)) * 2) / 3;
-    r += ((20 * Math.sin(y * PI) + 40 * Math.sin((y / 3) * PI)) * 2) / 3;
-    r += ((160 * Math.sin((y / 12) * PI) + 320 * Math.sin((y * PI) / 30)) * 2) / 3;
-    return r;
-  };
-  const tLon = (x, y) => {
-    let r = 300 + x + 2 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * Math.sqrt(Math.abs(x));
-    r += ((20 * Math.sin(6 * x * PI) + 20 * Math.sin(2 * x * PI)) * 2) / 3;
-    r += ((20 * Math.sin(x * PI) + 40 * Math.sin((x / 3) * PI)) * 2) / 3;
-    r += ((150 * Math.sin((x / 12) * PI) + 300 * Math.sin((x / 30) * PI)) * 2) / 3;
-    return r;
-  };
-  const wgs2gcj = (lat, lon) => {
-    if (outOfChina(lat, lon)) return [lat, lon];
-    let dLat = tLat(lon - 105, lat - 35);
-    let dLon = tLon(lon - 105, lat - 35);
-    const rad = (lat / 180) * PI;
-    let magic = Math.sin(rad);
-    magic = 1 - EE * magic * magic;
-    const sq = Math.sqrt(magic);
-    dLat = (dLat * 180) / (((A * (1 - EE)) / (magic * sq)) * PI);
-    dLon = (dLon * 180) / ((A / sq) * Math.cos(rad) * PI);
-    return [lat + dLat, lon + dLon];
-  };
-  // Approximate inverse by fixed-point iteration (converges to ~1e-9 deg).
-  const gcj2wgs = (lat, lon) => {
-    if (outOfChina(lat, lon)) return [lat, lon];
-    let wLat = lat;
-    let wLon = lon;
-    for (let i = 0; i < 10; i++) {
-      const [gLat, gLon] = wgs2gcj(wLat, wLon);
-      const dLat = gLat - lat;
-      const dLon = gLon - lon;
-      if (Math.abs(dLat) < 1e-9 && Math.abs(dLon) < 1e-9) break;
-      wLat -= dLat;
-      wLon -= dLon;
-    }
-    return [wLat, wLon];
-  };
-  const gcj2bd = (lat, lon) => {
-    const z = Math.sqrt(lon * lon + lat * lat) + 0.00002 * Math.sin(lat * XPI);
-    const theta = Math.atan2(lat, lon) + 0.000003 * Math.cos(lon * XPI);
-    return [z * Math.sin(theta) + 0.006, z * Math.cos(theta) + 0.0065];
-  };
-  const bd2gcj = (lat, lon) => {
-    const x = lon - 0.0065;
-    const y = lat - 0.006;
-    const z = Math.sqrt(x * x + y * y) - 0.00002 * Math.sin(y * XPI);
-    const theta = Math.atan2(y, x) - 0.000003 * Math.cos(x * XPI);
-    return [z * Math.sin(theta), z * Math.cos(theta)];
-  };
-  return {
-    wgs2gcj,
-    gcj2wgs,
-    wgs2bd: (lat, lon) => {
-      if (outOfChina(lat, lon)) return [lat, lon];
-      const [gLat, gLon] = wgs2gcj(lat, lon);
-      return gcj2bd(gLat, gLon);
-    },
-    bd2wgs: (lat, lon) => {
-      if (outOfChina(lat, lon)) return [lat, lon];
-      const [gLat, gLon] = bd2gcj(lat, lon);
-      return gcj2wgs(gLat, gLon);
-    },
-  };
-})();
+// The "open in map" link builder and the Chinese datum conversions it needs.
+// Shared with Admin Panel, which links the places accounts log in from the same
+// way - models/lib/mapLink.js.
+const { mapLinkFor, GCJ } = require('/models/lib/mapLink');
+
+
 
 // Parse coordinates (and, when present, a place name / address) out of a map
 // link from common providers, grouped by region:
@@ -229,6 +159,12 @@ function parseMapLink(url) {
   if ((m = sd.match(new RegExp(`[?&]q=${N},${N}`)))) setCoords(m[1], m[2]);
   // Generic center=lat,lon
   if ((m = sd.match(new RegExp(`[?&]center=${N},${N}`)))) setCoords(m[1], m[2]);
+  // A coordinate pair copied directly from a map or GPS application. Anchor
+  // the complete input so unrelated prose containing two numbers is not
+  // silently treated as a location.
+  if ((m = sd.match(new RegExp(`^\\s*${N}\\s*,\\s*${N}\\s*$`)))) {
+    setCoords(m[1], m[2]);
+  }
 
   if (lat !== undefined) {
     result.latitude = lat;
@@ -258,44 +194,6 @@ function parseMapLink(url) {
   return result;
 }
 
-// Build an "open in map" link for the given provider and coordinates. Mirrors
-// the providers offered in the location popup's "Open map links at" selector,
-// grouped by region (USA, Europe, Asia). Note that several non-US providers
-// expect the coordinates in lon,lat order rather than lat,lon.
-function mapLinkFor(provider, lat, lon) {
-  switch (provider) {
-    // --- USA ---
-    case 'google':
-      return `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
-    case 'bing':
-      return `https://www.bing.com/maps?cp=${lat}~${lon}&lvl=16`;
-    case 'apple':
-      return `https://maps.apple.com/?ll=${lat},${lon}`;
-    case 'waze':
-      return `https://waze.com/ul?ll=${lat},${lon}`;
-    // --- Europe ---
-    case 'here':
-      return `https://wego.here.com/?map=${lat},${lon},16`;
-    case 'yandex':
-      return `https://yandex.com/maps/?ll=${lon},${lat}&z=16`;
-    case 'mapy':
-      return `https://mapy.cz/zakladni?x=${lon}&y=${lat}&z=16`;
-    case '2gis':
-      return `https://2gis.ru/geo/${lon},${lat}`;
-    // --- Asia (coordinates converted from WGS-84 into the local datum) ---
-    case 'baidu': {
-      const [bLat, bLon] = GCJ.wgs2bd(parseFloat(lat), parseFloat(lon));
-      return `https://api.map.baidu.com/marker?location=${bLat},${bLon}&output=html`;
-    }
-    case 'amap': {
-      const [gLat, gLon] = GCJ.wgs2gcj(parseFloat(lat), parseFloat(lon));
-      return `https://uri.amap.com/marker?position=${gLon},${gLat}`;
-    }
-    case 'openstreetmap':
-    default:
-      return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=16/${lat}/${lon}`;
-  }
-}
 
 // SubsManager removed for Meteor 3 migration
 const { calculateIndexData } = Utils;
@@ -328,10 +226,155 @@ function getCardDetailsElement(cardId) {
   return null;
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// #6465: dock the desktop card-details window BESIDE the minicard it was opened
+// from, on whichever side has more room, and always fully inside the viewport.
+//
+// The window used to cover the middle of the board; docking it to the end edge
+// stopped that but left it nowhere near its card — open a card in the first list
+// of a wide board and its details are a screen away. The decision is
+// client/lib/cardDetailsPlacement.js; this is the DOM half.
+//
+// X ONLY. The Y geometry — the staggered `top` and the `bottom: 8px` that makes
+// the window full height — is already right, so `top`, `bottom` and `height` are
+// never written here.
+//
+// The one Y side effect that has to be paid for: the stylesheet's default-
+// position rule is `:not([style*="left"]):not([style*="top"])`, so writing an
+// inline `left` switches it off — and it carried the `top` for any window past
+// the five staggered `nth-of-type` rules. cardDetails.css restores exactly that
+// `top` for anchored windows, ahead of the stagger so cards 1-5 keep theirs.
+// ────────────────────────────────────────────────────────────────────────────
+
+// Set on the element once the user drags the window: from then on it stays where
+// they put it, and only the viewport clamp still applies.
+const USER_MOVED_ATTR = 'data-wekan-user-moved';
+
+function markCardDetailsUserMoved($card) {
+  const el = $card && $card.get(0);
+  if (el) el.setAttribute(USER_MOVED_ATTR, '1');
+}
+
+function anchorCardDetailsX(el) {
+  if (!el || !el.isConnected) return;
+
+  // Only the desktop floating window is placed here. The popup form (Board Table
+  // view, search results, mini-screen lists) and the mini-screen full-screen card
+  // have their own geometry, and the maximized window's insets are !important, so
+  // writing inline styles for it would be a silent no-op at best.
+  if (!document.body.classList.contains('desktop-mode')) return;
+  if (el.classList.contains('card-details-popup')) return;
+  if (el.classList.contains('card-details-maximized')) return;
+
+  const rect = el.getBoundingClientRect();
+  const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+
+  // A window the user dragged stays where they put it: only the "must be in the
+  // visible area" half still applies, so a viewport that shrank cannot leave it
+  // hanging off the edge. Its width is left alone — the drag did not change it.
+  if (el.getAttribute(USER_MOVED_ATTR) === '1') {
+    const maxLeft = viewportWidth - MARGIN - rect.width;
+    const left = Math.min(Math.max(rect.left, MARGIN), Math.max(MARGIN, maxLeft));
+    if (Math.round(left) !== Math.round(rect.left)) {
+      el.style.left = `${Math.round(left)}px`;
+      el.style.right = 'auto';
+    }
+    return;
+  }
+
+  const cardId = Blaze.getData(el)?._id;
+  const minicard = cardId
+    ? document.querySelector(`.js-minicard[data-card-id="${cardId}"]`)
+    : null;
+  // Nothing to anchor to — the card was opened from a URL or from search, or its
+  // list is scrolled out of view. Leave the stylesheet's dock alone.
+  if (!minicard) return;
+
+  // Hand the geometry back to the stylesheet before measuring, so what is
+  // measured is the width the stylesheet WANTS rather than whatever this function
+  // wrote last time. Without it, a run on a narrow viewport would clamp the width
+  // and every later run would re-measure that clamp, so widening the browser
+  // again would never give the window its full width back. Nothing is painted
+  // between the reset and the write below, so there is nothing to see.
+  el.style.left = '';
+  el.style.right = '';
+  el.style.width = '';
+
+  const placement = placeCardDetailsX({
+    anchor: minicard.getBoundingClientRect(),
+    panelWidth: el.getBoundingClientRect().width,
+    viewportWidth,
+    rtl: document.documentElement.dir === 'rtl',
+  });
+  if (!placement) return;
+
+  // `right: auto` because the stylesheet docks the window with an
+  // inset-inline-end, and an explicit width because the rule that carried the
+  // width is the one this inline `left` switches off.
+  el.style.left = `${placement.left}px`;
+  el.style.right = 'auto';
+  el.style.width = `${placement.width}px`;
+}
+
+// Every open window, re-placed. Used on resize: the request is that the card is
+// in the visible area, and a viewport that shrank is the other way to lose it.
+function anchorAllCardDetailsX() {
+  document
+    .querySelectorAll('.card-details:not(.card-details-popup)')
+    .forEach(anchorCardDetailsX);
+}
+
+let cardDetailsResizeBound = false;
+function bindCardDetailsResize() {
+  if (cardDetailsResizeBound || typeof window === 'undefined') return;
+  cardDetailsResizeBound = true;
+  let scheduled = false;
+  window.addEventListener('resize', () => {
+    // Coalesced into one frame: a drag-resize of the browser window fires this
+    // continuously, and each run measures layout.
+    if (scheduled) return;
+    scheduled = true;
+    window.requestAnimationFrame(() => {
+      scheduled = false;
+      anchorAllCardDetailsX();
+    });
+  });
+}
+
 Template.cardDetails.onCreated(function () {
   this.currentBoard = Utils.getCurrentBoard();
   this.isLoaded = new ReactiveVar(false);
   this.infiniteScrolling = new InfiniteScrolling();
+  const openedCardId = this.data?._id;
+  const openedBoardId = this.data?.boardId;
+
+  // #3114: another client can delete/archive this card or move it to another
+  // board. Minimongo then removed the data while the mobile details view kept
+  // rendering an empty shell. Observe the card that created this instance and
+  // close every way it can be open as soon as it no longer belongs here.
+  this.autorun(() => {
+    if (!openedCardId || !openedBoardId) return;
+    const card = ReactiveCache.getCard(openedCardId);
+    if (!openCardIsUnavailable(card, openedBoardId)) return;
+
+    Session.set(
+      'openCards',
+      (Session.get('openCards') || []).filter(id => id !== openedCardId),
+    );
+    if (Session.get('currentCard') === openedCardId) {
+      Session.set('currentCard', null);
+    }
+    if (Session.get('popupCardId') === openedCardId) {
+      Session.delete('popupCardId');
+      Session.delete('popupCardBoardId');
+      Popup.close();
+    }
+
+    const routeCardId = FlowRouter.current()?.params?.cardId;
+    if (routeCardId === openedCardId) {
+      Utils.goBoardId(openedBoardId);
+    }
+  });
 
   const boardBody = getBoardBodyInstance();
   if (boardBody !== null) {
@@ -396,6 +439,15 @@ Template.cardDetails.onRendered(function () {
   // within the same flush. If our DOM range is already gone, calling this.$()
   // below throws "Can't select in removed DomRange", so bail out early.
   if (this.view && this.view.isDestroyed) return;
+
+  // #6465: place the window beside its minicard (X only) once it has been laid
+  // out, so the width measured here is the one the stylesheet gave it.
+  const $cardDetails = this.$('.card-details').first();
+  if ($cardDetails.length) {
+    Tracker.afterFlush(() => anchorCardDetailsX($cardDetails.get(0)));
+  }
+  bindCardDetailsResize();
+
   this.calculateNextPeak();
   if (Meteor.settings.public.CARD_OPENED_WEBHOOK_ENABLED) {
     // Send Webhook but not create Activities records ---
@@ -529,10 +581,19 @@ Template.cardDetails.onDestroyed(function () {
 });
 
 Template.cardDetails.helpers({
+  canShowCustomFieldsOnCard() {
+    const board = this?.board?.();
+    return Utils.canModifyCard(this) && board?.allowsCustomFields !== false;
+  },
+  stickers() {
+    const card = Template.currentData();
+    return card && typeof card.getStickers === 'function' ? card.getStickers() : [];
+  },
   isWatching() {
     const card = Template.currentData();
     if (!card || typeof card.findWatcher !== 'function') return false;
-    return card.findWatcher(Meteor.userId());
+    const realCard = typeof card.getRealCard === 'function' ? card.getRealCard() : card;
+    return realCard.findWatcher(Meteor.userId());
   },
 
   // #6081: number of times this card's due date has been changed, for
@@ -602,7 +663,10 @@ Template.cardDetails.helpers({
 
   showActivities() {
     const card = Template.currentData();
-    return card && card.showActivities;
+    const realCard = card && typeof card.getRealCard === 'function'
+      ? card.getRealCard()
+      : card;
+    return realCard && realCard.showActivities;
   },
 
   cardCollapsed() {
@@ -679,12 +743,11 @@ Template.cardDetails.helpers({
     const swimlaneId = card.swimlaneId;
     const selector = { boardId: card.boardId, archived: false };
     if (swimlaneId) {
-      const defaultSwimlane = board.getDefaultSwimline && board.getDefaultSwimline();
-      if (defaultSwimlane && defaultSwimlane._id === swimlaneId) {
-        selector.swimlaneId = { $in: [swimlaneId, null, ''] };
-      } else {
-        selector.swimlaneId = swimlaneId;
-      }
+      // Board-wide lists have no swimlaneId. They are shared by EVERY
+      // swimlane, not only by the first/default one. Restricting this fallback
+      // to the default swimlane made the List chooser (and move/copy chooser)
+      // empty for valid cards in every later swimlane (#6614/#6618).
+      selector.swimlaneId = { $in: [swimlaneId, null, ''] };
     }
     return ReactiveCache.getLists(selector, { sort: { sort: 1 } });
   },
@@ -703,7 +766,109 @@ Template.cardDetails.helpers({
   },
 });
 
+// WHICH SECTIONS OF A CARD ARE OPEN.
+//
+// Every section of an opened card - Labels, Date Format, Members, Dependencies,
+// Sort, Custom Fields, Description, Checklists, Subtasks, Attachments, Comments
+// and Activities - carries a caret that collapses it, and one rule above it.
+// Before this there was one caret for the whole card and an EYE on Activities
+// that showed and hid exactly what a caret would: two controls for one idea,
+// able to disagree with each other.
+//
+// The state is module-level, so it survives closing and reopening a card in the
+// same session: somebody who works with the description collapsed wants it
+// collapsed on the next card too, not just on this one.
+//
+// ACTIVITIES starts CLOSED and everything else open. A card is opened to read
+// the card; its history is the thing you go looking for.
+const CARD_SECTIONS = [
+  'labels', 'date-format', 'members', 'dependencies', 'sort', 'custom-fields',
+  'description', 'checklists', 'subtasks', 'attachments', 'comments', 'activities',
+];
+const COLLAPSED_BY_DEFAULT = ['activities'];
+
+const cardSectionState = new ReactiveDict();
+CARD_SECTIONS.forEach(section => {
+  cardSectionState.set(section, !COLLAPSED_BY_DEFAULT.includes(section));
+});
+
+function isCardSectionOpen(section) {
+  const state = cardSectionState.get(section);
+  // An unknown section is open: a new one must show up, not hide silently.
+  return state === undefined ? true : state;
+}
+
+Template.registerHelper('isSectionOpen', isCardSectionOpen);
+
+// "Attachments (3)" - the count the heading carried before it became a section,
+// and only when the board asks for it.
+Template.registerHelper('attachmentCount', function attachmentCount() {
+  const card = Utils.getCurrentCard();
+  const board = card && card.board && card.board();
+  if (!board || !board.allowsAttachmentCountOnCard) return '';
+  const attachments = card.attachments && card.attachments();
+  return attachments && attachments.length ? attachments.length : '';
+});
+
+// Which way the caret points. The rule - and the reason - is in
+// client/lib/sectionCaret.js, shared with the board sidebar's Activities, which
+// is the same control and must not point the other way in the same language.
+Template.registerHelper('sectionCaret', section =>
+  caretClassFor(isCardSectionOpen(section)));
+
+Template.cardSectionHeader.events({
+  // A hamburger at the end of a heading opens that section's settings. Neither
+  // may reach the heading itself: a click there folds the section, so opening
+  // the menu would close what you opened it from.
+  'click .js-open-subtasks-settings'(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    Popup.open('boardSubtaskSettings')(event);
+  },
+  // Every custom field the board has, ticked when it is on this card, with a
+  // pencil each and "Add custom field" under a rule. The card is its data
+  // context, which is what the ticks and the toggle read.
+  // client/components/cards/cardCustomFields.jade
+  'click .js-open-custom-fields-settings'(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    Popup.open('cardCustomFields').call(Utils.getCurrentCard(), event);
+  },
+
+  'click #toggleCustomFieldsGridButton'(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    Meteor.call('toggleCustomFieldsGrid');
+  },
+
+  'click .js-toggle-card-section'(event) {
+    if (event.target.closest('#toggleCustomFieldsGridButton')) return;
+    event.preventDefault();
+    const section = event.currentTarget.dataset.section;
+    if (!section) return;
+    cardSectionState.set(section, !isCardSectionOpen(section));
+  },
+  // A heading that can be operated with the mouse can be operated with the
+  // keyboard: it carries role="button" and tabindex, so Enter and Space are
+  // what a screen reader user presses.
+  'keydown .js-toggle-card-section'(event) {
+    if (event.target !== event.currentTarget) return;
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    const section = event.currentTarget.dataset.section;
+    if (section) cardSectionState.set(section, !isCardSectionOpen(section));
+  },
+});
+
 Template.cardDetails.events({
+  // #1591 folded each FIELD by its own title, storing a class per card in the
+  // profile. The section carets replaced it: one handle per section, on the
+  // heading, and every field lives in a section now. Both were still running,
+  // and they fought - clicking a section's caret also ran the old handler, so
+  // the field it was drawn on was left `is-collapsed` with nothing to open it
+  // again, and the Date Format select vanished for good. The old half is gone;
+  // the same store is still the CHECKLISTS' (client/components/cards/checklists.js),
+  // which is why it is not.
   [`${CSSEvents.transitionend} .js-card-details`](event, tpl) {
     tpl.isLoaded.set(true);
   },
@@ -727,6 +892,9 @@ Template.cardDetails.events({
   'mousedown .js-card-drag-handle'(event) {
     event.preventDefault();
     const $card = $(event.target).closest('.card-details');
+    // #6465: where the user put it wins over where the minicard is, so a later
+    // resize re-places every other window but only clamps this one into view.
+    markCardDetailsUserMoved($card);
     const startX = event.clientX;
     const startY = event.clientY;
     const startLeft = $card.offset().left;
@@ -750,14 +918,35 @@ Template.cardDetails.events({
     $(document).on('mouseup', onMouseUp);
   },
   'mousedown .js-card-title-drag-handle'(event) {
-    // Allow dragging from title for ReadOnly users
-    // Don't interfere with text selection
-    if (event.target.tagName === 'A' || $(event.target).closest('a').length > 0) {
-      return; // Don't drag if clicking on links
+    // The title bar drags the window. Don't interfere with text selection.
+    if (
+      $(event.target).closest(
+        'a, input, textarea, button, select, option, .js-card-details-title',
+      ).length > 0
+    ) {
+      // #6641: while the editor replaces the header, a textarea press still
+      // bubbles to this drag bar. Leave it to the browser so mouse dragging
+      // selects text instead of moving the card window.
+      return;
+    }
+    // ...and don't drag from the half that EDITS. The title is split like a
+    // minicard's: the leading half opens the editor, the trailing half is what
+    // you take hold of. With drag handles ON the zone covers the whole title
+    // (cardDetails.css), so the window is dragged by its handle alone - which is
+    // what turning handles on means.
+    if ($(event.target).closest('.card-details-title-edit-zone').length > 0) {
+      return;
+    }
+    // The drag handle has its own handler; without this both would run and the
+    // window would be moved twice by one press.
+    if ($(event.target).closest('.js-card-drag-handle').length > 0) {
+      return;
     }
 
     event.preventDefault();
     const $card = $(event.target).closest('.card-details');
+    // #6465: same as the drag handle above — a dragged window keeps its place.
+    markCardDetailsUserMoved($card);
     const startX = event.clientX;
     const startY = event.clientY;
     const startLeft = $card.offset().left;
@@ -831,15 +1020,6 @@ Template.cardDetails.events({
       Utils.goBoardId(boardId);
     }
   },
-  'click .js-copy-link'(event, tpl) {
-    event.preventDefault();
-    const card = Template.currentData();
-    const url = card.absoluteUrl();
-    const promise = Utils.copyTextToClipboard(url);
-
-    const $tooltip = tpl.$('.card-details-header .copied-tooltip');
-    Utils.showCopied(promise, $tooltip);
-  },
   'change .js-date-format-selector'(event) {
     const dateFormat = event.target.value;
     if (Meteor.userId()) {
@@ -848,7 +1028,12 @@ Template.cardDetails.events({
       window.localStorage.setItem('dateFormat', dateFormat);
     }
   },
-  'click .js-open-card-details-menu': Popup.open('cardDetailsActions'),
+  // The opened card's own hamburger. It says so, so the menu's first entry is
+  // "Show on Card" rather than the minicard's "Show on Minicard".
+  'click .js-open-card-details-menu'(event) {
+    setCardMenuSource('card');
+    Popup.open('cardDetailsActions').call(this, event);
+  },
   // Mobile: switch to desktop popup view (maximize)
   'click .js-mobile-switch-to-desktop'(event) {
     event.preventDefault();
@@ -987,6 +1172,8 @@ Template.cardDetails.events({
   },
   'click .js-member': Popup.open('cardMember'),
   'click .js-add-members': Popup.open('cardMembers'),
+  'click .js-select-requester': Popup.open('cardRequestedBy', { titleKey: 'requested-by' }),
+  'click .js-select-assigner': Popup.open('cardAssignedBy', { titleKey: 'assigned-by' }),
   'click .js-assignee': Popup.open('cardAssignee'),
   'click .js-add-assignees': Popup.open('cardAssignees'),
   'click .js-add-labels': Popup.open('cardLabels'),
@@ -1021,14 +1208,16 @@ Template.cardDetails.events({
       dataContextIfCurrentDataIsUndefined: card,
     });
   },
-  'click .js-remove-location'(event) {
+  async 'click .js-remove-location'(event) {
     event.preventDefault();
     event.stopPropagation();
     if (!Utils.canModifyCard()) return;
     const locationId = event.currentTarget.dataset.locationId;
-    const card = Template.currentData();
+    // The X is rendered inside `each getLocations`, so Template.currentData()
+    // is the location row, not the surrounding card (#6644).
+    const card = getCurrentCardFromContext();
     if (card && locationId) {
-      card.removeLocation(locationId);
+      await card.removeLocation(locationId);
     }
   },
   'click .js-received-date': Popup.open('editCardReceivedDate'),
@@ -1044,7 +1233,6 @@ Template.cardDetails.events({
   'click .js-end-date': Popup.open('editCardEndDate'),
   'click .js-show-positive-votes': Popup.open('positiveVoteMembers'),
   'click .js-show-negative-votes': Popup.open('negativeVoteMembers'),
-  'click .js-custom-fields': Popup.open('cardCustomFields'),
   'mouseenter .js-card-details'(event, tpl) {
     const boardBody = getBoardBodyInstance(tpl);
     if (boardBody === null) return;
@@ -1067,13 +1255,6 @@ Template.cardDetails.events({
   async 'click #toggleHideCheckedChecklistItems'() {
     const card = Template.currentData();
     await card.toggleHideCheckedChecklistItems();
-  },
-  async 'click .js-toggle-show-activities-card'() {
-    const card = Template.currentData();
-    await card.toggleShowActivities();
-  },
-  'click #toggleCustomFieldsGridButton'() {
-    Meteor.call('toggleCustomFieldsGrid');
   },
   'click .js-maximize-card-details'() {
     if (Meteor.userId()) {
@@ -1103,50 +1284,50 @@ Template.cardDetails.events({
       newState = forIt;
     }
     // Use secure server method; direct client updates to vote are blocked
-    Meteor.call('cards.vote', card._id, newState);
+    Meteor.call('cards.vote', card.getRealId(), newState);
   },
   'click .js-poker'(e) {
     const card = Template.currentData();
     let newState = null;
     if ($(e.target).hasClass('js-poker-vote-one')) {
       newState = 'one';
-      Meteor.call('cards.pokerVote', card._id, newState);
+      Meteor.call('cards.pokerVote', card.getRealId(), newState);
     }
     if ($(e.target).hasClass('js-poker-vote-two')) {
       newState = 'two';
-      Meteor.call('cards.pokerVote', card._id, newState);
+      Meteor.call('cards.pokerVote', card.getRealId(), newState);
     }
     if ($(e.target).hasClass('js-poker-vote-three')) {
       newState = 'three';
-      Meteor.call('cards.pokerVote', card._id, newState);
+      Meteor.call('cards.pokerVote', card.getRealId(), newState);
     }
     if ($(e.target).hasClass('js-poker-vote-five')) {
       newState = 'five';
-      Meteor.call('cards.pokerVote', card._id, newState);
+      Meteor.call('cards.pokerVote', card.getRealId(), newState);
     }
     if ($(e.target).hasClass('js-poker-vote-eight')) {
       newState = 'eight';
-      Meteor.call('cards.pokerVote', card._id, newState);
+      Meteor.call('cards.pokerVote', card.getRealId(), newState);
     }
     if ($(e.target).hasClass('js-poker-vote-thirteen')) {
       newState = 'thirteen';
-      Meteor.call('cards.pokerVote', card._id, newState);
+      Meteor.call('cards.pokerVote', card.getRealId(), newState);
     }
     if ($(e.target).hasClass('js-poker-vote-twenty')) {
       newState = 'twenty';
-      Meteor.call('cards.pokerVote', card._id, newState);
+      Meteor.call('cards.pokerVote', card.getRealId(), newState);
     }
     if ($(e.target).hasClass('js-poker-vote-forty')) {
       newState = 'forty';
-      Meteor.call('cards.pokerVote', card._id, newState);
+      Meteor.call('cards.pokerVote', card.getRealId(), newState);
     }
     if ($(e.target).hasClass('js-poker-vote-one-hundred')) {
       newState = 'oneHundred';
-      Meteor.call('cards.pokerVote', card._id, newState);
+      Meteor.call('cards.pokerVote', card.getRealId(), newState);
     }
     if ($(e.target).hasClass('js-poker-vote-unsure')) {
       newState = 'unsure';
-      Meteor.call('cards.pokerVote', card._id, newState);
+      Meteor.call('cards.pokerVote', card.getRealId(), newState);
     }
   },
   'click .js-poker-finish'(e) {
@@ -1154,16 +1335,16 @@ Template.cardDetails.events({
       e.preventDefault();
       const card = Template.currentData();
       const now = new Date();
-      Meteor.call('cards.setPokerEnd', card._id, now);
+      Meteor.call('cards.setPokerEnd', card.getRealId(), now);
     }
   },
   'click .js-poker-replay'(e) {
     if ($(e.target).hasClass('js-poker-replay')) {
       e.preventDefault();
       const currentCard = Template.currentData();
-      Meteor.call('cards.replayPoker', currentCard._id);
-      Meteor.call('cards.unsetPokerEnd', currentCard._id);
-      Meteor.call('cards.unsetPokerEstimation', currentCard._id);
+      Meteor.call('cards.replayPoker', currentCard.getRealId());
+      Meteor.call('cards.unsetPokerEnd', currentCard.getRealId());
+      Meteor.call('cards.unsetPokerEstimation', currentCard.getRealId());
     }
   },
   'click .js-poker-estimation'(event, tpl) {
@@ -1174,9 +1355,9 @@ Template.cardDetails.events({
       tpl.find('#pokerEstimation').value = '';
 
       if (ruleTitle) {
-        Meteor.call('cards.setPokerEstimation', card._id, parseInt(ruleTitle, 10));
+        Meteor.call('cards.setPokerEstimation', card.getRealId(), parseInt(ruleTitle, 10));
       } else {
-        Meteor.call('cards.unsetPokerEstimation', card._id);
+        Meteor.call('cards.unsetPokerEstimation', card.getRealId());
       }
     }
   },
@@ -1273,90 +1454,9 @@ Template.cardDetailsPopup.helpers({
   },
 });
 
-// Ordered list of Excel export field keys and their i18n label keys.
-// Must match ALL_FIELDS in models/server/ExporterExcelCard.js.
-const EXCEL_EXPORT_FIELDS = [
-  { field: 'labels',      label: 'labels' },
-  { field: 'people',      label: 'export-card-field-people' },
-  { field: 'board-info',  label: 'export-card-field-board-info' },
-  { field: 'dates',       label: 'export-card-field-dates' },
-  { field: 'description', label: 'description' },
-  { field: 'checklists',  label: 'checklists' },
-  { field: 'subtasks',    label: 'export-card-subtasks' },
-  { field: 'comments',    label: 'comments' },
-  { field: 'attachments', label: 'attachments' },
-];
-
-Template.exportCardPopup.onCreated(function () {
-  // Track which Excel sections the user wants to include (all on by default)
-  const initial = {};
-  EXCEL_EXPORT_FIELDS.forEach(({ field }) => { initial[field] = true; });
-  this.excelFields = new ReactiveDict(initial);
-});
-
-Template.exportCardPopup.helpers({
-  exportUrlCardPDF() {
-    const card = getCurrentCardFromContext({ ignorePopupCard: true }) || this;
-    const params = {
-      boardId: card.boardId || Session.get('currentBoard'),
-      listId: card.listId,
-      cardId: card._id || card.cardId,
-    };
-    return FlowRouter.path(
-      '/api/boards/:boardId/lists/:listId/cards/:cardId/exportPDF',
-      params,
-      { authToken: Accounts._storedLoginToken() },
-    );
-  },
-  exportFilenameCardPDF() {
-    const card = getCurrentCardFromContext({ ignorePopupCard: true }) || this;
-    return `${String(card.title || 'export-card')
-      .replace(/[^a-z0-9._-]+/gi, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '') || 'export-card'}.pdf`;
-  },
-  // Returns the field list with current checked state — reactive
-  excelExportFields() {
-    const instance = Template.instance();
-    return EXCEL_EXPORT_FIELDS.map(f => ({
-      field:   f.field,
-      label:   f.label,
-      checked: instance.excelFields.get(f.field),
-    }));
-  },
-  exportUrlCardExcel() {
-    const instance = Template.instance();
-    const card = getCurrentCardFromContext({ ignorePopupCard: true }) || this;
-    const params = {
-      boardId: card.boardId || Session.get('currentBoard'),
-      listId:  card.listId,
-      cardId:  card._id || card.cardId,
-    };
-    const selectedFields = EXCEL_EXPORT_FIELDS
-      .map(f => f.field)
-      .filter(f => instance.excelFields.get(f));
-    return FlowRouter.path(
-      '/api/boards/:boardId/lists/:listId/cards/:cardId/exportExcel',
-      params,
-      { authToken: Accounts._storedLoginToken(), fields: selectedFields.join(','), lang: TAPi18n.getLanguage() },
-    );
-  },
-  exportFilenameCardExcel() {
-    const card = getCurrentCardFromContext({ ignorePopupCard: true }) || this;
-    return `${String(card.title || 'export-card')
-      .replace(/[^a-z0-9._-]+/gi, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '') || 'export-card'}.xlsx`;
-  },
-});
-
-Template.exportCardPopup.events({
-  'click .js-excel-field-toggle'(event, instance) {
-    event.preventDefault();
-    const field = event.currentTarget.dataset.field;
-    instance.excelFields.set(field, !instance.excelFields.get(field));
-  },
-});
+// #1173: the card export popup is client/components/boards/exportScope.js now -
+// one body, one field list and one url builder for the card, the list, the
+// swimlane and the board. What was here was a second copy of all three.
 
 // only allow number input
 Template.editCardSortOrderForm.onRendered(function () {
@@ -1459,19 +1559,63 @@ Template.cardDetailsActionsPopup.helpers({
     return ReactiveCache.getCurrentUser()?.isBoardAdmin();
   },
 
+  // Which of the two hamburgers opened this menu, so its first entry can be
+  // about the thing the user is looking at. client/lib/cardMenuSource.js
+  isMinicardMenu() {
+    return cardMenuSource() === 'minicard';
+  },
+
   showListOnMinicard() {
     return this.showListOnMinicard;
   },
 });
 
 Template.cardDetailsActionsPopup.events({
+  // History.md §7a: adding History to a menu is a menu item and this handler,
+  // opening the SAME historyTable every other scope opens.
+  'click .js-card-history'(event) {
+    const card = this.card || this;
+    // The scope has to travel as `dataContextIfCurrentDataIsUndefined`: the
+    // second argument to Popup.open()'s handler is OPTIONS, and the popup takes
+    // its data context from `this.currentData()` first - which in an event
+    // handler is undefined, so this key is the one that reaches the template.
+    // Passing a bare object there would have opened the History of the card
+    // menu's own data context instead of the scope asked for. (client/lib/popup.js)
+    Popup.open('history', { titleKey: 'history' })(event, {
+      dataContextIfCurrentDataIsUndefined: { scope: 'card', scopeId: card._id },
+    });
+  },
+  // Copy the card's address. This was an icon in the card's header with only a
+  // tooltip to name it - the one place a name cannot be read without hovering -
+  // and it is here now beside the swimlane's and the list's, so all three are
+  // copied the same way from the same kind of menu.
+  // docs/Features/Page/Board-Item-Links.md
+  'click .js-copy-card-link'(event, tpl) {
+    event.preventDefault();
+    const card = Template.currentData();
+    if (!card) return;
+    const url = card.absoluteUrl();
+    if (!url) return;
+    Utils.showCopied(Utils.copyTextToClipboard(url), tpl.$('.copied-tooltip'));
+  },
+  // The board's Card Settings, one column of them, titled by the key the app
+  // already has for that column - so no `showOnCardPopup-title` has to be added
+  // to 147 language files to say a phrase they have already translated.
+  'click .js-show-on-card': Popup.open('showOnCard', { titleKey: 'show-on-card' }),
+  // "Custom Fields" is ONE entry: it opens the picker for which of the board's
+  // fields are on THIS card, and that popup's own Settings cog opens the
+  // board's list of fields, where one is created, renamed or deleted. Two
+  // entries for the two halves put the general one above the particular one and
+  // made the menu ask which you wanted before you had seen either.
+  // client/components/cards/cardCustomFields.jade
+  'click .js-show-on-minicard': Popup.open('showOnMinicard', { titleKey: 'show-on-minicard' }),
   'click .js-export-card': Popup.open('exportCard'),
+  'click .js-import-card': Popup.open('importCard'),
   'click .js-members': Popup.open('cardMembers'),
   'click .js-assignees': Popup.open('cardAssignees'),
   'click .js-attachments': Popup.open('cardAttachments'),
   'click .js-start-voting': Popup.open('cardStartVoting'),
   'click .js-start-planning-poker': Popup.open('cardStartPlanningPoker'),
-  'click .js-custom-fields': Popup.open('cardCustomFields'),
   'click .js-received-date': Popup.open('editCardReceivedDate'),
   'click .js-start-date': Popup.open('editCardStartDate'),
   'click .js-due-date': Popup.open('editCardDueDate'),
@@ -1519,16 +1663,17 @@ Template.cardDetailsActionsPopup.events({
   'click .js-toggle-watch-card'() {
     const currentCard = Cards.findOne(getCardId());
     if (!currentCard) return;
-    const level = currentCard.findWatcher(Meteor.userId()) ? null : 'watching';
-    Meteor.call('watch', 'card', currentCard._id, level, (err, ret) => {
+    const sourceCard = currentCard.getRealCard();
+    const level = sourceCard.findWatcher(Meteor.userId()) ? null : 'watching';
+    Meteor.call('watch', 'card', currentCard.getRealId(), level, (err, ret) => {
       if (!err && ret) Popup.close();
     });
   },
   'click .js-toggle-show-list-on-minicard'() {
     const currentCard = Cards.findOne(getCardId());
     if (!currentCard) return;
-    const newValue = !currentCard.showListOnMinicard;
-    Cards.update(currentCard._id, { $set: { showListOnMinicard: newValue } });
+    const newValue = !currentCard.getRealCard().showListOnMinicard;
+    Cards.update(currentCard.getRealId(), { $set: { showListOnMinicard: newValue } });
     Popup.close();
   },
 });
@@ -1605,6 +1750,48 @@ Template.cardMembersPopup.helpers({
   },
 });
 
+Template.cardIdentityPicker.onCreated(function () {
+  this.filterTerm = new ReactiveVar('');
+});
+
+Template.cardIdentityPicker.events({
+  'click .js-select-card-identity'(event, tpl) {
+    event.preventDefault();
+    const card = getCurrentCardFromContext();
+    const user = ReactiveCache.getUser(this.userId);
+    if (!card || !user) return;
+    if (tpl.data.field === 'requesters') card.toggleRequester(user._id);
+    if (tpl.data.field === 'assigners') card.toggleAssigner(user._id);
+  },
+  'keyup .card-identity-filter'(event) {
+    Template.instance().filterTerm.set(event.target.value);
+  },
+});
+
+Template.cardIdentityPicker.helpers({
+  members() {
+    return [...uniqBy(filterMembers(Template.instance().filterTerm.get()), 'userId')]
+      .sort((a, b) => {
+        const userA = ReactiveCache.getUser(a.userId);
+        const userB = ReactiveCache.getUser(b.userId);
+        const nameA = (userA && userA.profile && userA.profile.fullname) || '';
+        const nameB = (userB && userB.profile && userB.profile.fullname) || '';
+        return nameA.localeCompare(nameB);
+      });
+  },
+  userData() {
+    return ReactiveCache.getUser(this.userId);
+  },
+  isSelected() {
+    const card = getCurrentCardFromContext();
+    const user = ReactiveCache.getUser(this.userId);
+    if (!card || !user) return false;
+    const selected = Template.instance().data.field === 'requesters'
+      ? card.getRequesters() : card.getAssigners();
+    return (selected || []).includes(user._id);
+  },
+});
+
 // Popup that adds or edits a single card location (name, address, latitude,
 // longitude). Cards can hold multiple locations, like members.
 Template.cardLocationsPopup.onCreated(function () {
@@ -1627,11 +1814,6 @@ Template.cardLocationsPopup.helpers({
   },
   detectMessage() {
     return Template.instance().detectMsg.get();
-  },
-  isMapProvider(provider) {
-    const user = ReactiveCache.getCurrentUser();
-    const current = user ? user.getMapProvider() : 'openstreetmap';
-    return current === provider;
   },
   mapSavedMessage() {
     return Template.instance().mapSavedMsg.get();
@@ -1777,47 +1959,75 @@ Template.editCardAssignerForm.events({
   },
 });
 
+
+// The four selects of the move/copy dialogs, in one template. The dialog comes
+// from the popup that includes it and is kept on THIS instance: inside
+// `each boards` the data context is a board, so a helper reaching into the
+// context for it would find nothing there.
+Template.cardDestinationPicker.onCreated(function () {
+  this.autorun(() => {
+    const data = Template.currentData();
+    this.dialog = data && data.dialog;
+  });
+});
+
+Template.cardDestinationPicker.helpers({
+  boards() {
+    return Template.instance().dialog.boards();
+  },
+  swimlanes() {
+    return Template.instance().dialog.swimlanes();
+  },
+  lists() {
+    return Template.instance().dialog.lists();
+  },
+  cards() {
+    return Template.instance().dialog.cards();
+  },
+  isDialogOptionBoardId(boardId) {
+    return Template.instance().dialog.isDialogOptionBoardId(boardId);
+  },
+  isDialogOptionSwimlaneId(swimlaneId) {
+    return Template.instance().dialog.isDialogOptionSwimlaneId(swimlaneId);
+  },
+  isDialogOptionListId(listId) {
+    return Template.instance().dialog.isDialogOptionListId(listId);
+  },
+  isSelectedBoardId(boardId) {
+    return Template.instance().dialog.isSelectedBoardId(boardId);
+  },
+  isSelectedSwimlaneId(swimlaneId) {
+    return Template.instance().dialog.isSelectedSwimlaneId(swimlaneId);
+  },
+  isSelectedListId(listId) {
+    return Template.instance().dialog.isSelectedListId(listId);
+  },
+  isDialogOptionCardId(cardId) {
+    return Template.instance().dialog.isDialogOptionCardId(cardId);
+  },
+  isTitleDefault(title) {
+    return Template.instance().dialog.isTitleDefault(title);
+  },
+});
+
 /**
  * Helper: register standard board/swimlane/list/card dialog helpers and events
  * for a template that uses BoardSwimlaneListCardDialog.
  */
+/**
+ * Helper: register standard board/swimlane/list/card dialog helpers and events
+ * for a template that uses BoardSwimlaneListCardDialog.
+ *
+ * The MARKUP those helpers feed is one template - `cardDestinationPicker` in
+ * cardDetails.jade, included by all four popups - so the helpers are registered
+ * on it, once, below. What each popup needs of its own is the `dialog` to hand
+ * that template, and the events: a change or a click inside the picker bubbles
+ * up to the popup that includes it, which is the one holding the dialog.
+ */
 function registerCardDialogTemplate(templateName) {
   Template[templateName].helpers({
-    boards() {
-      return Template.instance().dialog.boards();
-    },
-    swimlanes() {
-      return Template.instance().dialog.swimlanes();
-    },
-    lists() {
-      return Template.instance().dialog.lists();
-    },
-    cards() {
-      return Template.instance().dialog.cards();
-    },
-    isDialogOptionBoardId(boardId) {
-      return Template.instance().dialog.isDialogOptionBoardId(boardId);
-    },
-    isDialogOptionSwimlaneId(swimlaneId) {
-      return Template.instance().dialog.isDialogOptionSwimlaneId(swimlaneId);
-    },
-    isDialogOptionListId(listId) {
-      return Template.instance().dialog.isDialogOptionListId(listId);
-    },
-    isSelectedBoardId(boardId) {
-      return Template.instance().dialog.isSelectedBoardId(boardId);
-    },
-    isSelectedSwimlaneId(swimlaneId) {
-      return Template.instance().dialog.isSelectedSwimlaneId(swimlaneId);
-    },
-    isSelectedListId(listId) {
-      return Template.instance().dialog.isSelectedListId(listId);
-    },
-    isDialogOptionCardId(cardId) {
-      return Template.instance().dialog.isDialogOptionCardId(cardId);
-    },
-    isTitleDefault(title) {
-      return Template.instance().dialog.isTitleDefault(title);
+    dialog() {
+      return Template.instance().dialog;
     },
   });
 
@@ -2347,16 +2557,16 @@ Template.cardStartVotingPopup.events({
       'is-checked',
     );
     const endString = card.getVoteEnd();
-    Meteor.call('cards.setVoteQuestion', card._id, voteQuestion, publicVote, allowNonBoardMembers);
+    Meteor.call('cards.setVoteQuestion', card.getRealId(), voteQuestion, publicVote, allowNonBoardMembers);
     if (endString) {
-      Meteor.call('cards.setVoteEnd', card._id, new Date(endString));
+      Meteor.call('cards.setVoteEnd', card.getRealId(), new Date(endString));
     }
     Popup.back();
   },
   'click .js-remove-vote': Popup.afterConfirm('deleteVote', function () {
     const card = Cards.findOne(getCardId());
     if (!card) return;
-    Meteor.call('cards.unsetVote', card._id);
+    Meteor.call('cards.unsetVote', card.getRealId());
     Popup.back();
   }),
   'click a.js-toggle-vote-public'(event) {
@@ -2403,6 +2613,12 @@ Template.editVoteEndDatePopup.onCreated(function () {
   setupDatePicker(this, {
     defaultTime: formatDateTime(now()),
     initialDate: card?.getVoteEnd ? (card.getVoteEnd() || undefined) : undefined,
+    async storeDate(date, currentCard) {
+      await Meteor.callAsync('cards.setVoteEnd', currentCard.getRealId(), date);
+    },
+    async deleteDate(currentCard) {
+      await Meteor.callAsync('cards.unsetVoteEnd', currentCard.getRealId());
+    },
   });
 });
 
@@ -2411,15 +2627,6 @@ Template.editVoteEndDatePopup.onRendered(function () {
 });
 
 Template.editVoteEndDatePopup.helpers(datePickerHelpers());
-
-Template.editVoteEndDatePopup.events(datePickerEvents({
-  storeDate(date) {
-    Meteor.call('cards.setVoteEnd', this.datePicker.card._id, date);
-  },
-  deleteDate() {
-    Meteor.call('cards.unsetVoteEnd', this.datePicker.card._id);
-  },
-}));
 
 Template.cardStartPlanningPokerPopup.onCreated(function () {
   const cardId = getCardId();
@@ -2454,16 +2661,16 @@ Template.cardStartPlanningPokerPopup.events({
     );
     const endString = card.getPokerEnd();
 
-    Meteor.call('cards.setPokerQuestion', card._id, pokerQuestion, allowNonBoardMembers);
+    Meteor.call('cards.setPokerQuestion', card.getRealId(), pokerQuestion, allowNonBoardMembers);
     if (endString) {
-      Meteor.call('cards.setPokerEnd', card._id, new Date(endString));
+      Meteor.call('cards.setPokerEnd', card.getRealId(), new Date(endString));
     }
     Popup.back();
   },
   'click .js-remove-poker': Popup.afterConfirm('deletePoker', function () {
     const card = Cards.findOne(getCardId());
     if (!card) return;
-    Meteor.call('cards.unsetPoker', card._id);
+    Meteor.call('cards.unsetPoker', card.getRealId());
     Popup.back();
   }),
   'click a.js-toggle-poker-allow-non-members'(event) {
@@ -2478,6 +2685,12 @@ Template.editPokerEndDatePopup.onCreated(function () {
   setupDatePicker(this, {
     defaultTime: formatDateTime(now()),
     initialDate: card?.getPokerEnd ? (card.getPokerEnd() || undefined) : undefined,
+    async storeDate(date, currentCard) {
+      await Meteor.callAsync('cards.setPokerEnd', currentCard.getRealId(), date);
+    },
+    async deleteDate(currentCard) {
+      await Meteor.callAsync('cards.unsetPokerEnd', currentCard.getRealId());
+    },
   });
 });
 
@@ -2486,15 +2699,6 @@ Template.editPokerEndDatePopup.onRendered(function () {
 });
 
 Template.editPokerEndDatePopup.helpers(datePickerHelpers());
-
-Template.editPokerEndDatePopup.events(datePickerEvents({
-  storeDate(date) {
-    Meteor.call('cards.setPokerEnd', this.datePicker.card._id, date);
-  },
-  deleteDate() {
-    Meteor.call('cards.unsetPokerEnd', this.datePicker.card._id);
-  },
-}));
 
 // Close the card details pane by pressing escape
 EscapeActions.register(

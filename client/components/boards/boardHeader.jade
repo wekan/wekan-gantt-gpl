@@ -1,189 +1,99 @@
-template(name="boardHeaderBar")
-  unless notDisplayThisBoard
-    h1.header-board-menu
-      with currentBoard
-        if $eq title 'Templates'
-          | {{_ 'templates'}}
-        else
-          +viewer
-            = title
+//- There is no pencil beside the board's name any more: the NAME renames the
+//- board. It is one target instead of a word and an icon that did the same
+//- thing, and the icon was the smaller of the two. client/components/main/header.jade
+//-
+//- Everything else the board's second header bar held, as icons in the FIRST
+//- bar, to the left of the notification bell.
+//-
+//- ICON ONLY, each named by a tooltip. The bar is a single row shared with the
+//- logo, the starred boards, the view menu, the bell and the user menu, and
+//- these are ten more controls - labelled, they would not fit at any width.
+//-
+//- There is no desktop/mobile split any more either. The second bar wrote the
+//- whole set out TWICE, once for each, because a labelled row does not fit on a
+//- phone; icons do, so one set serves both. docs/Features/Page/Header.md
+template(name="boardHeaderButtons")
+  if currentBoard
+    if currentUser
+      .board-header-btns.board-header-controls
+        //- The board's controls fold into one caret at the leading edge of the
+          group - left of the lock in a left-to-right page, right of it in Arabic,
+          because the caret's direction comes from the same rule as every other
+          one. Folded, the seven controls after it are gone; open, they are back.
+          The buttons a board's own Rules put in this bar are NOT folded away with
+          them: somebody added those to this board on purpose.
+          client/lib/foldState.js
+        a.board-header-btn.js-toggle-fold(data-fold="board-controls"
+          title="{{#if isFoldOpen 'board-controls'}}{{_ 'collapse'}}{{else}}{{_ 'uncollapse'}}{{/if}}" role="button" tabindex="0")
+          i.fa(class="{{foldCaret 'board-controls'}}")
+        if isFoldOpen 'board-controls'
+          with currentBoard
+            a.board-header-btn(
+              class="{{#if currentUser.isBoardAdmin}}js-change-visibility{{else}}is-disabled{{/if}}"
+              title="{{_ currentBoard.permission}}")
+              i.fa(class="{{#if currentBoard.isPublic}}fa-globe{{else}}fa-lock{{/if}}")
+              //- The SAME expression the tooltip uses, so the two cannot say
+                different things - and both follow the board from Private to
+                Public without a second list of words to keep in step.
+              span.board-header-btn-label {{_ currentBoard.permission}}
 
-    //- The sidebar hamburger is its own flex item, right after the title in the
-    //- markup, with `order` putting it last on a wide screen. That is what lets it sit
-    //- in the TOP RIGHT of the bar in mobile mode - on the first row beside the title,
-    //- with its divider to its left - while every other button wraps to the second
-    //- row. Inside the right-hand group it could only ever wrap along with them.
-    .board-header-btns.board-header-sidebar-toggle
-      .separator
-      //- Board Settings cog removed: Board Settings is available in the right
-      //- sidebar (the hamburger), so the header no longer duplicates it.
-      a.board-header-btn.js-toggle-sidebar(title="{{_ 'sidebar-open'}} {{_ 'or'}} {{_ 'sidebar-close'}}")
-        i.fa.fa-bars
+            unless watchDisabled
+              a.board-header-btn.js-watch-board(title="{{_ watchLevel }}")
+                if $eq watchLevel "watching"
+                  i.fa.fa-eye
+                if $eq watchLevel "tracking"
+                  i.fa.fa-bell
+                if $eq watchLevel "muted"
+                  i.fa.fa-bell-slash
+                span.board-header-btn-label {{_ watchLevel }}
 
-    //- Every button group lives inside ONE flex item so that, when the board title
-    //- is long enough that title + buttons no longer fit on a line, ALL the buttons
-    //- move down to the second row together, under the title. As separate flex items
-    //- the left group stayed beside a long title and only the right group wrapped,
-    //- which split the controls across both rows.
-    .board-header-btns-group
-      .board-header-btns.left
-        unless isMiniScreen
-          if currentBoard
-            if currentUser
-              with currentBoard
-                if currentUser.isBoardAdmin
-                  a.board-header-btn(class="{{#if currentUser.isBoardAdmin}}js-edit-board-title{{else}}is-disabled{{/if}}" title="{{_ 'edit'}}" value=title)
-                    i.fa.fa-pencil-square-o
+            //- The name beside the icon where the bar has room for it, dropped
+              when it does not - one rule in header.css hides every label of this
+              bar below the width they stop fitting at.
+              docs/Features/Page/Header.md
+            a.board-header-btn(title="{{#if isSortActive}}{{_ 'sort-is-on'}}{{else}}{{_ 'sort-cards'}}{{/if}}" class="js-sort-cards {{#if isSortActive }}emphasis{{/if}}")
+              i.fa.fa-sort
+              span.board-header-btn-label {{#if isSortActive}}{{_ 'sort-is-on'}}{{else}}{{_ 'sort-cards'}}{{/if}}
+            if isSortActive
+              a.board-header-btn-close.js-sort-reset(title="{{_ 'remove-sort'}}")
+                i.fa.fa-times-thin
 
-                a.board-header-btn(
-                  class="{{#if currentUser.isBoardAdmin}}js-change-visibility{{else}}is-disabled{{/if}}"
-                  title="{{_ currentBoard.permission}}")
-                  i.fa(class="{{#if currentBoard.isPublic}}fa-globe{{else}}fa-lock{{/if}}")
-                  span {{_ currentBoard.permission}}
+        +boardButtons
 
-                unless watchDisabled
-                  a.board-header-btn.js-watch-board(
-                    title="{{_ watchLevel }}")
-                    if $eq watchLevel "watching"
-                      i.fa.fa-eye
-                    if $eq watchLevel "tracking"
-                      i.fa.fa-bell
-                    if $eq watchLevel "muted"
-                      i.fa.fa-bell-slash
-                    span {{_ watchLevel}}
-                a.board-header-btn.js-star-board(class="{{#if isStarred}}is-active{{/if}}"
-                  title="{{#if isStarred}}{{_ 'click-to-unstar'}}{{else}}{{_ 'click-to-star'}}{{/if}} {{_ 'starred-boards-description'}}")
-                  i.fa(class="fa-star{{#unless isStarred}}-o{{/unless}}")
-                  if showStarCounter
-                    span.board-star-counter {{currentBoard.stars}}
-                a.board-header-btn(title="{{_ 'sort-cards'}}" class="js-sort-cards {{#if isSortActive }}emphasis{{/if}}")
-                  i.fa.fa-sort
-                  span {{#if isSortActive }}{{_ 'sort-is-on'}}{{else}}{{_ 'sort-cards'}}{{/if}}
-                if isSortActive
-                  a.board-header-btn-close.js-sort-reset(title="{{_ 'remove-sort'}}")
-                    i.fa.fa-times-thin
-
-            else
-              a.board-header-btn.js-log-in(
-                title="{{_ 'log-in'}}")
-                i.fa.fa-sign-in
-                span {{_ 'log-in'}}
-
-      .board-header-btns.center
-        if currentUser
-          +boardButtons
-
-      .board-header-btns.right
-        if currentBoard
-          if isMiniScreen
-            if currentUser
-              with currentBoard
-                a.board-header-btn(class="{{#if currentUser.isBoardAdmin}}js-edit-board-title{{else}}is-disabled{{/if}}" title="{{_ 'edit'}}" value=title)
-                  i.fa.fa-pencil-square-o
-
-                a.board-header-btn(
-                  class="{{#if currentUser.isBoardAdmin}}js-change-visibility{{else}}is-disabled{{/if}}"
-                  title="{{_ currentBoard.permission}}")
-                  i.fa(class="{{#if currentBoard.isPublic}}fa-globe{{else}}fa-lock{{/if}}")
-
-                unless watchDisabled
-                  a.board-header-btn.js-watch-board(
-                    title="{{_ watchLevel }}")
-                    if $eq watchLevel "watching"
-                      i.fa.fa-eye
-                    if $eq watchLevel "tracking"
-                      i.fa.fa-bell
-                    if $eq watchLevel "muted"
-                      i.fa.fa-bell-slash
-                a.board-header-btn.js-star-board(class="{{#if isStarred}}is-active{{/if}}"
-                  title="{{#if isStarred}}{{_ 'click-to-unstar'}}{{else}}{{_ 'click-to-star'}}{{/if}} {{_ 'starred-boards-description'}}")
-                  i.fa(class="fa-star{{#unless isStarred}}-o{{/unless}}")
-                a.board-header-btn(title="{{_ 'sort-cards'}}" class="js-sort-cards {{#if isSortActive }}emphasis{{/if}}")
-                  i.fa.fa-sort
-                  span {{#if isSortActive }}{{_ 'sort-is-on'}}{{else}}{{_ 'sort-cards'}}{{/if}}
-                if isSortActive
-                  a.board-header-btn-close.js-sort-reset(title="{{_ 'remove-sort'}}")
-                    i.fa.fa-times-thin
-
-            else
-              a.board-header-btn.js-log-in(
-                title="{{_ 'log-in'}}")
-                i.fa.fa-sign-in
-
-          if isSandstorm
-            if currentUser
-              a.board-header-btn.js-open-archived-board
-                i.fa.fa-archive
-
-          //if showSort
-          //
-            a.board-header-btn.js-open-sort-view(title="{{_ 'sort-desc'}}")
-          //
-                i.fa(class="{{directionClass}}")
-          //
-                span {{_ 'sort'}}{{_ listSortShortDesc}}
-
+        if isFoldOpen 'board-controls'
           a.board-header-btn.js-open-filter-view(
               title="{{#if Filter.isActive}}{{_ 'filter-on-desc'}}{{else}}{{_ 'filter'}}{{/if}}"
               class="{{#if Filter.isActive}}js-filter-active{{/if}}")
             i.fa.fa-filter
-            span {{#if Filter.isActive}}{{_ 'filter-on-desc'}}{{else}}{{_ 'filter'}}{{/if}}
-            if Filter.isActive
-              a.board-header-btn-close.js-filter-reset(title="{{_ 'filter-clear'}}")
-                i.fa.fa-times-thin
+            span.board-header-btn-label {{#if Filter.isActive}}{{_ 'filter-on-desc'}}{{else}}{{_ 'filter'}}{{/if}}
+          if Filter.isActive
+            a.board-header-btn-close.js-filter-reset(title="{{_ 'filter-clear'}}")
+              i.fa.fa-times-thin
 
           a.board-header-btn.js-open-search-view(title="{{_ 'search'}}")
             i.fa.fa-search
-            span {{_ 'search'}}
+            span.board-header-btn-label {{_ 'search'}}
 
-          unless currentBoard.isTemplatesBoard
-            a.board-header-btn.js-toggle-board-view
-              i.fa.fa-caret-down
-              if $eq boardView 'board-view-swimlanes'
-                i.fa.fa-th-large
-              if $eq boardView 'board-view-lists'
-                i.fa.fa-trello
-              if $eq boardView 'board-view-cal'
-                i.fa.fa-calendar
-              if $eq boardView 'board-view-gantt'
-                i.fa.fa-bar-chart
-              if $eq boardView 'board-view-table'
-                i.fa.fa-table
-              if $eq boardView 'board-view-stats'
-                i.fa.fa-pie-chart
-              span
-                if $eq boardView 'board-view-swimlanes'
-                  | {{_ 'swimlanes'}}
-                if $eq boardView 'board-view-lists'
-                  | {{_ 'lists'}}
-                if $eq boardView 'board-view-cal'
-                  | {{_ 'calendar'}}
-                if $eq boardView 'board-view-gantt'
-                  | {{_ 'gantt'}}
-                if $eq boardView 'board-view-table'
-                  | {{_ 'board-view-table'}}
-                if $eq boardView 'board-view-stats'
-                  | {{_ 'board-view-stats'}}
           a.board-header-btn.js-toggle-dependencies(
               title="{{#if currentBoard.showDependencies}}{{_ 'hide-dependencies'}}{{else}}{{_ 'show-dependencies'}}{{/if}}"
               class="{{#if currentBoard.showDependencies}}emphasis{{/if}}")
             i.fa.fa-link
-            span {{#if currentBoard.showDependencies}}{{_ 'hide-dependencies'}}{{else}}{{_ 'show-dependencies'}}{{/if}}
+            span.board-header-btn-label {{#if currentBoard.showDependencies}}{{_ 'hide-dependencies'}}{{else}}{{_ 'show-dependencies'}}{{/if}}
 
           if canModifyBoard
             a.board-header-btn.js-multiselection-activate(
                 title="{{#if MultiSelection.isActive}}{{_ 'multi-selection-on'}}{{else}}{{_ 'multi-selection'}}{{/if}}"
                 class="{{#if MultiSelection.isActive}}emphasis{{/if}}")
               i.fa.fa-check-square-o
-              span {{#if MultiSelection.isActive}}{{_ 'multi-selection-on'}}{{else}}{{_ 'multi-selection'}}{{/if}}
-              if MultiSelection.isActive
-                a.board-header-btn-close.js-multiselection-reset(title="{{_ 'filter-clear'}}")
-                  i.fa.fa-times-thin
-
-          //- The separator and the sidebar hamburger used to end this group. They are
-          //- now their own flex item (.board-header-sidebar-toggle, above) so that in
-          //- mobile mode the hamburger can stay in the top right corner of the bar,
-          //- beside the title, while the rest of the buttons wrap to the second row.
+              //- Named, like the board's Multi-Selection on All Boards: a
+                check-box outline says nothing about what the button does.
+              span.board-header-btn-label {{_ 'multi-selection'}}
+            if MultiSelection.isActive
+              a.board-header-btn-close.js-multiselection-reset(title="{{_ 'multi-selection-off'}}")
+                i.fa.fa-times-thin
+    else
+      a.board-header-btn.js-log-in(title="{{_ 'log-in'}}")
+        i.fa.fa-sign-in
 
 //- `described-list`: every row is icon + name + description, and the three are laid
 //- out as three left-aligned columns (popup.css), so the descriptions of all the
@@ -283,7 +193,16 @@ template(name="boardChangeViewPopup")
           if $eq Utils.boardView "board-view-stats"
             i.fa.fa-check
 
-template(name="createBoard")
+//- The Create Board form: a title, what the board is visible to, and Create.
+  Four templates drew it letter for letter - the one on the All Boards page and
+  three popups, one of which creates a TEMPLATE board and says so with a Session
+  flag rather than with different markup.
+//-
+//- The two things it shows about visibility are passed IN. The state itself
+  stays with each of the four owners and is passed in explicitly. Blaze scopes
+  events to this included template, so this form owns the handlers.
+  client/components/boards/boardHeader.js
+template(name="createBoardForm")
   form
     label
       | {{_ 'title'}}
@@ -309,88 +228,19 @@ template(name="createBoard")
     span.quiet
       | /
       a.js-board-template {{_ 'template'}}
+
+template(name="createBoard")
+  +createBoardForm(owner=createBoardOwner visibility=visibility visibilityMenuIsOpen=visibilityMenuIsOpen)
 
 template(name="createBoardPopup")
-  form
-    label
-      | {{_ 'title'}}
-      input.js-new-board-title(type="text" placeholder="{{_ 'bucket-example'}}" autofocus required)
-    if visibilityMenuIsOpen
-      +boardVisibilityList
-    else
-      p.quiet
-        if $eq visibility 'public'
-          span.fa.fa-globe.colorful
-          = " "
-          | {{{_ 'board-public-info'}}}
-        else
-          span.fa.fa-lock.colorful
-          = " "
-          | {{{_ 'board-private-info'}}}
-        a.js-change-visibility {{_ 'change'}}.
-    input.primary.wide(type="submit" value="{{_ 'create'}}")
-    unless importDisabled
-      span.quiet
-        | {{_ 'or'}}
-        a.js-import-board {{_ 'import'}}
-    span.quiet
-      | /
-      a.js-board-template {{_ 'template'}}
+  +createBoardForm(owner=createBoardOwner visibility=visibility visibilityMenuIsOpen=visibilityMenuIsOpen)
 
 template(name="headerBarCreateBoardPopup")
-  form
-    label
-      | {{_ 'title'}}
-      input.js-new-board-title(type="text" placeholder="{{_ 'bucket-example'}}" autofocus required)
-    if visibilityMenuIsOpen
-      +boardVisibilityList
-    else
-      p.quiet
-        if $eq visibility 'public'
-          span.fa.fa-globe.colorful
-          = " "
-          | {{{_ 'board-public-info'}}}
-        else
-          span.fa.fa-lock.colorful
-          = " "
-          | {{{_ 'board-private-info'}}}
-        a.js-change-visibility {{_ 'change'}}.
-    input.primary.wide(type="submit" value="{{_ 'create'}}")
-    unless importDisabled
-      span.quiet
-        | {{_ 'or'}}
-        a.js-import-board {{_ 'import'}}
-    span.quiet
-      | /
-      a.js-board-template {{_ 'template'}}
+  +createBoardForm(owner=createBoardOwner visibility=visibility visibilityMenuIsOpen=visibilityMenuIsOpen starAfterCreate=true)
 
 // New popup for Template Container creation; shares the same form content
 template(name="createTemplateContainerPopup")
-  form
-    label
-      | {{_ 'title'}}
-      input.js-new-board-title(type="text" placeholder="{{_ 'bucket-example'}}" autofocus required)
-    if visibilityMenuIsOpen
-      +boardVisibilityList
-    else
-      p.quiet
-        if $eq visibility 'public'
-          span.fa.fa-globe.colorful
-          = " "
-          | {{{_ 'board-public-info'}}}
-        else
-          span.fa.fa-lock.colorful
-          = " "
-          | {{{_ 'board-private-info'}}}
-        a.js-change-visibility {{_ 'change'}}.
-    input.primary.wide(type="submit" value="{{_ 'create'}}")
-    unless importDisabled
-      span.quiet
-        | {{_ 'or'}}
-        a.js-import-board {{_ 'import'}}
-    span.quiet
-      | /
-      a.js-board-template {{_ 'template'}}
+  +createBoardForm(owner=createBoardOwner visibility=visibility visibilityMenuIsOpen=visibilityMenuIsOpen)
 
 //template(name="listsortPopup")
 //
@@ -454,3 +304,50 @@ template(name="cardsSortPopup")
         i.fa.fa-arrow-up
         | {{_ 'created-at-oldest-first'}}
 
+
+//- The board's view menu, in the FIRST top header bar.
+//-
+//- It was a button in the board's second header bar. A view menu says what you
+//- are looking AT, so it belongs beside the page's name in the one bar that is
+//- always on screen - the same place the All Boards Lists/Table menu is.
+//-
+//- `unless currentBoard.isTemplatesBoard`: there is nothing to look at six
+//- ways on a templates board. docs/Features/Page/Header.md
+//- Whether THIS board is starred, and the button that changes it. Its own
+//- template because the first header bar places it beside the starred-boards
+//- dropdown rather than among the board's other controls: the two are one pair -
+//- how many boards you have starred, and whether this is one of them.
+//-
+//- The outline star means not starred and the solid one means starred, so the
+//- button shows its state rather than the action - the tooltip says the action.
+//- docs/Features/Page/Header.md
+template(name="boardStarButton")
+  if currentBoard
+    a.board-header-btn.js-star-board(class="{{#if isStarred}}is-active{{/if}}"
+      title="{{#if isStarred}}{{_ 'click-to-unstar'}}{{else}}{{_ 'click-to-star'}}{{/if}}")
+      i.fa(class="fa-star{{#unless isStarred}}-o{{/unless}}")
+      if showStarCounter
+        span.board-star-counter {{currentBoard.stars}}
+
+template(name="boardViewMenu")
+  unless currentBoard.isTemplatesBoard
+    //- The name is VISIBLE beside the icon, not only in the tooltip. Six view
+      icons are six glyphs to learn, and a tooltip is the one place a name
+      cannot be read without hovering - so the button says which view is on.
+      The bar wraps to a second row when it runs out of width, which is what
+      makes a word beside the icon affordable. docs/Features/Page/Header.md
+    a.board-header-btn.js-toggle-board-view(title="{{boardViewName}}")
+      i.fa.fa-caret-down
+      if $eq boardView 'board-view-swimlanes'
+        i.fa.fa-th-large
+      if $eq boardView 'board-view-lists'
+        i.fa.fa-trello
+      if $eq boardView 'board-view-cal'
+        i.fa.fa-calendar
+      if $eq boardView 'board-view-gantt'
+        i.fa.fa-bar-chart
+      if $eq boardView 'board-view-table'
+        i.fa.fa-table
+      if $eq boardView 'board-view-stats'
+        i.fa.fa-pie-chart
+      span.board-header-btn-label= boardViewName

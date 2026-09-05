@@ -14,12 +14,14 @@
  *
  * Run from the repo root. Read-only: it only prints a report, never edits files.
  */
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
 const DATA_DIR = 'imports/i18n/data';
 const EN_FILE = path.join(DATA_DIR, 'en.i18n.json');
+const beforeArg = process.argv.indexOf('--before-dir');
+const beforeDir = beforeArg >= 0 ? process.argv[beforeArg + 1] : null;
 
 // --files: machine-readable mode for the pull script's auto-heal loop. Print
 // ONLY the reverted language-file paths (one per line) to stdout, nothing else,
@@ -30,7 +32,7 @@ const filesMode = process.argv.slice(2).includes('--files');
 function parse(text) { try { return JSON.parse(text); } catch { return null; } }
 function readFile(p) { try { return parse(fs.readFileSync(p, 'utf8')); } catch { return null; } }
 function gitShow(ref, p) {
-  try { return execSync(`git show ${ref}:${p}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }); }
+  try { return execFileSync('git', ['show', `${ref}:${p}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }); }
   catch { return null; } // file did not exist at that ref (new language) → treat as empty
 }
 
@@ -38,11 +40,17 @@ const en = readFile(EN_FILE) || {};
 
 // Language data files changed by the pull (modified in the working tree vs HEAD).
 let changed = [];
-try {
-  changed = execSync(`git diff --name-only -- ${DATA_DIR}`, { encoding: 'utf8' })
-    .split('\n').map(s => s.trim()).filter(Boolean)
-    .filter(f => f.endsWith('.i18n.json') && path.basename(f) !== 'en.i18n.json');
-} catch { /* not a git repo / no git → nothing to compare */ }
+if (beforeDir) {
+  changed = fs.readdirSync(DATA_DIR)
+    .filter(name => name.endsWith('.i18n.json') && name !== 'en.i18n.json')
+    .map(name => path.join(DATA_DIR, name));
+} else {
+  try {
+    changed = execFileSync('git', ['diff', '--name-only', '-z', '--', DATA_DIR], { encoding: 'utf8' })
+      .split('\0').filter(Boolean)
+      .filter(f => f.endsWith('.i18n.json') && path.basename(f) !== 'en.i18n.json');
+  } catch { /* not a git repo / no git → nothing to compare */ }
+}
 
 if (!changed.length) {
   if (!filesMode) console.log('[i18n] No changed language files to check.');
@@ -51,8 +59,10 @@ if (!changed.length) {
 
 const report = [];
 for (const f of changed) {
-  const before = gitShow('HEAD', f);
-  const oldJson = before != null ? (parse(before) || {}) : {};
+  const beforePath = beforeDir ? path.join(beforeDir, path.basename(f)) : null;
+  const before = beforePath ? null : gitShow('HEAD', f);
+  const oldJson = beforePath ? (readFile(beforePath) || {})
+    : (before != null ? (parse(before) || {}) : {});
   const newJson = readFile(f);
   if (!newJson) continue;
 

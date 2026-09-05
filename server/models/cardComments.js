@@ -9,8 +9,10 @@ import {
 } from '/server/lib/apiResponseHelpers';
 import { ReactiveCache } from '/imports/reactiveCache';
 import Activities from '/models/activities';
-import CardComments from '/models/cardComments';
+import CardComments, { assertCanMutateComment } from '/models/cardComments';
 import { ensureIndex } from '/server/lib/mongoStartup';
+import { tripCanary } from '/server/lib/canary';
+import { allowIsBoardMemberCommentOnly } from '/server/lib/utils';
 
 async function commentCreation(userId, doc) {
   const card = await ReactiveCache.getCard(doc.cardId);
@@ -96,10 +98,22 @@ WebApp.handlers.get('/api/boards/:boardId/cards/:cardId/comments', async functio
     const paramBoardId = req.params.boardId;
     const paramCardId = req.params.cardId;
     await Authentication.checkBoardAccess(req.userId, paramBoardId);
+    // The card is the authoritative board boundary. Older/imported comments can
+    // have a missing or stale denormalized boardId even though their cardId is
+    // valid (the board export deliberately follows cardId for the same reason).
+    // Validate that the requested card belongs to this board, then return every
+    // comment attached to it instead of silently dropping those legacy rows.
+    const card = await ReactiveCache.getCard({
+      _id: paramCardId,
+      boardId: paramBoardId,
+    });
+    if (!card) {
+      sendJsonResult(res, { code: 404, data: { error: 'Card not found' } });
+      return;
+    }
     sendJsonResult(res, {
       code: 200,
       data: (await ReactiveCache.getCardComments({
-        boardId: paramBoardId,
         cardId: paramCardId,
       })).map(doc => ({
         _id: doc._id,
@@ -144,7 +158,13 @@ WebApp.handlers.post('/api/boards/:boardId/cards/:cardId/comments', async functi
   try {
     const paramBoardId = req.params.boardId;
     const paramCardId = req.params.cardId;
-    await Authentication.checkBoardAccess(req.userId, paramBoardId);
+    Authentication.checkLoggedIn(req.userId);
+    const board = await ReactiveCache.getBoard(paramBoardId);
+    Authentication.checkBoardExists(board);
+    await Authentication.checkAdminOrCondition(
+      req.userId,
+      allowIsBoardMemberCommentOnly(req.userId, board),
+    );
 
     // Validate the required `comment` parameter before inserting. Without this
     // an empty/missing comment reaches the schema-validated insert and throws a
@@ -194,6 +214,38 @@ WebApp.handlers.delete(
       const paramCommentId = req.params.commentId;
       const paramCardId = req.params.cardId;
       await Authentication.checkBoardAccess(req.userId, paramBoardId);
+
+      // GHSA-pqr4-rxgp-hv2m: board membership is not permission to delete
+      // ANOTHER member's comment. This used to be the only check here, and the
+      // object-level rule (author, or a board admin unless the board sets
+      // restrictCommentEditing) lived in a collection hook keyed off the Meteor
+      // userId — which an HTTP request does not carry, so the hook took its
+      // "server-internal, no user" path and allowed every deletion. Load the
+      // comment and apply the same rule DDP applies, before removing anything.
+      const comment = await ReactiveCache.getCardComment({
+        _id: paramCommentId,
+        cardId: paramCardId,
+        boardId: paramBoardId,
+      });
+      if (!comment) {
+        sendJsonResult(res, { code: 404, data: { error: 'Comment not found' } });
+        return;
+      }
+      // A canary with the REQUEST in hand, so the event carries the real client
+      // address and not just the account (docs/Security/Remediation/WeKan.md §12).
+      // Deleting somebody else's comment is refused exactly as before - the
+      // canary only records the attempt, and the 403 below is unchanged.
+      if (comment.userId && comment.userId !== req.userId) {
+        try {
+          await assertCanMutateComment(req.userId, comment);
+        } catch (refusal) {
+          tripCanary('comment.foreign-delete', { req, userId: req.userId });
+          throw refusal;
+        }
+      } else {
+        await assertCanMutateComment(req.userId, comment);
+      }
+
       await CardComments.removeAsync({
         _id: paramCommentId,
         cardId: paramCardId,

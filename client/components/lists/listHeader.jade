@@ -21,7 +21,7 @@ template(name="listHeader")
         if collapsed
           if showCardsCountForList cardsCountWhole
             br
-            span.cardCount {{cardsCount ../../_id}}
+            span.cardCount {{cardsCount containerSwimlaneId}}
       if isMiniScreen
         h2.list-header-name(
           title="{{ displayDate modifiedAt 'LLL' }}"
@@ -33,7 +33,7 @@ template(name="listHeader")
            span(class="{{#if exceededWipLimit}}highlight{{/if}}") {{cardsCountWhole}}
            |/#{wipLimit.value})
         if showCardsCountForList cardsCountWhole
-          span.cardCount {{cardsCount ../../_id}} {{cardsCountForListIsOne cardsCountWhole}}
+          span.cardCount {{cardsCount containerSwimlaneId}} {{cardsCountForListIsOne cardsCountWhole}}
           if hasNumberFieldsSum
             | &nbsp;
             span.list-sum-badge(title="{{_ 'sum-of-number-fields'}}") ∑ {{numberFieldsSum}}
@@ -55,7 +55,7 @@ template(name="listHeader")
              |/#{wipLimit.value})
         unless collapsed
           if showCardsCountForList cardsCountWhole
-            span.cardCount {{cardsCount ../../_id}} {{cardsCountForListIsOne cardsCountWhole}}
+            span.cardCount {{cardsCount containerSwimlaneId}} {{cardsCountForListIsOne cardsCountWhole}}
             if hasNumberFieldsSum
               | &nbsp;
               span.list-sum-badge(title="{{_ 'sum-of-number-fields'}}") ∑ {{numberFieldsSum}}
@@ -128,6 +128,39 @@ template(name="editListTitleForm")
         i.fa.fa-times-thin
 
 template(name="listActionPopup")
+  //- Copy link, FIRST and above every permission check - see the swimlane
+    popup: copying an address is reading, not editing.
+    models/lib/boardItemUrl.js, docs/Features/Page/Board-Item-Links.md
+  ul.pop-over-list
+    li: a.js-copy-list-link
+      i.fa.fa-link
+      span
+        | {{_ 'copy-link-to-clipboard'}}
+  span.copied-tooltip {{_ 'copied'}}
+  //- History of this list and its cards. Reading, like the link above it, so it
+    is not behind the edit permissions below.
+  ul.pop-over-list
+    li: a.js-list-history
+      i.fa.fa-history
+      span
+        | {{_ 'history'}}
+  hr
+  //- #1173: exporting a list is the board export restricted to it. Reading, like
+    the link above it, so it is not behind the edit permissions below. The menu
+    already says what it is about, so the rows are named "Export" and "Import"
+    and not "Export list" - the noun was in the heading above them either way.
+    Import WRITES, so it is offered only to somebody who may change the board;
+    `canImportIntoBoard` is the same question the popup itself asks
+    (client/components/boards/exportScope.js).
+  ul.pop-over-list
+    li: a.js-export-list
+      i.fa.fa-upload
+      span {{_ 'export'}}
+    if canImportIntoBoard
+      li: a.js-import-list
+        i.fa.fa-download
+        span {{_ 'import'}}
+  hr
   unless currentUser.isReadOnly
     unless currentUser.isReadAssignedOnly
       ul.pop-over-list
@@ -226,8 +259,10 @@ template(name="listMorePopup")
       = ' '
       i.fa(class="{{#if currentBoard.isPublic}}fa-globe{{else}}fa-lock{{/if}}")
       //- #6459: was {{ rootUrl }}, a helper that does not exist anywhere, so the
-      //- link input was always empty. absoluteUrl resolves a URL via a card on
-      //- this list.
+      //- link input was always empty. absoluteUrl was then resolved through a
+      //- CARD of this list, so the box showed a card's address - and nothing at
+      //- all for an empty list. A list has its own address now.
+      //- models/lib/boardItemUrl.js
       input.inline-input(type="text" readonly value="{{ absoluteUrl }}")
     | {{_ 'added'}}
     span.date(title=list.createdAt) {{ displayDate createdAt 'LLL' }}
@@ -307,9 +342,13 @@ template(name="setListColorPopup")
     button.primary.confirm.js-submit {{_ 'save'}}
     button.js-remove-color.negate.wide.right {{_ 'unset-color'}}
 
-template(name="copyListPopup")
-  label(for='copy-list-title') {{_ 'title'}}:
-  input#copy-list-title.full-line(type="text" value="{{title}}" autofocus)
+//- WHERE a list goes: the board, the swimlane, which list to put it left or
+  right of, and Done. Copy list and Move list asked the same question with the
+  same form; only the title field above it differs, so that stays with each.
+  The dialog comes from the popup that includes this and is read from the
+  template INSTANCE, because inside `each boards` the data context is a board.
+  client/components/lists/listHeader.js
+template(name="listDestinationPicker")
   label {{_ 'boards'}}:
   select.js-select-boards
     each boards
@@ -331,29 +370,15 @@ template(name="copyListPopup")
   .edit-controls.clearfix
     button.primary.confirm.js-done {{_ 'done'}}
 
+template(name="copyListPopup")
+  label(for='copy-list-title') {{_ 'title'}}:
+  input#copy-list-title.full-line(type="text" value="{{title}}" autofocus)
+  +listDestinationPicker(dialog=dialog)
+
 template(name="moveListPopup")
   label(for='move-list-title') {{_ 'title'}}:
   input#move-list-title.full-line(type="text" value="{{title}}" autofocus)
-  label {{_ 'boards'}}:
-  select.js-select-boards
-    each boards
-      option(value="{{_id}}" selected="{{#if isDialogOptionBoardId _id}}selected{{/if}}") {{add @index 1}}. {{title}}
-  label {{_ 'swimlanes'}}:
-  select.js-select-swimlanes
-    each swimlanes
-      option(value="{{_id}}" selected="{{#if isDialogOptionSwimlaneId _id}}selected{{/if}}") {{add @index 1}}. {{isTitleDefault title}}
-  label {{_ 'lists'}}:
-  select.js-select-lists
-    each lists
-      option(value="{{_id}}" selected="{{#if isDialogOptionListId _id}}selected{{/if}}") {{add @index 1}}. {{title}}
-  div
-    input(type="radio" name="list-position" value="left" checked id="list-position-left" style="display: inline")
-    label(for="list-position-left") {{_ 'left-of-list'}}
-  div
-    input(type="radio" name="list-position" value="right" id="list-position-right" style="display: inline")
-    label(for="list-position-right") {{_ 'right-of-list'}}
-  .edit-controls.clearfix
-    button.primary.confirm.js-done {{_ 'done'}}
+  +listDestinationPicker(dialog=dialog)
 
 template(name="addListPopup")
   form.js-add-list-form

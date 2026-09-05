@@ -47,3 +47,62 @@
   margin: 0 0 4px;
   padding: 0;
 }
+/* Two switches, one row: what the theme IS on the start side ("Default (no
+   override)"), and where it ALSO applies on the end side ("All Boards", which
+   paints the overview's tiles in the theme's lighter colour). They are one
+   decision about the same theme, so they are one row rather than two stacked
+   menus, and each takes half the width so neither reads as the heading of the
+   other. On a narrow popup the row wraps and they stack, which is the same
+   layout one item at a time. */
+.theme-color-picker ul.pop-over-list.theme-scope-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.theme-color-picker ul.pop-over-list.theme-scope-row > li {
+  flex: 1 1 12em;
+  min-width: 0;
+}
+/* The chosen one is filled, not merely ticked: the tick alone is easy to miss on
+   a row that is otherwise identical to the one beside it. Same fill as the
+   selected row of the All Boards left menu and of the Admin Panel - one
+   selected-thing look everywhere.
+   `--theme-accent-fill`, not `--theme-accent`: the accent is one colour - the
+   solid end of a colour-slide theme - so on clearorange this button was flat
+   orange while the menu row behind the popup slid, which is two looks for one
+   selected thing. The fill is the slide where the theme has one. */
+.theme-color-picker ul.pop-over-list.theme-scope-row > li.active > a,
+.theme-color-picker ul.pop-over-list.theme-scope-row > li.active > a:hover {
+  background: var(--theme-accent-fill, var(--theme-accent, #2980b9));
+  color: #fff !important;
+}
+.theme-color-picker ul.pop-over-list.theme-scope-row > li.active > a i {
+  color: #fff !important;
+}
+
+/* As many colour swatches visible at once as the width allows.
+ *
+ * The swatch list is shared with the board-background picker, where it is a
+ * float-based TWO-column grid (boardsList.css: `float: inline-start; width: 50%`).
+ * Two columns is right for background thumbnails; for the Select Color picker it
+ * meant Flat, Clear, Dark and Special each ran down the popup in a narrow pair,
+ * and most of them were below the fold however wide the browser was.
+ *
+ * Auto-filling columns instead - the same answer as the Change Language popup
+ * (popup.css), for the same reason. `auto-fill` + `minmax` takes as many columns
+ * as fit and collapses to one on a narrow window, so no media query is needed and
+ * a phone is unaffected. Scoped to `.theme-color-picker`, so the board-background
+ * picker keeps its pairs.
+ *
+ * The float rules have to be undone explicitly: a floated grid item is still
+ * floated, and `width: 50%` would leave every other column half empty. */
+.theme-color-picker .board-backgrounds-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+}
+.theme-color-picker .board-backgrounds-list .board-background-select {
+  float: none;
+  width: auto;
+  padding: 0;
+}

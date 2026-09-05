@@ -8,6 +8,7 @@
  *  - Switching from minimized to maximized (full-screen) view
  *  - Opening a card in a new tab in full-screen view
  *  - Card title edits do not break the card
+ *  - Minicard titles save inline, while blank titles remain unchanged
  */
 
 const { test, expect } = require('../fixtures');
@@ -17,6 +18,26 @@ const CardPage = require('../pages/CardPage');
 const BASE_URL = process.env.WEKAN_BASE_URL || 'http://localhost:3000';
 
 test.describe('Cards – open & view modes', () => {
+  test('#3576: mobile Search back returns directly to the board', async ({
+    boardPage,
+  }) => {
+    await boardPage.setViewportSize({ width: 390, height: 844 });
+    await boardPage.evaluate(() =>
+      localStorage.setItem('wekan-mobile-mode', 'true'),
+    );
+    await boardPage.reload({ waitUntil: 'networkidle' });
+
+    await boardPage.locator('.js-open-search-view').click();
+    await expect(boardPage.locator('.board-sidebar')).toHaveClass(/is-open/);
+    await expect(boardPage.locator('.js-search-term-form')).toBeVisible();
+    await boardPage.locator('.board-sidebar .js-back-home').click();
+
+    await expect(boardPage.locator('.board-sidebar')).not.toHaveClass(/is-open/);
+    await expect(boardPage.locator('.board-canvas')).toBeVisible();
+    await expect(boardPage.locator('.board-sidebar .js-search-term-form'))
+      .not.toBeVisible();
+  });
+
   test('clicking a minicard opens the card detail panel', async ({ boardPage, board }) => {
     const bp = new BoardPage(boardPage);
     const cp = new CardPage(boardPage);
@@ -70,20 +91,31 @@ test.describe('Cards – open & view modes', () => {
     await bp.clickCard(board.listIds[0], 'Alpha Card');
     await cp.waitForOpen();
 
-    // Get the href from the copy-link anchor.
-    // WeKan card URLs use: /b/{boardId}/{slug}/card{cardId}  (jade: href="{{ originRelativeUrl }}")
-    const linkEl = cp.copyLinkButton();
-    const href = await linkEl.getAttribute('href');
-    expect(href).toBeTruthy();
-    expect(href).toMatch(/\/b\/.+\/card/);
+    // Copy the link from the card's actions MENU. It was an `<a href>` in the
+    // card's title header, named only by a tooltip; it is a named row of the
+    // hamburger menu now and copies with JavaScript, so there is no href to
+    // read - what it puts in the clipboard is the absolute url.
+    // docs/Features/Page/Board-Item-Links.md
+    const copied = await cp.copyLink();
+    expect(copied).toBeTruthy();
+    expect(copied).toMatch(/\/b\/[^/]+\/[^/]+\/[^/]+$/);
+    const href = new URL(copied).pathname;
 
     // Open the card URL in a new tab (simulates Ctrl+Click).
     // New pages share browser cookies but not Meteor's localStorage session,
-    // so we re-authenticate with the same resume token before navigating.
-    const { loginWithToken: login } = require('../helpers/auth');
+    // so we authenticate before navigating - with a resume token of its OWN.
+    // The seeded user has one token and the first page is already using it;
+    // two real browsers would each have their own, and sharing one means
+    // anything that ends one session ends the other's too.
+    const { loginWithToken: login, waitForMeteor } = require('../helpers/auth');
+    const db = require('../helpers/db');
     const newPage = await context.newPage();
-    await login(newPage, board.owner.id, board.owner.token);
-    await newPage.goto(`${BASE_URL}${href}`, { waitUntil: 'networkidle' });
+    await login(newPage, board.owner.id, db.addResumeToken(board.owner.id));
+    // 'commit' + waitForMeteor rather than 'networkidle': the card is rendered
+    // by the client after its subscriptions land, which is not a network event
+    // the browser can be idle about.
+    await newPage.goto(`${BASE_URL}${href}`, { waitUntil: 'commit' });
+    await waitForMeteor(newPage);
     const newCp = new CardPage(newPage);
     await newCp.waitForOpen();
     await expect(newCp.root).toBeVisible({ timeout: 10_000 });
@@ -104,6 +136,78 @@ test.describe('Cards – open & view modes', () => {
     await cp.waitForOpen();
     const title = await cp.getTitle();
     expect(title).toContain('Renamed');
+  });
+
+  test('a minicard title opens the card instead of an inline editor', async ({ boardPage, board }) => {
+    const bp = new BoardPage(boardPage);
+    const cp = new CardPage(boardPage);
+    const [listA] = board.listIds;
+    const card = bp.minicard(listA, 'Alpha Card');
+
+    await card.locator('.minicard-title-text').click();
+    await cp.waitForOpen();
+    await expect(card.locator('textarea.js-edit-minicard-title')).toHaveCount(0);
+  });
+
+  test('#6639: a markdown link in a minicard title opens instead of editing', async ({
+    boardPage,
+    board,
+  }) => {
+    const bp = new BoardPage(boardPage);
+    const [listA] = board.listIds;
+    const card = bp.minicard(listA, 'Alpha Card');
+    await boardPage.evaluate(async cardId => {
+      const cardModel = ReactiveCache.getCard(cardId);
+      await cardModel.setTitle('[Wekan](https://example.invalid/card-title-link)');
+    }, await card.getAttribute('data-card-id'));
+
+    const linkedCard = bp.list(listA).locator('.js-minicard', { hasText: 'Wekan' });
+    const link = linkedCard.locator('.minicard-title-text .viewer a');
+    await expect(link).toBeVisible({ timeout: 8_000 });
+    await boardPage.evaluate(() => {
+      window.__wekanTitleLinkOpened = null;
+      window.open = href => { window.__wekanTitleLinkOpened = href; return null; };
+    });
+    await link.click();
+
+    await expect(linkedCard.locator('textarea.js-edit-minicard-title')).not.toBeVisible();
+    expect(await boardPage.evaluate(() => window.__wekanTitleLinkOpened))
+      .toContain('https://example.invalid/card-title-link');
+  });
+
+  test('#6641: mouse dragging selects an opened card title without moving the card', async ({
+    boardPage,
+    board,
+  }) => {
+    const bp = new BoardPage(boardPage);
+    const cp = new CardPage(boardPage);
+    await bp.clickCard(board.listIds[0], 'Alpha Card');
+    await cp.waitForOpen();
+    await cp.root.locator('.card-details-title-edit-zone').click();
+    const editor = cp.root.locator('textarea.js-edit-card-title');
+    await expect(editor).toBeVisible({ timeout: 5_000 });
+    // Keep text under both drag coordinates in every browser. Firefox maps a
+    // click beyond the rendered text to the existing end caret, so a short
+    // title made both ends equal even though native mouse selection was free.
+    await editor.fill('Select this title with the mouse '.repeat(8));
+
+    const before = await cp.root.boundingBox();
+    const box = await editor.boundingBox();
+    await boardPage.mouse.move(box.x + 20, box.y + 12);
+    await boardPage.mouse.down();
+    await boardPage.mouse.move(box.x + Math.min(box.width - 20, 240), box.y + 12, {
+      steps: 8,
+    });
+    await boardPage.mouse.up();
+
+    const selection = await editor.evaluate(el => ({
+      start: el.selectionStart,
+      end: el.selectionEnd,
+    }));
+    expect(selection.end).toBeGreaterThan(selection.start);
+    const after = await cp.root.boundingBox();
+    expect(Math.abs(after.x - before.x)).toBeLessThan(2);
+    expect(Math.abs(after.y - before.y)).toBeLessThan(2);
   });
 
   test('closing the card detail panel hides it', async ({ boardPage, board }) => {

@@ -103,11 +103,12 @@ test('the quick-access bar gives way instead of spilling off the phone', () => {
   const at = header.indexOf('The quick-access bar must FIT the phone');
   assert.ok(at !== -1, 'the rules that make it fit must be there');
   const block = header.slice(at);
-  const input = /\.zoom-input \{([\s\S]*?)\}/.exec(block);
-  assert.ok(input, 'the zoom pill is the widest item in the bar');
-  const width = /(?<![-\w])width:\s*(\d+)px/.exec(input[1]);
-  assert.ok(width && Number(width[1]) <= 50,
-    `the zoom input was a fixed 80px of a 375px bar, found ${width && width[1]}px`);
+  // The zoom pill used to be the widest item in this bar, and this test capped
+  // its input at 50px of a 375px phone. The pill is gone - removed rather than
+  // fixed, since it never worked and WeKan has a font-size setting - so what is
+  // checked now is that nothing has put it back to eat the width again.
+  assert.ok(!/zoom-(controls|level|display|input)/.test(header),
+    'the removed zoom pill must not be back in the quick-access bar');
   // The two the user actually came for stay put, at the end of the row. They are
   // two rules now, each with the `.iphone-device` / `.wrapper ~` variants that
   // have to be named to win, so what is asserted is that EACH of them declares
@@ -121,30 +122,12 @@ test('the quick-access bar gives way instead of spilling off the phone', () => {
   }
 });
 
-test('the zoom number stays INSIDE its white pill, and is readable', () => {
-  // Letting the pill shrink below its contents put the white rounded background
-  // at one width and the number at another: "100%" was laid out to the right of
-  // the pill, in tiny type, half of it under the notification bell.
-  const block = header.slice(header.indexOf('The quick-access bar must FIT the phone'));
-  const pill = /#header-quick-access \.zoom-controls \{([\s\S]*?)\}/.exec(block);
-  assert.ok(pill, 'the pill must be sized here');
-  assert.ok(/flex: 0 0 auto !important;/.test(pill[1]),
-    'the pill is as wide as what is in it - never narrower');
-  assert.ok(/max-height: none !important;/.test(pill[1]),
-    'and not capped shorter than its own text, which pushed the number up');
-  const level = /#header-quick-access \.zoom-controls \.zoom-level \{([\s\S]*?)\}/.exec(block);
-  assert.ok(level && /flex: 0 0 auto !important;/.test(level[1]),
-    'the number does not shrink either');
-  // Nothing may set the zoom text in a relative size small enough to vanish: the
-  // old `0.7em` of a 12px bar was ~8px, the smallest text on the page.
-  const relative = [...header.matchAll(/zoom-(?:level|input|controls)[^{}]*\{[^{}]*font-size:\s*(0?\.\d+)em/g)];
-  assert.deepStrictEqual(relative.map(m => m[1]), [],
-    'the zoom number is sized in px, not in a fraction of an already small bar');
-  for (const m of header.matchAll(/\.zoom-(?:level|display) \{([^{}]*)\}/g)) {
-    const size = /(?<![-\w])font-size:\s*(\d+)px/.exec(m[1]);
-    if (size) assert.ok(Number(size[1]) >= 12, `the number must be readable, found ${size[1]}px`);
-  }
-});
+// The test that lived here checked that the "100%" zoom number stayed inside its
+// white pill and stayed readable - a real bug once, when the pill shrank below its
+// contents and the number ended up beside it in 8px type under the notification
+// bell. The pill is REMOVED now (it scaled the board with a CSS transform, never
+// worked, and WeKan has a font-size setting), so there is nothing left to lay out.
+// The test above asserts it has not come back.
 
 test('and the page itself can never be dragged sideways on a phone', () => {
   const small = layouts.slice(layouts.indexOf('Nothing on a phone may make the PAGE scroll sideways'));
@@ -153,6 +136,73 @@ test('and the page itself can never be dragged sideways on a phone', () => {
     'a spill must not become a scrollable page');
   // Belt and braces: mobile mode already said this for the body.
   assert.ok(/body\.mobile-mode \{[\s\S]{0,200}overflow-x: hidden;/.test(layouts));
+});
+
+test('the left menu fits its column, so it cannot lie over the boards', () => {
+  // Spec 43 (`43-mobile-allboards.e2e.js`) measures this in a browser: the
+  // board list must start at or after the menu's right edge. On a 375px phone
+  // the grid track is capped at 42% - about 157px - but the menu carries a
+  // width of its own (260px, so it can be dragged), and it kept every pixel of
+  // it and lay over the boards.
+  //
+  // `max-width: 100%` alone did NOT fix it, which is the part worth pinning: a
+  // grid item's default `min-width: auto` is its content's intrinsic minimum,
+  // and a minimum beats a maximum. The cap only applies once the item is
+  // allowed to shrink - which is the same pair the right-hand column beside it
+  // has always had.
+  const boards = read('client/components/boards/boardsList.css');
+  const at = boards.indexOf('.boards-left-menu {');
+  assert.notStrictEqual(at, -1, 'the menu has its own rule');
+  const rule = boards.slice(at, boards.indexOf('}', at));
+  assert.ok(/width: var\(--wekan-left-menu-width\);/.test(rule),
+    'it carries the width that can be dragged');
+  assert.ok(/max-width: 100%;/.test(rule), 'capped by the column it is in');
+  assert.ok(/min-width: 0;/.test(rule),
+    'and allowed to shrink to that cap - without this the maximum does nothing');
+
+  // The column it is capped against really is narrower than that width on a
+  // phone, or the cap would be untested in the only place it matters.
+  const phone = boards.match(/\.boards-layout \{[^}]*grid-template-columns:[^;]*min\(42%, 210px\)[^;]*;/);
+  assert.ok(phone, 'the phone track is the one that caps it');
+
+  // And the same fix on the right-hand column, which is where this came from -
+  // whichever of its rules carries it: `.boards-right-grid` has more than one.
+  const rightRules = [...boards.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+    .filter(r => r[1].split(',').some(sel => sel.trim().endsWith('.boards-right-grid')));
+  assert.ok(rightRules.some(r => /min-width: 0;/.test(r[2])),
+    'the boards column shrinks to its track too');
+});
+
+test('the board counts line up in one column, at every width', () => {
+  // xet7, from an iPhone 12 mini: "count of boards should be at same x
+  // position, of Starred, Home, Templates, Archive".
+  //
+  // Those four labels are four different lengths, so a count that follows its
+  // label lands at four different x positions and the column of numbers reads
+  // as ragged. #6523 had packed them that way on a phone deliberately - the
+  // number beside the text rather than across a gap - and this is the reversal.
+  const boards = read('client/components/boards/boardsList.css');
+  const code = boards.replace(/\/\*[\s\S]*?\*\//g, '');
+  const rules = [...code.matchAll(/([^{}]+)\{([^{}]*)\}/g)];
+
+  // The row spreads its two children apart, and the label takes the slack -
+  // which is what puts every count at the END of its row.
+  const rowRules = rules.filter(r => r[1].trim() === '.boards-left-menu .menu-item a');
+  assert.ok(rowRules.some(r => /justify-content: space-between/.test(r[2])),
+    'the row spreads label and count apart');
+  assert.ok(rules.some(r => r[1].trim() === '.boards-left-menu .menu-item .menu-label'
+    && /flex: 1/.test(r[2])), 'and the label takes the slack');
+
+  // ...and NOTHING may take that back at a narrower width. A phone override is
+  // exactly how they came to be ragged in the first place.
+  for (const r of rowRules) {
+    assert.ok(!/justify-content: flex-start/.test(r[2]),
+      'no width may pack the row from the start - that is what ragged looks like');
+  }
+  for (const r of rules.filter(r => /\.menu-item \.menu-label$/.test(r[1].trim()))) {
+    assert.ok(!/flex: 0/.test(r[2]),
+      'and none may stop the label taking the slack');
+  }
 });
 
 console.log(`\n${passed} tests passed`);

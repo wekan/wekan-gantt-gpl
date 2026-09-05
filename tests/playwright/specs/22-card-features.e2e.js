@@ -34,7 +34,7 @@ test.describe('Card & list features', () => {
     });
   });
 
-  test('a location can be added to a card', async ({ boardPage, board }) => {
+  test('#6644: a location can be added to and removed from a card', async ({ boardPage, board }) => {
     const bp = new BoardPage(boardPage);
     const cp = new CardPage(boardPage);
     await bp.clickCard(board.listIds[0], 'Alpha Card');
@@ -43,8 +43,23 @@ test.describe('Card & list features', () => {
     await boardPage.locator('.js-add-location').click();
     const pop = boardPage.locator('.js-pop-over');
     await pop.waitFor({ timeout: 10_000 });
-    await pop.locator('.js-location-latitude').fill('60.17');
-    await pop.locator('.js-location-longitude').fill('24.94');
+    const mapInput = pop.locator('.js-location-map-link');
+    await mapInput.fill(
+      'https://www.google.fi/maps/@61.9118869,28.6344825,9.42z?entry=ttu',
+    );
+    await pop.locator('.js-detect-location').click();
+    await expect(pop.locator('.js-location-latitude')).toHaveValue('61.9118869');
+    await expect(pop.locator('.js-location-longitude')).toHaveValue('28.6344825');
+
+    // A bare coordinate pair copied from a map is accepted by the same input.
+    await mapInput.fill('62.04818048451111, 28.15197260779129');
+    await pop.locator('.js-detect-location').click();
+    await expect(pop.locator('.js-location-latitude')).toHaveValue(
+      '62.04818048451111',
+    );
+    await expect(pop.locator('.js-location-longitude')).toHaveValue(
+      '28.15197260779129',
+    );
     // Fill the name LAST and confirm it stuck before submitting. On WebKit the popup
     // can reactively re-render just after opening and wipe the first-filled field —
     // the name was previously filled first and lost (lat/lng, filled after, survived),
@@ -58,6 +73,19 @@ test.describe('Card & list features', () => {
       'WeKan HQ',
       { timeout: 10_000 },
     );
+
+    // #6644: this X is inside the location row's Blaze data context. It must
+    // resolve the surrounding card before removing the row.
+    await boardPage.locator('.js-remove-location').click();
+    await expect(boardPage.locator('.card-locations .card-location')).toHaveCount(0);
+    await expect.poll(() => {
+      const card = db.findOne('cards', {
+        boardId: board.boardId,
+        title: 'Alpha Card',
+      });
+      return (card.locations || []).length;
+    })
+      .toBe(0);
   });
 
   test('the minicard complete checkbox toggles', async ({ boardPage, board }) => {

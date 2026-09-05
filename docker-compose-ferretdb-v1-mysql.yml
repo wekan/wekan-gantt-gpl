@@ -96,27 +96,40 @@ services:
       - |
         set -eu
         BIN=/data/bin/ferretdb
-        if [ ! -x "$$BIN" ]; then
-          echo "Fetching FerretDB v1 from the wekan/FerretDB release ..."
+        RELEASE_FILE=/data/bin/ferretdb.release
+        if ! command -v curl >/dev/null 2>&1; then
           apt-get update -qq
           apt-get install -y -qq --no-install-recommends curl ca-certificates >/dev/null
+        fi
+        DOWNLOAD_RELEASE="$$FERRETDB_RELEASE"
+        REQUIRED_RELEASE="$$FERRETDB_RELEASE"
+        if [ "$$FERRETDB_RELEASE" = latest/download ]; then
+          LATEST_URL="$$(curl -fsSIL --retry 5 -o /dev/null -w '%{url_effective}' https://github.com/wekan/FerretDB/releases/latest)"
+          REQUIRED_RELEASE="$${LATEST_URL##*/}"
+          [ -n "$$REQUIRED_RELEASE" ]
+          DOWNLOAD_RELEASE="download/$$REQUIRED_RELEASE"
+        fi
+        CACHED_RELEASE="$$(cat "$$RELEASE_FILE" 2>/dev/null || true)"
+        if [ ! -x "$$BIN" ] || [ "$$CACHED_RELEASE" != "$$REQUIRED_RELEASE" ]; then
+          echo "Fetching newest FerretDB v1 $${REQUIRED_RELEASE} from the wekan/FerretDB release ..."
           arch="$$(dpkg --print-architecture)"
           case "$$arch" in ppc64el) arch=ppc64le ;; esac
           mkdir -p /data/bin
-          # Download only this arch's binary (per-arch release assets, no ferretdb.zip).
-          curl -fSL --retry 5 -o "$$BIN" \
-            "https://github.com/wekan/FerretDB/releases/$${FERRETDB_RELEASE}/ferretdb-$${arch}"
-          chmod +x "$$BIN"
+          curl -fSL --retry 5 -o "$$BIN.new" "https://github.com/wekan/FerretDB/releases/$${DOWNLOAD_RELEASE}/ferretdb-$${arch}"
+          curl -fSL --retry 5 -o "$$BIN.new.sha256sum" "https://github.com/wekan/FerretDB/releases/$${DOWNLOAD_RELEASE}/ferretdb-$${arch}.sha256sum"
+          EXPECTED="$$(awk '{print $$1; exit}' "$$BIN.new.sha256sum")"
+          ACTUAL="$$(sha256sum "$$BIN.new" | awk '{print $$1}')"
+          [ -n "$$EXPECTED" ] && [ "$$ACTUAL" = "$$EXPECTED" ]
+          chmod +x "$$BIN.new"
+          mv "$$BIN.new" "$$BIN"
+          rm "$$BIN.new.sha256sum"
+          printf '%s\n' "$$REQUIRED_RELEASE" > "$$RELEASE_FILE"
         fi
-        # #6480/#6481: --repl-set-name makes FerretDB v1 auto-create the capped
-        # local.oplog.rs and advertise the replica-set hello handshake, so WeKan's
-        # Meteor can TAIL the OpLog instead of poll-and-diff (fixes high CPU on
-        # busy boards). Pair with MONGO_OPLOG_URL in the wekan service below.
+        # FerretDB runs standalone; WeKan uses polling reactivity with this backend.
         exec "$$BIN" \
           --handler=mysql \
           --mysql-url="mysql://root:$${MYSQL_ROOT_PASSWORD}@mysql:3306/$${MYSQL_DATABASE}" \
           --listen-addr=0.0.0.0:27017 \
-          --repl-set-name=rs0 \
           --telemetry=disable \
           --log-level=error
     # Healthy only once FerretDB is actually accepting connections on 27017 — i.e.
@@ -149,18 +162,18 @@ services:
     # latest tag changes when is newest release,
     # when upgrading would be better to use version tag.
     # a) Using specific version tag is better:
-    # image: ghcr.io/wekan/wekan:v6.89
-    # image: quay.io/wekan/wekan:v6.89
-    # image: wekanteam/wekan:v6.89
+    # image: ghcr.io/wekan/wekan-gantt-gpl:v6.89
+    # image: quay.io/wekan/wekan-gantt-gpl:v6.89
+    # image: wekanteam/wekan-gantt-gpl:v6.89
     # b) GitHub Container registry.
     # b1) Latest release tag:
-    image: ghcr.io/wekan/wekan:latest
+    image: ghcr.io/wekan/wekan-gantt-gpl:latest
     # b2) Newest git commit automatic build:
-    #image: ghcr.io/wekan/wekan:main
+    #image: ghcr.io/wekan/wekan-gantt-gpl:main
     # c) Quay:
-    #image: quay.io/wekan/wekan:latest
+    #image: quay.io/wekan/wekan-gantt-gpl:latest
     # d) Docker Hub:
-    #image: wekanteam/wekan:latest
+    #image: wekanteam/wekan-gantt-gpl:latest
     #-------------------------------------------------------------------------------------
     container_name: wekan-app
     # On CentOS 7 there is seccomp issue with glibc 6,
@@ -187,24 +200,13 @@ services:
       # remove port mapping if you use nginx reverse proxy, port 8080 is already exposed to wekan-tier network
       - 80:8080
     environment:
-      #-------------------- USING MONGODB CHANGE STREAMS WITH REPLICA SETS AT CURRENT DATABASE --------------------
-      # If you would not like to use Change Streams and replica set for improving speed, change to use polling:
-      #- METEOR_REACTIVITY_ORDER=polling
-      # https://forums.meteor.com/t/meteor-3-5-beta-change-streams-performance-improvements/64461#change-streams-setup-3
-      # https://github.com/meteor/meteor/blob/release-3.5/v3-docs/docs/performance/change-streams-observer-driver.md#choosing-the-reactivity-driver-order
-      # Keep oplog/polling fallback available for deployments that cannot use Change Streams:
-      # https://github.com/wekan/wekan/issues/6307#issuecomment-4299349231
-      # wekan/wekan#6503/#6480/#6481: FerretDB v1 CAN tail an OpLog (the ferretdb
-      # service above runs with --repl-set-name=rs0). On the SQLite backend that
-      # tail keeps FerretDB CPU pinned (~190–390% even idle) and a struggling tail
-      # shows as "oplog catching up took too long" and stalls loading; on this
-      # backend it is simply UNVERIFIED. Either way FerretDB has no MongoDB change
-      # streams, so the DEFAULT here is POLLING ONLY. To try OpLog tailing, set both
-      # to `oplog,polling` and uncomment MONGO_OPLOG_URL in the wekan service below.
+      # FerretDB v1 deployments are polling-only. Use docker-compose-mongodb-v7.yml
+      # for MongoDB replica-set/change-stream reactivity.
       - DEFAULT_METEOR_REACTIVITY_ORDER=polling
       - METEOR_REACTIVITY_ORDER=polling
       # uws does not work at s390x. sockjs works.
-      #- DDP_TRANSPORT=uws
+      # sockjs is the only transport WeKan ships: no bundle or image carries
+      # uWebSockets.js, and DDP_TRANSPORT=uws is coerced to sockjs at startup.
       - DDP_TRANSPORT=sockjs
       #-----------------------------------------------------------------
       # ==== WRITEABLE PATH FOR FILE UPLOADS ====
@@ -259,25 +261,6 @@ services:
       # Add more stack, this is done at Dockerfile:
       #   bash -c "ulimit -s 65500; exec node --stack-size=65500 main.js"
       #---------------------------------------------------------------
-      # ==== OPTIONAL: MONGO OPLOG SETTINGS =====
-      # https://github.com/wekan/wekan-mongodb/issues/2#issuecomment-378343587
-      # HIGHLY RECOMMENDED for pub/sub performance!
-      # MongoDB oplog is used by Meteor for real-time data synchronization.
-      # Without oplog, Meteor falls back to polling which increases:
-      #   - CPU usage by 3-5x
-      #   - Network traffic significantly
-      #   - Latency from 50ms to 2000ms
-      # Must configure MongoDB replica set first
-      # See: https://blog.meteor.com/tuning-meteor-mongo-livedata-for-scalability-13fe9deb8908
-      # FerretDB v1 CAN emulate the OpLog via --repl-set-name=rs0 (set on the
-      # ferretdb service above). On the SQLite backend that tail keeps FerretDB CPU
-      # pinned and stalls loading (wekan/wekan#6503); on this backend it is
-      # UNVERIFIED, so it is DISABLED by default here too. Merely SETTING
-      # MONGO_OPLOG_URL makes Meteor start an OpLog tail regardless of the
-      # reactivity order (#6498), so it is commented out. To try OpLog tailing,
-      # uncomment the next line AND set METEOR_REACTIVITY_ORDER=oplog,polling above.
-      #- MONGO_OPLOG_URL=mongodb://ferretdb:27017/local?replicaSet=rs0
-      #---------------------------------------------------------------
       # ==== OPTIONAL: KADIRA PERFORMANCE MONITORING FOR METEOR ====
       # https://github.com/edemaine/kadira-compose
       # https://github.com/meteor/meteor-apm-agent
@@ -295,9 +278,9 @@ services:
       # Statistics Python script for Wekan Dashboard
       # https://github.com/wekan/wekan-stats
       #
-      # Console, file, and zulip logger on database changes https://github.com/wekan/wekan/pull/1010
-      # with fix to replace console.log by winston logger https://github.com/wekan/wekan/pull/1033
-      # but there could be bug https://github.com/wekan/wekan/issues/1094
+      # The legacy Winston/Zulip database-change logger was removed in 2017:
+      # replacing Meteor's default console transport could prevent database startup (#1094).
+      # Use the current logging integrations documented above instead.
       #
       # There is Feature Request: Logging date and time of all activity with summary reports,
       # and requesting reason for changing card to other column https://github.com/wekan/wekan/issues/1598
@@ -341,7 +324,7 @@ services:
       #          (infinite scroll) plus a live count, so boards with
       #          thousands of cards use less memory/bandwidth.
       # Also changeable at runtime in Admin Panel / Features.
-      - CARDS_LOADING=all
+      - CARDS_LOADING=auto
       #---------------------------------------------------------------
       # ==== CARD OPENED, SEND WEBHOOK MESSAGE ====
       # https://github.com/wekan/wekan/issues/2518
@@ -583,7 +566,7 @@ services:
       #-----------------------------------------------------------------
       # ==== LDAP: UNCOMMENT ALL TO ENABLE LDAP ====
       # https://github.com/wekan/wekan/blob/main/docs/Login/LDAP.md
-      # For Snap settings see https://github.com/wekan/wekan/blob/main/docs/Platforms/FOSS/Snap/Supported-settings-keys.md
+      # For Snap settings see https://github.com/wekan/wekan/blob/main/docs/Platforms/FOSS/Container/Snap/Supported-settings-keys.md
       # Most settings work both on Snap and Docker below.
       # Note: Do not add single quotes '' to variables. Having spaces still works without quotes where required.
       #
@@ -726,6 +709,14 @@ services:
       # LDAP_GROUP_FILTER_GROUP_MEMBER_FORMAT, LDAP_GROUP_FILTER_GROUP_ID_ATTRIBUTE)
       # must still be configured for any group search to work.
       #- LDAP_GROUP_FILTER_ENABLE=false
+      #
+      # Where the GROUPS are, when they are not under LDAP_BASEDN. Leave this
+      # unset when users and groups share one subtree: the group searches then
+      # use LDAP_BASEDN, exactly as they always have. Set it when the directory
+      # keeps them apart - ou=groups beside ou=people is a common layout - or
+      # every group search runs under the USER base, finds nothing, and
+      # LDAP_GROUP_FILTER_ENABLE=true refuses every login (wekan/wekan#5539).
+      #- LDAP_GROUP_BASEDN=ou=groups,dc=example,dc=org
       #
       # The object class for filtering. Example: group
       #- LDAP_GROUP_FILTER_OBJECTCLASS=

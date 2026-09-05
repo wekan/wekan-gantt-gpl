@@ -18,6 +18,8 @@ const { SimpleSchema } = require('/imports/simpleSchema');
 // Multitenancy option D: the per-tenant Global Admin rules, pure and shared by the
 // client, the server and the tests (docs/Design/Multitenancy/Multitenancy.md).
 import * as tenantAdmin from '/models/lib/tenantAdmin';
+// The bookmark rules, pure so the client, the server and the tests agree.
+const { starredPagesOf, isPageStarred } = require('/models/lib/starredPages');
 const Users = Meteor.users;
 const getUtils = () => require('/client/lib/utils').Utils;
 
@@ -49,6 +51,54 @@ if (Meteor.isClient) {
     } catch (e) {
       console.warn('Error writing collapse cookie', name, e);
     }
+  };
+
+  // The left menu's fold, for somebody who is NOT signed in - a public board
+  // has this menu too, and there is no user document to write to. The same
+  // cookie mechanism the public list and swimlane collapse states above use, so
+  // there is one way this app remembers a fold for a signed-out reader.
+  // One value, not a map: it is one menu, drawn on two pages.
+  // docs/Features/Page/Left-Menu.md
+  Users.getPublicLeftMenuCollapsed = () => {
+    const data = readCookieMap('wekan-left-menu-collapsed');
+    return typeof data.collapsed === 'boolean' ? data.collapsed : null;
+  };
+
+  Users.setPublicLeftMenuCollapsed = collapsed => {
+    writeCookieMap('wekan-left-menu-collapsed', { collapsed: !!collapsed });
+    return true;
+  };
+
+  // Which WORKSPACES are folded, for somebody who is not signed in. One cookie
+  // holding a map of workspace id -> true, the same shape and the same helpers
+  // as the collapsed lists above. docs/Features/Page/Workspaces.md
+  Users.getPublicCollapsedWorkspaces = () => {
+    const data = readCookieMap('wekan-collapsed-workspaces');
+    return data && typeof data === 'object' ? data : {};
+  };
+
+  Users.setPublicCollapsedWorkspace = (workspaceId, collapsed) => {
+    if (!workspaceId) return false;
+    const data = Users.getPublicCollapsedWorkspaces();
+    if (collapsed) data[workspaceId] = true;
+    else delete data[workspaceId];
+    writeCookieMap('wekan-collapsed-workspaces', data);
+    return true;
+  };
+
+  // ...and the width it was dragged to, kept the same way and for the same
+  // reason. A COOKIE rather than the localStorage the right sidebar's width
+  // uses: this menu already keeps its fold in one, and one reader's menu should
+  // not be remembered in two different places.
+  // docs/Features/Page/Left-Menu.md
+  Users.getPublicLeftMenuWidth = () => {
+    const data = readCookieMap('wekan-left-menu-width');
+    return typeof data.width === 'number' ? data.width : null;
+  };
+
+  Users.setPublicLeftMenuWidth = width => {
+    writeCookieMap('wekan-left-menu-width', { width: Number(width) });
+    return true;
   };
 
   Users.getPublicCollapsedList = (boardId, listId) => {
@@ -287,6 +337,36 @@ Users.attachSchema(
       type: Boolean,
       optional: true,
     },
+    'profile.leftMenuCollapsed': {
+      /**
+       * is the left menu of All Boards and the Admin Panel collapsed? One
+       * setting for both: they are one menu drawn on two pages.
+       * docs/Features/Page/Left-Menu.md
+       */
+      type: Boolean,
+      optional: true,
+    },
+    'profile.collapsedWorkspaces': {
+      /**
+       * which workspaces of the All Boards left menu are folded, as a map of
+       * workspace id -> true. Only the folded ones are stored, so a tree of
+       * fifty workspaces with two folded is two keys.
+       * docs/Features/Page/Workspaces.md
+       */
+      type: Object,
+      optional: true,
+      blackbox: true,
+    },
+    'profile.leftMenuWidth': {
+      /**
+       * user-chosen width (px) of that same left menu, set by dragging its inner
+       * edge - the right one while reading left to right, the left one under a
+       * right-to-left language. One width for both pages, like the fold above.
+       * Unset = the CSS default. docs/Features/Page/Left-Menu.md
+       */
+      type: Number,
+      optional: true,
+    },
     'profile.submitOnEnter': {
       /**
        * per-user preference: in multi-line editors (card title/description and
@@ -303,6 +383,21 @@ Users.attachSchema(
        * open. Turned on, every clicked card stays open as its own draggable window,
        * which is what WeKan did unconditionally and what the issue reported as a
        * bug: the previous card simply never closed.
+       */
+      type: Boolean,
+      optional: true,
+    },
+    'profile.allBoardsThemeTiles': {
+      /**
+       * Member Settings / Change color, beside "Default (no override)": paint the
+       * board tiles on the All Boards page in the THEME's lighter colour instead
+       * of each board's own colour. Off by default, so All Boards looks as it
+       * always has - a wall of boards in the colours their owners chose.
+       *
+       * Turned on, the overview reads as one list rather than a palette, which is
+       * what #6593 asked for by making every tile white for everybody. It is a
+       * per-user preference here, because "the tile colours are noise" and "the
+       * tile colours are how I find my board" are both true, of different people.
        */
       type: Boolean,
       optional: true,
@@ -367,8 +462,12 @@ Users.attachSchema(
     },
     'profile.uiTextBgColor': {
       /**
-       * Member Settings / Font / Color (#4759): custom UI text background color.
-       * A validated #rrggbb hex; absent = default (transparent) background.
+       * REMOVED feature (#4759 "text background color"): nothing sets or reads
+       * this any more, and `setUiColors` unsets it on every call. The key stays
+       * in the schema ONLY so that $unset validates against it for the users who
+       * stored a colour before it was removed - a modifier touching a key the
+       * schema does not know is rejected, which would leave exactly those
+       * profiles unable to be cleaned.
        */
       type: String,
       optional: true,
@@ -566,6 +665,30 @@ Users.attachSchema(
     'profile.starredBoards.$': {
       type: String,
     },
+    'profile.starredPages': {
+      /**
+       * the starred PAGES - bookmarks. A board is starred by id; a page has no
+       * id, so each entry is the pair a bookmark is: a relative URL and the
+       * title to list it under. docs/Features/Board/Starred.md
+       */
+      type: Array,
+      optional: true,
+    },
+    'profile.starredPages.$': {
+      type: Object,
+    },
+    'profile.starredPages.$.url': {
+      /**
+       * RELATIVE, so a bookmark survives the site moving to another host.
+       */
+      type: String,
+    },
+    'profile.starredPages.$.title': {
+      /**
+       * The words the browser tab shows, which are the words the dropdown lists.
+       */
+      type: String,
+    },
     'profile.defaultBoardId': {
       /**
        * #2220: the board that opens automatically after logging in (the user's
@@ -746,6 +869,27 @@ Users.attachSchema(
       defaultValue: {},
       blackbox: true,
     },
+    'profile.collapsedCardSections': {
+      /**
+       * Per-user collapsed state for the sections of a card (#1591).
+       * profile[cardId][sectionKey] = true|false
+       *
+       * ONE map for every foldable thing on a card, because they are all the
+       * same question: a whole feature group ('labels', 'members', 'due', ...)
+       * uses the section's own name, and an individual checklist uses
+       * 'checklist-<checklistId>'. The same key works on the opened card and on
+       * the minicard, so folding a checklist folds it in both.
+       *
+       * Per USER, like collapsedLists and collapsedSwimlanes above, and unlike
+       * the checklist's own hideAllChecklistItems, which is a field on the
+       * checklist and therefore changes what EVERYONE on the board sees.
+       * Folding something to get it out of your way is a view preference, not
+       * an edit to the card.
+       */
+      type: Object,
+      defaultValue: {},
+      blackbox: true,
+    },
     'profile.keyboardShortcuts': {
       /**
        * User-specified state of keyboard shortcut activation.
@@ -775,15 +919,6 @@ Users.attachSchema(
       optional: true,
       allowedValues: ['YYYY-MM-DD', 'DD-MM-YYYY', 'MM-DD-YYYY'],
       defaultValue: 'YYYY-MM-DD',
-    },
-    'profile.zoomLevel': {
-      /**
-       * User-specified zoom level for board view (1.0 = 100%, 1.5 = 150%, etc.)
-       */
-      type: Number,
-      defaultValue: 1.0,
-      min: 0.5,
-      max: 3.0,
     },
     'profile.mobileMode': {
       /**
@@ -976,7 +1111,6 @@ Users.safeFields = {
   'profile.fullname': 1,
   'profile.avatarUrl': 1,
   'profile.initials': 1,
-  'profile.zoomLevel': 1,
   'profile.mobileMode': 1,
   orgs: 1,
   teams: 1,
@@ -1227,6 +1361,26 @@ Users.helpers({
     return Boards.userBoards(this._id, false, { _id: { $in: starredBoards } }, {});
   },
 
+  // The starred PAGES - the bookmarks. Boards are starred by id; a page has no
+  // id, so it is stored as the pair a bookmark is: where it goes and what to
+  // call it. docs/Features/Board/Starred.md
+  starredPages() {
+    const { starredPages = [] } = this.profile || {};
+    return starredPagesOf(starredPages);
+  },
+
+  hasStarredPage(url) {
+    const { starredPages = [] } = this.profile || {};
+    return isPageStarred(starredPages, url);
+  },
+
+  // What the star group counts: both kinds, because it is one list of the
+  // places you keep. A count that left the pages out would say 2 above a
+  // dropdown showing five rows.
+  starredCount() {
+    return this.starredBoards().length + this.starredPages().length;
+  },
+
   hasStarred(boardId) {
     const { starredBoards = [] } = this.profile || {};
     return starredBoards.includes(boardId);
@@ -1300,9 +1454,11 @@ Users.helpers({
    * (#5799) boards are ordered alphabetically by title; otherwise the per-user
    * manual drag order (profile.boardSortIndex) is used, falling back to title.
    */
-  sortBoardsForUser(boardsArr) {
+  sortBoardsForUser(boardsArr, modeOverride) {
     const arr = (boardsArr || []).slice();
-    const mode = this.getAllBoardsSortBy();
+    const mode = allowedAllBoardsSortValues.includes(modeOverride)
+      ? modeOverride
+      : this.getAllBoardsSortBy();
     const byTitle = (a, b) =>
       (a.title || '').localeCompare(b.title || '', undefined, {
         sensitivity: 'base',
@@ -1500,6 +1656,31 @@ Users.helpers({
     return profile.showDesktopDragHandles || false;
   },
 
+  // Is the left menu collapsed? Open is the default: a menu that remembered
+  // itself collapsed for a user who has never collapsed one would be a page
+  // with no visible way to navigate. docs/Features/Page/Left-Menu.md
+  isLeftMenuCollapsed() {
+    const profile = this.profile || {};
+    return profile.leftMenuCollapsed || false;
+  },
+
+  // Is this workspace folded? Only the folded ones are in the map, so a missing
+  // key is an OPEN workspace - which is the right default for one you have
+  // never touched. docs/Features/Page/Workspaces.md
+  isWorkspaceCollapsed(workspaceId) {
+    if (!workspaceId) return false;
+    const map = (this.profile || {}).collapsedWorkspaces || {};
+    return map[workspaceId] === true;
+  },
+
+  // How wide the left menu was dragged to, or undefined for the CSS default -
+  // NOT a number of its own, so the default lives in one place, the stylesheet.
+  // docs/Features/Page/Left-Menu.md
+  getLeftMenuWidth() {
+    const width = (this.profile || {}).leftMenuWidth;
+    return typeof width === 'number' ? width : undefined;
+  },
+
   hasSubmitOnEnter() {
     const profile = this.profile || {};
     return profile.submitOnEnter || false;
@@ -1510,6 +1691,13 @@ Users.helpers({
   hasOpenManyCardsAtOnce() {
     const profile = this.profile || {};
     return profile.openManyCardsAtOnce || false;
+  },
+
+  // Member Settings / Change color: are the All Boards tiles painted in the
+  // theme's lighter colour instead of each board's own? Off by default.
+  hasAllBoardsThemeTiles() {
+    const profile = this.profile || {};
+    return profile.allBoardsThemeTiles || false;
   },
 
 
@@ -1554,19 +1742,30 @@ Users.helpers({
     return emailBuffer;
   },
 
+  // The letters an avatar falls back to when there is no picture. It must
+  // never throw: it is called while RENDERING, from two helpers of
+  // userAvatarInitials, and a throw there took out the avatar, the `viewBox`
+  // computed beside it ("0 0  15") and everything Blaze was drawing in the same
+  // pass. It threw whenever a user document arrived without a `username` -
+  // `this.username[0]` - which a publication that sends only the fields an
+  // avatar needs, or a user still syncing, can do. A word of a fullname can be
+  // empty too ("  Ann  " splits into empty strings), which used to put the
+  // literal text "undefined" in the circle.
   getInitials() {
     const profile = this.profile || {};
     if (profile.initials) return profile.initials;
-    else if (profile.fullname) {
-      return profile.fullname
+    if (profile.fullname) {
+      const initials = profile.fullname
         .split(/\s+/)
-        .reduce((memo, word) => {
-          return memo + word[0];
-        }, '')
+        .filter(word => word.length > 0)
+        .map(word => word[0])
+        .join('')
         .toUpperCase();
-    } else {
-      return this.username[0].toUpperCase();
+      if (initials) return initials;
     }
+    // No name of any kind: an empty string, so the avatar draws a blank circle
+    // rather than breaking the page around it.
+    return (this.username || '').slice(0, 1).toUpperCase();
   },
 
   getLimitToShowCardsCount() {
@@ -1795,6 +1994,20 @@ Users.helpers({
       return collapsedSwimlanes[boardId][swimlaneId];
     }
     return null;
+  },
+  /** #1591: null means "never set", so the caller can apply its own default
+   * (expanded) instead of a stored false being indistinguishable from absent. */
+  getCollapsedCardSection(cardId, sectionKey) {
+    const { collapsedCardSections = {} } = this.profile || {};
+    if (collapsedCardSections[cardId] &&
+        typeof collapsedCardSections[cardId][sectionKey] === 'boolean') {
+      return collapsedCardSections[cardId][sectionKey];
+    }
+    return null;
+  },
+  /** The key for one checklist, so the opened card and the minicard agree. */
+  checklistSectionKey(checklistId) {
+    return `checklist-${checklistId}`;
   },
   setCollapsedListToStorage(boardId, listId, collapsed) {
     // Logged-in users: save to profile
@@ -2077,12 +2290,10 @@ Users.helpers({
     return (this.profile && this.profile.uiFontSize) || null;
   },
 
-  // #4759: custom UI text color / text background color (hex), or null when unset.
+  // #4759: custom UI text color (hex), or null when unset. There was a
+  // getUiTextBgColor() beside it, for the removed "text background color".
   getUiTextColor() {
     return (this.profile && this.profile.uiTextColor) || null;
-  },
-  getUiTextBgColor() {
-    return (this.profile && this.profile.uiTextBgColor) || null;
   },
 
   // The CSS class the global override maps to, or '' when unset. Used by the header
@@ -2180,8 +2391,11 @@ Users.helpers({
     return await Users.updateAsync(this._id, { $set: { 'profile.collapsedSwimlanes': current } });
   },
 
-  async setZoomLevel(level) {
-    return await Users.updateAsync(this._id, { $set: { 'profile.zoomLevel': level } });
+  async setCollapsedCardSection(cardId, sectionKey, collapsed) {
+    const current = (this.profile && this.profile.collapsedCardSections) || {};
+    if (!current[cardId]) current[cardId] = {};
+    current[cardId][sectionKey] = !!collapsed;
+    return await Users.updateAsync(this._id, { $set: { 'profile.collapsedCardSections': current } });
   },
 
   async setMobileMode(enabled) {

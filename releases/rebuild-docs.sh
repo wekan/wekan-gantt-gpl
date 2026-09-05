@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+if [ -n "${ZSH_VERSION:-}" ]; then exec /bin/bash "$0" "$@"; fi
 
 # Rebuild OpenAPI spec (wekan.yml) and HTML docs (wekan.html) from source.
 #
@@ -28,35 +29,13 @@ cd "$REPO_DIR"
 mkdir -p public/api
 
 # ── Python dependency: esprima ────────────────────────────────────────────────
-# The OpenAPI generator (openapi/generate_openapi.py) uses the esprima package
-# to parse the JavaScript AST from models/*.js files.
-
-# Detect OS and ensure python3, pip3, and brew (on macOS) are available
-if [ "$(uname)" = "Darwin" ]; then
-  # macOS
-  if ! command -v brew >/dev/null 2>&1; then
-    echo "Homebrew not found. Installing Homebrew..."
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  fi
-  if ! command -v python3 >/dev/null 2>&1; then
-    echo "python3 not found. Installing python3 with brew..."
-    brew install python
-  fi
-  if ! command -v pip3 >/dev/null 2>&1; then
-    echo "pip3 not found. Installing pip3 with brew..."
-    brew install pipx
-    pipx ensurepath
-  fi
+# Detect OS and ensure Python 3 and pip are available.
+. "$REPO_DIR/releases/ensure-tools.sh"
+if [ "$(_et_os)" = macos ]; then
+  _et_brew_ensure
+  command -v python3 >/dev/null 2>&1 || brew install python
 else
-  # Linux
-  if ! command -v python3 >/dev/null 2>&1; then
-    echo "python3 not found. Installing python3 with apt-get..."
-    sudo apt-get update && sudo apt-get install -y python3
-  fi
-  if ! command -v pip3 >/dev/null 2>&1; then
-    echo "pip3 not found. Installing pip3 with apt-get..."
-    sudo apt-get update && sudo apt-get install -y python3-pip
-  fi
+  ensure_tools python3 python3-pip
 fi
 
 # Use /usr/bin/env for python3 and pip3
@@ -70,13 +49,7 @@ if [ -z "$PIP" ]; then
     PIP=$(command -v pip3 || echo "")
   fi
   if [ -z "$PIP" ]; then
-    if [ "$(uname)" = "Darwin" ]; then
-      if command -v brew >/dev/null 2>&1; then
-        brew install python
-      fi
-    else
-      sudo apt-get update && sudo apt-get install -y python3-pip
-    fi
+    ensure_tools python3-pip
     PIP=$(command -v pip3 || echo "")
   fi
 fi

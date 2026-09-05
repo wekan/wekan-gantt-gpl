@@ -84,6 +84,11 @@ test.describe('Search', () => {
     const sp = new SearchPage(boardPage);
     const cardTitles = ['Alpha Card', 'Beta Card', 'Gamma Card'];
 
+    // Enter Global Search once. Re-entering the same route does not recreate
+    // its Blaze instance; doing it between queries can leave the previous
+    // subscription/result paired with the newly filled input.
+    await sp.navigateToGlobalSearch();
+
     for (const title of cardTitles) {
       // Fire the search once per term, then poll only the result read. The
       // global-search page shows the boards/lists help block by default, so
@@ -91,7 +96,6 @@ test.describe('Search', () => {
       // results render. Re-navigating/re-searching on every poll iteration kept
       // reading each fresh search too early; polling a single search lets the
       // round-trip settle (matching the resilient pattern of the tests above).
-      await sp.navigateToGlobalSearch();
       await sp.globalSearch(title);
 
       await expect
@@ -186,5 +190,149 @@ test.describe('Search', () => {
     await expect(boardPage.locator('.js-minicard').filter({ hasText: 'Gamma Card' })).not.toBeVisible({ timeout: 10_000 });
 
     await sp.clearFilters();
+  });
+
+  test('#6629: Board Table view applies the active label filter', async ({ boardPage, board }) => {
+    const labelId = `lbl_${Date.now()}`;
+    const labelName = 'Table Filter Label';
+    db.updateOne('boards', { _id: board.boardId },
+      { $set: { labels: [{ _id: labelId, name: labelName, color: 'green' }] } });
+    db.updateMany('cards', { boardId: board.boardId }, { $set: { labelIds: [] } });
+    db.updateOne('cards', { boardId: board.boardId, title: 'Alpha Card' },
+      { $set: { labelIds: [labelId] } });
+    await boardPage.reload({ waitUntil: 'networkidle' });
+
+    // A board-view change reloads the page and clears the in-memory Filter.
+    // Enter Table view first, then activate the filter under test.
+    await boardPage.locator('.js-toggle-board-view').first().click();
+    await boardPage.locator('.pop-over .js-open-table-view').click();
+    await expect(boardPage.locator('.my-cards-board-table')).toBeVisible({
+      timeout: 10_000,
+    });
+
+    const sp = new SearchPage(boardPage);
+    await sp.openFilterSidebar();
+    const labelFilter = boardPage.locator('.js-toggle-label-filter')
+      .filter({ hasText: labelName }).first();
+    await labelFilter.click();
+    await expect(labelFilter.locator('i.fa-check').first())
+      .toBeVisible({ timeout: 10_000 });
+
+    await expect(boardPage.locator('.my-cards-board-table tbody tr'))
+      .toHaveCount(1);
+    await expect(boardPage.locator('.my-cards-board-table tbody'))
+      .toContainText('Alpha Card');
+    await expect(boardPage.locator('.my-cards-board-table tbody'))
+      .not.toContainText('Beta Card');
+
+    await sp.clearFilters();
+  });
+
+  test('#6632: Table view uses full width and remembers wrapped card titles', async ({
+    boardPage,
+    board,
+  }) => {
+    const longTitle = 'A very long card title '.repeat(12).trim();
+    db.updateOne(
+      'cards',
+      { boardId: board.boardId, title: 'Alpha Card' },
+      { $set: { title: longTitle } },
+    );
+    await boardPage.reload({ waitUntil: 'networkidle' });
+    await boardPage.locator('.js-toggle-board-view').first().click();
+    await boardPage.locator('.pop-over .js-open-table-view').click();
+
+    const table = boardPage.locator('.table-view-table');
+    const titleCell = table.locator('.table-view-cell-card-title').first();
+    await expect(table).toBeVisible({ timeout: 10_000 });
+    const widths = await table.evaluate(element => ({
+      table: element.getBoundingClientRect().width,
+      parent: element.parentElement.getBoundingClientRect().width,
+    }));
+    expect(widths.table).toBeGreaterThan(widths.parent * 0.9);
+    await expect(titleCell).toHaveAttribute('title', longTitle);
+    await expect(titleCell.locator('.viewer p')).toHaveCSS('white-space', 'nowrap');
+    await expect(titleCell.locator('.viewer p')).toHaveCSS('text-overflow', 'ellipsis');
+
+    await boardPage.locator('.js-table-view-toggle-card-title-wrap').click();
+    await expect(titleCell.locator('.viewer p')).toHaveCSS('white-space', 'normal');
+    await boardPage.reload({ waitUntil: 'networkidle' });
+    await expect(
+      boardPage.locator('.table-view-cell-card-title .viewer p').first(),
+    ).toHaveCSS('white-space', 'normal');
+  });
+
+  test('#6633: Table view headers toggle ascending and descending sorting', async ({
+    boardPage,
+  }) => {
+    await boardPage.locator('.js-toggle-board-view').first().click();
+    await boardPage.locator('.pop-over .js-open-table-view').click();
+    const titles = boardPage.locator(
+      '.table-view-cell-card-title .viewer p',
+    );
+    await expect(titles.first()).toHaveText('Alpha Card', { timeout: 10_000 });
+
+    await boardPage
+      .locator('.js-table-view-sort[data-field="title"]')
+      .click();
+    await expect(titles.first()).toHaveText('Gamma Card');
+    await expect(
+      boardPage.locator(
+        '.js-table-view-sort[data-field="title"] i.fa-sort-desc',
+      ),
+    ).toBeVisible();
+
+    await boardPage
+      .locator('.js-table-view-sort[data-field="listTitle"]')
+      .click();
+    await expect(
+      boardPage.locator(
+        '.js-table-view-sort[data-field="listTitle"] i.fa-sort-asc',
+      ),
+    ).toBeVisible();
+  });
+
+  test('#6634: Table view optionally groups cards by swimlane and remembers it', async ({
+    boardPage,
+    board,
+  }) => {
+    const secondSwimlaneId = db.uid('swim');
+    const now = new Date();
+    db.insertOne('swimlanes', {
+      _id: secondSwimlaneId,
+      title: 'Urgent Lane',
+      boardId: board.boardId,
+      archived: false,
+      type: 'swimlane',
+      height: -1,
+      sort: 100,
+      createdAt: now,
+      modifiedAt: now,
+    });
+    db.updateOne(
+      'cards',
+      { boardId: board.boardId, title: 'Gamma Card' },
+      { $set: { swimlaneId: secondSwimlaneId } },
+    );
+    await boardPage.reload({ waitUntil: 'networkidle' });
+    await boardPage.locator('.js-toggle-board-view').first().click();
+    await boardPage.locator('.pop-over .js-open-table-view').click();
+
+    const headers = boardPage.locator('.table-view-swimlane-group');
+    await expect(boardPage.locator('.table-view-table')).toBeVisible({
+      timeout: 10_000,
+    });
+    await expect(headers).toHaveCount(0);
+    await boardPage.locator('.js-table-view-toggle-swimlane-groups').click();
+    await expect(headers).toHaveCount(2);
+    await expect(headers.nth(0)).toContainText('Default');
+    await expect(headers.nth(1)).toContainText('Urgent Lane');
+    await expect(boardPage.locator('.table-view-table tbody tr:not(.table-view-swimlane-group)'))
+      .toHaveCount(3);
+
+    await boardPage.reload({ waitUntil: 'networkidle' });
+    await expect(boardPage.locator('.table-view-swimlane-group')).toHaveCount(2);
+    await expect(boardPage.locator('.js-table-view-toggle-swimlane-groups'))
+      .toHaveAttribute('aria-pressed', 'true');
   });
 });

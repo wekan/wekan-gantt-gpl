@@ -35,7 +35,7 @@
 # amd64-only, wants ~16 GB of RAM and tens of GB of disk, and needs SAP's licence
 # accepted - not something to start because somebody picked a menu entry.
 #
-# Everything is written to ../log/<datetime>/, where every other WeKan test run
+# Everything is written to log/<datetime>/, where every other WeKan test run
 # writes.
 
 set -uo pipefail
@@ -46,15 +46,22 @@ WEKAN_DIR="$(pwd)"
 RUN_TS="$(date '+%Y-%m-%d_%H-%M-%S')"
 # One run, one directory: when build.sh's "EVERYTHING" is driving this, it passes
 # the directory the whole run is writing to, so the WeKan suite, this and
-# FerretDB's own tests end up together under ../log/<datetime>/.
-LOGDIR="${WEKAN_LOGDIR:-../log/$RUN_TS}"
+# FerretDB's own tests end up together under log/<datetime>/.
+# WEKAN_LOG_ROOT is resolved by build.sh to the ignored `.tools/log` directory.
+# Standalone runs use that same repository-local path.
+if [ -z "${WEKAN_LOG_ROOT:-}" ]; then
+  WEKAN_LOG_ROOT=".tools/log"
+fi
+LOGDIR="${WEKAN_LOGDIR:-$WEKAN_LOG_ROOT/$RUN_TS}"
 mkdir -p "$LOGDIR"
 LOGDIR="$(cd "$LOGDIR" && pwd)"
 
-FERRET_DIR="$WEKAN_DIR/FerretDB"
+# .tools/FerretDB: companion repos live in one ignored directory inside the
+# checkout, instead of one ignored subdirectory each at the repo root.
+FERRET_DIR="$WEKAN_DIR/.tools/FerretDB"
 # The binary this script BUILDS and tests with: FerretDB/bin/ferretdb, never a
 # downloaded release.
-FERRET_BIN="$WEKAN_DIR/FerretDB/bin/ferretdb"
+FERRET_BIN="$WEKAN_DIR/.tools/FerretDB/bin/ferretdb"
 FERRET_REPO_SSH="git@github.com:wekan/FerretDB"
 FERRET_REPO_HTTPS="https://github.com/wekan/FerretDB"
 
@@ -99,7 +106,7 @@ host_platform() {
 # one of them is about the image.
 image_has_platform() {
   local out
-  out="$(docker manifest inspect "$1" 2>&1)" || return 2
+  out="$(docker_exec manifest inspect "$1" 2>&1)" || return 2
   printf '%s' "$out" | grep -q "\"architecture\": \"$2\"" && return 0
   return 1
 }
@@ -113,7 +120,24 @@ echo "Sequential: one database at a time."
 echo "=========================================================================="
 echo
 
-command -v docker >/dev/null 2>&1 || { echo "ERROR: docker not found - it starts the databases." >&2; exit 1; }
+docker_available() {
+  command -v docker >/dev/null 2>&1 && return 0
+  command -v flatpak-spawn >/dev/null 2>&1 || return 1
+  flatpak-spawn --host sh -lc 'command -v docker >/dev/null 2>&1' >/dev/null 2>&1
+}
+
+docker_exec() {
+  if command -v docker >/dev/null 2>&1; then
+    docker "$@"
+  else
+    flatpak-spawn --host docker "$@"
+  fi
+}
+
+docker_available || {
+  echo "ERROR: Docker is unavailable both locally and through flatpak-spawn --host." >&2
+  exit 1
+}
 command -v git    >/dev/null 2>&1 || { echo "ERROR: git not found - it fetches the FerretDB source." >&2; exit 1; }
 command -v node   >/dev/null 2>&1 || { echo "ERROR: node not found - it runs the query catalogue." >&2; exit 1; }
 if [ ! -d node_modules/mongodb ]; then
@@ -124,7 +148,8 @@ fi
 
 # ── 1. the FerretDB source ──────────────────────────────────────────────────
 if [ ! -d "$FERRET_DIR/.git" ]; then
-  echo "---- FerretDB source is not here; cloning wekan/FerretDB ----"
+  echo "---- FerretDB source is not in .tools/; cloning wekan/FerretDB ----"
+  mkdir -p "$(dirname "$FERRET_DIR")"
   if ! git clone "$FERRET_REPO_SSH" "$FERRET_DIR" 2>&1 | tee -a "$LOGDIR/db-conformance-build.log"; then
     echo "SSH clone failed (no key for github.com?); trying HTTPS."
     git clone "$FERRET_REPO_HTTPS" "$FERRET_DIR" 2>&1 | tee -a "$LOGDIR/db-conformance-build.log" || {
@@ -144,11 +169,15 @@ fi
 echo "FerretDB at $(git -C "$FERRET_DIR" rev-parse --short HEAD 2>/dev/null || echo '?')"
 
 # ── 2. build it ─────────────────────────────────────────────────────────────
-# FerretDB's own build.sh installs the Go toolchain when it is missing (ensure_go)
-# and downloads the module dependencies, so nothing has to be installed by hand.
+# FerretDB's build action installs the Go toolchain when it is missing and `go
+# build` downloads only the modules needed by the binary. Do not precede it with
+# `deps`: that action downloads every dependency of the root, integration and
+# tools modules, although conformance has not started those test suites yet.
+# EVERYTHING runs those suites in the following stage, where Go can fetch their
+# dependencies on demand. Keeping the Go cache makes either fetch a one-time cost.
 echo
 echo "---- Building FerretDB v1 from source ----"
-( cd "$FERRET_DIR" && ./build.sh deps && ./build.sh build ) 2>&1 \
+( cd "$FERRET_DIR" && ./build.sh build ) 2>&1 \
   | tee -a "$LOGDIR/db-conformance-build.log"
 if [ ! -x "$FERRET_BIN" ]; then
   echo "ERROR: the build produced no $FERRET_BIN - see $LOGDIR/db-conformance-build.log" >&2
@@ -171,6 +200,19 @@ skipped=0
 #
 #   WEKAN_CONFORMANCE_PORT     FerretDB itself     (default 37017)
 #   WEKAN_CONFORMANCE_DB_PORT  the database server (default 35432)
+#
+# There is a THIRD port, and it is the one that bit: FerretDB also opens a debug
+# handler for metrics and profiling, at 127.0.0.1:8088 by default, and it EXITS
+# when that address is taken. Nothing here uses it, but every backend died with
+#
+#   Failed to create debug handler ... listen tcp 127.0.0.1:8088: bind: address
+#   already in use
+#   ERROR sqlite  FerretDB did not start on this backend
+#
+# because an unrelated FerretDB was running on the machine. Choosing a free port
+# for it would work; not opening it at all is better, since the run never asks it
+# anything - so every launch below passes `--debug-addr=-`, which is how
+# FerretDB's main.go spells "no debug handler".
 #
 # is_free: a port nothing is listening on. bash's /dev/tcp needs no extra tools;
 # a refused connection means free.
@@ -196,11 +238,11 @@ DB_HOST_PORT_BASE="${WEKAN_CONFORMANCE_DB_PORT:-35432}"
 # script's own, named wekan-conformance-db-<run timestamp>, so removing them is
 # safe: a `docker compose up` stack is named wekan-postgres / wekan-ferretdb and is
 # never touched.
-stale="$(docker ps -aq --filter 'name=^wekan-conformance-db-' 2>/dev/null || true)"
+stale="$(docker_exec ps -aq --filter 'name=^wekan-conformance-db-' 2>/dev/null || true)"
 if [ -n "$stale" ]; then
   echo "Removing containers left behind by an earlier run: $(echo "$stale" | tr '\n' ' ')"
   # shellcheck disable=SC2086
-  docker rm -f $stale >/dev/null 2>&1 || true
+  docker_exec rm -f $stale >/dev/null 2>&1 || true
 fi
 # One container name per run, so a stack somebody started with `docker compose up`
 # - which names its containers wekan-postgres, wekan-ferretdb ... - is never
@@ -212,7 +254,7 @@ echo
 
 cleanup() {
   [ -n "${FERRET_PID:-}" ] && kill "$FERRET_PID" 2>/dev/null
-  docker rm -f "$CONTAINER" >/dev/null 2>&1
+  docker_exec rm -f "$CONTAINER" >/dev/null 2>&1
 }
 # Ctrl-C must END the run. Without the explicit exit, the interrupt only killed
 # whatever was in the foreground - a `docker manifest inspect`, a sleep - and the
@@ -265,7 +307,7 @@ for entry in "${BACKENDS[@]}"; do
 
   echo
   echo "---- $name: starting the database ----"
-  docker rm -f "$CONTAINER" >/dev/null 2>&1
+  docker_exec rm -f "$CONTAINER" >/dev/null 2>&1
 
   # Start the container, and when the published port turns out to be taken after
   # all, move to the next free one and try again. `free_port` looks a moment
@@ -275,7 +317,7 @@ for entry in "${BACKENDS[@]}"; do
   start_db_container() {
     local attempt
     for attempt in 1 2 3 4 5; do
-      if docker run -d --name "$CONTAINER" -p "127.0.0.1:$hostport:$port" "$@" >>"$log" 2>&1; then
+      if docker_exec run -d --name "$CONTAINER" -p "127.0.0.1:$hostport:$port" "$@" >>"$log" 2>&1; then
         return 0
       fi
 
@@ -283,7 +325,7 @@ for entry in "${BACKENDS[@]}"; do
         return 1                      # a real failure: report it as one
       fi
 
-      docker rm -f "$CONTAINER" >/dev/null 2>&1
+      docker_exec rm -f "$CONTAINER" >/dev/null 2>&1
       hostport=$((hostport + 1))
       hostport="$(free_port "$hostport")"
       echo "  port was taken; retrying on 127.0.0.1:$hostport" | tee -a "$log"
@@ -348,10 +390,10 @@ for entry in "${BACKENDS[@]}"; do
       # its database is initialised, and starting FerretDB early only produces a
       # confusing connection error.
       case "$name" in
-        postgresql) docker exec "$CONTAINER" pg_isready -U ferretdb -d ferretdb >/dev/null 2>&1 && up=1 ;;
-        mysql)      docker exec "$CONTAINER" mysqladmin ping -h 127.0.0.1 -u root -pferretdb_root_secret --silent >/dev/null 2>&1 && up=1 ;;
-        mariadb)    docker exec "$CONTAINER" healthcheck.sh --connect --innodb_initialized >/dev/null 2>&1 && up=1 ;;
-        sap-hana)   docker logs "$CONTAINER" 2>&1 | grep -q "Startup finished" && up=1 ;;
+        postgresql) docker_exec exec "$CONTAINER" pg_isready -U ferretdb -d ferretdb >/dev/null 2>&1 && up=1 ;;
+        mysql)      docker_exec exec "$CONTAINER" mysqladmin ping -h 127.0.0.1 -u root -pferretdb_root_secret --silent >/dev/null 2>&1 && up=1 ;;
+        mariadb)    docker_exec exec "$CONTAINER" healthcheck.sh --connect --innodb_initialized >/dev/null 2>&1 && up=1 ;;
+        sap-hana)   docker_exec logs "$CONTAINER" 2>&1 | grep -q "Startup finished" && up=1 ;;
       esac
       [ "$up" -eq 1 ] && break
       printf '.'
@@ -360,9 +402,9 @@ for entry in "${BACKENDS[@]}"; do
     echo
     if [ "$up" -ne 1 ]; then
       echo "ERROR $name: the database never became ready (see $log)"
-      docker logs "$CONTAINER" >>"$log" 2>&1
+      docker_exec logs "$CONTAINER" >>"$log" 2>&1
       echo "ERROR $name  database never ready" >> "$SUMMARY"
-      docker rm -f "$CONTAINER" >/dev/null 2>&1
+      docker_exec rm -f "$CONTAINER" >/dev/null 2>&1
       continue
     fi
   fi
@@ -371,16 +413,16 @@ for entry in "${BACKENDS[@]}"; do
   case "$handler" in
     sqlite)     "$FERRET_BIN" --handler=sqlite --sqlite-url="$url" \
                   --listen-addr=127.0.0.1:$FERRET_PORT --repl-set-name=rs0 \
-                  --telemetry=disable --log-level=error >>"$log" 2>&1 & ;;
+                  --telemetry=disable --debug-addr=- --log-level=error >>"$log" 2>&1 & ;;
     postgresql) "$FERRET_BIN" --handler=postgresql --postgresql-url="$url" \
                   --listen-addr=127.0.0.1:$FERRET_PORT --repl-set-name=rs0 \
-                  --telemetry=disable --log-level=error >>"$log" 2>&1 & ;;
+                  --telemetry=disable --debug-addr=- --log-level=error >>"$log" 2>&1 & ;;
     mysql)      "$FERRET_BIN" --handler=mysql --mysql-url="$url" \
                   --listen-addr=127.0.0.1:$FERRET_PORT --repl-set-name=rs0 \
-                  --telemetry=disable --log-level=error >>"$log" 2>&1 & ;;
+                  --telemetry=disable --debug-addr=- --log-level=error >>"$log" 2>&1 & ;;
     hana)       "$FERRET_BIN" --handler=hana --hana-url="$url" \
                   --listen-addr=127.0.0.1:$FERRET_PORT --repl-set-name=rs0 \
-                  --telemetry=disable --log-level=error >>"$log" 2>&1 & ;;
+                  --telemetry=disable --debug-addr=- --log-level=error >>"$log" 2>&1 & ;;
   esac
   FERRET_PID=$!
 
@@ -407,7 +449,7 @@ for entry in "${BACKENDS[@]}"; do
     echo "---------------------------------"
     echo "ERROR $name  FerretDB did not start on this backend" >> "$SUMMARY"
     kill "$FERRET_PID" 2>/dev/null; FERRET_PID=""
-    docker rm -f "$CONTAINER" >/dev/null 2>&1
+    docker_exec rm -f "$CONTAINER" >/dev/null 2>&1
     continue
   fi
 
@@ -424,8 +466,8 @@ for entry in "${BACKENDS[@]}"; do
   echo "---- $name: stopping ----"
   kill "$FERRET_PID" 2>/dev/null; wait "$FERRET_PID" 2>/dev/null; FERRET_PID=""
   if [ -n "$service" ]; then
-    docker logs "$CONTAINER" >>"$log" 2>&1
-    docker rm -f "$CONTAINER" >/dev/null 2>&1
+    docker_exec logs "$CONTAINER" >>"$log" 2>&1
+    docker_exec rm -f "$CONTAINER" >/dev/null 2>&1
   fi
   echo
 done

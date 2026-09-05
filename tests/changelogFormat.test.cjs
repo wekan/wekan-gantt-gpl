@@ -76,7 +76,10 @@ test('TODO Later opens by saying what the list is', () => {
 });
 
 test('a change is a short description, with the long one behind it', () => {
-  assert.ok(ALL.length > 500, `expected hundreds of entries, found ${ALL.length}`);
+  // Not "hundreds" any more: CHANGELOG.md holds ONE MONTH since #6580, and the
+  // rest is under old-CHANGELOG/. At the start of a month there may be only one
+  // release with a few entries, so one parsed block is enough to prove parsing.
+  assert.ok(ALL.length > 0, `expected the month's entries, found ${ALL.length}`);
   const long = ALL.filter(b => summaryText(b.summary).length > 130);
   assert.deepStrictEqual(long.map(b => `line ${b.line}: ${summaryText(b.summary).slice(0, 50)}…`),
     [], 'a summary is a title - the story goes in the body below it');
@@ -190,17 +193,26 @@ test('the newest release follows the rules to the letter', () => {
   const start = lines.findIndex((l, i) => i > todo && /^# v\d/.test(l));
   const end = lines.findIndex((l, i) => i > start && /^# v\d/.test(l));
   const inSection = ALL.filter(b => b.line > start && b.line < end);
-  // At least one. A release is as big as the work in it - v10.46 carried two
-  // fixes - and "more than five" measured the day rather than the format.
-  assert.ok(inSection.length >= 1, 'and it must have entries');
+  // At least one CHANGE. A release is as big as the work in it - v10.46 carried
+  // two fixes - and "more than five" measured the day rather than the format.
+  //
+  // An entry OR a bullet: v10.55 is four dependabot updates and nothing else,
+  // and CLAUDE.md keeps a dependency batch as plain bullets. Requiring a
+  // `<details>` would mean padding one bump into a block whose body repeats its
+  // summary, which is the noise that rule exists to prevent.
+  const bullets = lines.slice(start, end).filter(l => /^- \*\*/.test(l));
+  assert.ok(inSection.length + bullets.length >= 1,
+    'and it must have entries or bullets');
   for (const b of inSection) {
     assert.ok(summaryText(b.summary).length <= 120,
       `line ${b.line}: a summary must be a title (${summaryText(b.summary).length} chars)`);
-    // The commit it describes - in THIS repository, or in wekan/FerretDB when the
-    // change is in the fork WeKan's default database is built from. A WeKan hash
-    // for work that is not in this repository points at the wrong change, so the
-    // link follows the code rather than the changelog.
-    assert.ok(/<a href="https:\/\/github\.com\/wekan\/(wekan|FerretDB)\/commit\//.test(b.summary),
+    // The commit it describes - in THIS repository, or in a companion repository
+    // whose code or binaries the release carries. A WeKan hash for work that is
+    // not in this repository points at the wrong change, so the link follows the
+    // code rather than the changelog.
+    assert.ok(
+      /<a href="https:\/\/github\.com\/wekan\/(wekan|FerretDB|charts|mongo-tools-patches)\/commit\//
+        .test(b.summary),
       `line ${b.line}: the summary links the commit it describes`);
   }
 });
@@ -215,14 +227,210 @@ test('the Upcoming section, when there is one, follows the same rules', () => {
   const end = lines.findIndex((l, i) => i > start && /^# v\d/.test(l));
   assert.ok(end > start, 'it sits above the newest release');
   const inSection = ALL.filter(b => b.line > start && b.line < end);
-  assert.ok(inSection.length >= 1, 'and it has at least one entry');
+  // At least one CHANGE - an entry or a plain bullet. Not "at least one
+  // <details>": a release whose whole content is a dependency batch is bullets
+  // all the way down, which is what CLAUDE.md prescribes for one, and padding a
+  // bump into a <details> whose body repeats its summary would be noise added
+  // to satisfy a guard.
+  const bullets = lines.slice(start, end).filter(l => /^- \*\*/.test(l));
+  // EMPTY IS ALLOWED, but only when it says so. releases/release-all.sh opens the
+  // next Upcoming as soon as it names a release, because releases here are
+  // frequent and the work that follows one needs somewhere to go the moment it
+  // starts - without that, entries land in the section just published and a
+  // released record has to be repaired from memory (v10.96 and v10.97 both did).
+  // So a section carrying the placeholder paragraph is a section nobody has
+  // written in yet; a section with real prose and no entries is one somebody
+  // meant to write in and did not.
+  const placeholder = lines.slice(start, end)
+    .some(l => l.startsWith('**In short:** nothing here yet.'));
+  if (placeholder) {
+    assert.strictEqual(inSection.length + bullets.length, 0,
+      'this Upcoming still carries the "nothing here yet" placeholder, but it HAS '
+      + 'entries - replace the placeholder with a summary of what they amount to');
+  } else {
+    assert.ok(inSection.length + bullets.length >= 1,
+      'and it has at least one entry or bullet');
+  }
 
   for (const b of inSection) {
     assert.ok(summaryText(b.summary).length <= 120,
       `line ${b.line}: a summary must be a title (${summaryText(b.summary).length} chars)`);
-    assert.ok(/<a href="https:\/\/github\.com\/wekan\/(wekan|FerretDB)\/commit\//.test(b.summary),
+    assert.ok(
+      /<a href="https:\/\/github\.com\/wekan\/(wekan|FerretDB|mongo-tools-patches)\/commit\//
+        .test(b.summary),
       `line ${b.line}: the summary links the commit it describes`);
   }
+});
+
+test('Upcoming opens with a short summary of the whole release', () => {
+  const start = lines.indexOf('# Upcoming WeKan ® release');
+  if (start === -1) {
+    console.log('    (no Upcoming section right now - nothing to check)');
+    return;
+  }
+  // Between the heading and the first `This release …:` header. It is the first
+  // thing a reader sees, and a release this size is otherwise forty collapsed
+  // blocks with no way to tell what it amounts to.
+  //
+  // TWO things live there now, in this order: the **In short:** paragraph, and
+  // then the binaries table - what each platform's bundle ships, where it came
+  // from and what it hashes to. The table is FULL of links by design, so the
+  // "links nothing" rule below applies to the PARAGRAPH, which is what it was
+  // ever about: a summary that quietly turns into a second list of entries.
+  const firstHeader = lines.findIndex((l, i) => i > start && /^This release .*:$/.test(l));
+  assert.ok(firstHeader > start, 'the first subsection header follows it');
+  const head = lines.slice(start + 1, firstHeader);
+  const tableAt = head.findIndex(l => /^\| Platform \| Binary \|/.test(l));
+  const intro = (tableAt === -1 ? head : head.slice(0, tableAt)).join('\n').trim();
+  assert.ok(intro.startsWith('**In short:**'),
+    'the Upcoming section opens with an **In short:** paragraph');
+  // A compact release-level summary, not a second list or progress ledger.
+  assert.ok(!/<details>|<summary>/.test(intro), 'prose, not entries');
+  assert.ok(!/https?:\/\//.test(intro), 'and it links nothing - the entries do that');
+  assert.ok(intro.length > 200, 'and it actually summarises the release');
+  const introWords = intro.replace(/^\*\*In short:\*\*\s*/, '').trim().split(/\s+/);
+  assert.ok(introWords.length <= 120,
+    `and stays high-level rather than becoming a ${introWords.length}-word ledger`);
+});
+
+test('Upcoming then says which binaries each platform ships', () => {
+  // A WeKan bundle is not only WeKan: it carries a Node.js and a FerretDB that
+  // other projects publish, and WHICH source has a given CPU changes from
+  // release to release. "Which Node.js is in the arm64 bundle of 10.69, and was
+  // it checked" must be answerable from the CHANGELOG rather than from a build
+  // log that expires - so the same table the release notes carry is here too,
+  // right under the summary. See CLAUDE.md.
+  const start = lines.indexOf('# Upcoming WeKan ® release');
+  if (start === -1) {
+    console.log('    (no Upcoming section right now - nothing to check)');
+    return;
+  }
+  const firstHeader = lines.findIndex((l, i) => i > start && /^This release .*:$/.test(l));
+  const head = lines.slice(start + 1, firstHeader);
+  const at = head.findIndex(l => /^\| Platform \| Binary \| From \| Version \| SHA256 \|$/.test(l));
+  assert.ok(at !== -1,
+    'the binaries table follows the summary: | Platform | Binary | From | Version | SHA256 |');
+  assert.ok(/^\|( ---+ \|)+$/.test(head[at + 1]), 'with its separator row');
+
+  const rows = [];
+  for (let i = at + 2; i < head.length && head[i].startsWith('|'); i++) rows.push(head[i]);
+  assert.ok(rows.length >= 2, 'and at least one platform in it');
+  const seen = [];
+  for (const r of rows) {
+    const cells = r.split('|').map(c => c.trim()).filter(Boolean);
+    assert.strictEqual(cells.length, 5, `a row has five cells: ${r.slice(0, 60)}`);
+    // The URL is the link on the From cell - never a bare URL as visible text.
+    assert.ok(/^\[[^\]]+\]\(https:\/\/[^)]+\)$/.test(cells[2]),
+      `the From cell links the exact file it came from: ${cells[2]}`);
+    // A checksum, or an honest statement that the source publishes none.
+    assert.ok(/^`[0-9a-f]{64}`$/.test(cells[4]) || cells[4] === '*no checksum published*',
+      `the SHA256 cell is a checksum or says none is published: ${cells[4]}`);
+    seen.push(cells[0]);
+  }
+  // Grouped by platform: one platform's rows stay together, so the table is read
+  // a platform at a time rather than hunted through.
+  const firstSeen = new Map();
+  seen.forEach((p, i) => { if (!firstSeen.has(p)) firstSeen.set(p, i); });
+  for (const [p, i] of firstSeen) {
+    const last = seen.lastIndexOf(p);
+    for (let k = i; k <= last; k++) {
+      assert.strictEqual(seen[k], p,
+        `${p}'s rows must stay together - ${seen[k]} interrupts them`);
+    }
+  }
+});
+
+test('entries are grouped by area, and no summary repeats its group', () => {
+  const start = lines.indexOf('# Upcoming WeKan ® release');
+  if (start === -1) return;
+  const end = lines.findIndex((l, i) => i > start && /^# v\d/.test(l));
+
+  // A group line is `**Area** - short description.` on one line. NOT a heading:
+  // a `##` inside a release breaks the version list.
+  const GROUP = /^\*\*([^*]+)\*\* - .+\.$/;
+  let group = null;
+  let grouped = 0;
+  let inEntry = false;
+  const loose = [];
+  for (let i = start; i < end; i++) {
+    const line = lines[i];
+    // Only OUTSIDE an entry. An entry's own body uses `**bold**` for emphasis,
+    // and a body paragraph that happened to open with one and end in a full
+    // stop would otherwise be read as a group heading - silently reassigning
+    // every entry after it to a group that does not exist.
+    if (line === '<details>') { inEntry = true; }
+    if (line === '</details>') { inEntry = false; continue; }
+    if (inEntry && !line.startsWith('<summary>')) continue;
+    // `(This release|and )` with a space INSIDE the alternative and another one
+    // after it needs "and  updates" - two spaces - so every `and ...:` header
+    // silently failed to match and never reset the group. Entries under a later
+    // subsection were then still attributed to the last group line above them,
+    // which is exactly the mistake this loop exists to catch.
+    if (/^(This release|and) .*:$/.test(line)) { group = null; continue; }
+    if (!inEntry) {
+      const m = GROUP.exec(line);
+      if (m) { group = m[1]; continue; }
+    }
+    if (!line.startsWith('<summary>')) continue;
+    const text = summaryText(line);
+    if (!group) { loose.push(text.slice(0, 60)); continue; }
+    grouped++;
+    // The point of the grouping: the area is named ONCE, on the group line, and
+    // the entry under it says what changed rather than saying the area again.
+    // Twelve entries beginning "All Boards:" say it twelve times, and the part
+    // that differs starts halfway through the line.
+    assert.ok(!text.toLowerCase().startsWith(group.toLowerCase()),
+      `line ${i + 1}: "${text.slice(0, 50)}" repeats its group "${group}"`);
+    const bare = group.replace(/^The /, '');
+    assert.ok(!text.toLowerCase().startsWith(bare.toLowerCase()),
+      `line ${i + 1}: "${text.slice(0, 50)}" repeats its group "${bare}"`);
+  }
+  // MOST of what is there is grouped - not a fixed count. `>= 10` was written
+  // against a release with forty entries, and it fails a small release for
+  // being small: a dependencies-only one has no entries at all, because
+  // CLAUDE.md keeps a dependency batch as plain bullets. What matters is the
+  // ratio, and the loose count below is the other half of it.
+  const entries = grouped + loose.length;
+  assert.ok(entries === 0 || grouped >= entries - 4,
+    `the Upcoming entries are grouped (${grouped} of ${entries} are)`);
+  // Half grouped and half loose reads as a mistake. The subsections that hold a
+  // single entry - developer tooling, documentation, translations - stay flat,
+  // so a few loose ones are expected; a pile of them is not.
+  assert.ok(loose.length <= 4,
+    `${loose.length} entries sit outside any group, e.g. ${loose[0]}`);
+});
+
+test('a RELEASED section never claims its binaries were not rebuilt', () => {
+  // An Upcoming section that changes no build may say so - "The binaries below
+  // are v10.82's: nothing here rebuilds them" - and copy the previous release's
+  // table rather than inventing one. Releasing invalidates both halves of that:
+  // release-all.sh renames the heading and every bundle IS rebuilt, so the
+  // sentence becomes false and the copied table describes the wrong build.
+  //
+  // v10.83 shipped exactly that way. Its table was v10.82's, so it named
+  // FerretDB v1.48.0 when v1.49.0 was built, listed loong64 (skipped this time -
+  // debian:trixie publishes no linux/loong64 image) and omitted armhf, armv6,
+  // armv7, i386 and win-arm64, which were built. The generated table at the top
+  // of the GitHub release notes was right, and the CHANGELOG's contradicted it.
+  //
+  // The whole point of this table is that "which Node.js is in the arm64 bundle
+  // of 10.69, and was it checked" is answerable from the CHANGELOG after the
+  // build log has expired. A table carried forward unchanged answers it wrongly,
+  // which is worse than not answering.
+  // Checked on the NEWEST release only - the one release-all.sh just renamed,
+  // where the mistake is fresh and the build log is still there to correct it
+  // from. v10.73 through v10.81 carry the same sentence; whether each of those
+  // releases really rebuilt its bundles cannot be established now that their
+  // logs have expired, and rewriting eight historical tables on a guess would
+  // put invented provenance where merely doubtful provenance is. They are left
+  // as they shipped.
+  const newest = changelog.split(/^# (?=v\d)/m)[1] || '';
+  const version = (newest.match(/^v[\d.]+/) || ['?'])[0];
+  assert.ok(!/nothing here rebuilds them/.test(newest),
+    `${version} carries the Upcoming section's "nothing here rebuilds them" - ` +
+    `a release rebuilds every bundle, so its table has to be that build's own ` +
+    `provenance (releases/provenance-table.sh prints it from provenance.tsv, ` +
+    `and the same table heads the GitHub release notes)`);
 });
 
 test('CLAUDE.md states these rules, so they are not folklore', () => {
@@ -234,6 +442,9 @@ test('CLAUDE.md states these rules, so they are not folklore', () => {
   assert.ok(/Never show a long URL as visible text/.test(claude));
   assert.ok(/Word-wrap both CHANGELOGs at 80 chars/.test(claude));
   assert.ok(/no `Thanks to` line/.test(claude), 'including the TODO Later exception');
+  assert.ok(/The Upcoming section opens with an `\*\*In short:\*\*` paragraph/.test(claude));
+  assert.ok(/Inside a subsection, entries are GROUPED BY TOPIC\/AREA/.test(claude));
+  assert.ok(/release summary → topic summary → commit\s+detail/.test(claude));
 });
 
 console.log(`\n${passed} tests passed`);

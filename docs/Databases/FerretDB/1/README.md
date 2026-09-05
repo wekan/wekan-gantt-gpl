@@ -7,8 +7,10 @@ the **default database of WeKan**: `docker-compose.yml` runs FerretDB v1 on its
 embedded SQLite, so there is no separate database server to install at all.
 
 Whichever backend is used, WeKan talks only to FerretDB
-(`MONGO_URL=mongodb://ferretdb:27017/wekan`) — nothing in WeKan knows what is
-behind it.
+(`MONGO_URL=mongodb://ferretdb:27017/wekan?directConnection=true`) — nothing in
+WeKan knows what is behind it. See
+[directConnection](#why-the-url-says-directconnectiontrue) for why that parameter
+is not optional.
 
 ## Which one to use
 
@@ -55,8 +57,24 @@ The compose files do not use a FerretDB image: a small Debian container download
 the `ferretdb-<arch>` binary for its own architecture from the newest
 [wekan/FerretDB release](https://github.com/wekan/FerretDB/releases), caches it on
 the volume and runs it. Pin a version with `FERRETDB_RELEASE=download/v1.24.2`.
-The same per-arch binaries are embedded in the WeKan bundles for the platforms
-MongoDB has no server build for — ppc64le, s390x, riscv64.
+
+**Seventeen of those binaries are built**, all cross-compiled from one checkout
+with CGO disabled: ten Linux (`amd64`, `arm64`, `armhf`, `armv6`, `armel`,
+`i386`, `ppc64le`, `s390x`, `riscv64`, `loong64`), three Windows (`win64`,
+`win-arm64`, `win32`), two macOS (`mac-amd64`, `mac-arm64`) and two FreeBSD
+(`freebsd-amd64`, `freebsd-arm64`). The 32-bit ARM ones are three different
+builds, not three names for one: `armhf` is `GOARM=7`, `armv6` is `GOARM=6` for
+the Raspberry Pi 1 and Zero, and `armel` is `GOARM=5` software floating point for
+genuine ARMv5.
+
+A `ferretdb-<arch>` binary is embedded in **every** WeKan bundle, and it is the
+default database on the platforms MongoDB publishes no server for — ppc64le,
+s390x, riscv64, i386, armv6 and armhf — where nothing else can be. There is also
+a multi-arch image (`wekanteam/ferretdb`, `quay.io/wekan/ferretdb`,
+`ghcr.io/wekan/ferretdb`) built `FROM scratch` around these same binaries, which
+is why it covers every Linux one of them, including `linux/arm/v6` and
+`linux/loong64` that the WeKan image cannot reach — see
+[Docker CPU platforms](../../../Platforms/FOSS/Container/Docker/CPU-platforms.md).
 
 The `hana` handler is behind the `ferretdb_hana` build tag; the released binaries
 are built with it, so `--handler=hana` exists. A FerretDB built elsewhere without
@@ -74,6 +92,53 @@ merely setting `MONGO_OPLOG_URL` starts a tail regardless of the reactivity orde
 ([#6498](https://github.com/wekan/wekan/issues/6498)).
 
 FerretDB has no MongoDB change streams at all, in either version.
+
+## Why the URL says `directConnection=true`
+
+Every FerretDB v1 compose file connects with
+`mongodb://ferretdb:27017/wekan?directConnection=true`, and dropping that
+parameter breaks the stack on the first start
+([#6582](https://github.com/wekan/wekan/issues/6582)):
+
+```
+MongoServerSelectionError: connect ECONNREFUSED 0.0.0.0:27017
+reason: TopologyDescription {
+  type: 'ReplicaSetNoPrimary',
+  servers: Map(1) { '0.0.0.0:27017' => [ServerDescription] },
+  setName: 'rs0', ... }
+```
+
+`0.0.0.0` appears in no compose file. It is FerretDB's own **listen** address,
+and the driver was handed it by the server.
+
+Because the `ferretdb` service runs with `--repl-set-name=rs0` (see
+[The OpLog](#the-oplog) above), FerretDB answers the `hello` handshake as a
+one-member replica set, and fills the `hosts`, `me` and `primary` fields with its
+`--listen-addr` — the wildcard `0.0.0.0:27017`. A MongoDB driver that is not in
+direct-connection mode treats such a reply as an invitation to do replica-set
+**discovery**: it adopts the member list the server advertised, and drops the
+seed it was given, because the server reports a name other than the one that was
+dialled. So `mongodb://ferretdb:27017` turns into `0.0.0.0:27017`, which inside
+the `wekan-app` container means that container itself — where nothing is
+listening. Hence `ECONNREFUSED`, on a compose file that was never edited.
+
+`directConnection=true` tells the driver to stay on exactly the host it was
+given and skip discovery entirely. Measured against FerretDB v1.49.0 with the
+driver the bundle ships:
+
+| MONGO\_URL | Topology the driver ends up with |
+| --- | --- |
+| `mongodb://localhost:27017/wekan` | `ReplicaSetWithPrimary`, servers: `0.0.0.0:27017` — the seed was discarded |
+| `mongodb://localhost:27017/wekan?directConnection=true` | `Single`, servers: `localhost:27017` |
+
+It costs nothing else. The handshake still reports `setName: 'rs0'`, and that is
+the only thing Meteor checks before it will tail an OpLog, so
+`MONGO_OPLOG_URL=...?replicaSet=rs0&directConnection=true` keeps working exactly
+as [#6480/#6481](https://github.com/wekan/wekan/issues/6480) left it.
+
+This applies only to FerretDB. The MongoDB compose files talk to a real replica
+set whose members are configured with names that do resolve, so they keep plain
+`replicaSet=rs0` and must **not** gain `directConnection`.
 
 ## Do they all answer the same?
 

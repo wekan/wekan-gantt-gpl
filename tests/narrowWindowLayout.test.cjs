@@ -125,23 +125,27 @@ test('the bar gives back the width the avatar needs', () => {
     'the iphone-device variant must be named, or the cap never applies there');
 });
 
-test('the bell and the avatar sit the same way in both modes', () => {
-  // With the free space of the row shared around the bell - an auto margin on
-  // each side - it lands midway between the zoom pill and the avatar, and the
-  // avatar keeps a small fixed gap to the edge instead of being flung against it.
-  // Same rule for both modes, because it is chosen by WIDTH.
+test('the bell and the avatar pack from the start like everything else', () => {
+  // These used to be PLACED: the free space of the row was shared around the
+  // bell by an auto margin on each side, so it landed midway across, and the
+  // avatar kept a fixed gap to the far edge.
+  //
+  // That is gone. The bar packs from the start and wraps forward at every
+  // width - left to right in a left-to-right language, right to left in a
+  // right-to-left one, which flexbox does by itself. An item pushed to the far
+  // end or centred in the leftover space puts a hole in the middle of the row,
+  // and which items land on which side of the hole changes with the window.
   const block = headerCss.slice(headerCss.indexOf('The quick-access bar must FIT the phone'));
   const bell = /#header-quick-access #notifications,([\s\S]*?)\{([\s\S]*?)\}/.exec(block);
   assert.ok(bell, 'the bell must be placed here');
-  assert.ok(/margin-inline-start: auto !important;/.test(bell[2])
-    && /margin-inline-end: auto !important;/.test(bell[2]),
-    'an auto margin on EACH side is what centres it');
+  assert.ok(!/margin-inline-start: auto/.test(bell[2])
+    && !/margin-inline-end: auto/.test(bell[2]),
+    'nothing centres the bell any more');
+  assert.ok(/margin-inline: 0 !important;/.test(bell[2]), 'it packs with the rest');
   const avatar = /#header-quick-access #header-user-bar,([\s\S]*?)\{([\s\S]*?)\}/.exec(block);
   assert.ok(avatar, 'and the avatar');
   assert.ok(/margin-inline-start: 0 !important;/.test(avatar[2]),
-    'no second auto margin - two of them would split the row and separate the pair');
-  assert.ok(/margin-inline-end: 12px !important;/.test(avatar[2]),
-    'a small gap to the right edge');
+    'which is not pushed either');
   // The `.iphone-device` fallback sets these with `!important` and two classes,
   // so both of its variants have to be named or the placement never applies
   // there - which is the phone in the screenshots.
@@ -189,16 +193,24 @@ test('the board bar: buttons after the title, hamburger in the corner', () => {
 });
 
 test('the mode toggle shows which mode is on', () => {
+  const headerJade = read('client/components/main/header.jade');
+  const toggle = headerJade.slice(headerJade.indexOf('.mobile-mode-toggle'),
+    headerJade.indexOf('// Drag handles toggle'));
+  assert.ok(/if mobileMode[\s\S]*?i\.fa\.fa-mobile[\s\S]*?else[\s\S]*?i\.fa\.fa-desktop/.test(toggle),
+    'Mobile mode renders only the phone and Desktop mode only the monitor');
   const at = headerCss.indexOf('/* Which mode is ON, at a glance.');
   assert.ok(at !== -1, 'the rules must be there');
   const block = headerCss.slice(at, at + 2000);
-  assert.ok(/i\.mobile-icon,\s*\n[^\n]*i\.desktop-icon \{[\s\S]*?opacity: 0\.35 !important;/.test(block),
-    'the side that is off is faded - black vs #666 was no difference at all');
   assert.ok(/background: var\(--theme-accent, #2980b9\) !important;/.test(block),
-    'and the side that is on is a filled chip in the active theme');
+    'the current mode is a filled chip in the active theme');
+  assert.ok(/\.mobile-active i\.mobile-icon,/.test(block)
+    && /\.desktop-active i\.desktop-icon \{/.test(block)
+    && /opacity: 1 !important;[\s\S]*?color: #fff !important;/.test(block),
+    'the selected Mobile or Desktop icon is explicitly white');
   assert.ok(/\.mobile-active i\.mobile-icon \.fa,/.test(block)
+    && /\.desktop-active i\.desktop-icon \.fa \{/.test(block)
     && /color: #fff !important;/.test(block),
-    'the glyph inside that chip is white - it is the INNER i.fa that draws it');
+    'the inner Font Awesome glyph is also explicitly white');
 });
 
 test('the drag-handle toggle is not a board button in disguise', () => {

@@ -29,6 +29,10 @@ import TableVisibilityModeSettings from '/models/tableVisibilityModeSettings';
 import Triggers from '/models/triggers';
 import Users from '/models/users';
 import { ensureIndex } from '/server/lib/mongoStartup';
+import { getFeatureFlags } from '/models/lib/featureFlags';
+import RecoveryEvents from '/models/recoveryEvents';
+import { recordRecoveryAudit } from '/server/lib/recoveryAudit';
+import { publicErrorData } from '/server/lib/apiResponseHelpers';
 
 const getTAPi18n = () => require('/imports/i18n').TAPi18n;
 
@@ -328,6 +332,111 @@ Meteor.methods({
     return true;
   },
 
+  // The other direction, and gated the same way. Restoring puts a board back in
+  // front of everyone who can see it, so it is a board-admin action exactly as
+  // archiving is - and the two must agree, or one of them is the way round the
+  // check.
+  //
+  // It exists because a board can now be brought back by DRAGGING it out of the
+  // Archive, one board or a whole multi-selection at a time; the archive page's
+  // own button called `board.restore()` straight from the client, which the
+  // allow rules permit for a board admin but which cannot answer for a list of
+  // boards or say why it refused. docs/Features/Page/Archive.md
+  async restoreBoard(boardId) {
+    check(boardId, String);
+    const board = await ReactiveCache.getBoard(boardId);
+    if (!board) {
+      throw new Meteor.Error('error-board-doesNotExist');
+    }
+
+    const userId = this.userId;
+    const user = await ReactiveCache.getUser(userId);
+    if (!board.hasAdmin(userId) && !(user && user.isAdmin)) {
+      throw new Meteor.Error('error-board-notAdmin');
+    }
+
+    await board.restore();
+    return true;
+  },
+
+  // Permanently remove archived boards selected in All Boards / Archive.
+  // The server enforces every gate even against a forged DDP call: Global
+  // Admin, the explicit permanent-delete setting, and archived boards only.
+  // Validate the whole selection before deleting the first board so one bad id
+  // cannot leave a partially applied bulk action.
+  async permanentlyDeleteArchivedBoards(boardIds) {
+    const attemptedIds = Array.isArray(boardIds)
+      ? [...new Set(boardIds.filter(id => typeof id === 'string'))].slice(0, 200)
+      : [];
+    let attemptedBoards = attemptedIds.map(_id => ({ _id, title: '' }));
+    let user;
+    let username = 'unknown';
+
+    try {
+      // audit-argument-checks must see the method argument before the first
+      // await. Otherwise the asynchronous user lookup can leave the audit
+      // context believing boardIds was never checked and mask the real result
+      // with "Did not check() all arguments".
+      check(boardIds, [String]);
+      user = this.userId && await ReactiveCache.getUser(this.userId);
+      username = user?.username || user?._id || 'unknown';
+      const ids = [...new Set(boardIds)];
+      if (!ids.length || ids.length > 200) {
+        throw new Meteor.Error('invalid-board-selection');
+      }
+
+      const foundBoards = await Boards.find(
+        { _id: { $in: ids } },
+        { fields: { _id: 1, title: 1, archived: 1 } },
+      ).fetchAsync();
+      const foundById = new Map(foundBoards.map(board => [board._id, board]));
+      attemptedBoards = ids.map(_id => foundById.get(_id) || { _id, title: '' });
+
+      if (user?.isAdmin !== true || !getFeatureFlags().enablePermanentDelete) {
+        throw new Meteor.Error('not-authorized', 'Permanent delete is disabled.');
+      }
+      if (foundBoards.length !== ids.length || foundBoards.some(board => !board.archived)) {
+        throw new Meteor.Error(
+          'not-archived',
+          'Only archived boards can be permanently deleted.',
+        );
+      }
+      for (const board of foundBoards) {
+        await Boards.removeAsync(board._id);
+        await recordRecoveryAudit({
+          type: RecoveryEvents.types.BOARD_PERMANENTLY_DELETED,
+          user,
+          connection: this.connection,
+          done: true,
+          deletedData: true,
+          boards: [board],
+          detail: `Global Admin ${username} (${user._id}) permanently deleted board ${board._id} titled ${JSON.stringify(board.title || '')}.`,
+        });
+      }
+      return { deleted: foundBoards.length };
+    } catch (error) {
+      // A malformed argument still belongs in Recovery. Resolve the actor here
+      // only when validation failed before the ordinary lookup above.
+      if (!user && this.userId) {
+        try {
+          user = await ReactiveCache.getUser(this.userId);
+          username = user?.username || user?._id || 'unknown';
+        } catch {
+          // Best effort: the original deletion error is the one returned.
+        }
+      }
+      await recordRecoveryAudit({
+        type: RecoveryEvents.types.BOARD_PERMANENTLY_DELETED,
+        user,
+        connection: this.connection,
+        done: false,
+        boards: attemptedBoards,
+        detail: `User ${username} (${user?._id || 'not logged in'}) failed to permanently delete boards ${attemptedBoards.map(board => `${board._id} titled ${JSON.stringify(board.title || '')}`).join(', ') || '(none)'}: ${error.reason || error.message || 'unknown error'}.`,
+      });
+      throw error;
+    }
+  },
+
   async setBoardOrgs(boardOrgsArray, currBoardId) {
     check(boardOrgsArray, Array);
     check(currBoardId, String);
@@ -555,6 +664,11 @@ Meteor.startup(async () => {
   // index-backed rather than a scan + in-memory sort.
   await ensureIndex(Boards, { sort: 1 });
   await ensureIndex(Boards, { archived: 1, 'members.userId': 1 });
+  // All Boards always filters these two scalar fields and sorts by `sort`.
+  // Keep that common prefix index-backed. The relationship branches use
+  // document-form $elemMatch; FerretDB v1 pushes those through json_each, so
+  // simple dotted org/team/domain indexes cannot accelerate them.
+  await ensureIndex(Boards, { archived: 1, type: 1, sort: 1 });
 });
 
 Boards.after.insert(async (userId, doc) => {
@@ -601,6 +715,8 @@ Boards.before.update((userId, doc, fieldNames, modifier) => {
       {
         $pull: {
           members: memberId,
+          requesters: memberId,
+          assigners: memberId,
           watchers: memberId,
         },
       },
@@ -691,15 +807,46 @@ WebApp.handlers.get('/api/users/:userId/boards', async function(req, res) {
     const paramUserId = req.params.userId;
     await Authentication.checkAdminOrCondition(req.userId, req.userId === paramUserId);
 
+    // GHSA-r8r3-23vr-8jh6: a membership counts only while it is ACTIVE. The
+    // dotted `'members.userId'` match ignored `isActive`, and removing a member
+    // does not delete their entry - it sets `isActive: false` and `isAdmin:
+    // false` and keeps it - so a removed member's own board listing went on
+    // showing the board's id and title for as long as the board existed.
+    // Reading the board itself was already refused, which bounded this to the
+    // id and the title; the id is the part that matters, since it is what the
+    // rest of the API is addressed by. `$elemMatch` is what the same revoke
+    // means everywhere else (models/lib/boardVisibilitySelectors.js).
     const boards = await ReactiveCache.getBoards(
       {
         archived: false,
-        'members.userId': paramUserId,
+        members: { $elemMatch: { userId: paramUserId, isActive: true } },
       },
       {
         sort: { sort: 1 },
       },
     );
+    // A caller whose membership was REVOKED still has an entry, so the boards
+    // this listing now withholds are countable - and a removed member coming
+    // back to look is the attempt worth showing in Admin Panel / Problems.
+    // Counted, not named: the point is that somebody is still asking, and the
+    // board titles are the thing being withheld.
+    try {
+      const revoked = await ReactiveCache.getBoards(
+        {
+          archived: false,
+          members: { $elemMatch: { userId: paramUserId, isActive: false } },
+        },
+        { fields: { _id: 1 } },
+      );
+      if (revoked && revoked.length) {
+        require('/server/lib/securityLog').record({
+          key: 'authz.board-list', action: 'blocked',
+          source: 'GET /api/users/:userId/boards',
+          userId: req.userId,
+          detail: `withheld ${revoked.length} board(s) whose membership is revoked`,
+        });
+      }
+    } catch (e) { /* logging must never break the guard */ }
     // #5582: hide internal helper boards (caret-wrapped titles like `^Subtasks^`
     // and non-`board` types such as `list`/`template`) from the REST API, the
     // same way the UI board list does.
@@ -710,10 +857,7 @@ WebApp.handlers.get('/api/users/:userId/boards', async function(req, res) {
 
     sendJsonResult(res, { code: 200, data });
   } catch (error) {
-    sendJsonResult(res, {
-      code: 200,
-      data: error,
-    });
+    sendJsonResult(res, publicErrorData(error));
   }
 });
 
@@ -736,10 +880,7 @@ WebApp.handlers.get('/api/boards', async function(req, res) {
       })),
     });
   } catch (error) {
-    sendJsonResult(res, {
-      code: 200,
-      data: error,
-    });
+    sendJsonResult(res, publicErrorData(error));
   }
 });
 
@@ -756,10 +897,7 @@ WebApp.handlers.get('/api/boards_count', async function(req, res) {
       },
     });
   } catch (error) {
-    sendJsonResult(res, {
-      code: 200,
-      data: error,
-    });
+    sendJsonResult(res, publicErrorData(error));
   }
 });
 
@@ -774,10 +912,7 @@ WebApp.handlers.get('/api/boards/:boardId', async function(req, res) {
       data: board,
     });
   } catch (error) {
-    sendJsonResult(res, {
-      code: 200,
-      data: error,
-    });
+    sendJsonResult(res, publicErrorData(error));
   }
 });
 
@@ -791,18 +926,15 @@ WebApp.handlers.post('/api/boards', async function(req, res) {
       title: req.body.title,
       members: [
         {
-          // #5650: fall back to the authenticated caller when `owner` is omitted.
-          // Without a valid userId the board's only member has userId=undefined,
-          // so the boards publication (members.$elemMatch:{userId,isActive:true})
-          // never matches the user — the board is returned by the REST API but is
-          // invisible in the browser UI. Mirrors the Meteor create method, which
-          // uses this.userId.
-          userId: req.body.owner || req.userId,
-          isAdmin: req.body.isAdmin || true,
-          isActive: req.body.isActive || true,
-          isNoComments: req.body.isNoComments || false,
-          isCommentOnly: req.body.isCommentOnly || false,
-          isWorker: req.body.isWorker || false,
+          // The authenticated caller is always the initial owner. An `owner`
+          // field in the body must not let one user inject boards into another
+          // user's account.
+          userId: req.userId,
+          isAdmin: true,
+          isActive: true,
+          isNoComments: false,
+          isCommentOnly: false,
+          isWorker: false,
         },
       ],
       permission,
@@ -821,10 +953,7 @@ WebApp.handlers.post('/api/boards', async function(req, res) {
       },
     });
   } catch (error) {
-    sendJsonResult(res, {
-      code: error.statusCode || error.code || 500,
-      data: { error: error.reason || error.message || 'Error' },
-    });
+    sendJsonResult(res, publicErrorData(error));
   }
 });
 
@@ -869,7 +998,7 @@ WebApp.handlers.post('/api/boards/import', async function(req, res) {
     );
     sendJsonResult(res, { code: 200, data: { _id: boardId } });
   } catch (error) {
-    sendJsonResult(res, { code: 200, data: error });
+    sendJsonResult(res, publicErrorData(error));
   }
 });
 
@@ -906,7 +1035,7 @@ WebApp.handlers.post('/api/boards/import/:source', async function(req, res) {
     );
     sendJsonResult(res, { code: 200, data: { _id: boardId } });
   } catch (error) {
-    sendJsonResult(res, { code: 200, data: error });
+    sendJsonResult(res, publicErrorData(error));
   }
 });
 
@@ -922,10 +1051,7 @@ WebApp.handlers.delete('/api/boards/:boardId', async function(req, res) {
       },
     });
   } catch (error) {
-    sendJsonResult(res, {
-      code: error.statusCode || error.code || 500,
-      data: { error: error.reason || error.message || 'Error' },
-    });
+    sendJsonResult(res, publicErrorData(error));
   }
 });
 
@@ -945,10 +1071,7 @@ WebApp.handlers.put('/api/boards/:boardId/title', async function(req, res) {
       },
     });
   } catch (error) {
-    sendJsonResult(res, {
-      code: 200,
-      data: error,
-    });
+    sendJsonResult(res, publicErrorData(error));
   }
 });
 
@@ -1008,10 +1131,7 @@ WebApp.handlers.put('/api/boards/:boardId/labels', async function(req, res) {
       data: labelId,
     });
   } catch (error) {
-    sendJsonResult(res, {
-      code: error.statusCode || error.code || 500,
-      data: { error: error.reason || error.message || 'Error' },
-    });
+    sendJsonResult(res, publicErrorData(error));
   }
 });
 
@@ -1145,13 +1265,10 @@ WebApp.handlers.post('/api/boards/:boardId/copy', async function(req, res) {
     // status to 200 when no `code` is given, so `catch { data: error }` returned
     // 200 with the error object as the body — a failed copy looked like a success
     // whose response happened to be an error (the copy REST test then saw an
-    // object, not the new board id). Return 500 with the message, and log the
+    // object, not the new board id). Return a sanitized failure, and log the
     // stack server-side so a failing copy is diagnosable instead of swallowed.
     console.error('POST /api/boards/:boardId/copy failed:', error);
-    sendJsonResult(res, {
-      code: 500,
-      data: { error: (error && error.message) || String(error) },
-    });
+    sendJsonResult(res, publicErrorData(error));
   }
 });
 
@@ -1228,10 +1345,7 @@ WebApp.handlers.post('/api/boards/:boardId/members/:memberId', async function(re
       data: query,
     });
   } catch (error) {
-    sendJsonResult(res, {
-      code: 200,
-      data: error,
-    });
+    sendJsonResult(res, publicErrorData(error));
   }
 });
 
@@ -1258,10 +1372,7 @@ WebApp.handlers.get('/api/boards/:boardId/domains', async function(req, res) {
     }
     sendJsonResult(res, { code: 200, data: board.domains || [] });
   } catch (error) {
-    sendJsonResult(res, {
-      code: 200,
-      data: error,
-    });
+    sendJsonResult(res, publicErrorData(error));
   }
 });
 
@@ -1326,10 +1437,7 @@ WebApp.handlers.post('/api/boards/:boardId/domains', async function(req, res) {
     const updated = await ReactiveCache.getBoard(boardId);
     sendJsonResult(res, { code: 200, data: updated.domains || [] });
   } catch (error) {
-    sendJsonResult(res, {
-      code: 200,
-      data: error,
-    });
+    sendJsonResult(res, publicErrorData(error));
   }
 });
 
@@ -1374,10 +1482,7 @@ WebApp.handlers.delete('/api/boards/:boardId/domains/:domain', async function(re
     const updated = await ReactiveCache.getBoard(boardId);
     sendJsonResult(res, { code: 200, data: updated.domains || [] });
   } catch (error) {
-    sendJsonResult(res, {
-      code: 200,
-      data: error,
-    });
+    sendJsonResult(res, publicErrorData(error));
   }
 });
 

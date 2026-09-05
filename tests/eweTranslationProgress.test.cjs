@@ -1,0 +1,317 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { spawnSync } = require('node:child_process');
+
+const root = path.resolve(__dirname, '..');
+const fillScript = path.join(root, 'releases/translations/fill-translations.mjs');
+const result = spawnSync(process.execPath, [fillScript, '--list', 'ee'], {
+  cwd: root,
+  encoding: 'utf8',
+});
+assert.equal(result.status, 0, result.stderr);
+const remaining = JSON.parse(result.stdout);
+assert.equal(Object.keys(remaining).length, 0);
+
+const english = JSON.parse(
+  fs.readFileSync(path.join(root, 'imports/i18n/data/en.i18n.json'), 'utf8'),
+);
+const ewe = JSON.parse(
+  fs.readFileSync(path.join(root, 'imports/i18n/data/ee.i18n.json'), 'utf8'),
+);
+const tokens = (value) =>
+  [
+    ...value.matchAll(
+      /__[A-Za-z0-9_]+__|%[A-Za-z]|%{[A-Za-z0-9]+}|{{[A-Za-z0-9]+}}/g,
+    ),
+  ]
+    .map(([token]) => token)
+    .sort();
+const tags = (value) =>
+  [...value.matchAll(/<\/?[A-Za-z][^>]*>/g)]
+    .map(([tag]) => tag)
+    .sort();
+
+for (const [key, value] of Object.entries(ewe)) {
+  if (value !== english[key]) {
+    assert.deepEqual(tokens(value), tokens(english[key]), key);
+  }
+  assert.deepEqual(tags(value), tags(english[key]), key);
+}
+
+assert.equal(ewe.accept, 'Lɔ̃ ɖe edzi');
+assert.deepEqual(tokens(ewe['activity-changedTitle']), ['%s', '%s']);
+assert.deepEqual(tokens(ewe['act-deleteCard']), [
+  '__board__',
+  '__card__',
+  '__list__',
+  '__swimlane__',
+]);
+assert.deepEqual(tokens(ewe['act-removeChecklistItem']), [
+  '__board__',
+  '__card__',
+  '__checkList__',
+  '__checklistItem__',
+  '__list__',
+  '__swimlane__',
+]);
+assert.match(ewe['act-createBoard'], /kpekpeɖeŋu/);
+assert.match(ewe['act-addComment'], /nyaŋuɖoɖo/);
+assert.deepEqual(tokens(ewe['act-moveCard']), [
+  '__board__',
+  '__card__',
+  '__list__',
+  '__oldList__',
+  '__oldSwimlane__',
+  '__swimlane__',
+]);
+assert.deepEqual(tokens(ewe['act-moveCardToOtherBoard']), [
+  '__board__',
+  '__card__',
+  '__list__',
+  '__oldBoard__',
+  '__oldList__',
+  '__oldSwimlane__',
+  '__swimlane__',
+]);
+assert.deepEqual(tokens(ewe['activity-imported']), ['%s', '%s', '%s']);
+assert.deepEqual(tokens(ewe['activity-checklist-completed-card']), [
+  '__board__',
+  '__card__',
+  '__checklist__',
+  '__list__',
+  '__swimlane__',
+]);
+assert.match(ewe['allboards.edit-workspace-icon'], /markdown/);
+assert.deepEqual(tokens(ewe['activity-dueDate']), ['%s', '%s']);
+assert.match(ewe['list-width-error-message'], /270/);
+assert.match(ewe['set-swimlane-height'], /tsiƒuƒu/);
+assert.match(ewe['convertChecklistItemToCardPopup-title'], /kaɖi/);
+assert.deepEqual(tokens(ewe['and-n-other-card']), ['__count__']);
+assert.deepEqual(tokens(ewe['avatar-too-big']), ['__size__']);
+assert.deepEqual(tokens(ewe['board-nb-stars']), ['%s']);
+assert.deepEqual(tags(ewe['board-private-info']), [
+  '</strong>',
+  '<strong>',
+]);
+assert.match(ewe['board-background-image-url'], /URL/);
+assert.deepEqual(tags(ewe['board-public-info']), [
+  '</strong>',
+  '<strong>',
+]);
+assert.deepEqual(tokens(ewe['board-open-and-move-between-remaining-and-workspaces']), [
+  '__workspaces__',
+]);
+assert.match(ewe['enter-zoom-level'], /50-300%/);
+assert.deepEqual(tokens(ewe['card-comments-title']), ['%s']);
+assert.match(ewe['cardStartPlanningPokerPopup-title'], /Planning Poker/);
+assert.match(ewe['editPokerEndDatePopup-title'], /Planning Poker/);
+assert.match(ewe['importSwimlanePopup-title'], /tsiƒuƒu/);
+assert.match(ewe['importCardPopup-title'], /kaɖi/);
+assert.match(ewe.casSignIn, /CAS/);
+assert.match(ewe['font-preview-text'], /0123456789/);
+assert.match(ewe['map-to-existing-user-search'], /email/);
+assert.match(ewe['card-aging-days'], /3/);
+assert.match(ewe['color-black'], /yibɔ/);
+assert.match(ewe['color-green'], /amaɖi/);
+assert.match(ewe['color-red'], /dzĩ/);
+assert.match(ewe['copyManyCardsPopup-instructions'], /JSON/);
+assert.doesNotThrow(() => JSON.parse(ewe['copyManyCardsPopup-format']));
+assert.match(ewe['custom-field-dropdown-options-placeholder'], /enter/);
+assert.match(ewe['edit-wip-limit'], /WIP/);
+assert.deepEqual(tokens(ewe['email-invite-text']), [
+  '__board__',
+  '__inviter__',
+  '__url__',
+  '__user__',
+]);
+assert.match(ewe['error-json-malformed'], /JSON/);
+assert.match(ewe['error-csv-schema'], /CSV.*TSV/);
+assert.match(ewe['error-import-empty-board'], /WeKan/);
+assert.match(ewe['export-card-pdf'], /PDF/);
+assert.match(ewe['export-card-excel'], /Excel/);
+assert.match(ewe['export-card-excel-no-disk-space'], /Excel.*disk/);
+assert.match(ewe['advanced-filter-description'], /== != <= >= && \|\| \( \)/);
+assert.match(ewe['advanced-filter-description'], /F1 == \/Tes\.\*\/i/);
+assert.deepEqual(tokens(ewe['import-board-instruction-issues']), [
+  '__endpoint__',
+  '__sourceName__',
+]);
+assert.match(ewe['import-board-instruction-excel'], /WeKan.*\.xlsx.*Excel/);
+assert.match(ewe['import-trello-json-file-hint'], /Trello API key.*token/);
+assert.match(ewe['trello-api-key'], /Trello API key.*https:\/\/trello\.com\/app-key/);
+assert.match(ewe['trello-api-token'], /Trello API token.*API key/);
+assert.match(ewe['invalid-year'], /2026/);
+assert.deepEqual(tokens(ewe['label-default']), ['%s']);
+assert.deepEqual(tokens(ewe['leave-board-pop']), ['__boardTitle__']);
+assert.match(ewe['listImportCardPopup-title'], /Trello/);
+assert.match(ewe['listImportCardsTsvPopup-title'], /Excel CSV\/TSV/);
+assert.deepEqual(tokens(ewe['page-maybe-private']), ['%s']);
+assert.deepEqual(tags(ewe['page-maybe-private']), [
+  '</a>',
+  "<a href='%s'>",
+]);
+assert.deepEqual(tokens(ewe['remove-member-pop']), [
+  '__boardTitle__',
+  '__name__',
+  '__username__',
+]);
+assert.match(ewe['public-desc'], /Google/);
+assert.match(ewe['setWipLimitPopup-title'], /WIP/);
+assert.match(ewe['toggle-assignees'], /1-9/);
+assert.match(ewe['toggle-labels'], /1-9/);
+assert.match(ewe['custom-top-left-corner-logo-height'], /27/);
+assert.match(ewe['automatic-linked-url-schemes'], /URL.*URL/);
+assert.match(ewe['attachment-transfer-limits-title'], /API/);
+assert.match(ewe['api-upload-limit-label'], /API/);
+assert.match(ewe['smtp-tls-description'], /TLS.*SMTP/);
+assert.deepEqual(tokens(ewe['email-invite-register-text']), [
+  '__icode__',
+  '__inviter__',
+  '__url__',
+  '__user__',
+]);
+assert.match(ewe.Node_version, /Node/);
+assert.match(ewe.Meteor_version, /Meteor/);
+assert.match(ewe.FerretDB_version, /FerretDB/);
+assert.match(ewe.Reactivity_mode, /changeStreams \/ oplog \/ polling/);
+assert.match(ewe.Reactivity_order, /METEOR_REACTIVITY_ORDER/);
+assert.match(ewe.DDP_transport, /DDP.*DDP_TRANSPORT/);
+assert.match(ewe['org-domains-description'], /a\.example\.com.*kanban\.example\.org.*MULTITENANCY=true/);
+assert.deepEqual(tokens(ewe['default-subtasks-board']), ['__board__']);
+assert.match(ewe['checklist-count-on-minicard'], /0\/0/);
+assert.deepEqual(tokens(ewe['activity-added-label']), ['%s', '%s']);
+assert.deepEqual(tokens(ewe['activity-removed-label']), ['%s', '%s']);
+assert.deepEqual(tokens(ewe['activity-set-customfield']), ['%s', '%s', '%s']);
+assert.deepEqual(tokens(ewe['r-w-every-day-at']), ['__time__']);
+assert.deepEqual(tokens(ewe['r-import-done']), ['__count__']);
+assert.match(ewe['r-import-paste'], /JSON.*CSV.*Trello Butler/);
+assert.match(ewe['r-import-workflow-note'], /n8n.*Node-RED.*WeKan/);
+assert.deepEqual(tokens(ewe['r-import-unmapped']), ['__count__']);
+assert.match(ewe['r-for-n-days'], /N/);
+assert.match(ewe['r-list'], /xexlẽdzesi/);
+assert.match(ewe['r-card'], /kaɖi/);
+assert.match(ewe['r-checklist'], /ŋkuɖodzinudzesi/);
+assert.equal(ewe['r-items-list'].split(',').length, 3);
+assert.match(ewe['custom-head-meta-tags'], /HTML/);
+assert.match(ewe['custom-head-manifest-content'], /JSON/);
+assert.match(ewe['custom-assetlinks-content'], /assetlinks\.json.*JSON/i);
+assert.deepEqual(tags(ewe['add-custom-html-after-body-start']), ['<body>']);
+assert.deepEqual(tags(ewe['add-custom-html-before-body-end']), ['</body>']);
+assert.match(ewe['oidc-button-text'], /OIDC/);
+assert.deepEqual(tokens(ewe['act-a-dueAt']), [
+  '__card__',
+  '__timeOldValue__',
+  '__timeValue__',
+]);
+assert.deepEqual(tokens(ewe['act-atUserComment']), [
+  '__board__',
+  '__card__',
+  '__comment__',
+  '__list__',
+  '__swimlane__',
+]);
+assert.match(ewe['submit-on-enter-description'], /Enter.*Shift\+Enter.*Ctrl\/Cmd\+Enter.*Enter/);
+assert.equal(ewe.monday, 'Dzoɖa');
+assert.equal(ewe.sunday, 'Kɔsiɖa');
+assert.match(ewe['invalid-domain'], /example\.com.*@/);
+assert.match(ewe['dueCardsViewChange-choice-all-description'], /\*[^*]+\*/);
+assert.match(ewe['globalSearchViewChange-choice-all-description'], /\*[^*]+\*/);
+assert.deepEqual(tokens(ewe['board-title-not-found']), ['%s']);
+assert.deepEqual(tokens(ewe['user-username-not-found']), ['%s']);
+assert.deepEqual(tokens(ewe['n-n-of-n-cards-found']), [
+  '__end__',
+  '__start__',
+  '__total__',
+]);
+assert.match(ewe['operator-board'], /kpekpeɖeŋu/);
+assert.match(ewe['operator-checklist-text'], /ŋkuɖodzinudzesi/);
+assert.deepEqual(tokens(ewe['operator-number-expected']), [
+  '__operator__',
+  '__value__',
+]);
+assert.match(ewe['globalSearch-instructions-description'], /`list:Blocked`.*`__operator_list__:\"To Review\"`/);
+assert.deepEqual(
+  tags(ewe['globalSearch-instructions-operator-board']),
+  tags(english['globalSearch-instructions-operator-board']),
+);
+assert.match(ewe['globalSearch-instructions-notes-2'], /\*OR\*/);
+assert.match(ewe['globalSearch-instructions-notes-3'], /\*AND\*/);
+assert.match(ewe['sort-boards-title-asc'], /A → Z/);
+assert.match(ewe['sort-boards-title-desc'], /Z → A/);
+assert.match(ewe['import-dependencies-file'], /JSON.*SVG/);
+assert.deepEqual(tokens(ewe['import-dependencies-done']), [
+  '__imported__',
+  '__unmatched__',
+]);
+assert.deepEqual(tokens(ewe['background-too-big']), ['{{size}}']);
+assert.match(ewe['server-error-troubleshooting'], /`sudo snap logs wekan\.wekan`.*`sudo docker logs wekan-app`/s);
+assert.deepEqual(tokens(ewe['custom-field-stringtemplate-format']), ['%{value}']);
+assert.match(ewe['custom-field-stringtemplate-separator'], /&#32;.*&nbsp;/);
+assert.match(ewe['office-report-desc'], /IPv4.*IPv6/);
+assert.match(ewe['api-report-desc'], /REST API/);
+assert.match(ewe['api-no-calls'], /REST API.*API.*WITH_API=true/);
+assert.match(ewe['recovery-report-desc'], /MongoDB/);
+assert.match(ewe['carbon-copy'], /Cc:/);
+assert.match(ewe.Node_heap_malloced_memory, /Node heap.*malloced memory/);
+assert.match(ewe.Node_memory_usage_rss, /Node.*resident set size/);
+assert.match(ewe['custom-legal-notice-link-url'], /URL/);
+assert.match(ewe['attachment-move-storage-gridfs'], /GridFS/);
+assert.match(ewe['attachment-move-storage-s3'], /S3/);
+assert.match(ewe['move-all-attachments-of-board-to-gridfs'], /GridFS/);
+assert.match(ewe['move-all-attachments-of-board-to-s3'], /S3/);
+assert.match(ewe['gridfs-file-id'], /GridFS.*ID/);
+assert.match(ewe['mongodb-compact-description'], /MongoDB GridFS.*disk.*Compact/);
+assert.match(ewe['mongodb-compact-warning'], /Compact.*replica set.*oplog.*Meteor.*Compact/);
+assert.match(ewe.Mongo_sessions_count, /Mongo/);
+assert.match(ewe['max-upload-filesize'], /bytes/);
+assert.match(ewe['preview-pdf-not-supported'], /PDF/);
+assert.deepEqual(tokens(ewe['drag-board-to-workspace']), ['__workspaces__']);
+assert.match(ewe['show-week-of-year'], /ISO 8601/);
+assert.match(ewe['import-board-zip'], /\.zip.*JSON/);
+assert.match(ewe['accounts-lockout-period'], /sekɛndwo/);
+assert.match(ewe['attachments-path'], /mɔ/);
+assert.match(ewe['avatars-path'], /mɔ/);
+assert.match(ewe['s3-force-path-style-description'], /MinIO.*AWS.*S3/);
+assert.match(ewe['database-migration-description'], /MongoDB.*FerretDB v1.*SQLite.*mongodb:\/\/127\.0\.0\.1:27018.*mongodb:\/\/127\.0\.0\.1:27019.*WEKAN_FERRETDB_URL.*WEKAN_MONGODB_URL.*MONGO_URL.*WeKan.*Snap.*snap set wekan database=ferretdb.*=mongodb/);
+assert.deepEqual(tokens(ewe['database-migration-confirm']), ['__db__']);
+assert.match(ewe['sandstorm-migration-description'], /WeKan.*Sandstorm grain.*MongoDB 3.*FerretDB v1.*SQLite.*files\/attachments.*files\/avatars.*disk.*MongoDB.*grain/);
+assert.match(ewe['cards-loading-description'], /WeKan.*infinite scroll.*CARDS_LOADING.*all\/lazy\/auto.*CARDS_LOADING_LAZY_THRESHOLD/);
+assert.deepEqual(tags(ewe['render-links-as-plain-text-description']), ['<a href>']);
+assert.match(ewe['always-show-code-as-text-description'], /HTML.*<!-- -->.*JavaScript/);
+assert.match(ewe['backup-description'], /\.zip.*backup\/YYYY\/MM\/DD\/HH_MM_SS\/backup\.zip.*YYYY_MM_DD-HH_MM_SS\/attachments.*\/avatars.*\/data.*S3\/MinIO.*Azure.*GCS/);
+assert.match(ewe['backup-time'], /HH:MM/);
+assert.match(ewe['backup-day-of-month'], /1-28/);
+assert.match(ewe['gcs-permissions-note'], /WeKan.*Google Cloud Console.*Cloud Storage.*Buckets.*Permissions.*Grant access.*New principals.*client_email.*JSON.*Storage Object Admin/);
+assert.match(ewe['s3-endpoint-menu-path'], /AWS.*S3-compatible.*Endpoint URL.*MinIO.*Cloudflare R2.*Backblaze B2.*Wasabi.*DigitalOcean Spaces/);
+assert.match(ewe['attachment-move-storage-azure'], /Azure Blob Storage/);
+assert.match(ewe['attachment-move-storage-gcs'], /Google Cloud Storage/);
+assert.match(ewe['gridfs-enabled-description'], /MongoDB GridFS/);
+assert.match(ewe['gridfs-move-collectionfs-note'], /CollectionFS/);
+assert.match(ewe['s3-enabled-description'], /AWS S3.*MinIO/);
+assert.match(ewe['s3-region-description'], /AWS S3.*us-east-1/);
+assert.match(ewe['s3-ssl-enabled-description'], /SSL\/TLS.*S3/);
+assert.match(ewe['restore-lost-cards-migration-description'], /swimlaneId.*listId/);
+assert.match(ewe['restore-all-archived-migration-description'], /swimlaneId.*listId/);
+assert.match(ewe['fix-avatar-urls-migration-description'], /URL/);
+assert.match(ewe['run-restore-all-archived-migration-confirm'], /ID/);
+assert.match(ewe['step-fix-missing-ids'], /ID/);
+assert.match(ewe['step-fix-file-urls'], /URL/);
+assert.match(ewe['cpu-cores'], /CPU/);
+assert.match(ewe['gridfs-attachments'], /GridFS/);
+assert.match(ewe['every-30-minutes'], /30/);
+assert.match(ewe['migrate-all-to-gridfs'], /GridFS/);
+assert.match(ewe['migrate-all-to-s3'], /S3/);
+assert.match(ewe['migration-batch-size-description'], /1-100/);
+assert.match(ewe['migration-cpu-threshold'], /CPU.*%/);
+assert.match(ewe['migration-cpu-threshold-description'], /CPU.*10-90/);
+assert.match(ewe['migration-delay-ms-description'], /100-10000/);
+assert.deepEqual(tokens(ewe['repair-broken-cards-done']), ['__fixed__']);
+assert.deepEqual(tokens(ewe['repair-broken-cards-done-unfixable']), [
+  '__fixed__',
+  '__unfixable__',
+]);
+assert.match(ewe['globalSearch-instructions-operator-number'], /`__operator_number__:<number>`/);
+assert.match(ewe['globalSearch-instructions-operator-number'], /\*<number>\*/);
+assert.match(ewe['import-here-instruction'], /WeKan.*\.json.*\.zip/);
+assert.match(ewe['import-board-source'], /Trello.*Jira.*WeKan.*CSV.*Excel/);

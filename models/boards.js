@@ -3,6 +3,8 @@ import { Mongo } from 'meteor/mongo';
 import { check, Match } from 'meteor/check';
 import { Random } from 'meteor/random';
 import { ReactiveCache } from '/imports/reactiveCache';
+const { notHelperBoardTitle } = require('/models/lib/helperBoards');
+const { boardVisibilitySelectors } = require('/models/lib/boardVisibilitySelectors');
 import escapeForRegex from 'escape-string-regexp';
 import CustomFields from './customFields';
 import {
@@ -600,6 +602,19 @@ Boards.attachSchema(
        */
       type: Boolean,
       defaultValue: true,
+    },
+
+    allowsCustomFields: {
+      /** Show assigned custom fields on opened cards? */
+      type: Boolean,
+      optional: true,
+      defaultValue: true,
+    },
+    allowsCustomFieldsOnMinicard: {
+      /** Show assigned custom fields on minicards? Opt-in by default. */
+      type: Boolean,
+      optional: true,
+      defaultValue: false,
     },
 
     allowsChecklistCountBadgeOnMinicard: {
@@ -1861,7 +1876,29 @@ Boards.helpers({
     // Upsert keyed on the deterministic _id: concurrent self-heals collide on
     // the _id unique index, so only one insert wins instead of racing the
     // check-then-insert and each inserting a new swimlane.
-    Swimlanes.upsert({ _id: defaultId }, { $setOnInsert: this.defaultSwimlaneFields() });
+    //
+    // It must be the ASYNC upsert. Meteor 3 removed the synchronous one on the
+    // server, and calling it threw
+    //   Error: update is not available on the server. Please use updateAsync()
+    // out of every `moveSwimlane` that reached this self-heal - the failure an
+    // admin kept seeing in Admin Panel / Problems / Database problems. This
+    // getter is SYNCHRONOUS and cannot await, so the upsert is started and not
+    // waited for: the self-heal still happens, and this call returns whatever
+    // is in the cache, which the caller already had to handle (it was undefined
+    // before the self-heal existed too). A caller that needs the swimlane back
+    // in the same tick uses ensureDefaultSwimlaneIdAsync().
+    try {
+      const p = Swimlanes.upsertAsync(
+        { _id: defaultId },
+        { $setOnInsert: this.defaultSwimlaneFields() },
+      );
+      if (p && typeof p.catch === 'function') p.catch(() => {});
+    } catch (e) {
+      if (process.env.DEBUG === 'true') {
+        // eslint-disable-next-line no-console
+        console.warn('default swimlane self-heal failed:', e && e.message);
+      }
+    }
     return ReactiveCache.getSwimlane({ _id: defaultId });
   },
 
@@ -1871,7 +1908,10 @@ Boards.helpers({
       { _id: defaultId },
       { $setOnInsert: this.defaultSwimlaneFields() },
     );
-    return ReactiveCache.getSwimlane({ _id: defaultId });
+    return (
+      (await ReactiveCache.getSwimlane({ _id: defaultId })) ||
+      (Meteor.isServer ? await Swimlanes.findOneAsync(defaultId) : undefined)
+    );
   },
 
   // Fields for an upsert-inserted default swimlane. archived/type must be set
@@ -1886,9 +1926,13 @@ Boards.helpers({
   async getDefaultSwimlineAsync() {
     // Issue #1971: prefer a NON-archived swimlane (see getDefaultSwimline).
     const { pickDefaultSwimlane } = require('./lib/defaultSwimlane');
-    let result = pickDefaultSwimlane(
-      await ReactiveCache.getSwimlanes({ boardId: this._id }),
-    );
+    // On the server this can run immediately after creating a helper board and
+    // its first swimlane. The reactive cache may still hold the pre-insert
+    // empty result, so use the authoritative collection in server methods.
+    const swimlanes = Meteor.isServer
+      ? await Swimlanes.find({ boardId: this._id }).fetchAsync()
+      : await ReactiveCache.getSwimlanes({ boardId: this._id });
+    let result = pickDefaultSwimlane(swimlanes);
     if (result === undefined && Meteor.isServer && this._id) {
       // Issue #6382: never auto-create swimlanes from the client (see
       // getDefaultSwimline) — only the server may insert the default one.
@@ -2394,23 +2438,39 @@ Boards.uniqueTitle = async title => {
 
 // Non-async: returns data on client, Promise on server.
 // Server callers must await.
+// Boards matching `selector` that the user may search. `options.includePublic:
+// false` drops the "anybody may open this" clause, the same choice as
+// Boards.userBoards - this is what resolves a `board:name` filter, so it has to
+// scope the same way the search around it does, or the filter would name a board
+// the search cannot return anything from.
 Boards.userSearch = (
   userId,
   selector = {},
   projection = {},
-  // includeArchived = false,
+  options = {},
 ) => {
-  // if (!includeArchived) {
-  //   selector.archived = false;
-  // }
-  selector.$or = [{ permission: 'public' }];
+  selector.$or = options.includePublic === false ? [] : [{ permission: 'public' }];
 
   if (userId) {
     selector.$or.push({ members: { $elemMatch: { userId, isActive: true } } });
   }
+  // An anonymous caller with public boards excluded can reach nothing, and an
+  // empty `$or` matches NOTHING in Mongo but is an error in some backends - so
+  // say it explicitly rather than leaving a selector that means "no boards" by
+  // accident.
+  if (selector.$or.length === 0) {
+    return Meteor.isServer ? Promise.resolve([]) : [];
+  }
   return ReactiveCache.getBoards(selector, projection);
 };
 
+// The ways a user reaches a board. `{ permission: 'public' }` is the odd one out:
+// it is not a relationship to the user at all, it is "anybody may open this". That
+// belongs in the boards LIST - a public board is meant to be discoverable - but not
+// in a search over "all boards", where it means every public board on the instance
+// is searched, and a hit lands the user in somebody else's board they have no part
+// in. `options.includePublic: false` leaves it out (see Boards.userBoardIds).
+//
 // Non-async: returns data on client (for Blaze templates), Promise on server.
 // Server callers must await.
 Boards.userBoards = (
@@ -2418,7 +2478,9 @@ Boards.userBoards = (
   archived = false,
   selector = {},
   projection = {},
+  options = {},
 ) => {
+  const includePublic = options.includePublic !== false;
   const _buildSelector = (user) => {
     if (!user) return null;
     if (typeof archived === 'boolean') {
@@ -2431,16 +2493,17 @@ Boards.userBoards = (
     // carets (e.g. `^Subtasks^`). Only set this when the caller did not already
     // constrain the title.
     if (selector.title === undefined) {
-      selector.title = { $not: { $regex: /^\^.*\^$/ } };
+      selector.title = notHelperBoardTitle();
     }
-    selector.$or = [
-      { permission: 'public' },
-      { members: { $elemMatch: { userId, isActive: true } } },
-      { orgs: { $elemMatch: { orgId: { $in: user.orgIds() }, isActive: true } } },
-      { teams: { $elemMatch: { teamId: { $in: user.teamIds() }, isActive: true } } },
-      // #5850: domain-based board sharing — board shared with the user's email domain.
-      { domains: { $elemMatch: { domain: { $in: user.emailDomains() }, isActive: true } } },
-    ];
+    // GHSA-gwc4-fw7p-gw58: the same builder the `board` publication uses, so
+    // "which boards may this user see" has one answer and cannot drift.
+    selector.$or = boardVisibilitySelectors({
+      userId,
+      orgIds: user.orgIds(),
+      teamIds: user.teamIds(),
+      emailDomains: user.emailDomains(),
+      includePublic,
+    });
     return selector;
   };
 
@@ -2456,10 +2519,10 @@ Boards.userBoards = (
   return ReactiveCache.getBoards(selector, projection);
 };
 
-Boards.userBoardIds = async (userId, archived = false, selector = {}) => {
+Boards.userBoardIds = async (userId, archived = false, selector = {}, options = {}) => {
   const boards = await Boards.userBoards(userId, archived, selector, {
     fields: { _id: 1 },
-  });
+  }, options);
   return boards.map(board => {
     return board._id;
   });

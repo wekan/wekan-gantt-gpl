@@ -1,0 +1,22 @@
+      # ========== CUSTOM END =====
+      ## See ../multitenancy.md about commented out settings:
+      #- METEOR_REACTIVITY_ORDER=changeStreams,oplog,polling
+      - METEOR_REACTIVITY_ORDER=oplog,polling
+      # sockjs is the only transport WeKan ships: no bundle or image carries
+      # uWebSockets.js, and DDP_TRANSPORT=uws is coerced to sockjs at startup.
+      - DDP_TRANSPORT=sockjs
+      - WRITABLE_PATH=/data
+      - WITH_API=true
+      - RICHER_CARD_COMMENT_EDITOR=false
+      - CARD_OPENED_WEBHOOK_ENABLED=false
+      - BIGEVENTS_PATTERN=NONE
+      - NODE_FLAGS=--max-old-space-size=16384
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - wekan-files:/data:rw
+
+volumes:
+  wekan-files:
+    driver: local

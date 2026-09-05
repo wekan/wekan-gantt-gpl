@@ -11,13 +11,13 @@ import { Utils } from '/client/lib/utils';
 // #3392-adjacent: "my cards / all cards" toggle for global search (mirrors the
 // due-cards view toggle). When "me", the current user is injected as a `user:`
 // predicate (member OR assignee), reusing the existing search logic.
-Template.globalSearchHeaderBar.helpers({
+Template.globalSearchControls.helpers({
   globalSearchView() {
     return Utils.globalSearchView();
   },
 });
 
-Template.globalSearchHeaderBar.events({
+Template.globalSearchControls.events({
   'click .js-global-search-view-change': Popup.open('globalSearchViewChange'),
 });
 
@@ -372,6 +372,7 @@ Template.globalSearch.helpers({
         operator_debug: TAPi18n.__('operator-debug'),
         operator_org: TAPi18n.__('operator-org'),
         operator_team: TAPi18n.__('operator-team'),
+        operator_number: TAPi18n.__('operator-number'),
         predicate_overdue: TAPi18n.__('predicate-overdue'),
         predicate_archived: TAPi18n.__('predicate-archived'),
         predicate_all: TAPi18n.__('predicate-all'),
@@ -414,6 +415,7 @@ Template.globalSearch.helpers({
         ['\n- ', 'globalSearch-instructions-operator-creator'],
         ['\n- ', 'globalSearch-instructions-operator-org'],
         ['\n- ', 'globalSearch-instructions-operator-team'],
+        ['\n- ', 'globalSearch-instructions-operator-number'],
         ['\n- ', 'globalSearch-instructions-operator-due'],
         ['\n- ', 'globalSearch-instructions-operator-created'],
         ['\n- ', 'globalSearch-instructions-operator-modified'],

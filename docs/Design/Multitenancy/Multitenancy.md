@@ -2,7 +2,7 @@
 
 Today, hosting *n* customers means running *n* WeKan servers: *n* Node.js
 processes, *n* `ROOT_URL`s, *n* databases, *n* upgrades. That is what
-[`docs/Platforms/FOSS/Docker/Meteor3/`](../../Platforms/FOSS/Docker/Meteor3/README.md)
+[`docs/Platforms/FOSS/Container/Docker/Meteor3/`](../../Platforms/FOSS/Container/Docker/Meteor3)
 sets up and it works.
 
 This page designs the **alternatives**: what it would take for **one** WeKan
@@ -23,8 +23,8 @@ Everything the question touches. Paths are from the repository root.
 
 | File Path | File Type | Description |
 | --- | --- | --- |
-| `docs/Platforms/FOSS/Docker/Meteor3/README.md` | `.md` guide | The shipped topology: Caddy in front, one WeKan container per customer, one MongoDB, one database per customer. |
-| `docs/Platforms/FOSS/Docker/Meteor3/multitenancy.md` | `.md` guide | The two supported transports for that topology, and why each instance in one network namespace needs its own internal `uws.port`. |
+| `docs/Platforms/FOSS/Container/Docker/Meteor3` | `.md` guide | The shipped topology: Caddy in front, one WeKan container per customer, one MongoDB, one database per customer. |
+| `docs/Platforms/FOSS/Container/Docker/Meteor3/multitenancy.md` | `.md` guide | The two supported transports for that topology, and why each instance in one network namespace needs its own internal `uws.port`. |
 | `docker-compose-multitenancy.yml` | `.yml` compose file | The working example: per-tenant `PORT`, `ROOT_URL`, `MONGO_URL` database and `uws.port`. |
 | `models/lib/universalUrlGenerator.js` | `.js` module | Builds attachment/avatar URLs that do **not** depend on `ROOT_URL`. Already tenant-safe, and the model the rest of the code should follow. |
 | `server/routes/universalFileServer.js` | `.js` route | Serves `/cdn/storage/…` for any host. Two `Meteor.absoluteUrl()` calls are the only `ROOT_URL` dependency left in it. |
@@ -38,7 +38,7 @@ Everything the question touches. Paths are from the repository root.
 | `models/lib/tenantBackup.js` | `.js` module | **(D)** Pure per-tenant backup scope: which collections, the selector for each, the restore-side ownership guard, where a tenant's archives live. |
 | `server/lib/tenantResolver.js` | `.js` server | **(D)** The Meteor glue: the host → org cache, the resolver for HTTP requests and DDP connections, the per-host runtime config hook. |
 | `server/methods/tenant.js` | `.js` methods | **(D)** `currentTenant`, the org tenant/branding fields, the site theme (`getAdminThemeColor` / `setAdminThemeColor`), appointing per-tenant Global Admins, listing an org's members. |
-| `docs/Design/Page/Theme.md` | `.md` design | **(D)** The shared "Change color" picker and the order of themes: default → site/Organization → user. |
+| `docs/Features/Page/Theme.md` | `.md` design | **(D)** The shared "Change color" picker and the order of themes: default → site/Organization → user. |
 | `server/methods/backup.js` | `.js` methods | **(D)** Per-tenant backup and restore, scoped by `models/lib/tenantBackup.js`. |
 | `tests/tenants.test.cjs`, `tests/tenantAdmin.test.cjs`, `tests/tenantBackup.test.cjs`, `tests/tenantWiring.test.cjs` | `.cjs` tests | **(D)** The separation suite: host spoofing, scope, escalation, cross-tenant restore, and that the wiring really calls the rules. |
 
@@ -384,7 +384,7 @@ host.
 **The site theme** is the one branding field an Organization's own admin sets from
 the Admin Panel rather than from the org row: Admin Panel / Settings / Visibility /
 **Change color**, the same shared picker as Board Settings and Member Settings
-([Change color](../Page/Theme.md)). The site admin's pane says under the title that
+([Change color](../../Features/Page/Theme.md)). The site admin's pane says under the title that
 their colour is the one every Organization without one of its own inherits; an
 Organization's admin sees only that section of the pane, and their colour reaches
 only their own hosts. Where the write lands is decided server-side by

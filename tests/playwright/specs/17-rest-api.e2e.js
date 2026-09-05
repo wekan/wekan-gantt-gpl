@@ -17,6 +17,7 @@
  *  - copy a card to a 0-based position (deep copy)
  *  - #3062  board card settings GET/PUT
  *  - #4815  GET /api/user/cards (My Cards / Due Cards)
+ *  - DELETE /api/users/:userId confirms deletion and reports missing users
  *
  * The API requires WITH_API=true (the build.sh "Run tests" server sets it).
  * The Bearer token is the user's MongoDB resume token (seedUser returns the raw
@@ -57,6 +58,53 @@ async function createLabel(request, token, boardId, name, color) {
 }
 
 test.describe('REST API: data + permissions', () => {
+  test('#1437 logout revokes the presented REST token', async ({ request, user, board }) => {
+    const before = db.findOne('users', { _id: user.id });
+    expect(before.services.resume.loginTokens.length).toBeGreaterThan(0);
+
+    const logout = await request.post('/users/logout', {
+      headers: authHeaders(user.token, true),
+      data: {},
+    });
+    expect(logout.status()).toBe(200);
+
+    const after = db.findOne('users', { _id: user.id });
+    expect(after.services.resume.loginTokens).toHaveLength(0);
+    const rejected = await request.get(`/api/boards/${board.boardId}`, {
+      headers: authHeaders(user.token),
+    });
+    expect(rejected.status()).toBe(401);
+  });
+
+  // ---- DELETE /api/users/:userId: confirm the authoritative result --------
+  test('user deletion confirms removal and reports a repeat as 404', async ({ request, adminUser }) => {
+    const target = db.seedUser();
+    try {
+      expect(db.findOne('users', { _id: target.id })).not.toBeNull();
+
+      const deleted = await request.delete(`/api/users/${target.id}`, {
+        headers: authHeaders(adminUser.token),
+      });
+      expect(deleted.status()).toBe(200);
+      expect(await deleted.json()).toEqual({ _id: target.id });
+
+      // Independently poll MongoDB so the response cannot merely echo the id.
+      await expect.poll(
+        () => db.findOne('users', { _id: target.id }),
+        { message: 'the deleted user should be absent from MongoDB' },
+      ).toBeNull();
+
+      const missing = await request.delete(`/api/users/${target.id}`, {
+        headers: authHeaders(adminUser.token),
+        failOnStatusCode: false,
+      });
+      expect(missing.status()).toBe(404);
+      expect(await missing.json()).toEqual({ error: 'User not found' });
+    } finally {
+      db.deleteOne('users', { _id: target.id });
+    }
+  });
+
   // ---- #4743 / #5813: bulk create, uniqueness, bulk delete ----------------
   test('#4743/#5813 bulk create assigns unique card numbers, bulk delete removes them', async ({ request, user, board }) => {
     const listId = board.listIds[0];
@@ -416,13 +464,14 @@ test.describe('REST API: data + permissions', () => {
 
     // A comment on the source card, authored by a DIFFERENT user.
     const commentId = db.uid('cmt');
+    const originalCreatedAt = new Date('2017-01-02T03:04:05.000Z');
     db.insertOne('card_comments', {
       _id: commentId,
       boardId: board.boardId,
       cardId: srcCardId,
       userId: user2.id,
       text: 'original author comment',
-      createdAt: new Date(),
+      createdAt: originalCreatedAt,
       modifiedAt: new Date(),
     });
 
@@ -447,6 +496,8 @@ test.describe('REST API: data + permissions', () => {
       expect(copied[0].boardId).toBe(dest.boardId);
       expect(copied[0].boardId).not.toBe(board.boardId);
       expect(copied[0].userId).toBe(user2.id);
+      expect(new Date(copied[0].createdAt).toISOString())
+        .toBe(originalCreatedAt.toISOString());
     } finally {
       db.cleanup({ boardIds: [dest.boardId] });
     }

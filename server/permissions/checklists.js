@@ -1,19 +1,21 @@
 import Cards from '/models/cards';
 import Checklists from '/models/checklists';
-import { allowIsBoardMemberWithWriteAccessByCard, denyCrossBoardMoveByCard } from '/server/lib/utils';
+import { denyCrossBoardMoveByCard } from '/server/lib/utils';
+import { tripCanaryDeny } from '/server/lib/canary';
+import { canEditCardOrLinkedCard } from '/server/lib/linkedCardPermission';
 
 Checklists.allow({
   async insert(userId, doc) {
     // ReadOnly users cannot create checklists
-    return await allowIsBoardMemberWithWriteAccessByCard(userId, await Cards.findOneAsync(doc.cardId));
+    return await canEditCardOrLinkedCard(userId, await Cards.findOneAsync(doc.cardId));
   },
   async update(userId, doc) {
     // ReadOnly users cannot edit checklists
-    return await allowIsBoardMemberWithWriteAccessByCard(userId, await Cards.findOneAsync(doc.cardId));
+    return await canEditCardOrLinkedCard(userId, await Cards.findOneAsync(doc.cardId));
   },
   async remove(userId, doc) {
     // ReadOnly users cannot delete checklists
-    return await allowIsBoardMemberWithWriteAccessByCard(userId, await Cards.findOneAsync(doc.cardId));
+    return await canEditCardOrLinkedCard(userId, await Cards.findOneAsync(doc.cardId));
   },
   fetch: ['userId', 'cardId'],
 });
@@ -25,7 +27,8 @@ Checklists.allow({
 // card). Deny any move whose destination board the caller cannot write to.
 Checklists.deny({
   async update(userId, doc, fieldNames, modifier) {
-    return await denyCrossBoardMoveByCard(userId, modifier);
+    if (!(await denyCrossBoardMoveByCard(userId, modifier))) return false;
+    return tripCanaryDeny('checklist.cross-board-move', { userId });
   },
   fetch: [],
 });

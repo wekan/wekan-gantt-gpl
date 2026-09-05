@@ -1,5 +1,6 @@
 template(name="listBody")
-  .list-body(class="{{#unless isVerticalScrollbars}}no-scrollbars{{/unless}}")
+  .list-body(class="{{#unless isVerticalScrollbars}}no-scrollbars{{/unless}}"
+    role="region" tabindex="0" aria-label="{{_ 'list'}}: {{title}}")
     .minicards.clearfix.js-minicards(class="{{#if reachedWipLimit}}js-list-full{{/if}}")
       +inlinedForm(autoclose=false position="top")
         +addCardForm(listId=_id position="top")
@@ -14,7 +15,7 @@ template(name="listBody")
             if $eq customFieldsSum.type "currency"
               +viewer
                 = formattedCurrencyCustomFieldValue(value)
-      each (cardsWithLimit (idOrNull ../../_id))
+      each (cardsWithLimit (idOrNull containerSwimlaneId))
         a.minicard-wrapper.js-minicard(href=originRelativeUrl
           data-card-id="{{_id}}"
           class="{{#if cardIsSelected}}is-selected{{/if}}"
@@ -23,7 +24,7 @@ template(name="listBody")
             .materialCheckBox.multi-selection-checkbox.js-toggle-multi-selection(
               class="{{#if MultiSelection.isSelected _id}}is-checked{{/if}}")
           +minicard(this)
-      if (showSpinner (idOrNull ../../_id))
+      if (showSpinner (idOrNull containerSwimlaneId))
         +spinnerList
       if canSeeAddCard
         +inlinedForm(autoclose=false position="bottom")

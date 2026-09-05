@@ -4,6 +4,7 @@ import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
 import Users from '/models/users';
 import { EscapeActions } from '/client/lib/escapeActions';
 import { enablePageDragscroll, disablePageDragscroll } from '/client/lib/pageDragscroll';
+import { trapTabKey } from '/client/lib/accessibility';
 
 let alreadyCheck = 1;
 let isCheckDone = false;
@@ -309,6 +310,9 @@ Template.userFormsLayout.events({
 Template.defaultLayout.events({
   'click .js-close-modal': () => {
     Modal.close();
+  },
+  'keydown #modal'(event) {
+    trapTabKey(event);
   },
 });
 

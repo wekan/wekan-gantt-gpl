@@ -13,34 +13,58 @@ template(name="tableView")
           span.table-view-page-info {{currentPage}} / {{totalPages}}
           button.js-table-view-next-page(type="button" class="{{#unless hasNextPage}}disabled{{/unless}}" aria-label="{{_ 'next'}}")
             i.fa.fa-chevron-right
-      table.my-cards-board-table
+        button.js-table-view-toggle-card-title-wrap(type="button" class="{{#if wrapCardTitles}}active{{/if}}" title="{{_ 'card'}}" aria-label="{{_ 'card'}}" aria-pressed="{{wrapCardTitles}}")
+          i.fa(class="{{#if wrapCardTitles}}fa-align-left{{else}}fa-ellipsis-h{{/if}}")
+        button.js-table-view-toggle-swimlane-groups(type="button" class="{{#if groupBySwimlane}}active{{/if}}" title="{{_ 'swimlane'}}" aria-label="{{_ 'swimlane'}}" aria-pressed="{{groupBySwimlane}}")
+          i.fa(class="{{#if groupBySwimlane}}fa-object-group{{else}}fa-list{{/if}}")
+      table.my-cards-board-table.table-view-table(class="{{#if wrapCardTitles}}table-view-wrap-card-titles{{else}}table-view-ellipsis-card-titles{{/if}}")
         caption.sr-only {{currentBoard.title}}
         thead
           tr
             th(scope="col")
-            th(scope="col") {{_ "card"}}
-            th(scope="col") {{_ "list"}}
-            th(scope="col") {{_ "swimlane"}}
+            th(scope="col")
+              button.js-table-view-sort(type="button" data-field="title")
+                | {{_ "card"}}
+                i.fa(class="{{sortIcon 'title'}}")
+            th(scope="col")
+              button.js-table-view-sort(type="button" data-field="listTitle")
+                | {{_ "list"}}
+                i.fa(class="{{sortIcon 'listTitle'}}")
+            th(scope="col")
+              button.js-table-view-sort(type="button" data-field="swimlaneTitle")
+                | {{_ "swimlane"}}
+                i.fa(class="{{sortIcon 'swimlaneTitle'}}")
             unless isMiniScreen
-              th(scope="col") {{_ "assignees"}}
-              th(scope="col") {{_ "members"}}
-              th(scope="col") {{_ "labels"}}
+              th(scope="col")
+                button.js-table-view-sort(type="button" data-field="assigneesKey") {{_ "assignees"}}
+              th(scope="col")
+                button.js-table-view-sort(type="button" data-field="membersKey") {{_ "members"}}
+              th(scope="col")
+                button.js-table-view-sort(type="button" data-field="labelsKey") {{_ "labels"}}
               if showReceivedColumn
-                th(scope="col") {{_ "card-received"}}
+                th(scope="col")
+                  button.js-table-view-sort(type="button" data-field="receivedAt") {{_ "card-received"}}
               if showStartColumn
-                th(scope="col") {{_ "card-start"}}
+                th(scope="col")
+                  button.js-table-view-sort(type="button" data-field="startAt") {{_ "card-start"}}
               if showDueColumn
-                th(scope="col") {{_ "card-due"}}
+                th(scope="col")
+                  button.js-table-view-sort(type="button" data-field="dueAt") {{_ "card-due"}}
               if showEndColumn
-                th(scope="col") {{_ "card-end"}}
+                th(scope="col")
+                  button.js-table-view-sort(type="button" data-field="endAt") {{_ "card-end"}}
         tbody
           each row in rows
-            tr
+            if row.isGroupHeader
+              tr.table-view-swimlane-group
+                th(colspan="11" scope="rowgroup")= row.swimlaneTitle
+            else
+              tr
               td.table-view-cell-edit
                 a.edit-card.js-table-view-edit-card(href=row.card.originRelativeUrl data-card-id=row.card._id title="{{_ 'edit'}}")
                   i.fa.fa-pencil-square-o
                   | {{_ 'edit'}}
-              td.table-view-cell-wrap
+              td.table-view-cell-wrap.table-view-cell-card-title(title=row.title)
                 unless isMiniScreen
                   .my-cards-board-badge(class=row.colorClass)
                 .my-cards-card-title-table

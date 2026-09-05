@@ -9,7 +9,7 @@
 # `uws` DDP transport plus `changeStreams` reactivity to work
 # correctly in this topology, namely:
 #
-#   - DDP_TRANSPORT=uws on every service
+#   - DDP_TRANSPORT=sockjs on every service
 #   - METEOR_REACTIVITY_ORDER=changeStreams,oplog,polling on every service
 #   - METEOR_SETTINGS with a DISTINCT uws.port per service (5001, 5002, …)
 #
@@ -21,7 +21,7 @@
 # opened exclusively. Give each service its own internal port via
 # METEOR_SETTINGS and they coexist cleanly.
 #
-# Reference: see docs/Platforms/FOSS/Docker/Meteor3/multitenancy.md
+# Reference: see docs/Platforms/FOSS/Container/Docker/Meteor3/multitenancy.md
 # and https://docs.meteor.com/performance/ddp-transport#multitenancy
 #
 # Setup:
@@ -79,7 +79,7 @@ services:
   #   3. uws.port in METEOR_SETTINGS — here 5001
   # ---------------------------------------------------------------------
   wekan-tenant1:
-    image: ghcr.io/wekan/wekan:latest
+    image: ghcr.io/wekan/wekan-gantt-gpl:latest
     container_name: wekan-tenant1
     restart: always
     network_mode: "host"
@@ -91,7 +91,7 @@ services:
       - ROOT_URL=https://tenant1.example.com
       - MONGO_URL=mongodb://127.0.0.1:27017/wekan_tenant1?replicaSet=rs0
       - MONGO_OPLOG_URL=mongodb://127.0.0.1:27017/local?replicaSet=rs0
-      - DDP_TRANSPORT=uws
+      - DDP_TRANSPORT=sockjs
       - METEOR_REACTIVITY_ORDER=changeStreams,oplog,polling
       # Internal uws proxy port — MUST be distinct per service.
       - METEOR_SETTINGS={"packages":{"ddp-server":{"uws":{"port":5001,"host":"127.0.0.1"}}}}
@@ -104,7 +104,7 @@ services:
   # Tenant 2 — same template, distinct PORT / database / uws.port
   # ---------------------------------------------------------------------
   wekan-tenant2:
-    image: ghcr.io/wekan/wekan:latest
+    image: ghcr.io/wekan/wekan-gantt-gpl:latest
     container_name: wekan-tenant2
     restart: always
     network_mode: "host"
@@ -116,7 +116,7 @@ services:
       - ROOT_URL=https://tenant2.example.com
       - MONGO_URL=mongodb://127.0.0.1:27017/wekan_tenant2?replicaSet=rs0
       - MONGO_OPLOG_URL=mongodb://127.0.0.1:27017/local?replicaSet=rs0
-      - DDP_TRANSPORT=uws
+      - DDP_TRANSPORT=sockjs
       - METEOR_REACTIVITY_ORDER=changeStreams,oplog,polling
       - METEOR_SETTINGS={"packages":{"ddp-server":{"uws":{"port":5002,"host":"127.0.0.1"}}}}
       - WRITABLE_PATH=/data

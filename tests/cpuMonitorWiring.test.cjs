@@ -46,16 +46,25 @@ check('logs the automatic mitigation taken and whether it lowered CPU', () => {
   assert.ok(/noticeably lower/.test(m), 'states whether pausing helped');
 });
 
-check('on high CPU, WeKan asks FerretDB what it is doing and to slow down, and logs it', () => {
+check('on high CPU, WeKan reads FerretDB status before conditionally slowing it down', () => {
   const g = read('server/lib/ferretdbGovernor.js');
   assert.ok(/throttle: 1/.test(g), 'calls the general FerretDB throttle command');
   assert.ok(/export function slowDownFerretDb/.test(g) && /export function resumeFerretDb/.test(g),
     'slow-down + resume');
   const m = read('server/lib/cpuMonitor.js');
   assert.ok(/governFerretStart/.test(m) && /governFerretEnd/.test(m), 'wired into start/end');
+  assert.ok(/slowDownFerretDb\(0, 0\)/.test(m), 'starts with a status-only read');
   assert.ok(/asked FerretDB to slow down/.test(m), 'logs what FerretDB was asked');
   assert.ok(/commandsProcessed/.test(m), 'logs FerretDB activity');
   assert.ok(/asked FerretDB to resume/.test(m), 'FerretDB resumes when CPU drops');
+});
+
+check('FerretDB CPU and the zero cap prevent read-path throttling', () => {
+  const m = read('server/lib/cpuMonitor.js');
+  assert.ok(/FERRET_SLOWDOWN_MAX_MS > 0/.test(m), 'zero cap prevents the initial delay');
+  assert.ok(/FERRET_SLOWDOWN_MAX_MS === 0\) return/.test(m), 'zero cap prevents adjustment');
+  assert.ok(/lastFerretProcessCpu >= FERRET_PROC_HIGH_PCT && !currentActivity/.test(m),
+    'idle WeKan does not throttle FerretDB when FerretDB is the CPU source');
 });
 
 check('the FerretDB slow-down escalates until CPU has headroom, then holds', () => {
@@ -84,25 +93,41 @@ check('WeKan rate-limits asks, times out, backs off, and logs the outage startâ†
 });
 
 check('FerretDB self-regulates its own CPU and reports its operations summary', () => {
-  const s = read('FerretDB/internal/handler/selfregulate.go');
+  // The FerretDB fork is a companion repo, cloned into .tools/ - one ignored
+  // directory for all of them, instead of one ignored subdirectory each at the
+  // repo root. It used to be read from FerretDB/ here, and this guard broke the
+  // moment it moved; the path comes from the layout now, and a checkout that has
+  // not cloned it yet is skipped rather than failed - it is another repository,
+  // and not every checkout has it.
+  const FERRET = '.tools/FerretDB';
+  if (!fs.existsSync(path.join(__dirname, '..', FERRET, 'internal/handler/selfregulate.go'))) {
+    console.log(`    (${FERRET} is not cloned here - ./build.sh clones it on demand)`);
+    return;
+  }
+  const s = read(`${FERRET}/internal/handler/selfregulate.go`);
   assert.ok(/nextAutoSlowdown/.test(s) && /autoSlowdownMs/.test(s), 'autonomous delay decision');
   assert.ok(/procStatCPU/.test(s) && /\/proc\/stat/.test(s), 'measures host CPU itself');
   assert.ok(/runSelfRegulation/.test(s), 'background loop');
-  const t = read('FerretDB/internal/handler/throttle.go');
+  const t = read(`${FERRET}/internal/handler/throttle.go`);
   assert.ok(/effectiveDelay/.test(t) && /autoSlowdownMs/.test(t), 'effective delay = max(client, self-regulated)');
   assert.ok(/commandSummary/.test(t) && /commandCounts/.test(t), 'per-command summary of what FerretDB is doing');
-  const mt = read('FerretDB/internal/handler/msg_throttle.go');
+  const mt = read(`${FERRET}/internal/handler/msg_throttle.go`);
   assert.ok(/operationsSummary/.test(mt), 'summary returned in the throttle response');
 });
 
 check('CPU usage report is wired into Admin Panel / Problems', () => {
   assert.ok(/'security', 'speed', 'tests', 'cpu'/.test(read('models/eventLog.js')), 'cpu event stream registered');
-  const jade = read('client/components/settings/adminReports.jade');
+  const jade = read('client/components/settings/adminProblems.jade');
   assert.ok(/stream="cpu"/.test(jade), 'report template');
-  // The side menu is data now (docs/Design/Page/Left-Menu.md).
-  assert.ok(/'report-cpu'/.test(read('client/components/settings/adminReports.js')), 'menu item');
-  const js = read('client/components/settings/adminReports.js');
-  assert.ok(/showCpu/.test(js) && /cpuReportTitle/.test(js), 'show state + title');
+  // The side menu is data now (docs/Features/Page/Left-Menu.md).
+  assert.ok(/'report-cpu'/.test(read('client/components/settings/adminProblems.js')), 'menu item');
+  const js = read('client/components/settings/adminProblems.js');
+  // The pane's state is the shared activeReport id now, not a ReactiveVar of its
+  // own, so what there is to check is that the menu entry and the template agree
+  // on the id.
+  const paneJade = read('client/components/settings/adminProblems.jade');
+  assert.ok(/isPane 'report-cpu'/.test(paneJade) && /cpuReportTitle/.test(js),
+    'the pane is rendered, and the menu entry has its title');
   assert.ok(/"cpuReportTitle": "CPU usage"/.test(read('imports/i18n/data/en.i18n.json')), 'title string');
 });
 

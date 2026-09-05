@@ -1,0 +1,42 @@
+/* Admin Panel → Problems: the few styles that are NOT part of the shared table
+   page. Everything the reports have in common - title, status row, search +
+   pagination controls, and the table itself - now lives in tablePage.css and is
+   defined once. See docs/Features/Page/Table.md. */
+
+/* The menu separator and the "Reports" group title are styled with the menu itself
+   (settingBody.css): the shared left menu renders `li.left-menu-separator` and
+   `li.left-menu-heading`, not the `.admin-reports-separator` this file used to
+   target - so the rule that lived here, twice, never applied to anything. */
+
+/* Admin Panel → Problems → CPU usage: the live figure between the page title and
+   the search box. The table underneath is a history of past high-CPU periods, so
+   this line is the only place the page says what the CPU is doing right now. */
+.admin-cpu-current {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--theme-accent, #01628c);
+  border-radius: 6px;
+}
+
+.admin-cpu-label {
+  font-weight: 700;
+}
+
+.admin-cpu-percent {
+  font-size: 1.4em;
+  font-weight: 700;
+  color: var(--theme-accent, #01628c);
+}
+
+/* Sustained high CPU: warn without inventing a second colour system. */
+.admin-cpu-current.admin-cpu-high {
+  border-color: #b04632;
+}
+
+.admin-cpu-current.admin-cpu-high .admin-cpu-percent {
+  color: #b04632;
+}

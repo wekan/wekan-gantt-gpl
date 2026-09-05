@@ -15,7 +15,41 @@ REM   - Playwright runs Chromium, Firefox AND WebKit natively on Windows
 REM     (unlike Linux arm64, no Docker is needed here).
 REM   - If Meteor does not run well natively on your Windows, WSL2 + Ubuntu
 REM     with build.sh is the recommended alternative.
+REM
+REM  Two build directories, and they are not the same thing:
+REM   - .build\  the RELEASE bundle, from 'meteor build .build --directory'.
+REM               .build\bundle is what is deployed, tested and packaged.
+REM   - _build\  rspack's compiled output, written by ANY Meteor compile.
+REM               Meteor reads its main modules from _build\main-prod\, so it is
+REM               a handoff, not a leftover: it is gitignored but must NOT be
+REM               added to .meteorignore (see the note in that file).
+REM  Both are generated. Never edit them, never commit them, and skip them in any
+REM  tool that walks the repo - _build holds a second copy of every source file.
 REM ============================================================================
+
+REM --- Command line: build.bat <name> [args] / --help / --list ---------------
+REM  Same names as build.sh, so a release, a bundle build or a translation pull
+REM  can be scripted on Windows too. With no arguments this falls through to the
+REM  menu, exactly as before.
+if "%~1"=="" goto no_cli_args
+if /I "%~1"=="-h"     goto cli_help_exit
+if /I "%~1"=="--help" goto cli_help_exit
+if /I "%~1"=="help"   goto cli_help_exit
+if /I "%~1"=="-l"     goto cli_list_exit
+if /I "%~1"=="--list" goto cli_list_exit
+if /I "%~1"=="list"   goto cli_list_exit
+call :cli_run %*
+exit /b %errorlevel%
+:cli_help_exit
+call :cli_help
+exit /b 0
+:cli_list_exit
+call :cli_help
+echo.
+echo Commands:
+call :cli_list
+exit /b 0
+:no_cli_args
 
 REM --- Repo root = folder of this script (strip trailing backslash) ---
 set "REPO=%~dp0"
@@ -27,14 +61,17 @@ REM development sessions and test runs don't crash with "FATAL ERROR: ...
 REM JavaScript heap out of memory". TOOL_NODE_FLAGS controls the Meteor
 REM command-line/build process (the one that hits the limit during
 REM `meteor run` / `meteor test` / `meteor build`); NODE_OPTIONS covers the
-REM child Node/rspack processes. Both default to 8 GB and honor any value you
-REM already set. Lower it if your machine has less RAM.
-if not defined TOOL_NODE_FLAGS set "TOOL_NODE_FLAGS=--max-old-space-size=8192"
-if not defined NODE_OPTIONS set "NODE_OPTIONS=--max-old-space-size=8192"
+REM child Node/rspack processes. Both derive their defaults from installed RAM and honor any value you
+set "WEKAN_MEMORY_MB=16384"
+for /f "usebackq delims=" %%M in (`powershell.exe -NoProfile -Command "[math]::Floor((Get-CimInstance Win32_OperatingSystem).TotalVisibleMemorySize / 1024)" 2^>NUL`) do set "WEKAN_MEMORY_MB=%%M"
+set /a WEKAN_BUILD_HEAP_MB=WEKAN_MEMORY_MB/2
+if %WEKAN_BUILD_HEAP_MB% GTR 16384 set "WEKAN_BUILD_HEAP_MB=16384"
+if not defined TOOL_NODE_FLAGS set "TOOL_NODE_FLAGS=--max-old-space-size=%WEKAN_BUILD_HEAP_MB%"
+if not defined NODE_OPTIONS set "NODE_OPTIONS=--max-old-space-size=%WEKAN_BUILD_HEAP_MB%"
 
-REM Every log this script writes goes into ..\log\ (one directory up from the
-REM repo). Create it up front so redirections never fail on a missing directory.
-if not exist "..\log" md "..\log"
+REM Every log this script writes goes into the repo-local ignored .tools\log\.
+REM Create it up front so redirections never fail on a missing directory.
+if not exist ".tools\log" md ".tools\log"
 
 REM --- Platform detection (OS + CPU arch), like detect_platform in the .sh ---
 set "PLATFORM_OS=windows"
@@ -43,7 +80,7 @@ if /i "%PROCESSOR_ARCHITECTURE%"=="ARM64" set "PLATFORM_ARCH=arm64"
 if /i "%PROCESSOR_ARCHITEW6432%"=="ARM64" set "PLATFORM_ARCH=arm64"
 echo Platform: %PLATFORM_OS% %PLATFORM_ARCH%
 echo Repo: %REPO%
-echo Note: Dev-server console output is also logged to ..\log\wekan-log.log
+echo Note: Dev-server console output is also logged to .tools\log\wekan-log.log
 
 :menu
 echo.
@@ -52,7 +89,9 @@ echo   1^) Setup            ^(install dependencies, build^)
 echo   2^) Dev server       ^(meteor run variants^)
 echo   3^) Tests            ^(mocha, playwright, e2e, ...^)
 echo   4^) Docker           ^(start / follow logs / stop^)
-echo   5^) Tools            ^(save deps, forge tools, mirror^)
+echo   5^) Releases         ^(release, snap, bundles, translations, ...^)
+echo   6^) CLI commands     ^(run any of them without the menu^)
+echo   7^) Tools            ^(save deps, forge tools, mirror^)
 echo   0^) Quit
 echo ==========================================================
 set "choice="
@@ -61,7 +100,9 @@ if "%choice%"=="1" goto menu_setup
 if "%choice%"=="2" goto menu_dev
 if "%choice%"=="3" goto menu_tests
 if "%choice%"=="4" goto menu_docker
-if "%choice%"=="5" goto menu_tools
+if "%choice%"=="5" goto menu_releases
+if "%choice%"=="6" goto menu_cli
+if "%choice%"=="7" goto menu_tools
 if "%choice%"=="0" goto end
 echo invalid option
 goto menu
@@ -71,13 +112,17 @@ REM ===========================================================================
 echo.
 echo -- Setup --   ^(0 = Back^)
 echo   1^) Install dependencies
-echo   2^) Build WeKan
-echo   3^) Update git ^(fetch + rebase onto origin, fix CHANGELOG hashes, status^)
+echo   2^) Build WeKan release bundle
+echo   3^) Build WeKan development bundle
+echo   4^) git pull ^(fetch, fast-forward or rebase, repoint moved CHANGELOG links^)
+echo   5^) git push ^(check the CHANGELOG links, push, pull-and-retry once if rejected^)
 set "choice="
 set /p "choice=Choose: "
 if "%choice%"=="1" goto install
 if "%choice%"=="2" goto build
-if "%choice%"=="3" goto updategit
+if "%choice%"=="3" goto builddev
+if "%choice%"=="4" goto gitpull
+if "%choice%"=="5" goto gitpush
 if "%choice%"=="0" goto menu
 goto menu_setup
 
@@ -110,11 +155,13 @@ REM ===========================================================================
 :menu_tests
 echo.
 echo -- Tests --   ^(0 = Back^)
-echo   1^) EVERYTHING ^(sequential^): WeKan's own tests, then every database with an
-echo       image for this CPU, then all FerretDB tests. Logs in ..\log\^<datetime^>\
-echo   2^) WeKan's own tests only, parallel: Mocha, node unit suites, import, node
-echo       E2E and all three browsers, concurrently. No databases, no FerretDB
-echo   3^) WeKan's own tests only, sequential: the same suite, one job at a time
+echo   1^) EVERYTHING two-worker: one stage at a time, two Playwright workers
+echo       per browser; every database and all FerretDB tests remain sequential.
+echo       Logs in .tools\log\^<datetime^>\
+echo   2^) EVERYTHING one by one: one stage and one Playwright worker at a time
+echo       for minimum RAM usage; database and FerretDB stages stay sequential
+echo   3^) EVERYTHING at once: WeKan test jobs concurrently; database and
+echo       FerretDB stages remain sequential
 echo   4^) Mocha ^(server-side^)
 echo   5^) Import regression
 echo   6^) Node E2E regressions
@@ -130,9 +177,9 @@ echo       against every database with an image for this CPU, compare the answer
 echo  15^) Run all FerretDB tests - SEQUENTIAL ^(unit, vet, integration^)
 set "choice="
 set /p "choice=Choose: "
-if "%choice%"=="1"  goto test_everything
-if "%choice%"=="2"  goto test_all_parallel
-if "%choice%"=="3"  goto test_all_sequential
+if "%choice%"=="1"  goto test_everything_two
+if "%choice%"=="2"  goto test_everything_one
+if "%choice%"=="3"  goto test_everything_all
 if "%choice%"=="4"  goto test_mocha
 if "%choice%"=="5"  goto test_import
 if "%choice%"=="6"  goto test_e2e
@@ -162,6 +209,537 @@ if "%choice%"=="2" goto install_forge_tools
 if "%choice%"=="3" goto mirror_forge
 if "%choice%"=="0" goto menu
 goto menu_tools
+
+REM ===========================================================================
+REM  Releases: every maintainer script in releases/, grouped, same list and
+REM  same order as build.sh's RELEASE_SCRIPTS. They are Git Bash scripts, so
+REM  this needs Git for Windows (bash on PATH); .mjs entries are run by node.
+REM  The entries build.sh marks as linux-only (systemd, ufw, snap, multipass)
+REM  are not here: Windows cannot do them at all.
+REM  tests/buildScriptParity.test.cjs fails when a script is added to
+REM  releases/ and not to BOTH menus.
+:menu_releases
+echo.
+echo -- Releases --   ^(0 = Back^)
+echo   1^) Release ^(22 entries^)
+echo   2^) Snap ^(11 entries^)
+echo   3^) Bundles ^(10 entries^)
+echo   4^) Docker images ^(5 entries^)
+echo   5^) Sandstorm ^(5 entries^)
+echo   6^) Translations ^(9 entries^)
+echo   7^) Git and repo ^(8 entries^)
+echo   8^) Server and VM ^(4 entries^)
+set "choice="
+set /p "choice=Choose: "
+if "%choice%"=="1" goto rel_release
+if "%choice%"=="2" goto rel_snap
+if "%choice%"=="3" goto rel_bundles
+if "%choice%"=="4" goto rel_dockerimages
+if "%choice%"=="5" goto rel_sandstorm
+if "%choice%"=="6" goto rel_translations
+if "%choice%"=="7" goto rel_gitandrepo
+if "%choice%"=="8" goto rel_serverandvm
+if "%choice%"=="0" goto menu
+goto menu_releases
+
+REM ---------------------------------------------------------------------------
+:rel_release
+echo.
+echo -- Releases / Release --   ^(0 = Back^)
+echo   1^) Release ALL platforms: push CHANGELOG, trigger release-all.yml
+echo   2^) Release ^(older local flow^), for one version
+echo   3^) Show the version numbers this checkout would release
+echo   4^) Show the CHANGELOG of the release being prepared
+echo   5^) Rebuild the API docs ^(wekan.yml + wekan.html^)
+echo   6^) Rebuild a release that already exists
+echo   7^) Prepare the release directory for one version
+echo   8^) Collect the built bundles for one version
+echo   9^) Link the newest bundle as wekan-latest
+echo   10^) Move an old release out of the download directory
+echo   11^) Clean up after a release
+echo   12^) Publish the Helm chart in wekan/charts
+echo   13^) Update wekan.fi with the new version and API docs
+echo   14^) Publish the npm packages xet7 maintains
+echo   15^) Check every download URL snapcraft.yaml uses
+echo   16^) Clone all release-related repositories
+echo   17^) Create the GitHub Actions secrets a release needs
+echo   18^) Add a git tag for a release
+echo   19^) Delete a git tag, locally and on the remote
+echo   20^) Move the 'stable' tag to HEAD
+echo   21^) Release the wekan-ondra / wekan-gantt-gpl variants, part 1
+echo   22^) Release the wekan-ondra / wekan-gantt-gpl variants, part 2
+echo   23^) Report ^(or repair^) the Helm chart index for past releases
+echo   24^) Rebuild the Helm index.yaml from the chart packages
+set "choice="
+set /p "choice=Choose: "
+if "%choice%"=="1" call :rel_run "releases/release-all.sh" ""
+if "%choice%"=="2" call :rel_run "releases/release.sh" "WeKan version, e.g. 10.50"
+if "%choice%"=="3" call :rel_run "releases/version.sh" ""
+if "%choice%"=="4" call :rel_run "releases/changelog.sh" ""
+if "%choice%"=="5" call :rel_run "releases/rebuild-docs.sh" ""
+if "%choice%"=="6" call :rel_run "releases/rebuild-release.sh" ""
+if "%choice%"=="7" call :rel_run "releases/rel.sh" "WeKan version, e.g. 10.50"
+if "%choice%"=="8" call :rel_run "releases/release-bundle.sh" "WeKan version, e.g. 10.50"
+if "%choice%"=="9" call :rel_run "releases/release-ln.sh" "WeKan version, e.g. 10.50"
+if "%choice%"=="10" call :rel_run "releases/release-x2.sh" "WeKan version, e.g. 10.50"
+if "%choice%"=="11" call :rel_run "releases/release-cleanup.sh" "WeKan version, e.g. 10.50"
+if "%choice%"=="12" call :rel_run "releases/release-charts.sh" ""
+if "%choice%"=="13" call :rel_run "releases/release-website.sh" ""
+if "%choice%"=="14" call :rel_run "releases/npm-publish.sh" ""
+if "%choice%"=="15" call :rel_run "releases/test-download-urls.sh" ""
+if "%choice%"=="16" call :rel_run "releases/clone-release-repos.sh" ""
+if "%choice%"=="17" call :rel_run "releases/create-github-secrets.sh" ""
+if "%choice%"=="18" call :rel_run "releases/add-tag.sh" "Version tag, e.g. v10.50"
+if "%choice%"=="19" call :rel_run "releases/delete-tag.sh" "Version tag, e.g. v10.50"
+if "%choice%"=="20" call :rel_cmd "git tag --force stable HEAD && git push --tags --force && git push --follow-tags" ""
+if "%choice%"=="21" call :rel_run "releases/release-ondra-1.sh" ""
+if "%choice%"=="22" call :rel_run "releases/release-ondra-2.sh" ""
+if "%choice%"=="23" call :rel_run "releases/backfill-charts.sh" ""
+if "%choice%"=="24" call :rel_run "releases/reindex-charts.py" ""
+if "%choice%"=="0" goto menu_releases
+goto rel_release
+
+REM ---------------------------------------------------------------------------
+:rel_snap
+echo.
+echo -- Releases / Snap --   ^(0 = Back^)
+echo   1^) Build the snap from snapcraft.yaml
+echo   2^) Install the locally built .snap
+echo   3^) Push one .snap to the Snap Store
+echo   4^) Release the snap for one version
+echo   5^) List the newest Snap Store revisions
+echo   6^) Release one store revision to edge, beta and candidate
+echo   7^) Switch the installed snap to the edge channel
+echo   8^) Switch the installed snap to the stable channel
+echo   9^) snapcraft help topics
+echo   10^) wekan.help of the installed snap
+echo   11^) Switch between KVM, snapcraft, Waydroid and VirtualBox
+set "choice="
+set /p "choice=Choose: "
+if "%choice%"=="1" call :rel_run "releases/snap-build.sh" ""
+if "%choice%"=="2" call :rel_run "releases/snap-install.sh" ""
+if "%choice%"=="3" call :rel_run "releases/snap-push-to-store.sh" "Path to the .snap file"
+if "%choice%"=="4" call :rel_run "releases/release-snap.sh" "WeKan version, e.g. 10.50"
+if "%choice%"=="5" call :rel_run "releases/snap-store-revisions.sh" ""
+if "%choice%"=="6" call :rel_run "releases/snap-store-release-revision-to-channels.sh" "Snap Store revision number"
+if "%choice%"=="7" call :rel_run "releases/snap-release-all-channels.sh" "Version, or empty for the newest"
+if "%choice%"=="7" call :rel_run "releases/snap-edge.sh" ""
+if "%choice%"=="8" call :rel_run "releases/snap-stable.sh" ""
+if "%choice%"=="9" call :rel_run "releases/snapcraft-help.sh" ""
+if "%choice%"=="10" call :rel_run "releases/wekan-snap-help.sh" ""
+if "%choice%"=="11" call :rel_run "releases/switch-kvm-snapcraft-waydroid-virtualbox.sh" ""
+if "%choice%"=="0" goto menu_releases
+goto rel_snap
+
+REM ---------------------------------------------------------------------------
+:rel_bundles
+echo.
+echo -- Releases / Bundles --   ^(0 = Back^)
+echo   ^(the Windows bundle is built by running releases\build-bundle-win64.bat directly^)
+echo   1^) Build the arm64 bundle
+echo   2^) Build the armhf ^(arm/v7^) bundle
+echo   3^) Build the ppc64el bundle
+echo   4^) Build the ppc64le bundle
+echo   5^) Build the s390x bundle
+echo   6^) Fetch the built bundle from the amd64 build host
+echo   7^) Fetch the built bundle from the arm64 build host
+echo   8^) Fetch the built bundle from the ppc64le build host
+echo   9^) Fetch the built bundle from the s390x build host
+echo   10^) Upload the Windows bundle to the download server
+set "choice="
+set /p "choice=Choose: "
+if "%choice%"=="1" call :rel_run "releases/build-bundle-arm64.sh" "WeKan version, e.g. 10.50"
+if "%choice%"=="2" call :rel_run "releases/build-bundle-armhf.sh" "WeKan version, e.g. 10.50"
+if "%choice%"=="3" call :rel_run "releases/build-bundle-ppc64el.sh" "WeKan version, e.g. 10.50"
+if "%choice%"=="4" call :rel_run "releases/build-bundle-ppc64le.sh" "WeKan version, e.g. 10.50"
+if "%choice%"=="5" call :rel_run "releases/build-bundle-s390x.sh" "WeKan version, e.g. 10.50"
+if "%choice%"=="6" call :rel_run "releases/up.sh" "WeKan version, e.g. 10.50"
+if "%choice%"=="7" call :rel_run "releases/up-a.sh" "WeKan version, e.g. 10.50"
+if "%choice%"=="8" call :rel_run "releases/up-o.sh" "WeKan version, e.g. 10.50"
+if "%choice%"=="9" call :rel_run "releases/up-s.sh" "WeKan version, e.g. 10.50"
+if "%choice%"=="10" call :rel_run "releases/up-w.sh" "WeKan version, e.g. 10.50"
+if "%choice%"=="0" goto menu_releases
+goto rel_bundles
+
+REM ---------------------------------------------------------------------------
+:rel_dockerimages
+echo.
+echo -- Releases / Docker images --   ^(0 = Back^)
+echo   1^) Build the WeKan Docker image
+echo   2^) Create the multi-platform buildx builder
+echo   3^) Publish a variant image ^(wekan-gantt-gpl / wekan-ondra^)
+echo   4^) Push the locally built images to Docker Hub and Quay
+echo   5^) Mirror the images between registries with skopeo
+set "choice="
+set /p "choice=Choose: "
+if "%choice%"=="1" call :rel_run "releases/docker-build.sh" ""
+if "%choice%"=="2" call :rel_run "releases/docker-build-deps.sh" ""
+if "%choice%"=="3" call :rel_run "releases/docker-publish-variant.sh" "Image and version, e.g. wekan-gantt-gpl 10.50"
+if "%choice%"=="4" call :rel_run "releases/docker-push-gantt.sh" "Docker build tag and WeKan version"
+if "%choice%"=="5" call :rel_run "releases/docker-registry-sync.sh" ""
+if "%choice%"=="0" goto menu_releases
+goto rel_dockerimages
+
+REM ---------------------------------------------------------------------------
+:rel_sandstorm
+echo.
+echo -- Releases / Sandstorm --   ^(0 = Back^)
+echo   1^) Install the Sandstorm-related files
+echo   2^) Disable the Sandstorm files again
+echo   3^) Make the .spk package
+echo   4^) Run the Sandstorm dev server
+echo   5^) Release the Sandstorm version
+set "choice="
+set /p "choice=Choose: "
+if "%choice%"=="1" call :rel_run "releases/install-sandstorm.sh" ""
+if "%choice%"=="2" call :rel_run "releases/disable-sandstorm.sh" ""
+if "%choice%"=="3" call :rel_run "releases/sandstorm-make-spk.sh" ""
+if "%choice%"=="4" call :rel_run "releases/sandstorm-test-dev.sh" ""
+if "%choice%"=="5" call :rel_run "releases/release-sandstorm.sh" ""
+if "%choice%"=="0" goto menu_releases
+goto rel_sandstorm
+
+REM ---------------------------------------------------------------------------
+:rel_translations
+echo.
+echo -- Releases / Translations --   ^(0 = Back^)
+echo   1^) Pull the newest translations from Transifex and merge them
+echo   2^) How many strings each language still needs
+echo   3^) Push one language to Transifex
+echo   4^) Push every language to Transifex
+echo   5^) Push the English source to Transifex
+echo   6^) Copy the English source into en-GB on Transifex
+echo   7^) Report English strings that regressed
+echo   8^) Prove a pull keeps human translations ^(no network^)
+echo   9^) Merge a finished pull by hand
+set "choice="
+set /p "choice=Choose: "
+if "%choice%"=="1" call :rel_run "releases/translations/pull-translations.sh" ""
+if "%choice%"=="2" call :rel_run "releases/translations/fill-translations.mjs --missing" ""
+if "%choice%"=="3" call :rel_run "releases/translations/push-translation.sh" "Language code, e.g. ja"
+if "%choice%"=="4" call :rel_run "releases/translations/push-all-translations.sh" ""
+if "%choice%"=="5" call :rel_run "releases/translations/push-english-base-translation.sh" ""
+if "%choice%"=="6" call :rel_run "releases/translations/push-copy-en-gb-translation.sh" ""
+if "%choice%"=="7" call :rel_run "releases/translations/report-english-regressions.mjs" ""
+if "%choice%"=="8" call :rel_run "releases/translations/verify-human-preference.mjs" ""
+if "%choice%"=="9" call :rel_run "releases/translations/merge-translations.mjs" ""
+if "%choice%"=="0" goto menu_releases
+goto rel_translations
+
+REM ---------------------------------------------------------------------------
+:rel_gitandrepo
+echo.
+echo -- Releases / Git and repo --   ^(0 = Back^)
+echo   1^) Commit with the editor open for a multi-line message
+echo   2^) Add everything, then revert it again
+echo   3^) Delete a branch, locally and on the remote
+echo   4^) Count lines of code per committer
+echo   5^) Convert the remaining Stylus to CSS
+echo   6^) Update Node.js everywhere in the sources
+echo   7^) Update the local Node.js version
+echo   8^) Migrate a MongoDB database to FerretDB ^(--help first^)
+set "choice="
+set /p "choice=Choose: "
+if "%choice%"=="1" call :rel_run "releases/commit.sh" ""
+if "%choice%"=="2" call :rel_cmd "git restore --staged" "Path to unstage"
+if "%choice%"=="3" call :rel_run "releases/delete-branch-local-and-remote.sh" "Branch name"
+if "%choice%"=="4" call :rel_run "releases/count-lines-of-code-per-committer.sh" ""
+if "%choice%"=="5" call :rel_run "releases/stylus-to-css.sh" ""
+if "%choice%"=="6" call :rel_run "releases/node-update.sh" ""
+if "%choice%"=="7" call :rel_run "releases/node-update-local.sh" ""
+if "%choice%"=="8" call :rel_run "releases/migrate-mongodb-to-ferretdb.mjs" "Arguments, e.g. --help"
+if "%choice%"=="0" goto menu_releases
+goto rel_gitandrepo
+
+REM ---------------------------------------------------------------------------
+:rel_serverandvm
+echo.
+echo -- Releases / Server and VM --   ^(0 = Back^)
+echo   1^) Show the VirtualBox VM's IP address
+echo   2^) Let Node.js bind port 80 in the VM
+echo   3^) Start WeKan in the VirtualBox VM
+echo   4^) Stop WeKan in the VirtualBox VM
+set "choice="
+set /p "choice=Choose: "
+if "%choice%"=="1" call :rel_run "releases/virtualbox/ipaddress.sh" ""
+if "%choice%"=="2" call :rel_run "releases/virtualbox/node-allow-port-80.sh" ""
+if "%choice%"=="3" call :rel_run "releases/virtualbox/start-wekan.sh" ""
+if "%choice%"=="4" call :rel_run "releases/virtualbox/stop-wekan.sh" ""
+if "%choice%"=="0" goto menu_releases
+goto rel_serverandvm
+
+REM ---------------------------------------------------------------------------
+REM  Run one releases/ script: %1 = path (may carry arguments), %2 = the
+REM  prompt for its argument, empty when it takes none.
+:rel_run
+set "RS=%~1"
+set "RP=%~2"
+set "RA="
+if "%RP%"=="" goto rel_run_go
+set /p "RA=%RP%: "
+:rel_run_go
+call :need_bash
+if errorlevel 1 goto :eof
+echo.
+echo --- %RS% %RA% ---
+echo %RS%| findstr /I /C:".mjs" >nul
+if errorlevel 1 goto rel_run_bash
+call node %RS% %RA%
+goto rel_run_done
+:rel_run_bash
+call bash %RS% %RA%
+:rel_run_done
+pause
+goto :eof
+
+REM ---------------------------------------------------------------------------
+REM  Run one COMMAND (the entries that used to be one-line wrapper scripts):
+REM  %1 = the command, %2 = the prompt for its argument. Through bash, so the
+REM  ^&^& in a command means what it means everywhere else.
+:rel_cmd
+set "RC=%~1"
+set "RP=%~2"
+set "RA="
+if "%RP%"=="" goto rel_cmd_go
+set /p "RA=%RP%: "
+:rel_cmd_go
+call :need_bash
+if errorlevel 1 goto :eof
+echo.
+echo --- !RC! !RA! ---
+call bash -c "!RC! !RA!"
+pause
+goto :eof
+
+REM ---------------------------------------------------------------------------
+:need_bash
+where bash >nul 2>&1
+if errorlevel 1 (
+	echo bash not found - the releases scripts need Git Bash, bundled with Git for Windows.
+	echo Install Git for Windows, or run this under WSL2 with build.sh.
+	pause
+	exit /b 1
+)
+exit /b 0
+
+REM ===========================================================================
+REM  CLI: run any of the above without the menu.
+REM    build.bat ^<name^> [arguments]   run one entry
+REM    build.bat --list                every name, with what it does
+REM    build.bat --help                usage and examples
+:cli_help
+echo WeKan build.bat - menu, or a command line.
+echo.
+echo   build.bat                          the menu
+echo   build.bat --help                   this text
+echo   build.bat --list                   every command name, with what it does
+echo   build.bat ^<name^> [arguments]       run one, without the menu
+echo.
+echo Examples:
+echo.
+echo   build.bat release-all              push the CHANGELOG, trigger the release
+echo   build.bat version                  show the version numbers this would release
+echo   build.bat rebuild-docs             rebuild wekan.yml + wekan.html
+echo   build.bat release-snap 10.50       release the snap of that version
+echo   build.bat pull-translations        pull and merge the newest translations
+echo   build.bat push-translation ja      push one language to Transifex
+echo   build.bat fill-translations        how many strings each language still needs
+echo   build.bat add-tag v10.50           tag the release
+echo.
+echo Arguments after the name are passed to the script unchanged. Names come
+echo from --list. The scripts run under Git Bash; systemd/ufw/snap entries are
+echo Linux only and are in build.sh instead.
+goto :eof
+
+:cli_list
+echo   release-all                        Release ALL platforms: push CHANGELOG, trigger release-all.yml
+echo   release                            Release ^(older local flow^), for one version   ^<WeKan version, e.g. 10.50^>
+echo   version                            Show the version numbers this checkout would release
+echo   changelog                          Show the CHANGELOG of the release being prepared
+echo   rebuild-docs                       Rebuild the API docs ^(wekan.yml + wekan.html^)
+echo   rebuild-release                    Rebuild a release that already exists
+echo   rel                                Prepare the release directory for one version   ^<WeKan version, e.g. 10.50^>
+echo   release-bundle                     Collect the built bundles for one version   ^<WeKan version, e.g. 10.50^>
+echo   release-ln                         Link the newest bundle as wekan-latest   ^<WeKan version, e.g. 10.50^>
+echo   release-x2                         Move an old release out of the download directory   ^<WeKan version, e.g. 10.50^>
+echo   release-cleanup                    Clean up after a release   ^<WeKan version, e.g. 10.50^>
+echo   release-charts                     Publish the Helm chart in wekan/charts
+echo   release-website                    Update wekan.fi with the new version and API docs
+echo   npm-publish                        Publish the npm packages xet7 maintains
+echo   test-download-urls                 Check every download URL snapcraft.yaml uses
+echo   clone-release-repos                Clone all release-related repositories
+echo   create-github-secrets              Create the GitHub Actions secrets a release needs
+echo   add-tag                            Add a git tag for a release   ^<Version tag, e.g. v10.50^>
+echo   delete-tag                         Delete a git tag, locally and on the remote   ^<Version tag, e.g. v10.50^>
+echo   stable-tag                         Move the 'stable' tag to HEAD
+echo   release-ondra-1                    Release the wekan-ondra / wekan-gantt-gpl variants, part 1
+echo   release-ondra-2                    Release the wekan-ondra / wekan-gantt-gpl variants, part 2
+echo   snap-build                         Build the snap from snapcraft.yaml
+echo   snap-install                       Install the locally built .snap
+echo   snap-push-to-store                 Push one .snap to the Snap Store   ^<Path to the .snap file^>
+echo   release-snap                       Release the snap for one version   ^<WeKan version, e.g. 10.50^>
+echo   snap-store-revisions               List the newest Snap Store revisions
+echo   snap-store-release-revision-to-channels Release one store revision to edge, beta and candidate   ^<Snap Store revision number^>
+echo   snap-release-all-channels Release every snap, every architecture, to all four channels   ^<Version, or empty for the newest^>
+echo   snap-edge                          Switch the installed snap to the edge channel
+echo   snap-stable                        Switch the installed snap to the stable channel
+echo   snapcraft-help                     snapcraft help topics
+echo   wekan-snap-help                    wekan.help of the installed snap
+echo   switch-kvm-snapcraft-waydroid-virtualbox Switch between KVM, snapcraft, Waydroid and VirtualBox
+echo   build-bundle-arm64                 Build the arm64 bundle   ^<WeKan version, e.g. 10.50^>
+echo   build-bundle-armhf                 Build the armhf ^(arm/v7^) bundle   ^<WeKan version, e.g. 10.50^>
+echo   build-bundle-ppc64el               Build the ppc64el bundle   ^<WeKan version, e.g. 10.50^>
+echo   build-bundle-ppc64le               Build the ppc64le bundle   ^<WeKan version, e.g. 10.50^>
+echo   build-bundle-s390x                 Build the s390x bundle   ^<WeKan version, e.g. 10.50^>
+echo   up                                 Fetch the built bundle from the amd64 build host   ^<WeKan version, e.g. 10.50^>
+echo   up-a                               Fetch the built bundle from the arm64 build host   ^<WeKan version, e.g. 10.50^>
+echo   up-o                               Fetch the built bundle from the ppc64le build host   ^<WeKan version, e.g. 10.50^>
+echo   up-s                               Fetch the built bundle from the s390x build host   ^<WeKan version, e.g. 10.50^>
+echo   up-w                               Upload the Windows bundle to the download server   ^<WeKan version, e.g. 10.50^>
+echo   docker-build                       Build the WeKan Docker image
+echo   docker-build-deps                  Create the multi-platform buildx builder
+echo   docker-publish-variant             Publish a variant image ^(wekan-gantt-gpl / wekan-ondra^)   ^<Image and version, e.g. wekan-gantt-gpl 10.50^>
+echo   docker-push-gantt                  Push the locally built images to Docker Hub and Quay   ^<Docker build tag and WeKan version^>
+echo   docker-registry-sync               Mirror the images between registries with skopeo
+echo   install-sandstorm                  Install the Sandstorm-related files
+echo   disable-sandstorm                  Disable the Sandstorm files again
+echo   sandstorm-make-spk                 Make the .spk package
+echo   sandstorm-test-dev                 Run the Sandstorm dev server
+echo   release-sandstorm                  Release the Sandstorm version
+echo   pull-translations                  Pull the newest translations from Transifex and merge them
+echo   fill-translations                  How many strings each language still needs
+echo   push-translation                   Push one language to Transifex   ^<Language code, e.g. ja^>
+echo   push-all-translations              Push every language to Transifex
+echo   push-english-base-translation      Push the English source to Transifex
+echo   push-copy-en-gb-translation        Copy the English source into en-GB on Transifex
+echo   report-english-regressions         Report English strings that regressed
+echo   verify-human-preference            Prove a pull keeps human translations ^(no network^)
+echo   merge-translations                 Merge a finished pull by hand
+echo   commit                             Commit with the editor open for a multi-line message
+echo   git-add-revert                     Add everything, then revert it again   ^<Path to unstage^>
+echo   delete-branch-local-and-remote     Delete a branch, locally and on the remote   ^<Branch name^>
+echo   count-lines-of-code-per-committer  Count lines of code per committer
+echo   stylus-to-css                      Convert the remaining Stylus to CSS
+echo   node-update                        Update Node.js everywhere in the sources
+echo   node-update-local                  Update the local Node.js version
+echo   migrate-mongodb-to-ferretdb        Migrate a MongoDB database to FerretDB ^(--help first^)   ^<Arguments, e.g. --help^>
+echo   ipaddress                          Show the VirtualBox VM's IP address
+echo   node-allow-port-80                 Let Node.js bind port 80 in the VM
+echo   start-wekan                        Start WeKan in the VirtualBox VM
+echo   stop-wekan                         Stop WeKan in the VirtualBox VM
+goto :eof
+
+:cli_run
+set "K=%~1"
+set "ARGS=%*"
+call set "ARGS=%%ARGS:*%K%=%%"
+set "CMD="
+set "SHCMD="
+if /I "%K%"=="release-all" (set "CMD=bash releases/release-all.sh" ^& goto cli_go)
+if /I "%K%"=="release" (set "CMD=bash releases/release.sh" ^& goto cli_go)
+if /I "%K%"=="version" (set "CMD=bash releases/version.sh" ^& goto cli_go)
+if /I "%K%"=="changelog" (set "CMD=bash releases/changelog.sh" ^& goto cli_go)
+if /I "%K%"=="rebuild-docs" (set "CMD=bash releases/rebuild-docs.sh" ^& goto cli_go)
+if /I "%K%"=="rebuild-release" (set "CMD=bash releases/rebuild-release.sh" ^& goto cli_go)
+if /I "%K%"=="rel" (set "CMD=bash releases/rel.sh" ^& goto cli_go)
+if /I "%K%"=="release-bundle" (set "CMD=bash releases/release-bundle.sh" ^& goto cli_go)
+if /I "%K%"=="release-ln" (set "CMD=bash releases/release-ln.sh" ^& goto cli_go)
+if /I "%K%"=="release-x2" (set "CMD=bash releases/release-x2.sh" ^& goto cli_go)
+if /I "%K%"=="release-cleanup" (set "CMD=bash releases/release-cleanup.sh" ^& goto cli_go)
+if /I "%K%"=="release-charts" (set "CMD=bash releases/release-charts.sh" ^& goto cli_go)
+if /I "%K%"=="backfill-charts" (set "CMD=bash releases/backfill-charts.sh" ^& goto cli_go)
+if /I "%K%"=="reindex-charts" (set "CMD=python3 releases/reindex-charts.py" ^& goto cli_go)
+if /I "%K%"=="release-website" (set "CMD=bash releases/release-website.sh" ^& goto cli_go)
+if /I "%K%"=="npm-publish" (set "CMD=bash releases/npm-publish.sh" ^& goto cli_go)
+if /I "%K%"=="test-download-urls" (set "CMD=bash releases/test-download-urls.sh" ^& goto cli_go)
+if /I "%K%"=="clone-release-repos" (set "CMD=bash releases/clone-release-repos.sh" ^& goto cli_go)
+if /I "%K%"=="create-github-secrets" (set "CMD=bash releases/create-github-secrets.sh" ^& goto cli_go)
+if /I "%K%"=="add-tag" (set "CMD=bash releases/add-tag.sh" ^& goto cli_go)
+if /I "%K%"=="delete-tag" (set "CMD=bash releases/delete-tag.sh" ^& goto cli_go)
+if /I "%K%"=="stable-tag" (set "SHCMD=git tag --force stable HEAD && git push --tags --force && git push --follow-tags" ^& goto cli_go)
+if /I "%K%"=="release-ondra-1" (set "CMD=bash releases/release-ondra-1.sh" ^& goto cli_go)
+if /I "%K%"=="release-ondra-2" (set "CMD=bash releases/release-ondra-2.sh" ^& goto cli_go)
+if /I "%K%"=="snap-build" (set "CMD=bash releases/snap-build.sh" ^& goto cli_go)
+if /I "%K%"=="snap-install" (set "CMD=bash releases/snap-install.sh" ^& goto cli_go)
+if /I "%K%"=="snap-push-to-store" (set "CMD=bash releases/snap-push-to-store.sh" ^& goto cli_go)
+if /I "%K%"=="release-snap" (set "CMD=bash releases/release-snap.sh" ^& goto cli_go)
+if /I "%K%"=="snap-store-revisions" (set "CMD=bash releases/snap-store-revisions.sh" ^& goto cli_go)
+if /I "%K%"=="snap-store-release-revision-to-channels" (set "CMD=bash releases/snap-store-release-revision-to-channels.sh" ^& goto cli_go)
+if /I "%K%"=="snap-release-all-channels" (set "CMD=bash releases/snap-release-all-channels.sh" ^& goto cli_go)
+if /I "%K%"=="snap-edge" (set "CMD=bash releases/snap-edge.sh" ^& goto cli_go)
+if /I "%K%"=="snap-stable" (set "CMD=bash releases/snap-stable.sh" ^& goto cli_go)
+if /I "%K%"=="snapcraft-help" (set "CMD=bash releases/snapcraft-help.sh" ^& goto cli_go)
+if /I "%K%"=="wekan-snap-help" (set "CMD=bash releases/wekan-snap-help.sh" ^& goto cli_go)
+if /I "%K%"=="switch-kvm-snapcraft-waydroid-virtualbox" (set "CMD=bash releases/switch-kvm-snapcraft-waydroid-virtualbox.sh" ^& goto cli_go)
+if /I "%K%"=="build-bundle-arm64" (set "CMD=bash releases/build-bundle-arm64.sh" ^& goto cli_go)
+if /I "%K%"=="build-bundle-armhf" (set "CMD=bash releases/build-bundle-armhf.sh" ^& goto cli_go)
+if /I "%K%"=="build-bundle-ppc64el" (set "CMD=bash releases/build-bundle-ppc64el.sh" ^& goto cli_go)
+if /I "%K%"=="build-bundle-ppc64le" (set "CMD=bash releases/build-bundle-ppc64le.sh" ^& goto cli_go)
+if /I "%K%"=="build-bundle-s390x" (set "CMD=bash releases/build-bundle-s390x.sh" ^& goto cli_go)
+if /I "%K%"=="up" (set "CMD=bash releases/up.sh" ^& goto cli_go)
+if /I "%K%"=="up-a" (set "CMD=bash releases/up-a.sh" ^& goto cli_go)
+if /I "%K%"=="up-o" (set "CMD=bash releases/up-o.sh" ^& goto cli_go)
+if /I "%K%"=="up-s" (set "CMD=bash releases/up-s.sh" ^& goto cli_go)
+if /I "%K%"=="up-w" (set "CMD=bash releases/up-w.sh" ^& goto cli_go)
+if /I "%K%"=="docker-build" (set "CMD=bash releases/docker-build.sh" ^& goto cli_go)
+if /I "%K%"=="docker-build-deps" (set "CMD=bash releases/docker-build-deps.sh" ^& goto cli_go)
+if /I "%K%"=="docker-publish-variant" (set "CMD=bash releases/docker-publish-variant.sh" ^& goto cli_go)
+if /I "%K%"=="docker-push-gantt" (set "CMD=bash releases/docker-push-gantt.sh" ^& goto cli_go)
+if /I "%K%"=="docker-registry-sync" (set "CMD=bash releases/docker-registry-sync.sh" ^& goto cli_go)
+if /I "%K%"=="install-sandstorm" (set "CMD=bash releases/install-sandstorm.sh" ^& goto cli_go)
+if /I "%K%"=="disable-sandstorm" (set "CMD=bash releases/disable-sandstorm.sh" ^& goto cli_go)
+if /I "%K%"=="sandstorm-make-spk" (set "CMD=bash releases/sandstorm-make-spk.sh" ^& goto cli_go)
+if /I "%K%"=="sandstorm-test-dev" (set "CMD=bash releases/sandstorm-test-dev.sh" ^& goto cli_go)
+if /I "%K%"=="release-sandstorm" (set "CMD=bash releases/release-sandstorm.sh" ^& goto cli_go)
+if /I "%K%"=="pull-translations" (set "CMD=bash releases/translations/pull-translations.sh" ^& goto cli_go)
+if /I "%K%"=="fill-translations" (set "CMD=node releases/translations/fill-translations.mjs --missing" ^& goto cli_go)
+if /I "%K%"=="push-translation" (set "CMD=bash releases/translations/push-translation.sh" ^& goto cli_go)
+if /I "%K%"=="push-all-translations" (set "CMD=bash releases/translations/push-all-translations.sh" ^& goto cli_go)
+if /I "%K%"=="push-english-base-translation" (set "CMD=bash releases/translations/push-english-base-translation.sh" ^& goto cli_go)
+if /I "%K%"=="push-copy-en-gb-translation" (set "CMD=bash releases/translations/push-copy-en-gb-translation.sh" ^& goto cli_go)
+if /I "%K%"=="report-english-regressions" (set "CMD=node releases/translations/report-english-regressions.mjs" ^& goto cli_go)
+if /I "%K%"=="verify-human-preference" (set "CMD=node releases/translations/verify-human-preference.mjs" ^& goto cli_go)
+if /I "%K%"=="merge-translations" (set "CMD=node releases/translations/merge-translations.mjs" ^& goto cli_go)
+REM `git pull` and `git push` are shell functions in build.sh, not scripts in
+REM releases/, so this answers to the same two names with its own labels - the
+REM ones the interactive menu already uses.
+if /I "%K%"=="git-pull" (goto gitpull)
+if /I "%K%"=="git-push" (goto gitpush)
+if /I "%K%"=="commit" (set "CMD=bash releases/commit.sh" ^& goto cli_go)
+if /I "%K%"=="git-add-revert" (set "SHCMD=git restore --staged" ^& goto cli_go)
+if /I "%K%"=="delete-branch-local-and-remote" (set "CMD=bash releases/delete-branch-local-and-remote.sh" ^& goto cli_go)
+if /I "%K%"=="count-lines-of-code-per-committer" (set "CMD=bash releases/count-lines-of-code-per-committer.sh" ^& goto cli_go)
+if /I "%K%"=="stylus-to-css" (set "CMD=bash releases/stylus-to-css.sh" ^& goto cli_go)
+if /I "%K%"=="node-update" (set "CMD=bash releases/node-update.sh" ^& goto cli_go)
+if /I "%K%"=="node-update-local" (set "CMD=bash releases/node-update-local.sh" ^& goto cli_go)
+if /I "%K%"=="migrate-mongodb-to-ferretdb" (set "CMD=node releases/migrate-mongodb-to-ferretdb.mjs" ^& goto cli_go)
+if /I "%K%"=="ipaddress" (set "CMD=bash releases/virtualbox/ipaddress.sh" ^& goto cli_go)
+if /I "%K%"=="node-allow-port-80" (set "CMD=bash releases/virtualbox/node-allow-port-80.sh" ^& goto cli_go)
+if /I "%K%"=="start-wekan" (set "CMD=bash releases/virtualbox/start-wekan.sh" ^& goto cli_go)
+if /I "%K%"=="stop-wekan" (set "CMD=bash releases/virtualbox/stop-wekan.sh" ^& goto cli_go)
+echo build.bat: no command called "%K%".
+echo Try: build.bat --list
+exit /b 2
+:cli_go
+call :need_bash
+if errorlevel 1 exit /b 1
+if not "!SHCMD!"=="" goto cli_go_sh
+call !CMD! !ARGS!
+exit /b %errorlevel%
+:cli_go_sh
+call bash -c "!SHCMD! !ARGS!"
+exit /b %errorlevel%
+
+REM ===========================================================================
+:menu_cli
+echo.
+call :cli_help
+echo.
+echo Commands:
+call :cli_list
+pause
+goto menu
+
 
 REM ===========================================================================
 :menu_docker
@@ -238,10 +816,51 @@ echo Done. Open a new terminal so PATH changes take effect, then re-run this scr
 goto end
 
 REM ===========================================================================
+REM Two entries, one build. :build adds what a RELEASE bundle is on top of
+REM :builddev, and both share :buildcommon - so the plain build cannot drift
+REM from the one the release steps run on.
+:builddev
+echo Building the WeKan DEVELOPMENT bundle ^(plain meteor build^).
+call :buildcommon
+if errorlevel 1 goto end
+echo.
+echo Done. This is NOT what a release ships: it still has the legacy client, the
+echo source maps and uWebSockets.js, and no Node.js, FerretDB or launcher of its
+echo own. Use "Build WeKan release bundle" to find out whether a release starts.
+goto end
+
+REM ===========================================================================
 :build
-echo Building WeKan.
-REM Also clears the rspack dev-build caches (_build and node_modules\.cache) so the
-REM next `meteor run` recompiles from scratch instead of serving stale modules.
+echo Building the WeKan RELEASE bundle.
+call :buildcommon
+if errorlevel 1 goto end
+REM THE REST OF WHAT A RELEASE BUNDLE IS - the same steps as the Release All
+REM workflow for this platform, minus the .zip: the server's npm modules, the
+REM three prunes, the sockjs / legacy-client / source-map trim, a verified
+REM Node.js, FerretDB, the MongoDB Database Tools and start-wekan.bat. So this
+REM entry answers whether the bundle a release would publish starts here, which
+REM `meteor build` on its own never could.
+REM
+REM Through bash, like the git actions above and for the same reason: this is
+REM releases/build-release-bundle.sh, the script the release itself runs, not a
+REM batch copy of it that would drift from it.
+where bash >nul 2>&1
+if errorlevel 1 (
+  echo.
+  echo WARNING: bash was not found, so .build\bundle is a plain `meteor build`
+  echo          bundle - no Node.js, no FerretDB, no launcher, nothing trimmed.
+  echo          bash comes with Git for Windows ^(Git Bash^) and with WSL.
+  goto end
+)
+bash releases/build-release-bundle.sh .build/bundle
+echo Done.
+goto end
+
+REM ===========================================================================
+REM The part both build entries do: clear the rspack dev-build caches (_build and
+REM node_modules\.cache) so the next `meteor run` recompiles from scratch instead
+REM of serving stale modules, then build the bundle.
+:buildcommon
 if exist "%REPO%\node_modules"        rmdir /s /q "%REPO%\node_modules"
 if exist "%REPO%\node_modules\.cache" rmdir /s /q "%REPO%\node_modules\.cache"
 if exist "%REPO%\.meteor\local"       rmdir /s /q "%REPO%\.meteor\local"
@@ -250,55 +869,39 @@ if exist "%REPO%\_build"              rmdir /s /q "%REPO%\_build"
 call meteor update --npm
 call meteor npm install
 call meteor build .build --directory
-echo Done.
-goto end
+if not exist "%REPO%\.build\bundle\main.js" (
+  echo ERROR: the build produced no .build\bundle\main.js.
+  exit /b 1
+)
+exit /b 0
 
 REM ===========================================================================
-REM Make the working copy current in one step: fetch + rebase the current branch
-REM onto its upstream, repoint any CHANGELOG commit links the rebase made stale
-REM (the same shared releases\fix-changelog-hashes.sh release-all.sh uses), and
-REM show the status. Parity with build.sh's Setup -> "Update git ...".
-:updategit
-echo Updating git: fetch + rebase onto origin, fix CHANGELOG hashes, show status.
-git rev-parse --git-dir >nul 2>&1
-if errorlevel 1 ( echo Not a git repository. & goto end )
-set "BRANCH="
-for /f "delims=" %%b in ('git rev-parse --abbrev-ref HEAD 2^>nul') do set "BRANCH=%%b"
-echo Branch: %BRANCH%
-echo (A dirty tree is auto-stashed for the rebase and re-applied after.)
-echo --- git fetch --all --prune ---
-git fetch --all --prune
-git rev-parse --verify --quiet "origin/%BRANCH%" >nul 2>&1
-if errorlevel 1 (
-	echo No upstream origin/%BRANCH% - skipping rebase.
-) else (
-	echo --- git pull --rebase --autostash origin %BRANCH% ---
-	git pull --rebase --autostash origin "%BRANCH%"
-	if errorlevel 1 (
-		echo.
-		echo Rebase stopped ^(conflicts^). Resolve them, then:
-		echo     git rebase --continue     ^(or: git rebase --abort^)
-		echo and run this option again to finish the hash fix + status.
-		goto end
-	)
-)
-echo --- Fixing CHANGELOG commit links ^(releases\fix-changelog-hashes.sh^) ---
-echo     ^(whole file, including released sections: bash releases/fix-changelog-hashes.sh --all-sections^)
+:gitpull
+REM Both git actions are build.sh's git_pull / git_push, run through bash rather
+REM than written a second time here. What they do - fast-forward or rebase,
+REM repoint the CHANGELOG links a rebase moved, abort a conflicting rebase so the
+REM repo is left exactly as it was, pull-and-retry once when a push is rejected -
+REM is shell logic, and the batch copy of the old "Update git" that used to live
+REM here is why this file drifted: it reimplemented the same steps, so a fix to
+REM one never reached the other.
 where bash >nul 2>&1
 if errorlevel 1 (
-	echo bash not found - the CHANGELOG hash fix needs Git Bash, bundled with Git for Windows.
-	echo Skipping it. Run it yourself in Git Bash:  bash releases/fix-changelog-hashes.sh
-) else (
-	bash releases/fix-changelog-hashes.sh
+  echo ERROR: bash was not found. It comes with Git for Windows ^(Git Bash^) and with WSL.
+  goto end
 )
-echo --- git status ---
-git status
-echo.
-echo NOTE: if CHANGELOG.md was changed above, review 'git diff CHANGELOG.md' and
-echo       commit it - this script never commits for you.
+bash ./build.sh git-pull
 goto end
 
 REM ===========================================================================
+:gitpush
+where bash >nul 2>&1
+if errorlevel 1 (
+  echo ERROR: bash was not found. It comes with Git for Windows ^(Git Bash^) and with WSL.
+  goto end
+)
+bash ./build.sh git-push
+goto end
+
 :dev_local
 call :ensure_dirs
 call :set_dev_env
@@ -384,6 +987,12 @@ goto end
 
 REM ===========================================================================
 :test_all_parallel
+REM Clear anything a previous run left listening before starting: cmd cannot
+REM trap Ctrl-C, so an interrupted run's database outlives it, and the harness
+REM would REUSE it (it reuses a database that answers) with data this run never
+REM seeded. build.sh does this with a trap on the way out; here it is done on
+REM the way in, which covers the same gap.
+call :stop_test_databases
 echo Running ALL tests against ONE WeKan server on http://localhost:3000 - all jobs run IN PARALLEL (concurrently). Needs plenty of RAM (fine on 32 GB).
 echo Two WeKan servers are involved:
 echo   :3000  - the PRECOMPILED .build\bundle run as a plain Node server (Meteor's mongod on :3001, db "meteor")
@@ -404,18 +1013,20 @@ call :rebuild_for_tests
 if errorlevel 1 goto end
 
 set "FAILED=0"
-set "S_mocha=RUN" & set "S_unit=RUN" & set "S_import=RUN" & set "S_e2e=RUN" & set "S_browsers=RUN"
-set "C_mocha=0" & set "C_unit=0" & set "C_import=0" & set "C_e2e=0" & set "C_browsers=0"
-REM Each run gets its own ..\log\<timestamp>\ dir (stamped once at run start), so
+set "S_mocha=RUN" & set "S_unit=RUN" & set "S_import=RUN" & set "S_e2e=RUN"
+set "S_chromium=RUN" & set "S_firefox=RUN" & set "S_webkit=RUN"
+set "C_mocha=0" & set "C_unit=0" & set "C_import=0" & set "C_e2e=0"
+set "C_chromium=0" & set "C_firefox=0" & set "C_webkit=0"
+REM Each run gets its own .tools\log\<timestamp>\ dir (stamped once at run start), so
 REM logs are never overwritten and previous runs are kept. PowerShell gives a
 REM locale-independent yyyy-MM-dd_HH-mm-ss; %RUN_LOGDIR% is absolute so it works
 REM from any job's working directory (e.g. the browser job runs in tests\playwright).
 for /f %%i in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd_HH-mm-ss"') do set "RUN_TS=%%i"
-set "RUN_LOGDIR=%REPO%\..\log\%RUN_TS%"
+set "RUN_LOGDIR=%REPO%\.tools\log\%RUN_TS%"
 if not exist "%RUN_LOGDIR%" md "%RUN_LOGDIR%"
 echo Logs for this run: %RUN_LOGDIR%\  - previous runs are kept
 REM Clear completion flags from any previous run.
-del /q ".done-mocha" ".done-unit" ".done-import" ".done-e2e" ".done-browsers" 2>nul
+del /q ".done-mocha" ".done-unit" ".done-import" ".done-e2e" ".done-chromium" ".done-firefox" ".done-webkit" 2>nul
 
 REM Start the :3000 server FIRST and let it build alone. Mocha runs its own
 REM Meteor build (.meteor\local-test); launching it here would make two full
@@ -437,11 +1048,19 @@ start "Wekan import" /MIN /D "%REPO%" cmd /c "(echo ===== Import regression [no 
 
 if "!SERVER_READY!"=="0" (
 	echo FAIL: server did not become ready on http://localhost:3000 ^(see %RUN_LOGDIR%\wekan-test-server.log^)
-	set "S_e2e=SKIP" & set "S_browsers=SKIP" & set "FAILED=1"
+	set "S_e2e=SKIP" & set "S_chromium=SKIP" & set "S_firefox=SKIP" & set "S_webkit=SKIP" & set "FAILED=1"
 ) else (
-	echo ==^> Server is up: starting Node E2E and Playwright ^(Chromium + Firefox + WebKit, --workers=3^) in parallel.
+	echo ==^> Server is up: starting Node E2E and Playwright ^(Chromium, Firefox and WebKit as three separate jobs^) in parallel.
 	start "Wekan e2e" /MIN /D "%REPO%" cmd /c "(echo ===== Node E2E [M1 node:3000 db:3001] test run: %DATE% %TIME% =====) 1>%RUN_LOGDIR%\wekan-alltests-e2e.log 2>&1 & call meteor npm run test:e2e 1>>%RUN_LOGDIR%\wekan-alltests-e2e.log 2>&1 & if errorlevel 1 (echo FAIL>.done-e2e) else (echo PASS>.done-e2e)"
-	start "Wekan browsers" /MIN /D "%REPO%\tests\playwright" cmd /c "set WEKAN_PLAYWRIGHT_ALL=1&& (echo ===== Playwright browsers [M1 node:3000 db:3001] test run: %DATE% %TIME% =====) 1>%RUN_LOGDIR%\wekan-alltests-browsers.log 2>&1 & call meteor npm exec playwright test -- --project=chromium --project=firefox --project=webkit --workers=3 --reporter=list 1>>%RUN_LOGDIR%\wekan-alltests-browsers.log 2>&1 & if errorlevel 1 (echo FAIL>..\..\.done-browsers) else (echo PASS>..\..\.done-browsers)"
+	REM One job, one log, one summary row PER BROWSER - the same shape build.sh
+	REM produces. A single combined "browsers" job wrote one wekan-alltests-browsers.log
+	REM for all three, so "which browser failed, and what did WebKit print" could not
+	REM be answered from the logs, and CLAUDE.md's "check the newest test logs" names
+	REM the per-browser files. --output keeps each browser's artifacts in its own
+	REM directory, or the three would clear each other's at startup.
+	call :start_browser_job chromium
+	call :start_browser_job firefox
+	call :start_browser_job webkit
 )
 
 REM Live progress: re-print a status line every ~3s until all expected jobs
@@ -456,18 +1075,25 @@ call :jcount C_unit unit "%RUN_LOGDIR%\wekan-alltests-unit.log"
 call :jcount C_import check "%RUN_LOGDIR%\wekan-alltests-import.log"
 if "!SERVER_READY!"=="1" (
 	call :jstate e2e
-	call :jstate browsers
+	call :jstate chromium
+	call :jstate firefox
+	call :jstate webkit
 	call :jcount C_e2e e2e "%RUN_LOGDIR%\wekan-alltests-e2e.log"
-	call :jcount C_browsers check "%RUN_LOGDIR%\wekan-alltests-browsers.log"
+	call :jcount C_chromium check "%RUN_LOGDIR%\wekan-alltests-chromium.log"
+	call :jcount C_firefox check "%RUN_LOGDIR%\wekan-alltests-firefox.log"
+	call :jcount C_webkit check "%RUN_LOGDIR%\wekan-alltests-webkit.log"
 )
-echo   mocha [M2 :3100/db:3101] !S_mocha! tests:!C_mocha!  ^| unit [no server] !S_unit! tests:!C_unit!  ^| import [no server] !S_import! tests:!C_import!  ^| e2e [M1 :3000/db:3001] !S_e2e! tests:!C_e2e!  ^| browsers [M1 :3000/db:3001] !S_browsers! tests:!C_browsers!
+echo   mocha [M2 :3100/db:3101] !S_mocha! tests:!C_mocha!  ^| unit [no server] !S_unit! tests:!C_unit!  ^| import [no server] !S_import! tests:!C_import!  ^| e2e [M1 :3000/db:3001] !S_e2e! tests:!C_e2e!
+echo   chromium !S_chromium! tests:!C_chromium!  ^| firefox !S_firefox! tests:!C_firefox!  ^| webkit !S_webkit! tests:!C_webkit!   [all three on M1 :3000/db:3001]
 set "ALLDONE=1"
 if not exist ".done-mocha" set "ALLDONE=0"
 if not exist ".done-unit" set "ALLDONE=0"
 if not exist ".done-import" set "ALLDONE=0"
 if "!SERVER_READY!"=="1" (
 	if not exist ".done-e2e" set "ALLDONE=0"
-	if not exist ".done-browsers" set "ALLDONE=0"
+	if not exist ".done-chromium" set "ALLDONE=0"
+	if not exist ".done-firefox" set "ALLDONE=0"
+	if not exist ".done-webkit" set "ALLDONE=0"
 )
 if "!ALLDONE!"=="0" (
 	ping -n 4 127.0.0.1 >nul
@@ -475,16 +1101,16 @@ if "!ALLDONE!"=="0" (
 )
 
 echo.
-echo Stopping WeKan test server (bundle node :3000).
-taskkill /FI "WINDOWTITLE eq WekanTestServer*" /T /F >nul 2>&1
-if "!MONGOD_STARTED!"=="1" ( echo Stopping test MongoDB ^(mongod :3001^). & taskkill /FI "WINDOWTITLE eq WekanTestMongo*" /T /F >nul 2>&1 )
+call :stop_test_databases
 
 REM Final pass/fail per job (RUN means it never wrote a flag = treat as FAIL).
 if "!S_mocha!"=="FAIL" set "FAILED=1"
 if "!S_unit!"=="FAIL" set "FAILED=1"
 if "!S_import!"=="FAIL" set "FAILED=1"
 if "!S_e2e!"=="FAIL" set "FAILED=1"
-if "!S_browsers!"=="FAIL" set "FAILED=1"
+if "!S_chromium!"=="FAIL" set "FAILED=1"
+if "!S_firefox!"=="FAIL" set "FAILED=1"
+if "!S_webkit!"=="FAIL" set "FAILED=1"
 
 echo.
 echo ==================== TEST SUMMARY ====================
@@ -493,14 +1119,22 @@ call :report "!S_unit!"      "Unit tests (node)"                    "[no server]
 call :report "!S_import!"    "Import regression"                    "[no server]        tests:!C_import!"
 if "!SERVER_READY!"=="1" ( call :report "PASS" "Server startup" "[M1 :3000/db:3001]" ) else ( call :report "FAIL" "Server startup" "[M1 :3000/db:3001]" )
 call :report "!S_e2e!"       "Node E2E regressions"                 "[M1 :3000/db:3001] tests:!C_e2e!"
-call :report "!S_browsers!"  "Playwright (Chromium+Firefox+WebKit)" "[M1 :3000/db:3001] tests:!C_browsers!"
+call :report "!S_chromium!"  "Playwright Chromium"                  "[M1 :3000/db:3001] tests:!C_chromium!"
+call :report "!S_firefox!"   "Playwright Firefox"                   "[M1 :3000/db:3001] tests:!C_firefox!"
+call :report "!S_webkit!"    "Playwright WebKit"                    "[M1 :3000/db:3001] tests:!C_webkit!"
 echo =====================================================
-echo (per-job logs in: %RUN_LOGDIR%\  as wekan-alltests-^<mocha^|unit^|import^|e2e^|browsers^>.log and wekan-test-server.log)
+echo (per-job logs in: %RUN_LOGDIR%\  as wekan-alltests-^<mocha^|unit^|import^|e2e^|chromium^|firefox^|webkit^>.log and wekan-test-server.log)
 if "!FAILED!"=="0" ( echo RESULT: All tests passed. ) else ( echo RESULT: Some tests FAILED ^(see details above^). )
 goto end
 
 REM ===========================================================================
 :test_all_sequential
+REM Clear anything a previous run left listening before starting: cmd cannot
+REM trap Ctrl-C, so an interrupted run's database outlives it, and the harness
+REM would REUSE it (it reuses a database that answers) with data this run never
+REM seeded. build.sh does this with a trap on the way out; here it is done on
+REM the way in, which covers the same gap.
+call :stop_test_databases
 echo Running ALL tests against ONE WeKan server on http://localhost:3000 - all jobs run SEQUENTIALLY (one at a time).
 echo Two WeKan servers are involved (they do NOT run tests in parallel; the suites run one at a time):
 echo   :3000  - the PRECOMPILED .build\bundle run as a plain Node server (Meteor's mongod on :3001, db "meteor")
@@ -521,18 +1155,20 @@ call :rebuild_for_tests
 if errorlevel 1 goto end
 
 set "FAILED=0"
-set "S_mocha=RUN" & set "S_unit=RUN" & set "S_import=RUN" & set "S_e2e=RUN" & set "S_browsers=RUN"
-set "C_mocha=0" & set "C_unit=0" & set "C_import=0" & set "C_e2e=0" & set "C_browsers=0"
-REM Each run gets its own ..\log\<timestamp>\ dir (stamped once at run start), so
+set "S_mocha=RUN" & set "S_unit=RUN" & set "S_import=RUN" & set "S_e2e=RUN"
+set "S_chromium=RUN" & set "S_firefox=RUN" & set "S_webkit=RUN"
+set "C_mocha=0" & set "C_unit=0" & set "C_import=0" & set "C_e2e=0"
+set "C_chromium=0" & set "C_firefox=0" & set "C_webkit=0"
+REM Each run gets its own .tools\log\<timestamp>\ dir (stamped once at run start), so
 REM logs are never overwritten and previous runs are kept. PowerShell gives a
 REM locale-independent yyyy-MM-dd_HH-mm-ss; %RUN_LOGDIR% is absolute so it works
 REM from any job's working directory (e.g. the browser job runs in tests\playwright).
 for /f %%i in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd_HH-mm-ss"') do set "RUN_TS=%%i"
-set "RUN_LOGDIR=%REPO%\..\log\%RUN_TS%"
+set "RUN_LOGDIR=%REPO%\.tools\log\%RUN_TS%"
 if not exist "%RUN_LOGDIR%" md "%RUN_LOGDIR%"
 echo Logs for this run: %RUN_LOGDIR%\  - previous runs are kept
 REM Clear completion flags from any previous run.
-del /q ".done-mocha" ".done-unit" ".done-import" ".done-e2e" ".done-browsers" 2>nul
+del /q ".done-mocha" ".done-unit" ".done-import" ".done-e2e" ".done-chromium" ".done-firefox" ".done-webkit" 2>nul
 
 REM Start the :3000 server FIRST and let it build alone. Mocha runs its own
 REM Meteor build (.meteor\local-test); launching it here would make two full
@@ -571,36 +1207,46 @@ echo ==^> Running Node E2E regressions on Meteor #1 [Node.js :3000, MongoDB :300
 start "Wekan e2e" /MIN /D "%REPO%" cmd /c "(echo ===== Node E2E [M1 node:3000 db:3001] test run: %DATE% %TIME% =====) 1>%RUN_LOGDIR%\wekan-alltests-e2e.log 2>&1 & call meteor npm run test:e2e 1>>%RUN_LOGDIR%\wekan-alltests-e2e.log 2>&1 & if errorlevel 1 (echo FAIL>.done-e2e) else (echo PASS>.done-e2e)"
 call :seq_run_wait e2e e2e C_e2e "%RUN_LOGDIR%\wekan-alltests-e2e.log"
 
-echo ==^> Running Playwright Chromium, Firefox and WebKit one at a time ^(--workers=1^) on Meteor #1 [Node.js :3000, MongoDB :3001]. Full log: %RUN_LOGDIR%\wekan-alltests-browsers.log
-start "Wekan browsers" /MIN /D "%REPO%\tests\playwright" cmd /c "set WEKAN_PLAYWRIGHT_ALL=1&& (echo ===== Playwright browsers [M1 node:3000 db:3001] test run: %DATE% %TIME% =====) 1>%RUN_LOGDIR%\wekan-alltests-browsers.log 2>&1 & call :onelog playwright-all
-call meteor npm exec playwright test -- --project=chromium --project=firefox --project=webkit --workers=1 --reporter=list 2>&1 | powershell -NoProfile -Command "$input | Tee-Object -FilePath '%ONELOG%'" 1>>%RUN_LOGDIR%\wekan-alltests-browsers.log 2>&1 & if errorlevel 1 (echo FAIL>..\..\.done-browsers) else (echo PASS>..\..\.done-browsers)"
-call :seq_run_wait browsers check C_browsers "%RUN_LOGDIR%\wekan-alltests-browsers.log"
+echo ==^> Running Playwright Chromium, Firefox and WebKit one browser at a time on Meteor #1 [Node.js :3000, MongoDB :3001].
+REM One job, one log and one summary row per browser, as build.sh does. The
+REM combined run wrote a single wekan-alltests-browsers.log for all three, so
+REM neither "which browser failed" nor "what did WebKit print" was answerable
+REM from the logs afterwards - and CLAUDE.md's "check the newest test logs"
+REM names wekan-alltests-chromium.log, -firefox.log and -webkit.log.
+call :start_browser_job chromium
+call :seq_run_wait chromium check C_chromium "%RUN_LOGDIR%\wekan-alltests-chromium.log"
+call :start_browser_job firefox
+call :seq_run_wait firefox check C_firefox "%RUN_LOGDIR%\wekan-alltests-firefox.log"
+call :start_browser_job webkit
+call :seq_run_wait webkit check C_webkit "%RUN_LOGDIR%\wekan-alltests-webkit.log"
 goto server_jobs_done
 
 :skip_server_jobs
 echo FAIL: server did not become ready on http://localhost:3000 ^(see %RUN_LOGDIR%\wekan-test-server.log^)
-set "S_e2e=SKIP" & set "S_browsers=SKIP" & set "FAILED=1"
+set "S_e2e=SKIP" & set "S_chromium=SKIP" & set "S_firefox=SKIP" & set "S_webkit=SKIP" & set "FAILED=1"
 
 :server_jobs_done
 
 echo.
-echo Stopping WeKan test server (bundle node :3000).
-taskkill /FI "WINDOWTITLE eq WekanTestServer*" /T /F >nul 2>&1
-if "!MONGOD_STARTED!"=="1" ( echo Stopping test MongoDB ^(mongod :3001^). & taskkill /FI "WINDOWTITLE eq WekanTestMongo*" /T /F >nul 2>&1 )
+call :stop_test_databases
 
 REM Final pass/fail per job (RUN means it never wrote a flag = treat as FAIL).
 if "!S_mocha!"=="FAIL" set "FAILED=1"
 if "!S_unit!"=="FAIL" set "FAILED=1"
 if "!S_import!"=="FAIL" set "FAILED=1"
 if "!S_e2e!"=="FAIL" set "FAILED=1"
-if "!S_browsers!"=="FAIL" set "FAILED=1"
+if "!S_chromium!"=="FAIL" set "FAILED=1"
+if "!S_firefox!"=="FAIL" set "FAILED=1"
+if "!S_webkit!"=="FAIL" set "FAILED=1"
 
 REM Count passing tests per job from each log (advances shown in the summary).
 call :jcount C_mocha check "%RUN_LOGDIR%\wekan-alltests-mocha.log"
 call :jcount C_unit unit "%RUN_LOGDIR%\wekan-alltests-unit.log"
 call :jcount C_import check "%RUN_LOGDIR%\wekan-alltests-import.log"
 call :jcount C_e2e e2e "%RUN_LOGDIR%\wekan-alltests-e2e.log"
-call :jcount C_browsers check "%RUN_LOGDIR%\wekan-alltests-browsers.log"
+call :jcount C_chromium check "%RUN_LOGDIR%\wekan-alltests-chromium.log"
+call :jcount C_firefox check "%RUN_LOGDIR%\wekan-alltests-firefox.log"
+call :jcount C_webkit check "%RUN_LOGDIR%\wekan-alltests-webkit.log"
 
 echo.
 echo ==================== TEST SUMMARY ====================
@@ -609,9 +1255,11 @@ call :report "!S_unit!"      "Unit tests (node)"                    "[no server]
 call :report "!S_import!"    "Import regression"                    "[no server]        tests:!C_import!"
 if "!SERVER_READY!"=="1" ( call :report "PASS" "Server startup" "[M1 :3000/db:3001]" ) else ( call :report "FAIL" "Server startup" "[M1 :3000/db:3001]" )
 call :report "!S_e2e!"       "Node E2E regressions"                 "[M1 :3000/db:3001] tests:!C_e2e!"
-call :report "!S_browsers!"  "Playwright (Chromium+Firefox+WebKit)" "[M1 :3000/db:3001] tests:!C_browsers!"
+call :report "!S_chromium!"  "Playwright Chromium"                  "[M1 :3000/db:3001] tests:!C_chromium!"
+call :report "!S_firefox!"   "Playwright Firefox"                   "[M1 :3000/db:3001] tests:!C_firefox!"
+call :report "!S_webkit!"    "Playwright WebKit"                    "[M1 :3000/db:3001] tests:!C_webkit!"
 echo =====================================================
-echo (per-job logs in: %RUN_LOGDIR%\  as wekan-alltests-^<mocha^|unit^|import^|e2e^|browsers^>.log and wekan-test-server.log)
+echo (per-job logs in: %RUN_LOGDIR%\  as wekan-alltests-^<mocha^|unit^|import^|e2e^|chromium^|firefox^|webkit^>.log and wekan-test-server.log)
 if "!FAILED!"=="0" ( echo RESULT: All tests passed. ) else ( echo RESULT: Some tests FAILED ^(see details above^). )
 goto end
 
@@ -707,16 +1355,33 @@ if /i "%INSTALL_DEPS%"=="y" (
 	popd
 )
 
-REM All three browsers run natively on Windows. Use --workers=1 so a single
-REM Playwright run executes Chromium, Firefox and WebKit tests one at a time
-REM (sequentially) rather than concurrently: running all three at once uses too
-REM much RAM/swap and can crash the machine. WEKAN_PLAYWRIGHT_ALL=1 enables all
-REM projects.
-cd /d "%REPO%\tests\playwright"
-set "WEKAN_PLAYWRIGHT_ALL=1"
-call meteor npm exec playwright test -- --project=chromium --project=firefox --project=webkit --workers=1 --reporter=list
-if errorlevel 1 ( echo RESULT: Some Playwright browsers FAILED ^(see details above^). ) else ( echo RESULT: All Playwright browsers passed. )
+REM One browser at a time, each with its own log - the same as build.sh's
+REM run_playwright_parallel, and the same per-browser logs the whole-suite runs
+REM write. Running all three concurrently against one dev server uses too much
+REM RAM/swap on smaller machines and can crash it, so this stays sequential.
+REM
+REM It used to be a single `playwright test --project=... --project=...` call
+REM with no log at all: everything went to the terminal and there was nothing
+REM left to read afterwards, which is what tests/dbConformanceWiring.test.cjs
+REM means by "every Tests option writes its log to .tools/log/<datetime>/".
+set "PW_ALL_FAILED=0"
+for %%B in (chromium firefox webkit) do call :pw_one_browser %%B
+if "%PW_ALL_FAILED%"=="1" ( echo RESULT: Some Playwright browsers FAILED ^(see the logs above^). ) else ( echo RESULT: All Playwright browsers passed. )
 goto end
+
+:pw_one_browser
+REM One browser of the "ALL browsers" option: %1 = chromium^|firefox^|webkit.
+REM Streams live AND writes wekan-playwright-^<browser^>.log, via the same
+REM :onelog helper every other Tests option uses.
+set "PW_PROJECT=%~1"
+call :onelog playwright-%PW_PROJECT%
+echo ==^> Playwright %PW_PROJECT% ^(one browser at a time^). Log: %ONELOG%
+pushd "%REPO%\tests\playwright"
+set "WEKAN_PLAYWRIGHT_ALL=1"
+call meteor npm exec playwright test -- --project=%PW_PROJECT% --output=test-results\%PW_PROJECT% --reporter=list 2>&1 | powershell -NoProfile -Command "$input | Tee-Object -FilePath '%ONELOG%'"
+if errorlevel 1 set "PW_ALL_FAILED=1"
+popd
+exit /b 0
 
 REM ===========================================================================
 :check_floating
@@ -871,7 +1536,7 @@ exit /b 0
 :set_dev_env
 REM Common dev-server environment (caller sets ROOT_URL afterwards).
 set "DEFAULT_METEOR_REACTIVITY_ORDER=changeStreams,oplog,polling"
-set "DDP_TRANSPORT=uws"
+set "DDP_TRANSPORT=sockjs"
 set "DEBUG=true"
 set "WRITABLE_PATH=.."
 set "WITH_API=true"
@@ -879,7 +1544,7 @@ set "RICHER_CARD_COMMENT_EDITOR=false"
 exit /b 0
 
 :onelog
-REM Set ONELOG to ..\log\<datetime>\wekan-%1.log - the same place every other
+REM Set ONELOG to .tools\log\<datetime>\wekan-%1.log - the same place every other
 REM test run writes, so "the newest test logs" is one directory whichever option
 REM produced them. A larger run (EVERYTHING) exports WEKAN_LOGDIR first, and then
 REM the whole run stays in that one directory. The Windows equivalent of build.sh's
@@ -887,7 +1552,7 @@ REM one_log().
 if defined WEKAN_LOGDIR (
 	set "ONELOGDIR=%WEKAN_LOGDIR%"
 ) else (
-	for /f %%T in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd_HH-mm-ss"') do set "ONELOGDIR=..\log\%%T"
+	for /f %%T in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd_HH-mm-ss"') do set "ONELOGDIR=.tools\log\%%T"
 )
 if not exist "%ONELOGDIR%" md "%ONELOGDIR%" >nul 2>&1
 set "ONELOG=%ONELOGDIR%\wekan-%~1.log"
@@ -903,8 +1568,8 @@ exit /b 0
 
 :runlog
 REM Run "meteor run <args>" showing output live AND copying it to
-REM ..\log\wekan-log.log - the Windows equivalent of the .sh's
-REM "meteor run ... 2>&1 | tee ../log/wekan-log.log". cmd has no built-in tee,
+REM .tools\log\wekan-log.log - the Windows equivalent of the .sh's
+REM "meteor run ... 2>&1 | tee .tools/log/wekan-log.log". cmd has no built-in tee,
 REM so pipe through PowerShell's Tee-Object. %* = all args forwarded to meteor.
 REM Note: PowerShell buffers the pipeline, so console output can appear in
 REM bursts; the full stream is always captured in the log file.
@@ -912,8 +1577,8 @@ REM Callers always pass "--port <PORT>" first, so %2 is the port: kill any
 REM Meteor dev server already listening there before starting a new one.
 call :kill_meteor_on_port %2
 if errorlevel 1 exit /b 1
-if not exist "..\log" md "..\log"
-call meteor run %* 2>&1 | powershell -NoProfile -Command "$input | Tee-Object -FilePath '..\log\wekan-log.log'"
+if not exist ".tools\log" md ".tools\log"
+call meteor run %* 2>&1 | powershell -NoProfile -Command "$input | Tee-Object -FilePath '.tools\log\wekan-log.log'"
 exit /b 0
 
 :kill_meteor_on_port
@@ -968,6 +1633,33 @@ exit /b %ERRORLEVEL%
 :free_port
 REM %1 = port. Kill whatever is LISTENING on that TCP port (and its process tree).
 for /f "tokens=5" %%p in ('netstat -ano ^| findstr /r /c:":%~1 .*LISTENING"') do taskkill /F /T /PID %%p >nul 2>&1
+exit /b 0
+
+:stop_test_databases
+REM Stop what a test run started: the bundle server on :3000, the test mongod on
+REM :3001 when THIS run launched it, and any database-conformance container.
+REM
+REM Called at the end of both all-tests flows, and again before a run starts,
+REM which is the batch answer to build.sh's trap. cmd cannot trap Ctrl-C, so an
+REM interrupted run leaves its database behind; clearing before starting means
+REM the next run does not inherit it. That matters because the harness reuses a
+REM database only when it ANSWERS - a leftover mongod answers, so it would be
+REM reused, holding a database this run never seeded, and the failures would
+REM land somewhere else entirely.
+echo Stopping WeKan test server (bundle node :3000).
+taskkill /FI "WINDOWTITLE eq WekanTestServer*" /T /F >nul 2>&1
+if "!MONGOD_STARTED!"=="1" ( echo Stopping test MongoDB ^(mongod :3001^). & taskkill /FI "WINDOWTITLE eq WekanTestMongo*" /T /F >nul 2>&1 )
+REM The conformance stage runs each engine in a container named
+REM wekan-conformance-db-<timestamp> and removes it when that engine is done. An
+REM interrupted run leaves the one it was on, and a container still holding 5432
+REM or 3306 fails the next run's engine before it starts.
+where docker >nul 2>&1
+if not errorlevel 1 (
+	for /f %%c in ('docker ps -aq --filter "name=wekan-conformance-db-" 2^>nul') do (
+		echo Stopping database-conformance container %%c.
+		docker rm -f %%c >nul 2>&1
+	)
+)
 exit /b 0
 
 :kill_all_dev_servers
@@ -1076,7 +1768,7 @@ if "!SERVER_READY!"=="1" echo ==^> WeKan test server is ready on http://localhos
 exit /b 0
 
 :rebuild_for_tests
-REM Delete .build (and the rspack dev-build caches, as :build does) and build the
+REM Delete .build (and the rspack dev-build caches, as :buildcommon does) and build the
 REM WeKan bundle the test server runs. Same steps as Setup -> "Build WeKan", so the
 REM two can never drift apart.
 echo ==^> Deleting .build and building WeKan before running the tests ^(always, so the tests run against the current source^).
@@ -1179,6 +1871,25 @@ REM 6) Wait for :3000 to answer (bundle boots in seconds; curl-timeout poll).
 call :wait_server_ready
 exit /b 0
 
+:start_browser_job
+REM Start ONE Playwright browser as its own job: %1 = chromium^|firefox^|webkit.
+REM
+REM One job, one log, one .done flag and one summary row per browser - the same
+REM shape build.sh's run_pw_all_browser produces, and what CLAUDE.md means by the
+REM per-browser logs in log\^<datetime^>\. The combined three-project run this
+REM replaced wrote everything into one wekan-alltests-browsers.log, where a
+REM failure could not be attributed to a browser without reading the whole file.
+REM
+REM --output is per browser as well: Playwright CLEARS its output directory at
+REM startup, so three jobs sharing test-results\ would delete each other's traces
+REM and screenshots - exactly the artifacts wanted after a failure. The job runs
+REM in tests\playwright, so the .done flag is written two levels up, in the repo
+REM root, where the wait loops look for it.
+if "%~1"=="" exit /b 1
+echo ==^> Playwright %~1 on Meteor #1 [Node.js :3000, MongoDB :3001]. Log: %RUN_LOGDIR%\wekan-alltests-%~1.log
+start "Wekan %~1" /MIN /D "%REPO%\tests\playwright" cmd /c "set WEKAN_PLAYWRIGHT_ALL=1&& (echo ===== Playwright %~1 [M1 node:3000 db:3001] test run: %DATE% %TIME% =====) 1>%RUN_LOGDIR%\wekan-alltests-%~1.log 2>&1 & call meteor npm exec playwright test -- --project=%~1 --output=test-results\%~1 --reporter=list 1>>%RUN_LOGDIR%\wekan-alltests-%~1.log 2>&1 & if errorlevel 1 (echo FAIL>..\..\.done-%~1) else (echo PASS>..\..\.done-%~1)"
+exit /b 0
+
 :seq_run_wait
 REM Live progress for a sequential job that runs in its own minimized window and
 REM writes .done-<key> when finished. %1=key %2=count kind (check^|e2e) %3=count var
@@ -1216,12 +1927,12 @@ exit /b 0
 REM ===========================================================================
 :test_all_databases
 REM The same thing build.sh's "All databases (sequential)" runs: build the newest
-REM FerretDB v1 from the FerretDB subdirectory (cloning wekan/FerretDB if it is
-REM not there, and installing Go and the module dependencies if they are
+REM FerretDB v1 from .tools\FerretDB (cloning wekan/FerretDB there if it is not
+REM there, and installing Go and the module dependencies if they are
 REM missing), then run the whole FerretDB v1 query catalogue against every
 REM database that has a Docker image for THIS CPU - one at a time, because they
 REM all use the same FerretDB port - and compare that they all answered the same.
-REM Results go to ..\log\<datetime>\ with every other test run's.
+REM Results go to .tools\log\<datetime>\ with every other test run's.
 REM
 REM The orchestration is one bash script, shared with build.sh rather than
 REM rewritten here: a second implementation would drift, and Docker Desktop on
@@ -1237,33 +1948,65 @@ goto end
 
 REM ===========================================================================
 :test_ferretdb
-REM All of FerretDB's own tests, one at a time: unit, vet, integration. FerretDB
-REM is expected to be a subdirectory of this repo - the "All databases" option
-REM clones it if it is not there. Its build.sh installs Go and the Go modules
-REM when they are missing, and writes its logs to ..\log\<datetime>\ with every
+REM All of FerretDB's own tests, one at a time: unit, vet, integration.
+REM
+REM FerretDB lives in .tools\FerretDB - companion repos are kept in one directory
+REM that .gitignore and .meteorignore already exclude, instead of one ignored
+REM subdirectory each at the repo root. It is cloned here when it is not there,
+REM the same as build.sh's ensure_tool_repo does, so neither script depends on
+REM the other having been run first. Its build.sh installs Go and the Go modules
+REM when they are missing, and writes its logs to .tools\log\<datetime>\ with every
 REM other test run's.
 where bash >nul 2>&1
 if errorlevel 1 (
   echo ERROR: bash was not found. It comes with Git for Windows ^(Git Bash^) and with WSL.
   goto end
 )
-if not exist "FerretDB\build.sh" (
-  echo FerretDB\build.sh is missing. Clone it first:
-  echo   git clone git@github.com:wekan/FerretDB
-  echo ^(or run Tests - All databases, which clones it before building.^)
+if not exist "%REPO%\.tools\FerretDB\build.sh" (
+  where git >nul 2>&1
+  if errorlevel 1 (
+    echo ERROR: git was not found, so .tools\FerretDB cannot be cloned.
+    echo        Install Git for Windows, or clone it by hand:
+    echo          git clone git@github.com:wekan/FerretDB .tools/FerretDB
+    goto end
+  )
+  if not exist "%REPO%\.tools" md "%REPO%\.tools"
+  echo ==^> FerretDB is not in .tools\ yet; cloning wekan/FerretDB
+  git clone git@github.com:wekan/FerretDB "%REPO%\.tools\FerretDB"
+  if errorlevel 1 (
+    echo ==^> SSH clone failed ^(no key for github.com?^); trying HTTPS.
+    git clone https://github.com/wekan/FerretDB "%REPO%\.tools\FerretDB"
+  )
+)
+if not exist "%REPO%\.tools\FerretDB\build.sh" (
+  echo ERROR: .tools\FerretDB\build.sh is still missing after cloning.
   goto end
 )
-bash -c "cd FerretDB && ./build.sh test-all"
+bash -c "cd .tools/FerretDB && ./build.sh test-all"
 goto end
 
 REM ===========================================================================
+:test_everything_two
+set "WEKAN_EVERYTHING_MODE=two-worker"
+goto test_everything
+
+:test_everything_one
+set "WEKAN_EVERYTHING_MODE=sequential"
+goto test_everything
+
+:test_everything_all
+set "WEKAN_EVERYTHING_MODE=parallel"
+goto test_everything
+
 :test_everything
 REM Every test WeKan and FerretDB have, one stage at a time: WeKan's own suite,
 REM then the database conformance run for every database with an image for this
-REM CPU, then all of FerretDB's tests. One ..\log\<datetime>\ directory for the
+REM CPU, then all of FerretDB's tests. One .tools\log\<datetime>\ directory for the
 REM whole run, and nothing runs concurrently, which is what makes a failure
 REM readable.
 REM
+REM The shared runner first stops and waits for any older EVERYTHING run, so the
+REM two runs cannot share ports 3000/3001, databases or browser output.
 REM The WeKan stage builds a Meteor bundle and runs a server, which needs the
 REM POSIX shell throughout - so this hands the whole run to bash rather than
 REM reimplementing it here, exactly as options 14 and 15 do.
@@ -1272,7 +2015,11 @@ if errorlevel 1 (
   echo ERROR: bash was not found. It comes with Git for Windows ^(Git Bash^) and with WSL.
   goto end
 )
-bash ./releases/run-everything.sh
+bash ./releases/run-everything.sh %WEKAN_EVERYTHING_MODE%
+if errorlevel 1 (
+  echo ERROR: EVERYTHING did not start or did not finish successfully. See the message above.
+  goto end
+)
 goto end
 
 REM ===========================================================================

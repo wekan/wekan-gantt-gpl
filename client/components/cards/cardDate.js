@@ -4,7 +4,6 @@ import {
   setupDatePicker,
   datePickerRendered,
   datePickerHelpers,
-  datePickerEvents,
 } from '/client/lib/datepicker';
 import {
   formatDateTime,
@@ -28,6 +27,7 @@ import {
   calendar
 } from '/imports/lib/dateUtils';
 import { dueDateClass } from '/client/lib/dueDateColor';
+import { subscribeDateNowTicker } from '/client/lib/dateNowTicker';
 
 // --- DatePicker popups (edit date forms) ---
 
@@ -37,6 +37,12 @@ Template.editCardReceivedDatePopup.onCreated(function () {
   setupDatePicker(this, {
     defaultTime: formatDateTime(now()),
     initialDate: card.getReceived() ? card.getReceived() : undefined,
+    storeDate(date, currentCard) {
+      return currentCard.setReceived(date);
+    },
+    deleteDate(currentCard) {
+      return currentCard.unsetReceived();
+    },
   });
 });
 
@@ -46,21 +52,18 @@ Template.editCardReceivedDatePopup.onRendered(function () {
 
 Template.editCardReceivedDatePopup.helpers(datePickerHelpers());
 
-Template.editCardReceivedDatePopup.events(datePickerEvents({
-  storeDate(date) {
-    this.datePicker.card.setReceived(date);
-  },
-  deleteDate() {
-    this.datePicker.card.unsetReceived();
-  },
-}));
-
 // editCardStartDatePopup
 Template.editCardStartDatePopup.onCreated(function () {
   const card = Template.currentData();
   setupDatePicker(this, {
     defaultTime: formatDateTime(now()),
     initialDate: card.getStart() ? card.getStart() : undefined,
+    storeDate(date, currentCard) {
+      return currentCard.setStart(date);
+    },
+    deleteDate(currentCard) {
+      return currentCard.unsetStart();
+    },
   });
 });
 
@@ -70,21 +73,18 @@ Template.editCardStartDatePopup.onRendered(function () {
 
 Template.editCardStartDatePopup.helpers(datePickerHelpers());
 
-Template.editCardStartDatePopup.events(datePickerEvents({
-  storeDate(date) {
-    this.datePicker.card.setStart(date);
-  },
-  deleteDate() {
-    this.datePicker.card.unsetStart();
-  },
-}));
-
 // editCardDueDatePopup
 Template.editCardDueDatePopup.onCreated(function () {
   const card = Template.currentData();
   setupDatePicker(this, {
     defaultTime: '1970-01-01 17:00:00',
     initialDate: card.getDue() ? card.getDue() : undefined,
+    storeDate(date, currentCard) {
+      return currentCard.setDue(date);
+    },
+    deleteDate(currentCard) {
+      return currentCard.unsetDue();
+    },
   });
 });
 
@@ -94,21 +94,18 @@ Template.editCardDueDatePopup.onRendered(function () {
 
 Template.editCardDueDatePopup.helpers(datePickerHelpers());
 
-Template.editCardDueDatePopup.events(datePickerEvents({
-  storeDate(date) {
-    this.datePicker.card.setDue(date);
-  },
-  deleteDate() {
-    this.datePicker.card.unsetDue();
-  },
-}));
-
 // editCardEndDatePopup
 Template.editCardEndDatePopup.onCreated(function () {
   const card = Template.currentData();
   setupDatePicker(this, {
     defaultTime: formatDateTime(now()),
     initialDate: card.getEnd() ? card.getEnd() : undefined,
+    storeDate(date, currentCard) {
+      return currentCard.setEnd(date);
+    },
+    deleteDate(currentCard) {
+      return currentCard.unsetEnd();
+    },
   });
 });
 
@@ -118,24 +115,40 @@ Template.editCardEndDatePopup.onRendered(function () {
 
 Template.editCardEndDatePopup.helpers(datePickerHelpers());
 
-Template.editCardEndDatePopup.events(datePickerEvents({
-  storeDate(date) {
-    this.datePicker.card.setEnd(date);
-  },
-  deleteDate() {
-    this.datePicker.card.unsetEnd();
-  },
-}));
-
 // --- Card date badge display helpers ---
+
+// Passing named arguments to a Blaze inclusion replaces the included
+// template's data context with the argument object. Card details passes
+// `canModifyCard`, while minicards and Table view inherit the Card directly.
+// Keep both call shapes explicit so reactive reruns never try Card methods on
+// `{ card, canModifyCard }` (#6615).
+function cardFromDateContext(data = Template.currentData()) {
+  return data?.card || data;
+}
+
+// dateBadgeBody is a child template whose data is only display arguments. An
+// event handled by the surrounding card/minicard date template therefore must
+// open the popup with THAT surrounding template's Card, not with the event's
+// `this`. The plus buttons do not need this because they already live directly
+// in cardDetails with the Card as their data context.
+function openDateEditor(name) {
+  return function (event, templateInstance) {
+    event.preventDefault();
+    event.stopPropagation();
+    Popup.open(name).call(
+      cardFromDateContext(templateInstance.data),
+      event,
+      templateInstance,
+    );
+  };
+}
 
 // Shared onCreated logic for card date badge templates
 function cardDateOnCreated(tpl) {
   tpl.date = new ReactiveVar();
-  tpl.now = new ReactiveVar(now());
-  window.setInterval(() => {
-    tpl.now.set(now());
-  }, 60000);
+  const dateNowTicker = subscribeDateNowTicker();
+  tpl.now = dateNowTicker.now;
+  tpl.view.onViewDestroyed(dateNowTicker.unsubscribe);
 }
 
 // Shared helpers for card date badge templates
@@ -166,7 +179,7 @@ Template.cardReceivedDate.onCreated(function () {
   cardDateOnCreated(this);
   const self = this;
   self.autorun(() => {
-    self.date.set(new Date(Template.currentData().getReceived()));
+    self.date.set(new Date(cardFromDateContext().getReceived()));
   });
 });
 
@@ -174,7 +187,7 @@ Template.cardReceivedDate.helpers(cardDateHelpers({
   classes() {
     const tpl = Template.instance();
     let classes = 'received-date ';
-    const data = Template.currentData();
+    const data = cardFromDateContext();
     const dueAt = data.getDue();
     const endAt = data.getEnd();
     const startAt = data.getStart();
@@ -201,7 +214,7 @@ Template.cardReceivedDate.helpers(cardDateHelpers({
 }));
 
 Template.cardReceivedDate.events({
-  'click .js-edit-date': Popup.open('editCardReceivedDate'),
+  'click .js-edit-date': openDateEditor('editCardReceivedDate'),
 });
 
 // cardStartDate
@@ -209,7 +222,7 @@ Template.cardStartDate.onCreated(function () {
   cardDateOnCreated(this);
   const self = this;
   self.autorun(() => {
-    self.date.set(new Date(Template.currentData().getStart()));
+    self.date.set(new Date(cardFromDateContext().getStart()));
   });
 });
 
@@ -217,7 +230,7 @@ Template.cardStartDate.helpers(cardDateHelpers({
   classes() {
     const tpl = Template.instance();
     let classes = 'start-date ';
-    const data = Template.currentData();
+    const data = cardFromDateContext();
     const dueAt = data.getDue();
     const endAt = data.getEnd();
     const theDate = tpl.date.get();
@@ -242,7 +255,7 @@ Template.cardStartDate.helpers(cardDateHelpers({
 }));
 
 Template.cardStartDate.events({
-  'click .js-edit-date': Popup.open('editCardStartDate'),
+  'click .js-edit-date': openDateEditor('editCardStartDate'),
 });
 
 // cardDueDate
@@ -250,14 +263,14 @@ Template.cardDueDate.onCreated(function () {
   cardDateOnCreated(this);
   const self = this;
   self.autorun(() => {
-    self.date.set(new Date(Template.currentData().getDue()));
+    self.date.set(new Date(cardFromDateContext().getDue()));
   });
 });
 
 Template.cardDueDate.helpers(cardDateHelpers({
   classes() {
     const tpl = Template.instance();
-    const data = Template.currentData();
+    const data = cardFromDateContext();
     const endAt = data.getEnd();
     const theDate = tpl.date.get();
     const nowVal = tpl.now.get();
@@ -274,7 +287,7 @@ Template.cardDueDate.helpers(cardDateHelpers({
 }));
 
 Template.cardDueDate.events({
-  'click .js-edit-date': Popup.open('editCardDueDate'),
+  'click .js-edit-date': openDateEditor('editCardDueDate'),
 });
 
 // cardEndDate
@@ -282,7 +295,7 @@ Template.cardEndDate.onCreated(function () {
   cardDateOnCreated(this);
   const self = this;
   self.autorun(() => {
-    self.date.set(new Date(Template.currentData().getEnd()));
+    self.date.set(new Date(cardFromDateContext().getEnd()));
   });
 });
 
@@ -290,7 +303,7 @@ Template.cardEndDate.helpers(cardDateHelpers({
   classes() {
     const tpl = Template.instance();
     let classes = 'end-date ';
-    const data = Template.currentData();
+    const data = cardFromDateContext();
     const dueAt = data.getDue();
     const theDate = tpl.date.get();
 
@@ -312,7 +325,7 @@ Template.cardEndDate.helpers(cardDateHelpers({
 }));
 
 Template.cardEndDate.events({
-  'click .js-edit-date': Popup.open('editCardEndDate'),
+  'click .js-edit-date': openDateEditor('editCardEndDate'),
 });
 
 // cardCustomFieldDate
@@ -353,7 +366,7 @@ Template.minicardReceivedDate.onCreated(function () {
   cardDateOnCreated(this);
   const self = this;
   self.autorun(() => {
-    self.date.set(new Date(Template.currentData().getReceived()));
+    self.date.set(new Date(cardFromDateContext().getReceived()));
   });
 });
 
@@ -361,7 +374,7 @@ Template.minicardReceivedDate.helpers(cardDateHelpers({
   classes() {
     const tpl = Template.instance();
     let classes = 'received-date ';
-    const data = Template.currentData();
+    const data = cardFromDateContext();
     const dueAt = data.getDue();
     const endAt = data.getEnd();
     const startAt = data.getStart();
@@ -393,7 +406,7 @@ Template.minicardReceivedDate.helpers(cardDateHelpers({
 }));
 
 Template.minicardReceivedDate.events({
-  'click .js-edit-date': Popup.open('editCardReceivedDate'),
+  'click .js-edit-date': openDateEditor('editCardReceivedDate'),
 });
 
 // minicardStartDate
@@ -401,7 +414,7 @@ Template.minicardStartDate.onCreated(function () {
   cardDateOnCreated(this);
   const self = this;
   self.autorun(() => {
-    self.date.set(new Date(Template.currentData().getStart()));
+    self.date.set(new Date(cardFromDateContext().getStart()));
   });
 });
 
@@ -409,7 +422,7 @@ Template.minicardStartDate.helpers(cardDateHelpers({
   classes() {
     const tpl = Template.instance();
     let classes = 'start-date ';
-    const data = Template.currentData();
+    const data = cardFromDateContext();
     const dueAt = data.getDue();
     const endAt = data.getEnd();
     const theDate = tpl.date.get();
@@ -439,7 +452,7 @@ Template.minicardStartDate.helpers(cardDateHelpers({
 }));
 
 Template.minicardStartDate.events({
-  'click .js-edit-date': Popup.open('editCardStartDate'),
+  'click .js-edit-date': openDateEditor('editCardStartDate'),
 });
 
 // minicardDueDate
@@ -447,14 +460,14 @@ Template.minicardDueDate.onCreated(function () {
   cardDateOnCreated(this);
   const self = this;
   self.autorun(() => {
-    self.date.set(new Date(Template.currentData().getDue()));
+    self.date.set(new Date(cardFromDateContext().getDue()));
   });
 });
 
 Template.minicardDueDate.helpers(cardDateHelpers({
   classes() {
     const tpl = Template.instance();
-    const data = Template.currentData();
+    const data = cardFromDateContext();
     const endAt = data.getEnd();
     const theDate = tpl.date.get();
     const nowVal = tpl.now.get();
@@ -476,7 +489,7 @@ Template.minicardDueDate.helpers(cardDateHelpers({
 }));
 
 Template.minicardDueDate.events({
-  'click .js-edit-date': Popup.open('editCardDueDate'),
+  'click .js-edit-date': openDateEditor('editCardDueDate'),
 });
 
 // minicardEndDate
@@ -484,7 +497,7 @@ Template.minicardEndDate.onCreated(function () {
   cardDateOnCreated(this);
   const self = this;
   self.autorun(() => {
-    self.date.set(new Date(Template.currentData().getEnd()));
+    self.date.set(new Date(cardFromDateContext().getEnd()));
   });
 });
 
@@ -492,7 +505,7 @@ Template.minicardEndDate.helpers(cardDateHelpers({
   classes() {
     const tpl = Template.instance();
     let classes = 'end-date ';
-    const data = Template.currentData();
+    const data = cardFromDateContext();
     const dueAt = data.getDue();
     const theDate = tpl.date.get();
 
@@ -519,7 +532,7 @@ Template.minicardEndDate.helpers(cardDateHelpers({
 }));
 
 Template.minicardEndDate.events({
-  'click .js-edit-date': Popup.open('editCardEndDate'),
+  'click .js-edit-date': openDateEditor('editCardEndDate'),
 });
 
 // minicardCustomFieldDate
@@ -556,7 +569,7 @@ Template.voteEndDate.onCreated(function () {
   cardDateOnCreated(this);
   const self = this;
   self.autorun(() => {
-    self.date.set(new Date(Template.currentData().getVoteEnd()));
+    self.date.set(new Date(cardFromDateContext().getVoteEnd()));
   });
 });
 
@@ -576,7 +589,7 @@ Template.voteEndDate.helpers(cardDateHelpers({
 }));
 
 Template.voteEndDate.events({
-  'click .js-edit-date': Popup.open('editVoteEndDate'),
+  'click .js-edit-date': openDateEditor('editVoteEndDate'),
 });
 
 // pokerEndDate
@@ -584,7 +597,7 @@ Template.pokerEndDate.onCreated(function () {
   cardDateOnCreated(this);
   const self = this;
   self.autorun(() => {
-    self.date.set(new Date(Template.currentData().getPokerEnd()));
+    self.date.set(new Date(cardFromDateContext().getPokerEnd()));
   });
 });
 
@@ -604,5 +617,5 @@ Template.pokerEndDate.helpers(cardDateHelpers({
 }));
 
 Template.pokerEndDate.events({
-  'click .js-edit-date': Popup.open('editPokerEndDate'),
+  'click .js-edit-date': openDateEditor('editPokerEndDate'),
 });

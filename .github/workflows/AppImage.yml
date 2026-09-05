@@ -1,12 +1,14 @@
 name: AppImage
 
 # Build WeKan as an AppImage for every CPU an AppImage runtime exists for, and
-# attach them to the newest WeKan release.
+# attach them to a WeKan release. The ordinary full-release path calls this
+# workflow from release-all.yml with the exact tag after its core bundles are
+# published; workflow_dispatch remains available for rebuilding an AppImage.
 #
 # WHAT IS INSIDE IS WHAT WEKAN ALREADY SHIPS. release-all.yml already produces a
 # bundle that runs offline with nothing installed: the Meteor server (main.js),
 # the bundled Node.js the release was built against, the wekan/FerretDB v1 fork
-# with its embedded pure-Go SQLite backend, the wekan/mongo-tools binaries, the
+# with its embedded pure-Go SQLite backend, the wekan/mongo-tools-patches binaries, the
 # cpu-exec/qemu-user shim from #6458, and start-wekan.sh to bring them up. That
 # bundle is already relocatable and already self-contained - it is the offline
 # zip people download today - so this workflow does NOT rebuild WeKan. It takes
@@ -80,11 +82,12 @@ jobs:
   release:
     name: find the release
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     outputs:
       tag: ${{ steps.find.outputs.tag }}
       version: ${{ steps.find.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - id: find
         env:
@@ -92,7 +95,12 @@ jobs:
         run: |
           set -euo pipefail
           tag='${{ inputs.tag }}'
-          [ -n "$tag" ] || tag="$(gh release list --limit 1 --json tagName --jq '.[0].tagName')"
+          # --repo on every gh call, whether or not the job happens to have
+          # checked out: a call that relies on an inferred remote breaks the day
+          # somebody removes the checkout, and the error it gives - "fatal: not
+          # a git repository" - names neither gh nor the workflow.
+          [ -n "$tag" ] || tag="$(gh release list --repo "${{ github.repository }}" \
+            --limit 1 --json tagName --jq '.[0].tagName')"
           if [ -z "$tag" ]; then
             echo "::error::No release to wrap, and no tag was given."
             exit 1
@@ -107,6 +115,9 @@ jobs:
     name: AppImage ${{ matrix.appimage_arch }}
     needs: release
     runs-on: ${{ matrix.runs_on }}
+    # A 32-bit job that cannot run on the runner it was given must not fail the
+    # release for the architectures that built fine.
+    continue-on-error: ${{ matrix.tolerate_failure || false }}
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -118,6 +129,28 @@ jobs:
           - appimage_arch: aarch64
             bundle_arch: arm64
             runs_on: ubuntu-24.04-arm
+          # The other two architectures an AppImage runtime EXISTS for. There
+          # are four in total - x86_64, aarch64, i686, armhf - and that is the
+          # whole limit: the runtime is the ELF the kernel executes, so an
+          # architecture with no runtime cannot have an AppImage at all. That is
+          # why ppc64le, s390x, riscv64 and loong64 are not here and never will
+          # be; they are served by the bundle zip and the .deb.
+          #
+          # i686 builds on the x86_64 runner, which runs 32-bit x86 natively -
+          # no emulation, no multiarch, and appimagetool-i686 runs as-is.
+          - appimage_arch: i686
+            bundle_arch: i386
+            runs_on: ubuntu-24.04
+          # armhf builds on the aarch64 runner, which runs 32-bit ARM only if
+          # the kernel was built with CONFIG_COMPAT and the 32-bit loader is
+          # installed. GitHub does not promise either, so this one is allowed to
+          # fail without taking the release with it - the same treatment TSC
+          # gives its emulated armhf job. If it turns out to work reliably,
+          # drop the flag; if it never does, drop the entry.
+          - appimage_arch: armhf
+            bundle_arch: armhf
+            runs_on: ubuntu-24.04-arm
+            tolerate_failure: true
     # WHICH entries this run wants, decided here because it cannot be decided
     # where it belongs. A job-level `if:` cannot see `matrix` - GitHub exposes
     # that context to runs-on, env, name, steps and a few others, but not to a
@@ -130,8 +163,31 @@ jobs:
       BUILD_THIS: ${{ inputs.only == '' || contains(fromJSON(inputs.only), matrix.appimage_arch) }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: ${{ env.BUILD_THIS == 'true' }}
+
+      # An AppImage only WRAPS an existing release bundle
+      # (wekan-<version>-<arch>.zip); it cannot build one. When this workflow is
+      # asked to fill a gap for a release whose base bundle is not published yet
+      # (release in progress, or it failed), `gh release download` finds "no
+      # assets to download" and the job failed hard. Turn that into a graceful
+      # skip: if the bundle this arch needs is not on the release, flip BUILD_THIS
+      # off so every step below (all gated on it) is skipped with a notice. The
+      # AppImage is built normally once the base bundle exists.
+      - name: Skip this arch if its release bundle is not published yet
+        if: ${{ env.BUILD_THIS == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          zip="wekan-${{ needs.release.outputs.version }}-${{ matrix.bundle_arch }}.zip"
+          if gh release view --repo "${GITHUB_REPOSITORY:-wekan/wekan}" '${{ needs.release.outputs.tag }}' --repo "${{ github.repository }}" \
+               --json assets --jq '.assets[].name' 2>/dev/null | grep -qx "$zip"; then
+            echo "OK: $zip is on ${{ needs.release.outputs.tag }}; building its AppImage."
+          else
+            echo "::notice::$zip is not on ${{ needs.release.outputs.tag }} yet - skipping this AppImage (it can only wrap a bundle that exists)."
+            echo "BUILD_THIS=false" >> "$GITHUB_ENV"
+          fi
 
       - name: Fetch the release bundle for this architecture
         if: ${{ env.BUILD_THIS == 'true' }}
@@ -140,7 +196,8 @@ jobs:
         run: |
           set -euo pipefail
           zip="wekan-${{ needs.release.outputs.version }}-${{ matrix.bundle_arch }}.zip"
-          gh release download '${{ needs.release.outputs.tag }}' --pattern "$zip" --clobber
+          gh release download '${{ needs.release.outputs.tag }}' \
+            --repo "${{ github.repository }}" --pattern "$zip" --clobber
           unzip -q "$zip"
           # A zip that exists is not a bundle that runs; these are the two files
           # the AppImage is built around.
@@ -158,6 +215,7 @@ jobs:
         run: |
           set -euo pipefail
           version='${{ needs.release.outputs.version }}'
+          arch='${{ matrix.appimage_arch }}'
           rm -rf AppDir
           mkdir -p AppDir/usr/lib/wekan AppDir/usr/share/applications \
                    AppDir/usr/share/icons/hicolor/512x512/apps
@@ -215,8 +273,21 @@ jobs:
           echo "bundled FerretDB."
           echo
 
+          # A missing AppImage may be rebuilt around an ALREADY-PUBLISHED base
+          # bundle. In that case its start-wekan.sh predates fixes in this
+          # checkout. Keep the 32-bit V8 address-space ceiling in AppRun too,
+          # so an i686/armhf AppImage made for an older release can start. An
+          # administrator's explicit NODE_OPTIONS remains authoritative.
+          case "@APPIMAGE_ARCH@" in
+            i686|armhf)
+              : "${NODE_OPTIONS:=--max-old-space-size=1024}"
+              export NODE_OPTIONS
+              ;;
+          esac
+
           exec "$BUNDLE/start-wekan.sh" "$@"
           APPRUN
+          sed -i "s/@APPIMAGE_ARCH@/$arch/" AppDir/AppRun
           chmod +x AppDir/AppRun
 
       - name: Pack the AppImage
@@ -238,6 +309,11 @@ jobs:
             ./appimagetool AppDir "dist/${name}.AppImage"
 
           chmod +x "dist/${name}.AppImage"
+          # Checksum keeps the .AppImage extension in its name, matching the zip
+          # convention (wekan-<v>-<arch>.zip.sha256sum) and what
+          # releases/expected-assets.sh looks for. Naming it ${name}.sha256sum
+          # (extension dropped) meant "what is missing" never found the checksum,
+          # so every run rebuilt the AppImage even when it was already published.
           ( cd dist
             md5sum    "${name}.AppImage" > "${name}.AppImage.md5sum"
             sha256sum "${name}.AppImage" > "${name}.AppImage.sha256sum" )
@@ -253,6 +329,19 @@ jobs:
           # for WeKan to answer on its port, then stop it - so a broken bundle
           # is caught here rather than by whoever downloads it.
           export WRITABLE_PATH="$PWD/smoke-data" PORT=8080
+
+          # A CHECK THAT CANNOT RUN IS NOT A FAILED CHECK. Probe the INNER Node,
+          # not the AppImage runtime: on the arm64 runner the armhf AppImage
+          # runtime itself executes, while its bundled hard-float Node cannot
+          # when /lib/ld-linux-armhf.so.3 is absent. Probing the outer wrapper
+          # misclassified that missing loader as an application startup bug.
+          # AppDir is the exact tree just packed, so this also avoids extracting
+          # the large image merely to make the capability decision.
+          if ! AppDir/usr/lib/wekan/bundle/node --version >/dev/null 2>&1; then
+            echo "::warning::this runner cannot execute the bundled ${{ matrix.appimage_arch }} Node binary, so the AppImage was packed but not started. It is uploaded unchecked."
+            exit 0
+          fi
+
           APPIMAGE_EXTRACT_AND_RUN=1 "$app" > smoke.log 2>&1 &
           pid=$!
           ok=false
@@ -270,7 +359,7 @@ jobs:
           fi
           echo "WeKan answered on port 8080."
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: ${{ env.BUILD_THIS == 'true' }}
         with:
           name: appimage-${{ matrix.appimage_arch }}
@@ -278,35 +367,66 @@ jobs:
           if-no-files-found: error
 
   publish:
+    timeout-minutes: 30
     name: attach to the release
     needs: [release, build]
-    if: ${{ always() && inputs.publish != false }}
+    if: ${{ !cancelled() && inputs.publish != false }}
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: appimage-*
           path: assets
           merge-multiple: true
 
       - name: Say what was built, and what was not
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           ls -lh assets 2>/dev/null || true
-          if ! ls assets/*.AppImage >/dev/null 2>&1; then
-            echo "::error::No architecture produced an AppImage - every build job" \
-                 "failed. Their logs say why; nothing is uploaded."
+          if ls assets/*.AppImage >/dev/null 2>&1; then
+            # Every architecture the matrix builds. A missing one WARNS rather
+          # than fails: the 32-bit pair is allowed not to build, and an
+          # architecture whose base bundle was never published has nothing to
+          # wrap. What must not happen silently is one going missing unnoticed.
+          for want in x86_64 aarch64 i686 armhf; do
+              ls assets/*"-$want.AppImage" >/dev/null 2>&1 || \
+                echo "::warning::no AppImage for $want - see that build job's log"
+            done
+          else
+            # No AppImage was produced. That is only a FAILURE if there was a base
+            # bundle to wrap: an AppImage cannot be built without one, and the
+            # build jobs skip (not fail) when the base bundle is not published yet.
+            published="$(gh release view --repo "${GITHUB_REPOSITORY:-wekan/wekan}" '${{ needs.release.outputs.tag }}' --repo "${{ github.repository }}" --json assets --jq '.assets[].name' 2>/dev/null || true)"
+            base_present=false
+            for arch in amd64 arm64 i386 armhf; do
+              printf '%s\n' "$published" | grep -qx "wekan-${{ needs.release.outputs.version }}-${arch}.zip" && base_present=true
+            done
+            if [ "$base_present" = false ]; then
+              echo "::notice::No base bundle (wekan-${{ needs.release.outputs.version }}-{amd64,arm64}.zip) is on ${{ needs.release.outputs.tag }} yet, so there is nothing to wrap - skipping. release-all.yml builds the AppImages once the base bundles are published."
+              exit 0
+            fi
+            echo "::error::A base bundle is published but no architecture produced an AppImage - every build job failed. Their logs say why; nothing is uploaded."
             exit 1
           fi
-          for want in x86_64 aarch64; do
-            ls assets/*"-$want.AppImage" >/dev/null 2>&1 || \
-              echo "::warning::no AppImage for $want - see that build job's log"
-          done
 
       - name: Upload them
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh release upload '${{ needs.release.outputs.tag }}' assets/* --clobber
-          echo "Uploaded to $(gh release view '${{ needs.release.outputs.tag }}' --json url --jq .url)"
+          if ! ls assets/*.AppImage >/dev/null 2>&1; then
+            echo "Nothing to upload (no base bundle was published to wrap)."
+            exit 0
+          fi
+          # --repo, because this job does NOT check the repository out - it only
+          # downloads artifacts - so `gh` has no git remote to infer the repo
+          # from and fails with "fatal: not a git repository". Every other gh
+          # call in this workflow already passes it; these two did not, so the
+          # AppImages were built, smoke-tested and uploaded as artifacts, and
+          # then nothing was attached to the release.
+          gh release upload --repo "${GITHUB_REPOSITORY:-wekan/wekan}" '${{ needs.release.outputs.tag }}' assets/* \
+            --repo "${{ github.repository }}" --clobber
+          echo "Uploaded to $(gh release view --repo "${GITHUB_REPOSITORY:-wekan/wekan}" '${{ needs.release.outputs.tag }}' \
+            --repo "${{ github.repository }}" --json url --jq .url)"

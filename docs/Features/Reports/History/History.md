@@ -1,47 +1,73 @@
 # Design: Universal change History (view + restore) — the basis for Undo/Redo
 
-> **This page uses the shared [Table Page](../../../Design/Page/Table.md) design.**
+> **This page uses the shared [Table Page](../../../Features/Page/Table.md) design.**
 > Layout, search, pagination, column spec, per-page data loading and RTL rules are
 > defined there and are not repeated here. Below is only what is specific to
 > History: its store, its scopes, and restore/undo.
 
-Status: **Draft for approval** · Owner: xet7 · Related: card details view, Member settings,
-`Activities`, `userPositionHistory`, `docs/Features/Undo/Undo.md`
+Status: **Phase 1 implemented · phases 2-6 outstanding** · Owner: xet7 · Related: card details
+view, Member settings, `Activities`, `userPositionHistory`, `docs/Features/Undo/Undo.md`
 
-This document specifies one unified **change-history** subsystem that records **every change a user
-makes**, keeps it **append-only**, and lets changes be **restored**. It is surfaced from **many menus**, but every one is the **same table + restore** over the **same
-store**, differing only by the **scope filter** it passes to `changeHistory.page`. A **History**
-option is added to each of these menus (and the pattern generalises to any future entity menu — the
-UI and method don't change, only the scope):
-
-| Menu / location | View shows the history of… | Scope filter | Section |
-| --- | --- | --- | --- |
-| Card group menu (open card) | that **group** on that card, with a per-contributor avatar list | `{ cardId, group }` | 7 |
-| Card menu (open card) | the **whole card** (all its groups) | `{ cardId }` | 7a |
-| Member settings menu | that **user's** own changes | `{ userId }` | 7a |
-| Board Settings | the whole **board** (all users/entities) | `{ boardId }` | 7a |
-| Swimlane menu | that **swimlane** and its contents | `{ scope:'swimlane', scopeId }` | 7a |
-| List menu | that **list** and its cards | `{ scope:'list', scopeId }` | 7a |
-| *(future)* Checklist menu, Attachment menu, … | that entity | `{ entityType, entityId }` | 7a |
-
-Scopes **nest**: a card's history ⊂ its list's ⊂ its swimlane's ⊂ the board's. Container scopes
-(board/swimlane/list/card) therefore mean "this entity **and its descendants**" — implemented as an
-OR over the relevant id columns (`boardId` / `swimlaneId` / `listId` / `cardId` / `entityId`), which
-is why the write side (section 5) stores all the applicable id columns on every row.
-
-Plus one keyboard front-end:
-
-- **Undo / Redo** — `Ctrl+Z` / `Ctrl+Y` = "restore the current user's most recent change from this
-  history" / "re-apply it". Undo/Redo is therefore **not a separate feature**; it is the keyboard
-  restore of the newest own change. (v1 undo/redo of *position moves* already shipped in #6478 via
-  `userPositionHistory`; this design **generalises** that to every change and merges the two.)
-
-It is a design doc only — no code is implied as final until this is approved.
-
-> **Scope change (this revision):** the earlier draft covered only card *groups*. Per request, the
-> model now records **every change** (all card fields/groups **and** board/list/swimlane/etc.
-> structural changes), per user, and adds the Member-settings per-user view. `userPositionHistory`
-> becomes a special case that this unified store supersedes.
+> **What is live.** Phases 1-3, 5 and 6 of §10, and the write half of 2.
+>
+> * **The store** — `models/changeHistory.js` (append-only, one row per change,
+>   carrying every container id so a scope is a plain equality),
+>   `models/lib/changeHistoryQuery.js` (scope / search / selection, pure) and
+>   `models/lib/changeHistoryGroups.js` (which field belongs to which group, and
+>   the content shape, pure).
+> * **The write side** — `server/models/changeHistoryHooks.js`, the choke point
+>   §5 asks for: an `after.update` diff per collection, plus insert/remove for
+>   the sub-entities. It records card, list, swimlane, checklist, checklist-item
+>   and comment changes across every group of §3, and because it is a collection
+>   hook it also catches the REST API, the importers and the rules engine, none
+>   of which go through the client setters. Moves and the list soft delete record
+>   themselves, as one change each, rather than as several field edits.
+> * **The read side and restore** — `server/models/changeHistory.js`:
+>   `changeHistory.page`, `.restore` (dual re-logging, oldest-to-newest, one
+>   batch), `.undoLast` and `.redoLast`.
+> * **The UI** — ONE `historyTable` (§7a), with the contributor pane, search,
+>   pagination, row selection, Restore and RTL. The card, list and swimlane
+>   menus each open it with a different scope; that is one menu item and one
+>   two-line handler each, as §7a promises.
+> * `Ctrl+Z`/`Ctrl+Y` read this store, for any recorded change.
+> * `changeHistory` is in the snap's `MERGE_COLLECTIONS` (§9a.4).
+>
+> Tests: `changeHistoryQuery`, `changeHistoryGroups`, `changeHistoryWiring`,
+> `historyOneTemplate`, `undoRecordsWhatItClaims`.
+>
+> **What is NOT live.** The Member-settings and Board-settings entries of §7a —
+> the table serves those scopes and is tested, but no menu item opens it there
+> yet. The retention cron of §9. Restoring a REMOVED sub-entity re-creates
+> nothing: the row stores the whole document, so it can be built, but §11 asks
+> whether it should be and that is a product decision. Attachments and custom
+> fields record their scalar changes only, not their files.
+>
+> **Verified how.** Everything above is covered by unit tests and source guards,
+> and the whole of it has since been exercised against a running WeKan, which
+> §10 asks for. What was actually done, in a browser: a card renamed through the
+> UI recorded one row with the right group and both values; the card, list and
+> swimlane menus each opened the table with their own scope reaching the template
+> (`scope: 'swimlane'`, the swimlane's own id, and so on); selecting the row and
+> pressing Restore put the title back and left exactly two rows — the edit and
+> the restore; search narrowed the table and showed *no results* for a term
+> nothing matched; clicking a contributor's avatar filtered to that person; and
+> with 32 rows the footer read *1 / 2*, the second page held the remaining seven
+> in sequence, and the *next* arrow disabled itself there.
+>
+> That pass found four faults, three of them fatal to the feature, and none of
+> them visible in the source: the table rendered one row of empty cells because
+> `{{#each row in rows}}` leaves the data context alone, so bare field names
+> resolved against the outer one; the row's checkbox was 0×0 because WeKan hides
+> every bare `input[type="checkbox"]` app-wide and draws its own; the panel was
+> 380px wide, which left 201px for a four-column table; and a restore was
+> recorded twice, once by the very `after.update` hook that §8.2 deliberately
+> keeps running. Each now has a regression test.
+>
+> One design decision is worth keeping: the collection imports **no other model**.
+> Its predecessor imported Cards, Lists and the rest so its `undo()` could write
+> to them, which made it unimportable from those same files — the direct cause of
+> the inert recording in the appendix. Applying a change lives in
+> `server/models/changeHistory.js`, which nothing imports.
 
 ---
 
@@ -210,13 +236,13 @@ The server turns `{scope, scopeId}` into the id-column filter (`board`→`boardI
 - **contributors** powers the card view's left-column avatar list (distinct `userId` + counts);
   unused when the view is already pinned to one `userId`.
 - Paging uses the shared `pageInfo()` from `models/lib/tablePage.js` (see
-  [Table Page](../../../Design/Page/Table.md)) — do not add a second paginator. The History-specific
+  [Table Page](../../../Features/Page/Table.md)) — do not add a second paginator. The History-specific
   pure helpers are `matchesSearch(row, term)` and `selectionToIds(selected)`, in `models/lib/…`
   with tests, mirroring `models/lib/undoRedoSelection.js`.
 
 ## 7. UI
 
-A [table page](../../../Design/Page/Table.md) inside one popup opened from the group menu's
+A [table page](../../../Features/Page/Table.md) inside one popup opened from the group menu's
 **History** item. Only the History-specific parts are listed here:
 
 - **Left pane** (`historyNav`) — a **History** button (default view = newest, all users) plus a
@@ -292,6 +318,62 @@ each knows how to re-apply its own `previousContent`.
   `updateListSort` and `userPositionHistory.*`.
 - No client-exposed update/delete on `cardGroupHistory` (append-only invariant).
 - Retention cap per card/board via a server cron (reuse the `userPositionHistory.cleanup` pattern).
+
+## 9a. Append-only is what makes two copies of a database mergeable
+
+This section is here because the snap now depends on it (#6583, #6585). It is a
+consequence of section 9's invariant, not a new rule.
+
+**The situation.** A WeKan snap can end up holding TWO copies of its data that
+have both been written to since they were copies of each other: the MongoDB to
+FerretDB migration is a snapshot and nothing keeps it in step, `snap revert` does
+not roll back `$SNAP_COMMON`, and both databases can be written to
+back and forth. Which copy gets served then decides what a user sees, and getting
+it wrong looks exactly like data loss — that is what both of those issues were.
+
+**Why history decides it.** File timestamps cannot answer "which copy holds the
+work": an mtime says when a file was touched, and merely starting a database
+touches its files. The DATA can answer it, and history is the part of the data
+that answers it best — every change a user makes writes a row, so the newest
+history row is the newest moment somebody was actually working, on either side.
+`snap-src/bin/db-eval.mjs evidence` reads exactly that (per-collection counts plus
+the newest timestamp any document carries) and `snap-src/bin/database-choose.mjs`
+compares the two.
+
+**Why the other copy is not lost.** Because history is APPEND-ONLY — never
+rewritten in place, never updated, only added to — rows from one copy can be
+inserted into the other without contradicting anything already there. So the snap
+serves the copy holding the newer work and copies into it every document whose
+`_id` is ABSENT from it (`snap-src/bin/database-merge-missing.mjs`):
+
+- nothing that exists in the served copy is overwritten, so the newer version of
+  a card that was edited on both sides stands;
+- nothing is deleted, on either side, and the copy that was not chosen stays on
+  disk — switching back is still one `snap set` away;
+- the activities, comments and (once this design ships) `changeHistory` rows
+  written on the other copy become part of the served copy's history, so the work
+  done there is READABLE IN THE CARD'S HISTORY rather than stranded in a database
+  nobody opens.
+
+**What is deliberately not attempted.** Reconciling two edits of the same field —
+a three-way merge — is a decision about somebody's work and is not made by a
+script. When the two copies cannot be told apart (their newest moments are within
+hours of each other, or neither carries a timestamp), the snap changes nothing and
+says so, which is the behaviour #6583 arrived at the hard way.
+
+**What this design owes the snap**, when it ships:
+
+1. Every `changeHistory` row keeps a stable, content-derived or random `_id` that
+   is never reused, so "absent by `_id`" is a safe test for "this row is not here".
+2. Rows stay immutable after insert (section 9 already requires this); a row that
+   could be updated in place would make two copies of it disagree, and the merge
+   would then have to choose between them.
+3. The retention cron prunes by age, not by rewriting rows, so a pruned copy and a
+   full copy merge to the full one rather than to a contradiction.
+4. `changeHistory` is listed in the merge's collection list
+   (`MERGE_COLLECTIONS` in `snap-src/bin/database-choose.mjs`) the moment the
+   collection exists — the list is the only place the snap learns which
+   collections carry history.
 
 ## 10. Phasing (each phase verified live before the next)
 

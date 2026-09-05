@@ -22,8 +22,23 @@ WebApp.handlers.use(function apiGate(req, res, next) {
   if ((api && process.env.WITH_API === 'true') || !api) {
     return next();
   }
-  res.writeHead(301, { Location: '/' });
-  return res.end();
+  // REFUSED, IN WORDS - not a redirect to the front page.
+  //
+  // This used to answer `301 Location: /`, and every export in the interface is
+  // a download from an `/api/...` address: a board or a card to PDF, Excel,
+  // JSON, .zip, CSV. The browser followed the redirect, got WeKan's own HTML
+  // page, and wrote it to the file the download link had named - so "the API is
+  // off" arrived as a PDF that no reader could open, with nothing anywhere
+  // saying why. A 403 with a sentence in it cannot be mistaken for the file
+  // that was asked for, and it says what to change.
+  res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+  return res.end(
+    'WeKan API is disabled, so this address answers nothing.\n'
+    + '\n'
+    + 'Exports use it too - a board or card exported to PDF, Excel, JSON, .zip\n'
+    + 'or CSV is a download from /api/..., so with the API off none of them can\n'
+    + 'work. Set the environment variable WITH_API=true and restart WeKan.\n',
+  );
 });
 
 // ---------------------------------------------------------------------------
@@ -67,6 +82,15 @@ WebApp.handlers.use(async function authenticateByToken(req, res, next) {
   }
   next();
 });
+
+// ---------------------------------------------------------------------------
+// 4b. API usage counting (Admin Panel -> Problems -> API)
+// ---------------------------------------------------------------------------
+// After authentication, so a call has an account, and in front of the routes, so
+// a route cannot be added without being counted. It counts on the response's
+// `finish` event - by then Express has filled req.route.path, which is the route
+// PATTERN and therefore one row per endpoint rather than one per board id.
+WebApp.handlers.use(require('/server/lib/apiUsageLog').apiUsageMiddleware);
 
 // ---------------------------------------------------------------------------
 // 5. sendJsonResult — drop-in replacement for JsonRoutes.sendResult

@@ -6,6 +6,7 @@ import { sanitizeHTML, sanitizeText } from '/imports/lib/secureDOMPurify';
 import { TAPi18n } from '/imports/i18n';
 import { Utils } from '/client/lib/utils';
 import { getSidebarInstance } from '/client/features/sidebar/service';
+import { activityCardLinkData } from '/models/lib/activityCardLink';
 
 // #6480/#6481: 500 was far more than the sidebar/card activity feed ever shows
 // at once, and with FerretDB (no oplog) every live cursor is re-run on a timer —
@@ -87,9 +88,20 @@ function _showActivities(data) {
       const currentCard = Utils.getCurrentCard();
       ret = currentCard.showActivities ?? false;
     } else if (mode === 'card') {
-      // For card mode, get showActivities from data context or fallback to current card
-      const card = data?.card || Utils.getCurrentCard();
-      ret = card?.showActivities ?? false;
+      // The card's Activities section is COLLAPSED by default and renders this
+      // template only when its caret has been opened - so being here means the
+      // reader asked for the history, and the history is what they get.
+      //
+      // Until the section had a caret, the card carried a `showActivities` flag
+      // toggled by an eye beside the heading, and `false` - the default -
+      // subscribed to comments ONLY (server/publications/activities.js). The eye
+      // is gone: one control for one idea. Nothing is fetched at all while the
+      // section is closed, which is the cheaper half of what the flag was for,
+      // and opening it now means the whole history rather than a filtered part
+      // of it. Do not consult the obsolete per-card `showActivities` value here:
+      // existing cards commonly persist its old default (`false`), which would
+      // silently turn an explicitly opened Activities section into comments-only.
+      ret = true;
     } else {
       ret = Utils.getCurrentBoard().showActivities ?? false;
     }
@@ -150,23 +162,23 @@ Template.activity.helpers({
       return TAPi18n.__('this-card');
     }
     else if (this.mode !== 'board') {
-      return createCardLink(this.activity.card(), null);
+      return createCardLink(this.activity, this.activity.card(), null);
     }
     else if (currentBoardId != this.activity.boardId) {
-      return createCardLink(this.activity.card(), this.activity.board().title);
+      return createCardLink(this.activity, this.activity.card(), this.activity.board().title);
     }
-    return createCardLink(this.activity.card(), null);
+    return createCardLink(this.activity, this.activity.card(), null);
   },
 
   cardLink() {
     const currentBoardId = Session.get('currentBoard');
     if (this.mode !== 'board') {
-      return createCardLink(this.activity.card(), null);
+      return createCardLink(this.activity, this.activity.card(), null);
     }
     else if (currentBoardId != this.activity.boardId) {
-      return createCardLink(this.activity.card(), this.activity.board().title);
+      return createCardLink(this.activity, this.activity.card(), this.activity.board().title);
     }
-    return createCardLink(this.activity.card(), null);
+    return createCardLink(this.activity, this.activity.card(), null);
   },
 
   receivedDate() {
@@ -365,21 +377,36 @@ Template.commentReactions.helpers({
   }
 })
 
-function createCardLink(card, board) {
-  if (!card) return '';
-  let text = card.title;
-  if (board) text = `${board} > ` + text;
-  return (
-    card &&
-    Blaze.toHTML(
-      HTML.A(
-        {
-          href: card.originRelativeUrl(),
-          class: 'action-card',
-        },
-        sanitizeHTML(text),
-      ),
-    )
+// #3144: the card is not always here. An ARCHIVED card is not published to the
+// client, so `activity.card()` returned nothing and every sentence that named it
+// was rendered around a hole - "Activities for archived card displayed as
+// undefined on board settings".
+//
+// The activity itself recorded the title in most cases (`cardTitle`), and a card
+// URL can be built from the ids it carries, so the link survives the card not
+// being here. models/lib/activityCardLink.js decides what to show;
+// this turns it into the anchor, and marks an archived card the way the reporter
+// asked for: "{{ card title }} [archived]".
+function createCardLink(activity, card, boardTitle) {
+  const link = activityCardLinkData(activity, card, card ? card.board && card.board() : null);
+  if (!link) {
+    // Nothing named the card - an old activity from before the titles were
+    // recorded, on a card this client cannot see. Say "this card" rather than
+    // leaving a gap in the middle of a sentence.
+    return sanitizeHTML(TAPi18n.__('this-card'));
+  }
+  let text = link.title;
+  if (link.archived) text = `${text} [${TAPi18n.__('archived')}]`;
+  if (boardTitle) text = `${boardTitle} > ` + text;
+  if (!link.url) return sanitizeHTML(text);
+  return Blaze.toHTML(
+    HTML.A(
+      {
+        href: link.url,
+        class: 'action-card',
+      },
+      sanitizeHTML(text),
+    ),
   );
 }
 

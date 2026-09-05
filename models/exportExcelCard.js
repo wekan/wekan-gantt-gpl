@@ -46,13 +46,43 @@ runOnServer(function() {
         return;
       }
 
+      // GHSA-6p5m-f9p2-wqm5: the card has to BELONG to the board being
+      // authorised. Every check below is about `board` - isPublic() on one
+      // branch, canExport() on the other - and both were deciding access to one
+      // object while the export read a different one, named by a path parameter
+      // the caller also controls. Bound here, at the routing layer, as well as in
+      // the exporter's own query: the two identifiers arrive together, so this is
+      // where their relationship is cheapest to state, and it holds for the
+      // public branch too, which skips authentication entirely.
+      //
+      // 404, not 403: whether a given card id exists at all is not something an
+      // unauthorised caller should learn from the difference.
+      const containedCard = await ReactiveCache.getCard({
+        _id: paramCardId,
+        boardId,
+        listId: paramListId,
+      });
+      if (!containedCard) {
+        res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end('Card not found');
+        return;
+      }
+
       // Public boards skip authentication
       if (board.isPublic()) {
         const fieldsParam = req.query.fields;
         const fields = fieldsParam
           ? fieldsParam.split(',').map(f => f.trim()).filter(f => ALL_FIELDS.includes(f))
           : null;
-        const exporter = new ExporterExcelCard(boardId, paramListId, paramCardId, 'en', fields);
+        let publicLanguage = (req.query && req.query.lang) || 'en';
+        try {
+          await TAPi18n.loadLanguage(publicLanguage);
+        } catch (_) {
+          publicLanguage = 'en';
+        }
+        const exporter = new ExporterExcelCard(
+          boardId, paramListId, paramCardId, publicLanguage, fields,
+        );
         await exporter.build(res);
         return;
       }
@@ -91,13 +121,11 @@ runOnServer(function() {
         });
       }
 
-      // Determine language: prefer the active UI language sent by the client
-      // (?lang=fi), then the profile setting, then English.  The client-side
-      // param is necessary because WeKan may use the browser locale without
-      // ever writing it to profile.language.
+      // A saved profile language is authoritative. The browser language sent
+      // in ?lang= is used only when the account has no saved language.
       let userLanguage =
-        req.query.lang ||
         (user && user.profile && user.profile.language) ||
+        (req.query && req.query.lang) ||
         'en';
 
       // Ensure the chosen language bundle is loaded into i18next.
@@ -108,7 +136,22 @@ runOnServer(function() {
         userLanguage = 'en';
       }
 
-      const dateFormat = (user && user.profile && user.profile.dateFormat) || 'YYYY-MM-DD';
+      // #6586: the date format the OPENED CARD is showing, sent by the export
+      // link - for a reader who is not logged in it lives in localStorage, which
+      // this lookup cannot reach. The profile is the fallback, and only the
+      // three formats formatDateByUserPreference understands are accepted.
+      const DATE_FORMATS = ['YYYY-MM-DD', 'DD-MM-YYYY', 'MM-DD-YYYY'];
+      const requestedFormat = req.query && req.query.dateFormat;
+      const dateFormat = DATE_FORMATS.includes(requestedFormat)
+        ? requestedFormat
+        : ((user && user.profile && user.profile.dateFormat) || 'YYYY-MM-DD');
+
+      // #6586: the reader's IANA zone, sent by the export link. Without it the
+      // dates come out in the server's zone, which is the "-2h wrong for
+      // Europe/Berlin" the PDF export was reported for and this export shared.
+      const timezone = (req.query && typeof req.query.tz === 'string' && req.query.tz.length <= 64)
+        ? req.query.tz
+        : '';
 
       // Parse optional ?fields=people,dates,... query param
       const fieldsParam = req.query.fields;
@@ -116,7 +159,7 @@ runOnServer(function() {
         ? fieldsParam.split(',').map(f => f.trim()).filter(f => ALL_FIELDS.includes(f))
         : null;
 
-      const exporter = new ExporterExcelCard(boardId, paramListId, paramCardId, userLanguage, fields, dateFormat);
+      const exporter = new ExporterExcelCard(boardId, paramListId, paramCardId, userLanguage, fields, dateFormat, timezone);
       if ((await exporter.canExport(user))) {
         if (impersonateDone) {
           await ImpersonatedUsers.insertAsync({

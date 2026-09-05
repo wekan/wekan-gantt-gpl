@@ -5,9 +5,8 @@
  *
  * Regression guard for two mobile requirements:
  *  - board icons show AT LEAST 2 per row (menu on the left, boards on the right);
- *  - the board list is a bounded, scrollable container (the old CSS forced it
- *    min-height:100vh so it grew to fit and, clipped by the overflow:hidden wrapper,
- *    boards below the fold were unreachable — "you can't scroll boards on mobile").
+ *  - #content is the single vertical scroller; the board list grows naturally
+ *    inside it (nested list/wrapper scrollers broke on invited-board rows).
  */
 
 const { test, expect } = require('../fixtures');
@@ -25,6 +24,14 @@ test.describe('All Boards – phone viewport (#6488)', () => {
     for (let i = 0; i < 12; i++) {
       boards.push(await db.seedBoard({ ownerId: adminUser.id, title: `MobileBoard ${i}` }));
     }
+    const invitedBoard = await db.seedBoard({
+      ownerId: adminUser.id,
+      title: 'Phone invitation board',
+    });
+    boards.push(invitedBoard);
+    db.updateOne('users', { _id: adminUser.id }, {
+      $set: { 'profile.invitedBoards': [invitedBoard.boardId] },
+    });
     try {
       await loginWithToken(page, adminUser.id, adminUser.token);
       await page.goto(BASE_URL, { waitUntil: 'networkidle' });
@@ -37,6 +44,29 @@ test.describe('All Boards – phone viewport (#6488)', () => {
       const tiles = page.locator('ul.board-list li.js-board');
       await expect(tiles.first()).toBeVisible({ timeout: 15_000 });
       expect(await tiles.count()).toBeGreaterThanOrEqual(4);
+
+      // The invitation row contains more than a normal 4rem board icon. The
+      // fixed phone tile height used to clip its message and both actions while
+      // leaving only the title visible (#6488 comments 9 and 10).
+      const invitation = page.locator(`li.js-board.${invitedBoard.boardId}`);
+      await expect(invitation).toHaveClass(/is-invited/);
+      await expect(invitation.getByText('You are just invited to this board')).toBeVisible();
+      await expect(invitation.locator('.js-accept-invite')).toBeVisible();
+      await expect(invitation.locator('.js-decline-invite')).toBeVisible();
+      const invitationBox = await invitation.boundingBox();
+      expect(invitationBox).toBeTruthy();
+      for (const control of [
+        invitation.getByText('You are just invited to this board'),
+        invitation.locator('.js-accept-invite'),
+        invitation.locator('.js-decline-invite'),
+      ]) {
+        const box = await control.boundingBox();
+        expect(box).toBeTruthy();
+        expect(box.y).toBeGreaterThanOrEqual(invitationBox.y);
+        expect(box.y + box.height).toBeLessThanOrEqual(
+          invitationBox.y + invitationBox.height + 1,
+        );
+      }
 
       // At least 2 per row. Measure EVERY tile in the list (including the leading
       // "+ Add board" tile, which occupies the first grid cell and offsets the
@@ -72,36 +102,34 @@ test.describe('All Boards – phone viewport (#6488)', () => {
       expect(menuBox && listBox).toBeTruthy();
       expect(listBox.x).toBeGreaterThanOrEqual(menuBox.x + menuBox.width - 2);
 
-      // The list must be a BOUNDED, scrollable container so boards below the fold
-      // are reachable (not clipped by the surrounding overflow:hidden). Assert the
-      // invariant the CSS guarantees — a scroll container whose height is bounded
-      // to the viewport — instead of requiring the current board count to overflow
-      // it (which depends on exact tile height vs viewport and is flaky). An
-      // unbounded list that grew to fit all its boards fails clientHeight<=viewport.
+      // There is ONE vertical scroll owner. Nested overflow containers made a
+      // swipe depend on where it began and failed when an invitation row grew.
       const m = await list.evaluate(el => ({
         overflowY: getComputedStyle(el).overflowY,
         clientHeight: el.clientHeight,
         scrollHeight: el.scrollHeight,
-        viewport: window.innerHeight,
       }));
-      expect(['auto', 'scroll']).toContain(m.overflowY);
-      expect(m.clientHeight).toBeLessThanOrEqual(m.viewport);
-      // When there are more boards than fit, the bounded box actually scrolls.
-      if (m.scrollHeight > m.viewport) {
-        expect(m.scrollHeight).toBeGreaterThan(m.clientHeight + 4);
-      }
+      // CSS computes overflow-y:visible to auto when overflow-x is hidden.
+      // The capacity assertion is the behavioral contract: the list itself
+      // has no vertical range, so #content remains the only scroll owner.
+      expect(['visible', 'auto']).toContain(m.overflowY);
+      expect(m.scrollHeight).toBeLessThanOrEqual(m.clientHeight + 1);
 
-      // The left menu is its own bounded scroll area too, so a tall menu's lower
-      // items (many workspaces) can be drag-scrolled to instead of being clipped by
-      // the fixed-height wrapper.
-      const menu = await page.locator('.boards-left-menu').evaluate(el => ({
+      const content = await page.locator('#content').evaluate(el => ({
         overflowY: getComputedStyle(el).overflowY,
         clientHeight: el.clientHeight,
-        viewport: window.innerHeight,
+        scrollHeight: el.scrollHeight,
       }));
-      expect(['auto', 'scroll']).toContain(menu.overflowY);
-      expect(menu.clientHeight).toBeLessThanOrEqual(menu.viewport);
+      expect(['auto', 'scroll']).toContain(content.overflowY);
+      expect(content.scrollHeight).toBeGreaterThan(content.clientHeight + 4);
+
+      await page.locator('#content').evaluate(el => { el.scrollTop = el.scrollHeight; });
+      await expect(tiles.last()).toBeVisible();
+
     } finally {
+      db.updateOne('users', { _id: adminUser.id }, {
+        $unset: { 'profile.invitedBoards': '' },
+      });
       boards.forEach(b => db.cleanup({ boardIds: [b.boardId] }));
     }
   });

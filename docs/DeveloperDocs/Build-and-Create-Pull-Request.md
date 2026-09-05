@@ -2,6 +2,22 @@
 
 WeKan currently uses Meteor 3.
 
+## Before you commit: what not to add
+
+A build writes two directories, both generated and both gitignored. Neither ever
+belongs in a pull request:
+
+- **`.build/`** — the release bundle, from `meteor build .build --directory`.
+  `.build/bundle` is what gets deployed, tested and packaged.
+- **`_build/`** — rspack's compiled output, written by any Meteor compile. Meteor
+  reads the app's main modules from `_build/main-prod/`, so it is a handoff
+  rather than a leftover. It is gitignored, but must **not** be added to
+  `.meteorignore`: ignoring it breaks the build.
+
+`git status` should never list either. If it does, the checkout's ignore files
+are out of date rather than the directories being something new — see
+[Directory-Structure.md](Directory-Structure.md).
+
 Using newest Ubuntu amd64:
 
 # Meteor 3
@@ -80,7 +96,7 @@ That does:
 - **Setup -> Build WeKan** builds wekan,
 - **Dev server -> localhost:3000** starts wekan in development mode with command `meteor`, so it can detect if some file changes and try to rebuild automatically. If a dev server is already running on that port, it is stopped first and a fresh one started on the same port.
 
-And then [register and login](../Login/Adding-users.md) with webbrowser at http://localhost:3000
+And then [register and login](../Features/Login/Adding-users.md) with webbrowser at http://localhost:3000
 
 ### 4. Make and test your changes
 

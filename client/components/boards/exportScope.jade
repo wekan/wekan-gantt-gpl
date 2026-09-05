@@ -1,0 +1,111 @@
+//- The checkbox list - WHAT an export includes, and what an import brings in.
+  Its own template so the board popup can borrow it into a pane of its own
+  layout while the swimlane, list and card popups get it inside the pane
+  exportScopeBody builds for them, with no copy of the markup in either place.
+  The helpers are registered on BOTH templates from one object (exportScope.js);
+  the click handlers stay on exportScopeBody, because an event from here bubbles
+  to the template that includes it.
+//- EACH ROW CARRIES ITS OWN CHECKBOX - `.materialCheckBox`, the one Admin
+  Panel / Settings / Announcement uses for "Active System-Wide Announcement",
+  and the one every checkbox in the Admin Panel uses. A reader has seen it
+  before, and it says "on" and "off" at a glance.
+  It used to be an unconditional `i.fa.fa-check` on a `li.active`, which is a
+  DIFFERENT convention: popup.css hides that tick and shows it only for an
+  active row - but its selector is `.pop-over-list .pop-over-list.checkable
+  .fa-check`, so it needs a NESTED list carrying `checkable`, and this list was
+  neither. The tick was therefore never hidden and `active` was never styled, so
+  every row looked ticked whatever it was and clicking one changed nothing on
+  screen. Reported as \#6586 comment 5308548585, "I can't select/deselect those
+  arrows here".
+  A checkbox that carries its own state needs no ancestor to be right, which is
+  why it is this rather than the missing class.
+template(name="exportScopeSelect")
+  p.quiet {{_ 'export-select-what-to-include'}}
+  ul.pop-over-list.export-scope-select
+    li
+      a.flex.js-export-card-details-toggle(href="#" role="checkbox" aria-checked="{{#if cardDetailsChecked}}true{{else}}false{{/if}}")
+        .materialCheckBox(class="{{#if cardDetailsChecked}}is-checked{{/if}}")
+        span {{_ 'export-card-details'}}
+    each exportFields
+      li
+        a.flex.js-export-field-toggle(data-field="{{field}}" href="#" role="checkbox" aria-checked="{{#if checked}}true{{else}}false{{/if}}")
+          .materialCheckBox(class="{{#if checked}}is-checked{{/if}}")
+          span {{_ label}}
+
+//- The body of an export popup - ALL of them (#1173). What to include in one
+  pane and what to export it to in the other, side by side when the window has
+  room and stacked when it does not.
+  It was two menus: the board popup wrote nineteen formats of its own in
+  sidebar.jade under four subheadings, and the swimlane, list and card popups
+  wrote five here in one narrow column - so "the export popup" looked like two
+  different features depending on which menu opened it, and a format added to
+  one was missing from the other. The formats are one table now
+  (EXPORT_FORMAT_GROUPS, exportScope.js); each entry says which scopes it
+  applies to and whether it is a link or an action, and this lays them out.
+template(name="exportScopeBody")
+  .export-board-panes
+    .export-board-pane.export-board-pane-select
+      +exportScopeSelect
+    .export-board-pane.export-board-pane-formats
+      if isImportMode
+        //- #1173: the same popup, the other direction. The checkboxes in the
+          other pane say what goes OUT of an export and what comes IN from an
+          import - one selection, so "no comments" means the same thing
+          whichever way the file is moving.
+          Asked HERE as well as on the menu row that opens it: the row is hidden
+          from a reader who may not write, and a popup that trusts its caller is
+          a popup that offers the file chooser the first time somebody reaches
+          it another way.
+        if canImport
+          p.quiet {{_ 'import-here-instruction'}}
+          ul.pop-over-list
+            li
+              label.js-import-file-label
+                i.fa.fa-download
+                | {{_ 'import'}} / JSON, .zip
+                input.js-import-file(type="file" accept=".json,application/json,.zip,application/zip" hidden)
+          if importBusy
+            p.quiet {{_ 'importing'}}
+          if importError
+            .warning {{_ importError}}
+          if importDone
+            p.quiet {{_ 'import-done'}} {{importDone}}
+      else
+        each formatGroups
+          if heading
+            hr
+            h4.pop-over-list-subheading {{heading}}
+          ul.pop-over-list
+            each entries
+              li
+                if action
+                  a(class="{{action}}")
+                    i.fa(class="{{icon}}")
+                    | {{label}}
+                else
+                  //- The server supplies the localized, scope-aware filename.
+                  a(href="{{url}}" download)
+                    i.fa(class="{{icon}}")
+                    | {{label}}
+
+template(name="exportSwimlanePopup")
+  +exportScopeBody(swimlaneId=_id title=title)
+
+template(name="exportListPopup")
+  +exportScopeBody(listId=_id title=title)
+
+template(name="exportChecklistPopup")
+  +exportScopeBody(checklistId=_id title=title)
+
+//- The IMPORT half of each menu. Same body, same table, same selection - the
+  mode decides whether the second pane offers the formats to write out or the
+  file to read in. A menu says what it is about, so its two rows are named
+  "Export" and "Import" and nothing more.
+template(name="importSwimlanePopup")
+  +exportScopeBody(swimlaneId=_id title=title mode="import")
+
+template(name="importListPopup")
+  +exportScopeBody(listId=_id title=title mode="import")
+
+template(name="importCardPopup")
+  +exportScopeBody(cardId=_id listId=listId title=title mode="import")

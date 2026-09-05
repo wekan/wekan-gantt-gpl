@@ -4,7 +4,7 @@
 }
 
 .card-details-item-date-format .card-details-item-title {
-  font-size: 15px;
+  font-size: calc(15px * var(--wekan-ui-font-scale, 1));
   font-weight: bold;
   margin-bottom: 6px;
   color: #333;
@@ -17,7 +17,7 @@
   border: 1px solid #ddd;
   border-radius: 5px;
   background-color: #fff;
-  font-size: 15px;
+  font-size: calc(15px * var(--wekan-ui-font-scale, 1));
   cursor: pointer;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
@@ -138,7 +138,10 @@
 body.desktop-mode .card-details:not(.card-details-popup) {
   position: fixed;
   width: auto;
-  max-width: 520px; /* #6465: narrower dock (was 800px, ~1/4 screen) */
+  /* Open at the compact dock width below, but let the bottom-right native
+     resize handle grow the card up to the viewport edge. A fixed 520px cap
+     made the handle capable of shrinking only. */
+  max-width: calc(100vw - 16px);
   flex-basis: auto;
   border-radius: 3px;
   z-index: 2001;
@@ -149,8 +152,27 @@ body.desktop-mode .card-details:not(.card-details-popup):not([style*="left"]):no
   top: 8px;
   inset-inline-start: auto;
   inset-inline-end: 8px;
-  width: min(650px, 90vw);
+  width: min(520px, 90vw);
   bottom: 8px;
+}
+
+/* #6465: the Y half of the rule above, kept when the window has been placed
+   horizontally.
+
+   The default-position rule is `:not([style*="left"]):not([style*="top"])`, so it
+   switches itself off the moment anything writes an inline `left` — and it
+   carried `top` as well as the width. cardDetails.js now writes an inline `left`
+   to dock the window beside its minicard (X only), which would leave a SIXTH open
+   window — past the five staggered rules below — with no `top` at all, i.e.
+   `top: auto`, which for a fixed element is wherever it happened to land.
+
+   Same specificity as the stagger rules and written BEFORE them, so cards 1-5
+   still take their staggered `top` from those and nothing about the vertical
+   position changes. `bottom` is unchanged too: it comes from the
+   `:not(.card-details-collapsed)` rule further down, which never depended on the
+   inline styles. */
+body.desktop-mode .card-details:not(.card-details-popup):not([style*="top"]) {
+  top: 8px;
 }
 
 /* Stagger positions for multiple cards using nth-of-type (from the end edge) */
@@ -188,7 +210,7 @@ body.desktop-mode .card-details:not(.card-details-popup):not(.card-details-colla
    canvas (off-screen) instead of over the viewport.
    All four insets are !important for two reasons:
    1. The floating-window rules above (top: 8px / inset-inline-end: 8px /
-      width: min(650px, 90vw), specificity up to 0,5,1) otherwise override the
+      width: min(520px, 90vw), specificity up to 0,5,1) otherwise override the
       lower-specificity .card-details-maximized geometry entirely, leaving the
       Maximize button a no-op.
    2. The drag handle writes inline left/top styles onto the card; a card that
@@ -224,6 +246,8 @@ body.desktop-mode .card-details.card-details-collapsed {
 }
 .card-details .card-details-canvas {
   width: auto;
+  box-sizing: border-box;
+  min-width: 0;
   /* #6465: fixed 20px as in 6.09 — 35px was ~48px of white border per side
      on a FullHD screen. */
   padding: 0 20px;
@@ -248,7 +272,7 @@ body.desktop-mode .card-details.card-details-collapsed {
 /* Collapse toggle triangle */
 .card-details .card-details-header .card-collapse-toggle {
   float: inline-start;
-  font-size: 20px;
+  font-size: calc(20px * var(--wekan-ui-font-scale, 1));
   padding: 7px 10px;
   margin-inline-start: -10px;
   margin-inline-end: 5px;
@@ -260,7 +284,7 @@ body.desktop-mode .card-details.card-details-collapsed {
 }
 
 .card-details .card-details-header .card-drag-handle {
-  font-size: 20px;
+  font-size: calc(20px * var(--wekan-ui-font-scale, 1));
   padding: 8px 10px;
   margin-inline-end: 10px;
   cursor: move;
@@ -285,7 +309,7 @@ body.desktop-mode .card-details.card-details-collapsed {
 .card-details .card-details-header .close-card-details,
 .card-details .card-details-header .maximize-card-details,
 .card-details .card-details-header .minimize-card-details {
-  font-size: 24px;
+  font-size: calc(24px * var(--wekan-ui-font-scale, 1));
   padding: 5px 10px 5px 10px;
   margin-inline-end: -8px;
   cursor: pointer;
@@ -296,37 +320,37 @@ body.desktop-mode .card-details.card-details-collapsed {
 }
 .card-details .card-details-header .close-card-details-mobile-web,
 .card-details .card-details-header .card-mobile-desktop-toggle {
-  font-size: 24px;
+  font-size: calc(24px * var(--wekan-ui-font-scale, 1));
   padding: 5px;
   margin-inline-end: 5px;
   cursor: pointer;
   user-select: none;
 }
 .card-details .card-details-header .card-copy-button {
-  font-size: 17px;
+  font-size: calc(17px * var(--wekan-ui-font-scale, 1));
   padding: 10px;
   margin-inline-end: 10px;
 }
 .card-details .card-details-header .card-copy-mobile-button {
-  font-size: 17px;
+  font-size: calc(17px * var(--wekan-ui-font-scale, 1));
   padding: 10px;
   margin-inline-end: 10px;
 }
 .card-details .card-details-header .card-details-menu {
-  font-size: 17px;
+  font-size: calc(17px * var(--wekan-ui-font-scale, 1));
   padding: 10px;
   vertical-align: middle;
   line-height: 1.2;
 }
 .card-details .card-details-header .card-details-menu-mobile-web {
-  font-size: 17px;
+  font-size: calc(17px * var(--wekan-ui-font-scale, 1));
   padding: 10px;
   margin-inline-end: 30px;
 }
 .card-details .card-details-header .card-mobile-desktop-toggle,
 .card-details .card-details-header .card-zoom-in,
 .card-details .card-details-header .card-zoom-out {
-  font-size: 24px;
+  font-size: calc(24px * var(--wekan-ui-font-scale, 1));
   padding: 5px 10px 5px 10px;
   margin-inline-end: 5px;
   cursor: pointer;
@@ -343,7 +367,7 @@ body.desktop-mode .card-details.card-details-collapsed {
   font-size: 1em;
 }
 .card-details .card-details-header .card-details-watch {
-  font-size: 17px;
+  font-size: calc(17px * var(--wekan-ui-font-scale, 1));
   padding-inline-start: 7px;
   color: #a6a6a6;
 }
@@ -356,6 +380,46 @@ body.desktop-mode .card-details.card-details-collapsed {
   vertical-align: middle;
   line-height: 1.3;
   letter-spacing: 0.01em;
+  position: relative;
+}
+
+/* The title is two things at once, split like a minicard's: the LEADING half
+   opens the editor, the trailing half drags the window. With drag handles OFF
+   there is no handle, so the title bar is what the window is moved by - and a
+   heading that is entirely an edit target leaves nothing to take hold of.
+
+   An overlay rather than a split of the text, because the text is a `.viewer`
+   and cutting it in two would cut the sentence in two. `inset-inline-start`, so
+   the edit half is the left in English and the right in Arabic from one rule.
+   The drag handler steps aside for this zone (cardDetails.js). */
+.card-details .card-details-header .card-details-title .card-details-title-edit-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  inset-inline-start: 0;
+  /* Half of the heading - and the heading is stretched to the row below, so
+     this is half of the BAR however long the title happens to be. */
+  width: 50%;
+  cursor: text;
+  z-index: 1;
+}
+
+/* The heading fills the row rather than shrinking to its text, so "half the
+   title" and "half the bar" are the same half however long the title is. A
+   heading only as wide as its words leaves the empty space beside it belonging
+   to nothing - and that space is where anybody would grab to move the window.
+   It stays inline-block so the complete-toggle beside it keeps its place; the
+   buttons floating at the trailing edge take their room out of this width. */
+.card-details .card-details-header .card-details-title {
+  min-width: 60%;
+}
+
+/* With drag handles ON the handle is the only drag source, so the whole title
+   is the edit target - the same rule the minicard follows, from the same
+   question: `card-details-with-handle` is set by the template from
+   isTouchScreenOrShowDesktopDragHandles, which is Utils.showDragHandles(). */
+.card-details.card-details-with-handle .card-details-header .card-details-title .card-details-title-edit-zone {
+  width: 100%;
 }
 .card-details .card-details-header .linked-card-location {
   font-style: italic;
@@ -435,9 +499,18 @@ body.desktop-mode .card-details.card-details-collapsed {
   padding-inline-start: 10px;
 }
 .card-details .card-details-item-title {
-  font-size: 16px;
+  font-size: calc(16px * var(--wekan-ui-font-scale, 1));
   font-weight: bold;
   color: #4d4d4d;
+}
+.card-details .card-details-item-customfield .js-edit-card-custom-field-value {
+  cursor: pointer;
+}
+.card-details .card-details-person-controls {
+  align-items: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25em;
 }
 .card-details .activities {
   padding-top: 10px;
@@ -901,7 +974,7 @@ body.mobile-mode .card-details .card-details-header .close-card-details-mobile-w
   box-sizing: border-box;
   padding: 5px;
   margin: 3px;
-  font-size: 20px;
+  font-size: calc(20px * var(--wekan-ui-font-scale, 1));
   font-weight: bold;
   text-shadow: #2d2d2d 1px 1px 0;
   box-shadow: 0 0 5px #aaa;
@@ -927,8 +1000,15 @@ body.mobile-mode .card-details .card-details-header .close-card-details-mobile-w
 }
 
 /* Sticker picker + card-detail stickers + due-complete toggle */
+/* The picker fills the popup it is in rather than stopping at eight columns:
+   the popup is wide now (popup.css), and a fixed 320px there would have left
+   the extra width empty while the icons still ran off the bottom. A grid that
+   fits as many 40px cells as there is room for turns that width into rows the
+   reader does not have to scroll past. */
 .card-stickers-picker {
-  max-width: 320px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+  justify-items: center;
 }
 .card-sticker-select {
   display: inline-flex;
@@ -938,7 +1018,7 @@ body.mobile-mode .card-details .card-details-header .close-card-details-mobile-w
   height: 36px;
   margin: 2px;
   border-radius: 3px;
-  font-size: 18px;
+  font-size: calc(18px * var(--wekan-ui-font-scale, 1));
   color: #4d4d4d;
   cursor: pointer;
   position: relative;
@@ -954,18 +1034,18 @@ body.mobile-mode .card-details .card-details-header .close-card-details-mobile-w
   position: absolute;
   bottom: 1px;
   inset-inline-end: 2px;
-  font-size: 10px;
+  font-size: calc(10px * var(--wekan-ui-font-scale, 1));
   color: #3cb500;
 }
 .card-stickers .card-sticker {
   display: inline-flex;
   align-items: center;
   margin: 0 8px 4px 0;
-  font-size: 18px;
+  font-size: calc(18px * var(--wekan-ui-font-scale, 1));
 }
 .card-sticker .card-sticker-remove {
   margin-inline-start: 3px;
-  font-size: 11px;
+  font-size: calc(11px * var(--wekan-ui-font-scale, 1));
   color: #999;
   cursor: pointer;
 }
@@ -1046,19 +1126,6 @@ body.mobile-mode .card-details .card-details-header .close-card-details-mobile-w
   box-sizing: border-box;
 }
 
-/* "Open map links at" provider selector in the location popup */
-.js-card-location-form .map-provider-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-.js-card-location-form .map-provider-row .js-map-provider {
-  flex: 0 0 auto;
-  width: auto;
-}
-
 /* Opened card (card details popup) docks to the very top of the window and
    overlays the global + board header bars instead of opening below them. The
    base .pop-over is position:absolute with a small margin/top offset, which left
@@ -1126,4 +1193,143 @@ body.mobile-mode .card-details .card-details-header .close-card-details-mobile-w
   height: 200px;
   user-select: none;
   margin: 8px 0;
+}
+
+/* #1591 gave every FIELD of the opened card a caret of its own on its title,
+   and hid everything after that title when it was folded. The section carets
+   replaced it - one handle per section, on the heading - and the two ran at the
+   same time: clicking a section's caret also folded the field the heading was
+   drawn on, and with the field's own caret gone there was nothing left to open
+   it. That is where the Date Format select went. Both halves are gone from
+   here; client/components/cards/cardDetails.js says the same at the handler. */
+
+/* Collapsible card sections.
+   Every section of an opened card - Labels, Date Format, Members, Dependencies,
+   Sort, Custom Fields, Description, Checklists, Subtasks, Attachments, Comments
+   and Activities - has one rule above it and a caret in its heading that
+   collapses it. The rule comes from the same template as the caret, so eleven
+   sections cannot end up with ten separators.
+   The heading is a button: it says so to a screen reader (role/tabindex in the
+   template) and it looks like one to a mouse. */
+/* The GROUP is the full-width row of the card, and the fields inside it share
+   rows within it - which is what puts Assignee and Creator beside Members
+   rather than under it. The class that made an individual field full width is
+   gone with the grouping; a field that is its own section is a group of one. */
+.card-details .card-details-section-rule {
+  width: 100%;
+  margin: 14px 0 6px 0;
+}
+.card-details h3.card-details-item-title.js-toggle-card-section {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+/* The hamburger that opens a section's settings, at the FAR end of its heading
+   - `margin-inline-start: auto` in a flex row, so it mirrors itself in a
+   right-to-left page. It is inside a heading that folds the section when
+   clicked, so its own handler stops the click there. */
+.card-details h3.card-details-item-title .card-details-section-menu {
+  margin-inline-start: auto;
+  padding: 0 4px;
+  color: #808080;
+  cursor: pointer;
+}
+
+.card-details h3.card-details-item-title .card-details-section-menu:hover {
+  color: #000;
+}
+
+/* The caret is the widest part of the heading that must not move as the label
+   changes length, so it gets a fixed box. `text-align: center` rather than a
+   side, because the glyph itself differs between the open and closed states
+   (down, and right or left) and a fixed side would make it jump. */
+.card-details h3.card-details-item-title.js-toggle-card-section > .fa:first-child {
+  width: 12px;
+  text-align: center;
+  flex: 0 0 auto;
+}
+.card-details h3.card-details-item-title.js-toggle-card-section:hover {
+  opacity: 0.85;
+}
+/* The checklist "3/7" line that used to be a second h3 under the Checklists
+   heading: a subtitle, so it is not read as another section. */
+.card-details .card-details-item-subtitle {
+  margin: 0 0 4px 0;
+  font-size: calc(13px * var(--wekan-ui-font-scale, 1));
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+/* A GROUP of card fields - Labels with Stickers and Location, Date Format with
+   the four dates, Members with Assignee and Creator, and so on.
+   The group's own title carries the caret that folds it, and the fields inside
+   it do NOT: #1591 gives every .card-details-item a caret of its own, drawn on
+   the title by the rule further up this file, and inside a group that is a
+   second caret on every row saying the same thing in a smaller way. One handle
+   per group is what was asked for, and it is the group's.
+   The fields keep sharing rows inside the group, which is how they were laid
+   out - the group is a full-width row, the fields inside it wrap within it. */
+.card-details .card-details-items .card-details-group {
+  flex: 0 0 100%;
+  width: 100%;
+}
+.card-details .card-details-group-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em;
+}
+.card-details .card-details-group-body .card-details-item {
+  flex-grow: 1;
+}
+/* The user's Custom Fields layout toggle has two deliberately distinct modes.
+   Off keeps the compact wrapping grid; on gives every field its own row. */
+.card-details .card-details-group-custom-fields .custom-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
+}
+.card-details .card-details-group-custom-fields .custom-fields-grid > .card-details-item-customfield {
+  margin-inline-end: 0;
+  max-width: none;
+  min-width: 0;
+}
+.card-details .card-details-group-custom-fields .custom-fields-one-per-row > .card-details-item-customfield {
+  flex: 0 0 100%;
+  margin-inline-end: 0;
+  max-width: 100%;
+}
+/* Show only the icon for the current Custom Fields layout: table or list. */
+.card-details .custom-fields-layout-toggle {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: #808080;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 2px;
+  margin: 0;
+  margin-inline-start: auto;
+  padding: 2px;
+  width: auto;
+}
+.card-details h3.card-details-item-title .custom-fields-layout-toggle + .card-details-section-menu {
+  margin-inline-start: 0;
+}
+.card-details .custom-fields-layout-toggle .grid-icon,
+.card-details .custom-fields-layout-toggle .list-icon {
+  align-items: center;
+  border-radius: 3px;
+  display: inline-flex;
+  justify-content: center;
+  min-width: 28px;
+  padding: 4px 7px;
+}
+.card-details .custom-fields-layout-toggle .grid-icon .fa,
+.card-details .custom-fields-layout-toggle .list-icon .fa {
+  color: inherit;
+}
+.card-details .custom-fields-layout-toggle:hover {
+  color: #000;
 }

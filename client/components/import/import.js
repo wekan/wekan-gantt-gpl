@@ -8,33 +8,18 @@ import { kanboardGetMembersToMap } from './kanboardMembersMapper';
 import getSlug from 'limax';
 import { UserSearchIndex } from '/models/users';
 import { Utils } from '/client/lib/utils';
+import { productNameOrDefault } from '/models/lib/productName';
+import { BOARD_EXPORT_FIELDS } from '/models/lib/exportFields';
+import {
+  selection as importSelection,
+  selectedFields,
+  readExportFile,
+} from '/client/components/boards/exportScope';
+import { pruneImportDocument } from '/models/lib/importParts';
 import { TAPi18n } from '/imports/i18n';
 import TrelloImportJobs from '/models/trelloImportJobs';
 
 const Papa = require('papaparse');
-
-Template.importHeaderBar.helpers({
-  title() {
-    const sourceNameByKey = {
-      trello: 'Trello',
-      wekan: 'JSON',
-      csv: 'CSV-TSV',
-      excel: 'Excel',
-      jira: 'Jira',
-      kanboard: 'Kanboard',
-      deck: 'NextCloud Deck',
-      openproject: 'OpenProject',
-      github: 'GitHub',
-      gitlab: 'GitLab',
-      gitea: 'Gitea',
-      forgejo: 'Forgejo',
-      asana: 'Asana',
-      zenkit: 'Zenkit',
-    };
-    const sourceName = sourceNameByKey[Session.get('importSource')] || 'JSON';
-    return `${TAPi18n.__('import')} / ${sourceName}`;
-  },
-});
 
 // Helper to find the closest ancestor template instance by name
 function findParentTemplateInstance(childTemplateInstance, parentTemplateName) {
@@ -256,10 +241,17 @@ Template.import.onCreated(function () {
       // exports are awkward to paste) or from the textarea.
       let input = this.find('.js-import-json').value;
       const jsonFileEl = this.find('.js-import-json-file');
+      let dataObject = null;
       if (jsonFileEl && jsonFileEl.files && jsonFileEl.files[0]) {
-        input = await jsonFileEl.files[0].text();
+        // #1173: a .zip is read the same way the per-menu import reads one -
+        // the document out of `wekan.json`, and every file under `attachments/`
+        // put back on the metadata row it belongs to, so an export that was
+        // taken as a .zip imports with its files rather than without them.
+        // readExportFile handles a .json unchanged.
+        dataObject = await readExportFile(jsonFileEl.files[0]);
+      } else {
+        dataObject = JSON.parse(input);
       }
-      const dataObject = JSON.parse(input);
       // Guard against importing a broken/old WeKan export that has no board
       // content (see wekanExportIsEmpty): warn the user to re-export rather than
       // silently creating an empty board with only a Default swimlane.
@@ -373,9 +365,13 @@ Template.import.onCreated(function () {
       settled = true;
       this.setError('import-timeout');
     }, timeoutMs);
+    // #1173: the parts the page's checkboxes did not tick are taken OUT of the
+    // document here, before any creator sees it. A creator that never sees a
+    // comment cannot import one, which is how one selection works for five
+    // sources without teaching each of them a selection of its own.
     Meteor.call(
       'importBoard',
-      importedData,
+      pruneImportDocument(importedData, selectedFields()),
       { membersMapping: mappingById },
       this.importSource,
       Session.get('fromBoard'),
@@ -394,15 +390,76 @@ Template.import.onCreated(function () {
   };
 });
 
+// #1173: every import source, in one list, so the page says what it can read
+// instead of the answer living in a menu somewhere else. The order is the one
+// the board sidebar's links were in - the familiar one - and the WeKan entry is
+// named for the PRODUCT NAME this instance is branded with, because "a previous
+// export of ..." should say the name the person sees at the top of their screen.
+const IMPORT_SOURCES = [
+  { key: 'wekan', product: true },
+  { key: 'trello', name: 'Trello' },
+  { key: 'csv', name: 'CSV / TSV' },
+  { key: 'excel', name: 'Excel' },
+  { key: 'jira', name: 'Jira' },
+  { key: 'kanboard', name: 'Kanboard' },
+  { key: 'deck', name: 'NextCloud Deck' },
+  { key: 'openproject', name: 'OpenProject' },
+  { key: 'github', name: 'GitHub' },
+  { key: 'gitlab', name: 'GitLab' },
+  { key: 'gitea', name: 'Gitea' },
+  { key: 'forgejo', name: 'Forgejo' },
+  { key: 'asana', name: 'Asana' },
+  { key: 'zenkit', name: 'Zenkit' },
+];
+
 Template.import.helpers({
   error() {
     return Template.instance().error;
+  },
+  importSources() {
+    const setting = ReactiveCache.getCurrentSetting();
+    const product = productNameOrDefault(setting && setting.productName);
+    const current = Session.get('importSource');
+    return IMPORT_SOURCES.map(source => ({
+      key: source.key,
+      // "a previous export of <Product name>", which for an unbranded WeKan is
+      // "WeKan" and for a rebranded one is whatever it was rebranded to.
+      name: source.product ? `${product} (JSON, .zip)` : source.name,
+      selected: source.key === current,
+    }));
+  },
+  hasImportSource() {
+    return Boolean(Session.get('importSource'));
+  },
+  // The SAME selection the export popups use - one list, one meaning: on an
+  // export it is what goes out, on an import it is what comes in.
+  importParts() {
+    return BOARD_EXPORT_FIELDS.map(({ field, label }) => ({
+      field,
+      label,
+      checked: importSelection.get(field),
+    }));
   },
   currentTemplate() {
     return Template.instance().steps[Template.instance()._currentStepIndex.get()];
   },
   zipImporting() {
     return Template.instance().zipImporting.get();
+  },
+});
+
+Template.import.events({
+  'click .js-select-import-source'(event) {
+    event.preventDefault();
+    const source = event.currentTarget.dataset.source;
+    // The address still names the source, so an import page can be linked and
+    // the back button works - the picker sets it rather than replacing it.
+    FlowRouter.go(`/import/${source}`);
+  },
+  'click .js-import-part-toggle'(event) {
+    event.preventDefault();
+    const field = event.currentTarget.dataset.field;
+    importSelection.set(field, !importSelection.get(field));
   },
 });
 
@@ -448,6 +505,10 @@ Template.importTextarea.helpers({
   },
   isTrelloImport() {
     return Session.get('importSource') === 'trello';
+  },
+  // #1173: a previous export of this WeKan, as a .json or as a .zip.
+  isWekanImport() {
+    return Session.get('importSource') === 'wekan';
   },
   isExcelImport() {
     return Session.get('importSource') === 'excel';

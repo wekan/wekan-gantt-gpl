@@ -1,0 +1,97 @@
+//- THE History view. There is exactly ONE of these.
+//-
+//- docs/Features/Reports/History/History.md §7a: "Every non-card-group surface
+//- is the same historyTable with a different changeHistory.page scope; there is
+//- ONE implementation, parametrised by scope." The card-group menu, the whole
+//- card, Member settings, Board settings, and the swimlane and list menus all
+//- open THIS template with a different data context. Adding History to a new
+//- menu is a menu item and nothing else — no new template, method or restore
+//- code.
+//-
+//- Data context: { scope, scopeId, group, userId, titleKey }
+//- State (search, page, selection, the contributor filter) lives on the template
+//- instance in a ReactiveDict, never on the data context — #6479 showed a
+//- re-render drops ad-hoc fields written onto the context.
+template(name="historyTable")
+  .history-table(class="{{#if isRtl}}history-rtl{{/if}}")
+    //- Left pane: the contributor list. Only where a scope can span more than
+    //- one person — the Member view is already one user, so it has none.
+    if showContributors
+      .history-nav
+        a.history-nav-item.js-history-all(class="{{#unless activeUserId}}is-active{{/unless}}")
+          i.fa.fa-history
+          span {{_ 'history'}}
+        //- `each X in Y` binds X as a NAME and leaves the data context alone -
+        //- unlike `each Y`, which replaces it. So every field here must be
+        //- reached through `contributor.`; a bare {{userId}} resolves against
+        //- the OUTER context and silently renders nothing.
+        each contributor in contributors
+          a.history-nav-item.js-history-contributor(
+            data-user-id="{{contributor.userId}}"
+            class="{{#if contributor.isActive}}is-active{{/if}}")
+            +userAvatar(userId=contributor.userId)
+            span.history-nav-count {{contributor.count}}
+
+    .history-main
+      .history-controls
+        input.js-history-search(
+          type="search"
+          placeholder="{{_ 'search'}}"
+          aria-label="{{_ 'search'}}"
+          value="{{searchTerm}}")
+        .history-pagination
+          a.js-history-prev(class="{{#unless hasPrev}}is-disabled{{/unless}}")
+            i.fa.fa-chevron-left
+          span.history-page {{page}} / {{totalPages}}
+          a.js-history-next(class="{{#unless hasNext}}is-disabled{{/unless}}")
+            i.fa.fa-chevron-right
+        button.js-history-restore.primary(disabled="{{#unless hasSelection}}disabled{{/unless}}")
+          i.fa.fa-undo
+          | {{_ 'restore'}}
+
+      if loading
+        +spinner
+      else if hasRows
+        //- The SCROLL container is this div, not the table. A table given
+        //- `display: block` to make it scroll stops being a table: the cells no
+        //- longer share column widths, so the header and the rows under it drift
+        //- apart. Scrolling the wrapper keeps `display: table` and the columns
+        //- line up.
+        .history-scroll
+          table.history-rows
+            thead
+              tr
+                th.history-select
+                th {{_ 'action'}}
+                th {{_ 'details'}}
+                th {{_ 'date'}}
+            tbody
+              //- Every field goes through `row.` - see the note on the
+              //- contributor loop above. Written without it, the whole table
+              //- rendered one row of four empty cells and a checkbox with no id,
+              //- which is what opening it showed.
+              each row in rows
+                tr(class="{{#if row.isSelected}}is-selected{{/if}}")
+                  //- `.materialCheckBox`, not `input[type=checkbox]`. WeKan
+                  //- hides every bare checkbox app-wide (forms.css:
+                  //- `[type="checkbox"] { display: none }`) and draws its own,
+                  //- so a real one renders 0x0 and cannot be ticked - which is
+                  //- what this column did: the row could be seen but never
+                  //- selected, and Restore stayed disabled forever.
+                  td.history-select
+                    .materialCheckBox.js-history-select(
+                      data-id="{{row._id}}"
+                      class="{{#if row.isSelected}}is-checked{{/if}}")
+                  td.history-change
+                    span.history-change-type {{_ row.changeTypeKey}}
+                    if row.groupKey
+                      span.quiet.history-group {{_ row.groupKey}}
+                  td.history-content {{row.contentSummary}}
+                  td.history-when {{row.prettyWhen}}
+      else
+        p.quiet {{_ 'no-results'}}
+
+//- The popup wrapper every menu opens. It exists only so a menu item can say
+//- `Popup.open('history')` with a scope; the table above is the whole feature.
+template(name="historyPopup")
+  +historyTable(scope=scope scopeId=scopeId group=group userId=userId)

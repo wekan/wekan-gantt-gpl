@@ -40,10 +40,9 @@ template(name='homeSidebar')
   hr
   +labelsWidget
   hr
-  ul#cards.label-text-hidden
-    a.flex.js-toggle-minicard-label-text(title="{{_ 'hide-minicard-label-text'}}")
-      i.fa(class="{{#if hiddenMinicardLabelText}}fa-check{{else}}fa-square-o{{/if}}")
-      span {{_ 'hide-minicard-label-text'}}
+  //- "Hide minicard label text" was here, under the People/Organizations tabs.
+    It is a setting about the MINICARD, so it is in the minicard's own menu now:
+    Minicard menu / Show on Minicard. See showOnMinicardPopup below.
   if currentUser
     ul#cards.vertical-scrollbars-toggle
       a.flex.js-vertical-scrollbars-toggle(title="{{_ 'enable-vertical-scrollbars'}}")
@@ -55,18 +54,15 @@ template(name='homeSidebar')
       span {{_ 'show-week-of-year'}}
   hr
   if currentUser.isBoardAdmin
-    h3.activity-title
+    //- A caret in front of the heading, like every collapsible section of an
+      opened card: clicking the heading shows the activities under it, clicking
+      it again hides them. The eye and the words "Show activities" beside it
+      said the same thing a second time, which is one control too many for one
+      setting. client/lib/sectionCaret.js
+    h3.activity-title.js-toggle-show-activities(role="button" tabindex="0" title="{{_ 'activities'}}")
+      i.fa(class="{{activitiesCaret}}")
       i.fa.fa-comment-o
       | {{_ 'activities'}}
-
-      if showActivities
-        a.flex.activities-eye-toggle.js-toggle-show-activities(title="{{_ 'hide-activities'}}" aria-label="{{_ 'hide-activities'}}")
-          i.fa.fa-eye.eye-icon
-          span {{_ 'hide-activities'}}
-      else
-        a.flex.activities-eye-toggle.js-toggle-show-activities(title="{{_ 'show-activities'}}" aria-label="{{_ 'show-activities'}}")
-          i.fa.fa-eye-slash.eye-slash-icon
-          span {{_ 'show-activities'}}
     +activities(mode="board")
 
 template(name="membersWidget")
@@ -77,10 +73,16 @@ template(name="membersWidget")
           i.fa.fa-cog
           | {{_ 'boardMenuPopup-title'}}
   hr
-  h3
+  //- The heading is the button, with a caret in front of it, like every
+    collapsible section of an opened card: folding Members hides the People /
+    Organizations / Teams / Domains tabs and the avatars in them.
+    client/lib/foldState.js
+  h3.js-toggle-fold(data-fold="members" role="button" tabindex="0")
+    i.fa(class="{{foldCaret 'members'}}")
     i.fa.fa-users
     | {{_ 'members'}}
-  +basicTabs(tabs=tabs)
+  if isFoldOpen 'members'
+    +basicTabs(tabs=tabs)
       +tabContent(slug="people")
         unless currentUser.isWorker
           p.quiet
@@ -91,11 +93,12 @@ template(name="membersWidget")
           else
             each currentBoard.membersForSidebar
               +userAvatar(userId=this.userId showStatus=true)
-            if isSandstorm
-              if currentUser.isBoardMember
-                a.member.add-member.sandstorm-powerbox-request-identity(title="{{_ 'add-members'}}")
-                  i.fa.fa-plus
-            else if currentUser.canInviteToBoard
+            //- Sandstorm grains can contain multiple boards. Their users already
+              exist in this grain after first visiting it, so use WeKan's normal,
+              permission-checked board-member picker. The former Powerbox button
+              depended on capnp.node (unavailable with the bundled Node 24) and its
+              claimed identity was never attached to the selected board. #2405
+            if currentUser.canInviteToBoard
               a.member.add-member.js-manage-board-members(title="{{_ 'add-members'}}")
                 i.fa.fa-plus
             .clearfix
@@ -156,8 +159,13 @@ template(name="boardChangeColorPopup")
     the flat/clear categories, shared with Member Settings / Change Color.
   +themeColorPicker(scope="board")
 
-template(name="boardBackgroundsPopup")
-  .board-backgrounds-manage
+//- Uploading a background image. It is its own template because it belongs
+  with the URL field rather than with the list of images already uploaded:
+  both put a picture behind the board, one from the web and one from this
+  machine, so they are the two halves of one question and are read together.
+  The grid below is what you have; this is how you add to it.
+template(name="boardBackgroundUpload")
+  .board-background-upload
     input.js-bg-upload-input.hide(type="file" name="file" accept="image/*")
     a.primary.wide.js-bg-upload-button
       i.fa.fa-plus
@@ -167,16 +175,27 @@ template(name="boardBackgroundsPopup")
       +spinner
     if error.get
       .warning {{_ error.get}}
+
+//- The pictures uploaded to this board, with their NAMES: an upload that shows
+  nothing afterwards is indistinguishable from one that failed, which is what
+  uploading looked like while this list lived behind a menu entry of its own.
+  It is drawn inside Change Background Image, under the upload that adds to it,
+  and that entry - "Board backgrounds" - is gone with the popup it opened.
+template(name="boardBackgroundList")
+  .board-backgrounds-manage
     .board-backgrounds-grid.clearfix
       each backgrounds
+        //- The PICTURE is the button: clicking a thumbnail, or its name, puts
+          that one behind the board. It used to be a small check icon in the row
+          below, which is a 14px target beside an 80px picture of the thing it
+          applies - so the obvious click did nothing. The row keeps what the
+          picture cannot say: download it, or delete it.
         .board-bg-item(class="{{#if isActiveBackground}}is-active{{/if}}")
-          .board-bg-thumb(style="background-image: url('{{link}}');")
+          .board-bg-thumb.js-set-board-background(style="background-image: url('{{link}}');" title="{{_ 'set-as-active'}}")
             if isActiveBackground
               i.fa.fa-check.board-bg-active-check
+          .board-bg-name.js-set-board-background(title="{{_ 'set-as-active'}}")= name
           .board-bg-actions
-            unless isActiveBackground
-              a.js-set-board-background(title="{{_ 'set-as-active'}}")
-                i.fa.fa-check-circle-o
             a.js-download-board-background(href="{{link}}?download=true" download="{{name}}" title="{{_ 'download'}}")
               i.fa.fa-arrow-down
             a.js-delete-board-background(title="{{_ 'delete'}}")
@@ -193,16 +212,19 @@ template(name="boardChangeBackgroundImagePopup")
     label
       | {{_ 'board-background-image-url'}}
       input.js-board-background-image-url(type="text" value="{{backgroundImageURL}}" autofocus)
-    div.buttonsContainer
-      input.primary.wide(type="submit" value="{{_ 'save'}}")
-    br
-    br
-    br
-    br
-    br
+    //- Save and Unset side by side, in that order: they are the two things to
+      do with the address above them, and Unset was five blank lines below the
+      Save it belongs beside.
+    .buttonsContainer.board-background-image-buttons
+      input.primary(type="submit" value="{{_ 'save'}}")
+      button.js-remove-background-image.negate.card-details-red(type="button") {{_ 'unset-color'}}
     hr
-    div
-      button.js-remove-background-image.negate.wide.card-details-red.right {{_ 'unset-color'}}
+    //- ...and the same question answered from this machine instead of from a
+      URL, with what has been uploaded to this board under it - so an upload is
+      seen to have arrived, and can be applied, without going to another popup
+      to find out.
+    +boardBackgroundUpload
+  +boardBackgroundList
 
 template(name="boardInfoOnMyBoardsPopup")
   form.board-info-on-my-boards
@@ -240,15 +262,58 @@ template(name="boardInfoOnMyBoardsPopup")
           i.fa.fa-arrows-h
           | {{_ 'personal-list-width'}}
 
+//- The Card Settings, from the CARD's own menu: the same popup with the
+  "Show on Minicard" column hidden, because the card menu is opened while
+  looking at a card. One list of settings, one set of handlers, one place a new
+  setting has to be added. client/components/cards/cardDetails.jade
+template(name="showOnCardPopup")
+  +boardCardSettingsPopup(side="card")
+
+//- ...and from the MINICARD's menu, the other column.
+//-
+//- "Labels text" - the one PERSONAL setting in that column - is a row of the
+//- same table, under Labels, so it is read where the rest of the minicard's
+//- settings are. It is offered to everybody, because it is stored on the user's
+//- profile (or in this browser when there is nobody logged in) and changes
+//- nothing for anyone else; a user who is not a board admin sees that row
+//- alone. client/lib/minicardLabelText.js
+template(name="showOnMinicardPopup")
+  if currentUser.isBoardAdmin
+    +boardCardSettingsPopup(side="minicard" card=this)
+  else
+    +boardCardSettingsPopup(side="minicard" personalOnly=true card=this)
+
+//- No heading row. It used to name the columns of a ROW - "Show on Card" over
+  the checkbox and "Description" over the name - which is what they label, but
+  not what they LOOK like: the rows flow into as many columns as the window
+  fits, so two headings sat above the first of three or four columns and read as
+  if they named those. The first of them also repeated the popup's own title,
+  which is "Show on Card" or "Show on Minicard" already. A row is a checkbox and
+  the name of a setting, and needs neither.
 template(name="boardCardSettingsPopup")
-  form.board-card-settings
-    .card-settings-grid
-      .card-settings-column
-        h4 {{_ 'show-on-card'}}
-      .card-settings-column
-        h4 {{_ 'show-on-minicard'}}
-      .card-settings-column
-        h4 {{_ 'description'}}
+  form.board-card-settings(class=settingsSideClass)
+    //- "List title": the name of the LIST this card is in, on its minicard.
+      A per-CARD setting, unchecked by default, and the first row of this
+      column because it is about the card as a whole rather than one of its
+      fields. It was a line in the card's menu reading "Show list on minicard";
+      it is a checkbox among the other things a minicard can show, which is
+      where somebody looking for it would look. Only for a user who may change
+      the card - the same permission the menu entry had.
+      The board-wide "Show lists" row further down turns it on for EVERY card;
+      this one is for a single card that needs it, which is what it is for on a
+      swimlane, in search results and in My Cards, where a card is read away
+      from the column it lives in. client/components/cards/minicard.jade
+    if canModifyCard
+      .card-settings-row.card-settings-row-personal
+        .card-settings-column
+        .card-settings-column
+          a.flex.js-toggle-show-list-on-minicard(title="{{_ 'list'}} {{_ 'title'}}" class="{{#if showsListOnMinicard}}is-checked{{/if}}")
+            i.fa(class="{{#if showsListOnMinicard}}fa-check{{else}}fa-square-o{{/if}}")
+        .card-settings-column
+          span
+            i.fa.fa-list
+            | {{_ 'list'}}
+            | {{_ 'title'}}
     .card-settings-row
       .card-settings-column
         a.flex.js-field-has-receiveddate(title="{{_ 'card-received'}}" class="{{#if allowsReceivedDate}}is-checked{{/if}}")
@@ -393,6 +458,37 @@ template(name="boardCardSettingsPopup")
         span
           i.fa.fa-tag
           | {{_ 'labels'}}
+    //- "Labels text": the labels on a minicard as coloured WORDS, or as
+      coloured bars with the words left out. Directly under Labels, because it
+      is about what those labels look like.
+      It is the one PERSONAL row of this table - the user's own profile, or this
+      browser when nobody is logged in - so it is shown only in the minicard's
+      own view (Minicard menu / Show on Minicard) and not in the board-wide
+      Card Settings, where every other row belongs to the board. Checked by
+      default: the text is what a minicard shows unless somebody turns it off.
+      client/lib/minicardLabelText.js
+    .card-settings-row.card-settings-row-personal
+      .card-settings-column
+      .card-settings-column
+        a.flex.js-toggle-minicard-label-text(title="{{_ 'labels'}} {{_ 'custom-field-text'}}" class="{{#if showsMinicardLabelText}}is-checked{{/if}}")
+          i.fa(class="{{#if showsMinicardLabelText}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
+        span
+          i.fa.fa-tag
+          i.fa.fa-file-text-o
+          | {{_ 'labels'}}
+          | {{_ 'custom-field-text'}}
+    .card-settings-row
+      .card-settings-column
+        a.flex.js-field-has-custom-fields(title="{{_ 'custom-fields'}}" class="{{#if allowsCustomFields}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsCustomFields}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
+        a.flex.js-field-has-custom-fields-on-minicard(title="{{_ 'custom-fields'}}" class="{{#if allowsCustomFieldsOnMinicard}}is-checked{{/if}}")
+          i.fa(class="{{#if allowsCustomFieldsOnMinicard}}fa-check{{else}}fa-square-o{{/if}}")
+      .card-settings-column
+        span
+          i.fa.fa-list-alt
+          | {{_ 'custom-fields'}}
     .card-settings-row
       .card-settings-column
         a.flex.js-field-has-card-number(title="{{_ 'card'}} {{_ 'number'}}" class="{{#if allowsCardNumber}}is-checked{{/if}}")
@@ -518,7 +614,12 @@ template(name="boardCardSettingsPopup")
     //
           | {{_ 'activities'}}
 
-template(name="boardSubtaskSettingsPopup")
+//- The board's Subtasks Settings. Its own template, because the same settings
+  are read from two places: Board Settings, and the menu of a subtask on an
+  opened card - which is where somebody looking at a subtask is when they want
+  to change what subtasks do. One list, one set of handlers.
+  client/components/cards/subtasks.jade
+template(name="boardSubtaskSettingsBody")
   form.board-subtask-settings
     h3 {{_ 'show-parent-in-minicard'}}
       a#prefix-with-full-path.flex.js-field-show-parent-in-minicard(title="{{_ 'prefix-with-full-path'}}" class="{{#if $eq presentParentTask 'prefix-with-full-path'}}is-checked{{/if}}")
@@ -568,36 +669,26 @@ template(name="boardSubtaskSettingsPopup")
             else
               option(value=_id) {{title}}
 
+template(name="boardSubtaskSettingsPopup")
+  +boardSubtaskSettingsBody
+
+//- #1173: the fourteen per-source links that were here are the import PAGE now
+  - one full-width page that lists every source, offers the same "what to
+  include" checkboxes every export offers, and keeps its own address per source
+  so the old links still work. What is left in the popup is the one import that
+  is not a board: card dependencies.
 template(name="chooseBoardSourcePopup")
   ul.pop-over-list
     li
-      a(href="{{pathFor '/import/trello'}}") {{_ 'import'}} / Trello
-    li
-      a(href="{{pathFor '/import/wekan'}}") {{_ 'import'}} / JSON
-    li
-      a(href="{{pathFor '/import/csv'}}") {{_ 'import'}} / CSV-TSV
-    li
-      a(href="{{pathFor '/import/excel'}}") {{_ 'import'}} / Excel
-    li
-      a(href="{{pathFor '/import/jira'}}") {{_ 'import'}} / Jira
-    li
-      a(href="{{pathFor '/import/kanboard'}}") {{_ 'import'}} / Kanboard
-    li
-      a(href="{{pathFor '/import/deck'}}") {{_ 'import'}} / NextCloud Deck
-    li
-      a(href="{{pathFor '/import/openproject'}}") {{_ 'import'}} / OpenProject
-    li
-      a(href="{{pathFor '/import/github'}}") {{_ 'import'}} / GitHub
-    li
-      a(href="{{pathFor '/import/gitlab'}}") {{_ 'import'}} / GitLab
-    li
-      a(href="{{pathFor '/import/gitea'}}") {{_ 'import'}} / Gitea
-    li
-      a(href="{{pathFor '/import/forgejo'}}") {{_ 'import'}} / Forgejo
-    li
-      a(href="{{pathFor '/import/asana'}}") {{_ 'import'}} / Asana
-    li
-      a(href="{{pathFor '/import/zenkit'}}") {{_ 'import'}} / Zenkit
+      //- "Import board", and nothing else. It used to read "Import board
+        (Trello, Jira, WeKan export, CSV, Excel, ...)" - the whole list of
+        sources, in a menu row, above a page that asks which source it is and
+        lists every one of them with room to. Naming them twice makes the menu
+        the thing to read and the page the thing to confirm.
+        client/components/import/import.jade
+      a.js-open-import-page(href="{{pathFor '/import'}}")
+        i.fa.fa-download
+        |  {{_ 'import-board-c'}}
     li
       a.js-import-dependencies {{_ 'import'}} / {{_ 'card-dependencies'}} (JSON/SVG)
 
@@ -662,11 +753,10 @@ template(name="boardMenuPopup")
         a.js-open-rules-view(title="{{_ 'rules'}}")
           i.fa.fa-magic
           | {{_ 'rules'}}
-    if currentUser.isBoardAdmin
-      li
-        a.js-custom-fields
-          i.fa.fa-file-text-o
-          | {{_ 'custom-fields'}}
+    //- "Custom Fields" was here. The board's list of them is in the card's own
+      menu now - Card menu / Custom Fields, whose Settings cog opens it - which
+      is where somebody looking at a card's fields already is.
+      client/components/cards/cardDetails.jade
     li
       a.js-open-archives
         i.fa.fa-archive
@@ -680,10 +770,10 @@ template(name="boardMenuPopup")
         a.js-change-background-image
           i.fa.fa-picture-o
           | {{_ 'board-change-background-image'}}
-      li
-        a.js-manage-board-backgrounds
-          i.fa.fa-image
-          | {{_ 'board-backgrounds'}}
+      //- "Board backgrounds" was here. It was the list of pictures uploaded to
+        this board, and that list is drawn inside Change Background Image now -
+        under the upload that adds to it - so a second entry to the same list
+        was a second place to look for one thing.
     //Bug Board icons random dance https://github.com/wekan/wekan/issues/4214
     //if currentUser.isBoardAdmin
     //
@@ -705,20 +795,26 @@ template(name="boardMenuPopup")
         li
           a.js-export-board
             i.fa.fa-upload
-            | {{_ 'export-board'}}
+            | {{_ 'export'}}
+        if canImportIntoBoard
+          li
+            a.js-import-into-board
+              i.fa.fa-download
+              | {{_ 'import'}}
     if currentUser.isBoardAdmin
       li
         a.js-outgoing-webhooks
           i.fa.fa-globe
           | {{_ 'outgoing-webhooks'}}
-      li
-        a.js-card-settings
-          i.fa.fa-id-card
-          | {{_ 'card-settings'}}
-      li
-        a.js-subtask-settings
-          i.fa.fa-globe
-          | {{_ 'subtask-settings'}}
+      //- "Card Settings" was here. Every setting in it is now in the menu of
+        the thing it is about: the card's menu has "Show on Card" and a
+        minicard's has "Show on Minicard", each with that column of the same
+        table. A board-wide entry as well would be a third way to the same list.
+        client/components/cards/cardDetails.jade
+      //- "Subtasks Settings" was here. What subtasks do on this board is behind
+        the hamburger at the end of the Subtasks heading on an opened card,
+        which is where somebody looking at subtasks already is.
+        client/components/cards/cardDetails.jade
   unless currentBoard.isTemplatesBoard
     if currentUser.isBoardAdmin
       hr
@@ -736,107 +832,37 @@ template(name="boardMenuPopup")
             | {{_ 'archive-board'}}
 
 template(name="exportBoardPopup")
-  ul.pop-over-list
-    li
-      a.download-json-link(href="{{exportUrl}}", download="{{exportJsonFilename}}")
-        i.fa.fa-upload
-        | {{_ 'export'}} / JSON
-    li
-      a.download-json-link(href="{{exportUrlNoAttachments}}", download="{{exportJsonFilename}}")
-        i.fa.fa-upload
-        | {{_ 'export'}} / JSON ({{_ 'export-board-without-attachments'}})
-    li
-      a(href="{{exportUrlExcel}}", download="{{exportFilenameExcel}}")
-        i.fa.fa-upload
-        | {{_ 'export'}} / Excel
-    li
-      a(href="{{exportCsvUrl}}", download="{{exportCsvFilename}}")
-        i.fa.fa-upload
-        | {{_ 'export'}} / CSV (,)
-    li
-      a(href="{{exportScsvUrl}}", download="{{exportCsvFilename}}")
-        i.fa.fa-upload
-        | {{_ 'export'}} / CSV (;)
-    li
-      a(href="{{exportTsvUrl}}", download="{{exportTsvFilename}}")
-        i.fa.fa-upload
-        | {{_ 'export'}} / TSV
-    li
-      a(href="{{exportUrlPDF}}", download="{{exportFilenamePDF}}")
-        i.fa.fa-upload
-        | {{_ 'export'}} / PDF
-    li
-      a(href="{{exportUrlKanboard}}", download="{{exportFilenameKanboard}}")
-        i.fa.fa-upload
-        | {{_ 'export'}} / JSON / Kanboard
-    li
-      a(href="{{exportUrlExternal 'trello'}}", download="{{exportFilenameExternal 'trello'}}")
-        i.fa.fa-upload
-        | {{_ 'export'}} / JSON / Trello
-    li
-      a(href="{{exportUrlExternal 'jira'}}", download="{{exportFilenameExternal 'jira'}}")
-        i.fa.fa-upload
-        | {{_ 'export'}} / JSON / Jira
-    li
-      a(href="{{exportUrlExternal 'deck'}}", download="{{exportFilenameExternal 'deck'}}")
-        i.fa.fa-upload
-        | {{_ 'export'}} / JSON / NextCloud Deck
-    li
-      a(href="{{exportUrlExternal 'openproject'}}", download="{{exportFilenameExternal 'openproject'}}")
-        i.fa.fa-upload
-        | {{_ 'export'}} / JSON / OpenProject
-    li
-      a(href="{{exportUrlExternal 'github'}}", download="{{exportFilenameExternal 'github'}}")
-        i.fa.fa-upload
-        | {{_ 'export'}} / JSON / GitHub
-    li
-      a(href="{{exportUrlExternal 'gitlab'}}", download="{{exportFilenameExternal 'gitlab'}}")
-        i.fa.fa-upload
-        | {{_ 'export'}} / JSON / GitLab
-    li
-      a(href="{{exportUrlExternal 'gitea'}}", download="{{exportFilenameExternal 'gitea'}}")
-        i.fa.fa-upload
-        | {{_ 'export'}} / JSON / Gitea
-    li
-      a(href="{{exportUrlExternal 'forgejo'}}", download="{{exportFilenameExternal 'forgejo'}}")
-        i.fa.fa-upload
-        | {{_ 'export'}} / JSON / Forgejo
-    li
-      a(href="{{exportUrlExternal 'asana'}}", download="{{exportFilenameExternal 'asana'}}")
-        i.fa.fa-upload
-        | {{_ 'export'}} / JSON / Asana
-    li
-      a(href="{{exportUrlExternal 'zenkit'}}", download="{{exportFilenameExternal 'zenkit'}}")
-        i.fa.fa-upload
-        | {{_ 'export'}} / JSON / Zenkit
-    li
-      a.html-export-board
-        i.fa.fa-archive
-        | {{_ 'export'}} / HTML
-    li
-      a.js-export-dependencies-json
-        i.fa.fa-link
-        | {{_ 'export'}} / {{_ 'card-dependencies'}} / JSON
-    li
-      a.js-export-dependencies-svg
-        i.fa.fa-link
-        | {{_ 'export'}} / {{_ 'card-dependencies'}} / SVG
+  //- The same popup as Export swimlane / list / card, with the same panes and
+    the same formats table - a board just happens to be the widest scope, so the
+    entries marked `scopes: ['board']` (HTML, the dependency graph, CSV, and the
+    exports written for another tool) appear here and nowhere else.
+    client/components/boards/exportScope.js
+  +exportScopeBody(title=boardTitle)
+
+template(name="importBoardIntoPopup")
+  //- Import INTO this board - the same body in its import mode. (All Boards has
+    an "Import board" of its own, which makes a NEW board from a file; this one
+    adds to the board you are looking at.)
+  +exportScopeBody(title=boardTitle mode="import")
 
 template(name="labelsWidget")
   .board-widget.board-widget-labels
-    h3
+    //- Same caret as Members above: folding Labels hides the labels under it.
+    h3.js-toggle-fold(data-fold="labels" role="button" tabindex="0")
+      i.fa(class="{{foldCaret 'labels'}}")
       i.fa.fa-tag
       | {{_ 'labels'}}
-    .board-widget-content
-      each currentBoard.labels
-          a.card-label(class="{{labelColorClass color}}" style="{{labelColorStyle color}}"
-            class="{{#if currentUser.isNotCommentOnly}}{{#if currentUser.isNotWorker}}js-label{{/if}}{{/if}}")
-            span.card-label-name
-              +viewer
-                = name
-      if currentUser.isBoardAdmin
-        a.card-label.add-label.js-add-label(title="{{_ 'label-create'}}")
-          i.fa.fa-plus
+    if isFoldOpen 'labels'
+      .board-widget-content
+        each currentBoard.labels
+            a.card-label(class="{{labelColorClass color}}" style="{{labelColorStyle color}}"
+              class="{{#if currentUser.isNotCommentOnly}}{{#if currentUser.isNotWorker}}js-label{{/if}}{{/if}}")
+              span.card-label-name
+                +viewer
+                  = name
+        if currentUser.isBoardAdmin
+          a.card-label.add-label.js-add-label(title="{{_ 'label-create'}}")
+            i.fa.fa-plus
 
 template(name="memberPopup")
   .board-member-menu
@@ -892,6 +918,8 @@ template(name="mapImportedMemberPopup")
 
 template(name="removeMemberPopup")
   p {{_ 'remove-member-pop' name=user.profile.fullname username=user.username boardTitle=board.title}}
+  if isSandstorm
+    p.warning {{_ 'sandstorm-remove-member-warning'}}
   button.js-confirm.negate.full(type="submit") {{_ 'remove-member'}}
 
 template(name="leaveBoardPopup")
@@ -969,7 +997,11 @@ template(name="addMemberPopup")
             span.full-name
               = profile.fullname
               | (<span class="username">{{username}}</span>)
-    button.js-email-invite.primary.full {{_ 'email-invite'}}
+    //- A Sandstorm identity must enter through grain sharing; creating a local
+      email/password account here would produce an account that cannot use the
+      grain's header-based login. Existing grain identities remain searchable.
+    unless isSandstorm
+      button.js-email-invite.primary.full {{_ 'email-invite'}}
 
 
 template(name="addMemberPopupTest")

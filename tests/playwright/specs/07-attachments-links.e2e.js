@@ -12,7 +12,9 @@
  */
 
 const path = require('path');
+const fs = require('fs');
 const { test, expect } = require('../fixtures');
+const db = require('../helpers/db');
 const BoardPage = require('../pages/BoardPage');
 const CardPage = require('../pages/CardPage');
 
@@ -48,6 +50,73 @@ test.describe('Attachments & links', () => {
     const fileInput = boardPage.locator('.js-pop-over input[type=file], input.js-attach-file');
     const count = await fileInput.count();
     expect(count).toBeGreaterThanOrEqual(1);
+  });
+
+  test('the attachment overlay has an isolated Office preview surface', async ({
+    boardPage,
+    board,
+  }) => {
+    const bp = new BoardPage(boardPage);
+    const cp = new CardPage(boardPage);
+    const [listA] = board.listIds;
+
+    await bp.clickCard(listA, 'Alpha Card');
+    await cp.waitForOpen();
+
+    const viewer = boardPage.locator('#office-viewer');
+    await expect(viewer).toHaveCount(1);
+    await expect(viewer).toHaveClass(/hidden/);
+    await expect(viewer.locator('iframe, object, embed')).toHaveCount(0);
+  });
+
+  test('stored HTML is forced to a safe download on the original Meteor-Files route', async ({
+    boardPage,
+    board,
+  }) => {
+    const attachmentId = `responsepolicy${Date.now()}`;
+    // build.sh mounts the running server's files directory at /wekan-files in
+    // the browser container. A direct local run keeps the bundle fallback.
+    const filesPath = process.env.WEKAN_FILES_PATH || path.join(
+      __dirname, '..', '..', '..', '.build', 'bundle', 'files');
+    const storedPath = path.join(filesPath, 'attachments', attachmentId);
+    const storedBytes = Buffer.from('legacy attachment bytes');
+
+    // Meteor-Files evaluates its own `protected` callback before invoking the
+    // storage strategy. A public board reaches the response backstop without a
+    // private DDP resume-token transport obscuring what this test exercises.
+    db.updateOne('boards', { _id: board.boardId }, { $set: { permission: 'public' } });
+    fs.mkdirSync(path.dirname(storedPath), { recursive: true });
+    fs.writeFileSync(storedPath, storedBytes);
+    db.insertOne('attachments', {
+      _id: attachmentId,
+      name: 'payload.html',
+      size: storedBytes.length,
+      type: 'text/html',
+      meta: {
+        boardId: board.boardId,
+        cardId: db.findCardIdByTitle({ boardId: board.boardId, title: 'Alpha Card' }),
+      },
+      versions: {
+        original: {
+          path: storedPath,
+          name: 'payload.html',
+          size: storedBytes.length,
+          type: 'text/html',
+          extension: 'html',
+          storage: 'fs',
+        },
+      },
+    });
+
+    const response = await boardPage.request.get(
+      `/cdn/storage/attachments/${attachmentId}/original/${attachmentId}.html`,
+    );
+    expect(response.status()).toBe(200);
+    expect(response.headers()['content-type']).toContain('application/octet-stream');
+    expect(response.headers()['content-disposition']).toMatch(/^attachment;/);
+    expect(response.headers()['x-content-type-options']).toBe('nosniff');
+    expect(response.headers()['content-security-policy']).toContain('sandbox');
+    fs.unlinkSync(storedPath);
   });
 
   test('card description can contain a link that renders as a clickable anchor', async ({ boardPage, board }) => {
@@ -119,7 +188,7 @@ test.describe('Attachments & links', () => {
     expect(errors).toHaveLength(0);
   });
 
-  test('copy-link button copies a valid URL to clipboard (or href is correct)', async ({ boardPage, board }) => {
+  test('copy-link row copies a valid URL to the clipboard', async ({ boardPage, board }) => {
     const bp = new BoardPage(boardPage);
     const cp = new CardPage(boardPage);
     const [listA] = board.listIds;
@@ -127,17 +196,15 @@ test.describe('Attachments & links', () => {
     await bp.clickCard(listA, 'Alpha Card');
     await cp.waitForOpen();
 
-    const linkBtn = cp.copyLinkButton();
-    const href = await linkBtn.getAttribute('href');
-    if (href) {
-      // WeKan card URL format: /b/{boardId}/{slug}/card{cardId}
-      // (The template helper originRelativeUrl produces this path)
-      expect(href).toMatch(/\/b\/[^/]+\/[^/]+\/card/);
-    } else {
-      // Button may use clipboard API; verify it doesn't throw
-      await linkBtn.click({ force: true });
-      await boardPage.waitForTimeout(300);
-      // No JS errors should occur
-    }
+    // It is a row of the card's actions MENU now, not an `<a href>` in the
+    // title header, and it copies with JavaScript - so the clipboard is where
+    // the answer is, and it holds the ABSOLUTE url because that is what gets
+    // pasted into a chat. docs/Features/Page/Board-Item-Links.md
+    //
+    // Asserted rather than tolerated: the old test accepted "no href, so just
+    // click it and check nothing threw", which would have passed even if the
+    // button copied nothing at all.
+    const copied = await cp.copyLink();
+    expect(copied).toMatch(/^https?:\/\/[^/]+\/b\/[^/]+\/[^/]+\/[^/]+$/);
   });
 });

@@ -39,7 +39,9 @@ test('#6506: import shows the map-members step and builds the mapping from it', 
 test('#6506: unmapped Trello members become virtual users (both JSON and API import)', () => {
   const tc = read('models/trelloCreator.js');
   assert.ok(/async createPlaceholderUsers\(board\)/.test(tc), 'trelloCreator creates placeholder users');
-  assert.ok(/await this\.createPlaceholderUsers\(board\)/.test(tc), 'create() runs it before building the board');
+  assert.ok(tc.indexOf("{ method: 'createPlaceholderUsers' }") <
+    tc.indexOf("{ method: 'createBoardAndLabels', createsBoard: true }"),
+  'the pipeline runs it before building the board');
   // Unmapped members map to an existing user by username, else a virtual placeholder.
   assert.ok(/if \(this\.members\[member\.id\]\) continue;/.test(tc), 'already-mapped members are kept');
   assert.ok(/ReactiveCache\.getUser\(\{ username: member\.username \}\)/.test(tc), 'auto-maps by username');
@@ -87,9 +89,10 @@ test('#6508: the board publishes authenticationMethod so the member popup can de
   const pub = read('server/publications/boards.js');
   // The board composite's member-user cursor must publish authenticationMethod, or
   // isImportedMember() reads undefined and the in-board "Remap User" action never shows.
-  const at = pub.indexOf("'profile.fullname': 1");
-  assert.ok(at > -1, 'board member user fields exist');
-  const block = pub.slice(at, at + 800);
+  const marker = '// #6508: needed so the board member popup can offer "Remap User"';
+  const at = pub.indexOf(marker);
+  assert.ok(at > -1, 'board member user fields document the imported-member field');
+  const block = pub.slice(at, at + 700);
   assert.ok(/authenticationMethod: 1/.test(block),
     'the board member user fields must include authenticationMethod (for in-board Remap)');
 });

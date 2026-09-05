@@ -9,31 +9,61 @@ template(name="header")
     //- which forwards it to whatever actually scrolls. Without it the page-level
     //- dragscroll on the body element would scroll the page at the same time.
     #header-quick-access.nodragscroll(class="{{themeColorClass}}" role="navigation" aria-label="{{_ 'all-boards'}}")
-      // Home icon - always at left side of logo
+      //- Home icon - always at left side of logo. The house is the link to All
+        Boards; the TEXT beside it is the page you are on, which on a board is
+        the board's title. It used to say "All Boards" on every page, so the one
+        bar that is always on screen named a place you were not.
+        models/lib/pageTitles.js, docs/Features/Page/Header.md
       span.home-icon.allBoards
-        a(href="{{pathFor 'home'}}")
+        //- `header-home-link`: the rules that collapse this link's LABEL on a
+          narrow screen were written as `.home-icon a`, which also matched the
+          rename pencil beside it - an anchor in the same box - and collapsed
+          its icon to nothing. They name the link itself now.
+        a.header-home-link(href="{{pathFor 'home'}}" title="{{_ 'all-boards'}}")
           i.fa.fa-home
-          | {{_ 'all-boards'}}
+        //- The ROOT only - "All Boards", "Admin Panel" - with the whole path
+          in the tooltip. The path is what the page is, but it grows: a
+          workspace nests as deep as its tree does, and this bar is the one
+          strip always on screen and already short of width. The root names the
+          place and the tooltip carries the rest.
+          client/components/main/header.js
+        //- The board's NAME is the button that renames it: clicking the title
+          text opens the same "Change title" popup the pencil beside it used to
+          open, so there is one thing to click instead of a word and an icon
+          that do the same job. Board admins only - everybody else gets the
+          plain title. The `is-editable` class also gives the element a minimum
+          width, so a board whose title is EMPTY still has an area to click.
+        span.header-page-title(title="{{headerTitleFullPath}}"
+          class="{{#if canEditBoardTitle}}js-edit-board-title is-editable{{/if}}")
+          if headerTitleKey
+            | {{_ headerTitleKey}}
+          else
+            = headerTitleText
 
       // Logo - visible; on mobile constrained by CSS
       unless currentSetting.hideLogo
         if currentSetting.customTopLeftCornerLogoImageUrl
           if currentSetting.customTopLeftCornerLogoLinkUrl
-            a(href="{{currentSetting.customTopLeftCornerLogoLinkUrl}}" alt="{{currentSetting.productName}}" title="{{currentSetting.productName}}")
-              img(src="{{currentSetting.customTopLeftCornerLogoImageUrl}}" height="{{#if currentSetting.customTopLeftCornerLogoHeight}}#{currentSetting.customTopLeftCornerLogoHeight}{{else}}27{{/if}}" width="auto" margin="0" padding="0")
+            a.header-logo(href="{{currentSetting.customTopLeftCornerLogoLinkUrl}}" alt="{{currentSetting.productName}}" title="{{currentSetting.productName}}")
+              img(src="{{currentSetting.customTopLeftCornerLogoImageUrl}}" alt="{{currentSetting.productName}}" height="{{#if currentSetting.customTopLeftCornerLogoHeight}}#{currentSetting.customTopLeftCornerLogoHeight}{{else}}27{{/if}}" width="auto" margin="0" padding="0")
           unless currentSetting.customTopLeftCornerLogoLinkUrl
-            img(src="{{currentSetting.customTopLeftCornerLogoImageUrl}}" height="{{#if currentSetting.customTopLeftCornerLogoHeight}}#{currentSetting.customTopLeftCornerLogoHeight}{{else}}27{{/if}}" width="auto" margin="0" padding="0" alt="{{currentSetting.productName}}" title="{{currentSetting.productName}}")
+            img.header-logo(src="{{currentSetting.customTopLeftCornerLogoImageUrl}}" height="{{#if currentSetting.customTopLeftCornerLogoHeight}}#{currentSetting.customTopLeftCornerLogoHeight}{{else}}27{{/if}}" width="auto" margin="0" padding="0" alt="{{currentSetting.productName}}" title="{{currentSetting.productName}}")
         unless currentSetting.customTopLeftCornerLogoImageUrl
-          div#headerIsSettingDatabaseCallDone
-            img(src="{{pathFor '/logo-header.png'}}" alt="{{currentSetting.productName}}" title="{{currentSetting.productName}}")
+          //- `header-logo` on all three branches - a custom logo that links, one
+            that does not, and the stock one - so the bar can space the logo the
+            same way whichever is drawn. docs/Features/Page/Header.md
+          div#headerIsSettingDatabaseCallDone.header-logo
+            img(src="{{pathFor '/logo-header.png'}}" alt="{{headerLogoAlt}}" title="{{headerLogoAlt}}")
 
       // Mobile/desktop mode toggle (swapped with zoom)
       .mobile-mode-toggle
         a.board-header-btn.js-mobile-mode-toggle(title="{{_ 'mobile-desktop-toggle'}}" class="{{#if mobileMode}}mobile-active{{else}}desktop-active{{/if}}")
-          i.mobile-icon(class="{{#if mobileMode}}active{{/if}}")
-            i.fa.fa-mobile
-          i.desktop-icon(class="{{#unless mobileMode}}active{{/unless}}")
-            i.fa.fa-desktop
+          if mobileMode
+            i.mobile-icon
+              i.fa.fa-mobile
+          else
+            i.desktop-icon
+              i.fa.fa-desktop
 
       // Drag handles toggle - between zoom and mobile mode toggle
       a.board-header-btn.js-toggle-desktop-drag-handles(title="{{_ 'show-desktop-drag-handles'}}")
@@ -43,70 +73,157 @@ template(name="header")
         unless isShowDesktopDragHandles
           i.fa.fa-ban
 
-      if isMiniScreen
-        ul.header-quick-access-list
+      //- Everything from here on hugs the END of the bar - the right edge in a
+        left-to-right language, the LEFT edge in a right-to-left one. It is one
+        `margin-inline-start: auto` on this wrapper, which is a LOGICAL
+        property, so the mirroring is what the browser already does for the
+        writing direction rather than a second rule to keep in step.
+
+        The items before it - the home link and page title, the logo, the
+        phone/desktop toggle and the drag-handles toggle - stay at the start.
+      .header-quick-access-end
+        //- Starred boards, as a DROPDOWN rather than a row of links.
+          The bar listed every starred board inline, which is the widest thing in
+          it and grows with the number of boards you star. It is one button now,
+          laid out like the view menu beside it - a caret, then the COUNT of
+          them - and the names are in the popup it opens.
+
+          No star of its own: the button beside it is a star, and two stars in a
+          row are read as one control that has somehow been drawn twice. The
+          count is what this button is about, and the caret says it opens.
+
+          On a phone the popup is full width, which body.mobile-mode does for
+          every pop-over; nothing here has to ask for it.
+        //- One GROUP: the two adjacent buttons are about the same thing - how
+          many items you have starred, and whether this one is among them.
+        .header-star-group
+          a.board-header-btn.js-open-starred-boards(title="{{_ 'allboards.starred'}}")
+            i.fa.fa-caret-down
+            span.board-star-counter {{starredBoardsCount}}
+
+          //- ...and whether THIS one is one of them - the third control of the
+            group, so it reads caret, count, star, the way a browser's
+            bookmarks menu does.
+            On a BOARD that is the board's own star, which also carries the
+            count of members who starred it.
+            client/components/boards/boardHeader.jade
+            On every other page it stars THE PAGE. All Boards / Remaining, a
+            workspace, Admin Panel / Settings / Version - each of those has had
+            its own address since the All Boards and Admin Panel URLs landed,
+            so each of them is a place that can be kept.
+            TWO conditions rather than if/else: a comment between an `if` and
+            its `else` is a jade parse error, and `isPageStarrable` already
+            answers false on a board. docs/Features/Board/Starred.md
+          if isBoardPage
+            +boardStarButton
+          if isPageStarrable
+            a.board-header-btn.js-star-page(class="{{#if isCurrentPageStarred}}is-active{{/if}}"
+              title="{{#if isCurrentPageStarred}}{{_ 'click-to-unstar-page'}}{{else}}{{_ 'click-to-star-page'}}{{/if}}")
+              i.fa(class="fa-star{{#unless isCurrentPageStarred}}-o{{/unless}}")
+
+        //- On a phone, INSIDE a list, the bar still shows that board's lists:
+          that is a different thing from the starred boards, and it is what tells
+          you where you are while you swipe between lists.
+        if isMiniScreen
           if currentList
-            each currentBoard.lists
-              li(class="{{#if $.Session.equals 'currentList' _id}}current{{/if}}")
-                a.js-select-list
-                  +viewer
-                    = title
-          else
-            each currentUser.starredBoards
-              li(class="{{#if $.Session.equals 'currentBoard' _id}}current{{/if}}")
-                a(href="{{pathFor 'board' id=_id slug=slug}}")
-                  +viewer
-                    = title
-        #header-new-board-icon
-      else
-        ul.header-quick-access-list
-          //li
-          //
-            a(href="{{pathFor 'public'}}")
-          //
-              span.fa.fa-globe
-          //
-              | {{_ 'public'}}
-          each currentUser.starredBoards
-            li(class="{{#if $.Session.equals 'currentBoard' _id}}current{{/if}}")
-              a(href="{{pathFor 'board' id=_id slug=slug}}")
-                +viewer
-                  = title
-          else
-            li.current(title="{{_ 'quick-access-description'}}")
-            | {{_ 'quick-access-description'}}
-      //
-        Hide duplicate create board button,
-      //
-        because it did not show board templates correctly.
-      //a#header-new-board-icon.js-create-board
-      //
-        i.fa.fa-plus(title="Create a new board")
+            ul.header-quick-access-list
+              each currentBoard.lists
+                li(class="{{#if $.Session.equals 'currentList' _id}}current{{/if}}")
+                  a.js-select-list
+                    +viewer
+                      = title
+          #header-new-board-icon
+        //- The top-bar Create Board control shares the same form and board-template
+          picker as Add Board on the overview. #3070
+        a#header-new-board-icon.board-header-btn.js-create-board(title="{{_ 'add-board'}}")
+          i.fa.fa-plus
 
-      // Zoom controls (swapped with the mobile/desktop toggle)
-      .zoom-controls
-        span.zoom-level.js-zoom-level-click(title="{{_ 'click-to-change-zoom'}}")
-          span.zoom-display {{zoomLevel}}%
-          input.zoom-input.js-zoom-input(type="number" value=zoomLevel min="50" max="300" step="10" style="display: none;")
+        //- The "100%" zoom control that used to sit here is REMOVED. It scaled the
+          board with a CSS transform, which never worked properly - and WeKan
+          already has a font-size setting (Member Settings / Change Font), which is
+          what people actually wanted from it. Removed rather than left in place as
+          a control that does nothing.
 
-      // Notifications
-      +notifications
+        //- Everything the board's second header bar held, as icons, left of the
+          bell. client/components/boards/boardHeader.jade
+        if isBoardPage
+          +boardHeaderButtons
 
-      if currentSetting.customHelpLinkUrl
-        #header-help
-          a(href="{{currentSetting.customHelpLinkUrl}}", title="{{_ 'help'}}", target="_blank", rel="noopener noreferrer")
-            i.fa.fa-question-circle
+        //- All Boards' four controls - Sort, Search, Multi-Selection, Boards in
+          Archive - as icons, left of the bell, exactly where a board's own
+          controls are. client/components/boards/boardsList.jade
+        if isAllBoardsPage
+          +allBoardsHeaderButtons
 
-      +headerUserBar
+        //- The view menu of whatever page has one - Swimlanes / Lists / Calendar
+          / Gantt / Table / Stats on a board, Lists / Table on All Boards. A view
+          menu says what you are looking AT, so it belongs beside the page's name
+          in the bar that is always on screen, not in a second bar or behind a
+          panel. docs/Features/Page/Header.md
+        if isBoardPage
+          +boardViewMenu
+        else if isAllBoardsPage
+          +allBoardsViewMenu
 
+        //- The Admin Panel's four tabs, to the LEFT of the bell. Drawn only in
+          the Admin Panel: they are navigation between its four pages.
+          client/components/settings/settingHeader.jade
+        if isAdminPanel
+          +adminPanelTabs
+
+        // Notifications
+        +notifications
+
+        //- Everything that belongs to YOU rather than to the page - the divider
+          that separates the two, help, your account, and the sidebar toggle
+          behind its own divider. This group is aligned to the END of the bar:
+          the right edge in a left-to-right language, the LEFT edge in a
+          right-to-left one, which one `margin-inline-start: auto` does by
+          itself because it is a LOGICAL property.
+
+          It is a box rather than `display: contents`, unlike the page's own
+          button groups, and deliberately: these five belong together, and an
+          avatar left on the first row with its hamburger on the second is worse
+          than the whole cluster moving down at once. docs/Features/Page/Header.md
+        .header-account-group
+          //- The divider is the seam. Everything before it belongs to the PAGE -
+            its controls, its view menu, the panel's tabs. The bar runs them
+            together otherwise, and the run of icons reads as one list of
+            unrelated things.
+          .separator
+
+          if currentSetting.customHelpLinkUrl
+            #header-help
+              a(href="{{currentSetting.customHelpLinkUrl}}", title="{{_ 'help'}}", target="_blank", rel="noopener noreferrer")
+                i.fa.fa-question-circle
+
+          +headerUserBar
+
+          //- The divider and the sidebar hamburger, at the end of the username.
+            They were the last item of the second header bar; they are here
+            because this bar is the one that is always on screen, and because
+            what the hamburger opens - the right sidebar - is now where a page
+            keeps its controls.
+          if hasSidebar
+            .board-header-btns.header-sidebar-toggle
+              .separator
+              a.board-header-btn.js-toggle-page-sidebar(title="{{_ 'sidebar-open'}} {{_ 'or'}} {{_ 'sidebar-close'}}")
+                i.fa.fa-bars
+
+  //- The second bar renders ONLY where a page still has one. Most pages have
+    none now - their title is in the bar above and their controls are in a
+    sidebar - and `#header` is a coloured block with a height of its own, so
+    without this it painted a tall empty strip under the first bar on every one
+    of them. docs/Features/Page/Header.md
   //- See the note above: dragging this bar is owned by headerDragscroll.js.
-  #header.nodragscroll(class="{{themeColorClass}}")
-    //-
-      The main bar is a colorful bar that provide all the meta-data for the
-      current page. This bar is contextual based.
-      If the user is not connected we display "sign in" and "log in" buttons.
-    #header-main-bar(class="{{#if wrappedHeader}}wrapper{{/if}}")
-      +Template.dynamic(template=headerBar)
+  if headerBar
+    #header.nodragscroll(class="{{themeColorClass}}")
+      //-
+        The main bar is a colorful bar that provide all the meta-data for the
+        current page. This bar is contextual based.
+        If the user is not connected we display "sign in" and "log in" buttons.
+      #header-main-bar(class="{{#if wrappedHeader}}wrapper{{/if}}")
+        +Template.dynamic(template=headerBar)
 
   if appIsOffline
     +offlineWarning
@@ -132,3 +249,41 @@ template(name="offlineWarning")
       if canReconnectNow
         br
         a.app-try-reconnect {{_ 'app-try-reconnect'}}
+
+//- The starred boards, by name. This is what the first header bar used to list
+//- inline; it is a popup now, opened by the caret+star button, so the bar stays
+//- one row however many boards you star.
+//-
+//- Shaped like boardChangeViewPopup - a `ul.pop-over-list` of links, with a
+//- check on the one you are looking at - because it is the same kind of menu
+//- and opens from the same kind of button. On a phone it is full width, which
+//- body.mobile-mode does for every pop-over. docs/Features/Page/Header.md
+template(name="starredBoardsPopup")
+  ul.pop-over-list
+    each currentUser.starredBoards
+      li
+        a(href="{{pathFor 'board' id=_id slug=slug}}")
+          i.fa.fa-star
+          +viewer
+            = title
+          if $.Session.equals 'currentBoard' _id
+            i.fa.fa-check
+  //- ...then the starred PAGES, under their own heading, because they are a
+    different kind of destination and a flat list of both would leave the reader
+    working out which rows are boards.
+    The link's text is the page's TITLE - the words its browser tab shows - so
+    a row says where it goes rather than making a path be read.
+    Nothing is drawn when there are none: an empty heading is a promise of rows
+    that are not there.
+  if currentUser.starredPages.length
+    hr
+    div.pop-over-list-title {{_ 'starred-pages'}}
+    ul.pop-over-list
+      each currentUser.starredPages
+        li
+          a(href="{{url}}")
+            i.fa.fa-star
+            span {{title}}
+  unless hasAnyStarred
+    ul.pop-over-list
+      li.no-items-message {{_ 'quick-access-description'}}

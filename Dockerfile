@@ -1,21 +1,35 @@
-FROM ubuntu:26.04
+# debian:trixie (Debian 13), not ubuntu:26.04: Ubuntu publishes no linux/386
+# image, which stopped the image from ever building for i386. Debian ships every
+# arch this image targets - amd64, arm64, 386, arm/v7, ppc64le, riscv64, s390x -
+# so ONE base covers them all, and it is the same base WeKan's per-arch .zip
+# bundles are already built in (releases/... build-extra-arches).
+#
+# The ONE it does not ship is arm/v6: debian:trixie's manifest list has arm/v5
+# and arm/v7 and nothing between them. That matters because containerd treats a
+# LOWER ARM variant as compatible, so a linux/arm/v6 request does not fail - it
+# quietly resolves to the arm/v5 (armel, SOFT-float) image, whose loader and
+# glibc cannot run the hard-float node-armv6 in the armv6 bundle. The docker job
+# therefore asks this base what it publishes and drops a platform it lacks; see
+# docs/Platforms/FOSS/Container/Docker/CPU-platforms.md.
+FROM debian:trixie
 LABEL maintainer="wekan"
-LABEL org.opencontainers.image.ref.name="ubuntu"
-LABEL org.opencontainers.image.version="26.04"
-LABEL org.opencontainers.image.source="https://github.com/wekan/wekan"
+LABEL org.opencontainers.image.ref.name="debian"
+LABEL org.opencontainers.image.version="trixie"
+LABEL org.opencontainers.image.source="https://github.com/wekan/wekan-gantt-gpl"
 
 # TARGETARCH and TARGETVARIANT are automatically provided by Docker Buildx
 ARG TARGETARCH
 ARG TARGETVARIANT
-ARG VERSION=10.49
+ARG VERSION=11.49
 ARG DEBIAN_FRONTEND=noninteractive
 
 ENV BUILD_DEPS="apt-utils gnupg wget bzip2 g++ curl libarchive-tools build-essential git ca-certificates python3 unzip"
 
 ENV \
     DEBUG=false \
-    NODE_VERSION=v24.18.0 \
-    METEOR_RELEASE=METEOR@3.5-rc.2 \
+    DDP_TRANSPORT=sockjs \
+    NODE_VERSION=v24.20.0 \
+    METEOR_RELEASE=METEOR@3.5.2-beta.0 \
     USE_EDGE=false \
     NPM_VERSION=11.12.1 \
     SRC_PATH=./ \
@@ -169,6 +183,38 @@ ENV \
     MONGO_PASSWORD_FILE="" \
     S3_SECRET_FILE=""
 
+# Where this image's Node.js comes from is decided by the SAME script the .zip
+# bundles and the snap use - official nodejs.org, then unofficial-builds, then
+# wekan/node-patches - so the image and the bundle of the same architecture can
+# never end up on Node.js from different places. It is copied in rather than
+# reimplemented here; a second copy of that order would drift from the first.
+COPY --chmod=755 releases/resolve-node-source.sh /tmp/resolve-node-source.sh
+# It asks nodejs.org and github.com which builds exist, through releases/fetch.sh
+# - which retries a 503 instead of reading it as "that build does not exist".
+# The two travel together: without this line the resolve step dies on the first
+# lookup. tests/releaseDownloads.test.cjs pins the pair.
+COPY --chmod=755 releases/fetch.sh /tmp/fetch.sh
+# The bundle's `npm install` leaves node-gyp's whole tree - 83 of the 120
+# packages in programs/server/node_modules - in a bundle that compiles nothing at
+# run time, and a scan of the published image reads it as what it is. The same
+# script runs in every per-arch leg of release-all.yml, so the .zip bundles and
+# this image are pruned identically. tests/imageBuildOnlyModules.test.cjs pins it.
+COPY --chmod=755 releases/prune-build-only-modules.mjs /tmp/prune-build-only-modules.mjs
+# Its companion, and its manifest: the npm packages Meteor's own packages bundle,
+# which nothing in package.json can reach. The .zip is built with these already
+# applied; what this run has to redo is the part `npm install` puts back.
+COPY --chmod=755 releases/bump-bundle-npm-deps.mjs /tmp/bump-bundle-npm-deps.mjs
+COPY --chmod=644 releases/bundle-npm-security-bumps.json /tmp/bundle-npm-security-bumps.json
+# And the third of the same kind: WeKan talks DDP over sockjs on every platform,
+# so no bundle carries uWebSockets.js. ddp-server requires that module only
+# inside the uws transport's setup(), which a sockjs server never calls, and it
+# is 121M of prebuilt binaries for OS/CPU/ABI combinations one machine cannot
+# use. The entrypoint coerces DDP_TRANSPORT=uws to sockjs, so an existing
+# compose file that asks for uws keeps working rather than crash-looping.
+COPY --chmod=755 releases/bundle-trim.mjs /tmp/bundle-trim.mjs
+# Its companion: the same idea applied to programs/server/npm/node_modules.
+COPY --chmod=755 releases/prune-unreachable-npm.mjs /tmp/prune-unreachable-npm.mjs
+
 RUN <<EOR
 set -o xtrace
 # Fail hard on any error so a missing release zip / failed download can never
@@ -185,35 +231,92 @@ apt-get update --assume-yes
 apt-get upgrade --assume-yes
 apt-get install --assume-yes --no-install-recommends ${BUILD_DEPS}
 
-# Multi-arch mapping: Docker TARGETARCH -> Node.js arch name + WeKan bundle name.
-# amd64/arm64 have MongoDB Community; ppc64le/s390x/riscv64 have no MongoDB server
-# and ship FerretDB v1 instead (the ferretdb binary is baked into their .zip and
-# started by wekan-entrypoint.sh). riscv64's Node.js 24 comes from
-# unofficial-builds.nodejs.org (nodejs.org ships no riscv64). armv7l is excluded:
-# there is no Node.js 24 build for it anywhere.
-NODE_BASE="official"
+# Multi-arch mapping: Docker TARGETARCH -> WeKan's own platform name, which is
+# both the bundle .zip's name and what resolve-node-source.sh is asked about.
+# amd64/arm64 have MongoDB Community; ppc64le/s390x/riscv64 have no MongoDB
+# server and ship FerretDB v1 instead (the ferretdb binary is baked into their
+# .zip and started by wekan-entrypoint.sh). Debian's 32-bit ARM port is armhf
+# (ARMv7, VFPv3-D16), which is what linux/arm/v7 runs.
 case "${TARGETARCH}" in
-    "amd64")   NODE_ARCH="x64"     WEKAN_ARCH="amd64"   ;;
-    "arm64")   NODE_ARCH="arm64"   WEKAN_ARCH="arm64"   ;;
-    "ppc64le") NODE_ARCH="ppc64le" WEKAN_ARCH="ppc64le" ;;
-    "s390x")   NODE_ARCH="s390x"   WEKAN_ARCH="s390x"   ;;
-    "riscv64") NODE_ARCH="riscv64" WEKAN_ARCH="riscv64" NODE_BASE="unofficial" ;;
-    *) echo "Unsupported architecture: ${TARGETARCH}"; exit 1 ;;
+    "amd64")   WEKAN_ARCH="amd64"   ;;
+    "arm64")   WEKAN_ARCH="arm64"   ;;
+    "ppc64le") WEKAN_ARCH="ppc64le" ;;
+    "s390x")   WEKAN_ARCH="s390x"   ;;
+    "riscv64") WEKAN_ARCH="riscv64" ;;
+    "386")     WEKAN_ARCH="i386"    ;;
+    # BOTH linux/arm/v6 and linux/arm/v7 arrive here as TARGETARCH=arm - the CPU
+    # generation is in TARGETVARIANT, not in TARGETARCH - so this branch MUST read
+    # the variant. Mapping "arm" straight to armhf, as it did, would hand an ARMv6
+    # board (Raspberry Pi 1, Zero) the armhf bundle, which is built to Debian's
+    # ARMv7-A baseline and whose instructions that board cannot execute.
+    "arm")
+        case "${TARGETVARIANT}" in
+            "v6")    WEKAN_ARCH="armv6" ;;
+            # v7, and an unset variant, are Debian's armhf port: ARMv7-A,
+            # VFPv3-D16 hard-float. That is what linux/arm/v7 runs.
+            "v7"|"") WEKAN_ARCH="armhf" ;;
+            # v5 is armel: FerretDB and the MongoDB tools publish it (they are Go),
+            # but Node.js does not exist for ARMv5 at all, so there is no bundle to
+            # put in an image and refusing is the only honest answer.
+            *) echo "Unsupported 32-bit ARM variant: ${TARGETVARIANT} (only v6 and v7 have a WeKan bundle)"; exit 1 ;;
+        esac ;;
+    *) echo "Unsupported architecture: ${TARGETARCH}${TARGETVARIANT:+/${TARGETVARIANT}}"; exit 1 ;;
 esac
 
-# Node.js installation. Official nodejs.org builds for amd64/arm64/ppc64le/s390x;
-# unofficial-builds.nodejs.org for riscv64 (nodejs.org ships no riscv64 binary).
+# Node.js installation - official nodejs.org, then unofficial-builds.nodejs.org,
+# then wekan/node-patches, in that order, for EVERY architecture.
+#
+# The choice is made by releases/resolve-node-source.sh, copied in above and used
+# by the .zip bundles and the snap as well, so the image and the bundle of one
+# architecture always carry the same Node.js from the same place. It is asked
+# about the MAJOR, so a CPU whose newest build lags a release still gets its
+# newest: it answers with the exact file, what shape that file is, and the
+# SHA256 the source published for it.
+#
+# npm is arch-independent JavaScript, so it is grafted from the official amd64
+# tarball of the version that was resolved - a build-time tool, not the shipped
+# node. (node-patches publishes a bare node binary and no npm at all, which is
+# why npm is fetched separately rather than taken from the archive above.)
 cd /tmp
-if [ "${NODE_BASE}" = "unofficial" ]; then
-    NODE_DIST="https://unofficial-builds.nodejs.org/download/release/${NODE_VERSION}"
-else
-    NODE_DIST="https://nodejs.org/dist/${NODE_VERSION}"
+NODE_MAJOR="${NODE_VERSION#v}"; NODE_MAJOR="${NODE_MAJOR%%.*}"
+if ! NODE_META="$(bash /tmp/resolve-node-source.sh "${WEKAN_ARCH}" "${NODE_MAJOR}")"; then
+    echo "No Node.js ${NODE_MAJOR}.x for ${WEKAN_ARCH} at nodejs.org, unofficial-builds.nodejs.org or wekan/node-patches, so this image cannot be built for it. Build node-${WEKAN_ARCH} in wekan/node-patches, or drop ${TARGETARCH} from the image's platform list." >&2
+    exit 1
 fi
-wget "${NODE_DIST}/node-${NODE_VERSION}-linux-${NODE_ARCH}.tar.gz"
-wget "${NODE_DIST}/SHASUMS256.txt"
-grep " node-${NODE_VERSION}-linux-${NODE_ARCH}.tar.gz\$" SHASUMS256.txt | shasum -a 256 -c -
-tar xzf "node-${NODE_VERSION}-linux-${NODE_ARCH}.tar.gz" -C /usr/local --strip-components=1 --no-same-owner
-rm -f "node-${NODE_VERSION}-linux-${NODE_ARCH}.tar.gz" SHASUMS256.txt
+eval "${NODE_META}"
+echo "Node.js ${node_full} for ${WEKAN_ARCH}: ${node_from} (${node_url})"
+wget --tries=20 --waitretry=20 --retry-on-http-error=403,500,502,503 -O node-download "${node_url}"
+echo "${node_sha256}  node-download" | sha256sum -c -
+case "${node_kind}" in
+    binary)
+        cp node-download /usr/local/bin/node
+        ;;
+    tar.xz|tar.gz|tar)
+        # bsdtar (libarchive-tools) is installed below for the bundle; plain tar
+        # here, letting it detect the compression rather than naming it.
+        tar -xf node-download --no-same-owner "${node_member}"
+        cp "${node_member}" /usr/local/bin/node
+        ;;
+    *)
+        echo "resolve-node-source.sh returned an unknown kind '${node_kind}'." >&2
+        exit 1
+        ;;
+esac
+chmod +x /usr/local/bin/node
+# npm + npx from the official amd64 tarball of the SAME version; extract only
+# those paths, not the amd64 node binary.
+# Same flags as the download above: a bare wget treats a 503 as fatal, and
+# nodejs.org has them.
+wget --tries=20 --waitretry=20 --retry-on-http-error=403,500,502,503 \
+  "https://nodejs.org/dist/${node_full}/node-${node_full}-linux-x64.tar.gz"
+wget --tries=20 --waitretry=20 --retry-on-http-error=403,500,502,503 \
+  "https://nodejs.org/dist/${node_full}/SHASUMS256.txt"
+grep " node-${node_full}-linux-x64.tar.gz\$" SHASUMS256.txt | sha256sum -c -
+tar xzf "node-${node_full}-linux-x64.tar.gz" -C /usr/local --strip-components=1 --no-same-owner \
+    "node-${node_full}-linux-x64/lib/node_modules/npm" \
+    "node-${node_full}-linux-x64/bin/npm" \
+    "node-${node_full}-linux-x64/bin/npx"
+rm -rf node-download "node-${node_full}-linux-x64.tar.gz" "node-${node_full}-linux-x64" SHASUMS256.txt
 ln -s "/usr/local/bin/node" "/usr/local/bin/nodejs"
 
 # NPM configuration
@@ -238,13 +341,28 @@ wget --tries=20 --waitretry=20 --retry-on-http-error=404,403,500,502,503 "${WEKA
 unzip "wekan-${VERSION}-${WEKAN_ARCH}.zip"
 rm "wekan-${VERSION}-${WEKAN_ARCH}.zip"
 npm install --prefix ./bundle/programs/server
+# node-gyp and @mapbox/node-pre-gyp compiled nothing here - every native module
+# in the bundle is a prebuilt .node - and nothing in boot.js reaches them. Their
+# tree is what shipped `tar` 6.2.1 (CRITICAL) and npm's networking stack to the
+# published image, so it goes now that the install is done.
+node /tmp/prune-build-only-modules.mjs ./bundle
+# The .zip already carries the bumped meteor/ tree; this install put back
+# meteor-dev-bundle's own underscore 1.13.7 pin (CVE-2026-27601) over it, so the
+# same pass runs here.
+node /tmp/bump-bundle-npm-deps.mjs ./bundle
+# No uWebSockets.js, no legacy client, no source maps: this image runs sockjs,
+# serves web.browser to every browser, and has no debugger attached to it.
+node /tmp/bundle-trim.mjs ./bundle --transport sockjs --drop-legacy-client
+# And the npm tree rspack cannot tree-shake, because Atmosphere packages load it
+# through Npm.require(). Only what it can prove nothing requires.
+node /tmp/prune-unreachable-npm.mjs ./bundle
 mv /home/wekan/app/bundle /build
 
 # The .zip bundle now ships a self-contained launcher + its own Node.js for the
 # offline downloads; the Docker image installs its own Node and uses
 # wekan-entrypoint.sh, so drop the redundant bundled node + launchers. Keeps
 # /build/ferretdb (used by the entrypoint) and the per-arch MongoDB Database Tools
-# (bsondump, mongodump, mongorestore, … from wekan/mongo-tools, embedded in the
+# (bsondump, mongodump, mongorestore, … from wekan/mongo-tools-patches, embedded in the
 # bundle) for backup/restore inside the container. Saves ~80 MB per arch.
 rm -f /build/node /build/start-wekan.sh /build/start-wekan.bat
 
@@ -252,6 +370,13 @@ rm -f /build/node /build/start-wekan.sh /build/start-wekan.bat
 mv $(which tar)~ $(which tar)
 
 # Cleanup
+# npm is a BUILD tool in this image and nothing else: the only thing it does is
+# the `npm install` above, and the container starts bash + wekan-entrypoint.sh,
+# which never calls it. Shipping it shipped npm's own bundled dependencies - its
+# `tar` (CRITICAL), `sigstore`, `@sigstore/*`, `ip-address`, `brace-expansion` -
+# as image content that no code path can reach. node itself stays, because that
+# is what runs WeKan.
+rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 # Remove unused Go-based pebble binary shipped by base image to reduce CVE surface.
 apt-get remove --purge --assume-yes pebble || true
 rm -f /usr/bin/pebble
@@ -275,6 +400,10 @@ COPY --chmod=755 releases/ferretdb/wekan-entrypoint.sh /build/wekan-entrypoint.s
 # #6492: standalone "recovering data" page the entrypoint serves as a brief bridge on
 # the web port while a just-restored FerretDB comes back up during a data recovery.
 COPY --chmod=644 releases/ferretdb/recovery-bridge.mjs /build/recovery-bridge.mjs
+# #6595: the entrypoint asks this whether the database answers yet, so it can
+# serve the "waiting for database" page instead of leaving the web port unbound
+# for a reverse proxy to time out on.
+COPY --chmod=644 releases/ferretdb/db-ready.mjs /build/db-ready.mjs
 
 USER wekan
 ENV PORT=8080

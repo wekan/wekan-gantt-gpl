@@ -11,6 +11,10 @@ import { ensureIndex } from '/server/lib/mongoStartup';
 import { safeDeliver } from '/server/lib/webhookGuard';
 import { labelDisplayName } from '/models/lib/labelDisplayName';
 import { getFeatureFlags } from '/models/lib/featureFlags';
+import { ACTIVITY_NOTIFICATION_TITLE } from '/server/lib/activityNotificationTitle';
+const {
+  boardNotificationRecipients,
+} = require('/models/lib/boardNotificationRecipients');
 
 function normalizeActivityText(value, fallback = '') {
   return typeof value === 'string' ? value : fallback;
@@ -77,6 +81,15 @@ Activities.after.insert(async (userId, doc) => {
     const user = await activity.user();
     if (user) {
       params.user = getActivityUserName(user, activity.userId);
+      // #3113: `user` is a DISPLAY name - getActivityUserName prefers the full
+      // name, which is what the e-mail notification text wants ("Lauri Ojansivu
+      // commented ..."). A webhook consumer wants the stable identifier instead,
+      // and had no way to get it: it received "Lauri Ojansivu" where it needed
+      // "xet7", and matching users by display name is wrong the moment two people
+      // share one. So the username travels as its own field rather than by
+      // changing what `user` means - nothing that already reads `user` breaks,
+      // and the missing identifier is simply there now.
+      params.username = user.username || '';
       if (user.emails) {
         params.userEmails = user.emails;
       }
@@ -86,7 +99,7 @@ Activities.after.insert(async (userId, doc) => {
 
   if (activity.boardId) {
     params.board = normalizeActivityText(board?.title);
-    title = 'act-withBoardTitle';
+    title = ACTIVITY_NOTIFICATION_TITLE.BOARD;
     if (board && typeof board.absoluteUrl === 'function') {
       params.url = board.absoluteUrl();
     }
@@ -151,7 +164,7 @@ Activities.after.insert(async (userId, doc) => {
       ])];
       watchers = [...new Set([...watchers, ...(card.watchers || [])])];
       params.card = normalizeActivityText(card.title);
-      title = 'act-withCardTitle';
+      title = ACTIVITY_NOTIFICATION_TITLE.CARD;
       if (typeof card.absoluteUrl === 'function') {
         // Pass the already-awaited board: on the server card.board() returns an
         // unawaited Promise, which produced '/b/undefined/board/<cardId>' in
@@ -383,7 +396,15 @@ Activities.after.insert(async (userId, doc) => {
       }
     }
 
-    watchers = watchers.filter(x => activeMemberIds.includes(x));
+    // #6658: Muted is the board's final notification boundary. Direct
+    // assignment (#5833), mentions, list/card watchers and BIGEVENTS_PATTERN
+    // may nominate a recipient, but none may override that recipient's board
+    // watch level. No watcher entry also means the default `muted` level.
+    watchers = boardNotificationRecipients(
+      watchers,
+      board.members,
+      board.watchers,
+    );
   }
 
   (await Notifications.getUsers(watchers)).forEach((user) => {

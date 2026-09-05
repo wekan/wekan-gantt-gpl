@@ -1,8 +1,38 @@
+.datepicker-container .fields {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 15px;
+}
 .datepicker-container .fields .left {
-  width: 56%;
+  flex: 1;
+  min-width: 0;
+  float: none;
+  order: 1;
+  width: auto;
 }
 .datepicker-container .fields .right {
-  width: 38%;
+  flex: 1;
+  min-width: 0;
+  float: none;
+  order: 2;
+  width: auto;
+}
+.datepicker-container .fields input[type='date'],
+.datepicker-container .fields input[type='time'] {
+  box-sizing: border-box;
+  max-width: 100%;
+  width: 100%;
+}
+.datepicker-container .fields .custom-field-date-copy {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  order: 3;
+  padding-top: 24px;
+}
+.datepicker-container .fields .custom-field-date-copy .custom-field-copy-control {
+  inset: auto;
+  position: static;
 }
 .datepicker-container .datepicker {
   width: 100%;

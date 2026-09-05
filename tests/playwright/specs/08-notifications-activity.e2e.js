@@ -19,6 +19,68 @@ const BoardPage = require('../pages/BoardPage');
 const CardPage = require('../pages/CardPage');
 
 test.describe('Notifications & activity log', () => {
+  test('#6658: assigning a muted board member creates no notification', async ({
+    page,
+    user,
+    user2,
+    board,
+  }) => {
+    const { openBoard } = require('../helpers/auth');
+    db.addBoardMember({ boardId: board.boardId, userId: user2.id });
+    db.updateOne('boards', { _id: board.boardId }, {
+      $set: { watchers: [{ userId: user2.id, level: 'muted' }] },
+    });
+    await loginWithToken(page, user.id, user.token);
+    await openBoard(page, board.boardId, board.slug);
+
+    const bp = new BoardPage(page);
+    const cp = new CardPage(page);
+    await bp.clickCard(board.listIds[0], 'Alpha Card');
+    await cp.waitForOpen();
+    const assignUser2 = async () => {
+      await cp.root.locator('a.js-add-members').first().click();
+      const popup = page.locator('.js-pop-over');
+      await expect(popup).toBeVisible();
+      await popup.locator('.js-select-member').filter({ hasText: user2.username }).click();
+    };
+
+    await assignUser2();
+    await page.waitForTimeout(2_000);
+    expect(db.findOne('users', { _id: user2.id })?.notifications || []).toHaveLength(0);
+  });
+
+  test('#1658 opening a card Activities section shows its persisted history', async ({
+    boardPage,
+    board,
+    user,
+  }) => {
+    const cardId = db.findCardIdByTitle({
+      boardId: board.boardId,
+      title: 'Alpha Card',
+    });
+    const activityId = db.uid('issue-1658-activity');
+    db.insertOne('activities', {
+      _id: activityId,
+      activityType: 'createCard',
+      boardId: board.boardId,
+      cardId,
+      userId: user.id,
+      listId: board.listIds[0],
+      createdAt: new Date(),
+    });
+
+    const bp = new BoardPage(boardPage);
+    const cp = new CardPage(boardPage);
+    await bp.clickCard(board.listIds[0], 'Alpha Card');
+    await cp.waitForOpen();
+    const heading = cp.root.locator(
+      '.js-toggle-card-section[data-section="activities"]',
+    );
+    await expect(heading).toBeVisible();
+    await heading.click();
+    await expect(cp.root.locator(`.activity[data-id="${activityId}"]`)).toBeVisible();
+  });
+
   test('activity log shows board-level activities', async ({ boardPage, board }) => {
     const bp = new BoardPage(boardPage);
     await bp.openSidebar();
@@ -31,9 +93,16 @@ test.describe('Notifications & activity log', () => {
       // Click to toggle show activities (and verify no JS error)
       await activityToggle.click();
       await boardPage.waitForTimeout(500);
-      // The toggle has a checkmark icon indicating state
-      const icon = activityToggle.locator('i.fa');
-      await expect(icon).toBeVisible({ timeout: 5_000 });
+      // The heading carries TWO icons now: the caret that says whether the
+      // section is open (client/lib/sectionCaret.js, shared with the card's
+      // eleven sections) and the section's own comment icon. A bare `i.fa`
+      // matches both and is a strict-mode violation, so ask for the one that
+      // actually indicates state - and assert it points a legal way, which is
+      // what the caret is for.
+      const caret = activityToggle.locator(
+        'i.fa-caret-down, i.fa-caret-right, i.fa-caret-left',
+      );
+      await expect(caret).toBeVisible({ timeout: 5_000 });
     } else {
       // Activity log may not be available for this board config — just ensure sidebar is open
       await expect(boardPage.locator('.board-sidebar.sidebar.is-open')).toBeVisible({ timeout: 5_000 });
@@ -130,10 +199,21 @@ test.describe('Notifications & activity log', () => {
     await login(page2, user.id, user.token);
     await page2.goto(process.env.WEKAN_BASE_URL || 'http://localhost:3000', { waitUntil: 'networkidle' });
 
-    // Notification badge or indicator should exist in header
-    const notifBadge = page2.locator('.notification-badge, .js-notification-count, [data-count], .badge').first();
-    // Even if count is 0 initially (async), the element should be present
-    await expect(page2.locator('header, #header')).toBeVisible({ timeout: 10_000 });
+    // The mentioned user's page renders the header bar, and the bell that would
+    // carry the notification is in it.
+    //
+    // `#header-quick-access`, not `header, #header`: the first header bar was
+    // rebuilt this release and there is no `<header>` element or `#header` id
+    // any more - the bar is `#header-quick-access[role=navigation]`, which is
+    // what specs 18 and 19 already address it by. The old locator matched
+    // nothing, so this asserted that a non-existent element was visible.
+    // docs/Features/Page/Header.md
+    const headerBar = page2.locator('#header-quick-access');
+    await expect(headerBar).toBeVisible({ timeout: 10_000 });
+    // The bell itself rather than a count: the count arrives asynchronously and
+    // an assertion on it would be timing, not behaviour.
+    await expect(headerBar.locator('#notifications .notifications-drawer-toggle'))
+      .toBeVisible({ timeout: 10_000 });
     await page2.close();
   });
 });

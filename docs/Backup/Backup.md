@@ -5,7 +5,7 @@
 
 # Upgrade Sandstorm WeKan
 
-[Upgrade Sandstorm WeKan ](../Platforms/FOSS/Sandstorm/Sandstorm.md) 
+[Upgrade Sandstorm WeKan ](../Platforms/FOSS/Container/Sandstorm) 
 
 # Backup Docker
 
@@ -106,8 +106,25 @@ mv /var/snap/wekan/common/* /root/common/
 sudo snap refresh wekan --channel=latest/candidate --amend
 ```
 5. [Restore Snap](#restore-wekan-snap)
-6. Copy back files directory, if it is there: `sudo cp -pR /root/common/files /var/snap/wekan/common/`
-7. If you use [Caddy](../Webserver/Caddy.md), that is included in WeKan, edit /var/snap/wekan/Caddyfile to new syntax:
+6. Copy back **only the `files` directory**, if it is there — that is the attachments
+   and avatars, which live on disk and are not in the database:
+   `sudo cp -pR /root/common/files /var/snap/wekan/common/`
+
+   **Do NOT copy the rest of `/root/common` back.** Step 3 moved the whole directory
+   aside, so `cp -pR /root/common/* /var/snap/wekan/common/` looks like the obvious
+   way to undo it — and it is the one command here that destroys the database you
+   have just restored. Everything beside `files` is the OLD raw database
+   (`*.wt`, `WiredTiger*`, `_mdb_catalog.wt`, `sizeStorer.wt`, `storage.bson`,
+   `mongod.lock`, `journal/`), and dropping those on top of a RUNNING MongoDB
+   replaces the files it has open underneath it: mongod aborts (`SIGABRT`,
+   `status=134/n/a` in `snap logs wekan.mongodb`), and when the snap restarts, the
+   boards restored in step 5 are gone. Nothing is recoverable from that except your
+   backup, which is why step 2 exists.
+
+   The old database directory is only ever put back as a WHOLE, onto a STOPPED snap,
+   with the current contents removed first — that is the "going back to 6.09"
+   procedure below, and it is a different operation from this step.
+7. If you use [Caddy](../Platforms/Webserver/Caddy.md), that is included in WeKan, edit /var/snap/wekan/Caddyfile to new syntax:
 ```
 wekan.yourcompany.com {
         tls {
@@ -214,7 +231,7 @@ https://nosqlbooster.com/downloads
 
 For below scheduled backup scripts, no info from above of this wiki page is required. Backup scripts below have the required settings.
 
-This does backup of [Wekan+RocketChat snap databases](../Login/OAuth2.md) and php website etc.
+This does backup of [Wekan+RocketChat snap databases](../Features/Login/OAuth2.md) and php website etc.
 
 If you need to backup some remote server or cloud, you can use scp, or read [rclone docs](https://rclone.org/docs/) about how to configure saving to some other remote server or cloud.
 
@@ -523,7 +540,7 @@ cat board.json | xclip -se c
 ```
 Then paste to webbrowser Wekan Add Board / Import / From previous export.
 
-You can [save all MongoDB database content as JSON files](../Platforms/FOSS/Sandstorm/Export-from-Wekan-Sandstorm-grain-.zip-file.md). Files are base64 encoded in JSON files.
+You can [save all MongoDB database content as JSON files](../Platforms/FOSS/Container/Sandstorm/Export-from-Wekan-Sandstorm-grain-.zip-file.md). Files are base64 encoded in JSON files.
 
 Export board to Wekan JSON, and import as Wekan JSON can make some part of board to load, but you should check is some data missing.
 
@@ -765,7 +782,7 @@ makesRestore $1
 
 ## Docker Backup and Restore
 
-[Docker Backup and Restore](../Platforms/FOSS/Docker/Export-Docker-Mongo-Data.md)
+[Docker Backup and Restore](../Platforms/FOSS/Container/Docker/Export-Docker-Mongo-Data.md)
 
 [Wekan Docker Upgrade](https://github.com/wekan/wekan-mongodb#backup-before-upgrading)
 
@@ -779,11 +796,11 @@ makesRestore $1
 
 Download Wekan grain with arrow down download button to .zip file. You can restore it later.
 
-[Export data from Wekan Sandstorm grain .zip file](../Platforms/FOSS/Sandstorm/Export-from-Wekan-Sandstorm-grain-.zip-file.md)
+[Export data from Wekan Sandstorm grain .zip file](../Platforms/FOSS/Container/Sandstorm/Export-from-Wekan-Sandstorm-grain-.zip-file.md)
 
 ## <a name="cloudron">Cloudron
 
-If those [Backup](Backup.md) ways are not easily found at [Cloudron](../Platforms/Propietary/Cloud/Cloudron/Cloudron.md), one way is to install [Redash](https://redash.io/) and then backup this way:
+If those [Backup](Backup.md) ways are not easily found at [Cloudron](../Platforms/Propietary/SaaS/Cloudron), one way is to install [Redash](https://redash.io/) and then backup this way:
 
 Redash works with this kind of queries:
 ```json
@@ -844,7 +861,7 @@ but downloading with API script still works:
 
 7) Repeat steps 1-4 and 6 for every collection/table like boards,cards, etc
 
-8) Remove from downloaded .json files extra query related data, so that it is similar like [any other Wekan database backup JSON files](../Platforms/FOSS/Sandstorm/Export-from-Wekan-Sandstorm-grain-.zip-file.md)
+8) Remove from downloaded .json files extra query related data, so that it is similar like [any other Wekan database backup JSON files](../Platforms/FOSS/Container/Sandstorm/Export-from-Wekan-Sandstorm-grain-.zip-file.md)
 
 9) Insert data to some other Wekan install with nosqlbooster like mentioned at page [Backup](Backup.md)
 

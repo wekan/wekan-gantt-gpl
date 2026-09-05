@@ -9,6 +9,8 @@ import {
 import '/client/lib/dragscrollTouch';
 import '/client/lib/dragDropTouch';
 import { boardConverter } from '/client/lib/boardConverter';
+// Bring the swimlane or list a link named into view, once it has rendered.
+import { watchBoardItemReveals } from '/client/lib/revealBoardItem';
 import { formatDateByUserPreference } from '/imports/lib/dateUtils';
 import { toFullCalendarFirstDay } from '/client/lib/calendarFirstDay';
 import { weekNumberByFirstDay } from '/models/lib/weekStart';
@@ -19,6 +21,7 @@ import { EscapeActions } from '/client/lib/escapeActions';
 import { Utils } from '/client/lib/utils';
 import { Filter } from '/client/lib/filter';
 import { migrationProgressManager } from '/client/components/settings/migrationProgress';
+import { focusFirstControl } from '/client/lib/accessibility';
 
 // SubsManager removed for Meteor 3 migration
 const { calculateIndex } = Utils;
@@ -115,12 +118,23 @@ Template.board.onCreated(function () {
   // Pattern: https://kadira.io/academy/meteor-routing-guide/content/subscriptions-and-data-management/using-subs-manager
   this.autorun(() => {
     const currentBoardId = Session.get('currentBoard');
+    // Creating a linked card changes the set of source cards, boards and field
+    // definitions that the composite publication must expose. Reading this
+    // generation lets the link dialog restart the subscription immediately;
+    // otherwise those child cursors are only recalculated after a page reload.
+    const subscriptionGeneration =
+      Session.get('boardSubscriptionGeneration') || 0;
     if (!currentBoardId) {
       this.isBoardReady.set(false);
       return;
     }
 
-    const handle = Meteor.subscribe('board', currentBoardId, false);
+    const handle = Meteor.subscribe(
+      'board',
+      currentBoardId,
+      false,
+      subscriptionGeneration,
+    );
     // Learn this board's card-loading mode (lazy vs eager) so 'auto' can decide
     // per board by size; the flag drives isLazyCards(boardId). #6480.
     Meteor.subscribe('boardCardsLoadingMode', currentBoardId);
@@ -209,34 +223,11 @@ Template.boardBody.onCreated(function () {
   };
 
   this.isViewSwimlanes = () => {
-    const currentUser = ReactiveCache.getCurrentUser();
-    let boardView;
-
-    if (currentUser) {
-      boardView = (currentUser.profile || {}).boardView;
-    } else {
-      boardView = window.localStorage.getItem('boardView');
-    }
-
-    // If no board view is set, default to swimlanes
-    if (!boardView) {
-      boardView = 'board-view-swimlanes';
-    }
-
-    return boardView === 'board-view-swimlanes';
+    return Utils.boardView() === 'board-view-swimlanes';
   };
 
   this.isViewLists = () => {
-    const currentUser = ReactiveCache.getCurrentUser();
-    let boardView;
-
-    if (currentUser) {
-      boardView = (currentUser.profile || {}).boardView;
-    } else {
-      boardView = window.localStorage.getItem('boardView');
-    }
-
-    return boardView === 'board-view-lists';
+    return Utils.boardView() === 'board-view-lists';
   };
 
   // fix swimlanes sort field if there are null values
@@ -289,49 +280,38 @@ Template.boardBody.onRendered(function () {
   // Initialize user settings (zoom and mobile mode)
   Utils.initializeUserSettings();
 
+  // A link to a swimlane or a list has to end with that thing on screen. The
+  // route can only NAME it - it runs before this has rendered - so the reveal
+  // waits here for the element to exist. client/lib/revealBoardItem.js
+  this.boardItemReveals = watchBoardItemReveals();
+
   // Detect iPhone devices and add class for better CSS targeting
   const isIPhone = /iPhone|iPod/.test(navigator.userAgent);
   if (isIPhone) {
     document.body.classList.add('iphone-device');
   }
 
-  // Accessibility: Focus management for popups and menus
-  function focusFirstInteractive(container) {
-    if (!container) return;
-    // Find first focusable element
-    const focusable = container.querySelectorAll(
-      'button, [role="button"], a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-    );
-    for (let i = 0; i < focusable.length; i++) {
-      if (!focusable[i].disabled && focusable[i].offsetParent !== null) {
-        focusable[i].focus();
-        break;
-      }
-    }
-  }
-
-  // Observe for new popups/menus and set focus (but exclude swimlane content)
-  const popupObserver = new MutationObserver(function (mutations) {
+  // Popups and modals use their shared focus lifecycle. Board-only menus that
+  // are inserted outside that lifecycle still need their first control focused.
+  this._accessibilityMenuObserver = new MutationObserver(function (mutations) {
     mutations.forEach(function (mutation) {
       mutation.addedNodes.forEach(function (node) {
         if (
           node.nodeType === 1 &&
-          (node.classList.contains('popup') ||
-            node.classList.contains('modal') ||
-            node.classList.contains('menu')) &&
+          node.classList.contains('menu') &&
           !node.closest('.js-swimlanes') &&
           !node.closest('.swimlane') &&
           !node.closest('.list') &&
           !node.closest('.minicard')
         ) {
           setTimeout(function () {
-            focusFirstInteractive(node);
+            focusFirstControl(node);
           }, 10);
         }
       });
     });
   });
-  popupObserver.observe(document.body, { childList: true, subtree: true });
+  this._accessibilityMenuObserver.observe(document.body, { childList: true, subtree: true });
 
   // Remove tabindex from non-interactive elements (e.g., user abbreviations, labels)
   document
@@ -447,8 +427,9 @@ Template.boardBody.onRendered(function () {
       .js-add-card[tabindex] {
         outline: none;
       }
-      /* Sidebar hamburger menu button in header */
-      .js-toggle-sidebar .fa-bars {
+      /* Sidebar hamburger menu button in header. Renamed with the button when
+         it moved to the first top header bar: docs/Features/Page/Header.md */
+      .js-toggle-page-sidebar .fa-bars {
         color: #fff !important;
       }
       /* Grey icons in card detail header */
@@ -672,6 +653,14 @@ Template.boardBody.onRendered(function () {
 });
 
 Template.boardBody.onDestroyed(function () {
+  this._accessibilityMenuObserver?.disconnect();
+  this._accessibilityMenuObserver = null;
+  // The reveal watcher owns a Tracker computation and a retry interval, and
+  // neither stops on its own when this template goes.
+  if (this.boardItemReveals) {
+    this.boardItemReveals.stop();
+    this.boardItemReveals = null;
+  }
   if (BoardBody === this) {
     BoardBody = null;
   }
@@ -709,86 +698,27 @@ Template.boardBody.helpers({
   },
 
   isViewSwimlanes() {
-    const currentUser = ReactiveCache.getCurrentUser();
-    let boardView;
-
-    if (currentUser) {
-      boardView = (currentUser.profile || {}).boardView;
-    } else {
-      boardView = window.localStorage.getItem('boardView');
-    }
-
-    // If no board view is set, default to swimlanes
-    if (!boardView) {
-      boardView = 'board-view-swimlanes';
-    }
-
-    return boardView === 'board-view-swimlanes';
+    return Utils.boardView() === 'board-view-swimlanes';
   },
 
   isViewLists() {
-    const currentUser = ReactiveCache.getCurrentUser();
-    let boardView;
-
-    if (currentUser) {
-      boardView = (currentUser.profile || {}).boardView;
-    } else {
-      boardView = window.localStorage.getItem('boardView');
-    }
-
-    return boardView === 'board-view-lists';
+    return Utils.boardView() === 'board-view-lists';
   },
 
   isViewCalendar() {
-    const currentUser = ReactiveCache.getCurrentUser();
-    let boardView;
-
-    if (currentUser) {
-      boardView = (currentUser.profile || {}).boardView;
-    } else {
-      boardView = window.localStorage.getItem('boardView');
-    }
-
-    return boardView === 'board-view-cal';
+    return Utils.boardView() === 'board-view-cal';
   },
 
   isViewGantt() {
-    const currentUser = ReactiveCache.getCurrentUser();
-    let boardView;
-
-    if (currentUser) {
-      boardView = (currentUser.profile || {}).boardView;
-    } else {
-      boardView = window.localStorage.getItem('boardView');
-    }
-
-    return boardView === 'board-view-gantt';
+    return Utils.boardView() === 'board-view-gantt';
   },
 
   isViewTable() {
-    const currentUser = ReactiveCache.getCurrentUser();
-    let boardView;
-
-    if (currentUser) {
-      boardView = (currentUser.profile || {}).boardView;
-    } else {
-      boardView = window.localStorage.getItem('boardView');
-    }
-
-    return boardView === 'board-view-table';
+    return Utils.boardView() === 'board-view-table';
   },
 
   isViewStats() {
-    const currentUser = ReactiveCache.getCurrentUser();
-    let boardView;
-
-    if (currentUser) {
-      boardView = (currentUser.profile || {}).boardView;
-    } else {
-      boardView = window.localStorage.getItem('boardView');
-    }
-
-    return boardView === 'board-view-stats';
+    return Utils.boardView() === 'board-view-stats';
   },
 
   hasSwimlanes() {

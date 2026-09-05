@@ -1,0 +1,323 @@
+name: Windows single EXE
+
+# Wrap the already-published self-contained win64 ZIP as one Windows executable.
+# The ZIP remains the source of truth: this workflow appends that exact ZIP -
+# with its Node.js, FerretDB, MongoDB Database Tools and Meteor server - to a
+# small native launcher, and writes an 80-byte trailer saying where the payload
+# is and what its SHA-256 must be.
+#
+# The bundle is NOT unpacked. On its first run the EXE verifies that SHA-256 and
+# unpacks only what cannot be virtual - the executables, the native addons,
+# main.js, start-wekan.bat and wekan-vfs.cjs, about thirty files. The other
+# ~39,000 stay inside the EXE and are read from it in the server process by
+# releases/single-exe/wekan-vfs.cjs, which node.exe preloads. Persistent data
+# stays in a real wekan-files/ directory beside the EXE, so the EXE and its data
+# can be moved together and a newer version never touches them.
+#
+# It used to be packed with Enigma Virtual Box, whose virtual filesystem served
+# all 44,401 files from inside the EXE. That is what broke WeKan 11.48: once
+# Node.js had loaded the native bcrypt addon out of it, the next read -
+# promises.js, whose bytes sit immediately after that addon - came back as the
+# addon's own PE bytes, and the server died in a restart loop with
+# "SyntaxError: Invalid or unexpected token". The idea was right and the
+# closed-source implementation was wrong, so the mounting is ours now.
+
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: false
+        type: string
+      publish:
+        required: false
+        default: true
+        type: boolean
+
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to wrap and attach to (empty = newest release)'
+        required: false
+        type: string
+      publish:
+        description: 'Attach the single EXE to the release'
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: wekan-windows-exe-${{ inputs.tag || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: find the release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    outputs:
+      tag: ${{ steps.find.outputs.tag }}
+      version: ${{ steps.find.outputs.version }}
+      available: ${{ steps.find.outputs.available }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - id: find
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag='${{ inputs.tag }}'
+          [ -n "$tag" ] || tag="$(gh release list --repo "${{ github.repository }}" \
+            --limit 1 --json tagName --jq '.[0].tagName')"
+          [ -n "$tag" ] || { echo "::error::No release to wrap."; exit 1; }
+          version="${tag#v}"
+          available=false
+          if gh release view "$tag" --repo "${{ github.repository }}" --json assets \
+               --jq '.assets[].name' | grep -qx "wekan-${version}-win64.zip"; then
+            available=true
+          else
+            echo "::notice::wekan-${version}-win64.zip is not published; there is no Windows bundle to wrap."
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "available=$available" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: self-extracting win64 EXE
+    needs: release
+    if: ${{ needs.release.outputs.available == 'true' }}
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Fetch and verify the published win64 bundle
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $zip = 'wekan-${{ needs.release.outputs.version }}-win64.zip'
+          $assets = gh release view --repo '${{ github.repository }}' `
+            '${{ needs.release.outputs.tag }}' --json assets --jq '.assets[].name'
+          if ($assets -notcontains $zip) {
+            throw "$zip is not on ${{ needs.release.outputs.tag }}. The single EXE can only wrap a published win64 bundle."
+          }
+          gh release download '${{ needs.release.outputs.tag }}' `
+            --repo '${{ github.repository }}' --pattern "$zip*" --clobber
+          # The ZIP is the payload, so it is checked as a whole against the
+          # checksum published beside it rather than unpacked here.
+          if (Test-Path "$zip.sha256sum" -PathType Leaf) {
+            $published = ((Get-Content "$zip.sha256sum" -Raw).Trim() -split '\s+')[0].ToLowerInvariant()
+            $actual = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($actual -ne $published) {
+              throw "$zip does not match its published SHA256: expected $published, got $actual."
+            }
+            Write-Host "$zip matches its published SHA256 $actual."
+          } else {
+            Write-Host "::warning::$zip has no published .sha256sum on this release, so the payload is unverified."
+          }
+          # Read the archive's index only - the payload is appended whole, so
+          # unpacking 700 MB here would only prove what the launcher proves.
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $archive = [System.IO.Compression.ZipFile]::OpenRead((Resolve-Path $zip).Path)
+          try {
+            $names = $archive.Entries.FullName
+          } finally {
+            $archive.Dispose()
+          }
+          foreach ($file in @('main.js', 'node.exe', 'ferretdb.exe', 'start-wekan.bat',
+                              'wekan-vfs.cjs')) {
+            if ($names -notcontains "bundle/$file") {
+              throw "$zip has no bundle/$file; it is not a self-contained WeKan bundle. (wekan-vfs.cjs is the in-process archive mount; a bundle built before it existed cannot be wrapped as a single EXE.)"
+            }
+          }
+          Write-Host "$zip carries $($names.Count) entries."
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Work out which members cannot be virtual
+        shell: pwsh
+        # The launcher unpacks these and nothing else. The list is computed from
+        # the archive, not written by hand, so a bundle that gains an addon or a
+        # database tool does not silently lose it at runtime.
+        run: |
+          $ErrorActionPreference = 'Stop'
+          node releases/append-windows-payload.mjs `
+            --manifest "wekan-${{ needs.release.outputs.version }}-win64.zip" `
+            --header wekan-real-files.h
+
+      - uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Compile the native launcher
+        shell: cmd
+        # /I. so the generated wekan-real-files.h is found; it is written to the
+        # workspace root rather than beside the .c file, which stays clean.
+        run: >-
+          cl /nologo /O2 /MT /W4 /DUNICODE /D_UNICODE /I.
+          releases\windows-single-exe-launcher.c /Fe:wekan-launcher.exe
+
+      - name: Append the bundle and its trailer to the launcher
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = '${{ needs.release.outputs.version }}'
+          New-Item -ItemType Directory -Force dist | Out-Null
+          node releases/append-windows-payload.mjs `
+            --launcher wekan-launcher.exe `
+            --payload "wekan-$version-win64.zip" `
+            --output "dist/WeKan-$version-win64.exe" `
+            --version $version
+          $output = "dist/WeKan-$version-win64.exe"
+          if ((Get-Item $output).Length -lt 10MB) { throw 'The EXE is too small to contain WeKan.' }
+          node releases/append-windows-payload.mjs --verify $output
+          $hash = (Get-FileHash $output -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  WeKan-$version-win64.exe" |
+            Out-File "$output.sha256sum" -Encoding ascii
+          Get-ChildItem dist | Format-Table Name,Length
+
+      - name: Free ports used by the packaged EXE before smoke test
+        shell: pwsh
+        run: |
+          # The GitHub Actions Windows runner ships MongoDB 7 as a running
+          # service.  Its mongod holds 27017, and the pre-installed mongosh /
+          # MongoDB tools also register port 8088 in some images.  Both ports
+          # are needed by the embedded FerretDB inside the packaged EXE, so we
+          # must release them before the smoke test or FerretDB cannot bind and
+          # WeKan never starts.
+          foreach ($svc in @('MongoDB', 'mongod')) {
+            $s = Get-Service -Name $svc -ErrorAction SilentlyContinue
+            if ($s -and $s.Status -ne 'Stopped') {
+              Write-Host "Stopping service: $svc"
+              Stop-Service -Name $svc -Force -ErrorAction SilentlyContinue
+            }
+          }
+          # Kill any remaining process that holds the ports we need.
+          foreach ($port in @(27017, 8088)) {
+            $pids = (netstat -ano | Select-String ":$port\s") |
+              ForEach-Object { ($_ -split '\s+')[-1] } |
+              Where-Object { $_ -match '^\d+$' } |
+              Sort-Object -Unique
+            # Not $pid: that is PowerShell's own read-only process id.
+            foreach ($owner in $pids) {
+              Write-Host "Killing PID $owner (held port $port)"
+              taskkill /PID $owner /F 2>$null | Out-Null
+            }
+          }
+
+      - name: Check that the single EXE starts, twice, without ever restarting
+        shell: pwsh
+        # Twice, because the two runs are different code paths: the first
+        # unpacks the payload into wekan-app, the second must find it already
+        # there and start straight away.
+        #
+        # "Without ever restarting" is the part 11.48 needed. start-wekan.bat
+        # restarts WeKan every 3 seconds when it dies, so an EXE in a crash
+        # loop still answers on port 8080 eventually and a poll-until-ready
+        # check calls it healthy. This one fails on the restart line and on
+        # a SyntaxError, so a bundle Node.js cannot load can no longer ship.
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = '${{ needs.release.outputs.version }}'
+          # Run from its own directory: the EXE unpacks ~700 MB beside itself
+          # and dist/ is what gets uploaded as the release artifact.
+          New-Item -ItemType Directory -Force smoke | Out-Null
+          Copy-Item "dist/WeKan-$version-win64.exe" smoke/
+          $exe = (Resolve-Path "smoke/WeKan-$version-win64.exe").Path
+          $env:PORT = '8080'
+          $env:ROOT_URL = 'http://localhost:8080'
+
+          function Start-Once([string]$label, [int]$attempts) {
+            $out = "smoke-$label.log"
+            $err = "smoke-$label-error.log"
+            $process = Start-Process $exe -PassThru -RedirectStandardOutput $out `
+              -RedirectStandardError $err
+            $ready = $false
+            try {
+              for ($i = 0; $i -lt $attempts; $i++) {
+                if ($process.HasExited) { break }
+                try {
+                  Invoke-WebRequest http://localhost:8080/sign-in -UseBasicParsing -TimeoutSec 3 | Out-Null
+                  $ready = $true
+                  break
+                } catch {}
+                Start-Sleep -Seconds 2
+              }
+            } finally {
+              if (-not $process.HasExited) { taskkill /PID $process.Id /T /F | Out-Null }
+            }
+            # start-wekan.bat starts ferretdb.exe with `start /b`; make sure
+            # 27017 and 8080 are free again before the next run reuses them.
+            taskkill /IM ferretdb.exe /F 2>$null | Out-Null
+            Start-Sleep -Seconds 5
+            $log = (Get-Content $out, $err -ErrorAction SilentlyContinue) -join "`n"
+            if (-not $ready) {
+              Write-Host $log
+              throw "The packaged EXE did not answer on port 8080 on the $label run."
+            }
+            foreach ($bad in @('WeKan exited; restarting', 'SyntaxError')) {
+              if ($log -match [regex]::Escape($bad)) {
+                Write-Host $log
+                throw "The packaged EXE logged '$bad' on the $label run: it is starting only because start-wekan.bat keeps retrying."
+              }
+            }
+            Write-Host "$label run: WeKan answered on port 8080 on its first attempt."
+          }
+
+          # The first run unpacks ~700 MB before WeKan even starts.
+          $env:WRITABLE_PATH = "$pwd\smoke-data"
+          Start-Once 'first' 240
+          if (-not (Test-Path 'smoke/wekan-app/start-wekan.bat' -PathType Leaf)) {
+            throw 'The first run did not unpack the bundle into wekan-app.'
+          }
+
+          # The point of the whole design: the bundle stays in the EXE. A change
+          # that quietly went back to unpacking everything would still pass the
+          # two start checks above, so count what actually reached the disk.
+          $unpacked = (Get-ChildItem smoke/wekan-app -Recurse -File).Count
+          Write-Host "unpacked $unpacked files into wekan-app"
+          if ($unpacked -gt 200) {
+            throw "The EXE unpacked $unpacked files; it should unpack only the executables, the native addons and a few loader files. The rest must be served from inside the EXE."
+          }
+          foreach ($served in @('programs/server/boot.js',
+                                'programs/server/packages/webapp.js')) {
+            if (Test-Path "smoke/wekan-app/$served") {
+              throw "smoke/wekan-app/$served is on disk; it should be read from inside the EXE."
+            }
+          }
+
+          Start-Once 'second' 120
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: windows-single-exe-win64
+          path: dist/
+          if-no-files-found: error
+
+  publish:
+    name: attach to the release
+    needs: [release, build]
+    if: ${{ !cancelled() && needs.build.result == 'success' && inputs.publish != false }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: windows-single-exe-win64
+          path: assets
+
+      - name: Upload the EXE and checksum
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release upload --repo '${{ github.repository }}' \
+            '${{ needs.release.outputs.tag }}' assets/* --clobber
+          gh release view --repo '${{ github.repository }}' \
+            '${{ needs.release.outputs.tag }}' --json url --jq .url

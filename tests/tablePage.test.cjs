@@ -1,6 +1,6 @@
 'use strict';
 
-// The shared table page — docs/Design/Page/Table.md.
+// The shared table page — docs/Features/Page/Table.md.
 //
 // Files, Rules, Boards, Cards, Impersonation, Recovery and the four event streams
 // (Security, Speed, Tests, CPU usage) used to be ten copies of the same page: the
@@ -17,12 +17,12 @@
 // This is the COMBINED suite for the table page design: the shared helpers, the
 // shared template and stylesheet, the shared themed pager, the server-side paging
 // behind it, and the design doc that describes all of it. The former
-// tests/adminReportsPagination.test.cjs was merged in here - it asserted against
+// tests/adminProblemsPagination.test.cjs was merged in here - it asserted against
 // the same pages from a second file, which is exactly the split this change
 // removed from the app code.
 //
 // Files under test are the ones listed in the Related files table of
-// docs/Design/Page/Table.md.
+// docs/Features/Page/Table.md.
 //
 // Run: node tests/tablePage.test.cjs
 
@@ -43,9 +43,9 @@ const read = p => fs.readFileSync(path.join(root, p), 'utf8');
 const libSrc = read('models/lib/tablePage.js');
 const jade = read('client/components/settings/tablePage.jade');
 const css = read('client/components/settings/tablePage.css');
-const reportsJade = read('client/components/settings/adminReports.jade');
-const reportsJs = read('client/components/settings/adminReports.js');
-const doc = read('docs/Design/Page/Table.md');
+const reportsJade = read('client/components/settings/adminProblems.jade');
+const reportsJs = read('client/components/settings/adminProblems.js');
+const doc = read('docs/Features/Page/Table.md');
 
 // Load the ES module helpers without a bundler: strip the export keywords.
 const lib = {};
@@ -53,6 +53,7 @@ new Function('exports', libSrc.replace(/export (const|function)/g, '$1') +
   '\nexports.TABLE_PAGE_ROWS_PER_PAGE = TABLE_PAGE_ROWS_PER_PAGE;' +
   '\nexports.columnWidthPercent = columnWidthPercent;' +
   '\nexports.pageInfo = pageInfo;' +
+  '\nexports.adjacentPage = adjacentPage;' +
   '\nexports.buildRows = buildRows;' +
   '\nexports.buildHeader = buildHeader;' +
   '\nexports.buildFilters = buildFilters;' +
@@ -88,6 +89,20 @@ test('pageInfo on an empty table still offers page 1 of 1 (negative)', () => {
   assert.deepStrictEqual(
     { totalPages: i.totalPages, page: i.page, hasPrev: i.hasPrev, hasNext: i.hasNext, skip: i.skip },
     { totalPages: 1, page: 1, hasPrev: false, hasNext: false, skip: 0 });
+});
+
+test('adjacentPage moves one page and clamps both boundaries', () => {
+  assert.strictEqual(lib.adjacentPage(120, 3, -1, 25), 2);
+  assert.strictEqual(lib.adjacentPage(120, 3, 1, 25), 4);
+  assert.strictEqual(lib.adjacentPage(120, 1, -1, 25), 1);
+  assert.strictEqual(lib.adjacentPage(120, 5, 1, 25), 5);
+});
+
+test('adjacentPage normalizes direction and rejects invalid movement', () => {
+  assert.strictEqual(lib.adjacentPage(120, 3, -99, 25), 2);
+  assert.strictEqual(lib.adjacentPage(120, 3, 99, 25), 4);
+  assert.strictEqual(lib.adjacentPage(120, 3, 0, 25), 3);
+  assert.strictEqual(lib.adjacentPage(120, 3, 'nowhere', 25), 3);
 });
 
 test('columns get the same percentage width', () => {
@@ -132,6 +147,14 @@ test('buildRows renders a user cell as a link and marks alignment', () => {
   assert.strictEqual(row.cells[3].data, 'high');
   // A column with no userId function must not produce a link.
   assert.strictEqual(row.cells[0].userId, '');
+});
+
+test('buildRows preserves supplied initials for users absent from client cache', () => {
+  const [row] = lib.buildRows([{ uid: 'u1' }], [{
+    labelKey: 'office-people',
+    users: d => [{ userId: d.uid, text: 'Lauri Ojansivu', initials: 'LO' }],
+  }]);
+  assert.deepStrictEqual(row.cells[0].users.map(user => user.initials), ['LO']);
 });
 
 test('buildRows survives junk input (negative)', () => {
@@ -233,7 +256,7 @@ test('no report re-implements the controls or the table', () => {
     assert.ok(!reportsJade.includes(gone),
       `${gone} is the old per-report copy; the shared table page replaces it`);
     assert.ok(!reportsJs.includes(gone),
-      `${gone} still referenced in adminReports.js`);
+      `${gone} still referenced in adminProblems.js`);
   }
   // Every table renders through the one template.
   assert.ok(/\+tablePage\(tablePageData\)/.test(reportsJade));
@@ -242,8 +265,12 @@ test('no report re-implements the controls or the table', () => {
 test('the controls have one handler each, not one per report', () => {
   for (const cls of ['js-table-page-prev', 'js-table-page-next']) {
     const count = (reportsJs.match(new RegExp(`'click \\.${cls}'`, 'g')) || []).length;
-    // One on the reports parent + one on the event-stream template.
-    assert.ok(count <= 2, `${cls} should have at most 2 handlers, found ${count}`);
+    // One on the reports parent, plus one per METHOD-BACKED report template -
+    // eventStreamReport and officeReport. Those two do not go through the
+    // parent's reportConfig(), which is built around publications, so they carry
+    // their own paginator. What this guards against is a handler per REPORT,
+    // which is what the parent's single pair exists to avoid.
+    assert.ok(count <= 3, `${cls} should have at most 3 handlers, found ${count}`);
   }
   // The six per-report page/total helper pairs are gone.
   for (const helper of ['filesCurrentPage', 'rulesTotalPages', 'boardsCurrentPage',
@@ -265,9 +292,9 @@ test('every paginated page loads the SAME ten rows at a time', () => {
   // page, the Admin Panel reports and event streams, the People panes, the search
   // pages and the archive. A page that writes its own is the bug this pins.
   assert.strictEqual(lib.TABLE_PAGE_ROWS_PER_PAGE, 10,
-    'the app pages ten rows at a time (docs/Design/Page/Table.md)');
+    'the app pages ten rows at a time (docs/Features/Page/Table.md)');
   const sources = {
-    'client/components/settings/adminReports.js':
+    'client/components/settings/adminProblems.js':
       ['const REPORTS_PER_PAGE = TABLE_PAGE_ROWS_PER_PAGE;',
        'const EVENTS_PER_PAGE = TABLE_PAGE_ROWS_PER_PAGE;'],
     'client/components/settings/peopleBody.js':
@@ -310,7 +337,7 @@ test('the design doc lists the pages and they exist in code', () => {
   for (const id of ['report-security', 'report-speed', 'report-tests', 'report-cpu',
     'report-files', 'report-rules', 'report-boards', 'report-cards',
     'report-impersonation', 'report-recovery']) {
-    // The menu is DATA now (PROBLEMS_MENU, docs/Design/Page/Left-Menu.md),
+    // The menu is DATA now (PROBLEMS_MENU, docs/Features/Page/Left-Menu.md),
     // not markup, so it lives in the .js.
     assert.ok(reportsJs.includes(`'${id}'`), `${id} must exist in the Problems side menu`);
   }
@@ -321,9 +348,9 @@ test('pages that use the design link back to it', () => {
     'docs/Features/Admin-Panel/Problems/CPU-usage.md',
     'docs/Features/Admin-Panel/Problems/Recovery.md']) {
     const src = read(p);
-    assert.ok(/\[Table Page\]\((\.\.\/)+Design\/Page\/Table\.md\)/.test(src),
+    assert.ok(/\[Table Page\]\((\.\.\/)+Features\/Page\/Table\.md\)/.test(src),
       `${p} must link to the shared design with a relative path`);
-    const rel = /\[Table Page\]\(((?:\.\.\/)+Design\/Page\/Table\.md)\)/.exec(src)[1];
+    const rel = /\[Table Page\]\(((?:\.\.\/)+Features\/Page\/Table\.md)\)/.exec(src)[1];
     const target = path.resolve(path.dirname(path.join(root, p)), rel);
     assert.ok(fs.existsSync(target), `${p}: link target ${rel} must exist`);
   }
@@ -397,7 +424,7 @@ test('the design doc explains the theming', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Merged in from the former tests/adminReportsPagination.test.cjs.
+// Merged in from the former tests/adminProblemsPagination.test.cjs.
 //
 // Those guards were written when each report had its own markup, its own
 // controls row and its own stylesheet. Every one of them is about a paginated
@@ -406,7 +433,7 @@ test('the design doc explains the theming', () => {
 // is the split this whole change removed. The last three cover the OTHER pagers
 // (People/Org/Team/Domain, the board Table view, Translation): those are not
 // table pages, but they share the themed pager stylesheet listed in
-// docs/Design/Page/Table.md, so a change there reaches them too.
+// docs/Features/Page/Table.md, so a change there reaches them too.
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ── performance: paginated + index-backed sorts ─────────────────────────────
@@ -428,7 +455,7 @@ test('Cards report sorts by an INDEXED field (boardId,createdAt), not the uninde
   // publication's sort - two places to keep in step, and a page that showed rows
   // the publication had not sent (an open card, the boards the All Boards page
   // had already loaded).
-  const client = read('client/components/settings/adminReports.js');
+  const client = read('client/components/settings/adminProblems.js');
   assert.ok(/reportPageResults\(Cards, 'report-cards'\)/.test(client),
     'client must render the page the server named');
   assert.ok(!/collectionResults\(Cards,/.test(client),
@@ -445,15 +472,15 @@ test('eventlog has a {stream,at} index so Security/Speed/Tests pages stay fast',
 // ── one controls row, defined once for every report ──
 test('report tables have no Search button (Enter searches) and ONE shared controls row', () => {
   // The six reports used to carry six copies of this row. They now render
-  // through the shared table page (docs/Design/Page/Table.md), so the row exists
+  // through the shared table page (docs/Features/Page/Table.md), so the row exists
   // once, in one template, with one set of handlers.
   const jade = read('client/components/settings/tablePage.jade');
   assert.ok(!/-search-button/.test(jade), 'the Search button must be gone (typing + Enter searches)');
   assert.strictEqual((jade.match(/table-page-controls/g) || []).length, 1,
     'exactly one controls row, in the one shared template');
-  const reports = read('client/components/settings/adminReports.jade');
+  const reports = read('client/components/settings/adminProblems.jade');
   assert.ok(!/admin-report-controls/.test(reports), 'no per-report copy may come back');
-  const js = read('client/components/settings/adminReports.js');
+  const js = read('client/components/settings/adminProblems.js');
   assert.ok(!/-search-button'\(event, tmpl\)/.test(js), 'dead search-button handlers removed');
   assert.ok(/keydown \.js-table-page-search/.test(js), 'Enter-to-search kept');
 });
@@ -479,11 +506,12 @@ test('no People pane keeps a pager of its own', () => {
 });
 
 // ── column-header sorting removed everywhere ────────────────────────────────
-test('clickable column-header sorting is removed from the board Table view', () => {
+test('the board Table view has one client-side sorting handler', () => {
   const jade = read('client/components/boards/tableView.jade');
   const js = read('client/components/boards/tableView.js');
-  assert.ok(!/js-table-view-sort/.test(jade) && !/js-table-view-sort/.test(js), 'no sortable headers/handler');
-  assert.ok(!/sortField|sortDirection|sortIndicator/.test(js), 'sort state/helper removed');
+  assert.ok(/js-table-view-sort/.test(jade) && /click \.js-table-view-sort/.test(js));
+  assert.strictEqual((js.match(/click \.js-table-view-sort/g) || []).length, 1);
+  assert.ok(/compareTableViewRows/.test(js), 'all columns share the tested comparator');
 });
 test('clickable column-header sorting is removed from the Admin Domains table', () => {
   const jade = read('client/components/settings/peopleBody.jade');
@@ -667,7 +695,7 @@ test('Organizations renders through the shared table page', () => {
   assert.ok(/headerTemplate: 'orgFeatureHeader'/.test(js), 'its control headers use the header slot');
   // All of People's panes render inside ONE template, so a shared-class handler
   // must act only for the pane that is open - otherwise one click pages them all.
-  assert.ok(/pane === 'org-setting'/.test(js),
+  assert.ok(/'org-setting': \{ page: tpl\.orgPage/.test(js),
     'the org pager must be scoped to the open pane');
 });
 
@@ -681,9 +709,19 @@ test('Teams renders through the shared table page, and gains a working prev', ()
   assert.ok(/rowTemplate: 'teamRow'/.test(js) && /headerTemplate: 'teamFeatureHeader'/.test(js));
   // Teams had a prev BUTTON and no handler behind it - paging back was dead.
   // Folding both panes into one scoped handler pair fixed that.
-  assert.ok(/pane === 'team-setting' && tpl\.teamPage\.get\(\) > 1/.test(js),
+  assert.ok(/'team-setting': \{ page: tpl\.teamPage/.test(js) &&
+    /moveActivePeoplePage\(tpl, -1\)/.test(js),
     'Teams must now page backwards');
-  assert.strictEqual((js.match(/'click \.js-table-page-prev'/g) || []).length, 1,
+  // One handler for every People pane, because a duplicate key in ONE event map
+  // silently overwrites the earlier one. Scoped to Template.people.events: this
+  // used to count the whole file, which also forbade a handler on a DIFFERENT
+  // template - and Roles Status is exactly that, its own template with its own
+  // paging state (Template.rolesGeneral.events). A separate map is not a
+  // duplicate key; it is how two panes that do not share state stay apart.
+  const peopleEvents = js.slice(js.indexOf('Template.people.events({'));
+  const oneMap = peopleEvents.slice(0, peopleEvents.indexOf('\nTemplate.'));
+  assert.ok(oneMap.length > 0, 'Template.people.events must exist');
+  assert.strictEqual((oneMap.match(/'click \.js-table-page-prev'/g) || []).length, 1,
     'one handler for every pane - duplicate keys in one event map would overwrite');
 });
 
@@ -700,29 +738,46 @@ test('the People pane renders through the shared table page', () => {
   assert.strictEqual((js.match(/function peopleDocs/g) || []).length, 1);
   assert.ok(!/peopleDocs\(tpl\)[\s\S]{0,200}slice\(/.test(js), 'never re-slice a published page');
   // All four table panes share one scoped pager pair.
-  for (const pane of ['org-setting', 'team-setting', 'people-setting']) {
-    assert.ok(js.includes(`pane === '${pane}'`), `${pane} must be handled by the shared pager`);
+  for (const [pane, page] of [['org-setting', 'orgPage'], ['team-setting', 'teamPage'],
+    ['people-setting', 'peoplePage']]) {
+    assert.ok(js.includes(`'${pane}': { page: tpl.${page}`),
+      `${pane} must be handled by the shared pager`);
   }
 });
 
-test('the three non-table People panes are recorded as such, not forced in', () => {
-  // Locked users is a form, Roles and Shared templates are checkbox lists. There
-  // is no paginated set of rows, so the design does not apply - and the doc has to
-  // say WHY, or someone will try to convert them.
+test('the non-table People panes are recorded as such, not forced in', () => {
+  // Locked users is a form and Shared templates is a checkbox list. There is no
+  // set of rows, so the design does not apply - and the doc has to say WHY, or
+  // someone will try to convert them.
+  //
+  // Roles used to be listed here too, for the same reason: it is a checkbox list.
+  // It still is - and it has since gained a READ-ONLY table underneath it, Roles
+  // Status, showing what each role may do. So the pane renders both, and the
+  // exclusion now covers only the two that are still nothing but a form.
   const at = doc.indexOf('## Pages that do not use this design');
   const section = doc.slice(at, doc.indexOf('## Pages that use this design'));
-  for (const pane of ['Locked users', 'Roles', 'Shared templates']) {
+  for (const pane of ['Locked users', 'Shared templates']) {
     assert.ok(section.includes(pane), `${pane} must be listed with its reason`);
   }
   assert.ok(/not tables/i.test(section), 'and the reason must be that they are not tables');
-  // Still true in the code: none of them renders the shared table page.
+
   const people = read('client/components/settings/peopleBody.jade');
+  const paneSrc = (name, next) => people.slice(
+    people.indexOf(`template(name="${name}")`), people.indexOf(`template(name="${next}")`));
+
   for (const [name, next] of [['lockedUsersGeneral', 'rolesGeneral'],
-    ['rolesGeneral', 'templatesGeneral']]) {
-    const pane = people.slice(people.indexOf(`template(name="${name}")`),
-      people.indexOf(`template(name="${next}")`));
-    assert.ok(!/\+tablePage/.test(pane), `${name} must not render a table page`);
+    ['templatesGeneral', 'orgRow']]) {
+    assert.ok(!/\+tablePage/.test(paneSrc(name, next)),
+      `${name} must not render a table page`);
   }
+
+  // Roles is the one that changed, so pin the new truth rather than dropping it.
+  const roles = paneSrc('rolesGeneral', 'templatesGeneral');
+  assert.ok(/\+tablePage\(rolesStatusTable\)/.test(roles),
+    'Roles renders the shared table page for its Roles Status pane');
+  assert.ok(/js-roles-save/.test(roles), 'below the Save button of its checkbox list');
+  assert.ok(roles.indexOf('js-roles-save') < roles.indexOf('+tablePage'),
+    'the table comes AFTER the Save button, which is where it was asked for');
 });
 
 test('People uses the shared controls row - search, filter, actions, total', () => {
@@ -848,7 +903,7 @@ test('Broken cards is a report like the ones beside it', () => {
   // It was the one entry in the Problems menu with a different set of controls: no
   // search box, no total, no "page X / N", just its own prev/next - because it ran
   // on the global-search machinery instead of a column spec.
-  const js = read('client/components/settings/adminReports.js');
+  const js = read('client/components/settings/adminProblems.js');
   assert.ok(/'report-broken': \{ page: tmpl\.brokenPage[\s\S]*?pub: 'brokenCardsReport'[\s\S]*?countMethod: 'getBrokenCardsReportCount' \}/.test(js),
     'it must be driven by the same loadReport() config as the other reports');
   assert.ok(/'report-broken': \{\n\s+emptyKey/.test(js), 'and have a column spec');
@@ -859,7 +914,7 @@ test('Broken cards is a report like the ones beside it', () => {
   const code = js.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
   assert.ok(!/CardSearchPaged/.test(code) && !/Template\.brokenCardsReport/.test(code),
     'the global-search machinery must be gone from the Problems page');
-  const jadeSrc = read('client/components/settings/adminReports.jade');
+  const jadeSrc = read('client/components/settings/adminProblems.jade');
   assert.ok(!/brokenCardsReport/.test(jadeSrc), 'and its template with it');
   // Server: one page, searchable, admin-only, with a count method beside it.
   const pub = read('server/publications/cards.js');
@@ -875,6 +930,45 @@ test('Broken cards is a report like the ones beside it', () => {
     'defined once, not copied into the report');
   assert.ok(/publish\('brokenCards', async function\(sessionId\)/.test(pub),
     'the standalone /broken-cards page keeps its publication');
+});
+
+test('Problems pagers ignore panes that own separate pagination state', () => {
+  const js = read('client/components/settings/adminProblems.js');
+
+  // Event-stream and Office table controls are descendants of adminProblems.
+  // Blaze therefore also offers their events to the parent's delegated table
+  // handlers. Those pane ids deliberately have no reportConfig entry: they use
+  // their own publication and pagination state. A missing guard made Next read
+  // cfg.count and throw instead of letting the child pager finish its request.
+  for (const functionName of ['goPrevPage', 'goNextPage', 'runSearch']) {
+    const start = js.indexOf(`function ${functionName}(`);
+    const end = js.indexOf('\n}', start) + 2;
+    assert.ok(start >= 0 && end > start, `${functionName} must exist`);
+    const body = js.slice(start, end);
+    const configLookup = body.indexOf('const cfg = reportConfig(tmpl)[reportId];');
+    const missingGuard = body.indexOf('if (!cfg) return;');
+    assert.ok(configLookup >= 0 && missingGuard > configLookup,
+      `${functionName} must ignore a report id without shared table state`);
+  }
+
+  for (const templateName of ['eventStreamReport', 'officeReport']) {
+    const start = js.indexOf(`Template.${templateName}.events({`);
+    const end = js.indexOf('\n});', start) + 4;
+    const events = js.slice(start, end);
+    for (const direction of ['prev', 'next']) {
+      const handler = new RegExp(
+        `'click \\.js-table-page-${direction}'\\(event, tmpl\\) \\{[\\s\\S]*?event\\.stopPropagation\\(\\);`,
+      );
+      assert.ok(handler.test(events),
+        `${templateName} ${direction} must not bubble into the shared Problems pager`);
+    }
+  }
+
+  const officeStart = js.indexOf('Template.officeReport.events({');
+  const officeEnd = js.indexOf('\n});', officeStart) + 4;
+  const officeEvents = js.slice(officeStart, officeEnd);
+  assert.ok(/'keydown \.js-table-page-search'\(event, tmpl\) \{[\s\S]*?event\.stopPropagation\(\);/.test(officeEvents),
+    'Office search Enter must not bubble into the shared Problems search handler');
 });
 
 // ── one row of controls, one height, one theme ─────────────────────────────

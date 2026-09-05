@@ -9,7 +9,7 @@
    !important` with nowrap cells, to force a horizontal scrollbar. With
    `!important` that beat even the shared table page's own layout, which is
    width:100% + table-layout:fixed with equal, wrapping columns precisely so it
-   CANNOT grow past the panel (docs/Design/Page/Table.md): every table page in the
+   CANNOT grow past the panel (docs/Features/Page/Table.md): every table page in the
    Admin Panel - Domains, Organizations, Teams, People, the Problems reports - had
    its right-hand columns outside the window until you scrolled. The geometry is
    gone; a table fits its panel and wraps (settingBody.css), and the People panes
@@ -119,7 +119,7 @@ table:not(.table-page-table) td:first-child {
 .divLockedUsersFilter .people-filter {
   margin-bottom: 0;
   color: #777;
-  line-height: 34px;
+  line-height: calc(34px * var(--wekan-ui-font-scale, 1));
 }
 
 .divLockedUsersFilter .user-filter {
@@ -130,7 +130,7 @@ table:not(.table-page-table) td:first-child {
 }
 
 /* `.unlock-all-btn` is gone. "Unlock all users" is an action of the shared
-   controls row now (docs/Design/Page/Table.md), and this rule was written for the
+   controls row now (docs/Features/Page/Table.md), and this rule was written for the
    old hand-written page header: a 20px top margin and a 28px height, next to a
    "Teams" button that takes the shared 34px. In one flex row that put the two
    buttons at visibly different heights AND on different baselines. The shared row
@@ -225,8 +225,32 @@ table:not(.table-page-table) td:first-child {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: calc(12px * var(--wekan-ui-font-scale, 1));
   font-weight: 500;
+}
+
+/* Compact country counters in People. They are real buttons because each opens
+   the country/city/address report; wrapping keeps several countries inside the
+   Location column instead of widening the whole Admin Panel. */
+.people-login-locations {
+  white-space: normal;
+}
+.people-login-locations .js-open-login-country {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 26px;
+  margin: 1px 3px 1px 0;
+  padding: 2px 6px;
+  border: 1px solid var(--theme-border, #ccc);
+  border-radius: 12px;
+  background: var(--theme-window, #fff);
+  color: inherit;
+  cursor: pointer;
+}
+.people-login-locations .js-open-login-country:hover,
+.people-login-locations .js-open-login-country:focus-visible {
+  background: var(--theme-hover, #eee);
 }
 
 .username .avatar img.avatar-image {
@@ -261,6 +285,22 @@ table:not(.table-page-table) td:first-child {
 }
 
 /* Admin Panel > People > Domains renders through the shared table page
-   (docs/Design/Page/Table.md), so its controls row, pagination and table are
+   (docs/Features/Page/Table.md), so its controls row, pagination and table are
    styled there - and its pager is themed by paginationControls.css like every
    other pager. Nothing pane-specific is needed here any more. */
+
+/* #6465: the "all users" select-all in a table heading. One row, box after the
+   word, with a gap that cannot collapse - the two used to be loose inline nodes
+   in a centred heading cell, and at the column's width the box sat on top of the
+   text. inline-flex keeps the heading's own centring intact. */
+.select-all-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.select-all-user input.allUserChkBox {
+  margin: 0;
+  flex: none;
+}

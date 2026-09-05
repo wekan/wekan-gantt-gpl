@@ -21,7 +21,7 @@
 #      the legacy mongo CLI (mongoexport — the modern Node driver can't talk to 3.2)
 #      and inserts into FerretDB with the Node driver, extracting GridFS the same
 #      way. NO mongodump/mongorestore and no intermediate MongoDB 7.
-#   3. On success it switches the snap to database=ferretdb (MongoDB is then stopped
+#   3. On success it marks the migration done (MongoDB is then stopped
 #      and disabled by mongodb-control). Progress is shown at ROOT_URL.
 #   4. If neither mongod can open the data (unusual/corrupt) or the tools are
 #      missing, it falls back to a normal MongoDB start so the service is never left
@@ -48,6 +48,19 @@ TGT_PORT=27098                                         # temp target FerretDB
 NODE="$SNAP/bin/node"
 IMPORTER="$SNAP/bin/migrate-mongo3-to-ferretdb.mjs"      # MongoDB 3.2 (legacy CLI)
 IMPORTER_MODERN="$SNAP/bin/migrate-mongodb-to-ferretdb.mjs"  # MongoDB 6/7 (driver)
+# #6471: the third reader. mongod 4.2 opens featureCompatibilityVersion 4.0 and
+# 4.2 - the vintage neither mongod 7 nor the 3.2 tools can touch - and is used
+# ONLY to read the old data during a migration, never as the running database.
+# It carries its own OpenSSL 1.1 (core24 has 3); see the mongo42 part in
+# snapcraft.yaml. Absent on the architectures MongoDB never built it for, which
+# is why every use is guarded on the binary being there.
+M42="$SNAP/mongo42"
+M42_LIB="$M42/lib"
+# #6471 again, one rung up: mongod 5.0 opens FCV 4.4 and 5.0 - the vintage
+# between mongod 7 (6.0, 7.0) and mongod 4.2 (4.0, 4.2), and the one the WeKan
+# snap itself shipped in February 2023. Read-only, like the other two.
+M50="$SNAP/mongo50"
+M50_LIB="$M50/lib"
 FERRETDB="$SNAP/ferretdb"
 DB_EVAL="$SNAP/bin/db-eval"                            # Node + `mongodb` driver
 SRC_URL="mongodb://127.0.0.1:$SRC_PORT/?directConnection=true"
@@ -63,6 +76,27 @@ if [ ! -f "$DBPATH/WiredTiger" ] && ! ls "$DBPATH"/collection-*.wt >/dev/null 2>
   log "no existing MongoDB data in $DBPATH; nothing to migrate."
   touch "$MARKER" 2>/dev/null || true
   exit 0
+fi
+
+# #6585: FIRST, before anything here starts a mongod of its own. The importer's
+# resume checkpoint lists the collections it has already copied so an interrupted
+# migration continues instead of starting over - but between the interruption and
+# the resume, WeKan is handed back to MongoDB and goes on being used, for as long as
+# that lasts. Weeks later the resume would skip every collection it finished back
+# then, copy only the rest, and report success: a FerretDB holding the database as
+# it was on the day the migration stopped. That is what "Data Lost in DB after
+# Update 10.81 to 10.85" was - the update ran the resume, and the copy it completed
+# was three weeks old.
+#
+# So the checkpoint is only good while the SOURCE has not moved on. The evidence is
+# the mtime of the MongoDB data files, which is why this runs before start_mongod:
+# starting a mongod writes to them, and once ours has, the question can no longer be
+# asked. Only the collection half is dropped; extracted attachments and avatars are
+# kept, so the expensive part of a resume survives.
+CHECKPOINT_STALE="$SNAP/bin/migration-checkpoint-stale.mjs"
+if [ -x "$NODE" ] && [ -f "$CHECKPOINT_STALE" ]; then
+  _cp_out="$("$NODE" "$CHECKPOINT_STALE" "$DBPATH" 2>&1)"
+  [ -n "${_cp_out:-}" ] && log "$_cp_out"
 fi
 
 export LC_ALL=C
@@ -160,6 +194,40 @@ stop_via() {       # $1 = shell binary (legacy mongo), $2 = LD_LIBRARY_PATH pref
 
 WEKAN_PORT="${PORT:-8080}"
 
+# ── A FINISHED MIGRATION IS NOT A MIGRATION TO RUN ───────────────────────────
+#
+# Before anything is probed, read or deleted: if there is a FerretDB with data in
+# it and NO importer checkpoint beside it, this instance was migrated already and
+# has been serving from that database - possibly for months. Importing the old
+# MongoDB over it would replace months of work with the copy it was made from.
+#
+# That is not hypothetical. #6583 comment 5273400932: "the migration re-ran
+# yesterday (even though it had already run successfully a few weeks ago). The
+# .migration-to-ferretdb-done file is time stamped yesterday ... That explains
+# why I'm seeing old data." The marker had gone, the old staleness guard had
+# moved the instance back to MongoDB, and the re-run did the rest.
+#
+# bin/migration-pending already answers this the same way (through
+# bin/database-role), so this branch should never be reached - which is exactly
+# why it is here. The cost of being wrong in this direction is somebody's data.
+#
+# The checkpoint is what tells a finished migration from an interrupted one: the
+# importer writes migration-progress.json as it goes and resumes from it, so a
+# non-empty FerretDB WITHOUT one is a database that is finished and in use.
+if bash "$SNAP/bin/ferretdb-has-data" "$SQLITE_DIR" 2>/dev/null && \
+   [ ! -f "$SNAP_COMMON/migration-progress.json" ]; then
+  log "The FerretDB database in $SQLITE_DIR already holds data and no migration is in progress."
+  log "This instance is migrated. NOT importing MongoDB over it - that would replace what is being served with the copy it was made from (#6583)."
+  log "Marking the migration done and starting FerretDB. The MongoDB data stays in $SNAP_COMMON, untouched."
+  touch "$MARKER" 2>/dev/null || true
+  rm -f "$SNAP_COMMON/.migration-retry" 2>/dev/null || true
+  svc="${SNAP_INSTANCE_NAME:-${SNAP_NAME:-wekan}}"
+  snapctl start --enable "${svc}.ferretdb" 2>/dev/null || true
+  snapctl restart "${svc}.wekan" 2>/dev/null || true
+  snapctl stop --disable "${svc}.mongodb" 2>/dev/null || true
+  exit 0
+fi
+
 # Start a temporary FerretDB v1 (SQLite at <files>/db) as the migration TARGET, and
 # arm the traps that stop it and the source mongod. $1 = the source-mongod stop command.
 FPID=""
@@ -183,7 +251,7 @@ cleanup_all() {
 # call once the handler returns, reads the importer's signal exit code (143) as a
 # failure, and discards the partial SQLite — throwing away hours of work on every snap
 # refresh. The source MongoDB data is untouched either way, and the snap is still on
-# database=mongodb (only finish_success switches it), so WeKan comes back up on MongoDB
+# the migration unfinished (only finish_success marks it), so WeKan comes back up on MongoDB
 # and the migration continues on the next start.
 interrupted_keep_progress() {
   trap - EXIT INT TERM     # this handler does the cleanup; do not run it twice
@@ -222,7 +290,7 @@ resume_next_start() {   # $1 = importer exit code
 }
 # On a successful migration: mark done and switch the snap to FerretDB. The MongoDB
 # source mongod (temporary) is stopped by the EXIT trap, and mongodb-control, seeing
-# database=ferretdb on the next activation, stops+disables the MongoDB service — so
+# FerretDB on the next activation, stops+disables the MongoDB service — so
 # afterwards only WeKan (Node.js) + FerretDB (SQLite) run.
 finish_success() {
   # VERIFY the migration actually produced a non-empty FerretDB SQLite database before
@@ -248,10 +316,15 @@ finish_success() {
   # #6458/#6466: clear mongodb-control's start-failure counter — the migration
   # completing is exactly the recovery those failures were counting toward.
   rm -f "$SNAP_COMMON/.mongod-start-failures" 2>/dev/null || true
-  snapctl set database=ferretdb 2>/dev/null || true
-  # CRUCIAL: an INTERNAL `snapctl set` does NOT re-run the configure hook, so we must flip
-  # the database services here ourselves — exactly as snap/hooks/configure's ferretdb
-  # branch does. Otherwise FerretDB (which disabled its own service while database=mongodb)
+  # The retry record describes attempts that failed; this one did not.
+  rm -f "$SNAP_COMMON/.migration-retry" 2>/dev/null || true
+  # The marker above IS the switch now: bin/database-role reads it (plus a FerretDB
+  # with data in it) and every service asks database-role. There is no `database`
+  # setting to set - it was removed, because a setting could say mongodb while the
+  # data said otherwise, and then nothing ever set it back.
+  #
+  # The services still have to be flipped HERE, exactly as snap/hooks/configure's
+  # ferretdb branch does. Otherwise FerretDB (which disabled its own service while the migration was owed)
   # is never enabled/started, MongoDB stays enabled, and WeKan is left with no database to
   # talk to ("MongoDB not ready yet, retrying in 5 seconds..." forever). Enable+start
   # FerretDB FIRST (so a DB is running before we stop MongoDB, and before disabling THIS
@@ -278,7 +351,7 @@ finish_success() {
   # the one command that can terminate us goes LAST.
   snapctl start --enable "${svc}.ferretdb" 2>/dev/null || true
   snapctl restart "${svc}.ferretdb" 2>/dev/null || true
-  # WeKan is still waiting for MongoDB; restart it so it re-reads database=ferretdb
+  # WeKan is still waiting for MongoDB; restart it so it sees the finished migration
   # and connects to the FerretDB that is now running.
   snapctl restart "${svc}.wekan" 2>/dev/null || true
   # The migration is finished and the switch is recorded, so a SIGTERM from here on
@@ -299,6 +372,17 @@ finish_success() {
 discard_partial_ferretdb() {
   [ -n "${FPID:-}" ] && kill "$FPID" 2>/dev/null || true
   sleep 1
+  # ONLY what THIS attempt produced. The checkpoint is the importer's own record
+  # of the migration it is in the middle of; without one, the SQLite here is not
+  # partial - it is a database that was finished before this run started, and
+  # deleting it is how weeks of work disappear (#6583). The guard at the top of
+  # this file should have stopped us long before, and this is the second lock on
+  # the same door.
+  if [ ! -f "$SNAP_COMMON/migration-progress.json" ] && \
+     bash "$SNAP/bin/ferretdb-has-data" "$SQLITE_DIR" 2>/dev/null; then
+    log "NOT deleting the FerretDB database in $SQLITE_DIR: there is no migration checkpoint beside it, so it is a FINISHED database rather than this attempt's partial one."
+    return 0
+  fi
   rm -rf "${SQLITE_DIR:?}/"* 2>/dev/null || true
   # CRUCIAL: the importer's resume checkpoint lists the collections it has already
   # copied, and lives in $SNAP_COMMON (NOT in $SQLITE_DIR), so the rm above does not
@@ -310,32 +394,155 @@ discard_partial_ferretdb() {
   rm -f "$SNAP_COMMON/migration-progress.json" "$SNAP_COMMON/migration-progress.json.tmp" 2>/dev/null || true
   log "Removed any partial FerretDB SQLite from $SQLITE_DIR and the resume checkpoint; the snap stays on MongoDB and the next migration starts from the beginning."
 }
-# A migration FAILURE must NOT cause downtime. Delete any partial FerretDB SQLite, PAUSE
-# auto-migration (`migrate=off`) so it does not loop and re-hijack every start, and hand back to
-# mongodb-control to start MongoDB normally — so WeKan keeps working on MongoDB while the admin
-# fixes the problem and reruns `snap run wekan.migrate` (which re-enables migrate). The source
+# A migration FAILURE must NOT cause downtime, and must NOT end the migration either.
+#
+# It used to do both: it set `migrate=off`, which stops the loop - a migration that
+# fails on every start would re-hijack every start - but nothing ever turned it back
+# on. The snap stayed on MongoDB for good, waiting for an admin to read `snap logs`
+# and type `snap run wekan.migrate`, and most never do. Every WeKan snap is meant to
+# end up on FerretDB, so a failure is a RETRY, not a stop.
+#
+# So: record the failure (when, how many times, and which snap revision it was) and
+# hand back to mongodb-control, which starts MongoDB and keeps the site working. The
+# retry is decided by bin/migration-pending from that record:
+#
+#   * a NEW snap revision retries immediately - the next release is the most likely
+#     thing to have fixed whatever failed;
+#   * otherwise it waits, doubling from an hour up to a day, so a migration that
+#     cannot succeed yet costs one attempt a day rather than one per start;
+#   * `snap set wekan migrate=off` still stops it completely, because an admin
+#     saying "not now" is different from a failure.
+#
+# Any partial FerretDB SQLite is deleted first, so the retry starts clean; the source
 # MongoDB data is never modified or deleted.
+record_retry() {
+  local attempts=0
+  if [ -f "$SNAP_COMMON/.migration-retry" ]; then
+    attempts="$(sed -n 's/^attempts=\([0-9]*\)$/\1/p' "$SNAP_COMMON/.migration-retry" 2>/dev/null)"
+    [ -n "$attempts" ] || attempts=0
+  fi
+  attempts=$((attempts + 1))
+  {
+    echo "attempts=$attempts"
+    echo "when=$(date +%s)"
+    echo "revision=${SNAP_REVISION:-unknown}"
+  } > "$SNAP_COMMON/.migration-retry" 2>/dev/null || true
+  printf '%s' "$attempts"
+}
 fail_and_run_mongodb() {
   discard_partial_ferretdb
-  snapctl set migrate=off 2>/dev/null || true
-  log "Auto-migration PAUSED (snap set wekan migrate=off) so WeKan keeps working on MongoDB."
-  log "Fix the problem, then retry with:  snap run wekan.migrate"
+  local attempts
+  attempts="$(record_retry)"
+  log "Migration attempt $attempts failed. WeKan keeps working on MongoDB, and the migration"
+  log "is retried automatically - immediately after the next snap refresh, or after a wait"
+  log "that doubles from an hour up to a day. To retry now:  snap run wekan.migrate"
+  log "To stop retrying:  snap set wekan migrate=off"
   force_stop_src
   exec bash "$SNAP/bin/mongodb-control"
+}
+# #6471: the data was made by a MongoDB this snap carries NO reader for. It bundles
+# mongod 7 (the server) and the MongoDB 3.2 tools (to read a 6.09-era database) and
+# nothing in between, so a database left by a MongoDB 4.x or 5.x snap opens in neither
+# and mongod says so exactly:
+#
+#   This version of MongoDB is too recent to start up on the existing data files.
+#   Try MongoDB 4.2 or earlier.
+#
+# Handing that back to mongodb-control - which is what "not readable" used to do -
+# starts a mongod that CANNOT start, so mongodb-control re-runs the migration, which
+# fails the same way, three times, and then the snap serves 502 Bad Gateway with the
+# reason only in `snap logs`. Nothing retried here can succeed: reading those files
+# needs a binary the snap does not have. So STOP, leave every byte untouched, and say
+# so where an admin will see it - the web port - with the version mongod itself named
+# as still able to read the data.
+# WHY a reader did not open the data - from the reader's own words, not ours.
+#
+# #6585 (comment 5276581923) is a log that says everything except that:
+#
+#   [migration] mongod 7 could not open the data; trying the bundled mongod 5.0 ...
+#   [migration] mongod 7 could not open the data; trying the bundled mongod 4.2 ...
+#   [migration] The database files were made by an older MongoDB
+#               (MongoDB 4.2 or earlier can still read them).
+#
+# mongod 7 asked for 4.2, this snap HAS 4.2, it was tried, and the report ends
+# recommending the version that just failed. Whatever 4.2 said is in
+# migration-mongod.log and was never shown, so the next person to look has the
+# same three lines and no more. Print the last of it whenever a reader fails.
+reader_failed() {   # $1 = human name of the reader that did not open the data
+  log "$1 did not open the data. Its own last words:"
+  tail -n 25 "$LOGF" 2>/dev/null | sed 's/^/[migration]   /' || true
+}
+data_too_old_can_read() {   # what mongod said can still read these files, e.g. "4.2"
+  sed -n 's/.*Try MongoDB \([0-9][0-9.]*\) or earlier.*/\1/p' "$LOGF" 2>/dev/null | tail -1
+}
+mongod_says_data_too_old() {
+  grep -q "too recent to start up on the existing data files" "$LOGF" 2>/dev/null
+}
+stop_data_too_old() {
+  local can; can="$(data_too_old_can_read)"
+  printf '%s\n' "$can" > "$SNAP_COMMON/.mongodb-data-too-old"
+  # #6471: record WHICH revision concluded this. The conclusion is about the
+  # readers this snap has, and a later one may have more - the 4.2 reader was
+  # added for exactly these databases. A newer revision therefore ignores this
+  # marker and tries again (snap-src/bin/stale-marker).
+  bash "$SNAP/bin/stale-marker" --stamp "$SNAP_COMMON/.mongodb-data-too-old"
+  log "The database files were made by an older MongoDB${can:+ (mongod 7 says MongoDB $can or earlier can still read them)}."
+  log "This snap carries four readers and every one of them was tried on these files:"
+  log "  mongod 7    - MongoDB 6.0/7.0 data"
+  log "  mongod 5.0  - MongoDB 4.4/5.0 data"
+  log "  mongod 4.2  - MongoDB 4.0/4.2 data"
+  log "  the migratemongo 3.2 tools - MongoDB 3.x data (amd64 only)"
+  log "Each one's own error is printed above, under \"did not open the data\"; that is what to read, and what to send if you report this."
+  # #6585 (comment 5276581923): the report ended by recommending the exact
+  # version this snap had ALREADY tried - "MongoDB 4.2 or earlier can still read
+  # them" under a log line saying mongod 4.2 was tried. mongod 7 names the
+  # version that can open the FORMAT; it cannot know the file is also damaged,
+  # locked by an unclean shutdown, or built with options the reader lacks. So
+  # say which of the two this is, rather than sending somebody after a binary
+  # this snap already ran.
+  case "$can" in
+    4.2|4.0|4.4|5.0)
+      log "NOTE: this snap HAS a reader for MongoDB $can and it refused the files too, so the format is not the whole story - see its error above. A stock MongoDB $can will most likely say the same thing, and --repair on a COPY is the usual next step."
+      ;;
+  esac
+  log "NOTHING has been changed: your data, attachments and avatars are untouched."
+  log "Three ways forward:"
+  log "  1. Go back to the revision that worked:  sudo snap revert ${SNAP_INSTANCE_NAME:-wekan}   (then: sudo snap refresh --hold=forever ${SNAP_INSTANCE_NAME:-wekan})"
+  log "  2. Wait: this is retried by itself after every snap refresh, and each release may carry a reader this one does not."
+  log "  3. Move the data across yourself, with a MongoDB you download - they are all still published:"
+  log "       https://www.mongodb.com/try/download/community  (pick the version above, 'Archive' / tgz)"
+  log "       or directly: https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-ubuntu2004-<version>.tgz"
+  log "     Then, on a COPY of $SNAP_COMMON (never the original):"
+  log "       ./bin/mongod --dbpath /path/to/copy --port 27099          # add --repair first if it refuses"
+  log "       ./bin/mongodump --port 27099 --db wekan --out /path/to/dump"
+  log "     and restore that dump into a MongoDB 7 this snap can read, or ask on the issue and attach the mongod error above."
+  log "WeKan now serves an explanatory page on the web port instead of 502."
+  # NOT migrate=off. "No retry can change that" is true of THIS snap and false of
+  # the next one: the 4.2 reader was added for databases that had already been
+  # given up on, and the 5.0 reader after it. The retry record makes a new
+  # revision try again by itself, which is how those instances get migrated
+  # instead of waiting for someone to notice a release note.
+  record_retry >/dev/null
+  force_stop_src
+  # 0, not 1: there is nothing for snapd to retry, and a failing service would be
+  # restarted forever. The marker is what mongodb-control and wekan-control read.
+  trap - EXIT INT TERM
+  cleanup_all
+  exit 0
 }
 # Last resort when the data can be read by neither mongod 7 nor mongod 3.2 (unusual / corrupt),
 # or the migration tools are missing: don't loop with nothing running — pause auto-migration and
 # hand back to mongodb-control so mongod starts normally. Data is never modified or deleted.
 fall_back_to_mongodb() {   # $1 = human-readable reason
   log "$1"
-  log "Starting MongoDB normally (no migration this run). Pausing auto-migration (migrate=off)."
+  log "Starting MongoDB normally (no migration this run); the migration is retried automatically - after the next snap refresh, or after a wait that doubles from an hour up to a day."
   force_stop_src
-  snapctl set migrate=off 2>/dev/null || true
+  record_retry >/dev/null
   exec bash "$SNAP/bin/mongodb-control"
 }
-# #6466: failure handler for the MongoDB 3.x branch. For a 3.x source there is NO
-# working MongoDB fallback: the only service mongod is 7.x, which cannot open 3.x
-# data files ("This version of MongoDB is too recent ... Try MongoDB 4.2 or
+# #6466: failure handler for the branches with NO MongoDB fallback - the 3.x one
+# it was written for, and since #6471 the 4.x one as well. For either source the
+# only service mongod is 7.x, which cannot open those data files ("This version of MongoDB is too recent ... Try MongoDB 4.2 or
 # earlier"), so fail_and_run_mongodb used to delete the (possibly fully-copied)
 # FerretDB SQLite over a handful of per-item errors and then strand the snap in a
 # mongod crash loop serving 502 Bad Gateway. Instead: KEEP the partial FerretDB
@@ -392,14 +599,133 @@ fi
 stop_via_node
 force_stop_src
 
+# ── Otherwise a MongoDB 4.4/5.0 database? mongod 5.0 opens both. ────────────
+# The rung between the two readers this snap had. A server starts only on data
+# at most one major behind it, so mongod 7 covers FCV 6.0 and 7.0 and mongod 4.2
+# covers 4.0 and 4.2 - and FCV 4.4 and 5.0 were covered by nothing, which is a
+# real database and not a hypothetical one: the WeKan snap shipped MongoDB 5 in
+# February 2023 and 6.0.6 only in May. A site that stayed on it has 5.0 files,
+# and every reader here refused them, so it got .mongodb-data-too-old and the
+# explanatory page while its boards sat in a database nothing would open.
+#
+# MongoDB 5.0 REQUIRES AVX on x86_64, so this probe goes through cpu-exec with
+# the same feature spec as mongod 7: no AVX means qemu-user emulation, slow and
+# one-time, rather than a SIGILL and a site that stays down.
+if [ -x "$M50/bin/mongod" ]; then
+  reader_failed "mongod 7"
+  log "Trying the bundled mongod 5.0 (it opens featureCompatibilityVersion 4.4 and 5.0) ..."
+  if [ "$(uname -m)" = "x86_64" ] && ! grep -qw avx /proc/cpuinfo 2>/dev/null; then
+    log "CPU has no AVX support: the mongod 5.0 probe runs through qemu-user emulation (slower)."
+  fi
+  if start_mongod "$M50/bin/mongod" "$M50_LIB" "--wiredTigerCacheSizeGB ${SRC_WT_CACHE_GB}" "x86_64=avx,aarch64=atomics" && ready_via_node; then
+    if [ ! -x "$FERRETDB" ] || [ ! -x "$NODE" ] || [ ! -f "$IMPORTER_MODERN" ]; then
+      # NOT fall_back_to_mongodb: the service mongod is 7.x and it has already
+      # refused these files, so handing back to it is the loop this branch ends.
+      stop_via_node
+      force_stop_src
+      fall_back_to_mongodb "Migration tools unavailable; cannot migrate this MongoDB 4.4/5.0 database to FerretDB."
+    fi
+    log "Detected MongoDB 4.4/5.0 (mongod 5.0 opened it). Migrating to FerretDB (SQLite) ..."
+    start_target_ferretdb "stop_via_node"
+    log "Migrating MongoDB 4.4/5.0 → FerretDB (driver). Progress at ${ROOT_URL:-http://localhost:$WEKAN_PORT}"
+    NODE_PATH="$SNAP/programs/server/node_modules" \
+    SOURCE_MONGO_URL="mongodb://127.0.0.1:$SRC_PORT/wekan?directConnection=true" \
+    TARGET_MONGO_URL="mongodb://127.0.0.1:$TGT_PORT/wekan" \
+    WRITABLE_PATH="$SNAP_COMMON" \
+    MIGRATION_PORT="$WEKAN_PORT" \
+      "$NODE" "$IMPORTER_MODERN"
+    rc=$?
+    if [ "$rc" -eq 0 ] && finish_success; then exit 0; fi
+    [ "$rc" -ge 128 ] && resume_next_start "$rc"
+    # There is no MongoDB to fall back to for this vintage either - the service
+    # mongod cannot open it - so keep the partial FerretDB and its checkpoint and
+    # let the next start resume, rather than deleting good work.
+    fail_3x_keep_progress "$rc"
+  fi
+  stop_via_node
+  force_stop_src
+fi
+
+# ── Otherwise a MongoDB 4.x database? mongod 4.2 opens FCV 4.0 and 4.2. ──────
+# This is the gap #6471 fell into: a database from one of the 4.x snaps, which
+# mongod 7 refuses ("too recent to start up on the existing data files. Try
+# MongoDB 4.2 or earlier") and the 3.2 tools cannot read either. Reading it is
+# all that is needed - the modern importer then copies it into FerretDB with the
+# bundled driver, which supports servers from 4.2 up, exactly as it does for a
+# 6/7 source.
+if [ -x "$M42/bin/mongod" ]; then
+  reader_failed "mongod 5.0"
+  log "Trying the bundled mongod 4.2 (it opens featureCompatibilityVersion 4.0 and 4.2) ..."
+  if start_mongod "$M42/bin/mongod" "$M42_LIB" "--wiredTigerCacheSizeGB ${SRC_WT_CACHE_GB}" && ready_via_node; then
+    if [ ! -x "$FERRETDB" ] || [ ! -x "$NODE" ] || [ ! -f "$IMPORTER_MODERN" ]; then
+      # NOT fall_back_to_mongodb: the only service mongod is 7.x, and it cannot
+      # open this data either - handing back to it is the loop this whole branch
+      # exists to end.
+      stop_via_node
+      force_stop_src
+      fall_back_to_mongodb "Migration tools unavailable; cannot migrate this MongoDB 4.x database to FerretDB."
+    fi
+    log "Detected MongoDB 4.x (mongod 4.2 opened it). Migrating to FerretDB (SQLite) ..."
+    start_target_ferretdb "stop_via_node"
+    log "Migrating MongoDB 4.x → FerretDB (driver). Progress at ${ROOT_URL:-http://localhost:$WEKAN_PORT}"
+    NODE_PATH="$SNAP/programs/server/node_modules" \
+    SOURCE_MONGO_URL="mongodb://127.0.0.1:$SRC_PORT/wekan?directConnection=true" \
+    TARGET_MONGO_URL="mongodb://127.0.0.1:$TGT_PORT/wekan" \
+    WRITABLE_PATH="$SNAP_COMMON" \
+    MIGRATION_PORT="$WEKAN_PORT" \
+      "$NODE" "$IMPORTER_MODERN"
+    rc=$?
+    if [ "$rc" -eq 0 ] && finish_success; then exit 0; fi
+    [ "$rc" -ge 128 ] && resume_next_start "$rc"
+    # Same reasoning as the 3.x branch below: there is no MongoDB to fall back
+    # to for this vintage, so keep the partial FerretDB and its checkpoint and
+    # let the next start resume, rather than deleting good work and stranding
+    # the site.
+    fail_3x_keep_progress "$rc"
+  fi
+  stop_via_node
+  force_stop_src
+fi
+
 # ── Otherwise, old MongoDB 3.x? Read it with the bundled migratemongo 3.2 CLI. ─
+# #6471 (comment 5264028470): "It turns out the mongodb version on my installation
+# was even older. It was running on mongodb 3.2, this is why your 4.2 check was not
+# doing anything." Their site never showed the explanatory page either - it waited
+# for MongoDB forever - and this is why.
+#
+# The migratemongo 3.2 tools are staged for amd64 ONLY (see the migratemongo part in
+# snapcraft.yaml: MongoDB published no 3.2 build for any other architecture). So on
+# arm64 and everything else, a MongoDB 3.x database has NO reader in this snap at
+# all - and this branch handed that to fall_back_to_mongodb, which starts mongod 7
+# again. mongod 7 is the binary that has ALREADY said it cannot open these files, so
+# it fails, mongodb-control re-runs the migration, and the site sits on "MongoDB not
+# ready yet, retrying in 5 seconds..." forever with nothing said on the web port.
+# That loop is the whole of what #6471 was opened about.
+#
+# A missing reader and an unreadable database are not the same thing, and only one of
+# them can be retried. When mongod has already refused the files, "the tool that could
+# have read them is not in this snap" is a final answer: stop, keep every byte, and
+# serve the page that says so. Genuinely unreadable data - where no mongod ever said
+# "too recent" - still falls back to MongoDB as before, because that case may yet come
+# up serving.
 if [ ! -x "$MM/bin/mongod" ] || [ ! -x "$MM/bin/mongo" ] || [ ! -x "$FERRETDB" ] || [ ! -x "$NODE" ] || [ ! -f "$IMPORTER" ]; then
+  if mongod_says_data_too_old; then
+    log "The MongoDB 3.x reader (migratemongo) is not in this snap for $(uname -m); mongod 7 and mongod 4.2 have both refused these files."
+    stop_data_too_old
+  fi
   fall_back_to_mongodb "Migration tools unavailable; cannot migrate MongoDB 3.x to FerretDB."
 fi
 
-log "mongod 7 could not open the data; checking whether it is MongoDB 3.x ..."
+reader_failed "mongod 4.2"
+log "Checking whether it is MongoDB 3.x (the bundled 3.2 tools, amd64 only) ..."
 if ! start_mongod "$MM/bin/mongod" "$MM_LIB" || ! ready_via "$MM/bin/mongo" "$MM_LIB"; then
   stop_via "$MM/bin/mongo" "$MM_LIB"
+  # #6471: distinguish "no reader for this vintage" from "unreadable/corrupt". The
+  # first has a definite answer for the admin and no useful retry; only the second
+  # is worth handing back to mongodb-control.
+  if mongod_says_data_too_old; then
+    stop_data_too_old
+  fi
   fall_back_to_mongodb "Data is not readable as modern MongoDB or MongoDB 3.x; not migrating."
 fi
 

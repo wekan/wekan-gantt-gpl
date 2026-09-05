@@ -170,20 +170,32 @@ button:active:active {
   background: #e6e6e6;
   background: linear-gradient(#e6e6e6, #e6e6e6);
 }
+/* The submit button of a useraccounts form inside a popup is a `.primary` too.
+   Member Settings / Change Password renders `+atForm(state='changePwd')`, whose
+   button is `button.at-btn#at-btn` with no class of ours on it - so it fell back
+   to the plain grey `button` above, while the Save button of Edit Profile beside
+   it in the same menu was the themed one. Two buttons, one menu, two looks.
+   It is named in the SAME rules rather than given a copy of them, so the theme
+   accent and the hover and active states have one home.
+   docs/Features/Page/Theme.md */
 input[type="submit"].primary,
-button.primary {
+button.primary,
+.pop-over .at-form button.at-btn {
   background: var(--theme-accent, #005377);
   box-shadow: 0 1px 0 #4d4d4d;
   color: #fff;
 }
 input[type="submit"].primary:hover,
 button.primary:hover,
+.pop-over .at-form button.at-btn:hover,
 input[type="submit"].primary:focus,
-button.primary:focus {
+button.primary:focus,
+.pop-over .at-form button.at-btn:focus {
   background: var(--theme-accent, #004766);
 }
 input[type="submit"].primary:active,
-button.primary:active {
+button.primary:active,
+.pop-over .at-form button.at-btn:active {
   background: var(--theme-accent, #01628c);
 }
 input[type="submit"].negate,
@@ -295,8 +307,32 @@ textarea::-moz-placeholder {
 }
 .edit-controls .fa-times-thin,
 .add-controls .fa-times-thin {
-  font-size: 20px;
+  font-size: calc(20px * var(--wekan-ui-font-scale, 1));
   margin: 5px 21px;
+}
+/* Custom-field Copy is an editor action above the top-right corner of the
+   field controls, not part of the Save / Close row. */
+.js-card-customfield-text,
+.js-card-customfield-number,
+.js-card-customfield-checkbox-editor,
+.js-card-customfield-currency,
+.js-card-customfield-dropdown,
+.js-card-customfield-stringtemplate,
+.custom-field-date-editor {
+  position: relative;
+}
+.custom-field-copy-control {
+  inset-inline-end: 0;
+  position: absolute;
+  top: -24px;
+  z-index: 1;
+}
+form.inlined-form .custom-field-copy-control > a.fa-copy,
+.custom-field-date-editor .custom-field-copy-control > a.fa-copy {
+  float: none;
+  inset: auto;
+  position: static;
+  top: auto;
 }
 /* CJK (Japanese/Chinese/Korean) labels contain no spaces, so browsers may
    insert a line break between any two characters. In the narrow add-card /
@@ -334,6 +370,16 @@ textarea::-moz-placeholder {
   transition: 0.2s;
   margin: 0;
   cursor: pointer;
+  /* A CHECKBOX IS SQUARE, WHEREVER IT IS PUT.
+     Several of the rows that carry one are flex containers - the export popup's
+     "select what to include", Admin Panel's setting rows, the sidebar's filters
+     - and a flex item shrinks by default. Next to a long label that squeezed the
+     13px box into a thin vertical sliver: "Kortin tiedot (jokainen kortti kuten
+     kortin viennissä)" drew a sliver while "Taulu" beside it stayed square.
+     `flex: none` here rather than in each of those places, because the shape of
+     a checkbox is this rule's business and there are 92 of them across 19
+     templates. */
+  flex: none;
 }
 .materialCheckBox.is-checked {
   top: -4px;
@@ -376,10 +422,10 @@ textarea::-moz-placeholder {
   border-radius: 3px;
   color: #fff;
   display: none;
-  font-size: 12px;
+  font-size: calc(12px * var(--wekan-ui-font-scale, 1));
   font-weight: 700;
   height: 17px;
-  line-height: 17px;
+  line-height: calc(17px * var(--wekan-ui-font-scale, 1));
   margin: 0;
   padding: 2px 4px;
   position: absolute;
@@ -433,8 +479,8 @@ textarea::-moz-placeholder {
 .button-link.setting .label {
   color: #222;
   display: block;
-  font-size: 12px;
-  line-height: 14px;
+  font-size: calc(12px * var(--wekan-ui-font-scale, 1));
+  line-height: calc(14px * var(--wekan-ui-font-scale, 1));
   margin-bottom: 0;
 }
 .button-link.setting:hover .label {
@@ -442,8 +488,8 @@ textarea::-moz-placeholder {
 }
 .button-link.setting .value {
   display: block;
-  font-size: 18px;
-  line-height: 24px;
+  font-size: calc(18px * var(--wekan-ui-font-scale, 1));
+  line-height: calc(24px * var(--wekan-ui-font-scale, 1));
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -586,8 +632,8 @@ button.loud-text-button:hover {
   padding: 11px;
   position: relative;
   text-decoration: none;
-  font-size: 16px;
-  line-height: 20px;
+  font-size: calc(16px * var(--wekan-ui-font-scale, 1));
+  line-height: calc(20px * var(--wekan-ui-font-scale, 1));
 }
 .big-link .text {
   text-decoration: underline;
@@ -629,9 +675,9 @@ button.loud-text-button:hover {
   width: 40px;
 }
 .big-link.avatar-changer .member .member-initials {
-  font-size: 16px;
+  font-size: calc(16px * var(--wekan-ui-font-scale, 1));
   height: 40px;
-  line-height: 40px;
+  line-height: calc(40px * var(--wekan-ui-font-scale, 1));
   max-height: 40px;
 }
 .show-more {
@@ -663,24 +709,24 @@ button.loud-text-button:hover {
 .uploader .realfile {
   cursor: pointer;
   height: 34px;
-  line-height: 34px;
+  line-height: calc(34px * var(--wekan-ui-font-scale, 1));
   position: absolute;
   top: 0;
   inset-inline-start: 0;
   width: 100%;
   z-index: 2;
-  font-size: 23px;
+  font-size: calc(23px * var(--wekan-ui-font-scale, 1));
 }
 .uploader .realfile input[type="file"] {
   cursor: pointer;
   height: 34px;
-  line-height: 34px;
+  line-height: calc(34px * var(--wekan-ui-font-scale, 1));
   margin: 0;
   opacity: 0;
   padding: 0;
   width: 100%;
   z-index: 2;
-  font-size: 23px;
+  font-size: calc(23px * var(--wekan-ui-font-scale, 1));
 }
 .uploader:hover .fakefile {
   background: #318ec4;

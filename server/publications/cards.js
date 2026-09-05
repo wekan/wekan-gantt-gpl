@@ -53,6 +53,7 @@ import {
   OPERATOR_SWIMLANE, OPERATOR_TEAM,
   OPERATOR_USER,
   OPERATOR_TITLE,
+  OPERATOR_NUMBER,
   OPERATOR_DESCRIPTION,
   OPERATOR_CUSTOMFIELD,
   OPERATOR_ATTACHMENT_TEXT,
@@ -79,7 +80,13 @@ import { QueryErrors, QueryParams, Query } from '/config/query-classes';
 import { CARD_TYPES } from '../../config/const';
 import Org from "../../models/org";
 import Team from "../../models/team";
+import { MATCH_NOTHING, selectorIsInjection } from '/server/lib/selectorGuard';
 const { boardCardScope } = require('/models/lib/boardCardScope');
+const { retainRankedCard } = require('/models/lib/cardSearchRanking');
+const {
+  ownedSearchSessionSelector,
+  recordLoggedOutPaginationProbe,
+} = require('/models/lib/searchPaginationAuthorization');
 
 Meteor.publish('card', async function(cardId) {
   check(cardId, String);
@@ -330,8 +337,10 @@ Meteor.publish('myCards', async function(sessionId) {
 });
 
 // Optimized due cards publication for better performance
-Meteor.publish('dueCards', async function(allUsers = false) {
+Meteor.publish('dueCards', async function(allUsers = false, limit = 200, skip = 0) {
   check(allUsers, Boolean);
+  check(limit, Number);
+  check(skip, Number);
 
   const userId = this.userId;
   if (!userId) {
@@ -363,15 +372,19 @@ Meteor.publish('dueCards', async function(allUsers = false) {
     selector.$or = [
       { members: userId },
       { assignees: userId },
+      { requesters: userId },
+      { assigners: userId },
       { userId: userId }
     ];
   }
 
   const options = {
     sort: { dueAt: 1 }, // Sort by due date ascending (oldest first)
-    // No limit: show ALL of the user's due cards across boards (issue #5999).
-    // Previously a `limit: 100` capped the results, which (combined with the
-    // per-user filter) hid many due cards compared to older versions.
+    // Page rather than truncate: #5999 requires every due card to remain
+    // reachable, while an unlimited live cursor makes one visit publish every
+    // due card and keep every one reactive. The client provides Previous/Next.
+    limit: Math.max(1, Math.min(Math.floor(limit) || 200, 500)),
+    skip: Math.max(0, Math.floor(skip) || 0),
     fields: {
       title: 1,
       dueAt: 1,
@@ -421,13 +434,41 @@ Meteor.publish('sessionData', async function(sessionId) {
   return cursor;
 });
 
+// Which boards a search covers: the ones the user is actually part of - a member
+// of, or reached through an organization, a team or their e-mail domain - and NOT
+// every PUBLIC board on the instance.
+//
+// A public board is meant to be discoverable, so it belongs in the boards list.
+// But "Search All Boards" meant all boards on the server: on a public instance a
+// search for a common word answered with strangers' cards, and following a hit
+// dropped the user into a board they have no part in. "All boards" means all of
+// YOUR boards. Someone who wants to look inside a public board can still open it
+// and search there.
+const SEARCH_BOARD_SCOPE = { includePublic: false };
+
 async function buildSelector(queryParams, userId) {
   const errors = new QueryErrors();
 
   let selector = {};
 
   if (queryParams.selector) {
-    selector = queryParams.selector;
+    selector = selectorIsInjection(queryParams.selector, 'globalSearch')
+      ? MATCH_NOTHING
+      : {
+        $and: [
+          queryParams.selector,
+          {
+            boardId: {
+              $in: await Boards.userBoardIds(
+                userId,
+                null,
+                {},
+                SEARCH_BOARD_SCOPE,
+              ),
+            },
+          },
+        ],
+      };
   } else {
     const boardsSelector = {};
 
@@ -500,13 +541,13 @@ async function buildSelector(queryParams, userId) {
     if (archived !== null) {
       if (archived) {
         selector.boardId = {
-          $in: await Boards.userBoardIds(userId, null, boardsSelector),
+          $in: await Boards.userBoardIds(userId, null, boardsSelector, SEARCH_BOARD_SCOPE),
         };
         selector.$and.push({
           $or: [
             {
               boardId: {
-                $in: await Boards.userBoardIds(userId, archived, boardsSelector),
+                $in: await Boards.userBoardIds(userId, archived, boardsSelector, SEARCH_BOARD_SCOPE),
               },
             },
             // AWAITED: these are async, and an un-awaited call puts a PROMISE where
@@ -520,14 +561,14 @@ async function buildSelector(queryParams, userId) {
         });
       } else {
         selector.boardId = {
-          $in: await Boards.userBoardIds(userId, false, boardsSelector),
+          $in: await Boards.userBoardIds(userId, false, boardsSelector, SEARCH_BOARD_SCOPE),
         };
         selector.swimlaneId = { $nin: await Swimlanes.archivedSwimlaneIds() };
         selector.listId = { $nin: await Lists.archivedListIds() };
         selector.archived = false;
       }
     } else {
-      const userBoardIds = await Boards.userBoardIds(userId, null, boardsSelector);
+      const userBoardIds = await Boards.userBoardIds(userId, null, boardsSelector, SEARCH_BOARD_SCOPE);
       selector.boardId = {
         $in: userBoardIds,
       };
@@ -541,7 +582,7 @@ async function buildSelector(queryParams, userId) {
       for (const query of queryParams.getPredicates(OPERATOR_BOARD)) {
         const boards = await Boards.userSearch(userId, {
           title: new RegExp(escapeForRegex(query), 'i'),
-        });
+        }, {}, SEARCH_BOARD_SCOPE);
         if (boards.length) {
           boards.forEach(board => {
             queryBoards.push(board._id);
@@ -626,16 +667,44 @@ async function buildSelector(queryParams, userId) {
     queryUsers[OPERATOR_MEMBER] = [];
     queryUsers[OPERATOR_CREATOR] = [];
 
-    if (queryParams.hasOperator(OPERATOR_USER)) {
-      const users = [];
-      for (const username of queryParams.getPredicates(OPERATOR_USER)) {
-        const user = await ReactiveCache.getUser({ username });
-        if (user) {
-          users.push(user._id);
-        } else {
-          errors.addNotFound(OPERATOR_USER, username);
-        }
+    // Resolve every username the query names in ONE lookup.
+    //
+    // Each `user:`/`member:`/`assignee:`/`creator:` predicate used to do its own
+    // awaited findOne, so `member:ann member:bob member:carol` was three serial
+    // round-trips before the search itself could start. They are all the same
+    // question - which of these names is an account - so it is asked once, with
+    // `$in`, and answered from a map. Names that matched nothing are still
+    // reported per operator, exactly as before, because the operator is what
+    // tells the user WHERE the unknown name was typed.
+    const namedUsernames = new Set();
+    for (const key of [OPERATOR_USER, OPERATOR_MEMBER, OPERATOR_ASSIGNEE, OPERATOR_CREATOR]) {
+      if (queryParams.hasOperator(key)) {
+        for (const username of queryParams.getPredicates(key)) namedUsernames.add(username);
       }
+    }
+
+    const userIdByUsername = new Map();
+    if (namedUsernames.size) {
+      const found = await ReactiveCache.getUsers(
+        { username: { $in: [...namedUsernames] } },
+        { fields: { _id: 1, username: 1 } },
+      );
+      (found || []).forEach(user => userIdByUsername.set(user.username, user._id));
+    }
+
+    // The ids a predicate names, and the names it got wrong.
+    const resolvePredicates = key => {
+      const ids = [];
+      for (const username of queryParams.getPredicates(key)) {
+        const id = userIdByUsername.get(username);
+        if (id) ids.push(id);
+        else errors.addNotFound(key, username);
+      }
+      return ids;
+    };
+
+    if (queryParams.hasOperator(OPERATOR_USER)) {
+      const users = resolvePredicates(OPERATOR_USER);
       if (users.length) {
         selector.$and.push({
           $or: [{ members: { $in: users } }, { assignees: { $in: users } }],
@@ -645,15 +714,7 @@ async function buildSelector(queryParams, userId) {
 
     for (const key of [OPERATOR_MEMBER, OPERATOR_ASSIGNEE, OPERATOR_CREATOR]) {
       if (queryParams.hasOperator(key)) {
-        const users = [];
-        for (const username of queryParams.getPredicates(key)) {
-          const user = await ReactiveCache.getUser({ username });
-          if (user) {
-            users.push(user._id);
-          } else {
-            errors.addNotFound(key, username);
-          }
-        }
+        const users = resolvePredicates(key);
         if (users.length) {
           selector[key] = { $in: users };
         }
@@ -696,23 +757,57 @@ async function buildSelector(queryParams, userId) {
                   queryLabels.push(boardLabel._id);
                 });
             });
-          } else {
+          } else if (!/^[0-9]+$/.test(String(label).trim())) {
+            // #5006: `#12` with no label called 12 is not a mistake - it is a
+            // card-number search, answered below. Reporting "label not found"
+            // beside the card it did find is a message that contradicts the
+            // results on the screen.
             errors.addNotFound(OPERATOR_LABEL, label);
           }
         }
       }
-      if (queryLabels.length) {
-        selector.labelIds = { $in: [...new Set(queryLabels)] };
+      // #5006: `#12` searches for BOTH - a label called 12 and the card whose
+      // number is 12. A board calls a card "#12" and a label can be called
+      // anything, so which of the two a person means cannot be known from the
+      // text; answering with both is the only reading that never hides what
+      // they were looking for. It is an OR, so every card the label search
+      // returned before is still returned.
+      const numericLabels = [...new Set(queryParams.getPredicates(OPERATOR_LABEL)
+        .map(label => String(label).trim())
+        .filter(label => /^[0-9]+$/.test(label))
+        .map(label => parseInt(label, 10))
+        .filter(value => !isNaN(value)))];
+      const labelClause = queryLabels.length
+        ? { labelIds: { $in: [...new Set(queryLabels)] } }
+        : null;
+      const numberClause = numericLabels.length
+        ? { cardNumber: { $in: numericLabels } }
+        : null;
+
+      if (labelClause && numberClause) {
+        selector.$and.push({ $or: [labelClause, numberClause] });
+      } else if (labelClause) {
+        // Unchanged from before, for the ordinary `#red` / `label:urgent` case.
+        selector.labelIds = labelClause.labelIds;
+      } else if (numberClause) {
+        selector.$and.push(numberClause);
       }
     }
 
     if (queryParams.hasOperator(OPERATOR_HAS)) {
+      // Search child collections inside the same board scope as the card query.
+      // Without this, a board search first materialized every attachment/checklist
+      // id on the instance and only discarded the unrelated ids in the final card
+      // query. Global search still intentionally spans all authorized board ids.
+      const boardIds = selector.boardId && selector.boardId.$in;
+      const checklistScope = Array.isArray(boardIds) ? { boardId: { $in: boardIds } } : {};
+      const attachmentScope = Array.isArray(boardIds) ? { 'meta.boardId': { $in: boardIds } } : {};
       for (const has of queryParams.getPredicates(OPERATOR_HAS)) {
         switch (has.field) {
           case PREDICATE_ATTACHMENT:
             selector.$and.push({
               _id: {
-                $in: (await ReactiveCache.getAttachments({}, { fields: { cardId: 1 } })).map(
+                $in: (await ReactiveCache.getAttachments(attachmentScope, { fields: { cardId: 1 } })).map(
                   a => a.cardId,
                 ),
               },
@@ -721,7 +816,7 @@ async function buildSelector(queryParams, userId) {
           case PREDICATE_CHECKLIST:
             selector.$and.push({
               _id: {
-                $in: (await ReactiveCache.getChecklists({}, { fields: { cardId: 1 } })).map(
+                $in: (await ReactiveCache.getChecklists(checklistScope, { fields: { cardId: 1 } })).map(
                   a => a.cardId,
                 ),
               },
@@ -766,7 +861,14 @@ async function buildSelector(queryParams, userId) {
         { fields: { cardId: 1 } },
       );
 
-      const attachments = await ReactiveCache.getAttachments({ 'original.name': regex });
+      const attachmentSelector = { 'original.name': regex };
+      if (selector.boardId && Array.isArray(selector.boardId.$in)) {
+        attachmentSelector['meta.boardId'] = { $in: selector.boardId.$in };
+      }
+      const attachments = await ReactiveCache.getAttachments(
+        attachmentSelector,
+        { fields: { cardId: 1 } },
+      );
 
       // #5910: free-text search must match text inside card comments, for BOTH
       // global and board-level (board:) search. Board scoping is preserved by the
@@ -792,7 +894,25 @@ async function buildSelector(queryParams, userId) {
       if (queryParams.text === "false" || queryParams.text === "true") {
         cardsSelector.push({ customFields: { $elemMatch: { value: queryParams.text === "true" } } } );
       }
+      // #5006: typing `12` finds the card the board calls #12, as well as every
+      // card with "12" in its text. Another alternative in the same $or, so a
+      // search that used to find a title cannot stop finding it.
+      if (/^[0-9]+$/.test(String(queryParams.text).trim())) {
+        const asNumber = parseInt(queryParams.text, 10);
+        if (!isNaN(asNumber)) cardsSelector.push({ cardNumber: asNumber });
+      }
       selector.$and.push({ $or: cardsSelector });
+    }
+
+    // #5006: the number the board refers to a card by. An equality match on a
+    // number, not a regex on a string: "number:12" is card 12, never card 120.
+    if (queryParams.hasOperator(OPERATOR_NUMBER)) {
+      const numbers = queryParams.getPredicates(OPERATOR_NUMBER)
+        .map(value => parseInt(value, 10))
+        .filter(value => !isNaN(value));
+      if (numbers.length) {
+        selector.$and.push({ $or: numbers.map(cardNumber => ({ cardNumber })) });
+      }
     }
 
     if (queryParams.hasOperator(OPERATOR_TITLE)) {
@@ -813,7 +933,14 @@ async function buildSelector(queryParams, userId) {
     if (queryParams.hasOperator(OPERATOR_ATTACHMENT_TEXT)) {
       for (const t of queryParams.getPredicates(OPERATOR_ATTACHMENT_TEXT)) {
         const regex = new RegExp(escapeForRegex(t), 'i');
-        const attachments = await ReactiveCache.getAttachments({ 'original.name': regex });
+        const attachmentSelector = { 'original.name': regex };
+        if (selector.boardId && Array.isArray(selector.boardId.$in)) {
+          attachmentSelector['meta.boardId'] = { $in: selector.boardId.$in };
+        }
+        const attachments = await ReactiveCache.getAttachments(
+          attachmentSelector,
+          { fields: { cardId: 1 } },
+        );
         if (attachments.length) {
           selector.$and.push({ _id: { $in: attachments.map(attach => attach.cardId) } });
         } else {
@@ -1013,7 +1140,7 @@ function brokenCardsQuery(searchTerm) {
 
 // Broken cards, as a REPORT: one page, server-side, searchable and counted - the
 // same shape as the Files / Rules / Boards / Cards reports beside it in Admin Panel
-// / Problems (docs/Design/Page/Table.md). It used to run on the global-search
+// / Problems (docs/Features/Page/Table.md). It used to run on the global-search
 // machinery instead (a session document, nextPage/previousPage publications), which
 // is why it was the one report there with a different set of controls.
 Meteor.publish('brokenCardsReport', async function(searchTerm = '', limit, skip = 0) {
@@ -1085,7 +1212,14 @@ Meteor.methods({
 Meteor.publish('nextPage', async function(sessionId) {
   check(sessionId, String);
 
-  const session = await ReactiveCache.getSessionData({ sessionId });
+  const sessionSelector = ownedSearchSessionSelector(this.userId, sessionId);
+  if (!sessionSelector) {
+    recordLoggedOutPaginationProbe(this, 'nextPage', event =>
+      require('/server/lib/securityLog').record(event));
+    return this.ready();
+  }
+  const session = await ReactiveCache.getSessionData(sessionSelector);
+  if (!session) return this.ready();
   const projection = session.getProjection();
   projection.skip = session.lastHit;
 
@@ -1097,7 +1231,14 @@ Meteor.publish('nextPage', async function(sessionId) {
 Meteor.publish('previousPage', async function(sessionId) {
   check(sessionId, String);
 
-  const session = await ReactiveCache.getSessionData({ sessionId });
+  const sessionSelector = ownedSearchSessionSelector(this.userId, sessionId);
+  if (!sessionSelector) {
+    recordLoggedOutPaginationProbe(this, 'previousPage', event =>
+      require('/server/lib/securityLog').record(event));
+    return this.ready();
+  }
+  const session = await ReactiveCache.getSessionData(sessionSelector);
+  if (!session) return this.ready();
   const projection = session.getProjection();
   projection.skip = session.lastHit - session.resultsCount - projection.limit;
 
@@ -1107,36 +1248,56 @@ Meteor.publish('previousPage', async function(sessionId) {
 });
 
 async function findCards(sessionId, query, userId) {
+  // SessionData replays selectors for pagination. Scope again here so a session
+  // written by an older vulnerable release cannot retain cross-board access,
+  // and reject execution operators before either MongoDB or FerretDB sees them.
+  const authorizedBoardIds = await Boards.userBoardIds(
+    userId,
+    null,
+    {},
+    SEARCH_BOARD_SCOPE,
+  );
+  const storedSelector = selectorIsInjection(
+    query.selector,
+    'globalSearch.pagination',
+  )
+    ? MATCH_NOTHING
+    : query.selector;
+  const databaseSelector = storedSelector === MATCH_NOTHING
+    ? MATCH_NOTHING
+    : { $and: [storedSelector, { boardId: { $in: authorizedBoardIds } }] };
+
   let textMatches = query.getQueryParams().text;
   let isTextSearch = !!textMatches;
   let dbProjection = query.projection;
   if (isTextSearch) {
-    dbProjection = Object.assign({}, query.projection);
+    dbProjection = {
+      fields: { _id: 1, title: 1, description: 1, customFields: 1 },
+      sort: query.projection.sort,
+    };
     delete dbProjection.limit;
     delete dbProjection.skip;
   }
 
-  let cards = await ReactiveCache.getCards(query.selector, dbProjection, true);
+  let cards = await ReactiveCache.getCards(databaseSelector, dbProjection, true);
   let totalCardsCount = cards ? (typeof cards.countAsync === 'function' ? await cards.countAsync() : cards.count()) : 0;
   let orderedIds = [];
 
   if (isTextSearch && totalCardsCount > 0) {
-    let fetched = typeof cards.fetchAsync === 'function' ? await cards.fetchAsync() : cards.fetch();
     const regex = new RegExp(escapeForRegex(textMatches), 'i');
-    fetched.forEach(c => {
-      c._score = 0;
-      if (c.title && regex.test(c.title)) c._score += 10;
-      else if (c.description && regex.test(c.description)) c._score += 5;
-      else if (c.customFields && c.customFields.some(f => f.value && regex.test(String(f.value)))) c._score += 1;
-    });
-    fetched.sort((a, b) => {
-      if (b._score !== a._score) return b._score - a._score;
-      return (a.title || '').localeCompare(b.title || '');
-    });
-
     const skip = query.projection.skip || 0;
     const limit = query.projection.limit || 25;
-    const page = fetched.slice(skip, skip + limit);
+    const best = [];
+    const retain = card => retainRankedCard(best, card, regex, skip + limit);
+    if (typeof cards.forEachAsync === 'function') {
+      await cards.forEachAsync(retain);
+    } else {
+      const fetched = typeof cards.fetchAsync === 'function'
+        ? await cards.fetchAsync()
+        : cards.fetch();
+      fetched.forEach(retain);
+    }
+    const page = best.slice(skip, skip + limit);
     orderedIds = page.map(c => c._id);
 
     // override the cursor to only contain the paginated results for this page
@@ -1151,7 +1312,7 @@ async function findCards(sessionId, query, userId) {
       lastHit: 0,
       resultsCount: 0,
       cards: [],
-      selector: SessionData.pickle(query.selector),
+      selector: SessionData.pickle(storedSelector),
       projection: SessionData.pickle(query.projection),
       errors: query.errors(),
       modifiedAt: new Date()

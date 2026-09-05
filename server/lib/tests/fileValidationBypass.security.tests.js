@@ -1,4 +1,9 @@
 /* eslint-env mocha */
+// MimeBleed - https://wekan.fi/hall-of-fame/mimebleed/
+// Named for tests/securityRegressionCoverage.test.cjs, which checks the published
+// Hall of Fame list against the tests that guard it - a test that does not say
+// which vulnerability it belongs to cannot be checked against that list.
+
 import { expect } from 'chai';
 import { looksLikeDangerousMarkup } from '/models/fileValidation';
 
@@ -21,6 +26,9 @@ describe('fileValidation — dangerous-markup content sniff (GHSA-jhph-whx8-wq6p
       '<embed src="x">',
       '<!ENTITY xxe SYSTEM "file:///etc/passwd">',
       '<META HTTP-EQUIV="refresh" content="0">', // case-insensitive
+      '<img/onerror=document.body.dataset.executed="yes" src=x>',
+      '<img src=x onerror=alert(1)>',                // unquoted handler
+      '<a href=javascript:alert(1)>open</a>',
     ];
     dangerous.forEach((sample, i) => {
       it(`detects dangerous sample #${i + 1}`, function() {

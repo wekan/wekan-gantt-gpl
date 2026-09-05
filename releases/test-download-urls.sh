@@ -47,10 +47,10 @@ echo ""
 
 # mongosh is no longer used (WeKan uses the bundled Node.js + `mongodb` driver).
 
-echo "=== MongoDB Database Tools (wekan/mongo-tools, per-arch, newest release) ==="
+echo "=== MongoDB Database Tools (wekan/mongo-tools-patches, per-arch, newest release) ==="
 for a in amd64 arm64 s390x ppc64le riscv64; do
-  check "mongodump-$a (wekan/mongo-tools)" \
-    "https://github.com/wekan/mongo-tools/releases/latest/download/mongodump-$a"
+  check "mongodump-$a (wekan/mongo-tools-patches)" \
+    "https://github.com/wekan/mongo-tools-patches/releases/latest/download/mongodump-$a"
 done
 echo ""
 
@@ -63,13 +63,13 @@ echo ""
 
 echo "=== Node.js 24.17.0 (snap architectures with upstream Node builds) ==="
 check "Node.js 24.17.0  linux-x64     (amd64)" \
-  "https://nodejs.org/dist/v24.18.0/node-v24.18.0-linux-x64.tar.gz"
+  "https://nodejs.org/dist/v24.20.0/node-v24.20.0-linux-x64.tar.gz"
 check "Node.js 24.17.0  linux-arm64   (arm64)" \
-  "https://nodejs.org/dist/v24.18.0/node-v24.18.0-linux-arm64.tar.gz"
+  "https://nodejs.org/dist/v24.20.0/node-v24.20.0-linux-arm64.tar.gz"
 check "Node.js 24.17.0  linux-s390x   (s390x)" \
-  "https://nodejs.org/dist/v24.18.0/node-v24.18.0-linux-s390x.tar.gz"
+  "https://nodejs.org/dist/v24.20.0/node-v24.20.0-linux-s390x.tar.gz"
 check "Node.js 24.17.0  linux-ppc64le (ppc64el)" \
-  "https://nodejs.org/dist/v24.18.0/node-v24.18.0-linux-ppc64le.tar.gz"
+  "https://nodejs.org/dist/v24.20.0/node-v24.20.0-linux-ppc64le.tar.gz"
 echo ""
 
 echo "=== Results ==="

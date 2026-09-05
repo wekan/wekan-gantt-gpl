@@ -110,13 +110,19 @@ Template.userAvatar.helpers({
 
 Template.userAvatarInitials.helpers({
   initials() {
+    if (typeof this.initials === 'string' && this.initials) return this.initials;
     const user = ReactiveCache.getUser(this.userId);
-    return user && user.getInitials();
+    return (user && user.getInitials()) || '';
   },
 
+  // The SVG's viewBox is built from this, so it must be a number whatever the
+  // user document looks like: an empty width made Firefox refuse the whole
+  // attribute ("0 0  15"), and the avatar rendered as nothing.
   viewPortWidth() {
     const user = ReactiveCache.getUser(this.userId);
-    return ((user && user.getInitials().length) || 1) * 12;
+    const initials = (typeof this.initials === 'string' && this.initials)
+      || (user && user.getInitials()) || '';
+    return (initials.length || 1) * 12;
   },
 });
 

@@ -105,8 +105,23 @@ class BoardPage {
   // --- Opening a card ---
 
   async clickCard(listId, titleSubstring) {
-    await this.minicard(listId, titleSubstring).click();
-    await this.page.locator('.js-card-details').first().waitFor({ timeout: 15_000 });
+    // Title text deliberately opens inline editing. Activate the enclosing
+    // card link itself so this helper keeps its promise to open card details.
+    // A subscription can replace the board DOM just after a reload; in that
+    // case the click reached the detached card and must be repeated on the
+    // newly rendered minicard.
+    const details = this.page.locator('.js-card-details').first();
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const card = this.minicard(listId, titleSubstring);
+      await card.waitFor({ state: 'visible', timeout: 15_000 });
+      await card.evaluate(element => element.click());
+      try {
+        await details.waitFor({ state: 'visible', timeout: 5_000 });
+        return;
+      } catch (error) {
+        if (attempt === 2) throw error;
+      }
+    }
   }
 
   // --- Board view switching ---
@@ -131,9 +146,13 @@ class BoardPage {
     const sidebar = this.page.locator('.board-sidebar.sidebar');
     const isOpen = await sidebar.evaluate(el => el.classList.contains('is-open'));
     if (!isOpen) {
-      // .js-toggle-sidebar is in the board header (boardHeader.jade line 147).
+      // The hamburger is in the FIRST top header bar now, and it is
+      // `.js-toggle-page-sidebar` (client/components/main/header.jade): the
+      // second header bar it used to live in is gone, and one control opens
+      // whichever sidebar the page has - a board's own, All Boards', or the
+      // shared one. docs/Features/Page/Header.md
       // .js-open-board-menu lives *inside* the sidebar — don't use it here.
-      await this.page.locator('.js-toggle-sidebar').click();
+      await this.page.locator('.js-toggle-page-sidebar').click();
       await sidebar.waitFor({ state: 'visible' });
     }
   }

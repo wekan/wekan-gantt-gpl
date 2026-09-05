@@ -2,6 +2,11 @@ import { Client } from 'ldapts';
 import { Log } from 'meteor/logging';
 import { normalizeLdapEncryption } from './encryptionSetting';
 import { buildUserIdFilter } from './userIdFilter';
+import {
+  missingGroupLookupSettings,
+  missingLoginGroupFilterSettings,
+  loginGroupNames,
+} from './groupFilterConfig';
 
 // #4158: warn about a deprecated/invalid LDAP_ENCRYPTION value only once per
 // distinct message, not on every single login attempt (LDAP instantiates a
@@ -86,6 +91,13 @@ export default class LDAP {
       User_Search_Field                  : this.constructor.settings_get('LDAP_USER_SEARCH_FIELD'),
       Search_Page_Size                   : this.constructor.settings_get('LDAP_SEARCH_PAGE_SIZE'),
       Search_Size_Limit                  : this.constructor.settings_get('LDAP_SEARCH_SIZE_LIMIT'),
+      // #5539: groups do not have to live under the users' base DN. The group
+      // searches used BaseDN - the USER base - so a directory that keeps
+      // ou=groups beside ou=people (a common layout, and the reporter's) found
+      // no groups at all: with LDAP_GROUP_FILTER_ENABLE on, isUserInGroup then
+      // said "not a member" and refused every login. Unset, this stays BaseDN,
+      // so nothing changes for a directory that keeps both in one subtree.
+      GroupBaseDN                        : this.constructor.settings_get('LDAP_GROUP_BASEDN'),
       group_filter_enabled               : this.constructor.settings_get('LDAP_GROUP_FILTER_ENABLE'),
       group_filter_object_class          : this.constructor.settings_get('LDAP_GROUP_FILTER_OBJECTCLASS'),
       group_filter_group_id_attribute    : this.constructor.settings_get('LDAP_GROUP_FILTER_GROUP_ID_ATTRIBUTE'),
@@ -193,6 +205,50 @@ export default class LDAP {
       fields.push(...searchField.replace(/\s/g, '').split(','));
     }
     return fields;
+  }
+
+  getUserAttributes() {
+    const configured = this.options.User_Attributes;
+    if (!configured) return undefined;
+
+    const attributes = configured.split(',').map(field => field.trim()).filter(Boolean);
+    const requiredSettings = [
+      'LDAP_USERNAME_FIELD',
+      'LDAP_FULLNAME_FIELD',
+      'LDAP_EMAIL_FIELD',
+      'LDAP_UNIQUE_IDENTIFIER_FIELD',
+      'LDAP_USER_SEARCH_FIELD',
+    ];
+
+    for (const setting of requiredSettings) {
+      const value = this.constructor.settings_get(setting);
+      if (!value) continue;
+
+      for (const expression of String(value).split(',')) {
+        const templateFields = [...expression.matchAll(/#{([^}]+)}/g)].map(match => match[1]);
+        const fields = templateFields.length > 0 ? templateFields : [expression];
+        for (const field of fields.map(item => item.trim()).filter(Boolean)) {
+          if (!attributes.some(item => item.toLowerCase() === field.toLowerCase())) {
+            attributes.push(field);
+          }
+        }
+      }
+    }
+
+    return attributes;
+  }
+
+  // #5539: where to look for groups. LDAP_GROUP_BASEDN when it is set, the user
+  // base otherwise - an install that never had groups in a separate subtree
+  // behaves exactly as before. A blank string counts as unset: an env var that is
+  // present but empty is one somebody meant to fill in, not a search base, and
+  // searching "" would silently search the whole directory root.
+  groupBaseDN() {
+    const groupBase = this.options.GroupBaseDN;
+    if (typeof groupBase === 'string' && groupBase.trim() !== '') {
+      return groupBase.trim();
+    }
+    return this.options.BaseDN;
   }
 
   async searchAll(BaseDN, options) {
@@ -326,7 +382,11 @@ export default class LDAP {
       sizeLimit: this.options.Search_Size_Limit,
     };
 
-    if (!!this.options.User_Attributes) searchOptions.attributes = this.options.User_Attributes.split(',');
+    // A restricted attribute list must not omit fields configured elsewhere.
+    // In particular, omitting LDAP_FULLNAME_FIELD made Active Directory logins
+    // retain the sAMAccountName fallback even when displayName was configured.
+    const attributes = this.getUserAttributes();
+    if (attributes) searchOptions.attributes = attributes;
 
     if (this.options.Search_Page_Size > 0) {
       searchOptions.paged = {
@@ -360,8 +420,10 @@ export default class LDAP {
     );
 
     if (!filter) {
-      Log.error('Can\'t search user by id: neither LDAP_UNIQUE_IDENTIFIER_FIELD nor LDAP_USER_SEARCH_FIELD is configured');
-      return;
+      throw new Error(
+        'Can\'t search user by id: neither LDAP_UNIQUE_IDENTIFIER_FIELD nor ' +
+          'LDAP_USER_SEARCH_FIELD is configured',
+      );
     }
 
     const searchOptions = {
@@ -380,7 +442,10 @@ export default class LDAP {
     }
 
     if (result.length > 1) {
-      Log.error(`Search by id ${id} returned ${result.length} records`);
+      throw new Error(
+        `Search by id ${id} returned ${result.length} records; refusing an ` +
+          'ambiguous LDAP background-sync update',
+      );
     }
 
     return result[0];
@@ -432,6 +497,14 @@ export default class LDAP {
       return [];
     }
 
+    const missingSettings = missingGroupLookupSettings(this.options);
+    if (missingSettings.length > 0) {
+      Log.error(
+        `LDAP group search is enabled but cannot check membership because these settings are missing: ${missingSettings.join(', ')}. Answering with NO groups.`,
+      );
+      return [];
+    }
+
     const filter = ['(&'];
 
     if (this.options.group_filter_object_class !== '') {
@@ -480,7 +553,8 @@ export default class LDAP {
 
     Log.debug(`Group list filter LDAP: ${searchOptions.filter}`);
 
-    const result = await this.searchAll(this.options.BaseDN, searchOptions);
+    // #5539: the GROUP subtree, which equals the user one only by default.
+    const result = await this.searchAll(this.groupBaseDN(), searchOptions);
 
     if (!Array.isArray(result) || result.length === 0) {
       return [];
@@ -510,6 +584,21 @@ export default class LDAP {
       return true;
     }
 
+    const adminGroupNames =
+      this.constructor.settings_get('LDAP_SYNC_ADMIN_STATUS') === true
+        ? this.constructor.settings_get('LDAP_SYNC_ADMIN_GROUPS')
+        : '';
+    const missingSettings = missingLoginGroupFilterSettings(
+      this.options,
+      adminGroupNames,
+    );
+    if (missingSettings.length > 0) {
+      Log.error(
+        `LDAP group login filter is enabled but cannot check membership because these settings are missing: ${missingSettings.join(', ')}. Refusing login.`,
+      );
+      return false;
+    }
+
     const grps = await this.getUserGroups(username, ldapUser);
 
     const filter = ['(&'];
@@ -529,13 +618,13 @@ export default class LDAP {
       // #4036: LDAP_GROUP_FILTER_GROUP_NAME accepts a comma-separated list, and
       // members of LDAP_SYNC_ADMIN_GROUPS may also log in when admin sync is on
       // (previously an admin only in the admin group was locked out entirely).
-      const names = String(this.options.group_filter_group_name || '')
-        .split(',').map((s) => s.trim()).filter(Boolean);
-      if (this.constructor.settings_get('LDAP_SYNC_ADMIN_STATUS') === true) {
-        names.push(...String(this.constructor.settings_get('LDAP_SYNC_ADMIN_GROUPS') || '')
-          .split(',').map((s) => s.trim()).filter(Boolean));
-      }
-      const clauses = names.map((n) => `(${this.options.group_filter_group_id_attribute}=${n})`);
+      const names = loginGroupNames(
+        this.options,
+        this.constructor.settings_get('LDAP_SYNC_ADMIN_STATUS') === true,
+        this.constructor.settings_get('LDAP_SYNC_ADMIN_GROUPS'),
+      );
+      const clauses = names.map((name) =>
+        `(${this.options.group_filter_group_id_attribute}=${escapeLdapFilterValue(name)})`);
       if (clauses.length === 1) {
         filter.push(clauses[0]);
       } else if (clauses.length > 1) {
@@ -552,8 +641,9 @@ export default class LDAP {
     };
 
     Log.debug(`Group filter LDAP: ${searchOptions.filter}`);
+    // #5539: the GROUP subtree, which equals the user one only by default.
 
-    const result = await this.searchAll(this.options.BaseDN, searchOptions);
+    const result = await this.searchAll(this.groupBaseDN(), searchOptions);
 
     if (!Array.isArray(result) || result.length === 0) {
       return false;

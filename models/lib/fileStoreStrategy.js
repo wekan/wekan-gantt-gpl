@@ -31,18 +31,11 @@ export {
 const { sanitizeFilename } = require('./filenameSanitizer');
 const { hasEnoughDiskSpace } = require('./diskSpace');
 
-function normalizeForCompare(inputPath) {
-  const normalized = path.resolve(inputPath);
-  return process.platform === 'win32' ? normalized.toLowerCase() : normalized;
-}
-
-function isPathInside(basePath, targetPath) {
-  const normalizedBase = normalizeForCompare(basePath);
-  const normalizedTarget = normalizeForCompare(targetPath);
-  const relative = path.relative(normalizedBase, normalizedTarget);
-
-  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
-}
+// GHSA-4mxf-m8pq-xc9p: this containment check used to be written out here and
+// nowhere else, so the board exporter - which reads the very same stored paths -
+// had none. It lives in models/lib/storagePathContainment.js now, where the
+// exporter uses it too and where plain Node can test it.
+const { isPathInsideBase: isPathInside } = require('./storagePathContainment');
 
 function tryRealPath(inputPath) {
   try {
@@ -52,12 +45,34 @@ function tryRealPath(inputPath) {
   }
 }
 
-function isSafeReadableFile(candidatePath, storageRootPath) {
+/*
+ * `literalRootPath` is the storage root as WRITTEN; `storageRootPath` is that
+ * root with every symlink resolved. Both are needed, and comparing a path
+ * against the wrong one of them is what broke reading here.
+ *
+ * The candidates are built by joining names onto the LITERAL root, so the cheap
+ * lexical pre-filter below has to use that same root. It used to compare them
+ * against the RESOLVED one, which is identical on a system where nothing in the
+ * path is a symlink and different everywhere else: on macOS `os.tmpdir()` is
+ * `/var/folders/...`, a symlink to `/private/var/folders/...`, so every
+ * candidate was rejected before it was ever looked at and WeKan served none of
+ * its own attachments. A deployment whose data directory is a symlink - a very
+ * ordinary arrangement - has the same fault on Linux.
+ *
+ * The security property is unchanged, because it was never the lexical check
+ * that carried it: what a caller must not be able to do is reach a file OUTSIDE
+ * the storage root, and that is decided below by resolving the candidate and
+ * requiring the result to be inside the RESOLVED root. That check is what
+ * refuses `../../etc/passwd` and a symlink pointing out of the tree
+ * (GHSA-4mxf-m8pq-xc9p), and it still runs on every candidate.
+ */
+function isSafeReadableFile(candidatePath, storageRootPath, literalRootPath) {
   if (!candidatePath || !storageRootPath) {
     return false;
   }
 
-  if (!isPathInside(storageRootPath, candidatePath)) {
+  const lexicalRoot = literalRootPath || storageRootPath;
+  if (!isPathInside(lexicalRoot, candidatePath)) {
     return false;
   }
 
@@ -172,8 +187,19 @@ class FileStoreStrategy {
   /** download the file
    * @param http the current http request
    * @param cacheControl cacheControl of FilesCollection
+   *
+   * The BASE implementation refuses, and that is deliberate. An empty body
+   * returns undefined, which Meteor-Files reads as "not handled" and answers by
+   * serving the file itself - from the stored path, with the stored
+   * Content-Type, and none of the policy httpStreamOutput applies. Every
+   * concrete strategy below overrides this, so the default is only ever reached
+   * by one that forgot to; a strategy that forgets should serve nothing rather
+   * than serve it unfiltered.
    */
   interceptDownload(http, cacheControl) {
+    http.response.statusCode = 404;
+    http.response.end('not found');
+    return true;
   }
 
   /** after file remove */
@@ -248,17 +274,35 @@ export class FileStoreStrategyGridFs extends FileStoreStrategy {
    * @param http the current http request
    * @param cacheControl cacheControl of FilesCollection
    */
+  /*
+   * FAIL CLOSED when the strategy will not serve the file.
+   *
+   * Returning false here means "not handled", and Meteor-Files then serves the
+   * file ITSELF - from the stored path, with the stored Content-Type, and none
+   * of the policy httpStreamOutput applies. A stored attachment of type
+   * text/html came back as text/html, status 200, inline: precisely the stored
+   * XSS that policy exists to stop.
+   *
+   * What makes that a bypass rather than a fallback is WHY the strategy
+   * declines. getReadStream() returns nothing when the file cannot be resolved
+   * INSIDE the storage root - the containment check of GHSA-4mxf-m8pq-xc9p - so
+   * "false" means "this is not a file WeKan may serve", and handing it to a
+   * server with no containment check answers the refusal with the file.
+   *
+   * A file that is genuinely absent gets the same 404 it would have got anyway.
+   */
   interceptDownload(http, cacheControl) {
     const readStream = this.getReadStream();
     const downloadFlag = http?.params?.query?.download;
 
-    let ret = false;
-    if (readStream) {
-      ret = true;
-      httpStreamOutput(readStream, this.fileObj.name, http, downloadFlag, cacheControl, this.fileObj);
+    if (!readStream) {
+      http.response.statusCode = 404;
+      http.response.end('not found');
+      return true;
     }
 
-    return ret;
+    httpStreamOutput(readStream, this.fileObj.name, http, downloadFlag, cacheControl, this.fileObj);
+    return true;
   }
 
   /** after file remove */
@@ -399,10 +443,51 @@ export class FileStoreStrategyFilesystem extends FileStoreStrategy {
     super(fileObj, versionName, collection);
   }
 
+  /** Serve filesystem files through WeKan's response backstop instead of
+   * falling through to Meteor-Files, which trusts the stored MIME type and
+   * defaults to inline disposition. */
+  interceptDownload(http, cacheControl) {
+    const readStream = this.getReadStream();
+    // Fail closed, for the reason given above the filesystem strategy's
+    // interceptDownload: `false` hands the file to Meteor-Files unfiltered.
+    if (!readStream) {
+      http.response.statusCode = 404;
+      http.response.end('not found');
+      return true;
+    }
+    const downloadFlag = http?.params?.query?.download;
+    httpStreamOutput(
+      readStream,
+      this.fileObj.name,
+      http,
+      downloadFlag,
+      cacheControl,
+      this.fileObj,
+    );
+    return true;
+  }
+
   /** returns a read stream
    * @return the read stream
    */
-  getReadStream() {
+  /** every place the physical file could be, in priority order
+   *
+   * The recorded `versions[<v>].path` is a GUESS about the past: it was written
+   * by whichever WeKan stored the file, and the layout has changed - `<id>`,
+   * `<id>.<ext>`, `<id>-<version>-<name>` - while a migration, a storage move or
+   * an extension correction could rewrite one of the two and not the other.
+   *
+   * #6589 is what that costs when only the reader knows: a .drawio attachment
+   * was served fine (this search found it) and could not be RENAMED, because
+   * rename used the recorded path alone:
+   *
+   *   Error: ENOENT: no such file or directory, rename
+   *     '/data/files/attachments/6a7d66369c6aee799e857d36.drawio' -> ...
+   *
+   * So the search is a method now, and reading, renaming and deleting all use it.
+   * @return array of absolute candidate paths
+   */
+  candidatePaths() {
     const v = this.fileObj.versions[this.versionName] || {};
     const originalPath = v.path || '';
     const normalized = (originalPath || '').replace(/\\/g, '/');
@@ -490,15 +575,22 @@ export class FileStoreStrategyFilesystem extends FileStoreStrategy {
       }
     }
 
-    // Pick first existing candidate
-    let chosen;
-    for (const c of candidates) {
-      if (isSafeReadableFile(c, resolvedStorageRoot)) {
-        chosen = c;
-        break;
-      }
-    }
+    return { candidates, resolvedStorageRoot, storageRoot };
+  }
 
+  /** the path the file is ACTUALLY at, or undefined when none of them exists
+   * @return absolute path or undefined
+   */
+  resolveExistingPath() {
+    const { candidates, resolvedStorageRoot, storageRoot } = this.candidatePaths();
+    for (const c of candidates) {
+      if (isSafeReadableFile(c, resolvedStorageRoot, storageRoot)) return c;
+    }
+    return undefined;
+  }
+
+  getReadStream() {
+    const chosen = this.resolveExistingPath();
     if (!chosen) {
       return undefined;
     }
@@ -525,8 +617,11 @@ export class FileStoreStrategyFilesystem extends FileStoreStrategy {
 
   /** remove the file */
   unlink() {
-    const filePath = this.fileObj.versions[this.versionName].path;
-    fs.unlink(filePath, () => {});
+    // The file that is THERE, not the one the database remembers - see
+    // candidatePaths(). A delete that misses leaves the bytes on disk forever.
+    const filePath = this.resolveExistingPath()
+      || (this.fileObj.versions[this.versionName] || {}).path;
+    if (filePath) fs.unlink(filePath, () => {});
   }
 
   /** rename the file (physical)
@@ -534,7 +629,21 @@ export class FileStoreStrategyFilesystem extends FileStoreStrategy {
    * @param newFilePath the new file path
    */
   rename(newFilePath) {
-    fs.renameSync(this.fileObj.versions[this.versionName].path, newFilePath);
+    const current = this.resolveExistingPath();
+    if (!current) {
+      // #6589: this used to be `fs.renameSync(<recorded path>, ...)` and the
+      // recorded path did not exist, so every rename of that attachment threw
+      // ENOENT and it stayed stuck under the wrong name for good. Say what is
+      // actually wrong - the file is gone, not the rename - and name the
+      // attachment, because the ENOENT named a path nobody recognised.
+      const recorded = (this.fileObj.versions[this.versionName] || {}).path || '(none recorded)';
+      throw new Error(
+        `Attachment ${this.fileObj._id} (${this.fileObj.name || 'unnamed'}), version `
+        + `${this.versionName}: no file found on disk. The database says ${recorded}, `
+        + `and neither that nor any of the older layouts is there, so there is nothing to rename.`);
+    }
+    if (path.resolve(current) === path.resolve(newFilePath)) return;
+    fs.renameSync(current, newFilePath);
   }
 
   /** return the storage name
@@ -581,16 +690,35 @@ export class FileStoreStrategyCloud extends FileStoreStrategy {
    * @param http the current http request
    * @param cacheControl cacheControl of FilesCollection
    */
+  /*
+   * FAIL CLOSED when the strategy will not serve the file.
+   *
+   * Returning false here means "not handled", and Meteor-Files then serves the
+   * file ITSELF - from the stored path, with the stored Content-Type, and none
+   * of the policy httpStreamOutput applies. A stored attachment of type
+   * text/html came back as text/html, status 200, inline: precisely the stored
+   * XSS that policy exists to stop.
+   *
+   * What makes that a bypass rather than a fallback is WHY the strategy
+   * declines. getReadStream() returns nothing when the file cannot be resolved
+   * INSIDE the storage root - the containment check of GHSA-4mxf-m8pq-xc9p - so
+   * "false" means "this is not a file WeKan may serve", and handing it to a
+   * server with no containment check answers the refusal with the file.
+   *
+   * A file that is genuinely absent gets the same 404 it would have got anyway.
+   */
   interceptDownload(http, cacheControl) {
     const readStream = this.getReadStream();
     const downloadFlag = http?.params?.query?.download;
 
-    let ret = false;
-    if (readStream) {
-      ret = true;
-      httpStreamOutput(readStream, this.fileObj.name, http, downloadFlag, cacheControl, this.fileObj);
+    if (!readStream) {
+      http.response.statusCode = 404;
+      http.response.end('not found');
+      return true;
     }
-    return ret;
+
+    httpStreamOutput(readStream, this.fileObj.name, http, downloadFlag, cacheControl, this.fileObj);
+    return true;
   }
 
   /** after file remove */
@@ -1001,6 +1129,52 @@ export const moveToStorage = async function(fileObj, storageDestination, fileSto
   }));
 
   return Promise.all(versionPromises);
+};
+
+// Add an attachment FROM A STREAM: the bytes go to a temp file as they arrive
+// and the collection takes that file, so nothing is ever held whole in memory.
+//
+// This is what `copyFile` below does per version, lifted out so the .zip import
+// can do it too (#1173): a 500 MB attachment inside an archive is piped from the
+// archive to disk and handed over, never buffered. `Attachments.addFile` is the
+// Meteor-Files call that takes a path rather than a Buffer - `write()` takes a
+// Buffer, which is the thing to avoid here.
+export const addAttachmentFromStream = function(
+  readStream, { fileName, type, meta, userId, size }, factory,
+) {
+  return new Promise((resolve, reject) => {
+    const collection = (factory && factory.collection) || Attachments;
+    const storagePath = (factory && factory.storagePath) || '/tmp';
+    const safeName = sanitizeFilename(fileName || 'attachment');
+    const tempPath = path.join(storagePath, `${Random.id()}-import-${safeName}`);
+    const writeStream = fs.createWriteStream(tempPath);
+
+    const fail = error => {
+      try { readStream.destroy(); } catch (e) { /* already gone */ }
+      try { writeStream.destroy(); } catch (e) { /* already gone */ }
+      fs.promises.unlink(tempPath).catch(() => {});
+      reject(error);
+    };
+
+    readStream.on('error', fail);
+    writeStream.on('error', fail);
+    writeStream.on('finish', () => {
+      collection.addFile(
+        tempPath,
+        {
+          fileName: fileName || 'attachment',
+          type: type || 'application/octet-stream',
+          meta,
+          userId,
+          size,
+          fileId: new ObjectId().toString(),
+        },
+        (err, fileRef) => (err ? fail(err) : resolve(fileRef)),
+      );
+    });
+
+    readStream.pipe(writeStream);
+  });
 };
 
 export const copyFile = async function(fileObj, newCardId, fileStoreStrategyFactory) {

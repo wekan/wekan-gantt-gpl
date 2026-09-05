@@ -9,6 +9,11 @@
   background: #ccc;
   border-radius: 17px;
 }
+.minicard-wrapper.card-drop-preview {
+  background: transparent;
+  border-radius: 0;
+  pointer-events: none;
+}
 .minicard-wrapper.ui-sortable-helper {
   cursor: grabbing;
   transform: rotate(4deg);
@@ -58,13 +63,13 @@
 .minicard-details-menu-with-handle {
   float: inline-end;
   padding-inline-start: 10px;
-  font-size: 14px;
+  font-size: 0.875rem;
   padding: 0;
   z-index: 1;
 }
 .minicard-details-menu {
   float: inline-end;
-  font-size: 14px;
+  font-size: 0.875rem;
   padding-inline-start: 10px;
 }
 @media print {
@@ -237,18 +242,23 @@
   }
   body.mobile-mode .minicard .handle .drag-handle,
   body.mobile-mode .minicard .handle .fa {
-    font-size: 22px;
+    font-size: 1.375rem;
   }
 }
 
 .minicard .handle .drag-handle {
-  font-size: 16px;
+  font-size: 1rem;
   color: #ccc;
   display: inline-block;
   width: 1.4em;
   text-align: center;
 }
 .minicard .minicard-title {
+  /* #6465: one step below the list heading above it (16px), and above the
+     "Add card" affordance below (13px). It used to inherit the 16px document
+     size, which made a card title exactly as loud as the heading of the column
+     holding it. See the note on .list-header-name in lists/list.css. */
+  font-size: 0.875rem;
   margin-inline-end: 21px;
   /* #6444: isolate each title's bidirectional context. The title is a
      dir="auto" .viewer; under a global dir="rtl" document, non-isolated
@@ -258,6 +268,32 @@
      reverts on refresh). Isolation makes each title a self-contained run. */
   unicode-bidi: isolate;
 }
+/* #4990: the title text is the edit target. It is a block so that the whole
+   line, not only the words, is that target: a click on the empty space after a
+   short title is still a click on the title. */
+.minicard .minicard-title .minicard-title-text {
+  display: block;
+  position: relative;
+}
+
+/* Direct title editing is disabled; the former editor styles are retained as
+   commented code while the title serves as a card-drag/board-scroll surface.
+.minicard .minicard-title .minicard-title-text.is-editable {
+  cursor: text;
+}
+.minicard .js-minicard-title-form textarea.minicard-title-editor {
+  font-size: 0.875rem;
+  width: 100%;
+  min-height: 40px;
+  max-height: 200px;
+  margin-bottom: 4px;
+  overflow-y: auto;
+  resize: none;
+  user-select: text;
+  Same bidi isolation as the title it stands in for.
+  unicode-bidi: isolate;
+}
+*/
 .minicard .minicard-title .card-number {
   color: #b3b3b3;
   display: inline-block;
@@ -850,8 +886,16 @@
   transition: all 0.2s ease;
 }
 
-/* List name display on minicard */
+/* The name of the LIST this card is in, under the badges - "Show on Minicard /
+   List title", for reading a card away from the column it lives in (a
+   swimlane, search results, My Cards).
+
+   `clear` is the whole rule: `.minicard .badges` is `float: inline-start`, so
+   without it this block shares the badges' line and reads as one more badge
+   rather than as the line it is. Logical `inline-start`, so it clears the
+   floats on whichever side the page starts. */
 .minicard-list-name {
+  clear: inline-start;
   font-size: 0.75em;
   color: #8c8c8c;
   margin-top: 2px;

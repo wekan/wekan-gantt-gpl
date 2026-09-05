@@ -53,7 +53,9 @@ test('a subscription that names no board publishes nothing', () => {
 });
 
 test('the board publisher tests its arguments before anything else', () => {
-  const at = boards.indexOf("publishComposite('board', async function(boardId, isArchived)");
+  const at = boards.indexOf(
+    "publishComposite('board', async function(boardId, isArchived, generation)",
+  );
   assert.ok(at !== -1, 'the publisher must be there');
   // The publisher's OWN body, not a fixed-size window: the comment explaining why
   // check() cannot be the guard grew past 1400 characters, which put the first
@@ -74,7 +76,8 @@ test('the board publisher tests its arguments before anything else', () => {
   // 'board'"). Match.test does not count; check(x, Match.Any) does, and never
   // throws.
   assert.ok(/check\(boardId, Match\.Any\);/.test(head)
-    && /check\(isArchived, Match\.Any\);/.test(head),
+    && /check\(isArchived, Match\.Any\);/.test(head)
+    && /check\(generation, Match\.Any\);/.test(head),
     'every argument must be check()ed with Match.Any, or the audit throws');
   assert.ok(head.indexOf('check(boardId, Match.Any)') < head.indexOf('Match.test(boardId'),
     'marked first, validated second');
@@ -107,12 +110,14 @@ test('the client does not send a subscription with no board id', () => {
   assert.ok(subs.length >= 5, `expected the board subscriptions, found ${subs.length}`);
   for (const m of subs) {
     const [line, before, arg] = m;
-    const context = src.slice(Math.max(0, m.index - 400), m.index);
+    const context = src.slice(Math.max(0, m.index - 700), m.index);
     const guarded =
       /if \(/.test(before)                                 // guarded on the same line
       || context.includes(`if (${arg})`)                   // guarded just above
       // ...or the id comes from a board the code already refused to work without.
-      || (arg === 'this.boardId' && /if \(!this\.board\)[\s\S]*?return;/.test(context));
+      || (arg === 'this.boardId'
+        && (/if \(!this\.board\)[\s\S]*?return;/.test(context)
+          || /if \(!boardId\)[\s\S]*?return;[\s\S]*?this\.boardId = boardId;/.test(context)));
     assert.ok(guarded, `an unguarded subscription with ${arg}`);
   }
 });

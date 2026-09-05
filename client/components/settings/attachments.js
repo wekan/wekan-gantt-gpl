@@ -1,4 +1,8 @@
 import { Meteor } from 'meteor/meteor';
+import { Session } from 'meteor/session';
+import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
+// The per-pane URLs of the Admin Panel. docs/Features/Page/Admin-Panel-URLs.md
+import { adminPath } from '/models/lib/adminUrls';
 import { leftMenuData, paneTitle } from '/models/lib/leftMenu';
 import AttachmentBulkMoveStatus from '/models/attachmentBulkMoveStatus';
 import { TAPi18n } from '/imports/i18n';
@@ -249,6 +253,12 @@ Template.attachments.onCreated(function () {
   // comes to this page for most often, and the one action here that has to be
   // reachable in a hurry.
   this.activeSection = new ReactiveVar('backup');
+  // The pane the URL asks for. The route resolved it, so it is always a real
+  // pane id; a bare /attachments opens Backup.
+  this.autorun(() => {
+    const paneId = Session.get('attachmentsOpenPane');
+    if (paneId) this.activeSection.set(paneId);
+  });
   this.storageSettingsSubscription = Meteor.subscribe('attachmentStorageSettings');
   this.attachmentStorageSettings = new ReactiveVar(null);
   // #6473: the real storage paths only exist on the SERVER (WRITABLE_PATH is a
@@ -480,7 +490,7 @@ const BACKUP_DAYS = [
 // 31st would skip February, or a whole quarter of the year.
 const BACKUP_MONTH_DAYS = Array.from({ length: 28 }, (_, i) => i + 1);
 
-// The Attachments side menu, as data (docs/Design/Page/Left-Menu.md).
+// The Attachments side menu, as data (docs/Features/Page/Left-Menu.md).
 // emoji:true reproduces the empty span.emoji-icon this page always rendered.
 function attachmentsMenu(user) {
   const items = [
@@ -519,7 +529,7 @@ Template.attachments.helpers({
       Template.instance().activeSection.get(), 'js-attachments-menu');
   },
   // The heading above the pane: the open menu entry's own label
-  // (docs/Design/Page/Left-Menu.md).
+  // (docs/Features/Page/Left-Menu.md).
   paneTitleData() {
     return paneTitle(attachmentsMenu(ReactiveCache.getCurrentUser()),
       Template.instance().activeSection.get());
@@ -920,6 +930,10 @@ Template.attachments.events({
     }
 
     tpl.activeSection.set(targetID);
+    // ...and into the address bar, so the pane can be linked and bookmarked.
+    // docs/Features/Page/Admin-Panel-URLs.md
+    const path = adminPath('attachments', targetID);
+    if (path && FlowRouter.current().path !== path) FlowRouter.go(path);
   },
   // Deleting the raw MongoDB 3 files of a grain - commented out with the pane
   // (see attachmentsMenu). Compacting the database frees the space instead, and
@@ -1333,8 +1347,16 @@ Template.moveAttachments.helpers({
     const lm = getLastMove();
     if (!lm) return '';
     const cancelled = lm.cancelled ? ` (${TAPi18n.__('move-progress-cancel')})` : '';
+    // #6596: how many of the total actually moved. A record whose binary is not
+    // in the bucket has nothing to move and is SKIPPED, which is not the same
+    // as a failure and must not be silent either - a run that says only "done"
+    // while a dozen attachments stayed behind is how that bug went unnoticed.
+    const counts = [];
+    if (lm.skipped) counts.push(`${lm.skipped} skipped`);
+    if (lm.failed) counts.push(`${lm.failed} failed`);
+    const detail = counts.length ? ` - ${counts.join(', ')}` : '';
     return `${storageLabel(lm.source)} → ${storageLabel(lm.dest)} ` +
-      `(${scopeLabel(lm.scope)}) ${formatDateTime(lm.at)}${cancelled}`;
+      `(${scopeLabel(lm.scope)}) ${formatDateTime(lm.at)}${cancelled}${detail}`;
   },
   repairLoading() {
     return Template.instance().repairLoading.get();

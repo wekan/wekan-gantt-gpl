@@ -69,16 +69,49 @@ test('#5667: opener near the top of a scrolled page does not overflow the top', 
   assertFullyVisible(result, scrollTop, 'top+scrolled');
 });
 
-test('opener in the upper half opens below and stays visible', () => {
+test('an ordinary opener in the upper half opens below and stays visible', () => {
   const result = computePopupOffset({
     viewportWidth: VW,
     viewportHeight: VH,
     scrollTop: 0,
     opener: { top: 100, left: 300, height: 24 },
-    popupName: 'editCardDueDatePopup',
+    popupName: 'ordinaryPopup',
   });
   assert.strictEqual(result.top, 124, 'opens just below the opener (100+24)');
   assertFullyVisible(result, 0, 'upper-half');
+});
+
+test('#6636: every desktop date editor is centred in the viewport', () => {
+  for (const popupName of [
+    'editCardReceivedDatePopup', 'editCardStartDatePopup',
+    'editCardDueDatePopup', 'editCardEndDatePopup',
+    'editVoteEndDatePopup', 'editPokerEndDatePopup',
+    'cardCustomField-datePopup',
+  ]) {
+    const result = computePopupOffset({
+      viewportWidth: VW, viewportHeight: VH, scrollLeft: 300, scrollTop: 500,
+      opener: { top: 900, left: 1400, height: 24 }, popupName,
+    });
+    assert.strictEqual(result.left - 300, (VW - 400) / 2,
+      `${popupName} uses the date editor's real CSS width`);
+    assert.strictEqual(result.top - 500, PAD, popupName);
+    assert.strictEqual(result.maxHeight, VH - PAD * 2, popupName);
+  }
+});
+
+test('all four card people pickers open immediately below their + button', () => {
+  for (const popupName of [
+    'cardMembersPopup', 'cardAssigneesPopup',
+    'cardRequestedByPopup', 'cardAssignedByPopup',
+  ]) {
+    const result = computePopupOffset({
+      viewportWidth: VW, viewportHeight: VH,
+      opener: { top: 500, left: 300, height: 24 }, popupName,
+    });
+    assert.strictEqual(result.top, 524, `${popupName} stays below its opener`);
+    assert.strictEqual(result.maxHeight, VH - 524 - PAD,
+      `${popupName} uses the remaining space below`);
+  }
 });
 
 test('scrollLeft keeps the popup within the viewport horizontally', () => {
@@ -88,7 +121,7 @@ test('scrollLeft keeps the popup within the viewport horizontally', () => {
     scrollTop: 0,
     scrollLeft: 500,
     opener: { top: 100, left: 500 + 1195, height: 24 }, // far right in viewport
-    popupName: 'editCardDueDatePopup',
+    popupName: 'ordinaryPopup',
   });
   const leftVp = result.left - 500;
   const popupWidth = Math.min(380, VW * 0.55);
@@ -175,6 +208,77 @@ test('maxHeight is never negative for an opener above the viewport', () => {
     popupName: 'editCardDueDatePopup',
   });
   assert.ok(result.maxHeight >= 0, 'maxHeight must never be negative');
+});
+
+// ── wide popups: Select Color lays its swatches out in columns ──────────────
+//
+// The Change Color popups are given more width in popup.css so more colours are
+// visible at once. The clamp has to know that width: computed for the default
+// 380px, a 720px popup opened from a button near the right edge is placed with a
+// third of itself off the screen — which is exactly the class of bug #5667 was.
+
+test('a wide popup opened near the right edge still fits on screen', () => {
+  for (const popupName of ['changeColorPopup', 'boardChangeColorPopup']) {
+    const result = computePopupOffset({
+      viewportWidth: VW, viewportHeight: VH,
+      opener: { top: 100, left: VW - 120, height: 24 }, // a button by the right edge
+      popupName,
+    });
+    const width = Math.min(720, VW * 0.9);
+    assert.ok(result.left + width <= VW - 10 + 1,
+      `${popupName}: right edge ${result.left + width} must stay inside ${VW}`);
+    assert.ok(result.left >= 10, `${popupName}: and its left edge on screen`);
+  }
+});
+
+test('a narrow viewport shrinks the wide popup rather than pushing it off', () => {
+  const narrow = 900; // still desktop: above the 800px full-screen-sheet cutoff
+  const result = computePopupOffset({
+    viewportWidth: narrow, viewportHeight: VH,
+    opener: { top: 100, left: 800, height: 24 },
+    popupName: 'changeColorPopup',
+  });
+  const width = Math.min(720, narrow * 0.9); // 720
+  assert.ok(result.left >= 10);
+  assert.ok(result.left + width <= narrow - 10 + 1,
+    `right edge ${result.left + width} must stay inside ${narrow}`);
+});
+
+test('an ordinary popup is unaffected by the wide-popup widths', () => {
+  // The clamp for everything else must still be the 380px one, or every popup in
+  // WeKan moves.
+  const opener = { top: 100, left: VW - 120, height: 24 };
+  const plain = computePopupOffset({
+    viewportWidth: VW, viewportHeight: VH, opener, popupName: 'ordinaryPopup',
+  });
+  assert.strictEqual(plain.left, VW - Math.min(380, VW * 0.55) - 10,
+    'an ordinary popup still clamps against 380px');
+});
+
+test('the JS widths and the CSS widths are the same numbers', () => {
+  // They are two halves of one decision, in two files. If they drift, the popup
+  // is either clamped as if it were narrower than it is (off-screen) or wider
+  // than it is (needlessly pulled inward).
+  const fs = require('fs');
+  const path = require('path');
+  const root = path.join(__dirname, '..');
+  const js = fs.readFileSync(path.join(root, 'client/lib/popupOffset.js'), 'utf8');
+  const css = fs.readFileSync(path.join(root, 'client/components/main/popup.css'), 'utf8');
+
+  const declared = [...js.matchAll(/(\w+Popup):\s*(\d+),/g)].map(m => ({
+    name: m[1], width: Number(m[2]),
+  }));
+  assert.ok(declared.length >= 2, 'the wide popups must be declared in the JS');
+
+  for (const { name, width } of declared) {
+    assert.ok(css.includes(`data-popup='${name}'`),
+      `${name} must have a width rule in popup.css`);
+    assert.ok(css.includes(`width: min(90vw, ${width}px) !important`),
+      `${name}: popup.css must use the same ${width}px the JS clamps with`);
+  }
+  // And desktop only: below 800px popup.css lays every popup out full screen.
+  assert.ok(/@media screen and \(min-width: 801px\) \{[\s\S]*?changeColorPopup/.test(css),
+    'the wide width must be desktop-only, or it fights the full-screen sheet rule');
 });
 
 console.log(`\n${passed} tests passed`);

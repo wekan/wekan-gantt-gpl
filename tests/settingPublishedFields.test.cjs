@@ -76,9 +76,19 @@ test('the checkboxes that were broken by this are covered by name', () => {
   // from the settings document and which could not be ticked before.
   for (const field of ['supportPageEnabled', 'supportPagePublic',
     'hideBoardActivitiesOnAllBoards', 'boardMembersFromSameOrgOnly',
-    'boardMembersFromSameTeamOnly']) {
+    'boardMembersFromSameTeamOnly', 'enablePermanentDelete']) {
     assert.ok(published.has(field), `${field} must be published`);
   }
+});
+
+test('the permanent-delete checkbox receives the value it writes (negative)', () => {
+  const js = read('client/components/settings/adminProblems.js');
+  assert.ok(/enablePermanentDelete\(\)[\s\S]{0,100}\.enablePermanentDelete/.test(js),
+    'the checkbox helper reads enablePermanentDelete');
+  assert.ok(/toggleSettingField\('enablePermanentDelete'\)/.test(js),
+    'and its handler writes that same field');
+  assert.ok(published.has('enablePermanentDelete'),
+    'the publication must return the stored value or the checkmark reverts');
 });
 
 test('the SMTP settings stay admin-only, in their own publication', () => {
@@ -86,7 +96,10 @@ test('the SMTP settings stay admin-only, in their own publication', () => {
   assert.ok(/Meteor\.publish\('mailServer'/.test(pub), 'they have their own publication');
   const mail = pub.slice(pub.indexOf("Meteor.publish('mailServer'"));
   assert.ok(/user && user\.isAdmin/.test(mail), 'which is admin-gated');
-  assert.ok(!/mailServer\.password/.test(mail), 'and never sends the password');
+  assert.ok(!/['"]mailServer\.(?:password|passwords)['"]\s*:/.test(mail),
+    'and never sends password values');
+  assert.ok(/mailServer\.passwordSet/.test(mail),
+    'but tells the form whether a password is already stored');
 });
 
 test('a checkbox that writes the settings document reads it back from the same field', () => {

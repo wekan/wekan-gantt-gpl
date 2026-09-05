@@ -237,7 +237,7 @@ Cards.attachSchema(
     },
     requestedBy: {
       /**
-       * who requested the card (ID of the user)
+       * display name entered manually or copied from the selected user
        */
       type: String,
       optional: true,
@@ -245,7 +245,7 @@ Cards.attachSchema(
     },
     assignedBy: {
       /**
-       * who assigned the card (ID of the user)
+       * display name entered manually or copied from the selected user
        */
       type: String,
       optional: true,
@@ -283,6 +283,24 @@ Cards.attachSchema(
       defaultValue: [],
     },
     'assignees.$': {
+      type: String,
+    },
+    requesters: {
+      /** board-member user IDs that requested the card */
+      type: Array,
+      optional: true,
+      defaultValue: [],
+    },
+    'requesters.$': {
+      type: String,
+    },
+    assigners: {
+      /** board-member user IDs that assigned the card */
+      type: Array,
+      optional: true,
+      defaultValue: [],
+    },
+    'assigners.$': {
       type: String,
     },
     receivedAt: {
@@ -797,6 +815,37 @@ Cards.attachSchema(
   }),
 );
 
+/*
+ * Append one card change to the universal history
+ * (docs/Features/Reports/History/History.md §5).
+ *
+ * Lazy require, deliberately: this file is isomorphic and the collection is
+ * only written on the server, so the module is not pulled into the client
+ * bundle. Best-effort by contract - a history failure must never fail the edit
+ * it describes - and never gated on `typeof X !== 'undefined'`, which is the
+ * guard that made the position history record nothing at all (#6478).
+ */
+async function recordCardChange(card, change) {
+  if (!Meteor.isServer) return;
+  const userId = typeof Meteor.userId === 'function' ? Meteor.userId() : null;
+  if (!userId) return;
+  try {
+    const ChangeHistory = require('/models/changeHistory').default;
+    await ChangeHistory.record({
+      boardId: card.boardId,
+      swimlaneId: card.swimlaneId,
+      listId: card.listId,
+      cardId: card._id,
+      entityType: 'card',
+      entityId: card._id,
+      userId,
+      ...change,
+    });
+  } catch (error) {
+    console.warn('changeHistory: failed to record a card change:', error && error.message);
+  }
+}
+
 Cards.helpers({
   // Gantt https://github.com/wekan/wekan/issues/2870#issuecomment-857171127
   async setGanttTargetId(sourceId, targetId, linkType, linkId){
@@ -819,7 +868,29 @@ Cards.helpers({
     });
   },
 
-  mapCustomFieldsToBoard(boardId) {
+  // Re-key this card's custom field VALUES onto the destination board's field
+  // definitions, matching by name and type. Returns a NEW array of NEW entries -
+  // the caller assigns it to the card being written.
+  //
+  // #6560: this was a synchronous function calling ReactiveCache.getCustomField(),
+  // which is async on the SERVER (it awaits findOneAsync) and synchronous only on
+  // the client. So on the server `oldCf` and `newCf` were Promises. A Promise is
+  // truthy, so `!oldCf` never fired and the `newCf` branch always did, and it
+  // assigned `newCf._id` - `undefined` on a Promise. The schema declares
+  // `customFields.$._id` as `optional: true, defaultValue: ''`, so collection2
+  // cleaned that undefined to `''` on the way to the database: every moved or
+  // copied card came out with its values intact and its field ids blanked, which
+  // no board can match to a definition. Nothing threw, so it was silent.
+  //
+  // Both lookups are awaited now, and so is `addBoard` - also async, and until the
+  // awaits above were added its branch was unreachable, so its missing await had
+  // never been exercised.
+  //
+  // The entries are rebuilt rather than mutated in place because `copy()` works on
+  // a shallow copy of the card "to avoid mutating the source card in
+  // ReactiveCache" - and the old `cf._id = …` reached straight through that copy
+  // into the source card's own objects, re-keying the card being copied FROM.
+  async mapCustomFieldsToBoard(boardId) {
     // Guard against undefined/null customFields
     if (!this.customFields || !Array.isArray(this.customFields)) {
       return [];
@@ -827,28 +898,42 @@ Cards.helpers({
     // Map custom fields to new board
     const result = [];
     for (const cf of this.customFields) {
-        const oldCf = ReactiveCache.getCustomField(cf._id);
+        // An entry with no id has nothing to look up - and must not be looked up:
+        // getCustomField() defaults its selector to `{}`, so passing undefined
+        // would return an ARBITRARY custom field and re-key the value to it.
+        if (!cf || !cf._id) {
+            result.push({ ...cf });
+            continue;
+        }
+
+        const oldCf = await ReactiveCache.getCustomField(cf._id);
 
         // Check if oldCf is undefined or null
         if (!oldCf) {
             //console.error(`Custom field with ID ${cf._id} not found.`);
-            result.push(cf);  // Skip this field if oldCf is not found
+            result.push({ ...cf });  // Skip this field if oldCf is not found
             continue;
         }
 
-        const newCf = ReactiveCache.getCustomField({
+        const newCf = await ReactiveCache.getCustomField({
             boardIds: boardId,
             name: oldCf.name,
             type: oldCf.type,
         });
 
         if (newCf) {
-            cf._id = newCf._id;
-        } else if (!(oldCf.boardIds || []).includes(boardId)) {
-            oldCf.addBoard(boardId);
+            // The destination board has its own definition of the same field:
+            // point the value at it.
+            result.push({ ...cf, _id: newCf._id });
+            continue;
         }
 
-        result.push(cf);
+        // It has none, so share this one with the destination board and keep the
+        // value pointing at it.
+        if (!(oldCf.boardIds || []).includes(boardId)) {
+            await oldCf.addBoard(boardId);
+        }
+        result.push({ ...cf });
     }
     return result;
 },
@@ -892,7 +977,7 @@ Cards.helpers({
       cardData.labelIds = newCardLabels;
       this.labelIds = newCardLabels;
 
-      this.customFields = this.mapCustomFieldsToBoard(newBoard._id);
+      this.customFields = await this.mapCustomFieldsToBoard(newBoard._id);
     }
 
     delete this._id;
@@ -1052,6 +1137,18 @@ Cards.helpers({
     return this.__id;
   },
 
+  // A linked card owns only its placement. Displayed content comes from the
+  // source card so the link remains a live mirror instead of a stale snapshot.
+  getRealCard() {
+    if (!this.isLinkedCard()) return this;
+    return ReactiveCache.getCard(this.linkedId) || this;
+  },
+
+  getRealBoard() {
+    const card = this.getRealCard();
+    return ReactiveCache.getBoard(card.boardId) || this.board();
+  },
+
   getList() {
     const list = this.list();
     if (!list) {
@@ -1092,17 +1189,18 @@ Cards.helpers({
   },
 
   labels() {
-    const board = this.board();
+    const card = this.getRealCard();
+    const board = ReactiveCache.getBoard(card.boardId);
     if (!board) return [];
     const boardLabels = board.labels;
     const cardLabels = (boardLabels || []).filter(label => {
-      return (this.labelIds || []).includes(label._id);
+      return (card.labelIds || []).includes(label._id);
     });
     return cardLabels;
   },
 
   hasLabel(labelId) {
-    return (this.labelIds || []).includes(labelId);
+    return (this.getRealCard().labelIds || []).includes(labelId);
   },
 
   /** returns the sort number of a list
@@ -1153,7 +1251,7 @@ Cards.helpers({
   },
 
   user() {
-    return ReactiveCache.getUser(this.userId);
+    return ReactiveCache.getUser(this.getCreatorId());
   },
 
   isAssigned(memberId) {
@@ -1268,7 +1366,7 @@ Cards.helpers({
   },
 
   subtasks() {
-    const ret = ReactiveMiniMongoIndex.getSubTasksWithParentId(this._id, {
+    const ret = ReactiveMiniMongoIndex.getSubTasksWithParentId(this.getRealId(), {
         archived: false,
       }, {
         sort: {
@@ -1280,14 +1378,14 @@ Cards.helpers({
   },
 
   subtasksFinished() {
-    const ret = ReactiveMiniMongoIndex.getSubTasksWithParentId(this._id, {
+    const ret = ReactiveMiniMongoIndex.getSubTasksWithParentId(this.getRealId(), {
       archived: true,
     });
     return ret;
   },
 
   allSubtasks() {
-    const ret = ReactiveMiniMongoIndex.getSubTasksWithParentId(this._id);
+    const ret = ReactiveMiniMongoIndex.getSubTasksWithParentId(this.getRealId());
     return ret;
   },
 
@@ -1311,39 +1409,40 @@ Cards.helpers({
   },
 
   customFieldIndex(customFieldId) {
-    return (this.customFields || []).map(x => x._id).indexOf(customFieldId);
+    return (this.getRealCard().customFields || []).map(x => x._id).indexOf(customFieldId);
   },
 
   // customFields with definitions
   customFieldsWD() {
+    const card = this.getRealCard();
     // get all definitions attached to this card's CURRENT board
     const definitions = ReactiveCache.getCustomFields({
-      boardIds: { $in: [this.boardId] },
+      boardIds: { $in: [card.boardId] },
     });
     if (!definitions) {
       return {};
     }
-    // #3748: entries whose definition is not attached to THIS board are
-    // skipped — on a cross-board linked card the customFields snapshot copied
-    // by Cards.link() references the ORIGINAL board's definitions, and the old
-    // `{}` placeholders rendered phantom empty rows in the card details and
-    // threw in the cardCustomField getTemplate helper.
+    // #3748: entries whose definition is unavailable are skipped rather than
+    // becoming phantom `{}` rows. For a linked card both values and definitions
+    // now come from its source board publication.
     const { buildCustomFieldsWD } = require('./lib/customFieldsWD');
-    return buildCustomFieldsWD(this.customFields, definitions);
+    return buildCustomFieldsWD(card.customFields, definitions);
   },
 
   colorClass() {
+    const card = this.getRealCard();
     // #5514: a custom '#rrggbb' hex has no CSS class (templates prepend
     // `minicard-` / `card-details-`); it is applied inline via colorStyle().
-    if (this.color && !isHexColor(this.color)) return this.color;
+    if (card.color && !isHexColor(card.color)) return card.color;
     return '';
   },
 
   colorStyle() {
+    const card = this.getRealCard();
     // #5514: for a custom hex color, set the background inline plus an
     // automatically readable text color. Empty for named colors.
-    if (isHexColor(this.color)) {
-      return `background-color:${this.color} !important;color:${contrastText(this.color)} !important;`;
+    if (isHexColor(card.color)) {
+      return `background-color:${card.color} !important;color:${contrastText(card.color)} !important;`;
     }
     return '';
   },
@@ -1473,11 +1572,18 @@ Cards.helpers({
     return this.isLinkedCard() || this.isLinkedBoard();
   },
 
-  setDescription(description) {
+  async setDescription(description) {
+    // History.md §10.2: the first content group. The PREVIOUS text is read
+    // before the write - once the update lands it is gone, which is why a
+    // description could never be restored before this.
+    // The change itself is recorded by the field-diffing hook in
+    // server/models/changeHistoryHooks.js, not here. Recording it in both
+    // places would put two rows on one edit - and the hook also catches the
+    // REST API, the importers and the rules engine, none of which call this.
     if (this.isLinkedBoard()) {
-      return Boards.updateAsync({ _id: this.linkedId }, { $set: { description } });
+      await Boards.updateAsync({ _id: this.linkedId }, { $set: { description } });
     } else {
-      return Cards.updateAsync({ _id: this.getRealId() }, { $set: { description } });
+      await Cards.updateAsync({ _id: this.getRealId() }, { $set: { description } });
     }
   },
 
@@ -1544,6 +1650,16 @@ Cards.helpers({
     }
   },
 
+  getRequesters() {
+    const card = this.isLinkedCard() ? ReactiveCache.getCard(this.linkedId) : this;
+    return card ? card.requesters || [] : null;
+  },
+
+  getAssigners() {
+    const card = this.isLinkedCard() ? ReactiveCache.getCard(this.linkedId) : this;
+    return card ? card.assigners || [] : null;
+  },
+
   assignMember(memberId) {
     let ret;
     if (this.isLinkedBoard()) {
@@ -1573,6 +1689,14 @@ Cards.helpers({
         { $addToSet: { assignees: assigneeId } },
       );
     }
+  },
+
+  assignRequester(userId) {
+    return Cards.updateAsync({ _id: this.getRealId() }, { $addToSet: { requesters: userId } });
+  },
+
+  assignAssigner(userId) {
+    return Cards.updateAsync({ _id: this.getRealId() }, { $addToSet: { assigners: userId } });
   },
 
   unassignMember(memberId) {
@@ -1606,6 +1730,14 @@ Cards.helpers({
     }
   },
 
+  unassignRequester(userId) {
+    return Cards.updateAsync({ _id: this.getRealId() }, { $pull: { requesters: userId } });
+  },
+
+  unassignAssigner(userId) {
+    return Cards.updateAsync({ _id: this.getRealId() }, { $pull: { assigners: userId } });
+  },
+
   toggleMember(memberId) {
     const members = this.getMembers();
     if (members && members.indexOf(memberId) > -1) {
@@ -1624,22 +1756,33 @@ Cards.helpers({
     }
   },
 
+  toggleRequester(userId) {
+    return (this.getRequesters() || []).includes(userId)
+      ? this.unassignRequester(userId) : this.assignRequester(userId);
+  },
+
+  toggleAssigner(userId) {
+    return (this.getAssigners() || []).includes(userId)
+      ? this.unassignAssigner(userId) : this.assignAssigner(userId);
+  },
+
   // #3392: PI Program Board "Red Strings". Return this card's dependencies as
   // normalized { cardId, type, color, icon } objects (legacy bare-string ids are
   // upgraded on read).
   getDependencies() {
-    return normalizeDependencies(this.cardDependencies);
+    return normalizeDependencies(this.getRealCard().cardDependencies);
   },
 
   // #3392: Add (or update) a typed dependency to another card on the same board.
   // Guards against self-links and cross-board targets. When the dependency
   // already exists its type/color/icon are updated.
   addDependency(targetCardId, options = {}) {
-    if (!targetCardId || targetCardId === this._id) {
+    const realCard = this.getRealCard();
+    if (!targetCardId || targetCardId === realCard._id) {
       return undefined;
     }
     const target = ReactiveCache.getCard(targetCardId);
-    if (!target || target.boardId !== this.boardId) {
+    if (!target || target.boardId !== realCard.boardId) {
       return undefined;
     }
     const deps = this.getDependencies();
@@ -1655,7 +1798,7 @@ Cards.helpers({
     const next = existing
       ? deps.map(dep => (dep.cardId === targetCardId ? entry : dep))
       : [...deps, entry];
-    return Cards.updateAsync(this._id, {
+    return Cards.updateAsync(this.getRealId(), {
       $set: { cardDependencies: next },
     });
   },
@@ -1681,7 +1824,7 @@ Cards.helpers({
     if (!changed) {
       return undefined;
     }
-    return Cards.updateAsync(this._id, {
+    return Cards.updateAsync(this.getRealId(), {
       $set: { cardDependencies: next },
     });
   },
@@ -1692,7 +1835,7 @@ Cards.helpers({
     const next = this.getDependencies().filter(
       dep => dep.cardId !== targetCardId,
     );
-    return Cards.updateAsync(this._id, {
+    return Cards.updateAsync(this.getRealId(), {
       $set: { cardDependencies: next },
     });
   },
@@ -2199,11 +2342,11 @@ Cards.helpers({
   getTitle() {
     if (this.isLinkedCard()) {
       const card = ReactiveCache.getCard(this.linkedId);
-      if (card === undefined) {
-        return null;
-      } else {
-        return card.title;
-      }
+      // A user may see the linked card's destination board without being a
+      // member of its private source board.  In that case the source is
+      // deliberately not published; retain the title copied into the linked
+      // card instead of rendering an empty minicard.
+      return card === undefined ? (this.title ?? null) : card.title;
     } else if (this.isLinkedBoard()) {
       const board = ReactiveCache.getBoard(this.linkedId);
       if (board === undefined) {
@@ -2219,7 +2362,7 @@ Cards.helpers({
   },
 
   getCardNumber() {
-    return this.cardNumber;
+    return this.getRealCard().cardNumber;
   },
 
   getBoardTitle() {
@@ -2328,6 +2471,7 @@ Cards.helpers({
       return this.assignedBy;
     }
   },
+
 
   isTemplateCard() {
     return this.type === 'template-card';
@@ -2557,7 +2701,7 @@ Cards.helpers({
         cardNumber: newCardNumber
       });
 
-      mutatedFields.customFields = this.mapCustomFieldsToBoard(newBoard._id);
+      mutatedFields.customFields = await this.mapCustomFieldsToBoard(newBoard._id);
 
       // Ensure customFields is always an array (guards against legacy {} data)
       if (!Array.isArray(mutatedFields.customFields)) {
@@ -2578,23 +2722,56 @@ Cards.helpers({
 
       // #3392: card-to-card dependencies ("Red Strings") only connect cards on
       // the same board. When a card moves to another board, drop its now
-      // cross-board dependencies and remove inbound references to it from the
-      // cards left behind on the old board, so no dangling lines remain.
+      // cross-board dependencies. This half is part of the by-_id update below,
+      // so it is allowed from the client.
+      //
+      // The OTHER half - removing inbound references to this card from the cards
+      // left behind on the old board - needs a multi-document update with a
+      // compound selector, and it used to be done right here. This helper is
+      // called straight from client code (list.js, swimlanes.js, globalSearch.js,
+      // sidebarFilters.js, minicard.js), and Meteor's insecure-write rule only
+      // lets untrusted code updateAsync BY ID: every cross-board move therefore
+      // threw "Not permitted. Untrusted code may only updateAsync documents by
+      // ID" and never reached the move itself (#6572). addDependency,
+      // setDependencyProps and removeDependency above already follow that rule -
+      // this was the one place that did not.
+      //
+      // It is a Cards.after.update hook in server/models/cards.js now, where a
+      // selector is allowed, and being server-side it also covers the REST API
+      // and import paths, which never ran this helper at all.
       mutatedFields.cardDependencies = [];
-      await Cards.updateAsync(
-        {
-          boardId: previousState.boardId,
-          'cardDependencies.cardId': this._id,
-        },
-        { $pull: { cardDependencies: { cardId: this._id } } },
-        { multi: true },
-      );
     }
 
     await Cards.updateAsync(this._id, { $set: mutatedFields });
 
-    if (Meteor.isServer && typeof Meteor.userId === 'function' && Meteor.userId() && typeof UserPositionHistory !== 'undefined') {
+    if (Meteor.isServer && typeof Meteor.userId === 'function' && Meteor.userId()) {
       try {
+        // #6478 fixed this for list moves and missed the card path, so Ctrl+Z
+        // after dragging a card went on doing nothing. The guard used to be
+        // `typeof UserPositionHistory !== 'undefined'` on a bare identifier -
+        // an assumed global that this file never imported, so it was ALWAYS
+        // false and no card move was ever recorded.
+        //
+        // The import has to be lazy and it has to be here: models/userPositionHistory
+        // imports THIS file, so a top-level import would be a cycle and could
+        // leave the binding undefined depending on evaluation order. Requiring
+        // it inside the call, on the server, where the module graph is already
+        // built, is the same shape as the cardMoveModifier require above.
+        // Both stores during the transition (History.md §4, "keep
+        // userPositionHistory writing during transition"): the new one is what
+        // Ctrl+Z reads now, the old one stays until its rows are migrated.
+        await recordCardChange(this, {
+          group: 'position',
+          changeType: 'moved',
+          previousContent: previousState,
+          newContent: {
+            boardId,
+            swimlaneId,
+            listId,
+            sort: sort !== null ? sort : this.sort,
+          },
+        });
+        const UserPositionHistory = require('/models/userPositionHistory').default;
         UserPositionHistory.trackChange({
           userId: Meteor.userId(),
           boardId: this.boardId,
@@ -2635,17 +2812,20 @@ Cards.helpers({
   },
 
   addLabel(labelId) {
-    this.labelIds.push(labelId);
-    return Cards.updateAsync(this._id, { $addToSet: { labelIds: labelId } });
+    const card = this.getRealCard();
+    card.labelIds = card.labelIds || [];
+    card.labelIds.push(labelId);
+    return Cards.updateAsync(this.getRealId(), { $addToSet: { labelIds: labelId } });
   },
 
   removeLabel(labelId) {
-    this.labelIds = (this.labelIds || []).filter(x => x !== labelId);
-    return Cards.updateAsync(this._id, { $pull: { labelIds: labelId } });
+    const card = this.getRealCard();
+    card.labelIds = (card.labelIds || []).filter(x => x !== labelId);
+    return Cards.updateAsync(this.getRealId(), { $pull: { labelIds: labelId } });
   },
 
   toggleLabel(labelId) {
-    if (this.labelIds && this.labelIds.indexOf(labelId) > -1) {
+    if (this.hasLabel(labelId)) {
       return this.removeLabel(labelId);
     } else {
       return this.addLabel(labelId);
@@ -2657,12 +2837,20 @@ Cards.helpers({
   // icon can exist as a plain, mascot or computer sticker.
   hasSticker(icon, highlight) {
     const h = highlight || '';
-    return (this.stickers || []).some(s => s.icon === icon && (s.highlight || '') === h);
+    return this.getStickers().some(s => s.icon === icon && (s.highlight || '') === h);
+  },
+
+  getStickers() {
+    return this.getRealCard().stickers || [];
+  },
+
+  getCreatorId() {
+    return this.getRealCard().userId;
   },
 
   addSticker(icon, highlight, name) {
     if (!icon || this.hasSticker(icon, highlight)) return Promise.resolve();
-    const position = (this.stickers || []).length;
+    const position = this.getStickers().length;
     const sticker = { icon, position };
     if (highlight) sticker.highlight = highlight;
     if (name) sticker.name = name;
@@ -2674,7 +2862,7 @@ Cards.helpers({
 
   removeSticker(icon, highlight) {
     const h = highlight || '';
-    const stickers = (this.stickers || []).slice();
+    const stickers = this.getStickers().slice();
     const index = stickers.findIndex(
       s => s.icon === icon && (s.highlight || '') === h,
     );
@@ -2689,7 +2877,7 @@ Cards.helpers({
   // Remove a single sticker by its position in the array (so duplicates with
   // the same icon/name can be removed individually).
   removeStickerAt(index) {
-    const stickers = (this.stickers || []).slice();
+    const stickers = this.getStickers().slice();
     if (index < 0 || index >= stickers.length) return Promise.resolve();
     stickers.splice(index, 1);
     return Cards.updateAsync(
@@ -2710,20 +2898,21 @@ Cards.helpers({
   // flat locationName/Address/Latitude/Longitude fields is surfaced here as a
   // location entry so existing (e.g. Trello-imported) cards keep working.
   getLocations() {
-    const locations = (this.locations || []).slice();
+    const card = this.getRealCard();
+    const locations = (card.locations || []).slice();
     if (
       !locations.length &&
-      (this.locationName ||
-        this.locationAddress ||
-        typeof this.locationLatitude === 'number' ||
-        typeof this.locationLongitude === 'number')
+      (card.locationName ||
+        card.locationAddress ||
+        typeof card.locationLatitude === 'number' ||
+        typeof card.locationLongitude === 'number')
     ) {
       locations.push({
         _id: 'legacy',
-        name: this.locationName || '',
-        address: this.locationAddress || '',
-        latitude: this.locationLatitude,
-        longitude: this.locationLongitude,
+        name: card.locationName || '',
+        address: card.locationAddress || '',
+        latitude: card.locationLatitude,
+        longitude: card.locationLongitude,
       });
     }
     return locations;
@@ -2814,27 +3003,43 @@ Cards.helpers({
     if (newColor === 'white') {
       newColor = null;
     }
-    return Cards.updateAsync(this._id, { $set: { color: newColor } });
+    return Cards.updateAsync(this.getRealId(), { $set: { color: newColor } });
   },
 
   assignMember(memberId) {
-    return Cards.updateAsync(this._id, { $addToSet: { members: memberId } });
+    return Cards.updateAsync(this.getRealId(), { $addToSet: { members: memberId } });
   },
 
   assignAssignee(assigneeId) {
-    return Cards.updateAsync(this._id, { $addToSet: { assignees: assigneeId } });
+    return Cards.updateAsync(this.getRealId(), { $addToSet: { assignees: assigneeId } });
+  },
+
+  assignRequester(userId) {
+    return Cards.updateAsync(this.getRealId(), { $addToSet: { requesters: userId } });
+  },
+
+  assignAssigner(userId) {
+    return Cards.updateAsync(this.getRealId(), { $addToSet: { assigners: userId } });
   },
 
   unassignMember(memberId) {
-    return Cards.updateAsync(this._id, { $pull: { members: memberId } });
+    return Cards.updateAsync(this.getRealId(), { $pull: { members: memberId } });
   },
 
   unassignAssignee(assigneeId) {
-    return Cards.updateAsync(this._id, { $pull: { assignees: assigneeId } });
+    return Cards.updateAsync(this.getRealId(), { $pull: { assignees: assigneeId } });
+  },
+
+  unassignRequester(userId) {
+    return Cards.updateAsync(this.getRealId(), { $pull: { requesters: userId } });
+  },
+
+  unassignAssigner(userId) {
+    return Cards.updateAsync(this.getRealId(), { $pull: { assigners: userId } });
   },
 
   toggleMember(memberId) {
-    if (this.members && this.members.indexOf(memberId) > -1) {
+    if ((this.getMembers() || []).includes(memberId)) {
       return this.unassignMember(memberId);
     } else {
       return this.assignMember(memberId);
@@ -2842,21 +3047,31 @@ Cards.helpers({
   },
 
   toggleAssignee(assigneeId) {
-    if (this.assignees && this.assignees.indexOf(assigneeId) > -1) {
+    if ((this.getAssignees() || []).includes(assigneeId)) {
       return this.unassignAssignee(assigneeId);
     } else {
       return this.assignAssignee(assigneeId);
     }
   },
 
+  toggleRequester(userId) {
+    return (this.requesters || []).includes(userId)
+      ? this.unassignRequester(userId) : this.assignRequester(userId);
+  },
+
+  toggleAssigner(userId) {
+    return (this.assigners || []).includes(userId)
+      ? this.unassignAssigner(userId) : this.assignAssigner(userId);
+  },
+
   assignCustomField(customFieldId) {
-    return Cards.updateAsync(this._id, {
+    return Cards.updateAsync(this.getRealId(), {
       $addToSet: { customFields: { _id: customFieldId, value: null } },
     });
   },
 
   unassignCustomField(customFieldId) {
-    return Cards.updateAsync(this._id, {
+    return Cards.updateAsync(this.getRealId(), {
       $pull: { customFields: { _id: customFieldId } },
     });
   },
@@ -2870,22 +3085,22 @@ Cards.helpers({
   },
 
   toggleShowActivities() {
-    return Cards.updateAsync(this._id, {
-      $set: { showActivities: !this.showActivities },
+    return Cards.updateAsync(this.getRealId(), {
+      $set: { showActivities: !this.getRealCard().showActivities },
     });
   },
 
   toggleShowChecklistAtMinicard() {
-    return Cards.updateAsync(this._id, {
-      $set: { showChecklistAtMinicard: !this.showChecklistAtMinicard },
+    return Cards.updateAsync(this.getRealId(), {
+      $set: { showChecklistAtMinicard: !this.getRealCard().showChecklistAtMinicard },
     });
   },
 
   toggleHideFinishedChecklist() {
-    return Cards.updateAsync(this._id, {
+    return Cards.updateAsync(this.getRealId(), {
       $set: {
         hideFinishedChecklistIfItemsAreHidden:
-          !this.hideFinishedChecklistIfItemsAreHidden,
+          !this.getRealCard().hideFinishedChecklistIfItemsAreHidden,
       },
     });
   },
@@ -2895,17 +3110,17 @@ Cards.helpers({
     if (index > -1) {
       const update = { $set: {} };
       update.$set[`customFields.${index}.value`] = value;
-      return Cards.updateAsync(this._id, update);
+      return Cards.updateAsync(this.getRealId(), update);
     }
     return null;
   },
 
   setCover(coverId) {
-    return Cards.updateAsync(this._id, { $set: { coverId } });
+    return Cards.updateAsync(this.getRealId(), { $set: { coverId } });
   },
 
   unsetCover() {
-    return Cards.updateAsync(this._id, { $unset: { coverId: '' } });
+    return Cards.updateAsync(this.getRealId(), { $unset: { coverId: '' } });
   },
 
   // #4561: on a linked card these must target the REAL underlying card
@@ -2928,15 +3143,15 @@ Cards.helpers({
   },
 
   setOvertime(isOvertime) {
-    return Cards.updateAsync(this._id, { $set: { isOvertime } });
+    return Cards.updateAsync(this.getRealId(), { $set: { isOvertime } });
   },
 
   setSpentTime(spentTime) {
-    return Cards.updateAsync(this._id, { $set: { spentTime } });
+    return Cards.updateAsync(this.getRealId(), { $set: { spentTime } });
   },
 
   unsetSpentTime() {
-    return Cards.updateAsync(this._id, { $unset: { spentTime: '', isOvertime: false } });
+    return Cards.updateAsync(this.getRealId(), { $unset: { spentTime: '', isOvertime: false } });
   },
 
   setParentId(parentId) {
@@ -2960,18 +3175,18 @@ Cards.helpers({
         }
         ancestorIds.push(crtParentId);
       }
-      if (wouldCreateCycle(this._id, parentId, ancestorIds)) {
+      if (wouldCreateCycle(this.getRealId(), parentId, ancestorIds)) {
         throw new Meteor.Error(
           'circular-subtask',
           'A card cannot be made a subtask of itself or of one of its own subtasks.',
         );
       }
     }
-    return Cards.updateAsync(this._id, { $set: { parentId } });
+    return Cards.updateAsync(this.getRealId(), { $set: { parentId } });
   },
 
   setVoteQuestion(question, publicVote, allowNonBoardMembers) {
-    return Cards.updateAsync(this._id, {
+    return Cards.updateAsync(this.getRealId(), {
       $set: {
         vote: {
           question,
@@ -2985,38 +3200,38 @@ Cards.helpers({
   },
 
   unsetVote() {
-    return Cards.updateAsync(this._id, { $unset: { vote: '' } });
+    return Cards.updateAsync(this.getRealId(), { $unset: { vote: '' } });
   },
 
   setVoteEnd(end) {
-    return Cards.updateAsync(this._id, { $set: { 'vote.end': end } });
+    return Cards.updateAsync(this.getRealId(), { $set: { 'vote.end': end } });
   },
 
   unsetVoteEnd() {
-    return Cards.updateAsync(this._id, { $unset: { 'vote.end': '' } });
+    return Cards.updateAsync(this.getRealId(), { $unset: { 'vote.end': '' } });
   },
 
   setVote(userId, forIt) {
     switch (forIt) {
       case true:
-        return Cards.updateAsync(this._id, {
+        return Cards.updateAsync(this.getRealId(), {
           $pull: { 'vote.negative': userId },
           $addToSet: { 'vote.positive': userId },
         });
       case false:
-        return Cards.updateAsync(this._id, {
+        return Cards.updateAsync(this.getRealId(), {
           $pull: { 'vote.positive': userId },
           $addToSet: { 'vote.negative': userId },
         });
       default:
-        return Cards.updateAsync(this._id, {
+        return Cards.updateAsync(this.getRealId(), {
           $pull: { 'vote.positive': userId, 'vote.negative': userId },
         });
     }
   },
 
   setPokerQuestion(question, allowNonBoardMembers) {
-    return Cards.updateAsync(this._id, {
+    return Cards.updateAsync(this.getRealId(), {
       $set: {
         poker: {
           question,
@@ -3037,23 +3252,23 @@ Cards.helpers({
   },
 
   setPokerEstimation(estimation) {
-    return Cards.updateAsync(this._id, { $set: { 'poker.estimation': estimation } });
+    return Cards.updateAsync(this.getRealId(), { $set: { 'poker.estimation': estimation } });
   },
 
   unsetPokerEstimation() {
-    return Cards.updateAsync(this._id, { $unset: { 'poker.estimation': '' } });
+    return Cards.updateAsync(this.getRealId(), { $unset: { 'poker.estimation': '' } });
   },
 
   unsetPoker() {
-    return Cards.updateAsync(this._id, { $unset: { poker: '' } });
+    return Cards.updateAsync(this.getRealId(), { $unset: { poker: '' } });
   },
 
   setPokerEnd(end) {
-    return Cards.updateAsync(this._id, { $set: { 'poker.end': end } });
+    return Cards.updateAsync(this.getRealId(), { $set: { 'poker.end': end } });
   },
 
   unsetPokerEnd() {
-    return Cards.updateAsync(this._id, { $unset: { 'poker.end': '' } });
+    return Cards.updateAsync(this.getRealId(), { $unset: { 'poker.end': '' } });
   },
 
   setPoker(userId, state) {
@@ -3063,17 +3278,17 @@ Cards.helpers({
 
     if (pokerFields.includes(state)) {
       delete pullFields[`poker.${state}`];
-      return Cards.updateAsync(this._id, {
+      return Cards.updateAsync(this.getRealId(), {
         $pull: pullFields,
         $addToSet: { [`poker.${state}`]: userId },
       });
     } else {
-      return Cards.updateAsync(this._id, { $pull: pullFields });
+      return Cards.updateAsync(this.getRealId(), { $pull: pullFields });
     }
   },
 
   replayPoker() {
-    return Cards.updateAsync(this._id, {
+    return Cards.updateAsync(this.getRealId(), {
       $set: {
         'poker.one': [],
         'poker.two': [],
@@ -3164,12 +3379,15 @@ async function cardMove(
       userId,
       oldListId,
       activityType: 'moveCard',
-      listName: list.title,
+      // Old/shared-list boards can momentarily update a card before the target
+      // list/swimlane reaches this cache. Activity logging must not make the
+      // otherwise-valid move fail (#6614).
+      listName: list ? list.title : '',
       listId: doc.listId,
       boardId: doc.boardId,
       cardId: doc._id,
       cardTitle: doc.title,
-      swimlaneName: swimlane.title,
+      swimlaneName: swimlane ? swimlane.title : '',
       swimlaneId: doc.swimlaneId,
       oldSwimlaneId,
     });
@@ -3187,6 +3405,11 @@ async function cardState(userId, doc, fieldNames) {
         boardId: doc.boardId,
         listId: doc.listId,
         cardId: doc._id,
+        // #3144: the title, recorded WITH the activity. An archived card is not
+        // published to the client, so the board feed could not name the card that
+        // had just been archived - the sentence about it was the one sentence
+        // guaranteed to be about a card nobody could look up.
+        cardTitle: doc.title,
         swimlaneId: doc.swimlaneId,
       });
     } else {
@@ -3197,6 +3420,7 @@ async function cardState(userId, doc, fieldNames) {
         listName: list.title,
         listId: doc.listId,
         cardId: doc._id,
+        cardTitle: doc.title,
         swimlaneId: doc.swimlaneId,
       });
     }
@@ -3584,5 +3808,29 @@ Cards.helpers({
     return `Original position: ${history.originalPosition.sort || 0}${swimlaneInfo}${listInfo}`;
   },
 });
+
+if (Meteor.isServer) {
+  // #6595-adjacent, and the "still slow on loading cards" reports: the cards
+  // collection had NO index at all, so every query the board and the card make
+  // was a collection scan. That is invisible on a demo board and expensive
+  // everywhere else - and worse on FerretDB, whose SQLite backend has to walk
+  // the same documents. One user on a test server is enough to feel it, because
+  // it is not contention: it is the scan.
+  //
+  // Each of these is a selector the app really uses, with the sort it uses:
+  //   boardId + archived   the board and every window publication
+  //   listId + sort        a list's cards, in the order they are drawn
+  //   swimlaneId + sort    the swimlane view's rows
+  //   parentId             subtasks of a card
+  //   boardId + cardNumber searching by card number (#5006)
+  const { ensureIndex } = require('/server/lib/mongoStartup');
+  Meteor.startup(async () => {
+    await ensureIndex(Cards, { boardId: 1, archived: 1 });
+    await ensureIndex(Cards, { listId: 1, sort: 1 });
+    await ensureIndex(Cards, { swimlaneId: 1, sort: 1 });
+    await ensureIndex(Cards, { parentId: 1 });
+    await ensureIndex(Cards, { boardId: 1, cardNumber: 1 });
+  });
+}
 
 export default Cards;

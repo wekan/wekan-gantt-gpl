@@ -1,4 +1,6 @@
 import { ReactiveVar } from 'meteor/reactive-var';
+import { Tracker } from 'meteor/tracker';
+import { tabIndexForKey } from '/client/lib/accessibility';
 
 // Creation-time stack tracking which basicTabs is currently being rendered.
 // Blaze creates parent views before children, so when tabContent.onCreated fires,
@@ -7,12 +9,14 @@ import { ReactiveVar } from 'meteor/reactive-var';
 // back to the calling context (e.g. membersWidget), not the basicTabs template —
 // so walking the view tree cannot find the basicTabs instance.
 const _creatingStack = [];
+let nextTabsId = 1;
 
 Template.basicTabs.onCreated(function () {
   const activeTab = this.data.activeTab
     ? { slug: this.data.activeTab }
     : this.data.tabs[0];
   this._activeTab = new ReactiveVar(activeTab);
+  this._accessibilityId = `basic-tabs-${nextTabsId++}`;
 
   this.isActiveSlug = (slug) => {
     const current = this._activeTab.get();
@@ -33,11 +37,38 @@ Template.basicTabs.helpers({
       return 'active';
     }
   },
+  tabDomId(slug) {
+    return `${Template.instance()._accessibilityId}-tab-${slug}`;
+  },
+  panelDomId(slug) {
+    return `${Template.instance()._accessibilityId}-panel-${slug}`;
+  },
+  tabIndex(slug) {
+    return Template.instance().isActiveSlug(slug) ? '0' : '-1';
+  },
+  isSelectedTab(slug) {
+    return Template.instance().isActiveSlug(slug) ? 'true' : 'false';
+  },
 });
 
 Template.basicTabs.events({
   'click .tab-item'(e, t) {
     t._activeTab.set(this);
+  },
+  'keydown .tab-item'(event, template) {
+    const tabs = template.data.tabs || [];
+    const currentIndex = tabs.findIndex(tab => tab.slug === this.slug);
+    if (currentIndex < 0) return;
+
+    const nextIndex = tabIndexForKey(event, currentIndex, tabs.length);
+    if (nextIndex === null) return;
+
+    event.preventDefault();
+    template._activeTab.set(tabs[nextIndex]);
+    Tracker.afterFlush(() => {
+      const target = template.find(`#${template._accessibilityId}-tab-${tabs[nextIndex].slug}`);
+      target?.focus();
+    });
   },
 });
 
@@ -52,5 +83,13 @@ Template.tabContent.helpers({
   isActiveTab(slug) {
     const inst = Template.instance()._basicTabsInst;
     if (inst && inst.isActiveSlug(slug)) return 'active';
+  },
+  tabDomId(slug) {
+    const inst = Template.instance()._basicTabsInst;
+    return inst ? `${inst._accessibilityId}-tab-${slug}` : undefined;
+  },
+  panelDomId(slug) {
+    const inst = Template.instance()._basicTabsInst;
+    return inst ? `${inst._accessibilityId}-panel-${slug}` : undefined;
   },
 });

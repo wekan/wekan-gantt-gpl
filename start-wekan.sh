@@ -96,8 +96,9 @@
       # Later change to: METEOR_REACTIVITY_ORDER=changeStreams,oplog,polling
       if [ "$USE_CHANGE_STREAMS" = "true" ]; then
           export METEOR_REACTIVITY_ORDER=changeStreams,oplog,polling
-          export DDP_TRANSPORT=uws
-          #export DDP_TRANSPORT=sockjs
+          # sockjs is the only transport WeKan ships: no bundle carries
+          # uWebSockets.js, and uws is coerced to sockjs at startup.
+          export DDP_TRANSPORT=sockjs
       else
           export METEOR_REACTIVITY_ORDER=polling
       fi
@@ -764,6 +765,12 @@
       #bash -c "ulimit -s 65500; exec node --stack-size=65500 main.js"
       #-------------------- OPTIONAL SETTINGS END ----------------------
       #bash -c "ulimit -s 65500; exec node --stack-size=65500 --max-old-space-size=8192 main.js"
+      if [ -z "${NODE_OPTIONS:-}" ]; then
+        _memory_mb=$(awk '/^MemTotal:/{print int($2/1024)}' /proc/meminfo 2>/dev/null || echo 2048)
+        for _f in /sys/fs/cgroup/memory.max /sys/fs/cgroup/memory/memory.limit_in_bytes; do [ -r "$_f" ] || continue; _b=$(cat "$_f" 2>/dev/null || true); case "$_b" in ''|max|*[!0-9]*) continue;; esac; _m=$((_b/1048576)); [ "$_m" -gt 0 ] && [ "$_m" -lt "$_memory_mb" ] && _memory_mb=$_m; break; done
+        _heap_mb=$((_memory_mb*3/5)); [ "$_heap_mb" -gt 4096 ] && _heap_mb=4096
+        export NODE_OPTIONS="--max-old-space-size=$_heap_mb"
+      fi
       bash -c "ulimit -s 65500; exec node main.js"
       #node main.js
       #---------------------------------------------------------------------

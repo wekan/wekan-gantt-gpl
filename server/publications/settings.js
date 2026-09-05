@@ -43,6 +43,10 @@ const SETTING_FIELDS = {
   disableActivities: 1,
   disableNotifications: 1,
   disableWatch: 1,
+  // Admin Panel / Problems / Delete reads this field back after writing it.
+  // Without publishing it, the optimistic checkmark is immediately redrawn from
+  // `undefined` even though the server saved the new value.
+  enablePermanentDelete: 1,
   disableAllExport: 1,
   disableAllImport: 1,
   disableExportAvatars: 1,
@@ -159,6 +163,10 @@ Meteor.publish('mailServer', async function() {
           'mailServer.username': 1,
           'mailServer.enableTLS': 1,
           'mailServer.from': 1,
+          'mailServer.enabled': 1,
+          'mailServer.service': 1,
+          'mailServer.configurations': 1,
+          'mailServer.passwordSet': 1,
         },
       },
     );

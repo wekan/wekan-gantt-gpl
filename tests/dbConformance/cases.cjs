@@ -86,6 +86,10 @@ const CASES = [
   // ── logical ───────────────────────────────────────────────────────────────
   { group: 'logical', name: '$and', kind: 'find', filter: { $and: [{ n: { $gt: 0 } }, { flag: true }] } },
   { group: 'logical', name: '$or', kind: 'find', filter: { $or: [{ n: 42 }, { name: 'alpha' }] } },
+  // FerretDB #17: a dotted branch may cross an array of documents. SQLite must
+  // not discard that match during SQL pushdown before the common matcher runs.
+  { group: 'logical', name: '$or across dotted array fields', kind: 'find',
+    filter: { $or: [{ 'items.k': 'b' }, { 'items.missing': '__nonexistent__' }] } },
   { group: 'logical', name: '$nor', kind: 'find', filter: { $nor: [{ n: 42 }, { name: 'alpha' }] } },
   { group: 'logical', name: '$not', kind: 'find', filter: { n: { $not: { $gt: 0 } } } },
 
@@ -131,6 +135,25 @@ const CASES = [
     options: { projection: { tags: { $slice: 1 } } } },
   { group: 'projection', name: 'elemMatch projection', kind: 'find', filter: {},
     options: { projection: { items: { $elemMatch: { k: 'a' } } } } },
+  // `$meta` is the third projection operator. Two keywords can be answered, and
+  // they are compared differently on purpose.
+  //
+  // `recordId` is the STORAGE identity of the document, so its value is each
+  // backend's own and comparing values would report a difference that is not
+  // one. What has to agree is that every backend answers, and answers with the
+  // same shape - a number on every row - which is what COMPARE.SHAPE checks.
+  { group: 'projection', name: '$meta recordId', kind: 'find', filter: {},
+    options: { projection: { name: 1, rid: { $meta: 'recordId' } }, sort: { _id: 1 } },
+    compare: COMPARE.SHAPE },
+  // `textScore` is computed by the handler ABOVE the backends, from the
+  // document's own strings, so every backend must produce the SAME number and
+  // the values are compared in full. It is also the only case that exercises
+  // `$text`: only `alpha` (_id 1) carries the term, and it carries it once.
+  // Sorted by `_id` so the comparison does not depend on the order a backend
+  // happens to return rows in.
+  { group: 'projection', name: '$meta textScore', kind: 'find',
+    filter: { $text: { $search: 'alpha' } },
+    options: { projection: { name: 1, score: { $meta: 'textScore' } }, sort: { _id: 1 } } },
   { group: 'sort', name: 'sort ascending', kind: 'find', filter: {}, options: { sort: { n: 1 } } },
   { group: 'sort', name: 'sort descending', kind: 'find', filter: {}, options: { sort: { n: -1 } } },
   { group: 'sort', name: 'sort by two fields', kind: 'find', filter: {},

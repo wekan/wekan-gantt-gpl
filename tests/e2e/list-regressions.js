@@ -14,13 +14,23 @@ function findChromiumPath() {
   if (process.env.CHROMIUM_PATH) return process.env.CHROMIUM_PATH;
 
   const home = os.homedir();
-  const userCandidates = [
-    // Common Playwright browser cache locations
-    path.join(home, '.cache/ms-playwright/chromium-1223/chrome-linux/chrome'),
-    path.join(home, '.var/app/com.visualstudio.code/cache/ms-playwright/chromium-1223/chrome-linux/chrome'),
-    // Puppeteer-managed Chrome cache
-    path.join(home, '.cache/puppeteer/chrome/linux-148.0.7778.167/chrome-linux64/chrome'),
-  ];
+  const userCandidates = [];
+
+  // Playwright revisions change regularly. Discover them instead of pinning a
+  // cache revision that may be gone, and prefer the newest one. VS Code's
+  // Flatpak cache is included because that is where its ARM64 Playwright
+  // extension installs Chromium.
+  for (const cache of [
+    path.join(home, '.cache/ms-playwright'),
+    path.join(home, '.var/app/com.visualstudio.code/cache/ms-playwright'),
+  ]) {
+    try {
+      for (const revision of fs.readdirSync(cache).sort().reverse()) {
+        if (!revision.startsWith('chromium-')) continue;
+        userCandidates.push(path.join(cache, revision, 'chrome-linux', 'chrome'));
+      }
+    } catch {}
+  }
 
   const candidates = [
     ...userCandidates,
@@ -31,8 +41,24 @@ function findChromiumPath() {
     '/Applications/Chromium.app/Contents/MacOS/Chromium',
     '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
   ];
+  const compatible = p => {
+    try {
+      fs.accessSync(p, fs.constants.X_OK);
+      if (process.platform !== 'linux') return true;
+      const elf = Buffer.alloc(20);
+      const fd = fs.openSync(p, 'r');
+      try { fs.readSync(fd, elf, 0, elf.length, 0); } finally { fs.closeSync(fd); }
+      if (elf.toString('ascii', 0, 4) !== '\x7fELF') return true;
+      const machine = elf.readUInt16LE(18);
+      return (process.arch === 'arm64' && machine === 183)
+        || (process.arch === 'x64' && machine === 62)
+        || !['arm64', 'x64'].includes(process.arch);
+    } catch {
+      return false;
+    }
+  };
   for (const p of candidates) {
-    try { fs.accessSync(p, fs.constants.X_OK); return p; } catch {}
+    if (compatible(p)) return p;
   }
 
   // Last resort: discover from Puppeteer cache dynamically.
@@ -41,7 +67,7 @@ function findChromiumPath() {
     const versions = fs.readdirSync(cacheDir).sort().reverse();
     for (const version of versions) {
       const resolved = path.join(cacheDir, version, 'chrome-linux64', 'chrome');
-      try { fs.accessSync(resolved, fs.constants.X_OK); return resolved; } catch {}
+      if (compatible(resolved)) return resolved;
     }
   } catch {}
 
@@ -51,6 +77,9 @@ function findChromiumPath() {
 const CHROMIUM_PATH = findChromiumPath();
 const HEADLESS = process.env.HEADLESS !== 'false';
 const KEEP_E2E_DATA = process.env.KEEP_E2E_DATA === '1';
+const DDP_CONNECT_TIMEOUT_MS = Number(process.env.E2E_DDP_CONNECT_TIMEOUT_MS) || 30000;
+const LOGIN_TIMEOUT_MS = Number(process.env.E2E_LOGIN_TIMEOUT_MS) || 30000;
+const SUITE_TIMEOUT_MS = Number(process.env.E2E_SUITE_TIMEOUT_MS) || 10 * 60 * 1000;
 const RUN_ID = `${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
 const ARTIFACT_DIR = process.env.E2E_ARTIFACT_DIR || `/tmp/wekan-list-regressions-${RUN_ID}`;
 
@@ -74,6 +103,7 @@ const TEST_LIST_IDS = [
 
 let browser;
 let page;
+const browserErrors = [];
 let testBoardId = TEST_BOARD_ID;
 let testSwimlaneId = TEST_SWIMLANE_ID;
 let testListIds = TEST_LIST_IDS;
@@ -94,6 +124,14 @@ function assert(condition, message) {
 
 function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function withTimeout(promise, timeoutMs, message) {
+  let timer;
+  const timeout = new Promise((_resolve, reject) => {
+    timer = setTimeout(() => reject(new Error(message)), timeoutMs);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
 // Run an async callback with a connected MongoDB client (official `mongodb`
@@ -338,6 +376,40 @@ async function waitForMeteorGlobals(targetPage) {
   );
 }
 
+async function meteorDiagnostics(targetPage) {
+  try {
+    return await targetPage.evaluate(() => ({
+      href: location.href,
+      hasMeteor: typeof Meteor !== 'undefined',
+      status: typeof Meteor !== 'undefined' && typeof Meteor.status === 'function'
+        ? Meteor.status() : null,
+      userId: typeof Meteor !== 'undefined' && typeof Meteor.userId === 'function'
+        ? Meteor.userId() : null,
+      loggingIn: typeof Meteor !== 'undefined' && typeof Meteor.loggingIn === 'function'
+        ? Meteor.loggingIn() : null,
+    }));
+  } catch (error) {
+    return { diagnosticError: error.message };
+  }
+}
+
+async function waitForMeteorConnection(targetPage) {
+  try {
+    await targetPage.waitForFunction(
+      () => typeof Meteor !== 'undefined'
+        && typeof Meteor.status === 'function'
+        && Meteor.status().connected,
+      { timeout: DDP_CONNECT_TIMEOUT_MS },
+    );
+  } catch (error) {
+    const diagnostic = await meteorDiagnostics(targetPage);
+    throw new Error(
+      'DDP did not connect within ' + DDP_CONNECT_TIMEOUT_MS + 'ms: '
+        + JSON.stringify(diagnostic),
+    );
+  }
+}
+
 // Fire a navigation without blocking on load/domcontentloaded — Rspack HMR
 // can trigger a hot-code-push reload mid-navigation which detaches the frame
 // and causes puppeteer to throw.  Instead we fire and forget, then wait for
@@ -353,20 +425,58 @@ async function reloadAndWait(targetPage) {
 }
 
 async function loginWithToken(targetPage, rawToken) {
+  // clientStorage:none makes Meteor.loginWithToken memory-only. Put the seeded
+  // credential in the native HttpOnly cookie too, so the new DDP connection
+  // made by the final navigation resumes exactly as a production login does.
+  await targetPage.setCookie({
+    name: 'meteor_login_token',
+    value: rawToken,
+    url: BASE_URL,
+    httpOnly: true,
+    sameSite: 'Lax',
+  });
   await gotoAndWait(targetPage, `${BASE_URL}/sign-in`);
-  const loginResult = await targetPage.evaluate(async token => {
+  await waitForMeteorConnection(targetPage);
+  const loginResult = await targetPage.evaluate(async ({ token, timeoutMs }) => {
     return await new Promise(resolve => {
+      let settled = false;
+      let timer;
+      const state = () => ({
+        status: typeof Meteor.status === 'function' ? Meteor.status() : null,
+        userId: Meteor.userId(),
+        loggingIn: typeof Meteor.loggingIn === 'function' ? Meteor.loggingIn() : null,
+      });
+      const finish = result => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(result);
+      };
+      timer = setTimeout(() => {
+        finish({ error: `login callback timed out after ${timeoutMs}ms`, ...state() });
+      }, timeoutMs);
       Meteor.loginWithToken(token, err => {
-        resolve({
+        finish({
           error: err && (err.reason || err.message),
-          userId: Meteor.userId(),
+          ...state(),
         });
       });
     });
-  }, rawToken);
-  assert(!loginResult.error, `Login with resume token failed: ${loginResult.error}`);
-  assert(loginResult.userId === TEST_USER_ID, 'Unexpected logged-in test user');
+  }, { token: rawToken, timeoutMs: LOGIN_TIMEOUT_MS });
+  assert(!loginResult.error,
+    `Login with resume token failed: ${loginResult.error}; state=${JSON.stringify(loginResult)}`);
+  try {
+    await targetPage.waitForFunction(
+      expectedUserId => Meteor.userId() === expectedUserId,
+      { timeout: LOGIN_TIMEOUT_MS },
+      TEST_USER_ID,
+    );
+  } catch (error) {
+    const diagnostic = await meteorDiagnostics(targetPage);
+    throw new Error(`Login did not settle on ${TEST_USER_ID}: ${JSON.stringify(diagnostic)}`);
+  }
   await gotoAndWait(targetPage, BASE_URL);
+  await waitForMeteorConnection(targetPage);
 }
 
 async function seedBoardData() {
@@ -394,6 +504,7 @@ async function openBoard(boardId, slug) {
     listCount: document.querySelectorAll('.js-list:not(.js-list-composer)').length,
     body: document.body.innerText.slice(0, 1000),
   }));
+  debugInfo.browserErrors = browserErrors.slice(-10);
   throw new Error(`Board lists did not render: ${JSON.stringify(debugInfo)}`);
 }
 
@@ -548,6 +659,13 @@ async function runTest() {
     defaultViewport: { width: 1600, height: 1000 },
   });
   page = await browser.newPage();
+  page.on('pageerror', error => browserErrors.push(`pageerror: ${error.stack || error.message}`));
+  page.on('console', message => {
+    if (message.type() === 'error') browserErrors.push(`console: ${message.text()}`);
+  });
+  page.on('requestfailed', request => {
+    browserErrors.push(`request: ${request.url()} - ${request.failure()?.errorText || 'failed'}`);
+  });
 
   logStep('Logging in with a generated resume token');
   await loginWithToken(page, rawToken);
@@ -676,7 +794,11 @@ async function runTest() {
   }
 
   try {
-    await runTest();
+    await withTimeout(
+      runTest(),
+      SUITE_TIMEOUT_MS,
+      `E2E suite exceeded ${SUITE_TIMEOUT_MS}ms`,
+    );
   } catch (error) {
     console.error(`\n[wekan-e2e] FAIL: ${error.message}`);
     if (page) {

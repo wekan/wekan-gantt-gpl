@@ -8,6 +8,13 @@ import { isAdminByGroups } from './adminGroups';
 import { runWithLdapDisconnect } from './connectionGuard';
 import { log_debug, log_info, log_warn, log_error } from './logger';
 import { getLdapPhotoBuffer } from './ldapPhoto';
+import { ldapPresenceUpdate } from './presenceSync';
+import { isKnownLdapGroup } from './entryKind';
+import {
+  ldapTextValue,
+  ldapTextValues,
+  ldapEmailAddresses,
+} from './ldapTextValues';
 
 Object.defineProperty(Object.prototype, "getLDAPValue", {
   value: function (prop) {
@@ -85,26 +92,26 @@ export function getLdapEmail(ldapUser) {
 
   if (emailField.indexOf('#{') > -1) {
     return emailField.replace(/#{(.+?)}/g, function(match, field) {
-      return ldapUser.getLDAPValue(field);
+      return ldapTextValues(ldapUser.getLDAPValue(field))[0] || '';
     });
   }
 
-  const ldapMail = ldapUser.getLDAPValue(emailField);
-  if (typeof ldapMail === 'string') {
-    return ldapMail;
-  } else {
-    return ldapMail[0].toString();
-  }
+  return ldapTextValues(ldapUser.getLDAPValue(emailField))[0] || '';
 }
 
 export function getLdapFullname(ldapUser) {
   const fullnameField = LDAP.settings_get('LDAP_FULLNAME_FIELD');
+  const asText = value => {
+    const scalar = Array.isArray(value) ? value[0] : value;
+    if (scalar === undefined || scalar === null) return '';
+    return Buffer.isBuffer(scalar) ? scalar.toString('utf8') : String(scalar);
+  };
   if (fullnameField.indexOf('#{') > -1) {
     return fullnameField.replace(/#{(.+?)}/g, function(match, field) {
-      return ldapUser.getLDAPValue(field);
+      return asText(ldapUser.getLDAPValue(field));
     });
   }
-  return ldapUser.getLDAPValue(fullnameField);
+  return asText(ldapUser.getLDAPValue(fullnameField));
 }
 
 export function getLdapUserUniqueID(ldapUser) {
@@ -170,12 +177,14 @@ export function getDataToSyncUserData(ldapUser, user) {
           return;
         }
 
-        if (typeof ldapValue === 'object') {
-          Array.from(ldapValue).forEach(function(item) {
-            emailList.push({ address: item, verified: true });
-          });
-        } else {
-          emailList.push({ address: ldapValue, verified: true });
+        const existingAddresses = new Set(emailList.map(({ address }) =>
+          address.toLowerCase()));
+        for (const address of ldapEmailAddresses(ldapValue)) {
+          const normalizedAddress = address.toLowerCase();
+          if (!existingAddresses.has(normalizedAddress)) {
+            emailList.push({ address, verified: true });
+            existingAddresses.add(normalizedAddress);
+          }
         }
         break;
       }
@@ -315,6 +324,16 @@ export async function syncUserData(user, ldapUser) {
 }
 
 export async function addLdapUser(ldapUser, username, password) {
+  // #4875: a broad base DN can return group objects alongside users when
+  // LDAP_USER_SEARCH_FILTER is empty. Never create an account for a known LDAP
+  // group, regardless of whether this path came from bulk import or login.
+  if (isKnownLdapGroup(ldapUser)) {
+    throw new Meteor.Error(
+      'LDAP-login-error',
+      'LDAP entry is a group, not a user account',
+    );
+  }
+
   const uniqueId = getLdapUserUniqueID(ldapUser);
 
   const userObject = {
@@ -332,9 +351,9 @@ export async function addLdapUser(ldapUser, username, password) {
     } else {
       userObject.email = userData.emails[0].address;
     }
-  } else if (ldapUser.getLDAPValue('mail') && String(ldapUser.getLDAPValue('mail')).indexOf('@') > -1) {
+  } else if (ldapTextValue(ldapUser.getLDAPValue('mail')).includes('@')) {
     // #6481: case-insensitive, matching the fieldmap path above.
-    userObject.email = ldapUser.getLDAPValue('mail');
+    userObject.email = ldapTextValues(ldapUser.getLDAPValue('mail'))[0];
   } else if (LDAP.settings_get('LDAP_DEFAULT_DOMAIN') !== '') {
     userObject.email = `${ username || uniqueId.value }@${ LDAP.settings_get('LDAP_DEFAULT_DOMAIN') }`;
   } else {
@@ -398,6 +417,11 @@ export async function importNewUsers(ldap) {
 
     for (const ldapUser of ldapUsers) {
       count++;
+
+      if (isKnownLdapGroup(ldapUser)) {
+        log_warn('Skipping LDAP group returned by the user search');
+        continue;
+      }
 
       const uniqueId = getLdapUserUniqueID(ldapUser);
       // Look to see if user already exists
@@ -554,12 +578,20 @@ async function sync() {
           // user that is present in LDAP again (recovers from a removal or a
           // transient outage). Gated by the same opt-in flag as the disable
           // below; off by default.
-          if (
-            LDAP.settings_get('LDAP_BACKGROUND_SYNC_DISABLE_NONEXISTANT_USERS') === true &&
-            user.loginDisabled === true
-          ) {
+          const presenceUpdate = ldapPresenceUpdate({
+            ldapUserFound: true,
+            disableNonexistentUsers:
+              LDAP.settings_get(
+                'LDAP_BACKGROUND_SYNC_DISABLE_NONEXISTANT_USERS',
+              ) === true,
+            loginDisabled: user.loginDisabled,
+          });
+          if (presenceUpdate) {
             log_info('Re-enabling user present in LDAP again', user.username);
-            await Meteor.users.updateAsync({ _id: user._id }, { $set: { loginDisabled: false } });
+            await Meteor.users.updateAsync(
+              { _id: user._id },
+              { $set: presenceUpdate },
+            );
           }
         } else {
           // #4738: optionally disable Wekan users that no longer exist in the
@@ -569,14 +601,27 @@ async function sync() {
           // authoritative source of active status: users missing from LDAP are
           // disabled and reappearing users are re-enabled (see the if-branch
           // above), which also overrides a manual disable of an LDAP user.
-          // Caveat: a transient LDAP lookup failure looks the same as a removed
-          // user, so an account may be briefly disabled until it reappears.
-          if (LDAP.settings_get('LDAP_BACKGROUND_SYNC_DISABLE_NONEXISTANT_USERS') === true) {
-            if (!user.loginDisabled) {
-              log_info('Disabling user no longer present in LDAP', user.username);
-              await Meteor.users.updateAsync({ _id: user._id }, { $set: { loginDisabled: true } });
-            }
-          } else {
+          // Lookup/configuration errors throw and abort the run before this
+          // branch, so only a successful zero-result search counts as removed.
+          const presenceUpdate = ldapPresenceUpdate({
+            ldapUserFound: false,
+            disableNonexistentUsers:
+              LDAP.settings_get(
+                'LDAP_BACKGROUND_SYNC_DISABLE_NONEXISTANT_USERS',
+              ) === true,
+            loginDisabled: user.loginDisabled,
+          });
+          if (presenceUpdate) {
+            log_info('Disabling user no longer present in LDAP', user.username);
+            await Meteor.users.updateAsync(
+              { _id: user._id },
+              { $set: presenceUpdate },
+            );
+          } else if (
+            LDAP.settings_get(
+              'LDAP_BACKGROUND_SYNC_DISABLE_NONEXISTANT_USERS',
+            ) !== true
+          ) {
             log_info('Can\'t sync user', user.username);
           }
         }

@@ -6,13 +6,14 @@ import { ReactiveCache } from '/imports/reactiveCache';
 import { add, now } from '/imports/lib/dateUtils';
 import { Authentication } from '/server/authentication';
 import { sendJsonResult } from '/server/apiMiddleware';
-import { allowIsBoardMember, allowIsBoardMemberCommentOnly, allowIsBoardMemberWithWriteAccess, computeSortForIndex, mergeLabelIds, canAssignCardMember, isCardDateClear } from '/server/lib/utils';
+import { allowIsBoardMember, allowIsBoardMemberWithWriteAccess, computeSortForIndex, mergeLabelIds, canAssignCardMember, isCardDateClear } from '/server/lib/utils';
 import { computeTopSort, normalizeMoveParams, parseCardDate } from '/server/lib/restCardHelpers';
 const { coerceRestArrayParam } = require('/server/lib/restArrayParam');
 const { applyCardBoardConsistency } = require('/server/lib/cardBoardConsistency');
 import { titleChanged } from '/server/lib/titleChangeActivity';
 import { descriptionChanged } from '/server/lib/descriptionChangeActivity';
 import { buildDeleteCardActivity } from '/server/lib/deleteActivities';
+import { assertParentCardIsVisible } from '/server/lib/visibleBoardIds';
 import Activities from '/models/activities';
 import Boards from '/models/boards';
 import Cards, {
@@ -34,8 +35,197 @@ import Checklists from '/models/checklists';
 import ChecklistItems from '/models/checklistItems';
 import { subtaskCustomFields } from '/imports/lib/subtaskHelpers';
 import { ensureIndex } from '/server/lib/mongoStartup';
+import { canEditCardOrLinkedCard } from '/server/lib/linkedCardPermission';
 
 Meteor.methods({
+  // #6613: create cross-board card links as an acknowledged, authoritative
+  // operation. A direct client insert could be rejected after the optimistic
+  // write, leaving the Link popup open without creating anything.
+  async createLinkedCard(sourceCardId, boardId, swimlaneId, listId, sort) {
+    check(sourceCardId, String);
+    check(boardId, String);
+    check(swimlaneId, String);
+    check(listId, String);
+    check(sort, Number);
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+    if (!Number.isFinite(sort)) throw new Meteor.Error('invalid-sort');
+
+    const [sourceCard, destinationBoard, destinationList, destinationSwimlane] =
+      await Promise.all([
+        Cards.findOneAsync(sourceCardId),
+        Boards.findOneAsync(boardId),
+        Lists.findOneAsync(listId),
+        Swimlanes.findOneAsync(swimlaneId),
+      ]);
+    if (!sourceCard || !destinationBoard || !destinationList || !destinationSwimlane) {
+      throw new Meteor.Error('not-found');
+    }
+    const sourceBoard = await Boards.findOneAsync(sourceCard.boardId);
+    if (!sourceBoard || !allowIsBoardMember(this.userId, sourceBoard)) {
+      throw new Meteor.Error('not-authorized');
+    }
+    if (!allowIsBoardMemberWithWriteAccess(this.userId, destinationBoard)) {
+      throw new Meteor.Error('not-authorized');
+    }
+    if (
+      sourceCard.boardId === boardId ||
+      sourceCard.archived === true ||
+      destinationList.archived === true ||
+      destinationSwimlane.archived === true ||
+      destinationList.boardId !== boardId ||
+      destinationSwimlane.boardId !== boardId ||
+      sourceCard.type === 'template-card' ||
+      sourceCard.type === 'cardType-linkedCard' ||
+      sourceCard.type === 'cardType-linkedBoard'
+    ) {
+      throw new Meteor.Error('invalid-linked-card');
+    }
+
+    return await Cards.insertAsync({
+      title: sourceCard.title || '',
+      listId,
+      swimlaneId,
+      boardId,
+      sort,
+      type: 'cardType-linkedCard',
+      linkedId: sourceCardId,
+      cardNumber: await destinationBoard.getNextCardNumber(),
+      userId: this.userId,
+    });
+  },
+
+  // #6608: archive one card selection as one acknowledged server operation.
+  // The old sidebar loop issued direct client collection updates and closed
+  // immediately, so a rejected update looked exactly like a successful action
+  // while every selected card stayed put.
+  async archiveSelectedCards(boardId, cardIds) {
+    check(boardId, String);
+    check(cardIds, [String]);
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+
+    const ids = [...new Set(cardIds)];
+    if (!ids.length || ids.length > 5000) {
+      throw new Meteor.Error('invalid-card-selection');
+    }
+
+    const board = await Boards.findOneAsync(boardId);
+    if (!board || !allowIsBoardMemberWithWriteAccess(this.userId, board)) {
+      throw new Meteor.Error('not-authorized');
+    }
+
+    const cards = await Cards.find({
+      _id: { $in: ids },
+      boardId,
+      archived: false,
+    }).fetchAsync();
+    if (cards.length !== ids.length) {
+      throw new Meteor.Error('invalid-card-selection');
+    }
+
+    // Validate the complete selection before changing the first card. Preserve
+    // the board order used by Multi-Selection for deterministic activity order.
+    const byId = new Map(cards.map(card => [card._id, card]));
+    for (const id of ids) {
+      await byId.get(id).archive();
+    }
+    return { archived: ids.length };
+  },
+
+  // #6611: custom-field selection and checkbox values are acknowledged server
+  // writes. Direct client collection writes could be refused silently, making
+  // a removed field immediately reappear and a checkbox appear inert.
+  async setCardCustomFieldAssigned(cardId, customFieldId, assigned) {
+    check(cardId, String);
+    check(customFieldId, String);
+    check(assigned, Boolean);
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+
+    const card = await Cards.findOneAsync(cardId);
+    if (!card) throw new Meteor.Error('not-found');
+    const board = await Boards.findOneAsync(card.boardId);
+    if (!(await canEditCardOrLinkedCard(this.userId, card, board))) {
+      throw new Meteor.Error('not-authorized');
+    }
+    const definition = await CustomFields.findOneAsync({
+      _id: customFieldId,
+      boardIds: card.boardId,
+    });
+    if (!definition) throw new Meteor.Error('custom-field-not-found');
+
+    if (assigned) {
+      await Cards.updateAsync(cardId, {
+        $addToSet: { customFields: { _id: customFieldId, value: null } },
+      });
+    } else {
+      // #6611: MongoDB document conditions match fields within each array
+      // element. FerretDB must do the same here; exact document equality would
+      // not match an element that also contains its custom-field value.
+      await Cards.updateAsync(cardId, {
+        $pull: { customFields: { _id: customFieldId } },
+      });
+    }
+    return assigned;
+  },
+
+  async setCardCustomFieldCheckbox(cardId, customFieldId, value) {
+    check(cardId, String);
+    check(customFieldId, String);
+    check(value, Boolean);
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+
+    const card = await Cards.findOneAsync(cardId);
+    if (!card) throw new Meteor.Error('not-found');
+    const board = await Boards.findOneAsync(card.boardId);
+    if (!(await canEditCardOrLinkedCard(this.userId, card, board))) {
+      throw new Meteor.Error('not-authorized');
+    }
+    const definition = await CustomFields.findOneAsync({
+      _id: customFieldId,
+      boardIds: card.boardId,
+      type: 'checkbox',
+    });
+    if (!definition) throw new Meteor.Error('custom-field-not-found');
+
+    const index = (card.customFields || []).findIndex(field =>
+      field && field._id === customFieldId);
+    if (index < 0) throw new Meteor.Error('custom-field-not-on-card');
+    await Cards.updateAsync(cardId, {
+      $set: { [`customFields.${index}.value`]: value },
+    });
+    return value;
+  },
+
+  async setCardCustomFieldCurrency(cardId, customFieldId, value) {
+    check(cardId, String);
+    check(customFieldId, String);
+    check(value, Number);
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+    if (!Number.isFinite(value)) {
+      throw new Meteor.Error('invalid-custom-field-value');
+    }
+
+    const card = await Cards.findOneAsync(cardId);
+    if (!card) throw new Meteor.Error('not-found');
+    const board = await Boards.findOneAsync(card.boardId);
+    if (!(await canEditCardOrLinkedCard(this.userId, card, board))) {
+      throw new Meteor.Error('not-authorized');
+    }
+    const definition = await CustomFields.findOneAsync({
+      _id: customFieldId,
+      boardIds: card.boardId,
+      type: 'currency',
+    });
+    if (!definition) throw new Meteor.Error('custom-field-not-found');
+
+    const index = (card.customFields || []).findIndex(field =>
+      field && field._id === customFieldId);
+    if (index < 0) throw new Meteor.Error('custom-field-not-on-card');
+    await Cards.updateAsync(cardId, {
+      $set: { [`customFields.${index}.value`]: value },
+    });
+    return value;
+  },
+
   // Server-authoritative subtask creation. Fixes:
   //  - #3868 / #5788 / #2256 "extra swimlane / column on subtask creation" and
   //    #4782 "can not create more than one subtask": the default subtasks
@@ -57,7 +247,7 @@ Meteor.methods({
     const parentBoard = await Boards.findOneAsync(parentCard.boardId);
     if (!parentBoard) throw new Meteor.Error('not-found');
     // The author must have write access to the parent card's board.
-    if (!allowIsBoardMemberWithWriteAccess(this.userId, parentBoard))
+    if (!(await canEditCardOrLinkedCard(this.userId, parentCard, parentBoard)))
       throw new Meteor.Error('not-authorized');
 
     // Resolve (and, on the server, lazily create ONCE) the default subtasks
@@ -163,7 +353,8 @@ Meteor.methods({
     const board = (await ReactiveCache.getBoard(card.boardId)) || (await Boards.findOneAsync(card.boardId));
     if (!board) throw new Meteor.Error('not-found');
 
-    const isMember = allowIsBoardMember(this.userId, board);
+    const isMember = allowIsBoardMember(this.userId, board) ||
+      await canEditCardOrLinkedCard(this.userId, card, board);
     const allowNBM = !!(card.poker && card.poker.allowNonBoardMembers);
     if (!(isMember || allowNBM)) {
       throw new Meteor.Error('not-authorized');
@@ -187,7 +378,7 @@ Meteor.methods({
     const card = (await ReactiveCache.getCard(cardId)) || (await Cards.findOneAsync(cardId));
     if (!card) throw new Meteor.Error('not-found');
     const board = (await ReactiveCache.getBoard(card.boardId)) || (await Boards.findOneAsync(card.boardId));
-    if (!allowIsBoardMember(this.userId, board)) throw new Meteor.Error('not-authorized');
+    if (!(await canEditCardOrLinkedCard(this.userId, card, board))) throw new Meteor.Error('not-authorized');
 
     const modifier = {
       $set: {
@@ -220,7 +411,7 @@ Meteor.methods({
     const card = (await ReactiveCache.getCard(cardId)) || (await Cards.findOneAsync(cardId));
     if (!card) throw new Meteor.Error('not-found');
     const board = (await ReactiveCache.getBoard(card.boardId)) || (await Boards.findOneAsync(card.boardId));
-    if (!allowIsBoardMember(this.userId, board)) throw new Meteor.Error('not-authorized');
+    if (!(await canEditCardOrLinkedCard(this.userId, card, board))) throw new Meteor.Error('not-authorized');
 
     return await Cards.updateAsync(
       { _id: cardId },
@@ -241,7 +432,7 @@ Meteor.methods({
     const card = (await ReactiveCache.getCard(cardId)) || (await Cards.findOneAsync(cardId));
     if (!card) throw new Meteor.Error('not-found');
     const board = (await ReactiveCache.getBoard(card.boardId)) || (await Boards.findOneAsync(card.boardId));
-    if (!allowIsBoardMember(this.userId, board)) throw new Meteor.Error('not-authorized');
+    if (!(await canEditCardOrLinkedCard(this.userId, card, board))) throw new Meteor.Error('not-authorized');
 
     return await Cards.updateAsync(
       { _id: cardId },
@@ -259,7 +450,7 @@ Meteor.methods({
     const card = (await ReactiveCache.getCard(cardId)) || (await Cards.findOneAsync(cardId));
     if (!card) throw new Meteor.Error('not-found');
     const board = (await ReactiveCache.getBoard(card.boardId)) || (await Boards.findOneAsync(card.boardId));
-    if (!allowIsBoardMember(this.userId, board)) throw new Meteor.Error('not-authorized');
+    if (!(await canEditCardOrLinkedCard(this.userId, card, board))) throw new Meteor.Error('not-authorized');
 
     return await Cards.updateAsync(
       { _id: cardId },
@@ -278,7 +469,7 @@ Meteor.methods({
     const card = (await ReactiveCache.getCard(cardId)) || (await Cards.findOneAsync(cardId));
     if (!card) throw new Meteor.Error('not-found');
     const board = (await ReactiveCache.getBoard(card.boardId)) || (await Boards.findOneAsync(card.boardId));
-    if (!allowIsBoardMember(this.userId, board)) throw new Meteor.Error('not-authorized');
+    if (!(await canEditCardOrLinkedCard(this.userId, card, board))) throw new Meteor.Error('not-authorized');
 
     return await Cards.updateAsync(
       { _id: cardId },
@@ -299,7 +490,7 @@ Meteor.methods({
     const card = (await ReactiveCache.getCard(cardId)) || (await Cards.findOneAsync(cardId));
     if (!card) throw new Meteor.Error('not-found');
     const board = (await ReactiveCache.getBoard(card.boardId)) || (await Boards.findOneAsync(card.boardId));
-    if (!allowIsBoardMember(this.userId, board)) throw new Meteor.Error('not-authorized');
+    if (!(await canEditCardOrLinkedCard(this.userId, card, board))) throw new Meteor.Error('not-authorized');
 
     return await Cards.updateAsync(
       { _id: cardId },
@@ -317,7 +508,7 @@ Meteor.methods({
     const card = (await ReactiveCache.getCard(cardId)) || (await Cards.findOneAsync(cardId));
     if (!card) throw new Meteor.Error('not-found');
     const board = (await ReactiveCache.getBoard(card.boardId)) || (await Boards.findOneAsync(card.boardId));
-    if (!allowIsBoardMember(this.userId, board)) throw new Meteor.Error('not-authorized');
+    if (!(await canEditCardOrLinkedCard(this.userId, card, board))) throw new Meteor.Error('not-authorized');
 
     return await Cards.updateAsync(
       { _id: cardId },
@@ -351,7 +542,7 @@ Meteor.methods({
     const card = (await ReactiveCache.getCard(cardId)) || (await Cards.findOneAsync(cardId));
     if (!card) throw new Meteor.Error('not-found');
     const board = (await ReactiveCache.getBoard(card.boardId)) || (await Boards.findOneAsync(card.boardId));
-    if (!allowIsBoardMember(this.userId, board)) throw new Meteor.Error('not-authorized');
+    if (!(await canEditCardOrLinkedCard(this.userId, card, board))) throw new Meteor.Error('not-authorized');
 
     return await Cards.updateAsync(
       { _id: cardId },
@@ -379,7 +570,7 @@ Meteor.methods({
     const card = (await ReactiveCache.getCard(cardId)) || (await Cards.findOneAsync(cardId));
     if (!card) throw new Meteor.Error('not-found');
     const board = (await ReactiveCache.getBoard(card.boardId)) || (await Boards.findOneAsync(card.boardId));
-    if (!allowIsBoardMember(this.userId, board)) throw new Meteor.Error('not-authorized');
+    if (!(await canEditCardOrLinkedCard(this.userId, card, board))) throw new Meteor.Error('not-authorized');
 
     return await Cards.updateAsync(
       { _id: cardId },
@@ -400,7 +591,7 @@ Meteor.methods({
     const card = (await ReactiveCache.getCard(cardId)) || (await Cards.findOneAsync(cardId));
     if (!card) throw new Meteor.Error('not-found');
     const board = (await ReactiveCache.getBoard(card.boardId)) || (await Boards.findOneAsync(card.boardId));
-    if (!allowIsBoardMember(this.userId, board)) throw new Meteor.Error('not-authorized');
+    if (!(await canEditCardOrLinkedCard(this.userId, card, board))) throw new Meteor.Error('not-authorized');
 
     return await Cards.updateAsync(
       { _id: cardId },
@@ -418,7 +609,7 @@ Meteor.methods({
     const card = (await ReactiveCache.getCard(cardId)) || (await Cards.findOneAsync(cardId));
     if (!card) throw new Meteor.Error('not-found');
     const board = (await ReactiveCache.getBoard(card.boardId)) || (await Boards.findOneAsync(card.boardId));
-    if (!allowIsBoardMember(this.userId, board)) throw new Meteor.Error('not-authorized');
+    if (!(await canEditCardOrLinkedCard(this.userId, card, board))) throw new Meteor.Error('not-authorized');
 
     return await Cards.updateAsync(
       { _id: cardId },
@@ -439,7 +630,8 @@ Meteor.methods({
     const board = (await ReactiveCache.getBoard(card.boardId)) || (await Boards.findOneAsync(card.boardId));
     if (!board) throw new Meteor.Error('not-found');
 
-    const isMember = allowIsBoardMember(this.userId, board);
+    const isMember = allowIsBoardMember(this.userId, board) ||
+      await canEditCardOrLinkedCard(this.userId, card, board);
     const allowNBM = !!(card.vote && card.vote.allowNonBoardMembers);
     if (!(isMember || allowNBM)) {
       throw new Meteor.Error('not-authorized');
@@ -511,6 +703,26 @@ Meteor.startup(async () => {
   // scanned archived, which on boards with years of archived+active cards burned CPU
   // and caused SQLITE_BUSY (#6480). This compound index covers that filter.
   await ensureIndex(Cards, { boardId: 1, archived: 1 });
+  // Linked-card and parent discovery add one predicate to that common prefix.
+  await ensureIndex(Cards, { boardId: 1, archived: 1, type: 1 });
+  await ensureIndex(Cards, { boardId: 1, archived: 1, parentId: 1 });
+  // Lazy card windows filter one board/list/swimlane, sort by the card order and
+  // use _id as a deterministic tie-breaker. MongoDB can answer the projected id
+  // window from this index alone (limit included) instead of reading and sorting
+  // every card in the list. FerretDB may use a shorter prefix until its SQLite
+  // compound-sort pushdown supports this shape, but retains identical semantics.
+  await ensureIndex(Cards, {
+    boardId: 1,
+    archived: 1,
+    listId: 1,
+    swimlaneId: 1,
+    sort: 1,
+    _id: 1,
+  });
+  // Due Cards narrows authorized boards and active ordinary cards, then orders
+  // them chronologically. The equality prefix avoids walking every card of each
+  // board before applying the due-date range.
+  await ensureIndex(Cards, { boardId: 1, archived: 1, type: 1, dueAt: 1 });
   await ensureIndex(Cards, { parentId: 1 });
   // Admin Panel / Problems / Broken cards asks for cards with NO board, swimlane
   // or list, or an unknown type - an $or, which can only use an index if each of
@@ -549,6 +761,43 @@ Cards.after.update(async (userId, doc, fieldNames) => {
   const boardId = doc.boardId;
   await Checklists.direct.updateAsync({ cardId: doc._id }, { $set: { boardId } }, { multi: true });
   await ChecklistItems.direct.updateAsync({ cardId: doc._id }, { $set: { boardId } }, { multi: true });
+});
+
+// #6572 / #3392: "Red Strings" only connect cards on the same board, so a card
+// that moves away must also lose the INBOUND links pointing at it from the board
+// it left, or those cards keep a dangling line to a card that is no longer there.
+//
+// The card's own dependencies are cleared by the move itself (cardDependencies:
+// [] is part of the by-_id update). The inbound ones live on OTHER cards, so they
+// need a multi-document update with a compound selector - and that used to sit in
+// Cards.move() in models/cards.js, which the client calls directly. Meteor only
+// lets untrusted code updateAsync BY ID, so the selector made every cross-board
+// move fail with "Not permitted. Untrusted code may only updateAsync documents by
+// ID" before the move ran at all, whether or not the card had any dependencies.
+//
+// Server-side the selector is allowed, and this covers every path that moves a
+// card - the client helper, the REST API, and import - rather than only the one
+// that happened to call the model helper. .direct like the hook above: this is a
+// denormalization cleanup on other documents, not an edit anyone is watching.
+//
+// Two pulls, because an entry may be either shape: dependencies are stored as
+// { cardId, type, color, icon } objects, and data written before #3392's rewrite
+// can still hold bare card-id strings (normalizeDependencies upgrades those on
+// read, so they are invisible until something has to delete one).
+Cards.after.update(async function(userId, doc, fieldNames) {
+  if (!fieldNames.includes('boardId')) return;
+  const oldBoardId = (this.previous || {}).boardId;
+  if (!oldBoardId || oldBoardId === doc.boardId) return;
+  await Cards.direct.updateAsync(
+    { boardId: oldBoardId, 'cardDependencies.cardId': doc._id },
+    { $pull: { cardDependencies: { cardId: doc._id } } },
+    { multi: true },
+  );
+  await Cards.direct.updateAsync(
+    { boardId: oldBoardId, cardDependencies: doc._id },
+    { $pull: { cardDependencies: doc._id } },
+    { multi: true },
+  );
 });
 
 Cards.after.update(async function(userId, doc, fieldNames) {
@@ -838,7 +1087,7 @@ WebApp.handlers.post('/api/boards/:boardId/lists/:listId/cards', async function(
   Authentication.checkLoggedIn(req.userId);
   const paramBoardId = req.params.boardId;
   const board = await ReactiveCache.getBoard(paramBoardId);
-  const addPermission = allowIsBoardMemberCommentOnly(req.userId, board);
+  const addPermission = allowIsBoardMemberWithWriteAccess(req.userId, board);
   // Must be awaited: checkAdminOrCondition is async, so without await a denied
   // (non board member) caller's rejection never blocks and the card was created
   // anyway — an auth bypass (CWE-862). Awaiting enforces the membership check.
@@ -870,9 +1119,17 @@ WebApp.handlers.post('/api/boards/:boardId/lists/:listId/cards', async function(
     );
     sendJsonResult(res, { code: 200, data: { _id: linkedNewId } });
     const linkedCard = await ReactiveCache.getCard(linkedNewId);
-    await cardCreation(req.body.authorId, linkedCard);
+    // GHSA-6jr3-42jf-vhm5: attribution comes from the session, not the body.
+    noteAuthorSpoof(req, 'POST cards (linked)');
+    await cardCreation(req.userId, linkedCard);
     return;
   }
+
+  // GHSA-jvv9-498p-hxrg: the same read check the linked-card branch above makes
+  // for `linkedId`, for the parent card. A parent on another board is only
+  // allowed when the caller may see that board; otherwise creating one card
+  // would publish that board's ancestor cards to everyone subscribed here.
+  await assertParentCardIsVisible(req.userId, paramParentId);
 
   const nextCardNumber = await board.getNextCardNumber();
 
@@ -888,13 +1145,26 @@ WebApp.handlers.post('/api/boards/:boardId/lists/:listId/cards', async function(
     { listId: paramListId, archived: false },
     { sort: ['sort'] },
   );
-  const checkUser = await ReactiveCache.getUser(req.body.authorId);
+  // GHSA-6jr3-42jf-vhm5: attribution comes from the SESSION, not from the
+  // request body. `authorId` was taken as given after checking only that such a
+  // user exists, so any board member could record a card creation, a card
+  // deletion or a custom field as somebody else's - the board's own history,
+  // written by whoever called the endpoint. The same spoofing was fixed for
+  // comments in 8.19 and for the card PUT handler, and these paths were missed.
+  const checkUser = await ReactiveCache.getUser(req.userId);
   // #2875: normalize members/assignees so a card can be created with none, and so
   // a `null`/`""` payload never persists as null (which breaks UI editing — see
   // #3697). Omit the field entirely when not provided so the schema default ([])
   // applies. Same coercion the card PUT handler uses.
-  const members = req.body.members !== undefined ? coerceRestArrayParam(req.body.members) : undefined;
-  const assignees = req.body.assignees !== undefined ? coerceRestArrayParam(req.body.assignees) : undefined;
+  // GHSA-whxm-pxgj-7wqv: only ACTIVE members of this board may be named, the
+  // same rule the merge endpoint has enforced since #5998.
+  const postBoard = await ReactiveCache.getBoard(paramBoardId);
+  const members = req.body.members !== undefined
+    ? await assignableOnBoard(postBoard, coerceRestArrayParam(req.body.members))
+    : undefined;
+  const assignees = req.body.assignees !== undefined
+    ? await assignableOnBoard(postBoard, coerceRestArrayParam(req.body.assignees))
+    : undefined;
   if (typeof checkUser !== 'undefined') {
     // Issue #5537: accept card dates on create. These schema fields are typed
     // as Date, so a raw request string is stripped by schema cleaning and the
@@ -915,7 +1185,7 @@ WebApp.handlers.post('/api/boards/:boardId/lists/:listId/cards', async function(
       listId: paramListId,
       parentId: paramParentId,
       description: req.body.description,
-      userId: req.body.authorId,
+      userId: req.userId,
       swimlaneId: req.body.swimlaneId,
       sort: currentCards.length,
       cardNumber: nextCardNumber,
@@ -927,7 +1197,8 @@ WebApp.handlers.post('/api/boards/:boardId/lists/:listId/cards', async function(
     sendJsonResult(res, { code: 200, data: { _id: id } });
 
     const card = await ReactiveCache.getCard(id);
-    await cardCreation(req.body.authorId, card);
+    noteAuthorSpoof(req, 'POST cards');
+    await cardCreation(req.userId, card);
   } else {
     sendJsonResult(res, { code: 401 });
   }
@@ -949,7 +1220,7 @@ WebApp.handlers.post(
     Authentication.checkLoggedIn(req.userId);
     const paramBoardId = req.params.boardId;
     const board = await ReactiveCache.getBoard(paramBoardId);
-    const addPermission = allowIsBoardMemberCommentOnly(req.userId, board);
+    const addPermission = allowIsBoardMemberWithWriteAccess(req.userId, board);
     await Authentication.checkAdminOrCondition(req.userId, addPermission);
     const paramListId = req.params.listId;
 
@@ -983,7 +1254,10 @@ WebApp.handlers.post(
     const results = [];
     for (let i = 0; i < cardsInput.length; i++) {
       const input = cardsInput[i] || {};
-      const authorId = input.authorId || req.body.authorId;
+      // GHSA-6jr3-42jf-vhm5: the session identity, not the body's - per card,
+      // because the bulk form let each entry name its own author too.
+      noteAuthorSpoof(req, 'POST cards/bulk');
+      const authorId = req.userId;
       const swimlaneId = input.swimlaneId || req.body.swimlaneId;
       const checkUser = await ReactiveCache.getUser(authorId);
       if (typeof checkUser === 'undefined') {
@@ -1005,8 +1279,13 @@ WebApp.handlers.post(
         cardNumber: nextCardNumber,
         customFields: customFieldsArr,
         // #2875: same normalization as the single-card create above.
-        members: input.members !== undefined ? coerceRestArrayParam(input.members) : undefined,
-        assignees: input.assignees !== undefined ? coerceRestArrayParam(input.assignees) : undefined,
+        // GHSA-whxm-pxgj-7wqv: and the same board-membership rule.
+        members: input.members !== undefined
+          ? await assignableOnBoard(board, coerceRestArrayParam(input.members))
+          : undefined,
+        assignees: input.assignees !== undefined
+          ? await assignableOnBoard(board, coerceRestArrayParam(input.assignees))
+          : undefined,
       });
       const card = await ReactiveCache.getCard(id);
       await cardCreation(authorId, card);
@@ -1088,6 +1367,12 @@ WebApp.handlers.put(
       updated = true;
     }
     if (req.body.parentId) {
+      // GHSA-jvv9-498p-hxrg: a parent card may live on another board, and write
+      // access HERE says nothing about read access THERE. Without this check a
+      // board member could name a card on a private board as the parent and the
+      // board publication would then hand that private card to everyone
+      // subscribed to this board.
+      await assertParentCardIsVisible(req.userId, req.body.parentId);
       await Cards.direct.updateAsync(
         { _id: paramCardId, listId: paramListId, boardId: paramBoardId, archived: false },
         { $set: { parentId: req.body.parentId } },
@@ -1225,7 +1510,12 @@ WebApp.handlers.put(
     // REST works and never leaves a value the UI cannot edit. Use `!== undefined`
     // so an explicit null/"" clears instead of being skipped by a truthiness guard.
     if (req.body.members !== undefined) {
-      const newmembers = coerceRestArrayParam(req.body.members);
+      // GHSA-whxm-pxgj-7wqv: only active members of this board may be named.
+      const putBoard = await ReactiveCache.getBoard(paramBoardId);
+      const newmembers = await assignableOnBoard(
+        putBoard,
+        coerceRestArrayParam(req.body.members),
+      );
       await Cards.direct.updateAsync(
         { _id: paramCardId, listId: paramListId, boardId: paramBoardId, archived: false },
         { $set: { members: newmembers } },
@@ -1233,21 +1523,73 @@ WebApp.handlers.put(
       updated = true;
     }
     if (req.body.assignees !== undefined) {
-      const newassignees = coerceRestArrayParam(req.body.assignees);
+      // GHSA-whxm-pxgj-7wqv: same rule for assignees.
+      const putAssignBoard = await ReactiveCache.getBoard(paramBoardId);
+      const newassignees = await assignableOnBoard(
+        putAssignBoard,
+        coerceRestArrayParam(req.body.assignees),
+      );
       await Cards.direct.updateAsync(
         { _id: paramCardId, listId: paramListId, boardId: paramBoardId, archived: false },
         { $set: { assignees: newassignees } },
       );
       updated = true;
     }
-    if (moveParams.swimlaneId) {
+    // #6572: a body that names a swimlane or list belonging to ANOTHER board is
+    // refused, and a cross-board move is only ever done by the isBoardMove
+    // branch below.
+    //
+    // The reporter of #6572 tried to work around the client-side move by sending
+    // boardId/listId/swimlaneId of the DESTINATION board to this route. Those are
+    // not the board-move parameters - isBoardMove needs newBoardId, newSwimlaneId
+    // and newListId - so the board move never ran, while these two branches did:
+    // the card kept its old boardId and got the destination board's listId and
+    // swimlaneId written onto it, which points it at a list and a swimlane that
+    // belong to a different board than the card does. It shows on neither board,
+    // and it took a hand-written database update to undo.
+    //
+    // These two branches are for moving WITHIN the board in the URL, so that is
+    // what they now enforce; anything else says which parameters to use instead.
+    // They are also skipped entirely during a board move: they would rewrite
+    // listId before the isBoardMove update runs, and that update's selector pins
+    // the card's original listId, so it would then match nothing and silently do
+    // nothing - the same inconsistent card, by a different route.
+    if (moveParams.swimlaneId && !moveParams.isBoardMove) {
+      const sameBoardSwimlane = await ReactiveCache.getSwimlane({
+        _id: moveParams.swimlaneId,
+        boardId: paramBoardId,
+      });
+      if (!sameBoardSwimlane) {
+        sendJsonResult(res, {
+          code: 400,
+          data: {
+            error: 'swimlaneId does not belong to this board. To move a card to '
+              + 'another board, send newBoardId, newSwimlaneId and newListId.',
+          },
+        });
+        return;
+      }
       await Cards.direct.updateAsync(
         { _id: paramCardId, listId: paramListId, boardId: paramBoardId, archived: false },
         { $set: { swimlaneId: moveParams.swimlaneId } },
       );
       updated = true;
     }
-    if (moveParams.listId) {
+    if (moveParams.listId && !moveParams.isBoardMove) {
+      const sameBoardList = await ReactiveCache.getList({
+        _id: moveParams.listId,
+        boardId: paramBoardId,
+      });
+      if (!sameBoardList) {
+        sendJsonResult(res, {
+          code: 400,
+          data: {
+            error: 'listId does not belong to this board. To move a card to '
+              + 'another board, send newBoardId, newSwimlaneId and newListId.',
+          },
+        });
+        return;
+      }
       // Issue #5399: a same-board list move must land the card on TOP of the
       // destination list (like the Move Card dialog: getMinSort then
       // minSort - 1), otherwise it only $set listId and the card landed at a
@@ -1390,14 +1732,42 @@ WebApp.handlers.delete(
     const paramCardId = req.params.cardId;
     await Authentication.checkBoardWriteAccess(req.userId, paramBoardId);
 
-    const card = await ReactiveCache.getCard(paramCardId);
+    // GHSA-8cqr-x6m5-v4w6: the card is fetched with the BOARD the caller was
+    // authorised on, not by its id alone. A bare primary-key lookup answered
+    // with any board's card, and cardRemover below then destroyed that card's
+    // checklists, comments, activities and subcard tree - irreversibly, on a
+    // board the caller could not even read - while the triple-key removal that
+    // follows quietly matched nothing and the endpoint still answered 200. The
+    // bulk endpoint has always constrained its lookup this way; this one did
+    // not. A card that is not on this board is now simply not found.
+    const card = await ReactiveCache.getCard({
+      _id: paramCardId,
+      boardId: paramBoardId,
+    });
+    // An id that names a card, but not one on the board the caller was
+    // authorised for, is the attempt this fix refuses - so it is recorded and
+    // shows in Admin Panel / Problems. A card id that names nothing at all is
+    // an ordinary 404 and is not logged.
+    if (!card) {
+      const elsewhere = await ReactiveCache.getCard(paramCardId);
+      if (elsewhere) {
+        try {
+          require('/server/lib/securityLog').record({
+            key: 'authz.card-delete', action: 'blocked', source: 'DELETE /api/boards/:boardId/lists/:listId/cards/:cardId',
+            userId: req.userId,
+            detail: `refused delete of card ${paramCardId} on board ${elsewhere.boardId} via board ${paramBoardId}`,
+          });
+        } catch (e) { /* logging must never break the guard */ }
+      }
+    }
     // Remove the card's checklists, checklist items, comments and attachments
     // BEFORE removing the card itself, so their before.remove hooks still find
     // the parent card (otherwise they dereference an undefined card and crash
     // SyncedCron with an unhandled rejection). `Cards.direct.removeAsync`
     // bypasses Cards.before.remove, so cardRemover is not run twice.
     if (card) {
-      await cardRemover(req.body.authorId, card);
+      noteAuthorSpoof(req, 'DELETE card');
+      await cardRemover(req.userId, card);
     }
     await Cards.direct.removeAsync({
       _id: paramCardId,
@@ -1409,7 +1779,7 @@ WebApp.handlers.delete(
     if (card) {
       await Activities.insertAsync(
         buildDeleteCardActivity({
-          userId: req.body.authorId,
+          userId: req.userId,
           cardId: card._id,
           boardId: card.boardId,
           listId: card.listId,
@@ -1453,13 +1823,14 @@ WebApp.handlers.delete('/api/boards/:boardId/cards/bulk', async function(req, re
     }
     // Remove sub-items (checklists, items, comments, attachments) before the
     // card itself so their before.remove hooks still find the parent card.
-    await cardRemover(req.body.authorId, card);
+    noteAuthorSpoof(req, 'DELETE cards/bulk');
+    await cardRemover(req.userId, card);
     await Cards.direct.removeAsync({ _id: cardId, boardId: paramBoardId });
     // Issue #1587: Cards.direct.removeAsync bypasses Cards.before.remove, so log
     // the deleteCard activity here too (outgoing-webhook fires on delete).
     await Activities.insertAsync(
       buildDeleteCardActivity({
-        userId: req.body.authorId,
+        userId: req.userId,
         cardId: card._id,
         boardId: card.boardId,
         listId: card.listId,
@@ -1515,22 +1886,44 @@ WebApp.handlers.post('/api/boards/:boardId/cards/labels', async function(req, re
     return;
   }
 
+  // ONE read for every card, not one per card.
+  //
+  // This used to await a getCard per id and then an update per id - at the
+  // BULK_CARDS_MAX of 500 that is a thousand round-trips, issued one at a time,
+  // for a single request. The reads are all the same question, so they are one
+  // `$in` query; the writes genuinely differ (each card merges its own labels),
+  // so they stay individual, but they are issued TOGETHER instead of each
+  // waiting for the last.
+  const cards = await ReactiveCache.getCards(
+    { _id: { $in: cardIds }, boardId: paramBoardId, archived: false },
+    { fields: { _id: 1, labelIds: 1 } },
+  );
+  const cardById = new Map((cards || []).map(card => [card._id, card]));
+
   const updated = [];
   const notFound = [];
+  const writes = [];
+  // Iterate cardIds, not the query result: the response has to preserve the
+  // caller's order and report the ids that matched nothing.
   for (const cardId of cardIds) {
-    const card = await ReactiveCache.getCard({ _id: cardId, boardId: paramBoardId, archived: false });
+    const card = cardById.get(cardId);
     if (!card) {
       notFound.push(cardId);
       continue;
     }
     // Merge: keep existing minus removed, then add new ones, de-duplicated.
     const merged = mergeLabelIds(card.labelIds, addLabelIds, removeLabelIds);
-    await Cards.direct.updateAsync(
-      { _id: cardId, boardId: paramBoardId, archived: false },
-      { $set: { labelIds: merged } },
+    writes.push(
+      Cards.direct.updateAsync(
+        { _id: cardId, boardId: paramBoardId, archived: false },
+        { $set: { labelIds: merged } },
+      ),
     );
     updated.push({ _id: cardId, labelIds: merged });
   }
+
+  // Every write must land before the 200 says they did.
+  await Promise.all(writes);
 
   sendJsonResult(res, { code: 200, data: { updated, notFound } });
 });
@@ -1754,6 +2147,56 @@ WebApp.handlers.post(
   },
 );
 
+// GHSA-6jr3-42jf-vhm5: a request body that still carries `authorId` naming
+// somebody OTHER than the session is the attempt this fix refuses - the value is
+// ignored either way now, and naming yourself is what an old client does, so only
+// the mismatch is recorded. Shows in Admin Panel / Problems.
+function noteAuthorSpoof(req, source) {
+  try {
+    const claimed = req.body && req.body.authorId;
+    if (!claimed || String(claimed) === String(req.userId)) return;
+    require('/server/lib/securityLog').record({
+      key: 'spoofing.author', action: 'ignored', source,
+      userId: req.userId,
+      detail: `ignored authorId "${claimed}" from the body; recorded the session instead`,
+    });
+  } catch (e) { /* logging must never break the guard */ }
+}
+
+// GHSA-whxm-pxgj-7wqv: who may be put on a card, in the ARRAY form.
+//
+// `POST .../cards` and `PUT .../cards/{cardId}` take `members` and `assignees`
+// as arrays and stored them exactly as given. The merge endpoint
+// `POST .../cards/{cardId}/members/{memberId}` has enforced since #5998 that the
+// user must be an ACTIVE member of the card's board; the array form bypassed
+// that, so a member of a private board could put any user id on a card - and
+// `GET /api/user/cards`, which lists by card membership, then handed that
+// outsider the private board's card titles, ids and dates, while their direct
+// read of the board stayed Forbidden.
+//
+// One rule for every shape. An id that may not be assigned is dropped rather
+// than refused, so a bulk edit does not fail over one stale id, and the caller
+// sees what was kept in the answer.
+async function assignableOnBoard(board, ids, source) {
+  const out = [];
+  const refused = [];
+  for (const id of Array.isArray(ids) ? ids : []) {
+    if (canAssignCardMember(board, id)) out.push(id);
+    else if (id) refused.push(id);
+  }
+  // Naming somebody who is not on this board is the attempt, so it is recorded
+  // and shows in Admin Panel / Problems rather than being dropped in silence.
+  if (refused.length) {
+    try {
+      require('/server/lib/securityLog').record({
+        key: 'authz.card-member', action: 'blocked', source: source || 'card members/assignees',
+        detail: `refused ${refused.length} id(s) not active on board ${board && board._id}: ${refused.join(' ')}`,
+      });
+    } catch (e) { /* logging must never break the guard */ }
+  }
+  return out;
+}
+
 // Issue #4815: get the current user's cards (cards where they are a member or
 // assignee). ?due=true returns only cards that have a due date; ?from= and ?to=
 // (ISO 8601) restrict due cards to a date range. Returns a compact field set.
@@ -1768,7 +2211,10 @@ WebApp.handlers.get('/api/user/cards', async function(req, res) {
 
   const selector = {
     archived: false,
-    $or: [{ members: userId }, { assignees: userId }],
+    $or: [
+      { members: userId }, { assignees: userId },
+      { requesters: userId }, { assigners: userId },
+    ],
   };
 
   const url = new URL(req.url, 'http://localhost');
@@ -1788,9 +2234,29 @@ WebApp.handlers.get('/api/user/cards', async function(req, res) {
   }
 
   const cards = await ReactiveCache.getCards(selector, { sort: { dueAt: 1 } });
+
+  // GHSA-whxm-pxgj-7wqv: card membership is not board access. This listed every
+  // card naming the caller, so being placed on a card of a board they cannot
+  // read - which the array form above used to allow - disclosed that private
+  // board's card titles, ids and dates. Both halves are fixed: nobody outside a
+  // board can be put on its cards any more, and the answer is filtered here as
+  // well, so a card placed before this release stops leaking too.
+  const boardIds = [...new Set((cards || []).map(card => card.boardId).filter(Boolean))];
+  const visible = boardIds.length
+    ? await ReactiveCache.getBoards(
+        {
+          _id: { $in: boardIds },
+          members: { $elemMatch: { userId, isActive: true } },
+        },
+        { fields: { _id: 1 } },
+      )
+    : [];
+  const allowed = new Set((visible || []).map(board => board._id));
+  const readable = (cards || []).filter(card => allowed.has(card.boardId));
+
   sendJsonResult(res, {
     code: 200,
-    data: (cards || []).map(card => ({
+    data: readable.map(card => ({
       _id: card._id,
       title: card.title,
       boardId: card.boardId,

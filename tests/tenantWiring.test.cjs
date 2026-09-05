@@ -104,18 +104,29 @@ test('the people publication and its count use the SAME scope function', () => {
   const count = read('server/models/users.js');
   assert.ok(/tenantAdmin\.canOpenAdminPanel\(user\)/.test(pub),
     'the publication opens for a per-tenant admin too');
-  assert.ok(/tenantAdmin\.peopleScopeSelector\(user, query\)/.test(pub),
-    'and scopes with the shared rule instead of the raw query');
+  // GHSA-phm4-4v26-j2vq: what reaches the scope function is the selector AFTER the
+  // injection guard, not the raw one. The scoping rule is unchanged - it still
+  // merges the restriction under $and - but it no longer has to be handed a
+  // selector that might carry $where, because merging never stripped that out.
+  assert.ok(/tenantAdmin\.peopleScopeSelector\(user, safeQuery\)/.test(pub),
+    'and scopes with the shared rule, applied to the guarded query');
+  assert.ok(/safeSelector\(query, 'people'\)/.test(pub),
+    'which means the guard has to run first');
   assert.ok(!/user\.isAdmin/.test(live(pub)), 'no second opinion left in the publication');
-  assert.ok(/tenantAdmin\.peopleScopeSelector\(currentUser, query \|\| \{\}\)/.test(count),
+  // Same rule, same guard: the count and the page ids both scope the selector the
+  // publication scopes, and both hand it over only after the injection guard
+  // (GHSA-phm4-4v26-j2vq) has had it.
+  assert.ok(/tenantAdmin\.peopleScopeSelector\(currentUser, safeSelector\(query \|\| \{\}, 'getUsersCollectionCount'\)\)/.test(count),
     'getUsersCollectionCount is scoped the same way, or the pager counts the wrong set');
+  assert.ok(/tenantAdmin\.peopleScopeSelector\(currentUser, safeSelector\(query \|\| \{\}, 'getPeoplePageIds'\)\)/.test(count),
+    'and so is getPeoplePageIds, which reads the page back');
 });
 
 test('the org publication and its count are scoped the same way', () => {
   const pub = read('server/publications/org.js');
   const count = read('server/models/org.js');
-  assert.ok(/tenantAdmin\.orgScopeSelector\(user, query\)/.test(pub));
-  assert.ok(/tenantAdmin\.orgScopeSelector\(user, query \|\| \{\}\)/.test(count));
+  assert.ok(/tenantAdmin\.orgScopeSelector\(user, safeQuery\)/.test(pub));
+  assert.ok(/tenantAdmin\.orgScopeSelector\(user, safeSelector\(query \|\| \{\}, 'getOrgsCollectionCount'\)\)/.test(count));
   assert.ok(/tenantAdmin\.canOpenAdminPanel\(user\)/.test(count));
 });
 
@@ -258,12 +269,19 @@ test('the user helpers exist, so Blaze can ask the same questions', () => {
 
 test('Settings and Problems stay site-admin only in the tab bar', () => {
   const header = liveJade(read('client/components/settings/settingHeader.jade'));
-  const settingsTab = header.slice(header.indexOf('.setting-header-btns'));
-  assert.ok(/if currentUser\.isAdmin\n\s+a\.setting-header-btn\.settings/.test(settingsTab));
-  assert.ok(/if currentUser\.isAdmin\n\s+a\.setting-header-btn\.problems/.test(settingsTab));
+  // The tabs are icon-only `.board-header-btn`s in the FIRST top header bar
+  // now, beside the notification bell - they were labelled
+  // `.setting-header-btn`s in a second bar of their own. The RULE is unchanged
+  // and is what this checks: a per-tenant Global Admin gets People and
+  // Attachments, and not Settings or Problems.
+  const settingsTab = header.slice(header.indexOf('.admin-panel-tabs'));
+  assert.ok(/if currentUser\.isAdmin\n\s+a\.board-header-btn\.settings/.test(settingsTab),
+    'Settings is behind the site-admin check');
+  assert.ok(/if currentUser\.isAdmin\n\s+a\.board-header-btn\.problems/.test(settingsTab),
+    'and so is Problems');
   // People and Attachments are NOT behind that check - a per-tenant admin needs them.
-  assert.ok(/\n {6}a\.setting-header-btn\.people/.test(settingsTab));
-  assert.ok(/\n {6}a\.setting-header-btn\.informations/.test(settingsTab));
+  assert.ok(/\n {6}a\.board-header-btn\.people/.test(settingsTab), 'People is not');
+  assert.ok(/\n {6}a\.board-header-btn\.informations/.test(settingsTab), 'nor Attachments');
 });
 
 test('the Organizations row can appoint the org\'s own admins', () => {
@@ -286,7 +304,7 @@ test('the Backup pane offers a scope, and asks the server for the list', () => {
   assert.ok(/Meteor\.call\('runBackup', opts, storage, orgId \|\| null/.test(js));
 });
 
-// ── the site theme (D.9 / docs/Design/Page/Theme.md) ─────────────────────────
+// ── the site theme (D.9 / docs/Features/Page/Theme.md) ─────────────────────────
 
 test('Visibility gets a Change color section, above Logo, using the SHARED picker', () => {
   const jade = liveJade(read('client/components/settings/settingBody.jade'));
@@ -377,7 +395,7 @@ test('an empty custom-colour list does not override the instance one', () => {
 });
 
 test('the design of the shared picker is written down', () => {
-  const doc = read('docs/Design/Page/Theme.md');
+  const doc = read('docs/Features/Page/Theme.md');
   assert.ok(/scope="admin"/.test(doc) && /scope="board"/.test(doc) && /scope="global"/.test(doc));
   assert.ok(/Default theme/.test(doc) && /Site theme/i.test(doc) && /User's own/.test(doc),
     'including the order of themes');

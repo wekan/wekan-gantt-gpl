@@ -16,6 +16,7 @@
 #   extra      the six architectures nobody else builds for, repacked under
 #              QEMU by releases/repack-bundle-for-arch.sh.
 #   appimage   AppImage.yml
+#   windows    windows.yml
 #   flatpak    Flatpak.yml
 #   sandstorm  the .spk
 #
@@ -40,17 +41,19 @@ v="${1:?usage: expected-assets.sh <version>   e.g. 10.58}"
 
 echo "meteor amd64 wekan-${v}-amd64.zip sums"
 
-# release-all.yml: build-arm64, build-win64, build-mac-arm64. Each starts from
+# release-all.yml: build-arm64, build-win64, build-win-arm64, build-mac-arm64.
+# Each starts from
 # the amd64 bundle and runs on its own kind of runner, so they are not the
 # emulated repack below and cannot be built by it.
 echo "repack arm64 wekan-${v}-arm64.zip sums"
 echo "repack win64 wekan-${v}-win64.zip sums"
+echo "repack win-arm64 wekan-${v}-win-arm64.zip sums"
 echo "repack mac-arm64 wekan-${v}-mac-arm64.zip sums"
 
 # release-all.yml: build-extra-arches. The matrix, and it must match that job's
 # - if an architecture is added there and not here, this will not notice it is
 # missing.
-for arch in s390x ppc64le riscv64 i386 armhf loong64; do
+for arch in s390x ppc64le riscv64 i386 armv6 armhf loong64; do
     echo "extra ${arch} wekan-${v}-${arch}.zip sums"
 done
 
@@ -62,5 +65,10 @@ done
 for arch in x86_64 aarch64; do
     echo "flatpak ${arch} WeKan-${v}-${arch}.flatpak sums"
 done
+
+# The single EXE is the win64 launcher with the win64 ZIP appended, so it
+# exists exactly when that ZIP does. Windows ARM64 has no single EXE: the
+# launcher is compiled for x64 only.
+echo "windows win64 WeKan-${v}-win64.exe sums"
 
 echo "sandstorm sandstorm wekan-${v}-sandstorm.spk nosums"

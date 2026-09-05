@@ -17,6 +17,23 @@ function sanitizeText(text) {
     previous = sanitized;
     sanitized = sanitized.replace(/<[^>]*>/g, '');
   } while (sanitized !== previous);
+
+  // A comment losing a `<b>` is an everyday thing and says nothing. A comment
+  // losing a SCRIPT TAG, an event handler or a javascript: URI is a stored-XSS
+  // attempt that this line defused, and an admin should be told who wrote it
+  // (docs/Security/Remediation/WeKan.md §12.6). The comment is stored sanitized
+  // either way; the author is told nothing.
+  if (Meteor.isServer && sanitized !== text) {
+    try {
+      const { removedActiveMarkup, CANARY_IDS } = require('/models/lib/injectionDetect');
+      if (removedActiveMarkup(text, sanitized)) {
+        require('/server/lib/canary').tripCanary(CANARY_IDS.text, {
+          detail: 'active markup removed from a comment',
+        });
+      }
+    } catch (e) { /* a canary must never break a comment */ }
+  }
+
   return sanitized;
 }
 
@@ -127,17 +144,14 @@ CardComments.attachSchema(
 
 CardComments.helpers({
   copy(newCardId, newBoardId) {
-    this.cardId = newCardId;
-    // #5166: when a card is copied to another board, the copied comments must
-    // belong to the destination board too. Without this they kept the source
-    // board's boardId, so permission checks (which key off the comment's
-    // boardId) and any board-scoped queries used the wrong board. The author
-    // (userId) is intentionally preserved.
-    if (newBoardId) {
-      this.boardId = newBoardId;
-    }
-    delete this._id;
-    return CardComments.insertAsync(this);
+    const { buildCopiedComment } = require('./lib/copiedComment');
+    const copy = buildCopiedComment(this, newCardId, newBoardId || this.boardId);
+    if (!copy) return null;
+    // #1213: this is existing conversation history, not a newly posted
+    // comment. Preserve its author and dates, avoid mutating the cached source,
+    // and bypass the add-comment activity hook. Disabling auto-values prevents
+    // the schema from replacing createdAt with the time of the card copy.
+    return CardComments.direct.insertAsync(copy, { getAutoValues: false });
   },
 
   user() {
@@ -201,34 +215,47 @@ CardComments.helpers({
 
 CardComments.hookOptions.after.update = { fetchPrevious: false };
 
-if (Meteor.isServer) {
-  // Server-side enforcement of comment edit/delete permissions (issue #5906).
+// Server-side enforcement of comment edit/delete permissions (issue #5906).
+//
+// The DDP `allow` rule in server/permissions/cardComments.js is the first gate,
+// but the per-board `restrictCommentEditing` setting is enforced here so the
+// rule cannot be bypassed and the decision lives next to the data. Exported so
+// the REST handlers can enforce the SAME rule (GHSA-pqr4-rxgp-hv2m) rather than
+// relying on collection hooks, which cannot see an HTTP caller's identity.
+export async function assertCanMutateComment(userId, doc) {
+  // Server-internal operations (board copy, cleanup, migrations, etc.) run
+  // without an authenticated user; do not block those here. User-initiated
+  // DDP calls always carry a userId and are still gated by the allow rule.
   //
-  // The DDP `allow` rule in server/permissions/cardComments.js is the first
-  // gate, but the per-board `restrictCommentEditing` setting is enforced here
-  // so the rule cannot be bypassed and the decision lives next to the data.
-  const assertCanMutateComment = async (userId, doc) => {
-    // Server-internal operations (board copy, cleanup, migrations, etc.) run
-    // without an authenticated user; do not block those here. User-initiated
-    // DDP calls always carry a userId and are still gated by the allow rule.
-    if (!userId) {
-      return;
-    }
-    const isAuthor = userId === doc.userId;
-    if (isAuthor) {
-      return; // Authors may always edit/delete their own comments.
-    }
-    const board = await Boards.findOneAsync(doc.boardId);
-    const isBoardAdmin = !!board && !!userId && board.hasAdmin(userId);
-    const restrictCommentEditing = !!board && !!board.restrictCommentEditing;
-    if (!canEditComment({ isAuthor, isBoardAdmin, restrictCommentEditing })) {
-      throw new Meteor.Error(
-        'error-comment-edit-not-allowed',
-        "You are not allowed to edit or delete another user's comment on this board.",
-      );
-    }
-  };
+  // GHSA-pqr4-rxgp-hv2m: an HTTP handler is NOT a server-internal operation,
+  // but it reached the collection with no Meteor userId in the invocation
+  // context, so it landed on this trusted path — and every board member could
+  // delete anyone's comment through the REST API, restrictCommentEditing or
+  // not. The REST handlers now call this function themselves, with req.userId,
+  // BEFORE touching the collection (server/models/cardComments.js). The trusted
+  // path stays for the genuine internal callers it was written for.
+  if (!userId) {
+    return;
+  }
+  const isAuthor = userId === doc.userId;
+  if (isAuthor) {
+    return; // Authors may always edit/delete their own comments.
+  }
+  const board = await Boards.findOneAsync(doc.boardId);
+  const isBoardAdmin = !!board && !!userId && board.hasAdmin(userId);
+  const restrictCommentEditing = !!board && !!board.restrictCommentEditing;
+  if (!canEditComment({ isAuthor, isBoardAdmin, restrictCommentEditing })) {
+    const error = new Meteor.Error(
+      'error-comment-edit-not-allowed',
+      "You are not allowed to edit or delete another user's comment on this board.",
+    );
+    // So the REST layer answers 403 rather than 500 (httpStatusForError).
+    error.statusCode = 403;
+    throw error;
+  }
+}
 
+if (Meteor.isServer) {
   CardComments.before.update(async (userId, doc) => {
     await assertCanMutateComment(userId, doc);
   });
@@ -276,5 +303,15 @@ CardComments.textSearch = async (userId, textArray) => {
 
   return comments;
 };
+
+if (Meteor.isServer) {
+  // A card's comments, newest first - one selector, one sort, every time a card
+  // is opened.
+  const { ensureIndex } = require('/server/lib/mongoStartup');
+  Meteor.startup(async () => {
+    await ensureIndex(CardComments, { cardId: 1, createdAt: -1 });
+    await ensureIndex(CardComments, { boardId: 1 });
+  });
+}
 
 export default CardComments;

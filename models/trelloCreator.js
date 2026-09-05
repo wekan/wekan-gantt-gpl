@@ -36,7 +36,8 @@ import {
   calendar
 } from '/imports/lib/dateUtils';
 import getSlug from 'limax';
-import { validateAttachmentUrl } from './lib/attachmentUrlValidation';
+import { fetchImportedAttachment } from './lib/importAttachmentDownload';
+import { runImportPipeline, writeImportedEntity } from './lib/importPipeline';
 
 const DateString = Match.Where(function(dateAsString) {
   check(dateAsString, String);
@@ -644,12 +645,24 @@ export class TrelloCreator {
               );
               await setCover(fileRef && fileRef._id);
             } else if (att.url) {
-              const validation = await validateAttachmentUrl(att.url);
-              if (!validation.valid) {
+              // Best effort: works for publicly reachable URLs. Trello-hosted
+              // uploads require OAuth and should instead be supplied via the
+              // attachments ZIP (offline) or downloaded server-side in the
+              // live Trello API import.
+              //
+              // FollowBleed (GHSA-j9p2-jm73-p549): the download is NOT
+              // Attachments.loadAsync() any more. Meteor-Files fetches with the
+              // platform fetch(), which follows redirects, so validating att.url
+              // and then handing it to loadAsync let a public URL 302 the
+              // download to 127.0.0.1 and stored that body as the attachment.
+              // fetchImportedAttachment validates every hop and hands back the
+              // bytes, which are stored exactly like inline ones above.
+              const downloaded = await fetchImportedAttachment(att.url);
+              if (downloaded.blocked) {
                 if (process.env.DEBUG === 'true') {
                   console.warn(
                     'Blocked attachment URL during Trello import:',
-                    validation.reason,
+                    downloaded.reason,
                     att.url,
                   );
                 }
@@ -657,13 +670,14 @@ export class TrelloCreator {
                 // whole import.
                 continue;
               }
-              // Best effort: works for publicly reachable URLs. Trello-hosted
-              // uploads require OAuth and should instead be supplied via the
-              // attachments ZIP (offline) or downloaded server-side in the
-              // live Trello API import.
-              const fileRef = await Attachments.loadAsync(
-                att.url,
-                { meta, fileName: att.fileName || att.name },
+              const fileRef = await Attachments.writeAsync(
+                downloaded.buffer,
+                {
+                  fileName: att.fileName || att.name || 'attachment',
+                  type: att.type || downloaded.type || 'application/octet-stream',
+                  userId: this._user(att.userId),
+                  meta,
+                },
                 true,
               );
               await setCover(fileRef && fileRef._id);
@@ -734,27 +748,15 @@ export class TrelloCreator {
         title: list.name,
         sort: list.pos,
       };
-      const listId = await Lists.direct.insertAsync(listToCreate);
-      await Lists.direct.updateAsync(listId, { $set: { updatedAt: this._now() } });
-      this.lists[list.id] = listId;
-      // log activity
-      // Activities.direct.insert({
-      //   activityType: 'importList',
-      //   boardId,
-      //   createdAt: this._now(),
-      //   listId,
-      //   source: {
-      //     id: list.id,
-      //     system: 'Trello',
-      //   },
-      //   // We attribute the import to current user,
-      //   // not the creator of the original object
-      //   userId: this._user(),
-      // });
+      await writeImportedEntity(Lists, listToCreate, {
+        ids: this.lists,
+        sourceId: list.id,
+        touch: { updatedAt: this._now() },
+      });
     }
   }
 
-  async createSwimlanes(boardId) {
+  async createSwimlanes(_board, boardId) {
     const swimlaneToCreate = {
       archived: false,
       boardId,
@@ -766,8 +768,9 @@ export class TrelloCreator {
       title: 'Default',
       sort: 1,
     };
-    const swimlaneId = await Swimlanes.direct.insertAsync(swimlaneToCreate);
-    await Swimlanes.direct.updateAsync(swimlaneId, { $set: { updatedAt: this._now() } });
+    const swimlaneId = await writeImportedEntity(Swimlanes, swimlaneToCreate, {
+      touch: { updatedAt: this._now() },
+    });
     this.swimlane = swimlaneId;
   }
 
@@ -784,9 +787,10 @@ export class TrelloCreator {
           createdAt: this._now(),
           sort: checklist.pos,
         };
-        const checklistId = await Checklists.direct.insertAsync(checklistToCreate);
-        // keep track of Trello id => Wekan id
-        this.checklists[checklist.id] = checklistId;
+        const checklistId = await writeImportedEntity(Checklists, checklistToCreate, {
+          ids: this.checklists,
+          sourceId: checklist.id,
+        });
         // Now add the items to the checklistItems
         let counter = 0;
         for (const item of checklist.checkItems) {
@@ -1030,20 +1034,18 @@ export class TrelloCreator {
     // account or a virtual placeholder) BEFORE creating the board, so board members,
     // card authors, comments and activities keep the original person instead of
     // collapsing onto the importer.
-    await this.createPlaceholderUsers(board);
-    this.parseActions(board.actions);
-    const boardId = await this.createBoardAndLabels(board);
-    // Create the default swimlane first so lists can be attached to it (see
-    // createLists): a list shows under a swimlane in Swimlane View only when its
-    // swimlaneId matches that swimlane (or is empty).
-    await this.createSwimlanes(boardId);
-    await this.createLists(board.lists, boardId);
-    await this.createCards(board.cards, boardId);
-    await this.createChecklists(board.checklists, boardId);
-    await this.importActions(board.actions, boardId);
-    await this.recordImportedUsernames(board, boardId);
-    // XXX add members
-    return boardId;
+    return runImportPipeline(this, board, [
+      { method: 'createPlaceholderUsers' },
+      { method: 'parseActions', source: 'actions' },
+      { method: 'createBoardAndLabels', createsBoard: true },
+      // Trello has no swimlanes, so its adapter creates one before its lists.
+      { method: 'createSwimlanes' },
+      { method: 'createLists', source: 'lists' },
+      { method: 'createCards', source: 'cards' },
+      { method: 'createChecklists', source: 'checklists' },
+      { method: 'importActions', source: 'actions' },
+      { method: 'recordImportedUsernames' },
+    ]);
   }
 
   // Pick a free username: keep the original if it is not taken, else suffix it so we

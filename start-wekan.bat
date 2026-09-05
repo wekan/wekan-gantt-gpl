@@ -75,8 +75,9 @@ IF /I "%USE_CHANGE_STREAMS%"=="true" (
 ) ELSE (
    SET METEOR_REACTIVITY_ORDER=polling
 )
-SET DDP_TRANSPORT=uws
-REM #   REM # SET DDP_TRANSPORT=sockjs
+REM # sockjs is the only transport WeKan ships: no bundle carries
+REM # uWebSockets.js, and uws is coerced to sockjs at startup.
+SET DDP_TRANSPORT=sockjs
 
 REM # Writable path required to exist and be writable for attachments to migrate and work correctly
 SET WRITABLE_PATH=..
@@ -871,6 +872,11 @@ GOTO wait_for_mongodb
 :mongodb_ready
 REM #----------------------------------------------------------------------
 
+if not defined WEKAN_MEMORY_MB for /f "usebackq delims=" %%M in (`powershell.exe -NoProfile -Command "[math]::Floor((Get-CimInstance Win32_OperatingSystem).TotalVisibleMemorySize / 1024)" 2^>NUL`) do set "WEKAN_MEMORY_MB=%%M"
+if not defined WEKAN_MEMORY_MB set "WEKAN_MEMORY_MB=2048"
+set /a WEKAN_RUNTIME_HEAP_MB=WEKAN_MEMORY_MB*3/5
+if %WEKAN_RUNTIME_HEAP_MB% GTR 4096 set "WEKAN_RUNTIME_HEAP_MB=4096"
+if not defined NODE_OPTIONS set "NODE_OPTIONS=--max-old-space-size=%WEKAN_RUNTIME_HEAP_MB%"
 ECHO Starting Wekan in a persistent cmd loop...
 
 :start_wekan

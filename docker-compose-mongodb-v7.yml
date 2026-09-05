@@ -23,7 +23,7 @@
 # 2) Remove old Wekan app (wekan-app only, not that wekan-db container that has all your data)
 #      docker rm wekan-app
 # 3) Get newest docker-compose-mongodb-v7.yml from https://github.com/wekan/wekan to have correct image,
-#    for example: "image: quay.io/wekan/wekan" or version tag "image: quay.io/wekan/wekan:v4.52"
+#    for example: "image: quay.io/wekan/wekan" or version tag "image: quay.io/wekan/wekan-gantt-gpl:v4.52"
 # 4) Start Wekan:
 #      docker compose up -d
 #----------------------------------------------------------------------------------
@@ -290,18 +290,18 @@ services:
     # latest tag changes when is newest release,
     # when upgrading would be better to use version tag.
     # a) Using specific version tag is better:
-    # image: ghcr.io/wekan/wekan:v6.89
-    # image: quay.io/wekan/wekan:v6.89
-    # image: wekanteam/wekan:v6.89
+    # image: ghcr.io/wekan/wekan-gantt-gpl:v6.89
+    # image: quay.io/wekan/wekan-gantt-gpl:v6.89
+    # image: wekanteam/wekan-gantt-gpl:v6.89
     # b) GitHub Container registry.
     # b1) Latest release tag:
-    image: ghcr.io/wekan/wekan:latest
+    image: ghcr.io/wekan/wekan-gantt-gpl:latest
     # b2) Newest git commit automatic build:
-    #image: ghcr.io/wekan/wekan:main
+    #image: ghcr.io/wekan/wekan-gantt-gpl:main
     # c) Quay:
-    #image: quay.io/wekan/wekan:latest
+    #image: quay.io/wekan/wekan-gantt-gpl:latest
     # d) Docker Hub:
-    #image: wekanteam/wekan:latest
+    #image: wekanteam/wekan-gantt-gpl:latest
     #-------------------------------------------------------------------------------------
     container_name: wekan-app
     # On CentOS 7 there is seccomp issue with glibc 6,
@@ -336,8 +336,9 @@ services:
       # Keep oplog/polling fallback available for deployments that cannot use Change Streams:
       # https://github.com/wekan/wekan/issues/6307#issuecomment-4299349231
       - METEOR_REACTIVITY_ORDER=changeStreams,oplog,polling
-      - DDP_TRANSPORT=uws
-      #- DDP_TRANSPORT=sockjs
+      # sockjs is the only transport WeKan ships: no bundle or image carries
+      # uWebSockets.js, and DDP_TRANSPORT=uws is coerced to sockjs at startup.
+      - DDP_TRANSPORT=sockjs
       #-----------------------------------------------------------------
       # ==== WRITEABLE PATH FOR FILE UPLOADS ====
       - WRITABLE_PATH=/data
@@ -353,7 +354,7 @@ services:
       #-----------------------------------------------------------------
       # ==== MONGO_URL — points to FerretDB (MongoDB-compatible) ====
       #- MONGO_URL=mongodb://wekan-ferretdb:27017/wekan
-      - MONGO_URL=mongodb://wekandb:27017/wekan
+      - MONGO_URL=mongodb://wekandb:27017/wekan?replicaSet=rs0
       #- MONGO_PASSWORD_FILE=/run/secrets/mongo_password
       #---------------------------------------------------------------
       # ==== ROOT_URL SETTING ====
@@ -711,7 +712,7 @@ services:
       #-----------------------------------------------------------------
       # ==== LDAP: UNCOMMENT ALL TO ENABLE LDAP ====
       # https://github.com/wekan/wekan/blob/main/docs/Login/LDAP.md
-      # For Snap settings see https://github.com/wekan/wekan/blob/main/docs/Platforms/FOSS/Snap/Supported-settings-keys.md
+      # For Snap settings see https://github.com/wekan/wekan/blob/main/docs/Platforms/FOSS/Container/Snap/Supported-settings-keys.md
       # Most settings work both on Snap and Docker below.
       # Note: Do not add single quotes '' to variables. Having spaces still works without quotes where required.
       #
@@ -854,6 +855,14 @@ services:
       # LDAP_GROUP_FILTER_GROUP_MEMBER_FORMAT, LDAP_GROUP_FILTER_GROUP_ID_ATTRIBUTE)
       # must still be configured for any group search to work.
       #- LDAP_GROUP_FILTER_ENABLE=false
+      #
+      # Where the GROUPS are, when they are not under LDAP_BASEDN. Leave this
+      # unset when users and groups share one subtree: the group searches then
+      # use LDAP_BASEDN, exactly as they always have. Set it when the directory
+      # keeps them apart - ou=groups beside ou=people is a common layout - or
+      # every group search runs under the USER base, finds nothing, and
+      # LDAP_GROUP_FILTER_ENABLE=true refuses every login (wekan/wekan#5539).
+      #- LDAP_GROUP_BASEDN=ou=groups,dc=example,dc=org
       #
       # The object class for filtering. Example: group
       #- LDAP_GROUP_FILTER_OBJECTCLASS=

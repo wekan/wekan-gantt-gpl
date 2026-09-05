@@ -258,6 +258,26 @@ UserPositionHistory.helpers({
           const listId = this.previousListId || card.listId;
           const sort = this.previousSort !== undefined ? this.previousSort : card.sort;
 
+          // History documents are writable from DDP. Re-check the destination at
+          // execution time so a forged or stale entry cannot cross board bounds.
+          if (boardId !== card.boardId) {
+            const destinationBoard = await Boards.findOneAsync(boardId);
+            if (!destinationBoard || !destinationBoard.hasMember(userId)) {
+              try {
+                require('/server/lib/canary').tripCanary(
+                  'history.cross-board',
+                  { userId },
+                );
+              } catch (e) {
+                /* logging must never break the guard */
+              }
+              throw new Meteor.Error(
+                'not-authorized',
+                'You do not have access to the destination board.',
+              );
+            }
+          }
+
           await Cards.updateAsync(card._id, {
             $set: {
               boardId,

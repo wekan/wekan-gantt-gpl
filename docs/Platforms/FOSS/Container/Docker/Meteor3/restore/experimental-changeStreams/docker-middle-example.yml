@@ -1,0 +1,6 @@
+      - PORT=3001
+      - ROOT_URL=https://wekan.customer.com
+      - MONGO_URL=mongodb://PARAMETER_user:PASSWORD@localhost:27017/PARAMETER?replicaSet=rs0&appName=PARAMETER-tenant&authSource=PARAMETER
+      - MONGO_OPLOG_URL=mongodb://PARAMETER_user:PASSWORD@localhost:27017/local?replicaSet=rs0&appName=PARAMETER-tenant-oplog&authSource=PARAMETER
+      - MAIL_FROM=Customer WeKan Boards <boards@wekan.team>
+      - MAIL_URL=smtp://AKIA-USERNAME:PASSWORD@email-smtp.eu-west-1.amazonaws.com:587?tls={ciphers:"SSLv3"}&secureConnection=false

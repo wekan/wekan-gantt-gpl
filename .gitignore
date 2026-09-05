@@ -1,6 +1,10 @@
 *~
 /*.log
+# vim swap files (.swp, .swo, .swn) - but NOT .swcrc, which is the SWC transpiler
+# configuration and has to be committed. Without this exception `git add .swcrc`
+# is silently a no-op and the fix for #6557 never leaves the working tree.
 *.sw*
+!.swcrc
 .meteor-spk
 *.sublime-workspace
 tmp/
@@ -63,7 +67,14 @@ test-results/
 # Claude AI
 .claude/
 
-# Tools like mongosh etc so that they work inside Flatpak sandbox
+# Companion repositories and tools, cloned INSIDE this checkout so they work in a
+# Flatpak sandbox that shares only this directory. One ignored directory for all
+# of them - it replaced an entry per clone (/FerretDB/, /node/, /mongo-tools/,
+# /mongosh/, /sandstorm/, /projects/, and the WeKan variants), which had to be
+# extended by hand for every new one. build.sh's ensure_tool_repo clones what a
+# test run needs into here: .tools/FerretDB, .tools/node-patches,
+# .tools/mongo-tools-patches. Nothing in here is WeKan's source, and Meteor is
+# told the same by /.tools/ in .meteorignore.
 .tools/
 
 # Meteor custom local directory (METEOR_LOCAL_DIR)
@@ -71,19 +82,18 @@ _build-local-test
 */build-assets-local-test
 */build-chunks-local-test
 
-# Local-only working copies: other wekan repos cloned under this repo for editing,
-# and build inputs. These are separate git repos / large machine-specific dirs;
-# never commit them.
-#  - projects/    : unarchived meteor-spk fork (Node/Mongo/FerretDB binaries)
-#  - sandstorm/   : clone of sandstorm-io/sandstorm (platform source, for reference)
-#  - FerretDB/    : clone of wekan/FerretDB
-#  - mongo-tools/ : clone of wekan/mongo-tools
-#  - mongosh/     : clone of wekan/mongosh
-/projects/
-/sandstorm/
-/FerretDB/
-/mongo-tools/
-/mongosh/
+# Test and build logs, when they land INSIDE the repo. build.sh writes to
+# ../log/<datetime>/ by preference - one level up, so a test run does not show
+# up in git status - but the parent of the repo is not writable in a Flatpak
+# sandbox, which shares only the repository. There it falls back to ./log/,
+# which must not be committed.
+/log/
+
+# V8 heap snapshots from WEKAN_BUILD_HEAP_SNAPSHOT=1. Named
+# Heap.<date>.<pid>.<n>.heapsnapshot by Node, written into the repo root
+# because that is the build's working directory, and as large as the heap that
+# produced them - gigabytes.
+Heap.*.heapsnapshot
 
 # Linux core dumps (core.<pid>), e.g. from a crashing Playwright/WebKit browser
 # process. Written into the crashing process CWD (tests/playwright/) by
@@ -96,3 +106,23 @@ core.[0-9]*
 # they should not show up as untracked noise either.
 /wekan-ondra/
 /wekan-gantt-gpl/
+
+# node-patches: a SEPARATE repo (github.com/wekan/node-patches) checked out here.
+node-patches/
+
+# mongo-tools-patches: a SEPARATE repo (github.com/wekan/mongo-tools-patches)
+# checked out here. Same story as node-patches: the PATCHES to the upstream
+# MongoDB Database Tools that WeKan's bundled bsondump/mongodump/... are built
+# from, replacing the wekan/mongo-tools source fork.
+mongo-tools-patches/
+
+# Meteor Modern-Tools build context directories
+*/build-assets*
+*/build-chunks*
+
+# Meteor custom local directory (METEOR_LOCAL_DIR)
+*/build-assets-local-test*
+*/build-chunks-local-test*
+
+# Generated on the Windows single-EXE runner (releases/append-windows-payload.mjs --manifest)
+wekan-real-files.h

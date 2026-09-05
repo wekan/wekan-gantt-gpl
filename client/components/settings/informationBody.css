@@ -1,0 +1,74 @@
+/* ── Admin Panel / Settings / Version ────────────────────────────────────────
+   ONE table, in five categories - Platform, OS, Meteor, Database, Node - where
+   each category is a row of its own that spans both columns.
+
+   WHY ONE TABLE. It was five, one per category, and five tables size their
+   columns independently: "WeKan ® Version" made the first one's label column
+   wide and "OS Type" made the next one's narrow, so the values started at a
+   different x in every group and the pane read as five unrelated things. One
+   table puts every label and every value in the same place. */
+
+.version-check {
+  margin-bottom: 1rem;
+}
+
+.version-check > button,
+.version-check-state {
+  margin-inline-end: 0.75rem;
+}
+
+.version-check-results {
+  margin-top: 0.75rem;
+  white-space: pre-wrap;
+}
+
+/* Two EQUAL columns, and they stay equal whatever the longest label happens to
+   be. `table-layout: fixed` makes the browser take the widths from the colgroup
+   instead of measuring the content, and the two `col` rules below are that
+   colgroup - written here rather than as inline width attributes so a theme can
+   override them in one place.
+
+   The `max-width: none` undoes settingBody.css's 240px cap on admin table
+   headers, which exists to stop a long label blowing a column up; here the
+   column width is stated outright, so the cap has nothing to protect and would
+   only fight the 50%. Both rules are scoped through .info-table, so no other
+   admin table is touched. */
+.setting-content .content-body .main-body table.info-table {
+  table-layout: fixed;
+}
+
+.setting-content .content-body .main-body table.info-table > colgroup > col {
+  width: 50%;
+}
+
+.setting-content .content-body .main-body table.info-table th,
+.setting-content .content-body .main-body table.info-table td {
+  max-width: none;
+}
+
+/* The category row. It spans both columns, so it is not a label with a value
+   beside it - it is a line that says what the rows under it are about.
+
+   BOLD and start-aligned, at the table's own font size: it names a group of rows
+   inside the pane, and the pane title above it (`.admin-pane-title`, 1.25rem)
+   names the pane. Growing these to that size would read as five pane titles and
+   "Version" would be lost among them. `color: inherit` for the same reason it is
+   on the pane title: the panel is themeable and a fixed colour goes unreadable
+   on a dark one. */
+.setting-content .content-body .main-body table.info-table tr.info-category > th {
+  /* start, not left: a th centres by default, and this must sit over the label
+     column - which is the RIGHT edge in Arabic and Hebrew (tests/rtl.test.js). */
+  text-align: start;
+  font-weight: 700;
+  color: inherit;
+  /* Space above the group, none below it: the separation belongs BETWEEN
+     groups, and a gap under the title would push it away from the rows it
+     introduces. */
+  padding-top: 18px;
+}
+
+/* ...except the first one, which sits directly under the pane title and needs no
+   second gap on top of the 12px that title already brings. */
+.setting-content .content-body .main-body table.info-table tr.info-category:first-child > th {
+  padding-top: 0;
+}

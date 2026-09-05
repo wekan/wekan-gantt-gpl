@@ -1,4 +1,5 @@
 #!/bin/bash
+if [ -n "${ZSH_VERSION:-}" ]; then exec /bin/bash "$0" "$@"; fi
 
 # This script is only for Wekan maintainer to
 # convert x64 bundle to ppc64le bundle.
@@ -10,7 +11,9 @@ if [ $# -ne 1 ]
     exit 1
 fi
 
-sudo apt -y install g++ build-essential p7zip-full
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$SCRIPT_DIR/ensure-tools.sh"
+ensure_build_toolchain
 sudo npm -g uninstall node-pre-gyp
 sudo npm -g install @mapbox/node-pre-gyp
 rm -rf bundle

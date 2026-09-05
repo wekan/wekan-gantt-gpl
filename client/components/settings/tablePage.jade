@@ -1,12 +1,12 @@
 //- The ONE table page used by every paginated admin table.
-//- Design + the list of pages that use it: docs/Design/Page/Table.md
+//- Design + the list of pages that use it: docs/Features/Page/Table.md
 //-
 //- Rows, top to bottom: title, status, controls (search + pagination), table.
 //- That order is the design; it is defined here once instead of being retyped in
 //- each report, which is how the reports had drifted apart.
 //-
 //- Data context (see tablePage.js / models/lib/tablePage.js):
-//-   title / titleKey, descKey, statusTemplate + statusData,
+//-   title / titleKey, descKey, additionalDesc, statusTemplate + statusData,
 //-   header[], rows[], rowCount, searchTerm, page, totalPages, hasPrev, hasNext,
 //-   emptyKey
 template(name="tablePage")
@@ -16,7 +16,7 @@ template(name="tablePage")
     //- have the same title at the same size.
     //-
     //- Rendered only when the page supplies one: inside the Admin Panel the pane
-    //- title comes from the ACTIVE LEFT MENU ENTRY (docs/Design/Page/Left-Menu.md),
+    //- title comes from the ACTIVE LEFT MENU ENTRY (docs/Features/Page/Left-Menu.md),
     //- rendered once for every pane by the section around it, so a table page that
     //- also printed its own title would show the same heading twice.
     if titleKey
@@ -25,11 +25,13 @@ template(name="tablePage")
       h1.table-page-title.admin-pane-title {{title}}
     if descKey
       p.quiet.table-page-desc {{_ descKey}}
+    if additionalDesc
+      p.quiet.table-page-desc {{additionalDesc}}
     if statusTemplate
       .table-page-status
         +Template.dynamic(template=statusTemplate data=statusData)
     .table-page-controls
-      input.js-table-page-search(type="search" placeholder="{{_ 'search'}}" value="{{searchTerm}}")
+      input.js-table-page-search(type="search" placeholder="{{_ 'search'}}" aria-label="{{_ 'search'}}" value="{{searchTerm}}")
       //- Filters, actions and the total are ON by default: supply them and they
       //- render. They came from Admin Panel / People, where they were hand-written
       //- into that page's own markup; they are general enough for any table.
@@ -96,9 +98,85 @@ template(name="tablePage")
               tr(class="{{cls}}")
                 each cells
                   td(class="{{cls}}" data-sev="{{data}}")
-                    if userId
-                      a.edit-user.js-table-page-edit-user(data-user-id="{{userId}}") {{text}}
+                    if icons.length
+                      span.table-page-status-icons
+                        each icons
+                          i.fa(class="{{cls}}" title="{{title}}" aria-hidden="true")
+                    //- A user cell shows INITIALS, or the avatar where the
+                      account has one - the same way the board sidebar and a card
+                      show a member. It takes a fraction of the width of a
+                      username or a full name, and these tables are wide already.
+                      The name is the anchor's title, so hovering still says who
+                      it is, and clicking opens the same "Edit user" popup as
+                      Admin Panel / People. Not +userAvatar, which renders its own
+                      anchor for the board's member popup: an anchor inside this
+                      one is invalid and would swallow the click.
+                    //- Several people in one cell: an office row's People
+                      column. Each is the same avatar-or-initials link as a
+                      single user cell, with the number of logins beside it.
+                    //- `.member` is the board sidebar's own avatar box - 24px,
+                      round, with the image cropped to fill it and the initials
+                      centred in it. EVERY avatar rule in userAvatar.css is
+                      scoped to it, so a cell without it drew the image at its
+                      natural size: a 300px photograph in a table row, with the
+                      login counts scattered around it.
+                    //- A PLACE - an office row's Location: the country's flag
+                      and the city, and clicking it asks which map to open it
+                      at, from the same eleven providers as a card's location
+                      because it is the same chooser. Only when the row HAS
+                      coordinates: a city name is not a position, so a cell with
+                      a label and no lat/lon stays plain text.
+                    //- These comments sit ABOVE the chain, all of them. One
+                      between an `if` and its `else if` breaks the nesting -
+                      see the negative test in tests/jadeCompiles.test.cjs.
+                    if users.length
+                      .table-page-people
+                        each users
+                          span.table-page-person
+                            a.member.edit-user.js-table-page-edit-user(data-user-id="{{userId}}" title="{{text}}")
+                              if avatarUrl
+                                img.avatar.avatar-image(src="{{avatarUrl}}" alt="{{text}}")
+                              else
+                                +userAvatarInitials(userId=userId initials=initials)
+                            span.table-page-person-name {{text}}
+                            if count
+                              span.table-page-people-count {{count}}
+                    else if userId
+                      a.member.edit-user.js-table-page-edit-user(data-user-id="{{userId}}" title="{{text}}")
+                        if userAvatarUrl
+                          img.avatar.avatar-image(src="{{userAvatarUrl}}" alt="{{text}}")
+                        else
+                          +userAvatarInitials(userId=userId)
+                    else if location
+                      a.js-table-page-map(href="#" data-latitude="{{location.latitude}}" data-longitude="{{location.longitude}}" data-label="{{location.label}}" title="{{_ 'location-open-map-at'}}")
+                        if flag
+                          span.table-page-flag(aria-hidden="true") {{flag}}
+                        | {{text}}
                     else
+                      if flag
+                        span.table-page-flag(aria-hidden="true") {{flag}}
                       | {{text}}
     unless rowCount
       .table-page-empty {{_ emptyKey}}
+
+//- Where a location cell leads: this place, and which map to open it at.
+//-
+//- The MAP HALF of the card's location popup and nothing else. A card's popup
+//- also edits the location - name, address, coordinates, delete - and none of
+//- that applies to an office: its location arrived in a CDN header, WeKan did
+//- not ask for it and cannot correct it. What the two share is the chooser
+//- itself, +mapProviderSelect, so a provider added for one is offered by both.
+template(name="tablePageMapPopup")
+  .table-page-map-popup
+    if label
+      p.table-page-map-label {{label}}
+    if coordinates
+      p.quiet.table-page-map-coordinates {{coordinates}}
+    if mapUrl
+      a.js-open-map(href="{{mapUrl}}" target="_blank" rel="noopener noreferrer")
+        i.fa.fa-map-marker
+        | &nbsp;{{_ 'location-open-map'}}
+    +mapProviderSelect
+    button.primary.js-save-map-provider(type="button") {{_ 'save'}}
+    if savedMessage
+      p.quiet.js-map-saved {{savedMessage}}

@@ -23,6 +23,24 @@ Meteor.startup(() => {
 });
 
 Template.listHeader.helpers({
+  containerSwimlaneId() {
+    const list = Template.currentData();
+    if (!list || Utils.boardView() !== 'board-view-swimlanes') {
+      return undefined;
+    }
+    for (let depth = 1; depth <= 5; depth += 1) {
+      const candidate = Template.parentData(depth);
+      if (
+        candidate &&
+        candidate._id &&
+        candidate._id !== list._id &&
+        candidate.boardId === list.boardId
+      ) {
+        return candidate._id;
+      }
+    }
+    return undefined;
+  },
   canSeeAddCard() {
     const list = Template.currentData();
     return (
@@ -66,8 +84,8 @@ Template.listHeader.helpers({
     let swimlaneId = '';
     if (Utils.boardView() === 'board-view-swimlanes') {
       // Scope the count to the swimlane this header is rendered IN — the SAME id
-      // the card body uses (listBody.jade `idOrNull ../../_id`) — passed from
-      // listHeader.jade as `../../_id`. A SHARED list (empty swimlaneId) renders
+      // the card body uses — resolved explicitly from the parent swimlane data
+      // instead of fragile Jade `../../_id` traversal. A SHARED list renders
       // under every swimlane, so scoping by the list's OWN swimlaneId (== '' for a
       // shared list) reported the whole-list count in every swimlane while the
       // cards rendered below were swimlane-scoped — e.g. "5 Cards" over an empty
@@ -278,6 +296,24 @@ Template.listActionPopup.helpers({
 });
 
 Template.listActionPopup.events({
+  'click .js-list-history'(event) {
+    Popup.open('history', { titleKey: 'history' })(event, {
+      dataContextIfCurrentDataIsUndefined: { scope: 'list', scopeId: this._id },
+    });
+  },
+  // Copy the list's own address. `absoluteUrl` so what lands in the
+  // clipboard can be pasted anywhere - a relative path is only a link inside
+  // this page. The popup stays open long enough to show "Copied"; it is the
+  // confirmation, and a menu that vanishes the instant you click leaves you
+  // wondering whether anything happened. models/lib/boardItemUrl.js
+  'click .js-copy-list-link'(event, tpl) {
+    event.preventDefault();
+    const list = Template.currentData();
+    if (!list) return;
+    const url = list.absoluteUrl();
+    if (!url) return;
+    Utils.showCopied(Utils.copyTextToClipboard(url), tpl.$('.copied-tooltip'));
+  },
   'click .js-list-subscribe'() {},
   'click .js-add-card.list-header-plus-top'(event) {
     const listDom = $(`#js-list-${this._id}`)[0];
@@ -301,6 +337,8 @@ Template.listActionPopup.events({
     }
     Popup.back();
   },
+  'click .js-export-list': Popup.open('exportList'),
+  'click .js-import-list': Popup.open('importList'),
   'click .js-add-list': Popup.open('addList'),
   'click .js-set-list-width': Popup.open('setListWidth'),
   'click .js-set-color-list': Popup.open('setListColor'),
@@ -429,28 +467,50 @@ Template.listMorePopup.events({
   }),
 });
 
+
+// The three selects of the copy/move list dialogs, in one template. The dialog
+// is kept on THIS instance: inside `each boards` the data context is a board,
+// so a helper reaching into the context for it would find nothing.
+Template.listDestinationPicker.onCreated(function () {
+  this.autorun(() => {
+    const data = Template.currentData();
+    this.dialog = data && data.dialog;
+  });
+});
+
+Template.listDestinationPicker.helpers({
+  boards() {
+    return Template.instance().dialog.boards();
+  },
+  swimlanes() {
+    return Template.instance().dialog.swimlanes();
+  },
+  lists() {
+    return Template.instance().dialog.lists();
+  },
+  isDialogOptionBoardId(boardId) {
+    return Template.instance().dialog.isDialogOptionBoardId(boardId);
+  },
+  isDialogOptionSwimlaneId(swimlaneId) {
+    return Template.instance().dialog.isDialogOptionSwimlaneId(swimlaneId);
+  },
+  isDialogOptionListId(listId) {
+    return Template.instance().dialog.isDialogOptionListId(listId);
+  },
+  isTitleDefault(title) {
+    return Template.instance().dialog.isTitleDefault(title);
+  },
+});
+
 function registerListDialogTemplate(templateName) {
+  // The markup those helpers feed is one template - `listDestinationPicker` in
+  // listHeader.jade, included by both popups - so the helpers are registered on
+  // it, once, below. Each popup provides the `dialog` and keeps the events: a
+  // change or a click inside the picker bubbles up to the popup that includes
+  // it, which is the one holding the dialog.
   Template[templateName].helpers({
-    boards() {
-      return Template.instance().dialog.boards();
-    },
-    swimlanes() {
-      return Template.instance().dialog.swimlanes();
-    },
-    lists() {
-      return Template.instance().dialog.lists();
-    },
-    isDialogOptionBoardId(boardId) {
-      return Template.instance().dialog.isDialogOptionBoardId(boardId);
-    },
-    isDialogOptionSwimlaneId(swimlaneId) {
-      return Template.instance().dialog.isDialogOptionSwimlaneId(swimlaneId);
-    },
-    isDialogOptionListId(listId) {
-      return Template.instance().dialog.isDialogOptionListId(listId);
-    },
-    isTitleDefault(title) {
-      return Template.instance().dialog.isTitleDefault(title);
+    dialog() {
+      return Template.instance().dialog;
     },
   });
 

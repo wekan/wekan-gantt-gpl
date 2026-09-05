@@ -1,6 +1,7 @@
 import { ReactiveCache } from '/imports/reactiveCache';
 const Papa = require('papaparse');
 const { buildCsvCardRow } = require('./lib/exporterCsvRow');
+const { csvColumnMask, applyMask } = require('./lib/exportFields');
 const { encodeAligned, encodeFinal } = require('./lib/base64Chunk');
 const {
   getImportExportSecuritySettings,
@@ -61,6 +62,29 @@ export function writeWithBackpressure(res, str) {
   });
 }
 
+// GHSA-4mxf-m8pq-xc9p: an avatar's `versions.original.path` comes out of the
+// DATABASE, and the export below reads it off disk and embeds the bytes as
+// base64. The avatar allow rule now refuses to let a client write that field
+// (server/permissions/avatars.js), and this is the second lock: a path is only
+// read when it resolves to somewhere inside WeKan's own storage, so a path
+// poisoned any other way - an old document written before the fix, a restored
+// backup, a bad migration - still cannot turn an export into a file read.
+//
+// The roots are computed the same way models/avatars.js and models/attachments.js
+// compute their storagePath, via the shared helper both of them are kept in sync
+// with.
+export function avatarStorageRoots() {
+  const { computeStoragePaths } = require('./lib/attachmentStoragePath');
+  const paths = computeStoragePaths(process.env.WRITABLE_PATH);
+  return [paths.avatars, paths.attachments];
+}
+
+// True when `storedPath` may be read. Exported so the guard itself is testable.
+export function isReadableStoredFilePath(storedPath, roots) {
+  const { isPathInsideAny } = require('./lib/storagePathContainment');
+  return isPathInsideAny(storedPath, roots || avatarStorageRoots());
+}
+
 // exporter maybe is broken since Gridfs introduced, add fs and path
 export class Exporter {
   constructor(boardId, attachmentId, options = {}) {
@@ -75,6 +99,50 @@ export class Exporter {
     // "käyttäjä" -> käyttäjä1). Defaults to English when the caller cannot supply
     // the exporting user's language.
     this._userLanguage = options.userLanguage || 'en';
+    // #1173: WHAT of the board, and WHICH PARTS of it.
+    //
+    // `scope` narrows the export to one swimlane, one list, one card or one
+    // checklist, for the menus that offer it there. The FORMAT does not change -
+    // it is still `wekan-board-1.0.0`, still the board's own fields with the
+    // arrays under them - because the file has to import back, and an importer
+    // that had to understand four shapes would be four times the code and four
+    // times the bugs. A scoped export is the same document with fewer rows in
+    // it, plus the lists and swimlanes its cards refer to, so what comes back in
+    // still has somewhere to land.
+    //
+    // `fields` is the selection popup's `?fields=`, the same keys the PDF and
+    // Excel exports gate on. An unselected section is emitted as an EMPTY ARRAY
+    // rather than left out: a missing key is a format change, an empty one is an
+    // export with nothing of that kind in it.
+    this._scope = options.scope || {};
+    this._fields = options.fields && options.fields.length > 0
+      ? new Set(options.fields)
+      : null;
+  }
+
+  // No selection means everything, the same rule every other exporter follows.
+  hasField(key) { return this._fields === null || this._fields.has(key); }
+
+  // The cards this export is about. A card scope is one card; a checklist scope
+  // is the card that checklist is on, because a checklist without its card
+  // cannot be imported anywhere.
+  async _scopedCardSelector(boardId) {
+    const selector = { boardId, linkedId: { $in: ['', null] } };
+    if (this._scope.cardId) {
+      selector._id = this._scope.cardId;
+    } else if (this._scope.checklistId) {
+      const checklist = await ReactiveCache.getChecklist(this._scope.checklistId);
+      selector._id = checklist ? checklist.cardId : '__no_such_card__';
+    } else {
+      if (this._scope.swimlaneId) selector.swimlaneId = this._scope.swimlaneId;
+      if (this._scope.listId) selector.listId = this._scope.listId;
+    }
+    return selector;
+  }
+
+  hasScope() {
+    return Boolean(this._scope.swimlaneId || this._scope.listId
+      || this._scope.cardId || this._scope.checklistId);
   }
 
   async build() {
@@ -117,12 +185,33 @@ export class Exporter {
       buffer.fill(0);
 
       // callback has the form function (err, res) {}
+
+      // GHSA-4mxf-m8pq-xc9p: this is the ONE place the export turns a stored
+      // path into bytes, for attachments and avatars alike, so the containment
+      // check belongs here as well as at the call sites. A path that does not
+      // resolve inside WeKan's storage is not a file this export may read.
+      const storedPath = doc?.versions?.original?.path;
+      if (!isReadableStoredFilePath(storedPath)) {
+        if (process.env.DEBUG === 'true') {
+          console.warn('Refused to export a file stored outside the storage root:', storedPath);
+        }
+        // A canary, not a guess: every path WeKan writes is inside the storage
+        // root, so one that is not was put there by something that should not
+        // have. The export continues without the file, exactly as before.
+        try {
+          const { tripCanary } = require('/server/lib/canary');
+          tripCanary('export.path-outside-storage', { detail: 'during board export' });
+        } catch (e) { /* never break an export to report on it */ }
+        callback(null, null);
+        return;
+      }
+
       const tmpFile = path.join(
         os.tmpdir(),
         `tmpexport${process.pid}${Math.random()}`,
       );
       const tmpWriteable = fs.createWriteStream(tmpFile);
-      const readStream = fs.createReadStream(doc.versions.original.path);
+      const readStream = fs.createReadStream(storedPath);
       readStream.on('data', function (chunk) {
         buffer = Buffer.concat([buffer, chunk]);
       });
@@ -209,6 +298,7 @@ export class Exporter {
       );
       result.subtaskItems.push(
         ...await ReactiveCache.getCards({
+          boardId: card.boardId,
           parentId: card._id,
         }),
       );
@@ -250,6 +340,8 @@ export class Exporter {
           users[memberId] = true;
         });
       }
+      (card.requesters || []).forEach(userId => { users[userId] = true; });
+      (card.assigners || []).forEach(userId => { users[userId] = true; });
     });
     result.comments.forEach((comment) => {
       users[comment.userId] = true;
@@ -295,7 +387,10 @@ export class Exporter {
         const m = localUrl.match(/\/(?:cdn\/storage\/avatars|cfs\/files\/avatars)\/([^/?#]+)/);
         if (m && m[1]) {
           const avatar = await ReactiveCache.getAvatar(m[1]);
-          if (avatar && avatar.versions && avatar.versions.original && avatar.versions.original.path) {
+          const avatarPath = avatar?.versions?.original?.path;
+          // GHSA-4mxf-m8pq-xc9p: only read it when it is really inside WeKan's
+          // own storage. A path pointing anywhere else is not an avatar.
+          if (avatarPath && isReadableStoredFilePath(avatarPath)) {
             const file = await getBase64DataAsync(avatar);
             if (file) {
               user.profile = user.profile || {};
@@ -381,10 +476,16 @@ export class Exporter {
       const board0 = await ReactiveCache.getBoard(boardId, { fields: { members: 1 } });
       (board0.members || []).forEach(m => preUserIds.add(m.userId));
       const preCardIds = [];
-      for await (const d of cardsRaw.find({ boardId, linkedId: { $in: ['', null] } }, { projection: { _id: 1, userId: 1, members: 1 } })) {
+      for await (const d of cardsRaw.find({ boardId, linkedId: { $in: ['', null] } }, {
+        projection: {
+          _id: 1, userId: 1, members: 1, requesters: 1, assigners: 1,
+        },
+      })) {
         preCardIds.push(d._id);
         if (d.userId) preUserIds.add(d.userId);
         (d.members || []).forEach(id => preUserIds.add(id));
+        (d.requesters || []).forEach(id => preUserIds.add(id));
+        (d.assigners || []).forEach(id => preUserIds.add(id));
       }
       for await (const d of listsRaw.find({ boardId }, { projection: { userId: 1 } })) { if (d.userId) preUserIds.add(d.userId); }
       for await (const d of cardCommentsRaw.find({ cardId: { $in: preCardIds } }, { projection: { userId: 1 } })) { if (d.userId) preUserIds.add(d.userId); }
@@ -409,6 +510,19 @@ export class Exporter {
       return i;
     };
 
+    // #1173: which cards this export is about, resolved BEFORE anything keyed off
+    // them is written - the attachments array is emitted first and has to be the
+    // scope's attachments, not the whole board's.
+    const cardSelector = await this._scopedCardSelector(boardId);
+    const scoped = this.hasScope();
+    let scopedCardIds = null;
+    if (scoped) {
+      scopedCardIds = [];
+      for await (const d of cardsRaw.find(cardSelector, { projection: { _id: 1 } })) {
+        scopedCardIds.push(d._id);
+      }
+    }
+
     // Open the object with the board's own fields + _format (board data is small).
     const board = await ReactiveCache.getBoard(boardId, { fields: { stars: 0 } });
     (board.members || []).forEach(m => userIds.add(m.userId));
@@ -418,7 +532,14 @@ export class Exporter {
     // Attachments — file bytes streamed as base64 in aligned chunks.
     await w(`,"attachments":[`);
     {
-      const cursor = attachmentsRaw.find({ 'meta.boardId': boardId });
+      // An unselected section is an EMPTY array, not a missing key: the file
+      // still imports, it just has no attachments in it.
+      const attachmentSelector = !this.hasField('attachments')
+        ? { _id: '__none__' }
+        : (scoped
+          ? { 'meta.cardId': { $in: scopedCardIds } }
+          : { 'meta.boardId': boardId });
+      const cursor = attachmentsRaw.find(attachmentSelector);
       let i = 0;
       for await (const att of cursor) {
         const head = {
@@ -434,7 +555,13 @@ export class Exporter {
         if (!this._excludeAttachments) {
           await w(',"file":"');
           const filePath = att.versions && att.versions.original && att.versions.original.path;
-          if (filePath && fs.existsSync(filePath)) {
+          // GHSA-4mxf-m8pq-xc9p class: the ATTACHMENT half of the same read. The
+          // attachment allow rule refuses a client-supplied path, so this is not
+          // the reported hole - but a path is only as trustworthy as every way it
+          // could have been written, and this streaming export is the one
+          // remaining place that read a stored path with nothing but an
+          // existsSync. Same containment check as the avatars above.
+          if (filePath && isReadableStoredFilePath(filePath) && fs.existsSync(filePath)) {
             await new Promise((resolve, reject) => {
               const rs = fs.createReadStream(filePath);
               let leftover = Buffer.alloc(0);
@@ -459,13 +586,31 @@ export class Exporter {
     await w(']');
 
     // Lists / swimlanes / custom fields (bounded, but streamed uniformly).
-    await streamArray('lists', listsRaw, { boardId }, noBoardId, d => userIds.add(d.userId));
-    await streamArray('swimlanes', swimlanesRaw, { boardId });
-    await streamArray('customFields', customFieldsRaw, { boardIds: boardId }, { projection: { boardIds: 0 } });
+    // A scoped export carries the lists and swimlanes ITS cards refer to - the
+    // whole board's would be rows that import into empty columns, and none at
+    // all would leave the cards with nowhere to land.
+    let listSelector = { boardId };
+    let swimlaneSelector = { boardId };
+    if (scoped) {
+      const referenced = await cardsRaw
+        .find({ _id: { $in: scopedCardIds } }, { projection: { listId: 1, swimlaneId: 1 } })
+        .toArray();
+      const listIds = [...new Set(referenced.map(c => c.listId).filter(Boolean))];
+      const swimlaneIds = [...new Set(referenced.map(c => c.swimlaneId).filter(Boolean))];
+      if (this._scope.listId) listIds.push(this._scope.listId);
+      if (this._scope.swimlaneId) swimlaneIds.push(this._scope.swimlaneId);
+      listSelector = { boardId, _id: { $in: [...new Set(listIds)] } };
+      swimlaneSelector = { boardId, _id: { $in: [...new Set(swimlaneIds)] } };
+    }
+    await streamArray('lists', listsRaw, listSelector, noBoardId, d => userIds.add(d.userId));
+    await streamArray('swimlanes', swimlanesRaw, swimlaneSelector);
+    await streamArray('customFields', customFieldsRaw,
+      this.hasField('custom-fields') ? { boardIds: boardId } : { _id: '__none__' },
+      { projection: { boardIds: 0 } });
 
     // Cards (non-linked, like build()) — collect ids + userIds as we go, and
     // (when anonymizing) rewrite @mentions + requestedBy/assignedBy in each card.
-    await streamArray('cards', cardsRaw, { boardId, linkedId: { $in: ['', null] } }, noBoardId, d => {
+    await streamArray('cards', cardsRaw, cardSelector, noBoardId, d => {
       cardIds.push(d._id);
       userIds.add(d.userId);
       (d.members || []).forEach(id => userIds.add(id));
@@ -473,19 +618,41 @@ export class Exporter {
     });
 
     // Everything keyed by the card ids we just streamed.
-    await streamArray('comments', cardCommentsRaw, { cardId: { $in: cardIds } }, noBoardId, d => {
+    await streamArray('comments', cardCommentsRaw,
+      this.hasField('comments') ? { cardId: { $in: cardIds } } : { _id: '__none__' },
+      noBoardId, d => {
       userIds.add(d.userId);
       if (anonMap) anonymizeBoardTextInPlace({ comments: [d] }, anonMap.byUsername);
     });
-    await streamArray('activities', activitiesRaw, { $or: [{ boardId }, { cardId: { $in: cardIds } }] }, noBoardId, d => userIds.add(d.userId));
-    await streamArray('checklists', checklistsRaw, { cardId: { $in: cardIds } }, {}, d => userIds.add(d.userId));
-    await streamArray('checklistItems', checklistItemsRaw, { cardId: { $in: cardIds } }, {});
-    await streamArray('subtaskItems', cardsRaw, { parentId: { $in: cardIds } }, {});
+    // A scoped export's activities are its cards', not the board's - a swimlane
+    // export carrying every board-level activity would be mostly other people's
+    // swimlanes.
+    const activitySelector = !this.hasField('activities')
+      ? { _id: '__none__' }
+      : (scoped
+        ? { cardId: { $in: cardIds } }
+        : { $or: [{ boardId }, { cardId: { $in: cardIds } }] });
+    await streamArray('activities', activitiesRaw, activitySelector, noBoardId, d => userIds.add(d.userId));
+    // A checklist scope exports THAT checklist, on the card that holds it.
+    const checklistSelector = !this.hasField('checklists')
+      ? { _id: '__none__' }
+      : (this._scope.checklistId
+        ? { _id: this._scope.checklistId }
+        : { cardId: { $in: cardIds } });
+    const checklistItemSelector = !this.hasField('checklists')
+      ? { _id: '__none__' }
+      : (this._scope.checklistId
+        ? { checklistId: this._scope.checklistId }
+        : { cardId: { $in: cardIds } });
+    await streamArray('checklists', checklistsRaw, checklistSelector, {}, d => userIds.add(d.userId));
+    await streamArray('checklistItems', checklistItemsRaw, checklistItemSelector, {});
+    await streamArray('subtaskItems', cardsRaw,
+      this.hasField('subtasks') ? { boardId, parentId: { $in: cardIds } } : { _id: '__none__' }, {});
 
     // Rules + their triggers/actions.
     const ruleTriggerIds = [];
     const ruleActionIds = [];
-    await streamArray('rules', rulesRaw, { boardId }, noBoardId, d => { if (d.triggerId) ruleTriggerIds.push(d.triggerId); if (d.actionId) ruleActionIds.push(d.actionId); });
+    await streamArray('rules', rulesRaw, scoped ? { _id: '__none__' } : { boardId }, noBoardId, d => { if (d.triggerId) ruleTriggerIds.push(d.triggerId); if (d.actionId) ruleActionIds.push(d.actionId); });
     await streamArray('triggers', triggersRaw, { _id: { $in: ruleTriggerIds } }, noBoardId);
     await streamArray('actions', actionsRaw, { _id: { $in: ruleActionIds } }, noBoardId);
 
@@ -512,7 +679,9 @@ export class Exporter {
           if (m && m[1]) {
             const avatar = await avatarsRaw.findOne({ _id: m[1] });
             const p = avatar && avatar.versions && avatar.versions.original && avatar.versions.original.path;
-            if (p) {
+            // GHSA-4mxf-m8pq-xc9p: same containment check as the non-streaming
+            // export above - never read a stored path from outside the storage.
+            if (p && isReadableStoredFilePath(p)) {
               try {
                 const buf = fs.readFileSync(p);
                 user.profile = user.profile || {};
@@ -644,11 +813,17 @@ export class Exporter {
     const writeRow = row => w(Papa.unparse([row], papaconfig) + papaconfig.newline);
 
     // Header row + custom-field columns (same order as buildCsv).
-    const columnHeaders = [
+    //
+    // #1173: the export selection lands on COLUMNS here. The keys are kept
+    // UNTRANSLATED first so the mask can be built from them - a translated
+    // header is a label, not an identity - and the same mask then filters the
+    // header and every row, so the two cannot drift apart.
+    const columnKeys = [
       'title','description','list','swimlane','owner','requested-by','assigned-by',
       'members','assignee','labels','card-start','card-due','card-end','overtime-hours',
       'spent-time-hours','createdAt','last-modified-at','last-activity','voting','archived',
-    ].map(k => TAPi18n.__(k, '', userLanguage));
+    ];
+    const columnHeaders = columnKeys.map(k => TAPi18n.__(k, '', userLanguage));
     const customFieldMap = {};
     lookup.customFields.forEach((cf, i) => {
       customFieldMap[cf._id] = { position: i, type: cf.type };
@@ -662,16 +837,22 @@ export class Exporter {
         columnHeaders.push(`CustomField-${cf.name}-${cf.type}`);
       }
     });
-    await writeRow(columnHeaders);
+    const columnMask = csvColumnMask(columnKeys, lookup.customFields.length,
+      this._fields ? [...this._fields] : null);
+    await writeRow(applyMask(columnHeaders, columnMask));
 
     // Pass 1 — collect referenced user ids (ids only, cheap).
     const userIds = new Set();
     {
-      const cursor = cardsRaw.find(cardSelector, { projection: { userId: 1, members: 1, assignees: 1, vote: 1 } });
+      const cursor = cardsRaw.find(cardSelector, { projection: {
+        userId: 1, members: 1, assignees: 1, requesters: 1, assigners: 1, vote: 1,
+      } });
       for await (const c of cursor) {
         if (c.userId) userIds.add(c.userId);
         (c.members || []).forEach(id => userIds.add(id));
         (c.assignees || []).forEach(id => userIds.add(id));
+        (c.requesters || []).forEach(id => userIds.add(id));
+        (c.assigners || []).forEach(id => userIds.add(id));
         if (c.vote) { (c.vote.positive || []).forEach(id => userIds.add(id)); (c.vote.negative || []).forEach(id => userIds.add(id)); }
       }
     }
@@ -684,7 +865,7 @@ export class Exporter {
     {
       const cursor = cardsRaw.find(cardSelector);
       for await (const card of cursor) {
-        await writeRow(buildCsvCardRow(card, lookup, customFieldMap));
+        await writeRow(applyMask(buildCsvCardRow(card, lookup, customFieldMap), columnMask));
       }
     }
   }

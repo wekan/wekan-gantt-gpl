@@ -1,29 +1,27 @@
-
 #!/bin/bash
+if [ -n "${ZSH_VERSION:-}" ]; then exec /bin/bash "$0" "$@"; fi
 
-# Check dependencies for macOS/Linux
-if [ "$(uname)" = "Darwin" ]; then
-	if ! command -v brew >/dev/null 2>&1; then
-		echo "Homebrew not found. Installing Homebrew..."
-		/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-	fi
-	for dep in meteor zip; do
-		if ! command -v $dep >/dev/null 2>&1; then
-			echo "$dep not found. Installing $dep with brew..."
-			brew install $dep
-		fi
-	done
+# Check dependencies for every supported host family.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$SCRIPT_DIR/ensure-tools.sh"
+if [ "$(_et_os)" = macos ]; then
+  _et_brew_ensure
+  command -v meteor >/dev/null 2>&1 || brew install meteor
+  command -v zip >/dev/null 2>&1 || brew install zip
 else
-	for dep in meteor zip; do
-		if ! command -v $dep >/dev/null 2>&1; then
-			echo "$dep not found. Installing $dep with apt-get..."
-			sudo apt-get update && sudo apt-get install -y $dep
-		fi
-	done
+  ensure_tools npm zip
+  if ! command -v meteor >/dev/null 2>&1; then
+    sudo npm install -g meteor --unsafe-perm --foreground-script
+  fi
 fi
 
 echo "Note: If you use other locale than en_US.UTF-8 , you need to additionally install en_US.UTF-8"
-echo "      with 'sudo dpkg-reconfigure locales' , so that MongoDB works correctly."
+case "$(_et_linux_family)" in
+  fedora|rhel) echo "      install glibc-langpack-en and enable en_US.UTF-8." ;;
+  debian) echo "      run sudo dpkg-reconfigure locales." ;;
+  arch) echo "      enable en_US.UTF-8 in /etc/locale.gen and run locale-gen." ;;
+  alpine) echo "      Alpine uses musl; install musl-locales if the build requires locale data." ;;
+esac
 echo "      You can still use any other locale as your main locale."
 
 echo "Building Wekan."

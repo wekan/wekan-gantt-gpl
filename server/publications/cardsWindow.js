@@ -2,9 +2,25 @@ import { ReactiveCache } from '/imports/reactiveCache';
 import { publishComposite } from 'meteor/reywood:publish-composite';
 import Boards from '/models/boards';
 import Cards from '/models/cards';
-const { hasWhere } = require('/models/lib/mongoSelectorSafety');
-const { boardCardScope } = require('/models/lib/boardCardScope');
+import { canReadBoard } from '/models/lib/boardVisibility';
+// A client-supplied selector is run against the database, so an execution
+// operator in one is not a query - it is an attempt to make the database run
+// something. This publication refuses it and names WHO tried, from where, and
+// what they sent (docs/Security/Remediation/WeKan.md §12.6).
+//
+// The check used to live here as a local helper. GHSA-phm4-4v26-j2vq was eight
+// OTHER handlers taking the same shape of client-supplied selector and never
+// calling it, so it moved to /server/lib/selectorGuard - unchanged - and every
+// caller now shares the one copy. Leaving a second copy behind here would be the
+// same mistake set up to happen again.
+import { selectorIsInjection } from '/server/lib/selectorGuard';
+const {
+  boardCardScope,
+  assignedOnlyCardScope,
+  mergeCardScope,
+} = require('/models/lib/boardCardScope');
 const { sortWithIdTiebreaker } = require('/models/lib/cardSortTiebreaker');
+const { diffCardWindow } = require('/models/lib/cardWindowDiff');
 const {
   effectiveBoardCardsMode,
   DEFAULT_LAZY_THRESHOLD,
@@ -29,11 +45,7 @@ const MAX_WINDOW = 5000; // hard cap on how many cards one list window may reque
 
 async function boardVisibleTo(userId, boardId) {
   const board = await ReactiveCache.getBoard(boardId);
-  if (!board) return null;
-  if (board.permission === 'public') return board;
-  if (!userId) return null;
-  const user = await ReactiveCache.getUser(userId);
-  return board.isVisibleBy(user) ? board : null;
+  return canReadBoard(userId, board) ? board : null;
 }
 
 // Publish the cards of ONE list/swimlane window (client passes the exact selector
@@ -54,29 +66,40 @@ publishComposite('boardCardsWindow', function(boardId, cardSelector, sort, limit
   if (!Match.test(limit, Number)) return;
 
   const userId = this.userId;
+  const publication = this;
+  let windowStarted = false;
   const lim = Math.max(1, Math.min(Math.floor(limit) || 1, MAX_WINDOW));
-  const safe = hasWhere(cardSelector) ? { _id: { $in: [] } } : cardSelector;
+  const safe = selectorIsInjection(cardSelector, 'boardCardsWindow')
+    ? { _id: { $in: [] } }
+    : cardSelector;
   // #6511: a UNIQUE _id tiebreaker so the LIMITED published window is deterministic
   // (equal-`sort` ties would otherwise make the "first N cards" vary between polls,
   // feeding the client's #each an inconsistent ordered set).
   const sortOpt = sortWithIdTiebreaker(sort || { sort: 1 });
 
-  // The window's card selector, scoped to the board. Merge the board scope with the
-  // client selector at the TOP level (rather than wrapping both in a `$and`) so
-  // `boardId`/`archived` push down to FerretDB v1 (SQLite)'s index: FerretDB does NOT
-  // push down a top-level `$and`, so the wrapped form full-scanned the whole `cards`
-  // table on every poll and the window never became ready — cards never loaded on a
-  // big (lazy) board (10.22). Merging is EXACTLY equivalent to the `$and` as long as
-  // the client selector has no own `boardId`/`archived` key (it does not — it is a
-  // per-list listId + swimlane selector); if it ever did, fall back to `$and` so the
-  // semantics stay correct. The in-Go filter remains the authority either way.
-  const safeCollides =
-    Object.prototype.hasOwnProperty.call(safe, 'boardId') ||
-    Object.prototype.hasOwnProperty.call(safe, 'archived');
+  // The window's card selector, scoped to the board — and, for an ASSIGNED-ONLY
+  // member, to the cards they are assigned to.
+  //
+  // That restriction was missing here. The `board` publication has always narrowed
+  // its card cursor with `assignees: { $in: [userId] }` for a member carrying
+  // isReadAssignedOnly / isNormalAssignedOnly / isCommentAssignedOnly, but this
+  // publication — which is what ships the cards in LAZY card-loading mode — did
+  // not. So whether the restriction applied at all depended on the board's
+  // card-loading mode: the same member saw only their own cards on a small board
+  // and every card in the window on a big one. It has to hold in both, so it is
+  // part of the window scope now, and because `windowCardIds` builds on the same
+  // selector, the window's comments, attachments, checklists and checklist items
+  // are narrowed with it rather than leaking the children of cards whose minicard
+  // is not published.
+  //
+  // Keep the client filter and server authorization scope as separate MongoDB
+  // conjuncts so neither can replace the other.
   const windowSel = board =>
-    safeCollides
-      ? { $and: [safe, { boardId: board._id, archived: false }] }
-      : { ...safe, boardId: board._id, archived: false };
+    mergeCardScope(safe, {
+      boardId: board._id,
+      archived: false,
+      ...assignedOnlyCardScope(board, userId),
+    });
 
   // The ids of the cards in this window. Used to publish the window's comments,
   // attachments, checklists and checklist items with ONE cursor each
@@ -101,13 +124,98 @@ publishComposite('boardCardsWindow', function(boardId, cardSelector, sort, limit
     async find() {
       const board = await boardVisibleTo(userId, boardId);
       if (!board) return [];
-      return Boards.find({ _id: boardId }, { fields: { _id: 1 }, limit: 1 });
+      // `members` is published because the CHILDREN below need it: publish-composite
+      // hands each child the document as this cursor published it, so with the old
+      // `{ _id: 1 }` projection `board.members` was undefined in every child and
+      // assignedOnlyCardScope() could never see a flag to act on. It also makes the
+      // restriction reactive — changing a member's assigned-only flag re-runs the
+      // window instead of taking effect on the next subscribe. The board publication
+      // already ships this board's members to the same client, so nothing new is
+      // exposed by it.
+      return Boards.find(
+        { _id: boardId },
+        { fields: { _id: 1, members: 1 }, limit: 1 },
+      );
     },
     children: [
       // The window's cards.
       {
         async find(board) {
-          return await ReactiveCache.getCards(windowSel(board), { sort: sortOpt, limit: lim }, true);
+          // FerretDB cannot reliably establish the sorted, limited live cursor
+          // that publish-composite normally observes, so keep fetching snapshots.
+          // A one-time snapshot, however, made every later move/edit invisible
+          // until reload (#6645). Diff successive bounded snapshots and emit the
+          // same DDP added/changed/removed messages a live cursor would produce.
+          if (windowStarted) return null;
+          windowStarted = true;
+          let stopped = false;
+          let refreshing = false;
+          let refreshQueued = false;
+          let initializingObserver = true;
+          let observerHandle;
+          let cards = [];
+
+          const refresh = async () => {
+            refreshQueued = true;
+            if (stopped || refreshing) return;
+            refreshing = true;
+            try {
+              // An event can arrive while the bounded query is running. Keep
+              // one follow-up queued rather than losing that change or running
+              // overlapping queries for a burst of card updates.
+              while (refreshQueued && !stopped) {
+                refreshQueued = false;
+                const next = (await ReactiveCache.getCards(
+                  windowSel(board),
+                  { sort: sortOpt, limit: lim },
+                  false,
+                )) || [];
+                if (stopped) return;
+
+                const diff = diffCardWindow(cards, next);
+                for (const card of diff.added) {
+                  const { _id, ...fields } = card;
+                  publication.added('cards', _id, fields);
+                }
+                for (const card of diff.changed) {
+                  publication.changed('cards', card._id, card.fields);
+                }
+                for (const cardId of diff.removed) {
+                  publication.removed('cards', cardId);
+                }
+                cards = next;
+              }
+            } finally {
+              refreshing = false;
+            }
+          };
+
+          await refresh();
+          publication.onStop(() => {
+            stopped = true;
+            if (observerHandle) observerHandle.stop();
+          });
+
+          // Observe the unrestricted selector, not the sorted/limited cursor
+          // that stalls on FerretDB. Any matching card change asks refresh() to
+          // fetch and diff the small visible window. Initial observer additions
+          // are ignored because the first snapshot is already published.
+          observerHandle = await Cards.find(windowSel(board)).observeChangesAsync({
+            added: () => {
+              if (initializingObserver) return;
+              return refresh().catch(error => publication.error(error));
+            },
+            changed: () => refresh().catch(error => publication.error(error)),
+            removed: () => refresh().catch(error => publication.error(error)),
+          });
+          if (stopped) {
+            observerHandle.stop();
+            return null;
+          }
+          initializingObserver = false;
+          // Close the small race between the initial snapshot and observer setup.
+          await refresh();
+          return null;
         },
       },
       // The window's comments — one cursor for the whole window (not per card).
@@ -157,11 +265,20 @@ Meteor.publish('boardListCardCount', async function(countId, boardId, cardSelect
   check(cardSelector, Object);
 
   const board = await boardVisibleTo(this.userId, boardId);
-  if (!board || hasWhere(cardSelector)) {
+  if (!board || selectorIsInjection(cardSelector, 'boardCardsCount')) {
     return this.ready();
   }
 
-  const sel = { $and: [cardSelector, { boardId, archived: false }] };
+  // The same assigned-only narrowing as the window above: a member who may only
+  // see the cards assigned to them must not be TOLD there are more. This count is
+  // what the list's "load more" spinner is decided from, so leaving it unrestricted
+  // both leaked how many cards the list really holds and offered to scroll in
+  // cards that would never arrive.
+  const sel = mergeCardScope(cardSelector, {
+    boardId,
+    archived: false,
+    ...assignedOnlyCardScope(board, this.userId),
+  });
   let count = 0;
   let initializing = true;
 

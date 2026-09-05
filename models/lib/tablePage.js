@@ -1,4 +1,4 @@
-// Pure helpers behind the shared table page (docs/Design/Page/Table.md).
+// Pure helpers behind the shared table page (docs/Features/Page/Table.md).
 //
 // Every paginated admin table — Security, Speed, Tests, CPU usage, Files, Rules,
 // Boards, Cards, Impersonation, Recovery — renders through ONE template driven by
@@ -55,6 +55,14 @@ export function pageInfo(total, page, perPage = TABLE_PAGE_ROWS_PER_PAGE) {
   };
 }
 
+// One bounded step for pagers that do not use pageInfo directly.
+export function adjacentPage(total, page, direction, perPage = TABLE_PAGE_ROWS_PER_PAGE) {
+  const info = pageInfo(total, page, perPage);
+  const step = Math.sign(Number(direction));
+  if (!Number.isFinite(step) || step === 0) return info.page;
+  return Math.min(info.totalPages, Math.max(1, info.page + step));
+}
+
 // Text for one cell. Never returns undefined/null: an absent field shows as an
 // empty cell, not as the string "undefined" (which is what several of the
 // hand-written report tables used to print).
@@ -89,6 +97,21 @@ export function docsByIds(ids, docs) {
 // Build the rows the shared template iterates. One cell per column, in column
 // order, so a row can never be shorter than the header (which is how a
 // hand-written table ends up with its columns shifted by one).
+// The avatar of an account, or '' when it has none or is not loaded here. Looked
+// up through ReactiveCache like every other user lookup on the client; on the
+// server, where this module is also loaded, there is no cache and no avatar to
+// draw, and the initials fall back cleanly.
+function avatarUrlFor(userId) {
+  try {
+    // eslint-disable-next-line global-require
+    const { ReactiveCache } = require('/imports/reactiveCache');
+    const user = ReactiveCache.getUser(userId);
+    return (user && user.profile && user.profile.avatarUrl) || '';
+  } catch (e) {
+    return '';
+  }
+}
+
 export function buildRows(docs, columns, options = {}) {
   const cols = Array.isArray(columns) ? columns : [];
   const list = Array.isArray(docs) ? docs : [];
@@ -104,6 +127,56 @@ export function buildRows(docs, columns, options = {}) {
         cls: [column.cls || '', column.align === 'end' ? 'table-page-end' : '',
               column.nowrap ? 'table-page-nowrap' : ''].filter(Boolean).join(' '),
         userId: userId || '',
+        // The account's avatar, when it has one. A user cell shows INITIALS or
+        // the avatar rather than the name - the same way the board sidebar and
+        // a card show a member, and for the same reason: it takes a fraction of
+        // the width, and these tables are wide. The name is the cell's title,
+        // so hovering still identifies the account.
+        userAvatarUrl: userId ? avatarUrlFor(userId) : '',
+        // SEVERAL people in one cell - the accounts that log in from an office.
+        // Same rendering as a single user cell, repeated: initials or avatar,
+        // the name as the title, and clicking one opens the Edit user popup.
+        // Each entry is { userId, text, avatarUrl }.
+        users: typeof column.users === 'function'
+          ? (column.users(doc) || []).map(u => ({
+            userId: u.userId || '',
+            text: u.text || u.value || '',
+            initials: u.initials || '',
+            avatarUrl: u.avatarUrl || (u.userId ? avatarUrlFor(u.userId) : ''),
+            // How many times this person logged in from here. Shown beside the
+            // avatar, because "who" without "how much" does not tell an office
+            // from somebody who visited once.
+            count: typeof u.count === 'number' ? u.count : null,
+          }))
+          : [],
+        // A leading emoji for the cell - the country flag on an office row. Kept
+        // apart from `text` so the flag is not searched or sorted as text.
+        flag: typeof column.flag === 'function' ? (column.flag(doc) || '') : '',
+        // Small status icons rendered before cell text. Class names come from a
+        // fixed column function, not database content.
+        icons: typeof column.icons === 'function'
+          ? (column.icons(doc) || []).map(icon => ({
+            cls: icon.cls || '',
+            title: icon.title || '',
+          }))
+          : [],
+        // A PLACE this cell stands for, when something in front of WeKan
+        // resolved one: { latitude, longitude, label }. It makes the cell open
+        // the map-provider popup, so an office row's "London" leads to London
+        // on whichever map the admin uses - the same chooser, and the same
+        // eleven providers, as a card's location.
+        //
+        // Only with COORDINATES. A city name is not a position, and putting one
+        // into a map URL would either search for the word or invent a place; a
+        // CDN that sends a country and no lat/lon gives a label to read, not a
+        // pin to open.
+        location: (() => {
+          const loc = typeof column.location === 'function' ? column.location(doc) : null;
+          if (!loc) return null;
+          const { latitude, longitude } = loc;
+          if (typeof latitude !== 'number' || typeof longitude !== 'number') return null;
+          return { latitude, longitude, label: loc.label || cellText(column, doc) || '' };
+        })(),
         // Only used by the severity cell; a plain string, rendered as an
         // attribute value by Blaze (which escapes it).
         data: typeof column.data === 'function' ? (column.data(doc) || '') : '',

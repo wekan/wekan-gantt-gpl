@@ -1,5 +1,20 @@
 import { ReactiveCache } from '/imports/reactiveCache';
 import { Utils } from '/client/lib/utils';
+import { Filter } from '/client/lib/filter';
+import { tableViewCardsSelector } from '/models/lib/tableViewFilter';
+import {
+  readTableViewTitleWrap,
+  writeTableViewTitleWrap,
+} from '/models/lib/tableViewTitleMode';
+import {
+  compareTableViewRows,
+  nextTableViewSort,
+} from '/models/lib/tableViewSort';
+import {
+  readTableViewGrouping,
+  writeTableViewGrouping,
+  addSwimlaneGroupHeaders,
+} from '/models/lib/tableViewGrouping';
 
 // Board "Table" view: lists every card of the current board in a table that
 // reuses the My Cards table styling (the .my-cards-board-table CSS classes in
@@ -16,10 +31,18 @@ Template.tableView.onCreated(function () {
   this.searchQuery = new ReactiveVar('');
   this.page = new ReactiveVar(1);
   this.filteredRows = new ReactiveVar([]);
+  this.wrapCardTitles = new ReactiveVar(
+    readTableViewTitleWrap(window.localStorage, Meteor.userId()),
+  );
+  this.sortField = new ReactiveVar('title');
+  this.sortDirection = new ReactiveVar('asc');
+  this.groupBySwimlane = new ReactiveVar(
+    readTableViewGrouping(window.localStorage, Meteor.userId()),
+  );
 
   // Recompute the flat, filtered and sorted row list whenever the board cards,
-  // search query or sort order change. Pagination is applied separately in the
-  // rows() helper so paging does not rebuild the whole list.
+  // board Filter or search query changes. Pagination is applied separately in
+  // the rows() helper so paging does not rebuild the whole list.
   this.autorun(() => {
     const board = Utils.getCurrentBoard();
     if (!board) {
@@ -28,9 +51,16 @@ Template.tableView.onCreated(function () {
     }
 
     const query = this.searchQuery.get().trim().toLowerCase();
+    const filterSelector = Filter.isActive()
+      ? Filter._getMongoSelector()
+      : undefined;
+    const cards = ReactiveCache.getCards(
+      tableViewCardsSelector(board._id, filterSelector),
+      { sort: { title: 1 } },
+    );
 
     const rows = [];
-    board.cards().forEach(card => {
+    cards.forEach(card => {
       const swimlane = card.getSwimlane();
       const list = card.getList();
       if (!swimlane || swimlane.archived || !list || list.archived) return;
@@ -47,12 +77,17 @@ Template.tableView.onCreated(function () {
         title: card.title || '',
         listTitle: list.title || '',
         swimlaneTitle: swimlane.title || '',
+        swimlaneId: swimlane._id,
+        swimlaneSort: swimlane.sort || 0,
         colorClass: board.colorClass(),
         receivedAt: card.getReceived() || null,
         startAt: card.getStart() || null,
         dueAt: card.getDue() || null,
         endAt: card.getEnd() || null,
         labels,
+        assigneesKey: (card.assignees || []).join(' '),
+        membersKey: (card.members || []).join(' '),
+        labelsKey: labels.map(label => label.name).join(' '),
       });
     });
 
@@ -71,11 +106,20 @@ Template.tableView.onCreated(function () {
       });
     }
 
-    // Fixed order: by card title, ascending. (Column-header click-to-sort was
-    // removed; the Table view now always shows this stable order.)
-    filtered = filtered.slice().sort((a, b) =>
-      a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: 'base' }),
-    );
+    const sortField = this.sortField.get();
+    const sortDirection = this.sortDirection.get();
+    const groupBySwimlane = this.groupBySwimlane.get();
+    filtered = filtered.slice().sort((a, b) => {
+      if (groupBySwimlane) {
+        const laneOrder = a.swimlaneSort - b.swimlaneSort;
+        if (laneOrder !== 0) return laneOrder;
+        const laneTitle = a.swimlaneTitle.localeCompare(b.swimlaneTitle);
+        if (laneTitle !== 0) return laneTitle;
+        const laneId = a.swimlaneId.localeCompare(b.swimlaneId);
+        if (laneId !== 0) return laneId;
+      }
+      return compareTableViewRows(a, b, sortField, sortDirection);
+    });
 
     this.filteredRows.set(filtered);
   });
@@ -94,7 +138,10 @@ Template.tableView.helpers({
     // page; no write here, to avoid a reactive loop.
     const page = Math.min(tpl.page.get(), totalPages);
     const start = (page - 1) * rowsPerPage;
-    return all.slice(start, start + rowsPerPage);
+    const pageRows = all.slice(start, start + rowsPerPage);
+    return tpl.groupBySwimlane.get()
+      ? addSwimlaneGroupHeaders(pageRows)
+      : pageRows;
   },
 
   currentPage() {
@@ -117,6 +164,20 @@ Template.tableView.helpers({
       Math.ceil(tpl.filteredRows.get().length / rowsPerPage),
     );
     return tpl.page.get() < totalPages;
+  },
+
+  wrapCardTitles() {
+    return Template.instance().wrapCardTitles.get();
+  },
+
+  sortIcon(field) {
+    const tpl = Template.instance();
+    if (tpl.sortField.get() !== field) return 'fa-sort';
+    return tpl.sortDirection.get() === 'asc' ? 'fa-sort-asc' : 'fa-sort-desc';
+  },
+
+  groupBySwimlane() {
+    return Template.instance().groupBySwimlane.get();
   },
 
   // A date column is shown unless BOTH its "Show at Card" (allowsXxxDate) and
@@ -171,6 +232,35 @@ Template.tableView.events({
     );
     const current = tpl.page.get();
     if (current < totalPages) tpl.page.set(current + 1);
+  },
+
+  'click .js-table-view-toggle-card-title-wrap'(event, tpl) {
+    event.preventDefault();
+    const wrap = !tpl.wrapCardTitles.get();
+    tpl.wrapCardTitles.set(wrap);
+    writeTableViewTitleWrap(window.localStorage, Meteor.userId(), wrap);
+  },
+
+  'click .js-table-view-sort'(event, tpl) {
+    event.preventDefault();
+    const selectedField = event.currentTarget.dataset.field;
+    if (!selectedField) return;
+    const next = nextTableViewSort(
+      tpl.sortField.get(),
+      tpl.sortDirection.get(),
+      selectedField,
+    );
+    tpl.sortField.set(next.field);
+    tpl.sortDirection.set(next.direction);
+    tpl.page.set(1);
+  },
+
+  'click .js-table-view-toggle-swimlane-groups'(event, tpl) {
+    event.preventDefault();
+    const enabled = !tpl.groupBySwimlane.get();
+    tpl.groupBySwimlane.set(enabled);
+    writeTableViewGrouping(window.localStorage, Meteor.userId(), enabled);
+    tpl.page.set(1);
   },
 
   // Clicking the leftmost "Edit" link opens the Card Details popup on top of the

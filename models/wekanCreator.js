@@ -9,6 +9,7 @@ import Users from '/models/users';
 import { generateUniversalAttachmentUrl } from '/models/lib/universalUrlGenerator';
 import { planImportedBoardMember } from '/models/lib/importedBoardMemberPlan';
 import { importedCardDates } from '/models/lib/importedCardDates';
+import { importedBoardPermission } from '/models/lib/importedBoardPermission';
 import {
   getImportExportSecuritySettings,
   anonymizedUserWord,
@@ -46,7 +47,8 @@ import {
   calendar
 } from '/imports/lib/dateUtils';
 import getSlug from 'limax';
-import { validateAttachmentUrl } from './lib/attachmentUrlValidation';
+import { fetchImportedAttachment } from './lib/importAttachmentDownload';
+import { runImportPipeline, writeImportedEntity } from './lib/importPipeline';
 
 const DateString = Match.Where(function(dateAsString) {
   check(dateAsString, String);
@@ -352,7 +354,10 @@ export class WekanCreator {
       autoWidth: !!boardToImport.autoWidth,
       // Standalone Export has modifiedAt missing, adding modifiedAt to fix it
       modifiedAt: this._now(boardToImport.modifiedAt),
-      permission: boardToImport.permission,
+      // #1991: old Sandstorm exports have no permission field. Import those
+      // privately, and fail closed for malformed legacy values; only an
+      // explicit `public` export may create a public board.
+      permission: importedBoardPermission(boardToImport.permission),
       slug: getSlug(boardToImport.title) || 'board',
       stars: 0,
       title: await Boards.uniqueTitle(boardToImport.title),
@@ -467,7 +472,18 @@ export class WekanCreator {
         dueAt: cardDates.dueAt,
         endAt: cardDates.endAt,
         spentTime: card.spentTime || null,
+        // The two free-text "by" fields. They are exported - the JSON, the
+        // .zip, the CSV and both card exports all carry them - and were not
+        // imported, so a card came back having forgotten who asked for it and
+        // who assigned it. A round trip that loses a field is worse than one
+        // that never had it: the export looks complete.
+        requestedBy: card.requestedBy || '',
+        assignedBy: card.assignedBy || '',
       };
+      for (const [source, target] of [['requesters', 'requesters'], ['assigners', 'assigners']]) {
+        cardToCreate[target] = [...new Set((card[source] || [])
+          .map(userId => this.members[userId]).filter(Boolean))];
+      }
       // add labels
       if (card.labelIds) {
         cardToCreate.labelIds = card.labelIds.map(wekanId => {
@@ -608,12 +624,18 @@ export class WekanCreator {
               );
               await setCover(fileRef && fileRef._id);
             } else if (att.url) {
-              const validation = await validateAttachmentUrl(att.url);
-              if (!validation.valid) {
+              // FollowBleed (GHSA-j9p2-jm73-p549): downloading through
+              // Attachments.loadAsync() meant downloading with the platform
+              // fetch(), which follows redirects, so a validated public URL
+              // could 302 the download to an internal address and that body
+              // became the attachment. fetchImportedAttachment validates and
+              // pins every hop and hands back the bytes.
+              const downloaded = await fetchImportedAttachment(att.url);
+              if (downloaded.blocked) {
                 if (process.env.DEBUG === 'true') {
                   console.warn(
                     'Blocked attachment URL during Wekan import:',
-                    validation.reason,
+                    downloaded.reason,
                     att.url,
                   );
                 }
@@ -621,9 +643,14 @@ export class WekanCreator {
                 // importing all remaining cards).
                 continue;
               }
-              const fileRef = await Attachments.loadAsync(
-                att.url,
-                { meta, fileName: att.name },
+              const fileRef = await Attachments.writeAsync(
+                downloaded.buffer,
+                {
+                  fileName: att.name || 'attachment',
+                  type: att.type || downloaded.type || 'application/octet-stream',
+                  userId: this._user(att.userId),
+                  meta,
+                },
                 true,
               );
               await setCover(fileRef && fileRef._id);
@@ -663,15 +690,11 @@ export class WekanCreator {
         modifiedAt: field.modifiedAt,
       };
       //insert copy of custom field
-      const fieldId = await CustomFields.direct.insertAsync(fieldToCreate);
-      //set modified date to now
-      await CustomFields.direct.updateAsync(fieldId, {
-        $set: {
-          modifiedAt: this._now(),
-        },
+      await writeImportedEntity(CustomFields, fieldToCreate, {
+        ids: this.customFields,
+        sourceId: field._id,
+        touch: { modifiedAt: this._now() },
       });
-      //store mapping of old id to new id
-      this.customFields[field._id] = fieldId;
     }
   }
 
@@ -693,15 +716,14 @@ export class WekanCreator {
   // Create a single fallback list for cards that have no valid list to live
   // in (export contained no lists, or only dangling listId references).
   async _createDefaultList(boardId) {
-    const listId = await Lists.direct.insertAsync({
+    const listId = await writeImportedEntity(Lists, {
       archived: false,
       boardId,
       createdAt: this._now(),
       title: 'Default',
       sort: 0,
-    });
-    await Lists.direct.updateAsync(listId, {
-      $set: { updatedAt: this._now() },
+    }, {
+      touch: { updatedAt: this._now() },
     });
     this._defaultListId = listId;
     return listId;
@@ -730,30 +752,14 @@ export class WekanCreator {
       if (typeof list.collapsed === 'boolean') {
         listToCreate.collapsed = list.collapsed;
       }
-      const listId = await Lists.direct.insertAsync(listToCreate);
-      await Lists.direct.updateAsync(listId, {
-        $set: {
-          updatedAt: this._now(),
-        },
+      const listId = await writeImportedEntity(Lists, listToCreate, {
+        ids: this.lists,
+        sourceId: list._id,
+        touch: { updatedAt: this._now() },
       });
-      this.lists[list._id] = listId;
       if (!this._defaultListId) {
         this._defaultListId = listId;
       }
-      // // log activity
-      // Activities.direct.insert({
-      //   activityType: 'importList',
-      //   boardId,
-      //   createdAt: this._now(),
-      //   listId,
-      //   source: {
-      //     id: list._id,
-      //     system: 'Wekan',
-      //   },
-      //   // We attribute the import to current user,
-      //   // not the creator of the original object
-      //   userId: this._user(),
-      // });
     }
   }
 
@@ -767,11 +773,8 @@ export class WekanCreator {
         title: 'Default',
         sort: 0,
       };
-      const created = await Swimlanes.direct.insertAsync(swimlaneToCreate);
-      await Swimlanes.direct.updateAsync(created, {
-        $set: {
-          updatedAt: this._now(),
-        },
+      const created = await writeImportedEntity(Swimlanes, swimlaneToCreate, {
+        touch: { updatedAt: this._now() },
       });
       this._defaultSwimlaneId = created;
       return;
@@ -794,13 +797,11 @@ export class WekanCreator {
       if (swimlane.color && SWIMLANE_COLORS.includes(swimlane.color)) {
         swimlaneToCreate.color = swimlane.color;
       }
-      const swimlaneId = await Swimlanes.direct.insertAsync(swimlaneToCreate);
-      await Swimlanes.direct.updateAsync(swimlaneId, {
-        $set: {
-          updatedAt: this._now(),
-        },
+      const swimlaneId = await writeImportedEntity(Swimlanes, swimlaneToCreate, {
+        ids: this.swimlanes,
+        sourceId: swimlane._id,
+        touch: { updatedAt: this._now() },
       });
-      this.swimlanes[swimlane._id] = swimlaneId;
       if (!this._defaultSwimlaneId) {
         this._defaultSwimlaneId = swimlaneId;
       }
@@ -886,8 +887,10 @@ export class WekanCreator {
         createdAt: checklist.createdAt,
         sort: checklist.sort ? checklist.sort : checklistIndex,
       };
-      const checklistId = await Checklists.direct.insertAsync(checklistToCreate);
-      this.checklists[checklist._id] = checklistId;
+      const checklistId = await writeImportedEntity(Checklists, checklistToCreate, {
+        ids: this.checklists,
+        sourceId: checklist._id,
+      });
       result.push(checklistId);
     }
     return result;
@@ -1132,28 +1135,6 @@ export class WekanCreator {
     }
   }
 
-  //check(board) {
-  check() {
-    //try {
-    // check(data, {
-    //   membersMapping: Match.Optional(Object),
-    // });
-    // this.checkActivities(board.activities);
-    // this.checkBoard(board);
-    // this.checkLabels(board.labels);
-    // this.checkLists(board.lists);
-    // this.checkSwimlanes(board.swimlanes);
-    // this.checkCards(board.cards);
-    //this.checkChecklists(board.checklists);
-    // this.checkRules(board.rules);
-    // this.checkActions(board.actions);
-    //this.checkTriggers(board.triggers);
-    //this.checkChecklistItems(board.checklistItems);
-    //} catch (e) {
-    //  throw new Meteor.Error('error-json-schema');
-    // }
-  }
-
   async create(board, currentBoardId) {
     // TODO : Make isSandstorm variable global
     const isSandstorm =
@@ -1174,25 +1155,25 @@ export class WekanCreator {
     // reusing the original _id so every card/comment/activity reference resolves to the
     // right person, and restores their avatar. Deliberate mapping/merging to real
     // accounts (and LDAP reconciliation) happens later, not here.
-    await this.createPlaceholderUsers(board);
-    this.parseActivities(board);
-    const boardId = await this.createBoardAndLabels(board);
-    await this.createLists(board.lists, boardId);
-    await this.createSwimlanes(board.swimlanes, boardId);
-    await this.createCustomFields(board.customFields, boardId);
-    await this.createCards(board.cards, boardId);
-    await this.createSubtasks(board.cards);
-    await this.createCardDependencies(board.cards);
-    await this.createChecklists(board.checklists, boardId);
-    await this.createChecklistItems(board.checklistItems, boardId);
-    await this.importActivities(board.activities, boardId);
-    await this.createTriggers(board.triggers, boardId);
-    await this.createActions(board.actions, boardId);
-    await this.createRules(board.rules, boardId);
-    await this.recordImportedUsernames(board, boardId);
-    await this.recreateBackgrounds(board, boardId);
-    // XXX add members
-    return boardId;
+    return runImportPipeline(this, board, [
+      { method: 'createPlaceholderUsers' },
+      { method: 'parseActivities' },
+      { method: 'createBoardAndLabels', createsBoard: true },
+      { method: 'createLists', source: 'lists' },
+      { method: 'createSwimlanes', source: 'swimlanes' },
+      { method: 'createCustomFields', source: 'customFields' },
+      { method: 'createCards', source: 'cards' },
+      { method: 'createSubtasks', source: 'cards' },
+      { method: 'createCardDependencies', source: 'cards' },
+      { method: 'createChecklists', source: 'checklists' },
+      { method: 'createChecklistItems', source: 'checklistItems' },
+      { method: 'importActivities', source: 'activities' },
+      { method: 'createTriggers', source: 'triggers' },
+      { method: 'createActions', source: 'actions' },
+      { method: 'createRules', source: 'rules' },
+      { method: 'recordImportedUsernames' },
+      { method: 'recreateBackgrounds' },
+    ]);
   }
 
   // Re-create the board's background images, which are exported as board-level

@@ -18,38 +18,42 @@
 # A file has no quoting layer to get wrong, and `bash -n` can check it.
 #
 # Environment (all set by the workflow):
-#   NODE_FULL   the exact version, e.g. v24.18.1
-#   NODE_ARCH   what Node.js calls this CPU  (x86, armv7l, ppc64le, ...)
+#   NODE_FULL   the exact version, e.g. v24.19.0
+#   NODE_ARCH   what Node.js calls this CPU  (x86, armv7l, ppc64le, ...) - used
+#               only to name the amd64 npm tarball
 #   ARCH        what WeKan calls it          (i386, armhf, ppc64le, ...)
-#   NODE_FROM   which source has it: official | unofficial | fork
-#   NODE_URL    the exact URL it is at
-#   NODE_SHA256 its published SHA256, or empty when the source publishes none
-#               Both are resolved on the HOST by the preflight step, so this
-#               does not probe the network three times over an emulated CPU -
-#               and so the fork's URL is right even when the fork's newest
-#               release is a different version from nodejs.org's newest, which
-#               it usually is: the fork builds the CPUs nobody else does, one
-#               release at a time, and lags behind.
+#   NODE_FROM   which source it came from: official (nodejs.org), unofficial
+#               (unofficial-builds.nodejs.org) or node-patches
+#               (wekan/node-patches) - see releases/resolve-node-source.sh
+#   NODE_URL    the exact file to download
+#   NODE_KIND   what that file is: tar.xz / tar.gz / binary
+#   NODE_MEMBER the path to node inside the archive; empty when kind=binary
+#   NODE_SHA256 the SHA256 that source published for the file at NODE_URL
+#               All resolved on the HOST by the preflight step, so this does not
+#               probe the network over an emulated CPU - and so the URL is right
+#               even when the newest build FOR THIS CPU is an older release than
+#               the newest release: a CPU can lag a version or two behind.
 
 set -eux
 
 export DEBIAN_FRONTEND=noninteractive
 
-apt-get update -qq
-apt-get install -y -q build-essential python3 curl xz-utils ca-certificates
+bash "$(dirname "$0")/apt-install.sh" build-essential python3 curl xz-utils ca-certificates
 
-# The first two sources ship a TARBALL - node, npm and the whole runtime. The
-# fork ships the BARE BINARY it built, because that is the one thing missing, so
-# when the fork serves, npm comes from the official amd64 tarball of the same
-# version. npm is JavaScript and runs on whatever node executes it, so an npm
-# built for one CPU drives a node built for another.
+# Only the node BINARY has to be for this CPU. npm is JavaScript, so it runs on
+# whatever node executes it: it comes from the official amd64 tarball of the same
+# version and drives this arch's node all the same. Only the node WeKan SHIPS is
+# the target CPU's; the build-time npm need not be. (node-patches publishes the
+# bare binary and no npm at all, which is why npm is fetched separately rather
+# than taken from whatever archive the node came in.)
 mkdir -p /opt/node/bin
 
-# Download a file and check it against the SHA256 its source publishes.
+# Download a file and check it against the SHA256 its source published.
 #
-# nodejs.org and unofficial-builds are preferred over the fork precisely BECAUSE
-# they publish a checksum, so not checking it would be preferring them for
-# nothing. The fork publishes one now too.
+# All three sources publish one - SHASUMS256.txt at nodejs.org and
+# unofficial-builds, a .sha256sum sidecar at node-patches. The preflight read it
+# and passed it here as NODE_SHA256, and the download is refused if it does not
+# match: a binary this project cannot verify is not one it ships.
 #
 # A mismatch is retried before it is fatal. The overwhelmingly likely cause is a
 # truncated or corrupted transfer - a CDN edge that served a partial file, a
@@ -68,7 +72,7 @@ download_and_verify() {
     attempt=1
     while :; do
         rm -f "$dest"
-        if ! curl -fsSL --retry 3 --retry-delay 5 -o "$dest" "$url"; then
+        if ! bash "$(dirname "$0")/fetch.sh" -o "$dest" "$url"; then
             if [ "$attempt" -lt "$DOWNLOAD_ATTEMPTS" ]; then
                 echo "Download of $(basename "$url") failed (attempt ${attempt}/${DOWNLOAD_ATTEMPTS}); retrying."
                 attempt=$((attempt + 1))
@@ -104,29 +108,49 @@ download_and_verify() {
     done
 }
 
-case "$NODE_FROM" in
-    official|unofficial)
-        download_and_verify "$NODE_URL" /tmp/node.tar.xz
-        tar -xJf /tmp/node.tar.xz -C /opt/node --strip-components=1
+# The Node.js for THIS CPU, from whichever of the three sources the preflight
+# picked, verified against the SHA256 that source published.
+#
+# The two SHAPES the sources publish are the only difference that reaches this
+# script: nodejs.org and unofficial-builds publish a TARBALL of the whole
+# distribution, node-patches publishes the BARE binary. NODE_KIND says which and
+# NODE_MEMBER names the node inside an archive - both resolved on the host, so
+# nothing is guessed from the URL here.
+download_and_verify "$NODE_URL" /tmp/node-download
+
+case "${NODE_KIND:-binary}" in
+    binary)
+        cp /tmp/node-download /opt/node/bin/node
         ;;
-    fork)
-        download_and_verify "$NODE_URL" /opt/node/bin/node
-        chmod +x /opt/node/bin/node
-        curl -fsSL -o /tmp/npm.tar.xz \
-            "https://nodejs.org/dist/${NODE_FULL}/node-${NODE_FULL}-linux-x64.tar.xz"
-        mkdir -p /tmp/npm
-        tar -xJf /tmp/npm.tar.xz -C /tmp/npm --strip-components=1
-        cp -a /tmp/npm/lib /opt/node/
-        cp -a /tmp/npm/bin/npm /tmp/npm/bin/npx /opt/node/bin/
+    tar.xz|tar.gz|tar)
+        mkdir -p /tmp/nodedist
+        # -xf and let tar detect the compression: unofficial-builds publishes
+        # .tar.gz beside .tar.xz and either may be what was resolved.
+        if ! tar -xf /tmp/node-download -C /tmp/nodedist "${NODE_MEMBER}"; then
+            echo "install-node-for-arch.sh: ${NODE_MEMBER} is not in the archive" \
+                 "from ${NODE_FROM} (${NODE_URL})." >&2
+            exit 1
+        fi
+        cp "/tmp/nodedist/${NODE_MEMBER}" /opt/node/bin/node
         ;;
     *)
-        echo "install-node-for-arch.sh: NODE_FROM is '${NODE_FROM}', which is not" \
-             "one of official/unofficial/fork. The preflight step in" \
-             "release-all.yml decides this and should have stopped the job" \
-             "before here." >&2
+        echo "install-node-for-arch.sh: unknown NODE_KIND '${NODE_KIND}'. The" \
+             "preflight (check-arch-binaries.sh) sets it; a kind this script" \
+             "does not unpack is a bug there, not something to guess at." >&2
         exit 1
         ;;
 esac
+chmod +x /opt/node/bin/node
+rm -f /tmp/node-download
+# npm from the official amd64 tarball of the same version - JavaScript, so it runs
+# on this arch's node just as well. The tarball is a build-time tool, not what
+# WeKan ships; the shipped node is the target CPU's, above.
+bash "$(dirname "$0")/fetch.sh" -o /tmp/npm.tar.xz \
+    "https://nodejs.org/dist/${NODE_FULL}/node-${NODE_FULL}-linux-x64.tar.xz"
+mkdir -p /tmp/npm
+tar -xJf /tmp/npm.tar.xz -C /tmp/npm --strip-components=1
+cp -a /tmp/npm/lib /opt/node/
+cp -a /tmp/npm/bin/npm /tmp/npm/bin/npx /opt/node/bin/
 
 export PATH=/opt/node/bin:$PATH
 
@@ -140,7 +164,27 @@ if ! node --version; then
     exit 1
 fi
 
-npm install
+# Retried when the registry or github.com 5xxes: this install is an hour into an
+# emulated build, and a network blip here throws that hour away. Real errors are
+# not retried - see releases/npm-retry.sh.
+bash "$(dirname "$0")/npm-retry.sh" npm install
+
+# That install brought node-gyp's whole tree along to compile native modules,
+# and this bundle compiles none - every native module in it is a prebuilt .node.
+# Drop it before the .zip is made, so a scan of what was shipped does not report
+# npm's `tar` and networking stack as content of a bundle that cannot run them.
+node "$(dirname "$0")/prune-build-only-modules.mjs" /bundle
+# And put back the one thing that install undoes: meteor-dev-bundle pins
+# underscore 1.13.7, which npm reinstalls over the bumped copy the amd64 bundle
+# came with. The meteor/ tree it does not touch, so this pass is a small one.
+node "$(dirname "$0")/bump-bundle-npm-deps.mjs" /bundle
+# And drop what this bundle cannot use: uWebSockets.js (WeKan runs sockjs, and
+# ddp-server requires that module only inside the uws transport's setup() - 121M
+# of prebuilt binaries for other OS/CPU/ABI combinations), the legacy client
+# build, and the source maps only a debugger reads.
+node "$(dirname "$0")/bundle-trim.mjs" /bundle --transport sockjs --drop-legacy-client
+# And the npm tree rspack cannot tree-shake: only what it can prove is unreachable.
+node "$(dirname "$0")/prune-unreachable-npm.mjs" /bundle
 
 # Bundle the target-arch Node.js for the self-contained launcher. /bundle is the
 # host's bundle/ directory, mounted by the workflow.
@@ -152,8 +196,20 @@ chmod +x /bundle/node
 # by bundle/cpu-exec to emulate CPU features a binary needs but the host CPU
 # lacks. Tolerant: if the package is unavailable on this arch, the bundle just
 # ships without it - cpu-exec then falls back to a system qemu-user, or reports.
+#
+# It is the ONE thing here taken from the CONTAINER rather than downloaded built
+# for the target, so it is the one thing a container that is not the target's own
+# CPU must not contribute. SAME_ARCH_CONTAINER=false says this is such a build:
+# the armv6 bundle is assembled in Debian's arm/v7 (armhf) container, because
+# Debian publishes no ARMv6 port and the armel one cannot run a hard-float node.
+# There `uname -m` is armv7l, so this would drop an ARMv7 qemu-armv7l into an
+# ARMv6 bundle - a binary a Raspberry Pi 1 cannot execute, under a name its
+# cpu-exec (which looks for qemu-armv6l) would never ask for anyway. Ship
+# without it and let cpu-exec fall back, which is what it is written to do.
 rm -f /bundle/qemu-x86_64
-if apt-get install -y -q qemu-user-static >/dev/null 2>&1 &&
+if [ "${SAME_ARCH_CONTAINER:-true}" != "true" ]; then
+    echo "Bundle ${ARCH} is built in a $(uname -m) container that is not its own CPU; no qemu-user is bundled (cpu-exec falls back to the system one)."
+elif apt-get install -y -q qemu-user-static >/dev/null 2>&1 &&
    [ -x "/usr/bin/qemu-$(uname -m)-static" ]; then
     cp "/usr/bin/qemu-$(uname -m)-static" "/bundle/qemu-$(uname -m)"
     chmod +x "/bundle/qemu-$(uname -m)"

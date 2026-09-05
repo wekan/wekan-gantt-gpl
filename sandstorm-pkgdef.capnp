@@ -22,10 +22,10 @@ const pkgdef :Spk.PackageDefinition = (
     appTitle = (defaultText = "Wekan"),
     # The name of the app as it is displayed to the user.
 
-    appVersion = 1049,
+    appVersion = 1149,
     # Increment this for every release.
 
-    appMarketingVersion = (defaultText = "10.49~2026-07-28"),
+    appMarketingVersion = (defaultText = "11.49~2026-09-04"),
     # Human-readable presentation of the app version.
 
     minUpgradableAppVersion = 0,
@@ -227,9 +227,9 @@ const pkgdef :Spk.PackageDefinition = (
 
 const myCommand :Spk.Manifest.Command = (
   # Here we define the command used to start up your server.
-  #argv = ["/sandstorm-http-bridge", "4000", "--", "node", "start.js"],
+  #argv = ["/sandstorm-http-bridge", "4000", "--", "./start-memory.sh"],
   #argv = ["/sandstorm-http-bridge", "4000", "--", "node", "--stack-size=65500", "start.js"],
-  argv = ["/sandstorm-http-bridge", "4000", "--", "node", "start.js"],
+  argv = ["/sandstorm-http-bridge", "4000", "--", "./start-memory.sh"],
   environ = [
     # Note that this defines the *entire* environment seen by your app.
     #---------------------------------------------------------------------
@@ -239,11 +239,10 @@ const myCommand :Spk.Manifest.Command = (
     # Add more stack:
     #bash -c "ulimit -s 65500; exec node --stack-size=65500 main.js"
     #---------------------------------------------------------------------
-    (key = "NODE_OPTIONS", value = "--max_old_space_size=4096"),
     (key = "PATH", value = "/usr/local/bin:/usr/bin:/bin"),
     # Files root for the Node24/FerretDB build: attachments/, avatars/ and the
     # FerretDB SQLite db/ live under /var/files (start.js also exports this). See
-    # docs/Platforms/FOSS/Sandstorm/Meteor3/Migration.md.
+    # docs/Platforms/FOSS/Container/Sandstorm/Meteor3/Migration.md.
     (key = "WRITABLE_PATH", value = "/var/files"),
     (key = "RESULTS_PER_PAGE", value = ""),
     (key = "WITH_API", value = "true"),
@@ -271,6 +270,20 @@ const myCommand :Spk.Manifest.Command = (
     (key = "LDAP_ENABLE", value="false"),
     (key = "PASSWORD_LOGIN_ENABLED", value="true"),
     (key = "SANDSTORM", value="1"),
+    # A grain talks DDP over sockjs, and SAYS so rather than relying on
+    # ddp-server's default. That default IS sockjs today (Meteor.settings, then
+    # DDP_TRANSPORT, then DISABLE_SOCKJS, then sockjs), and the uws transport's
+    # `Npm.require('uWebSockets.js')` runs only inside the setup() of whichever
+    # transport was chosen - so a sockjs grain never loads that module. The .spk
+    # therefore does not SHIP it: releases/bundle-trim.mjs drops all 121 MB of
+    # it, twenty prebuilt binaries for OS/CPU/ABI combinations a grain is not,
+    # which is a large part of how the package fits Sandstorm's 1 GiB limit.
+    # Pinning the value here is what makes that safe - if this said uws, or if
+    # upstream changed its default, the grain would ask for a module that was
+    # left out and fail to boot. tests/bundleTrim.test.cjs ties the two together
+    # so they cannot drift apart. This environ is the app's ENTIRE environment,
+    # so there is nowhere else it could come from.
+    (key = "DDP_TRANSPORT", value="sockjs"),
     (key = "METEOR_SETTINGS", value = "{\"public\": {\"sandstorm\": true}}")
   ]
 );

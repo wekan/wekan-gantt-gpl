@@ -72,33 +72,39 @@ template(name="minicard")
                 i.fa.fa-check
                 span {{_ 'upload-completed'}}
 
+    //- Direct minicard title editing is disabled. Keep the former form here as
+      commented code in case it is revisited; the title is now a drag surface.
+      +inlinedForm(classNames="js-minicard-title-form")
+        +editMinicardTitleForm
+      else
     .minicard-title
-      if showDueComplete
-        if canModifyCard
-          a.minicard-complete-toggle.js-toggle-card-complete(title="{{#if getDueComplete}}{{_ 'card-mark-incomplete'}}{{else}}{{_ 'card-mark-complete'}}{{/if}}")
-            .materialCheckBox(class="{{#if getDueComplete}}is-checked{{/if}}")
-      if $eq 'prefix-with-full-path' currentBoard.presentParentTask
-        .parent-prefix
-          | {{ parentString ' > ' }}
-      if $eq 'prefix-with-parent' currentBoard.presentParentTask
-        .parent-prefix
-          | {{ parentCardName }}
-      if isLinkedBoard
-        a.js-linked-link
-          span.linked-icon
-            i.fa.fa-folder
-      else if isLinkedCard
-        a.js-linked-link
-          span.linked-icon
-            i.fa.fa-id-card
-      if getArchived
-        span.linked-icon.linked-archived
-          i.fa.fa-archive
-      +viewer
-        if showCardNumber
-          span.card-number
-            | ##{getCardNumber} &nbsp;
-        = getTitle
+        if showDueComplete
+          if canModifyCard
+            a.minicard-complete-toggle.js-toggle-card-complete(title="{{#if getDueComplete}}{{_ 'card-mark-incomplete'}}{{else}}{{_ 'card-mark-complete'}}{{/if}}")
+              .materialCheckBox(class="{{#if getDueComplete}}is-checked{{/if}}")
+        if $eq 'prefix-with-full-path' currentBoard.presentParentTask
+          .parent-prefix
+            | {{ parentString ' > ' }}
+        if $eq 'prefix-with-parent' currentBoard.presentParentTask
+          .parent-prefix
+            | {{ parentCardName }}
+        if isLinkedBoard
+          a.js-linked-link
+            span.linked-icon
+              i.fa.fa-folder
+        else if isLinkedCard
+          a.js-linked-link
+            span.linked-icon
+              i.fa.fa-id-card
+        if getArchived
+          span.linked-icon.linked-archived
+            i.fa.fa-archive
+        span.minicard-title-text
+          +viewer
+            if showCardNumber
+              span.card-number
+                | ##{getCardNumber} &nbsp;
+            = getTitle
     if showLabels
       if labels
         .minicard-labels(class="{{#if hiddenMinicardLabelText}}minicard-labels-no-text{{/if}}")
@@ -110,10 +116,10 @@ template(name="minicard")
             if hiddenMinicardLabelText
               .minicard-label(class="{{labelColorClass color}}" style="{{labelColorStyle color}}" title="{{name}}")
 
-    .minicard-custom-fields
-      each customFieldsWD
-        if definition.showOnCard
-          if trueValue
+    if showCustomFieldsOnMinicard
+      .minicard-custom-fields
+        each customFieldsWD
+          if definition.showOnCard
             .minicard-custom-field
               // If there is custom field label, show label at left,
               // and value at right
@@ -169,7 +175,7 @@ template(name="minicard")
 
     if showCreatorOnMinicard
       .minicard-creator
-        +userAvatar(userId=this.userId noRemove=true)
+        +userAvatar(userId=getCreatorId noRemove=true)
 
     if shouldShowChecklistAtMinicard
       each shouldShowChecklistAtMinicard
@@ -257,6 +263,16 @@ template(name="minicard")
       .parent-subtext
         | {{ parentCardName }}
 
+//- Direct minicard title editing is disabled so the title can drag the card or
+  drag-scroll the board. Former editor template:
+  template(name="editMinicardTitleForm")
+    textarea.minicard-title-editor.js-edit-minicard-title(rows='1' autofocus dir="auto")
+      = getTitle
+    .edit-controls.clearfix
+      button.primary.confirm.js-submit-edit-minicard-title(type="submit") {{_ 'save'}}
+      a.js-close-inlined-form(title="{{_ 'close'}}")
+        i.fa.fa-times-thin
+
 template(name="editCardSortOrderPopup")
   input.js-edit-card-sort-popup(type='text' autofocus value=sort dir="auto")
   .edit-controls.clearfix
@@ -265,6 +281,13 @@ template(name="editCardSortOrderPopup")
 template(name="minicardChecklist")
   .minicard-checklist
     .checklist-header
+      //- #1591: the same caret as on the opened card, and the same stored key,
+        so folding a checklist folds it in both places.
+      a.fa.checklist-collapse.js-collapse-checklist(
+        class="{{#if checklistCollapsed}}fa-caret-right{{else}}fa-caret-down{{/if}}"
+        title="{{#if checklistCollapsed}}{{_ 'expand-checklist'}}{{else}}{{_ 'collapse-checklist'}}{{/if}}"
+        role="button" tabindex="0"
+        aria-expanded="{{#if checklistCollapsed}}false{{else}}true{{/if}}")
       if canModifyCard
         +inlinedForm(classNames="js-edit-checklist-title" checklist=checklist)
           +editChecklistForm(checklist=checklist)
@@ -275,16 +298,16 @@ template(name="minicardChecklist")
       if canModifyCard
         a.checklist-menu.js-open-checklist-menu(title="{{_ 'checklistActionsPopup-title'}}")
           i.fa.fa-bars
-    .checklist-items.js-checklist-items
-      each visibleItems
-        +inlinedForm(classNames="js-edit-checklist-item" item=. checklist=checklist)
-          +editChecklistItemForm(type='item' item=. checklist=checklist)
+    unless checklistCollapsed
+      .checklist-items.js-checklist-items
+        each visibleItems
+          +inlinedForm(classNames="js-edit-checklist-item" item=. checklist=checklist)
+            +editChecklistItemForm(type='item' item=. checklist=checklist)
+          else
+            +checklistItemDetail(item=. checklist=checklist card=card)
+      if canModifyCard
+        +inlinedForm(autoclose=false classNames="js-add-checklist-item" checklist=checklist)
+          +addChecklistItemForm(checklist=checklist showNewlineBecomesNewChecklistItem=false)
         else
-          +checklistItemDetail(item=. checklist=checklist card=card)
-    if canModifyCard
-      +inlinedForm(autoclose=false classNames="js-add-checklist-item" checklist=checklist)
-        +addChecklistItemForm(checklist=checklist showNewlineBecomesNewChecklistItem=false)
-      else
-        a.add-checklist-item.js-open-inlined-form(title="{{_ 'add-checklist-item'}}")
-          i.fa.fa-plus
-
+          a.add-checklist-item.js-open-inlined-form(title="{{_ 'add-checklist-item'}}")
+            i.fa.fa-plus

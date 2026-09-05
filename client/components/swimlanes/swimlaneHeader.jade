@@ -55,6 +55,37 @@ template(name="editSwimlaneTitleForm")
 
 template(name="swimlaneActionPopup")
   if currentUser
+    //- Copy link, FIRST and above every permission check: a swimlane has an
+      address now, and copying it is reading, not editing - somebody who may
+      only read the board may still tell a colleague which swimlane they mean.
+      The rows below are all guarded because they change the board.
+      models/lib/boardItemUrl.js, docs/Features/Page/Board-Item-Links.md
+    ul.pop-over-list
+      li: a.js-copy-swimlane-link
+        i.fa.fa-link
+        span
+          | {{_ 'copy-link-to-clipboard'}}
+    span.copied-tooltip {{_ 'copied'}}
+    //- History of this swimlane and everything in it. Reading, like the link
+      above it, so it sits above the rows that change the board.
+    ul.pop-over-list
+      li: a.js-swimlane-history
+        i.fa.fa-history
+        span
+          | {{_ 'history'}}
+    hr
+    //- #1173: exporting a swimlane is the board export restricted to it, and
+      like copying a link it is READING - so it sits above the rows that change
+      the board and is not guarded by them.
+    ul.pop-over-list
+      li: a.js-export-swimlane
+        i.fa.fa-upload
+        span {{_ 'export'}}
+      if canImportIntoBoard
+        li: a.js-import-swimlane
+          i.fa.fa-download
+          span {{_ 'import'}}
+    hr
     unless currentUser.isCommentOnly
       unless currentUser.isReadOnly
         unless currentUser.isReadAssignedOnly

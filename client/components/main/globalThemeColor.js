@@ -3,7 +3,7 @@ import { Tracker } from 'meteor/tracker';
 import { Session } from 'meteor/session';
 import { ReactiveCache } from '/imports/reactiveCache';
 import { Template } from 'meteor/templating';
-import { activeAccent } from '/models/lib/themeAccents';
+import { activeAccent, activeFill } from '/models/lib/themeAccents';
 
 // #5778 + docs/Theme/Theme.md: apply the theme color to the whole UI (All Boards,
 // Search, Admin Panel, My Cards, etc.) via a `board-color-<name>` class on <body>,
@@ -28,7 +28,7 @@ import { activeAccent } from '/models/lib/themeAccents';
 // The class the CHROME (the two top bars, the board wrapper) must carry, from the
 // same order of themes the <body> autorun below applies:
 //   the user's own override, then the board's own colour on a board page, then the
-// site theme (docs/Design/Page/Theme.md). Registered as a Blaze helper so the
+// site theme (docs/Features/Page/Theme.md). Registered as a Blaze helper so the
 // templates read ONE answer instead of each re-deriving part of the order - which is
 // what left the top bars on the default colour while the buttons took the site theme.
 Template.registerHelper('themeColorClass', () => {
@@ -83,6 +83,16 @@ Meteor.startup(() => {
       } else {
         root.style.removeProperty('--theme-accent');
       }
+      // ...and what to PAINT a themed control with, which is not the same
+      // thing: --theme-accent is one colour, and a colour-slide theme's fill is
+      // a gradient. A control that reads only the accent came out flat while
+      // the header above it slid. models/lib/themeAccents.js
+      const fill = activeFill(color, custom);
+      if (fill) {
+        root.style.setProperty('--theme-accent-fill', fill);
+      } else {
+        root.style.removeProperty('--theme-accent-fill');
+      }
       if (c1) {
         document.body.classList.add('has-custom-theme-color');
       } else {
@@ -99,6 +109,20 @@ Meteor.startup(() => {
       // ignore
     }
   }
+
+  // Member Settings / Change color, beside "Default (no override)": paint the All
+  // Boards tiles in the theme's lighter colour instead of each board's own. It is
+  // a class on <body> rather than one on the list, because the preference is the
+  // user's and follows them to every page that shows board tiles.
+  Tracker.autorun(() => {
+    const user = Meteor.user();
+    const on = !!(user && user.profile && user.profile.allBoardsThemeTiles);
+    try {
+      document.body.classList.toggle('has-theme-board-tiles', on);
+    } catch (_) {
+      // document.body may not exist yet in exotic embeddings; ignore.
+    }
+  });
 
   Tracker.autorun(() => {
     const user = Meteor.user();

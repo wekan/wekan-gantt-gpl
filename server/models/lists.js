@@ -16,6 +16,7 @@ import { Random } from 'meteor/random';
 import { getFeatureFlags } from '/models/lib/featureFlags';
 import { softDeleteSet, restoreModifier, canPurge } from '/models/lib/softDelete';
 import { listsToUnbind } from '/models/lib/listUnbindRepair';
+import ChangeHistory from '/models/changeHistory';
 
 const hasBoardWriteAccess = (userId, board) => {
   if (!userId || !board) {
@@ -64,6 +65,22 @@ async function softRemoveList({ userId, list }) {
   } catch (e) {
     // best-effort: never fail the delete because history recording failed
   }
+  // The same change in the universal store (History.md §10.1). A lifecycle row
+  // is read in both directions: undoing it clears the delete mark, redoing it
+  // sets it again, which is what makes #1023 "undo a deleted list" work.
+  await ChangeHistory.record({
+    boardId: list.boardId,
+    swimlaneId: list.swimlaneId,
+    listId: list._id,
+    entityType: 'list',
+    entityId: list._id,
+    group: 'lifecycle',
+    changeType: 'removed',
+    previousContent: { deleted: false },
+    newContent: { deleted: true, deletedAt: at },
+    userId,
+    batchId,
+  });
   return batchId;
 }
 
@@ -123,6 +140,19 @@ Meteor.methods({
     } catch (e) {
       // best-effort
     }
+    await ChangeHistory.record({
+      boardId: list.boardId,
+      swimlaneId: list.swimlaneId,
+      listId: list._id,
+      entityType: 'list',
+      entityId: list._id,
+      group: 'lifecycle',
+      changeType: 'added',
+      previousContent: { deleted: true, deletedAt: list.deletedAt },
+      newContent: { deleted: false },
+      userId: this.userId,
+      batchId,
+    });
     return { restored: true };
   },
 
@@ -390,6 +420,20 @@ Meteor.methods({
       throw new Meteor.Error('not-authorized', 'Not a member of the target board.');
     }
 
+    // #6670: a move within the same board now BINDS the list to the chosen
+    // swimlane, so that swimlane has to be one of the target board's - binding a
+    // list to a swimlane on another board would hide it everywhere. An empty
+    // swimlaneId is the deliberate "make it board-wide again" case.
+    if (swimlaneId) {
+      const targetSwimlane = await ReactiveCache.getSwimlane(swimlaneId);
+      if (!targetSwimlane || targetSwimlane.boardId !== boardId) {
+        throw new Meteor.Error(
+          'swimlane-not-found',
+          'That swimlane is not on the board the list is being moved to.',
+        );
+      }
+    }
+
     list.title = desiredTitle;
     await list.move(boardId, swimlaneId);
 
@@ -617,7 +661,14 @@ Meteor.methods({
 
     // #6478: record the list move in the undo/redo position history (best-effort;
     // never fail the reorder if history recording throws).
-    if (typeof UserPositionHistory !== 'undefined') {
+    //
+    // No `typeof UserPositionHistory !== 'undefined'` guard here. It is imported
+    // at the top of this file, so the guard was always true and did nothing -
+    // but it is the shape that made undo inert in the first place, and copying
+    // this block into a file that does NOT import the collection silently turns
+    // the recording off again. That is exactly how the card path stayed dead
+    // after #6478 was declared fixed.
+    {
       try {
         await UserPositionHistory.trackChange({
           userId: this.userId,
@@ -631,6 +682,21 @@ Meteor.methods({
             swimlaneId: updateData.swimlaneId !== undefined ? updateData.swimlaneId : list.swimlaneId,
             sort: updateData.sort !== undefined ? updateData.sort : list.sort,
           },
+        });
+        await ChangeHistory.record({
+          boardId,
+          swimlaneId: updateData.swimlaneId !== undefined ? updateData.swimlaneId : list.swimlaneId,
+          listId,
+          entityType: 'list',
+          entityId: listId,
+          group: 'position',
+          changeType: 'moved',
+          previousContent: previousState,
+          newContent: {
+            sort: updateData.sort !== undefined ? updateData.sort : list.sort,
+            swimlaneId: updateData.swimlaneId !== undefined ? updateData.swimlaneId : list.swimlaneId,
+          },
+          userId: this.userId,
         });
       } catch (e) {
         console.warn('Failed to track list move in history:', e);
@@ -753,11 +819,32 @@ WebApp.handlers.get('/api/boards/:boardId/lists', async function(req, res) {
     const paramBoardId = req.params.boardId;
     await Authentication.checkBoardAccess(req.userId, paramBoardId);
 
+    // #5251: two dates per list, so a client can tell whether anything changed
+    // without fetching every card and diffing it.
+    //
+    //   modifiedAt      - the LIST document: title, sort, archived.
+    //   cardsModifiedAt - the newest change among the cards IN it: a card added,
+    //                     edited or archived. The list's own modifiedAt does not
+    //                     move for those, which is what made this unanswerable.
+    //
+    // One query for the board's cards and a reduction in memory, rather than a
+    // query per list. Archived cards are included on purpose: archiving a card is
+    // one of the changes the client is asking about.
+    const { newestCardChangeByList } = require('/models/lib/listActivityDates');
+    const lists = await ReactiveCache.getLists({ boardId: paramBoardId, archived: false });
+    const cards = await ReactiveCache.getCards(
+      { boardId: paramBoardId },
+      { fields: { listId: 1, modifiedAt: 1, dateLastActivity: 1 } },
+    );
+    const newestByList = newestCardChangeByList(cards);
+
     sendJsonResult(res, {
       code: 200,
-      data: (await ReactiveCache.getLists({ boardId: paramBoardId, archived: false })).map(doc => ({
+      data: lists.map(doc => ({
         _id: doc._id,
         title: doc.title,
+        modifiedAt: doc.modifiedAt || null,
+        cardsModifiedAt: newestByList.get(doc._id) || null,
       })),
     });
   } catch (error) {

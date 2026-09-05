@@ -1,0 +1,134 @@
+/* The one History view (docs/Features/Reports/History/History.md §7).
+   Left pane of contributors, then search + pagination + Restore above the table.
+   RTL mirrors the whole thing: the pane moves to the right, the controls
+   reverse, and the columns follow the document direction. */
+.history-table {
+  display: flex;
+  gap: 12px;
+  /* No min-width. A popup is 380px by default and below 801px every popup is a
+     full-screen sheet, so a floor here only made the panel overflow its own
+     shell - which is what it did: the search box was squeezed to 32px and the
+     table had to be scrolled sideways to read one row. The panel is instead
+     given real width by popup.css, which lists historyPopup with the export
+     panels; this file only has to survive being narrow. */
+  max-width: 100%;
+  /* Fill the panel. popup.css gives the History pop-over the height of the
+     window less the same 10px gutter it is inset by at the top, so the space
+     under it matches the space over it; this is what carries that height down
+     to the table instead of leaving it as blank panel. */
+  /* A flex item of the `.content` box above, not a percentage of it: at small
+     widths that box has no definite height to be a percentage of. `height:
+     100%` is kept as the fallback for the desktop panel, where it does. */
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+}
+.history-rtl { flex-direction: row-reverse; }
+
+.history-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  /* flex: it may shrink. At 380px this pane took a third of the panel and left
+     201px for a four-column table. */
+  flex: 0 1 auto;
+  min-width: 0;
+  /* No 60vh cap any more: the pane is as tall as the panel, and the panel is
+     as tall as the window. A viewport-relative maximum inside a box that is
+     already sized from the viewport just clips it early. */
+  min-height: 0;
+  overflow-y: auto;
+  border-inline-end: 1px solid rgba(128, 128, 128, 0.25);
+  padding-inline-end: 8px;
+}
+.history-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.history-nav-item.is-active { background: rgba(128, 128, 128, 0.18); }
+.history-nav-count { font-size: 0.85em; opacity: 0.7; }
+
+.history-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  /* A column, so the controls keep their height and the rows take everything
+     left over - which is what makes the table grow with the window instead of
+     the panel ending in blank space. */
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.history-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* Wrap rather than crush. Three controls on one row need about 380px between
+     them; narrower than that the search input was the one that gave way,
+     because it is the only one that can shrink. */
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+/* 14ch is about "search a card title" - short, but usable. Below it the row
+   above wraps and the input gets a line of its own instead. */
+.history-controls input { flex: 1 1 14ch; min-width: 14ch; }
+.history-pagination { display: flex; align-items: center; gap: 6px; }
+.history-pagination .is-disabled { opacity: 0.35; pointer-events: none; }
+
+/* The WRAPPER scrolls, not the table. `display: block` on a <table> is the
+   usual way to make one scroll and it is wrong here: it stops the cells sharing
+   column widths, so the header row and the rows beneath it no longer line up.
+   Putting the overflow on a plain div leaves the table a table. */
+.history-scroll {
+  /* Takes the rest of the column rather than a fixed slice of the viewport.
+     `min-height: 0` is what actually lets it shrink: a flex item's default
+     `min-height: auto` is its content, so without it a long table pushes the
+     panel taller instead of scrolling inside it. */
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+.history-rows {
+  /* As wide as the columns need, and never narrower than the panel.
+     `width: 100%` alone was wrong at both ends. At wide widths it overflowed by
+     exactly one pixel - WeKan's global `table, td, th` rule gives the table a
+     `border-inline-start: 1px` (those are the vertical lines between columns),
+     and this file's reset makes `*` content-box, so 100% sized the CONTENT and
+     that border was added outside it: columns summing to 993.047 in 993.047 of
+     space, with a 994.047 border box. One pixel of nothing, drawing a scrollbar
+     across the foot of the panel at every width the table actually fitted.
+     At narrow widths it was worse the other way: the table stayed at 100% while
+     its columns needed 436px, so they spilled out of it and the scroll box -
+     which measures the table's box, not its spill - offered no way to reach
+     them.
+     `max-content` sizes the table to what the columns actually want, `min-width`
+     keeps it filling the panel when they want less, and `border-box` puts that
+     1px border inside the 100% rather than after it. */
+  width: max-content;
+  min-width: 100%;
+  box-sizing: border-box;
+  border-collapse: collapse;
+}
+/* The header stays put while the rows scroll under it - with four columns and
+   25 rows a page, the column you are reading is otherwise off the top. */
+.history-rows thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: inherit;
+}
+.history-rows th,
+.history-rows td {
+  text-align: start;
+  padding: 4px 6px;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.2);
+  vertical-align: top;
+}
+.history-select { width: 28px; }
+.history-content { word-break: break-word; }
+.history-when { white-space: nowrap; opacity: 0.75; }
+.history-group { margin-inline-start: 6px; font-size: 0.85em; }
+.history-rows tr.is-selected { background: rgba(128, 128, 128, 0.12); }

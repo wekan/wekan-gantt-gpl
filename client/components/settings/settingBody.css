@@ -22,20 +22,53 @@
      the rest, so both stay visible without switching to a stacked layout. */
   flex-direction: row;
   flex-wrap: nowrap;
-  padding-top: 18px;
+  /* No padding above the ROW: it put grey between the header and the top of the
+     side menu, and the menu is meant to run from directly under the header to
+     the bottom of the window. The main body keeps its breathing room below -
+     see `.main-body` - because that IS content and content is not flush to a
+     bar. docs/Features/Page/Left-Menu.md */
+  padding-top: 0;
   height: 100%;
   gap: 18px;
+  /* The width grip is positioned against this ROW rather than against the menu:
+     the menu is its own scroll area, and a handle inside it would scroll away
+     with the entries. docs/Features/Page/Left-Menu.md */
+  position: relative;
+}
+
+/* ── How wide the left menu is ───────────────────────────────────────────────
+   ONE number, read by everything that needs it: the Admin Panel's menu, the All
+   Boards one (boardsList.css), and the grip that changes it, which has to sit
+   exactly on the menu's inner edge.
+   A reader who drags the grip gets it as an inline property on <html>, which
+   beats every rule here - so the declarations below are DEFAULTS, and the
+   breakpoints that want a different default (layouts.css) override the variable
+   instead of the width, or a dragged width would be overridden right back.
+   docs/Features/Page/Left-Menu.md */
+:root {
+  --wekan-left-menu-width: 260px;
 }
 .setting-content .content-body .side-menu {
   background-color: #f7f7f7;
+  /* Flush on three sides - it starts at the window's left edge, directly under
+     the header, and runs to the bottom - so it has a border and a corner only
+     on the side that faces the page. A rounded corner on a flush edge shows the
+     grey behind it, which is exactly the gap this removes. */
   border: 1px solid #f0f0f0;
-  border-radius: 7px;
-  width: min(250px, 32vw);
+  border-inline-start: 0;
+  border-top: 0;
+  border-bottom: 0;
+  border-radius: 0;
+  /* The shared width above, so this menu and the All Boards one are one menu at
+     one width - and so dragging either changes both. It replaces a
+     `min(250px, 32vw)` that only ever resolved to 250px above the 800px
+     breakpoint, below which the menu is full width anyway. */
+  width: var(--wekan-left-menu-width);
   /* Never let the menu be squeezed away on narrow windows; keep it visible. */
   flex: 0 0 auto;
   /* No X offset: an inset shadow offset sideways is a PHYSICAL direction and does
      not mirror under dir=rtl, so it shaded the wrong inner edge once the menu moved
-     to the right. See docs/Design/Page/Left-Menu.md. */
+     to the right. See docs/Features/Page/Left-Menu.md. */
   box-shadow: inset 0 -2px 4px rgba(0,0,0,0.05);
   /* A long menu SCROLLS inside the panel instead of spilling out of it.
      The menu is a flex item stretched to the row's height, so its box - and with it
@@ -60,7 +93,7 @@
    colour). One selected-thing look in both places.
    The colour is the per-user theme accent (Member Settings -> Change color sets
    --theme-accent on :root); the fallback is the WeKan header blue, so with no chosen
-   colour the menu matches the bar exactly. See docs/Design/Page/Left-Menu.md.
+   colour the menu matches the bar exactly. See docs/Features/Page/Left-Menu.md.
    `:hover` is listed too: `li:hover` below sets a white background at the SAME
    specificity as `li.active`, and being later in the file it would otherwise wash the
    selected entry back to white as soon as the pointer crossed it. */
@@ -88,7 +121,7 @@
    group. Neither is clickable, so both opt out of the hover treatment below -
    `li:hover` would otherwise light them up like a row you can open. The heading
    is quieter and smaller than an entry: it names the group, it is not one of them.
-   (The Problems page used to style its separator from adminReports.css with a
+   (The Problems page used to style its separator from adminProblems.css with a
    class the shared menu does not render, so the rule never applied at all.) */
 .setting-content .content-body .side-menu ul li.left-menu-separator {
   margin: 6px 4px;
@@ -101,7 +134,7 @@
 .setting-content .content-body .side-menu ul li.left-menu-heading {
   padding-block: 8px 4px;
   padding-inline-start: 18px;
-  font-size: 12px;
+  font-size: calc(12px * var(--wekan-ui-font-scale, 1));
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -123,12 +156,16 @@
   width: 95%;
 }
 .setting-content .content-body .side-menu ul li a span {
-  font-size: 13px;
+  font-size: calc(13px * var(--wekan-ui-font-scale, 1));
 }
 .setting-content .content-body .side-menu ul li a i {
   margin-inline-end: 20px;
 }
 .setting-content .content-body .main-body {
+  /* The row lost its top padding so the side menu can start under the header;
+     the content keeps it, because content is not meant to be flush against a
+     bar. */
+  padding-block-start: 18px;
   -webkit-user-select: text;
   -moz-user-select: text;
   -ms-user-select: text;
@@ -195,7 +232,7 @@
 
    So: fit the panel, wrap the text, and let a genuinely wide table scroll inside
    `.main-body`, which keeps `overflow-x: auto` for exactly that. The shared table
-   page (docs/Design/Page/Table.md) already does this for itself - width:100% +
+   page (docs/Features/Page/Table.md) already does this for itself - width:100% +
    table-layout:fixed with equal, wrapping columns - and is excluded so its equal
    columns are not turned back into content-sized ones. */
 .setting-content .content-body .main-body table:not(.table-page-table) {
@@ -223,6 +260,112 @@
 .setting-content .content-body .main-body {
   min-height: calc(100vh - 200px);
   padding-bottom: 50px;
+}
+
+/* Folded: the menu is GONE, not narrowed - no column and no strip - and the pane
+   beside it takes the whole width. See boardsList.css for the All Boards twin:
+   the two menus fold the same way because they are one menu. The way back is the
+   caret on the pane title below. */
+.setting-content .content-body .side-menu.collapsed {
+  display: none;
+}
+
+/* ── The caret that folds the left menu ──────────────────────────────────────
+   The same control a LIST has on a board: pointing DOWN while the menu is open
+   and RIGHT once it is folded. It is the collapse gesture WeKan already has, so
+   there is nothing new to learn.
+   It is styled here rather than beside one page's menu because it appears on
+   both pages and, folded, in a third place: the pane title.
+   docs/Features/Page/Left-Menu.md */
+.left-menu-collapse-indicator {
+  display: flex;
+  align-items: center;
+  /* The rows' own inline start, so the caret sits on the line the row icons
+     start on rather than hanging to their left. */
+  padding: 6px 10px 6px 18px;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  opacity: 0.7;
+}
+.left-menu-collapse-indicator:hover {
+  opacity: 1;
+}
+
+/* Folded, the caret rides at the inline start of the PANE TITLE and the two are
+   one target - the heading itself is what brings the menu back, so it is as easy
+   to hit as the menu was wide. It keeps the heading's own size and weight: it IS
+   the heading, with a caret in front of it, not a control that happens to sit
+   near one. The padding the caret carries inside the menu would push the title
+   off the line every other pane's title starts on, so it goes. */
+.admin-pane-title-folded > .left-menu-collapse-indicator {
+  display: inline-flex;
+  gap: 8px;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  opacity: 1;
+}
+.admin-pane-title-folded > .left-menu-collapse-indicator:hover .left-menu-collapse-title {
+  text-decoration: underline;
+}
+/* Keyboard focus has to be visible: the caret is an anchor with no href, which
+   the browser would otherwise leave with no ring of its own. */
+.left-menu-collapse-indicator:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* ── The grip that changes the menu's width ──────────────────────────────────
+   The same control the right board sidebar has on its own inner edge
+   (sidebar.css): a 6px strip straddling the edge, invisible until pointed at,
+   dragged to resize.
+   It sits on the menu's INNER edge - `inset-inline-start`, so under a
+   right-to-left language, where the whole row is mirrored and the menu is on
+   the right, the grip mirrors with it and needs no second rule.
+   It is positioned against the row/grid around the menu rather than inside the
+   menu, because the menu scrolls its own entries and a handle within it would
+   scroll away with them. Being absolutely positioned, it is neither a flex item
+   nor a grid item: it adds no column and no gap.
+   docs/Features/Page/Left-Menu.md */
+.left-menu-resize-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  inset-inline-start: calc(var(--wekan-left-menu-width) - 3px);
+  width: 6px;
+  cursor: col-resize;
+  z-index: 10;
+  background: transparent;
+  transition: background-color 0.2s ease;
+}
+.left-menu-resize-handle:hover {
+  background: rgba(0, 123, 255, 0.4);
+  box-shadow: 0 0 4px rgba(0, 123, 255, 0.3);
+}
+.left-menu-resize-handle:active {
+  background: rgba(0, 123, 255, 0.6);
+  box-shadow: 0 0 6px rgba(0, 123, 255, 0.4);
+}
+/* Folded there is no edge to drag, and on a phone the menu is full width above
+   the content, so a width would mean nothing there either. `.collapsed` is on
+   the menu in the Admin Panel and on the grid on All Boards - see the folding
+   rules above - so both are named. */
+.side-menu.collapsed ~ .left-menu-resize-handle,
+.boards-layout.collapsed > .left-menu-resize-handle {
+  display: none;
+}
+@media screen and (max-width: 800px) {
+  .left-menu-resize-handle {
+    display: none;
+  }
+}
+/* While dragging, the whole page shows the resize cursor and stops selecting
+   text - otherwise the drag selects every label it passes over. The same pair
+   `body.sidebar-resizing-active` uses for the right sidebar. */
+body.left-menu-resizing-active {
+  user-select: none;
+  cursor: col-resize;
 }
 
 /* The pane title: ONE size and weight for the heading at the top of every Admin
@@ -306,13 +449,45 @@
   margin: 0;
   padding: 0;
   background: transparent;
-  flex-shrink: 0;
+  /* Written as forms.css writes it: `flex-shrink: 0` and `flex: none` mean the
+     same thing here, and tests/adminCheckboxStyle.test.cjs compares the two
+     rules declaration by declaration - so saying it differently would read as a
+     difference between the Admin Panel's checkbox and everybody else's. */
+  flex: none;
   vertical-align: middle;
   cursor: pointer;
 }
 
 /* …and exactly .materialCheckBox.is-checked: the square becomes the tick, which is
    what the transition above animates. */
+/* #6465: THE FOCUS RING MUST NOT BE DRAWN ON THE ROTATED BOX.
+   The checked state below turns the square into a tick by making two borders
+   transparent and rotating the element 40deg. A browser draws its focus ring
+   around the element as it is - rotated - so a checkbox that is both checked and
+   focused (which is exactly what a checkbox you just clicked is) comes out as a
+   blue DIAMOND sitting where the tick should be. That is the glitch reported on
+   the Problems page.
+
+   The ring is not simply removed: keyboard users need to see where they are. It
+   moves to the row that CONTAINS the checkbox, which is not rotated - every one
+   of these lives inside a label (problemsSummary.jade: `label.admin-problem-item
+   > input.js-problem-check`) - so the indicator is a normal rectangle around the
+   whole row, which is easier to see than a 13px box anyway.
+
+   `:focus-visible` rather than `:focus`, so clicking with a mouse does not leave
+   a ring behind; `:focus-within` is the fallback where :has() is not supported,
+   and lands on the same element. */
+.setting-content input[type="checkbox"]:focus,
+.setting-content input[type="checkbox"]:focus-visible {
+  outline: none;
+}
+
+.setting-content label:has(> input[type="checkbox"]:focus-visible) {
+  outline: 2px solid #2980b9;
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
 .setting-content input[type="checkbox"]:checked {
   top: -4px;
   inset-inline-start: -3px;

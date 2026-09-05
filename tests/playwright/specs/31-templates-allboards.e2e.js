@@ -26,7 +26,7 @@
 
 const { test, expect } = require('../fixtures');
 const db = require('../helpers/db');
-const { loginWithToken } = require('../helpers/auth');
+const { loginWithToken, navigateInApp } = require('../helpers/auth');
 
 const BASE_URL = process.env.WEKAN_BASE_URL || 'http://localhost:3000';
 
@@ -51,6 +51,58 @@ async function boardListNames(page) {
 }
 
 test.describe('#2339 #5850 All Boards / Templates redesign', () => {
+  test('#6628: Table view can open board creation where Lists can', async ({ page, user }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem('wekan-all-boards-view', 'table');
+    });
+    await loginWithToken(page, user.id, user.token);
+    await navigateInApp(page, '/allboards/remaining');
+
+    const add = page.locator('.all-boards-table-actions .js-add-board');
+    await expect(add).toBeVisible({ timeout: 15_000 });
+    await add.click();
+    await expect(page.locator('.pop-over form').first()).toBeVisible({
+      timeout: 10_000,
+    });
+  });
+
+  test('#6628 negative: Table view does not create boards in Archive or Home', async ({ page, user }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem('wekan-all-boards-view', 'table');
+    });
+    await loginWithToken(page, user.id, user.token);
+    for (const section of ['archive', 'home']) {
+      await navigateInApp(page, `/allboards/${section}`);
+      await expect(page.locator('.boards-right-grid')).toBeVisible({
+        timeout: 15_000,
+      });
+      await expect(
+        page.locator('.all-boards-table-actions .js-add-board'),
+      ).toHaveCount(0);
+    }
+  });
+
+  test('#6643: Archive shows an archived subtasks helper board', async ({ page, user }) => {
+    const helper = db.seedBoard({
+      ownerId: user.id,
+      title: '^Subtasks for archived card^',
+      cardTitlesPerList: [[]],
+    });
+    db.updateOne('boards', { _id: helper.boardId }, {
+      $set: { archived: true, archivedAt: new Date() },
+    });
+
+    await page.addInitScript(() => {
+      window.localStorage.setItem('wekan-all-boards-view', 'lists');
+    });
+    await loginWithToken(page, user.id, user.token);
+    await navigateInApp(page, '/allboards/archive');
+
+    await expect
+      .poll(() => boardListNames(page), { timeout: 15_000 })
+      .toContain('^Subtasks for archived card^');
+  });
+
   test('ensureTemplatesBoard creates the templates container and is idempotent', async ({ page, user }) => {
     let templatesBoardId;
     try {
@@ -113,7 +165,7 @@ test.describe('#2339 #5850 All Boards / Templates redesign', () => {
     db.updateOne('boards', { _id: template.boardId }, { $set: { type: 'template-container' } });
     try {
       await loginWithToken(page, user.id, user.token);
-      await page.goto(`${BASE_URL}/templates`, { waitUntil: 'commit' });
+      await navigateInApp(page, '/templates');
 
       await expect
         .poll(() => boardListNames(page), { timeout: 15000 })
@@ -133,7 +185,7 @@ test.describe('#2339 #5850 All Boards / Templates redesign', () => {
     db.updateOne('boards', { _id: template.boardId }, { $set: { type: 'template-container' } });
     try {
       await loginWithToken(page, user.id, user.token);
-      await page.goto(`${BASE_URL}/remaining`, { waitUntil: 'commit' });
+      await navigateInApp(page, '/remaining');
 
       await expect
         .poll(() => boardListNames(page), { timeout: 15000 })
@@ -145,7 +197,7 @@ test.describe('#2339 #5850 All Boards / Templates redesign', () => {
     }
   });
 
-  test('member-menu Templates link navigates to /templates', async ({ page, user }) => {
+  test('member-menu Templates link navigates to the Templates section', async ({ page, user }) => {
     await loginWithToken(page, user.id, user.token);
 
     // Open the member (user) menu in the header.
@@ -154,7 +206,11 @@ test.describe('#2339 #5850 All Boards / Templates redesign', () => {
     // Click the Templates entry (an anchor whose href is the /templates route).
     await page.locator('.pop-over a[href$="/templates"]').first().click();
 
-    await expect.poll(() => new URL(page.url()).pathname, { timeout: 15000 }).toBe('/templates');
+    // `/templates` redirects: every All Boards section has an address of its
+    // own now and Templates is `/allboards/templates`, so the old bare path
+    // lands there rather than staying put. docs/Features/Page/All-Boards-URLs.md
+    await expect.poll(() => new URL(page.url()).pathname, { timeout: 15000 })
+      .toBe('/allboards/templates');
   });
 
   test('opening /templates does NOT auto-create an empty Template Container', async ({ page, user }) => {
@@ -164,7 +220,7 @@ test.describe('#2339 #5850 All Boards / Templates redesign', () => {
       expect(before.profile && before.profile.templatesBoardId).toBeFalsy();
 
       await loginWithToken(page, user.id, user.token);
-      await page.goto(`${BASE_URL}/templates`, { waitUntil: 'commit' });
+      await navigateInApp(page, '/templates');
 
       // Wait until the All Boards grid has settled (the "Add board" entry is the
       // template-container add button in this sub-view) so any (removed) autorun
@@ -297,6 +353,92 @@ test.describe('#2339 #5850 All Boards / Templates redesign', () => {
         db.deleteOne('boards', { _id: boardId });
       }
       db.deleteMany('boards', { type: 'template-container', 'members.userId': user.id });
+    }
+  });
+
+  test('#3070 top bar lists current board templates and copies custom fields', async ({ page, user }) => {
+    const seeded = db.seedTemplatesBoard({
+      ownerId: user.id,
+      templateTitles: ['Deleted Template', 'Std Template'],
+    });
+    const [deletedTemplate, stdTemplate] = seeded.templateBoards;
+    const customFieldId = db.uid('customfield');
+    const newTitle = `Board from Std ${db.uid('copy')}`;
+    let copiedBoardId;
+
+    db.updateOne(
+      'cards',
+      { _id: deletedTemplate.cardId },
+      { $set: { archived: true } },
+    );
+    db.insertOne('customFields', {
+      _id: customFieldId,
+      boardIds: [stdTemplate.linkedBoardId],
+      name: 'Template priority',
+      type: 'text',
+      settings: {},
+      showOnCard: true,
+      automaticallyOnCard: false,
+      alwaysOnCard: false,
+      showLabelOnMiniCard: false,
+      showSumAtTopOfList: false,
+      createdAt: new Date(),
+      modifiedAt: new Date(),
+    });
+
+    try {
+      await loginWithToken(page, user.id, user.token);
+      await page.goto(BASE_URL, { waitUntil: 'networkidle' });
+      await page.waitForFunction(
+        expected =>
+          Meteor.user()?.profile?.templatesBoardId === expected,
+        seeded.containerId,
+      );
+
+      await page.locator('.js-create-board').click();
+      await page.locator('.js-pop-over .js-board-template').click();
+      const picker = page.locator('.js-pop-over');
+      await expect(picker.locator('.js-minicard')).toHaveCount(1, {
+        timeout: 15_000,
+      });
+      await expect(picker).toContainText('Std Template');
+      await expect(picker).not.toContainText('Deleted Template');
+      await expect(picker).not.toContainText('Alpha Card');
+
+      await picker.locator('.js-element-title').fill(newTitle);
+      await picker.locator('.js-minicard').click();
+
+      await expect.poll(() => {
+        const copied = db.findOne('boards', { title: newTitle, type: 'board' });
+        copiedBoardId = copied?._id;
+        return copiedBoardId || null;
+      }, { timeout: 15_000 }).not.toBeNull();
+      await expect.poll(() =>
+        db.findOne('customFields', {
+          name: 'Template priority',
+          boardIds: copiedBoardId,
+        })?._id || null,
+      ).not.toBeNull();
+    } finally {
+      if (copiedBoardId) {
+        db.cleanup({ boardIds: [copiedBoardId] });
+        db.deleteMany('customFields', { boardIds: copiedBoardId });
+      }
+      db.deleteMany('customFields', {
+        boardIds: { $in: [stdTemplate.linkedBoardId] },
+      });
+      db.cleanup({ boardIds: [seeded.containerId] });
+      db.deleteMany('boards', {
+        _id: { $in: seeded.templateBoards.map(template => template.linkedBoardId) },
+      });
+      db.updateOne('users', { _id: user.id }, {
+        $unset: {
+          'profile.templatesBoardId': '',
+          'profile.cardTemplatesSwimlaneId': '',
+          'profile.listTemplatesSwimlaneId': '',
+          'profile.boardTemplatesSwimlaneId': '',
+        },
+      });
     }
   });
 });

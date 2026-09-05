@@ -13,7 +13,7 @@
   position: absolute;
   inset-inline-end: 0px;
   top: 0px;
-  font-size: 25px;
+  font-size: calc(25px * var(--wekan-ui-font-scale, 1));
   padding: 10px;
 }
 .sidebar-xmark:hover {
@@ -51,6 +51,18 @@
 .sidebar .sidebar-content h3 i.fa {
   margin-inline-end: 3px;
 }
+/* A sidebar heading that folds its section - Members, Labels - is a button:
+   the caret in front of it says which way it is, and it looks and behaves like
+   something to click. The same control an opened card's sections have.
+   client/lib/foldState.js */
+.sidebar .sidebar-content h3.js-toggle-fold {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  cursor: pointer;
+  user-select: none;
+}
+
 .sidebar .sidebar-content hr {
   margin: 13px 0;
 }
@@ -79,10 +91,30 @@
   flex-shrink: 0;
 }
 
+/* The Custom Fields form is a POP-OVER, and a pop-over renders in the global
+   popup container - not inside `.sidebar`. So its checkbox rows never got the
+   `align-items: center` above, and sat exactly as #6465 described before that
+   fix: the box on one line and its label on another, because `.flex` on its own
+   is only `display: flex`. Beside the Admin Panel / Announcement checkbox, which
+   is the same `a.flex > .materialCheckBox + span` markup inside a page that does
+   align it, this is what "not the animated one" looks like - the morph is there,
+   but it plays on a box that is not next to its own label.
+
+   The rows are aligned here, and the box's own states are spelled out below, so
+   the square, the green tick and the `transition: 0.2s` between them are the
+   announcement's - whichever stylesheet a pop-over happens to inherit.
+   client/components/sidebar/sidebarCustomFields.jade */
+.pop-over[data-popup='createCustomFieldPopup'] a.flex,
+.pop-over[data-popup='editCustomFieldPopup'] a.flex {
+  align-items: center;
+}
+
 /* Use checklist-style green checkboxes for all sidebar checkboxes */
 .sidebar .materialCheckBox.is-checked,
 .boardCardSettingsPopup .materialCheckBox.is-checked,
-.boardSubtaskSettingsPopup .materialCheckBox.is-checked {
+.boardSubtaskSettingsPopup .materialCheckBox.is-checked,
+.pop-over[data-popup='createCustomFieldPopup'] .materialCheckBox.is-checked,
+.pop-over[data-popup='editCustomFieldPopup'] .materialCheckBox.is-checked {
   top: -4px !important;
   inset-inline-start: -3px !important;
   width: 7px !important;
@@ -98,22 +130,25 @@
   transform-origin: 100% 100% !important;
 }
 
-/* Card Settings 3-column grid layout */
-.card-settings-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 2fr;
-  gap: 10px;
-  margin-bottom: 10px;
-  /* Keep the "Show on Card / Show on Minicard / Description" titles visible
-     while the rows below scroll (the popup scrolls in .pop-over .content-wrapper). */
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  background: #fff;
-  padding: 5px 0;
-  border-bottom: 2px solid #ddd;
+/* …and the square it morphs FROM. The checked half above is spelled out for
+   these popups; without the unchecked half the transition would run between a
+   box some other rule sized and the tick, which is the animation looking wrong
+   rather than missing. Same 13px square, same 0.2s, as forms.css draws it. */
+.pop-over[data-popup='createCustomFieldPopup'] .materialCheckBox,
+.pop-over[data-popup='editCustomFieldPopup'] .materialCheckBox {
+  position: relative;
+  width: 13px;
+  height: 13px;
+  border: 2px solid #5a5a5a;
+  border-radius: 1px;
+  transition: 0.2s;
+  margin: 0;
+  flex-shrink: 0;
+  cursor: pointer;
 }
 
+/* Card Settings 3-column row layout. There is no heading row above these: see
+   the note on boardCardSettingsPopup in sidebar.jade. */
 .card-settings-row {
   display: grid;
   grid-template-columns: 1fr 1fr 2fr;
@@ -121,6 +156,58 @@
   align-items: center;
   padding: 5px 0;
   border-bottom: 1px solid #eee;
+}
+
+/* One side of the same table. Card menu / Show on Card and Minicard menu /
+   Show on Minicard open this popup asking for one column; the other one is
+   hidden here, so there is still ONE list of settings and one set of handlers.
+   A hidden grid item takes no track, so the two that remain fill the two
+   columns declared below. client/components/sidebar/sidebar.jade */
+.board-card-settings.show-card-only .card-settings-row,
+.board-card-settings.show-minicard-only .card-settings-row {
+  grid-template-columns: 1fr 2fr;
+}
+
+/* Two dozen settings in one column is a list nobody sees the end of: "Show on
+   Card" opened, and the answer to "is Description on?" was somewhere below the
+   fold. With one column of checkboxes hidden the rows are half as wide as they
+   were, so the width the popup already has is enough for two or three of them
+   side by side - and popup.css gives these two popups more of it.
+
+   The FORM becomes the grid and each ROW is one of its cells; the row keeps its
+   own "checkbox | name" grid inside that cell. `auto-fill` rather than a fixed
+   count, so a narrow window still gets one column and a wide one gets four
+   without a media query per size. */
+@media screen and (min-width: 801px) {
+  .board-card-settings.show-card-only,
+  .board-card-settings.show-minicard-only {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    column-gap: 18px;
+    align-items: start;
+  }
+}
+
+/* "Labels text" is the user's own setting, not the board's: it shows in the
+   minicard's own view and nowhere else - not in Board Settings / Card Settings,
+   where every other row is board-wide, and not in Show on Card, which is about
+   the opened card. And when the reader is not a board admin, it is the only row
+   they may change, so it is the only row they get. */
+.board-card-settings .card-settings-row-personal {
+  display: none;
+}
+
+.board-card-settings.show-minicard-only .card-settings-row-personal {
+  display: grid;
+}
+
+.board-card-settings.show-personal-only .card-settings-row:not(.card-settings-row-personal) {
+  display: none;
+}
+
+.board-card-settings.show-card-only .card-settings-row > .card-settings-column:nth-child(2),
+.board-card-settings.show-minicard-only .card-settings-row > .card-settings-column:nth-child(1) {
+  display: none;
 }
 
 .card-settings-column {
@@ -135,7 +222,7 @@
 
 .card-settings-column h4 {
   margin: 0;
-  font-size: 12px;
+  font-size: calc(12px * var(--wekan-ui-font-scale, 1));
   font-weight: bold;
   text-align: center;
 }
@@ -278,7 +365,7 @@ body.sidebar-resizing-active {
 }
 .sidebar-tongue i.fa {
   padding: 3px 9px;
-  font-size: 24px;
+  font-size: calc(24px * var(--wekan-ui-font-scale, 1));
   transition: transform 0.5s;
 }
 .sidebar-accessibility {
@@ -380,18 +467,18 @@ body.sidebar-resizing-active {
      small text is not tiny — keep them close to the board's text size so board
      and sidebar read at one consistent size. */
   .board-sidebar.sidebar .sidebar-content {
-    font-size: 14px;
+    font-size: calc(14px * var(--wekan-ui-font-scale, 1));
   }
   .board-sidebar.sidebar .sidebar-content h2,
   .board-sidebar.sidebar .sidebar-content h3 {
-    font-size: 16px;
+    font-size: calc(16px * var(--wekan-ui-font-scale, 1));
   }
   .board-sidebar.sidebar .sidebar-content ul.sidebar-list li > a,
   .board-sidebar.sidebar .sidebar-content .card-label,
   .board-sidebar.sidebar .sidebar-content .card-label .card-label-name,
   .board-sidebar.sidebar .sidebar-content p,
   .board-sidebar.sidebar .sidebar-content span {
-    font-size: 14px;
+    font-size: calc(14px * var(--wekan-ui-font-scale, 1));
   }
   .board-sidebar .sidebar-content .hide-btn {
     width: 40px;
@@ -411,7 +498,7 @@ body.sidebar-resizing-active {
   }
   .board-sidebar .sidebar-content .hide-btn i.fa {
     padding: 8px 16px;
-    font-size: 24px;
+    font-size: calc(24px * var(--wekan-ui-font-scale, 1));
     font-weight: bold;
   }
   .sidebar-tongue {
@@ -471,6 +558,30 @@ body.sidebar-resizing-active {
   margin-inline-start: 40px;
 }
 
+/* Save and Unset, side by side under the Background Image URL - the two things
+   to do with the address above them. Unset used to be five <br>s and a rule
+   below its Save. `.buttonsContainer` is already `display: flex` (peopleBody.css
+   styles it for every popup that uses it); this gives the pair a gap and lets
+   them share the width instead of one of them being `.wide`. */
+.board-background-image-buttons {
+  gap: 8px;
+  align-items: stretch;
+  margin-bottom: 8px;
+}
+
+.board-background-image-buttons input[type="submit"],
+.board-background-image-buttons button {
+  flex: 1 1 0;
+  margin: 0;
+}
+
+/* The upload button under them, full width: it is the same question - what
+   picture goes behind this board - answered from this machine rather than from
+   a URL. client/components/sidebar/sidebar.jade */
+.board-background-upload {
+  margin-top: 8px;
+}
+
 /* Board backgrounds management popup */
 .board-backgrounds-manage .board-backgrounds-grid {
   display: flex;
@@ -486,6 +597,12 @@ body.sidebar-resizing-active {
 .board-bg-item.is-active {
   border-color: #3cb500;
 }
+/* The picture is the button that applies it, so it says so. */
+.board-bg-thumb,
+.board-bg-name {
+  cursor: pointer;
+}
+
 .board-bg-thumb {
   height: 80px;
   background-size: cover;
@@ -502,6 +619,18 @@ body.sidebar-resizing-active {
   border-radius: 50%;
   padding: 2px;
 }
+/* The picture's name under its thumbnail. A grid of thumbnails with no names
+   cannot be read: two photos of the same holiday look the same at 80px, and
+   after an upload there was nothing that said WHICH of them just arrived. */
+.board-bg-name {
+  padding: 2px 2px 0;
+  font-size: calc(12px * var(--wekan-ui-font-scale, 1));
+  color: #4d4d4d;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .board-bg-actions {
   display: flex;
   justify-content: space-around;
@@ -518,3 +647,21 @@ body.sidebar-resizing-active {
   display: inline-block;
   margin-bottom: 8px;
 }
+
+/* Subheadings inside a pop-over list - "Dependencies", "CSV", "JSON" in the
+   board's Export menu. The list under one of them is a family of the same
+   thing, and naming the family once is what lets the entries be "(,)", "(;)"
+   and "TSV" rather than "Export / CSV (,)" three times over. */
+.pop-over-list-subheading {
+  margin: 10px 0 2px 0;
+  padding: 0 12px;
+  font-size: calc(12px * var(--wekan-ui-font-scale, 1));
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.65;
+}
+.pop-over-list-subheading + .pop-over-list {
+  margin-top: 0;
+}
+

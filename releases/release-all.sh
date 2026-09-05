@@ -1,4 +1,5 @@
 #!/bin/bash
+if [ -n "${ZSH_VERSION:-}" ]; then exec /bin/bash "$0" "$@"; fi
 
 # WeKan REMOTE release script — pushes your CHANGELOG.md edit and triggers the
 # GitHub Actions release workflow, which does EVERYTHING else remotely.
@@ -61,7 +62,10 @@ wekan_dec() { printf '%d.%02d' $(( $1 / 100 )) $(( $1 % 100 )); }
 
 # The RELEASED versions from CHANGELOG.md ("# vNN.MM <date> ..." headings), newest
 # first. The "# Upcoming ..." heading has no version, so it is skipped.
-mapfile -t RELEASED < <(grep -oE '^# v[0-9]+\.[0-9]+ ' CHANGELOG.md | grep -oE '[0-9]+\.[0-9]+')
+# Portable read loop instead of `mapfile` (a bash 4+ builtin absent from the
+# bash 3.2 that macOS ships), so this trigger runs on a stock Mac too.
+RELEASED=()
+while IFS= read -r line; do RELEASED+=("$line"); done < <(grep -oE '^# v[0-9]+\.[0-9]+ ' CHANGELOG.md | grep -oE '[0-9]+\.[0-9]+')
 
 # ── Repoint stale commit links in the section about to be released ───────────
 # A rebase / amend / squash between writing a CHANGELOG bullet and releasing it
@@ -99,6 +103,14 @@ elif grep -qE '^# Upcoming WeKan' CHANGELOG.md; then
   echo "--- Renaming '# Upcoming WeKan ® release' -> '# v$NEW $DATE WeKan ® release' ---"
   _tmp="$(mktemp)"
   sed "s|^# Upcoming WeKan ® release.*|# v$NEW $DATE WeKan ® release|" CHANGELOG.md > "$_tmp" && mv "$_tmp" CHANGELOG.md
+
+  # AND OPEN THE NEXT ONE, while it is still unambiguous which release is which.
+  # Releases here are frequent and work continues straight after one, so the
+  # rename above has just taken away the section that work belongs in. Twice that
+  # has put entries inside a section that was already published; see the script's
+  # own header for what repairing that costs.
+  echo "--- Opening the next '# Upcoming WeKan ® release' ---"
+  node "$(dirname "$0")/changelog-open-next.mjs" "$NEW" CHANGELOG.md
 else
   NEW="${RELEASED[0]:-}"
   OLD="${RELEASED[1]:-}"

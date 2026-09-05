@@ -15,11 +15,16 @@
 
 const { test, expect } = require('../fixtures');
 const db = require('../helpers/db');
-const { loginWithToken } = require('../helpers/auth');
+const { loginWithToken, waitForMeteor } = require('../helpers/auth');
 
 const BASE_URL = process.env.WEKAN_BASE_URL || 'http://localhost:3000';
 
-function callMethod(page, name, ...args) {
+async function callMethod(page, name, ...args) {
+  // `networkidle` says the network went quiet, NOT that the client bundle has
+  // finished executing - under the three-browser parallel run Firefox reached
+  // here with `Meteor` still undefined and failed with "Meteor is not defined".
+  // waitForMeteor is idempotent and returns immediately once it is up.
+  await waitForMeteor(page);
   return page.evaluate(
     ({ name, args }) =>
       new Promise(resolve => {
@@ -80,9 +85,17 @@ test.describe('#5799 All Boards sort / search / pagination', () => {
           return names.join('|');
         }, { timeout: 15_000 })
         .toBe('Apple Board|Mango Board|Zebra Board');
+      await expect.poll(() =>
+        db.findOne('users', { _id: user.id })?.profile?.allBoardsSortBy,
+      ).toBe('title-asc');
 
-      // Switch to Title Z→A.
+      // Reopening the popup reflects the locally active choice even if the
+      // current-user publication has not delivered the profile update yet.
       await page.locator('.js-open-boards-sort').click();
+      await expect(page.locator('a.js-boards-sort[data-sort="title-asc"]'))
+        .toHaveClass(/active/);
+
+      // Switch to Title Z→A from that verified, still-open popup.
       await page.locator('a.js-boards-sort[data-sort="title-desc"]').click();
       await expect
         .poll(async () => {
@@ -98,7 +111,14 @@ test.describe('#5799 All Boards sort / search / pagination', () => {
       await expect.poll(() => boardNames(page), { timeout: 15_000 })
         .toEqual(expect.arrayContaining(['Apple Board']));
 
+      // Search is a VIEW of the All Boards right sidebar now, opened by the
+      // Search button in the first top header bar - it was a field in a second
+      // header bar that no longer exists. docs/Features/Page/Search.md
       const search = page.locator('.js-board-search-input');
+      if (!(await search.isVisible().catch(() => false))) {
+        await page.locator('.js-all-boards-sidebar-search').first().click();
+        await search.waitFor({ timeout: 15_000 });
+      }
 
       // Positive: partial, case-insensitive match narrows to one board.
       await search.fill('apple');

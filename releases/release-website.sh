@@ -22,21 +22,18 @@ sedi() {
   fi
 }
 
-# The website lives in the separate wekan.fi repo at ../w/wekan.fi (a sibling of
-# the wekan repo). The remote (GitHub Actions) flow sets WEBDIR and WEKANREPODIR
-# explicitly to point at the repos it checked out; otherwise detect the common
-# local sibling layouts.
+# The website lives in the separate wekan.fi repo at .tools/wekan.fi. The remote
+# (GitHub Actions) flow sets WEBDIR and WEKANREPODIR explicitly to point at the
+# repos it checked out; otherwise use the repository-local companion checkout.
 if [ -n "${WEBDIR:-}" ] && [ -n "${WEKANREPODIR:-}" ]; then
   echo "Using WEBDIR=$WEBDIR and WEKANREPODIR=$WEKANREPODIR from environment."
-elif [ -d "$HOME/repos/w/wekan.fi" ]; then
-  WEBDIR="$HOME/repos/w/wekan.fi"
-  WEKANREPODIR="$HOME/repos/wekan"
-elif [ -d "$HOME/Documents/repos/w/wekan.fi" ]; then
-  WEBDIR="$HOME/Documents/repos/w/wekan.fi"
-  WEKANREPODIR="$HOME/Documents/repos/wekan"
 else
-  echo "Website directory (../w/wekan.fi) not found, ignoring."
-  exit 0
+  WEKANREPODIR="$(cd "$(dirname "$0")/.." && pwd)"
+  WEBDIR="$WEKANREPODIR/.tools/wekan.fi"
+  if [ ! -d "$WEBDIR" ]; then
+    echo "Website directory ($WEBDIR) not found, ignoring."
+    exit 0
+  fi
 fi
 #git pull
 # Update MongoDB version string in $WEBDIR/install/index.html.
@@ -50,6 +47,11 @@ sedi "s|MongoDB 7[^,]*,|MongoDB 7.x or 6.x,|g" $WEBDIR/install/index.html
 METEOR_VERSION=$(grep -o 'METEOR@[^ "\\]*' $WEKANREPODIR/.meteor/release | head -1 | sed 's|^METEOR@||')
 NODE_VERSION=$(grep -o 'NODE_VERSION=[^ \\]*' $WEKANREPODIR/Dockerfile | head -1 | cut -d= -f2 | tr -d '"')
 NPM_VERSION=$(grep -o 'NPM_VERSION=[^ \\]*' $WEKANREPODIR/Dockerfile | head -1 | cut -d= -f2 | tr -d '"')
+
+# version.txt is the one endpoint used by WeKan's Admin Panel. The install page
+# carries the identical five-line block for people, from the same generator.
+bash "$WEKANREPODIR/releases/update-website-version-info.sh" \
+  "$WEBDIR" "$WEKANREPODIR" "$NEW"
 
 sedi "s|<span id=\"meteor-version\">[^<]*</span>|<span id=\"meteor-version\">$METEOR_VERSION</span>|g" $WEBDIR/install/index.html
 sedi "s|<span id=\"node-version\">[^<]*</span>|<span id=\"node-version\">$NODE_VERSION</span>|g" $WEBDIR/install/index.html
@@ -95,18 +97,18 @@ sedi -E "s#node-v[0-9]+\.[0-9]+\.[0-9]+-linux-#node-${NODE_VERSION}-linux-#g" $W
 #   A second expression handles the rare case of the version at end of line.
 sedi "s|v$OLD\([^0-9]\)|v$NEW\1|g; s|v$OLD$|v$NEW|g" $WEBDIR/api/index.html
 
-# Create directory for the new API version under ../w/wekan.fi/api/v$NEW, copy
+# Create directory for the new API version under .tools/wekan.fi/api/v$NEW, copy
 # the freshly built docs from public/api (wekan.html + wekan.yml), and rename
 # the HTML entry point to index.html:
-#   ../w/wekan.fi/api/v$NEW/index.html   (from public/api/wekan.html)
-#   ../w/wekan.fi/api/v$NEW/wekan.yml    (from public/api/wekan.yml)
+#   .tools/wekan.fi/api/v$NEW/index.html   (from public/api/wekan.html)
+#   .tools/wekan.fi/api/v$NEW/wekan.yml    (from public/api/wekan.yml)
 mkdir -p "$WEBDIR/api/v$NEW"
 cp "$WEKANREPODIR/public/api/"* "$WEBDIR/api/v$NEW/"
 mv "$WEBDIR/api/v$NEW/wekan.html" "$WEBDIR/api/v$NEW/index.html"
 
 # Commit and push website changes live. Enabled in the remote (GitHub Actions)
 # flow via RELEASE_PUSH_WEBSITE=1; the manual flow leaves publishing to the
-# maintainer (who reviews and pushes ../w/wekan.fi by hand).
+# maintainer (who reviews and pushes .tools/wekan.fi by hand).
 if [ "${RELEASE_PUSH_WEBSITE:-0}" = "1" ]; then
   (
     cd "$WEBDIR"

@@ -1,6 +1,7 @@
 import { Meteor } from 'meteor/meteor';
 import { WebApp } from 'meteor/webapp';
 import { ReactiveCache } from '/imports/reactiveCache';
+import { safeSelector } from '/server/lib/selectorGuard';
 import Team from '/models/team';
 import { ensureIndex } from '/server/lib/mongoStartup';
 import { Authentication } from '/server/authentication';
@@ -142,9 +143,14 @@ Meteor.methods({
       // #4737/#5850: actually ACT on the flag. Turning it on adds this team's
       // members to the boards that list the team (add-only). Previously the flag
       // was stored but nothing ever propagated (the method had no caller).
+      //
+      // #6559: `team` is the SELECTOR the client sent - `{ _id: … }`, the same
+      // value handed to updateAsync above - not an id. Passing it whole made the
+      // member lookup compare `teams.teamId` against an object, which matches
+      // nobody, so the checkbox stored the flag and silently added no one.
       if (value === true) {
         const { propagateGroupMembersToBoards } = require('/server/propagateOrgTeamMembers');
-        await propagateGroupMembersToBoards('team', team);
+        await propagateGroupMembersToBoards('team', team._id);
       }
     }
   },
@@ -171,6 +177,14 @@ Meteor.methods({
         throw new Meteor.Error('invalid-field');
       }
       await Team.updateAsync({}, { $set: { [field]: value } }, { multi: true });
+      // #6559: the select-all header checkbox is the same promise as the per-row
+      // one - tick it and the members should be on the boards - and it did not
+      // propagate at all, not even wrongly. Teams only: ticking the team column
+      // must not act on the org column beside it.
+      if (field === 'teamPropagateMembersToBoards' && value === true) {
+        const { propagateAllFlaggedGroupsToBoards } = require('/server/propagateOrgTeamMembers');
+        await propagateAllFlaggedGroupsToBoards('team');
+      }
     }
   },
 
@@ -241,7 +255,7 @@ Meteor.methods({
     if (!(await ReactiveCache.getCurrentUser())?.isAdmin) {
       throw new Meteor.Error('not-authorized');
     }
-    const cursor = await ReactiveCache.getTeams(query || {}, {}, true);
+    const cursor = await ReactiveCache.getTeams(safeSelector(query || {}, 'getTeamsCollectionCount'), {}, true);
     return typeof cursor.countAsync === 'function' ? await cursor.countAsync() : cursor.count();
   },
 });

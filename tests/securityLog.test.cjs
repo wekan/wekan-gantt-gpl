@@ -68,9 +68,25 @@ check('loggers insert into EventLog via Meteor JS query (fire-and-forget)', () =
   for (const [f, stream] of [['securityLog.js', 'security'], ['speedLog.js', 'speed'], ['testLog.js', 'tests']]) {
     const src = read('server/lib/' + f);
     assert.ok(/from '\/models\/eventLog'/.test(src), `${f} must import EventLog`);
-    assert.ok(/EventLog\.insertAsync\(/.test(src), `${f} must insert via Meteor query`);
+    // ONE ROW PER PROBLEM, not per event. All three write through the shared
+    // fold in server/lib/eventLogFold.js, which upserts the problem's row and
+    // increments its count instead of inserting a document per occurrence - a
+    // logger on a path that repeats otherwise grows the database with whatever
+    // is causing it. Still a normal Meteor JS query into the same collection,
+    // which is what this check is really about.
+    assert.ok(/foldEventFireAndForget\(/.test(src),
+      `${f} must fold into the problem's row via the shared folder`);
+    assert.ok(!/EventLog\.insertAsync\(/.test(src),
+      `${f} must not insert a document per event any more`);
     assert.ok(new RegExp(`stream:\\s*'${stream}'`).test(src), `${f} must set stream '${stream}'`);
-    assert.ok(/\.catch\(\(\) => \{\}\)/.test(src), `${f} insert must be fire-and-forget`);
+  }
+  // Fire-and-forget lives in the shared folder now, so it is checked once there
+  // rather than three times over: a rejected promise from the fold must never
+  // reach the guard, the timer or the test run that called it.
+  const fold = read('server/lib/eventLogFold.js');
+  assert.ok(/p\.catch\(/.test(fold), 'the fold must swallow a rejected write');
+  assert.ok(/catch \(e\) \{/.test(fold), 'and a throw from the call itself');
+  if (false) {
   }
 });
 check('no new files/DBs are created under WRITABLE_PATH', () => {
@@ -118,24 +134,29 @@ check('argument-taking methods check() every arg BEFORE requireAdmin (audit-argu
 });
 check('Admin Panel has a Problems button (right of Info) and no Reports button', () => {
   const jade = read('client/components/settings/settingHeader.jade');
-  assert.ok(/setting-header-btn\.problems/.test(jade), 'Problems button present');
+  // Icon-only, in the first top header bar beside the notification bell: the
+  // tabs are navigation between the panel's four pages, and that bar is where
+  // you can always see which of the four you are on. They were
+  // `.setting-header-btn` in a second bar of their own.
+  assert.ok(/board-header-btn\.problems/.test(jade), 'Problems button present');
+  assert.ok(/title="\{\{_ 'problems'\}\}"/.test(jade), 'named by a tooltip, being icon-only');
   assert.ok(/problemsClass/.test(jade), 'red-when-problems class');
   assert.ok(!/isAdminReportsActive/.test(jade) && !/'reports'/.test(jade), 'Reports button removed');
   const hjs = read('client/components/settings/settingHeader.js');
   assert.ok(/eventLogProblemAreas/.test(hjs) && /has-problems/.test(hjs), 'header polls problems + red class');
 });
 check('Problems page: Summary/Security/Speed/Tests menu + read-only stream table', () => {
-  const rj = read('client/components/settings/adminReports.jade');
-  const rjsMenu = read('client/components/settings/adminReports.js');
+  const rj = read('client/components/settings/adminProblems.jade');
+  const rjsMenu = read('client/components/settings/adminProblems.js');
   // The menu is DATA now (PROBLEMS_MENU + the shared +leftMenu, see
-  // docs/Design/Page/Left-Menu.md): every entry used to be six lines of markup and
+  // docs/Features/Page/Left-Menu.md): every entry used to be six lines of markup and
   // its own click handler, so the ids are asserted where they now live.
   assert.ok(/\+leftMenu\(menuItems\)/.test(rj), 'the pane renders the shared left menu');
   for (const id of ['report-summary','report-security','report-speed','report-tests']) {
     assert.ok(new RegExp(`id: '${id}'`).test(rjsMenu), id + ' menu entry');
   }
   assert.ok(/\+problemsSummary/.test(rj) && /\+eventStreamReport/.test(rj), 'summary + stream views');
-  const rjs = read('client/components/settings/adminReports.js');
+  const rjs = read('client/components/settings/adminProblems.js');
   assert.ok(/eventLogPage/.test(rjs) && /eventLogCount/.test(rjs), 'stream table reads via methods');
   assert.ok(!/js-ack/.test(rj), 'no acknowledge control on the report pages (read-only)');
 });
@@ -158,7 +179,21 @@ check('upload rejections are logged (fileValidation)', () => {
 });
 check('forged X-Forwarded-For denial is logged (metrics)', () => {
   const src = read('models/server/metrics.js');
-  assert.ok(/key: 'spoofing\.xff'/.test(src) && /x-forwarded-for/.test(src));
+  // It used to call securityLog.record({ key: 'spoofing.xff' }) directly. It
+  // trips a CANARY now (docs/Security/Remediation/WeKan.md §12), which records
+  // the same category through the same logger and adds the two things the raw
+  // call could not: the client address, resolved spoofing-safely from the
+  // request, and rate limiting - this endpoint is unauthenticated, so a bare
+  // record() there was one insert per request an attacker chose to send. The
+  // behaviour this guard protects is unchanged: a denial with a forwarded-for
+  // header present must reach Admin Panel / Problems / Security.
+  assert.ok(/tripCanary\('spoof\.forwarded-header'/.test(src));
+  assert.ok(/x-forwarded-for/.test(src));
+  // ...and the canary resolves to the same category it always did.
+  const { canaryFor } = require('../models/lib/canaryTokens');
+  assert.strictEqual(canaryFor('spoof.forwarded-header').key, 'spoofing.xff');
+  // The 401 is untouched: the caller must not be able to tell.
+  assert.ok(/res\.writeHead\(401\)/.test(src));
 });
 check('export authorization denials are logged (export.js)', () => {
   const src = read('models/export.js');
@@ -176,7 +211,7 @@ check('slow HTTP requests are recorded to the speed stream', () => {
 check('runtime self-checks feed the Tests stream WITHOUT Playwright', () => {
   const src = read('server/lib/selfChecks.js');
   assert.ok(/runSelfChecks/.test(src) && /recordFailure/.test(src), 'records failures to the Tests stream');
-  assert.ok(/database-roundtrip/.test(src) && /writable-path/.test(src), 'has runtime checks');
+  assert.ok(/database-roundtrip/.test(src) && /writable-path/.test(src) && /heap-headroom/.test(src) && /free-disk-space/.test(src), 'has runtime checks');
   assert.ok(/user\.isAdmin/.test(src), 'on-demand method is admin-gated');
   assert.ok(!/require\(['"]playwright|from ['"]playwright/.test(src), 'self-checks never import Playwright');
   assert.ok(/import '\/server\/lib\/selfChecks'/.test(read('server/imports.js')), 'must be loaded');

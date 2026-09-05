@@ -5,6 +5,7 @@ import { TAPi18n } from '/imports/i18n';
 import { EscapeActions } from '/client/lib/escapeActions';
 import { Utils } from '/client/lib/utils';
 import { computePopupOffset } from '/client/lib/popupOffset';
+import { focusFirstControl } from '/client/lib/accessibility';
 
 window.Popup = new (class {
   constructor() {
@@ -27,12 +28,28 @@ window.Popup = new (class {
     this._dep = new Tracker.Dependency();
   }
 
+  focusCurrentPopup() {
+    Tracker.afterFlush(() => {
+      const popup = document.querySelector('.js-pop-over');
+      if (!popup) return;
+      focusFirstControl(popup);
+    });
+  }
+
   /// This function returns a callback that can be used in an event map:
   ///   Template.tplName.events({
   ///     'click .elementClass': Popup.open("popupName"),
   ///   });
   /// The popup inherit the data context of its parent.
-  open(name) {
+  ///
+  /// `openOptions.titleKey` names the translation to use for the header title,
+  /// for a popup whose title is a phrase the app ALREADY has. The convention is
+  /// `<popupName>-title`, which is right when the title is that popup's own
+  /// words; it is wrong when they are words that exist elsewhere, because
+  /// adding the convention key would put a second copy of one phrase into all
+  /// 147 language files - starting as English in every one of them, so most
+  /// languages would show English for something they have already translated.
+  open(name, openOptions = {}) {
     const self = this;
     const popupName = `${name}Popup`;
     function clickFromPopup(evt) {
@@ -83,7 +100,7 @@ window.Popup = new (class {
         popupName,
         openerElement,
         hasPopupParent: clickFromPopup(evt),
-        title: self._getTitle(popupName),
+        title: self._getTitle(popupName, openOptions.titleKey),
         depth: self._stack.length,
         offset: self._getOffset(openerElement, popupName),
         dataContext: (this && this.currentData && this.currentData()) || (options && options.dataContextIfCurrentDataIsUndefined) || this,
@@ -119,8 +136,10 @@ window.Popup = new (class {
           },
           document.body,
         );
+        self.focusCurrentPopup();
       } else {
         self._dep.changed();
+        self.focusCurrentPopup();
       }
     };
   }
@@ -180,6 +199,7 @@ window.Popup = new (class {
       }
       for (let i = 0; i < n; i++) this._stack.pop();
       this._dep.changed();
+      this.focusCurrentPopup();
     } else {
       this.close();
     }
@@ -197,6 +217,11 @@ window.Popup = new (class {
       this._stack = [];
       // Clean up popup content when closing
       this._cleanupPreviousPopupContent();
+      Tracker.afterFlush(() => {
+        if (openerElement?.isConnected && typeof openerElement.focus === 'function') {
+          openerElement.focus();
+        }
+      });
     }
   }
 
@@ -265,9 +290,10 @@ window.Popup = new (class {
   // We get the title from the translation files. Instead of returning the
   // result, we return a function that compute the result and since `TAPi18n.__`
   // is a reactive data source, the title will be changed reactively.
-  _getTitle(popupName) {
+  _getTitle(popupName, titleKey) {
     return () => {
-      const translationKey = `${popupName}-title`;
+      // An explicit key wins, for a title the app already has words for.
+      const translationKey = titleKey || `${popupName}-title`;
 
       // XXX There is no public API to check if there is an available
       // translation for a given key. So we try to translate the key and if the

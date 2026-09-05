@@ -20,6 +20,41 @@ const DATABASES = ['mongodb', 'sqlite', 'postgresql', 'mysql', 'mariadb', 'hana'
 // doing it is obviously right. Everything else is advice, because a database
 // that is out of disk is not something an application should "handle".
 const RULES = [
+  // ── WeKan's own bugs, arriving as database errors ─────────────────────────
+  //
+  // These two filled Admin Panel / Problems / Database problems with rows
+  // marked "unknown / unclassified", whose advice was "add a rule to
+  // models/lib/databaseErrors.js". They are not the database's fault and there
+  // is nothing an admin can configure: they are WeKan calling the database
+  // wrongly, so the rule says so and names the version that fixes it rather
+  // than sending the admin to read a stack trace.
+  {
+    id: 'meteor3-sync-api',
+    match: /(update|insert|remove|upsert|find\w*) is not available on the server\. Please use \w+Async\(\) instead/i,
+    databases: ['mongodb', 'sqlite', 'postgresql', 'mysql', 'mariadb', 'hana'],
+    severity: 'warning',
+    kind: 'bug',
+    means: 'WeKan called a synchronous collection method on the server, which Meteor 3 removed. ' +
+      'The operation did not happen.',
+    whatToDo: 'A WeKan bug, not a database or configuration problem. Upgrade WeKan; if it ' +
+      'persists on the newest version, report it at https://github.com/wekan/wekan/issues ' +
+      'with the method name from the message.',
+    act: null,
+  },
+  {
+    id: 'schema-validation',
+    match: /ValidationError: Failed validation|Cannot read properties of undefined \(reading 'title'\)/i,
+    databases: ['mongodb', 'sqlite', 'postgresql', 'mysql', 'mariadb', 'hana'],
+    severity: 'warning',
+    kind: 'bug',
+    means: 'A write was refused because the document did not match its schema - usually a ' +
+      'required field that was empty. The document was not saved.',
+    whatToDo: 'Check whether the item named in the message is missing a title or another ' +
+      'required field, and fill it in. If nothing obvious is missing, it is a WeKan bug: ' +
+      'report it at https://github.com/wekan/wekan/issues with the method name.',
+    act: null,
+  },
+
   // ── injection and malformed SQL: FerretDB's bug, never the admin's ────────
   {
     id: 'sql-guard-refused',
@@ -112,6 +147,12 @@ const RULES = [
     act: null,
   },
 
+  { id: 'memory-exhausted', match: /JavaScript heap out of memory|ENOMEM|Cannot allocate memory/i, databases: DATABASES, severity: 'critical', kind: 'memory', means: 'The server or database exhausted its available memory.', whatToDo: 'The platform launcher now derives Node and FerretDB limits from available RAM. Check Admin Panel Problems and reduce concurrency or raise the container memory limit.', act: null },
+  { id: 'file-descriptors-exhausted', match: /EMFILE|ENFILE|too many open files/i, databases: DATABASES, severity: 'critical', kind: 'descriptors', means: 'The process cannot open another file or socket.', whatToDo: 'Raise the service file-descriptor limit and investigate leaked files or connections.', act: null },
+  { id: 'read-only-filesystem', match: /EROFS|read-only file system|attempt to write a readonly database/i, databases: DATABASES, severity: 'critical', kind: 'filesystem', means: 'The database or files volume is mounted read-only.', whatToDo: 'Restore a writable volume and ownership, then run Admin Panel Problems self-checks.', act: null },
+  { id: 'database-corrupt', match: /database disk image is malformed|database corruption|WiredTiger.*corrupt|checksum mismatch/i, databases: DATABASES, severity: 'critical', kind: 'corruption', means: 'The database reported corrupt storage.', whatToDo: 'Stop writes, preserve the volume, and restore or repair from a verified backup.', act: null },
+  { id: 'document-too-large', match: /BSONObjectTooLarge|DocumentTooLarge|object to insert too large|exceeds.*BSON/i, databases: DATABASES, severity: 'warning', kind: 'document-size', means: 'A document exceeds the database wire or storage limit.', whatToDo: 'Move large content to attachments and report which operation created the oversized document.', act: null },
+
   // ── the machine underneath ───────────────────────────────────────────────
   {
     id: 'disk-full',
@@ -143,8 +184,14 @@ const RULES = [
     kind: 'contention',
     means: 'Two writes wanted the same rows in a different order, or SQLite\'s single ' +
       'writer was busy.',
-    whatToDo: 'Retried automatically. If it is constant on SQLite, that backend has one ' +
-      'writer - move to PostgreSQL for a busy instance.',
+    // "Retried automatically" is true because server/00retryBusyWrites.js retries
+    // every collection write that fails this way; for years nothing read `act` and
+    // the write simply failed in front of the user (#6533).
+    whatToDo: 'Retried automatically. If it is constant, SQLite\'s one writer is the ' +
+      'limit and the backend should be PostgreSQL: on a snap, ' +
+      '"snap set wekan wekan-ferretdb-handler=postgresql ' +
+      'wekan-ferretdb-url=postgres://user:pass@HOST:5432/ferretdb"; in Docker, the ' +
+      'docker-compose-ferretdb-v1-postgresql.yml compose file.',
     act: 'retry',
   },
   {
@@ -206,6 +253,22 @@ const RULES = [
   },
 ];
 
+// A database that refuses a login or cannot be reached usually quotes the
+// connection URL back, and that URL carries the password - "failed to connect to
+// mongodb://wekan:s3cret@mongo:27017". The message is stored and SHOWN in Admin
+// Panel / Problems, so the credentials come out here, before anything keeps it.
+// Only the userinfo part goes: the host, the port and the database name are what
+// makes the message useful.
+function redactCredentials(text) {
+  return String(text || '').replace(
+    /([a-z][a-z0-9+.-]*:\/\/)([^/\s@]+)@/gi,
+    (all, scheme, userinfo) => {
+      const user = userinfo.split(':')[0];
+      return userinfo.includes(':') ? `${scheme}${user}:***@` : all;
+    },
+  );
+}
+
 // Which database produced this, as far as the text betrays it. `configured` is
 // what WeKan believes it is talking to (from MONGO_URL / the FerretDB handler),
 // and it wins unless the message itself names another - a MySQL error code in a
@@ -233,8 +296,8 @@ function databaseOf(message, configured) {
 // with the message kept, because an admin looking at Problems needs to see that
 // something happened even when this module has no rule for it.
 function classifyDatabaseError(error, options = {}) {
-  const message = String(
-    (error && (error.message || error.errmsg || error.reason)) || error || '',
+  const message = redactCredentials(
+    String((error && (error.message || error.errmsg || error.reason)) || error || ''),
   ).slice(0, 2000);
   const configured = options.configured || 'unknown';
   const database = databaseOf(message, configured);
@@ -262,8 +325,11 @@ function classifyDatabaseError(error, options = {}) {
     severity: 'warning',
     kind: 'unknown',
     means: 'The database returned an error WeKan has no rule for.',
-    whatToDo: 'Read the message below; if it is one WeKan should recognise, add a rule ' +
-      'to models/lib/databaseErrors.js.',
+    // The message follows in the same cell of the table (the Detail column joins
+    // the two), so this points at where the message actually is - it used to say
+    // "below", where there was nothing.
+    whatToDo: 'What the database said follows; if it is one WeKan should recognise, ' +
+      'add a rule to models/lib/databaseErrors.js.',
     act: null,
     message,
     operation: options.operation || '',
@@ -282,4 +348,6 @@ function configuredDatabase(env = {}) {
   return 'unknown';
 }
 
-module.exports = { classifyDatabaseError, configuredDatabase, databaseOf, DATABASES, RULES };
+module.exports = {
+  classifyDatabaseError, configuredDatabase, databaseOf, redactCredentials, DATABASES, RULES,
+};

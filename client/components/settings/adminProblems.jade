@@ -1,0 +1,147 @@
+template(name="adminProblems")
+  .setting-content.admin-reports-content
+    unless currentUser.isAdmin
+      | {{_ 'error-notAuthorized'}}
+    else
+      .content-body
+        +leftMenu(menuItems)
+
+        .main-body
+          //- Every Admin Panel pane opens with the same heading, and it is the
+          //- open menu entry's own label (docs/Features/Page/Left-Menu.md).
+          +paneTitle(paneTitleData)
+          if loading.get
+            +spinner
+          else if isPane 'report-summary'
+            +problemsSummary
+          else if isPane 'features-performance'
+            +featuresPerformance
+          else if isPane 'features-security'
+            +featuresSecurity
+          else if isPane 'features-delete'
+            +featuresDelete
+          else if isPane 'features-notifications'
+            +featuresNotifications
+          else if isPane 'report-security'
+            +eventStreamReport(stream="security")
+          else if isPane 'report-speed'
+            +eventStreamReport(stream="speed")
+          else if isPane 'report-tests'
+            +eventStreamReport(stream="tests")
+          else if isPane 'report-cpu'
+            +eventStreamReport(stream="cpu")
+          else if isPane 'report-database'
+            +eventStreamReport(stream="database")
+          else if isPane 'report-integrity'
+            +eventStreamReport(stream="integrity")
+          else if isPane 'report-api'
+            +eventStreamReport(stream="api")
+          else if isPane 'report-office'
+            +officeReport
+          else if tablePageData
+            +tablePage(tablePageData)
+
+template(name="officeReport")
+  //- Where people log in from, grouped. Through the shared table page like every
+  //- other report here (docs/Features/Page/Table.md).
+  +tablePage(tablePageData)
+
+template(name="eventStreamReport")
+  //- Security / Speed / Tests / CPU usage all render through the shared table
+  //- page (docs/Features/Page/Table.md). CPU usage additionally passes the live
+  //- figure as the status row between the title and the controls.
+  +tablePage(tablePageData)
+
+template(name="cpuCurrentStatus")
+  .admin-cpu-current(class="{{#if high}}admin-cpu-high{{/if}}")
+    span.admin-cpu-label {{_ 'cpu-usage-current'}}
+    span.admin-cpu-percent {{percent}}%
+    span.quiet
+      | {{cores}} {{_ 'cpu-cores-suffix'}} &middot; {{_ 'cpu-load-average'}} {{loadAverage}}
+    if activity
+      span.quiet  &middot; {{activity}}
+
+//- Performance, Security and Notifications. They were the whole of Admin Panel /
+//- Features, which is gone; they are Problems panes now and live with the page that
+//- renders them. Each is its own template so its helpers and handlers can live ON it -
+//- Blaze resolves both against the template an element is IN, never an enclosing one.
+
+//- Admin Panel / Problems / Performance.
+template(name="featuresPerformance")
+  ul.setting-detail
+    li.layout-form
+      .title {{_ 'cards-loading'}}
+      p.description {{_ 'cards-loading-description'}}
+
+//- Admin Panel / Problems / Security.
+template(name="featuresSecurity")
+  ul.setting-detail
+    li
+      a.flex.js-toggle-render-links-as-plain-text
+        .materialCheckBox(class="{{#if renderLinksAsPlainText}}is-checked{{/if}}")
+        span {{_ 'render-links-as-plain-text'}}
+      p.description {{_ 'render-links-as-plain-text-description'}}
+    li
+      a.flex.js-toggle-always-show-code-as-text
+        .materialCheckBox(class="{{#if alwaysShowCodeAsText}}is-checked{{/if}}")
+        span {{_ 'always-show-code-as-text'}}
+      p.description {{_ 'always-show-code-as-text-description'}}
+    li
+      a.flex.js-toggle-disable-all-import
+        .materialCheckBox(class="{{#if disableAllImport}}is-checked{{/if}}")
+        span {{_ 'disable-all-import'}}
+      p.description {{_ 'disable-all-import-description'}}
+    li
+      a.flex.js-toggle-disable-all-export
+        .materialCheckBox(class="{{#if disableAllExport}}is-checked{{/if}}")
+        span {{_ 'disable-all-export'}}
+      p.description {{_ 'disable-all-export-description'}}
+    li
+      a.flex.js-toggle-disable-import-avatars
+        .materialCheckBox(class="{{#if disableImportAvatars}}is-checked{{/if}}")
+        span {{_ 'disable-import-avatars'}}
+      p.description {{_ 'disable-import-avatars-description'}}
+    li
+      a.flex.js-toggle-disable-export-avatars
+        .materialCheckBox(class="{{#if disableExportAvatars}}is-checked{{/if}}")
+        span {{_ 'disable-export-avatars'}}
+      p.description {{_ 'disable-export-avatars-description'}}
+    li
+      a.flex.js-toggle-anonymize-import-users
+        .materialCheckBox(class="{{#if anonymizeImportUsers}}is-checked{{/if}}")
+        span {{_ 'anonymize-import-users'}}
+      p.description {{_ 'anonymize-import-users-description'}}
+    li
+      a.flex.js-toggle-anonymize-export-users
+        .materialCheckBox(class="{{#if anonymizeExportUsers}}is-checked{{/if}}")
+        span {{_ 'anonymize-export-users'}}
+      p.description {{_ 'anonymize-export-users-description'}}
+
+//- Admin Panel / Problems / Delete.
+template(name="featuresDelete")
+  ul.setting-detail
+    li
+      a.flex.js-toggle-enable-permanent-delete
+        .materialCheckBox(class="{{#if enablePermanentDelete}}is-checked{{/if}}")
+        span {{_ 'enable-permanent-delete'}}
+      p.description {{_ 'enable-permanent-delete-description'}}
+      p.description {{permanentDeleteRecoveryDescription}}
+
+//- Admin Panel / Problems / Notifications.
+template(name="featuresNotifications")
+  ul.setting-detail
+    li
+      a.flex.js-toggle-disable-activities
+        .materialCheckBox(class="{{#if disableActivities}}is-checked{{/if}}")
+        span {{_ 'disable-activities'}}
+      p.description {{_ 'disable-activities-description'}}
+    li
+      a.flex.js-toggle-disable-notifications
+        .materialCheckBox(class="{{#if disableNotifications}}is-checked{{/if}}")
+        span {{_ 'disable-notifications'}}
+      p.description {{_ 'disable-notifications-description'}}
+    li
+      a.flex.js-toggle-disable-watch
+        .materialCheckBox(class="{{#if disableWatch}}is-checked{{/if}}")
+        span {{_ 'disable-watch'}}
+      p.description {{_ 'disable-watch-description'}}

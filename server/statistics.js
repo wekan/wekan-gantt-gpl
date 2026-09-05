@@ -1,6 +1,9 @@
 import { ReactiveCache } from '/imports/reactiveCache';
 import { Meteor } from 'meteor/meteor';
 import { MongoInternals } from 'meteor/mongo';
+import fs from 'fs';
+import { detectPackaging } from '/models/lib/platformPackaging';
+import { parseVersionManifest } from '/models/lib/versionCheck';
 
 // Sandstorm context is detected using the METEOR_SETTINGS environment variable
 // in the package definition.
@@ -8,6 +11,24 @@ const isSandstorm =
   Meteor.settings && Meteor.settings.public && Meteor.settings.public.sandstorm;
 
 Meteor.methods({
+  async checkNewestVersions() {
+    const currentUser = await ReactiveCache.getCurrentUser();
+    if (!currentUser?.isAdmin) throw new Meteor.Error('not-authorized');
+
+    try {
+      const response = await fetch('https://wekan.fi/version.txt', {
+        headers: { Accept: 'text/plain' },
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!response.ok) throw new Error('Version manifest request failed');
+      const manifest = parseVersionManifest(await response.text());
+      if (!manifest) throw new Error('Version manifest was invalid');
+      return manifest;
+    } catch {
+      throw new Meteor.Error('version-check-failed');
+    }
+  },
+
   async getStatistics() {
     const currentUser = await ReactiveCache.getCurrentUser();
     if (currentUser?.isAdmin) {
@@ -17,6 +38,19 @@ Meteor.methods({
       let wekanVersion = pjson.version;
       wekanVersion = wekanVersion.replace('v', '');
       statistics.version = wekanVersion;
+      // HOW this WeKan was installed - bundle.zip, Snap, Docker or Sandstorm.
+      // The same version behaves differently in each (where its data lives, what
+      // database it carries, what the admin can reach), so the Version pane says
+      // which one rather than leaving it to be asked on every issue. The
+      // detection is a pure function so it can be tested without a snap, a
+      // container or a grain; see models/lib/platformPackaging.js.
+      statistics.platform = {
+        packaging: detectPackaging({
+          env: process.env,
+          isSandstorm,
+          fileExists: p => fs.existsSync(p),
+        }),
+      };
       statistics.os = {
         type: os.type(),
         platform: os.platform(),

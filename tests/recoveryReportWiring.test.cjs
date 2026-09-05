@@ -53,28 +53,38 @@ test('recordRecoveryEvent method is admin-gated', () => {
 
 test('client report is wired: config, columns, menu, rendering', () => {
   // The report no longer has a template of its own: it renders through the
-  // shared table page (docs/Design/Page/Table.md) and differs from the other
+  // shared table page (docs/Features/Page/Table.md) and differs from the other
   // reports only in its column list. Same wiring, one implementation.
-  const js = read('client/components/settings/adminReports.js');
+  const js = read('client/components/settings/adminProblems.js');
   assert.ok(/'report-recovery':/.test(js), 'reportConfig has report-recovery');
   assert.ok(/pub: 'recoveryReport'/.test(js) && /getRecoveryReportCount/.test(js), 'points at pub + count');
   assert.ok(/REPORT_TABLES = \{[\s\S]*'report-recovery': \{[\s\S]*columns:/.test(js),
     'report-recovery has a column spec in REPORT_TABLES');
   // No titleKey any more: every Admin Panel pane's heading is rendered once, from
-  // the open menu entry (docs/Design/Page/Left-Menu.md), and PROBLEMS_MENU carries
+  // the open menu entry (docs/Features/Page/Left-Menu.md), and PROBLEMS_MENU carries
   // this report's i18n key - a titleKey here would print the same words twice.
   assert.ok(/labelKey: 'recoveryReportTitle'/.test(js),
     'the menu entry carries the title');
   assert.ok(!/titleKey: 'recoveryReportTitle'/.test(js),
     'and the table must not repeat it');
   assert.ok(/emptyKey: 'recovery-no-events'/.test(js), 'empty-state key');
+  assert.ok(/additionalDesc: PERMANENT_DELETE_RECOVERY_DESCRIPTION/.test(js),
+    'a shared second description explains the permanent-delete audit fields');
   assert.ok(/rowClass: d => `recovery-severity-\$\{d\.severity \|\| 'info'\}`/.test(js),
     'severity row class');
+  for (const status of ['all', 'done', 'failed', 'deleted']) {
+    assert.ok(new RegExp(`value: '${status}'`).test(js), `Recovery filter has ${status}`);
+  }
+  assert.ok(/recoveryFilter\.set\(\$\(event\.currentTarget\)\.val\(\) \|\| 'all'\)/.test(js),
+    'Recovery filter reloads from the shared dropdown');
 
-  const jade = read('client/components/settings/adminReports.jade');
-  // The side menu is data now (docs/Design/Page/Left-Menu.md).
+  const jade = read('client/components/settings/adminProblems.jade');
+  // The side menu is data now (docs/Features/Page/Left-Menu.md).
   assert.ok(/'report-recovery'/.test(js), 'menu entry');
   assert.ok(/\+tablePage\(tablePageData\)/.test(jade), 'rendered through the shared table page');
+  const tablePage = read('client/components/settings/tablePage.jade');
+  assert.ok(/if additionalDesc\s+p\.quiet\.table-page-desc \{\{additionalDesc\}\}/.test(tablePage),
+    'the additional description renders below the current description');
 });
 
 test('i18n keys exist', () => {

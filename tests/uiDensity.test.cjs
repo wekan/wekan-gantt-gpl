@@ -22,7 +22,14 @@ const fs = require('fs');
 const path = require('path');
 
 const repoRoot = path.resolve(__dirname, '..');
-const read = rel => fs.readFileSync(path.join(repoRoot, rel), 'utf8');
+// Sizes are written `calc(Npx * var(--wekan-ui-font-scale, 1))` so Member
+// Settings / Font / Size can move all of them (client/components/main/uiFont.css).
+// This guard is about the N - the density WeKan draws at with no preset chosen -
+// so the wrapper is unwrapped as the file is read, and every assertion below
+// still names the size it means.
+const unscale = css => css.replace(
+  /calc\((\d*\.?\d+px) \* var\(--wekan-ui-font-scale, 1\)\)/g, '$1');
+const read = rel => unscale(fs.readFileSync(path.join(repoRoot, rel), 'utf8'));
 const squish = s => s.replace(/\s+/g, ' ');
 
 const layouts = read('client/components/main/layouts.css');
@@ -45,10 +52,13 @@ function test(name, fn) {
 test('base font is the 6.09 fixed 14px/18px', () => {
   const base = layouts.match(/html,\s*\nbody,\s*\ninput,[\s\S]*?\{[\s\S]*?\}/);
   assert.ok(base, 'base font rule found');
-  assert.ok(base[0].includes('font: 14px Roboto'));
+  // Family and size are separate declarations, not the `font` shorthand: the
+  // shorthand's size is the one the font-size preset has to be able to move.
+  assert.ok(base[0].includes('font-family: Roboto'));
+  assert.ok(base[0].includes('font-size: 14px'));
   assert.ok(base[0].includes('line-height: 18px'));
   // negative: the desktop-inflating clamp must not come back
-  assert.ok(!/font:\s*clamp\(/.test(base[0]));
+  assert.ok(!/font(-size)?:\s*clamp\(/.test(base[0]));
 });
 
 test('headings are the 6.09 sizes 22/18/16px', () => {
@@ -76,13 +86,13 @@ test('card details default position docks to the END edge, not over the card', (
   assert.ok(rule, 'default-position rule found');
   assert.ok(rule[0].includes('inset-inline-start: auto'));
   assert.ok(rule[0].includes('inset-inline-end: 8px'));
-  assert.ok(rule[0].includes('width: min(650px, 90vw)'));
+  assert.ok(rule[0].includes('width: min(520px, 90vw)'));
   // negative: the v8.18 whole-board overlay anchored at the start edge
   assert.ok(!rule[0].includes('inset-inline-start: 20px'));
 });
 
 test('card details canvas padding is the 6.09 fixed 20px', () => {
-  assert.ok(/\.card-details \.card-details-canvas \{[\s\S]*?padding: 0 20px;/.test(cardDetails));
+  assert.ok(/\.card-details \.card-details-canvas \{[\s\S]*?box-sizing: border-box;[\s\S]*?min-width: 0;[\s\S]*?padding: 0 20px;/.test(cardDetails));
   assert.ok(!cardDetails.includes('padding: 0 2.5vw'), 'no ~48px viewport borders');
 });
 
@@ -106,7 +116,7 @@ test('desktop card window uses a small 3px radius', () => {
 test('org/team feature column headers use compact icon links', () => {
   // The org headers are one shared template now, parameterised by feature and
   // rendered through the table page's headerTemplate slot
-  // (docs/Design/Page/Table.md) - three copies of the same select-all pair became
+  // (docs/Features/Page/Table.md) - three copies of the same select-all pair became
   // one. Same compact icon links, one definition.
   assert.ok(/a\.js-org-feature-all\(href="#", data-feature="\{\{feature\}\}", data-value="true", title="\{\{_ 'select-all'\}\}"\)\s*\n\s*i\.fa\.fa-check-square-o/.test(peopleBody));
   const js = fs.readFileSync(path.join(__dirname, '..', 'client/components/settings/peopleBody.js'), 'utf8');
@@ -148,14 +158,26 @@ test('admin table cells wrap instead of pushing the table off screen', () => {
 });
 
 // --- Zoom pill -------------------------------------------------------------------
+//
+// The "100%" zoom pill is GONE, and with it the only thing this section had to
+// say. It scaled the board with a CSS transform, never worked properly, and
+// WeKan already has a font-size setting, so it was removed rather than fixed -
+// there is no pill left to fit inside the quick-access row.
+//
+// What remains worth asserting is that it did not come back by accident, since
+// its stylesheet rules were spread over four files.
 
-test('zoom pill fits inside the 28px quick-access row', () => {
-  const pill = header.match(/#header-quick-access \.zoom-controls \{[\s\S]*?\}/);
-  assert.ok(pill, 'zoom-controls rule found');
-  assert.ok(pill[0].includes('padding: 2px 8px'));
-  assert.ok(pill[0].includes('max-height: 24px'));
-  // negative: no viewport-relative sizing that outgrew the clipped row
-  assert.ok(!pill[0].includes('0.5vh 1vw'));
+test('the zoom pill is gone from every stylesheet that carried it', () => {
+  for (const rel of [
+    'client/components/main/header.css',
+    'client/components/main/layouts.css',
+    'client/components/boards/boardHeader.css',
+    'client/components/boards/boardsList.css',
+  ]) {
+    const css = read(rel);
+    assert.ok(!/zoom-(controls|level|display|input)/.test(css),
+      `${rel} still styles the removed zoom pill`);
+  }
 });
 
 // --- Right-docked card window must not trap the sidebar ---------------------------

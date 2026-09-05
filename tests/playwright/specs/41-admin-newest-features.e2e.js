@@ -15,7 +15,7 @@
 
 const { test, expect } = require('../fixtures');
 const db = require('../helpers/db');
-const { loginWithToken } = require('../helpers/auth');
+const { loginWithToken, waitForMeteor, navigateInApp } = require('../helpers/auth');
 
 const BASE_URL = process.env.WEKAN_BASE_URL || 'http://localhost:3000';
 const ZW = '\u200b'; // zero-width space (escape sequence — no literal invisible char in source)
@@ -32,23 +32,27 @@ test.describe('Admin – newest features', () => {
     // could never match them, so fail here with a clear message instead of "no table".
     expect(cardId, 'seed: findCardIdByTitle must return the seeded card id').toBeTruthy();
     const meta = { boardId: board.boardId, cardId };
-    const attachmentIds = ['e2e-att-normal', 'e2e-att-encoded', 'e2e-att-invisible', 'e2e-att-homoglyph', 'e2e-att-exploit'];
-    // Idempotent seed: clear any leftovers from a previous run (or another browser
-    // project sharing this DB) so insertMany never hits an E11000 duplicate _id.
-    await db.deleteMany('attachments', { _id: { $in: attachmentIds } });
+    const runId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const marker = `files-${runId}`;
     await db.insertMany('attachments', [
-      { _id: 'e2e-att-normal', name: 'normal-file.png', size: 10, type: 'image/png', meta },
-      { _id: 'e2e-att-encoded', name: '%D0%93%D1%80.png', size: 20, type: 'image/png', meta }, // -> "Гр.png"
-      { _id: 'e2e-att-invisible', name: 'evil' + ZW + '.png', size: 30, type: 'image/png', meta },
-      { _id: 'e2e-att-homoglyph', name: 'pаypal.png', size: 40, type: 'image/png', meta }, // Cyrillic a
-      { _id: 'e2e-att-exploit', name: '<script>x</script>note.png', size: 50, type: 'image/png', meta },
+      { _id: `${runId}-normal`, name: `${marker}-normal-file.png`, size: 10, type: 'image/png', meta },
+      { _id: `${runId}-encoded`, name: `${marker}-%D0%93%D1%80.png`, size: 20, type: 'image/png', meta }, // -> "Гp.png" after confusable folding
+      { _id: `${runId}-invisible`, name: `${marker}-evil${ZW}.png`, size: 30, type: 'image/png', meta },
+      { _id: `${runId}-homoglyph`, name: `${marker}-pаypal.png`, size: 40, type: 'image/png', meta }, // Cyrillic a
+      { _id: `${runId}-exploit`, name: `${marker}-<script>x</script>note.png`, size: 50, type: 'image/png', meta },
     ]);
 
     await loginWithToken(page, adminUser.id, adminUser.token);
-    await page.goto(`${BASE_URL}/admin-reports`, { waitUntil: 'networkidle' });
-    // The Problems side menu is the shared left menu now: an entry is addressed by
-    // data-id (docs/Design/Page/Left-Menu.md), not by a per-report class.
-    await page.locator('.js-left-menu-item[data-id="report-files"]').click();
+    // Straight to the pane by its own address. Every Admin Panel pane has one
+    // now - `/admin/problems/files` - so there is no need to land on the page
+    // and then click a menu row, and no race between the redirect from the old
+    // `/admin-reports` and the menu rendering.
+    // docs/Features/Page/Admin-Panel-URLs.md
+    await navigateInApp(page, '/admin/problems/files');
+    // The evaluate below reaches for `window.Meteor.callAsync`; `networkidle`
+    // only means the network went quiet, so Firefox got here with Meteor still
+    // undefined and the count came back as an error string.
+    await waitForMeteor(page);
 
     // Localize any failure: ask the SERVER directly whether it counts the seeded
     // attachments (this method runs the SAME accessibleCardIds + meta.cardId query the
@@ -66,27 +70,74 @@ test.describe('Admin – newest features', () => {
     const table = page.locator('table').first();
     await expect(table).toBeVisible({ timeout: 15_000 });
 
+    // Other browser projects share this database and global admins can see
+    // their rows. Restrict the report to this run before asserting all five
+    // names, so pagination cannot move the last seeded row to another page.
+    const search = page.locator('input.js-table-page-search');
+    await search.fill(marker);
+    await search.press('Enter');
+
+    // WHICH half is missing, when the table draws its headers and then "No results".
+    //
+    // A row of this report needs TWO things to arrive over DDP, and the server
+    // count above proves only that the query finds them. The publication sends
+    // the page with this.added('attachments', ...) AND one small `report_pages`
+    // index document naming the ids of that page, in order; the pane renders
+    // that index and nothing else, because minimongo holds far more than the
+    // page (models/lib/reportPageIndex.js, reportPageResults in
+    // adminProblems.js). So an empty table means the rows did not arrive, or the
+    // index did not, or they disagree - three different bugs that all look like
+    // "element(s) not found".
+    //
+    // Read through Meteor's client stores rather than app globals, which the
+    // production bundle does not expose. Entirely defensive: any failure here
+    // leaves the diagnosis empty and the assertion below fails exactly as it
+    // would have anyway.
+    const diag = await page.evaluate(() => {
+      const countIn = name => {
+        try {
+          const store = window.Meteor?.connection?._stores?.[name];
+          const coll = store && store._getCollection && store._getCollection();
+          return coll ? coll.find().count() : `no client store "${name}"`;
+        } catch (e) { return `error: ${(e && e.message) || e}`; }
+      };
+      let index;
+      try {
+        const store = window.Meteor?.connection?._stores?.report_pages;
+        const coll = store && store._getCollection && store._getCollection();
+        const doc = coll && coll.findOne('report-files');
+        index = doc ? `${(doc.ids || []).length} id(s)` : 'no report-files index doc';
+      } catch (e) { index = `error: ${(e && e.message) || e}`; }
+      return `attachments in minimongo: ${countIn('attachments')}; report_pages index: ${index}`;
+    }).catch(e => `diagnosis unavailable: ${(e && e.message) || e}`);
+
     // URL-encoded name is DECODED for display (and the raw %-encoding is gone).
-    await expect(table.getByText('Гр.png')).toBeVisible();
+    await expect(
+      table.getByText(`${marker}-Гp.png`),
+      `the Files report drew no usable row. ${diag}. ` +
+      'Rows but no index = publishReportPage did not send one; index but no rows = ' +
+      "this.added went to a collection the client does not have; neither = the " +
+      'publication returned early (the isAdmin check) or never ran.',
+    ).toBeVisible();
     await expect(table.getByText('%D0%93%D1%80')).toHaveCount(0);
 
     // Invisible character is REMOVED — the clean "evil.png" is shown, and the old
     // red warning / inline description elements no longer exist.
-    await expect(table.getByText('evil.png', { exact: false })).toBeVisible();
+    await expect(table.getByText(`${marker}-evil.png`, { exact: false })).toBeVisible();
     await expect(page.locator('.filename-invisible-warning')).toHaveCount(0);
     await expect(page.locator('.invisible-char-desc')).toHaveCount(0);
     await expect(page.locator('.js-files-invisible-filter')).toHaveCount(0);
     await expect(page.locator('.admin-report-legend')).toHaveCount(0);
 
     // Confusable homoglyph is folded to plain Latin ("paypal.png").
-    await expect(table.getByText('paypal.png', { exact: false })).toBeVisible();
-    // Exploit markup is stripped from the shown name.
-    await expect(table.getByText('note.png', { exact: false })).toBeVisible();
+    await expect(table.getByText(`${marker}-paypal.png`, { exact: false })).toBeVisible();
+    // Exploit markup is stripped while its harmless text content remains.
+    await expect(table.getByText(`${marker}-xnote.png`, { exact: false })).toBeVisible();
     await expect(table.getByText('<script>')).toHaveCount(0);
 
     // NO Search button; the search field + pagination controls ARE present. Every
     // report renders through the ONE shared table page now
-    // (docs/Design/Page/Table.md), so the controls carry the shared class names and
+    // (docs/Features/Page/Table.md), so the controls carry the shared class names and
     // the per-report ones are gone with the per-report markup.
     await expect(page.locator('button.js-files-search-button')).toHaveCount(0);
     await expect(page.locator('input.js-files-search-input')).toHaveCount(0);
@@ -96,13 +147,42 @@ test.describe('Admin – newest features', () => {
 
   test('Version page shows Reactivity mode + configured REACTIVITY_ORDER and DDP_TRANSPORT', async ({ page, adminUser }) => {
     await loginWithToken(page, adminUser.id, adminUser.token);
-    await page.goto(`${BASE_URL}/information`, { waitUntil: 'networkidle' });
+    // `/information` redirects to the Version pane's own address.
+    await navigateInApp(page, '/admin/settings/version');
 
     const body = page.locator('body');
     await expect(body).toContainText('Reactivity mode', { timeout: 15_000 });
+    const check = page.locator('.js-check-newest-versions');
+    await expect(check).toBeVisible();
+    const checkBox = await check.boundingBox();
+    const currentBox = await page.getByText('WeKan ® Version', { exact: true }).boundingBox();
+    expect(checkBox.y).toBeLessThan(currentBox.y);
+    await check.click();
+    const results = page.locator('.version-check-results');
+    await expect(results).toContainText(/^WeKan \d+\.\d+/m, { timeout: 15_000 });
+    await expect(results).toContainText(/^FerretDB \d+\.\d+\.\d+/m);
+    await expect(results).toContainText(/^Meteor \d+\.\d+/m);
+    await expect(results).toContainText(/^Node \d+\.\d+\.\d+/m);
+    await expect(results).toContainText(/^NPM \d+\.\d+\.\d+/m);
+    await expect(results.locator('a')).toHaveCount(0);
     // The configured-env rows show the literal env-var names.
     await expect(body).toContainText('METEOR_REACTIVITY_ORDER');
     await expect(body).toContainText('DDP_TRANSPORT');
+  });
+
+  test('Version release lookup rejects a non-admin caller', async ({ page, user }) => {
+    await loginWithToken(page, user.id, user.token);
+    await page.goto(BASE_URL, { waitUntil: 'networkidle' });
+    await waitForMeteor(page);
+    const denied = await page.evaluate(async () => {
+      try {
+        await window.Meteor.callAsync('checkNewestVersions');
+        return 'allowed';
+      } catch (error) {
+        return error.error;
+      }
+    });
+    expect(denied).toBe('not-authorized');
   });
 
   test('Rules/Boards/Cards/Impersonation reports load without hanging (manual publish on FerretDB)', async ({ page, adminUser }) => {
@@ -110,14 +190,14 @@ test.describe('Admin – newest features', () => {
     // still become READY and show their (empty) report, not hang on the spinner.
     await db.seedBoard({ ownerId: adminUser.id, title: 'Report Data Board', cardTitlesPerList: [['RCard']] });
     await loginWithToken(page, adminUser.id, adminUser.token);
-    await page.goto(`${BASE_URL}/admin-reports`, { waitUntil: 'networkidle' });
+    await navigateInApp(page, '/admin/problems/summary');
 
     // #6480: these report publications returned sorted+limited live cursors, whose
     // LIMITED live observe hangs on FerretDB's OpLog — the subscription never became
     // ready and the report was stuck on the loading spinner. Each report's template
     // (with its search input) only renders once the subscription is ready, so a
     // visible search input proves the spinner cleared and the report loaded.
-    // One shared table page for every report (docs/Design/Page/Table.md): the entry
+    // One shared table page for every report (docs/Features/Page/Table.md): the entry
     // is addressed by data-id and the search field is the shared one, so what proves
     // the subscription became ready is the shared controls row rendering with the
     // report's own title above it.
@@ -136,15 +216,13 @@ test.describe('Admin – newest features', () => {
 
   test('Board Statistics view renders full-width with board counts and selectable text', async ({ page, adminUser }) => {
     const board = await db.seedBoard({ ownerId: adminUser.id, title: 'Stats Board', cardTitlesPerList: [['S1'], ['S2']] });
-    // Pre-seed the per-user board view so the board renders the Statistics view on
-    // its first (single) load. The switcher path calls Utils.setBoardView, which
-    // does a full window.location.reload() — reloading the whole board cold mid-test
-    // races the 15s assertion (the board-canvas can still be empty when it fires).
-    // Pre-seeding avoids that reload and tests what actually matters here: that
-    // statsView renders (with server-resolved counts) when it is the user's view.
-    db.updateOne('users', { _id: adminUser.id }, { $set: { 'profile.boardView': 'board-view-stats' } });
     await loginWithToken(page, adminUser.id, adminUser.token);
-    await page.goto(`${BASE_URL}/b/${board.boardId}/${board.slug}`, { waitUntil: 'networkidle' });
+    await navigateInApp(page, `/b/${board.boardId}/${board.slug}`);
+
+    // Use the real view switcher. It updates local reactive state immediately,
+    // so this avoids racing a direct database change against the user publication.
+    await page.locator('.js-toggle-board-view').click();
+    await page.locator('.js-open-stats-view').click();
 
     const stats = page.locator('.stats-view');
     await expect(stats).toBeVisible({ timeout: 15_000 });
@@ -170,7 +248,7 @@ test.describe('Admin – newest features', () => {
     // Open the board's Table view via My Cards / board table (the .js-table-view-sort
     // class only ever existed on the sortable headers). Anywhere the table view
     // renders, no sortable header must exist.
-    await page.goto(`${BASE_URL}/my-cards`, { waitUntil: 'networkidle' }).catch(() => {});
+    await navigateInApp(page, '/my-cards').catch(() => {});
     await page.waitForTimeout(1_000);
     await expect(page.locator('.js-table-view-sort')).toHaveCount(0);
   });

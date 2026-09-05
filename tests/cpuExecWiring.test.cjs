@@ -40,22 +40,59 @@ test('arm64 bundle replaces the inherited amd64 qemu with qemu-aarch64', () => {
 });
 
 test('extra arches (ppc64le/s390x/riscv64) bundle their own-arch qemu, tolerantly', () => {
-  assert.ok(releaseAll.includes('rm -f /bundle/qemu-x86_64'));
-  assert.ok(/apt-get install -y -q qemu-user-static[\s\S]*?\/usr\/bin\/qemu-\$\(uname -m\)-static/.test(releaseAll));
-  assert.ok(releaseAll.includes('bundle ships without a bundled qemu-user'),
+  // This lives in releases/install-node-for-arch.sh now, not inline in the
+  // workflow. It used to be a `bash -c '...'` argument, and that string
+  // contained apostrophes - which a single-quoted shell argument cannot hold:
+  // the first one ended it, the rest became separate words, and ${NODE_ARCH}
+  // was left to the runner's shell to expand, where it does not exist. Every
+  // one of these jobs then asked nodejs.org for "node-<version>-linux-.tar.xz".
+  // A file has no quoting layer to get wrong, so the script is the file and
+  // this looks there.
+  const script = read('releases/install-node-for-arch.sh');
+  assert.ok(script.includes('rm -f /bundle/qemu-x86_64'));
+  assert.ok(/apt-get install -y -q qemu-user-static[\s\S]*?\/usr\/bin\/qemu-\$\(uname -m\)-static/.test(script));
+  assert.ok(script.includes('bundle ships without a bundled qemu-user'),
     'a missing qemu package on an exotic arch must not fail the release');
+  assert.ok(/bash \/releases\/install-node-for-arch\.sh/.test(releaseAll),
+    'and the workflow runs that file rather than an inline script');
 });
 
 test('negative: Windows and macOS bundles strip the Linux-only cpu-exec + qemu', () => {
+  // Counted from the jobs that exist rather than from a number written here:
+  // the count was 4 and became 5 the day build-win-arm64 was added, and a bare
+  // number tells whoever hits that only that it changed, not whether the new
+  // job strips its own copy - which is the thing that actually matters.
+  const NON_LINUX = ['build-win64', 'build-win-arm64', 'build-win32',
+                     'build-mac-arm64', 'build-mac-x64'];
+  const missing = NON_LINUX.filter(job => {
+    const at = releaseAll.indexOf(`\n  ${job}:`);
+    if (at < 0) return false;                 // job removed; covered below
+    const rest = releaseAll.slice(at + 1);
+    const next = rest.search(/\n  [a-z][a-z0-9-]*:\n/);
+    const body = next < 0 ? rest : rest.slice(0, next);
+    return !/rm -f bundle\/cpu-exec bundle\/qemu-x86_64/.test(body);
+  });
+  assert.deepStrictEqual(missing, [],
+    'these ship a Linux-only cpu-exec and qemu-x86_64 they cannot run');
+
+  const present = NON_LINUX.filter(job => releaseAll.includes(`\n  ${job}:`));
+  assert.deepStrictEqual(present, NON_LINUX,
+    'a non-Linux bundle job disappeared; update this list deliberately');
+
   const strips = releaseAll.match(/rm -f bundle\/cpu-exec bundle\/qemu-x86_64/g) || [];
-  assert.strictEqual(strips.length, 2, 'one strip in build-win64, one in build-mac-arm64');
+  assert.strictEqual(strips.length, NON_LINUX.length,
+    `one strip per non-Linux bundle, found ${strips.length} for ${NON_LINUX.length} jobs`);
 });
 
 test('the qemu-user-static build dependency is installed where bundles are built', () => {
-  // amd64 + arm64 bundle jobs, and both sandstorm jobs (release-all + standalone)
-  const aptLines = releaseAll.match(/apt-get install[^\n]*qemu-user-static/g) || [];
+  // amd64 + arm64 bundle jobs, and both sandstorm jobs (release-all + standalone).
+  // The package list moved behind releases/apt-install.sh, which retries a
+  // mirror that is mid-republish (tests/releaseAptInstall.test.cjs); what this
+  // guard is about is that qemu-user-static is still asked for, wherever the
+  // asking happens.
+  const aptLines = releaseAll.match(/(apt-get install|apt-install\.sh)[^\n]*qemu-user-static/g) || [];
   assert.ok(aptLines.length >= 3, `found ${aptLines.length} apt lines with qemu-user-static in release-all.yml`);
-  assert.ok(/apt-get install[^\n]*qemu-user-static/.test(sandstormYml));
+  assert.ok(/(apt-get install|apt-install\.sh)[^\n]*qemu-user-static/.test(sandstormYml));
 });
 
 // --- Sandstorm .spk ------------------------------------------------------------
@@ -109,8 +146,19 @@ test('the snap runs node (the app and the maintenance page) through cpu-exec', (
   // The main application start, which keeps its ulimit -s 65500.
   assert.ok(/ulimit -s 65500; exec \$\{CPU_EXEC:\+bash \\"\$CPU_EXEC\\"\} \$NODE_PATH\/node \$APPLICATION_START/
     .test(wekanControl), 'the main app start is routed and keeps its stack ulimit');
-  const pages = wekanControl.match(/\$\{CPU_EXEC:\+bash "\$CPU_EXEC"\} "\$SNAP\/bin\/node"/g) || [];
-  assert.strictEqual(pages.length, 2, 'both maintenance-page launches are routed');
+  // Every launch of the maintenance page, however many there are - this was a
+  // count of two, and #6592 added a third (the "waiting for its database" page
+  // served during the endless database wait). A count says nothing about the
+  // launch that was added; asking each launch line instead cannot go stale.
+  const launches = wekanControl.split('\n')
+    .filter(l => /wekan-maintenance-page\.mjs/.test(l) && /\$SNAP\/bin\/node/.test(l) && !/^\s*#/.test(l));
+  assert.ok(launches.length >= 3, `expected the maintenance-page launches, found ${launches.length}`);
+  for (const line of launches) {
+    // `env VAR=value` may sit between the two (the data-too-old page passes its
+    // reason that way), so this asks for the order, not for adjacency.
+    assert.ok(/\$\{CPU_EXEC:\+bash "\$CPU_EXEC"\}.*"\$SNAP\/bin\/node"/.test(line),
+      `a maintenance page started around cpu-exec cannot run on a CPU that needs it: ${line.trim()}`);
+  }
 });
 
 // --- Docker entrypoint ----------------------------------------------------------

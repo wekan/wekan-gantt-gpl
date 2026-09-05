@@ -80,6 +80,8 @@
   color: #666;
 }
 #viewer-overlay {
+  display: flex;
+  flex-direction: column;
   width: 100%;
   height: 100vh;
   position: fixed;
@@ -88,11 +90,16 @@
   z-index: 9999 !important;
   background: rgba(13, 13, 13, 0.95);
 }
+#viewer-overlay.hidden {
+  display: none;
+}
 #viewer-container {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
-  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
 }
 #viewer-top-bar {
   display: flex;
@@ -100,6 +107,8 @@
   justify-content: space-between;
   width: 100%;
   padding: 16px;
+  flex: 0 0 auto;
+  box-sizing: border-box;
 }
 #attachment-name {
   color: white;
@@ -125,7 +134,7 @@
   border-radius: 4px;
   padding: 12px;
   margin: 8px 0;
-  font-size: 14px;
+  font-size: calc(14px * var(--wekan-ui-font-scale, 1));
 }
 
 .upload-progress-header {
@@ -187,7 +196,7 @@
 .upload-progress-success {
   display: flex;
   align-items: center;
-  font-size: 12px;
+  font-size: calc(12px * var(--wekan-ui-font-scale, 1));
   font-weight: 500;
 }
 
@@ -208,7 +217,7 @@
 .minicard-upload-progress {
   margin: 4px 0;
   padding: 8px;
-  font-size: 12px;
+  font-size: calc(12px * var(--wekan-ui-font-scale, 1));
 }
 
 .minicard-upload-progress .upload-progress-item {
@@ -217,7 +226,7 @@
 }
 
 .minicard-upload-progress .upload-progress-filename {
-  font-size: 11px;
+  font-size: calc(11px * var(--wekan-ui-font-scale, 1));
 }
 
 /* Card details specific styles */
@@ -227,7 +236,7 @@
 }
 
 .card-details-upload-progress .upload-progress-header {
-  font-size: 16px;
+  font-size: calc(16px * var(--wekan-ui-font-scale, 1));
   margin-bottom: 12px;
 }
 
@@ -237,7 +246,7 @@
 }
 
 .card-details-upload-progress .upload-progress-filename {
-  font-size: 14px;
+  font-size: calc(14px * var(--wekan-ui-font-scale, 1));
 }
 
 /* Drag over state for minicards */
@@ -276,8 +285,10 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 100%;
-  height: calc(100% - 50px);
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
 }
 #image-viewer {
   background: repeating-conic-gradient(#808080 0% 25%, transparent 0% 50%) 50% /
@@ -293,25 +304,25 @@
   max-width: 100%;
 }
 #pdf-viewer {
-  width: 560px;
+  width: 100%;
   height: 100%;
 }
 #txt-viewer {
   background-color: white;
-  width: 560px;
+  width: 100%;
   height: 100%;
+}
+#office-viewer {
+  background-color: #e5e7eb;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 .pdf-preview-error {
   margin-top: 180px;
   display: block;
   font-size: 2em;
   color: white;
-}
-
-@media screen and (max-width: 1600px) {
-  #pdf-viewer {
-    width: 840px;
-  }
 }
 
 @media screen and (max-width: 800px) {
@@ -346,7 +357,8 @@
       100vh - 155px
     ); /* Full height - height of top and bottom bars */
   }
-  #txt-viewer {
+  #txt-viewer,
+  #office-viewer {
     width: 100%;
     height: calc(
       100vh - 155px

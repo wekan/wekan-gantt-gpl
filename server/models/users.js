@@ -3,6 +3,7 @@ import { WebApp } from 'meteor/webapp';
 import { Accounts } from 'meteor/accounts-base';
 import { Email } from 'meteor/email';
 import { check, Match } from 'meteor/check';
+import { safeSelector } from '/server/lib/selectorGuard';
 import { EJSON } from 'meteor/ejson';
 import { Random } from 'meteor/random';
 import { CollectionHooks } from 'meteor/matb33:collection-hooks';
@@ -21,6 +22,9 @@ import { BOARD_COLORS } from '/models/metadata/colors';
 import { isValidCustomColors } from '/models/lib/themeCategories';
 import { isKnownFont, isKnownFontSize, isHexColor6 } from '/models/lib/uiFonts';
 import { DDPRateLimiter } from 'meteor/ddp-rate-limiter';
+import { publicErrorData } from '/server/lib/apiResponseHelpers';
+import escapeForRegex from 'escape-string-regexp';
+const { recordAuthRateLimitDenial } = require('/server/lib/authRateLimitDecision');
 
 // Security (reported by meifukun): defence-in-depth throttle on account creation
 // so invitation-code sign-up (and any other registration) attempts cannot be
@@ -40,6 +44,26 @@ if (Meteor.isServer) {
     10,
     60 * 1000,
   );
+  DDPRateLimiter.addRule(
+    { type: 'method', name: 'searchUsers' },
+    20,
+    10 * 1000,
+  );
+  const accountRecoveryRateLimitCallback = (result, input) =>
+    recordAuthRateLimitDenial(result, input, event =>
+      require('/server/lib/securityLog').record(event));
+  for (const [name, attempts] of [
+    ['forgotPassword', 5],
+    ['resetPassword', 5],
+    ['verifyEmail', 10],
+  ]) {
+    DDPRateLimiter.addRule(
+      { type: 'method', name, clientAddress() { return true; } },
+      attempts,
+      60 * 1000,
+      accountRecoveryRateLimitCallback,
+    );
+  }
 }
 
 // Security (reported by meifukun): profile.avatarUrl is rendered as an <img src>
@@ -69,12 +93,20 @@ function assertSafeAvatarUrl(avatarUrl) {
 import ImpersonatedUsers from '/models/impersonatedUsers';
 import Avatars from '/models/avatars';
 import Boards from '/models/boards';
+const {
+  isStarrablePageUrl, toggleStarredPage, moveStarredPage,
+} = require('/models/lib/starredPages');
 import InvitationCodes from '/models/invitationCodes';
 import InviteToBoardRolesSettings from '/models/inviteToBoardRolesSettings';
+import AccountSettings from '/models/accountSettings';
 import Lists from '/models/lists';
 import Swimlanes from '/models/swimlanes';
 import Users, { allowedSortValues, allowedAllBoardsSortValues } from '/models/users';
-import { expiredNotificationActivityIds } from '/models/lib/notificationCleanup';
+import {
+  expiredNotificationActivityIds,
+  cappedNotifications,
+  notificationCapFromEnv,
+} from '/models/lib/notificationCleanup';
 import { chooseInviteEmailLanguage } from '/models/lib/inviteEmailLanguage';
 import { paginateDomains } from '/models/lib/domainTablePage';
 import { orgsToAutoAddForEmail } from '/models/lib/orgAutoAddByDomain';
@@ -123,6 +155,32 @@ const isSandstorm =
   Meteor.settings && Meteor.settings.public && Meteor.settings.public.sandstorm;
 
 Meteor.methods({
+  // Profile preferences are server writes. Direct client Users.update calls are
+  // optimistic and Meteor rolls them back when the server rejects or cleans the
+  // modifier, which made language/fullname/initials appear to change and then
+  // immediately revert (#6655).
+  async setOwnProfile(fullname, initials) {
+    check(fullname, String);
+    check(initials, String);
+    if (!this.userId) throw new Meteor.Error('not-logged-in', 'User must be logged in');
+    if (fullname.length > 256 || initials.length > 20) {
+      throw new Meteor.Error('invalid-profile', 'Profile fields are too long');
+    }
+    await Users.updateAsync(this.userId, {
+      $set: { 'profile.fullname': fullname, 'profile.initials': initials },
+    });
+  },
+
+  async setLanguage(language) {
+    check(language, String);
+    if (!this.userId) throw new Meteor.Error('not-logged-in', 'User must be logged in');
+    const TAPi18n = getTAPi18n();
+    if (!TAPi18n.isLanguageSupported(language)) {
+      throw new Meteor.Error('invalid-language', 'Language is not supported');
+    }
+    await Users.updateAsync(this.userId, { $set: { 'profile.language': language } });
+  },
+
   // Lazily create the per-user templates-container board on first use (#2339,
   // #5850). New users no longer get one auto-created at signup; this method is
   // called right before a template is actually saved/copied. If the current
@@ -426,6 +484,84 @@ Meteor.methods({
     await Users.updateAsync(this.userId, updateObject);
   },
 
+  // Star the page the caller is on, or unstar it if it is already starred.
+  //
+  // The URL and the title come from the client because only the client knows
+  // what page it is looking at - but neither is trusted: the URL is refused
+  // unless it is a RELATIVE path (an absolute or protocol-relative one would
+  // put another site behind a row in this user's own dropdown), and the title
+  // is stored as text and drawn as text. docs/Features/Board/Starred.md
+  async toggleStarredPage(url, title) {
+    check(url, String);
+    check(title, String);
+    if (!this.userId) throw new Meteor.Error('not-logged-in', 'User must be logged in');
+    if (!isStarrablePageUrl(url)) {
+      throw new Meteor.Error('invalid-page-url', 'Only a relative page URL can be starred');
+    }
+    const user = await Users.findOneAsync(this.userId);
+    if (!user) throw new Meteor.Error('user-not-found', 'User not found');
+
+    const next = toggleStarredPage(
+      (user.profile && user.profile.starredPages) || [], url, title,
+    );
+    await Users.updateAsync(this.userId, {
+      $set: { 'profile.starredPages': next },
+    });
+  },
+
+  // Move a bookmark so it sits where another one is.
+  //
+  // The order is the reader's, and it is ONE order: the tiles in All Boards /
+  // Starred and the rows of the header dropdown are two views of the same
+  // array. docs/Features/Board/Starred.md
+  async moveStarredPage(url, beforeUrl) {
+    check(url, String);
+    check(beforeUrl, Match.OneOf(String, null));
+    if (!this.userId) throw new Meteor.Error('not-logged-in', 'User must be logged in');
+    const user = await Users.findOneAsync(this.userId);
+    if (!user) throw new Meteor.Error('user-not-found', 'User not found');
+
+    const next = moveStarredPage(
+      (user.profile && user.profile.starredPages) || [], url, beforeUrl,
+    );
+    await Users.updateAsync(this.userId, {
+      $set: { 'profile.starredPages': next },
+    });
+  },
+
+  // Set this board as the Home board, whatever was there before. Dropping a
+  // board on the Home row REPLACES - Home holds one board, and a drop that
+  // sometimes set and sometimes cleared (which is what toggleDefaultBoard would
+  // do here) would depend on state the reader cannot see while dragging.
+  // docs/Features/Board/Home.md
+  async setDefaultBoard(boardId) {
+    check(boardId, String);
+    if (!this.userId) throw new Meteor.Error('not-logged-in', 'User must be logged in');
+    // A board this user cannot open is not a board they can start in: the
+    // after-login redirect would land on a board that refuses to draw. The
+    // membership test is the same one the board publication applies.
+    const board = await Boards.findOneAsync({
+      _id: boardId,
+      archived: false,
+      'members.userId': this.userId,
+    });
+    if (!board) throw new Meteor.Error('board-not-found', 'Board not found');
+    await Users.updateAsync(this.userId, {
+      $set: { 'profile.defaultBoardId': boardId },
+    });
+  },
+
+  // Take this board off Home - and only if it IS Home, so dragging some other
+  // board out of a list cannot clear somebody's Home board as a side effect.
+  async clearDefaultBoard(boardId) {
+    check(boardId, String);
+    if (!this.userId) throw new Meteor.Error('not-logged-in', 'User must be logged in');
+    await Users.updateAsync(
+      { _id: this.userId, 'profile.defaultBoardId': boardId },
+      { $unset: { 'profile.defaultBoardId': '' } },
+    );
+  },
+
 
   // #5778: set (or clear, when null/'') the caller's global theme color override.
   // Validated against the known board colors so a client cannot inject an arbitrary
@@ -500,9 +636,16 @@ Meteor.methods({
     return null;
   },
 
-  // #4759: set (or clear) the caller's custom UI text color and text background
-  // color. Each is validated as #rrggbb hex; a null/empty/invalid value unsets that
-  // color (back to default). Only strict hex ever reaches a CSS value.
+  // #4759: set (or clear) the caller's custom UI text color. Validated as
+  // #rrggbb hex; a null/empty/invalid value unsets it (back to default). Only
+  // strict hex ever reaches a CSS value.
+  //
+  // `bgColor` was the "text background color", which is REMOVED - no choice of
+  // elements to paint it on looked good. The parameter is still accepted, so an
+  // older client calling this cannot fail, and it is IGNORED: the field is
+  // unset on every call whatever is passed, so a colour stored before the
+  // removal is cleared the next time somebody touches this popup rather than
+  // sitting in the profile for ever.
   async setUiColors(textColor, bgColor) {
     if (!this.userId) throw new Meteor.Error('not-logged-in', 'User must be logged in');
     check(textColor, Match.OneOf(String, null, undefined));
@@ -515,8 +658,7 @@ Meteor.methods({
     const $unset = {};
     if (isHexColor6(textColor)) $set['profile.uiTextColor'] = textColor;
     else $unset['profile.uiTextColor'] = '';
-    if (isHexColor6(bgColor)) $set['profile.uiTextBgColor'] = bgColor;
-    else $unset['profile.uiTextBgColor'] = '';
+    $unset['profile.uiTextBgColor'] = '';
 
     const modifier = {};
     if (Object.keys($set).length) modifier.$set = $set;
@@ -524,7 +666,7 @@ Meteor.methods({
     await Users.updateAsync(this.userId, modifier);
     return {
       textColor: $set['profile.uiTextColor'] || null,
-      bgColor: $set['profile.uiTextBgColor'] || null,
+      bgColor: null,
     };
   },
 
@@ -534,6 +676,57 @@ Meteor.methods({
   // only the second one may hide the handles on a touch screen, where they are
   // the default. Called with no argument by older clients, which keeps the old
   // flip-the-stored-value behaviour.
+  // Collapse or expand the left menu. One setting for both pages: All Boards
+  // and the Admin Panel draw one menu, and a reader who folds it away on one of
+  // them has said what they want on the other.
+  // docs/Features/Page/Left-Menu.md
+  async setLeftMenuCollapsed(collapsed) {
+    check(collapsed, Boolean);
+    if (!this.userId) throw new Meteor.Error('not-logged-in', 'User must be logged in');
+    await Users.updateAsync(this.userId, {
+      $set: { 'profile.leftMenuCollapsed': collapsed },
+    });
+  },
+
+  // Fold or unfold one workspace of the All Boards left menu. Only the folded
+  // ones are stored, so unfolding REMOVES the key rather than writing false: a
+  // reader who folds two workspaces out of fifty has two keys, and a workspace
+  // that is deleted takes its key with it the next time it is unfolded.
+  // docs/Features/Page/Workspaces.md
+  async setWorkspaceCollapsed(workspaceId, collapsed) {
+    check(workspaceId, String);
+    check(collapsed, Boolean);
+    if (!this.userId) throw new Meteor.Error('not-logged-in', 'User must be logged in');
+    // The id becomes part of a DOTTED field path, and the tree it comes from is
+    // written by the client - so an id carrying a `.` or a `$` would address a
+    // different field, or a nested one, instead of a key in this map.
+    if (!/^[A-Za-z0-9_-]{1,64}$/.test(workspaceId)) {
+      throw new Meteor.Error('invalid-workspace', 'Not a workspace id');
+    }
+    const field = `profile.collapsedWorkspaces.${workspaceId}`;
+    await Users.updateAsync(this.userId, collapsed
+      ? { $set: { [field]: true } }
+      : { $unset: { [field]: '' } });
+  },
+
+  // How wide that menu was dragged to. The client already clamps the drag, but
+  // a method is reachable without the drag: the width is clamped again here, so
+  // a call with 20000 - or with NaN, which passes `check(width, Number)` and
+  // would store a width no page could recover from - cannot leave a user with a
+  // menu that fills the window and no way to get at what it covers.
+  // docs/Features/Page/Left-Menu.md
+  async setLeftMenuWidth(width) {
+    check(width, Number);
+    if (!this.userId) throw new Meteor.Error('not-logged-in', 'User must be logged in');
+    if (!Number.isFinite(width)) {
+      throw new Meteor.Error('invalid-width', 'Left menu width must be a finite number');
+    }
+    const clamped = Math.round(Math.min(Math.max(width, 120), 1200));
+    await Users.updateAsync(this.userId, {
+      $set: { 'profile.leftMenuWidth': clamped },
+    });
+  },
+
   async toggleDesktopDragHandles(show) {
     check(show, Match.OneOf(Boolean, null, undefined));
     if (!this.userId) throw new Meteor.Error('not-logged-in', 'User must be logged in');
@@ -563,6 +756,19 @@ Meteor.methods({
     if (!user) throw new Meteor.Error('user-not-found', 'User not found');
     const current = !!((user.profile || {}).openManyCardsAtOnce);
     await Users.updateAsync(this.userId, { $set: { 'profile.openManyCardsAtOnce': !current } });
+  },
+
+  // Member Settings / Change color, beside "Default (no override)": paint the All
+  // Boards tiles in the theme's lighter colour rather than each board's own. A
+  // per-user preference, off by default, and a toggle for the same reason
+  // toggleOpenManyCardsAtOnce is one - the row it sits in has no Save button.
+  async toggleAllBoardsThemeTiles() {
+    if (!this.userId) throw new Meteor.Error('not-logged-in', 'User must be logged in');
+    const user = await Users.findOneAsync(this.userId);
+    if (!user) throw new Meteor.Error('user-not-found', 'User not found');
+    const current = !!((user.profile || {}).allBoardsThemeTiles);
+    await Users.updateAsync(this.userId, { $set: { 'profile.allBoardsThemeTiles': !current } });
+    return !current;
   },
 
   async createWorkspace(params) {
@@ -866,12 +1072,6 @@ Meteor.methods({
     return true;
   },
 
-  async setZoomLevel(level) {
-    check(level, Number);
-    const user = await ReactiveCache.getCurrentUser();
-    user.setZoomLevel(level);
-  },
-
   async setMobileMode(enabled) {
     check(enabled, Boolean);
     const user = await ReactiveCache.getCurrentUser();
@@ -979,23 +1179,29 @@ Meteor.methods({
     if (userId.includes('/') || email.includes('/')) {
       return false;
     }
-    if ((await ReactiveCache.getCurrentUser())?.isAdmin) {
-      if (Array.isArray(email)) {
-        email = email.shift();
-      }
-      const existingUser = await ReactiveCache.getUser(
-        { 'emails.address': email },
-        { fields: { _id: 1 } },
-      );
-      if (existingUser) {
-        throw new Meteor.Error('email-already-taken');
-      } else {
-        await Users.updateAsync(userId, {
-          $set: {
-            emails: [{ address: email, verified: false }],
-          },
-        });
-      }
+    const currentUser = await ReactiveCache.getCurrentUser();
+    const allowSelfChange =
+      this.userId === userId &&
+      (await AccountSettings.findOneAsync('accounts-allowEmailChange'))
+        ?.booleanValue;
+    if (!currentUser?.isAdmin && !allowSelfChange) {
+      throw new Meteor.Error('not-authorized');
+    }
+    if (Array.isArray(email)) {
+      email = email.shift();
+    }
+    const existingUser = await ReactiveCache.getUser(
+      { 'emails.address': email },
+      { fields: { _id: 1 } },
+    );
+    if (existingUser) {
+      throw new Meteor.Error('email-already-taken');
+    } else {
+      await Users.updateAsync(userId, {
+        $set: {
+          emails: [{ address: email, verified: false }],
+        },
+      });
     }
   },
 
@@ -1378,11 +1584,22 @@ const autoAddOrgsByDomain = async user => {
 };
 
 Accounts.onCreateUser(async (options, user) => {
-  const usersCursor = await ReactiveCache.getUsers({}, {}, true);
-  const userCount = typeof usersCursor.countAsync === 'function' ? await usersCursor.countAsync() : usersCursor.count();
-  user.isAdmin = userCount === 0;
+  // Only existence matters: the very first account becomes administrator.
+  // Counting every user made sign-up decode the entire users collection on
+  // FerretDB; a restored 14k-user instance took almost a minute, so the client
+  // timed out and showed failure although the account was eventually created.
+  const existingUser = await ReactiveCache.getUser(
+    {},
+    { fields: { _id: 1 } },
+  );
+  user.isAdmin = !existingUser;
 
-  if (user.services.oidc) {
+  // A custom login handler is allowed to supply a valid user document without
+  // a `services` object. WeKan's CAS handler does exactly that: its verified
+  // username, email, profile and authenticationMethod are top-level fields.
+  // Only enter the OIDC normalization path when OIDC service data exists.
+  // #3204
+  if (user.services?.oidc) {
     let email = user.services.oidc.email;
     if (Array.isArray(email)) {
       email = email.shift();
@@ -1586,19 +1803,39 @@ const runNotificationCleanup = async function runNotificationCleanup() {
   const users = await ReactiveCache.getUsers({
     'profile.notifications': { $exists: true, $ne: [] },
   });
+  // #6533: the cap is a BACKSTOP for the array the rule above cannot shrink.
+  // Only READ notifications are ever pruned, so a user who does not clear their
+  // tray grows `profile.notifications` without limit - and every new
+  // notification is an `$addToSet` that rewrites that whole array inside the user
+  // document. On FerretDB's SQLite backend, which has one writer, those rewrites
+  // queue and start failing with SQLITE_BUSY while FerretDB burns CPU scanning
+  // the array. See models/lib/notificationCleanup.js.
+  const maxPerUser = notificationCapFromEnv(process.env);
   for (const user of users) {
+    const notifications = user.profile && user.profile.notifications;
     const activityIds = expiredNotificationActivityIds(
-      user.profile && user.profile.notifications,
+      notifications,
       removeAge,
       now,
     );
-    if (activityIds.length === 0) continue;
+    // What the array would be after the $pull, so the cap is applied to the
+    // result rather than to a length that is about to shrink anyway.
+    const remaining = activityIds.length
+      ? (notifications || []).filter(n => !(n && activityIds.includes(n.activity)))
+      : notifications;
+    const kept = cappedNotifications(remaining, maxPerUser);
+    if (activityIds.length === 0 && kept === null) continue;
     try {
-      await Users.updateAsync(user._id, {
-        $pull: {
-          'profile.notifications': { activity: { $in: activityIds } },
-        },
-      });
+      // ONE write per user either way. When the cap applies, `$set` replaces the
+      // array outright - a `$pull` for the overflow would need the entries it is
+      // removing listed, and the point is that there are too many of them.
+      await Users.updateAsync(user._id, kept !== null
+        ? { $set: { 'profile.notifications': kept } }
+        : {
+            $pull: {
+              'profile.notifications': { activity: { $in: activityIds } },
+            },
+          });
     } catch (error) {
       console.error(
         'Notification cleanup: failed to prune notifications for user',
@@ -1826,7 +2063,7 @@ WebApp.handlers.get('/api/user', async function(req, res) {
     data.boards = boards;
     sendJsonResult(res, { code: 200, data });
   } catch (error) {
-    sendJsonResult(res, { code: 200, data: error });
+    sendJsonResult(res, publicErrorData(error));
   }
 });
 
@@ -1840,9 +2077,30 @@ WebApp.handlers.get('/api/users', async function(req, res) {
       data: users.map(doc => ({ _id: doc._id, username: doc.username })),
     });
   } catch (error) {
-    sendJsonResult(res, { code: 200, data: error });
+    sendJsonResult(res, publicErrorData(error));
   }
 });
+
+// GHSA-6qpx-x7vr-p9w6: what an admin API answer may carry about a user.
+//
+// `GET /api/users/:userId` and `PUT /api/users/:userId` serialised the whole
+// Meteor user document, which means `services.password.bcrypt` - an offline
+// crackable password hash - and `services.resume.loginTokens`, the hashes of
+// every live session with the time each began. Both endpoints are admin-only
+// and that was never the problem: the payload was. Walking the ids that
+// `GET /api/users` returns handed an admin, or anyone holding an admin token,
+// the credential material of the whole instance.
+//
+// `GET /api/user` (the self view) has always done `delete data.services`; the
+// list endpoint has always projected down to `_id` and `username`. These two
+// were the inconsistency, so they strip the same subtree - and `sessionData`
+// with it, which is server-side state no API answer needs.
+function withoutSecrets(user) {
+  if (!user || typeof user !== 'object') return user;
+  delete user.services;
+  delete user.sessionData;
+  return user;
+}
 
 WebApp.handlers.get('/api/users/:userId', async function(req, res) {
   try {
@@ -1866,9 +2124,9 @@ WebApp.handlers.get('/api/users/:userId', async function(req, res) {
     });
 
     user.boards = boards;
-    sendJsonResult(res, { code: 200, data: user });
+    sendJsonResult(res, { code: 200, data: withoutSecrets(user) });
   } catch (error) {
-    sendJsonResult(res, { code: 200, data: error });
+    sendJsonResult(res, publicErrorData(error));
   }
 });
 
@@ -1898,12 +2156,12 @@ WebApp.handlers.put('/api/users/:userId', async function(req, res) {
         } else if (action === 'enableLogin') {
           await Users.updateAsync({ _id: id }, { $set: { loginDisabled: '' } });
         }
-        data = await ReactiveCache.getUser(id);
+        data = withoutSecrets(await ReactiveCache.getUser(id));
       }
     }
     sendJsonResult(res, { code: 200, data });
   } catch (error) {
-    sendJsonResult(res, { code: 200, data: error });
+    sendJsonResult(res, publicErrorData(error));
   }
 });
 
@@ -1996,7 +2254,7 @@ WebApp.handlers.post('/api/boards/:boardId/members/:userId/add', async function(
     }
     sendJsonResult(res, { code: 200, data });
   } catch (error) {
-    sendJsonResult(res, { code: 200, data: error });
+    sendJsonResult(res, publicErrorData(error));
   }
 });
 
@@ -2048,14 +2306,14 @@ WebApp.handlers.post('/api/boards/:boardId/members/:userId/remove', async functi
     }
     sendJsonResult(res, { code: 200, data });
   } catch (error) {
-    sendJsonResult(res, { code: 200, data: error });
+    sendJsonResult(res, publicErrorData(error));
   }
 });
 
 WebApp.handlers.post('/api/users/', async function(req, res) {
   try {
     await Authentication.checkUserId(req.userId);
-    const id = Accounts.createUser({
+    const id = await Accounts.createUser({
       username: req.body.username,
       email: req.body.email,
       password: req.body.password,
@@ -2063,18 +2321,36 @@ WebApp.handlers.post('/api/users/', async function(req, res) {
     });
     sendJsonResult(res, { code: 200, data: { _id: id } });
   } catch (error) {
-    sendJsonResult(res, { code: 200, data: error });
+    sendJsonResult(res, publicErrorData(error));
   }
 });
 
+/**
+ * @operation delete_user
+ * @summary Delete a user and confirm that one account was removed
+ *
+ * @description Global administrators receive the deleted id; a missing id
+ * returns HTTP 404 without reporting a deletion.
+ *
+ * @param {string} userId the id of the user to delete
+ * @return_type {_id: string}
+ * @response 404 {error: string} No user matched the requested id.
+ */
 WebApp.handlers.delete('/api/users/:userId', async function(req, res) {
   try {
     await Authentication.checkUserId(req.userId);
     const id = req.params.userId;
-    await Meteor.users.removeAsync({ _id: id });
+    const removed = await Meteor.users.removeAsync({ _id: id });
+    if (removed === 0) {
+      sendJsonResult(res, { code: 404, data: { error: 'User not found' } });
+      return;
+    }
+    if (removed !== 1) {
+      throw new Error(`Unexpected user deletion count: ${removed}`);
+    }
     sendJsonResult(res, { code: 200, data: { _id: id } });
   } catch (error) {
-    sendJsonResult(res, { code: 200, data: error });
+    sendJsonResult(res, publicErrorData(error));
   }
 });
 
@@ -2082,8 +2358,28 @@ WebApp.handlers.post('/api/createtoken/:userId', async function(req, res) {
   try {
     await Authentication.checkUserId(req.userId);
     const id = req.params.userId;
+    check(id, String);
+    const reason = req.body && typeof req.body.reason === 'string'
+      ? req.body.reason.trim()
+      : '';
+    if (!reason) {
+      sendJsonResult(res, {
+        code: 400,
+        data: { error: 'A reason is required when creating a token for another user' },
+      });
+      return;
+    }
+    if (!(await ReactiveCache.getUser(id))) {
+      sendJsonResult(res, { code: 404, data: { error: 'User not found' } });
+      return;
+    }
     const token = Accounts._generateStampedLoginToken();
-    Accounts._insertLoginToken(id, token);
+    await ImpersonatedUsers.insertAsync({
+      adminId: req.userId,
+      userId: id,
+      reason: `restCreateToken: ${reason.slice(0, 500)}`,
+    });
+    await Accounts._insertLoginToken(id, token);
 
     sendJsonResult(res, {
       code: 200,
@@ -2093,7 +2389,7 @@ WebApp.handlers.post('/api/createtoken/:userId', async function(req, res) {
       },
     });
   } catch (error) {
-    sendJsonResult(res, { code: 200, data: error });
+    sendJsonResult(res, publicErrorData(error));
   }
 });
 
@@ -2120,7 +2416,7 @@ WebApp.handlers.post('/api/deletetoken', async function(req, res) {
 
     sendJsonResult(res, { code: 200, data });
   } catch (error) {
-    sendJsonResult(res, { code: 200, data: error });
+    sendJsonResult(res, publicErrorData(error));
   }
 });
 
@@ -2214,7 +2510,7 @@ Meteor.methods({
     }
 
     const cursor = await ReactiveCache.getUsers(
-      tenantAdmin.peopleScopeSelector(currentUser, query || {}), {}, true);
+      tenantAdmin.peopleScopeSelector(currentUser, safeSelector(query || {}, 'getUsersCollectionCount')), {}, true);
     return typeof cursor.countAsync === 'function' ? await cursor.countAsync() : cursor.count();
   },
 
@@ -2253,7 +2549,7 @@ Meteor.methods({
     // The same selector, the same sort and the same window as the publication -
     // anything else would name a different page than the one that was sent.
     const cursor = await ReactiveCache.getUsers(
-      tenantAdmin.peopleScopeSelector(currentUser, query || {}),
+      tenantAdmin.peopleScopeSelector(currentUser, safeSelector(query || {}, 'getPeoplePageIds')),
       {
         limit,
         skip: skip || 0,
@@ -2475,7 +2771,7 @@ Meteor.methods({
       return [];
     }
 
-    const searchRegex = new RegExp(query, 'i');
+    const searchRegex = new RegExp(escapeForRegex(query), 'i');
     const users = await ReactiveCache.getUsers(
       {
         $or: [
@@ -2560,6 +2856,6 @@ WebApp.handlers.get('/api/admin/domains', async function(req, res) {
       .sort((a, b) => b.count - a.count || a.domain.localeCompare(b.domain));
     sendJsonResult(res, { code: 200, data });
   } catch (error) {
-    sendJsonResult(res, { code: 200, data: error });
+    sendJsonResult(res, publicErrorData(error));
   }
 });

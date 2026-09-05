@@ -7,7 +7,7 @@ fi
 # FerretDB Control Script
 # Starts FerretDB v1 (the wekan/FerretDB fork) with its embedded pure-Go SQLite
 # backend, which speaks the MongoDB wire protocol. It is the MongoDB-compatible
-# alternative database, selected with:  snap set wekan database=ferretdb
+# database WeKan runs on. MongoDB runs beside it only while a migration is owed.
 #
 # Only one database runs at a time. This service starts FerretDB only when
 # `database` is set to ferretdb; otherwise it disables itself (mirroring how
@@ -19,27 +19,33 @@ echo "Reading snap settings..."
 source $SNAP/bin/wekan-read-settings
 
 # Maintenance mode: if $SNAP_COMMON/.wekan-maintenance exists, do NOT self-disable; start
-# FerretDB regardless of the `database` setting, so an admin can run FerretDB by hand
+# FerretDB even mid-migration, so an admin can run FerretDB by hand
 # (`snap start wekan.ferretdb`) to reach the data over the MongoDB wire protocol. Toggle with
 # `snap run wekan.maintenance on|off`. FerretDB and MongoDB share port 27019 - run one at a time.
 WEKAN_MAINTENANCE="$SNAP_COMMON/.wekan-maintenance"
 if [ -f "$WEKAN_MAINTENANCE" ]; then
-    echo "MAINTENANCE MODE (.wekan-maintenance present): starting FerretDB directly, ignoring the"
-    echo "database setting. Stop with 'snap stop wekan.ferretdb'."
+    echo "MAINTENANCE MODE (.wekan-maintenance present): starting FerretDB directly, whatever"
+    echo "the migration state is. Stop with 'snap stop wekan.ferretdb'."
 fi
 
-# The `database` snap setting is AUTHORITATIVE (see wekan-control): FerretDB runs only when
-# database=ferretdb. This lets an admin keep WeKan on MongoDB (`snap run wekan.database mongodb`)
-# while a migration is being fixed, instead of being force-switched to FerretDB just because a
-# SQLite file exists. A successful migration sets database=ferretdb itself (finish_success).
-if [ ! -f "$WEKAN_MAINTENANCE" ] && [ "ferretdb" != "${DATABASE}" ]; then
-    echo "database is '${DATABASE:-mongodb}', not 'ferretdb'. Disabling ferretdb service."
+# FerretDB is what WeKan runs on, so this service starts unless the snap is still
+# in the middle of getting there: bin/database-role says mongodb while a migration
+# is owed (mongod holds the shared port then, and it has the data), and ferretdb
+# the rest of the time. There is no setting in it - the data decides.
+if [ ! -f "$WEKAN_MAINTENANCE" ] && [ "ferretdb" != "$(bash "$SNAP/bin/database-role")" ]; then
+    echo "$(bash "$SNAP/bin/database-role" --why). Disabling ferretdb service until that is done."
     snapctl stop --disable ${SNAP_NAME}.ferretdb 2>/dev/null || true
     exit 0
 fi
 
 # The FerretDB binary is shipped inside the WeKan bundle and staged to the snap
 # root by the wekan part (bundle/ferretdb -> $SNAP/ferretdb).
+if [ -z "${GOMEMLIMIT:-}" ]; then
+    _memory_mb=$(awk '/^MemTotal:/{print int($2/1024)}' /proc/meminfo 2>/dev/null || echo 2048)
+    for _f in /sys/fs/cgroup/memory.max /sys/fs/cgroup/memory/memory.limit_in_bytes; do [ -r "$_f" ] || continue; _b=$(cat "$_f" 2>/dev/null || true); case "$_b" in ''|max|*[!0-9]*) continue;; esac; _m=$((_b/1048576)); [ "$_m" -gt 0 ] && [ "$_m" -lt "$_memory_mb" ] && _memory_mb=$_m; break; done
+    _go_mb=$((_memory_mb/5)); [ "$_go_mb" -gt 1024 ] && _go_mb=1024
+    export GOMEMLIMIT="${_go_mb}MiB"
+fi
 FERRETDB_BIN="$SNAP/ferretdb"
 if [ ! -x "$FERRETDB_BIN" ]; then
     echo "ERROR: FerretDB binary not found or not executable at $FERRETDB_BIN"
@@ -85,7 +91,7 @@ if [ "sqlite" != "${FERRETDB_HANDLER}" ]; then
 
     # Same OpLog gate as the sqlite path: create the replica set / OpLog only when the
     # admin opts in (wekan-ferretdb-oplog=true); otherwise run standalone (polling).
-    if [ "true" = "${WEKAN_FERRETDB_OPLOG:-false}" ]; then
+    if [ "true" = "${WEKAN_FERRETDB_OPLOG:-true}" ]; then
         REPL_SET_ARGS=(--repl-set-name="${WEKAN_FERRETDB_REPL_SET:-rs0}")
         OPLOG_MODE="OpLog enabled (replSet ${WEKAN_FERRETDB_REPL_SET:-rs0})"
     else
@@ -116,17 +122,11 @@ export DO_NOT_TRACK=1 FERRETDB_TELEMETRY=disable
 # #6480/#6481: a replica-set name makes FerretDB v1 auto-create the capped
 # local.oplog.rs and advertise the replica-set hello handshake, so WeKan's Meteor
 # CAN tail the OpLog. But the OpLog is only useful when WeKan is ACTUALLY tailing it
-# (WEKAN_FERRETDB_OPLOG=true). In the default polling-only mode (wekan/wekan#6503)
-# maintaining the OpLog is pure overhead: a second write per mutation, a
-# once-a-minute capped-cleanup ticker, and — worst — a leftover tailable cursor
-# whose SQLite awaitData re-scan can peg FerretDB CPU (300%+) even while node is
-# idle. So enable the replica set / OpLog ONLY in OpLog mode; in polling-only mode
-# run FerretDB STANDALONE, with no OpLog at all. This matches the WEKAN_FERRETDB_OPLOG
-# gate in wekan-control (which unsets MONGO_OPLOG_URL in the same mode), so neither
-# side keeps an OpLog alive by default. Repl-set name overridable via
-# WEKAN_FERRETDB_REPL_SET.
+# OpLog mode is the default now that FerretDB wakes awaitData tails from backend
+# write notifications instead of repeatedly polling SQLite. The explicit false
+# setting remains available as a standalone polling fallback.
 REPL_SET_NAME="${WEKAN_FERRETDB_REPL_SET:-rs0}"
-if [ "true" = "${WEKAN_FERRETDB_OPLOG:-false}" ]; then
+if [ "true" = "${WEKAN_FERRETDB_OPLOG:-true}" ]; then
     REPL_SET_ARGS=(--repl-set-name="${REPL_SET_NAME}")
     OPLOG_MODE="OpLog enabled (replSet ${REPL_SET_NAME})"
 else

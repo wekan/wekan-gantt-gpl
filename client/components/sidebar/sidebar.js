@@ -4,9 +4,16 @@ import { ReactiveVar } from 'meteor/reactive-var';
 import { ReactiveCache } from '/imports/reactiveCache';
 import { TAPi18n } from '/imports/i18n';
 import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
+const { allBoardsPath, SECTION_ARCHIVE } = require('/models/lib/allBoardsUrls');
+const {
+  SIDEBAR_BACK_CLOSE,
+  sidebarBackAction,
+} = require('/models/lib/sidebarBackAction');
 import { InfiniteScrolling } from '/client/lib/infiniteScrolling';
+import '/client/components/boards/exportScope';
 import AccessibilitySettings from '/models/accessibilitySettings';
 import Boards from '/models/boards';
+import Cards from '/models/cards';
 import Attachments from '/models/attachments';
 import { generateUniversalAttachmentUrl } from '/models/lib/universalUrlGenerator';
 import Integrations from '/models/integrations';
@@ -19,6 +26,13 @@ import {
   exportDependenciesSvg,
 } from '/client/lib/exportDependencies';
 import { parseDependencyLines } from '/client/lib/importDependencies';
+import { caretClassFor } from '/client/lib/sectionCaret';
+import { buildAttachmentUploadConfig } from '/client/lib/attachmentUploadConfig';
+import { toggleFold } from '/client/lib/foldState';
+import {
+  hiddenMinicardLabelText,
+  toggleMinicardLabelText,
+} from '/client/lib/minicardLabelText';
 import {
   clearSidebarInstance,
   setSidebarInstance,
@@ -307,26 +321,33 @@ Template.sidebar.helpers({
 });
 
 Template.sidebar.events({
+  // Members and Labels fold by their headings, the way an opened card's
+  // sections do. Delegated here, on the sidebar, because the two headings live
+  // in two child templates and the rule is one rule.
+  // client/lib/foldState.js
+  'click .js-toggle-fold'(event) {
+    event.preventDefault();
+    toggleFold(event.currentTarget.dataset.fold);
+  },
+  // A heading with role="button" and a tabindex has to answer the keys a button
+  // answers, or it cannot be folded without a mouse.
+  'keydown .js-toggle-fold'(event) {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    toggleFold(event.currentTarget.dataset.fold);
+  },
   'click .js-hide-sidebar'(event, tpl) {
     tpl.hide();
   },
-  'click .js-toggle-sidebar'(event, tpl) {
-    tpl.toggle();
-  },
   'click .js-back-home'(event, tpl) {
-    tpl.setView();
-  },
-  'click .js-toggle-minicard-label-text'() {
-    const currentUser = ReactiveCache.getCurrentUser();
-    if (currentUser) {
-      Meteor.call('toggleMinicardLabelText');
-    } else if (window.localStorage.getItem('hiddenMinicardLabelText')) {
-      window.localStorage.removeItem('hiddenMinicardLabelText');
-      location.reload();
-    } else {
-      window.localStorage.setItem('hiddenMinicardLabelText', 'true');
-      location.reload();
+    if (sidebarBackAction(tpl.getView(), Utils.isMiniScreen()) === SIDEBAR_BACK_CLOSE) {
+      // #3576: Search is a full-screen panel on a phone. Reset its view for the
+      // next open, but close it now so Back returns directly to the card wall.
+      tpl._view.set(defaultView);
+      tpl.hide();
+      return;
     }
+    tpl.setView();
   },
   'click .js-shortcuts'() {
     FlowRouter.go('shortcuts');
@@ -364,16 +385,6 @@ Template.sidebar.events({
 Blaze.registerHelper('Sidebar', () => Sidebar);
 
 Template.homeSidebar.helpers({
-  hiddenMinicardLabelText() {
-    const currentUser = ReactiveCache.getCurrentUser();
-    if (currentUser) {
-      return (currentUser.profile || {}).hiddenMinicardLabelText;
-    } else if (window.localStorage.getItem('hiddenMinicardLabelText')) {
-      return true;
-    } else {
-      return false;
-    }
-  },
   isVerticalScrollbars() {
     const user = ReactiveCache.getCurrentUser();
     return user && user.isVerticalScrollbars();
@@ -387,10 +398,25 @@ Template.homeSidebar.helpers({
     let ret = Utils.getCurrentBoard().showActivities ?? false;
     return ret;
   },
+  // The caret in front of the Activities heading - the same one an opened
+  // card's sections carry, from the same function, so the two cannot point
+  // different ways in one language. client/lib/sectionCaret.js
+  activitiesCaret() {
+    return caretClassFor(Utils.getCurrentBoard()?.showActivities ?? false);
+  },
 });
 
 Template.homeSidebar.events({
-  async 'click .js-toggle-show-activities'() {
+  async 'click .js-toggle-show-activities'(event) {
+    event.preventDefault();
+    await Utils.getCurrentBoard().toggleShowActivities();
+  },
+  // A heading that can be operated with the mouse can be operated with the
+  // keyboard: it carries role="button" and a tabindex, so Enter and Space have
+  // to do what a click does.
+  async 'keydown .js-toggle-show-activities'(event) {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
     await Utils.getCurrentBoard().toggleShowActivities();
   },
 });
@@ -481,12 +507,6 @@ Template.boardMenuPopup.events({
       });
     }
   },
-  'click .js-custom-fields'() {
-    if (Sidebar) {
-      Sidebar.setView('customFields');
-    }
-    Popup.back();
-  },
   'click .js-open-archives'() {
     if (Sidebar) {
       Sidebar.setView('archives');
@@ -495,7 +515,6 @@ Template.boardMenuPopup.events({
   },
   'click .js-change-board-color': Popup.open('boardChangeColor'),
   'click .js-change-background-image': Popup.open('boardChangeBackgroundImage'),
-  'click .js-manage-board-backgrounds': Popup.open('boardBackgrounds'),
   'click .js-board-info-on-my-boards': Popup.open('boardInfoOnMyBoards'),
   'click .js-change-language': Popup.open('changeLanguage'),
   'click .js-delete-duplicate-lists': Popup.afterConfirm('deleteDuplicateLists', function() {
@@ -554,9 +573,11 @@ Template.boardMenuPopup.events({
   }),
   'click .js-outgoing-webhooks': Popup.open('outgoingWebhooks'),
   'click .js-import-board': Popup.open('chooseBoardSource'),
-  'click .js-subtask-settings': Popup.open('boardSubtaskSettings'),
-  'click .js-card-settings': Popup.open('boardCardSettings'),
   'click .js-export-board': Popup.open('exportBoard'),
+  // Import INTO this board. `js-import-board` above is All Boards' own row,
+  // which makes a NEW board from a file - a different question with a nearly
+  // identical name, so the classes are kept apart.
+  'click .js-import-into-board': Popup.open('importBoardInto'),
 });
 
 Template.boardMenuPopup.onCreated(function() {
@@ -827,8 +848,11 @@ Template.membersWidget.events({
   'click .js-manage-board-addTeam': Popup.open('addBoardTeam'),
   'click .js-manage-board-addDomain': Popup.open('addBoardDomain'),
   'click .js-import-board': Popup.open('chooseBoardSource'),
+  // Boards in Archive is a SECTION of All Boards, not a page of its own: the
+  // row in its left menu. `/archive` is the full-width page that section
+  // replaced. docs/Features/Page/Archive.md
   'click .js-open-archived-board'() {
-    Modal.open('archivedBoards');
+    FlowRouter.go(allBoardsPath(SECTION_ARCHIVE, []));
   },
   'click .sandstorm-powerbox-request-identity'() {
     window.sandstormRequestIdentity();
@@ -936,140 +960,18 @@ Template.outgoingWebhooksPopup.events({
   },
 });
 
+// The board popup is the shared export body (client/components/boards/exportScope.js)
+// with the widest scope: every format, every filename and the URL builder behind
+// them live in that one table, so this popup has nothing of its own to compute
+// except the NAME of what is being exported. The nineteen helpers that used to
+// build those URLs here are gone with the markup that called them - two lists of
+// formats was how the board menu and the other three menus drifted apart.
 Template.exportBoardPopup.helpers({
-  withApi() {
-    return Template.instance().apiEnabled.get();
-  },
-  exportUrl() {
-    const params = {
-      boardId: Session.get('currentBoard'),
-    };
-    const queryParams = {
-      authToken: Accounts._storedLoginToken(),
-    };
-    return FlowRouter.path('/api/boards/:boardId/export', params, queryParams);
-  },
-  // #5870: JSON export omitting base64 attachment data, so very large boards
-  // (whose inlined attachments would otherwise overflow the JSON serializer)
-  // can still be exported.
-  exportUrlNoAttachments() {
-    const params = {
-      boardId: Session.get('currentBoard'),
-    };
-    const queryParams = {
-      authToken: Accounts._storedLoginToken(),
-      attachments: 'false',
-    };
-    return FlowRouter.path('/api/boards/:boardId/export', params, queryParams);
-  },
-  exportUrlExcel() {
-    const params = {
-      boardId: Session.get('currentBoard'),
-    };
-    const queryParams = {
-      authToken: Accounts._storedLoginToken(),
-    };
-    return FlowRouter.path(
-      '/api/boards/:boardId/exportExcel',
-      params,
-      queryParams,
-    );
-  },
-  exportUrlPDF() {
-    const params = {
-      boardId: Session.get('currentBoard'),
-    };
-    const queryParams = {
-      authToken: Accounts._storedLoginToken(),
-    };
-    return FlowRouter.path('/api/boards/:boardId/exportPDF', params, queryParams);
-  },
-  exportFilenamePDF() {
-    const boardId = Session.get('currentBoard');
-    return `export-board-${boardId}.pdf`;
-  },
-  exportUrlKanboard() {
-    const params = {
-      boardId: Session.get('currentBoard'),
-    };
-    const queryParams = {
-      authToken: Accounts._storedLoginToken(),
-    };
-    return FlowRouter.path('/api/boards/:boardId/export/kanboard', params, queryParams);
-  },
-  exportFilenameKanboard() {
-    const boardId = Session.get('currentBoard');
-    return `export-board-kanboard-${boardId}.json`;
-  },
-  // Generalized export URL/filename for the external tools (Deck, OpenProject,
-  // GitHub, GitLab, Gitea, Forgejo).
-  exportUrlExternal(format) {
-    return FlowRouter.path(
-      `/api/boards/:boardId/export/${format}`,
-      { boardId: Session.get('currentBoard') },
-      { authToken: Accounts._storedLoginToken() },
-    );
-  },
-  exportFilenameExternal(format) {
-    return `export-board-${format}-${Session.get('currentBoard')}.json`;
-  },
-  exportFilenameExcel() {
-    const boardId = Session.get('currentBoard');
-    return `export-board-excel-${boardId}.xlsx`;
-  },
-  exportCsvUrl() {
-    const params = {
-      boardId: Session.get('currentBoard'),
-    };
-    const queryParams = {
-      authToken: Accounts._storedLoginToken(),
-      delimiter: ',',
-    };
-    return FlowRouter.path(
-      '/api/boards/:boardId/export/csv',
-      params,
-      queryParams,
-    );
-  },
-  exportScsvUrl() {
-    const params = {
-      boardId: Session.get('currentBoard'),
-    };
-    const queryParams = {
-      authToken: Accounts._storedLoginToken(),
-      delimiter: ';',
-    };
-    return FlowRouter.path(
-      '/api/boards/:boardId/export/csv',
-      params,
-      queryParams,
-    );
-  },
-  exportTsvUrl() {
-    const params = {
-      boardId: Session.get('currentBoard'),
-    };
-    const queryParams = {
-      authToken: Accounts._storedLoginToken(),
-      delimiter: '\t',
-    };
-    return FlowRouter.path(
-      '/api/boards/:boardId/export/csv',
-      params,
-      queryParams,
-    );
-  },
-  exportJsonFilename() {
-    const boardId = Session.get('currentBoard');
-    return `export-board-${boardId}.json`;
-  },
-  exportCsvFilename() {
-    const boardId = Session.get('currentBoard');
-    return `export-board-${boardId}.csv`;
-  },
-  exportTsvFilename() {
-    const boardId = Session.get('currentBoard');
-    return `export-board-${boardId}.tsv`;
+  // #1173: the shared export body names the file after what was exported, and
+  // for this popup that is the board.
+  boardTitle() {
+    const board = ReactiveCache.getBoard(Session.get('currentBoard'));
+    return (board && board.title) || 'export-board';
   },
 });
 
@@ -1240,12 +1142,95 @@ Template.boardChangeBackgroundImagePopup.helpers({
   },
 });
 
-// Manage the board's stored background images (upload / set active / download /
-// delete). Backgrounds are board-level Attachments (meta.boardId, no cardId,
+// Uploading one. It sits with the Background Image URL field
+// (boardChangeBackgroundImagePopup) rather than with the list of images already
+// uploaded: a URL and a file are the same question answered two ways.
+// Backgrounds are board-level Attachments (meta.boardId, no cardId,
 // meta.source === 'board-background') in the default attachments storage.
-Template.boardBackgroundsPopup.onCreated(function () {
+Template.boardBackgroundUpload.onCreated(function () {
   this.uploading = new ReactiveVar(false);
   this.error = new ReactiveVar('');
+  const board = Utils.getCurrentBoard();
+  this.boardId = board && board._id;
+});
+
+Template.boardBackgroundUpload.helpers({
+  uploading() {
+    return Template.instance().uploading;
+  },
+  error() {
+    return Template.instance().error;
+  },
+});
+
+Template.boardBackgroundUpload.events({
+  'click .js-bg-upload-button'(event, tpl) {
+    event.preventDefault();
+    tpl.find('.js-bg-upload-input').click();
+  },
+  async 'change .js-bg-upload-input'(event, tpl) {
+    const file = event.currentTarget.files && event.currentTarget.files[0];
+    if (!file) return;
+    tpl.error.set('');
+    tpl.uploading.set(true);
+    // The config comes from the shared builder, which is the whole reason this
+    // upload works: it stamps the generated `fileId` into `meta.fileId`, and
+    // Attachments' namingFunction reads the stored file's NAME out of there.
+    // Written by hand here, without it, every background upload was stored
+    // under `undefined` and never arrived. client/lib/attachmentUploadConfig.js
+    // allow re-selecting the same file later - done FIRST, so a failure below
+    // does not also leave the picker refusing to offer the same file again.
+    const input = event.currentTarget;
+    try {
+      const uploader = await Attachments.insertAsync(
+        buildAttachmentUploadConfig({
+          file,
+          meta: { boardId: tpl.boardId, source: 'board-background' },
+        }),
+        false,
+      );
+      // A finished upload puts itself BEHIND THE BOARD. "Add background image"
+      // is asked for by somebody who wants that picture there; an upload that
+      // only lands in a list, with the board unchanged, reads as one that did
+      // not work - which is exactly how this looked. The list under it still
+      // has the check that switches between the pictures already uploaded.
+      uploader.on('uploaded', async (err, fileRef) => {
+        if (err || !fileRef || !fileRef._id) return;
+        const board = Utils.getCurrentBoard();
+        if (!board) return;
+        await board.setBackgroundImage(fileRef._id);
+        Utils.setBackgroundImage();
+      });
+      uploader.on('end', (err) => {
+        tpl.uploading.set(false);
+        if (err) {
+          console.error('board background upload failed', err);
+          tpl.error.set(err.reason || err.message || 'upload-failed');
+        }
+      });
+      uploader.on('error', (err) => {
+        tpl.uploading.set(false);
+        console.error('board background upload failed', err);
+        tpl.error.set((err && (err.reason || err.message)) || 'upload-failed');
+      });
+      uploader.start();
+    } catch (error) {
+      // An upload can fail BEFORE there is an uploader to listen to - a config
+      // the collection refuses, a name its namingFunction cannot build. That
+      // used to reject into nothing: the spinner stopped, no message appeared,
+      // and the picture simply never showed up in the list. Say so instead.
+      tpl.uploading.set(false);
+      console.error('board background upload failed', error);
+      tpl.error.set((error && (error.reason || error.message)) || 'upload-failed');
+    }
+    input.value = '';
+  },
+});
+
+// The board's stored background images: set active, download, delete. Drawn in
+// BOTH the Change Background Image popup (under the upload that adds to it) and
+// the Board backgrounds popup, from this one template and one subscription.
+Template.boardBackgroundList.onCreated(function () {
   const board = Utils.getCurrentBoard();
   this.boardId = board && board._id;
   if (this.boardId) {
@@ -1253,13 +1238,7 @@ Template.boardBackgroundsPopup.onCreated(function () {
   }
 });
 
-Template.boardBackgroundsPopup.helpers({
-  uploading() {
-    return Template.instance().uploading;
-  },
-  error() {
-    return Template.instance().error;
-  },
+Template.boardBackgroundList.helpers({
   backgrounds() {
     // Raw collection docs don't carry the .link() helper, so compute the URL.
     return Attachments.collection
@@ -1280,38 +1259,14 @@ Template.boardBackgroundsPopup.helpers({
   },
 });
 
-Template.boardBackgroundsPopup.events({
-  'click .js-bg-upload-button'(event, tpl) {
+Template.boardBackgroundList.events({
+  // Clicking a picture - the thumbnail or its name - puts that one behind the
+  // board, and the URL field above the list follows, because setBackgroundImage
+  // writes both the id and the address it resolves to.
+  async 'click .js-set-board-background'(event) {
     event.preventDefault();
-    tpl.find('.js-bg-upload-input').click();
-  },
-  async 'change .js-bg-upload-input'(event, tpl) {
-    const file = event.currentTarget.files && event.currentTarget.files[0];
-    if (!file) return;
-    tpl.error.set('');
-    tpl.uploading.set(true);
-    const uploader = await Attachments.insertAsync(
-      {
-        file,
-        chunkSize: 'dynamic',
-        meta: { boardId: tpl.boardId, source: 'board-background' },
-      },
-      false,
-    );
-    uploader.on('end', (err) => {
-      tpl.uploading.set(false);
-      if (err) tpl.error.set(err.reason || 'upload-failed');
-    });
-    uploader.on('error', (err) => {
-      tpl.uploading.set(false);
-      tpl.error.set((err && err.reason) || 'upload-failed');
-    });
-    uploader.start();
-    // allow re-selecting the same file later
-    event.currentTarget.value = '';
-  },
-  async 'click .js-set-board-background'() {
     const board = Utils.getCurrentBoard();
+    if (!board || !this._id) return;
     await board.setBackgroundImage(this._id);
     Utils.setBackgroundImage();
   },
@@ -1426,7 +1381,11 @@ Template.boardInfoOnMyBoardsPopup.events({
   },
 });
 
-Template.boardSubtaskSettingsPopup.onCreated(function() {
+// The settings themselves - drawn by Board Settings and by the menu of a
+// subtask on an opened card, from this one template with its own state and
+// handlers, so neither place needs code of its own.
+// client/components/sidebar/sidebar.jade
+Template.boardSubtaskSettingsBody.onCreated(function() {
   // Same reactive-snapshot fix as boardCardSettingsPopup (#6385): the
   // allowsSubtasks toggle reads tpl.currentBoard, so keep it current in an
   // autorun so the setting can be reversed without a page refresh.
@@ -1435,7 +1394,7 @@ Template.boardSubtaskSettingsPopup.onCreated(function() {
   });
 });
 
-Template.boardSubtaskSettingsPopup.helpers({
+Template.boardSubtaskSettingsBody.helpers({
   allowsSubtasks() {
     // Get the current board reactively using board ID from Session
     const boardId = Session.get('currentBoard');
@@ -1521,7 +1480,7 @@ Template.boardSubtaskSettingsPopup.helpers({
   },
 });
 
-Template.boardSubtaskSettingsPopup.events({
+Template.boardSubtaskSettingsBody.events({
   'click .js-field-has-subtasks'(evt, tpl) {
     evt.preventDefault();
     const newValue = !tpl.currentBoard.allowsSubtasks;
@@ -1578,7 +1537,50 @@ Template.boardCardSettingsPopup.onCreated(function() {
   });
 });
 
+// The card this popup was opened for, when it was opened for one. Board
+// Settings / Card Settings has no card - it is about every card of the board -
+// so the two rows that belong to a card are only ever drawn from the minicard's
+// own menu, which passes it in. client/components/sidebar/sidebar.jade
+function settingsCard() {
+  const passed = (Template.currentData() || {}).card;
+  return passed && passed._id ? ReactiveCache.getCard(passed._id) : null;
+}
+
 Template.boardCardSettingsPopup.helpers({
+  // Board Settings / Card Settings shows both columns - "Show on Card" and
+  // "Show on Minicard" beside each other. The card's own menu and the
+  // minicard's menu open the SAME popup asking for one of them, and the other
+  // column is hidden by this class rather than by a second copy of the list:
+  // twenty-four settings written out twice would drift the first time one is
+  // added. client/components/sidebar/sidebar.css
+  settingsSideClass() {
+    const data = Template.currentData() || {};
+    const classes = [];
+    if (data.side === 'card') classes.push('show-card-only');
+    if (data.side === 'minicard') classes.push('show-minicard-only');
+    // A user who is not a board admin may still set the one PERSONAL row of
+    // this table - "Labels text" - and none of the board's own. They get that
+    // row alone rather than a table of checkboxes the server would refuse.
+    if (data.personalOnly) classes.push('show-personal-only');
+    return classes.join(' ');
+  },
+
+  // Checked means the labels on a minicard show their TEXT, which is what they
+  // do unless somebody turns it off - so the stored "hidden" flag is read the
+  // other way round here. A checkbox that is unticked by default for the
+  // default behaviour reads as broken. client/lib/minicardLabelText.js
+  showsMinicardLabelText() {
+    return !hiddenMinicardLabelText();
+  },
+
+  // "List title" is the CARD's own setting, not the board's, so the card is
+  // passed in with the side (showOnMinicardPopup) rather than looked up: a
+  // minicard's menu is opened from the board, where there is no "current card".
+  // Re-read from the collection so the checkbox follows its own click.
+  showsListOnMinicard() {
+    const card = settingsCard();
+    return Boolean(card && card.showListOnMinicard);
+  },
   allowsReceivedDate() {
     const boardId = Session.get('currentBoard');
     const currentBoard = ReactiveCache.getBoard(boardId);
@@ -1647,7 +1649,10 @@ Template.boardCardSettingsPopup.helpers({
   allowsCreatorOnMinicard() {
     const boardId = Session.get('currentBoard');
     const currentBoard = ReactiveCache.getBoard(boardId);
-    return getMinicardSetting(currentBoard, 'allowsCreatorOnMinicard', 'allowsCreator', false);
+    // #3823: creator visibility on the opened card and on its minicard are
+    // separate choices. Old boards predate the minicard field, so they must
+    // stay opted out instead of inheriting the card-details setting.
+    return getMinicardSetting(currentBoard, 'allowsCreatorOnMinicard', null, false);
   },
   allowsMembers() {
     const boardId = Session.get('currentBoard');
@@ -1708,6 +1713,14 @@ Template.boardCardSettingsPopup.helpers({
     const boardId = Session.get('currentBoard');
     const currentBoard = ReactiveCache.getBoard(boardId);
     return getMinicardSetting(currentBoard, 'allowsLabelsOnMinicard', 'allowsLabels', true);
+  },
+  allowsCustomFields() {
+    const board = ReactiveCache.getBoard(Session.get('currentBoard'));
+    return board ? board.allowsCustomFields !== false : true;
+  },
+  allowsCustomFieldsOnMinicard() {
+    const board = ReactiveCache.getBoard(Session.get('currentBoard'));
+    return board?.allowsCustomFieldsOnMinicard === true;
   },
   allowsShowListsOnMinicard() {
     const boardId = Session.get('currentBoard');
@@ -1865,6 +1878,21 @@ Template.boardCardSettingsPopup.helpers({
 });
 
 Template.boardCardSettingsPopup.events({
+  // The one row of this table that is the user's own, not the board's.
+  'click .js-toggle-minicard-label-text'(evt) {
+    evt.preventDefault();
+    toggleMinicardLabelText();
+  },
+  // ...and the one that is this CARD's. The board-wide "Show lists" row further
+  // down turns the list name on for every card; this turns it on for one.
+  'click .js-toggle-show-list-on-minicard'(evt) {
+    evt.preventDefault();
+    const card = settingsCard();
+    if (!card) return;
+    Cards.update(card._id, {
+      $set: { showListOnMinicard: !card.showListOnMinicard },
+    });
+  },
   'click .js-field-has-receiveddate'(evt, tpl) {
     evt.preventDefault();
     const newValue = !tpl.currentBoard.allowsReceivedDate;
@@ -1994,6 +2022,20 @@ Template.boardCardSettingsPopup.events({
     evt.preventDefault();
     const newValue = !tpl.currentBoard.allowsLabelsOnMinicard;
     Boards.update(tpl.currentBoard._id, { $set: { allowsLabelsOnMinicard: newValue } });
+  },
+  'click .js-field-has-custom-fields'(evt, tpl) {
+    evt.preventDefault();
+    const currentValue = tpl.currentBoard.allowsCustomFields !== false;
+    Boards.update(tpl.currentBoard._id, {
+      $set: { allowsCustomFields: !currentValue },
+    });
+  },
+  'click .js-field-has-custom-fields-on-minicard'(evt, tpl) {
+    evt.preventDefault();
+    const currentValue = tpl.currentBoard.allowsCustomFieldsOnMinicard === true;
+    Boards.update(tpl.currentBoard._id, {
+      $set: { allowsCustomFieldsOnMinicard: !currentValue },
+    });
   },
   'click .js-field-has-card-show-lists-on-minicard'(evt, tpl) {
     evt.preventDefault();

@@ -58,6 +58,16 @@ test.describe('Stability & connectivity', () => {
     await expect(cp.comments().filter({ hasText: 'Persistence check comment' })).toBeVisible({ timeout: 10_000 });
   });
 
+  test('#6654: a private-board session survives a full page refresh', async ({ boardPage, user }) => {
+    await boardPage.reload({ waitUntil: 'networkidle' });
+
+    await expect.poll(() => boardPage.evaluate(() => Meteor.userId()), {
+      timeout: 10_000,
+    }).toBe(user.id);
+    await expect(boardPage.locator('.board-canvas')).toBeVisible();
+    await expect(boardPage.locator('[name="username"]')).toHaveCount(0);
+  });
+
   test('login link is visible on 5 consecutive fresh page loads', async ({ page }) => {
     for (let i = 0; i < 5; i++) {
       await page.goto(`${BASE_URL}/sign-in`, { waitUntil: 'networkidle' });
@@ -91,10 +101,13 @@ test.describe('Stability & connectivity', () => {
     db.cleanup({ boardIds: [b.boardId] });
   });
 
-  test('multiple simultaneous board views by different users stay independent', async ({ page, user, user2, board }) => {
+  test('multiple simultaneous board views by different users stay independent', async ({ browser, page, user, user2, board }) => {
     db.addBoardMember({ boardId: board.boardId, userId: user2.id });
 
-    const page2 = await page.context().newPage();
+    // Meteor stores its resume token in origin-scoped localStorage. Two pages
+    // in one browser context therefore cannot represent two independent users.
+    const context2 = await browser.newContext();
+    const page2 = await context2.newPage();
     await loginWithToken(page, user.id, user.token);
     await loginWithToken(page2, user2.id, user2.token);
 
@@ -108,12 +121,12 @@ test.describe('Stability & connectivity', () => {
     expect(await bp1.allLists().count()).toBe(3);
     expect(await bp2.allLists().count()).toBe(3);
 
-    await page2.close();
+    await context2.close();
   });
 
   test('page does not emit JS errors on initial board load', async ({ boardPage, board }) => {
     const errors = [];
-    boardPage.on('pageerror', e => errors.push(e.message));
+    boardPage.on('pageerror', e => errors.push(e.stack || e.message));
 
     await boardPage.waitForTimeout(3_000);
     // Filter out known non-critical warnings

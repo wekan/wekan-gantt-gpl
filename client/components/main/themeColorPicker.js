@@ -12,11 +12,11 @@ import {
   customColorCount,
 } from '/models/lib/themeCategories';
 
-// Shared "Select Color" picker (docs/Design/Page/Theme.md): VISIBLE color swatches grouped
+// Shared "Select Color" picker (docs/Features/Page/Theme.md): VISIBLE color swatches grouped
 // by category (with the category name above each group) + native color wheel(s) for
 // the flat/clear categories once such a color is selected.
 //
-// ONE template, rendered wherever a theme is chosen - the way docs/Design/Page/Table.md
+// ONE template, rendered wherever a theme is chosen - the way docs/Features/Page/Table.md
 // is one table page for every table. `data.scope` says whose theme is being set, and
 // that is the only difference between the three places:
 //   'board'  — Board Settings / Change Color   -> board.color
@@ -31,7 +31,7 @@ import {
 //   2. the site theme set here in the Admin Panel (an Organization's own value
 //      replaces the instance's on that Organization's hosts)
 //   3. the user's own override
-// See docs/Design/Page/Theme.md for the whole design.
+// See docs/Features/Page/Theme.md for the whole design.
 
 const DEFAULT_WHEEL = ['#2980b9', '#6dd5fa']; // stock flat accent / second slide stop
 
@@ -70,6 +70,22 @@ Template.themeColorPicker.onCreated(function () {
   this.customColors = new ReactiveVar((cur.custom || []).slice());
 });
 
+// WHICH category's custom colours this picker is offering.
+//
+// The category of the theme that is selected - and when NOTHING is selected, the
+// FLAT one. That case is Member Settings / Change Color and Admin Panel /
+// Visibility sitting on "Default (no override)", which is where they open: the
+// custom-colour wheel was hidden until a named theme had been picked, so those
+// two pages looked as though they had no custom colour at all, while Board
+// Settings - where a board always has a colour, and the first one is flat -
+// always showed it. A custom colour is now offered in all three, and choosing
+// one from "Default" applies it over the first flat theme, which is the base
+// its single wheel describes.
+function customCategory(tpl) {
+  const cur = tpl.color.get();
+  return cur ? categoryOf(cur) : THEME_CATEGORY_ORDER[0];
+}
+
 Template.themeColorPicker.helpers({
   // The "Default theme" row - clearing the override - belongs to every scope that
   // HAS a weaker layer under it. A board always has a colour, so it has no such row.
@@ -79,6 +95,16 @@ Template.themeColorPicker.helpers({
   isNoneSelected() {
     const tpl = Template.instance();
     return tpl.scope !== 'board' && !tpl.color.get();
+  },
+  // "All Boards" sits beside "Default (no override)" and belongs to the USER's own
+  // theme only: it is a preference about the overview page, not something a site
+  // admin sets for everybody, and a board has no overview of its own.
+  isUserScope() {
+    return Template.instance().scope === 'global';
+  },
+  allBoardsTilesOn() {
+    const u = ReactiveCache.getCurrentUser();
+    return !!(u && u.hasAllBoardsThemeTiles && u.hasAllBoardsThemeTiles());
   },
   // Visible swatches grouped by category, each group labelled with its category name.
   themeGroups() {
@@ -90,13 +116,11 @@ Template.themeColorPicker.helpers({
     }));
   },
   showCustom() {
-    const cur = Template.instance().color.get();
-    return cur ? allowsCustomColor(categoryOf(cur)) : false;
+    return allowsCustomColor(customCategory(Template.instance()));
   },
   customWheels() {
     const tpl = Template.instance();
-    const cur = tpl.color.get();
-    const n = cur ? customColorCount(categoryOf(cur)) : 0;
+    const n = customColorCount(customCategory(tpl));
     const cc = tpl.customColors.get();
     const wheels = [];
     for (let i = 0; i < n; i += 1) {
@@ -112,9 +136,8 @@ Template.themeColorPicker.helpers({
   // colors until the CSS-variable refactor; the preview swatch shows them directly).
   previewStyle() {
     const tpl = Template.instance();
-    const cur = tpl.color.get();
-    const cat = cur ? categoryOf(cur) : null;
-    if (!cat || !allowsCustomColor(cat)) return '';
+    const cat = customCategory(tpl);
+    if (!allowsCustomColor(cat)) return '';
     const cc = tpl.customColors.get();
     if (!cc.some(Boolean)) return '';
     if (customColorCount(cat) === 2 && cc[0] && cc[1]) {
@@ -129,9 +152,8 @@ Template.themeColorPicker.helpers({
 // which case read every wheel's current value (untouched ones contribute their shown
 // default) so the result is a complete set of the category's expected count.
 function gatherCustom(tpl) {
-  const color = tpl.color.get();
-  const cat = color ? categoryOf(color) : null;
-  if (!cat || !allowsCustomColor(cat)) return [];
+  const cat = customCategory(tpl);
+  if (!allowsCustomColor(cat)) return [];
   if (!tpl.customColors.get().some(Boolean)) return [];
   const n = customColorCount(cat);
   const wheels = Array.from(tpl.findAll('.js-theme-wheel'))
@@ -186,7 +208,24 @@ Template.themeColorPicker.events({
   // ...and apply the custom color when the wheel is committed (avoids spamming the
   // server on every intermediate value during the drag).
   'change .js-theme-wheel'(event, tpl) {
+    // From "Default (no override)" there is no theme under the colour yet.
+    // applySelection() already falls back to the first flat theme, so the SAME
+    // fallback is written into the picker's own state: otherwise the wheel would
+    // save a theme the page does not show as chosen, and the next click would
+    // read the selection back as "none".
+    if (!tpl.color.get()) tpl.color.set(colorsInCategory(THEME_CATEGORY_ORDER[0])[0]);
     applySelection(tpl);
+  },
+  // Paint the All Boards tiles in the theme's lighter colour, or give them back
+  // their own colours. Applies immediately, like everything else in this popup,
+  // and the popup stays open so the effect can be seen and undone in one place.
+  'click .js-theme-all-boards'(event) {
+    event.preventDefault();
+    Meteor.call('toggleAllBoardsThemeTiles', err => {
+      if (err && process.env.DEBUG === 'true') {
+        console.error('toggleAllBoardsThemeTiles error', err);
+      }
+    });
   },
   // Clear the global override (Default) — applies immediately too.
   'click .js-theme-none'(event, tpl) {
