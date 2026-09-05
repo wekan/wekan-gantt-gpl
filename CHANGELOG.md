@@ -8245,6 +8245,26 @@ browser build to verify).
 
 # Upcoming WeKan ® release
 
+**In short:** nothing here yet. This paragraph is the first thing a reader sees,
+so replace it as entries are added: say what the release amounts to, which areas
+changed and what changed about them, with the notable names in **bold**, and
+account for the rest in a closing clause. The table below is carried over from
+the release under this one, and is refilled from each build's provenance.tsv
+when this release is made.
+
+| Platform | Binary | From | Version | SHA256 |
+| --- | --- | --- | --- | --- |
+| amd64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.xz) | v24.19.0 | `14b342e71204f811bde6153be8e04b62aef63c236fef92b55f9c83154b409647` |
+| amd64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-amd64) | v1.53.0 | `eae1f0a8f73bfc979738bfff7284d40fd1bc55de2cc56514721fc155c3624f7d` |
+| arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-arm64.tar.xz) | v24.19.0 | `01443c1e1a29e531ccad5a46fefa6df490d2189c49f7955904aecdbb0fe86fdc` |
+| arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-arm64) | v1.53.0 | `bdc50caee3ac28495b42d2130b94a042a9dd6d3a38f732cac02b648f36c891da` |
+| mac-arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-arm64.tar.xz) | v24.19.0 | `3f1cf157479c1480352083105e13faf9d008ede98e7e157746b6df940d197b94` |
+| mac-arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-arm64) | v1.53.0 | `cb14ffe93e285903e5a8a9c1821687ddb5b8a979a11c584bf4af534b272c6d3e` |
+| mac-x64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.xz) | v24.19.0 | `d35e95230f46f6f0751df497c56622c6735e05d5e1fb1630996a005b9d328fe4` |
+| mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
+
+# v11.50 2026-09-05 WeKan ® release
+
 **In short:** **Undo** stops being position-only: it now reads a new universal
 **change history** covering every card group, and **History** is a new view on
 it, opened from the card, list and swimlane menus. Opening it for real found and
@@ -8682,6 +8702,22 @@ description.
 
 and fixes the following bugs:
 
+**API usage report** - recording calls after their responses finish.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/bd668f6b8">API usage counts now pass EventLog schema validation</a>. Thanks to xet7.</summary>
+
+The API middleware accumulated calls correctly, but every timed flush failed
+with `api is not allowed by the schema in eventlog updateAsync`. Its summary
+identity writes `api` and `apiUserId`, and the shared fold writes the normalized
+`ipv4` or `ipv6` address, while the attached EventLog schema declared none of
+those fields. Collection2 rejected the upsert selector at `api`, so the report
+could never receive a row. All four fields are now declared. Regression coverage
+checks every API/fold field against the schema so another report column cannot
+be wired end to end yet rejected only when its first live event arrives.
+
+</details>
+
 **Minicards** - what dragging the card title does.
 
 <details>
@@ -8698,7 +8734,120 @@ title does not become an inline-editor trigger again.
 
 </details>
 
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5b03743ac">The minicard drag handle no longer has a grey background</a>. Thanks to xet7.</summary>
+
+On touch devices the enlarged drag target looked like a separate grey button.
+Its background is now transparent, leaving only the drag icon visible, while
+the target remains directly below the minicard menu and keeps its full
+finger-sized area. The focused regression test pins the transparent background,
+the menu-and-handle ordering, the shared trailing edge and the absence of the
+old grey or tinted background.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3c2702d9e">The minicard drag icon lines up below its menu</a>. Thanks to xet7.</summary>
+
+The touch target was in the correct trailing-edge column, but Font Awesome's
+four-way arrow has uneven side bearings and made the visible icon look too far
+toward the edge. The glyph now moves inward independently while its 44-pixel
+touch target stays in place. The handle also explicitly suppresses borders and
+shadows and gives its transparent background priority, preventing a mobile rule
+from drawing a grey block below the icon. The focused regression test covers
+the logical, RTL-safe alignment and every background layer.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e48c969fa">Mobile Mode uses one aligned minicard control column in every browser</a>. Thanks to xet7.</summary>
+
+The enlarged, aligned menu-and-handle column was restricted to coarse pointers.
+A desktop browser switched with **Toggle between Desktop and Mobile Mode** has a
+mouse pointer, so it kept the compact desktop drag handle and placed its center
+farther toward the minicard edge than the menu center. Mobile Mode now owns the
+layout regardless of pointer type: both controls have the same trailing inset
+and width, which gives them exactly the same horizontal center on phone and
+desktop browsers and mirrors the column in RTL. Desktop Mode retains its compact
+handle. The regression test calculates and compares the two centers and rejects
+any pointer-type media query that could split the explicit mode again.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/418d53aa7">iPhone Safari no longer paints the minicard drag target grey</a>. Thanks to xet7.</summary>
+
+iPhone Safari still drew a grey rectangle over the full drag target in Mobile
+Mode even though its CSS background was transparent; Desktop Mode's compact
+handle did not expose the problem. The Mobile Mode target now inherits the
+minicard's actual background, so it blends into white, coloured and hovered
+cards, and explicitly disables WebKit's tap highlight. Its pseudo-elements,
+border and shadow are also pinned to paint nothing. The icon, aligned control
+column and 44-pixel touch target are unchanged. Regression coverage keeps these
+Safari-specific paint guards scoped to Mobile Mode.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e7dde0db3">Mobile card and swimlane drag handles now keep their desktop alignment</a>. Thanks to xet7.</summary>
+
+The Mobile Mode minicard arrow was shifted six pixels away from the shared
+menu-and-handle control center. Mobile font scaling enlarged that error, leaving the
+arrow visibly to the side of the menu bars even though their touch targets had equal
+width. The shift is gone, so both glyph centers have the same x coordinate in every
+browser and direction. Swimlanes also no longer substitute a larger, separately
+positioned handle on touch devices; one compact logical-position handle is shared by
+Desktop and Mobile Modes on every device. A live Chromium regression compares the
+actual glyph centers and verifies the swimlane handle's x coordinate is unchanged
+when switching modes. Focused positive and negative source tests reject either
+device-specific positioning variant.
+
+</details>
+
 **Swimlanes** - which swimlane a list belongs to, and what travels with it.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c002bc2c1">Opening a Mobile Mode list no longer empties the other swimlanes</a>. Thanks to xet7.</summary>
+
+Mobile Mode stored one globally selected list, and every swimlane guarded its
+compact list rows with `unless currentList`. Opening **List 1 at Swimlane 2**
+therefore expanded that list correctly but hid every list in Swimlanes 1 and 3.
+The guard now asks whether the selected list belongs to *this* swimlane: its own
+swimlane renders the expanded list while every other swimlane retains its
+compact rows. Board-wide lists still expand in every swimlane by design. A live
+Chromium regression against the port-3000 application seeds two swimlanes,
+opens the second one's list and verifies the first one's list remains visible;
+focused positive and negative source tests pin the template scope as well.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7968f522d">Opening a Mobile Mode list no longer resizes lists in other swimlanes</a>. Thanks to xet7.</summary>
+
+The compact list rows in every swimlane consulted the board's global selected-list
+state when choosing their header controls. Opening **List 1 at Swimlane 2** therefore
+made the still-visible rows in Swimlanes 1 and 3 switch to the expanded header shape,
+changing their height even though neither swimlane had been selected. A list header
+now switches shape only when its own ID is selected, so every other swimlane keeps
+the same controls and row heights. The live Chromium regression records every compact
+row height before opening the second swimlane's list and verifies the dimensions are
+unchanged afterward; focused positive and negative source coverage pins the ID scope.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/cb2dec9dd">Opening a Mobile Mode list no longer enlarges the top header</a>. Thanks to xet7.</summary>
+
+Selecting **List 1 at Swimlane 2** inserted the names of every board list into the
+quick-access header. On a narrow screen that list navigation consumed another row,
+made the blue top bar taller and moved the board content down. Mobile Mode already
+presents every list as a selectable row inside its swimlane, so the duplicate header
+list has been removed. The live Chromium regression verifies that the selected list's
+name is absent from the top bar and that the bar has exactly the same height before
+and after the list opens; focused negative coverage prevents the conditional list
+from returning to the header template.
+
+</details>
 
 <details>
 <summary><a href="https://github.com/wekan/wekan/commit/97fcf364c">Copying a list copies its cards, into a new list</a>. Thanks to xet7.</summary>
@@ -9115,6 +9264,8 @@ false claim comes back.
 
 and improves release automation:
 
+**Variant repositories** - one authoritative source and two compatibility names.
+
 <details>
 <summary><a href="https://github.com/wekan/wekan/commit/abdd9750c">Update Ondra and Gantt repositories as a required release job</a>. Thanks to xet7.</summary>
 
@@ -9145,6 +9296,8 @@ negative fixture coverage pins the exclusion for both variants.
 
 </details>
 
+**Test suite** - full runs inspect source rather than generated copies.
+
 <details>
 <summary><a href="https://github.com/wekan/wekan/commit/87896365a">Keep source scans out of builds and exercise minicard links through the UI</a>. Thanks to xet7.</summary>
 
@@ -9162,7 +9315,25 @@ without restoring inline title editing.
 
 </details>
 
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e5831f16b">Keep consistency checks aligned with release helpers and security names</a>. Thanks to xet7.</summary>
+
+The complete test rerun found four consistency failures rather than application
+failures. The new variant preparation helper now has its documented workflow-only
+menu exemption, and the variant design explicitly retains historical Docker tags
+without claiming that new variant images are published. Upcoming entries are
+grouped by their actual areas.
+
+The security inventory previously used substring matching, so naming
+`CookieTokenBleed` made it falsely conclude that the unrelated `TokenBleed` gap
+had acquired coverage. Vulnerability names now require non-alphanumeric
+boundaries. The four suites that failed in the complete run pass together.
+
+</details>
+
 and improves documentation:
+
+**Outgoing email documentation** - current configuration and readable Markdown.
 
 <details>
 <summary><a href="https://github.com/wekan/wekan/commit/e28081911">Remove visible Liquid tags from email troubleshooting</a>. Thanks to xet7.</summary>
