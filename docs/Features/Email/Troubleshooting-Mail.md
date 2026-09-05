@@ -1,6 +1,3 @@
-{% raw %}
-<!-- Contains a literal {{variable}} code example; wrap in raw so Jekyll's
-     Liquid engine does not try to evaluate it when building GitHub Pages. -->
 ## Configure email in Admin Panel
 
 Before using the environment-variable examples below, open **Admin Panel /
@@ -66,7 +63,7 @@ sudo snap set wekan mail-url='smtp://USER%40DOMAIN:PASSWORD@127.0.0.1:1025?ignor
 
 ```
 let htmlText = Assets.getText("emailTemplate.html");
-let modifiedText = htmlText.replace(new RegExp("{{variable}}", 'g'), variable);
+let modifiedText = htmlText.replace(/\{\{variable\}\}/g, variable);
 await Email.sendAsync({
             from: "nobody@example.com",
             to: email,
@@ -165,6 +162,9 @@ You can convert special characters of your password at https://www.url-encode-de
 and copy converted characters to your password.
 
 ## Example: Microsoft Office 365
+
+- Microsoft will disable Basic authentication for SMTP AUTH by default on existing Microsoft 365 tenants at the end of December 2026, and it is unavailable by default on tenants created after that date. An administrator can still turn it back on for an existing tenant. Timeline: https://techcommunity.microsoft.com/blog/exchange/updated-exchange-online-smtp-auth-basic-authentication-deprecation-timeline/4489835
+- The example below uses Basic authentication. Microsoft's alternatives for devices and applications that send mail are at https://learn.microsoft.com/en-us/exchange/mail-flow-best-practices/how-to-set-up-a-multifunction-device-or-application-to-send-email-using-microsoft-365-or-office-365
 
 ```
 sudo snap set wekan mail-url='smtp://user:password@smtp.office365.com:587?ignoreTLS=false&tls={rejectUnauthorized:false}&secure=true'
@@ -607,4 +607,3 @@ By default zoho uses port number 465 with TLS enabled.
 Step 3: form MAIL_FROM
 
 MAIL_FROM=Wekan Notifications <user1@example.com>
-{% endraw %}
