@@ -8263,6 +8263,69 @@ when this release is made.
 | mac-x64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.xz) | v24.19.0 | `d35e95230f46f6f0751df497c56622c6735e05d5e1fb1630996a005b9d328fe4` |
 | mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
 
+# v11.53 2026-09-06 WeKan ® release
+
+**In short:** **Amiga-safe filenames** are sanitized before upload and whenever
+they are displayed or downloaded, retain content-correct application extensions,
+and avoid truncating through brackets. Existing stored names are corrected lazily
+when read. **Problems reports** retain available usernames, separate IPv4/IPv6
+addresses, and proxy-provided country and city context. Security regression tests
+also avoid embedding incomplete sanitizer examples.
+
+| Platform | Binary | From | Version | SHA256 |
+| --- | --- | --- | --- | --- |
+| amd64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.xz) | v24.19.0 | `14b342e71204f811bde6153be8e04b62aef63c236fef92b55f9c83154b409647` |
+| amd64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-amd64) | v1.53.0 | `eae1f0a8f73bfc979738bfff7284d40fd1bc55de2cc56514721fc155c3624f7d` |
+| arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-arm64.tar.xz) | v24.19.0 | `01443c1e1a29e531ccad5a46fefa6df490d2189c49f7955904aecdbb0fe86fdc` |
+| arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-arm64) | v1.53.0 | `bdc50caee3ac28495b42d2130b94a042a9dd6d3a38f732cac02b648f36c891da` |
+| mac-arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-arm64.tar.xz) | v24.19.0 | `3f1cf157479c1480352083105e13faf9d008ede98e7e157746b6df940d197b94` |
+| mac-arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-arm64) | v1.53.0 | `cb14ffe93e285903e5a8a9c1821687ddb5b8a979a11c584bf4af534b272c6d3e` |
+| mac-x64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.xz) | v24.19.0 | `d35e95230f46f6f0751df497c56622c6735e05d5e1fb1630996a005b9d328fe4` |
+| mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
+
+This release fixes the following SECURITY ISSUES found by GitHub CodeQL code
+scanning:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/596d99fc4">Remove incomplete sanitizer test doubles</a>. Thanks to GitHub CodeQL and xet7.</summary>
+
+The import/export boundary regression test no longer demonstrates a partial
+regular-expression sanitizer that handled only one URL scheme and complete HTML
+tags. Its deterministic observation callback now proves that HTML and
+`javascript:`, `vbscript:` and `data:` payloads reach the sanitizer boundary,
+while the production callback remains DOMPurify. This resolves CodeQL alerts
+448 and 449 without creating a misleading sanitizer example. The findings were
+confined to test code and exposed no runtime path, so there is no attributable
+security event to report in Admin Panel Problems or researcher to add to the
+Hall of Fame.
+
+</details>
+
+**Files and problem reporting** - Portable names and attributable diagnostics.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/829d2a6c7">Enforce Amiga-safe filenames on every read</a>. Thanks to xet7.</summary>
+
+One common filename boundary now sanitizes names before upload and whenever a
+name is displayed, archived or downloaded. It preserves the content-derived
+extension inside the classic Amiga FFS 30-character limit and removes an
+incomplete bracketed suffix instead of producing names such as
+`Online Gantt 20260905 (1.gantt`. The maintained JavaScript `file-type` detector
+handles binary magic bytes before the bounded libmagic/text fallback; Online
+Gantt JSON retains its application-owned `.gantt` extension. Existing attachment
+metadata is corrected only when an authorized read needs it, not by an eager
+database-wide rename.
+
+The common Problems fold now fills available usernames and obtains trusted,
+proxy-aware request addresses for all report streams. IPv4 and IPv6 remain
+separate, while available Cloudflare and other supported proxy/CDN headers add a
+display-only country flag, city, region and coordinates. DDP lockout reports now
+forward their known username, source address and headers instead of showing an
+empty actor beside “locked one address.” Location never participates in a
+security decision.
+
+</details>
+
 # v11.52 2026-09-06 WeKan ® release
 
 **In short:** **Release builds** create the Windows single EXE on Windows, sync
