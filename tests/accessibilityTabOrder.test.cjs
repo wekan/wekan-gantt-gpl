@@ -68,8 +68,8 @@ test('links are naturally focusable and title tooltips become accessible names',
   assert.match(accessibility, /attributes\['aria-label'\] = attributes\.title/);
 });
 
-test('password visibility follows the input in normal Tab order', () => {
-  assert.doesNotMatch(password, /password-toggle-btn[^\n]*tabindex="-1"/);
+test('password visibility stays labelled but does not interrupt field Tab order', () => {
+  assert.match(password, /password-toggle-btn[^\n]*tabindex="-1"/);
   assert.match(password, /aria-label="\{\{_ 'password'\}\}: \{\{_ 'visibility'\}\}"/);
   assert.strictEqual((password.match(/aria-hidden="true"/g) || []).length, 2);
 });
@@ -117,7 +117,7 @@ test('board-only menu focus reuses the helper and cleans up its observer', () =>
 });
 
 test('card edit targets are keyboard reachable', () => {
-  assert.match(card, /a\.card-collapse-toggle\.js-card-collapse-toggle/);
+  assert.match(card, /a\.[^\n]*card-collapse-toggle\.js-card-collapse-toggle/);
   assert.match(card, /a\.card-details-title-edit-zone\.js-open-inlined-form/);
   assert.match(minicard, /span\.minicard-title-text/);
   assert.match(customFields,

@@ -23,6 +23,37 @@ const ZW = '\u200b'; // zero-width space (escape sequence — no literal invisib
 test.describe('Admin – newest features', () => {
   test.use({ storageState: undefined });
 
+  test('Boards Report filters All, Public and Private on the server', async ({ page, adminUser }) => {
+    // Keep the visible title below the report's UI abbreviation boundary so
+    // this test is about filtering, not abbreviated cell presentation.
+    const marker = `bf-${db.uniqueSuffix()}`;
+    const privateBoard = await db.seedBoard({
+      ownerId: adminUser.id, title: `${marker}-private`, cardTitlesPerList: [[]],
+    });
+    await db.updateOne('boards', { _id: privateBoard.boardId },
+      { $set: { permission: 'private' } });
+    const publicBoard = await db.seedBoard({
+      ownerId: adminUser.id, title: `${marker}-public`, cardTitlesPerList: [[]],
+    });
+    await db.updateOne('boards', { _id: publicBoard.boardId },
+      { $set: { permission: 'public' } });
+
+    await loginWithToken(page, adminUser.id, adminUser.token);
+    await navigateInApp(page, '/admin/problems/boards');
+    await waitForMeteor(page);
+    const search = page.locator('input.js-table-page-search');
+    await search.fill(marker);
+    await search.press('Enter');
+    const filter = page.locator('select.js-table-page-filter[data-filter="board-permission"]');
+    await expect(filter).toBeVisible();
+    await filter.selectOption('public');
+    await expect(page.getByText(`${marker}-public`, { exact: false })).toBeVisible();
+    await expect(page.getByText(`${marker}-private`, { exact: false })).toHaveCount(0);
+    await filter.selectOption('private');
+    await expect(page.getByText(`${marker}-private`, { exact: false })).toBeVisible();
+    await expect(page.getByText(`${marker}-public`, { exact: false })).toHaveCount(0);
+  });
+
   test('Files report shows clean filenames (decoded, homoglyphs folded, invisible/exploit removed), no Search button', async ({ page, adminUser }) => {
     // Seed a board + card owned by the admin so the attachments are "accessible"
     // (the report restricts to attachments on cards the user can see).
@@ -32,8 +63,11 @@ test.describe('Admin – newest features', () => {
     // could never match them, so fail here with a clear message instead of "no table".
     expect(cardId, 'seed: findCardIdByTitle must return the seeded card id').toBeTruthy();
     const meta = { boardId: board.boardId, cardId };
-    const runId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const marker = `files-${runId}`;
+    const runId = db.uniqueSuffix();
+    // File display/download names are intentionally capped at 30 Amiga-visible
+    // characters. Keep the per-run prefix short enough that each sanitized
+    // suffix remains observable instead of being truncated away.
+    const marker = `f-${db.uniqueSuffix()}`;
     await db.insertMany('attachments', [
       { _id: `${runId}-normal`, name: `${marker}-normal-file.png`, size: 10, type: 'image/png', meta },
       { _id: `${runId}-encoded`, name: `${marker}-%D0%93%D1%80.png`, size: 20, type: 'image/png', meta }, // -> "Гp.png" after confusable folding
@@ -134,6 +168,20 @@ test.describe('Admin – newest features', () => {
     // Exploit markup is stripped while its harmless text content remains.
     await expect(table.getByText(`${marker}-xnote.png`, { exact: false })).toBeVisible();
     await expect(table.getByText('<script>')).toHaveCount(0);
+
+    // Every file row starts with the same attachment affordances as an opened
+    // card: thumbnail/type tile, preview button and sanitized download link.
+    const encodedRow = table.locator('tr', { hasText: `${marker}-Гp.png` });
+    await expect(encodedRow.locator('.table-page-attachment-thumbnail')).toBeVisible();
+    await expect(encodedRow.locator('.js-table-page-attachment-preview')).toHaveCount(2);
+    const download = encodedRow.locator('.js-table-page-attachment-download');
+    await expect(download).toBeVisible();
+    await expect(download).toHaveAttribute('download', `${marker}-Гp.png`);
+    // Permanent deletion is off by default; no client-only button may expose it.
+    await expect(encodedRow.locator('.js-table-page-attachment-delete')).toHaveCount(0);
+    await encodedRow.locator('.table-page-attachment-preview').click();
+    await expect(page.locator('#viewer-overlay')).not.toHaveClass(/hidden/);
+    await page.locator('#viewer-close').click();
 
     // NO Search button; the search field + pagination controls ARE present. Every
     // report renders through the ONE shared table page now

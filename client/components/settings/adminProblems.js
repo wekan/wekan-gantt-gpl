@@ -20,6 +20,7 @@ import { ReportPages } from '/client/lib/reportPages';
 import { leftMenuData, paneTitle } from '/models/lib/leftMenu';
 import Settings from '/models/settings';
 const { cleanFileName } = require('/imports/lib/fileNameDisplay');
+const { attachmentKind } = require('/models/lib/attachmentKind');
 const { filesize } = require('filesize');
 
 // --- Shared helper functions (formerly AdminReport base class methods) ---
@@ -50,7 +51,7 @@ function abbreviate(text) {
 // The same audit trail is relevant where permanent deletion is enabled and where
 // its events are reviewed. Keep one sentence so the two panes cannot drift apart.
 const PERMANENT_DELETE_RECOVERY_DESCRIPTION =
-  'Recovery also logs permanent-delete setting changes and every successful, failed, or unauthorized permanent-delete attempt, including Done status, user ID, username, trusted IPv4 or IPv6 address, and attempted board IDs and titles.';
+  'The permanent-delete setting must be enabled before a delete icon is shown. Recovery logs setting changes and every successful, failed, or unauthorized permanent-delete attempt, including Done status, user ID, username, trusted IPv4 or IPv6 address and available location. Board deletion records IDs and titles; file deletion records the attachment ID, sanitized filename and card ID.';
 
 // The report publications already send only the current page (server-side
 // search + limit/skip, sorted). Display exactly what was published, applying
@@ -97,7 +98,7 @@ function reportConfig(tmpl) {
   return {
     'report-files': { page: tmpl.filesPage, count: tmpl.filesCount, search: tmpl.filesSearch, pub: 'attachmentsList', countMethod: 'getAttachmentsReportCount' },
     'report-rules': { page: tmpl.rulesPage, count: tmpl.rulesCount, search: tmpl.rulesSearch, pub: 'rulesReport', countMethod: 'getRulesReportCount' },
-    'report-boards': { page: tmpl.boardsPage, count: tmpl.boardsCount, search: tmpl.boardsSearch, pub: 'boardsReport', countMethod: 'getBoardsReportCount' },
+    'report-boards': { page: tmpl.boardsPage, count: tmpl.boardsCount, search: tmpl.boardsSearch, filter: tmpl.boardsFilter, pub: 'boardsReport', countMethod: 'getBoardsReportCount' },
     'report-cards': { page: tmpl.cardsPage, count: tmpl.cardsCount, search: tmpl.cardsSearch, pub: 'cardsReport', countMethod: 'getCardsReportCount' },
     'report-broken': { page: tmpl.brokenPage, count: tmpl.brokenCount, search: tmpl.brokenSearch, pub: 'brokenCardsReport', countMethod: 'getBrokenCardsReportCount' },
     'report-impersonation': { page: tmpl.impersonationPage, count: tmpl.impersonationCount, search: tmpl.impersonationSearch, pub: 'impersonationReport', countMethod: 'getImpersonationReportCount' },
@@ -135,6 +136,7 @@ Template.adminProblems.onCreated(function () {
   this.impersonationSearch = new ReactiveVar('');
   this.recoverySearch = new ReactiveVar('');
   this.recoveryFilter = new ReactiveVar('all');
+  this.boardsFilter = new ReactiveVar('all');
 
   // Which search term each report's total count was last computed for, so
   // paging does not recount. See loadReport().
@@ -411,6 +413,11 @@ Template.adminProblems.helpers({
 });
 
 Template.adminProblems.events({
+  'files-report-changed'(event, tmpl) {
+    event.stopPropagation();
+    tmpl.loadReport('report-files', { recount: true });
+  },
+
   // One handler for the whole menu: the shared left menu gives every entry the
   // same class and puts the pane id in data-id, so the twelve identical
   // 'click a.js-report-<name>' handlers collapsed to this.
@@ -443,10 +450,12 @@ Template.adminProblems.events({
     }
   },
   'change .js-table-page-filter'(event, tmpl) {
-    if (tmpl.activeReport.get() !== 'report-recovery') return;
-    tmpl.recoveryFilter.set($(event.currentTarget).val() || 'all');
-    tmpl.recoveryPage.set(1);
-    tmpl.loadReport('report-recovery', { recount: true });
+    const reportId = tmpl.activeReport.get();
+    const cfg = reportConfig(tmpl)[reportId];
+    if (!cfg || !cfg.filter) return;
+    cfg.filter.set($(event.currentTarget).val() || 'all');
+    cfg.page.set(1);
+    tmpl.loadReport(reportId, { recount: true });
   },
 });
 
@@ -613,6 +622,7 @@ function formatDate(date) {
 // repeat.
 const REPORT_TABLES = {
   'report-files': {
+    additionalDesc: PERMANENT_DELETE_RECOVERY_DESCRIPTION,
     emptyKey: 'no-results',
     docs: () => {
       // The UNDERLYING reactive minimongo collection: the 'attachmentsList'
@@ -636,6 +646,24 @@ const REPORT_TABLES = {
       }
     },
     columns: [
+      {
+        labelKey: 'preview',
+        value: () => '',
+        attachment: d => {
+          const kind = attachmentKind(d);
+          return {
+            id: d._id,
+            cardId: d.meta?.cardId || '',
+            name: cleanFileName(d.name),
+            link: Attachments.link.call(d),
+            extension: kind.extension || 'file',
+            isImage: kind.isImage,
+            canPermanentlyDelete:
+              ReactiveCache.getCurrentUser()?.isAdmin === true
+              && ReactiveCache.getCurrentSetting()?.enablePermanentDelete === true,
+          };
+        },
+      },
       // The name is URL-decoded, homoglyphs folded and invisible / exploit
       // characters removed, so it is always shown as a plain, readable name.
       { label: 'Filename', value: d => cleanFileName(d.name) },
@@ -753,6 +781,14 @@ const REPORT_TABLES = {
       { labelKey: 'username', value: d => d.username },
       { labelKey: 'event-ipv4', value: d => d.ipv4 },
       { labelKey: 'event-ipv6', value: d => d.ipv6 },
+      {
+        labelKey: 'location',
+        value: d => {
+          const label = locationLabel(d.location);
+          const flag = countryFlag(d.location && d.location.country);
+          return [flag, label].filter(Boolean).join(' ');
+        },
+      },
       { labelKey: 'recovery-detail', value: d => d.detail },
     ],
   },
@@ -776,14 +812,17 @@ function reportTablePageData(tmpl) {
     additionalDesc: spec.additionalDesc,
     emptyKey: spec.emptyKey,
     searchTerm: cfg.search.get(),
-    filters: reportId === 'report-recovery' ? buildFilters([{
-      id: 'recovery-status',
-      label: 'Show',
-      options: [
-        { value: 'all', label: 'All' },
-        { value: 'done', label: 'Done' },
+    filters: cfg.filter ? buildFilters([reportId === 'report-recovery' ? {
+      id: 'recovery-status', label: 'Show', options: [
+        { value: 'all', label: 'All' }, { value: 'done', label: 'Done' },
         { value: 'failed', label: 'Failed' },
         { value: 'deleted', label: 'Deleted' },
+      ],
+    } : {
+      id: 'board-permission', label: 'Permission', options: [
+        { value: 'all', label: 'All' },
+        { value: 'public', labelKey: 'public' },
+        { value: 'private', labelKey: 'private' },
       ],
     }], cfg.filter.get()) : [],
     header: buildHeader(spec.columns),

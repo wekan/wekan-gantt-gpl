@@ -28,6 +28,7 @@ RecoveryEvents.types = {
   HISTORY_INTEGRITY_FAILED: 'history-integrity-failed',
   PERMANENT_DELETE_SETTING_CHANGED: 'permanent-delete-setting-changed',
   BOARD_PERMANENTLY_DELETED: 'board-permanently-deleted',
+  ATTACHMENT_PERMANENTLY_DELETED: 'attachment-permanently-deleted',
 };
 
 RecoveryEvents.attachSchema(
@@ -71,6 +72,7 @@ RecoveryEvents.attachSchema(
     username: { type: String, optional: true },
     ipv4: { type: String, optional: true },
     ipv6: { type: String, optional: true },
+    location: { type: Object, optional: true, blackbox: true },
     boardIds: { type: Array, optional: true },
     'boardIds.$': { type: String },
     boardTitles: { type: Array, optional: true },
@@ -102,6 +104,7 @@ RecoveryEvents.record = async function record(type, opts = {}) {
       username: opts.username,
       ipv4: opts.ipv4,
       ipv6: opts.ipv6,
+      location: opts.location,
       boardIds: opts.boardIds,
       boardTitles: opts.boardTitles,
       createdAt: new Date(),

@@ -70,16 +70,24 @@ import { Utils } from '/client/lib/utils';
 
 // Custom head tags
 
-// Meteor 3's native session flow keeps the persistent resume token in an
-// HttpOnly cookie and only the active tab's credential in memory. Configure it
-// before Accounts startup; the server has the same options in accounts-common.
+// Accounts may already have resumed a legacy localStorage session before the
+// application module loads. Move its credentials to memory without a second
+// login: that login rebuilds subscriptions and can discard the current profile
+// (#6677). Keep the poller's token in sync and let the native endpoint validate
+// the token when creating the HttpOnly cookie. An in-flight initial login still
+// finishes through Accounts' normal callback.
+const legacyResumeToken = Accounts._storedLoginToken();
+const legacyUserId = Accounts._storedUserId();
+const legacyTokenExpires = Accounts._storedLoginTokenExpires();
+// Remove the old persistent copy; subsequent Accounts writes go to memory.
+if (legacyResumeToken) Accounts._unstoreLoginToken();
 Accounts.config({ clientStorage: 'none', useHttpOnlyCookies: true });
-// AccountsClient is constructed before this application startup module runs.
-// Its constructor therefore cannot see the option above and skips its one-time
-// cookie resume. Start that public resume path now, after enabling it, so a
-// reload or board-view navigation restores the session from the HttpOnly
-// cookie instead of returning a private-board user to Sign In (#6654).
-Accounts.loginWithCookie();
+if (legacyResumeToken) {
+  Accounts._storeLoginToken(legacyUserId, legacyResumeToken, legacyTokenExpires);
+  Accounts._setHttpOnlyCookie(legacyResumeToken, legacyTokenExpires);
+} else {
+  Accounts.loginWithCookie();
+}
 
 // Subscribe to per-user small publications
 Meteor.startup(() => {

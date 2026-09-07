@@ -1,0 +1,341 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { spawnSync } = require('node:child_process');
+
+const root = path.resolve(__dirname, '..');
+const readLocale = code => JSON.parse(fs.readFileSync(
+  path.join(root, `imports/i18n/data/${code}.i18n.json`),
+  'utf8',
+));
+const english = readLocale('en');
+const tigrinya = readLocale('ti');
+const tokens = value => [...value.matchAll(
+  /__[A-Za-z0-9_]+__|%[A-Za-z]|%{[A-Za-z0-9]+}|{{[A-Za-z0-9]+}}/g,
+)].map(([token]) => token).sort();
+const tags = value => [...value.matchAll(/<\/?[A-Za-z][^>]*>/g)]
+  .map(([tag]) => tag).sort();
+
+const fillResult = spawnSync(process.execPath, [
+  path.join(root, 'releases/translations/fill-translations.mjs'),
+  '--list',
+  'ti',
+], { cwd: root, encoding: 'utf8' });
+assert.equal(fillResult.status, 0, fillResult.stderr);
+assert.equal(Object.keys(JSON.parse(fillResult.stdout)).length, 0,
+  'all Tigrinya translation batches stay resolved');
+
+for (const [key, value] of Object.entries(tigrinya)) {
+  if (value !== english[key]) {
+    assert.deepEqual(tokens(value), tokens(english[key]),
+      `${key}: locale-wide placeholder inventory`);
+  }
+  assert.deepEqual(tags(value), tags(english[key]),
+    `${key}: locale-wide HTML tag inventory`);
+}
+
+assert.equal(tigrinya.accept, 'ተቐበል');
+assert.deepEqual(tokens(tigrinya['activity-changedTitle']), ['%s', '%s']);
+assert.deepEqual(tokens(tigrinya['act-deleteCard']),
+  ['__board__', '__card__', '__list__', '__swimlane__']);
+assert.match(tigrinya['board-members-same-org-only'], /ውድብ/);
+assert.match(tigrinya['board-members-same-team-only'], /ጉጅለ/);
+assert.deepEqual(tokens(tigrinya['act-addChecklistItem']),
+  ['__board__', '__card__', '__checklistItem__', '__checklist__', '__list__',
+    '__swimlane__']);
+assert.deepEqual(tokens(tigrinya['act-removeChecklistItem']),
+  ['__board__', '__card__', '__checkList__', '__checklistItem__', '__list__',
+    '__swimlane__']);
+assert.deepEqual(tokens(tigrinya['act-setCustomField']),
+  ['__board__', '__card__', '__customFieldValue__', '__customField__',
+    '__list__', '__swimlane__']);
+assert.equal(tigrinya['act-importBoard'], 'ሰሌዳ __board__ ኣእትዩ');
+assert.deepEqual(tokens(tigrinya['act-moveCardToOtherBoard']),
+  ['__board__', '__card__', '__list__', '__oldBoard__', '__oldList__',
+    '__oldSwimlane__', '__swimlane__']);
+assert.deepEqual(tokens(tigrinya['activity-imported']), ['%s', '%s', '%s']);
+assert.deepEqual(tokens(tigrinya['activity-checklist-completed-card']),
+  ['__board__', '__card__', '__checklist__', '__list__', '__swimlane__']);
+assert.equal(tigrinya['allboards.workspaces'], 'ቦታታት ስራሕ');
+assert.match(tigrinya['allboards.edit-workspace-icon'], /markdown/);
+assert.deepEqual(tokens(tigrinya['activity-dueDate']), ['%s', '%s']);
+assert.match(tigrinya['archive-permanent-delete-disabled-hint'], /ፓነል/);
+assert.match(tigrinya['list-width-error-message'], /270/);
+assert.equal(tigrinya['fixed-list-width'], 'ንኹሎም ዝርዝራት ሓደ ግፍሒ');
+assert.match(tigrinya['set-swimlane-height-value'], /ፒክሰል/);
+assert.equal(tigrinya['convertChecklistItemToCardPopup-title'], 'ናብ ካርድ ቀይር');
+assert.deepEqual(tokens(tigrinya['and-n-other-card_plural']), ['__count__']);
+assert.deepEqual(tokens(tigrinya['avatar-too-big']), ['__size__']);
+assert.match(tigrinya['board-background-image-url'], /URL/);
+assert.deepEqual(tokens(tigrinya['board-nb-stars']), ['%s']);
+assert.deepEqual(tags(tigrinya['board-private-info']),
+  ['</strong>', '<strong>']);
+assert.equal(tigrinya.archives, 'መዝገብ');
+assert.deepEqual(tags(tigrinya['board-public-info']),
+  ['</strong>', '<strong>']);
+assert.deepEqual(tokens(
+  tigrinya['board-open-and-move-between-remaining-and-workspaces']),
+['__workspaces__']);
+assert.match(tigrinya['enter-zoom-level'], /50-300%/);
+assert.deepEqual(tokens(tigrinya['card-comments-title']), ['%s']);
+assert.equal(tigrinya['mobile-mode'], 'ሁነታ ሞባይል');
+assert.equal(tigrinya['card-due'], 'ዕለት ገደብ');
+assert.equal(tigrinya['positiveVoteMembersPopup-title'], 'ደገፍቲ');
+assert.equal(tigrinya['negativeVoteMembersPopup-title'], 'ተቓወምቲ');
+assert.match(tigrinya['poker-delete-pop'], /Planning Poker/);
+assert.equal(tigrinya['cardDependenciesPopup-title'], 'ጽግዕተኛነት ወስኽ');
+assert.equal(tigrinya['exportChecklistPopup-title'],
+  'ዝርዝር መረጋገጺ ልኣኽ');
+assert.equal(tigrinya['importBoardIntoPopup-title'], 'ናብ ሰሌዳ ኣእቱ');
+assert.match(tigrinya.casSignIn, /CAS/);
+assert.equal(tigrinya['cardType-linkedCard'], 'ዝተኣሳሰረ ካርድ');
+assert.match(tigrinya['map-to-existing-user-desc'], /ፍቓድ/);
+assert.match(tigrinya['font-preview-text'], /0123456789/);
+assert.equal(tigrinya['changeLanguagePopup-title'], 'ቋንቋ ቀይር');
+assert.equal(tigrinya['auto-list-width'], 'ራስ-ሰር ግፍሒ ዝርዝር');
+assert.match(tigrinya['card-aging-days'], /3/);
+assert.match(tigrinya['card-aging-tier3'], /ደረጃ 3/);
+assert.equal(tigrinya['color-darkgreen'], 'ጸሊም ቀጠልያ');
+assert.equal(tigrinya['color-sky'], 'ሰማያዊ ሰማይ');
+assert.equal(tigrinya['read-only'], 'ንባብ ጥራይ');
+assert.equal(tigrinya['confirm-move-list-to-swimlane'],
+  'ነዚ ዝርዝርን ኩሎም ካርድታቱን ናብቲ ካልእ መስመር ኣዛውሮ?');
+assert.equal(JSON.parse(tigrinya['copyManyCardsPopup-format']).length, 3);
+assert.match(tigrinya['copyManyCardsPopup-instructions'], /JSON/);
+assert.equal(tigrinya['custom-field-currency'], 'ባጤራ');
+assert.equal(tigrinya['custom-field-text'], 'ጽሑፍ');
+assert.deepEqual(tokens(tigrinya['email-enrollAccount-text']),
+  ['__url__', '__user__']);
+assert.deepEqual(tokens(tigrinya['email-invite-text']),
+  ['__board__', '__inviter__', '__url__', '__user__']);
+assert.deepEqual(tokens(tigrinya['email-resetPassword-text']),
+  ['__url__', '__user__']);
+assert.deepEqual(tokens(tigrinya['email-verifyEmail-text']),
+  ['__url__', '__user__']);
+assert.match(tigrinya['error-json-malformed'], /JSON/);
+assert.match(tigrinya['error-csv-schema'], /CSV.*TSV/);
+assert.match(tigrinya['error-import-empty-board'], /WeKan/);
+assert.equal(tigrinya['export-card'], 'ካርድ ልኣኽ');
+assert.match(tigrinya['export-card-pdf'], /PDF/);
+assert.match(tigrinya['export-card-excel'], /Excel/);
+assert.match(tigrinya['export-card-field-board-info'], /ሰሌዳ.*ዝርዝር.*መስመር/);
+assert.equal(tigrinya['filter-no-member'], 'ኣባል የለን');
+assert.match(tigrinya['advanced-filter-description'], /== != <= >= && \|\|/);
+assert.deepEqual(tokens(tigrinya['import-board-instruction-issues']),
+  ['__endpoint__', '__sourceName__']);
+assert.match(tigrinya['import-board-instruction-jira'], /automationRules/);
+assert.match(tigrinya['import-board-instruction-excel'], /\.xlsx/);
+assert.match(tigrinya['import-trello-zip-file-hint'], /\.json.*\.zip/);
+assert.equal(tigrinya['filter-no-assignee'], 'ተመዳቢ የለን');
+assert.match(tigrinya['trello-api-key'], /https:\/\/trello\.com\/app-key/);
+assert.match(tigrinya['trello-api-import-desc'], /API/);
+assert.match(tigrinya['trello-cancel-delete-confirm'], /ክምለስ ኣይከኣልን/);
+assert.match(tigrinya['import-members-map-note'], /ተጠቃሚ/);
+assert.match(tigrinya['invalid-year'], /2026/);
+assert.equal(tigrinya['label-create'], 'ምልክት ፍጠር');
+assert.deepEqual(tokens(tigrinya['label-default']), ['%s']);
+assert.deepEqual(tokens(tigrinya['leave-board-pop']), ['__boardTitle__']);
+assert.match(tigrinya['list-archive-cards-pop'], /“Menu” > “Archive”/);
+assert.match(tigrinya['listImportCardsTsvPopup-title'], /Excel CSV\/TSV/);
+assert.equal(tigrinya['multi-selection'], 'ብዙሕ ምርጫ');
+assert.match(tigrinya['normal-assigned-only-desc'], /ተጠቃሚ/);
+assert.deepEqual(tokens(tigrinya['page-maybe-private']), ['%s']);
+assert.deepEqual(tags(tigrinya['page-maybe-private']), ['</a>', "<a href='%s'>"]);
+assert.deepEqual(tokens(tigrinya['remove-member-pop']),
+  ['__boardTitle__', '__name__', '__username__']);
+assert.match(tigrinya['sandstorm-remove-member-warning'], /WeKan.*Sandstorm/);
+assert.equal(tigrinya['signupPopup-title'], 'መለያ ፍጠር');
+assert.equal(tigrinya.team, 'ጉጅለ');
+assert.match(tigrinya['toggle-assignees'], /1-9/);
+assert.match(tigrinya['custom-top-left-corner-logo-height'], /27/);
+assert.match(tigrinya['automatic-linked-url-schemes'], /URL Schemes.*URL Scheme/);
+assert.equal(tigrinya['wipLimitErrorPopup-title'], 'ዘይቅቡል ደረት WIP');
+assert.match(tigrinya['attachment-transfer-limits-title'], /API/);
+assert.match(tigrinya['smtp-tls-description'], /SMTP.*TLS/);
+assert.equal(tigrinya['smtp-port'], 'ወደብ SMTP');
+assert.deepEqual(tokens(tigrinya['email-invite-register-text']),
+  ['__icode__', '__inviter__', '__url__', '__user__']);
+assert.equal(tigrinya.Database, 'ዳታቤዝ');
+assert.match(tigrinya['bidirectional-webhooks'], /Webhooks/);
+assert.match(tigrinya.Reactivity_order, /METEOR_REACTIVITY_ORDER/);
+assert.equal(tigrinya.FerretDB_commit, 'ለውጢ FerretDB');
+assert.match(tigrinya.DDP_transport, /DDP_TRANSPORT/);
+assert.match(tigrinya['org-domains-description'],
+  /a\.example\.com, kanban\.example\.org.*MULTITENANCY=true/);
+assert.match(tigrinya['org-admins-description'], /Admin/);
+assert.equal(tigrinya['team-propagate-members-to-boards'],
+  'ኣባላት ናብ ሰሌዳታት ኣስፋሕፍሕ');
+assert.deepEqual(tokens(tigrinya['default-subtasks-board']), ['__board__']);
+assert.match(tigrinya['delete-all-notifications-confirm'], /ክምለስ ኣይከኣልን/);
+assert.match(tigrinya['checklist-count-on-minicard'], /\(0\/0\)/);
+assert.equal(tigrinya['parent-card'], 'ወላዲ ካርድ');
+assert.equal(tigrinya['source-board'], 'ምንጪ ሰሌዳ');
+assert.deepEqual(tokens(tigrinya['activity-set-customfield']),
+  ['%s', '%s', '%s']);
+assert.deepEqual(tokens(tigrinya['r-w-every-day-at']), ['__time__']);
+assert.deepEqual(tokens(tigrinya['r-import-done']), ['__count__']);
+assert.match(tigrinya['r-import-paste'], /JSON.*CSV.*Trello Butler/);
+assert.equal(tigrinya['r-board-rules'], 'ሕግታት ሰሌዳ');
+assert.deepEqual(tokens(tigrinya['r-import-unmapped']), ['__count__']);
+assert.match(tigrinya['r-import-workflow-note'], /n8n.*Node-RED.*WeKan/);
+assert.match(tigrinya['r-schedule-weekday'], /ሰኑይ–ዓርቢ/);
+assert.equal(tigrinya['r-trigger'], 'መበገሲ');
+assert.equal(tigrinya['r-action'], 'ተግባር');
+assert.equal(tigrinya['r-archived'], 'ናብ መዝገብ ተዛዊሩ');
+assert.equal(tigrinya['r-checklist'], 'ዝርዝር መረጋገጺ');
+assert.equal(tigrinya['r-remove-all'], 'ኩሎም ኣባላት ካብቲ ካርድ ኣወግድ');
+assert.equal(tigrinya['r-send-email'], 'ኢመይል ልኣኽ');
+assert.equal(tigrinya['r-d-move-to-bottom-gen'],
+  'ካርድ ናብ ታሕቲ ዝርዝሩ ኣዛውር');
+assert.equal(tigrinya['r-items-list'], 'ነገር1,ነገር2,ነገር3');
+assert.match(tigrinya['r-checklist-note'], /ኮማ/);
+assert.match(tigrinya['custom-head-meta-tags'], /HTML/);
+assert.match(tigrinya['custom-head-manifest-content'], /JSON/);
+assert.match(tigrinya['custom-assetlinks-content'], /assetlinks\.json.*JSON/);
+assert.deepEqual(tags(tigrinya['add-custom-html-after-body-start']), ['<body>']);
+assert.deepEqual(tags(tigrinya['add-custom-html-before-body-end']), ['</body>']);
+assert.deepEqual(tokens(tigrinya['act-a-dueAt']),
+  ['__card__', '__timeOldValue__', '__timeValue__']);
+assert.deepEqual(tokens(tigrinya['act-atUserComment']),
+  ['__board__', '__card__', '__comment__', '__list__', '__swimlane__']);
+assert.match(tigrinya['delete-user-confirm-popup'], /ምምላስ የለን/);
+assert.match(tigrinya['submit-on-enter-description'],
+  /Enter.*Shift\+Enter.*Ctrl\/Cmd\+Enter/);
+assert.match(tigrinya['roles-info'], /ፓነል ኣመሓዳሪ/);
+assert.equal(tigrinya.monday, 'ሰኑይ');
+assert.equal(tigrinya.sunday, 'ሰንበት');
+assert.equal(tigrinya['roles-status-sees-assigned'], 'ዝተመደበ ጥራይ');
+assert.equal(tigrinya.domains, 'ዶሜይናት');
+assert.match(tigrinya['invalid-domain'], /example\.com.*@/);
+assert.match(tigrinya['dueCardsViewChange-choice-all-description'], /\*ገደብ\*/);
+assert.deepEqual(tokens(tigrinya['board-title-not-found']), ['%s']);
+assert.deepEqual(tokens(tigrinya['swimlane-title-not-found']), ['%s']);
+assert.deepEqual(tokens(tigrinya['list-title-not-found']), ['%s']);
+assert.deepEqual(tokens(tigrinya['n-n-of-n-cards-found']),
+  ['__end__', '__start__', '__total__']);
+for (const [key, value] of Object.entries(tigrinya)) {
+  if ((key.startsWith('operator-') || key.startsWith('predicate-')) &&
+      !/\s/.test(english[key])) {
+    assert.doesNotMatch(value, /\s/, `${key}: search terms remain one word`);
+  }
+}
+assert.equal(tigrinya['operator-board'], 'ሰሌዳ');
+assert.equal(tigrinya['predicate-checklist'], 'ዝርዝርመረጋገጺ');
+assert.deepEqual(tokens(tigrinya['operator-number-expected']),
+  ['__operator__', '__value__']);
+assert.deepEqual(tokens(tigrinya['globalSearch-instructions-description']),
+  ['__operator_list__']);
+assert.match(tigrinya['globalSearch-instructions-description'],
+  /`list:Blocked`.*`__operator_list__:"To Review"`/);
+assert.deepEqual(tokens(tigrinya['globalSearch-instructions-operator-has']),
+  tokens(english['globalSearch-instructions-operator-has']));
+assert.match(tigrinya['globalSearch-instructions-notes-2'], /\*OR\*/);
+assert.match(tigrinya['globalSearch-instructions-notes-3'], /\*AND\*/);
+assert.match(tigrinya['sort-boards-title-asc'], /A → Z/);
+assert.match(tigrinya['import-dependencies-file'], /JSON.*SVG/);
+assert.deepEqual(tokens(tigrinya['import-dependencies-done']),
+  ['__imported__', '__unmatched__']);
+assert.deepEqual(tokens(tigrinya['background-too-big']), ['{{size}}']);
+assert.equal(tigrinya['location-open-map'], 'ኣብ ካርታ ክፈት');
+assert.match(tigrinya['server-error-troubleshooting'],
+  /`sudo snap logs wekan\.wekan`.*`sudo docker logs wekan-app`/s);
+assert.deepEqual(tokens(tigrinya['custom-field-stringtemplate-format']),
+  ['%{value}']);
+assert.match(tigrinya['custom-field-stringtemplate-separator'],
+  /&#32;.*&nbsp;/);
+assert.match(tigrinya['office-report-desc'], /IPv4.*IPv6/);
+assert.equal(tigrinya.securityReportTitle, 'ጸብጻብ ድሕነት');
+assert.match(tigrinya['api-no-calls'], /REST API.*WITH_API=true/);
+assert.match(tigrinya['recovery-report-desc'], /MongoDB/);
+assert.match(tigrinya['office-report-desc'], /IPv4.*IPv6/);
+assert.equal(tigrinya['recovery-db'], 'ዳታቤዝ');
+assert.equal(tigrinya['history-change-moved'], 'ተዛዊሩ');
+assert.match(tigrinya['Node_heap_malloced_memory'], /malloc/);
+assert.match(tigrinya['custom-legal-notice-link-url'], /URL/);
+assert.equal(tigrinya.newLineNewItem,
+  'ሓደ መስመር ጽሑፍ = ሓደ ነገር ዝርዝር መረጋገጺ');
+assert.equal(tigrinya.copyChecklist, 'ዝርዝር መረጋገጺ ቅዳሕ');
+assert.equal(tigrinya['subtaskActionsPopup-title'], 'ተግባራት ንኡስ ዕማም');
+assert.match(tigrinya['attachment-repair-locations-description'],
+  /GridFS.*cloud/);
+assert.match(tigrinya['mongodb-compact-description'], /MongoDB GridFS.*Compact/);
+assert.match(tigrinya['mongodb-compact-warning'],
+  /replica sets.*secondaries.*primary.*oplog.*Meteor/s);
+assert.equal(tigrinya['move-progress-resume'], 'ቀጽል');
+assert.equal(tigrinya['gridfs-file-id'], 'መለለዪ ፋይል GridFS');
+assert.deepEqual(tokens(tigrinya['drag-board-to-workspace']), ['__workspaces__']);
+assert.match(tigrinya['preview-pdf-not-supported'], /PDF/);
+assert.match(tigrinya['show-week-of-year'], /ISO 8601/);
+assert.match(tigrinya['import-board-zip'], /JSON.*\.zip/);
+assert.equal(tigrinya['support-page-enabled'], 'ገጽ ደገፍ ተኽኢሉ');
+assert.match(tigrinya['accounts-lockout-info'], /ሓይሊ ዝበዝሖ ፈተነ/);
+assert.match(tigrinya['accounts-lockout-known-users'], /መሕለፊ ቃል/);
+assert.equal(tigrinya['accounts-lockout-unlock-all'], 'ኩሉ ፍታሕ');
+assert.equal(tigrinya['attachments-path'], 'መንገዲ መተሓሓዚታት');
+assert.equal(tigrinya['board-archive-scheduled'], 'ምዝገባ ሰሌዳ ብዓወት ተመዲቡ');
+assert.match(tigrinya['s3-force-path-style-description'], /MinIO.*AWS.*S3-compatible/);
+assert.deepEqual(tokens(tigrinya['database-migration-confirm']), ['__db__']);
+assert.match(tigrinya['database-migration-description'],
+  /MongoDB.*FerretDB v1 \(SQLite\).*27018.*27019.*WEKAN_FERRETDB_URL.*WEKAN_MONGODB_URL.*MONGO_URL.*snap set wekan database=ferretdb.*=mongodb/s);
+assert.equal(tigrinya['cron-migrations-resumed'], 'ፍልሰታት ብዓወት ቀጺሎም');
+assert.match(tigrinya['cards-loading-description'],
+  /CARDS_LOADING.*CARDS_LOADING_LAZY_THRESHOLD/);
+assert.deepEqual(tags(tigrinya['render-links-as-plain-text-description']),
+  tags(english['render-links-as-plain-text-description']));
+assert.match(tigrinya['always-show-code-as-text-description'], /<!-- -->.*JavaScript/);
+assert.match(tigrinya['anonymize-import-users-description'], /user1, user2, \.\.\..*@username/s);
+assert.match(tigrinya['backup-description'],
+  /backup\/YYYY\/MM\/DD\/HH_MM_SS\/backup\.zip.*S3\/MinIO.*Azure.*GCS/s);
+assert.match(tigrinya['backup-time'], /HH:MM/);
+assert.match(tigrinya['backup-day-of-month'], /1-28/);
+assert.match(tigrinya['gcs-permissions-note'],
+  /Google Cloud Console.*client_email.*Storage Object Admin/);
+assert.match(tigrinya['s3-endpoint-menu-path'],
+  /AWS.*MinIO.*Cloudflare R2.*Backblaze B2.*Wasabi.*DigitalOcean Spaces/);
+assert.match(tigrinya['gcs-credentials-menu-path'], /IAM & Admin.*JSON/);
+assert.match(tigrinya['gridfs-enabled-description'], /MongoDB GridFS/);
+assert.match(tigrinya['gridfs-move-collectionfs-note'], /CollectionFS/);
+assert.match(tigrinya['s3-region-description'], /AWS S3.*us-east-1/);
+assert.match(tigrinya['s3-ssl-enabled-description'], /S3.*SSL\/TLS/);
+assert.equal(tigrinya['attachment-monitoring'], 'ምክትታል መተሓሓዚ');
+assert.match(tigrinya['restore-lost-cards-migration-description'],
+  /swimlaneId.*listId.*'ዝጠፍኡ ካርድታት'/s);
+assert.match(tigrinya['restore-all-archived-migration-description'],
+  /swimlaneId.*listId/s);
+assert.match(tigrinya['fix-avatar-urls-migration-description'], /URL.*backend/);
+assert.match(tigrinya['fix-all-file-urls-migration-description'], /URL.*backend/);
+assert.match(tigrinya['run-restore-all-archived-migration-confirm'],
+  /ብቐሊሉ ክምለስ ኣይከኣልን/);
+assert.equal(tigrinya['migration-progress-current-step'], 'እዋናዊ ደረጃ');
+assert.equal(tigrinya['step-validate-migration'], 'ፍልሰት ኣረጋግጽ');
+assert.match(tigrinya['step-fix-avatar-urls'], /URL/);
+assert.match(tigrinya['step-fix-attachment-urls'], /URL/);
+assert.match(tigrinya['step-fix-file-urls'], /URL/);
+assert.match(tigrinya['cpu-usage'], /CPU/);
+assert.match(tigrinya['gridfs-attachments'], /GridFS/);
+assert.match(tigrinya['conversion-info-text'], /ሓንሳእ ጥራይ/);
+assert.match(tigrinya['migration-cpu-threshold'], /CPU.*%/);
+assert.match(tigrinya['migration-delay-ms'], /ms/);
+assert.match(tigrinya['migrate-all-to-gridfs'], /GridFS/);
+assert.match(tigrinya['migrate-all-to-s3'], /S3/);
+assert.match(tigrinya['migration-info-text'], /ድሕረ ባይታ/);
+assert.match(tigrinya['migration-batch-size-description'], /1-100/);
+assert.match(tigrinya.otp, /OTP/);
+assert.match(tigrinya['api-endpoints'], /API/);
+assert.match(tigrinya['problems-in-progress-help'], /CPU/);
+assert.deepEqual(tokens(tigrinya['repair-broken-cards-done']), ['__fixed__']);
+assert.deepEqual(tokens(tigrinya['repair-broken-cards-done-unfixable']),
+  ['__fixed__', '__unfixable__']);
+assert.deepEqual(tokens(tigrinya['restore-list-swimlanes-done']),
+  ['__remaining__', '__restored__']);
+assert.match(tigrinya['event-ip'], /IP/);
+assert.match(tigrinya['event-ipv4'], /IPv4/);
+assert.match(tigrinya['event-ipv6'], /IPv6/);
+assert.deepEqual(tokens(tigrinya['globalSearch-instructions-operator-number']),
+  ['__operator_number__']);
+assert.match(tigrinya['globalSearch-instructions-operator-number'],
+  /<number>.*\*<number>\*/);
+assert.match(tigrinya['import-board-source'], /Trello.*Jira.*WeKan.*CSV.*Excel/);
+assert.match(tigrinya['import-here-instruction'], /WeKan.*\.json.*\.zip/);
+
+console.log('tigrinyaTranslationProgress: all forty-four batches passed');

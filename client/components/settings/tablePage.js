@@ -1,5 +1,7 @@
 import { ReactiveVar } from 'meteor/reactive-var';
+import { TAPi18n } from '/imports/i18n';
 import { selectedMapProvider } from '/client/components/main/mapProvider';
+import { openAttachmentSlideshow } from '/client/components/cards/attachments';
 
 const { mapLinkFor } = require('/models/lib/mapLink');
 
@@ -25,6 +27,38 @@ Template.tablePage.events({
     if (userId) {
       Popup.open('editUser').call({ userId }, event);
     }
+  },
+
+  'click .js-table-page-attachment-preview'(event, tmpl) {
+    event.preventDefault();
+    event.stopPropagation();
+    const attachmentId = event.currentTarget.getAttribute('data-attachment-id');
+    if (!attachmentId) return;
+    const attachmentIds = tmpl.findAll('.js-table-page-attachment-preview')
+      .map(element => element.getAttribute('data-attachment-id'))
+      .filter((id, index, ids) => id && ids.indexOf(id) === index);
+    openAttachmentSlideshow(attachmentId, attachmentIds);
+  },
+
+  'click .js-table-page-attachment-download'(event) {
+    event.stopPropagation();
+  },
+
+  'click .js-table-page-attachment-delete'(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    const attachmentId = event.currentTarget.getAttribute('data-attachment-id');
+    if (!attachmentId || !window.confirm(TAPi18n.__('attachment-delete-pop'))) return;
+    const button = event.currentTarget;
+    button.disabled = true;
+    Meteor.call('permanentlyDeleteAttachmentFromFilesReport', attachmentId, error => {
+      button.disabled = false;
+      if (error) {
+        window.alert(error.reason || error.message);
+        return;
+      }
+      button.dispatchEvent(new CustomEvent('files-report-changed', { bubbles: true }));
+    });
   },
 
   // A location cell: which map to open it at. The cell itself stays SHORT -
