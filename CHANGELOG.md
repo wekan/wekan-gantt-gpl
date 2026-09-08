@@ -20,6 +20,14 @@ Newest WeKan at these platforms:
 <details>
 <summary>Version</summary>
 
+- Version numbers v11.33, v11.54, v11.57, v11.59 and v11.61 do not exist: a bug
+  in `releases/release-all.sh` measured the version step from the two newest
+  CHANGELOG headings instead of always advancing by one, so once a prepared-
+  but-never-published release had its heading removed rather than renamed back
+  to `# Upcoming WeKan ® release`, the resulting gap was read as the new normal
+  cadence and re-applied on every later release, repeatedly skipping a number.
+  Fixed to a fixed +1 step; nothing was lost, these numbers were simply never
+  used.
 - WeKan 8.75 and newer uses Meteor 3.5
 - WeKan 8.43 upgraded to Meteor 3.x, huge thanks to harryadel:
   - https://harryadel.com/dev-diary-24/
@@ -289,14 +297,94 @@ the Markdown commit as the template.
 
 </details>
 
-# Upcoming WeKan ® release
+# v11.63 2026-09-08 WeKan ® release
 
-**In short:** nothing here yet. This paragraph is the first thing a reader sees,
-so replace it as entries are added: say what the release amounts to, which areas
-changed and what changed about them, with the notable names in **bold**, and
-account for the rest in a closing clause. The table below is carried over from
-the release under this one, and is refilled from each build's provenance.tsv
-when this release is made.
+**In short:** `releases/release-all.sh` no longer skips version numbers: its
+version step is now a fixed **+1**, fixing a bug where a single unpublished,
+deleted release heading made the script measure and re-apply the resulting
+gap forever, silently skipping v11.57, v11.59 and v11.61 (and, earlier,
+v11.33 and v11.54). **CHANGELOG.md** no longer carries an empty Upcoming
+placeholder between releases, and each release's binaries table moves from
+right under the summary to its own **Binaries in these bundles** section at
+the end. The **Docker Hub/Quay.io registry-overview sync** added earlier is
+removed again: it needed rights the release credentials do not have, and
+the maintainer updates both overviews manually now.
+
+This release fixes the following developer-tooling bug:
+
+**`releases/release-all.sh`** - the version-number step between releases.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/96157ef41">Stop release-all.sh from inheriting and widening a version-number gap</a>. Thanks to xet7.</summary>
+
+The next release version used to be computed by MEASURING the gap between
+the two newest `# vNN.MM` headings in CHANGELOG.md and re-applying that same
+gap, rather than always advancing by one. That is fine as long as every
+gap between two headings is really 1 - but it is not self-correcting: if a
+release number was ever prepared and then never published, and its
+CHANGELOG section was deleted outright instead of renamed back to `#
+Upcoming WeKan ® release` (the correct recovery for a release that never
+published, per this script's own header comment), the two headings left
+behind were 2 apart. The script read that as "the cadence is +2 now",
+applied +2 to get the next number, and did the same again next time -
+turning one incident into a permanent, ever-repeating habit of skipping a
+number. That is exactly how v11.56 -> v11.58 -> v11.60 -> v11.62 happened,
+silently skipping v11.57, v11.59 and v11.61 (v11.33 and v11.54 were
+skipped by the same bug earlier). The step is now a fixed +1 with no
+history lookup, and the other code path (resuming an already-renamed
+release) now hard-fails instead of printing "proceeding anyway" when the
+newest heading is not exactly +1 from the previous one, so a future gap is
+caught before it can be built on rather than silently accepted and
+repeated. `tests/releaseAllVersionStep.test.cjs` pins the fixed +1 step
+and the hard failure.
+
+</details>
+
+and the following developer-tooling changes:
+
+**CHANGELOG.md** - the empty Upcoming placeholder, and where the binaries table sits.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/83fa2d341">Stop leaving an empty Upcoming placeholder, move the binaries table to the end</a>. Thanks to xet7.</summary>
+
+CHANGELOG.md no longer carries an empty `# Upcoming WeKan ® release` section
+with an `**In short:** nothing here yet.` placeholder between releases.
+`release-all.sh` used to auto-create one immediately after renaming a
+release (via the now-deleted `releases/changelog-open-next.mjs`), so the
+file always had a section that said nothing until the first real entry
+replaced it. Add the section yourself, by hand, the moment there is a real
+entry for it, using the skeleton at
+`docs/DeveloperDocs/Changelog-Upcoming-Template.md`. What actually prevents
+an entry from landing inside an already-published release -
+`tests/changelogEntriesBelongToTheirRelease.test.cjs` asking git which
+commits a release contains - never depended on the placeholder existing
+first, so removing it costs nothing. Also reorders each release section:
+the binaries table used to sit right under the `**In short:**` summary; it
+now comes LAST, under its own `**Binaries in these bundles:**` label, after
+every content subsection and right before the closing "Thanks to above
+GitHub users" line - reference material, not the second thing a reader
+sees.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0c1b8a4ca">Remove the Docker Hub/Quay.io registry-overview sync</a>. Thanks to xet7.</summary>
+
+v11.62's `release-all.yml` run had already shown this step to be a
+liability rather than a convenience: `DOCKERHUB_AUTH`/`QUAY_AUTH` are
+scoped for `docker login`/image push, and neither registry grants a
+push-scoped token the rights a repository-description write needs, so the
+step failed with 403 even though the image itself published fine (fixed to
+a `::warning::` rather than a job failure in the previous commit, still in
+this same Upcoming section). The maintainer now updates both registries'
+overviews by hand, so the step - and its
+`tests/dockerRegistryOverviewSync.test.cjs` - are removed entirely rather
+than kept working. The identical step is removed from the companion
+FerretDB fork's `docker.yml` in the same commit round.
+
+</details>
+
+**Binaries in these bundles:**
 
 | Platform | Binary | From | Version | SHA256 |
 | --- | --- | --- | --- | --- |
