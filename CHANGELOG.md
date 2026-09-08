@@ -259,6 +259,36 @@ browser build to verify).
 
 </details>
 
+<details>
+<summary>Import/export: more formats, and the six existing ones brought up to full field fidelity.</summary>
+
+docs/Features/ImportExport/Format-Coverage.md is the design contract for every
+import/export format. Trello, the canonical WeKan zip, CSV/TSV, XLSX and PDF/
+HTML/SVG already meet it, each with real code and tests. GitHub/Gitea/Forgejo
+was brought up to it this round (second assignee, milestone, state reason,
+comments, an `unsupported` loss report). Six formats in
+models/lib/externalParsers.js / externalExporters.js are still the thin,
+intentionally best-effort stub each got when the shared import/export
+plumbing (validation boundary, checkpoints, one import page) landed: Jira
+(no ADF description, no custom fields, no pagination), Kanboard (no
+subtasks/comments), NextCloud Deck (no ACL/attachments/comments), OpenProject
+(no hierarchy/relations/watchers/custom fields), Asana (no
+subtasks/dependencies/stories/custom-field values) and Zenkit (no hierarchy/
+members/item-level custom fields, no loss report). Each needs its own
+fixture/spec pass, the way GitHub just got one - not a shared shallow bump.
+
+Additional formats named but not yet researched or built: the Leo literate
+editor's `.leo` outline format, and whatever else other kanban/outline tools
+use for import/export that WeKan does not read or write yet. Each new format
+costs roughly what Markdown (this round's new format) cost: a parser, a
+formatter, tests, UI wiring in the import picker and export menu, and - since
+every user-visible string needs one - a new translated string across all 234
+locale files, not just an English placeholder (tests/allTranslationCompleteness.test.cjs
+enforces that). Not attempted as a batch; take them one at a time, following
+the Markdown commit as the template.
+
+</details>
+
 # Upcoming WeKan ® release
 
 **In short:** nothing here yet. This paragraph is the first thing a reader sees,
@@ -278,6 +308,354 @@ when this release is made.
 | mac-arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-arm64) | v1.53.0 | `cb14ffe93e285903e5a8a9c1821687ddb5b8a979a11c584bf4af534b272c6d3e` |
 | mac-x64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.xz) | v24.19.0 | `d35e95230f46f6f0751df497c56622c6735e05d5e1fb1630996a005b9d328fe4` |
 | mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
+
+# v11.62 2026-09-08 WeKan ® release
+
+**In short:** this release adds **test-menu.sh** and a **Markdown**
+import/export format, and gives the **GitHub/Gitea/Forgejo issue importer**
+loss-reporting instead of silently dropping fields. The **Board View menu**
+is reordered and gains placeholder pages for ten not-yet-built views plus a
+new **Time** view. The **Board Table** and **Calendar** view toolbars are
+rethemed, regrouped and properly centered. Several bugs are fixed:
+dependency lines and collapsed lists bleeding past a resized swimlane, a
+list's collapse caret sitting in the wrong place, an **OIDC redirect
+login loop**, a **Windows single-EXE** CI smoke test failing silently,
+and **list width is now a single hardcoded 240px** for every list on
+every board, with the redundant "Set width"/"Set swimlane height" popups
+removed.
+
+| Platform | Binary | From | Version | SHA256 |
+| --- | --- | --- | --- | --- |
+| amd64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.xz) | v24.19.0 | `14b342e71204f811bde6153be8e04b62aef63c236fef92b55f9c83154b409647` |
+| amd64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-amd64) | v1.53.0 | `eae1f0a8f73bfc979738bfff7284d40fd1bc55de2cc56514721fc155c3624f7d` |
+| arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-arm64.tar.xz) | v24.19.0 | `01443c1e1a29e531ccad5a46fefa6df490d2189c49f7955904aecdbb0fe86fdc` |
+| arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-arm64) | v1.53.0 | `bdc50caee3ac28495b42d2130b94a042a9dd6d3a38f732cac02b648f36c891da` |
+| mac-arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-arm64.tar.xz) | v24.19.0 | `3f1cf157479c1480352083105e13faf9d008ede98e7e157746b6df940d197b94` |
+| mac-arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-arm64) | v1.53.0 | `cb14ffe93e285903e5a8a9c1821687ddb5b8a979a11c584bf4af534b272c6d3e` |
+| mac-x64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.xz) | v24.19.0 | `d35e95230f46f6f0751df497c56622c6735e05d5e1fb1630996a005b9d328fe4` |
+| mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
+
+This release adds the following developer-tooling feature:
+
+**Feature testing** - one menu to run and verify WeKan's own features.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1218cd281">Add test-menu.sh and checked-in example inputs for docs/Features</a>. Thanks to xet7.</summary>
+
+test-menu.sh mirrors the docs/Features menu structure and runs the actual
+WeKan code for each feature: a dedicated runner for Login (a real REST
+username/password round trip) and ImportExport/PDF (create a board, export
+it, check the PDF header), and a generic fallback that matches a feature
+against this repo's own automated tests by filename. Every feature run
+writes output.txt/result.txt/run.log under .tools/test-menu/&lt;timestamp&gt;/,
+mirroring the docs/Features path, and never leaves an empty or missing
+result. The example INPUT for a feature is checked into the repository next
+to its documentation instead - docs/Features/&lt;path&gt;/example-input.txt - so
+test-menu.sh only ever reads it, never writes into docs/Features.
+
+</details>
+
+and adds the following Board View feature:
+
+**Board View menu** - its order, icons and the views it opens.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/876b0a2c1">Reorder the Board View menu and add its not-yet-built views</a>. Thanks to xet7.</summary>
+
+New order top to bottom: Swimlanes, Lists, Table, Calendar, Time,
+Statistics, Dashboard, Burndown, Burnup, Cumulative Flow, Control, Cycle
+Time, Flow Efficiency, Gantt, Lead Time, Throughput Histogram, WIP Run -
+each with its own font-awesome icon. The ten views with no implementation
+yet get a real grey page titled like their menu entry instead of a menu
+item that opens nothing. "Time spent summary" moves out of Statistics into
+its own new Time view. models/users.js's profile.boardView schema and
+boardHeader.js's tooltip name map both had to learn every new view or
+switching to one silently failed (the server rejected it with a 400, or
+the tooltip fell back to a generic label); tests/boardViewMenu.test.cjs now
+checks the menu, the schema and the tooltip map against the same view list.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/14136a5b0">Group the Board View menu with separators and mark unfinished views</a>. Thanks to xet7.</summary>
+
+`<hr>` separators, matching the right sidebar's own hr-separated groups:
+one between Table and Calendar, one between Time and Statistics. The nine
+views with no implementation behind them yet (Burndown, Burnup, Cumulative
+Flow, Control, Cycle Time, Flow Efficiency, Lead Time, Throughput
+Histogram, WIP Run) show a hardcoded "(Name)" label instead of a
+translated one - translating them as if they were finished feature names,
+like every other entry, would not say in any language that the view
+behind them is just a grey placeholder page. Dashboard is left translated;
+it is not on the maintainer's list of nine.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/02449c0d0">Move Gantt between Statistics and Dashboard, mark Dashboard unfinished</a>. Thanks to xet7.</summary>
+
+Gantt moves next to Dashboard, with its own `<hr>` separator, matching the
+menu's existing grouping. Dashboard now carries the same hardcoded,
+untranslated "(Dashboard)" label the other nine not-yet-built views
+already had - the earlier entry above left it translated by oversight,
+which said the view was finished when it is a placeholder page like the
+rest of them.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a5e74972d">Translate the Board View menu's "not implemented yet" labels</a>. Thanks to xet7.</summary>
+
+The two entries above hardcoded the English word itself inside the
+parentheses, so on an otherwise fully translated menu these ten entries
+read as a leftover bug rather than a "coming soon" marker - the page each
+one opens was already correctly translated, since its own title uses the
+same key. The literal parentheses are what say "not implemented yet"; the
+word inside them is now translated like every other entry, through the
+exact key the placeholder page's title uses.
+
+</details>
+
+and fixes the following bugs:
+
+**CHANGELOG.md formatting.**
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4f35d5225">Fix a wrapped changelog summary line</a>. Thanks to xet7.</summary>
+
+A `<summary>` line must be on one line - a wrapped one renders its second
+line as literal text instead of part of the link. changelogFormat.test.cjs
+already checked this; it was failing before this fix.
+
+</details>
+
+**Calendar view** - the toolbar.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e0e03e200">Move all Calendar view toolbar buttons to the right of the title</a>. Thanks to xet7.</summary>
+
+Today/Previous/Next were their own group under the title, with the
+Day/Week/Month view toggles in a third, CENTER group that pushed
+everything onto a second row. All the buttons now sit together in one
+group on the right of the title, which stays alone on the left and is
+vertically centered against them - WeKan's global heading margin
+otherwise offset the title from that row.
+
+</details>
+
+**Login** - OIDC redirect-style auto-login.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/89682c251">Fix OIDC auto-redirect looping until the provider rate-limits it</a>. Thanks to Alishara and xet7.</summary>
+
+With `oauth2-login-style: redirect` and `OIDC_REDIRECTION_ENABLED`, the
+browser looped between WeKan and the identity provider until the provider
+started rate-limiting the repeated `/authorize` requests. The auto-redirect
+fired unconditionally on every render of the sign-in page; Meteor's
+redirect-style OAuth has no dedicated callback route, so the identity
+provider's callback bounces the browser back to that same page, racing the
+asynchronous login completion - and a bounce-back render that still looked
+"not logged in yet" fired a brand new redirect straight back to the
+provider, forever. Fixed with a one-shot flag that survives the round trip
+and is cleared on login success/failure, so a later logout can still
+auto-redirect again.
+
+</details>
+
+**Swimlanes** - resizing one shorter.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/24199bb1d">Fix dependency lines and collapsed lists bleeding past a resized swimlane</a>. Thanks to xet7.</summary>
+
+Two independent causes: `.swimlane.swimlane-resizing` forced
+`overflow: visible !important` for the whole drag, so a collapsed list (a
+fixed 540px tall) kept painting past a swimlane being dragged shorter, on
+top of the swimlane below it - now `hidden`. And the dependency-line ("red
+string") overlay only ever redrew on scroll or a window resize, never on a
+swimlane's own height changing, so a line kept stale coordinates from
+before the resize; it now recomputes on every height change and refuses to
+draw to/from a card with no on-screen area left once every clipping
+ancestor is accounted for - a line between two cards in the SAME shrunk
+swimlane disappears with the card, while one genuinely crossing into a
+different, still-visible swimlane is unaffected.
+
+</details>
+
+**Lists** - the collapse caret, list width, and swimlane height.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0f56a3344">Move an expanded list's collapse caret to its header's top corner</a>. Thanks to xet7.</summary>
+
+The caret rendered as a plain in-flow sibling before the title, on the row
+with the card count and the +/menu icons - visually unrelated to either.
+Nesting it inside the title heading was tried first and reverted: that
+heading opens the rename form on click, so the caret's click bubbled up
+and opened that instead of collapsing the list. Fixed by floating the
+caret to the START of the header's top line, the same line the hamburger
+menu already floats to the END of, so it lands level with that menu at the
+header's top corner - the left edge for LTR, the right for RTL.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/04d909b7a">Stack "Same width for all lists" below "Auto list width"</a>. Thanks to xet7.</summary>
+
+Both are `a` toggles in the "Set width" popup with no display rule of
+their own, so the browser default (inline) put them side by side on one
+crowded line instead of stacked rows like the rest of the popup.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/861494958">Hardcode list width to 240px and remove the width/height set-value popups</a>. Thanks to xet7.</summary>
+
+List width is now a single hardcoded constant (240px) applied to every
+list on every board for every viewer. This replaces the model built up
+over several past releases - a personal per-user width, a per-list shared
+width, a viewer-toggled "same width for all lists" mode and a
+viewer-toggled auto-width mode. All of it - the "Set width" list-menu
+popup just above, the board-settings "Personal list width" sidebar toggle,
+the drag-resize handle, and every schema field and Meteor method behind
+them - is removed rather than left dead. The "Set swimlane height" menu
+popup goes too, as a redundant text-input alternative to the working
+drag-resize handle from the swimlane-resize fix above; that drag handle
+itself is untouched. models/wekanCreator.js was still mapping the removed
+board fields on WeKan JSON import, which would have failed schema
+validation on any import; fixed as part of the same change.
+
+</details>
+
+**Board Table view** - its toolbar: the pagination buttons, two toggle
+button tooltips, and vertical alignment.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2d89c086a">Theme Board Table view's pagination buttons like the Search button</a>. Thanks to xet7.</summary>
+
+The prev/next page buttons were plain white with a grey border, unlike
+the blue "Search" button right next to them in the same control row - the
+two read as different UI families instead of one toolbar.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7b6b9d519">Add descriptive tooltips to the Board Table view toggle buttons</a>. Thanks to xet7.</summary>
+
+The "wrap card titles" and "group by swimlane" toggle buttons had bare
+one-word tooltips that said neither what clicking them does nor which of
+the two states is currently on. Each now has a state-aware
+tooltip/aria-label, translated into every locale.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/663a5a1cc">Vertically center the Board Table view toolbar's controls</a>. Thanks to xet7.</summary>
+
+The search input, Search button, pagination buttons and the two toggle
+buttons sit in one flex row with align-items: center - but a flex child
+never shrinks below its own content's minimum height no matter what the
+container measures, so the Search button's bold label pushed it visibly
+taller/lower than the search input beside it. Every control now shares
+one explicit border-box height, so there is nothing left for
+align-items: center to fail to center.
+
+</details>
+
+and adds the following import/export improvements:
+
+**Import/export formats** - see docs/Features/ImportExport/Format-Coverage.md.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/237b4f3f8">Add Markdown import/export and give GitHub-style import loss reporting</a>. Thanks to xet7.</summary>
+
+The GitHub/Gitea/Forgejo issue importer mapped only a title, description,
+one assignee and a due date, silently dropping everything else. It now also
+carries a second-and-later assignee, a milestone title, a non-"completed"
+state reason and embedded comments, and returns an `unsupported` list of
+what it genuinely could not place. Markdown is a new import/export format:
+the "## List name" / "- [ ]"/"- [x]" task-list convention several
+markdown-kanban tools use (Obsidian Kanban and similar) - a plain bulleted
+list with no checkboxes still imports as open cards. The export route
+serves plain `text/markdown` rather than JSON, since the point is a file
+readable/editable directly or opened by another markdown-kanban tool.
+
+</details>
+
+and has the following developer-tooling fix:
+
+**GitHub Actions** - the Windows single-EXE build.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b34b036eb">Fix the Windows single-EXE smoke test failing with no error message</a>. Thanks to xet7.</summary>
+
+A downloaded run's logs (.tools/wekan10) showed the smoke test's success
+message print, immediately followed by "Process completed with exit code
+1" - no thrown error anywhere in between. `taskkill.exe` (unlike a
+PowerShell cmdlet) sets `$LASTEXITCODE`, which `$ErrorActionPreference`
+does not touch, and `pwsh -Command` exits with whatever `$LASTEXITCODE`
+last held when the script itself never calls `exit`. `taskkill /IM
+ferretdb.exe` finding no matching process - a normal, harmless outcome by
+the second smoke-test run - was the LAST external command the whole step
+ran, so its "no such process" exit code alone failed the step. The same
+latent bug was in the "Free ports used by the packaged EXE" step's
+cleanup loop too; both now reset `$LASTEXITCODE` after every `taskkill`
+whose own exit code the workflow does not check.
+
+</details>
+
+and adds the following developer-tooling feature:
+
+**Docker releases** - keeping the registry overview pages in sync.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/395aa2b40">Sync the Docker Hub and Quay.io repository overviews from README.md on release</a>. Thanks to xet7.</summary>
+
+Docker Hub and Quay.io each show a long-form "overview"/description on the
+repository page, separate from the image tags, and neither registry updates
+it on its own - it silently drifts from what README.md actually documents
+unless something pushes it. release-all.yml's docker job now adds a step,
+after the multi-arch image is built, pushed and verified, that reads
+README.md and syncs it: to Docker Hub via its login-for-JWT-then-PATCH
+`full_description` API, and to Quay.io via its `PUT
+/api/v1/repository/{repo}` `description` API, reusing the same
+DOCKERHUB_AUTH/QUAY_AUTH secrets already decoded for `docker login`. GHCR
+needs no such call: a package linked to a GitHub repository (as
+ghcr.io/wekan/wekan is) already shows that repository's own README
+automatically. Each registry is synced independently, the same way the
+image push already tolerates one registry failing without blocking the
+others, and no token or JWT is ever echoed. The companion FerretDB fork's
+own `docker.yml` gained the identical step for wekanteam/ferretdb and
+quay.io/wekan/ferretdb. tests/dockerRegistryOverviewSync.test.cjs pins the
+new step's endpoints, request bodies, ordering and the
+no-plaintext-secrets rule.
+
+</details>
+
+and fixes the following:
+
+**Release consistency and the Statistics view test** - after the Meteor 3.5.2
+upgrade and the Time view split.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a7419ba9a">Fix Dockerfile's Meteor release pin after the 3.5.2 upgrade</a>. Thanks to xet7.</summary>
+
+`.meteor/release` was bumped to `METEOR@3.5.2`, but Dockerfile's own
+`METEOR_RELEASE` still said `METEOR@3.5.2-rc.0`, so
+`tests/releaseVersionConsistency.test.cjs` failed with a version mismatch.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5abcb5f2f">Fix Statistics view test for the Time-view split</a>. Thanks to xet7.</summary>
+
+Time spent summary moved out of the Statistics view into its own Time
+view, leaving statsView.jade with one `.stats-view-table` section (board
+status) instead of two. The Playwright test still expected 2 tables and
+failed on every browser; updated to expect 1.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for
+their translations.
 
 # v11.60 2026-09-08 WeKan ® release
 
@@ -367,8 +745,7 @@ behavior is unchanged; all 790 Node suites and 15 targeted browser checks pass.
 | mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
 
 <details>
-<summary><a href="https://github.com/wekan/wekan/commit/793f760ea">Fix
-alltests fixtures and HTTP cookie assertions</a>. Thanks to xet7.</summary>
+<summary><a href="https://github.com/wekan/wekan/commit/793f760ea">Fix alltests fixtures and HTTP cookie assertions</a>. Thanks to xet7.</summary>
 
 The September 7 alltests run failed on generated Playwright artifacts, changed
 Finnish wording, long fixture labels and an HTTPS-only cookie expectation on
