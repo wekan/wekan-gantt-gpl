@@ -279,14 +279,12 @@ when this release is made.
 | mac-x64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.xz) | v24.19.0 | `d35e95230f46f6f0751df497c56622c6735e05d5e1fb1630996a005b9d328fe4` |
 | mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
 
-# v11.58 2026-09-07 WeKan ® release
+# v11.60 2026-09-08 WeKan ® release
 
-**In short:** nothing here yet. This paragraph is the first thing a reader sees,
-so replace it as entries are added: say what the release amounts to, which areas
-changed and what changed about them, with the notable names in **bold**, and
-account for the rest in a closing clause. The table below is carried over from
-the release under this one, and is refilled from each build's provenance.tsv
-when this release is made.
+**In short:** **Logos and board backgrounds accept an external image URL again**,
+reverting the previous release's switch to upload-only, server-converted GIF
+storage, and a new **`test-menu.sh`** gives the repository an interactive test
+menu shaped exactly like `docs/Features`.
 
 | Platform | Binary | From | Version | SHA256 |
 | --- | --- | --- | --- | --- |
@@ -299,9 +297,45 @@ when this release is made.
 | mac-x64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.xz) | v24.19.0 | `d35e95230f46f6f0751df497c56622c6735e05d5e1fb1630996a005b9d328fe4` |
 | mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
 
-# v11.57 2026-09-07 WeKan ® release
+This release reverts the following change:
 
-**In short:** Now that builds have been fixed, new release with those fixes included.
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f07e2e69b">Revert branding and board background images to external URLs</a>. Thanks to xet7.</summary>
+
+The previous release replaced the login logo, top-left corner logo and board
+background URL fields with upload-only controls that convert every image to
+GIF on the server. This reverts that: the Admin Panel and Organization
+branding fields, and the board Change Background Image popup, accept a direct
+external image URL again, alongside the existing upload option. Trello and
+WeKan JSON imports may again carry an external background URL onto the
+imported board. Tests updated to match the restored fields and behavior.
+
+</details>
+
+and has the following developer-tooling addition:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3085e32fe">Add test-menu.sh, a docs/Features-shaped interactive test menu</a>. Thanks to xet7.</summary>
+
+`./test-menu.sh` builds its menu and submenus live from `docs/Features`, so
+they can never drift from it: a folder is a submenu, a folder with no
+subfolders of its own is a runnable leaf, menu 1 always runs every feature at
+once, and 0 goes back (or exits, at the top). Login and ImportExport/PDF are
+wired to real WeKan server code from this checkout - a REST username/password
+login round trip and a board create-then-export-PDF call - reusing an
+already-running WeKan or starting the precompiled `.build/bundle` if one
+exists. Every other leaf falls back to running this repository's own matching
+`tests/*.test.cjs`, a real, working way to exercise a feature that has no
+dedicated runner yet. Each run's starting command, log and any produced files
+(the exported PDF, login/board API responses) are saved under
+`.tools/test-menu/YYYY-MM-DD_HH-MM-SS/`, mirrored into the same subfolders as
+`docs/Features`.
+
+</details>
+
+# v11.58 2026-09-07 WeKan ® release
+
+Now that builds have been fixed, new release with those fixes included.
 Fixed are builds of FerretDB, node-patches, mongo-tools-patces and mongosh-patches.
 
 | Platform | Binary | From | Version | SHA256 |
