@@ -309,6 +309,168 @@ the Markdown commit as the template.
 </details>
 </details>
 
+# v11.65 2026-09-09 WeKan ® release
+
+**In short:** Four security advisories against **Attachments/Avatars**
+(ostrio:files) are fixed: a **critical** path-traversal arbitrary file
+write via the attachment upload `namingFunction`, a **critical**
+unauthenticated DDP method that could wipe every attachment or avatar on
+the instance, and two **high** missing-authorization bugs that let an
+anonymous caller download any avatar (a missing `protected` callback,
+and an unauthenticated legacy-avatar route). The **AppImage** no longer
+mounts itself under a possibly-small `/tmp`, relocating to
+`WRITABLE_PATH/app` instead.
+
+This release fixes the following CRITICAL SECURITY ISSUES:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9947e0138">Unauthenticated Arbitrary File Write via Path Traversal in Attachment Upload namingFunction</a>. Thanks to xet7.</summary>
+
+Attachments overrode ostrio:files' `sanitize()` to an identity function
+and used the client-supplied `fileId` verbatim as the on-disk file name
+in `namingFunction`, so an anonymous upload with
+`fileId: "../../../../tmp/pwn"` could write attacker-controlled content
+anywhere the WeKan process can write - including overwriting bundle
+modules for remote code execution. `sanitize()` is restored to the same
+whitelist `models/avatars.js` already used for the same tokens (file
+DISPLAY names are untouched - they go through a separate, unrelated
+sanitizer in `onBeforeUpload`), and `namingFunction` now also validates
+the sanitized `fileId` against the ObjectId shape WeKan itself generates,
+regenerating a fresh one rather than trusting it. A blocked attempt is
+recorded through the shared security log
+(`authz.upload-path`/[UploadPathBleed](https://wekan.fi/hall-of-fame/uploadpathbleed/)),
+so Admin Panel / Problems shows it happened.
+`tests/attachmentAvatarSecurityAdvisories.test.cjs` pins both the
+restored sanitizer and the fileId validation, with the advisory's own PoC
+string as a negative case.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9947e0138">Unauthenticated DDP Methods Allow Instance-Wide Deletion of Attachments and Avatars</a>. Thanks to xet7.</summary>
+
+ostrio:files registers its own `_FilesCollectionRemove_<collection>` DDP
+method, gated only by `allowClientCode` and never routed through
+`Attachments.allow`/`Avatars.allow` - those only gate the ordinary Mongo
+`.remove()` call, not the library's own method. Attachments had no
+`onBeforeRemove` at all, and Avatars' unconditionally returned `true`
+(it existed only to clear the removed avatar's owner's
+`profile.avatarUrl`), so any anonymous DDP connection could call either
+method with selector `{}` and delete every attachment (database record
+and physical file) or every avatar on the instance. Both now require
+`this.userId` and check every file the selector actually matches:
+attachments need the caller's board-write access on that file's card/
+board, avatars need ownership of that avatar or site-admin status (the
+existing admin "delete another user's avatar" flow keeps working). A
+blocked attempt is recorded through a new
+`authz.file-remove`/[WipeBleed](https://wekan.fi/hall-of-fame/wipebleed/)
+catalog key. `tests/attachmentAvatarSecurityAdvisories.test.cjs` pins
+both hooks and that an empty/non-matching selector is refused outright
+rather than treated as nothing to check.
+
+</details>
+
+and fixes the following bugs:
+
+**Avatars** - anonymous access to files nothing should have exposed.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9947e0138">Add the protected callback the download library needs to gate them</a>. Thanks to xet7.</summary>
+
+Unlike Attachments, Avatars never set `protected`, so ostrio:files' own
+library-native download route - whose `_checkAccess` defaults to
+allowing everything when `protected` is unset - served any avatar to any
+anonymous caller, entirely bypassing WeKan's own `isAuthorizedForAvatar`
+check. `Avatars.protected` now mirrors `Attachments.protected`: an
+authenticated caller may always view an avatar; an anonymous one only
+when the avatar's owner is a member of a public board. A denied
+anonymous download is recorded under a new
+`authz.avatar-protected`/[PortraitBleed](https://wekan.fi/hall-of-fame/portraitbleed/)
+catalog key.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9947e0138">serveLegacyAvatar Serves Legacy CollectionFS Avatars Without Any Authentication</a>. Thanks to xet7.</summary>
+
+Both routes in `server/routes/avatarServer.js` that fall back to reading
+a legacy CollectionFS avatar in place streamed it to any caller who knew
+its old `cfs.avatars.filerecord` id - one of the two
+(`/cfs/files/avatars`) with no authentication check at all. Both now
+require a signed-in caller (`isLegacyAvatarAuthorized`): legacy records
+carry no owner/board link that could be safely checked for the
+public-board exemption current avatars get, so this is a deliberately
+narrower rule rather than reusing that exemption on an unverifiable
+claim. The `/cfs/files/avatars` route's redirect fallback for
+already-migrated avatars is untouched, so an anonymous public-board
+viewer still sees those normally - only the legacy read-in-place path
+now requires a login. A denied attempt is recorded under a new
+`authz.legacy-avatar`/[RelicAvatarBleed](https://wekan.fi/hall-of-fame/relicavatarbleed/)
+catalog key.
+`tests/attachmentAvatarSecurityAdvisories.test.cjs` pins both call sites
+and the negative case that the redirect still works unauthenticated.
+
+</details>
+
+and fixes the following bug:
+
+**AppImage** - its own mount filling up a small /tmp.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5adc030bd">Relocate the AppImage's own mount from /tmp to WRITABLE_PATH/app</a>. Thanks to xet7.</summary>
+
+checkmk warned `/tmp/.mount_wekan.OhaGOG ... 100% used` because the
+AppImage runtime's own read-only squashfs mount landed on a small `/tmp`
+- a squashfs mount always reports itself as 100% used regardless of
+size, so this was really "`/tmp` is too small for the AppImage", not a
+leak. The runtime mounts itself under
+`$TMPDIR/.mount_<name>.<random>` (defaulting to `/tmp`) before `AppRun`
+ever runs, so the very first launch's mount cannot be redirected from
+inside `AppRun`. `AppRun` now re-execs itself once per launch with
+`TMPDIR` set to `WRITABLE_PATH/app` when the caller has not already
+chosen a `TMPDIR`, so every launch from then on mounts there instead -
+and, on that same first launch, sweeps out any of WeKan's own orphaned
+`.mount_*ekan*` directories left in `/tmp` by an earlier, uncleanly
+killed run (checked against `/proc/mounts`, so a live one is never
+touched). AppImage-only: no other WeKan platform mounts itself this way,
+so Docker, snap, the `.deb` and the bundle zip are untouched.
+`tests/appImageRuntime.test.cjs` pins the relocation, its
+once-per-launch/explicit-`TMPDIR` guards, and that only orphaned mounts
+are removed.
+
+</details>
+
+and has the following developer-tooling fixes:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5f197f4bd">Fix #3823 e2e test for the Show on Minicard -> Board Settings/Card move</a>. Thanks to xet7.</summary>
+
+The test still clicked the minicard's own "Show on Minicard" menu entry
+(`.js-show-on-minicard`), which no longer exists after the Board
+Settings / Card move earlier in this release: the checkbox
+(`.js-field-has-creator-on-minicard`) and its behavior are unchanged, so
+the test now opens it from Board Settings / Card, reached from the
+board's cog menu, instead.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/FerretDB/commit/b2e1ce4b">Update hardcoded SQLite version/source-id pins to 3.53.4</a>. Thanks to xet7.</summary>
+
+The `modernc.org/sqlite` bump (1.57.0 → 1.58.0, from the earlier
+"ferretdb" dependabot group update) embeds a newer SQLite release
+(3.53.3 → 3.53.4), which three tests pinned by exact string: `TestDefaults`
+in `internal/backends/sqlite/metadata/pool/pool_test.go`
+(`sqlite_version()`/`sqlite_source_id()`), and the `BackendVersion` checks
+in `internal/backends/backend_test.go` and
+`internal/backends/sqlite/metadata/registry_test.go`. The dependency bump
+is the intended change; the guards are updated to match it.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for
+their translations.
+
 # v11.64 2026-09-09 WeKan ® release
 
 **In short:** **Resizable list width and swimlane height are back.** v11.62

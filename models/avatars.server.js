@@ -144,12 +144,83 @@ Avatars.onAfterUpload = async function (fileObj) {
   }
 };
 
+// Advisory: "Avatars Collection Lacks `protected` Callback" - ostrio:files'
+// own _checkAccess (server.js) only enforces anything when `this.protected`
+// is set; its constructor default is `false`, so with no callback here the
+// library's own globally-registered download middleware
+// (/cdn/storage/avatars/{id}/original/{name}) served every avatar to any
+// anonymous caller, ahead of WeKan's own authorized route in
+// server/routes/avatarServer.js and its isAuthorizedForAvatar check in
+// server/routes/universalFileServer.js - both of which never ran. Mirrors
+// Attachments.protected (models/attachments.server.js): an authenticated
+// caller may always view an avatar; an anonymous one only when the avatar's
+// owner is a member of a public board, matching avatarIsOnAPublicBoard.
+Avatars.protected = async function (fileObj) {
+  if (!fileObj) {
+    return false;
+  }
+  if (this.userId) {
+    return true;
+  }
+  const owner = fileObj.userId;
+  let authorized = false;
+  if (owner) {
+    const publicBoard = await ReactiveCache.getBoard({
+      permission: 'public',
+      'members.userId': owner,
+    });
+    authorized = !!publicBoard;
+  }
+  if (!authorized) {
+    // An attempt: an anonymous caller reaching this branch is asking for an
+    // avatar whose owner is not on a public board - that is what an
+    // enumeration/download attempt against Advisory "Avatars Collection
+    // Lacks a protected Callback" looks like once the callback exists.
+    try {
+      require('/server/lib/securityLog').record({
+        key: 'authz.avatar-protected',
+        action: 'blocked',
+        source: 'Avatars.protected',
+        detail: 'refused an anonymous download of a non-public avatar',
+      });
+    } catch (e) { /* logging must never break the guard */ }
+  }
+  return authorized;
+};
+
 Avatars.interceptDownload = function (http, fileObj, versionName) {
   const ret = fileStoreStrategyFactory.getFileStrategy(fileObj, versionName).interceptDownload(http, this.cacheControl);
   return ret;
 };
 
+// Advisory: "Unauthenticated DDP Methods _FilesCollectionRemove_attachments/
+// _FilesCollectionRemove_avatars Allow Instance-Wide Deletion" - ostrio:files
+// registers its OWN DDP method (_FilesCollectionRemove_avatars), gated only
+// by `allowClientCode` (true for this collection); its handler never goes
+// through Avatars.allow({remove: isOwner}) in server/permissions/avatars.js
+// - that only gates the ordinary Mongo `.remove()` call. This hook used to
+// unconditionally `return true` (it existed only to clear the removed
+// avatar's owner's profile.avatarUrl below), so any anonymous DDP connection
+// could call it with selector `{}` and delete every avatar on the instance,
+// blanking every user's profile.avatarUrl too. `this.userId` here is the
+// calling DDP method's own userId (ostrio:files' server.js binds it before
+// invoking this hook): a caller may remove their OWN avatar, or any avatar
+// if they are a site admin (client/components/users/userAvatar.js's
+// adminChangeAvatarSetAvatar deletes other users' avatars this way).
 Avatars.onBeforeRemove = async function (filesInput) {
+  const userId = this.userId;
+  if (!userId) {
+    try {
+      require('/server/lib/securityLog').record({
+        key: 'authz.file-remove',
+        action: 'blocked',
+        source: '_FilesCollectionRemove_avatars',
+        detail: 'refused an unauthenticated avatar removal',
+      });
+    } catch (e) { /* logging must never break the guard */ }
+    return false;
+  }
+
   let files;
   try {
     files = normalizeRemovedFiles(filesInput);
@@ -167,6 +238,29 @@ Avatars.onBeforeRemove = async function (filesInput) {
   if (!Array.isArray(files)) {
     console.error('normalizeRemovedFiles did not return an array, got:', typeof files);
     files = [];
+  }
+
+  if (!files.length) {
+    return false;
+  }
+
+  const caller = await ReactiveCache.getUser(userId);
+  const callerIsAdmin = !!(caller && caller.isAdmin);
+  if (!callerIsAdmin) {
+    for (const fileObj of files) {
+      if (!fileObj || fileObj.userId !== userId) {
+        try {
+          require('/server/lib/securityLog').record({
+            key: 'authz.file-remove',
+            action: 'blocked',
+            userId,
+            source: '_FilesCollectionRemove_avatars',
+            detail: 'refused removal of an avatar the caller does not own',
+          });
+        } catch (e) { /* logging must never break the guard */ }
+        return false;
+      }
+    }
   }
 
   for (const fileObj of files) {
