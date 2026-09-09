@@ -414,7 +414,7 @@ directly after the merge.
 
   | Repository | File | Format |
   | --- | --- | --- |
-  | `wekan/wekan` | `CHANGELOG.md` | the WeKan format this section describes: `# Platforms`, `# TODO Later`, then `# v<MAJOR>.<MINOR> YYYY-MM-DD WeKan ® release` sections of `<details>` entries whose `<summary>` links the commit |
+  | `wekan/wekan` | `CHANGELOG.md` | the WeKan format this section describes: `# Status` (Platforms/Version/TODO Later nested as `<details>`), then `# v<MAJOR>.<MINOR> YYYY-MM-DD WeKan ® release` sections of `<details>` entries whose `<summary>` links the commit |
   | `wekan/node-patches` | `CHANGELOG.md` | the same WeKan format, with `# Upcoming node-patches release` |
   | `wekan/mongo-tools-patches` | `CHANGELOG.md` | the same WeKan format, with `# Upcoming mongo-tools-patches release` |
   | `wekan/FerretDB` | `CHANGELOG.md` | **upstream FerretDB's** format, not WeKan's: `## [v1.48.0](tag URL) (YYYY-MM-DD)` and `### New Features 🎉` / `### Fixed 🐛` / `### Other Changes 🤖` bullets ending `by @xet7. Thanks to xet7.` |
@@ -446,14 +446,15 @@ directly after the merge.
 
   | | |
   | --- | --- |
-  | `CHANGELOG.md` | the current month, plus `# Platforms`, `# TODO Later`, `# Upcoming` |
+  | `CHANGELOG.md` | the current month, plus `# Status` (Platforms/TODO Later inside it), `# Upcoming` |
   | `old-CHANGELOG/<year>/<MM>.md` | earlier months of the current year |
   | `old-CHANGELOG/<year>.md` | years that are over, whole |
 
   Past years stay one file each because they are already small (30–107 KB);
   splitting them further would trade a size problem nobody has for a hundred
   more files. Each archive opens with a **release count** — per month in a year
-  file, per day in a month file — and a bullet in `# Platforms` links every one.
+  file, per day in a month file — and a bullet in `# Status`'s "Newest WeKan at
+  these platforms" details links every one.
   That `git blame` is less useful on the split file is accepted: the history is
   still in git (`gitk`, `git-gui`, `git log --follow`), and being small enough
   to open is worth more.
@@ -463,15 +464,24 @@ directly after the merge.
   takes the month to keep from the FILE rather than the clock, so two people
   running it on the same day agree. An archived section is never edited, for the
   same reason a released one is not.
-- **The file's shape, top to bottom** — keep it exactly as it is now:
-  1. `# Platforms` — the line `Newest WeKan at these platforms:` and the Install /
-     Upgrade / Docs / Mac ChangeLog bullets, the `Older releases:` bullet linking
-     the per-year archives, then a `<details>` whose `<summary>` is `Version`
-     holding "which WeKan version uses what". There is no `# Version` heading of
+- **The file's shape, top to bottom** — keep it exactly as it is now. There is
+  exactly ONE `#` heading before the releases: `# Status`. Platforms, Version
+  and TODO Later are `<details>` blocks nested inside it, not headings of
+  their own (they used to be `# Platforms` and `# TODO Later`; both were
+  folded under `# Status` so the file opens with a single top-level section
+  rather than three):
+  1. `# Status` — opens with a `<details>` whose `<summary>` is `More status
+     info`, holding a link to <https://wekan.fi/status/>. Then a `<details>`
+     whose `<summary>` is `Newest WeKan at these platforms`, holding the line
+     `Newest WeKan at these platforms:` and the Install / Upgrade / Docs / Mac
+     ChangeLog bullets, plus the `Older releases:` bullet linking the per-year
+     archives. Then a `<details>` whose `<summary>` is `Version` holding
+     "which WeKan version uses what". Then a `<details>` whose `<summary>` is
+     `TODO Later`, itself holding a `<details>` whose `<summary>` is `Carried
+     to a future release.` explaining the list, then one `<details>` per
+     category (below). There is no `# Version` or `# TODO Later` heading of
      its own.
-  2. `# TODO Later` — a `<details>` whose `<summary>` is `Carried to a future
-     release.` explaining the list, then one `<details>` per category (below).
-  3. The releases, newest first, each `# v<MAJOR>.<MINOR> YYYY-MM-DD WeKan ® release`.
+  2. The releases, newest first, each `# v<MAJOR>.<MINOR> YYYY-MM-DD WeKan ® release`.
 
   Nothing else is an `#` heading. A `##`/`###` inside a release would break the
   version list, and a wrapped line that BEGINS with `#` (e.g. an issue number such
@@ -514,7 +524,7 @@ directly after the merge.
   A `<details>` whose body only
   repeats its summary is noise; use one when there IS a longer story to reveal, which
   is most fixes.
-- **`# TODO Later` blocks are the same shape with two differences:** the `<summary>` is
+- **TODO Later's own blocks are the same shape with two differences:** the `<summary>` is
   the short category text (no `<a>`, because nothing was committed), and there is **no
   `Thanks to`** — nothing is done yet, so there is nobody to thank. The body lists the
   issues as `[#NNNN](https://github.com/wekan/wekan/issues/NNNN) (one-line reason)`.
@@ -545,46 +555,19 @@ directly after the merge.
   `<details>` blocks below carry that information. Keep the paragraph current as
   topics change, and shorten it when added commits make it grow. A finished release
   keeps the paragraph it was written with.
-- **A release section's order, top to bottom, is: (1) the `**In short:**`
-  paragraph, (2) every `This release …:` subsection, and only THEN (3) the
-  BINARIES TABLE, under its own `**Binaries in these bundles:**` label.** The
-  table is the LAST thing in the section, right before the closing `Thanks to
-  above GitHub users …` line — not right under the summary. A reader opens a
-  release to find out what changed; the platform/SHA256 table is reference
-  material for whoever needs it, not the second thing anyone reads. A WeKan
-  bundle is not only WeKan — it carries a Node.js, a FerretDB and the MongoDB
-  Database Tools that other projects publish, and WHICH source has a given CPU
-  changes from release to release: nodejs.org builds some architectures,
-  unofficial-builds others, and [wekan/node-patches](https://github.com/wekan/node-patches)
-  the ones neither of them does. "Which Node.js is in the arm64 bundle of 10.69,
-  and was it checked" must be answerable from the CHANGELOG, not from a build log
-  that expires.
-
-  ```
-  **Binaries in these bundles:**
-
-  | Platform | Binary | From | Version | SHA256 |
-  | --- | --- | --- | --- | --- |
-  | amd64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.xz) | v24.19.0 | `a1b2…` |
-  | amd64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.24.0/ferretdb-amd64) | v1.24.0 | `c3d4…` |
-  | arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-arm64.tar.xz) | v24.19.0 | `e5f6…` |
-  ```
-
-  **GROUPED BY PLATFORM**: rows are sorted by platform and then by binary, so one
-  platform's binaries stay together and the table is read a platform at a time.
-  The URL is the LINK ON THE "From" CELL — never a bare URL as visible text, the
-  same rule as everywhere else — and it is the exact file that was downloaded, not
-  the project's front page. The SHA256 is the checksum the source published and the
-  build verified, in backticks; a source that publishes none says *no checksum
-  published*, which is not a failed check but a source worth fixing. Table rows
-  carry links, so the 80-character wrap does not apply to them.
-
-  It is the same table `releases/provenance-table.sh` puts at the top of the GitHub
-  release notes, from the `provenance.tsv` rows each build job records — so the two
-  are filled from the same data and cannot disagree. **A platform that was NOT built
-  has no rows**, which is how the table also answers "why is there no i386 bundle
-  this time": no source published a Node.js for it (see
-  `releases/resolve-node-source.sh`).
+- **No release section carries a Platform/Binary/From/Version/SHA256 table, and
+  none ever should again.** It used to sit right under the `**In short:**`
+  paragraph, then moved to a `**Binaries in these bundles:**` label at the end
+  of the section — both tried and both removed, because CHANGELOG.md is not
+  where that data belongs: it made every release's entry mostly a giant table
+  nobody read, on top of what `<details>` entries already say. "Which Node.js
+  is in the arm64 bundle of 10.69, and was it checked" is answered by the
+  **GitHub Release notes** instead: `releases/provenance-table.sh` puts the
+  same table at the TOP of those, built fresh from the `provenance.tsv` rows
+  each build job records (see `releases/record-provenance.sh`), every time a
+  release is made — so it is never stale and never needs hand-editing into
+  CHANGELOG.md. Adding a binaries table back into a CHANGELOG entry, in any
+  shape, is reintroducing something the maintainer removed on purpose.
 - **Inside a subsection, entries are GROUPED BY TOPIC/AREA.** A release touches a handful
   of areas and repeating the area's name in every summary is the noise this
   removes — twelve entries that each begin "All Boards:" say "All Boards" twelve
@@ -640,8 +623,9 @@ directly after the merge.
   `This release fixes the following SECURITY ISSUES found by GitHub CodeQL code scanning:`.
   Because CRITICAL comes first, it keeps the `This release ` prefix; a following non-security
   subsection becomes `and …` per the rule above.
-- **`# TODO Later` section** — a triage backlog near the TOP of `CHANGELOG.md` (above the
-  version sections), for open issues that were **investigated but not fixed here**, each
+- **TODO Later** — a `<details>` nested inside `# Status` near the TOP of
+  `CHANGELOG.md` (above the version sections), a triage backlog for open
+  issues that were **investigated but not fixed here**, each
   recorded with a concrete REASON so whoever picks it up next knows why. Use it when working
   through open issues (the "Fix open issues" process): for each issue, either **fix it** (commit
   ending `Fixes #NNNN,`), **close it** if already fixed in current code (commit `Close #NNNN` /

@@ -96,13 +96,19 @@ template(name="swimlaneActionPopup")
                i.fa.fa-plus
                span
                  | {{_ 'add-list'}}
+          //- "Set swimlane height" was here. Swimlane height can still be
+            dragged from the resize handle below it (unless Board Settings /
+            Swimlane has locked that) - a menu entry for the same thing was a
+            second place to look for it. client/components/sidebar/sidebar.jade
+            Its removal left "Select color" as the only row of this group, so
+            the group's own hr moves inside the admin check with it - a non-
+            admin who cannot select the color has nothing here to rule off.
           if currentUser.isBoardAdmin
             hr
             ul.pop-over-list
               li: a.js-set-swimlane-color
                 i.fa.fa-paint-brush
                 | {{_ 'select-color'}}
-          if currentUser.isBoardAdmin
             unless this.isTemplateContainer
               hr
               ul.pop-over-list
@@ -152,6 +158,21 @@ template(name="setSwimlaneColorPopup")
     .flush-left
       button.primary.confirm.js-submit(style="margin-inline-start:0") {{_ 'save'}}
       button.js-remove-color.negate.wide.right(style="margin-inline-start:8px") {{_ 'unset-color'}}
+
+template(name="setSwimlaneHeightPopup")
+  .flush-left.swimlane-height-popup
+    #js-swimlane-height-edit
+      label a) {{_ 'set-swimlane-height-value'}}
+      label b) -1
+        p
+          input.swimlane-height-value(type="number" value="{{ swimlaneHeightValue }}" min="100")
+          input.swimlane-height-apply(type="submit" value="{{_ 'apply'}}")
+          input.swimlane-height-error
+
+template(name="swimlaneHeightErrorPopup")
+  .swimlane-height-invalid
+    p {{_ 'swimlane-height-error-message'}} '&gt;=100'
+    button.full.js-back-view(type="submit") {{_ 'cancel'}}
 
 template(name="swimlaneArchivePopup")
   p {{_ "swimlane-archive-pop"}}

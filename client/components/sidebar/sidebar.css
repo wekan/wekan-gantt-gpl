@@ -147,8 +147,9 @@
   cursor: pointer;
 }
 
-/* Card Settings 3-column row layout. There is no heading row above these: see
-   the note on boardCardSettingsPopup in sidebar.jade. */
+/* Card Settings 3-column row layout. The heading row (Show on Card / Show on
+   Minicard / Description) is one of these rows too - see the note on
+   boardCardSettingsPopup in sidebar.jade for why that is safe here. */
 .card-settings-row {
   display: grid;
   grid-template-columns: 1fr 1fr 2fr;
@@ -208,6 +209,23 @@
 .board-card-settings.show-card-only .card-settings-row > .card-settings-column:nth-child(2),
 .board-card-settings.show-minicard-only .card-settings-row > .card-settings-column:nth-child(1) {
   display: none;
+}
+
+/* Show on Minicard reads to the LEFT of Show on Card. The markup keeps its
+   original order (column 1 is the card checkbox, column 2 is the minicard
+   one) so the show-card-only/show-minicard-only nth-child hiding rules above
+   still target the right element - only the VISUAL position of the two swaps,
+   with `order` on the grid items. Description (column 3) gets an explicit
+   order too, so it is not pulled in front of column 1 by the default order:0
+   every unordered item would otherwise share. */
+.card-settings-row > .card-settings-column:nth-child(1) {
+  order: 2;
+}
+.card-settings-row > .card-settings-column:nth-child(2) {
+  order: 1;
+}
+.card-settings-row > .card-settings-column:nth-child(3) {
+  order: 3;
 }
 
 .card-settings-column {

@@ -1,6 +1,14 @@
-# Platforms
+# Status
 
-Newest WeKan at these platforms:
+<details>
+<summary>More status info</summary>
+
+https://wekan.fi/status/
+
+</details>
+
+<details>
+<summary>Newest WeKan at these platforms</summary>
 
 - [Install](https://wekan.fi/install/)
 - [Upgrade WeKan](https://wekan.fi/upgrade/)
@@ -16,6 +24,8 @@ Newest WeKan at these platforms:
   [2020](old-CHANGELOG/2020.md), [2019](old-CHANGELOG/2019.md),
   [2018](old-CHANGELOG/2018.md), [2017](old-CHANGELOG/2017.md),
   [2016](old-CHANGELOG/2016.md), [2015](old-CHANGELOG/2015.md)
+
+</details>
 
 <details>
 <summary>Version</summary>
@@ -42,7 +52,8 @@ Newest WeKan at these platforms:
 
 </details>
 
-# TODO Later
+<details>
+<summary>TODO Later</summary>
 
 <details>
 <summary>Carried to a future release.</summary>
@@ -296,6 +307,330 @@ enforces that). Not attempted as a batch; take them one at a time, following
 the Markdown commit as the template.
 
 </details>
+</details>
+
+# v11.64 2026-09-09 WeKan ® release
+
+**In short:** **Resizable list width and swimlane height are back.** v11.62
+had replaced per-user/per-list drag-resize width and the "Set width"/"Set
+swimlane height" popups with a hardcoded 240px for every list; that is
+reverted at the maintainer's request. Board Settings also gains three
+grouped sections (**#6680**): **Swimlane** and **List**, with board-wide
+resize-lock and **"same width for all lists"** admin toggles, and
+**Card**, where Minicard/Card settings move back from their own menus.
+**FerretDB v1** now stores Infinity/-Infinity doubles like real MongoDB,
+patches a High-severity gRPC-Go DoS advisory, and keeps its dependencies
+current.
+
+This release reverts the following change:
+
+**List and swimlane resizing** - restoring the popups and drag handles v11.62 removed.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/59bed92f3">Revert "Hardcode list width to 240px and remove the width/height set-value popups"</a>. Thanks to xet7.</summary>
+
+This reverts commit 8614949580a8824be8c189ab3c7e5869d36f6e9b in full: the
+per-user/per-list resizable list width (drag-resize handle, the "Set
+width" list-menu popup, the board-settings "Personal list width" sidebar
+toggle, and the auto-width mode) and the "Set swimlane height" popup are
+restored, along with their schema fields, Meteor methods and tests
+(`tests/listWidthPopupLayout.test.cjs` and
+`tests/playwright/specs/38-fixed-list-width.e2e.js`, both un-deleted). No
+commit since v11.62 touched these files, so the revert applied cleanly
+with no follow-up fixes needed.
+
+</details>
+
+and adds the following feature:
+
+**The top header** - board-wide resize locks and a shared list width.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5c48be8e6">Add board-wide list-width/swimlane-height resize locks (#6680)</a>. Thanks to Hallsie and xet7.</summary>
+
+Three independent toggles, right of the drag-handles toggle, board admins
+only: a list-width resize lock (left-right arrow plus the same allowed/
+denied check/ban icon pair `.js-toggle-desktop-drag-handles` already uses),
+a swimlane-height resize lock (up-down arrow, same check/ban pair), and a
+board-wide "same width for all lists" (same pair again, over a static
+columns icon) - the existing per-user Set Width popup's fixed-width mode,
+now settable for the whole board so it applies to every viewer, overriding
+their personal choice while it is on. Enabling/disabling a toggle is
+admin-only on the server (`server/permissions/boards.js`'s default rule);
+dragging the shared same-width value itself is allowed for any board
+member with write access, through a new sole-field `Boards.allow` rule
+shaped exactly like the existing board-drag-reorder rule, so a
+lower-privilege member can never smuggle another board field into that
+update. The swimlane-height handle also HIDES entirely while its lock is
+on - not just refusing the drag - the same way the list-width handle
+already hides for its own lock, so a locked handle does not still draw the
+blue drag-height line on hover. `tests/listSwimlaneResizeLock.test.cjs`
+pins the schema, the header wiring, the permission-rule shape, and that
+each resize handle actually checks (and hides for) its lock.
+
+</details>
+
+and fixes the following bug:
+
+**Collapsed lists** - the rotated title was not centered across the column width.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c543a3909">Keep a collapsed list's title near the caret, only centered horizontally</a>. Thanks to xet7.</summary>
+
+The desktop rule that actually wins (`.list.list-collapsed:not(.mobile-view)
+...`, more specific than the plain one) had `text-align: start`, leaving
+the vertical text flush to one edge of the 30px column instead of centered
+across it - the plain/mobile-view rule already had `text-align: center`
+and was never broken. An earlier attempt at this fix also made both rule
+sets grow to fill and center across the WHOLE (often 540px) collapsed
+column, which moved the title far from the collapse-toggle/drag-handle at
+the top (.tools/collapse2.png) - that was reverted back to how it shipped;
+"centered" meant horizontally, not down the whole column.
+`tests/collapsedListTitleCentered.test.cjs` pins the `text-align` fix and
+negatively pins that neither rule set grows/centers across the full column
+height.
+
+</details>
+
+and adds the following feature:
+
+**The top header** - a collapse button for its own icons.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d1b01924e">Add a header-icons collapse toggle beside the board title (#6680 follow-up)</a>. Thanks to xet7.</summary>
+
+A single button, right after the board title, that hides every icon from
+the mobile/desktop toggle through the notification bell: mobile/desktop
+mode, drag-handles toggle, the three board-wide resize-lock icons, the
+starred-boards group, create-board, the board/all-boards header buttons,
+the view menu, the Admin Panel tabs, and notifications. Purely a
+per-viewer display preference (a plain Session var, the same shape as
+`mobileMode()` right beside it), not a board setting like the resize
+locks. Every icon in that range gets a shared
+`.js-header-collapsible-icon` marker class; the template inclusions that
+cannot carry a class of their own are each wrapped in a `span` that stays
+`display: contents` outside the collapsed state, so introducing it does
+not change how those icons behave as flex items when nothing is
+collapsed. `tests/headerIconsCollapse.test.cjs` pins the button's
+position, the Session-var shape, that every icon in the range is marked
+and nothing outside it is, and both CSS rules.
+
+</details>
+
+and fixes the following bug:
+
+**Collapsed lists** - the rotated title's x-position did not match the caret above it.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/afb6bc5cf">Fix collapsed list title x-position not matching the caret above it</a>. Thanks to xet7.</summary>
+
+Centering the title horizontally (above) was not enough: it still sat
+~13px right of the collapse-toggle caret (.tools/collapse3.png). Root
+cause was an unrelated, generic `.list-header .list-header-name` rule that
+sets `min-width: 56px` for ordinary (non-collapsed) list headings.
+`min-width` is a separate property from `width`, so it survives the
+cascade even where a more specific collapsed-list rule wins on `width`
+itself - it silently clamped the rotated title's box to 56px regardless
+of the 30px collapsed column, since the final used width is
+`clamp(min-width, width, max-width)`. Fixed by overriding `min-width`
+back to `0` in every collapsed-title `h2.list-header-name` rule: the
+plain/mobile-view rule, the desktop `:not(.mobile-view)` rule, and its
+three `@media (min-width: 768/1024/1200px)` duplicates. Verified with a
+Playwright measurement of the caret's and title's horizontal centers
+matching after the fix; `tests/collapsedListTitleCentered.test.cjs` pins
+that every one of those rules cancels the clamp, and that the generic
+56px rule this works around still exists (so the test does not go stale
+if that rule is ever removed).
+
+</details>
+
+and reorganizes the following board settings:
+
+**Board Settings** - Swimlane, List and Card, grouped together.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2606ab56b">Move swimlane/list resize settings and card settings into Board Settings</a>. Thanks to xet7.</summary>
+
+The list-width and swimlane-height resize-lock toggles and the board-wide
+"same width for all lists" toggle, header icons since #6680, move into
+**Board Settings / Swimlane** and **Board Settings / List** instead - with
+the rest of a board's settings, reached from the board's cog menu, rather
+than living as icons in the header. Minicard and Card settings (the
+shared table of two dozen display settings) move back into **Board
+Settings / Card**: they had been split across the card's own menu ("Show
+on Card") and the minicard's own menu ("Show on Minicard"), one column of
+the same table each. Both menu entries, their wrapper popups, and the
+`cardMenuSource` module that only existed to tell those two menus apart
+are removed; the shared settings table itself is unchanged, now opened
+directly from Board Settings with both columns shown side by side.
+Swimlane and List stay board-admin only, the same restriction the resize
+locks already had; Card is open to any board member, matching who could
+reach it before - a non-admin still gets the one PERSONAL row in that
+table ("Labels text") rather than the admin-only rows, the same fallback
+`showOnMinicardPopup` used to give them. All three reuse existing,
+already-translated words ("Swimlane", "List", "Card"/"Card Settings") via
+`Popup.open`'s `titleKey`, rather than adding new `*Popup-title` keys that
+would need translating into 147 languages. The group sits between two
+`<hr>` rules in Board Settings, as its own section.
+`tests/boardSettingsSwimlaneListCard.test.cjs` pins the new layout and the
+personal-row fallback.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9138f6f86">Restore the Show on Card/Minicard/Description column headings, on Card</a>. Thanks to xet7.</summary>
+
+The column headings above the settings table were removed once (commit
+02025aa6c) because the popup used to flow its rows into several
+side-by-side columns whenever only Card or only Minicard was shown, so
+the heading sat above the first of those columns and read as if it named
+that one alone. Board Settings / Card always shows both columns in a
+single list of rows now, so that ambiguity is gone, and the heading is
+back: "Show on Card" / "Show on Minicard" / "Description", reusing the
+same already-translated keys as before. It is an ordinary
+`.card-settings-row` this time, not the old separate
+`.card-settings-grid`/sticky-header markup, so the same CSS that hides a
+column for the still-supported `side="card"`/`"minicard"` case hides the
+matching heading with it, and `personalOnly` (what a non-admin gets)
+hides the whole heading along with every other non-personal row.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a8c8ed63a">Remove the duplicate hr above Move Board to Archive</a>. Thanks to xet7.</summary>
+
+The Swimlane/List/Card group's own closing `hr` and the Archive Board
+group's opening `hr` sat back to back, drawing two rules where one was
+enough.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/13ca5e08a">On Card, the Show on Minicard column reads left of Show on Card</a>. Thanks to xet7.</summary>
+
+CSS `order` on the grid items, not a markup change: column 1 (card) and
+column 2 (minicard) keep their original DOM order, so the
+show-card-only/show-minicard-only `nth-child` hiding rules still target
+the right element regardless of side. Only the visual position of the two
+swaps; Description (column 3) gets an explicit order too, so it is not
+pulled in front by the `order: 0` an unordered item would otherwise
+share.
+
+</details>
+
+and fixes the following bugs:
+
+**Edit Custom Fields popup** - a rule with nothing above it to separate.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/250adfe9a">No rule above Add when there are no custom fields yet</a>. Thanks to xet7.</summary>
+
+The `hr` between the field list and "Add custom field" was unconditional,
+so a board with no custom field yet drew a rule with an empty list above
+it - two lines doing the work of an empty one. It is now conditional on
+`board.customFields.length`.
+
+</details>
+
+**List Actions and Swimlane Actions** - two menu entries for things a drag already does.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4374502a4">Hide List Actions / Set width and Swimlane Actions / Set Swimlane height</a>. Thanks to xet7.</summary>
+
+Both are still reachable by dragging the resize handle (unless Board
+Settings / List or Board Settings / Swimlane has locked that), and the
+board-wide fixed-width value now lives in Board Settings / List - a menu
+entry for the same thing was a second place to look for it. The
+underlying popups (`setListWidthPopup`, `setSwimlaneHeightPopup`) are
+untouched, only the menu entries that opened them are removed. Removing
+"Set width" left its own group empty, so the group (and its enclosing
+`hr`) is removed entirely; removing "Set Swimlane height" left "Select
+color" as the only row of its group, so that group's `hr` moves inside
+the same admin-only check as the color entry itself, rather than leaving
+a dangling `hr` (or an empty list) for a non-admin.
+
+</details>
+
+and updates the following FerretDB v1 dependencies and fixes:
+
+**FerretDB v1** - infinity-value storage, a gRPC security fix, and current dependencies.
+
+<details>
+<summary><a href="https://github.com/wekan/FerretDB/commit/7bbc88c8">Allow storing Infinity/-Infinity doubles, matching MongoDB</a>. Thanks to xet7.</summary>
+
+`mongorestore` restoring a wekan `cards` collection with a `sort:
+-Infinity` value failed one document with `invalid value: { "sort": -Inf
+} (infinity values are not allowed)`, even though real MongoDB stores
++Inf/-Inf doubles without complaint. The root cause was one level down
+from that check: sjson (the JSON-based encoding documents are stored as)
+already special-cased NaN as the string `"NaN"` because Go's
+`encoding/json` cannot marshal NaN/Inf floats directly, but never did the
+same for Infinity, so document validation rejected it outright rather
+than hand the storage layer a value it could not round-trip. Infinity is
+now encoded the same way NaN already was, and the document-validation
+rejection - along with the matching restriction on a `$mul` that
+overflows to infinity - is removed now that storage supports it. Unit
+and integration tests cover the insert/read/update round-trip against a
+live server.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/FerretDB/commit/3df0ce7b">Bump tools/go.mod's indirect grpc-go to 1.83.2 (GHSA-2v4p-qf9q-27wj)</a>. Thanks to xet7.</summary>
+
+Dependabot alert 47: a gRPC-Go server configured with
+`xds.NewGRPCServer()` crashes (High severity, Denial of Service) on a
+crafted request missing both the `:authority` and `Host` headers,
+affecting `google.golang.org/grpc` >= 1.83.0, < 1.83.2. The root module
+and `integration/go.mod` were already on the patched 1.83.2, but
+`tools/go.mod` - a separate module pulling grpc in indirectly through
+`golang.org/x/pkgsite` - was missed and stayed on the vulnerable 1.83.1.
+`go mod verify` and `go list -m all` both succeed with the updated graph.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/FerretDB/commit/1e23af3f">Sync integration/go.mod after the ferretdb dependency-group bump</a>. Thanks to xet7.</summary>
+
+The "ferretdb" dependency-group update brought the root module's
+`go.mod`/`go.sum` current, but left `integration`'s pointing at the old
+indirect-dependency versions, so `go build ./integration/...` failed with
+"updates to go.mod needed; to update it: go mod tidy". Running it there
+brings both modules back in sync.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/FerretDB/commit/d4f75f6a">Update gRPC to 1.83.2 in the root and integration modules</a>. Thanks to dependabot and xet7.</summary>
+
+`google.golang.org/grpc` moves from 1.83.1 to 1.83.2 in both the root
+module and `integration`. Module checksums verify and the affected
+packages build.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/FerretDB/commit/8e62741d">Update the mongo and golang build images</a>. Thanks to dependabot and xet7.</summary>
+
+The `mongo` image used by `build/deps` moves from 8.3.8 to 8.3.9, and the
+`golang` image used by `build/ferretdb` moves from 1.27.0 to 1.27.1.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/FerretDB/commit/c3a5df81">Update the "ferretdb" dependency group</a>. Thanks to dependabot and xet7.</summary>
+
+Seven updates: `github.com/SAP/go-hdb` (1.18.2 → 1.18.3),
+`github.com/go-sql-driver/mysql` (1.10.0 → 1.10.1),
+`github.com/prometheus/client_model` (0.6.2 → 0.6.3),
+`github.com/prometheus/common` (0.70.1 → 0.71.0), `golang.org/x/crypto`
+(0.55.0 → 0.56.0), `golang.org/x/sys` (0.47.0 → 0.48.0) and
+`modernc.org/sqlite` (1.57.0 → 1.58.0, pulling in newer
+`modernc.org/libc`/`modernc.org/memory`). Module checksums verify and a
+binary containing the SQLite, PostgreSQL, MySQL and HANA handlers builds
+successfully.
+
+</details>
 
 # v11.63 2026-09-08 WeKan ® release
 
@@ -384,19 +719,6 @@ FerretDB fork's `docker.yml` in the same commit round.
 
 </details>
 
-**Binaries in these bundles:**
-
-| Platform | Binary | From | Version | SHA256 |
-| --- | --- | --- | --- | --- |
-| amd64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.xz) | v24.19.0 | `14b342e71204f811bde6153be8e04b62aef63c236fef92b55f9c83154b409647` |
-| amd64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-amd64) | v1.53.0 | `eae1f0a8f73bfc979738bfff7284d40fd1bc55de2cc56514721fc155c3624f7d` |
-| arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-arm64.tar.xz) | v24.19.0 | `01443c1e1a29e531ccad5a46fefa6df490d2189c49f7955904aecdbb0fe86fdc` |
-| arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-arm64) | v1.53.0 | `bdc50caee3ac28495b42d2130b94a042a9dd6d3a38f732cac02b648f36c891da` |
-| mac-arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-arm64.tar.xz) | v24.19.0 | `3f1cf157479c1480352083105e13faf9d008ede98e7e157746b6df940d197b94` |
-| mac-arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-arm64) | v1.53.0 | `cb14ffe93e285903e5a8a9c1821687ddb5b8a979a11c584bf4af534b272c6d3e` |
-| mac-x64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.xz) | v24.19.0 | `d35e95230f46f6f0751df497c56622c6735e05d5e1fb1630996a005b9d328fe4` |
-| mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
-
 # v11.62 2026-09-08 WeKan ® release
 
 **In short:** this release adds **test-menu.sh** and a **Markdown**
@@ -411,17 +733,6 @@ login loop**, a **Windows single-EXE** CI smoke test failing silently,
 and **list width is now a single hardcoded 240px** for every list on
 every board, with the redundant "Set width"/"Set swimlane height" popups
 removed.
-
-| Platform | Binary | From | Version | SHA256 |
-| --- | --- | --- | --- | --- |
-| amd64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.xz) | v24.19.0 | `14b342e71204f811bde6153be8e04b62aef63c236fef92b55f9c83154b409647` |
-| amd64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-amd64) | v1.53.0 | `eae1f0a8f73bfc979738bfff7284d40fd1bc55de2cc56514721fc155c3624f7d` |
-| arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-arm64.tar.xz) | v24.19.0 | `01443c1e1a29e531ccad5a46fefa6df490d2189c49f7955904aecdbb0fe86fdc` |
-| arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-arm64) | v1.53.0 | `bdc50caee3ac28495b42d2130b94a042a9dd6d3a38f732cac02b648f36c891da` |
-| mac-arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-arm64.tar.xz) | v24.19.0 | `3f1cf157479c1480352083105e13faf9d008ede98e7e157746b6df940d197b94` |
-| mac-arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-arm64) | v1.53.0 | `cb14ffe93e285903e5a8a9c1821687ddb5b8a979a11c584bf4af534b272c6d3e` |
-| mac-x64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.xz) | v24.19.0 | `d35e95230f46f6f0751df497c56622c6735e05d5e1fb1630996a005b9d328fe4` |
-| mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
 
 This release adds the following developer-tooling feature:
 
@@ -752,17 +1063,6 @@ reverting the previous release's switch to upload-only, server-converted GIF
 storage, and a new **`test-menu.sh`** gives the repository an interactive test
 menu shaped exactly like `docs/Features`.
 
-| Platform | Binary | From | Version | SHA256 |
-| --- | --- | --- | --- | --- |
-| amd64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.xz) | v24.19.0 | `14b342e71204f811bde6153be8e04b62aef63c236fef92b55f9c83154b409647` |
-| amd64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-amd64) | v1.53.0 | `eae1f0a8f73bfc979738bfff7284d40fd1bc55de2cc56514721fc155c3624f7d` |
-| arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-arm64.tar.xz) | v24.19.0 | `01443c1e1a29e531ccad5a46fefa6df490d2189c49f7955904aecdbb0fe86fdc` |
-| arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-arm64) | v1.53.0 | `bdc50caee3ac28495b42d2130b94a042a9dd6d3a38f732cac02b648f36c891da` |
-| mac-arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-arm64.tar.xz) | v24.19.0 | `3f1cf157479c1480352083105e13faf9d008ede98e7e157746b6df940d197b94` |
-| mac-arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-arm64) | v1.53.0 | `cb14ffe93e285903e5a8a9c1821687ddb5b8a979a11c584bf4af534b272c6d3e` |
-| mac-x64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.xz) | v24.19.0 | `d35e95230f46f6f0751df497c56622c6735e05d5e1fb1630996a005b9d328fe4` |
-| mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
-
 This release reverts the following change:
 
 <details>
@@ -804,33 +1104,11 @@ dedicated runner yet. Each run's starting command, log and any produced files
 Now that builds have been fixed, new release with those fixes included.
 Fixed are builds of FerretDB, node-patches, mongo-tools-patces and mongosh-patches.
 
-| Platform | Binary | From | Version | SHA256 |
-| --- | --- | --- | --- | --- |
-| amd64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.xz) | v24.19.0 | `14b342e71204f811bde6153be8e04b62aef63c236fef92b55f9c83154b409647` |
-| amd64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-amd64) | v1.53.0 | `eae1f0a8f73bfc979738bfff7284d40fd1bc55de2cc56514721fc155c3624f7d` |
-| arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-arm64.tar.xz) | v24.19.0 | `01443c1e1a29e531ccad5a46fefa6df490d2189c49f7955904aecdbb0fe86fdc` |
-| arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-arm64) | v1.53.0 | `bdc50caee3ac28495b42d2130b94a042a9dd6d3a38f732cac02b648f36c891da` |
-| mac-arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-arm64.tar.xz) | v24.19.0 | `3f1cf157479c1480352083105e13faf9d008ede98e7e157746b6df940d197b94` |
-| mac-arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-arm64) | v1.53.0 | `cb14ffe93e285903e5a8a9c1821687ddb5b8a979a11c584bf4af534b272c6d3e` |
-| mac-x64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.xz) | v24.19.0 | `d35e95230f46f6f0751df497c56622c6735e05d5e1fb1630996a005b9d328fe4` |
-| mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
-
 # v11.56 2026-09-07 WeKan ® release
 
 **In short:** repair test assumptions for generated artifacts, current Finnish
 translations, bounded report labels and HTTP/HTTPS session cookies. Application
 behavior is unchanged; all 790 Node suites and 15 targeted browser checks pass.
-
-| Platform | Binary | From | Version | SHA256 |
-| --- | --- | --- | --- | --- |
-| amd64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.xz) | v24.19.0 | `14b342e71204f811bde6153be8e04b62aef63c236fef92b55f9c83154b409647` |
-| amd64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-amd64) | v1.53.0 | `eae1f0a8f73bfc979738bfff7284d40fd1bc55de2cc56514721fc155c3624f7d` |
-| arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-arm64.tar.xz) | v24.19.0 | `01443c1e1a29e531ccad5a46fefa6df490d2189c49f7955904aecdbb0fe86fdc` |
-| arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-arm64) | v1.53.0 | `bdc50caee3ac28495b42d2130b94a042a9dd6d3a38f732cac02b648f36c891da` |
-| mac-arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-arm64.tar.xz) | v24.19.0 | `3f1cf157479c1480352083105e13faf9d008ede98e7e157746b6df940d197b94` |
-| mac-arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-arm64) | v1.53.0 | `cb14ffe93e285903e5a8a9c1821687ddb5b8a979a11c584bf4af534b272c6d3e` |
-| mac-x64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.xz) | v24.19.0 | `d35e95230f46f6f0751df497c56622c6735e05d5e1fb1630996a005b9d328fe4` |
-| mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
 
 <details>
 <summary><a href="https://github.com/wekan/wekan/commit/793f760ea">Fix alltests fixtures and HTTP cookie assertions</a>. Thanks to xet7.</summary>
@@ -859,17 +1137,6 @@ loading, translation updates and the session-upgrade fix remain. Meteor tests
 compile, and authentication forms follow keyboard order. Swimlane and card
 controls regain their previous colors, and upgraded sessions retain their profile
 without a duplicate login.
-
-| Platform | Binary | From | Version | SHA256 |
-| --- | --- | --- | --- | --- |
-| amd64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.xz) | v24.19.0 | `14b342e71204f811bde6153be8e04b62aef63c236fef92b55f9c83154b409647` |
-| amd64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-amd64) | v1.53.0 | `eae1f0a8f73bfc979738bfff7284d40fd1bc55de2cc56514721fc155c3624f7d` |
-| arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-arm64.tar.xz) | v24.19.0 | `01443c1e1a29e531ccad5a46fefa6df490d2189c49f7955904aecdbb0fe86fdc` |
-| arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-arm64) | v1.53.0 | `bdc50caee3ac28495b42d2130b94a042a9dd6d3a38f732cac02b648f36c891da` |
-| mac-arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-arm64.tar.xz) | v24.19.0 | `3f1cf157479c1480352083105e13faf9d008ede98e7e157746b6df940d197b94` |
-| mac-arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-arm64) | v1.53.0 | `cb14ffe93e285903e5a8a9c1821687ddb5b8a979a11c584bf4af534b272c6d3e` |
-| mac-x64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.xz) | v24.19.0 | `d35e95230f46f6f0751df497c56622c6735e05d5e1fb1630996a005b9d328fe4` |
-| mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
 
 This release reverts Legacy HTML4 and retains the following changes:
 
@@ -1105,17 +1372,6 @@ boards and cards, workflows, import/export, search, administration, security,
 recovery, file and cloud storage, data safety, backups and migrations. All
 Boards Table view now has a compact, themed controls row, and Admin Panel
 reports show complete, actionable data and controls.
-
-| Platform | Binary | From | Version | SHA256 |
-| --- | --- | --- | --- | --- |
-| amd64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.xz) | v24.19.0 | `14b342e71204f811bde6153be8e04b62aef63c236fef92b55f9c83154b409647` |
-| amd64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-amd64) | v1.53.0 | `eae1f0a8f73bfc979738bfff7284d40fd1bc55de2cc56514721fc155c3624f7d` |
-| arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-arm64.tar.xz) | v24.19.0 | `01443c1e1a29e531ccad5a46fefa6df490d2189c49f7955904aecdbb0fe86fdc` |
-| arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-arm64) | v1.53.0 | `bdc50caee3ac28495b42d2130b94a042a9dd6d3a38f732cac02b648f36c891da` |
-| mac-arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-arm64.tar.xz) | v24.19.0 | `3f1cf157479c1480352083105e13faf9d008ede98e7e157746b6df940d197b94` |
-| mac-arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-arm64) | v1.53.0 | `cb14ffe93e285903e5a8a9c1821687ddb5b8a979a11c584bf4af534b272c6d3e` |
-| mac-x64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.xz) | v24.19.0 | `d35e95230f46f6f0751df497c56622c6735e05d5e1fb1630996a005b9d328fe4` |
-| mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
 
 and fixes the following bugs:
 
@@ -3844,17 +4100,6 @@ when read. **Problems reports** retain available usernames, separate IPv4/IPv6
 addresses, and proxy-provided country and city context. Security regression tests
 also avoid embedding incomplete sanitizer examples.
 
-| Platform | Binary | From | Version | SHA256 |
-| --- | --- | --- | --- | --- |
-| amd64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.xz) | v24.19.0 | `14b342e71204f811bde6153be8e04b62aef63c236fef92b55f9c83154b409647` |
-| amd64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-amd64) | v1.53.0 | `eae1f0a8f73bfc979738bfff7284d40fd1bc55de2cc56514721fc155c3624f7d` |
-| arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-arm64.tar.xz) | v24.19.0 | `01443c1e1a29e531ccad5a46fefa6df490d2189c49f7955904aecdbb0fe86fdc` |
-| arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-arm64) | v1.53.0 | `bdc50caee3ac28495b42d2130b94a042a9dd6d3a38f732cac02b648f36c891da` |
-| mac-arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-arm64.tar.xz) | v24.19.0 | `3f1cf157479c1480352083105e13faf9d008ede98e7e157746b6df940d197b94` |
-| mac-arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-arm64) | v1.53.0 | `cb14ffe93e285903e5a8a9c1821687ddb5b8a979a11c584bf4af534b272c6d3e` |
-| mac-x64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.xz) | v24.19.0 | `d35e95230f46f6f0751df497c56622c6735e05d5e1fb1630996a005b9d328fe4` |
-| mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
-
 This release fixes the following SECURITY ISSUES found by GitHub CodeQL code
 scanning:
 
@@ -3913,17 +4158,6 @@ MongoDB source, preserves failed requests for retry, verifies history and stored
 files, and schedules non-urgent checksum work during sustained low CPU usage.
 **Import/export security** shares DOMPurify validation across transports and
 resumes Trello jobs.
-
-| Platform | Binary | From | Version | SHA256 |
-| --- | --- | --- | --- | --- |
-| amd64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.xz) | v24.19.0 | `14b342e71204f811bde6153be8e04b62aef63c236fef92b55f9c83154b409647` |
-| amd64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-amd64) | v1.53.0 | `eae1f0a8f73bfc979738bfff7284d40fd1bc55de2cc56514721fc155c3624f7d` |
-| arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-arm64.tar.xz) | v24.19.0 | `01443c1e1a29e531ccad5a46fefa6df490d2189c49f7955904aecdbb0fe86fdc` |
-| arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-arm64) | v1.53.0 | `bdc50caee3ac28495b42d2130b94a042a9dd6d3a38f732cac02b648f36c891da` |
-| mac-arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-arm64.tar.xz) | v24.19.0 | `3f1cf157479c1480352083105e13faf9d008ede98e7e157746b6df940d197b94` |
-| mac-arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-arm64) | v1.53.0 | `cb14ffe93e285903e5a8a9c1821687ddb5b8a979a11c584bf4af534b272c6d3e` |
-| mac-x64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.xz) | v24.19.0 | `d35e95230f46f6f0751df497c56622c6735e05d5e1fb1630996a005b9d328fe4` |
-| mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
 
 This release fixes the following SECURITY ISSUES found by GitHub CodeQL code
 scanning:
@@ -4163,17 +4397,6 @@ WeKan's documented Linux, macOS and Windows checkout locations, keep every relat
 clone below the active checkout's ignored `.tools` directory, and update existing
 mirrors on repeat runs.
 
-| Platform | Binary | From | Version | SHA256 |
-| --- | --- | --- | --- | --- |
-| amd64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.xz) | v24.19.0 | `14b342e71204f811bde6153be8e04b62aef63c236fef92b55f9c83154b409647` |
-| amd64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-amd64) | v1.53.0 | `eae1f0a8f73bfc979738bfff7284d40fd1bc55de2cc56514721fc155c3624f7d` |
-| arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-arm64.tar.xz) | v24.19.0 | `01443c1e1a29e531ccad5a46fefa6df490d2189c49f7955904aecdbb0fe86fdc` |
-| arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-arm64) | v1.53.0 | `bdc50caee3ac28495b42d2130b94a042a9dd6d3a38f732cac02b648f36c891da` |
-| mac-arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-arm64.tar.xz) | v24.19.0 | `3f1cf157479c1480352083105e13faf9d008ede98e7e157746b6df940d197b94` |
-| mac-arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-arm64) | v1.53.0 | `cb14ffe93e285903e5a8a9c1821687ddb5b8a979a11c584bf4af534b272c6d3e` |
-| mac-x64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.xz) | v24.19.0 | `d35e95230f46f6f0751df497c56622c6735e05d5e1fb1630996a005b9d328fe4` |
-| mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
-
 <details>
 <summary><a href="https://github.com/wekan/wekan/commit/4fae0377e">Windows single EXE builds generate the native launcher's required header</a>. Thanks to xet7.</summary>
 
@@ -4254,17 +4477,6 @@ and a **Restore** that handed back the version before the one picked. **Copying
 a list** now copies its cards, which an unbound swimlane turned into an empty
 copy, and **Admin Panel / Problems** can put back swimlane bindings an older
 repair cleared. The **contribution rules** now say which role commits where.
-
-| Platform | Binary | From | Version | SHA256 |
-| --- | --- | --- | --- | --- |
-| amd64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.xz) | v24.19.0 | `14b342e71204f811bde6153be8e04b62aef63c236fef92b55f9c83154b409647` |
-| amd64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-amd64) | v1.53.0 | `eae1f0a8f73bfc979738bfff7284d40fd1bc55de2cc56514721fc155c3624f7d` |
-| arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-arm64.tar.xz) | v24.19.0 | `01443c1e1a29e531ccad5a46fefa6df490d2189c49f7955904aecdbb0fe86fdc` |
-| arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-arm64) | v1.53.0 | `bdc50caee3ac28495b42d2130b94a042a9dd6d3a38f732cac02b648f36c891da` |
-| mac-arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-arm64.tar.xz) | v24.19.0 | `3f1cf157479c1480352083105e13faf9d008ede98e7e157746b6df940d197b94` |
-| mac-arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-arm64) | v1.53.0 | `cb14ffe93e285903e5a8a9c1821687ddb5b8a979a11c584bf4af534b272c6d3e` |
-| mac-x64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.xz) | v24.19.0 | `d35e95230f46f6f0751df497c56622c6735e05d5e1fb1630996a005b9d328fe4` |
-| mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
 
 This release fixes the following SECURITY ISSUES:
 
@@ -5383,17 +5595,6 @@ prebuilds no bundle can open; **moving a list to a swimlane** now binds it there
 instead of silently doing nothing; and **Admin Panel / Problems** can put back
 the swimlane bindings an older automatic repair cleared.
 
-| Platform | Binary | From | Version | SHA256 |
-| --- | --- | --- | --- | --- |
-| amd64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.xz) | v24.19.0 | `14b342e71204f811bde6153be8e04b62aef63c236fef92b55f9c83154b409647` |
-| amd64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-amd64) | v1.53.0 | `eae1f0a8f73bfc979738bfff7284d40fd1bc55de2cc56514721fc155c3624f7d` |
-| arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-arm64.tar.xz) | v24.19.0 | `01443c1e1a29e531ccad5a46fefa6df490d2189c49f7955904aecdbb0fe86fdc` |
-| arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-arm64) | v1.53.0 | `bdc50caee3ac28495b42d2130b94a042a9dd6d3a38f732cac02b648f36c891da` |
-| mac-arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-arm64.tar.xz) | v24.19.0 | `3f1cf157479c1480352083105e13faf9d008ede98e7e157746b6df940d197b94` |
-| mac-arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-arm64) | v1.53.0 | `cb14ffe93e285903e5a8a9c1821687ddb5b8a979a11c584bf4af534b272c6d3e` |
-| mac-x64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.xz) | v24.19.0 | `d35e95230f46f6f0751df497c56622c6735e05d5e1fb1630996a005b9d328fe4` |
-| mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
-
 This release fixes the following bugs:
 
 **The single Windows EXE** - what the one downloadable file is made of, what it
@@ -5612,17 +5813,6 @@ and the **browser regression suite** now shares file storage reliably and
 switches board views through the UI. The **first header bar** and opened-card
 **Custom Fields** controls are also cleaner and more compact.
 
-| Platform | Binary | From | Version | SHA256 |
-| --- | --- | --- | --- | --- |
-| amd64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.xz) | v24.19.0 | `14b342e71204f811bde6153be8e04b62aef63c236fef92b55f9c83154b409647` |
-| amd64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-amd64) | v1.53.0 | `eae1f0a8f73bfc979738bfff7284d40fd1bc55de2cc56514721fc155c3624f7d` |
-| arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-arm64.tar.xz) | v24.19.0 | `01443c1e1a29e531ccad5a46fefa6df490d2189c49f7955904aecdbb0fe86fdc` |
-| arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-arm64) | v1.53.0 | `bdc50caee3ac28495b42d2130b94a042a9dd6d3a38f732cac02b648f36c891da` |
-| mac-arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-arm64.tar.xz) | v24.19.0 | `3f1cf157479c1480352083105e13faf9d008ede98e7e157746b6df940d197b94` |
-| mac-arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-arm64) | v1.53.0 | `cb14ffe93e285903e5a8a9c1821687ddb5b8a979a11c584bf4af534b272c6d3e` |
-| mac-x64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.xz) | v24.19.0 | `d35e95230f46f6f0751df497c56622c6735e05d5e1fb1630996a005b9d328fe4` |
-| mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
-
 This release improves the following user interface controls:
 
 **The first header bar** - cleaner compact controls make their state clear.
@@ -5827,17 +6017,6 @@ strict download, archive and image limits while keeping Office content inactive.
 The viewer implementation, workers and WebAssembly parsers stay outside ordinary
 browser loads and are fetched only when a matching attachment opens.
 
-| Platform | Binary | From | Version | SHA256 |
-| --- | --- | --- | --- | --- |
-| amd64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.xz) | v24.19.0 | `14b342e71204f811bde6153be8e04b62aef63c236fef92b55f9c83154b409647` |
-| amd64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-amd64) | v1.53.0 | `eae1f0a8f73bfc979738bfff7284d40fd1bc55de2cc56514721fc155c3624f7d` |
-| arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-arm64.tar.xz) | v24.19.0 | `01443c1e1a29e531ccad5a46fefa6df490d2189c49f7955904aecdbb0fe86fdc` |
-| arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-arm64) | v1.53.0 | `bdc50caee3ac28495b42d2130b94a042a9dd6d3a38f732cac02b648f36c891da` |
-| mac-arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-arm64.tar.xz) | v24.19.0 | `3f1cf157479c1480352083105e13faf9d008ede98e7e157746b6df940d197b94` |
-| mac-arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-arm64) | v1.53.0 | `cb14ffe93e285903e5a8a9c1821687ddb5b8a979a11c584bf4af534b272c6d3e` |
-| mac-x64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.xz) | v24.19.0 | `d35e95230f46f6f0751df497c56622c6735e05d5e1fb1630996a005b9d328fe4` |
-| mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
-
 This release adds the following new feature:
 
 **Attachment viewer** - previews modern Office documents without activating their
@@ -5874,17 +6053,6 @@ Thanks to above GitHub users for their contributions and translators for their t
 integration, accounts, DDP, compilers, Rspack and TypeScript with the
 release-candidate platform.
 
-| Platform | Binary | From | Version | SHA256 |
-| --- | --- | --- | --- | --- |
-| amd64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.xz) | v24.19.0 | `14b342e71204f811bde6153be8e04b62aef63c236fef92b55f9c83154b409647` |
-| amd64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-amd64) | v1.53.0 | `eae1f0a8f73bfc979738bfff7284d40fd1bc55de2cc56514721fc155c3624f7d` |
-| arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-arm64.tar.xz) | v24.19.0 | `01443c1e1a29e531ccad5a46fefa6df490d2189c49f7955904aecdbb0fe86fdc` |
-| arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-arm64) | v1.53.0 | `bdc50caee3ac28495b42d2130b94a042a9dd6d3a38f732cac02b648f36c891da` |
-| mac-arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-arm64.tar.xz) | v24.19.0 | `3f1cf157479c1480352083105e13faf9d008ede98e7e157746b6df940d197b94` |
-| mac-arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-arm64) | v1.53.0 | `cb14ffe93e285903e5a8a9c1821687ddb5b8a979a11c584bf4af534b272c6d3e` |
-| mac-x64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.xz) | v24.19.0 | `d35e95230f46f6f0751df497c56622c6735e05d5e1fb1630996a005b9d328fe4` |
-| mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
-
 This release updates the following dependency:
 
 - **Meteor 3.5.2-beta.0 → 3.5.2-rc.0** — advances the framework and its accounts,
@@ -5901,17 +6069,6 @@ Thanks to Meteor developers and xet7.
 compatibility layer and the Rspack development-server dependency tree. The update
 closes two denial-of-service advisories while retaining the existing API, and also
 tightens array-limit enforcement, cycle detection, buffer checks and serialization.
-
-| Platform | Binary | From | Version | SHA256 |
-| --- | --- | --- | --- | --- |
-| amd64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.xz) | v24.19.0 | `14b342e71204f811bde6153be8e04b62aef63c236fef92b55f9c83154b409647` |
-| amd64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-amd64) | v1.53.0 | `eae1f0a8f73bfc979738bfff7284d40fd1bc55de2cc56514721fc155c3624f7d` |
-| arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-arm64.tar.xz) | v24.19.0 | `01443c1e1a29e531ccad5a46fefa6df490d2189c49f7955904aecdbb0fe86fdc` |
-| arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-arm64) | v1.53.0 | `bdc50caee3ac28495b42d2130b94a042a9dd6d3a38f732cac02b648f36c891da` |
-| mac-arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-arm64.tar.xz) | v24.19.0 | `3f1cf157479c1480352083105e13faf9d008ede98e7e157746b6df940d197b94` |
-| mac-arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-arm64) | v1.53.0 | `cb14ffe93e285903e5a8a9c1821687ddb5b8a979a11c584bf4af534b272c6d3e` |
-| mac-x64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.xz) | v24.19.0 | `d35e95230f46f6f0751df497c56622c6735e05d5e1fb1630996a005b9d328fe4` |
-| mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
 
 This release updates the following dependency:
 
@@ -5937,17 +6094,6 @@ protocol-required SCRAM-SHA-1 compatibility exception and moves its builds,
 dependencies, MongoDB driver and gRPC tooling to Go 1.27-era versions. The **MongoDB
 Database Tools** build follows current upstream development and refreshes Go and all
 compatible dependencies for every commit-specific snapshot.
-
-| Platform | Binary | From | Version | SHA256 |
-| --- | --- | --- | --- | --- |
-| amd64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.xz) | v24.19.0 | `14b342e71204f811bde6153be8e04b62aef63c236fef92b55f9c83154b409647` |
-| amd64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-amd64) | v1.53.0 | `eae1f0a8f73bfc979738bfff7284d40fd1bc55de2cc56514721fc155c3624f7d` |
-| arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-arm64.tar.xz) | v24.19.0 | `01443c1e1a29e531ccad5a46fefa6df490d2189c49f7955904aecdbb0fe86fdc` |
-| arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-arm64) | v1.53.0 | `bdc50caee3ac28495b42d2130b94a042a9dd6d3a38f732cac02b648f36c891da` |
-| mac-arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-arm64.tar.xz) | v24.19.0 | `3f1cf157479c1480352083105e13faf9d008ede98e7e157746b6df940d197b94` |
-| mac-arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-arm64) | v1.53.0 | `cb14ffe93e285903e5a8a9c1821687ddb5b8a979a11c584bf4af534b272c6d3e` |
-| mac-x64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.xz) | v24.19.0 | `d35e95230f46f6f0751df497c56622c6735e05d5e1fb1630996a005b9d328fe4` |
-| mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
 
 This release improves developer tooling:
 
@@ -6052,17 +6198,6 @@ well-known service from the Admin Panel while stored passwords remain strictly
 server-side. Existing `MAIL_URL` configuration remains the default until the
 administrator explicitly enables the new settings.
 
-| Platform | Binary | From | Version | SHA256 |
-| --- | --- | --- | --- | --- |
-| amd64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.xz) | v24.19.0 | `14b342e71204f811bde6153be8e04b62aef63c236fef92b55f9c83154b409647` |
-| amd64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-amd64) | v1.53.0 | `eae1f0a8f73bfc979738bfff7284d40fd1bc55de2cc56514721fc155c3624f7d` |
-| arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-arm64.tar.xz) | v24.19.0 | `01443c1e1a29e531ccad5a46fefa6df490d2189c49f7955904aecdbb0fe86fdc` |
-| arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-arm64) | v1.53.0 | `bdc50caee3ac28495b42d2130b94a042a9dd6d3a38f732cac02b648f36c891da` |
-| mac-arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-arm64.tar.xz) | v24.19.0 | `3f1cf157479c1480352083105e13faf9d008ede98e7e157746b6df940d197b94` |
-| mac-arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-arm64) | v1.53.0 | `cb14ffe93e285903e5a8a9c1821687ddb5b8a979a11c584bf4af534b272c6d3e` |
-| mac-x64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.xz) | v24.19.0 | `d35e95230f46f6f0751df497c56622c6735e05d5e1fb1630996a005b9d328fe4` |
-| mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
-
 This release adds the following new feature:
 
 <details>
@@ -6108,17 +6243,6 @@ translations.
 tokens are matched through nested arrays. Cross-database conformance protects
 the corrected logical OR behavior on every available backend.
 
-| Platform | Binary | From | Version | SHA256 |
-| --- | --- | --- | --- | --- |
-| amd64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.xz) | v24.19.0 | `14b342e71204f811bde6153be8e04b62aef63c236fef92b55f9c83154b409647` |
-| amd64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-amd64) | v1.53.0 | `eae1f0a8f73bfc979738bfff7284d40fd1bc55de2cc56514721fc155c3624f7d` |
-| arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-arm64.tar.xz) | v24.19.0 | `01443c1e1a29e531ccad5a46fefa6df490d2189c49f7955904aecdbb0fe86fdc` |
-| arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-arm64) | v1.53.0 | `bdc50caee3ac28495b42d2130b94a042a9dd6d3a38f732cac02b648f36c891da` |
-| mac-arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-arm64.tar.xz) | v24.19.0 | `3f1cf157479c1480352083105e13faf9d008ede98e7e157746b6df940d197b94` |
-| mac-arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-arm64) | v1.53.0 | `cb14ffe93e285903e5a8a9c1821687ddb5b8a979a11c584bf4af534b272c6d3e` |
-| mac-x64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.xz) | v24.19.0 | `d35e95230f46f6f0751df497c56622c6735e05d5e1fb1630996a005b9d328fe4` |
-| mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
-
 This release fixes the following bug:
 
 <details>
@@ -6160,17 +6284,6 @@ with executable metadata. **All Boards** sorting now changes immediately and
 persists reliably, while **FerretDB** avoids a multi-gigabyte allocation that
 could cause high CPU, connection resets and database crashes. Multi-user
 browser coverage also keeps simultaneous sessions genuinely independent.
-
-| Platform | Binary | From | Version | SHA256 |
-| --- | --- | --- | --- | --- |
-| amd64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.xz) | v24.19.0 | `14b342e71204f811bde6153be8e04b62aef63c236fef92b55f9c83154b409647` |
-| amd64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-amd64) | v1.53.0 | `eae1f0a8f73bfc979738bfff7284d40fd1bc55de2cc56514721fc155c3624f7d` |
-| arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-arm64.tar.xz) | v24.19.0 | `01443c1e1a29e531ccad5a46fefa6df490d2189c49f7955904aecdbb0fe86fdc` |
-| arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-arm64) | v1.53.0 | `bdc50caee3ac28495b42d2130b94a042a9dd6d3a38f732cac02b648f36c891da` |
-| mac-arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-arm64.tar.xz) | v24.19.0 | `3f1cf157479c1480352083105e13faf9d008ede98e7e157746b6df940d197b94` |
-| mac-arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-arm64) | v1.53.0 | `cb14ffe93e285903e5a8a9c1821687ddb5b8a979a11c584bf4af534b272c6d3e` |
-| mac-x64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.xz) | v24.19.0 | `d35e95230f46f6f0751df497c56622c6735e05d5e1fb1630996a005b9d328fe4` |
-| mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
 
 This release fixes the following CRITICAL SECURITY ISSUE of
 [MimeBleed](https://wekan.fi/hall-of-fame/mimebleed/):
@@ -6249,17 +6362,6 @@ the server. Lists, Calendar, Gantt, Table and Statistics therefore replace the
 Swimlanes layout immediately, while shared lists keep their cards and counts in
 the lane where each copy is rendered. **Full-stack testing** now keeps
 authenticated navigation stable and reaches host Docker from Flatpak.
-
-| Platform | Binary | From | Version | SHA256 |
-| --- | --- | --- | --- | --- |
-| amd64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.xz) | v24.19.0 | `14b342e71204f811bde6153be8e04b62aef63c236fef92b55f9c83154b409647` |
-| amd64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-amd64) | v1.53.0 | `eae1f0a8f73bfc979738bfff7284d40fd1bc55de2cc56514721fc155c3624f7d` |
-| arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-arm64.tar.xz) | v24.19.0 | `01443c1e1a29e531ccad5a46fefa6df490d2189c49f7955904aecdbb0fe86fdc` |
-| arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-arm64) | v1.53.0 | `bdc50caee3ac28495b42d2130b94a042a9dd6d3a38f732cac02b648f36c891da` |
-| mac-arm64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-arm64.tar.xz) | v24.19.0 | `3f1cf157479c1480352083105e13faf9d008ede98e7e157746b6df940d197b94` |
-| mac-arm64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-arm64) | v1.53.0 | `cb14ffe93e285903e5a8a9c1821687ddb5b8a979a11c584bf4af534b272c6d3e` |
-| mac-x64 | Node.js | [nodejs.org](https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.xz) | v24.19.0 | `d35e95230f46f6f0751df497c56622c6735e05d5e1fb1630996a005b9d328fe4` |
-| mac-x64 | FerretDB | [wekan/FerretDB](https://github.com/wekan/FerretDB/releases/download/v1.53.0/ferretdb-mac-x64) | v1.53.0 | `d97dfa9afa60aa05f25384327de82efe7b71d958ed24c1f66618284294a65cd3` |
 
 This release fixes the following bugs:
 
