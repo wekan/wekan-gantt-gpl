@@ -309,6 +309,63 @@ the Markdown commit as the template.
 </details>
 </details>
 
+# v11.67 2026-09-10 WeKan ® release
+
+**In short:** **Board export to .zip (with attachments)** answered a bare 500
+error on every request; the archiver dependency's v8 API change was missed in
+one of the two places WeKan builds a zip on the server. Issue #6681 (OIDC
+redirect-style login loop) is confirmed already fixed and closed.
+
+This release fixes the following bug:
+
+<details>
+<summary>Board export to .zip (with attachments) answered a bare 500 error</summary>
+
+`models/server/ExporterZip.js` still called the archiver package the v7 way -
+`const archiver = require('archiver'); archiver('zip', {...})`. archiver@8
+(package.json pins `^8.0.0`) is ESM-only and exports classes - `{ Archiver,
+ZipArchive, TarArchive, JsonArchive }` - with no callable default, so that
+call threw `TypeError: archiver is not a function` synchronously, before the
+`exportZip` route (models/export.js) had written any response header.
+`safeRoute` (server/apiMiddleware.js) then answered a bare 500 with no
+board-specific detail - every "export board -> .zip (with attachments)"
+request, for every board, since archiver was bumped to v8.
+
+`server/methods/backup.js` hit the identical break earlier and already fixed
+it with `import { ZipArchive } from 'archiver'; new ZipArchive({...})`;
+`ExporterZip.js` was the one call site that was missed. Fixed the same way.
+`tests/exportZipArchiverApi.test.cjs` pins the correct API shape, that the
+dead factory call is gone, and scans every server-side source file so a
+second call site cannot reintroduce the same break unnoticed.
+
+</details>
+
+and closes the following already-fixed issue:
+
+<details>
+<summary>Confirm #6681 (OIDC redirect-style login loop) stays fixed</summary>
+
+The reporter's `DEBUG=true` server log (getToken/getUserInfo repeating six
+times in under twenty seconds, each with a fresh access token) is the same
+signature the fix for #6681 already targets: `oauth2-login-style: redirect`
+with `oidc-redirection-enabled: true`, `Template.userFormsLayout.onCreated`
+re-firing the auto-redirect on the identity provider's bounce-back render
+before the prior login had finished. That was fixed by commit 89682c251
+("Fix OIDC auto-redirect looping until the provider rate-limits it"), which
+landed before v11.62 - several releases before this one - so a build the
+reporter's log shows as v11.60 predates the fix, and the fix has not been
+touched since. `tests/oidcAutoRedirectLoop.test.cjs` (6 checks) still
+passes against current source, confirming the one-shot sessionStorage flag
+still gates the auto-redirect and is still cleared on both login success
+and failure. No new code change was needed; the issue is closed with a
+pointer to where it was already fixed, and the reporter is asked to upgrade
+to v11.62 or newer.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their
+translations.
+
 # v11.66 2026-09-09 WeKan ® release
 
 **In short:** the companion build repositories under `.tools/` move forward:
