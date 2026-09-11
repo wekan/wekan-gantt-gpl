@@ -1,6 +1,6 @@
 {
   "name": "wekan-gantt-gpl",
-  "version": "v11.71.0",
+  "version": "v11.72.0",
   "description": "Open-Source kanban",
   "private": true,
   "repository": {
@@ -104,6 +104,7 @@
     "pdfjs-dist": "~6.2.108",
     "pdfkit": "^0.20.2",
     "pretty-ms": "^9.3.1",
+    "sanitize-html": "2.17.7",
     "sharp": "^0.35.4",
     "temml": "^0.13.3",
     "underscore": "^1.13.8",
