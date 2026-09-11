@@ -348,10 +348,40 @@ Template.list.onRendered(function () {
     stop(evt, ui) {
       // #6558: panning is available again the moment the drag is over.
       resumeBoardDragscroll();
+
+      // #766: a card dropped precisely on another list's HEADER (rather than
+      // its card-body area, which is the only thing `connectWith` above
+      // covers) lands outside every connected sortable container, so jQuery
+      // UI resolves no new drop target and the card silently snaps back to
+      // its source list. Detect that case from the mouseup event's own
+      // coordinates - `evt` here is the native mouseup - and, when the
+      // pointer is over a `.js-list-header`, treat it exactly like a drop at
+      // the TOP of that list's card body: same neighbour-based index
+      // calculation and the same card.move() mutation below, just resolved
+      // against the header's list instead of `ui.item`'s (unchanged) DOM
+      // position.
+      let headerDropList = null;
+      if (typeof evt.clientX === 'number' && typeof evt.clientY === 'number') {
+        const pointEl = document.elementFromPoint(evt.clientX, evt.clientY);
+        const headerEl = pointEl && pointEl.closest('.js-list-header');
+        headerDropList = headerEl ? headerEl.closest('.list') : null;
+      }
+
       // To attribute the new index number, we need to get the DOM element
       // of the previous and the following card -- if any.
-      const prevCardDom = ui.item.prev('.js-minicard').get(0);
-      const nextCardDom = ui.item.next('.js-minicard').get(0);
+      let prevCardDom;
+      let nextCardDom;
+      let headerDropContainer = null;
+      if (headerDropList) {
+        headerDropContainer = headerDropList.querySelector('.js-minicards');
+        prevCardDom = null;
+        nextCardDom = headerDropContainer
+          ? headerDropContainer.querySelector(itemsSelector)
+          : null;
+      } else {
+        prevCardDom = ui.item.prev('.js-minicard').get(0);
+        nextCardDom = ui.item.next('.js-minicard').get(0);
+      }
       const nCards = MultiSelection.isActive() ? MultiSelection.count() : 1;
       let sortIndex = calculateIndex(prevCardDom, nextCardDom, nCards);
 
@@ -374,17 +404,18 @@ Template.list.onRendered(function () {
           nextCardData ? nextCardData.sort : null,
         )
       ) {
-        orderedSiblingCards = ui.item
-          .parent()
+        orderedSiblingCards = $(headerDropContainer || ui.item.parent().get(0))
           .children(itemsSelector)
           .not(ui.item)
           .toArray()
           .map((el) => Blaze.getData(el))
           .filter(Boolean);
       }
-      const listData = Blaze.getData(ui.item.parents('.list').get(0));
+      const listData = headerDropList
+        ? Blaze.getData(headerDropList)
+        : Blaze.getData(ui.item.parents('.list').get(0));
       const listId = listData._id;
-      const targetContainer = ui.item.parent().get(0);
+      const targetContainer = headerDropContainer || ui.item.parent().get(0);
       const cardDomElement = ui.item.get(0);
       const droppedCard = Blaze.getData(cardDomElement);
       // #6430: sortable('cancel') is still necessary to keep jQuery UI from
@@ -395,7 +426,25 @@ Template.list.onRendered(function () {
         ? createCardDropPreview(cardDomElement, targetContainer)
         : null;
       const currentBoard = Utils.getCurrentBoard();
-      const defaultSwimlaneId = currentBoard.getDefaultSwimline()._id;
+      // #3298: the drop target list may belong to a DIFFERENT board than the
+      // one the page is currently routed to. The Bigboard view (#4223) stacks
+      // several boards' lists on one page, and the cards sortable's
+      // `connectWith: '.js-minicards:not(.js-list-full)'` above already
+      // connects across ALL of them (list-level dragging is the one scoped to
+      // stay within a board, via connectWithSelector() in swimlanes.js), so a
+      // card can legitimately be dropped into a list owned by another board
+      // entirely. Use the DESTINATION list's own boardId - already available
+      // on listData - rather than the route's current board, so the move
+      // lands on the right board when it crosses one. currentBoard is still
+      // used below for the CURRENT page's view-mode checks (swimlanes view /
+      // templates board), which describe how the page being dragged IN is
+      // laid out, not which board owns the drop target.
+      const targetBoardId = listData.boardId || currentBoard._id;
+      const targetBoard =
+        targetBoardId === currentBoard._id
+          ? currentBoard
+          : ReactiveCache.getBoard(targetBoardId);
+      const defaultSwimlaneId = targetBoard.getDefaultSwimline()._id;
       let targetSwimlaneId = null;
 
       // only set a new swimelane ID if the swimlanes view is active
@@ -403,8 +452,9 @@ Template.list.onRendered(function () {
         Utils.boardView() === 'board-view-swimlanes' ||
         currentBoard.isTemplatesBoard()
       ) {
+        const swimlaneSourceEl = headerDropList || ui.item.parents('.list').get(0);
         targetSwimlaneId = Blaze.getData(
-          ui.item.parents('.swimlane').get(0),
+          $(swimlaneSourceEl).parents('.swimlane').get(0),
         )._id;
       } else if (listData.swimlaneId) {
         targetSwimlaneId = listData.swimlaneId;
@@ -449,7 +499,7 @@ Template.list.onRendered(function () {
             ? targetSwimlaneId
             : card.swimlaneId || defaultSwimlaneId;
           card.move(
-            currentBoard._id,
+            targetBoardId,
             newSwimlaneId,
             listId,
             sortIndex.base + i * sortIndex.increment,
@@ -461,7 +511,7 @@ Template.list.onRendered(function () {
           ? targetSwimlaneId
           : card.swimlaneId || defaultSwimlaneId;
         const moveResult = card.move(
-          currentBoard._id,
+          targetBoardId,
           newSwimlaneId,
           listId,
           sortIndex.base,
@@ -638,6 +688,56 @@ Template.list.onRendered(function () {
   });
 });
 
+// A board-wide list (no swimlaneId of its own) renders once per swimlane in
+// Swimlanes view - the SAME list document, one row per swimlane - so its
+// collapse state must be resolved per-swimlane, or collapsing it in one
+// swimlane's row collapses every other swimlane's row of it too. Mirrors
+// listHeader.js's resolveContainerSwimlaneId exactly (#6660's fix for card
+// visibility, extended here to the collapse toggle).
+function resolveContainerSwimlaneId(list) {
+  if (!list || Utils.boardView() !== 'board-view-swimlanes') {
+    return undefined;
+  }
+  for (let depth = 1; depth <= 5; depth += 1) {
+    const candidate = Template.parentData(depth);
+    if (
+      candidate &&
+      candidate._id &&
+      candidate._id !== list._id &&
+      candidate.boardId === list.boardId
+    ) {
+      return candidate._id;
+    }
+  }
+  return undefined;
+}
+
+// The same resolution as resolveContainerSwimlaneId above, but usable from
+// initializeListResize's async/deferred code, where there is no active
+// Blaze render or event dispatch for Template.parentData() to read from
+// (that is exactly why this function already resolves `list` itself via
+// tpl.data/Blaze.getData instead of Template.currentData()). A View's
+// .parentView chain is a stored reference on the object, not a call-stack
+// snapshot, so it stays walkable at any time - the same idiom used by
+// client/components/gantt/ganttCard.js and cards/checklists.js.
+function resolveContainerSwimlaneIdFromView(view, list) {
+  if (!list || Utils.boardView() !== 'board-view-swimlanes') {
+    return undefined;
+  }
+  let current = view;
+  let depth = 0;
+  while (current && depth < 8) {
+    const inst = current.templateInstance && current.templateInstance();
+    const data = inst && inst.data;
+    if (data && data._id && data._id !== list._id && data.boardId === list.boardId) {
+      return data._id;
+    }
+    current = current.parentView;
+    depth += 1;
+  }
+  return undefined;
+}
+
 Template.list.helpers({
   listWidth() {
     return effectiveListWidth(Template.currentData());
@@ -654,7 +754,18 @@ Template.list.helpers({
   },
 
   collapsed() {
-    return Utils.getListCollapseState(this);
+    return Utils.getListCollapseState(this, resolveContainerSwimlaneId(this));
+  },
+
+  // #3847: board-wide "sticky list headers" toggle (client/components/lists/
+  // listHeader.jade's listActionPopup, models/boards.js). Drives the CSS in
+  // list.css that pins .list-header to the top of the list's own card
+  // scroll container (.list-body, overflow-y: scroll) instead of it
+  // scrolling out of view with the cards.
+  stickyListHeaders() {
+    const list = Template.currentData();
+    const board = list && ReactiveCache.getBoard(list.boardId);
+    return !!(board && board.getStickyListHeaders());
   },
 });
 
@@ -672,8 +783,9 @@ Template.list.onCreated(function () {
     }
     const $list = tpl.$('.js-list');
     const $resizeHandle = tpl.$('.js-list-resize-handle');
+    const swimlaneId = resolveContainerSwimlaneIdFromView(tpl.view, list);
 
-    const isCollapsed = Utils.getListCollapseState(list);
+    const isCollapsed = Utils.getListCollapseState(list, swimlaneId);
     if (isCollapsed) {
       // Collapsed lists do not render a resize handle by design.
       return;
@@ -694,7 +806,7 @@ Template.list.onCreated(function () {
     // user is allowed to change this list's width (always in personal mode; only
     // with board write access in shared mode).
     tpl.autorun(() => {
-      const isCollapsed = Utils.getListCollapseState(list);
+      const isCollapsed = Utils.getListCollapseState(list, swimlaneId);
       if (isCollapsed || !canResizeList(list)) {
         $resizeHandle.hide();
       } else {

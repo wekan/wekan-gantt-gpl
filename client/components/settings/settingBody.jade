@@ -99,6 +99,8 @@ template(name="general")
 
           li
             button.js-email-invite.primary {{_ 'invite'}}
+          li
+            #invite-people-infos
     li.accounts-form
       .title {{_ 'default-authentication-method'}}
       +selectAuthenticationMethod(authenticationMethod=currentSetting.defaultAuthenticationMethod)
@@ -107,6 +109,101 @@ template(name="general")
       .form-group
         input.wekan-form-control#oidcBtnTextvalue(type="text", placeholder="" value="{{currentSetting.oidcBtnText}}")
       button.js-account-access-save.primary {{_ 'save'}}
+
+    //- Admin Panel override of the LDAP_* environment variables (maintainer
+    //- request: "Add all settings from environment variables to Admin Panel
+    //- where appropriate ... as possibility to override"). Every field falls
+    //- back to its LDAP_* env var when left blank here - see
+    //- models/lib/configResolver.js and server/models/settings.js's
+    //- saveLdapSettings/getLdapConfigSources. The badge after each label says
+    //- which one is currently in effect; nothing here ever shows the bind
+    //- password itself (client/components/settings/settingBody.js only ever
+    //- receives a boolean "is a password configured").
+    if currentUser.isAdmin
+      li.admin-pane-group-separator
+        hr
+      li
+        h2.admin-pane-group-title {{_ 'ldap'}}
+      li.accounts-form
+        a.flex.js-toggle-ldap-enabled
+          .materialCheckBox(class="{{#if currentSetting.ldap.enabled}}is-checked{{/if}}")
+          span LDAP_ENABLE
+          span.ldap-source-badge  ({{ldapSourceLabel 'enabled'}})
+      each ldapTextFields
+        li.accounts-form
+          .title= envVar
+          .form-group
+            input.wekan-form-control(type="text" class="js-ldap-field" data-field="{{field}}" placeholder="{{envVar}}" value="{{ldapFieldValue field}}")
+            span.ldap-source-badge  ({{ldapSourceLabelFor field}})
+      li.accounts-form
+        .title LDAP_AUTHENTIFICATION_PASSWORD
+        .description {{ldapPasswordStatusText}}
+        .form-group
+          input.wekan-form-control#ldap-bind-password(type="password", placeholder="{{_ 'password'}}" value="" autocomplete="new-password")
+      li.accounts-form
+        button.js-ldap-settings-save.primary {{_ 'save'}}
+        button.js-ldap-test-connection.primary {{_ 'ldap-test-connection'}}
+      if ldapTestResult
+        li.accounts-form
+          span(class="{{ldapTestResultClass}}")= ldapTestResult
+
+    //- Admin Panel override of the OAUTH_<PROVIDER>_* environment variables for
+    //- Meteor's own accounts-* login services (models/lib/oauthProviders.js),
+    //- and of PASSWORDLESS_ENABLED. Same shape and rules as the LDAP block
+    //- above: every field falls back to its env var when blank, the badge names
+    //- the source in effect, and the secret is never shown - the client only
+    //- ever receives "a secret is set" (see server/models/settings.js
+    //- saveOauthProviderSettings/getOauthProviderConfigSources).
+    if currentUser.isAdmin
+      li.admin-pane-group-separator
+        hr
+      li
+        h2.admin-pane-group-title {{_ 'oauth-providers-title'}}
+      li.accounts-form
+        .description {{_ 'oauth-providers-hint'}}
+      each oauthProviderList
+        li.accounts-form.js-oauth-provider(data-provider="{{key}}")
+          .title {{_ labelKey}}
+          a.flex.js-toggle-oauth-provider-enabled(data-provider="{{key}}")
+            .materialCheckBox.js-oauth-provider-enabled(class="{{#if oauthProviderEnabled key}}is-checked{{/if}}")
+            span= enabledVar
+            span.ldap-source-badge  ({{oauthProviderSourceLabel key 'enabled'}})
+          .form-group
+            label {{_ 'oauth-provider-client-id'}}
+            input.wekan-form-control(type="text" class="js-oauth-provider-field" data-provider="{{key}}" data-field="id" placeholder="{{idVar}}" value="{{oauthProviderFieldValue key 'id'}}")
+            span.ldap-source-badge  ({{oauthProviderSourceLabel key 'id'}})
+          .form-group
+            label {{_ 'oauth-provider-secret'}}
+            .description {{oauthProviderSecretStatusText key}}
+            input.wekan-form-control(type="password" class="js-oauth-provider-secret" data-provider="{{key}}" placeholder="{{secretVar}}" value="" autocomplete="new-password")
+          button.js-oauth-provider-save.primary(data-provider="{{key}}") {{_ 'save'}}
+      li.accounts-form
+        .title {{_ 'oauth-providers-login-style'}}
+        .form-group
+          select.wekan-form-control#oauth-providers-login-style
+            each oauthLoginStyleOptions
+              option(value=value selected=selected)= label
+          span.ldap-source-badge  ({{oauthSharedSourceLabel 'loginStyle'}})
+      li.accounts-form
+        a.flex.js-toggle-oauth-merge-existing-users
+          .materialCheckBox(class="{{#if currentSetting.oauthProvidersMergeExistingUsers}}is-checked{{/if}}")
+          span {{_ 'oauth-providers-merge-existing-users'}}
+          span.ldap-source-badge  ({{oauthSharedSourceLabel 'mergeExistingUsers'}})
+      li.accounts-form
+        button.js-oauth-shared-save.primary {{_ 'save'}}
+
+      li.admin-pane-group-separator
+        hr
+      li
+        h2.admin-pane-group-title {{_ 'passwordless-title'}}
+      li.accounts-form
+        .description {{_ 'passwordless-hint'}}
+        a.flex.js-toggle-passwordless-enabled
+          .materialCheckBox(class="{{#if currentSetting.passwordlessEnabled}}is-checked{{/if}}")
+          span {{_ 'passwordless-enabled'}}
+          span.ldap-source-badge  ({{oauthSharedSourceLabel 'passwordless'}})
+      li.accounts-form
+        button.js-passwordless-save.primary {{_ 'save'}}
 
 //- The E-mail pane. Rendered by Admin Panel / People too - see the note above.
 template(name='email')
@@ -154,6 +251,41 @@ template(name='email')
           input.wekan-form-control#mail-server-from(type="text", placeholder="WeKan <no-reply@domain.com>" value="{{mailConfiguration.from}}")
     li
       button.mail-settings-save.primary {{_ 'save'}}
+
+    //- #2022: admin-customizable templates for WeKan's transactional emails.
+    //- Each field is OPTIONAL and empty by default - left blank, WeKan sends
+    //- its exact current hardcoded/i18n email content, unchanged. Filled in,
+    //- it replaces that email's subject/body, with the same {token}
+    //- substitution the Rules "send email" action already uses (see
+    //- r-email-vars-hint in rules). Password-reset / account-verification
+    //- emails are deliberately NOT covered here (see the comment below).
+    li
+      h2 {{_ 'email-templates-title'}}
+      //- Password-reset / account-verification emails are deliberately not
+      //- offered here at all - see the CLAUDE.md-mandated note above and
+      //- docs/Features - so there is nothing to warn about turning off.
+    li.smtp-form
+      .title {{_ 'email-templates-invite-subject'}}
+      .description {{_ 'email-templates-invite-vars-hint'}}
+      .form-group
+        input.wekan-form-control#email-template-invite-subject(type="text" value="{{currentSetting.inviteEmailSubjectTemplate}}")
+    li.smtp-form
+      .title {{_ 'email-templates-invite-body'}}
+      .description {{_ 'email-templates-invite-vars-hint'}}
+      .form-group
+        textarea.wekan-form-control#email-template-invite-body(rows="4")= currentSetting.inviteEmailBodyTemplate
+    li.smtp-form
+      .title {{_ 'email-templates-activity-subject'}}
+      .description {{_ 'email-templates-activity-vars-hint'}}
+      .form-group
+        input.wekan-form-control#email-template-activity-subject(type="text" value="{{currentSetting.activityEmailSubjectTemplate}}")
+    li.smtp-form
+      .title {{_ 'email-templates-activity-body'}}
+      .description {{_ 'email-templates-activity-vars-hint'}}
+      .form-group
+        textarea.wekan-form-control#email-template-activity-body(rows="4")= currentSetting.activityEmailBodyTemplate
+    li
+      button.js-email-templates-save.primary {{_ 'save'}}
 
     li.smtp-form
       //- Not "Email domain name": the field decides who may INVITE. A non-admin
@@ -209,6 +341,13 @@ template(name='tableVisibilityModeSettings')
         a.flex.js-toggle-all-boards-hide
           .materialCheckBox#accounts-allowPrivateOnly(class="{{#if allowPrivateOnly}}is-checked{{/if}}")
           span {{_ 'public-boards'}}
+      li.tableVisibilityMode-form
+        //- #4475: ticked forbids anyone who is not a site admin from creating
+        //- new boards. Same Save button and same collection as the setting
+        //- above - only the checked key differs.
+        a.flex.js-toggle-all-boards-hide
+          .materialCheckBox#accounts-boardCreationAdminOnly(class="{{#if boardCreationAdminOnly}}is-checked{{/if}}")
+          span {{_ 'board-creation-admin-only'}}
       li.hideBoardActivities-form
         a.flex.js-toggle-all-boards-hide
           .materialCheckBox#hide-board-activities(class="{{#if currentSetting.hideBoardActivitiesOnAllBoards}}is-checked{{/if}}")
@@ -224,6 +363,19 @@ template(name='tableVisibilityModeSettings')
       li.tableVisibilityMode-form
         .title {{_ 'wait-spinner'}}
         +selectSpinnerName(spinnerName=currentSetting.spinnerName)
+      //- #4421: an org whose "Public" means "public within our organization"
+      //- rather than public on the internet can replace the wording shown
+      //- under Private/Public in the board visibility popup and the
+      //- create-board popup. Empty = unchanged i18n default text
+      //- (imports/i18n/lib/visibilityDesc.js).
+      li.tableVisibilityMode-form
+        .title {{_ 'custom-private-desc'}}
+        .form-group
+          input.wekan-form-control#custom-private-board-desc(type="text", placeholder="{{_ 'custom-private-desc-placeholder'}}" value="{{currentSetting.customPrivateBoardDesc}}")
+      li.tableVisibilityMode-form
+        .title {{_ 'custom-public-desc'}}
+        .form-group
+          input.wekan-form-control#custom-public-board-desc(type="text", placeholder="{{_ 'custom-public-desc-placeholder'}}" value="{{currentSetting.customPublicBoardDesc}}")
       li
         //- One Save per section, at its end, above the rule that closes it. It writes
         //- this section's fields and nothing else, so saving one group can never
@@ -269,6 +421,25 @@ template(name='tableVisibilityModeSettings')
           textarea#automatic-linked-url-schemes.wekan-form-control= currentSetting.automaticLinkedUrlSchemes
       li
         button.js-visibility-url-save.primary {{_ 'save'}}
+
+      li.admin-pane-group-separator
+        hr
+      li
+        //- wekan/wekan#3069: autolink bare "<prefix>NNNN" tokens (e.g. "#1234")
+        //- found in card descriptions/comments to an external issue tracker.
+        //- Leaving either field empty keeps this feature off (no-op).
+        h2.admin-pane-group-title {{_ 'external-link-pattern'}}
+        p.description {{_ 'external-link-pattern-description'}}
+      li.tableVisibilityMode-form
+        .title {{_ 'external-link-pattern-prefix'}}
+        .form-group
+          input.wekan-form-control#external-link-pattern-prefix(type="text", placeholder="#" value="{{currentSetting.externalLinkPatternPrefix}}")
+      li.tableVisibilityMode-form
+        .title {{_ 'external-link-pattern-url'}}
+        .form-group
+          input.wekan-form-control#external-link-pattern-url(type="text", placeholder="https://issues.example.com/browse/PROJ-{number}" value="{{currentSetting.externalLinkPatternUrl}}")
+      li
+        button.js-visibility-external-link-pattern-save.primary {{_ 'save'}}
 
       li.admin-pane-group-separator
         hr

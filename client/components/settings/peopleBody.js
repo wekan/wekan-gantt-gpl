@@ -1,4 +1,5 @@
 import { ReactiveCache } from '/imports/reactiveCache';
+import { TAPi18n } from '/imports/i18n';
 import { Session } from 'meteor/session';
 import { leftMenuData, paneTitle } from '/models/lib/leftMenu';
 // buildFilters and buildActions are imported like the rest of them. The People
@@ -25,6 +26,8 @@ import * as tenantAdmin from '/models/lib/tenantAdmin';
 // Is this account locked, and why. The lockout is per source address
 // (GHSA-rf3w-rj48-jxcc), so one place knows the shape.
 const { isUserLocked: lockoutIsUserLocked } = require('/models/lib/accountLockout');
+// #3678, #3734: presence recency threshold, shared with the unit test.
+const { isRecentlyActive } = require('/models/lib/lastActive');
 import InviteToBoardRolesSettings, {
   INVITE_TO_BOARD_ROLES,
   INVITE_TO_BOARD_ROLES_ID,
@@ -107,6 +110,9 @@ Template.people.onCreated(function () {
   // The page opens on Login, the first entry of the menu - as it always did.
   this.registrationSetting = new ReactiveVar(true);
   this.emailSetting = new ReactiveVar(false);
+  // Admin-level default for the 3-tier Notification Settings system, see
+  // models/lib/notificationSettings.js.
+  this.notifySetting = new ReactiveVar(false);
   this.orgSetting = new ReactiveVar(false);
   this.teamSetting = new ReactiveVar(false);
   this.peopleSetting = new ReactiveVar(false);
@@ -157,6 +163,10 @@ Template.people.onCreated(function () {
     this.loginLocationPage.set(1);
   };
   this.userFilterType = new ReactiveVar('all');
+  // #4510: which Team the People list is narrowed to, '' meaning every team. A
+  // second controls-row dropdown alongside the Show filter, so an admin with
+  // several teams can jump straight to one team's members.
+  this.teamFilterId = new ReactiveVar('');
   // The search box lives in the shared controls row now, so keep the term in
   // state rather than reading it back out of a DOM id.
   this.peopleSearchTerm = new ReactiveVar('');
@@ -339,6 +349,15 @@ Template.people.onCreated(function () {
         break;
     }
 
+    // #4510: narrow to one Team's members. A user's teams live in their own
+    // `teams` array (models/users.js), each entry `{ teamId, teamDisplayName }`,
+    // so this is a plain match on the embedded field - the same shape the Team
+    // membership popups already read.
+    const teamId = this.teamFilterId.get();
+    if (teamId) {
+      query['teams.teamId'] = teamId;
+    }
+
     this.findUsersOptions.set(query);
     this.peoplePage.set(1);
   };
@@ -377,6 +396,7 @@ Template.people.onCreated(function () {
       this.activeMenuId.set(targetID);
       this.registrationSetting.set('registration-setting' === targetID);
       this.emailSetting.set('email-setting' === targetID);
+      this.notifySetting.set('notify-setting' === targetID);
       this.orgSetting.set('org-setting' === targetID);
       this.teamSetting.set('team-setting' === targetID);
       this.peopleSetting.set('people-setting' === targetID);
@@ -492,6 +512,10 @@ function peopleMenu(user) {
     { id: 'registration-setting', icon: 'fa-key', labelKey: 'login', emoji: true },
     // No e-mail settings on Sandstorm; a null entry is dropped, not rendered empty.
     isSandstorm ? null : { id: 'email-setting', icon: 'fa-envelope', labelKey: 'email', emoji: true },
+    // Admin-level default for the 3-tier Notification Settings system (see
+    // models/lib/notificationSettings.js): admin default -> board override ->
+    // member override. Sits right below E-mail, the setting it is closest to.
+    { id: 'notify-setting', icon: 'fa-bell', labelKey: 'notifications', emoji: true },
     // Domains sits with E-mail: it lists the e-mail domains the users sign in
     // with, so it belongs beside the e-mail settings rather than at the end of
     // the menu, after the roles and template checkbox lists.
@@ -568,6 +592,8 @@ const PEOPLE_COLUMNS = [
   { labelKey: 'active-person' },
   { labelKey: 'location' },
   { labelKey: 'accounts-lockout-status' },
+  // #3678, #3734: when was this account last seen, and is it here right now.
+  { labelKey: 'admin-people-last-active' },
   { labelKey: 'createdAt' },
   { headerTemplate: 'selectAllUser' },
 ];
@@ -638,6 +664,20 @@ Template.people.helpers({
           { value: 'active', labelKey: 'admin-people-filter-active' },
           { value: 'inactive', labelKey: 'admin-people-filter-inactive' },
           { value: 'admin', label: 'Admin' },
+        ],
+      }, {
+        // #4510: an admin with several teams wants the People list narrowed to
+        // one of them - the same "search by team" the Teams pane already has,
+        // but for who is IN the team rather than the team itself.
+        id: 'team',
+        labelKey: 'admin-people-filter-team',
+        current: tpl.teamFilterId.get(),
+        options: [
+          { value: '', labelKey: 'admin-people-filter-all-teams' },
+          ...ReactiveCache.getTeams({}, { sort: { teamDisplayName: 1 } }).map(team => ({
+            value: team._id,
+            label: team.teamDisplayName,
+          })),
         ],
       }], tpl.userFilterType.get()),
       // No per-action class: both buttons are sized and themed by the shared
@@ -784,6 +824,9 @@ Template.people.helpers({
   },
   emailSetting() {
     return Template.instance().emailSetting;
+  },
+  notifySetting() {
+    return Template.instance().notifySetting;
   },
   orgSetting() {
     return Template.instance().orgSetting;
@@ -983,7 +1026,14 @@ Template.people.events({
   },
   'change .js-table-page-filter'(event, tpl) {
     if (tpl.activeMenuId.get() !== 'people-setting') return;
-    tpl.userFilterType.set($(event.currentTarget).val());
+    // Two dropdowns share this class now - Show and Team (#4510) - identified
+    // by data-filter the same way buildFilters names them.
+    const filterId = $(event.currentTarget).data('filter');
+    if (filterId === 'team') {
+      tpl.teamFilterId.set($(event.currentTarget).val());
+    } else {
+      tpl.userFilterType.set($(event.currentTarget).val());
+    }
     tpl.filterPeople();
   },
   'click .js-table-page-action'(event, tpl) {
@@ -1415,7 +1465,21 @@ Template.peopleRow.helpers({
     // address). This read the flat field that fix removed, so every account
     // showed as unlocked; models/lib/accountLockout.js knows the shape now.
     return lockoutIsUserLocked(user);
-  }
+  },
+  // #3678, #3734: presence for the People table. The timestamp itself is
+  // written by server/lastActiveOnLogin.js (on login) and the client heartbeat
+  // (client/lastActiveHeartbeat.js) via the `usersHeartbeat` method; the
+  // recency threshold for "online now" lives in models/lib/lastActive.js so
+  // this helper and the unit test agree on what "recent" means.
+  lastActiveAt() {
+    const user = this.user || ReactiveCache.getUser(this.userId);
+    return user && user.lastConnectionDate;
+  },
+  isRecentlyActive() {
+    const user = this.user || ReactiveCache.getUser(this.userId);
+    if (!user || !user.lastConnectionDate) return false;
+    return isRecentlyActive(user.lastConnectionDate, new Date());
+  },
 });
 
 // Initialize filter dropdown
@@ -2537,6 +2601,34 @@ Template.settingsUserPopup.events({
           console.log('User deleted successfully:', result);
         }
         // One row fewer: which users this page holds has changed.
+        peopleListChanged();
+        Popup.back();
+      }
+    });
+  },
+  // #2731: GDPR-friendlier alternative to deleteButton above - scrubs PII and
+  // disables login, but leaves every board/card/comment reference to this
+  // userId untouched (no reference-pruning, no hard delete).
+  'click #anonymizeButton'(event) {
+    event.preventDefault();
+    const userId = this.userId || this.user?._id;
+
+    Meteor.call('anonymizeUser', userId, (error, result) => {
+      if (error) {
+        if (process.env.DEBUG === 'true') {
+          console.error('Error anonymizing user:', error);
+        }
+        if (error.error === 'not-authorized') {
+          alert('You are not authorized to anonymize this user.');
+        } else if (error.error === 'user-not-found') {
+          alert('User not found.');
+        } else {
+          alert('Error anonymizing user: ' + error.reason);
+        }
+      } else {
+        if (process.env.DEBUG === 'true') {
+          console.log('User anonymized successfully:', result);
+        }
         peopleListChanged();
         Popup.back();
       }

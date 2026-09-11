@@ -25,6 +25,7 @@ import {
   tokenizeAdvancedFilter,
   parseAdvancedFilterDate,
   buildDateValueSelector,
+  advancedFilterCommandsToSelector,
 } from '/imports/lib/advancedFilter';
 import { weekRange } from '/models/lib/weekStart';
 import { Session } from 'meteor/session';
@@ -254,6 +255,15 @@ class SetFilter {
     return this._selectedElements.indexOf(val) > -1;
   }
 
+  // #319: a reactive snapshot of the selected values, used to mirror the
+  // filter's state into the URL query string as the user changes it (the
+  // write direction of #4540's read-on-load `?assignee=`/`?member=`/`?label=`
+  // support). Returns a copy so callers cannot mutate internal state.
+  list() {
+    this._dep.depend();
+    return this._selectedElements.slice();
+  }
+
   add(val) {
     if (this._indexOfVal(val) === -1) {
       this._selectedElements.push(val);
@@ -311,6 +321,16 @@ class SetFilter {
           $eq: [],
         }
       : null;
+  }
+
+  // #2886: the inverse of `_getMongoSelector` — matches documents whose
+  // field does NOT contain any of the selected values, used to EXCLUDE
+  // cards that carry a given label rather than requiring one.
+  _getExcludedMongoSelector() {
+    this._dep.depend();
+    return {
+      $nin: this._selectedElements,
+    };
   }
 }
 
@@ -399,276 +419,23 @@ class AdvancedFilter {
     return buildDateValueSelector(op, range);
   }
 
+  // #3092: the command-array -> Mongo selector algorithm (sub-expressions,
+  // comparisons, and/or/not) now lives in /imports/lib/advancedFilter.js as
+  // advancedFilterCommandsToSelector(), so the "card matches advanced filter"
+  // rule trigger can reuse the exact same function server-side instead of a
+  // parallel reimplementation. Only the three lookups that need live board
+  // data stay here, bound to ReactiveCache.
   _arrayToSelector(commands) {
     try {
-      //let changed = false;
-      this._processSubCommands(commands);
+      const selector = advancedFilterCommandsToSelector(commands, {
+        fieldNameToId: this._fieldNameToId.bind(this),
+        fieldValueToId: this._fieldValueToId.bind(this),
+        customFieldDateSelector: this._customFieldDateSelector.bind(this),
+      });
+      this._lastValide = selector;
+      return selector;
     } catch (e) {
       return this._lastValide;
-    }
-    this._lastValide = {
-      $or: commands,
-    };
-    return {
-      $or: commands,
-    };
-  }
-
-  _processSubCommands(commands) {
-    const subcommands = [];
-    let level = 0;
-    let start = -1;
-    for (let i = 0; i < commands.length; i++) {
-      if (commands[i].cmd) {
-        switch (commands[i].cmd) {
-          case '(': {
-            level++;
-            if (start === -1) start = i;
-            continue;
-          }
-          case ')': {
-            level--;
-            commands.splice(i, 1);
-            i--;
-            continue;
-          }
-          default: {
-            if (level > 0) {
-              subcommands.push(commands[i]);
-              commands.splice(i, 1);
-              i--;
-              continue;
-            }
-          }
-        }
-      }
-    }
-    if (start !== -1) {
-      this._processSubCommands(subcommands);
-      if (subcommands.length === 1) commands.splice(start, 0, subcommands[0]);
-      else commands.splice(start, 0, subcommands);
-    }
-    this._processConditions(commands);
-    this._processLogicalOperators(commands);
-  }
-
-  _processConditions(commands) {
-    for (let i = 0; i < commands.length; i++) {
-      if (!commands[i].string && commands[i].cmd) {
-        switch (commands[i].cmd) {
-          case '=':
-          case '==':
-          case '===': {
-            const field = commands[i - 1].cmd;
-            const str = commands[i + 1].cmd;
-            if (commands[i + 1].regex) {
-              const match = str.match(new RegExp('^/(.*?)/([gimy]*)$'));
-              let regex = null;
-              if (match.length > 2) regex = new RegExp(match[1], match[2]);
-              else regex = new RegExp(match[1]);
-              commands[i] = {
-                'customFields._id': this._fieldNameToId(field),
-                'customFields.value': regex,
-              };
-            } else {
-              commands[i] = {
-                'customFields._id': this._fieldNameToId(field),
-                'customFields.value': this._customFieldDateSelector(
-                  field,
-                  str,
-                  commands[i].cmd,
-                ) || {
-                  $in: [this._fieldValueToId(field, str), parseInt(str, 10)],
-                },
-              };
-            }
-            commands.splice(i - 1, 1);
-            commands.splice(i, 1);
-            //changed = true;
-            i--;
-            break;
-          }
-          case '!=':
-          case '!==': {
-            const field = commands[i - 1].cmd;
-            const str = commands[i + 1].cmd;
-            if (commands[i + 1].regex) {
-              const match = str.match(new RegExp('^/(.*?)/([gimy]*)$'));
-              let regex = null;
-              if (match.length > 2) regex = new RegExp(match[1], match[2]);
-              else regex = new RegExp(match[1]);
-              commands[i] = {
-                'customFields._id': this._fieldNameToId(field),
-                'customFields.value': {
-                  $not: regex,
-                },
-              };
-            } else {
-              commands[i] = {
-                'customFields._id': this._fieldNameToId(field),
-                'customFields.value': this._customFieldDateSelector(
-                  field,
-                  str,
-                  commands[i].cmd,
-                ) || {
-                  $not: {
-                    $in: [this._fieldValueToId(field, str), parseInt(str, 10)],
-                  },
-                },
-              };
-            }
-            commands.splice(i - 1, 1);
-            commands.splice(i, 1);
-            //changed = true;
-            i--;
-            break;
-          }
-          case '>':
-          case 'gt':
-          case 'Gt':
-          case 'GT': {
-            const field = commands[i - 1].cmd;
-            const str = commands[i + 1].cmd;
-            commands[i] = {
-              'customFields._id': this._fieldNameToId(field),
-              'customFields.value': this._customFieldDateSelector(
-                field,
-                str,
-                commands[i].cmd,
-              ) || {
-                $gt: parseInt(str, 10),
-              },
-            };
-            commands.splice(i - 1, 1);
-            commands.splice(i, 1);
-            //changed = true;
-            i--;
-            break;
-          }
-          case '>=':
-          case '>==':
-          case 'gte':
-          case 'Gte':
-          case 'GTE': {
-            const field = commands[i - 1].cmd;
-            const str = commands[i + 1].cmd;
-            commands[i] = {
-              'customFields._id': this._fieldNameToId(field),
-              'customFields.value': this._customFieldDateSelector(
-                field,
-                str,
-                commands[i].cmd,
-              ) || {
-                $gte: parseInt(str, 10),
-              },
-            };
-            commands.splice(i - 1, 1);
-            commands.splice(i, 1);
-            //changed = true;
-            i--;
-            break;
-          }
-          case '<':
-          case 'lt':
-          case 'Lt':
-          case 'LT': {
-            const field = commands[i - 1].cmd;
-            const str = commands[i + 1].cmd;
-            commands[i] = {
-              'customFields._id': this._fieldNameToId(field),
-              'customFields.value': this._customFieldDateSelector(
-                field,
-                str,
-                commands[i].cmd,
-              ) || {
-                $lt: parseInt(str, 10),
-              },
-            };
-            commands.splice(i - 1, 1);
-            commands.splice(i, 1);
-            //changed = true;
-            i--;
-            break;
-          }
-          case '<=':
-          case '<==':
-          case 'lte':
-          case 'Lte':
-          case 'LTE': {
-            const field = commands[i - 1].cmd;
-            const str = commands[i + 1].cmd;
-            commands[i] = {
-              'customFields._id': this._fieldNameToId(field),
-              'customFields.value': this._customFieldDateSelector(
-                field,
-                str,
-                commands[i].cmd,
-              ) || {
-                $lte: parseInt(str, 10),
-              },
-            };
-            commands.splice(i - 1, 1);
-            commands.splice(i, 1);
-            //changed = true;
-            i--;
-            break;
-          }
-        }
-      }
-    }
-  }
-
-  _processLogicalOperators(commands) {
-    for (let i = 0; i < commands.length; i++) {
-      if (!commands[i].string && commands[i].cmd) {
-        switch (commands[i].cmd) {
-          case 'or':
-          case 'Or':
-          case 'OR':
-          case '|':
-          case '||': {
-            const op1 = commands[i - 1];
-            const op2 = commands[i + 1];
-            commands[i] = {
-              $or: [op1, op2],
-            };
-            commands.splice(i - 1, 1);
-            commands.splice(i, 1);
-            //changed = true;
-            i--;
-            break;
-          }
-          case 'and':
-          case 'And':
-          case 'AND':
-          case '&':
-          case '&&': {
-            const op1 = commands[i - 1];
-            const op2 = commands[i + 1];
-            commands[i] = {
-              $and: [op1, op2],
-            };
-            commands.splice(i - 1, 1);
-            commands.splice(i, 1);
-            //changed = true;
-            i--;
-            break;
-          }
-          case 'not':
-          case 'Not':
-          case 'NOT':
-          case '!': {
-            const op1 = commands[i + 1];
-            commands[i] = {
-              $not: op1,
-            };
-            commands.splice(i + 1, 1);
-            //changed = true;
-            i--;
-            break;
-          }
-        }
-      }
     }
   }
 
@@ -696,8 +463,23 @@ export const Filter = {
   // the rest of the schema, but we need to set some migrations architecture
   // before changing the schema.
   labelIds: new SetFilter(),
+  // #2886: labels the user clicked a THIRD time — cards carrying one of
+  // these are excluded even if they also match `labelIds`. Kept as a
+  // separate SetFilter (mirroring `labelIds`'s API/shape) rather than a
+  // third value inside `labelIds` so the two remain independent reactive
+  // sets and the existing `_fields` machinery for every other filter type
+  // is untouched.
+  excludedLabelIds: new SetFilter(),
   members: new SetFilter(),
   assignees: new SetFilter(),
+  // #3681: filter cards by who created them. The card schema's author
+  // field is `userId` (see models/cards.js), not `creatorId` — the
+  // filter is keyed the same way so `_getMongoSelector()` below can map
+  // `_fields` entries straight onto card document field names, the same
+  // way `labelIds`/`members`/`assignees` already do. Same SetFilter
+  // shape/API as every other id-set filter, so no new filtering engine
+  // was needed.
+  userId: new SetFilter(),
   archive: new SetFilter(),
   hideEmpty: new SetFilter(),
   dueAt: new DateFilter(),
@@ -712,6 +494,7 @@ export const Filter = {
     'labelIds',
     'members',
     'assignees',
+    'userId',
     'archive',
     'hideEmpty',
     'dueAt',
@@ -731,9 +514,24 @@ export const Filter = {
       this._fields.some(fieldName => {
         return this[fieldName]._isActive();
       }) ||
+      this.excludedLabelIds._isActive() ||
       this.advanced._isActive() ||
       this.lists._isActive()
     );
+  },
+
+  // #2886: clicking an unfiltered label filters FOR it, clicking it again
+  // inverts the filter to EXCLUDE it, and a third click clears it — a
+  // three-state cycle scoped to labels only (not members, due dates, etc.).
+  toggleLabelFilter(labelId) {
+    if (this.labelIds.isSelected(labelId)) {
+      this.labelIds.remove(labelId);
+      this.excludedLabelIds.add(labelId);
+    } else if (this.excludedLabelIds.isSelected(labelId)) {
+      this.excludedLabelIds.remove(labelId);
+    } else {
+      this.labelIds.add(labelId);
+    }
   },
 
   _getMongoSelector() {
@@ -761,6 +559,18 @@ export const Filter = {
       }
     });
 
+    // #2886: merge the exclusion into the existing `labelIds` selector
+    // (rather than a `filterSelector.excludedLabelIds` key nothing reads)
+    // so a card matching `labelIds`'s $in but ALSO carrying an excluded
+    // label is still filtered out — exclusion wins over inclusion.
+    if (this.excludedLabelIds._isActive()) {
+      isFilterActive = true;
+      const excludedSelector = this.excludedLabelIds._getExcludedMongoSelector();
+      filterSelector.labelIds = filterSelector.labelIds
+        ? { ...filterSelector.labelIds, ...excludedSelector }
+        : excludedSelector;
+    }
+
     const exceptionsSelector = {
       _id: {
         $in: this._exceptions,
@@ -773,7 +583,8 @@ export const Filter = {
     if (
       this._fields.some(fieldName => {
         return this[fieldName]._isActive();
-      })
+      }) ||
+      this.excludedLabelIds._isActive()
     )
       selectors.push(filterSelector);
     if (includeEmptySelectors) selectors.push(emptySelector);
@@ -822,6 +633,35 @@ export const Filter = {
       const filter = this[fieldName];
       filter.reset();
     });
+    this.excludedLabelIds.reset();
+    this.lists.reset();
+    this.advanced.reset();
+    this.resetExceptions();
+  },
+
+  // #1751 asked for filters to survive navigating from one board to
+  // another instead of being wiped every time - the reporter's own use
+  // case is "only show my user's cards", i.e. a `members`/`assignees`
+  // filter by user id, which means the SAME thing on every board since
+  // user ids are global. `labelIds`/`excludedLabelIds`/`customFields`/
+  // `cardDependencies`/`lists`/`advanced`, by contrast, hold ids or text
+  // that are scoped to the board the user is LEAVING (a label id from
+  // board A means nothing, or the wrong thing, on board B), so those
+  // still have to reset. `config/router.js`'s board route calls this
+  // instead of `reset()` when the target board differs from the current
+  // one, keeping the plain `reset()` behavior (e.g. the "Clear filters"
+  // sidebar button, leaving to All Boards) exactly as it was everywhere
+  // else - this only changes what happens on a board-to-board hop.
+  resetBoardScoped() {
+    const boardScopedFields = [
+      'labelIds',
+      'customFields',
+      'cardDependencies',
+    ];
+    boardScopedFields.forEach(fieldName => {
+      this[fieldName].reset();
+    });
+    this.excludedLabelIds.reset();
     this.lists.reset();
     this.advanced.reset();
     this.resetExceptions();

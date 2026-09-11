@@ -8,6 +8,7 @@ import ChecklistItems from '/models/checklistItems';
 import Cards from '/models/cards';
 import { resolveCoverId } from '/models/lib/linkedCardCover';
 import { isChecklistShownAtMinicard } from '/models/lib/minicardChecklistVisibility';
+import { hasUnreadComments } from '/models/lib/unreadComments';
 import {
   parseChecklistItemTitles,
   buildChecklistItemPayload,
@@ -33,9 +34,27 @@ function getMinicardFlag(board, onMinicardField, legacyField, defaultValue) {
 // });
 
 Template.minicard.helpers({
+  // #1591: the whole-minicard fold, same shape as a list's collapsed() helper.
+  minicardCollapsed() {
+    return Utils.getCardCollapseState(this);
+  },
   showCustomFieldsOnMinicard() {
     const board = this.board();
     return board?.allowsCustomFieldsOnMinicard === true;
+  },
+  // #3078: highlight the minicard when it has comments the current user has
+  // not seen yet - a comment created after the user's last-viewed timestamp
+  // for this card (models/users.js getCardLastViewedAt/setCardLastViewed),
+  // or any comment at all when the card was never opened by this user. The
+  // decision itself is pure/tested in models/lib/unreadComments.js.
+  hasUnreadComments() {
+    const card = this;
+    if (!card || !card._id) return false;
+    const comments = ReactiveCache.getCardComments({ cardId: card._id }) || [];
+    if (!comments.length) return false;
+    const user = ReactiveCache.getCurrentUser();
+    if (!user) return false;
+    return hasUnreadComments(comments, user.getCardLastViewedAt(card._id));
   },
   // True exactly when the drag handle is rendered (see minicard.jade): the user
   // may move the card AND drag handles are on. On a coarse pointer the handle is
@@ -162,6 +181,13 @@ Template.minicard.helpers({
     const board = this.board();
     return getMinicardFlag(board, 'allowsEndDateOnMinicard', 'allowsEndDate', true);
   },
+  // #2530: accumulated spent-time badge on the minicard. Defaults to true
+  // (models/boards.js) since it was already shown unconditionally; this only
+  // lets an admin turn it off via Card Settings.
+  showSpentTime() {
+    const board = this.board();
+    return getMinicardFlag(board, 'allowsSpentTimeOnMinicard', 'allowsSpentTime', true);
+  },
   showLabels() {
     const board = this.board();
     return getMinicardFlag(board, 'allowsLabelsOnMinicard', 'allowsLabels', true);
@@ -188,6 +214,40 @@ Template.minicard.helpers({
   showChecklistCountBadge() {
     const board = this.board();
     return !!(board && board.allowsChecklistCountBadgeOnMinicard);
+  },
+  // #4285: show a card's comments directly on the minicard. Opt-in and OFF by
+  // default (see models/boards.js:allowsCommentsOnMinicard), so a board that
+  // does not use this pays no extra cost - the comments list below is only
+  // built (and the comment badge's `comments` helper already runs
+  // unconditionally for the count badge) when this returns true.
+  showCommentsOnMinicard() {
+    const board = this.board();
+    return !!(board && board.allowsCommentsOnMinicard);
+  },
+  // Compact, truncated preview of the most recent comments for the minicard.
+  // Reuses the same `comments()` card helper the comment-count badge already
+  // calls (sorted newest first) rather than a new subscription/query. Caps
+  // the number shown and the length of each, and flags whether there is more
+  // to see (either more comments than shown, or a comment that got cut) so
+  // the template can offer a "more" affordance that opens the full card -
+  // the same click-to-open behavior every minicard already has.
+  commentsForMinicard() {
+    const MAX_COMMENTS = 3;
+    const MAX_LENGTH = 140;
+    const all = this.comments() || [];
+    const shown = all.slice(0, MAX_COMMENTS).map(comment => {
+      const text = comment.text || '';
+      const truncated = text.length > MAX_LENGTH;
+      return {
+        _id: comment._id,
+        text: truncated ? `${text.slice(0, MAX_LENGTH)}…` : text,
+        truncated,
+      };
+    });
+    return {
+      comments: shown,
+      hasMore: all.length > MAX_COMMENTS || shown.some(c => c.truncated),
+    };
   },
 
   hiddenMinicardLabelText,
@@ -240,6 +300,22 @@ Template.minicard.helpers({
     return currentBoard.allowsShowListsOnMinicard || this.getRealCard().showListOnMinicard;
   },
 
+  // #2426: the swimlane a card belongs to isn't otherwise visible on its
+  // minicard in List view (Swimlanes view already groups cards by
+  // swimlane), so this board-wide toggle shows the swimlane's name at the
+  // bottom of the minicard, the same place/style as the list name above.
+  shouldShowSwimlaneNameOnMinicard() {
+    const currentBoard = this.board();
+    if (!currentBoard) return false;
+    return currentBoard.allowsSwimlaneNameOnMinicard === true;
+  },
+
+  swimlaneName() {
+    const card = this.getRealCard();
+    const swimlane = card && ReactiveCache.getSwimlane(card.swimlaneId);
+    return swimlane ? swimlane.title : '';
+  },
+
   shouldShowChecklistAtMinicard() {
     // Return checklists that should be shown on minicard
     const currentBoard = this.board();
@@ -287,6 +363,22 @@ function moveCardBy(card, delta) {
 }
 
 Template.minicard.events({
+  // #1591: the same collapse toggle as a list's `.js-collapse` handler. The
+  // minicard is a link to the card, so both preventDefault and stopPropagation
+  // are needed or toggling the caret would also open the card.
+  'click .js-collapse-minicard'(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    const card = Template.currentData();
+    const collapsed = Utils.getCardCollapseState(card);
+    Utils.setCardCollapseState(card, !collapsed);
+  },
+  'keydown .js-collapse-minicard'(event) {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    event.stopPropagation();
+    $(event.currentTarget).trigger('click');
+  },
   /* Direct title editing on the minicard is disabled. The title must remain a
    * drag surface: it moves the card without handles and pans the board with
    * handles. Keep the former handlers commented for possible future reuse.

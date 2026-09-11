@@ -965,6 +965,28 @@ publishComposite('board', async function(boardId, isArchived, generation) {
           return await ReactiveCache.getCardComments({ boardId: { $in: boardIds } }, {}, true);
         }
       },
+      // CardTextNotes for the whole board — a single cursor on the denormalized
+      // boardId, same pattern as checklists/comments above (#595).
+      {
+        async find(board) {
+          if (await boardIsLazy(board)) return null;
+          const boardIds = [board._id];
+          if (board.subtasksDefaultBoardId) boardIds.push(board.subtasksDefaultBoardId);
+          if (thisUserId && board.members) {
+            const member = findWhere(board.members, { userId: thisUserId, isActive: true });
+            if (member && (member.isNormalAssignedOnly || member.isCommentAssignedOnly || member.isReadAssignedOnly)) {
+              const cards = await ReactiveCache.getCards(
+                { boardId: { $in: boardIds }, archived: isArchived, assignees: { $in: [thisUserId] } },
+                { fields: { _id: 1 } },
+                false,
+              );
+              const cardIds = (cards || []).map(c => c._id);
+              return await ReactiveCache.getCardTextNotes({ cardId: { $in: cardIds } }, {}, true);
+            }
+          }
+          return await ReactiveCache.getCardTextNotes({ boardId: { $in: boardIds } }, {}, true);
+        }
+      },
       // Attachments for the whole board — a single cursor on the denormalized
       // meta.boardId (indexed), replacing the former one-cursor-per-card N+1 (#6480).
       {
@@ -1176,6 +1198,15 @@ publishComposite('board', async function(boardId, isArchived, generation) {
           return await ReactiveCache.getCardComments({ cardId: { $in: linkedCardIds } }, {}, true);
         }
       },
+      // CardTextNotes for linked cards
+      {
+        async find(board) {
+          const linkedCardIds = await visibleLinkedCardIds(board);
+          if (linkedCardIds.length === 0) return null;
+
+          return await ReactiveCache.getCardTextNotes({ cardId: { $in: linkedCardIds } }, {}, true);
+        }
+      },
       // Attachments for linked cards
       {
         async find(board) {
@@ -1264,13 +1295,15 @@ Meteor.methods({
     // POST /api/boards/:boardId/copy (checkAdminOrCondition with adminAccess).
     if (!board.hasAdmin(this.userId)) throw new Meteor.Error('not-authorized');
 
-    // Strip fields the caller must not control on the copy
-    const { members, permission, ...safeProperties } = properties;
+    // Strip fields the caller must not control on the copy, and pull out
+    // withoutCards (#4726 "Clone Board without cards") - it steers the copy
+    // itself rather than being a field assigned onto the board doc.
+    const { members, permission, withoutCards, ...safeProperties } = properties;
     for (const key of Object.keys(safeProperties)) {
       board[key] = safeProperties[key];
     }
 
-    return board.copy();
+    return board.copy(!!withoutCards);
   },
 
   // Board status for the sidebar Status popup: accurate counts computed on the
@@ -1316,5 +1349,23 @@ Meteor.methods({
       mode, lazy, swimlanes, lists, cards, archivedCards, labels, members, customFields,
       timeSpentTotal, cardsWithTimeSpent, overtimeCards,
     };
+  },
+
+  // Data for the board report charts (chartPlaceholderViews.jade replacements -
+  // Dashboard/Burndown/Burnup/CFD/Control/Cycle/Flow-Efficiency/Lead/Throughput/
+  // WIP-Run), computed board-scoped as requested. The calculation itself is pure
+  // (models/lib/chartCalculations.js, unit-tested there); this method's job is
+  // only to load the plain records a chart needs and hand them off.
+  async boardChartData(boardId, chartKey) {
+    check(boardId, String);
+    check(chartKey, String);
+    const board = await ReactiveCache.getBoard(boardId);
+    if (!board || !board.isVisibleBy({ _id: this.userId })) {
+      throw new Meteor.Error('not-authorized');
+    }
+    const { loadBoardChartData } = require('/server/lib/boardChartData');
+    const data = await loadBoardChartData(boardId, chartKey);
+    if (!data) throw new Meteor.Error('bad-request', 'unknown chartKey');
+    return data;
   },
 });

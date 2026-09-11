@@ -34,9 +34,19 @@ template(name="rulesList")
               i.fa.fa-eye
               | {{_ 'r-view-rule'}}
             if canAdmin
+              button.primary.wide.js-toggle-rule-enabled(type="submit" data-rule-id="{{_id}}" title="{{_ 'r-toggle-rule-enabled'}}")
+                if isEnabled
+                  i.fa.fa-toggle-on
+                  | {{_ 'r-rule-enabled'}}
+                else
+                  i.fa.fa-toggle-off
+                  | {{_ 'r-rule-disabled'}}
               button.primary.wide.js-edit-rule(type="submit" data-rule-id="{{_id}}")
                 i.fa.fa-pencil
                 | {{_ 'r-edit-rule'}}
+              button.primary.wide.js-edit-rule-full(type="submit" data-rule-id="{{_id}}")
+                i.fa.fa-sliders
+                | {{_ 'r-edit-rule-trigger-action'}}
               button.primary.wide.js-delete-rule(type="submit" data-rule-id="{{_id}}")
                 i.fa.fa-trash
                 | {{_ 'r-delete-rule'}}
@@ -48,3 +58,4 @@ template(name="rulesList")
           i.fa.fa-plus
           | {{_ 'r-add-rule'}}
         input(type=text,placeholder="{{_ 'r-new-rule-name' }}",id="ruleTitle")
+        p.rules-field-error-message.js-rule-title-error.hide-element {{_ 'r-rule-title-required'}}

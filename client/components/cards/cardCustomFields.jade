@@ -8,7 +8,7 @@
   (client/components/sidebar/sidebarCustomFields.jade), not second copies.
 template(name="cardCustomFieldsPopup")
     ul.pop-over-list
-        each board.customFields
+        each customFields
             li.item
                 a.name.js-select-field(href="#" title="{{_ 'show-field-on-card'}}")
                     //- The same animated checkbox used by Admin Panel /
@@ -21,7 +21,7 @@ template(name="cardCustomFieldsPopup")
                     i.fa.fa-pencil-square-o(aria-hidden="true")
     //- The rule separates the list above from "Add custom field" below - with
       no custom field yet, there is nothing above it to separate from.
-    if board.customFields.length
+    if customFields.length
         hr
     a.quiet-button.full.js-open-create-custom-field
         i.fa.fa-plus
@@ -178,6 +178,31 @@ template(name="cardCustomField-dropdown")
         if value
             +viewer
                 = selectedItem
+
+template(name="cardCustomField-dropdownMultiSelect")
+    if canModifyCard
+        +inlinedForm(classNames="js-card-customfield-dropdown-multi-select")
+            +customFieldCopyButton(value=selectedNames)
+            each items
+                a.flex.js-card-customfield-dropdown-multi-item(data-id=_id class="{{#if isChecked _id}}is-checked{{/if}}")
+                    .materialCheckBox(class="{{#if isChecked _id}}is-checked{{/if}}")
+                    +viewer
+                        = name
+            .edit-controls.clearfix
+                button.primary(type="submit") {{_ 'save'}}
+                a.fa.fa-times-thin.js-close-inlined-form(title="{{_ 'close'}}")
+        else
+            button.js-open-inlined-form.js-custom-field-edit-trigger(type="button" hidden)
+            a.js-edit-card-custom-field-value(title="{{_ 'edit'}}" aria-label="{{_ 'edit'}}")
+                if value.length
+                    +viewer
+                        = selectedNames
+                else
+                    i.fa.fa-pencil-square-o(aria-hidden="true")
+    else
+        if value.length
+            +viewer
+                = selectedNames
 
 template(name="cardCustomField-stringtemplate")
     if canModifyCard

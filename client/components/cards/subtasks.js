@@ -24,6 +24,12 @@ Template.subtasks.events({
     const title = textarea.value.trim();
     const contextCard = ReactiveCache.getCard(this.cardId);
     const cardId = contextCard?.getRealId ? contextCard.getRealId() : this.cardId;
+    // #2184: optional one-time copy of the parent card's CURRENT labels onto
+    // the new subtask, at creation time only -- not an ongoing sync.
+    const inheritLabelsCheckbox = tpl.find(
+      'input.js-add-subtask-inherit-labels',
+    );
+    const inheritLabels = !!(inheritLabelsCheckbox && inheritLabelsCheckbox.checked);
 
     if (title) {
       // Subtask creation is performed server-side by the `addSubtaskCard` Meteor
@@ -34,7 +40,12 @@ Template.subtasks.events({
       // (#4782), and the method applies the destination board's automatic
       // custom fields to the new subtask (#4037 / #3562).
       try {
-        const _id = await Meteor.callAsync('addSubtaskCard', cardId, title);
+        const _id = await Meteor.callAsync(
+          'addSubtaskCard',
+          cardId,
+          title,
+          inheritLabels,
+        );
 
         if (!_id) {
           throw new Error('The server could not create the subtask.');
@@ -51,6 +62,9 @@ Template.subtasks.events({
             .click();
         }, 100);
         textarea.value = '';
+        if (inheritLabelsCheckbox) {
+          inheritLabelsCheckbox.checked = false;
+        }
         textarea.focus();
       } catch (error) {
         alert(error?.reason || error?.message || 'Could not create the subtask.');
@@ -71,6 +85,11 @@ Template.subtasks.events({
       await subtask.archive();
     }
   },
+  // #3626: add an EXISTING card as a subtask of the current card, picked from
+  // a search popup, instead of only being able to create a brand-new one.
+  'click .js-add-existing-subtask'(event, tpl) {
+    Popup.open('addExistingSubtask').call(this, event);
+  },
   keydown(event) {
     //If user press enter key inside a form, submit it
     //Unless the user is also holding down the 'shift' key
@@ -84,6 +103,11 @@ Template.subtasks.events({
 
 Template.subtasks.onCreated(function () {
   this.toggleDeleteDialog = new ReactiveVar(false);
+  // #3409: archived subtasks stay in the list, shown as completed, instead of
+  // vanishing. This toggle hides them again for anyone who wants the shorter
+  // list — a client-side ReactiveVar, not a persisted field, because it is a
+  // per-viewing preference of this subtask list, not data about the card.
+  this.hideCompletedSubtasks = new ReactiveVar(false);
 });
 
 Template.subtasks.helpers({
@@ -92,6 +116,29 @@ Template.subtasks.helpers({
   },
   toggleDeleteDialog() {
     return Template.instance().toggleDeleteDialog;
+  },
+  hideCompletedSubtasks() {
+    return Template.instance().hideCompletedSubtasks.get();
+  },
+  // #3409: archived (= completed) subtasks are always fetched — currentCard.subtasks()
+  // used to filter them out entirely — and only hidden here, on the client,
+  // when the toggle above is on. The template's own data context is
+  // {cardId}, not the card itself (see +subtasks(cardId = _id) below), so the
+  // card is looked up the same way the add-subtask handler above does.
+  visibleSubtasks() {
+    const card = ReactiveCache.getCard(this.cardId);
+    const allSubtasks = card && card.allSubtasks ? card.allSubtasks() : [];
+    if (Template.instance().hideCompletedSubtasks.get()) {
+      return allSubtasks.filter(subtask => !subtask.archived);
+    }
+    return allSubtasks;
+  },
+});
+
+Template.subtasks.events({
+  'click .js-toggle-hide-completed-subtasks'(event, tpl) {
+    event.preventDefault();
+    tpl.hideCompletedSubtasks.set(!tpl.hideCompletedSubtasks.get());
   },
 });
 
@@ -172,6 +219,92 @@ Template.subtaskActionsPopup.events({
       await subtask.archive();
     }
   }),
+});
+
+// #3626: "add an existing card as a subtask" popup. Search is scoped to the
+// current card's own board (a card and its subtasks normally live on the
+// dedicated "subtasks" board, but this also covers a card being turned into
+// a subtask on its own board), and picking a result reuses `setParentId` --
+// the exact same method `card.js`/other callers use to (re)parent a card --
+// rather than creating a new card the way `addSubtaskCard` does.
+Template.addExistingSubtaskPopup.onCreated(function () {
+  this.searchTerm = new ReactiveVar('');
+});
+
+function existingSubtaskCandidatesFor(tpl) {
+  const contextCard = ReactiveCache.getCard(Template.currentData().cardId);
+  if (!contextCard) {
+    return [];
+  }
+  const cardId = contextCard.getRealId
+    ? contextCard.getRealId()
+    : contextCard._id;
+  const term = (tpl.searchTerm.get() || '').trim();
+  const selector = {
+    archived: false,
+    boardId: contextCard.boardId,
+    _id: { $ne: cardId },
+    // A card already a subtask of this one has nothing to gain from being
+    // picked again.
+    parentId: { $ne: cardId },
+    type: { $nin: ['template-card', 'cardType-linkedCard', 'cardType-linkedBoard'] },
+  };
+  if (term) {
+    selector.title = { $regex: term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' };
+  }
+  const cards = ReactiveCache.getCards(selector, { sort: { sort: 1 }, limit: 50 });
+  // Never offer a card that is already an ancestor of this one -- setParentId
+  // refuses it anyway (#3328 loop guard), so filter it out up front instead
+  // of letting the user pick it and see an error.
+  return (cards || []).filter(card => {
+    let crt = card;
+    const seen = new Set();
+    while (crt && crt.parentId && !seen.has(crt.parentId)) {
+      if (crt.parentId === cardId) {
+        return false;
+      }
+      seen.add(crt.parentId);
+      crt = ReactiveCache.getCard(crt.parentId);
+    }
+    return true;
+  });
+}
+
+Template.addExistingSubtaskPopup.helpers({
+  existingSubtaskCandidates() {
+    return existingSubtaskCandidatesFor(Template.instance());
+  },
+  noExistingSubtaskCandidates() {
+    return existingSubtaskCandidatesFor(Template.instance()).length === 0;
+  },
+});
+
+Template.addExistingSubtaskPopup.events({
+  'keyup .js-add-existing-subtask-search'(event, tpl) {
+    tpl.searchTerm.set(event.target.value);
+  },
+  submit(event) {
+    event.preventDefault();
+  },
+  async 'click .js-select-existing-subtask'(event) {
+    event.preventDefault();
+    const cardId = $(event.currentTarget).data('id');
+    const contextCard = ReactiveCache.getCard(Template.currentData().cardId);
+    const targetCard = ReactiveCache.getCard(cardId);
+    if (!contextCard || !targetCard) {
+      Popup.close();
+      return;
+    }
+    const parentId = contextCard.getRealId
+      ? contextCard.getRealId()
+      : contextCard._id;
+    try {
+      await targetCard.setParentId(parentId);
+    } catch (error) {
+      alert(error?.reason || error?.message || 'Could not add the existing card as a subtask.');
+    }
+    Popup.close();
+  },
 });
 
 Template.editSubtaskItemForm.helpers({

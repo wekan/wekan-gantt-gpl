@@ -35,6 +35,8 @@ template(name="people")
               +general
             else if emailSetting.get
               +email
+            else if notifySetting.get
+              +notificationSettingsPopup(scope="admin")
             else if orgSetting.get
               +orgGeneral(orgTablePageData)
             else if teamSetting.get
@@ -284,6 +286,14 @@ template(name="peopleRow")
       else
         span.text-green.js-toggle-lock-status.emoji-icon(data-user-id=userData._id, data-is-locked="false", title="{{_ 'accounts-lockout-user-unlocked'}}")
           i.fa.fa-unlock
+    td.last-active-status
+      if lastActiveAt
+        if isRecentlyActive
+          span.text-green.emoji-icon(title="{{_ 'admin-people-currently-online'}}")
+            i.fa.fa-circle
+        | {{ displayDate lastActiveAt 'LLL' }}
+      else
+        | -
     if userData.loginDisabled
       td <s>{{ displayDate userData.createdAt 'LLL' }}</s>
     else
@@ -703,6 +713,15 @@ template(name="settingsUserPopup")
         | {{_ 'impersonate-user'}}
     br
     hr
+    li
+      form
+        label.hide.userId(type="text" value=user._id)
+        label
+          | {{_ 'anonymize-account-confirm-popup' }}
+        br
+        div.buttonsContainer
+          input#anonymizeButton.card-details-red.right.wide(type="button" value="{{_ 'anonymize-account'}}")
+    br
     li
       form
         label.hide.userId(type="text" value=user._id)

@@ -7,6 +7,13 @@ import {
   isChecklistShownAtMinicard,
   toggledChecklistAtMinicard,
 } from '/models/lib/minicardChecklistVisibility';
+import {
+  buildCopiedChecklistDoc,
+  buildCopiedItemDoc,
+  firstAppendSort,
+} from '/models/lib/checklistTemplateCopy';
+import { CHECKLIST_RESET_INTERVALS } from '/models/lib/checklistResetSchedule';
+import { selectBulkCheckItemIds } from '/models/lib/checklistBulkCheck';
 const { SimpleSchema } = require('/imports/simpleSchema');
 
 const Checklists = new Mongo.Collection('checklists');
@@ -108,11 +115,45 @@ Checklists.attachSchema(
       type: Boolean,
       optional: true,
     },
+    resetInterval: {
+      /**
+       * #3818 / #4729: automatically uncheck all items of this checklist on a
+       * recurring schedule. 'none' (default) never resets automatically.
+       * See models/lib/checklistResetSchedule.js and
+       * server/checklistResetSchedule.js for the due-date calculation and the
+       * periodic job that applies it.
+       */
+      type: String,
+      allowedValues: CHECKLIST_RESET_INTERVALS,
+      defaultValue: 'none',
+      optional: true,
+    },
+    lastResetAt: {
+      /**
+       * When the automatic-reset job last unchecked this checklist's items.
+       * Falls back to createdAt (in isChecklistResetDue()) until the first
+       * automatic reset happens.
+       */
+      type: Date,
+      optional: true,
+    },
   }),
 );
 
 Checklists.helpers({
-  async copy(newCardId) {
+  /**
+   * Copy this checklist (and its items) onto another card.
+   * @param newCardId the destination card
+   * @param options.resetChecked when true, every copied item is inserted
+   *   unchecked regardless of its source `isFinished` state. Used when
+   *   applying a template checklist onto an existing card (#4017), where a
+   *   template's items should never arrive pre-checked. Ordinary
+   *   copy/duplicate keeps the source checked state, so this defaults to
+   *   false so existing callers (e.g. the "Copy Checklist" popup, card
+   *   copy) are unaffected.
+   */
+  async copy(newCardId, options = {}) {
+    const { resetChecked = false } = options;
     // #5688: copy the checklist and its items with `.direct` so the per-document
     // before/after.insert hooks do NOT fire. The after.insert hooks look up the
     // card and insert an activity per checklist item — for a card with many
@@ -123,22 +164,26 @@ Checklists.helpers({
     const newCard = await ReactiveCache.getCard(newCardId);
     const boardId = newCard && newCard.boardId;
 
-    const copyObj = Object.assign({}, this);
-    delete copyObj._id;
-    copyObj.cardId = newCardId;
-    copyObj.boardId = boardId;
+    const copyObj = buildCopiedChecklistDoc(this, {
+      newCardId,
+      boardId,
+      sort: this.sort,
+    });
     copyObj.createdAt = new Date();
     const newChecklistId = await Checklists.direct.insertAsync(copyObj);
 
     const items = await ReactiveCache.getChecklistItems({ checklistId: this._id });
     for (const item of items) {
-      const copyItem = Object.assign({}, item);
-      delete copyItem._id;
-      copyItem.checklistId = newChecklistId;
-      copyItem.cardId = newCardId;
-      copyItem.boardId = boardId;
+      const copyItem = buildCopiedItemDoc(item, {
+        newChecklistId,
+        newCardId,
+        boardId,
+        resetChecked,
+      });
       await ChecklistItems.direct.insertAsync(copyItem);
     }
+
+    return newChecklistId;
   },
 
   itemCount() {
@@ -201,16 +246,28 @@ Checklists.helpers({
     }
     return ret;
   },
+  // #2473: "Check all items" / "Uncheck all items" on the checklist's action
+  // menu. selectBulkCheckItemIds() (models/lib/checklistBulkCheck.js, unit
+  // tested there) is what decides WHICH items belong to this checklist - kept
+  // pure/testable so "every item of this checklist, regardless of starting
+  // state" and "items of any other checklist are untouched" can be asserted
+  // without a database.
   async checkAllItems() {
     const checkItems = await ReactiveCache.getChecklistItems({ checklistId: this._id });
+    const ids = selectBulkCheckItemIds(checkItems, this._id);
     for (const item of checkItems) {
-      await item.check();
+      if (ids.includes(item._id)) {
+        await item.check();
+      }
     }
   },
   async uncheckAllItems() {
     const checkItems = await ReactiveCache.getChecklistItems({ checklistId: this._id });
+    const ids = selectBulkCheckItemIds(checkItems, this._id);
     for (const item of checkItems) {
-      await item.uncheck();
+      if (ids.includes(item._id)) {
+        await item.uncheck();
+      }
     }
   },
   itemIndex(itemId) {
@@ -255,7 +312,56 @@ Checklists.helpers({
       },
     });
   },
+  /** #3818 / #4729: set (or clear, with 'none') this checklist's automatic-reset
+   * interval. Does not itself uncheck anything - the periodic job in
+   * server/checklistResetSchedule.js does that once the interval comes due. */
+  async setResetInterval(resetInterval) {
+    if (!CHECKLIST_RESET_INTERVALS.includes(resetInterval)) return undefined;
+    return await Checklists.updateAsync(this._id, {
+      $set: { resetInterval },
+    });
+  },
 });
+
+/**
+ * Append every checklist (and its items) of a source card onto a destination
+ * card, in source order, leaving the destination card's existing checklists
+ * untouched (#4017: apply a template card's checklists onto an already
+ * existing card). Copied items always come in unchecked, regardless of the
+ * source card's own checked state — a template being applied should never
+ * pre-check its target. Reuses the same per-checklist `copy()` helper the
+ * "Copy Checklist" popup and card-copy (`Cards.copy`) already use, so the
+ * copy semantics (fresh ids, `.direct` inserts to skip the per-item activity
+ * storm, board re-homing) stay in one place.
+ * @param sourceCardId the template/source card whose checklists are copied
+ * @param targetCardId the existing card the checklists are appended onto
+ * @returns the array of newly created checklist ids, in source order
+ */
+Checklists.copyAllFromCardToCard = async function (sourceCardId, targetCardId) {
+  const sourceChecklists = await ReactiveCache.getChecklists(
+    { cardId: sourceCardId },
+    { sort: { sort: 1 } },
+  );
+
+  // Place the appended checklists after whatever the target card already has,
+  // in source order, rather than reusing the source card's own sort values
+  // (which could collide with, or sort ahead of, the target's existing
+  // checklists).
+  const targetChecklists = await ReactiveCache.getChecklists(
+    { cardId: targetCardId },
+    { sort: { sort: 1 } },
+  );
+  let nextSort = firstAppendSort(targetChecklists);
+
+  const newChecklistIds = [];
+  for (const checklist of sourceChecklists) {
+    const newChecklistId = await checklist.copy(targetCardId, { resetChecked: true });
+    await Checklists.direct.updateAsync(newChecklistId, { $set: { sort: nextSort } });
+    nextSort += 1;
+    newChecklistIds.push(newChecklistId);
+  }
+  return newChecklistIds;
+};
 
 Checklists.before.insert((userId, doc) => {
   doc.createdAt = new Date();

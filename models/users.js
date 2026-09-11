@@ -323,6 +323,23 @@ Users.attachSchema(
     'profile.emailBuffer.$': {
       type: String,
     },
+    'profile.notifyOverrideTray': {
+      /**
+       * Member-level override of the in-app notification tray (3-tier
+       * Notification Settings system, see models/lib/notificationSettings.js).
+       * Unset means "use the board override, or the Admin Panel default".
+       */
+      type: Boolean,
+      optional: true,
+    },
+    'profile.notifyOverrideEmail': {
+      /**
+       * Member-level override of email notifications (see
+       * models/lib/notificationSettings.js).
+       */
+      type: Boolean,
+      optional: true,
+    },
     'profile.fullname': {
       /**
        * full name of the user
@@ -372,6 +389,14 @@ Users.attachSchema(
        * per-user preference: in multi-line editors (card title/description and
        * other inlined forms) submit on plain Enter (Shift+Enter for a newline)
        * instead of the default Ctrl/Cmd+Enter. Off by default. See #4236/#6480.
+       */
+      type: Boolean,
+      optional: true,
+    },
+    'profile.checklistDingSound': {
+      /**
+       * #5427: per-user preference - play a short synthesized "ding" when a
+       * checklist item is checked off. Off by default.
        */
       type: Boolean,
       optional: true,
@@ -529,6 +554,17 @@ Users.attachSchema(
       type: Boolean,
       optional: true,
     },
+    'profile.showLabelTextOverride': {
+      /**
+       * #4256: optional per-user override of a board's "show label text on
+       * minicards" setting (Boards.showLabelText), mirroring the shape of
+       * profile.globalThemeColor - absent/null = no override, follow the
+       * board's own setting; true/false = always show/hide regardless of
+       * which board is being viewed.
+       */
+      type: Boolean,
+      optional: true,
+    },
     'profile.initials': {
       /**
        * initials of the user
@@ -665,6 +701,36 @@ Users.attachSchema(
     'profile.starredBoards.$': {
       type: String,
     },
+    'profile.starredSwimlanes': {
+      /**
+       * list of starred swimlane IDs (#1172)
+       */
+      type: Array,
+      optional: true,
+    },
+    'profile.starredSwimlanes.$': {
+      type: String,
+    },
+    'profile.starredLists': {
+      /**
+       * list of starred list IDs (#1172)
+       */
+      type: Array,
+      optional: true,
+    },
+    'profile.starredLists.$': {
+      type: String,
+    },
+    'profile.starredCards': {
+      /**
+       * list of starred card IDs (#1172)
+       */
+      type: Array,
+      optional: true,
+    },
+    'profile.starredCards.$': {
+      type: String,
+    },
     'profile.starredPages': {
       /**
        * the starred PAGES - bookmarks. A board is starred by id; a page has no
@@ -697,6 +763,28 @@ Users.attachSchema(
       type: String,
       optional: true,
     },
+    'profile.defaultBoardTemplateId': {
+      /**
+       * #4205: the "Board Templates" swimlane card (cardType-linkedBoard) the
+       * user has marked as their default. When set, creating a board with the
+       * plain "type a name and click Create" flow applies this template
+       * instead of starting blank. Empty/unset means unchanged (blank board)
+       * behavior, exactly as before this feature.
+       */
+      type: String,
+      optional: true,
+    },
+    'profile.defaultBoardTemplateBoardId': {
+      /**
+       * #4205: the actual template board (type 'template-board', the card's
+       * `linkedId`) that `profile.defaultBoardTemplateId` points at, kept in
+       * sync with it. Denormalized so board creation can pass it straight to
+       * the same `copyBoard` method the manual "Template" picker already uses
+       * (client/components/lists/listBody.js), without a second subscription.
+       */
+      type: String,
+      optional: true,
+    },
     'profile.icode': {
       /**
        * icode
@@ -714,11 +802,18 @@ Users.attachSchema(
         'board-view-swimlanes',
         'board-view-lists',
         'board-view-cal',
+        'board-view-multiboard-cal',
         'board-view-gantt',
+        'board-view-gantt-frappe',
+        'board-view-gantt-dhtmlx',
         'board-view-table',
         'board-view-stats',
         'board-view-time',
+        'board-view-timeline',
+        'board-view-group-by-assignee',
+        'board-view-roadmap',
         'board-view-dashboard',
+        'board-view-bigboard',
         'board-view-burndown',
         'board-view-burnup',
         'board-view-cumulative-flow',
@@ -728,6 +823,7 @@ Users.attachSchema(
         'board-view-lead-time',
         'board-view-throughput-histogram',
         'board-view-wip-run',
+        'board-view-pulse',
       ],
     },
     'profile.listSortBy': {
@@ -871,6 +967,15 @@ Users.attachSchema(
       defaultValue: {},
       blackbox: true,
     },
+    'profile.collapsedCards': {
+      /**
+       * Per-user collapsed state for whole minicards (#1591).
+       * profile[boardId][cardId] = true|false
+       */
+      type: Object,
+      defaultValue: {},
+      blackbox: true,
+    },
     'profile.collapsedSwimlanes': {
       /**
        * Per-user collapsed state for swimlanes.
@@ -896,6 +1001,25 @@ Users.attachSchema(
        * checklist and therefore changes what EVERYONE on the board sees.
        * Folding something to get it out of your way is a view preference, not
        * an edit to the card.
+       */
+      type: Object,
+      defaultValue: {},
+      blackbox: true,
+    },
+    'profile.cardLastViews': {
+      /**
+       * Per-user, per-card "last viewed" timestamp (#3078).
+       * profile.cardLastViews[cardId] = Date
+       *
+       * Set when the user opens a card's detail view (Template.cardDetails
+       * onCreated). Used to decide whether a card's minicard should show the
+       * "has unread comments" highlight: a comment created after this
+       * timestamp is unread, and a card that was never opened is treated as
+       * unread whenever it has any comment at all (see
+       * models/lib/unreadComments.js). Same shape as collapsedCardSections
+       * above - a blackbox map keyed by cardId - because it is the same kind
+       * of thing: per-user view state, not an edit to the card, so every
+       * board member can have their own.
        */
       type: Object,
       defaultValue: {},
@@ -930,6 +1054,19 @@ Users.attachSchema(
       optional: true,
       allowedValues: ['YYYY-MM-DD', 'DD-MM-YYYY', 'MM-DD-YYYY'],
       defaultValue: 'YYYY-MM-DD',
+    },
+    'profile.calendarSystem': {
+      /**
+       * #4335: DISPLAY-ONLY calendar system used to render minicard and card
+       * detail dates (received/start/due/end). Dates are always stored as
+       * Gregorian `Date` objects; this only switches the rendered string to
+       * the Jalali (Persian/Solar Hijri) calendar for the viewing user. Date
+       * pickers/inputs are unaffected and stay Gregorian.
+       */
+      type: String,
+      optional: true,
+      allowedValues: ['gregorian', 'jalali'],
+      defaultValue: 'gregorian',
     },
     'profile.mobileMode': {
       /**
@@ -1029,6 +1166,23 @@ Users.attachSchema(
       type: String,
     },
     lastConnectionDate: {
+      type: Date,
+      optional: true,
+    },
+    anonymized: {
+      /**
+       * #2731: true once anonymizeUser has scrubbed this account's PII in
+       * place (username/profile/emails replaced with a placeholder,
+       * loginDisabled set). Board/card/comment references to this userId are
+       * left untouched - see server/models/users.js anonymizeUser.
+       */
+      type: Boolean,
+      optional: true,
+    },
+    anonymizedAt: {
+      /**
+       * When anonymizeUser last ran for this account.
+       */
       type: Date,
       optional: true,
     },
@@ -1372,6 +1526,42 @@ Users.helpers({
     return Boards.userBoards(this._id, false, { _id: { $in: starredBoards } }, {});
   },
 
+  // #1172: the same per-user id-array shape as starredBoards, generalized to
+  // swimlanes, lists and cards so any of the four can be starred and reached
+  // from the "Starred" page and the header bookmarks dropdown.
+  starredSwimlanes() {
+    const { starredSwimlanes = [] } = this.profile || {};
+    if (!starredSwimlanes.length) return [];
+    return ReactiveCache.getSwimlanes({ _id: { $in: starredSwimlanes } });
+  },
+
+  starredLists() {
+    const { starredLists = [] } = this.profile || {};
+    if (!starredLists.length) return [];
+    return ReactiveCache.getLists({ _id: { $in: starredLists } });
+  },
+
+  starredCards() {
+    const { starredCards = [] } = this.profile || {};
+    if (!starredCards.length) return [];
+    return ReactiveCache.getCards({ _id: { $in: starredCards } });
+  },
+
+  hasStarredSwimlane(swimlaneId) {
+    const { starredSwimlanes = [] } = this.profile || {};
+    return starredSwimlanes.includes(swimlaneId);
+  },
+
+  hasStarredList(listId) {
+    const { starredLists = [] } = this.profile || {};
+    return starredLists.includes(listId);
+  },
+
+  hasStarredCard(cardId) {
+    const { starredCards = [] } = this.profile || {};
+    return starredCards.includes(cardId);
+  },
+
   // The starred PAGES - the bookmarks. Boards are starred by id; a page has no
   // id, so it is stored as the pair a bookmark is: where it goes and what to
   // call it. docs/Features/Board/Starred.md
@@ -1389,7 +1579,13 @@ Users.helpers({
   // places you keep. A count that left the pages out would say 2 above a
   // dropdown showing five rows.
   starredCount() {
-    return this.starredBoards().length + this.starredPages().length;
+    return (
+      this.starredBoards().length +
+      this.starredPages().length +
+      this.starredSwimlanes().length +
+      this.starredLists().length +
+      this.starredCards().length
+    );
   },
 
   hasStarred(boardId) {
@@ -1404,6 +1600,17 @@ Users.helpers({
 
   isDefaultBoard(boardId) {
     return this.getDefaultBoardId() === boardId;
+  },
+
+  // #4205: the "Board Templates" card the user has marked as their default
+  // template, applied automatically by the plain "type a name and click
+  // Create" board-creation flow.
+  getDefaultBoardTemplateId() {
+    return (this.profile && this.profile.defaultBoardTemplateId) || null;
+  },
+
+  isDefaultBoardTemplate(cardId) {
+    return this.getDefaultBoardTemplateId() === cardId;
   },
 
   isAutoWidth(boardId) {
@@ -1632,6 +1839,18 @@ Users.helpers({
     return _ret;
   },
 
+  /** returns all confirmed "copy checklist(s) from template card" dialog
+   * field values (#4017)
+   * <li> the board, swimlane, list and (source) card id is stored for each board
+   */
+  getCopyChecklistFromTemplateDialogOptions() {
+    let _ret = {};
+    if (this.profile && this.profile.copyChecklistFromTemplateDialog) {
+      _ret = this.profile.copyChecklistFromTemplateDialog;
+    }
+    return _ret;
+  },
+
   hasTag(tag) {
     const { tags = [] } = this.profile || {};
     return tags.includes(tag);
@@ -1697,6 +1916,13 @@ Users.helpers({
     return profile.submitOnEnter || false;
   },
 
+  // #5427: does this user want a short "ding" sound when a checklist item is
+  // checked off? Off by default.
+  hasChecklistDingSound() {
+    const profile = this.profile || {};
+    return profile.checklistDingSound || false;
+  },
+
   // #6531: does this user want several cards open at once? Off by default, so a
   // click opens the card it was aimed at and closes the previous one.
   hasOpenManyCardsAtOnce() {
@@ -1741,6 +1967,15 @@ Users.helpers({
   hasHiddenMinicardLabelText() {
     const profile = this.profile || {};
     return profile.hiddenMinicardLabelText || false;
+  },
+
+  // #4256: null when there is no override (follow the board's own setting),
+  // else the user's explicit true/false override.
+  getShowLabelTextOverride() {
+    const profile = this.profile || {};
+    return typeof profile.showLabelTextOverride === 'boolean'
+      ? profile.showLabelTextOverride
+      : null;
   },
 
   hasRescuedCardDescription() {
@@ -1811,6 +2046,11 @@ Users.helpers({
   getDateFormat() {
     const profile = this.profile || {};
     return profile.dateFormat || 'YYYY-MM-DD';
+  },
+
+  getCalendarSystem() {
+    const profile = this.profile || {};
+    return profile.calendarSystem || 'gregorian';
   },
 
   getTemplatesBoardId() {
@@ -2006,6 +2246,22 @@ Users.helpers({
     }
     return null;
   },
+  // #1591: the whole-minicard collapse, same shape as getCollapsedList above.
+  getCollapsedCard(boardId, cardId) {
+    const { collapsedCards = {} } = this.profile || {};
+    if (collapsedCards[boardId] && typeof collapsedCards[boardId][cardId] === 'boolean') {
+      return collapsedCards[boardId][cardId];
+    }
+    return null;
+  },
+  /** Logged-in-only, unlike getCollapsedListFromStorage: see the comment on
+   * Utils.getCardCollapseState for why there is no anonymous/cookie fallback. */
+  getCollapsedCardFromStorage(boardId, cardId) {
+    if (this._id) {
+      return this.getCollapsedCard(boardId, cardId);
+    }
+    return null;
+  },
   /** #1591: null means "never set", so the caller can apply its own default
    * (expanded) instead of a stored false being indistinguishable from absent. */
   getCollapsedCardSection(cardId, sectionKey) {
@@ -2019,6 +2275,11 @@ Users.helpers({
   /** The key for one checklist, so the opened card and the minicard agree. */
   checklistSectionKey(checklistId) {
     return `checklist-${checklistId}`;
+  },
+  /** #3078: when this user last opened this card, or null if never. */
+  getCardLastViewedAt(cardId) {
+    const { cardLastViews = {} } = this.profile || {};
+    return cardLastViews[cardId] || null;
   },
   setCollapsedListToStorage(boardId, listId, collapsed) {
     // Logged-in users: save to profile
@@ -2153,9 +2414,32 @@ Users.helpers({
     return await Users.updateAsync(this._id, { $set: { 'profile.copyChecklistDialog': currentOptions } });
   },
 
+  async setCopyChecklistFromTemplateDialogOption(boardId, options) {
+    let currentOptions = this.getCopyChecklistFromTemplateDialogOptions();
+    currentOptions[boardId] = options;
+    return await Users.updateAsync(this._id, { $set: { 'profile.copyChecklistFromTemplateDialog': currentOptions } });
+  },
+
   async toggleBoardStar(boardId) {
     const queryKind = this.hasStarred(boardId) ? '$pull' : '$addToSet';
     return await Users.updateAsync(this._id, { [queryKind]: { 'profile.starredBoards': boardId } });
+  },
+
+  // #1172: same toggle pattern as toggleBoardStar, targeting the other three
+  // id-array fields.
+  async toggleSwimlaneStar(swimlaneId) {
+    const queryKind = this.hasStarredSwimlane(swimlaneId) ? '$pull' : '$addToSet';
+    return await Users.updateAsync(this._id, { [queryKind]: { 'profile.starredSwimlanes': swimlaneId } });
+  },
+
+  async toggleListStar(listId) {
+    const queryKind = this.hasStarredList(listId) ? '$pull' : '$addToSet';
+    return await Users.updateAsync(this._id, { [queryKind]: { 'profile.starredLists': listId } });
+  },
+
+  async toggleCardStar(cardId) {
+    const queryKind = this.hasStarredCard(cardId) ? '$pull' : '$addToSet';
+    return await Users.updateAsync(this._id, { [queryKind]: { 'profile.starredCards': cardId } });
   },
 
   // #2220: toggle this board as the user's default "home" board (opened after
@@ -2165,6 +2449,16 @@ Users.helpers({
       return await Users.updateAsync(this._id, { $unset: { 'profile.defaultBoardId': '' } });
     }
     return await Users.updateAsync(this._id, { $set: { 'profile.defaultBoardId': boardId } });
+  },
+
+  // #4205: toggle this "Board Templates" card as the user's default board
+  // template. Clicking the current default clears it (back to blank-board
+  // creation, unchanged from before this feature).
+  async toggleDefaultBoardTemplate(cardId) {
+    if (this.isDefaultBoardTemplate(cardId)) {
+      return await Users.updateAsync(this._id, { $unset: { 'profile.defaultBoardTemplateId': '' } });
+    }
+    return await Users.updateAsync(this._id, { $set: { 'profile.defaultBoardTemplateId': cardId } });
   },
 
   async setBoardSortIndex(boardId, sortIndex) {
@@ -2351,6 +2645,22 @@ Users.helpers({
     return await Users.updateAsync(this._id, { $set: { 'profile.avatarUrl': avatarUrl } });
   },
 
+  // Member-level override of the 3-tier Notification Settings system (see
+  // models/lib/notificationSettings.js): admin default -> board override ->
+  // member override, the same precedence the board/member theme override
+  // uses. `service` is 'tray' or 'email'; `value` is true/false to override,
+  // or null/undefined to clear it and fall back to the board/admin default.
+  async setNotifyOverride(service, value) {
+    const field = service === 'email' ? 'profile.notifyOverrideEmail'
+      : service === 'tray' ? 'profile.notifyOverrideTray'
+      : null;
+    if (!field) return false;
+    const modifier = value === true || value === false
+      ? { $set: { [field]: value } }
+      : { $unset: { [field]: '' } };
+    return await Users.updateAsync(this._id, modifier);
+  },
+
   async setShowCardsCountAt(limit) {
     return await Users.updateAsync(this._id, { $set: { 'profile.showCardsCountAt': limit } });
   },
@@ -2361,6 +2671,10 @@ Users.helpers({
 
   async setDateFormat(dateFormat) {
     return await Users.updateAsync(this._id, { $set: { 'profile.dateFormat': dateFormat } });
+  },
+
+  async setCalendarSystem(calendarSystem) {
+    return await Users.updateAsync(this._id, { $set: { 'profile.calendarSystem': calendarSystem } });
   },
 
   async setBoardView(view) {
@@ -2395,6 +2709,13 @@ Users.helpers({
     return await Users.updateAsync(this._id, { $set: { 'profile.collapsedLists': current } });
   },
 
+  async setCollapsedCard(boardId, cardId, collapsed) {
+    const current = (this.profile && this.profile.collapsedCards) || {};
+    if (!current[boardId]) current[boardId] = {};
+    current[boardId][cardId] = !!collapsed;
+    return await Users.updateAsync(this._id, { $set: { 'profile.collapsedCards': current } });
+  },
+
   async setCollapsedSwimlane(boardId, swimlaneId, collapsed) {
     const current = (this.profile && this.profile.collapsedSwimlanes) || {};
     if (!current[boardId]) current[boardId] = {};
@@ -2407,6 +2728,14 @@ Users.helpers({
     if (!current[cardId]) current[cardId] = {};
     current[cardId][sectionKey] = !!collapsed;
     return await Users.updateAsync(this._id, { $set: { 'profile.collapsedCardSections': current } });
+  },
+
+  /** #3078: record that this user just opened this card, clearing its
+   * "unread comments" highlight on every minicard that shows it. */
+  async setCardLastViewed(cardId) {
+    const current = (this.profile && this.profile.cardLastViews) || {};
+    current[cardId] = new Date();
+    return await Users.updateAsync(this._id, { $set: { 'profile.cardLastViews': current } });
   },
 
   async setMobileMode(enabled) {

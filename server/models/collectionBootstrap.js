@@ -48,6 +48,13 @@ Meteor.startup(async () => {
     { cardCommentId: 1 },
     { unique: true },
   );
+  // The two ways the app actually READS reactions - the card publication by
+  // `cardId: { $in: [...all the board's cards] }`, the board publication by
+  // `boardId` - had no index: a reported MongoDB log (.tools/crash) had 3,397
+  // full collection scans of this one collection, up to 1.6 s each on slow
+  // storage, the bulk of that server's "Slow query" lines.
+  await ensureIndex(CardCommentReactions, { cardId: 1 });
+  await ensureIndex(CardCommentReactions, { boardId: 1 });
   await ensureIndex(InvitationCodes, { modifiedAt: -1 });
 
   await ensureIndex(LockoutSettings, { modifiedAt: -1 });
@@ -134,6 +141,12 @@ Meteor.startup(async () => {
   await TableVisibilityModeSettings.upsertAsync(
     { _id: 'tableVisibilityMode-allowPrivateOnly' },
     { $setOnInsert: { booleanValue: false, sort: 0 } },
+  );
+  // #4475: off by default, so board creation stays unrestricted unless a
+  // site admin explicitly turns it on.
+  await TableVisibilityModeSettings.upsertAsync(
+    { _id: 'tableVisibilityMode-boardCreationAdminOnly' },
+    { $setOnInsert: { booleanValue: false, sort: 1 } },
   );
 
   await ensureIndex(InviteToBoardRolesSettings, { modifiedAt: -1 });

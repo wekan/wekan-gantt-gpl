@@ -1,5 +1,6 @@
 import { ReactiveCache } from '/imports/reactiveCache';
 import { TAPi18n } from '/imports/i18n';
+import { Filter } from '/client/lib/filter';
 import Cards from '/models/cards';
 import Boards from '/models/boards';
 import ChecklistItems from '/models/checklistItems';
@@ -9,9 +10,65 @@ import { EscapeActions } from '/client/lib/escapeActions';
 import { Utils } from '/client/lib/utils';
 import autosize from 'autosize';
 import { isChecklistShownAtMinicard } from '/models/lib/minicardChecklistVisibility';
+import { CHECKLIST_RESET_INTERVALS } from '/models/lib/checklistResetSchedule';
+import { playChecklistDingSound } from '/client/lib/checklistDingSound';
+import {
+  datePickerRendered,
+  datePickerHelpers,
+} from '/client/lib/datepicker';
+import {
+  formatDateByUserPreference,
+  isValidDate,
+} from '/imports/lib/dateUtils';
+import { dueDateClass } from '/client/lib/dueDateColor';
+import { subscribeDateNowTicker } from '/client/lib/dateNowTicker';
+import {
+  checklistItemsToText,
+  parseChecklistItemsText,
+  planChecklistItemsTextUpdate,
+} from '/models/lib/checklistItemsAsText';
+import { buildCardFromChecklistItem } from '/models/lib/checklistItemToCard';
+import { subtaskNavTarget } from '/client/components/cards/subtaskViewHelpers';
+import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
 
 // SubsManager removed for Meteor 3 migration
 const { calculateIndexData } = Utils;
+
+// #3294: was the sortable `stop` released over a LIST's own card column
+// (`.js-minicards`, see client/components/lists/listBody.jade) rather than
+// back inside a checklist? Reads the element under the pointer rather than
+// tracking drop targets some other way, because the checklist-item sortable
+// is only ever connected to OTHER `.js-checklist-items` containers (see
+// initSorting below) - a `.js-minicards` is never a valid sortable target for
+// it, so jQuery UI always reverts the drag, and this is what turns that
+// revert into "create a card here" instead of a no-op.
+function resolveListDropTarget(evt) {
+  const pageX = evt && (evt.pageX ?? (evt.originalEvent && evt.originalEvent.pageX));
+  const pageY = evt && (evt.pageY ?? (evt.originalEvent && evt.originalEvent.pageY));
+  if (typeof pageX !== 'number' || typeof pageY !== 'number') return null;
+  const x = pageX - window.scrollX;
+  const y = pageY - window.scrollY;
+  const el = document.elementFromPoint(x, y);
+  if (!el) return null;
+  const $minicards = $(el).closest('.js-minicards');
+  if (!$minicards.length) return null;
+  const list = Blaze.getData($minicards.get(0));
+  if (!list || !list._id) return null;
+
+  // Same swimlane-resolution shape as list.js's own card-drop handler: use
+  // the swimlane row being dropped into when the board is in swimlanes view,
+  // otherwise fall back to the list's own swimlaneId, then the board default.
+  const swimlaneEl = $minicards.closest('.swimlane').get(0);
+  const swimlaneData = swimlaneEl && Blaze.getData(swimlaneEl);
+  let swimlaneId = swimlaneData && swimlaneData._id;
+  if (!swimlaneId) swimlaneId = list.swimlaneId;
+  if (!swimlaneId) {
+    const board = ReactiveCache.getBoard(list.boardId);
+    const defaultSwimlane = board && board.getDefaultSwimline && board.getDefaultSwimline();
+    swimlaneId = defaultSwimlane && defaultSwimlane._id;
+  }
+  return { list, swimlaneId };
+}
 
 function initSorting(items) {
   items.sortable({
@@ -28,6 +85,33 @@ function initSorting(items) {
       EscapeActions.clickExecute(evt.target, 'inlinedForm');
     },
     stop(evt, ui) {
+      const checklistDomElement = ui.item.get(0);
+      const checklistData = Blaze.getData(checklistDomElement);
+      const checklistItem = checklistData.item;
+
+      items.sortable('cancel');
+
+      // #3294: dropped onto a list rather than back into a checklist -
+      // create a new card from the item's text instead of reordering. The
+      // original checklist item is left exactly as it was (see
+      // buildCardFromChecklistItem's scope note - this never marks it done).
+      const dropTarget = resolveListDropTarget(evt);
+      if (dropTarget) {
+        const maxSort = ReactiveCache.getCards({
+          listId: dropTarget.list._id,
+        }).reduce((max, c) => Math.max(max, c.sort || 0), 0);
+        const cardDoc = buildCardFromChecklistItem(
+          checklistItem,
+          dropTarget.list,
+          dropTarget.swimlaneId,
+          maxSort + 1,
+        );
+        if (cardDoc) {
+          Cards.insert(cardDoc);
+        }
+        return;
+      }
+
       const parent = ui.item.parents('.js-checklist-items');
       const checklistId = Blaze.getData(parent.get(0)).checklist._id;
       let prevItem = ui.item.prev('.js-checklist-item').get(0);
@@ -40,11 +124,6 @@ function initSorting(items) {
       }
       const nItems = 1;
       const sortIndex = calculateIndexData(prevItem, nextItem, nItems);
-      const checklistDomElement = ui.item.get(0);
-      const checklistData = Blaze.getData(checklistDomElement);
-      const checklistItem = checklistData.item;
-
-      items.sortable('cancel');
 
       checklistItem.move(checklistId, sortIndex.base);
     },
@@ -139,6 +218,9 @@ Template.checklists.helpers({
 
 Template.checklists.events({
   'click .js-open-checklist-details-menu': Popup.open('checklistActions'),
+  // #4017: apply/append a template card's checklists onto this already
+  // existing card, alongside whatever checklists it already has.
+  'click .js-copy-checklist-from-template': Popup.open('copyChecklistFromTemplate'),
   'submit .js-add-checklist'(event, tpl) {
     event.preventDefault();
     const textarea = tpl.find('textarea.js-add-checklist-item');
@@ -253,6 +335,47 @@ Template.checklists.events({
     }
   },
   'click .js-convert-checklist-item-to-card': Popup.open('convertChecklistItemToCard'),
+  // #2422: "Convert to subtask" - distinct from the plain, unlinked
+  // "Convert to card" action above and from the #3294 drag-to-card gesture.
+  // This creates a proper SUBTASK of the CURRENT card (reusing the same
+  // server-side `addSubtaskCard` method 'submit .js-add-subtask' uses in
+  // subtasks.js, so the default subtasks board/list/swimlane and automatic
+  // custom fields are resolved exactly the same way), seeded with the
+  // checklist item's own title, and then records the new subtask's _id on
+  // the item's `linkedCardId` field so a "linked subtask" indicator can be
+  // shown on the item (checklistItemDetail, below). The original checklist
+  // item is left untouched - it is not deleted or replaced.
+  async 'click .js-convert-checklist-item-to-subtask'(event, tpl) {
+    event.preventDefault();
+    const item = Template.currentData().item;
+    if (!item || !item.title || !item.cardId) {
+      return;
+    }
+    const parentCard = ReactiveCache.getCard(item.cardId);
+    const parentCardId = parentCard && parentCard.getRealId
+      ? parentCard.getRealId()
+      : item.cardId;
+    if (!parentCardId) {
+      return;
+    }
+    try {
+      const _id = await Meteor.callAsync(
+        'addSubtaskCard',
+        parentCardId,
+        item.title,
+        false,
+      );
+      if (!_id) {
+        throw new Error('The server could not create the subtask.');
+      }
+      await item.setLinkedCardId(_id);
+      // In case the filter is active, keep the new subtask visible instead
+      // of it disappearing instantly. See https://github.com/wekan/wekan/issues/80
+      Filter.addException(_id);
+    } catch (error) {
+      alert(error?.reason || error?.message || 'Could not create the subtask.');
+    }
+  },
   'click .js-delete-checklist-item': Popup.afterConfirm('checklistItemDelete', function () {
     Popup.back();
     const item = this?.item || this;
@@ -318,6 +441,7 @@ Template.checklistActionsPopup.helpers({
 
 Template.checklistActionsPopup.events({
   'click .js-export-checklist': Popup.open('exportChecklist'),
+  'click .js-edit-checklist-items-as-text': Popup.open('editChecklistItemsAsText'),
   'click .js-delete-checklist': Popup.afterConfirm('checklistDelete', function () {
     Popup.back(2);
     const checklist = this.checklist;
@@ -328,6 +452,26 @@ Template.checklistActionsPopup.events({
   }),
   'click .js-move-checklist': Popup.open('moveChecklist'),
   'click .js-copy-checklist': Popup.open('copyChecklist'),
+  'click .js-set-checklist-reset-interval': Popup.open('checklistResetInterval'),
+  // #2473: bulk check/uncheck every item of this checklist in one action,
+  // reusing the same checkAllItems()/uncheckAllItems() model helpers the
+  // Rules automation already uses per-item (server/rulesHelper.js).
+  'click .js-check-all-checklist-items'(event) {
+    event.preventDefault();
+    const checklist = Template.currentData().checklist;
+    if (checklist) {
+      checklist.checkAllItems();
+    }
+    Popup.back();
+  },
+  'click .js-uncheck-all-checklist-items'(event) {
+    event.preventDefault();
+    const checklist = Template.currentData().checklist;
+    if (checklist) {
+      checklist.uncheckAllItems();
+    }
+    Popup.back();
+  },
   'click .js-hide-checked-checklist-items'(event) {
     event.preventDefault();
     Template.currentData().checklist.toggleHideCheckedChecklistItems();
@@ -350,6 +494,84 @@ Template.checklistActionsPopup.events({
   },
 });
 
+// #3818 / #4729: pick (or clear) the checklist's automatic-reset interval.
+Template.checklistResetIntervalPopup.helpers({
+  resetIntervals() {
+    return CHECKLIST_RESET_INTERVALS;
+  },
+  isCurrentInterval() {
+    const checklist = Template.instance().data && Template.instance().data.checklist;
+    const current = (checklist && checklist.resetInterval) || 'none';
+    return current === this.toString();
+  },
+});
+
+Template.checklistResetIntervalPopup.events({
+  'click .js-set-reset-interval'(event, tpl) {
+    event.preventDefault();
+    const interval = event.currentTarget.getAttribute('data-interval');
+    const checklist = tpl.data && tpl.data.checklist;
+    if (checklist) {
+      checklist.setResetInterval(interval);
+    }
+    Popup.back();
+  },
+});
+
+// #4218: bulk-edit a checklist's items as one multi-line text block.
+Template.editChecklistItemsAsTextPopup.helpers({
+  checklistItemsAsText() {
+    const checklist = this.checklist;
+    if (!checklist) return '';
+    const items = checklist.items ? checklist.items() : [];
+    return checklistItemsToText(items);
+  },
+});
+
+Template.editChecklistItemsAsTextPopup.onRendered(function () {
+  autosize(this.$('textarea.js-checklist-items-as-text'));
+});
+
+Template.editChecklistItemsAsTextPopup.events({
+  'click .js-cancel-checklist-items-as-text'(event) {
+    event.preventDefault();
+    Popup.back();
+  },
+  'submit .js-edit-checklist-items-as-text-form'(event, tpl) {
+    event.preventDefault();
+    const checklist = Template.currentData().checklist;
+    if (!checklist) return;
+    const textarea = tpl.find('textarea.js-checklist-items-as-text');
+    const parsedLines = parseChecklistItemsText(textarea.value);
+    const existingItems = (checklist.items ? checklist.items() : []).map(item => ({
+      _id: item._id,
+      title: item.title,
+    }));
+    const plan = planChecklistItemsTextUpdate(existingItems, parsedLines);
+
+    plan.keep.forEach(({ _id, sort, isFinished }) => {
+      ChecklistItems.updateAsync(_id, { $set: { sort, isFinished } });
+    });
+    plan.insert.forEach(({ title, isFinished, sort }) => {
+      ChecklistItems.insert({
+        title,
+        isFinished,
+        checklistId: checklist._id,
+        cardId: checklist.cardId,
+        sort,
+      });
+    });
+    plan.remove.forEach(_id => {
+      // #3252: see js-delete-checklist-item - avoid "Removed nonexistent document".
+      if (ChecklistItems.findOne(_id)) {
+        ChecklistItems.remove(_id);
+      }
+    });
+
+    Popup.back();
+  },
+});
+
 Template.editChecklistItemForm.onRendered(function () {
   autosize(this.$('textarea.js-edit-checklist-item'));
 });
@@ -365,17 +587,163 @@ Template.editChecklistItemForm.events({
 });
 
 Template.checklistItemDetail.helpers({
+  // #2422: show the "linked subtask" indicator only while the linked card
+  // still exists (it may have been archived/removed independently since).
+  linkedSubtask() {
+    const item = this.item;
+    return item && item.getLinkedCard ? item.getLinkedCard() : undefined;
+  },
 });
 
 Template.checklistItemDetail.events({
+  // #2422: open the checklist item's linked subtask card. Reuses the same
+  // navigation guard subtasks.js uses for its own "View it" button, so a
+  // subtask on another (not-yet-loaded) board resolves the same way.
+  'click .js-checklist-item-linked-subtask'(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    const item = Template.currentData().item;
+    const subtask = item && item.getLinkedCard ? item.getLinkedCard() : undefined;
+    if (!subtask) {
+      return;
+    }
+    const target = subtaskNavTarget(subtask);
+    if (target) {
+      FlowRouter.go('card', target);
+    } else {
+      console.warn(
+        'Cannot view linked subtask: missing board/card id on subtask',
+        subtask && subtask._id,
+      );
+    }
+  },
   'click .js-checklist-item .check-box-container'() {
     const checklist = Template.currentData().checklist;
     const item = Template.currentData().item;
     if (checklist && item && item._id) {
+      // #5427: play a short "ding" only on the unchecked -> checked
+      // transition (never on uncheck), and only when the user opted in.
+      const wasFinished = !!item.isFinished;
       item.toggleItem();
+      if (!wasFinished) {
+        const currentUser = ReactiveCache.getCurrentUser();
+        if (currentUser && currentUser.hasChecklistDingSound()) {
+          playChecklistDingSound();
+        }
+      }
+    }
+  },
+  // #4755: open the checklist item's own due-date popup. Bound to the ITEM
+  // (not the {item, checklist, card} data this template's events normally see)
+  // so it opens exactly like a card's own due-date popup does for a card.
+  'click .js-checklist-item-due-date'(event, tpl) {
+    event.preventDefault();
+    event.stopPropagation();
+    const item = Template.currentData().item;
+    if (item) {
+      // Reuse the card's own "Change due date" title (#4755) rather than
+      // adding a near-duplicate translation key to every locale file.
+      Popup.open('editChecklistItemDueDate', {
+        titleKey: 'editCardDueDatePopup-title',
+      }).call(item, event, tpl);
     }
   },
 });
+
+// checklistItemDueDate - the compact due-date badge on a single checklist
+// item (#4755). Reuses dateBadgeBody, the same markup the card's own
+// received/start/due/end badges use, so the item's badge looks and colours
+// itself identically (see client/components/cards/cardDate.jade / .js).
+Template.checklistItemDueDate.onCreated(function () {
+  this.date = new ReactiveVar();
+  const dateNowTicker = subscribeDateNowTicker();
+  this.now = dateNowTicker.now;
+  this.view.onViewDestroyed(dateNowTicker.unsubscribe);
+  const self = this;
+  self.autorun(() => {
+    const item = Template.currentData().item;
+    self.date.set(new Date(item && item.getDue ? item.getDue() : undefined));
+  });
+});
+
+Template.checklistItemDueDate.helpers({
+  showWeek() {
+    // Checklist items are dense UI (see CLAUDE.md) - no ISO-week badge here.
+    return '';
+  },
+  showWeekOfYear() {
+    return false;
+  },
+  showDate() {
+    const currentUser = ReactiveCache.getCurrentUser();
+    const dateFormat = currentUser ? currentUser.getDateFormat() : (window.localStorage.getItem('dateFormat') || 'YYYY-MM-DD');
+    return formatDateByUserPreference(Template.instance().date.get(), dateFormat, true);
+  },
+  showISODate() {
+    return Template.instance().date.get().toISOString();
+  },
+  classes() {
+    const tpl = Template.instance();
+    return dueDateClass(tpl.date.get(), tpl.now.get());
+  },
+  showTitle() {
+    const tpl = Template.instance();
+    const currentUser = ReactiveCache.getCurrentUser();
+    const dateFormat = currentUser ? currentUser.getDateFormat() : (window.localStorage.getItem('dateFormat') || 'YYYY-MM-DD');
+    const formattedDate = formatDateByUserPreference(tpl.date.get(), dateFormat, true);
+    return `${TAPi18n.__('card-due-on')} ${formattedDate}`;
+  },
+});
+
+Template.checklistItemDueDate.events({
+  'click .js-edit-date'(event, tpl) {
+    event.preventDefault();
+    event.stopPropagation();
+    const item = Template.currentData().item;
+    if (item) {
+      // Reuse the card's own "Change due date" title (#4755) rather than
+      // adding a near-duplicate translation key to every locale file.
+      Popup.open('editChecklistItemDueDate', {
+        titleKey: 'editCardDueDatePopup-title',
+      }).call(item, event, tpl);
+    }
+  },
+});
+
+// editChecklistItemDueDatePopup - the popup form editing that badge. Reuses
+// editDateForm - the same date/time-picker markup and submit/delete events
+// (datePickerEvents(), registered once on Template.editDateForm) the card's
+// own editCardDueDatePopup uses. Deliberately does NOT use setupDatePicker
+// from /client/lib/datepicker: that helper resolves its `card` via
+// getCurrentCardFromContext(), which - opened from inside an already-open
+// card detail dialog - would find the CARD, not the checklist item, and
+// silently save the due date on the wrong document.
+Template.editChecklistItemDueDatePopup.onCreated(function () {
+  const item = Template.currentData();
+  const initialDate = item && item.getDue ? item.getDue() : undefined;
+  this.datePicker = {
+    error: new ReactiveVar(''),
+    card: item,
+    date: new ReactiveVar(
+      initialDate && isValidDate(new Date(initialDate))
+        ? new Date(initialDate)
+        : new Date('invalid'),
+    ),
+    defaultTime: '1970-01-01 17:00:00',
+    storeDate(date, currentItem) {
+      return currentItem.setDue(date);
+    },
+    deleteDate(currentItem) {
+      return currentItem.unsetDue();
+    },
+  };
+});
+
+Template.editChecklistItemDueDatePopup.onRendered(function () {
+  datePickerRendered(this);
+});
+
+Template.editChecklistItemDueDatePopup.helpers(datePickerHelpers());
 
 /**
  * Helper to find the dialog instance from a parent popup template.
@@ -507,3 +875,32 @@ Template.copyChecklistPopup.onCreated(function () {
   });
 });
 registerChecklistDialogEvents('copyChecklistPopup');
+
+/**
+ * Copy Checklist(s) From Template Card Dialog (#4017).
+ *
+ * Unlike "Copy Checklist" above (which copies ONE existing checklist FROM
+ * this card TO a chosen destination card), this picks a SOURCE card — a
+ * template card, or any other card — and APPENDS every one of its checklists
+ * onto THIS card, alongside whatever checklists this card already has. It
+ * reuses the same `Checklists.copy()` helper (via `copyAllFromCardToCard`),
+ * so the copy semantics (fresh ids, `.direct` inserts, board re-homing) are
+ * the same as every other checklist copy in the app — the only difference is
+ * that copied items always come in unchecked (`resetChecked`), since a
+ * template being applied should never pre-check its target.
+ */
+Template.copyChecklistFromTemplatePopup.onCreated(function () {
+  this.dialog = new BoardSwimlaneListCardDialog(this, {
+    getDialogOptions() {
+      return ReactiveCache.getCurrentUser().getCopyChecklistFromTemplateDialogOptions();
+    },
+    async setDone(sourceCardId, options) {
+      ReactiveCache.getCurrentUser().setCopyChecklistFromTemplateDialogOption(this.currentBoardId, options);
+      const targetCardId = Template.currentData().cardId;
+      if (sourceCardId && targetCardId) {
+        await Checklists.copyAllFromCardToCard(sourceCardId, targetCardId);
+      }
+    },
+  });
+});
+registerChecklistDialogEvents('copyChecklistFromTemplatePopup');

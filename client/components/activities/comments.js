@@ -1,5 +1,6 @@
 import { ReactiveCache } from '/imports/reactiveCache';
-import CardComments, { canEditComment } from '/models/cardComments';
+import CardComments, { canEditComment, resolveParentId } from '/models/cardComments';
+import { groupCommentsByThread } from '/imports/lib/commentThreading';
 import { UnsavedEdits } from '/client/lib/unsavedEdits';
 import { EscapeActions } from '/client/lib/escapeActions';
 import { Utils } from '/client/lib/utils';
@@ -79,6 +80,15 @@ Template.commentForm.helpers({
     const id = replyToCommentId.get();
     return id ? ReactiveCache.getCardComment(id) : undefined;
   },
+  // The name shown by the "Replying to [author]" banner while composing a
+  // reply, or undefined when the parent comment/its author can no longer be
+  // found (the banner then falls back to the plain "In reply to" wording).
+  replyToCommentAuthorName() {
+    const id = replyToCommentId.get();
+    const comment = id ? ReactiveCache.getCardComment(id) : undefined;
+    const user = comment && ReactiveCache.getUser(comment.userId);
+    return user && user.getName ? user.getName() : undefined;
+  },
 });
 
 Template.commentForm.events({
@@ -142,11 +152,34 @@ Template.comments.helpers({
   getComments() {
     const data = Template.currentData();
     if (!data || typeof data.comments !== 'function') return [];
-    return data.comments();
+    // #3011: replies render directly under their (one-level) parent rather
+    // than interleaved by date with unrelated top-level comments.
+    return groupCommentsByThread(data.comments());
   },
 });
 
+// Issue #4757: permalink to a comment. The card's own URL
+// (models/lib/cardUrl.js) plus a `#comment-<id>` fragment - see
+// client/lib/revealBoardItem.js for how the fragment turns back into a
+// scroll+highlight on the other end. Shared by the helper below and the
+// click handler, which needs the same URL to build the copy-to-clipboard
+// text.
+function commentPermalinkFor(comment) {
+  if (!comment || !comment._id || !comment.cardId) return '';
+  const card = ReactiveCache.getCard(comment.cardId);
+  const url = card && card.absoluteUrl();
+  return url ? `${url}#comment-${comment._id}` : '';
+}
+
 Template.comment.helpers({
+  // The element id `comments.jade` anchors this comment to, so a permalink's
+  // `#comment-<id>` fragment has something to scroll to.
+  commentDomId() {
+    return this._id ? `comment-${this._id}` : undefined;
+  },
+  commentPermalink() {
+    return commentPermalinkFor(this);
+  },
   // Whether the current user may edit/delete this comment, honouring the
   // board's restrictCommentEditing setting (issue #5906). Mirrors the
   // server-side enforcement so the UI hides buttons the server would reject.
@@ -166,9 +199,32 @@ Template.comment.helpers({
 });
 
 Template.comment.events({
+  // Issue #4757: the timestamp is a real `<a href>` to the permalink, so a
+  // normal click already navigates there (and back/forward and a fresh load
+  // of that URL are handled by client/lib/revealBoardItem.js reading the
+  // hash). This also sets the reveal Session value directly, rather than
+  // relying only on the browser's `hashchange` event, because neither a
+  // same-page anchor click nor FlowRouter's `pushState` navigation is
+  // guaranteed to fire one.
+  'click .js-comment-permalink'() {
+    if (this._id) Session.set('revealCommentId', this._id);
+  },
+  'click .js-copy-comment-link'(evt, tpl) {
+    evt.preventDefault();
+    const url = commentPermalinkFor(this);
+    if (!url) return;
+    Utils.showCopied(Utils.copyTextToClipboard(url), tpl.$('.copied-tooltip'));
+  },
   'click .js-reply-comment'(evt) {
     evt.preventDefault();
-    replyToCommentId.set(this._id);
+    // #3011: cap threading at one level - replying to a reply attaches the
+    // new comment to that reply's own parent (the original top-level
+    // comment) instead of nesting further, so the banner and the eventual
+    // insert both point at the same, already-flattened target.
+    const targetId = resolveParentId(this._id, id =>
+      ReactiveCache.getCardComment(id),
+    );
+    replyToCommentId.set(targetId);
     // Open and focus the new-comment form.
     const input = $('.js-new-comment-input');
     input.click();

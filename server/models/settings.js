@@ -13,6 +13,7 @@ import { Authentication } from '/server/authentication';
 import { sendJsonResult } from '/server/apiMiddleware';
 import RecoveryEvents from '/models/recoveryEvents';
 import { recordRecoveryAudit } from '/server/lib/recoveryAudit';
+const { buildOauthLogoutUrl } = require('/server/lib/oauthLogoutUrl');
 const { parseCardsLoadingEnv, cardsLoadingLazyThreshold } = require('/models/lib/cardsLoading');
 const {
   normalizeInviteEmail,
@@ -20,6 +21,45 @@ const {
   buildReinviteModifier,
   shouldRemoveInvitationOnEmailFailure,
 } = require('/models/lib/invitationCodeEmail');
+const { substituteVars } = require('/models/lib/ruleVarsSubstitute');
+const { resolveConfigValue, hasConfigValue } = require('/models/lib/configResolver');
+// The Meteor accounts-* OAuth providers the Admin Panel can override
+// (models/lib/oauthProviders.js). Required lazily so this file loads even
+// while the catalog module is absent; the fallback carries the same keys.
+const FALLBACK_OAUTH_PROVIDER_KEYS = [
+  'google', 'github', 'facebook', 'twitter', 'meteor-developer', 'weibo', 'meetup',
+];
+function oauthProviderCatalog() {
+  try {
+    const { OAUTH_PROVIDERS } = require('/models/lib/oauthProviders');
+    if (Array.isArray(OAUTH_PROVIDERS) && OAUTH_PROVIDERS.length) return OAUTH_PROVIDERS;
+  } catch (e) {
+    // fall through to the minimal catalog below
+  }
+  return FALLBACK_OAUTH_PROVIDER_KEYS.map(key => {
+    const upper = key.toUpperCase().replace(/-/g, '_');
+    const idVar = key === 'facebook' ? 'OAUTH_FACEBOOK_APP_ID'
+      : key === 'twitter' ? 'OAUTH_TWITTER_CONSUMER_KEY'
+      : `OAUTH_${upper}_CLIENT_ID`;
+    return { key, envPrefix: `OAUTH_${upper}`, idVar, secretVar: `OAUTH_${upper}_SECRET` };
+  });
+}
+// Re-read the Settings document and the OAUTH_* env vars into Meteor's
+// ServiceConfiguration so an Admin Panel change takes effect without a server
+// restart. Guarded: the reconfigure module is optional and a failure in it
+// must never turn a successful save into an error.
+function reconfigureOauthProvidersNow() {
+  try {
+    const mod = require('/server/lib/oauthProviders');
+    if (typeof mod.reconfigureOauthProviders === 'function') {
+      const p = mod.reconfigureOauthProviders();
+      if (p && typeof p.catch === 'function') p.catch(() => {});
+    }
+  } catch (e) {
+    // the module is not present, or reconfiguring failed; the saved settings
+    // still apply at the next startup.
+  }
+}
 
 const getReactiveCache = () => require('/imports/reactiveCache').ReactiveCache;
 const getTAPi18n = () => require('/imports/i18n').TAPi18n;
@@ -90,14 +130,40 @@ async function sendInvitationEmail(_id, { isNewInvitation = true } = {}) {
       url: Meteor.absoluteUrl('sign-up'),
     };
     const lang = author.getLanguage();
-    await EmailLocalization.sendEmail({
-      to: icode.email,
-      from: Accounts.emailTemplates.from,
-      subject: 'email-invite-register-subject',
-      text: 'email-invite-register-text',
-      params,
-      language: lang,
-    });
+    // #2022: an admin-customized invite template (Admin Panel -> Email
+    // Templates) overrides the hardcoded i18n subject/text, using the same
+    // {token} substitution the #3304 rule "send email" action uses
+    // (substituteVars). Unset (the default on every existing install) falls
+    // through to the exact i18n-driven content below, unchanged.
+    const setting = await getReactiveCache().getCurrentSetting();
+    const templateVars = {
+      email: params.email,
+      inviter: params.inviter,
+      user: params.user,
+      icode: params.icode,
+      url: params.url,
+    };
+    if (setting && setting.inviteEmailSubjectTemplate) {
+      // Sent directly (not through EmailLocalization.sendEmail) because the
+      // subject/text here are already-substituted plain text, not i18n keys
+      // - passing them through TAPi18n.__() would treat the custom text
+      // itself as a translation key to look up.
+      await Email.sendAsync({
+        to: icode.email,
+        from: Accounts.emailTemplates.from,
+        subject: substituteVars(setting.inviteEmailSubjectTemplate, templateVars),
+        text: substituteVars(setting.inviteEmailBodyTemplate || '', templateVars),
+      });
+    } else {
+      await EmailLocalization.sendEmail({
+        to: icode.email,
+        from: Accounts.emailTemplates.from,
+        subject: 'email-invite-register-subject',
+        text: 'email-invite-register-text',
+        params,
+        language: lang,
+      });
+    }
   } catch (e) {
     // #4043: only roll back a code created by this very invite. A pre-existing
     // invitation was already delivered in an earlier email; deleting it here
@@ -141,6 +207,12 @@ function isOauth2Enabled() {
 
 function isCasEnabled() {
   return process.env.CAS_ENABLED === 'true' || process.env.CAS_ENABLED === true;
+}
+
+function isSamlEnabled() {
+  return (
+    process.env.SAML_ENABLED === 'true' || process.env.SAML_ENABLED === true
+  );
 }
 
 function isApiEnabled() {
@@ -329,6 +401,193 @@ Meteor.methods({
     }
     return true;
   },
+  // Admin Panel -> LDAP override (models/lib/configResolver.js). Saves the
+  // non-secret LDAP_* overrides plainly, and the bind password ONLY when a new
+  // one was actually typed (an empty submission leaves the currently-active
+  // value/source - admin or env var - untouched, matching saveAdminMailSettings
+  // above and the maintainer's "empty submission = no change" requirement).
+  // The password is never returned to the caller; only 'ldap.bindPasswordSet'
+  // is published (server/publications/settings.js), so the client can show
+  // "a password is configured" without ever holding the password itself.
+  async saveLdapSettings(input) {
+    check(input, Object);
+    const user = await Meteor.userAsync();
+    if (!user?.isAdmin) throw new Meteor.Error('error-notAuthorized');
+
+    const clean = {
+      'ldap.enabled': input.enabled === true,
+      'ldap.host': String(input.host || '').trim(),
+      'ldap.port': String(input.port || '').trim(),
+      'ldap.baseDN': String(input.baseDN || '').trim(),
+      'ldap.authentificationUserDN': String(input.authentificationUserDN || '').trim(),
+      'ldap.userSearchFilter': String(input.userSearchFilter || '').trim(),
+      'ldap.userSearchField': String(input.userSearchField || '').trim(),
+      'ldap.encryption': String(input.encryption || '').trim(),
+    };
+
+    const setting = await Settings.findOneAsync({});
+    if (!setting) throw new Meteor.Error('settings-not-found');
+
+    const set = { ...clean };
+    const bindPassword = String(input.bindPassword || '');
+    if (bindPassword) {
+      set['ldap.bindPassword'] = bindPassword;
+      set['ldap.bindPasswordSet'] = true;
+    }
+    await Settings.updateAsync(setting._id, { $set: set });
+    return true;
+  },
+  // Admin-only. Tells the Admin Panel LDAP section WHICH source (env var /
+  // admin panel / not configured) is currently active for each field - the
+  // maintainer's "clearly visible, is in use environment variable or admin
+  // panel setting" requirement - WITHOUT ever sending a secret's value. The
+  // non-secret fields' resolved value is included too (host/port/DN/filter are
+  // not secrets and are useful for debugging); the bind password is reported
+  // ONLY as hasValue/source, from hasConfigValue(), never its actual value.
+  // Nothing here reads a composite/connection-string-shaped env var (LDAP's
+  // host and credentials are already separate fields, not a combined URL), so
+  // there is no embedded-credential string to redact for this module - see
+  // models/lib/configResolver.js's redactCredentialsInUrl() for the helper
+  // that exists for the general case.
+  async getLdapConfigSources() {
+    const user = await Meteor.userAsync();
+    if (!user?.isAdmin) throw new Meteor.Error('error-notAuthorized');
+
+    const setting = await Settings.findOneAsync({});
+    const ldap = setting?.ldap || {};
+
+    const fieldMap = {
+      enabled: 'LDAP_ENABLE',
+      host: 'LDAP_HOST',
+      port: 'LDAP_PORT',
+      baseDN: 'LDAP_BASEDN',
+      authentificationUserDN: 'LDAP_AUTHENTIFICATION_USERDN',
+      userSearchFilter: 'LDAP_USER_SEARCH_FILTER',
+      userSearchField: 'LDAP_USER_SEARCH_FIELD',
+      encryption: 'LDAP_ENCRYPTION',
+    };
+    const result = {};
+    Object.keys(fieldMap).forEach(field => {
+      const resolved = resolveConfigValue(fieldMap[field], ldap[field]);
+      result[field] = { source: resolved.source, value: resolved.value };
+    });
+    const passwordStatus = hasConfigValue(
+      'LDAP_AUTHENTIFICATION_PASSWORD',
+      ldap.bindPassword,
+    );
+    result.bindPassword = {
+      source: passwordStatus.source,
+      hasValue: passwordStatus.hasValue,
+    };
+    return result;
+  },
+  // Admin Panel -> OAuth login providers (Meteor's accounts-google/-github/
+  // -facebook/-twitter/-meteor-developer/-weibo/-meetup; the catalog is
+  // models/lib/oauthProviders.js). Same contract as saveLdapSettings above:
+  // isAdmin only, the non-secret fields (`enabled`, `id`, `loginStyle`) are
+  // saved plainly, the secret ONLY when a new one was actually typed - an
+  // empty submission leaves the stored secret and its source untouched - and
+  // the secret is never returned; only 'oauthProviders.<key>.secretSet' is
+  // published (server/publications/settings.js). After saving, the provider
+  // is reconfigured in place (server/lib/oauthProviders.js) so switching a
+  // login method on or off needs no server restart.
+  async saveOauthProviderSettings(providerKey, input) {
+    check(providerKey, String);
+    check(input, Object);
+    const user = await Meteor.userAsync();
+    if (!user?.isAdmin) throw new Meteor.Error('error-notAuthorized');
+
+    const provider = oauthProviderCatalog().find(p => p.key === providerKey);
+    if (!provider) throw new Meteor.Error('error-unknown-oauth-provider');
+
+    const setting = await Settings.findOneAsync({});
+    if (!setting) throw new Meteor.Error('settings-not-found');
+
+    const prefix = `oauthProviders.${providerKey}`;
+    const set = {
+      [`${prefix}.enabled`]: input.enabled === true,
+      [`${prefix}.id`]: String(input.id || '').trim(),
+    };
+    if (input.loginStyle !== undefined) {
+      const loginStyle = String(input.loginStyle || '').trim();
+      set[`${prefix}.loginStyle`] =
+        loginStyle === 'popup' || loginStyle === 'redirect' ? loginStyle : '';
+    }
+    const secret = String(input.secret || '');
+    if (secret) {
+      set[`${prefix}.secret`] = secret;
+      set[`${prefix}.secretSet`] = true;
+    }
+    // The two settings shared by every provider ride along with any save.
+    if (input.globalLoginStyle !== undefined) {
+      const style = String(input.globalLoginStyle || '').trim();
+      set.oauthProvidersLoginStyle =
+        style === 'popup' || style === 'redirect' ? style : '';
+    }
+    if (input.mergeExistingUsers !== undefined) {
+      set.oauthProvidersMergeExistingUsers = input.mergeExistingUsers === true;
+    }
+    await Settings.updateAsync(setting._id, { $set: set });
+    reconfigureOauthProvidersNow();
+    return true;
+  },
+  // Admin Panel -> Passwordless login (Meteor accounts-passwordless, env var
+  // PASSWORDLESS_ENABLED). isAdmin only; no secret involved.
+  async savePasswordlessSettings(input) {
+    check(input, Object);
+    const user = await Meteor.userAsync();
+    if (!user?.isAdmin) throw new Meteor.Error('error-notAuthorized');
+
+    const setting = await Settings.findOneAsync({});
+    if (!setting) throw new Meteor.Error('settings-not-found');
+    await Settings.updateAsync(setting._id, {
+      $set: { passwordlessEnabled: input.enabled === true },
+    });
+    reconfigureOauthProvidersNow();
+    return true;
+  },
+  // Admin-only. Which source (env var / Admin Panel / unset) is active for
+  // every OAuth provider field, the shared login style / merge setting and
+  // passwordless - the LDAP getLdapConfigSources contract. The secret is
+  // reported ONLY as hasValue/source from hasConfigValue(), never its value.
+  async getOauthProviderConfigSources() {
+    const user = await Meteor.userAsync();
+    if (!user?.isAdmin) throw new Meteor.Error('error-notAuthorized');
+
+    const setting = await Settings.findOneAsync({});
+    const stored = setting?.oauthProviders || {};
+    const result = { providers: {} };
+    oauthProviderCatalog().forEach(provider => {
+      const admin = stored[provider.key] || {};
+      const enabled = resolveConfigValue(
+        `${provider.envPrefix}_ENABLED`,
+        admin.enabled,
+      );
+      const id = resolveConfigValue(provider.idVar, admin.id);
+      const secret = hasConfigValue(provider.secretVar, admin.secret);
+      result.providers[provider.key] = {
+        enabled: { source: enabled.source, value: enabled.value },
+        id: { source: id.source, value: id.value },
+        secret: { source: secret.source, hasValue: secret.hasValue },
+      };
+    });
+    const style = resolveConfigValue(
+      'OAUTH_PROVIDERS_LOGIN_STYLE',
+      setting?.oauthProvidersLoginStyle,
+    );
+    result.loginStyle = { source: style.source, value: style.value };
+    const merge = resolveConfigValue(
+      'OAUTH_PROVIDERS_MERGE_EXISTING_USERS',
+      setting?.oauthProvidersMergeExistingUsers,
+    );
+    result.mergeExistingUsers = { source: merge.source, value: merge.value };
+    const passwordless = resolveConfigValue(
+      'PASSWORDLESS_ENABLED',
+      setting?.passwordlessEnabled,
+    );
+    result.passwordless = { source: passwordless.source, value: passwordless.value };
+    return result;
+  },
   async setPermanentDeleteEnabled(enabled) {
     const user = await Meteor.userAsync();
     const username = user?.username || user?._id || 'unknown';
@@ -365,6 +624,29 @@ Meteor.methods({
       });
       throw error;
     }
+  },
+
+  // Admin-level default of the 3-tier Notification Settings system (see
+  // models/lib/notificationSettings.js). `service` is 'tray' or 'email';
+  // `enabled` is the admin default for it. Board and member overrides are set
+  // through their own methods (setBoardNotifyOverride in models/boards.js,
+  // setMemberNotifyOverride in models/users.js) and win over this default.
+  async setAdminNotifyDefault(service, enabled) {
+    check(service, String);
+    check(enabled, Boolean);
+    const user = await Meteor.userAsync();
+    if (user?.isAdmin !== true) {
+      throw new Meteor.Error('not-authorized');
+    }
+    const field = service === 'email' ? 'notifyDefaultEmail'
+      : service === 'tray' ? 'notifyDefaultTray'
+      : null;
+    if (!field) throw new Meteor.Error('invalid-service');
+
+    const setting = await Settings.findOneAsync({});
+    if (!setting) throw new Meteor.Error('settings-not-found');
+    await Settings.updateAsync(setting._id, { $set: { [field]: enabled } });
+    return enabled;
   },
 
   async sendInvitation(emails, boards) {
@@ -525,11 +807,25 @@ Meteor.methods({
   },
 
   getAuthenticationsEnabled() {
-    return {
+    const enabled = {
       ldap: isLdapEnabled(),
       oauth2: isOauth2Enabled(),
       cas: isCasEnabled(),
+      saml: isSamlEnabled(),
     };
+    // Meteor's own accounts-* providers and accounts-passwordless
+    // (server/lib/oauthProviders.js): one key per enabled provider, so the
+    // login form shows a button for each. Keys only - never a credential.
+    try {
+      const oauth = require('/server/lib/oauthProviders');
+      oauth.enabledOauthProviders().forEach(key => {
+        enabled[key] = true;
+      });
+      enabled.passwordless = oauth.isPasswordlessLoginEnabled();
+    } catch (e) {
+      enabled.passwordless = false;
+    }
+    return enabled;
   },
 
   getOauthServerUrl() {
@@ -547,17 +843,12 @@ Meteor.methods({
   // via post_logout_redirect_uri, instead of dumping them on the provider's home
   // page (which errors for non-admin users). See issue #6158.
   getOauthLogoutUrl() {
-    const endpoint = process.env.OAUTH2_LOGOUT_ENDPOINT;
-    if (!endpoint) return '';
-    const serverUrl = (process.env.OAUTH2_SERVER_URL || '').replace(/\/$/, '');
-    const base = /^https?:\/\//.test(endpoint) ? endpoint : serverUrl + endpoint;
-    const params = [
-      'post_logout_redirect_uri=' + encodeURIComponent(Meteor.absoluteUrl()),
-    ];
-    if (process.env.OAUTH2_CLIENT_ID) {
-      params.push('client_id=' + encodeURIComponent(process.env.OAUTH2_CLIENT_ID));
-    }
-    return base + (base.includes('?') ? '&' : '?') + params.join('&');
+    return buildOauthLogoutUrl({
+      endpoint: process.env.OAUTH2_LOGOUT_ENDPOINT,
+      serverUrl: process.env.OAUTH2_SERVER_URL,
+      clientId: process.env.OAUTH2_CLIENT_ID,
+      redirectUri: Meteor.absoluteUrl(),
+    });
   },
 
   getDefaultAuthenticationMethod() {

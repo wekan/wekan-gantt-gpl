@@ -1,6 +1,6 @@
 import { Meteor } from 'meteor/meteor';
 import { WebApp } from 'meteor/webapp';
-import { check } from 'meteor/check';
+import { check, Match } from 'meteor/check';
 import { Random } from 'meteor/random';
 import { ReactiveCache } from '/imports/reactiveCache';
 import { add, now } from '/imports/lib/dateUtils';
@@ -14,6 +14,7 @@ import { titleChanged } from '/server/lib/titleChangeActivity';
 import { descriptionChanged } from '/server/lib/descriptionChangeActivity';
 import { buildDeleteCardActivity } from '/server/lib/deleteActivities';
 import { assertParentCardIsVisible } from '/server/lib/visibleBoardIds';
+import { computeSubtaskLabelIds } from '/models/lib/subtaskLabelInheritance';
 import Activities from '/models/activities';
 import Boards from '/models/boards';
 import Cards, {
@@ -36,8 +37,86 @@ import ChecklistItems from '/models/checklistItems';
 import { subtaskCustomFields } from '/imports/lib/subtaskHelpers';
 import { ensureIndex } from '/server/lib/mongoStartup';
 import { canEditCardOrLinkedCard } from '/server/lib/linkedCardPermission';
+import getSlug from 'limax';
+
+const getTAPi18n = () => require('/imports/i18n').TAPi18n;
+
+function getTranslatedString(key, fallback, options) {
+  const i18n = getTAPi18n && getTAPi18n();
+  if (!i18n || !i18n.i18n) {
+    return fallback;
+  }
+  const translated = i18n.__(key, options);
+  return typeof translated === 'string' ? translated : fallback;
+}
 
 Meteor.methods({
+  // #4495: create a brand-new board from an EXISTING card, in one step, and
+  // link that same card to it — without leaving the card. This reuses the
+  // exact board-creation shape server/models/boards.js's own `/api/boards`
+  // endpoint uses (an admin member, a default swimlane), and then sets on the
+  // card the exact same fields the "Link to board" popup sets when linking to
+  // a whole board (client/components/lists/listBody.js `.js-link-board`):
+  // `type: 'cardType-linkedBoard'`, `linkedId: <boardId>`. Nothing else on the
+  // card is touched, so this is a conversion of the existing card, not a copy.
+  async createBoardFromCard(cardId, title) {
+    check(cardId, String);
+    check(title, Match.Optional(String));
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+
+    const card = await Cards.findOneAsync(cardId);
+    if (!card) throw new Meteor.Error('not-found');
+    if (card.archived === true) throw new Meteor.Error('invalid-card');
+    if (
+      card.type === 'template-card' ||
+      card.type === 'cardType-linkedCard' ||
+      card.type === 'cardType-linkedBoard'
+    ) {
+      // Already a link, or a template card: nothing sensible to convert.
+      throw new Meteor.Error('invalid-linked-card');
+    }
+
+    const sourceBoard = await Boards.findOneAsync(card.boardId);
+    if (!sourceBoard || !allowIsBoardMemberWithWriteAccess(this.userId, sourceBoard)) {
+      throw new Meteor.Error('not-authorized');
+    }
+
+    const boardTitle = (title && title.trim()) || card.title || '';
+    if (!boardTitle) throw new Meteor.Error('invalid-title');
+
+    const boardId = await Boards.insertAsync({
+      title: boardTitle,
+      slug: getSlug(boardTitle) || 'board',
+      members: [
+        {
+          userId: this.userId,
+          isAdmin: true,
+          isActive: true,
+          isNoComments: false,
+          isCommentOnly: false,
+          isWorker: false,
+        },
+      ],
+      permission: sourceBoard.permission === 'public' ? 'public' : 'private',
+      color: sourceBoard.color,
+      migrationVersion: 1,
+    });
+    await Swimlanes.insertAsync({
+      title: getTranslatedString('default', 'Default'),
+      boardId,
+    });
+
+    // The same two fields the existing "Link to board" flow sets — nothing
+    // else on the card changes.
+    await Cards.updateAsync(cardId, {
+      $set: {
+        type: 'cardType-linkedBoard',
+        linkedId: boardId,
+      },
+    });
+
+    return boardId;
+  },
   // #6613: create cross-board card links as an acknowledged, authoritative
   // operation. A direct client insert could be rejected after the optimistic
   // write, leaving the Link popup open without creating anything.
@@ -185,6 +264,12 @@ Meteor.methods({
       type: 'checkbox',
     });
     if (!definition) throw new Meteor.Error('custom-field-not-found');
+    // #3141: a UI-only hide is not real access control - a direct method call
+    // is checked the same as the deny rule that covers text/number/dropdown/
+    // stringtemplate fields (server/permissions/cards.js).
+    if (definition.adminOnly && !board.hasAdmin(this.userId)) {
+      throw new Meteor.Error('not-authorized');
+    }
 
     const index = (card.customFields || []).findIndex(field =>
       field && field._id === customFieldId);
@@ -216,6 +301,10 @@ Meteor.methods({
       type: 'currency',
     });
     if (!definition) throw new Meteor.Error('custom-field-not-found');
+    // #3141: same server-side gate as setCardCustomFieldCheckbox above.
+    if (definition.adminOnly && !board.hasAdmin(this.userId)) {
+      throw new Meteor.Error('not-authorized');
+    }
 
     const index = (card.customFields || []).findIndex(field =>
       field && field._id === customFieldId);
@@ -233,9 +322,14 @@ Meteor.methods({
   //    server, so the client can no longer create duplicate helper boards.
   //  - #4037 / #3562 "custom fields not assigned to subtask cards": the
   //    destination board's automatic custom fields are applied to the subtask.
-  async addSubtaskCard(parentCardId, title) {
+  //  - #2184: an optional `inheritLabels` flag copies the parent card's
+  //    CURRENT labelIds onto the new subtask, once, at creation time. This is
+  //    a one-time copy, not an ongoing sync: a later change to the parent's
+  //    labels does not retroactively touch subtasks already created.
+  async addSubtaskCard(parentCardId, title, inheritLabels = false) {
     check(parentCardId, String);
     check(title, String);
+    check(inheritLabels, Boolean);
     if (!this.userId) throw new Meteor.Error('not-authorized');
     const trimmed = title.trim();
     if (!trimmed) return undefined;
@@ -298,12 +392,15 @@ Meteor.methods({
     );
     const sort =
       lastCard && Number.isFinite(lastCard.sort) ? lastCard.sort + 1 : 0;
+    // #2184: copy the parent's CURRENT labelIds when requested, otherwise
+    // keep the existing behavior of an empty labelIds array.
+    const labelIds = computeSubtaskLabelIds(parentCard, inheritLabels);
     const _id = await Cards.insertAsync({
       title: trimmed,
       parentId: parentCardId,
       members: [],
       assignees: [],
-      labelIds: [],
+      labelIds,
       customFields,
       listId: targetList._id,
       boardId: targetBoard._id,
@@ -690,6 +787,57 @@ Meteor.methods({
     }
 
     return await card.copy(boardId, swimlaneId, listId);
+  },
+
+  // #2209: "Create template from element" — save an EXISTING card as a card
+  // template, the reverse direction of the existing "insert a card FROM a
+  // template" flow (Template.searchElementPopup, client/components/lists/
+  // listBody.js). Reuses the same lazy per-user Templates board that #4205's
+  // default-template application already relies on (ensureTemplatesBoardForUserId,
+  // extracted from the ensureTemplatesBoard Meteor method in
+  // /server/models/users.js) and the same card.copy() the copyCard method above
+  // uses, just targeting the user's "Card Templates" swimlane instead of an
+  // ordinary board/swimlane/list, and marking the copy `type: 'template-card'`
+  // (Cards.isTemplateCard()) so it behaves as a template rather than a normal
+  // card. A "Default" list is created on demand the first time, mirroring the
+  // client-side "create the first list if none exists" fallback already used
+  // for ad-hoc card creation (client/components/boards/boardBody.js).
+  async saveCardAsTemplate(cardId) {
+    check(cardId, String);
+
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+    const card = await ReactiveCache.getCard(cardId);
+    if (!card) throw new Meteor.Error('not-found');
+    const sourceBoard = await Boards.findOneAsync(card.boardId);
+    if (!allowIsBoardMember(this.userId, sourceBoard))
+      throw new Meteor.Error('not-authorized');
+
+    const { ensureTemplatesBoardForUserId } = require('/server/models/users');
+    const templatesBoardId = await ensureTemplatesBoardForUserId(this.userId);
+
+    const user = await ReactiveCache.getUser(this.userId);
+    const swimlaneId = user && user.profile && user.profile.cardTemplatesSwimlaneId;
+    if (!swimlaneId) throw new Meteor.Error('not-found', 'card-templates-swimlane-missing');
+
+    let list = await Lists.findOneAsync({
+      boardId: templatesBoardId,
+      swimlaneId,
+      archived: false,
+    });
+    if (!list) {
+      const listId = await Lists.insertAsync({
+        title: 'Default',
+        boardId: templatesBoardId,
+        swimlaneId,
+      });
+      list = await Lists.findOneAsync(listId);
+    }
+
+    const sort = await card.getSort(list._id, swimlaneId, false);
+    card.sort = sort + 1;
+    card.type = 'template-card';
+
+    return await card.copy(templatesBoardId, swimlaneId, list._id);
   },
 });
 

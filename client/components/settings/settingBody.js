@@ -911,6 +911,11 @@ Template.tableVisibilityModeSettings.helpers({
       'tableVisibilityMode-allowPrivateOnly',
     ).booleanValue;
   },
+  boardCreationAdminOnly() {
+    return TableVisibilityModeSettings.findOne(
+      'tableVisibilityMode-boardCreationAdminOnly',
+    )?.booleanValue;
+  },
 });
 
 // Admin Panel / Settings / Visibility saves per SECTION: All Boards, URL, Product
@@ -967,6 +972,11 @@ Template.tableVisibilityModeSettings.events({
         $set: { booleanValue: $('#accounts-allowPrivateOnly').hasClass('is-checked') },
       });
     }
+    if ($('#accounts-boardCreationAdminOnly').length) {
+      TableVisibilityModeSettings.update('tableVisibilityMode-boardCreationAdminOnly', {
+        $set: { booleanValue: $('#accounts-boardCreationAdminOnly').hasClass('is-checked') },
+      });
+    }
     const $set = {};
     for (const [selector, key] of [
       ['#hide-board-activities', 'hideBoardActivitiesOnAllBoards'],
@@ -979,6 +989,12 @@ Template.tableVisibilityModeSettings.events({
     }
     if ($('#spinnerName').length) {
       $set.spinnerName = visibilityText('#spinnerName');
+    }
+    if ($('#custom-private-board-desc').length) {
+      $set.customPrivateBoardDesc = visibilityText('#custom-private-board-desc');
+    }
+    if ($('#custom-public-board-desc').length) {
+      $set.customPublicBoardDesc = visibilityText('#custom-public-board-desc');
     }
     saveVisibilitySettings($set);
   },
@@ -993,6 +1009,14 @@ Template.tableVisibilityModeSettings.events({
       ['#custom-help-link-url', 'customHelpLinkUrl'],
       ['#legalNoticevalue', 'legalNotice'],
       ['#automatic-linked-url-schemes', 'automaticLinkedUrlSchemes'],
+    ]));
+  },
+
+  // ── External issue tracker autolink (wekan/wekan#3069) ─────────────────────
+  'click button.js-visibility-external-link-pattern-save'() {
+    saveVisibilitySettings(visibilityTextFields([
+      ['#external-link-pattern-prefix', 'externalLinkPatternPrefix'],
+      ['#external-link-pattern-url', 'externalLinkPatternUrl'],
     ]));
   },
 
@@ -1283,11 +1307,22 @@ Template.general.events({
     });
     if (validEmails.length) {
       tpl.loading.set(true);
-      Meteor.call('sendInvitation', validEmails, boardsToInvite, () => {
-        // if (!err) {
-        //   TODO - show more info to user
-        // }
+      Meteor.call('sendInvitation', validEmails, boardsToInvite, (err) => {
         tpl.loading.set(false);
+        // #5707: this call used to ignore both the error and the result, so
+        // an admin who hit a mail-send failure (e.g. SMTP not configured) saw
+        // nothing at all — the button just stopped loading with no
+        // indication anything had gone wrong. Surface success/failure the
+        // same way the member "Invite People" popup already does
+        // (client/components/users/userHeader.js).
+        const divInfos = document.getElementById('invite-people-infos');
+        if (divInfos) {
+          divInfos.innerHTML = err
+            ? `<span style='color: red'>${TAPi18n.__('invite-people-error')}</span>`
+            : `<span style='color: green'>${TAPi18n.__(
+                'invite-people-success',
+              )}</span>`;
+        }
       });
     }
   },
@@ -1318,6 +1353,291 @@ Template.general.events({
     }
   },
 });
+
+// Admin Panel -> LDAP override section (Login pane). Mirrors the E-mail pane's
+// mail-server pattern below: non-secret fields are read straight from the
+// published `currentSetting.ldap.*`, the bind password NEVER is (only a
+// boolean "is one configured" comes back from getLdapConfigSources), and
+// "which source is active" is fetched from the server on demand rather than
+// guessed on the client, because only the server can see the env vars.
+const LDAP_TEXT_FIELDS = [
+  { field: 'host', envVar: 'LDAP_HOST' },
+  { field: 'port', envVar: 'LDAP_PORT' },
+  { field: 'baseDN', envVar: 'LDAP_BASEDN' },
+  { field: 'authentificationUserDN', envVar: 'LDAP_AUTHENTIFICATION_USERDN' },
+  { field: 'userSearchFilter', envVar: 'LDAP_USER_SEARCH_FILTER' },
+  { field: 'userSearchField', envVar: 'LDAP_USER_SEARCH_FIELD' },
+  { field: 'encryption', envVar: 'LDAP_ENCRYPTION' },
+];
+
+Template.general.onCreated(function () {
+  this.ldapSources = new ReactiveVar({});
+  this.ldapTestResult = new ReactiveVar('');
+  this.ldapTestSuccess = new ReactiveVar(true);
+  const tpl = this;
+  const refreshLdapSources = () => {
+    Meteor.call('getLdapConfigSources', (err, res) => {
+      if (!err && res) tpl.ldapSources.set(res);
+    });
+  };
+  refreshLdapSources();
+  this.refreshLdapSources = refreshLdapSources;
+});
+
+Template.general.helpers({
+  ldapTextFields() {
+    return LDAP_TEXT_FIELDS;
+  },
+  ldapFieldValue(field) {
+    const ldap = ReactiveCache.getCurrentSetting()?.ldap || {};
+    return ldap[field] || '';
+  },
+  // Badge text: literally names the source ('Admin Panel', the env var name,
+  // or 'Unset') rather than adding more new i18n keys for this - 'admin-panel'
+  // and 'unset-color' are already translated everywhere, and an env var name
+  // is a technical identifier, not language content.
+  ldapSourceLabelFor(field) {
+    const inst = Template.instance();
+    const sources = inst.ldapSources.get();
+    const entry = sources[field];
+    if (!entry) return '';
+    if (entry.source === 'admin') return TAPi18n.__('admin-panel');
+    if (entry.source === 'env') {
+      const envVar = (LDAP_TEXT_FIELDS.find(f => f.field === field) || {}).envVar;
+      return envVar || TAPi18n.__('admin-panel');
+    }
+    return TAPi18n.__('unset-color');
+  },
+  ldapSourceLabel(field) {
+    const inst = Template.instance();
+    const sources = inst.ldapSources.get();
+    const entry = sources[field];
+    if (!entry) return '';
+    if (entry.source === 'admin') return TAPi18n.__('admin-panel');
+    if (entry.source === 'env') return 'LDAP_ENABLE';
+    return TAPi18n.__('unset-color');
+  },
+  ldapPasswordStatusText() {
+    const inst = Template.instance();
+    const sources = inst.ldapSources.get();
+    const entry = sources.bindPassword;
+    if (!entry || !entry.hasValue) return TAPi18n.__('unset-color');
+    const from =
+      entry.source === 'admin'
+        ? TAPi18n.__('admin-panel')
+        : 'LDAP_AUTHENTIFICATION_PASSWORD';
+    return `${TAPi18n.__('password')}: ${from}`;
+  },
+  ldapTestResult() {
+    return Template.instance().ldapTestResult.get();
+  },
+  ldapTestResultClass() {
+    return Template.instance().ldapTestSuccess.get()
+      ? 'ldap-test-success'
+      : 'ldap-test-error';
+  },
+});
+
+Template.general.events({
+  'click a.js-toggle-ldap-enabled'(event, tpl) {
+    const ldap = ReactiveCache.getCurrentSetting()?.ldap || {};
+    Settings.update(ReactiveCache.getCurrentSetting()._id, {
+      $set: { 'ldap.enabled': !ldap.enabled },
+    });
+  },
+  'click button.js-ldap-settings-save'(event, tpl) {
+    const input = { enabled: !!ReactiveCache.getCurrentSetting()?.ldap?.enabled };
+    LDAP_TEXT_FIELDS.forEach(({ field }) => {
+      const $el = $(`.js-ldap-field[data-field="${field}"]`);
+      if ($el.length) input[field] = $el.val();
+    });
+    const bindPassword = $('#ldap-bind-password').val();
+    if (bindPassword) input.bindPassword = bindPassword;
+    Meteor.call('saveLdapSettings', input, (err) => {
+      $('#ldap-bind-password').val('');
+      if (!err) tpl.refreshLdapSources();
+    });
+  },
+  // "It should be possible to test at admin panel, does for example LDAP login
+  // work, to get back error message visible at admin panel" - calls the
+  // existing (now admin-gated, see packages/wekan-ldap/server/testConnection.js)
+  // ldap_test_connection method against whichever config (admin override or
+  // env var) is CURRENTLY resolved server-side, and shows the result inline.
+  'click button.js-ldap-test-connection'(event, tpl) {
+    tpl.ldapTestResult.set('...');
+    Meteor.call('ldap_test_connection', (err) => {
+      if (err) {
+        tpl.ldapTestSuccess.set(false);
+        tpl.ldapTestResult.set(
+          TAPi18n.__('ldap-test-connection-error', {
+            sprintf: [err.reason || err.message || ''],
+          }),
+        );
+      } else {
+        tpl.ldapTestSuccess.set(true);
+        tpl.ldapTestResult.set(TAPi18n.__('ldap-test-connection-success'));
+      }
+    });
+  },
+});
+
+// Admin Panel -> OAuth login providers + Passwordless (Login pane). The same
+// shape as the LDAP section above: non-secret fields come from the published
+// `currentSetting.oauthProviders.<key>.*`, the secret NEVER does (only the
+// boolean "a secret is set" comes back from getOauthProviderConfigSources),
+// and "which source is active" is asked of the server, which alone can see
+// the OAUTH_* env vars. The provider catalog is models/lib/oauthProviders.js;
+// the fallback below carries the same keys so this pane renders even while
+// that module is absent.
+const FALLBACK_OAUTH_PROVIDERS = [
+  { key: 'google', envPrefix: 'OAUTH_GOOGLE', idVar: 'OAUTH_GOOGLE_CLIENT_ID', secretVar: 'OAUTH_GOOGLE_SECRET', labelKey: 'oauth-provider-google' },
+  { key: 'github', envPrefix: 'OAUTH_GITHUB', idVar: 'OAUTH_GITHUB_CLIENT_ID', secretVar: 'OAUTH_GITHUB_SECRET', labelKey: 'oauth-provider-github' },
+  { key: 'facebook', envPrefix: 'OAUTH_FACEBOOK', idVar: 'OAUTH_FACEBOOK_APP_ID', secretVar: 'OAUTH_FACEBOOK_SECRET', labelKey: 'oauth-provider-facebook' },
+  { key: 'twitter', envPrefix: 'OAUTH_TWITTER', idVar: 'OAUTH_TWITTER_CONSUMER_KEY', secretVar: 'OAUTH_TWITTER_SECRET', labelKey: 'oauth-provider-twitter' },
+  { key: 'meteor-developer', envPrefix: 'OAUTH_METEOR_DEVELOPER', idVar: 'OAUTH_METEOR_DEVELOPER_CLIENT_ID', secretVar: 'OAUTH_METEOR_DEVELOPER_SECRET', labelKey: 'oauth-provider-meteor-developer' },
+  { key: 'weibo', envPrefix: 'OAUTH_WEIBO', idVar: 'OAUTH_WEIBO_CLIENT_ID', secretVar: 'OAUTH_WEIBO_SECRET', labelKey: 'oauth-provider-weibo' },
+  { key: 'meetup', envPrefix: 'OAUTH_MEETUP', idVar: 'OAUTH_MEETUP_CLIENT_ID', secretVar: 'OAUTH_MEETUP_SECRET', labelKey: 'oauth-provider-meetup' },
+];
+function oauthProviderCatalog() {
+  try {
+    const { OAUTH_PROVIDERS } = require('/models/lib/oauthProviders');
+    if (Array.isArray(OAUTH_PROVIDERS) && OAUTH_PROVIDERS.length) return OAUTH_PROVIDERS;
+  } catch (e) {
+    // catalog module absent: use the fallback
+  }
+  return FALLBACK_OAUTH_PROVIDERS;
+}
+const OAUTH_SHARED_ENV_VARS = {
+  loginStyle: 'OAUTH_PROVIDERS_LOGIN_STYLE',
+  mergeExistingUsers: 'OAUTH_PROVIDERS_MERGE_EXISTING_USERS',
+  passwordless: 'PASSWORDLESS_ENABLED',
+};
+// Badge text, as ldapSourceLabelFor: 'Admin Panel', the env var name, or
+// 'Unset' - reusing the already-translated 'admin-panel' / 'unset-color'.
+function sourceBadge(entry, envVar) {
+  if (!entry) return '';
+  if (entry.source === 'admin') return TAPi18n.__('admin-panel');
+  if (entry.source === 'env') return envVar;
+  return TAPi18n.__('unset-color');
+}
+
+Template.general.onCreated(function () {
+  this.oauthSources = new ReactiveVar({ providers: {} });
+  const tpl = this;
+  const refreshOauthSources = () => {
+    Meteor.call('getOauthProviderConfigSources', (err, res) => {
+      if (!err && res) tpl.oauthSources.set(res);
+    });
+  };
+  refreshOauthSources();
+  this.refreshOauthSources = refreshOauthSources;
+});
+
+Template.general.helpers({
+  oauthProviderList() {
+    return oauthProviderCatalog().map(p => ({
+      ...p,
+      enabledVar: `${p.envPrefix}_ENABLED`,
+    }));
+  },
+  oauthProviderEnabled(key) {
+    const providers = ReactiveCache.getCurrentSetting()?.oauthProviders || {};
+    return providers[key]?.enabled === true;
+  },
+  oauthProviderFieldValue(key, field) {
+    const providers = ReactiveCache.getCurrentSetting()?.oauthProviders || {};
+    return providers[key]?.[field] || '';
+  },
+  oauthProviderSourceLabel(key, field) {
+    const sources = Template.instance().oauthSources.get();
+    const entry = sources.providers?.[key]?.[field];
+    const provider = oauthProviderCatalog().find(p => p.key === key) || {};
+    const envVar = field === 'enabled' ? `${provider.envPrefix}_ENABLED` : provider.idVar;
+    return sourceBadge(entry, envVar);
+  },
+  // "is set (Admin Panel)" / "is set (OAUTH_GOOGLE_SECRET)" / "Unset" - never
+  // the secret itself, which the client never holds.
+  oauthProviderSecretStatusText(key) {
+    const sources = Template.instance().oauthSources.get();
+    const entry = sources.providers?.[key]?.secret;
+    if (!entry || !entry.hasValue) return TAPi18n.__('unset-color');
+    const provider = oauthProviderCatalog().find(p => p.key === key) || {};
+    const from = entry.source === 'admin' ? TAPi18n.__('admin-panel') : provider.secretVar;
+    return `${TAPi18n.__('oauth-provider-secret-set')} (${from})`;
+  },
+  oauthSharedSourceLabel(field) {
+    const sources = Template.instance().oauthSources.get();
+    return sourceBadge(sources[field], OAUTH_SHARED_ENV_VARS[field]);
+  },
+  oauthLoginStyleOptions() {
+    const current = ReactiveCache.getCurrentSetting()?.oauthProvidersLoginStyle || '';
+    return [
+      { value: '', label: OAUTH_SHARED_ENV_VARS.loginStyle, selected: current === '' },
+      { value: 'popup', label: 'popup', selected: current === 'popup' },
+      { value: 'redirect', label: 'redirect', selected: current === 'redirect' },
+    ];
+  },
+});
+
+Template.general.events({
+  'click a.js-toggle-oauth-provider-enabled'(event, tpl) {
+    const key = event.currentTarget.dataset.provider;
+    const providers = ReactiveCache.getCurrentSetting()?.oauthProviders || {};
+    Settings.update(ReactiveCache.getCurrentSetting()._id, {
+      $set: { [`oauthProviders.${key}.enabled`]: !providers[key]?.enabled },
+    });
+  },
+  'click button.js-oauth-provider-save'(event, tpl) {
+    const key = event.currentTarget.dataset.provider;
+    const providers = ReactiveCache.getCurrentSetting()?.oauthProviders || {};
+    const input = {
+      enabled: providers[key]?.enabled === true,
+      id: $(`.js-oauth-provider-field[data-provider="${key}"][data-field="id"]`).val(),
+    };
+    const $secret = $(`.js-oauth-provider-secret[data-provider="${key}"]`);
+    const secret = $secret.val();
+    if (secret) input.secret = secret;
+    Meteor.call('saveOauthProviderSettings', key, input, (err) => {
+      $secret.val('');
+      if (!err) tpl.refreshOauthSources();
+    });
+  },
+  'click a.js-toggle-oauth-merge-existing-users'(event, tpl) {
+    const setting = ReactiveCache.getCurrentSetting();
+    Settings.update(setting._id, {
+      $set: { oauthProvidersMergeExistingUsers: !setting.oauthProvidersMergeExistingUsers },
+    });
+  },
+  // The two settings shared by every provider ride along with a save of the
+  // first provider in the catalog - the server applies them globally.
+  'click button.js-oauth-shared-save'(event, tpl) {
+    const setting = ReactiveCache.getCurrentSetting();
+    const key = oauthProviderCatalog()[0].key;
+    const providers = setting?.oauthProviders || {};
+    const input = {
+      enabled: providers[key]?.enabled === true,
+      id: providers[key]?.id || '',
+      globalLoginStyle: $('#oauth-providers-login-style').val() || '',
+      mergeExistingUsers: setting?.oauthProvidersMergeExistingUsers === true,
+    };
+    Meteor.call('saveOauthProviderSettings', key, input, (err) => {
+      if (!err) tpl.refreshOauthSources();
+    });
+  },
+  'click a.js-toggle-passwordless-enabled'(event, tpl) {
+    const setting = ReactiveCache.getCurrentSetting();
+    Settings.update(setting._id, {
+      $set: { passwordlessEnabled: !setting.passwordlessEnabled },
+    });
+  },
+  'click button.js-passwordless-save'(event, tpl) {
+    const enabled = ReactiveCache.getCurrentSetting()?.passwordlessEnabled === true;
+    Meteor.call('savePasswordlessSettings', { enabled }, (err) => {
+      if (!err) tpl.refreshOauthSources();
+    });
+  },
+});
+
 // The E-mail pane's own behaviour. These handlers were registered on
 // Template.setting, which is fine only while Settings renders the pane. Admin Panel /
 // People renders it now, and Blaze delivers an event to the handlers of the template
@@ -1409,6 +1729,19 @@ Template.email.events({
         $('#mail-server-password').val('');
       }
     });
+  },
+  // #2022: Email Templates save. Each field is written only when present -
+  // an empty value clears back to the default hardcoded/i18n content, it
+  // does not fail validation, since all four Settings fields are optional.
+  'click button.js-email-templates-save'(event, tpl) {
+    event.preventDefault();
+    const $set = {
+      inviteEmailSubjectTemplate: ($('#email-template-invite-subject').val() || '').trim(),
+      inviteEmailBodyTemplate: ($('#email-template-invite-body').val() || '').trim(),
+      activityEmailSubjectTemplate: ($('#email-template-activity-subject').val() || '').trim(),
+      activityEmailBodyTemplate: ($('#email-template-activity-body').val() || '').trim(),
+    };
+    Settings.update(ReactiveCache.getCurrentSetting()._id, { $set });
   },
   // The pane's one Save, below both settings it writes: the invite domain and the
   // allow-email-change Yes/No.

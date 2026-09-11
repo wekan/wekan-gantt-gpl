@@ -252,6 +252,22 @@ body.mobile-mode [id^="swimlane-"] .list[style*="--list-width"]:not(.list-collap
   padding: 4px !important;
 }
 
+/* #3847: board-wide "sticky list headers" toggle (List hamburger menu ->
+   listActionPopup in listHeader.jade, models/boards.js's stickyListHeaders).
+   .list-header already sits BEFORE .list-body (its cards' own scrolling
+   container, overflow-y: scroll below) as a flex sibling rather than inside
+   it, so it does not scroll away with the cards in the ordinary bounded-
+   height board layout. `position: sticky` additionally pins it whenever the
+   ancestor that actually scrolls turns out to be `.list` itself instead -
+   e.g. a layout where `.list-body` is not the independently scrolling box -
+   so the header stays visible either way. Content/behaviour of the header
+   is unchanged; only whether it stays pinned during scroll. */
+.list.list-sticky-header .list-header {
+  position: sticky !important;
+  top: 0;
+  z-index: 20;
+}
+
 /* Anchor header action buttons within header during resize */
 .list .list-header { position: relative; z-index: 5; }
 .list .list-header .js-open-list-menu,
@@ -1699,4 +1715,32 @@ form.inlined-form .list-composer {
 #js-list-width-edit .js-toggle-fixed-list-width {
   display: block;
   margin-top: 8px;
+}
+
+/* List sync popup (listSyncPopup, listHeader.jade/.js,
+   docs/Features/ImportExport/Sync.md). Same success/error color convention
+   as the LDAP test-connection result (client/components/settings/settingBody.css
+   .ldap-test-success/.ldap-test-error) so an inline result reads the same way
+   everywhere it appears. */
+.list-sync-now-success {
+  color: #2e7d32;
+}
+
+.list-sync-now-error,
+.list-sync-error {
+  color: #c62828;
+}
+
+.list-sync-credential-status {
+  margin: 2px 0 6px;
+}
+
+/* Hamburger-menu badge (listActionPopup) showing whether this list already
+   has a sync source configured, and whether it is enabled or paused. */
+.list-sync-active {
+  color: #2e7d32;
+}
+
+.list-sync-paused {
+  color: #999;
 }

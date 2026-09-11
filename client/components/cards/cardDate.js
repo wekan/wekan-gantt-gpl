@@ -26,8 +26,42 @@ import {
   fromNow,
   calendar
 } from '/imports/lib/dateUtils';
-import { dueDateClass } from '/client/lib/dueDateColor';
+import { dueDateClass, dueCountdown } from '/client/lib/dueDateColor';
 import { subscribeDateNowTicker } from '/client/lib/dateNowTicker';
+import { formatJalaliDate } from '/imports/lib/jalaliDate';
+
+// #2424: turn a due date's countdown into the badge's visible suffix, e.g.
+// "Jun 15 (3 days left)" / "Jun 15 (2 days overdue)" / "Jun 15 (Due today)".
+// Pure day-count math lives in dueCountdown() (client/lib/dueDateColor.js,
+// shared with dueDateClass so the countdown and the badge colour always
+// agree); this only turns its result into translated text.
+function dueCountdownText(dueDate, nowVal) {
+  const { key, days } = dueCountdown(dueDate, nowVal);
+  if (key === 'due-today') {
+    return TAPi18n.__('due-today');
+  }
+  return TAPi18n.__(key, { sprintf: [days] });
+}
+
+// #4335: DISPLAY-ONLY per-user calendar-system toggle. Storage always stays
+// Gregorian (native `Date`); when the viewing user opted into
+// `profile.calendarSystem === 'jalali'`, minicard and card detail dates are
+// rendered in the Jalali (Persian/Solar Hijri) calendar instead. Date
+// pickers/inputs are untouched by this and remain Gregorian.
+function formatCardDateForDisplay(date, includeTime = true) {
+  const currentUser = ReactiveCache.getCurrentUser();
+  const dateFormat = currentUser
+    ? currentUser.getDateFormat()
+    : window.localStorage.getItem('dateFormat') || 'YYYY-MM-DD';
+  const calendarSystem = currentUser
+    ? currentUser.getCalendarSystem()
+    : window.localStorage.getItem('calendarSystem') || 'gregorian';
+
+  if (calendarSystem === 'jalali') {
+    return formatJalaliDate(date, dateFormat, includeTime);
+  }
+  return formatDateByUserPreference(date, dateFormat, includeTime);
+}
 
 // --- DatePicker popups (edit date forms) ---
 
@@ -163,9 +197,7 @@ function cardDateHelpers(extraHelpers) {
       return user.isShowWeekOfYear();
     },
     showDate() {
-      const currentUser = ReactiveCache.getCurrentUser();
-      const dateFormat = currentUser ? currentUser.getDateFormat() : (window.localStorage.getItem('dateFormat') || 'YYYY-MM-DD');
-      return formatDateByUserPreference(Template.instance().date.get(), dateFormat, true);
+      return formatCardDateForDisplay(Template.instance().date.get(), true);
     },
     showISODate() {
       return Template.instance().date.get().toISOString();
@@ -206,9 +238,7 @@ Template.cardReceivedDate.helpers(cardDateHelpers({
   },
   showTitle() {
     const tpl = Template.instance();
-    const currentUser = ReactiveCache.getCurrentUser();
-    const dateFormat = currentUser ? currentUser.getDateFormat() : (window.localStorage.getItem('dateFormat') || 'YYYY-MM-DD');
-    const formattedDate = formatDateByUserPreference(tpl.date.get(), dateFormat, true);
+    const formattedDate = formatCardDateForDisplay(tpl.date.get(), true);
     return `${TAPi18n.__('card-received-on')} ${formattedDate}`;
   },
 }));
@@ -247,9 +277,7 @@ Template.cardStartDate.helpers(cardDateHelpers({
   },
   showTitle() {
     const tpl = Template.instance();
-    const currentUser = ReactiveCache.getCurrentUser();
-    const dateFormat = currentUser ? currentUser.getDateFormat() : (window.localStorage.getItem('dateFormat') || 'YYYY-MM-DD');
-    const formattedDate = formatDateByUserPreference(tpl.date.get(), dateFormat, true);
+    const formattedDate = formatCardDateForDisplay(tpl.date.get(), true);
     return `${TAPi18n.__('card-start-on')} ${formattedDate}`;
   },
 }));
@@ -279,10 +307,20 @@ Template.cardDueDate.helpers(cardDateHelpers({
   },
   showTitle() {
     const tpl = Template.instance();
-    const currentUser = ReactiveCache.getCurrentUser();
-    const dateFormat = currentUser ? currentUser.getDateFormat() : (window.localStorage.getItem('dateFormat') || 'YYYY-MM-DD');
-    const formattedDate = formatDateByUserPreference(tpl.date.get(), dateFormat, true);
-    return `${TAPi18n.__('card-due-on')} ${formattedDate}`;
+    const formattedDate = formatCardDateForDisplay(tpl.date.get(), true);
+    const data = cardFromDateContext();
+    const endAt = data.getEnd();
+    const title = `${TAPi18n.__('card-due-on')} ${formattedDate}`;
+    if (endAt) return title;
+    return `${title} (${dueCountdownText(tpl.date.get(), tpl.now.get())})`;
+  },
+  showDate() {
+    const tpl = Template.instance();
+    const formattedDate = formatCardDateForDisplay(tpl.date.get(), true);
+    const data = cardFromDateContext();
+    const endAt = data.getEnd();
+    if (endAt) return formattedDate;
+    return `${formattedDate} (${dueCountdownText(tpl.date.get(), tpl.now.get())})`;
   },
 }));
 
@@ -349,9 +387,7 @@ Template.cardCustomFieldDate.helpers(cardDateHelpers({
   },
   showTitle() {
     const tpl = Template.instance();
-    const currentUser = ReactiveCache.getCurrentUser();
-    const dateFormat = currentUser ? currentUser.getDateFormat() : (window.localStorage.getItem('dateFormat') || 'YYYY-MM-DD');
-    const formattedDate = formatDateByUserPreference(tpl.date.get(), dateFormat, true);
+    const formattedDate = formatCardDateForDisplay(tpl.date.get(), true);
     return `${formattedDate}`;
   },
   classes() {
@@ -393,15 +429,11 @@ Template.minicardReceivedDate.helpers(cardDateHelpers({
   },
   showTitle() {
     const tpl = Template.instance();
-    const currentUser = ReactiveCache.getCurrentUser();
-    const dateFormat = currentUser ? currentUser.getDateFormat() : (window.localStorage.getItem('dateFormat') || 'YYYY-MM-DD');
-    const formattedDate = formatDateByUserPreference(tpl.date.get(), dateFormat, true);
+    const formattedDate = formatCardDateForDisplay(tpl.date.get(), true);
     return `${TAPi18n.__('card-received-on')} ${formattedDate}`;
   },
   showDate() {
-    const currentUser = ReactiveCache.getCurrentUser();
-    const dateFormat = currentUser ? currentUser.getDateFormat() : (window.localStorage.getItem('dateFormat') || 'YYYY-MM-DD');
-    return formatDateByUserPreference(Template.instance().date.get(), dateFormat, true);
+    return formatCardDateForDisplay(Template.instance().date.get(), true);
   },
 }));
 
@@ -439,15 +471,11 @@ Template.minicardStartDate.helpers(cardDateHelpers({
   },
   showTitle() {
     const tpl = Template.instance();
-    const currentUser = ReactiveCache.getCurrentUser();
-    const dateFormat = currentUser ? currentUser.getDateFormat() : (window.localStorage.getItem('dateFormat') || 'YYYY-MM-DD');
-    const formattedDate = formatDateByUserPreference(tpl.date.get(), dateFormat, true);
+    const formattedDate = formatCardDateForDisplay(tpl.date.get(), true);
     return `${TAPi18n.__('card-start-on')} ${formattedDate}`;
   },
   showDate() {
-    const currentUser = ReactiveCache.getCurrentUser();
-    const dateFormat = currentUser ? currentUser.getDateFormat() : (window.localStorage.getItem('dateFormat') || 'YYYY-MM-DD');
-    return formatDateByUserPreference(Template.instance().date.get(), dateFormat, true);
+    return formatCardDateForDisplay(Template.instance().date.get(), true);
   },
 }));
 
@@ -476,15 +504,20 @@ Template.minicardDueDate.helpers(cardDateHelpers({
   },
   showTitle() {
     const tpl = Template.instance();
-    const currentUser = ReactiveCache.getCurrentUser();
-    const dateFormat = currentUser ? currentUser.getDateFormat() : (window.localStorage.getItem('dateFormat') || 'YYYY-MM-DD');
-    const formattedDate = formatDateByUserPreference(tpl.date.get(), dateFormat, true);
-    return `${TAPi18n.__('card-due-on')} ${formattedDate}`;
+    const formattedDate = formatCardDateForDisplay(tpl.date.get(), true);
+    const data = cardFromDateContext();
+    const endAt = data.getEnd();
+    const title = `${TAPi18n.__('card-due-on')} ${formattedDate}`;
+    if (endAt) return title;
+    return `${title} (${dueCountdownText(tpl.date.get(), tpl.now.get())})`;
   },
   showDate() {
-    const currentUser = ReactiveCache.getCurrentUser();
-    const dateFormat = currentUser ? currentUser.getDateFormat() : (window.localStorage.getItem('dateFormat') || 'YYYY-MM-DD');
-    return formatDateByUserPreference(Template.instance().date.get(), dateFormat, true);
+    const tpl = Template.instance();
+    const formattedDate = formatCardDateForDisplay(tpl.date.get(), true);
+    const data = cardFromDateContext();
+    const endAt = data.getEnd();
+    if (endAt) return formattedDate;
+    return `${formattedDate} (${dueCountdownText(tpl.date.get(), tpl.now.get())})`;
   },
 }));
 
@@ -525,9 +558,7 @@ Template.minicardEndDate.helpers(cardDateHelpers({
     return `${TAPi18n.__('card-end-on')} ${format(tpl.date.get(), 'LLLL')}`;
   },
   showDate() {
-    const currentUser = ReactiveCache.getCurrentUser();
-    const dateFormat = currentUser ? currentUser.getDateFormat() : (window.localStorage.getItem('dateFormat') || 'YYYY-MM-DD');
-    return formatDateByUserPreference(Template.instance().date.get(), dateFormat, true);
+    return formatCardDateForDisplay(Template.instance().date.get(), true);
   },
 }));
 
@@ -546,15 +577,11 @@ Template.minicardCustomFieldDate.onCreated(function () {
 
 Template.minicardCustomFieldDate.helpers(cardDateHelpers({
   showDate() {
-    const currentUser = ReactiveCache.getCurrentUser();
-    const dateFormat = currentUser ? currentUser.getDateFormat() : (window.localStorage.getItem('dateFormat') || 'YYYY-MM-DD');
-    return formatDateByUserPreference(Template.instance().date.get(), dateFormat, true);
+    return formatCardDateForDisplay(Template.instance().date.get(), true);
   },
   showTitle() {
     const tpl = Template.instance();
-    const currentUser = ReactiveCache.getCurrentUser();
-    const dateFormat = currentUser ? currentUser.getDateFormat() : (window.localStorage.getItem('dateFormat') || 'YYYY-MM-DD');
-    const formattedDate = formatDateByUserPreference(tpl.date.get(), dateFormat, true);
+    const formattedDate = formatCardDateForDisplay(tpl.date.get(), true);
     return `${formattedDate}`;
   },
   classes() {
@@ -578,9 +605,7 @@ Template.voteEndDate.helpers(cardDateHelpers({
     return 'end-date ';
   },
   showDate() {
-    const currentUser = ReactiveCache.getCurrentUser();
-    const dateFormat = currentUser ? currentUser.getDateFormat() : (window.localStorage.getItem('dateFormat') || 'YYYY-MM-DD');
-    return formatDateByUserPreference(Template.instance().date.get(), dateFormat, true);
+    return formatCardDateForDisplay(Template.instance().date.get(), true);
   },
   showTitle() {
     const tpl = Template.instance();
@@ -606,9 +631,7 @@ Template.pokerEndDate.helpers(cardDateHelpers({
     return 'end-date ';
   },
   showDate() {
-    const currentUser = ReactiveCache.getCurrentUser();
-    const dateFormat = currentUser ? currentUser.getDateFormat() : (window.localStorage.getItem('dateFormat') || 'YYYY-MM-DD');
-    return formatDateByUserPreference(Template.instance().date.get(), dateFormat, true);
+    return formatCardDateForDisplay(Template.instance().date.get(), true);
   },
   showTitle() {
     const tpl = Template.instance();

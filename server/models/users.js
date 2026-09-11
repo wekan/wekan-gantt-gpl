@@ -24,7 +24,10 @@ import { isKnownFont, isKnownFontSize, isHexColor6 } from '/models/lib/uiFonts';
 import { DDPRateLimiter } from 'meteor/ddp-rate-limiter';
 import { publicErrorData } from '/server/lib/apiResponseHelpers';
 import escapeForRegex from 'escape-string-regexp';
+import { Notifications } from '/server/notifications/notifications';
+import { providerOfUser, onCreateProviderUser } from '/server/lib/oauthProviders';
 const { recordAuthRateLimitDenial } = require('/server/lib/authRateLimitDecision');
+const { decideAnonymize, buildAnonymizeUpdate } = require('/models/lib/userAnonymization');
 
 // Security (reported by meifukun): defence-in-depth throttle on account creation
 // so invitation-code sign-up (and any other registration) attempts cannot be
@@ -93,6 +96,7 @@ function assertSafeAvatarUrl(avatarUrl) {
 import ImpersonatedUsers from '/models/impersonatedUsers';
 import Avatars from '/models/avatars';
 import Boards from '/models/boards';
+import Cards from '/models/cards';
 const {
   isStarrablePageUrl, toggleStarredPage, moveStarredPage,
 } = require('/models/lib/starredPages');
@@ -190,8 +194,22 @@ Meteor.methods({
   // created exactly as the removed signup hook did, and the id is returned.
   async ensureTemplatesBoard() {
     if (!this.userId) throw new Meteor.Error('not-logged-in');
+    return await ensureTemplatesBoardForUserId(this.userId);
+  },
+});
 
-    const existing = await Users.findOneAsync(this.userId, {
+// #2209: "Create template from element" — extracted from the ensureTemplatesBoard
+// Meteor method above so a plain server-side caller (saveCardAsTemplate in
+// /server/models/cards.js, the "Save as Template" card action) can reuse the
+// exact same lazy per-user Templates board without going through a nested
+// Meteor method call. Behaviour is unchanged: idempotent, returns the existing
+// board id when one already exists and its board was not deleted, otherwise
+// creates the Templates board and its three swimlanes exactly as before.
+export async function ensureTemplatesBoardForUserId(userId) {
+  if (!userId) throw new Meteor.Error('not-logged-in');
+
+  {
+    const existing = await Users.findOneAsync(userId, {
       fields: { 'profile.templatesBoardId': 1 },
     });
     const existingId =
@@ -203,84 +221,87 @@ Meteor.methods({
         return existingId;
       }
     }
+  }
 
-    const fakeUser = {
-      extendAutoValueContext: {
-        userId: this.userId,
+  const fakeUser = {
+    extendAutoValueContext: {
+      userId,
+    },
+  };
+
+  let createdId;
+  await fakeUserId.withValue(userId, async () => {
+    const boardId = await Boards.insertAsync(
+      {
+        title:
+          getTAPi18n() && getTAPi18n().i18n
+            ? getTAPi18n().__('templates')
+            : 'Templates',
+        permission: 'private',
+        type: 'template-container',
       },
-    };
+      fakeUser,
+    );
 
-    let createdId;
-    await fakeUserId.withValue(this.userId, async () => {
-      const boardId = await Boards.insertAsync(
-        {
-          title:
-            getTAPi18n() && getTAPi18n().i18n
-              ? getTAPi18n().__('templates')
-              : 'Templates',
-          permission: 'private',
-          type: 'template-container',
-        },
-        fakeUser,
-      );
-
-      await Users.updateAsync(this.userId, {
-        $set: { 'profile.templatesBoardId': boardId },
-      });
-
-      const cardSwimlaneId = await Swimlanes.insertAsync(
-        {
-          title:
-            getTAPi18n() && getTAPi18n().i18n
-              ? getTAPi18n().__('card-templates-swimlane')
-              : 'Card Templates',
-          boardId,
-          sort: 1,
-          type: 'template-container',
-        },
-        fakeUser,
-      );
-      await Users.updateAsync(this.userId, {
-        $set: { 'profile.cardTemplatesSwimlaneId': cardSwimlaneId },
-      });
-
-      const listSwimlaneId = await Swimlanes.insertAsync(
-        {
-          title:
-            getTAPi18n() && getTAPi18n().i18n
-              ? getTAPi18n().__('list-templates-swimlane')
-              : 'List Templates',
-          boardId,
-          sort: 2,
-          type: 'template-container',
-        },
-        fakeUser,
-      );
-      await Users.updateAsync(this.userId, {
-        $set: { 'profile.listTemplatesSwimlaneId': listSwimlaneId },
-      });
-
-      const boardSwimlaneId = await Swimlanes.insertAsync(
-        {
-          title:
-            getTAPi18n() && getTAPi18n().i18n
-              ? getTAPi18n().__('board-templates-swimlane')
-              : 'Board Templates',
-          boardId,
-          sort: 3,
-          type: 'template-container',
-        },
-        fakeUser,
-      );
-      await Users.updateAsync(this.userId, {
-        $set: { 'profile.boardTemplatesSwimlaneId': boardSwimlaneId },
-      });
-
-      createdId = boardId;
+    await Users.updateAsync(userId, {
+      $set: { 'profile.templatesBoardId': boardId },
     });
 
-    return createdId;
-  },
+    const cardSwimlaneId = await Swimlanes.insertAsync(
+      {
+        title:
+          getTAPi18n() && getTAPi18n().i18n
+            ? getTAPi18n().__('card-templates-swimlane')
+            : 'Card Templates',
+        boardId,
+        sort: 1,
+        type: 'template-container',
+      },
+      fakeUser,
+    );
+    await Users.updateAsync(userId, {
+      $set: { 'profile.cardTemplatesSwimlaneId': cardSwimlaneId },
+    });
+
+    const listSwimlaneId = await Swimlanes.insertAsync(
+      {
+        title:
+          getTAPi18n() && getTAPi18n().i18n
+            ? getTAPi18n().__('list-templates-swimlane')
+            : 'List Templates',
+        boardId,
+        sort: 2,
+        type: 'template-container',
+      },
+      fakeUser,
+    );
+    await Users.updateAsync(userId, {
+      $set: { 'profile.listTemplatesSwimlaneId': listSwimlaneId },
+    });
+
+    const boardSwimlaneId = await Swimlanes.insertAsync(
+      {
+        title:
+          getTAPi18n() && getTAPi18n().i18n
+            ? getTAPi18n().__('board-templates-swimlane')
+            : 'Board Templates',
+        boardId,
+        sort: 3,
+        type: 'template-container',
+      },
+      fakeUser,
+    );
+    await Users.updateAsync(userId, {
+      $set: { 'profile.boardTemplatesSwimlaneId': boardSwimlaneId },
+    });
+
+    createdId = boardId;
+  });
+
+  return createdId;
+}
+
+Meteor.methods({
   async deleteWorkspace(workspaceId) {
     check(workspaceId, String);
     if (!this.userId) throw new Meteor.Error('not-logged-in');
@@ -379,6 +400,53 @@ Meteor.methods({
     return { success: true, message: 'User deleted successfully' };
   },
 
+  // #2731: GDPR-friendlier alternative to removeUser. removeUser (above) prunes
+  // the user's references off every board/card/comment and hard-deletes the
+  // Users document, which loses attribution/history entirely. anonymizeUser
+  // instead overwrites the directly-identifying profile fields in place with a
+  // placeholder and disables login (`loginDisabled: true`, the same flag
+  // server/authentication.js's validateLoginAttempt already gates on, and the
+  // same field editUser above already lets an admin toggle) - it does NOT touch
+  // any board/card/comment/activity reference, which keeps pointing at the same
+  // userId and now simply displays the anonymized name. Callable both by the
+  // account owner on themselves and by an admin on any other user, mirroring
+  // removeUser's self/admin split below.
+  //
+  // No Admin Panel -> Problems entry: that log is for ATTEMPTS an attacker
+  // controls (see CLAUDE.md's security-logging discipline), and there is no
+  // attacker here - this is a privileged admin action an admin takes on
+  // purpose, or a member acting on their own account. WeKan has no general
+  // admin-action audit log to hook into (server/lib/recoveryAudit.js is
+  // board-deletion-specific, keyed to RecoveryEvents/boardIds); the audit trail
+  // for this action is the anonymized/anonymizedAt fields persisted on the
+  // Users document itself and visible in Admin Panel -> People.
+  async anonymizeUser(targetUserId) {
+    check(targetUserId, String);
+
+    const currentUserId = this.userId;
+    const currentUser = currentUserId ? await ReactiveCache.getUser(currentUserId) : null;
+    const targetUser = await ReactiveCache.getUser(targetUserId);
+    const adminsCount = currentUser && currentUser.isAdmin
+      ? (await ReactiveCache.getUsers({ isAdmin: true })).length
+      : undefined;
+
+    const decision = decideAnonymize({
+      currentUserId,
+      currentUser,
+      targetUserId,
+      targetUser,
+      adminsCount,
+    });
+    if (!decision.allowed) {
+      throw new Meteor.Error(decision.error, decision.reason);
+    }
+
+    const placeholder = `deleted-user-${Random.id(8).toLowerCase()}`;
+    await Users.updateAsync(targetUserId, buildAnonymizeUpdate(placeholder));
+
+    return { success: true, message: 'User anonymized successfully' };
+  },
+
   async editUser(targetUserId, updateData) {
     check(targetUserId, String);
     check(updateData, Object);
@@ -469,6 +537,53 @@ Meteor.methods({
     await Users.updateAsync(this.userId, updateObject);
   },
 
+  // #1172: same toggle pattern as toggleBoardStar, generalized to swimlanes,
+  // lists and cards - each its own per-user id-array field on the profile.
+  async toggleSwimlaneStar(swimlaneId) {
+    check(swimlaneId, String);
+    if (!this.userId) throw new Meteor.Error('not-logged-in', 'User must be logged in');
+    const user = await Users.findOneAsync(this.userId);
+    if (!user) throw new Meteor.Error('user-not-found', 'User not found');
+
+    const starredSwimlanes = (user.profile && user.profile.starredSwimlanes) || [];
+    const isStarred = starredSwimlanes.includes(swimlaneId);
+    const updateObject = isStarred
+      ? { $pull: { 'profile.starredSwimlanes': swimlaneId } }
+      : { $addToSet: { 'profile.starredSwimlanes': swimlaneId } };
+
+    await Users.updateAsync(this.userId, updateObject);
+  },
+
+  async toggleListStar(listId) {
+    check(listId, String);
+    if (!this.userId) throw new Meteor.Error('not-logged-in', 'User must be logged in');
+    const user = await Users.findOneAsync(this.userId);
+    if (!user) throw new Meteor.Error('user-not-found', 'User not found');
+
+    const starredLists = (user.profile && user.profile.starredLists) || [];
+    const isStarred = starredLists.includes(listId);
+    const updateObject = isStarred
+      ? { $pull: { 'profile.starredLists': listId } }
+      : { $addToSet: { 'profile.starredLists': listId } };
+
+    await Users.updateAsync(this.userId, updateObject);
+  },
+
+  async toggleCardStar(cardId) {
+    check(cardId, String);
+    if (!this.userId) throw new Meteor.Error('not-logged-in', 'User must be logged in');
+    const user = await Users.findOneAsync(this.userId);
+    if (!user) throw new Meteor.Error('user-not-found', 'User not found');
+
+    const starredCards = (user.profile && user.profile.starredCards) || [];
+    const isStarred = starredCards.includes(cardId);
+    const updateObject = isStarred
+      ? { $pull: { 'profile.starredCards': cardId } }
+      : { $addToSet: { 'profile.starredCards': cardId } };
+
+    await Users.updateAsync(this.userId, updateObject);
+  },
+
   // #2220: toggle the board that opens after login (the user's "home" board).
   async toggleDefaultBoard(boardId) {
     check(boardId, String);
@@ -482,6 +597,48 @@ Meteor.methods({
       : { $set: { 'profile.defaultBoardId': boardId } };
 
     await Users.updateAsync(this.userId, updateObject);
+  },
+
+  // #4205: toggle a "Board Templates" swimlane card (cardType-linkedBoard) as
+  // this user's default board template. Marking a default lets plain "type a
+  // name and click Create" board creation apply it automatically instead of
+  // starting blank; clicking the current default clears it. Only a card the
+  // caller can actually apply (their own templates board, still a live linked
+  // board card) may be set, so a stale/foreign id can never be stored.
+  async toggleDefaultBoardTemplate(cardId) {
+    check(cardId, String);
+    if (!this.userId) throw new Meteor.Error('not-logged-in', 'User must be logged in');
+    const user = await Users.findOneAsync(this.userId);
+    if (!user) throw new Meteor.Error('user-not-found', 'User not found');
+
+    const isDefault = (user.profile && user.profile.defaultBoardTemplateId) === cardId;
+    if (isDefault) {
+      await Users.updateAsync(this.userId, {
+        $unset: {
+          'profile.defaultBoardTemplateId': '',
+          'profile.defaultBoardTemplateBoardId': '',
+        },
+      });
+      return;
+    }
+
+    const templatesBoardId = user.profile && user.profile.templatesBoardId;
+    const card = await Cards.findOneAsync({
+      _id: cardId,
+      type: 'cardType-linkedBoard',
+      boardId: templatesBoardId,
+      archived: false,
+    });
+    if (!card || !card.linkedId) {
+      throw new Meteor.Error('not-found', 'Board template not found');
+    }
+
+    await Users.updateAsync(this.userId, {
+      $set: {
+        'profile.defaultBoardTemplateId': cardId,
+        'profile.defaultBoardTemplateBoardId': card.linkedId,
+      },
+    });
   },
 
   // Star the page the caller is on, or unstar it if it is already starred.
@@ -749,6 +906,16 @@ Meteor.methods({
     await Users.updateAsync(this.userId, { $set: { 'profile.submitOnEnter': !current } });
   },
 
+  // #5427: "play a ding when a checklist item is checked off" - a per-user
+  // preference, off by default.
+  async toggleChecklistDingSound() {
+    if (!this.userId) throw new Meteor.Error('not-logged-in', 'User must be logged in');
+    const user = await Users.findOneAsync(this.userId);
+    if (!user) throw new Meteor.Error('user-not-found', 'User not found');
+    const current = !!((user.profile || {}).checklistDingSound);
+    await Users.updateAsync(this.userId, { $set: { 'profile.checklistDingSound': !current } });
+  },
+
   // #6531: "Open many cards at once" - a per-user preference, off by default.
   async toggleOpenManyCardsAtOnce() {
     if (!this.userId) throw new Meteor.Error('not-logged-in', 'User must be logged in');
@@ -904,6 +1071,24 @@ Meteor.methods({
     user.toggleLabelText(user.hasHiddenMinicardLabelText());
   },
 
+  // #4256: the per-user override of the board's "show label text on
+  // minicards" setting - null/undefined to follow the board's own setting,
+  // or an explicit true/false to always show/hide regardless of the board.
+  // Mirrors the global theme override (profile.globalThemeColor).
+  async setShowLabelTextOverride(value) {
+    if (!this.userId) return;
+    check(value, Match.OneOf(Boolean, null, undefined));
+    if (value === null || value === undefined) {
+      await Users.updateAsync(this.userId, {
+        $unset: { 'profile.showLabelTextOverride': '' },
+      });
+      return;
+    }
+    await Users.updateAsync(this.userId, {
+      $set: { 'profile.showLabelTextOverride': value },
+    });
+  },
+
   async toggleRescueCardDescription() {
     if (!this.userId) return;
     const user = await ReactiveCache.getCurrentUser();
@@ -926,6 +1111,18 @@ Meteor.methods({
     const user = await ReactiveCache.getCurrentUser();
     if (!user) return;
     user.setDateFormat(dateFormat);
+  },
+
+  // #4335: per-user, display-only Jalali (Persian/Solar Hijri) calendar
+  // toggle for minicard/card-detail dates. Storage stays Gregorian.
+  async changeCalendarSystem(calendarSystem) {
+    check(calendarSystem, String);
+    if (!['gregorian', 'jalali'].includes(calendarSystem)) {
+      throw new Meteor.Error('invalid-calendar-system');
+    }
+    const user = await ReactiveCache.getCurrentUser();
+    if (!user) return;
+    user.setCalendarSystem(calendarSystem);
   },
 
   async applyListWidth(boardId, listId, width, constraint) {
@@ -974,6 +1171,25 @@ Meteor.methods({
     return true;
   },
 
+  // #3847: board-wide "sticky list headers" toggle, offered from the List
+  // hamburger/action menu (client/components/lists/listHeader.jade) even
+  // though it affects every list on the board - see models/boards.js.
+  async setStickyListHeaders(boardId, stickyListHeaders) {
+    check(boardId, String);
+    check(stickyListHeaders, Boolean);
+    if (!this.userId) {
+      throw new Meteor.Error('not-logged-in', 'User must be logged in');
+    }
+    const board = await ReactiveCache.getBoard(boardId);
+    if (!board || !board.hasMember(this.userId)) {
+      throw new Meteor.Error('error-notAuthorized');
+    }
+    await Boards.updateAsync(boardId, {
+      $set: { stickyListHeaders: !!stickyListHeaders },
+    });
+    return true;
+  },
+
   async setListCollapsedState(boardId, listId, collapsed) {
     check(boardId, String);
     check(listId, String);
@@ -985,6 +1201,22 @@ Meteor.methods({
     if (!current[boardId]) current[boardId] = {};
     current[boardId][listId] = !!collapsed;
     await Users.updateAsync(this.userId, { $set: { 'profile.collapsedLists': current } });
+  },
+
+  // #1591: the same shape as setListCollapsedState above, for the whole
+  // minicard fold. See client/lib/utils.js's Utils.setCardCollapseState for
+  // why there is no anonymous/public fallback here.
+  async setCardCollapsedState(boardId, cardId, collapsed) {
+    check(boardId, String);
+    check(cardId, String);
+    check(collapsed, Boolean);
+    if (!this.userId) throw new Meteor.Error('not-logged-in', 'User must be logged in');
+    const user = await Users.findOneAsync(this.userId);
+    if (!user) throw new Meteor.Error('user-not-found', 'User not found');
+    const current = (user.profile && user.profile.collapsedCards) || {};
+    if (!current[boardId]) current[boardId] = {};
+    current[boardId][cardId] = !!collapsed;
+    await Users.updateAsync(this.userId, { $set: { 'profile.collapsedCards': current } });
   },
 
   async applySwimlaneHeight(boardId, swimlaneId, height) {
@@ -1467,6 +1699,23 @@ Meteor.methods({
     } catch (e) {
       throw new Meteor.Error('email-fail', e.message);
     }
+
+    // #3136: also push-notify the invitee, the same way other event types
+    // (card assignment, due dates, mentions, ...) already do - via the
+    // shared notify() helper, which fans out to every subscribed
+    // notification service (email + the in-app notification bell). Only
+    // possible for an EXISTING user: a brand-new invitee has no established
+    // notification target yet, so they stay email-only (isNewUser is true
+    // only when no matching account existed above).
+    if (!isNewUser) {
+      try {
+        Notifications.notify(user, 'push-invite-title', 'push-invite-text', params);
+      } catch (e) {
+        // Logging must never break the invite itself.
+        console.error('Error sending board invite push notification:', e);
+      }
+    }
+
     return {
       username: user.username,
       email: user.emails[0].address,
@@ -1599,6 +1848,22 @@ Accounts.onCreateUser(async (options, user) => {
   // username, email, profile and authenticationMethod are top-level fields.
   // Only enter the OIDC normalization path when OIDC service data exists.
   // #3204
+  //
+  // A login through one of Meteor's own accounts packages (Google, GitHub,
+  // Facebook, Twitter/X, Meteor Developer, Weibo, Meetup) is normalised by
+  // server/lib/oauthProviders.js with the same fail-closed linking rule as
+  // OIDC below. An existing account comes back ready to return; a brand-new
+  // one falls through to the ordinary registration checks further down.
+  const oauthProvider = providerOfUser(user);
+  if (oauthProvider) {
+    const created = await onCreateProviderUser(options, user, oauthProvider);
+    if (created.existing) return created.user;
+  } else if (options && options.passwordless === true && user.services && !Object.keys(user.services).length) {
+    // accounts-passwordless: the account is made by requestLoginTokenForUser
+    // before the first code is e-mailed, with no service data yet.
+    user.authenticationMethod = 'passwordless';
+  }
+
   if (user.services?.oidc) {
     let email = user.services.oidc.email;
     if (Array.isArray(email)) {
@@ -1995,9 +2260,22 @@ Users.after.insert(async (userId, doc) => {
   const disableRegistration = (await ReactiveCache.getCurrentSetting()).disableRegistration;
   if (doc.authenticationMethod !== 'ldap' && disableRegistration) {
     let invitationCode = null;
-    if (doc.authenticationMethod.toLowerCase() === 'oauth2') {
+    // #6620: authenticationMethod is only set for oauth2/ldap signups (see
+    // ATCreateUserServer/enrollOrLoginOidcUser above) - a normal
+    // password/invitation signup leaves it undefined, and calling
+    // .toLowerCase() on that crashed here as an unhandledRejection
+    // ("TypeError: string.toLowerCase is not a function") every time
+    // disableRegistration was on. Likewise doc.emails may be empty for an
+    // account created without an email. Both are guarded so a missing value
+    // just falls through to the invitation-code branch below instead of
+    // throwing.
+    if (
+      typeof doc.authenticationMethod === 'string' &&
+      doc.authenticationMethod.toLowerCase() === 'oauth2'
+    ) {
+      const oauthEmail = doc.emails && doc.emails[0] && doc.emails[0].address;
       invitationCode = await ReactiveCache.getInvitationCode({
-        email: doc.emails[0].address.toLowerCase(),
+        email: typeof oauthEmail === 'string' ? oauthEmail.toLowerCase() : '',
         valid: true,
       });
     } else {

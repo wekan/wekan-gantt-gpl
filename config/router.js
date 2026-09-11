@@ -458,6 +458,8 @@ FlowRouter.route('/b/:boardId/:slug/:cardId', {
     // scroll the board away from the card it just opened.
     Session.set('revealSwimlaneId', null);
     Session.set('revealListId', null);
+    Session.set('revealCommentId', null);
+    Session.set('revealActivityId', null);
     Session.set('popupCardId', null);
     Session.set('popupCardBoardId', null);
     // #4758: if the card was moved to another board, redirect to its current one.
@@ -516,13 +518,20 @@ FlowRouter.route('/b/:id/:slug', {
     Session.set('currentCard', null);
     Session.set('revealSwimlaneId', null);
     Session.set('revealListId', null);
+    Session.set('revealCommentId', null);
+    Session.set('revealActivityId', null);
     Session.set('popupCardId', null);
     Session.set('popupCardBoardId', null);
 
     // If we close a card, we'll execute again this route action but we don't
     // want to excape every current actions (filters, etc.)
     if (previousBoard !== currentBoard) {
-      Filter.reset();
+      // #1751: only clear the filters that are scoped to the board being
+      // left (labels, custom fields, dependency types, the advanced/list
+      // text filters) - a member/assignee/creator/due-date/title filter
+      // means the same thing on the next board, since those keys (user
+      // ids, dates, text) aren't board-specific, so they survive the hop.
+      Filter.resetBoardScoped();
       Session.set('sortBy', '');
       EscapeActions.executeAll();
     } else {
@@ -616,6 +625,45 @@ FlowRouter.route('/due-cards', {
       content: 'dueCards',
     });
     // }
+  },
+});
+
+FlowRouter.route('/my-attachments', {
+  name: 'my-attachments',
+  triggersEnter: [ensureSignedInUnlessSandstorm],
+  action() {
+    Filter.reset();
+    Session.set('sortBy', '');
+    // EscapeActions.executeAll();
+    EscapeActions.executeUpTo('popup-close');
+
+    Utils.manageCustomUI();
+    Utils.manageMatomo();
+
+    this.render('defaultLayout', {
+      content: 'myAttachments',
+    });
+    // }
+  },
+});
+
+// #1172: the "Starred" page - everything (boards, swimlanes, lists, cards)
+// the current user has starred, across all boards, grouped by type. Mirrors
+// myCards/myAttachments/dueCards above.
+FlowRouter.route('/starred-items', {
+  name: 'starred-items',
+  triggersEnter: [ensureSignedInUnlessSandstorm],
+  action() {
+    Filter.reset();
+    Session.set('sortBy', '');
+    EscapeActions.executeUpTo('popup-close');
+
+    Utils.manageCustomUI();
+    Utils.manageMatomo();
+
+    this.render('defaultLayout', {
+      content: 'starredItems',
+    });
   },
 });
 

@@ -1,0 +1,30 @@
+template(name="boardChartView")
+  .stats-view
+    .stats-view-content.chart-view-content
+      h1.stats-view-title {{ chartTitle }}
+      .chart-export-buttons
+        a.chart-export-button.js-export-chart(href="#" data-chart-key="{{chartKey}}")
+          i.fa.fa-share-square-o
+          | {{_ 'export'}}
+
+      if isLoading
+        p.stats-view-placeholder-note {{_ 'loading'}}
+      else if hasNoData
+        p.stats-view-placeholder-note {{_ 'no-results'}}
+      else
+        .chart-canvas-wrapper
+          canvas.js-chart-canvas
+
+        if forecastNote
+          p.stats-view-placeholder-note.chart-forecast-note {{ forecastNote }}
+
+        table.stats-view-table.chart-data-table
+          thead
+            tr
+              each header in tableHeaders
+                th {{ header }}
+          tbody
+            each row in tableRows
+              tr
+                each cell in row
+                  td {{ cell }}

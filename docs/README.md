@@ -115,9 +115,12 @@ Wekan is distributed under the [MIT License], allowing anyone to easily work wit
 * [LDAP](./Features/Login/LDAP.md)
 * [LDAP AD Simple Auth](./Features/Login/LDAP-AD-Simple-Auth.md)
 * [Keycloak](./Features/Login/Keycloak/Keycloak.md)
+* [Authelia](./Features/Login/Authelia.md)
 * [Google login](./Features/Login/Google-login.md)
 * [Azure](./Features/Login/Azure/Azure.md)
 * [OAuth2](./Features/Login/OAuth2.md), Auth0, GitLab, RocketChat
+* [OAuth Providers](./Features/Login/OAuth-Providers.md): Google, GitHub, Facebook, Twitter, Meteor Developer, Weibo, Meetup
+* [Passwordless](./Features/Login/Passwordless.md): one-time sign-in code by email
 * [Oracle OIM on premise using OAuth2](./Features/Login/Oracle-OIM.md)
 * [ADFS 4.0 using OAuth2 and OpenID](./Features/Login/ADFS.md)
 * [Azure AD B2C using OAuth2](./Features/Login/B2C.md)
@@ -125,6 +128,7 @@ Wekan is distributed under the [MIT License], allowing anyone to easily work wit
 * [CAS](./Features/Login/CAS.md) Please test
 * [SAML](./Features/Login/SAML.md) Please test
 * [Zitadel](./Features/Login/Zitadel.md)
+* [Two-Factor Authentication (TOTP)](./Features/Login/Two-Factor-Authentication.md)
 
 # <a name="Logs"></a>Metrics, Logs, Stats
 
@@ -143,10 +147,13 @@ Wekan is distributed under the [MIT License], allowing anyone to easily work wit
 # <a name="Time"></a>Time
 
 * [Time Tracking](./Features/Date/Time-Tracking.md)
+* [Flowtime and Pomodoro timers](./Features/Date/Flowtime-and-Pomodoro.md)
 * [Gantt Chart](Features/Reports/Gantt.md)
 * [Due Date](./Features/Date/Due-Date.md)
 * [Day of week start](./Features/Date/Day-of-week-start.md)
 * [Calendar](./Features/Date/Calendar.md)
+* [Multi Board Calendar](./Features/Date/Multi-Board-Calendar.md)
+* [Board Report Charts (Dashboard, Burndown, Burnup, Cumulative Flow, Control Chart, Cycle Time, Flow Efficiency, Lead Time, Throughput Histogram, WIP Run, Pulse)](Features/Reports/Charts/Board-Report-Charts.md)
 
 # <a name="Features"></a>Features
 
@@ -156,6 +163,7 @@ Wekan is distributed under the [MIT License], allowing anyone to easily work wit
 * [Cards](Features/Cards/Cards.md)
 * [Members and Permissions](Features/Members/Members.md)
 * [WIP Limits](Features/Lists/WipLimit/WipLimit.md)
+* [WIP Limit Groups (shared limit across several lists)](Features/Lists/WipLimit/WIP-Limit-Groups.md)
 * [Keyboard Shortcuts](Features/Keyboard-Shortcuts/Keyboard-Shortcuts.md)
 * [Accessibility](Features/Accessibility/Accessibility.md)
 * [Rules (Automation)](Features/Automation/Rules/Rules.md)
@@ -172,6 +180,7 @@ Wekan is distributed under the [MIT License], allowing anyone to easily work wit
 * [Customize Translations](./Features/Translations/Customize-Translations.md)
 * [Default Language for All Users](https://github.com/wekan/wekan/issues/3927)
 * [Planning Poker](Features/Cards/Planning-Poker.md)
+* [Using WeKan for Scrum](Features/Cards/Scrum.md)
 * [Scaling](./Platforms/Webserver/Scaling.md)
 * [Custom Logo](Features/Admin-Panel/Settings/Visibility.md)
 * [Subtasks](Features/Cards/Subtasks.md)
@@ -188,6 +197,15 @@ Wekan is distributed under the [MIT License], allowing anyone to easily work wit
 * [Fix Export board menu not visible on some boards](https://github.com/wekan/wekan/issues/1060)
 * [RAM usage](https://github.com/wekan/wekan/issues/1088#issuecomment-311843230)
 * [Swimlanes](Features/Board/Swimlanes.md)
+* [Group by Assignee](Features/Board/Group-By-Assignee.md)
+* [Bigboard (all your boards stacked on one page)](Features/Board/Bigboard.md)
+* [Roadmap (custom-field-grouped Gantt)](Features/Board/Roadmap.md)
+* [Notification Settings (Admin → Board → Member)](Features/Members/Notification-Settings.md)
+* [My Cards, Due Cards, My Attachments](Features/Members/My-Cards-Due-Attachments.md)
+* [Custom field: Admin only and display order](Features/Cards/CustomFields/Custom-Field-Admin-Only-And-Order.md)
+* [Label due dates (Milestones)](Features/Board/Labels-Milestone-Due-Date.md)
+* [Checklists (automatic reset, bulk text edit)](Features/Cards/Checklists.md)
+* [Card field display order](Features/Board/Card-Field-Display-Order.md)
 
 # <a name="Email"></a>Email
 

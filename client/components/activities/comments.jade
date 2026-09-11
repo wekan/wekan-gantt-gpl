@@ -4,7 +4,11 @@ template(name="commentForm")
     +userAvatar(userId=currentUser._id noRemove=true)
     if replyToComment
       .comment-reply-banner.js-reply-banner
-        span.comment-reply-banner-label {{_ 'comment-in-reply-to'}}:
+        span.comment-reply-banner-label
+          if replyToCommentAuthorName
+            | {{_ 'comment-in-reply-to'}} {{ replyToCommentAuthorName }}:
+          else
+            | {{_ 'comment-in-reply-to'}}:
         span.comment-reply-banner-text
           +viewer
             = replyToComment.text
@@ -22,7 +26,7 @@ template(name="comments")
       +comment(commentData)
 
 template(name="comment")
-  .comment(class="{{#if parentId}}is-reply{{/if}}")
+  .comment(id=commentDomId class="{{#if parentId}}is-reply{{/if}}")
     +userAvatar(userId=userId)
     p.comment-desc
       span.comment-member
@@ -48,7 +52,17 @@ template(name="comment")
           +viewer
             = text
         +commentReactions(reactions=reactions commentId=_id)
-        span(title=createdAt).comment-meta {{ displayDate createdAt }}
+        span(title=createdAt).comment-meta
+          //- Issue #4757: the timestamp is a real permalink (card URL +
+          //- #comment-<id>) so a normal click navigates/scrolls/highlights,
+          //- and right-click - copy link address works too. The small icon
+          //- beside it copies the same URL to the clipboard explicitly,
+          //- reusing the copy-link pattern already used for cards/lists/
+          //- swimlanes (client/lib/utils.js copyTextToClipboard).
+          a.js-comment-permalink(href="{{ commentPermalink }}") {{ displayDate createdAt }}
+          a.js-copy-comment-link(title="{{_ 'copy-link-to-clipboard'}}")
+            i.fa.fa-link
+          span.copied-tooltip {{_ 'copied'}}
           if currentUser.isBoardMember
             = ' - '
             a.js-reply-comment {{_ "comment-reply"}}

@@ -5,10 +5,39 @@ import { TAPi18n } from '/imports/i18n';
 import EmailLocalization from '../lib/emailLocalization';
 import { Notifications } from '/server/notifications/notifications';
 import { formatActivityNotificationTitle } from '/server/lib/activityNotificationTitle';
+import { resolveNotificationSetting } from '/models/lib/notificationSettings';
 const {
   escapeEmailHtml,
   safeEmailSubject,
+  buildHtmlNotificationLine,
 } = require('/models/lib/emailNotificationSafety');
+const { buildReplyToAddress } = require('/server/lib/inboundEmailReplyToken');
+const { substituteVars } = require('/models/lib/ruleVarsSubstitute');
+
+// #2414: reply-by-email. A notification's Reply-To address encodes the card
+// it is about (HMAC-signed, see inboundEmailReplyToken.js) so a reply caught
+// by the inbound-email webhook (server/routes/inboundEmail.js) can be matched
+// back to the right card. Both a shared secret and a domain to send the
+// reply to must be configured, or WeKan sends no Reply-To at all (the
+// feature is opt-in and off by default - most self-hosters have no
+// inbound-mail webhook configured).
+// Emails are buffered per-user and flushed together (see below); a digest
+// covering more than one card can only carry ONE Reply-To, so this tracks the
+// MOST RECENTLY notified card per user and a reply lands on that one. This is
+// a deliberate, documented limitation of the webhook-based approach - see
+// docs/Features/Reply-By-Email.md.
+const lastNotifiedCardIdByUser = new Map();
+
+function inboundEmailReplyTo(cardId) {
+  const secret = process.env.INBOUND_EMAIL_HMAC_SECRET;
+  const domain = process.env.INBOUND_EMAIL_DOMAIN;
+  if (!cardId || !secret || !domain) return '';
+  try {
+    return buildReplyToAddress(cardId, secret, domain);
+  } catch (e) {
+    return '';
+  }
+}
 
 // buffer each user's email text in a queue, then flush them in single email
 Meteor.startup(() => {
@@ -23,6 +52,19 @@ Meteor.startup(() => {
         console.error('Invalid user helper surface for email notification:', user?._id);
         return;
       }
+
+      // 3-tier Notification Settings: admin default -> board override ->
+      // member override (see models/lib/notificationSettings.js).
+      const setting = await ReactiveCache.getCurrentSetting();
+      const board = params.boardId
+        ? await ReactiveCache.getBoard(params.boardId)
+        : null;
+      const enabled = resolveNotificationSetting('email', {
+        adminDefault: setting && setting.notifyDefaultEmail,
+        boardOverride: board && board.notifyOverrideEmail,
+        memberOverride: user.profile && user.profile.notifyOverrideEmail,
+      });
+      if (!enabled) return;
 
       // #5875: the server only loads the English bundle at startup, so make sure
       // the recipient's language is loaded before translating the subject/body —
@@ -39,7 +81,7 @@ Meteor.startup(() => {
       });
 
       const lan = user.getLanguage();
-      const subject = safeEmailSubject(formatActivityNotificationTitle(
+      let subject = safeEmailSubject(formatActivityNotificationTitle(
         title,
         params,
         TAPi18n.__.bind(TAPi18n),
@@ -50,13 +92,52 @@ Meteor.startup(() => {
         Meteor.settings.public &&
         Meteor.settings.public.RICHER_CARD_COMMENT_EDITOR !== false;
       const actorName = params.user || '';
-      const text = `${existing ? `\n${subject}\n` : ''}${
-        actorName
-      } ${TAPi18n.__(description, quoteParams, lan)}\n${params.url}`;
+      const descriptionText = TAPi18n.__(description, quoteParams, lan);
+
+      // #2022: an admin-customized activity-notification template (Admin
+      // Panel -> Email Templates) overrides the built subject/body line,
+      // using the same {token} substitution the #3304 rule "send email"
+      // action uses (substituteVars). Unset (the default on every existing
+      // install) falls through to the exact content built above, unchanged.
+      const templateSetting = await ReactiveCache.getCurrentSetting();
+      const templateVars = {
+        board: params.board || '',
+        card: params.card || '',
+        list: params.list || '',
+        username: actorName,
+        url: params.url || '',
+        comment: params.comment || '',
+        action: descriptionText,
+      };
+      if (templateSetting && templateSetting.activityEmailSubjectTemplate) {
+        subject = safeEmailSubject(
+          substituteVars(templateSetting.activityEmailSubjectTemplate, templateVars),
+        );
+      }
+      const bodyTemplate = templateSetting && templateSetting.activityEmailBodyTemplate;
+      const text = bodyTemplate
+        ? `${existing ? `\n${subject}\n` : ''}${substituteVars(bodyTemplate, templateVars)}`
+        : `${existing ? `\n${subject}\n` : ''}${
+            actorName
+          } ${descriptionText}\n${params.url}`;
 
       user.addEmailBuffer(
-        htmlEnabled ? escapeEmailHtml(text).replace(/\n/g, '<br/>') : text,
+        bodyTemplate
+          ? text
+          : htmlEnabled
+          ? buildHtmlNotificationLine({
+              existing,
+              subject,
+              actorName,
+              descriptionText,
+              url: params.url,
+            })
+          : text,
       );
+
+      if (params.cardId) {
+        lastNotifiedCardIdByUser.set(user._id, params.cardId);
+      }
 
       const userId = user._id;
       Meteor.setTimeout(async () => {
@@ -75,14 +156,26 @@ Meteor.startup(() => {
 
         const html = texts.join('<br/>\n\n');
         user.clearEmailBuffer();
+        const replyToCardId = lastNotifiedCardIdByUser.get(userId);
+        lastNotifiedCardIdByUser.delete(userId);
         try {
+          // #6620: a user can reach this path (e.g. header-auth/LDAP
+          // accounts) with an empty emails array - user.emails[0] would then
+          // be undefined and .address.toLowerCase() threw an
+          // unhandledRejection. Skip the buffered digest send rather than
+          // crash when there is nowhere to send it.
+          const emailAddress = user.emails && user.emails[0] && user.emails[0].address;
+          if (typeof emailAddress !== 'string' || !emailAddress) {
+            return;
+          }
           await EmailLocalization.sendEmail({
-            to: user.emails[0].address.toLowerCase(),
+            to: emailAddress.toLowerCase(),
             from: Accounts.emailTemplates.from,
             subject,
             html,
             language: user.getLanguage(),
-            userId: user._id
+            userId: user._id,
+            replyTo: inboundEmailReplyTo(replyToCardId),
           });
         } catch (e) {
           return;

@@ -48,6 +48,21 @@ Settings.attachSchema(
       optional: true,
       defaultValue: false,
     },
+    // Admin Panel / Features (issue #3069): autolink bare `<prefix>NNNN` tokens
+    // (e.g. "#1234") found in card descriptions/comments to an external issue
+    // tracker. externalLinkPatternPrefix is the literal token prefix (commonly
+    // "#"); externalLinkPatternUrl is the URL template containing "{number}",
+    // which is replaced with the digits that followed the prefix. Either left
+    // empty disables the feature (no-op). See models/lib/externalLinkAutolink.js
+    // for the pure matching/URL-building function this setting drives.
+    externalLinkPatternPrefix: {
+      type: String,
+      optional: true,
+    },
+    externalLinkPatternUrl: {
+      type: String,
+      optional: true,
+    },
     // Admin Panel / Features / Notifications (issue #5820).
     // disableActivities: stop recording AND showing all activity-feed entries.
     // disableNotifications: never send watch notifications.
@@ -292,6 +307,20 @@ Settings.attachSchema(
       type: String,
       optional: true,
     },
+    // Board visibility popup / create-board popup: the sub-name text shown under
+    // "Private" and "Public". Empty (the default) falls back to the i18n
+    // 'private-desc' / 'public-desc' strings unchanged - see
+    // imports/i18n/lib/visibilityDesc.js. Set by an admin who wants "Public" to
+    // mean something else on their instance, e.g. "public within our
+    // organization" rather than public on the internet (issue #4421).
+    customPrivateBoardDesc: {
+      type: String,
+      optional: true,
+    },
+    customPublicBoardDesc: {
+      type: String,
+      optional: true,
+    },
     customHeadEnabled: {
       type: Boolean,
       optional: true,
@@ -373,12 +402,142 @@ Settings.attachSchema(
       optional: true,
       defaultValue: false,
     },
+    // Admin-level default for the 3-tier Notification Settings system (see
+    // models/lib/notificationSettings.js): the base decision used when neither a
+    // board nor a member has overridden a given notification service. Follows
+    // the same nullable-override precedence used by the board/member allowsX
+    // toggles elsewhere in this schema — see resolveNotificationSetting().
+    notifyDefaultTray: {
+      type: Boolean,
+      optional: true,
+      defaultValue: true,
+    },
+    notifyDefaultEmail: {
+      type: Boolean,
+      optional: true,
+      defaultValue: true,
+    },
+    // #2022: admin-customizable templates for WeKan's transactional emails.
+    // Each is OPTIONAL and unset by default, so an install that has never
+    // touched Admin Panel -> Email Templates sends the exact hardcoded/i18n
+    // content it always has (server/models/settings.js's sendInvitationEmail,
+    // server/notifications/email.js's activity-notification buffer). Only
+    // when an admin fills one of these in is it used, with
+    // models/lib/ruleVarsSubstitute.js's substituteVars() - the same
+    // `{token}` substitution the #3304 rule "send email" action uses -
+    // filling in the tokens documented next to each field below. Deliberately
+    // NOT included: password-reset / account-verification emails, which stay
+    // hardcoded (see docs/Security note in server/models/settings.js).
+    // Tokens: {email} {inviter} {user} {icode} {url}
+    inviteEmailSubjectTemplate: {
+      type: String,
+      optional: true,
+    },
+    inviteEmailBodyTemplate: {
+      type: String,
+      optional: true,
+    },
+    // Tokens: {board} {card} {list} {username} {url} {comment} {action}
+    activityEmailSubjectTemplate: {
+      type: String,
+      optional: true,
+    },
+    activityEmailBodyTemplate: {
+      type: String,
+      optional: true,
+    },
     supportTitle: {
       type: String,
       optional: true,
     },
     supportPageText: {
       type: String,
+      optional: true,
+    },
+    // Admin Panel override of the LDAP_* environment variables (maintainer
+    // request: "Add all settings from environment variables to Admin Panel
+    // where appropriate ... as possibility to override"). Every field here is
+    // OPTIONAL and unset by default, so an install that has never touched
+    // Admin Panel -> LDAP keeps its current env-var-only behaviour unchanged -
+    // see models/lib/configResolver.js's resolveConfigValue()/hasConfigValue(),
+    // which an unset/empty admin field falls through to the LDAP_* env var for.
+    // `ldap.bindPassword` is the ONE field in this group that is never
+    // published to the client (see server/publications/settings.js) - only
+    // `ldap.bindPasswordSet` (a boolean) is, so the Admin Panel can show "a
+    // password is configured" without ever sending the password itself.
+    ldap: {
+      type: Object,
+      optional: true,
+    },
+    'ldap.enabled': {
+      type: Boolean,
+      optional: true,
+    },
+    'ldap.host': {
+      type: String,
+      optional: true,
+    },
+    'ldap.port': {
+      type: String,
+      optional: true,
+    },
+    'ldap.baseDN': {
+      type: String,
+      optional: true,
+    },
+    'ldap.authentificationUserDN': {
+      type: String,
+      optional: true,
+    },
+    'ldap.bindPassword': {
+      type: String,
+      optional: true,
+    },
+    'ldap.bindPasswordSet': {
+      type: Boolean,
+      optional: true,
+      defaultValue: false,
+    },
+    'ldap.userSearchFilter': {
+      type: String,
+      optional: true,
+    },
+    'ldap.userSearchField': {
+      type: String,
+      optional: true,
+    },
+    'ldap.encryption': {
+      type: String,
+      optional: true,
+    },
+    // Admin Panel override of the OAUTH_<PROVIDER>_* environment variables for
+    // Meteor's own accounts-* login services (Google, GitHub, Facebook,
+    // X/Twitter, Meteor Developer, Weibo, Meetup - models/lib/oauthProviders.js
+    // is the catalog). Same contract as `ldap` above: everything OPTIONAL and
+    // unset by default so an env-var-only install is unchanged, and per
+    // provider ONLY `enabled`, `id`, `loginStyle` and the derived boolean
+    // `secretSet` are published (server/publications/settings.js) - the
+    // `secret` itself never leaves the server, exactly like ldap.bindPassword.
+    oauthProviders: {
+      type: Object,
+      optional: true,
+      blackbox: true,
+    },
+    // OAUTH_PROVIDERS_LOGIN_STYLE ('popup' | 'redirect') for every provider.
+    oauthProvidersLoginStyle: {
+      type: String,
+      optional: true,
+      allowedValues: ['popup', 'redirect'],
+    },
+    // OAUTH_PROVIDERS_MERGE_EXISTING_USERS: attach a provider login to the
+    // existing account that has the same verified email instead of a new one.
+    oauthProvidersMergeExistingUsers: {
+      type: Boolean,
+      optional: true,
+    },
+    // PASSWORDLESS_ENABLED: Meteor's accounts-passwordless one-time email code.
+    passwordlessEnabled: {
+      type: Boolean,
       optional: true,
     },
     createdAt: {

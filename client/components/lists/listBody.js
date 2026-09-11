@@ -3,6 +3,7 @@ import { TAPi18n } from '/imports/i18n';
 import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
 import { getSpinnerName, getSpinnerTemplate } from '/client/lib/spinner';
 import getSlug from 'limax';
+import { Random } from 'meteor/random';
 import Boards from '/models/boards';
 import Cards from '/models/cards';
 import Swimlanes from '/models/swimlanes';
@@ -13,8 +14,15 @@ import { isLinkableCardTarget } from '/models/lib/linkedCardTarget';
 import { listCardsSelector } from '/models/lib/swimlaneFilter';
 import { sortWithIdTiebreaker } from '/models/lib/cardSortTiebreaker';
 import { sortCardsByTitle } from '/models/lib/sortCardsByTitle';
+import { sortCardsByVotes } from '/models/lib/voteSortCards';
 import { labelMatchesTerm } from '/models/lib/labelAutocomplete';
 import { memberMatchesTerm } from '/models/lib/memberAutocomplete';
+import {
+  parseQuickAddCardLabel,
+  findExistingLabelIdByName,
+  pickDefaultLabelColor,
+} from '/models/lib/quickAddCardLabel';
+import { LABEL_COLORS } from '/models/metadata/colors';
 import { isLazyCards, BoardListCardCounts, windowCountId } from '/client/lib/lazyCards';
 import {
   shouldShowLoadMoreSpinner,
@@ -168,7 +176,12 @@ Template.listBody.onCreated(function () {
     }
     const textarea = $(submittedForm).find('textarea.js-card-title');
     const position = Blaze.getData(submittedForm)?.position;
-    const title = textarea.val().trim();
+    const rawTitle = textarea.val().trim();
+    // #3986: a leading "[LabelName] " prefix on the typed title applies (and,
+    // if needed, creates) that label instead of becoming part of the card
+    // title - e.g. "[Fedora] Do a thing" creates "Do a thing" labeled
+    // "Fedora". Only a single bracket prefix at the very start is parsed.
+    const { title, labelName: quickAddLabelName } = parseQuickAddCardLabel(rawTitle);
 
     let sortIndex;
     if (position === 'top') {
@@ -182,8 +195,20 @@ Template.listBody.onCreated(function () {
       return;
     }
     const members = formComponent.members.get();
-    const labelIds = formComponent.labels.get();
+    let labelIds = formComponent.labels.get();
     const customFields = formComponent.customFields.get();
+    // #3967: "More options" lets a few common fields be filled in as part of
+    // THIS SAME Cards.insert call, rather than as separate Cards.update calls
+    // right after creation. Each Cards.update fires its own watcher
+    // notification email (server/models/activities.js reacts to every
+    // Activities insert), so a card created with its description/due
+    // date/assignees already set produces exactly one "card created"
+    // notification instead of one email per field the user would otherwise
+    // set afterward.
+    const description = formComponent.description?.get().trim() || '';
+    const dueAtValue = formComponent.dueAt?.get() || '';
+    const dueAt = dueAtValue ? new Date(dueAtValue) : undefined;
+    const assignees = formComponent.assignees?.get() || [];
 
     const data = this.data;
     if (!data) {
@@ -198,6 +223,24 @@ Template.listBody.onCreated(function () {
       // before any async operations that would leave the old text visible.
       textarea.val('').focus();
       autosize.update(textarea);
+
+      // #3986: resolve the "[LabelName] " bracket prefix (if any) against the
+      // board's labels - match an existing label by name case-insensitively,
+      // or create one (with the same default-color pick as the "Add label"
+      // popup) when no label with that name exists yet.
+      if (quickAddLabelName) {
+        let quickAddLabelId = findExistingLabelIdByName(board.labels, quickAddLabelName);
+        if (!quickAddLabelId) {
+          quickAddLabelId = Random.id(6);
+          const color = pickDefaultLabelColor(board.labels, LABEL_COLORS);
+          await Boards.updateAsync(board._id, {
+            $push: { labels: { _id: quickAddLabelId, name: quickAddLabelName, color } },
+          });
+        }
+        if (labelIds.indexOf(quickAddLabelId) === -1) {
+          labelIds = [...labelIds, quickAddLabelId];
+        }
+      }
 
       if (board.isTemplatesBoard()) {
         const swimlaneEl = this.$('.js-minicards').closest('.swimlane').get(0);
@@ -234,7 +277,7 @@ Template.listBody.onCreated(function () {
 
       const nextCardNumber = await board.getNextCardNumber();
 
-      const _id = Cards.insert({
+      const cardFields = {
         title,
         members,
         labelIds,
@@ -246,7 +289,19 @@ Template.listBody.onCreated(function () {
         type: cardType,
         cardNumber: nextCardNumber,
         linkedId,
-      });
+      };
+      // #3967: only add these when actually filled in via "More options", so a
+      // plain quick-add card keeps behaving exactly as before.
+      if (description) {
+        cardFields.description = description;
+      }
+      if (dueAt && !isNaN(dueAt.getTime())) {
+        cardFields.dueAt = dueAt;
+      }
+      if (assignees.length) {
+        cardFields.assignees = assignees;
+      }
+      const _id = Cards.insert(cardFields);
 
       // if the displayed card count is less than the total cards in the list,
       // we need to increment the displayed card count to prevent the spinner
@@ -483,6 +538,18 @@ Template.listBody.helpers({
     // ordered diff throws "Bad index in range.removeMember" — leaving the board with
     // no cards. Applied before BOTH the server window subscription and the client
     // cursor below, so they agree on a deterministic order.
+    // #3050: "Sort by votes" is a pure DISPLAY-order mode - it floats
+    // highest-voted cards to the top without touching the manual `sort`
+    // field, so turning it off restores the original manual drag order
+    // exactly. Vote score (positive minus negative) is not a stored Mongo
+    // field, so it cannot be expressed as a Mongo sort spec: fetch the
+    // window in the underlying manual order (`defaultSort`) and re-sort the
+    // resulting array client-side instead of passing `sortBy` through to
+    // Mongo/minimongo.
+    const sortByVotes = !!(sortBy && sortBy.votes);
+    if (sortByVotes) {
+      sortBy = defaultSort;
+    }
     sortBy = sortWithIdTiebreaker(sortBy);
     // #6441: build the swimlane-membership fallback as a single `swimlaneId:
     // { $in: [...] }` clause (via the shared, unit-tested helper) instead of a
@@ -515,6 +582,16 @@ Template.listBody.helpers({
         list.boardId,
         mongoSelector,
       );
+    }
+    if (sortByVotes) {
+      // Fetch as a plain array (not a cursor) so it can be re-sorted by vote
+      // score in JS - see the comment above. The underlying documents and
+      // their `sort` field are untouched; only the rendered ORDER changes.
+      const cards = ReactiveCache.getCards(renderableCardsSelector(mongoSelector), {
+        sort: sortBy,
+        limit,
+      });
+      return sortCardsByVotes(cards);
     }
     const ret = ReactiveCache.getCards(renderableCardsSelector(mongoSelector), {
       // sort: ['sort'],
@@ -707,25 +784,52 @@ function toggleValueInReactiveArray(reactiveValue, value) {
   reactiveValue.set(array);
 }
 
+// Issue #2392: a custom field with "Auto create field to all cards" (or
+// "Always on card") applied correctly to the FIRST card of a quick-add
+// session but not to any card created after it, because this same
+// computation lived only inline in `onCreated` - the one place that ran
+// before the very first card - while `reset()` (meant to clear the form
+// between cards) just set `customFields` back to `[]` instead of
+// recomputing it. Any code path that clears the form between submits would
+// therefore drop the automatic field from every card after the first.
+// Sharing one helper between `onCreated` and `reset()` means the automatic
+// fields are (re)applied consistently, not only once per template lifetime.
+function automaticCustomFieldsForCurrentBoard() {
+  const currentBoardId = Session.get('currentBoard');
+  const board = ReactiveCache.getBoard(currentBoardId);
+  const arr = [];
+  (board?.customFields() || []).forEach(function (field) {
+    if (field.automaticallyOnCard || field.alwaysOnCard)
+      arr.push({ _id: field._id, value: null });
+  });
+  return arr;
+}
+
 Template.addCardForm.onCreated(function () {
   this.labels = new ReactiveVar([]);
   this.members = new ReactiveVar([]);
   this.customFields = new ReactiveVar([]);
+  // #3967: "More options" — a handful of common fields that can be filled in
+  // before the card is created, so they travel in the SAME Cards.insert call
+  // as the title instead of as separate edits (and separate watcher-
+  // notification emails) right after.
+  this.showMoreOptions = new ReactiveVar(false);
+  this.description = new ReactiveVar('');
+  this.dueAt = new ReactiveVar('');
+  this.assignees = new ReactiveVar([]);
 
-  const currentBoardId = Session.get('currentBoard');
-  const arr = [];
-  ReactiveCache.getBoard(currentBoardId)
-    .customFields()
-    .forEach(function (field) {
-      if (field.automaticallyOnCard || field.alwaysOnCard)
-        arr.push({ _id: field._id, value: null });
-    });
-  this.customFields.set(arr);
+  this.customFields.set(automaticCustomFieldsForCurrentBoard());
 
   this.reset = () => {
     this.labels.set([]);
     this.members.set([]);
-    this.customFields.set([]);
+    // #2392: recompute rather than clear, so a card created after a reset
+    // still gets its board's automatic custom fields.
+    this.customFields.set(automaticCustomFieldsForCurrentBoard());
+    this.showMoreOptions.set(false);
+    this.description.set('');
+    this.dueAt.set('');
+    this.assignees.set([]);
   };
 
   this.pressKey = (evt) => {
@@ -787,11 +891,36 @@ Template.addCardForm.helpers({
     }
     return false;
   },
+  // #3967
+  showMoreOptions() {
+    return Template.instance().showMoreOptions.get();
+  },
+  boardMembersForAssignees() {
+    const currentBoardId = Session.get('currentBoard');
+    const board = ReactiveCache.getBoard(currentBoardId);
+    return (board?.members || []).filter(m => m.isActive !== false);
+  },
+  isAssignee(userId) {
+    return Template.instance().assignees.get().includes(userId);
+  },
 });
 
 Template.addCardForm.events({
   keydown(evt, tpl) {
     tpl.pressKey(evt);
+  },
+  'click .js-toggle-more-options'(evt, tpl) {
+    evt.preventDefault();
+    tpl.showMoreOptions.set(!tpl.showMoreOptions.get());
+  },
+  'input .js-more-options-description'(evt, tpl) {
+    tpl.description.set(evt.currentTarget.value);
+  },
+  'change .js-more-options-due-at'(evt, tpl) {
+    tpl.dueAt.set(evt.currentTarget.value);
+  },
+  'change .js-more-options-assignee'(evt, tpl) {
+    toggleValueInReactiveArray(tpl.assignees, evt.currentTarget.value);
   },
   'click .js-link': Popup.open('linkCard'),
   'click .js-search': Popup.open('searchElement'),
@@ -1173,6 +1302,15 @@ Template.searchElementPopup.onCreated(function () {
     if (boardId) {
       Meteor.subscribe('board', boardId, false);
     }
+    // #2684: this popup used to be hard-wired to the current user's OWN
+    // templates board only, so a template-container board another member
+    // shared by adding them as a board member (the normal, existing sharing
+    // mechanism) never appeared here even though the All Boards "Templates"
+    // view already lists it (server/publications/boards.js's `boardTemplates`
+    // publication already selects by membership, not by ownership). Subscribe
+    // to that same publication so the "other template boards" dropdown below
+    // has the shared ones available in minimongo.
+    Meteor.subscribe('boardTemplates');
   } else {
     boardId = (Utils.getCurrentBoard() || {})._id;
   }
@@ -1259,13 +1397,62 @@ Template.searchElementPopup.helpers({
       return [];
     }
   },
+
+  // #4205: is this "Board Templates" card the user's current default?
+  isDefaultBoardTemplate(cardId) {
+    const user = ReactiveCache.getCurrentUser();
+    return !!user && user.isDefaultBoardTemplate(cardId);
+  },
+
+  // #2684: OTHER template-container boards the current user may search -
+  // ones shared with them the normal way (added as a board member) rather
+  // than their own personal templates board, which is the default this
+  // popup already opens with. Excludes the user's own so it is not offered
+  // twice.
+  otherTemplateBoards() {
+    const tpl = Template.instance();
+    if (!tpl.isTemplateSearch) return [];
+    return ReactiveCache.getBoards(
+      {
+        archived: false,
+        type: 'template-container',
+        members: { $elemMatch: { userId: Meteor.userId(), isActive: true } },
+        _id: { $ne: tpl.boardId },
+      },
+      { sort: { sort: 1 /* boards default sorting */ } },
+    );
+  },
 });
 
 Template.searchElementPopup.events({
+  // #4205: toggle this board template as the default, without also applying
+  // it (the rest of the row still does that - see 'click .js-minicard').
+  'click .js-set-default-board-template'(evt) {
+    evt.preventDefault();
+    evt.stopPropagation();
+    const cardId = this && this._id;
+    if (!cardId) return;
+    Meteor.call('toggleDefaultBoardTemplate', cardId, (err) => {
+      if (err) alert(err?.reason || err?.message || 'Failed to set default board template');
+    });
+  },
   'change .js-select-boards'(evt, tpl) {
     const boardId = $(evt.currentTarget).val();
     // An empty <select> value is a null subscription - see above.
     if (boardId) Meteor.subscribe('board', boardId, false);
+    tpl.selectedBoardId.set(boardId);
+  },
+  // #2684: switch which template-container board this popup searches, e.g.
+  // to one shared by another member rather than the user's own. An empty
+  // value falls back to the user's own templates board (tpl.boardId's
+  // original value never changes, so this always has somewhere to return
+  // to).
+  'change .js-select-template-board'(evt, tpl) {
+    const ownTemplatesBoardId =
+      (ReactiveCache.getCurrentUser().profile || {}).templatesBoardId;
+    const boardId = $(evt.currentTarget).val() || ownTemplatesBoardId;
+    if (boardId) Meteor.subscribe('board', boardId, false);
+    tpl.boardId = boardId;
     tpl.selectedBoardId.set(boardId);
   },
   'submit .js-search-term-form'(evt, tpl) {

@@ -1,8 +1,9 @@
 template(name="customFieldsSidebar")
-    ul.sidebar-list
+    ul.sidebar-list.js-custom-fields-sidebar-list
         each customFields
-            li
+            li(data-id="{{_id}}")
                 div.minicard-wrapper.js-minicard
+                    i.fa.fa-bars.js-custom-field-drag-handle
                     div.minicard
                         a.js-edit-custom-field.minicard-edit-button
                           i.fa.fa-pencil
@@ -59,7 +60,7 @@ template(name="createCustomFieldPopup")
                 .materialCheckBox(class="{{#if showSumAtTopOfList}}is-checked{{/if}}")
                 span {{_ 'showSum-field-on-list'}}
 
-        div.js-field-settings.js-field-settings-dropdown(class="{{#if isTypeNotSelected 'dropdown'}}hide{{/if}}")
+        div.js-field-settings.js-field-settings-dropdown(class="{{#if isDropdownTypeNotSelected}}hide{{/if}}")
             label
                 | {{_ 'custom-field-dropdown-options'}}
             each dropdownItems.get
@@ -91,6 +92,14 @@ template(name="createCustomFieldPopup")
             .materialCheckBox(class="{{#if showLabelOnMiniCard}}is-checked{{/if}}")
 
             span {{_ 'showLabel-field-on-card'}}
+
+        //- #3141: only a board admin may see/toggle this - it decides whether
+          the field's value is hidden from everyone else. Non-admins never see
+          the control at all, matching how other admin-only UI is gated.
+        if currentUser.isBoardAdmin
+            a.flex.js-field-admin-only(class="{{#if adminOnly}}is-checked{{/if}}")
+                .materialCheckBox(class="{{#if adminOnly}}is-checked{{/if}}")
+                span {{_ 'admin-only-field'}}
 
         button.primary.wide.left(type="button")
             | {{_ 'save'}}

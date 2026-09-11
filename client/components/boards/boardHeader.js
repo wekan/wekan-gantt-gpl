@@ -7,6 +7,7 @@ import getSlug from 'limax';
 import Boards from '/models/boards';
 import Swimlanes from '/models/swimlanes';
 import TableVisibilityModeSettings from '/models/tableVisibilityModeSettings';
+import visibilityDesc from '/imports/i18n/lib/visibilityDesc';
 import { Filter } from '/client/lib/filter';
 // Which way a button that opens a sidebar view goes on a click - one answer,
 // in one place, for both Filter and Search.
@@ -120,6 +121,8 @@ Template.boardHeaderButtons.helpers({
       return 'fa-font'; // alphabetical
     } else if (sortBy.createdAt) {
       return sortBy.createdAt === 1 ? 'fa-arrow-up' : 'fa-arrow-down';
+    } else if (sortBy.votes) {
+      return 'fa-thumbs-o-up'; // sort by votes (#3050)
     }
     return 'fa-sort';
   },
@@ -277,8 +280,20 @@ Template.boardChangeViewPopup.events({
     Utils.setBoardView('board-view-cal');
     Popup.back();
   },
+  'click .js-open-multiboard-cal-view'() {
+    Utils.setBoardView('board-view-multiboard-cal');
+    Popup.back();
+  },
   'click .js-open-gantt-view'() {
     Utils.setBoardView('board-view-gantt');
+    Popup.back();
+  },
+  'click .js-open-gantt-frappe-view'() {
+    Utils.setBoardView('board-view-gantt-frappe');
+    Popup.back();
+  },
+  'click .js-open-gantt-dhtmlx-view'() {
+    Utils.setBoardView('board-view-gantt-dhtmlx');
     Popup.back();
   },
   'click .js-open-table-view'() {
@@ -293,8 +308,24 @@ Template.boardChangeViewPopup.events({
     Utils.setBoardView('board-view-time');
     Popup.back();
   },
+  'click .js-open-timeline-view'() {
+    Utils.setBoardView('board-view-timeline');
+    Popup.back();
+  },
+  'click .js-open-group-by-assignee-view'() {
+    Utils.setBoardView('board-view-group-by-assignee');
+    Popup.back();
+  },
+  'click .js-open-roadmap-view'() {
+    Utils.setBoardView('board-view-roadmap');
+    Popup.back();
+  },
   'click .js-open-dashboard-view'() {
     Utils.setBoardView('board-view-dashboard');
+    Popup.back();
+  },
+  'click .js-open-bigboard-view'() {
+    Utils.setBoardView('board-view-bigboard');
     Popup.back();
   },
   'click .js-open-burndown-view'() {
@@ -331,6 +362,10 @@ Template.boardChangeViewPopup.events({
   },
   'click .js-open-wip-run-view'() {
     Utils.setBoardView('board-view-wip-run');
+    Popup.back();
+  },
+  'click .js-open-pulse-view'() {
+    Utils.setBoardView('board-view-pulse');
     Popup.back();
   },
 });
@@ -408,15 +443,54 @@ async function createBoardSubmit(tpl, event) {
   } else {
     const visibility = tpl.visibility.get();
 
-    tpl.boardId.set(
-      await Meteor.callAsync('createBoardWithInitialSwimlanes', {
-        title,
-        slug,
-        permission: visibility,
-        migrationVersion: 1,
-        swimlanes: [{ title: 'Default' }],
-      }),
-    );
+    // #4205: when the user has marked a board template as their default,
+    // apply it automatically - the same "type a name and click Create" flow
+    // that used to always start blank now reuses the EXACT copyBoard call the
+    // manual "Template" picker already makes (Template.searchElementPopup's
+    // 'click .js-minicard' handler, client/components/lists/listBody.js) -
+    // only the source (the default template's board) and the typed title
+    // differ. Nothing changes for a user who has not set a default.
+    const currentUser = ReactiveCache.getCurrentUser();
+    const defaultTemplateBoardId = currentUser
+      && currentUser.profile
+      && currentUser.profile.defaultBoardTemplateBoardId;
+
+    if (defaultTemplateBoardId) {
+      await new Promise((resolve) => {
+        Meteor.call(
+          'copyBoard',
+          defaultTemplateBoardId,
+          {
+            sort: ReactiveCache.getBoards({ archived: false }).length,
+            type: 'board',
+            title,
+          },
+          (err, newBoardId) => {
+            if (err) {
+              // Stale/removed default (should self-heal via boardRemover, but
+              // guard against a race): fall back to a blank board rather than
+              // leaving Create silently broken.
+              console.error(err);
+            } else {
+              tpl.boardId.set(newBoardId);
+            }
+            resolve();
+          },
+        );
+      });
+    }
+
+    if (!tpl.boardId.get()) {
+      tpl.boardId.set(
+        await Meteor.callAsync('createBoardWithInitialSwimlanes', {
+          title,
+          slug,
+          permission: visibility,
+          migrationVersion: 1,
+          swimlanes: [{ title: 'Default' }],
+        }),
+      );
+    }
 
     // Assign to space if one was selected
     const spaceId = Session.get('createBoardInWorkspace');
@@ -497,6 +571,18 @@ Template.headerBarCreateBoardPopup.helpers(createBoardHelpers());
 Template.boardVisibilityList.helpers({
   notAllowPrivateVisibilityOnly() {
     return !TableVisibilityModeSettings.findOne('tableVisibilityMode-allowPrivateOnly')?.booleanValue;
+  },
+  // #4421: an admin can override these sub-name texts in Admin Panel /
+  // Settings / Visibility (Settings.customPrivateBoardDesc /
+  // customPublicBoardDesc); empty/unset falls back to the i18n default,
+  // byte-identical to before this setting existed.
+  privateDesc() {
+    const setting = ReactiveCache.getCurrentSetting();
+    return visibilityDesc(setting?.customPrivateBoardDesc, TAPi18n.__, 'private-desc');
+  },
+  publicDesc() {
+    const setting = ReactiveCache.getCurrentSetting();
+    return visibilityDesc(setting?.customPublicBoardDesc, TAPi18n.__, 'public-desc');
   },
 });
 
@@ -681,6 +767,19 @@ Template.cardsSortPopup.events({
     sortCardsBy.set(TAPi18n.__('date-created-oldest-first'));
     Popup.back();
   },
+  // #3050: float highest-voted cards to the top of each list. `votes` is not
+  // a real Mongo field (vote score is computed from vote.positive/negative),
+  // so this is a marker only - client.components.lists.listBody's
+  // cardsWithLimit() recognizes it and re-sorts the rendered cards in JS
+  // instead of passing it through as a Mongo sort spec.
+  'click .js-sort-votes'() {
+    const sortBy = {
+      votes: -1,
+    };
+    setCardsSortBy(sortBy);
+    sortCardsBy.set(TAPi18n.__('sort-by-votes'));
+    Popup.back();
+  },
 });
 
 // The board's view menu is its own template in the FIRST header bar now, so its
@@ -701,11 +800,18 @@ Template.boardViewMenu.helpers({
       'board-view-swimlanes': 'swimlanes',
       'board-view-lists': 'lists',
       'board-view-cal': 'calendar',
+      'board-view-multiboard-cal': 'board-view-multiboard-cal',
       'board-view-gantt': 'gantt',
+      'board-view-gantt-frappe': 'board-view-gantt-frappe',
+      'board-view-gantt-dhtmlx': 'board-view-gantt-dhtmlx',
       'board-view-table': 'board-view-table',
       'board-view-stats': 'board-view-stats',
       'board-view-time': 'board-view-time',
+      'board-view-timeline': 'board-view-timeline',
+      'board-view-group-by-assignee': 'board-view-group-by-assignee',
+      'board-view-roadmap': 'board-view-roadmap',
       'board-view-dashboard': 'board-view-dashboard',
+      'board-view-bigboard': 'board-view-bigboard',
       'board-view-burndown': 'board-view-burndown',
       'board-view-burnup': 'board-view-burnup',
       'board-view-cumulative-flow': 'board-view-cumulative-flow',
@@ -715,6 +821,7 @@ Template.boardViewMenu.helpers({
       'board-view-lead-time': 'board-view-lead-time',
       'board-view-throughput-histogram': 'board-view-throughput-histogram',
       'board-view-wip-run': 'board-view-wip-run',
+      'board-view-pulse': 'board-view-pulse',
     };
     return TAPi18n.__(names[Utils.boardView()] || 'board-view');
   },

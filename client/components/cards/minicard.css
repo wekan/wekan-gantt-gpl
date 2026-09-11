@@ -5,6 +5,14 @@
   align-items: center;
   margin-bottom: 8px;
 }
+/* #3078: a subtle highlight for a minicard that has comments the current
+   user has not seen yet. An inset ring plus a left-edge stripe, not a
+   background fill, so it stays visible against every label swatch and
+   colorStyle background a minicard can already have (an inline
+   background-color always wins over these box-shadow rings anyway). */
+.minicard.minicard-unread-comments {
+  box-shadow: inset 3px 0 0 0 #f2c94c, inset 0 0 0 1px rgba(242, 201, 76, 0.55);
+}
 .minicard-wrapper.placeholder {
   background: #ccc;
   border-radius: 17px;
@@ -59,6 +67,20 @@
     overflow: hidden;
     transition: transform 0.2s, border-radius 0.2s;
   }
+}
+/* #1591: the whole-minicard collapse caret, top-left corner - unobtrusive,
+   the same size as the per-checklist caret it mirrors. It sits BEFORE
+   .minicard-title in the markup (see minicard.jade) so it stays at the
+   start of the title's line rather than floating separately. */
+.minicard .minicard-collapse {
+  float: inline-start;
+  margin-inline-end: 4px;
+  font-size: 0.875rem;
+  color: #999;
+  cursor: pointer;
+}
+.minicard .minicard-collapse:hover {
+  color: #4d4d4d;
 }
 .minicard-details-menu-with-handle {
   float: inline-end;
@@ -165,6 +187,12 @@
   word-wrap: break-word;
   max-width: 100%;
   margin-inline-end: 7px;
+}
+.minicard .minicard-custom-field-checkbox-icon.minicard-custom-field-checkbox-true {
+  color: #2ecc71;
+}
+.minicard .minicard-custom-field-checkbox-icon.minicard-custom-field-checkbox-false {
+  color: #e74c3c;
 }
 .minicard .handle {
   width: 20px;
@@ -564,6 +592,36 @@
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
 }
+/* #4285: compact preview of the most recent comments on the minicard. */
+.minicard .minicard-comments {
+  width: 100%;
+  margin-bottom: 3px;
+}
+.minicard .minicard-comment {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  font-size: calc(11px * var(--wekan-ui-font-scale, 1));
+  color: #555;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.minicard .minicard-comment-icon {
+  flex: 0 0 auto;
+}
+.minicard .minicard-comment-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.minicard .minicard-comments-more {
+  font-size: calc(11px * var(--wekan-ui-font-scale, 1));
+  color: #888;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
 .minicard.minicard-composer {
   margin-bottom: 12px;
 }
@@ -905,6 +963,18 @@
    rather than as the line it is. Logical `inline-start`, so it clears the
    floats on whichever side the page starts. */
 .minicard-list-name {
+  clear: inline-start;
+  font-size: 0.75em;
+  color: #8c8c8c;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* #2426: the swimlane-name label, same place/weight as the list name above -
+   a small, unobtrusive line at the bottom of the minicard. */
+.minicard-swimlane-name {
   clear: inline-start;
   font-size: 0.75em;
   color: #8c8c8c;

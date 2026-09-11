@@ -36,25 +36,34 @@ const VIEWS = [
   { view: 'board-view-lists', jsClass: 'js-open-lists-view', icon: 'fa-trello' },
   { view: 'board-view-table', jsClass: 'js-open-table-view', icon: 'fa-table' },
   { view: 'board-view-cal', jsClass: 'js-open-cal-view', icon: 'fa-calendar' },
+  { view: 'board-view-multiboard-cal', jsClass: 'js-open-multiboard-cal-view', icon: 'fa-calendar-plus-o', template: 'multiboardCalendarView', helper: 'isViewMultiboardCalendar' },
   { view: 'board-view-time', jsClass: 'js-open-time-view', icon: 'fa-clock-o', template: 'timeView', helper: 'isViewTime' },
+  { view: 'board-view-timeline', jsClass: 'js-open-timeline-view', icon: 'fa-history', template: 'timelineView', helper: 'isViewTimeline' },
   { view: 'board-view-stats', jsClass: 'js-open-stats-view', icon: 'fa-pie-chart' },
+  { view: 'board-view-group-by-assignee', jsClass: 'js-open-group-by-assignee-view', icon: 'fa-users', template: 'groupByAssigneeView', helper: 'isViewGroupByAssignee' },
   { view: 'board-view-gantt', jsClass: 'js-open-gantt-view', icon: 'fa-bar-chart' },
-  { view: 'board-view-dashboard', jsClass: 'js-open-dashboard-view', icon: 'fa-tachometer', template: 'dashboardView', helper: 'isViewDashboard', placeholder: true, parenthesized: true },
-  { view: 'board-view-burndown', jsClass: 'js-open-burndown-view', icon: 'fa-line-chart', template: 'burndownView', helper: 'isViewBurndown', placeholder: true, parenthesized: true },
-  { view: 'board-view-burnup', jsClass: 'js-open-burnup-view', icon: 'fa-area-chart', template: 'burnupView', helper: 'isViewBurnup', placeholder: true, parenthesized: true },
-  { view: 'board-view-cumulative-flow', jsClass: 'js-open-cumulative-flow-view', icon: 'fa-signal', template: 'cumulativeFlowView', helper: 'isViewCumulativeFlow', placeholder: true, parenthesized: true },
-  { view: 'board-view-control-chart', jsClass: 'js-open-control-chart-view', icon: 'fa-crosshairs', template: 'controlChartView', helper: 'isViewControlChart', placeholder: true, parenthesized: true },
-  { view: 'board-view-cycle-time', jsClass: 'js-open-cycle-time-view', icon: 'fa-refresh', template: 'cycleTimeView', helper: 'isViewCycleTime', placeholder: true, parenthesized: true },
-  { view: 'board-view-flow-efficiency', jsClass: 'js-open-flow-efficiency-view', icon: 'fa-percent', template: 'flowEfficiencyView', helper: 'isViewFlowEfficiency', placeholder: true, parenthesized: true },
-  { view: 'board-view-lead-time', jsClass: 'js-open-lead-time-view', icon: 'fa-hourglass-half', template: 'leadTimeView', helper: 'isViewLeadTime', placeholder: true, parenthesized: true },
-  { view: 'board-view-throughput-histogram', jsClass: 'js-open-throughput-histogram-view', icon: 'fa-columns', template: 'throughputHistogramView', helper: 'isViewThroughputHistogram', placeholder: true, parenthesized: true },
-  { view: 'board-view-wip-run', jsClass: 'js-open-wip-run-view', icon: 'fa-flag-checkered', template: 'wipRunView', helper: 'isViewWipRun', placeholder: true, parenthesized: true },
+  { view: 'board-view-gantt-frappe', jsClass: 'js-open-gantt-frappe-view', icon: 'fa-tasks', template: 'frappeGanttView', helper: 'isViewGanttFrappe' },
+  { view: 'board-view-gantt-dhtmlx', jsClass: 'js-open-gantt-dhtmlx-view', icon: 'fa-list-alt', template: 'dhtmlxGanttView', helper: 'isViewGanttDhtmlx' },
+  { view: 'board-view-roadmap', jsClass: 'js-open-roadmap-view', icon: 'fa-road', template: 'roadmapView', helper: 'isViewRoadmap' },
+  { view: 'board-view-dashboard', jsClass: 'js-open-dashboard-view', icon: 'fa-tachometer', template: 'dashboardView', helper: 'isViewDashboard', chart: true },
+  { view: 'board-view-bigboard', jsClass: 'js-open-bigboard-view', icon: 'fa-th', template: 'bigboardView', helper: 'isViewBigboard' },
+  { view: 'board-view-burndown', jsClass: 'js-open-burndown-view', icon: 'fa-line-chart', template: 'burndownView', helper: 'isViewBurndown', chart: true },
+  { view: 'board-view-burnup', jsClass: 'js-open-burnup-view', icon: 'fa-area-chart', template: 'burnupView', helper: 'isViewBurnup', chart: true },
+  { view: 'board-view-cumulative-flow', jsClass: 'js-open-cumulative-flow-view', icon: 'fa-signal', template: 'cumulativeFlowView', helper: 'isViewCumulativeFlow', chart: true },
+  { view: 'board-view-control-chart', jsClass: 'js-open-control-chart-view', icon: 'fa-crosshairs', template: 'controlChartView', helper: 'isViewControlChart', chart: true },
+  { view: 'board-view-cycle-time', jsClass: 'js-open-cycle-time-view', icon: 'fa-refresh', template: 'cycleTimeView', helper: 'isViewCycleTime', chart: true },
+  { view: 'board-view-flow-efficiency', jsClass: 'js-open-flow-efficiency-view', icon: 'fa-percent', template: 'flowEfficiencyView', helper: 'isViewFlowEfficiency', chart: true },
+  { view: 'board-view-lead-time', jsClass: 'js-open-lead-time-view', icon: 'fa-hourglass-half', template: 'leadTimeView', helper: 'isViewLeadTime', chart: true },
+  { view: 'board-view-throughput-histogram', jsClass: 'js-open-throughput-histogram-view', icon: 'fa-columns', template: 'throughputHistogramView', helper: 'isViewThroughputHistogram', chart: true },
+  { view: 'board-view-wip-run', jsClass: 'js-open-wip-run-view', icon: 'fa-flag-checkered', template: 'wipRunView', helper: 'isViewWipRun', chart: true },
+  { view: 'board-view-pulse', jsClass: 'js-open-pulse-view', icon: 'fa-heartbeat', template: 'pulseView', helper: 'isViewPulse', chart: true },
 ];
 
-// Between Table and Calendar, between Time and Statistics, and between Gantt
-// and Dashboard - like the right sidebar's own hr-separated groups
-// (client/components/sidebar/sidebar.jade).
-const HR_AFTER = ['board-view-table', 'board-view-time', 'board-view-gantt'];
+// Between Table and Calendar, between Timeline and Statistics, between
+// Statistics and the Gantt group, and between the Gantt group (WeKan's own
+// Gantt, Frappe Gantt, DHTMLX Gantt) and Dashboard - like the right
+// sidebar's own hr-separated groups (client/components/sidebar/sidebar.jade).
+const HR_AFTER = ['board-view-table', 'board-view-timeline', 'board-view-stats', 'board-view-group-by-assignee', 'board-view-gantt-dhtmlx'];
 
 test('the menu lists every view in the required top-to-bottom order', () => {
   const popup = boardHeaderJade.slice(boardHeaderJade.indexOf('template(name="boardChangeViewPopup")'));
@@ -76,24 +85,23 @@ test('every entry carries a font-awesome icon', () => {
   });
 });
 
-test('a not-fully-implemented view still shows a TRANSLATED "(Name)" label', () => {
-  // #6690: an earlier version hardcoded the English word itself, so on an
-  // otherwise fully translated menu these ten entries read as a bug, not a
-  // "coming soon" marker (the page each opens WAS already translated, since
-  // its own <h1> uses the same key - only the menu entry was not; see
-  // .tools/board-view.png). The literal parentheses are what say "not
-  // implemented yet"; the word inside them is translated like every other
-  // entry, through the SAME key the page title uses.
+test('a chart view menu entry is no longer parenthesized as "not implemented yet"', () => {
+  // These ten used to open a grey "not implemented yet" page and their menu
+  // label was wrapped in literal parentheses to say so (#6690). Now each opens
+  // a real chart (chartPlaceholderViews.jade + charts/boardCharts.js/.jade),
+  // so the parentheses - which meant "coming soon" - would be actively wrong.
   const popup = boardHeaderJade.slice(boardHeaderJade.indexOf('template(name="boardChangeViewPopup")'));
-  VIEWS.filter(v => v.parenthesized).forEach(v => {
+  VIEWS.filter(v => v.chart).forEach(v => {
     const at = popup.indexOf(`"${v.view}"`);
     const block = popup.slice(at, at + 700);
-    assert.ok(block.includes(`| ({{_ '${v.view}'}})`),
-      `${v.view}'s menu label is its translated key wrapped in literal parentheses`);
+    assert.ok(block.includes(`| {{_ '${v.view}'}}`),
+      `${v.view}'s menu label is its translated key, unwrapped`);
+    assert.ok(!block.includes(`| ({{_ '${v.view}'}})`),
+      `${v.view}'s menu label is no longer parenthesized (negative)`);
   });
 });
 
-test('a separator sits between Table and Calendar, between Time and Statistics, and between Gantt and Dashboard', () => {
+test('a separator sits between Table and Calendar, between Timeline and Statistics, and between Gantt and Dashboard', () => {
   // Like the right sidebar's own hr-separated groups
   // (client/components/sidebar/sidebar.jade's homeSidebar).
   const popup = boardHeaderJade.slice(boardHeaderJade.indexOf('template(name="boardChangeViewPopup")'));
@@ -160,18 +168,30 @@ test('every view has a tooltip name, through a real translation key', () => {
   });
 });
 
-test('every placeholder view is a real grey page titled like its menu entry', () => {
+test('every chart view renders the shared boardChartView, keyed and titled like its menu entry', () => {
   const placeholders = read('client/components/boards/chartPlaceholderViews.jade');
-  VIEWS.filter(v => v.placeholder).forEach(v => {
+  VIEWS.filter(v => v.chart).forEach(v => {
     const at = placeholders.indexOf(`template(name="${v.template}")`);
     assert.ok(at !== -1, `${v.template} template exists`);
     const block = placeholders.slice(at, at + 300);
-    assert.ok(block.includes(`h1.stats-view-title {{_ '${v.view}'}}`),
+    assert.ok(block.includes('+boardChartView('), `${v.template} renders +boardChartView`);
+    assert.ok(block.includes(`titleKey="${v.view}"`),
       `${v.template}'s title uses the same key as its menu entry (${v.view})`);
-    assert.ok(block.includes("{{_ 'board-view-not-yet-implemented'}}"),
-      `${v.template} shows the shared not-implemented note`);
   });
-  assert.ok(typeof en['board-view-not-yet-implemented'] === 'string');
+});
+
+test('the shared chart view calls the board-scoped boardChartData server method and offers PDF/Excel export', () => {
+  const boardChartsJs = read('client/components/boards/charts/boardCharts.js');
+  const boardsPublications = read('server/publications/boards.js');
+  assert.match(boardChartsJs, /Meteor\.call\('boardChartData', boardId, chartKey/);
+  assert.match(boardsPublications, /async boardChartData\(boardId, chartKey\)/);
+  assert.match(boardsPublications, /board\.isVisibleBy\(\{ _id: this\.userId \}\)/);
+  // The PDF/Excel export moved into the one shared "Export" popup
+  // (exportChart.js builds the URL for every chart view; see
+  // tests/chartExportPopup.test.cjs).
+  const exportChartJs = read('client/components/boards/charts/exportChart.js');
+  assert.match(exportChartJs, /charts\/\$\{chartKey\}\/\$\{path\}/);
+  assert.match(read('client/components/boards/charts/boardCharts.jade'), /js-export-chart\(href="#" data-chart-key="\{\{chartKey\}\}"\)/);
 });
 
 test('"Time spent summary" moved to the Time view and out of Statistics', () => {
@@ -197,7 +217,11 @@ test('"Time spent summary" moved to the Time view and out of Statistics', () => 
 
 test('the new templates and stylesheets are registered, like every other board view', () => {
   const boardsFeature = read('client/features/boards.js');
-  ['timeView.jade', 'timeView.js', 'chartPlaceholderViews.jade', 'chartPlaceholderViews.js']
+  ['timeView.jade', 'timeView.js', 'groupByAssigneeView.jade', 'groupByAssigneeView.js', 'chartPlaceholderViews.jade', 'chartPlaceholderViews.js', 'bigboardView.jade', 'bigboardView.js', 'bigboardView.css', 'multiboardCalendarView.jade', 'multiboardCalendarView.js', 'multiboardCalendarView.css', 'roadmapView.jade', 'roadmapView.js', 'roadmapView.css']
+    .forEach(f => {
+      assert.ok(boardsFeature.includes(`/client/components/boards/${f}`), `${f} is imported`);
+    });
+  ['charts/boardCharts.jade', 'charts/boardCharts.js', 'charts/boardCharts.css']
     .forEach(f => {
       assert.ok(boardsFeature.includes(`/client/components/boards/${f}`), `${f} is imported`);
     });

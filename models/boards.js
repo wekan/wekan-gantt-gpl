@@ -29,9 +29,11 @@ import { findWhere, where, groupBy } from '/imports/lib/collectionHelpers';
 import {
   cardsDueInBetweenSelector,
   cardsInIntervalSelector,
+  cardsReceivedInBetweenSelector,
+  cardsEndInBetweenSelector,
 } from '/models/lib/calendarFilter';
 import { generateUniversalAttachmentUrl } from '/models/lib/universalUrlGenerator';
-import { buildCardSearchOr } from '/models/lib/cardSearch';
+import { buildCardSearchOr, matchingCommentCardIds } from '/models/lib/cardSearch';
 const { SimpleSchema } = require('/imports/simpleSchema');
 const getTAPi18n = () => require('/imports/i18n').TAPi18n;
 
@@ -221,6 +223,17 @@ Boards.attachSchema(
         if (LABEL_COLORS.includes(v) || isHexColor(v)) return undefined;
         return 'notAllowed';
       },
+    },
+    'labels.$.dueAt': {
+      /**
+       * Optional due date carried by the label itself (#2802), e.g. a
+       * "milestone" label such as "Sprint 1" that expires on a given date.
+       * Unset by default so existing labels/boards are unaffected. Filtering
+       * cards by this label is the existing label filter; no separate
+       * Milestone object or filter UI is added for this.
+       */
+      type: Date,
+      optional: true,
     },
     // XXX We might want to maintain more informations under the member sub-
     // documents like de-normalized meta-data (the date the member joined the
@@ -429,6 +442,63 @@ Boards.attachSchema(
         }
       },
     },
+    // #2489: WIP limit GROUPS - a shared limit across two or more of this
+    // board's lists together (e.g. "these three middle columns together may
+    // never hold more than 10 cards total"), on top of the existing per-list
+    // `wipLimit` in models/lists.js. Deliberately its own small array rather
+    // than a second WIP-tracking system: the combined count and "over limit"
+    // decision are pure arithmetic (models/lib/wipLimitGroupDecision.js) and
+    // the visual indicator it drives is the SAME `.highlight` styling the
+    // per-list limit already uses (client/components/lists/listHeader.js).
+    wipLimitGroups: {
+      /**
+       * List of board-level WIP limit groups.
+       */
+      type: Array,
+      optional: true,
+    },
+    'wipLimitGroups.$': {
+      type: Object,
+    },
+    'wipLimitGroups.$._id': {
+      /**
+       * Unique id of a WIP limit group.
+       */
+      type: String,
+    },
+    'wipLimitGroups.$.name': {
+      /**
+       * Optional display name for the group (e.g. "Middle columns").
+       */
+      type: String,
+      optional: true,
+    },
+    'wipLimitGroups.$.listIds': {
+      /**
+       * The _ids of the board's lists that share this group's limit. At least
+       * two - a "group" of one is just that list's own individual wipLimit.
+       */
+      type: Array,
+    },
+    'wipLimitGroups.$.listIds.$': {
+      type: String,
+    },
+    'wipLimitGroups.$.limit': {
+      /**
+       * The combined card-count limit shared by every list in listIds.
+       */
+      type: Number,
+      defaultValue: 1,
+    },
+    'wipLimitGroups.$.enabled': {
+      /**
+       * Whether this group's limit is currently in effect. Kept (rather than
+       * deleting the group) so a temporarily-disabled group's list selection
+       * and limit are not lost.
+       */
+      type: Boolean,
+      defaultValue: true,
+    },
     customThemeColors: {
       /**
        * Optional custom colors for the "flat" (1 color) and "clear" (2 colors,
@@ -636,6 +706,15 @@ Boards.attachSchema(
       defaultValue: true,
     },
 
+    allowsCommentsOnMinicard: {
+      /**
+       * #4285: show a card's comments directly on the minicard? Opt-in and
+       * OFF by default so existing boards are unaffected.
+       */
+      type: Boolean,
+      defaultValue: false,
+    },
+
     allowsDescriptionTitle: {
       /**
        * Does the board allows description title?
@@ -664,6 +743,22 @@ Boards.attachSchema(
        */
       type: Boolean,
       defaultValue: false,
+    },
+
+    // #4448: the order the major sections of the opened card (Labels, Dates,
+    // Members, Custom Fields, Description) render in. A missing/partial/unknown
+    // value falls back to the historical fixed order via
+    // applyCardFieldOrder() in models/lib/cardFieldOrder.js - see that file for
+    // which sections are (and are not) covered by this setting.
+    cardFieldOrder: {
+      /**
+       * The order of the reorderable card-detail-view sections
+       */
+      type: Array,
+      optional: true,
+    },
+    'cardFieldOrder.$': {
+      type: String,
     },
 
     allowsCoverAttachmentOnMinicard: {
@@ -725,6 +820,20 @@ Boards.attachSchema(
       type: Boolean,
       defaultValue: false,
     },
+    // Board-level override of the 3-tier Notification Settings system (see
+    // models/lib/notificationSettings.js). Unset (optional, no default)
+    // means "use the Admin Panel default"; an explicit true/false overrides
+    // it for every member of this board unless a member also has their own
+    // override, exactly like the admin-default -> board-override ->
+    // member-override precedence used elsewhere.
+    notifyOverrideTray: {
+      type: Boolean,
+      optional: true,
+    },
+    notifyOverrideEmail: {
+      type: Boolean,
+      optional: true,
+    },
     allowsCardNumberOnMinicard: {
       /**
        * Does the board allows card numbers on minicard?
@@ -770,6 +879,20 @@ Boards.attachSchema(
        */
       type: Boolean,
       defaultValue: false,
+    },
+
+    showLabelText: {
+      /**
+       * #4256: does this board show label TEXT on its minicards (coloured
+       * words), or only the coloured bars? Board Settings / Card ("Labels
+       * text"). A user's own profile.showLabelTextOverride, when set, wins
+       * over this on every board - see client/lib/minicardLabelText.js.
+       * Defaults to true (text shown), the historical global default, so an
+       * existing board with no value stored sees no behaviour change.
+       */
+      type: Boolean,
+      defaultValue: true,
+      optional: true,
     },
 
     allowsAssignee: {
@@ -856,6 +979,18 @@ Boards.attachSchema(
       defaultValue: false,
     },
 
+    // #2426: a card's swimlane isn't otherwise visible on its minicard in
+    // List view (Swimlanes view already groups cards by swimlane), so this
+    // board-wide toggle shows the swimlane's name at the bottom of the
+    // minicard. Defaults to false so existing boards see no change.
+    allowsSwimlaneNameOnMinicard: {
+      /**
+       * Does the board allow showing the swimlane name on all minicards?
+       */
+      type: Boolean,
+      defaultValue: false,
+    },
+
     allowsChecklistAtMinicard: {
       /**
        * Does the board allow showing checklists on all minicards?
@@ -867,6 +1002,30 @@ Boards.attachSchema(
     allowsReceivedDate: {
       /**
        * Does the board allows received date?
+       */
+      type: Boolean,
+      defaultValue: true,
+    },
+
+    // #2530: the "Time spent" field (and its overtime indicator) was only
+    // reachable through the card's hamburger/context menu. Both the card
+    // detail view and the minicard already render it unconditionally
+    // whenever a card has logged time (see getSpentTime() in
+    // client/components/cards/minicard.jade and cardDetails.jade), so these
+    // two toggles default to TRUE - matching that existing behaviour rather
+    // than hiding something boards already show - and only let an admin turn
+    // it OFF via Card Settings, the same "Show on card"/"Show on minicard"
+    // pattern used by allowsReceivedDate/allowsReceivedDateOnMinicard above.
+    allowsSpentTime: {
+      /**
+       * Does the board show the accumulated spent-time badge on the opened card?
+       */
+      type: Boolean,
+      defaultValue: true,
+    },
+    allowsSpentTimeOnMinicard: {
+      /**
+       * Does the board show the accumulated spent-time badge on the minicard?
        */
       type: Boolean,
       defaultValue: true,
@@ -902,6 +1061,20 @@ Boards.attachSchema(
        */
       type: Boolean,
       optional: true,
+      defaultValue: false,
+    },
+    stickyListHeaders: {
+      /**
+       * #3847: when true, every list's header (title/WIP badge/hamburger)
+       * stays pinned to the top of its own list while that list's cards
+       * scroll underneath it, instead of scrolling out of view with them.
+       * Board-wide rather than per-list - freezing one list's header while
+       * its neighbours scrolled normally would look inconsistent - but the
+       * toggle itself lives in the List hamburger/action menu
+       * (listActionPopup in client/components/lists/listHeader.jade) for
+       * discoverability, per the issue reporter's request.
+       */
+      type: Boolean,
       defaultValue: false,
     },
     listWidthResizeLocked: {
@@ -1110,7 +1283,7 @@ Boards.attachSchema(
 );
 
 Boards.helpers({
-  async copy() {
+  async copy(withoutCards = false) {
     const oldId = this._id;
     const oldWatchers = this.watchers ? this.watchers.slice() : [];
     delete this._id;
@@ -1144,7 +1317,7 @@ Boards.helpers({
     });
     for (const swimlane of swimlanes) {
       swimlane.type = 'swimlane';
-      await swimlane.copy(_id, null, 'below', '', cardIdMap);
+      await swimlane.copy(_id, null, 'below', '', cardIdMap, withoutCards);
     }
 
     // #3392: remap card-to-card dependencies (Red Strings) from the source
@@ -1624,6 +1797,13 @@ Boards.helpers({
     return ret;
   },
 
+  // #4448: the resolved, always-complete order of the reorderable card-detail
+  // sections - see models/lib/cardFieldOrder.js.
+  getCardFieldOrder() {
+    const { applyCardFieldOrder } = require('/models/lib/cardFieldOrder');
+    return applyCardFieldOrder(this.cardFieldOrder);
+  },
+
   absoluteUrl() {
     // Build the URL from the relative path rather than FlowRouter.url():
     // FlowRouter is client-only, so on the server (board invitation emails,
@@ -1652,9 +1832,11 @@ Boards.helpers({
 
   // XXX currently mutations return no value so we have an issue when using addLabel in import
   // XXX waiting on https://github.com/mquandalle/meteor-collection-mutations/issues/1 to remove...
-  pushLabel(name, color) {
+  pushLabel(name, color, dueAt) {
     const _id = Random.id(6);
-    Boards.direct.update(this._id, { $push: { labels: { _id, name, color } } });
+    const label = { _id, name, color };
+    if (dueAt) label.dueAt = dueAt;
+    Boards.direct.update(this._id, { $push: { labels: label } });
     return _id;
   },
 
@@ -1761,6 +1943,21 @@ Boards.helpers({
       // #5680: build the $or so numeric custom fields (number / currency, stored
       // as JS Numbers) match by value too — a regex alone only matches strings.
       query.$or = buildCardSearchOr(term);
+
+      // #3841: also find cards whose match is only inside a COMMENT. Comments
+      // live in a separate collection, so Minimongo can't match them with a
+      // single query on Cards — pull this board's comment texts, work out
+      // which cards they belong to (using the same case-insensitive matching
+      // rule as the rest of the search), and OR those card ids in too.
+      const comments = ReactiveCache.getCardComments(
+        { boardId: this._id },
+        { fields: { cardId: 1, text: 1 } },
+      );
+      const commentCardIds = matchingCommentCardIds(comments, term);
+      if (commentCardIds.length) {
+        query.$or.push({ _id: { $in: commentCardIds } });
+      }
+
       ret = ReactiveCache.getCards(query, projection);
     }
     return ret;
@@ -2067,6 +2264,20 @@ Boards.helpers({
     return ret;
   },
 
+  cardsReceivedInBetween(start, end, filterSelector) {
+    const ret = ReactiveCache.getCards(
+      cardsReceivedInBetweenSelector(this._id, start, end, filterSelector),
+    );
+    return ret;
+  },
+
+  cardsEndInBetween(start, end, filterSelector) {
+    const ret = ReactiveCache.getCards(
+      cardsEndInBetweenSelector(this._id, start, end, filterSelector),
+    );
+    return ret;
+  },
+
   isTemplateBoard() {
     return this.type === 'template-board';
   },
@@ -2110,6 +2321,24 @@ Boards.helpers({
     return await Boards.updateAsync(this._id, modifier);
   },
 
+  // Board-level override of the 3-tier Notification Settings system (see
+  // models/lib/notificationSettings.js): admin default -> board override ->
+  // member override. `service` is 'tray' or 'email'; `value` is true/false to
+  // override, or null/undefined to clear the override and fall back to the
+  // Admin Panel default.
+  async setNotifyOverride(service, value) {
+    const currentUser = await ReactiveCache.getCurrentUser();
+    if (!(currentUser.isBoardAdmin() || currentUser.isAdmin())) return false;
+    const field = service === 'email' ? 'notifyOverrideEmail'
+      : service === 'tray' ? 'notifyOverrideTray'
+      : null;
+    if (!field) return false;
+    const modifier = value === true || value === false
+      ? { $set: { [field]: value } }
+      : { $unset: { [field]: '' } };
+    return await Boards.updateAsync(this._id, modifier);
+  },
+
   async setBackgroundImageURL(backgroundImageURL) {
     const currentUser = await ReactiveCache.getCurrentUser();
     if (currentUser.isBoardAdmin() || currentUser.isAdmin()) {
@@ -2144,23 +2373,35 @@ Boards.helpers({
     return await Boards.updateAsync(this._id, { $set: { permission: visibility } });
   },
 
-  async addLabel(name, color) {
+  async addLabel(name, color, dueAt) {
     if (!this.getLabel(name, color)) {
       const _id = Random.id(6);
-      return await Boards.updateAsync(this._id, { $push: { labels: { _id, name, color } } });
+      const label = { _id, name, color };
+      // #2802: an optional due date turns a label into a "milestone" (e.g.
+      // "Sprint 1" due 2026-01-15) without a separate Milestone object.
+      if (dueAt) label.dueAt = dueAt;
+      return await Boards.updateAsync(this._id, { $push: { labels: label } });
     }
     return null;
   },
 
-  async editLabel(labelId, name, color) {
+  async editLabel(labelId, name, color, dueAt) {
     if (!this.getLabel(name, color)) {
       const labelIndex = this.labelIndex(labelId);
-      return await Boards.updateAsync(this._id, {
+      const update = {
         $set: {
           [`labels.${labelIndex}.name`]: name,
           [`labels.${labelIndex}.color`]: color,
         },
-      });
+      };
+      // #2802: keep a label's "milestone" due date unset unless one is
+      // provided, and clear it explicitly when it is removed in the popup.
+      if (dueAt) {
+        update.$set[`labels.${labelIndex}.dueAt`] = dueAt;
+      } else {
+        update.$unset = { [`labels.${labelIndex}.dueAt`]: '' };
+      }
+      return await Boards.updateAsync(this._id, update);
     }
     return null;
   },
@@ -2294,6 +2535,12 @@ Boards.helpers({
     return await Boards.updateAsync(this._id, { $set: { allowsShowListsOnMinicard } });
   },
 
+  async setAllowsSwimlaneNameOnMinicard(allowsSwimlaneNameOnMinicard) {
+    return await Boards.updateAsync(this._id, {
+      $set: { allowsSwimlaneNameOnMinicard },
+    });
+  },
+
   async setAllowsChecklistAtMinicard(allowsChecklistAtMinicard) {
     return await Boards.updateAsync(this._id, { $set: { allowsChecklistAtMinicard } });
   },
@@ -2320,6 +2567,10 @@ Boards.helpers({
 
   async setAllowsComments(allowsComments) {
     return await Boards.updateAsync(this._id, { $set: { allowsComments } });
+  },
+
+  async setAllowsCommentsOnMinicard(allowsCommentsOnMinicard) {
+    return await Boards.updateAsync(this._id, { $set: { allowsCommentsOnMinicard } });
   },
 
   async setAllowsDescriptionTitle(allowsDescriptionTitle) {
@@ -2367,12 +2618,29 @@ Boards.helpers({
     return await this.setAllowsCardSortingByNumberOnMinicard(allowsCardSortingByNumberOnMinicard);
   },
 
+  // #4256: this board's own default for showing label text on minicards.
+  getShowLabelText() {
+    return this.showLabelText !== false;
+  },
+
+  async setShowLabelText(showLabelText) {
+    return await Boards.updateAsync(this._id, { $set: { showLabelText } });
+  },
+
   async setAllowsActivities(allowsActivities) {
     return await Boards.updateAsync(this._id, { $set: { allowsActivities } });
   },
 
   async setAllowsReceivedDate(allowsReceivedDate) {
     return await Boards.updateAsync(this._id, { $set: { allowsReceivedDate } });
+  },
+
+  async setAllowsSpentTime(allowsSpentTime) {
+    return await Boards.updateAsync(this._id, { $set: { allowsSpentTime } });
+  },
+
+  async setAllowsSpentTimeOnMinicard(allowsSpentTimeOnMinicard) {
+    return await Boards.updateAsync(this._id, { $set: { allowsSpentTimeOnMinicard } });
   },
 
   getRestrictCommentEditing() {
@@ -2397,6 +2665,18 @@ Boards.helpers({
 
   getAutoWidth() {
     return !!this.autoWidth;
+  },
+
+  // #3847: board-wide sticky list headers, toggled from the List hamburger
+  // menu (see server/models/users.js#setStickyListHeaders).
+  getStickyListHeaders() {
+    return !!this.stickyListHeaders;
+  },
+
+  async setStickyListHeaders(stickyListHeaders) {
+    return await Boards.updateAsync(this._id, {
+      $set: { stickyListHeaders: !!stickyListHeaders },
+    });
   },
 
   async setAutoWidth(autoWidth) {
@@ -2432,6 +2712,54 @@ Boards.helpers({
   async setSameWidthForAllLists(sameWidthForAllLists) {
     return await Boards.updateAsync(this._id, {
       $set: { sameWidthForAllLists: !!sameWidthForAllLists },
+    });
+  },
+
+  // #2489: WIP limit groups - see the schema comment above for what these are.
+  getWipLimitGroups() {
+    return Array.isArray(this.wipLimitGroups) ? this.wipLimitGroups : [];
+  },
+
+  async addWipLimitGroup(listIds, limit, name = '') {
+    const group = {
+      _id: Random.id(6),
+      name: name || '',
+      listIds: Array.isArray(listIds) ? listIds : [],
+      limit: Number.isFinite(limit) && limit > 0 ? limit : 1,
+      enabled: true,
+    };
+    await Boards.updateAsync(this._id, {
+      $push: { wipLimitGroups: group },
+    });
+    return group._id;
+  },
+
+  async updateWipLimitGroup(groupId, fields = {}) {
+    const $set = {};
+    if (Array.isArray(fields.listIds)) {
+      $set['wipLimitGroups.$.listIds'] = fields.listIds;
+    }
+    if (Number.isFinite(fields.limit) && fields.limit > 0) {
+      $set['wipLimitGroups.$.limit'] = fields.limit;
+    }
+    if (typeof fields.name === 'string') {
+      $set['wipLimitGroups.$.name'] = fields.name;
+    }
+    if (typeof fields.enabled === 'boolean') {
+      $set['wipLimitGroups.$.enabled'] = fields.enabled;
+    }
+    if (Object.keys($set).length === 0) {
+      return 0;
+    }
+    return await Boards.updateAsync(
+      { _id: this._id, 'wipLimitGroups._id': groupId },
+      { $set },
+    );
+  },
+
+  async removeWipLimitGroup(groupId) {
+    return await Boards.updateAsync(this._id, {
+      $pull: { wipLimitGroups: { _id: groupId } },
     });
   },
 

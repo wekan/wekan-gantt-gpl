@@ -70,6 +70,7 @@ import '/imports/reactiveCache';
 // Models — server-only exporters
 import '/models/csvCreator';
 import '/models/export';
+import '/models/exportCharts';
 import '/models/exportExcel';
 import '/models/exportExcelCard';
 import '/models/exportPDF';
@@ -129,6 +130,8 @@ import '/server/models/userPositionHistory';
 // mainModule, so files not imported here are never loaded / their methods are
 // not registered).
 import '/server/ldapGroupSync';
+import '/server/ldapAdminSettingsBridge';
+import '/server/lib/oauthProviders';
 import '/server/sharedTemplateTargets';
 import '/server/propagateOrgTeamMembers';
 
@@ -209,6 +212,7 @@ import '/server/lib/tenantResolver';
 import '/server/lib/ssrfGuard';
 import '/server/lib/ddpSessionSendGuard';
 import '/server/lib/databaseProblems';
+import '/server/lib/databaseHealth';
 // What the FILESYSTEM said, and whether this server stopped cleanly last time
 // (docs/Security/Remediation/WeKan.md §13). Both write to the 'integrity' event
 // stream, shown in Admin Panel / Problems / Filesystem integrity.
@@ -313,6 +317,7 @@ import '/server/publications/trelloImportJobs';
 // ----------------------------------------------------------------------------
 import '/server/routes/attachmentApi';
 import '/server/routes/avatarServer';
+import '/server/routes/cardOgTags';
 import '/server/routes/customHeadAssets';
 import '/server/routes/importTrelloZip';
 import '/server/routes/legacyAttachments';
@@ -324,6 +329,9 @@ import '/server/routes/universalFileServer';
 import '/server/rulesHelper';
 import '/server/triggersDef';
 import '/server/scheduledRules';
+import '/server/checklistResetSchedule';
+import '/server/listSync';
+import '/server/methods/listSync';
 import '/server/rulesButton';
 
 // ----------------------------------------------------------------------------
@@ -339,6 +347,7 @@ import '/server/permissions/boards';
 import '/server/permissions/cardCommentReactions';
 import '/server/permissions/cardComments';
 import '/server/permissions/cards';
+import '/server/permissions/cardTextNotes';
 import '/server/permissions/checklistItems';
 import '/server/permissions/checklists';
 import '/server/permissions/customFields';
@@ -370,6 +379,10 @@ import '/server/avatarLocalizationOnLogin';
 // office groupings in Admin Panel (server/lib/loginTally.js).
 import '/server/loginTallyOnLogin';
 import '/server/methods/loginOffices';
+// Presence for Admin Panel > People (#3678, #3734): last-active timestamp set on
+// login and refreshed by an open client session's heartbeat.
+import '/server/lastActiveOnLogin';
+import '/server/methods/lastActiveHeartbeat';
 import '/server/importedUserReconciliation';
 
 // ----------------------------------------------------------------------------

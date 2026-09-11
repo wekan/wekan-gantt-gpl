@@ -151,6 +151,38 @@ test('empty or malformed inputs never throw and return []', () => {
   );
 });
 
+test('#4165: matched entries are sorted by the definition\'s `sort`, not name', () => {
+  const lowSort = { _id: 'cf-z', name: 'Zebra', type: 'text', settings: {}, sort: 0 };
+  const highSort = { _id: 'cf-a', name: 'Aardvark', type: 'text', settings: {}, sort: 1 };
+  const ret = buildCustomFieldsWD(
+    [
+      { _id: 'cf-a', value: '1' },
+      { _id: 'cf-z', value: '2' },
+    ],
+    [lowSort, highSort],
+  );
+  assert.deepStrictEqual(
+    ret.map(f => f.definition._id),
+    ['cf-z', 'cf-a'],
+  );
+});
+
+test('#4165: a definition with no `sort` yet falls after ones that have it', () => {
+  const withSort = { _id: 'cf-with', name: 'Zeta', type: 'text', settings: {}, sort: 5 };
+  const withoutSort = { _id: 'cf-without', name: 'Alpha', type: 'text', settings: {} };
+  const ret = buildCustomFieldsWD(
+    [
+      { _id: 'cf-without', value: '1' },
+      { _id: 'cf-with', value: '2' },
+    ],
+    [withoutSort, withSort],
+  );
+  assert.deepStrictEqual(
+    ret.map(f => f.definition._id),
+    ['cf-with', 'cf-without'],
+  );
+});
+
 test('definitions without a name do not break sorting', () => {
   const namelessDef = { _id: 'cf-noname', type: 'text', settings: {} };
   const ret = buildCustomFieldsWD(
@@ -170,6 +202,87 @@ test('resolveTrueValue: non-dropdown and unmatched ids keep the raw value', () =
   assert.strictEqual(resolveTrueValue(dropdownDef, 'item1'), 'Frontend');
   assert.strictEqual(resolveTrueValue({ settings: {} }, 'v'), 'v');
   assert.strictEqual(resolveTrueValue(undefined, 'v'), 'v');
+});
+
+// --- #4166: dropdownMultiSelect (several options from the same option list) -
+// Reuses the exact same settings.dropdownItems option list as 'dropdown'; only
+// the VALUE stored on the card differs - an ARRAY of item ids instead of one.
+const multiSelectDef = {
+  _id: 'cf-multi',
+  name: 'Tags',
+  type: 'dropdownMultiSelect',
+  settings: {
+    dropdownItems: [
+      { _id: 'item1', name: 'Frontend' },
+      { _id: 'item2', name: 'Backend' },
+      { _id: 'item3', name: 'DevOps' },
+    ],
+  },
+};
+
+test('#4166: dropdownMultiSelect is a valid custom-field type (allowedValues)', () => {
+  // models/customFields.js is an ES module that attaches a live Mongo
+  // collection schema at import time (needs Meteor), so it cannot be
+  // `require()`d from a plain-Node test. Reading the source's own
+  // `allowedValues` list is the pattern this suite otherwise avoids
+  // reimplementing the schema by hand and drifting from it.
+  const fs = require('fs');
+  const src = fs.readFileSync(
+    require('path').join(__dirname, '..', 'models', 'customFields.js'),
+    'utf8',
+  );
+  const match = src.match(/allowedValues:\s*\[([\s\S]*?)\]/);
+  assert.ok(match, 'customFields.js must define type.allowedValues');
+  assert.ok(match[1].includes("'dropdownMultiSelect'"));
+  assert.ok(match[1].includes("'dropdown'"));
+});
+
+test('#4166: resolveTrueValue joins several selected item NAMES for a multi-select value', () => {
+  const ret = buildCustomFieldsWD(
+    [{ _id: 'cf-multi', value: ['item1', 'item3'] }],
+    [multiSelectDef],
+  );
+  assert.strictEqual(ret.length, 1);
+  assert.deepStrictEqual(ret[0].value, ['item1', 'item3']);
+  assert.strictEqual(ret[0].trueValue, 'Frontend, DevOps');
+});
+
+test('#4166: an array value round-trips through buildCustomFieldsWD unchanged', () => {
+  const ret = buildCustomFieldsWD(
+    [{ _id: 'cf-multi', value: ['item2'] }],
+    [multiSelectDef],
+  );
+  assert.ok(Array.isArray(ret[0].value));
+  assert.strictEqual(ret[0].value.length, 1);
+  assert.strictEqual(ret[0].value[0], 'item2');
+});
+
+test('#4166: an empty selection resolves to an empty trueValue, not a crash', () => {
+  const ret = buildCustomFieldsWD(
+    [{ _id: 'cf-multi', value: [] }],
+    [multiSelectDef],
+  );
+  assert.strictEqual(ret[0].trueValue, '');
+});
+
+test('#4166: a non-array value on a multi-select field is treated as no selection', () => {
+  // Defensive: a stray scalar (e.g. legacy data) must never throw.
+  assert.strictEqual(resolveTrueValue(multiSelectDef, null), '');
+  assert.strictEqual(resolveTrueValue(multiSelectDef, undefined), '');
+});
+
+test('#4166: an id that no longer matches an option is kept as-is (deleted option)', () => {
+  const ret = buildCustomFieldsWD(
+    [{ _id: 'cf-multi', value: ['item1', 'item-deleted'] }],
+    [multiSelectDef],
+  );
+  assert.strictEqual(ret[0].trueValue, 'Frontend, item-deleted');
+});
+
+test('#4166: the single-select dropdown type is untouched by the multi-select addition', () => {
+  assert.strictEqual(resolveTrueValue(dropdownDef, 'item2'), 'Backend');
+  assert.strictEqual(typeof resolveTrueValue(dropdownDef, 'item2'), 'string');
+  assert.ok(!Array.isArray(resolveTrueValue(dropdownDef, 'item2')));
 });
 
 console.log(`\n${passed} passed`);

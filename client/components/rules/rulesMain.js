@@ -7,6 +7,24 @@ Template.rulesMain.onCreated(function () {
   this.ruleName = new ReactiveVar('');
   this.triggerVar = new ReactiveVar();
   this.ruleId = new ReactiveVar();
+  // #2713: set while editing an EXISTING rule's trigger/action through the
+  // rulesList "Edit" button, so the wizard's save buttons (routed through
+  // rulesSaveHelper.saveRuleTriggerAction) update that rule instead of
+  // creating a new one. null while creating a brand-new rule.
+  this.editingRuleId = new ReactiveVar(null);
+
+  // The Workflow view is the rulesList tab's alternative rendering, so it can
+  // only show while that tab is current. The toggle lives in rulesControls -
+  // a separate template in the page sidebar with no handle on this instance
+  // - and it only flips Session 'rulesViewMode'; from the Add trigger / Add
+  // action / rule details tabs that changed the button's label and nothing
+  // else. Switching to the workflow view therefore brings the page back to
+  // the list tab here, where the tab state lives.
+  this.autorun(() => {
+    if (Session.get('rulesViewMode') === 'workflow') {
+      this.rulesCurrentTab.set('rulesList');
+    }
+  });
 
   // The Rules page is now a standalone board-scoped route, so subscribe to the
   // board data (lists, swimlanes, labels, members) the trigger/action forms need,
@@ -32,6 +50,9 @@ Template.rulesMain.helpers({
   },
   ruleId() {
     return Template.instance().ruleId;
+  },
+  editingRuleId() {
+    return Template.instance().editingRuleId;
   },
   currentBoard() {
     return Utils.getCurrentBoard();
@@ -95,12 +116,47 @@ Template.rulesMain.events({
   },
   'click .js-goto-trigger'(event, tpl) {
     event.preventDefault();
-    const ruleTitle = tpl.find('#ruleTitle').value;
-    if (ruleTitle !== undefined && ruleTitle !== '') {
-      tpl.find('#ruleTitle').value = '';
-      tpl.ruleName.set(ruleTitle);
-      tpl.rulesCurrentTab.set('trigger');
+    const input = tpl.find('#ruleTitle');
+    const ruleTitle = (input.value || '').trim();
+    // #4294: clicking "Add Rule" with an empty title used to just do
+    // nothing — no error, no explanation, and the button visibly reacted to
+    // the click. Show a validation message and highlight the field instead
+    // of the silent no-op.
+    if (ruleTitle === '') {
+      input.classList.add('rules-field-error');
+      input.setAttribute('aria-invalid', 'true');
+      input.focus();
+      $(input)
+        .closest('.rules-add')
+        .find('.js-rule-title-error')
+        .removeClass('hide-element');
+      return;
     }
+    input.classList.remove('rules-field-error');
+    input.removeAttribute('aria-invalid');
+    $(input)
+      .closest('.rules-add')
+      .find('.js-rule-title-error')
+      .addClass('hide-element');
+    input.value = '';
+    tpl.ruleName.set(ruleTitle);
+    // A fresh "Add Rule" always creates - clear any leftover edit target.
+    tpl.editingRuleId.set(null);
+    tpl.rulesCurrentTab.set('trigger');
+  },
+  'click .js-edit-rule-full'(event, tpl) {
+    event.preventDefault();
+    // #2713: "Edit" on an existing rule - open the same trigger/action wizard
+    // used to create a rule, but remember which rule this is so the wizard's
+    // save buttons update it in place (see rulesSaveHelper.js) instead of
+    // creating a new rule alongside it.
+    const ruleId = event.currentTarget.getAttribute('data-rule-id');
+    if (!ruleId) return;
+    const rule = ReactiveCache.getRule(ruleId);
+    if (!rule) return;
+    tpl.ruleName.set(rule.title || '');
+    tpl.editingRuleId.set(ruleId);
+    tpl.rulesCurrentTab.set('trigger');
   },
   'click .js-goto-action'(event, tpl) {
     event.preventDefault();
@@ -132,6 +188,9 @@ Template.rulesMain.events({
   'click .js-goto-rules'(event, tpl) {
     event.preventDefault();
     tpl.rulesCurrentTab.set('rulesList');
+    // Whether this was "cancel" or "save", the wizard is done with whichever
+    // rule it was editing.
+    tpl.editingRuleId.set(null);
   },
   'click .js-goback'(event, tpl) {
     event.preventDefault();
@@ -140,6 +199,7 @@ Template.rulesMain.events({
       tpl.rulesCurrentTab.get() === 'ruleDetails'
     ) {
       tpl.rulesCurrentTab.set('rulesList');
+      tpl.editingRuleId.set(null);
     }
     if (tpl.rulesCurrentTab.get() === 'action') {
       tpl.rulesCurrentTab.set('trigger');

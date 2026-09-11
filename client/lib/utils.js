@@ -249,6 +249,17 @@ export const Utils = {
   canMoveCard() {
     return Utils.currentUserCan('moveCard');
   },
+  // #3307: checking/unchecking a checklist item is not the same capability as
+  // editing or deleting one either - a Worker (write: false) may still tick a
+  // box, field by field, exactly like the move/self-assign carve-out above
+  // (models/lib/workerChecklistItemToggle.js enforces it server-side). Every
+  // role that can `write` can also check an item, so this only ever ADDS the
+  // Worker on top of whoever canModifyCard already allows.
+  canCheckChecklistItem(card = Utils.getCurrentCard()) {
+    if (Utils.canModifyCard(card)) return true;
+    const user = ReactiveCache.getCurrentUser();
+    return !!(user && user.isWorker && user.isWorker());
+  },
   canModifyBoard() {
     return Utils.currentUserCan('write');
   },
@@ -288,10 +299,17 @@ export const Utils = {
       Utils.reload();
     } else if (
       [
+        'board-view-multiboard-cal',
+        'board-view-gantt-frappe',
+        'board-view-gantt-dhtmlx',
         'board-view-table',
         'board-view-time',
+        'board-view-timeline',
         'board-view-stats',
+        'board-view-group-by-assignee',
+        'board-view-roadmap',
         'board-view-dashboard',
+        'board-view-bigboard',
         'board-view-burndown',
         'board-view-burnup',
         'board-view-cumulative-flow',
@@ -301,6 +319,7 @@ export const Utils = {
         'board-view-lead-time',
         'board-view-throughput-histogram',
         'board-view-wip-run',
+        'board-view-pulse',
       ].includes(view)
     ) {
       window.localStorage.setItem('boardView', view); //true
@@ -345,10 +364,17 @@ export const Utils = {
       return 'board-view-gantt';
     } else if (
       [
+        'board-view-multiboard-cal',
+        'board-view-gantt-frappe',
+        'board-view-gantt-dhtmlx',
         'board-view-table',
         'board-view-time',
+        'board-view-timeline',
         'board-view-stats',
+        'board-view-group-by-assignee',
+        'board-view-roadmap',
         'board-view-dashboard',
+        'board-view-bigboard',
         'board-view-burndown',
         'board-view-burnup',
         'board-view-cumulative-flow',
@@ -358,6 +384,7 @@ export const Utils = {
         'board-view-lead-time',
         'board-view-throughput-histogram',
         'board-view-wip-run',
+        'board-view-pulse',
       ].includes(window.localStorage.getItem('boardView'))
     ) {
       return window.localStorage.getItem('boardView');
@@ -368,9 +395,20 @@ export const Utils = {
     }
   },
 
-  getListCollapseState(list) {
+  // `swimlaneId` scopes a BOARD-WIDE list's collapse state to the one
+  // swimlane row it was toggled in. A list with no swimlaneId of its own
+  // (shared/pre-migration) renders once per swimlane in Swimlanes view - the
+  // SAME list document, one row per swimlane - so without this, collapsing
+  // it in swimlane 1 collapsed every other swimlane's row of it too, since
+  // they all shared the one `collapsedList-<listId>` key. Callers resolve
+  // swimlaneId via the containerSwimlaneId pattern already used for scoping
+  // that list's CARDS per swimlane (client/components/lists/listHeader.js,
+  // listBody.js) - undefined outside Swimlanes view, where there is only
+  // ever one row for the list and the old unscoped key is exactly right.
+  getListCollapseState(list, swimlaneId) {
     if (!list) return false;
-    const key = `collapsedList-${list._id}`;
+    const storageId = swimlaneId ? `${list._id}:${swimlaneId}` : list._id;
+    const key = `collapsedList-${storageId}`;
     const sessionVal = Session.get(key);
     if (typeof sessionVal === 'boolean') {
       return sessionVal;
@@ -379,9 +417,9 @@ export const Utils = {
     const user = ReactiveCache.getCurrentUser();
     let stored = null;
     if (user && user.getCollapsedListFromStorage) {
-      stored = user.getCollapsedListFromStorage(list.boardId, list._id);
+      stored = user.getCollapsedListFromStorage(list.boardId, storageId);
     } else if (Users.getPublicCollapsedList) {
-      stored = Users.getPublicCollapsedList(list.boardId, list._id);
+      stored = Users.getPublicCollapsedList(list.boardId, storageId);
     }
 
     if (typeof stored === 'boolean') {
@@ -394,15 +432,58 @@ export const Utils = {
     return fallback;
   },
 
-  setListCollapseState(list, collapsed) {
+  setListCollapseState(list, collapsed, swimlaneId) {
     if (!list) return;
-    const key = `collapsedList-${list._id}`;
+    const storageId = swimlaneId ? `${list._id}:${swimlaneId}` : list._id;
+    const key = `collapsedList-${storageId}`;
     Session.set(key, !!collapsed);
     const user = ReactiveCache.getCurrentUser();
     if (user) {
-      Meteor.call('setListCollapsedState', list.boardId, list._id, !!collapsed);
+      Meteor.call('setListCollapsedState', list.boardId, storageId, !!collapsed);
     } else if (Users.setPublicCollapsedList) {
-      Users.setPublicCollapsedList(list.boardId, list._id, !!collapsed);
+      Users.setPublicCollapsedList(list.boardId, storageId, !!collapsed);
+    }
+  },
+
+  // #1591: the same shape as a list's collapse state above, for the whole
+  // minicard. There is deliberately no `Users.getPublicCollapsedCard` /
+  // `setPublicCollapsedCard` cookie fallback: a public board can have very
+  // many cards (unlike its handful of lists), and a per-card cookie entry per
+  // anonymous visitor would grow the cookie without bound. An anonymous
+  // visitor's fold still works for the session (the Session key above), it
+  // just does not survive a reload - the same tradeoff already accepted for
+  // an anonymous visitor's per-checklist folds (getCollapsedCardSection has
+  // no public/cookie fallback either).
+  getCardCollapseState(card) {
+    if (!card) return false;
+    const key = `collapsedCard-${card._id}`;
+    const sessionVal = Session.get(key);
+    if (typeof sessionVal === 'boolean') {
+      return sessionVal;
+    }
+
+    const user = ReactiveCache.getCurrentUser();
+    let stored = null;
+    if (user && user.getCollapsedCardFromStorage) {
+      stored = user.getCollapsedCardFromStorage(card.boardId, card._id);
+    }
+
+    if (typeof stored === 'boolean') {
+      Session.setDefault(key, stored);
+      return stored;
+    }
+
+    Session.setDefault(key, false);
+    return false;
+  },
+
+  setCardCollapseState(card, collapsed) {
+    if (!card) return;
+    const key = `collapsedCard-${card._id}`;
+    Session.set(key, !!collapsed);
+    const user = ReactiveCache.getCurrentUser();
+    if (user) {
+      Meteor.call('setCardCollapsedState', card.boardId, card._id, !!collapsed);
     }
   },
 

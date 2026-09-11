@@ -111,6 +111,51 @@ Template.cardTriggers.events({
       });
     }
   },
+  'click .js-add-gen-assignee-trigger'(event, tpl) {
+    const desc = Utils.getTriggerActionDesc(event, tpl);
+    const datas = Template.currentData();
+    const actionSelected = tpl.find('#gen-assignee-action').value;
+    const boardId = Session.get('currentBoard');
+    if (actionSelected === 'added') {
+      datas.triggerVar.set({
+        activityType: 'joinAssignee',
+        boardId,
+        username: '*',
+        desc,
+      });
+    }
+    if (actionSelected === 'removed') {
+      datas.triggerVar.set({
+        activityType: 'unjoinAssignee',
+        boardId,
+        username: '*',
+        desc,
+      });
+    }
+  },
+  'click .js-add-spec-assignee-trigger'(event, tpl) {
+    const desc = Utils.getTriggerActionDesc(event, tpl);
+    const datas = Template.currentData();
+    const actionSelected = tpl.find('#spec-assignee-action').value;
+    const username = tpl.find('#spec-assignee').value;
+    const boardId = Session.get('currentBoard');
+    if (actionSelected === 'added') {
+      datas.triggerVar.set({
+        activityType: 'joinAssignee',
+        boardId,
+        username,
+        desc,
+      });
+    }
+    if (actionSelected === 'removed') {
+      datas.triggerVar.set({
+        activityType: 'unjoinAssignee',
+        boardId,
+        username,
+        desc,
+      });
+    }
+  },
   'click .js-add-attachment-trigger'(event, tpl) {
     const desc = Utils.getTriggerActionDesc(event, tpl);
     const datas = Template.currentData();
@@ -130,5 +175,90 @@ Template.cardTriggers.events({
         desc,
       });
     }
+  },
+  // #3092: "card matches advanced filter" - the trigger stores the SAME
+  // criteria string the board Filter sidebar's Advanced Filter field accepts
+  // (client/components/sidebar/sidebarFilters.jade's .js-field-advanced-filter),
+  // so it is evaluated server-side by the exact same selector-building
+  // function (server/lib/advancedFilterMatch.js -> /imports/lib/advancedFilter.js)
+  // the sidebar itself uses, not a reimplementation of the filter language.
+  'click .js-add-advanced-filter-trigger'(event, tpl) {
+    const desc = Utils.getTriggerActionDesc(event, tpl);
+    const datas = Template.currentData();
+    const advancedFilter = tpl.find('.advanced-filter-trigger-value').value.trim();
+    if (!advancedFilter) return;
+    const boardId = Session.get('currentBoard');
+    datas.triggerVar.set({
+      activityType: 'advancedFilterTrigger',
+      boardId,
+      advancedFilter,
+      desc,
+    });
+  },
+  // #2194: "card title/description contains {value}" - stores the raw
+  // substring the user typed; server/rulesHelper.js does the actual
+  // case-insensitive match against the card's CURRENT title/description
+  // (models/lib/ruleTextContainsMatch.js), the same "store what the user
+  // typed, match server-side" split the advanced-filter trigger above uses.
+  'click .js-add-text-contains-trigger'(event, tpl) {
+    const desc = Utils.getTriggerActionDesc(event, tpl);
+    const datas = Template.currentData();
+    const textContains = tpl.find('.text-contains-trigger-value').value.trim();
+    if (!textContains) return;
+    const boardId = Session.get('currentBoard');
+    datas.triggerVar.set({
+      activityType: 'textContainsTrigger',
+      boardId,
+      textContains,
+      desc,
+    });
+  },
+  // #2474: "a card's due/start/end/received date is set or changed" - these
+  // reuse the 'a-dueAt'/'a-startAt'/'a-endAt'/'a-receivedAt' activities that
+  // models/cards.js's setDue/setStart/setEnd/setReceived already log via
+  // server/models/cards.js's timing-field hook (see server/triggersDef.js),
+  // the same mechanism the due-date-change-count feature (#6081) already
+  // reads. No userId is stored here, matching the addAttachment trigger
+  // above - server/rulesHelper.js's buildMatchingFieldsMap treats an omitted
+  // field as "any", and the "by" username field (once wired up) narrows it.
+  'click .js-add-due-date-changed-trigger'(event, tpl) {
+    const desc = Utils.getTriggerActionDesc(event, tpl);
+    const datas = Template.currentData();
+    const boardId = Session.get('currentBoard');
+    datas.triggerVar.set({
+      activityType: 'a-dueAt',
+      boardId,
+      desc,
+    });
+  },
+  'click .js-add-start-date-changed-trigger'(event, tpl) {
+    const desc = Utils.getTriggerActionDesc(event, tpl);
+    const datas = Template.currentData();
+    const boardId = Session.get('currentBoard');
+    datas.triggerVar.set({
+      activityType: 'a-startAt',
+      boardId,
+      desc,
+    });
+  },
+  'click .js-add-end-date-changed-trigger'(event, tpl) {
+    const desc = Utils.getTriggerActionDesc(event, tpl);
+    const datas = Template.currentData();
+    const boardId = Session.get('currentBoard');
+    datas.triggerVar.set({
+      activityType: 'a-endAt',
+      boardId,
+      desc,
+    });
+  },
+  'click .js-add-received-date-changed-trigger'(event, tpl) {
+    const desc = Utils.getTriggerActionDesc(event, tpl);
+    const datas = Template.currentData();
+    const boardId = Session.get('currentBoard');
+    datas.triggerVar.set({
+      activityType: 'a-receivedAt',
+      boardId,
+      desc,
+    });
   },
 });

@@ -93,7 +93,15 @@ Template.filterSidebar.events({
   },
   'click .js-toggle-label-filter'(evt) {
     evt.preventDefault();
-    Filter.labelIds.toggle(getFilterIdFromEvent(evt, this?._id));
+    const filterId = getFilterIdFromEvent(evt, this?._id);
+    if (filterId === undefined) {
+      // The "no label" pseudo-entry stays a simple two-state toggle; the
+      // #2886 three-state include/exclude/clear cycle is scoped to actual
+      // labels.
+      Filter.labelIds.toggle(filterId);
+    } else {
+      Filter.toggleLabelFilter(filterId);
+    }
     Filter.resetExceptions();
   },
   'click .js-toggle-member-filter'(evt) {
@@ -104,6 +112,13 @@ Template.filterSidebar.events({
   'click .js-toggle-assignee-filter'(evt) {
     evt.preventDefault();
     Filter.assignees.toggle(getFilterIdFromEvent(evt, this?._id));
+    Filter.resetExceptions();
+  },
+  // #3681: filter cards by whose card.userId (the creator/author field)
+  // matches, the same toggle pattern as members/assignees above.
+  'click .js-toggle-creator-filter'(evt) {
+    evt.preventDefault();
+    Filter.userId.toggle(getFilterIdFromEvent(evt, this?._id));
     Filter.resetExceptions();
   },
   'click .js-toggle-no-due-date-filter'(evt) {

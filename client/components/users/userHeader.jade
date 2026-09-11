@@ -22,6 +22,14 @@ template(name="memberMenuPopup")
           i.fa.fa-calendar
           | {{_ 'dueCards-title'}}
       li
+        a.js-my-attachments(href="{{pathFor 'my-attachments'}}")
+          i.fa.fa-paperclip
+          | {{_ 'my-attachments'}}
+      li
+        a.js-starred-items(href="{{pathFor 'starred-items'}}")
+          i.fa.fa-star
+          | {{_ 'allboards.starred'}}
+      li
         a.js-global-search(href="{{pathFor 'global-search'}}")
           i.fa.fa-search
           | {{_ 'globalSearch-title'}}
@@ -84,6 +92,10 @@ template(name="memberMenuPopup")
           i.fa.fa-paint-brush
           | {{_ 'change-color'}}
       li
+        a.js-open-notification-settings
+          i.fa.fa-bell
+          | {{_ 'notifications'}}
+      li
         a.js-change-font
           i.fa.fa-font
           | {{_ 'change-font'}}
@@ -97,6 +109,10 @@ template(name="memberMenuPopup")
             a.js-change-password
               i.fa.fa-key
               | {{_ 'changePasswordPopup-title'}}
+          li
+            a.js-two-factor-auth
+              i.fa.fa-shield
+              | {{_ 'twoFactorAuthPopup-title'}}
       li
         a.js-change-language
           i.fa.fa-flag
@@ -167,6 +183,8 @@ template(name="editProfilePopup")
       if allowUserDelete
         div
         input#deleteButton.primary.wide(type="button" value="{{_ 'delete'}}")
+        div
+        input#anonymizeButton.primary.wide(type="button" value="{{_ 'anonymize-account'}}")
 
 
 template(name="supportPopup")
@@ -177,6 +195,48 @@ template(name="supportPopup")
 
 template(name="changePasswordPopup")
   +atForm(state='changePwd')
+
+template(name="twoFactorAuthPopup")
+  //- Issue #3058: opt-in per-user TOTP two-factor authentication, via
+  //- Meteor's official accounts-2fa package
+  //- (https://docs.meteor.com/packages/accounts-2fa.html). All secret
+  //- generation and code verification is done by that package
+  //- (Accounts.generate2faActivationQrCode / Accounts.enableUser2fa /
+  //- Accounts.disableUser2fa) - this template only shows the resulting QR
+  //- code / secret and the enable/disable controls. See
+  //- client/components/users/userHeader.js for the wiring.
+  .two-factor-auth-popup
+    if isLoadingStatus
+      +loader
+    else
+      if hasTwoFactorAuth
+        p.two-factor-auth-status
+          i.fa.fa-check-circle
+          | {{_ 'twoFactorAuth-enabled'}}
+        div.buttonsContainer
+          button.primary.js-two-factor-disable(type="button") {{_ 'twoFactorAuth-disable'}}
+      else
+        if activationStep
+          p {{_ 'twoFactorAuth-scan-instructions'}}
+          if qrSvg
+            .two-factor-auth-qr-code
+              != qrSvg
+          if qrSecret
+            p.two-factor-auth-secret
+              | {{_ 'twoFactorAuth-manual-entry'}}
+              code {{qrSecret}}
+          form.js-two-factor-confirm-form
+            label
+              | {{_ 'twoFactorCode-prompt'}}
+              input.js-two-factor-confirm-input(type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" autofocus)
+            div.two-factor-auth-error.error.hide
+            div.buttonsContainer
+              input.primary(type="submit" value="{{_ 'twoFactorAuth-confirm'}}")
+              button.js-two-factor-cancel-activation(type="button") {{_ 'twoFactorCode-cancel'}}
+        else
+          p {{_ 'twoFactorAuth-explanation'}}
+          div.buttonsContainer
+            button.primary.js-two-factor-start-enable(type="button") {{_ 'twoFactorAuth-enable'}}
 
 template(name="changeLanguagePopup")
   ul.pop-over-list
@@ -250,6 +310,14 @@ template(name="changeSettingsPopup")
         | {{_ 'open-many-cards-at-once'}}
         if isOpenManyCardsAtOnce
           i.fa.fa-check
+    li
+      //- #5427: off by default - a short synthesized "ding" plays when a
+      //- checklist item is checked off.
+      a.js-toggle-checklist-ding-sound(title="{{_ 'checklist-ding-sound-description'}}")
+        i.fa.fa-bell
+        | {{_ 'checklist-ding-sound'}}
+        if isChecklistDingSound
+          i.fa.fa-check
     unless currentUser.isWorker
       li
         label.bold.clear
@@ -265,6 +333,17 @@ template(name="changeSettingsPopup")
               option(selected="true", value="#{day.value}") #{day.name}
             else
               option(value="#{day.value}") #{day.name}
+        label.bold.clear
+          i.fa.fa-calendar-check-o
+          | {{_ 'calendar-system'}}
+        //- #4335: display-only toggle. Dates stay stored as Gregorian; this
+        //- only changes how minicard/card-detail dates are RENDERED.
+        select#calendar-system.inline-input.left
+          each system in calendarSystems
+            if system.isSelected
+              option(selected="true", value="#{system.value}") #{system.name}
+            else
+              option(value="#{system.value}") #{system.name}
         label.bold.clear
           | {{_ 'card-settings'}}
         //- #6465: the checkbox and its label are ONE row, built the way every
@@ -290,3 +369,8 @@ template(name="userDeletePopup")
   unless currentUser.isWorker
     p {{_ 'delete-user-confirm-popup'}}
     button.js-confirm.negate.full(type="submit") {{_ 'delete'}}
+
+template(name="userAnonymizePopup")
+  unless currentUser.isWorker
+    p {{_ 'anonymize-account-confirm-popup'}}
+    button.js-confirm.negate.full(type="submit") {{_ 'anonymize-account'}}

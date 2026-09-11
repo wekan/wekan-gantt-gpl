@@ -275,6 +275,16 @@
   margin: 0 4px;
   color: #3cb500;
 }
+/* #2886: a label filter clicked a third time inverts to EXCLUDE that label
+   (rather than clearing the filter) — struck-through text plus a "no
+   entry" icon distinguish it from the plain checked "include" state above. */
+.sidebar .sidebar-content ul.sidebar-list li.excluded > a .sidebar-list-item-description {
+  text-decoration: line-through;
+}
+.sidebar .sidebar-content ul.sidebar-list li > a .fa.fa-ban {
+  margin: 0 4px;
+  color: #e63737;
+}
 .sidebar .sidebar-content ul.sidebar-list li .minicard {
   padding: 6px 8px 4px;
 }
@@ -285,6 +295,20 @@
 }
 .sidebar .sidebar-content ul.sidebar-list li .minicard .minicard-edit-button:hover {
   background: #dbdbdb;
+}
+/* #4165: drag handle for reordering the board's custom fields list. */
+.sidebar .sidebar-content ul.js-custom-fields-sidebar-list li .js-custom-field-drag-handle {
+  cursor: move;
+  padding: 0 6px 0 2px;
+  opacity: 0.5;
+}
+.sidebar .sidebar-content ul.js-custom-fields-sidebar-list li .js-custom-field-drag-handle:hover {
+  opacity: 1;
+}
+.sidebar .sidebar-content ul.js-custom-fields-sidebar-list li.custom-field-sidebar-item.placeholder {
+  border: 1px dashed #c2c2c2;
+  background: #f5f5f5;
+  list-style: none;
 }
 .sidebar .sidebar-content .sidebar-btn {
   display: block;

@@ -20,6 +20,10 @@ import TableVisibilityModeSettings from '/models/tableVisibilityModeSettings';
 import { EscapeActions } from '/client/lib/escapeActions';
 import { Utils } from '/client/lib/utils';
 import { Filter } from '/client/lib/filter';
+import {
+  parseBoardFilterQueryParams,
+  buildBoardFilterQueryParams,
+} from '/client/lib/filterQueryParams';
 import { migrationProgressManager } from '/client/components/settings/migrationProgress';
 import { focusFirstControl } from '/client/lib/accessibility';
 
@@ -36,6 +40,100 @@ Template.board.onCreated(function () {
   this.isConverting = new ReactiveVar(false);
   this._swimlaneCreated = new Set(); // boards where a default swimlane was ensured
   this._listRepairChecked = new Set(); // boards whose data-repair was checked
+  this._queryFiltersApplied = new Set(); // boards whose URL filter params were applied
+
+  // #4540: let a board's filter state be driven by URL query params, e.g.
+  // `?assignee=johndoe` or `?member=johndoe,janedoe&label=urgent`, so a link
+  // (for instance embedded in an iframe) opens the board already filtered.
+  // Reuses the existing `Filter` sidebar state/API - this only translates the
+  // query params into the same `Filter.assignees` / `Filter.members` /
+  // `Filter.labelIds` calls the sidebar UI would make. Applied once per board
+  // load (guarded by `_queryFiltersApplied`), reading the query params once
+  // rather than reactively - this is a one-time "open pre-filtered" bridge,
+  // not two-way URL sync.
+  this.applyQueryParamFilters = (boardId) => {
+    if (!boardId || this._queryFiltersApplied.has(boardId)) {
+      return;
+    }
+    this._queryFiltersApplied.add(boardId);
+
+    const assigneeParam = FlowRouter.getQueryParam('assignee');
+    const memberParam = FlowRouter.getQueryParam('member');
+    const labelParam = FlowRouter.getQueryParam('label');
+    if (!assigneeParam && !memberParam && !labelParam) {
+      return;
+    }
+
+    const board = ReactiveCache.getBoard(boardId);
+    if (!board) {
+      return;
+    }
+
+    // Collect candidate usernames from both params to look up in one query.
+    const usernames = new Set();
+    (assigneeParam || '')
+      .split(',')
+      .concat((memberParam || '').split(','))
+      .map(u => u.trim())
+      .filter(Boolean)
+      .forEach(u => usernames.add(u));
+
+    const users = ReactiveCache.getUsers(
+      { username: { $in: Array.from(usernames) } },
+      { fields: { _id: 1, username: 1 } },
+    ) || [];
+
+    const { assigneeIds, memberIds, labelIds } = parseBoardFilterQueryParams(
+      { assignee: assigneeParam, member: memberParam, label: labelParam },
+      users,
+      board.labels,
+    );
+
+    assigneeIds.forEach(id => Filter.assignees.add(id));
+    memberIds.forEach(id => Filter.members.add(id));
+    labelIds.forEach(id => Filter.labelIds.add(id));
+  };
+
+  // #319: the write direction of the two-way URL sync #4540 started. Mirrors
+  // the `Filter` sidebar's current assignee/member/label selection into the
+  // `?assignee=`/`?member=`/`?label=` query params (reusing
+  // `buildBoardFilterQueryParams`'s token format, the exact inverse of
+  // `parseBoardFilterQueryParams` above) so a manually filtered board is a
+  // bookmarkable/shareable URL without the user having to hand-type it.
+  // Reactive by design (unlike the one-time `applyQueryParamFilters`
+  // read): every `Filter.assignees`/`members`/`labelIds` change re-runs this
+  // and updates the URL. Uses `FlowRouter.withReplaceState` so toggling a
+  // filter replaces the current history entry instead of piling up a new one
+  // per click.
+  this.syncFilterQueryParams = (boardId) => {
+    if (!boardId) {
+      return;
+    }
+    const assigneeIds = Filter.assignees.list();
+    const memberIds = Filter.members.list();
+    const labelIds = Filter.labelIds.list();
+
+    const board = ReactiveCache.getBoard(boardId);
+    if (!board) {
+      return;
+    }
+
+    const userIds = new Set([...assigneeIds, ...memberIds]);
+    const users = ReactiveCache.getUsers(
+      { _id: { $in: Array.from(userIds) } },
+      { fields: { _id: 1, username: 1 } },
+    ) || [];
+
+    const queryParams = buildBoardFilterQueryParams(
+      { assigneeIds, memberIds, labelIds },
+      users,
+      board.labels,
+    );
+
+    FlowRouter.withReplaceState(() => {
+      FlowRouter.setQueryParams(queryParams);
+    });
+  };
 
   // When a board opens, detect whether it needs the shared data-repairs (the same
   // set run during the MongoDB <-> SQLite migration): #6484 lists wrongly bound to
@@ -148,7 +246,24 @@ Template.board.onCreated(function () {
       Tracker.nonreactive(() => this.ensureDefaultSwimlane(currentBoardId));
       // Also detect + run the shared board data-repairs once the board is ready.
       Tracker.nonreactive(() => this.maybeRepairBoard(currentBoardId));
+      // #4540: apply any ?assignee=/?member=/?label= URL filter params now
+      // that the board and its members/labels are loaded.
+      Tracker.nonreactive(() => this.applyQueryParamFilters(currentBoardId));
     }
+  });
+
+  // #319: keep the URL's ?assignee=/?member=/?label= in sync with the
+  // sidebar's Filter state as the user changes it, so a manually filtered
+  // board is bookmarkable/shareable - the write direction of #4540's
+  // read-on-load support. A separate autorun (rather than folding this into
+  // the subscription one above) so it reruns on every filter change without
+  // resubscribing to the board.
+  this.autorun(() => {
+    const currentBoardId = Session.get('currentBoard');
+    if (!currentBoardId || !this.isBoardReady.get()) {
+      return;
+    }
+    this.syncFilterQueryParams(currentBoardId);
   });
 });
 
@@ -709,8 +824,20 @@ Template.boardBody.helpers({
     return Utils.boardView() === 'board-view-cal';
   },
 
+  isViewMultiboardCalendar() {
+    return Utils.boardView() === 'board-view-multiboard-cal';
+  },
+
   isViewGantt() {
     return Utils.boardView() === 'board-view-gantt';
+  },
+
+  isViewGanttFrappe() {
+    return Utils.boardView() === 'board-view-gantt-frappe';
+  },
+
+  isViewGanttDhtmlx() {
+    return Utils.boardView() === 'board-view-gantt-dhtmlx';
   },
 
   isViewTable() {
@@ -725,8 +852,24 @@ Template.boardBody.helpers({
     return Utils.boardView() === 'board-view-time';
   },
 
+  isViewTimeline() {
+    return Utils.boardView() === 'board-view-timeline';
+  },
+
+  isViewGroupByAssignee() {
+    return Utils.boardView() === 'board-view-group-by-assignee';
+  },
+
+  isViewRoadmap() {
+    return Utils.boardView() === 'board-view-roadmap';
+  },
+
   isViewDashboard() {
     return Utils.boardView() === 'board-view-dashboard';
+  },
+
+  isViewBigboard() {
+    return Utils.boardView() === 'board-view-bigboard';
   },
 
   isViewBurndown() {
@@ -763,6 +906,10 @@ Template.boardBody.helpers({
 
   isViewWipRun() {
     return Utils.boardView() === 'board-view-wip-run';
+  },
+
+  isViewPulse() {
+    return Utils.boardView() === 'board-view-pulse';
   },
 
   hasSwimlanes() {
@@ -1130,6 +1277,23 @@ Template.calendarView.helpers({
           .forEach(function (card) {
             pushEvent(card);
           });
+        // #6712-adjacent: Received, Start, Due and End are all meant to be
+        // visible on the Calendar - the Start/End span above draws as one
+        // bar, but a card whose Start (or End) falls outside the visible
+        // range would otherwise show no marker for Received/End at all, and
+        // Due never had one. Received and End each get their own event the
+        // same way Due already does.
+        currentBoard
+          .cardsReceivedInBetween(fetchInfo.start, fetchInfo.end, filterSelector)
+          .forEach(function (card) {
+            pushEvent(
+              card,
+              `${card.title} ${TAPi18n.__('card-received')}`,
+              card.receivedAt,
+              new Date(card.receivedAt.getTime() + 36e5),
+              'calendar-event-received',
+            );
+          });
         currentBoard
           .cardsDueInBetween(fetchInfo.start, fetchInfo.end, filterSelector)
           .forEach(function (card) {
@@ -1138,6 +1302,18 @@ Template.calendarView.helpers({
               `${card.title} ${TAPi18n.__('card-due')}`,
               card.dueAt,
               new Date(card.dueAt.getTime() + 36e5),
+              'calendar-event-due',
+            );
+          });
+        currentBoard
+          .cardsEndInBetween(fetchInfo.start, fetchInfo.end, filterSelector)
+          .forEach(function (card) {
+            pushEvent(
+              card,
+              `${card.title} ${TAPi18n.__('card-end')}`,
+              card.endAt,
+              new Date(card.endAt.getTime() + 36e5),
+              'calendar-event-end',
             );
           });
         events.sort(function (first, second) {

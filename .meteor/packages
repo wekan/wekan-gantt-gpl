@@ -23,6 +23,7 @@ mongo@2.5.1
 
 # Account system
 accounts-password@3.3.1
+accounts-2fa@3.1.0
 accounts-express@1.0.0
 communitypackages:core
 communitypackages:unstyled
@@ -31,6 +32,7 @@ communitypackages:flow-routing
 ostrio:flow-router-extra
 wekan-ldap
 wekan-accounts-cas
+wekan-accounts-saml
 wekan-accounts-sandstorm
 wekan-accounts-lockout
 wekan-oidc
@@ -63,3 +65,11 @@ ejson@1.2.0
 logging@1.3.6
 wekan-fullcalendar
 wekan-fontawesome
+accounts-google
+accounts-github
+accounts-facebook
+accounts-twitter
+accounts-meteor-developer
+accounts-weibo
+accounts-meetup
+accounts-passwordless

@@ -82,6 +82,23 @@ async function boardRemover(doc) {
       { multi: true },
     );
   }
+
+  // #4205: when an individual board template (type 'template-board', the
+  // board a "Board Templates" linked card points at) is deleted, clear it as
+  // anyone's default board template so board creation falls back to its
+  // normal blank-board behavior instead of failing against a dead board id.
+  if (doc.type === 'template-board') {
+    await Users.updateAsync(
+      { 'profile.defaultBoardTemplateBoardId': doc._id },
+      {
+        $unset: {
+          'profile.defaultBoardTemplateId': '',
+          'profile.defaultBoardTemplateBoardId': '',
+        },
+      },
+      { multi: true },
+    );
+  }
 }
 
 const foreachRemovedMember = (doc, modifier, callback) => {
@@ -136,6 +153,22 @@ Meteor.methods({
 
     if (!this.userId) {
       throw new Meteor.Error('not-authorized');
+    }
+
+    // #4475: an admin can restrict board creation to admins only. The
+    // setting lives beside its sibling tableVisibilityMode-allowPrivateOnly
+    // in Admin Panel -> Settings -> Visibility, so it is read the same way.
+    const boardCreationAdminOnly = await TableVisibilityModeSettings.findOneAsync(
+      'tableVisibilityMode-boardCreationAdminOnly',
+    );
+    if (boardCreationAdminOnly && boardCreationAdminOnly.booleanValue) {
+      const creator = await ReactiveCache.getUser(this.userId);
+      if (!creator || creator.isAdmin !== true) {
+        throw new Meteor.Error(
+          'not-authorized',
+          'Board creation is restricted to admins.',
+        );
+      }
     }
 
     const boardId = await Boards.insertAsync({
@@ -1143,6 +1176,7 @@ const BOARD_CARD_SETTING_KEYS = [
   'allowsAttachments',
   'allowsChecklists',
   'allowsComments',
+  'allowsCommentsOnMinicard',
   'allowsDescriptionTitle',
   'allowsDescriptionText',
   'allowsActivities',
@@ -1155,6 +1189,7 @@ const BOARD_CARD_SETTING_KEYS = [
   'allowsCardNumber',
   'allowsAssignedBy',
   'allowsReceivedDate',
+  'allowsSpentTime',
   'allowsStartDate',
   'allowsEndDate',
   'allowsDueDate',
@@ -1175,11 +1210,14 @@ const BOARD_CARD_SETTING_KEYS = [
   'allowsRequestedByOnMinicard',
   'allowsAssignedByOnMinicard',
   'allowsReceivedDateOnMinicard',
+  'allowsSpentTimeOnMinicard',
   'allowsStartDateOnMinicard',
   'allowsEndDateOnMinicard',
   'allowsDueDateOnMinicard',
   'allowsSubtasksOnMinicard',
   'allowsShowListsOnMinicard',
+  'allowsSwimlaneNameOnMinicard',
+  'showLabelText',
 ];
 
 // #3984: numeric card-settings keys (parsed as integers, not booleans). These are

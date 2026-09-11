@@ -7,6 +7,7 @@ import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
 import getSlug from 'limax';
 // The archived-at line on a tile in the Archive, in the reader's own format.
 import { formatDateByUserPreference } from '/imports/lib/dateUtils';
+import { boardCreationAllowed } from '/client/lib/boardCreationAllowed';
 // The All Boards URLs, and the slug path of a workspace in the tree.
 // docs/Features/Page/All-Boards-URLs.md
 import {
@@ -992,7 +993,10 @@ Template.boardList.helpers({
     const info = pageInfo(all.length, tpl.tablePageVar.get());
     const page = all.slice(info.skip, info.skip + TABLE_PAGE_ROWS_PER_PAGE);
     const selectedMenu = tpl.selectedMenu.get();
-    const canAddBoard = selectedMenu !== 'archive' && selectedMenu !== 'home';
+    const canAddBoard =
+      selectedMenu !== 'archive' &&
+      selectedMenu !== 'home' &&
+      boardCreationAllowed();
     return {
       header: buildHeader(ALL_BOARDS_COLUMNS),
       rowTemplate: 'allBoardsRow',
@@ -1196,7 +1200,7 @@ Template.boardList.helpers({
   // Home (a new board is not the board that opens after login).
   showsAddBoardTile() {
     const sel = Template.instance().selectedMenu.get();
-    return sel !== 'archive' && sel !== 'home';
+    return sel !== 'archive' && sel !== 'home' && boardCreationAllowed();
   },
 
   // The count for a row. The three board lists count what the page can see; the
@@ -1841,35 +1845,12 @@ Template.boardList.events({
   'drop .js-board-placeholder'(evt, tpl) {
     persistBoardOrderFromDom(evt, tpl);
   },
-  'click .js-clone-board'(evt) {
-    if (confirm(TAPi18n.__('duplicate-board-confirm'))) {
-      let title =
-        getSlug(ReactiveCache.getBoard(this._id).title) ||
-        'cloned-board';
-      Meteor.call(
-        'copyBoard',
-        this._id,
-        {
-          sort: ReactiveCache.getBoards({ archived: false }).length,
-          type: 'board',
-          title: ReactiveCache.getBoard(this._id).title,
-        },
-        (err, res) => {
-          if (err) {
-            console.error(err);
-          } else {
-            Session.set('fromBoard', null);
-            Meteor.subscribe('board', res, false);
-            FlowRouter.go('board', {
-              id: res,
-              slug: title,
-            });
-          }
-        },
-      );
-      evt.preventDefault();
-    }
-  },
+  // #4726 "Clone Board without cards": the confirm() dialog cannot carry a
+  // checkbox, so cloning a board now opens a small popup (cloneBoardPopup,
+  // below) that asks for confirmation AND whether cards should be skipped.
+  // The actual copyBoard call, and the redirect to the new board, moved into
+  // that popup's own submit handler; this stays a plain Popup.open.
+  'click .js-clone-board': Popup.open('cloneBoard'),
   'click .js-archive-board'(evt) {
     if (confirm(TAPi18n.__('archive-board-confirm'))) {
       const boardId = this._id;
@@ -2462,6 +2443,54 @@ Template.boardsSortPopup.events({
         }
       });
     }
+    Popup.back();
+  },
+});
+
+// #4726 "Clone Board without cards": confirmation popup for the per-board
+// Clone action, with an opt-in checkbox to skip copying cards. The popup's
+// data context is the board being cloned (Popup.open inherits the parent
+// template's current data, which for a board-tile click is the board doc).
+Template.cloneBoardPopup.helpers({
+  boardTitle() {
+    return this && this.title;
+  },
+});
+
+Template.cloneBoardPopup.events({
+  'submit .js-clone-board-form'(evt) {
+    evt.preventDefault();
+    const boardId = this && this._id;
+    if (!boardId) {
+      Popup.back();
+      return;
+    }
+    const withoutCards = evt.currentTarget
+      .querySelector('.js-clone-board-without-cards').checked;
+    const board = ReactiveCache.getBoard(boardId);
+    const title = getSlug(board && board.title) || 'cloned-board';
+    Meteor.call(
+      'copyBoard',
+      boardId,
+      {
+        sort: ReactiveCache.getBoards({ archived: false }).length,
+        type: 'board',
+        title: board && board.title,
+        withoutCards,
+      },
+      (err, res) => {
+        if (err) {
+          console.error(err);
+        } else {
+          Session.set('fromBoard', null);
+          Meteor.subscribe('board', res, false);
+          FlowRouter.go('board', {
+            id: res,
+            slug: title,
+          });
+        }
+      },
+    );
     Popup.back();
   },
 });

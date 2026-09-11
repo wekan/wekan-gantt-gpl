@@ -6,24 +6,33 @@ template(name="subtasks")
       .board-overlay#card-details-overlay
       +subtaskDeleteDialog(subtask = subtaskToDelete)
 
+  if currentCard.allSubtasksCount
+    a.js-toggle-hide-completed-subtasks.subtasks-hide-completed-toggle
+      i.fa(class="{{#if hideCompletedSubtasks}}fa-eye-slash{{else}}fa-eye{{/if}}")
+      | {{_ 'hideCompletedSubtasks'}} ...
+
   .card-subtasks-items
-    each subtask in currentCard.subtasks
+    each subtask in visibleSubtasks
       +subtaskDetail(subtask = subtask)
 
   if canModifyCard
     +inlinedForm(autoclose=false classNames="js-add-subtask" cardId = cardId)
-      +addSubtaskItemForm
+      +addSubtaskCardForm
     else
       a.js-open-inlined-form(title="{{_ 'add-subtask'}}")
         i.fa.fa-plus
+    a.js-add-existing-subtask(title="{{_ 'add-existing-card-as-subtask'}}")
+      i.fa.fa-link
 
 template(name="subtaskDetail")
-  .js-subtasks.subtask
+  .js-subtasks.subtask(class="{{#if subtask.archived}}is-completed{{/if}}")
     +inlinedForm(classNames="js-edit-subtask-title" subtask = subtask)
       +editSubtaskItemForm(subtask = subtask)
     else
       .subtask-title
         span
+        if subtask.archived
+          i.fa.fa-check-circle.subtask-completed-icon(title="{{_ 'completed'}}")
         if canModifyCard
           a.fa.fa-navicon.subtask-details-menu.js-open-subtask-details-menu(title="{{_ 'subtaskActionsPopup-title'}}")
         if canModifyCard
@@ -41,6 +50,18 @@ template(name="subtaskDetail")
 
 template(name="addSubtaskItemForm")
   textarea.js-add-subtask-item(rows='1' autofocus dir="auto")
+  .edit-controls.clearfix
+    button.primary.confirm.js-submit-add-subtask-item-form(type="submit") {{_ 'save'}}
+    a.fa.fa-times-thin.js-close-inlined-form(title="{{_ 'close-add-checklist-item'}}")
+
+//- #2184: separate from the generic addSubtaskItemForm (shared with checklist
+  items, which have no labels) so only the "Add a new subtask" form gets the
+  inherit-labels checkbox.
+template(name="addSubtaskCardForm")
+  textarea.js-add-subtask-item(rows='1' autofocus dir="auto")
+  label.subtask-inherit-labels
+    input.js-add-subtask-inherit-labels(type="checkbox")
+    | {{_ 'subtask-inherit-parent-labels'}}
   .edit-controls.clearfix
     button.primary.confirm.js-submit-add-subtask-item-form(type="submit") {{_ 'save'}}
     a.fa.fa-times-thin.js-close-inlined-form(title="{{_ 'close-add-checklist-item'}}")
@@ -109,4 +130,15 @@ template(name="subtaskActionsPopup")
   //- The board's subtask SETTINGS are not here: they belong to the section, not
     to one subtask, and they are behind the hamburger at the end of the
     Subtasks heading. client/components/cards/cardDetails.jade
+
+template(name="addExistingSubtaskPopup")
+  form.js-add-existing-subtask-form
+    input.js-add-existing-subtask-search(type="text" placeholder="{{_ 'search'}}" autofocus dir="auto")
+    ul.pop-over-list.js-add-existing-subtask-results
+      each card in existingSubtaskCandidates
+        li
+          a.js-select-existing-subtask(data-id="{{card._id}}" title="{{card.title}}")
+            = card.title
+      if noExistingSubtaskCandidates
+        li.quiet {{_ 'add-existing-card-as-subtask-empty'}}
 

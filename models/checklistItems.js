@@ -30,6 +30,13 @@ ChecklistItems.attachSchema(
       type: Boolean,
       defaultValue: false,
     },
+    dueAt: {
+      /**
+       * Date the checklist item is due
+       */
+      type: Date,
+      optional: true,
+    },
     checklistId: {
       /**
        * the checklist ID the item is attached to
@@ -49,6 +56,21 @@ ChecklistItems.attachSchema(
        * reactive cursor filtered by boardId. Kept in sync on insert, on the
        * item / its checklist moving to another card, and when the card moves to
        * another board.
+       */
+      type: String,
+      optional: true,
+    },
+    linkedCardId: {
+      /**
+       * #2422: the _id of the subtask card created from this checklist item
+       * via "Convert to subtask" (checklists.js's
+       * 'click .js-convert-checklist-item-to-subtask' handler), if any. This
+       * is a one-way, set-once reference recorded at conversion time - it is
+       * NOT kept in sync with the subtask afterwards (no bidirectional status
+       * sync), and it is unrelated to the pre-existing "Convert to card"
+       * action (convertChecklistItemToCardPopup) or the #3294 drag-to-card
+       * gesture (buildCardFromChecklistItem), neither of which sets this
+       * field: both of those create a plain, unlinked, non-subtask card.
        */
       type: String,
       optional: true,
@@ -106,6 +128,28 @@ ChecklistItems.helpers({
     return await ChecklistItems.updateAsync(this._id, {
       $set: { cardId, checklistId, sort: sortIndex },
     });
+  },
+  // getDue/setDue/unsetDue mirror models/cards.js's own due-date methods
+  // (#4755) - a checklist item never links to another card/board, so unlike
+  // Cards.getDue()/setDue() there is no linked-card/board indirection to
+  // resolve.
+  getDue() {
+    return this.dueAt;
+  },
+  async setDue(dueAt) {
+    return await ChecklistItems.updateAsync(this._id, { $set: { dueAt } });
+  },
+  async unsetDue() {
+    return await ChecklistItems.updateAsync(this._id, { $unset: { dueAt: '' } });
+  },
+  // #2422: record the _id of the subtask card created from this item via
+  // "Convert to subtask". A one-way, set-once reference - see the schema
+  // comment on linkedCardId above for why it is not kept in sync afterwards.
+  async setLinkedCardId(cardId) {
+    return await ChecklistItems.updateAsync(this._id, { $set: { linkedCardId: cardId } });
+  },
+  getLinkedCard() {
+    return this.linkedCardId ? ReactiveCache.getCard(this.linkedCardId) : undefined;
   },
 });
 

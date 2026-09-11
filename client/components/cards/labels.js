@@ -9,6 +9,16 @@ Meteor.startup(() => {
   labelColors = LABEL_COLORS;
 });
 
+// #2802: read the label popup's optional due-date <input type="date">, e.g.
+// "Sprint 1" due 2026-01-15. Returns a Date, or null when left blank/invalid
+// so the caller can unset an existing label's due date.
+const readLabelDueAt = templateInstance => {
+  const value = templateInstance.$('.js-label-due-at').val();
+  if (!value) return null;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return isNaN(date.getTime()) ? null : date;
+};
+
 const getFallbackLabelColor = () => {
   if (Array.isArray(labelColors) && labelColors.length > 0) {
     return labelColors[0];
@@ -39,6 +49,16 @@ Template.formLabel.helpers({
   // only accepts hex. Named colors map to their palette hex; fall back to green.
   currentColorHex() {
     return toHex(Template.instance().currentColor.get()) || '#3cb500';
+  },
+  // #2802: a label's optional "milestone" due date, formatted as the
+  // yyyy-mm-dd a native <input type="date"> expects. Unset for a label with
+  // no due date, and for the "create label" popup's blank starting label.
+  dueAtValue() {
+    const dueAt = Template.currentData()?.dueAt;
+    if (!dueAt) return '';
+    const date = dueAt instanceof Date ? dueAt : new Date(dueAt);
+    if (isNaN(date.getTime())) return '';
+    return date.toISOString().slice(0, 10);
   },
 });
 
@@ -101,8 +121,17 @@ Template.cardLabelsPopup.onRendered(function () {
     },
     stop(evt, ui) {
       const newLabelOrderOnlyIds = ui.item.parent().children().toArray().map(_element => Blaze.getData(_element)._id)
-      const card = Blaze.getData(this);
-      card.board().setNewLabelOrder(newLabelOrderOnlyIds);
+      // Same reason as the js-select-label click handler below: use the
+      // popup template's own card data (linked-card-aware via
+      // getCardLabelBoard), not Blaze.getData(this) on the sortable's root
+      // element - the latter does not reliably resolve back to a real Card
+      // document (with a callable .board()) and threw "card.board is not a
+      // function" here, which broke even a plain click on a label (jQuery UI
+      // sortable's mouseup handling runs this `stop` callback regardless of
+      // whether the drag distance threshold was ever crossed).
+      const board = getCardLabelBoard(tpl.data);
+      if (!board) return;
+      board.setNewLabelOrder(newLabelOrderOnlyIds);
     },
   });
 
@@ -127,6 +156,14 @@ Template.cardLabelsPopup.helpers({
   isLabelSelected(cardId) {
     const card = ReactiveCache.getCard(cardId);
     return (card?.getRealCard().labelIds || []).includes(this._id);
+  },
+  // #2802: a short, locale-formatted date next to the label in the labels
+  // list — the "milestone" due date filtering by this label already gives.
+  formatLabelDueAt(dueAt) {
+    if (!dueAt) return '';
+    const date = dueAt instanceof Date ? dueAt : new Date(dueAt);
+    if (isNaN(date.getTime())) return '';
+    return date.toLocaleDateString();
   },
 });
 
@@ -172,7 +209,8 @@ Template.createLabelPopup.events({
       }
     }
     color = color || getFallbackLabelColor();
-    board.addLabel(name, color);
+    const dueAt = readLabelDueAt(templateInstance);
+    board.addLabel(name, color, dueAt);
     Popup.back();
   },
 });
@@ -208,7 +246,8 @@ Template.editLabelPopup.events({
       }
     }
     color = color || getFallbackLabelColor();
-    board.editLabel(this._id, name, color);
+    const dueAt = readLabelDueAt(templateInstance);
+    board.editLabel(this._id, name, color, dueAt);
     Popup.back();
   },
 });

@@ -9,6 +9,14 @@ import { isHexColor, toHex } from '/models/lib/contrastColor';
 import { MultiSelection } from '/client/lib/multiSelection';
 import { Utils } from '/client/lib/utils';
 import { lazyListCardCount } from '/client/lib/lazyCards';
+import {
+  sumCustomFieldValues,
+  numberFieldStats,
+  dateFieldRange,
+} from '/models/lib/customFieldsSum';
+import {
+  isListInExceededWipLimitGroup,
+} from '/models/lib/wipLimitGroupDecision';
 // #5659: single source of truth for the default/minimum list width, shared
 // with client/components/lists/list.js and models/users.js.
 import {
@@ -16,11 +24,77 @@ import {
   MIN_LIST_WIDTH,
   normalizeListWidth,
 } from '/models/lib/listWidth';
+// List sync (docs/Features/ImportExport/Sync.md): UI wiring only, calls the
+// EXISTING setListSyncSource/hasListSyncCredential/syncListNow methods in
+// server/methods/listSync.js. SYNC_CAPABLE_SOURCES is the same list those
+// methods validate `type` against, reused here so the picker can never offer
+// a source the backend would reject.
+import { SYNC_CAPABLE_SOURCES } from '/models/lib/externalParsers';
+import { fromNow } from '/imports/lib/dateUtils';
 
 let listsColors;
 Meteor.startup(() => {
   listsColors = LIST_COLORS;
 });
+
+// A board-wide list (no swimlaneId of its own) renders once per swimlane in
+// Swimlanes view - the SAME list document, one row per swimlane - so any
+// per-swimlane state (which cards show, whether THIS row is collapsed) needs
+// to know which swimlane row it is currently rendering inside. #6660 already
+// solved this for card visibility by walking up parent data contexts rather
+// than relying on Jade's fragile `../../_id` traversal; the collapse toggle
+// (#list-collapse-swimlane-bleed) reuses the exact same resolution, from
+// inside both a helper and an event handler - Template.parentData() works in
+// either, since Blaze keeps the current view active for both.
+// #2075: shared by numberFieldsSum()/numberFieldsStats()/dateFieldsRange()
+// below - the "which flagged custom fields of this type, which cards" lookup
+// is identical for a number-field sum/min/max and a date-field range; only
+// the aggregation function applied to the result differs.
+function summarizableCustomFields(boardId, type) {
+  return (
+    ReactiveCache.getCustomFields({
+      boardIds: { $in: [boardId] },
+      showSumAtTopOfList: true,
+      type,
+    }) || []
+  );
+}
+
+function listCardsForSummary(list, containerSwimlaneId) {
+  // Same swimlane-scoping decision as cardsCount() below: in Swimlanes view,
+  // scope to the swimlane row this header is rendered in (the SAME id the
+  // card body / card count already use), so a shared list does not report
+  // the whole-list figure under every swimlane row.
+  const selector = { listId: list._id, archived: false };
+  if (Utils.boardView() === 'board-view-swimlanes') {
+    const swimlaneId =
+      typeof containerSwimlaneId === 'string' && containerSwimlaneId
+        ? containerSwimlaneId
+        : list.swimlaneId || '';
+    if (swimlaneId) {
+      selector.swimlaneId = swimlaneId;
+    }
+  }
+  return ReactiveCache.getCards(selector);
+}
+
+function resolveContainerSwimlaneId(list) {
+  if (!list || Utils.boardView() !== 'board-view-swimlanes') {
+    return undefined;
+  }
+  for (let depth = 1; depth <= 5; depth += 1) {
+    const candidate = Template.parentData(depth);
+    if (
+      candidate &&
+      candidate._id &&
+      candidate._id !== list._id &&
+      candidate.boardId === list.boardId
+    ) {
+      return candidate._id;
+    }
+  }
+  return undefined;
+}
 
 Template.listHeader.helpers({
   isCurrentList() {
@@ -28,22 +102,7 @@ Template.listHeader.helpers({
     return Boolean(list && Utils.getCurrentListId() === list._id);
   },
   containerSwimlaneId() {
-    const list = Template.currentData();
-    if (!list || Utils.boardView() !== 'board-view-swimlanes') {
-      return undefined;
-    }
-    for (let depth = 1; depth <= 5; depth += 1) {
-      const candidate = Template.parentData(depth);
-      if (
-        candidate &&
-        candidate._id &&
-        candidate._id !== list._id &&
-        candidate.boardId === list.boardId
-      ) {
-        return candidate._id;
-      }
-    }
-    return undefined;
+    return resolveContainerSwimlaneId(Template.currentData());
   },
   canSeeAddCard() {
     const list = Template.currentData();
@@ -66,7 +125,7 @@ Template.listHeader.helpers({
 
   collapsed() {
     const list = Template.currentData();
-    return Utils.getListCollapseState(list);
+    return Utils.getListCollapseState(list, resolveContainerSwimlaneId(list));
   },
 
   isWatching() {
@@ -118,7 +177,19 @@ Template.listHeader.helpers({
     const list = Template.currentData();
     const lazyCount = lazyListCardCount(list, undefined);
     const count = lazyCount !== null ? lazyCount : list.cards().length;
-    return list.getWipLimit('enabled') && list.getWipLimit('value') < count;
+    return (
+      (list.getWipLimit('enabled') && list.getWipLimit('value') < count) ||
+      Template.instance().exceededWipLimitGroup()
+    );
+  },
+
+  // #2489: is this list a member of a board-level WIP limit GROUP that is
+  // currently over its own shared limit? Reuses the exact same `.highlight`
+  // styling as the per-list `exceededWipLimit` above (see listHeader.jade) -
+  // the group feature only supplies a different reason the list is flagged,
+  // not a second visual language.
+  exceededWipLimitGroup() {
+    return Template.instance().exceededWipLimitGroup();
   },
 
   // Accurate whole-list card count (used by the badge visibility, WIP-limit
@@ -144,49 +215,95 @@ Template.listHeader.helpers({
     }
   },
 
-  numberFieldsSum() {
+  numberFieldsSum(containerSwimlaneId) {
     const list = Template.currentData();
     if (!list) return 0;
     const boardId = Session.get('currentBoard');
-    const fields = ReactiveCache.getCustomFields({
-      boardIds: { $in: [boardId] },
-      showSumAtTopOfList: true,
-      type: 'number',
-    });
-    if (!fields || !fields.length) return 0;
-    const cards = ReactiveCache.getCards({ listId: list._id, archived: false });
-    let total = 0;
-    if (cards && cards.length) {
-      cards.forEach(card => {
-        const cfs = (card.customFields || []);
-        fields.forEach(field => {
-          const cf = cfs.find(f => f && f._id === field._id);
-          if (!cf || cf.value === null || cf.value === undefined) return;
-          let v = cf.value;
-          if (typeof v === 'string') {
-            const parsed = parseFloat(v.replace(',', '.'));
-            if (isNaN(parsed)) return;
-            v = parsed;
-          }
-          if (typeof v === 'number' && isFinite(v)) {
-            total += v;
-          }
-        });
-      });
-    }
-    return total;
+    const fields = summarizableCustomFields(boardId, 'number');
+    if (!fields.length) return 0;
+    const cards = listCardsForSummary(list, containerSwimlaneId);
+    return sumCustomFieldValues(cards, fields.map(field => field._id));
   },
 
   hasNumberFieldsSum() {
     const boardId = Session.get('currentBoard');
-    const fields = ReactiveCache.getCustomFields({
-      boardIds: { $in: [boardId] },
-      showSumAtTopOfList: true,
-      type: 'number',
-    });
-    return !!(fields && fields.length);
+    return !!summarizableCustomFields(boardId, 'number').length;
+  },
+
+  // #2075: min/max/"how many cards have the field set" alongside the #3319
+  // sum, for the SAME flagged number field(s) - no separate field-selection
+  // setting. Returns null when there is nothing to show so the template can
+  // keep the primary "∑ N" badge unadorned (no min/max yet flagged/no data).
+  numberFieldsStats(containerSwimlaneId) {
+    const list = Template.currentData();
+    if (!list) return null;
+    const boardId = Session.get('currentBoard');
+    const fields = summarizableCustomFields(boardId, 'number');
+    if (!fields.length) return null;
+    const cards = listCardsForSummary(list, containerSwimlaneId);
+    const stats = numberFieldStats(cards, fields.map(field => field._id));
+    return stats.min === null ? null : stats;
+  },
+
+  // A tooltip for the "∑ N" badge that adds the min/max range and the
+  // "N of M cards have a value" count WITHOUT any extra always-visible
+  // number in the header itself - hover/long-press only. Deliberately
+  // wordless (min–max, count/total) so it needs no new translatable label.
+  numberFieldsSumTooltip(containerSwimlaneId) {
+    const label = TAPi18n.__('sum-of-number-fields');
+    const list = Template.currentData();
+    if (!list) return label;
+    const boardId = Session.get('currentBoard');
+    const fields = summarizableCustomFields(boardId, 'number');
+    if (!fields.length) return label;
+    const cards = listCardsForSummary(list, containerSwimlaneId);
+    const s = numberFieldStats(cards, fields.map(field => field._id));
+    if (s.min === null) return label;
+    return `${label} (${s.min}–${s.max}, ${s.count}/${s.total})`;
+  },
+
+  // #2075: a date-type field flagged showSumAtTopOfList=true (the SAME
+  // per-field checkbox #3319 already ships, just no longer number-only) is
+  // shown as an earliest-latest range instead of a sum - a sum of dates has
+  // no meaning. Mutually exclusive in practice with the number badge: a
+  // field is either type 'number' or type 'date', never both.
+  hasDateFieldsRange() {
+    const boardId = Session.get('currentBoard');
+    return !!summarizableCustomFields(boardId, 'date').length;
+  },
+
+  // A short "earliest – latest" badge label. Formatted here (rather than via
+  // a nested Jade subexpression calling the shared `displayDate` helper) to
+  // keep the template simple - a plain YYYY-MM-DD is unambiguous in every
+  // locale and needs no new translatable text.
+  dateFieldsRangeLabel(containerSwimlaneId) {
+    const stats = dateFieldsRangeStats(containerSwimlaneId);
+    if (!stats || stats.earliest === null) return '';
+    const iso = t => new Date(t).toISOString().slice(0, 10);
+    return stats.earliest === stats.latest
+      ? iso(stats.earliest)
+      : `${iso(stats.earliest)} – ${iso(stats.latest)}`;
+  },
+
+  dateFieldsRangeTooltip(containerSwimlaneId) {
+    const label = TAPi18n.__('date-range-of-fields');
+    const stats = dateFieldsRangeStats(containerSwimlaneId);
+    if (!stats || stats.earliest === null) return label;
+    return `${label} (${stats.count}/${stats.total})`;
   },
 });
+
+// Shared by the three dateFieldsRange* helpers above - same "recompute the
+// range" logic, once, keyed the same way as the number-field helpers.
+function dateFieldsRangeStats(containerSwimlaneId) {
+  const list = Template.currentData();
+  if (!list) return null;
+  const boardId = Session.get('currentBoard');
+  const fields = summarizableCustomFields(boardId, 'date');
+  if (!fields.length) return null;
+  const cards = listCardsForSummary(list, containerSwimlaneId);
+  return dateFieldRange(cards, fields.map(field => field._id));
+}
 
 // Helper function on template instance for reachedWipLimit check
 Template.listHeader.onCreated(function () {
@@ -195,6 +312,31 @@ Template.listHeader.onCreated(function () {
     const lazyCount = lazyListCardCount(list, undefined);
     const count = lazyCount !== null ? lazyCount : list.cards().length;
     return list.getWipLimit('enabled') && list.getWipLimit('value') <= count;
+  };
+
+  // #2489: board-level WIP limit groups - the combined count/over-limit
+  // decision itself is the pure models/lib/wipLimitGroupDecision.js module;
+  // this only gathers the (reactive) inputs it needs: the board's groups and
+  // the current card count of every list any of them names.
+  this.exceededWipLimitGroup = function () {
+    const list = Template.currentData();
+    if (!list) return false;
+    const board = ReactiveCache.getBoard(list.boardId);
+    const groups = board ? board.getWipLimitGroups() : [];
+    if (!groups.length) return false;
+
+    const cardCountsByListId = {};
+    groups.forEach(group => {
+      (group.listIds || []).forEach(listId => {
+        if (cardCountsByListId[listId] !== undefined) return;
+        const memberList = ReactiveCache.getList(listId);
+        const lazyCount = memberList ? lazyListCardCount(memberList, undefined) : null;
+        cardCountsByListId[listId] =
+          lazyCount !== null ? lazyCount : memberList ? memberList.cards().length : 0;
+      });
+    });
+
+    return isListInExceededWipLimitGroup(groups, list._id, cardCountsByListId);
   };
 });
 
@@ -237,8 +379,9 @@ Template.listHeader.events({
   'click .js-collapse'(event) {
     event.preventDefault();
     const list = Template.currentData();
-    const status = Utils.getListCollapseState(list);
-    Utils.setListCollapseState(list, !status);
+    const swimlaneId = resolveContainerSwimlaneId(list);
+    const status = Utils.getListCollapseState(list, swimlaneId);
+    Utils.setListCollapseState(list, !status, swimlaneId);
   },
   'click .js-open-list-menu': Popup.open('listAction'),
   // #6465: open the inline Add List composer after this list. Record the
@@ -296,7 +439,24 @@ Template.listActionPopup.helpers({
 
   isWatching() {
     return this.findWatcher(Meteor.userId());
-  }
+  },
+
+  // #3847: board-wide, but surfaced from the List hamburger menu - see
+  // models/boards.js's stickyListHeaders.
+  isStickyListHeaders() {
+    const list = Template.currentData();
+    const board = list && ReactiveCache.getBoard(list.boardId);
+    return !!(board && board.getStickyListHeaders());
+  },
+
+  // #1172: per-user star, same shape as toggleBoardStar - not to be confused
+  // with `starred()`/`isStarred()` above, which is the list's own per-board
+  // "starred" field (models/lists.js `star()`).
+  isListItemStarred() {
+    const list = Template.currentData();
+    const user = ReactiveCache.getCurrentUser();
+    return !!(list && user && user.hasStarredList(list._id));
+  },
 });
 
 Template.listActionPopup.events({
@@ -319,6 +479,13 @@ Template.listActionPopup.events({
     Utils.showCopied(Utils.copyTextToClipboard(url), tpl.$('.copied-tooltip'));
   },
   'click .js-list-subscribe'() {},
+  // #1172: star/unstar this list for the current user only.
+  async 'click .js-star-list-item'(event) {
+    event.preventDefault();
+    const list = Template.currentData();
+    if (!list) return;
+    await Meteor.callAsync('toggleListStar', list._id);
+  },
   'click .js-add-card.list-header-plus-top'(event) {
     const listDom = $(`#js-list-${this._id}`)[0];
     const view = Blaze.getView(listDom, 'Template.list');
@@ -346,6 +513,7 @@ Template.listActionPopup.events({
   'click .js-add-list': Popup.open('addList'),
   'click .js-set-list-width': Popup.open('setListWidth'),
   'click .js-set-color-list': Popup.open('setListColor'),
+  'click .js-list-sync': Popup.open('listSync'),
   'click .js-select-cards'() {
     // Scope "select all cards" to the current swimlane when invoked from a
     // swimlane context (#5623). In swimlanes board view the list carries its
@@ -359,6 +527,35 @@ Template.listActionPopup.events({
     MultiSelection.add(cardIds);
     Popup.back();
   },
+  // #3383: "archive all cards in this list" as one click (behind a confirm
+  // popup, same shape as "Archive list" below), instead of having to open
+  // the checkbox multi-select sidebar first. Scoped exactly like "Select all
+  // cards" above (current swimlane in swimlanes view, the whole list
+  // otherwise) and reuses the very same server method the multi-select
+  // sidebar's "Archive selection" button calls
+  // (client/components/sidebar/sidebarFilters.js's `archiveSelectedCards`
+  // handler) - no new archiving logic, only the card-id list is built here.
+  'click .js-archive-list-cards': Popup.afterConfirm(
+    'listArchiveCards',
+    async function () {
+      let swimlaneId;
+      if (Utils.boardView() === 'board-view-swimlanes' && this.swimlaneId) {
+        swimlaneId = this.swimlaneId;
+      }
+      const cardIds = this.allCards(swimlaneId).map(card => card._id);
+      Popup.close();
+      if (!cardIds.length) return;
+      try {
+        await Meteor.callAsync(
+          'archiveSelectedCards',
+          Session.get('currentBoard'),
+          cardIds,
+        );
+      } catch (error) {
+        alert(error.reason || error.message || TAPi18n.__('server-error'));
+      }
+    },
+  ),
   'click .js-toggle-watch-list'() {
     const currentList = this;
     const level = currentList.findWatcher(Meteor.userId()) ? null : 'watching';
@@ -370,6 +567,16 @@ Template.listActionPopup.events({
     await this.archive();
     Popup.close();
   }),
+  // #3847: board-wide toggle for pinning every list's header while its cards
+  // scroll underneath it, flipped from this per-list menu for discoverability.
+  'click .js-toggle-sticky-list-headers'(event) {
+    event.preventDefault();
+    const list = Template.currentData();
+    const board = ReactiveCache.getBoard(list.boardId);
+    const enabled = !(board && board.getStickyListHeaders());
+    Meteor.call('setStickyListHeaders', list.boardId, enabled);
+    Popup.back();
+  },
   'click .js-set-wip-limit': Popup.open('setWipLimit'),
   'click .js-copy-list': Popup.open('copyList'),
   'click .js-move-list': Popup.open('moveList'),
@@ -642,6 +849,175 @@ Template.setListColorPopup.events({
       console.error('[ListColor] remove color error:', err);
     }
     Popup.close();
+  },
+});
+
+// List sync settings popup (docs/Features/ImportExport/Sync.md). UI wiring
+// only: reads the list's own (already published, credential-free) syncSource
+// fields and calls setListSyncSource/hasListSyncCredential/syncListNow
+// (server/methods/listSync.js) exactly as they are defined there - this file
+// does not add to or change the sync backend.
+Template.listSyncPopup.onCreated(function () {
+  const tpl = this;
+  const list = Template.currentData();
+  // Which of the picker's radio/select values is "currently chosen" - starts
+  // at whatever the list already has, then tracks the user's picks so the
+  // form fields below (url/projectKey/credential) show/hide live.
+  tpl.selectedSyncType = new ReactiveVar((list && list.syncSource && list.syncSource.type) || '');
+  tpl.selectedSyncEnabled = new ReactiveVar(
+    !(list && list.syncSource && list.syncSource.enabled === false),
+  );
+  // Never pre-filled with the real token - only whether ONE IS SET, fetched
+  // as a boolean from the existing hasListSyncCredential method, the same
+  // secret-safety discipline as the LDAP Admin Panel override's bind
+  // password (client/components/settings/settingBody.js, models/lib/configResolver.js).
+  tpl.hasCredential = new ReactiveVar(false);
+  tpl.syncNowResult = new ReactiveVar('');
+  tpl.syncNowSuccess = new ReactiveVar(true);
+
+  const refreshCredentialStatus = () => {
+    if (!list || !list._id) return;
+    Meteor.call('hasListSyncCredential', list._id, (err, res) => {
+      if (!err) tpl.hasCredential.set(!!res);
+    });
+  };
+  tpl.refreshCredentialStatus = refreshCredentialStatus;
+  if (list && list.syncSource && list.syncSource.type) {
+    refreshCredentialStatus();
+  }
+});
+
+Template.listSyncPopup.helpers({
+  listSyncSourceTypes() {
+    return SYNC_CAPABLE_SOURCES;
+  },
+  listSyncSourceLabel(type) {
+    // Technical identifiers (source names), not language content - same
+    // reasoning as the LDAP env-var badges not being translated.
+    const labels = {
+      jira: 'Jira',
+      github: 'GitHub',
+      gitlab: 'GitLab',
+      gitea: 'Gitea',
+      forgejo: 'Forgejo',
+    };
+    return labels[type] || type;
+  },
+  isCurrentSyncType(type) {
+    return Template.instance().selectedSyncType.get() === type;
+  },
+  isSyncTypeSelected() {
+    return !!Template.instance().selectedSyncType.get();
+  },
+  currentSyncUrl() {
+    const list = Template.currentData();
+    return (list && list.syncSource && list.syncSource.url) || '';
+  },
+  currentSyncProjectKey() {
+    const list = Template.currentData();
+    return (list && list.syncSource && list.syncSource.projectKey) || '';
+  },
+  currentSyncUsername() {
+    const list = Template.currentData();
+    return (list && list.syncSource && list.syncSource.username) || '';
+  },
+  currentSyncEnabled() {
+    return Template.instance().selectedSyncEnabled.get();
+  },
+  listSyncCredentialStatusText() {
+    return Template.instance().hasCredential.get()
+      ? TAPi18n.__('list-sync-credential-status-set')
+      : TAPi18n.__('list-sync-credential-status-unset');
+  },
+  listSyncLastSyncedText() {
+    const list = Template.currentData();
+    const lastSyncedAt = list && list.syncSource && list.syncSource.lastSyncedAt;
+    if (!lastSyncedAt) return TAPi18n.__('list-sync-last-synced-never');
+    return fromNow(lastSyncedAt);
+  },
+  listSyncLastError() {
+    const list = Template.currentData();
+    return (list && list.syncSource && list.syncSource.lastSyncError) || '';
+  },
+  listSyncNowResult() {
+    return Template.instance().syncNowResult.get();
+  },
+  listSyncNowResultClass() {
+    return Template.instance().syncNowSuccess.get()
+      ? 'list-sync-now-success'
+      : 'list-sync-now-error';
+  },
+});
+
+Template.listSyncPopup.events({
+  'change .js-list-sync-type'(event, tpl) {
+    tpl.selectedSyncType.set(event.currentTarget.value);
+  },
+  'click a.js-toggle-list-sync-enabled'(event, tpl) {
+    event.preventDefault();
+    tpl.selectedSyncEnabled.set(!tpl.selectedSyncEnabled.get());
+  },
+  async 'click .js-list-sync-save'(event, tpl) {
+    event.preventDefault();
+    const list = Template.currentData();
+    const type = tpl.selectedSyncType.get();
+    if (!list || !list._id || !type) return;
+    const projectKey = tpl.$('.js-list-sync-project-key').val() || '';
+    const url = tpl.$('.js-list-sync-url').val() || '';
+    const token = tpl.$('.js-list-sync-token').val() || '';
+    const username = tpl.$('.js-list-sync-username').val() || '';
+    const config = {
+      type,
+      url,
+      projectKey,
+      enabled: tpl.selectedSyncEnabled.get(),
+      // Leaving the credential field blank keeps whatever is already stored
+      // - setListSyncSource only overwrites it when a non-empty token is
+      // sent (server/methods/listSync.js).
+      token: token || null,
+      username,
+    };
+    Meteor.call('setListSyncSource', list._id, config, (err) => {
+      tpl.$('.js-list-sync-token').val('');
+      if (!err) {
+        tpl.refreshCredentialStatus();
+      } else {
+        tpl.syncNowSuccess.set(false);
+        tpl.syncNowResult.set(err.reason || err.message || String(err));
+      }
+    });
+  },
+  'click .js-list-sync-now'(event, tpl) {
+    event.preventDefault();
+    const list = Template.currentData();
+    if (!list || !list._id) return;
+    tpl.syncNowResult.set(TAPi18n.__('list-sync-now-pending'));
+    Meteor.call('syncListNow', list._id, (err, res) => {
+      if (err) {
+        tpl.syncNowSuccess.set(false);
+        tpl.syncNowResult.set(
+          TAPi18n.__('list-sync-now-error', {
+            sprintf: [err.reason || err.message || ''],
+          }),
+        );
+      } else {
+        tpl.syncNowSuccess.set(true);
+        tpl.syncNowResult.set(TAPi18n.__('list-sync-now-success'));
+      }
+    });
+  },
+  async 'click .js-list-sync-clear'(event, tpl) {
+    event.preventDefault();
+    const list = Template.currentData();
+    if (!list || !list._id) return;
+    Meteor.call('setListSyncSource', list._id, null, (err) => {
+      if (!err) {
+        tpl.selectedSyncType.set('');
+        tpl.hasCredential.set(false);
+        tpl.syncNowResult.set('');
+        Popup.close();
+      }
+    });
   },
 });
 

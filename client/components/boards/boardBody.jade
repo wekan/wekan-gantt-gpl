@@ -48,16 +48,30 @@ template(name="boardBody")
           +listsGroup(currentBoard)
         else if isViewCalendar
           +calendarView
+        else if isViewMultiboardCalendar
+          +multiboardCalendarView
         else if isViewGantt
           +ganttView
+        else if isViewGanttFrappe
+          +frappeGanttView
+        else if isViewGanttDhtmlx
+          +dhtmlxGanttView
         else if isViewTable
           +tableView
         else if isViewStats
           +statsView
         else if isViewTime
           +timeView
+        else if isViewTimeline
+          +timelineView
+        else if isViewGroupByAssignee
+          +groupByAssigneeView
+        else if isViewRoadmap
+          +roadmapView
         else if isViewDashboard
           +dashboardView
+        else if isViewBigboard
+          +bigboardView
         else if isViewBurndown
           +burndownView
         else if isViewBurnup
@@ -76,6 +90,8 @@ template(name="boardBody")
           +throughputHistogramView
         else if isViewWipRun
           +wipRunView
+        else if isViewPulse
+          +pulseView
         else
           // Default view - show swimlanes if they exist, otherwise show lists
           if hasSwimlanes

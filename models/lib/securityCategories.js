@@ -24,6 +24,10 @@ const CATALOG = {
   'authz.position-history': { category: 'authz', bleed: 'PositionHistoryBleed', severity: 'high', cwe: 'CWE-639' },
   'auth-race.cas':   { category: 'auth-race', bleed: 'CasBleed', severity: 'high', cwe: 'CWE-362' },
   'authn.cas-link':  { category: 'authn', bleed: 'CasBleed', severity: 'medium', cwe: 'CWE-287' },
+  // A Google/GitHub/Facebook/… login whose email matches an account made by
+  // another method, while OAUTH_PROVIDERS_MERGE_EXISTING_USERS is off: the same
+  // takeover shape as CasBleed and OIDC's GHSA-mp7g-hj5q-gxhq, refused and recorded.
+  'authn.oauth-link': { category: 'authn', bleed: 'CasBleed', severity: 'medium', cwe: 'CWE-287' },
   'auth-race.oidc':  { category: 'auth-race', bleed: 'OIDCBleed', severity: 'high', cwe: 'CWE-362' },
   'brute.invite':    { category: 'brute-force', bleed: 'InviteBleed', severity: 'high', cwe: 'CWE-307' },
   'brute.login':     { category: 'brute-force', bleed: 'BruteBleed', severity: 'medium', cwe: 'CWE-307' },
@@ -105,6 +109,14 @@ const CATALOG = {
   'injection.sql':   { category: 'injection', bleed: 'EscapeBleed', severity: 'critical', cwe: 'CWE-89' },
   'integrity.history': { category: 'integrity', bleed: 'HistoryIntegrity', severity: 'critical', cwe: 'CWE-345' },
   'integrity.file': { category: 'integrity', bleed: 'StorageBleed', severity: 'high', cwe: 'CWE-353' },
+  // Reply-by-email (#2414): the /api/inbound-email webhook is unauthenticated
+  // by design (a mail provider, not a logged-in WeKan user, calls it), so the
+  // HMAC token in the recipient address is the only guard standing between a
+  // POST and a new card comment. A request whose token fails to verify, or
+  // whose From address matches no WeKan user, is refused - every refusal here
+  // is an ATTEMPT (a legitimate reply always carries a valid token from a mail
+  // WeKan itself sent, and a known sender address), so it is logged.
+  'authn.inbound-email': { category: 'authn', bleed: 'ReplyBleed', severity: 'medium', cwe: 'CWE-287' },
 };
 
 const DEFAULT = { category: 'unknown', bleed: 'Generic', severity: 'info', cwe: '' };

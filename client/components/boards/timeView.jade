@@ -2,6 +2,10 @@ template(name="timeView")
   .stats-view
     .stats-view-content
       h1.stats-view-title {{_ 'board-view-time'}}
+      .chart-export-buttons
+        a.chart-export-button.js-export-chart(href="#" data-chart-key="time")
+          i.fa.fa-share-square-o
+          | {{_ 'export'}}
       .stats-view-section
         h2.stats-view-heading {{_ 'board-status-time-summary'}}
         table.stats-view-table
@@ -15,3 +19,37 @@ template(name="timeView")
             tr
               td.stats-view-label {{_ 'board-status-overtime-cards'}}
               td.stats-view-value {{ overtimeCards }}
+            tr
+              //- #1121: sum of remaining time until due date, across the
+              //- board's open cards that have a due date - the same value
+              //- the PDF/Excel export carries as its own section.
+              td.stats-view-label {{_ 'board-status-remaining-time-total'}}
+              td.stats-view-value {{ remainingTimeTotal }}
+      if hasTimeBreakdown
+        //- #812 ("reporting total hours by resource and task type"): who
+        //- logged how many hours, and which cards those hours went to - the
+        //- same data the PDF/Excel export above contains.
+        .stats-view-section
+          h2.stats-view-heading {{_ 'assignees'}}
+          table.stats-view-table.chart-data-table
+            thead
+              tr
+                th {{_ 'name'}}
+                th {{_ 'hours'}}
+            tbody
+              each byAssignee
+                tr
+                  td {{assigneeLabel label}}
+                  td {{hours}}
+        .stats-view-section
+          h2.stats-view-heading {{_ 'card'}}
+          table.stats-view-table.chart-data-table
+            thead
+              tr
+                th {{_ 'name'}}
+                th {{_ 'hours'}}
+            tbody
+              each byCard
+                tr
+                  td {{title}}{{#if isOvertime}} ({{_ 'overtime'}}){{/if}}
+                  td {{hours}}

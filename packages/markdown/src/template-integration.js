@@ -24,6 +24,145 @@ const Markdown = new MarkdownIt({
 // visible, not clickable, and not running.
 Markdown.alwaysShowCodeAsText = new ReactiveVar(false);
 
+// wekan/wekan#3069: Admin Panel / Features bridge for the external issue-tracker
+// autolink setting (externalLinkPatternPrefix / externalLinkPatternUrl), kept in
+// sync the same way as alwaysShowCodeAsText above - this package cannot import
+// app code (models/settings.js, models/lib/externalLinkAutolink.js), so
+// client/components/main/editor.js writes the two configured strings here.
+// Empty prefix or a template with no "{number}" placeholder means "off": see
+// externalLinkAutolinkAndaSummary below, which mirrors the pure, unit-tested
+// algorithm in models/lib/externalLinkAutolink.js (keep the two in sync).
+Markdown.externalLinkPattern = new ReactiveVar({ prefix: '', urlTemplate: '' });
+
+// wekan/wekan#2453: same app/package bridge as externalLinkPattern above, for
+// resolving a pasted WeKan card URL's cardId to its CURRENT title. This
+// package cannot import ReactiveCache (app code), so
+// client/components/main/editor.js assigns a plain function here once at
+// startup: `Markdown.resolveCardTitle = cardId => ReactiveCache.getCard(cardId)?.title`.
+// It is a plain function reference, not a ReactiveVar, because ReactiveCache's
+// own lookups are already reactive Tracker dependencies - calling it from
+// inside this Blaze helper (itself a reactive computation) is what makes the
+// rendered title update automatically when the target card is renamed, and
+// what makes it resolve to nothing (falls back to the bare URL, see
+// autolinkWekanCardUrls) for a card this client's Minimongo subscription does
+// not have - a deleted card, or one on a board this viewer cannot see.
+Markdown.resolveCardTitle = null;
+
+const EXTERNAL_LINK_NUMBER_PLACEHOLDER = '{number}';
+
+function externalLinkPatternIsConfigured(prefix, urlTemplate) {
+  return (
+    typeof prefix === 'string' &&
+    prefix.length > 0 &&
+    typeof urlTemplate === 'string' &&
+    urlTemplate.includes(EXTERNAL_LINK_NUMBER_PLACEHOLDER)
+  );
+}
+
+function escapeRegExpForExternalLink(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function isInsideExistingLinkForExternalLink(text, index) {
+  const before = text.slice(0, index);
+  const openParen = before.lastIndexOf('](');
+  const closeParen = before.lastIndexOf(')');
+  if (openParen !== -1 && openParen > closeParen) return true;
+  const hrefIdx = before.lastIndexOf('href="');
+  const hrefIdx2 = before.lastIndexOf("href='");
+  const lastHref = Math.max(hrefIdx, hrefIdx2);
+  if (lastHref !== -1) {
+    const quote = lastHref === hrefIdx ? '"' : "'";
+    const closingQuote = before.indexOf(quote, lastHref + 6);
+    if (closingQuote === -1 || closingQuote > before.length) return true;
+  }
+  return false;
+}
+
+// Replaces bare "<prefix><digits>" tokens (e.g. "#1234") with markdown links to
+// the configured external tracker, skipping tokens already inside a link. A
+// no-op when the setting is not configured, or when text has no match.
+function autolinkExternalIssueReferences(text, prefix, urlTemplate) {
+  if (!externalLinkPatternIsConfigured(prefix, urlTemplate)) return text;
+  if (typeof text !== 'string' || !text) return text;
+
+  const pattern = new RegExp(`${escapeRegExpForExternalLink(prefix)}(\\d+)`, 'g');
+  let result = '';
+  let lastEnd = 0;
+  let match;
+  let changed = false;
+  while ((match = pattern.exec(text)) !== null) {
+    const index = match.index;
+    if (isInsideExistingLinkForExternalLink(text, index)) continue;
+    result += text.slice(lastEnd, index);
+    const url = urlTemplate.split(EXTERNAL_LINK_NUMBER_PLACEHOLDER).join(match[1]);
+    result += `[${match[0]}](${url})`;
+    lastEnd = index + match[0].length;
+    changed = true;
+  }
+  result += text.slice(lastEnd);
+  return changed ? result : text;
+}
+
+// wekan/wekan#2453: mirrors the pure, unit-tested algorithm in
+// models/lib/cardUrlAutolink.js (keep the two in sync) - duplicated here for
+// the same reason autolinkExternalIssueReferences is duplicated above: this
+// package cannot import app/model code, only Meteor packages.
+const CARD_URL_RE =
+  /(?:https?:\/\/[^\s/]+)?\/b\/([^/\s#]+)\/([^/\s#]+)\/([^/\s#?]+)(#(comment|activity)-([^\s"'<>)]+))?/g;
+
+function findCardUrlMatches(text) {
+  if (typeof text !== 'string' || !text) return [];
+  const pattern = new RegExp(CARD_URL_RE.source, 'g');
+  const results = [];
+  let match;
+  while ((match = pattern.exec(text)) !== null) {
+    results.push({ match: match[0], index: match.index, cardId: match[3] });
+    if (match.index === pattern.lastIndex) pattern.lastIndex += 1;
+  }
+  return results;
+}
+
+// Replaces every matching, not-already-linked WeKan card URL in `text` with a
+// markdown link "[<title>](<match>)", using `resolveTitle(cardId)`. Falls
+// back to leaving the URL untouched when resolveTitle is missing, throws, or
+// returns nothing - a deleted card, a card on a board this viewer cannot see
+// (Minimongo simply does not have it), or the bridge not wired up yet.
+function autolinkWekanCardUrls(text, resolveTitle) {
+  if (typeof text !== 'string' || !text) return text;
+  if (typeof resolveTitle !== 'function') return text;
+
+  const matches = findCardUrlMatches(text);
+  if (!matches.length) return text;
+
+  let result = '';
+  let lastEnd = 0;
+  let changed = false;
+  matches.forEach(({ match, index, cardId }) => {
+    if (isInsideExistingLinkForExternalLink(text, index)) return;
+    let title;
+    try {
+      title = resolveTitle(cardId);
+    } catch (e) {
+      title = undefined;
+    }
+    if (!title || typeof title !== 'string') return;
+    result += text.slice(lastEnd, index);
+    // '\' MUST be escaped before ']' - see models/lib/cardUrlAutolink.js
+    // (kept in sync with this copy) for why: a title ending in a raw
+    // backslash would otherwise escape the literal ']' inserted below,
+    // leaving the markdown link label unterminated
+    // (CodeQL js/incomplete-sanitization).
+    const safeTitle = title.replace(/\\/g, '\\\\').replace(/]/g, '\\]');
+    result += `[${safeTitle}](${match})`;
+    lastEnd = index + match.length;
+    changed = true;
+  });
+  result += text.slice(lastEnd);
+
+  return changed ? result : text;
+}
+
 // Escape every HTML-significant character so the raw source is shown literally.
 // DOMPurify alone is not enough here: it would strip tags like <script> rather
 // than display them, which would hide code instead of revealing it.
@@ -131,6 +270,50 @@ const emojiPlugin = markdownItEmoji.full || markdownItEmoji.default || markdownI
 if (emojiPlugin) {
   Markdown.use(emojiPlugin);
 }
+
+// wekan/wekan#2419: GFM task-list items ("- [ ] Task" / "- [x] Done") rendered
+// as literal text ("<input disable=\"\" type=\"checkbox\"/> Task") instead of a
+// real checkbox, because plain markdown-it has no task-list extension and never
+// emits an <input> in the first place - there was nothing for the sanitizer
+// below to keep. This core rule runs after inline parsing (md.core.ruler.push
+// appends to the end of the chain, so `children` are already tokenized) and
+// looks at only the FIRST list item per bullet: a leading "[ ] "/"[x] " text
+// token is swapped for a real (but disabled - see the note on click-to-toggle
+// below) checkbox, matching what GitHub and other GFM renderers do.
+//
+// The checkbox is DISABLED and non-interactive: toggling it would need to
+// write back into the raw markdown SOURCE of the card description/comment
+// from a click on rendered output, which is a separate, materially larger
+// feature (mapping a DOM node back to its exact source offset, then saving
+// through the card's update API) - out of scope for this rendering fix. The
+// bug this closes is specifically "renders as literal HTML text", and a
+// disabled checkbox already fixes that: the box is real and its
+// checked/unchecked state reflects the source accurately.
+const TASK_LIST_ITEM_RE = /^\[([ xX])\]\s+/;
+Markdown.use(function(md) {
+  md.core.ruler.push('task-lists', function(state) {
+    const tokens = state.tokens;
+    for (let i = 0; i < tokens.length; i++) {
+      if (tokens[i].type !== 'list_item_open') continue;
+      for (let j = i + 1; j < tokens.length; j++) {
+        if (tokens[j].type === 'list_item_close') break;
+        if (tokens[j].type !== 'inline') continue;
+        const inline = tokens[j];
+        const first = inline.children && inline.children[0];
+        if (first && first.type === 'text' && TASK_LIST_ITEM_RE.test(first.content)) {
+          const match = TASK_LIST_ITEM_RE.exec(first.content);
+          const checked = match[1].toLowerCase() === 'x';
+          first.content = first.content.slice(match[0].length);
+          const checkbox = new state.Token('html_inline', '', 0);
+          checkbox.content = '<input type="checkbox" disabled="disabled"'
+            + (checked ? ' checked="checked"' : '') + '> ';
+          inline.children.unshift(checkbox);
+        }
+        break;
+      }
+    }
+  });
+});
 
 // LaTeX math support. Renders $...$ (inline) and $$...$$ (block) to native
 // MathML using Temml, which browsers display without any client-side rendering
@@ -355,7 +538,21 @@ Blaze.Template.registerHelper('markdown', new Template('markdown', function () {
     // renders - unformatted, but readable, and the card opens.
     let sanitized;
     try {
-      const renderedMarkdown = Markdown.render(text).replace('<!--', '<font color="red" title="Warning! Hidden HTML comment!" aria-label="Warning! Hidden HTML comment!">&lt;!--</font>').replace('-->', '<font color="red" title="Warning! Hidden HTML comment!" aria-label="Warning! Hidden HTML comment!">--&gt;</font>');
+      const externalLinkPattern = Markdown.externalLinkPattern.get();
+      const textWithExternalLinks = autolinkExternalIssueReferences(
+        text,
+        externalLinkPattern && externalLinkPattern.prefix,
+        externalLinkPattern && externalLinkPattern.urlTemplate,
+      );
+      // wekan/wekan#2453: relabel a pasted WeKan card URL with the target
+      // card's current title, before markdown-it turns bare URLs into plain
+      // autolinks. Runs unconditionally (Markdown.resolveCardTitle is null
+      // until editor.js wires it at startup, in which case this is a no-op).
+      const textWithCardLinks = autolinkWekanCardUrls(
+        textWithExternalLinks,
+        Markdown.resolveCardTitle,
+      );
+      const renderedMarkdown = Markdown.render(textWithCardLinks).replace('<!--', '<font color="red" title="Warning! Hidden HTML comment!" aria-label="Warning! Hidden HTML comment!">&lt;!--</font>').replace('-->', '<font color="red" title="Warning! Hidden HTML comment!" aria-label="Warning! Hidden HTML comment!">--&gt;</font>');
       sanitized = DOMPurify.sanitize(renderedMarkdown, getSecureDOMPurifyConfig());
     } catch (error) {
       const message = (error && error.message) ? error.message : String(error);

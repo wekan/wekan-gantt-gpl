@@ -51,6 +51,7 @@ import Users from '/models/users';
 import Lists from '/models/lists';
 import CardComments from '/models/cardComments';
 import { ALLOWED_COLORS } from '/config/const';
+import { CARD_RECURRENCE_INTERVALS } from '/models/lib/cardRecurrenceSchedule';
 import { isHexColor, toHex } from '/models/lib/contrastColor';
 import { uniqBy } from '/imports/lib/collectionHelpers';
 import { memberTargetBoardId } from '/models/lib/linkedCardMembers';
@@ -375,6 +376,28 @@ Template.cardDetails.onCreated(function () {
     }
   });
 
+  // #6686: a sub-popup opened from this card (Labels, Members, ...) is a
+  // global singleton (client/lib/popup.js) that is not tied to this card
+  // details instance. Closing this card, or switching to another card,
+  // destroys this template instance without ever calling Popup.close()/back(),
+  // so the popup stayed open and, when re-opened on the next card, could still
+  // be operating on the closed card's stale data. Remember which card this
+  // instance was opened for so onDestroyed (below) can close a popup that is
+  // still showing this card's data.
+  this.openedCardId = openedCardId;
+
+  // #3078: opening a card is what clears its minicard "unread comments"
+  // highlight - reusing this existing open trigger rather than a new
+  // tracking mechanism. Record the current user's own last-viewed
+  // timestamp for this card; see models/users.js setCardLastViewed and the
+  // minicard helper in client/components/cards/minicard.js.
+  if (openedCardId) {
+    const currentUser = ReactiveCache.getCurrentUser();
+    if (currentUser) {
+      currentUser.setCardLastViewed(openedCardId);
+    }
+  }
+
   const boardBody = getBoardBodyInstance();
   if (boardBody !== null) {
     // Only show overlay in mobile mode, not in desktop mode
@@ -575,81 +598,171 @@ Template.cardDetails.onRendered(function () {
 
 Template.cardDetails.onDestroyed(function () {
   const boardBody = getBoardBodyInstance();
-  if (boardBody === null) return;
-  boardBody.showOverlay.set(false);
+  if (boardBody !== null) {
+    boardBody.showOverlay.set(false);
+  }
+
+  // #6686: see the comment in onCreated above. Only close a popup that is
+  // still showing THIS card's data at the base of its stack - a popup opened
+  // for an unrelated card/context must not be touched.
+  const openedCardId = this.openedCardId;
+  if (openedCardId && Popup.isOpen()) {
+    const baseStackEntry = Popup._stack?.[0];
+    if (baseStackEntry?.dataContext?._id === openedCardId) {
+      Popup.close();
+    }
+  }
+});
+
+// The following are used from one of the cardFieldSection* templates
+// (cardDetails.jade), cardDetailsActionsPopup, or activities.jade - each a
+// SEPARATE template from cardDetails, where a template-local helper
+// (Template.cardDetails.helpers) is invisible, exactly like isDateFormat
+// above. Registered globally so every template that needs them can see
+// them.
+Template.registerHelper('canShowCustomFieldsOnCard', function canShowCustomFieldsOnCard() {
+  const board = this?.board?.();
+  return Utils.canModifyCard(this) && board?.allowsCustomFields !== false;
+});
+
+Template.registerHelper('stickers', function stickers() {
+  const card = Template.currentData();
+  return card && typeof card.getStickers === 'function' ? card.getStickers() : [];
+});
+
+Template.registerHelper('isWatching', function isWatching() {
+  const card = Template.currentData();
+  if (!card || typeof card.findWatcher !== 'function') return false;
+  const realCard = typeof card.getRealCard === 'function' ? card.getRealCard() : card;
+  return realCard.findWatcher(Meteor.userId());
+});
+
+// #6081: number of times this card's due date has been changed, for
+// accountability. Returns 0 when unavailable so the template can hide it.
+Template.registerHelper('dueDateChangeCount', function dueDateChangeCount() {
+  const card = Template.currentData();
+  if (!card || typeof card.getDueDateChangeCount !== 'function') return 0;
+  return card.getDueDateChangeCount();
+});
+
+// Returns the card's locations (multiple supported), each enriched with the
+// coordinate flag and OpenStreetMap link used by the template.
+Template.registerHelper('getLocations', function getLocations() {
+  const card = Template.currentData();
+  if (!card || !card.getLocations) return [];
+  const user = ReactiveCache.getCurrentUser();
+  const provider = user ? user.getMapProvider() : 'openstreetmap';
+  return card.getLocations().map(loc => {
+    const hasCoordinates =
+      typeof loc.latitude === 'number' && typeof loc.longitude === 'number';
+    const mapUrl = hasCoordinates
+      ? mapLinkFor(provider, loc.latitude, loc.longitude)
+      : '';
+    return { ...loc, hasCoordinates, mapUrl };
+  });
+});
+
+// #3392: PI Program Board "Red Strings". Resolve this card's dependencies
+// into card objects (with relation type, color, icon and a relative link).
+Template.registerHelper('getDependencyCards', function getDependencyCards() {
+  const card = Template.currentData();
+  if (!card || typeof card.getDependencies !== 'function') return [];
+  return card
+    .getDependencies()
+    .map(dep => {
+      const target = ReactiveCache.getCard(dep.cardId);
+      if (!target) return null;
+      return {
+        card: target,
+        linkUrl: target.originRelativeUrl(),
+        type: dep.type,
+        color: dep.color,
+        icon: dep.icon,
+        typeLabel: `dependency-type-${dep.type}`,
+        // Per-row relation-type dropdown options with the current one marked.
+        typeOption: DEPENDENCY_TYPES.map(t => ({
+          id: t.id,
+          label: `dependency-type-${t.id}`,
+          selected: t.id === dep.type,
+        })),
+      };
+    })
+    .filter(Boolean);
+});
+
+Template.registerHelper('customFieldsGrid', function customFieldsGrid() {
+  return ReactiveCache.getCurrentUser().hasCustomFieldsGrid();
+});
+
+Template.registerHelper('showActivities', function showActivities() {
+  const card = Template.currentData();
+  const realCard = card && typeof card.getRealCard === 'function'
+    ? card.getRealCard()
+    : card;
+  return realCard && realCard.showActivities;
+});
+
+Template.registerHelper('showVotingButtons', function showVotingButtons() {
+  const card = Template.currentData();
+  // #6420: currentUser was referenced but never defined here, so the helper
+  // threw "ReferenceError: currentUser is not defined" on every card render and
+  // the voting buttons disappeared. Define it and guard the board-member call.
+  const currentUser = ReactiveCache.getCurrentUser();
+  return (
+    currentUser &&
+    (currentUser.isBoardMember() || card.voteAllowNonBoardMembers()) &&
+    !card.expiredVote()
+  );
+});
+
+Template.registerHelper('showPlanningPokerButtons', function showPlanningPokerButtons() {
+  const card = Template.currentData();
+  // #6420: same as showVotingButtons — currentUser was undefined here.
+  const currentUser = ReactiveCache.getCurrentUser();
+  return (
+    currentUser &&
+    (currentUser.isBoardMember() || card.pokerAllowNonBoardMembers()) &&
+    !card.expiredPoker()
+  );
+});
+
+Template.registerHelper('currentSwimlaneListsSorted', function currentSwimlaneListsSorted() {
+  const card = Template.currentData();
+  if (!card || !card.boardId) return [];
+  const board = ReactiveCache.getBoard(card.boardId);
+  if (!board) return [];
+  const swimlaneId = card.swimlaneId;
+  const selector = { boardId: card.boardId, archived: false };
+  if (swimlaneId) {
+    // Board-wide lists have no swimlaneId. They are shared by EVERY
+    // swimlane, not only by the first/default one. Restricting this fallback
+    // to the default swimlane made the List chooser (and move/copy chooser)
+    // empty for valid cards in every later swimlane (#6614/#6618).
+    selector.swimlaneId = { $in: [swimlaneId, null, ''] };
+  }
+  return ReactiveCache.getLists(selector, { sort: { sort: 1 } });
+});
+
+Template.registerHelper('isCurrentListId', function isCurrentListId(listId) {
+  let data = Template.currentData();
+  if (!data || typeof data.listId === 'undefined') {
+    data = Template.parentData(1);
+  }
+  if (!data || typeof data.listId === 'undefined') return false;
+  return data.listId == listId;
 });
 
 Template.cardDetails.helpers({
-  canShowCustomFieldsOnCard() {
+  // #4448: the order the reorderable card-detail sections (Labels, Dates,
+  // Members, Custom Fields, Description) render in, resolved from the
+  // board's stored setting. models/lib/cardFieldOrder.js
+  orderedCardFieldSections() {
     const board = this?.board?.();
-    return Utils.canModifyCard(this) && board?.allowsCustomFields !== false;
-  },
-  stickers() {
-    const card = Template.currentData();
-    return card && typeof card.getStickers === 'function' ? card.getStickers() : [];
-  },
-  isWatching() {
-    const card = Template.currentData();
-    if (!card || typeof card.findWatcher !== 'function') return false;
-    const realCard = typeof card.getRealCard === 'function' ? card.getRealCard() : card;
-    return realCard.findWatcher(Meteor.userId());
-  },
-
-  // #6081: number of times this card's due date has been changed, for
-  // accountability. Returns 0 when unavailable so the template can hide it.
-  dueDateChangeCount() {
-    const card = Template.currentData();
-    if (!card || typeof card.getDueDateChangeCount !== 'function') return 0;
-    return card.getDueDateChangeCount();
-  },
-
-  // Returns the card's locations (multiple supported), each enriched with the
-  // coordinate flag and OpenStreetMap link used by the template.
-  getLocations() {
-    const card = Template.currentData();
-    if (!card || !card.getLocations) return [];
-    const user = ReactiveCache.getCurrentUser();
-    const provider = user ? user.getMapProvider() : 'openstreetmap';
-    return card.getLocations().map(loc => {
-      const hasCoordinates =
-        typeof loc.latitude === 'number' && typeof loc.longitude === 'number';
-      const mapUrl = hasCoordinates
-        ? mapLinkFor(provider, loc.latitude, loc.longitude)
-        : '';
-      return { ...loc, hasCoordinates, mapUrl };
-    });
-  },
-
-  // #3392: PI Program Board "Red Strings". Resolve this card's dependencies
-  // into card objects (with relation type, color, icon and a relative link).
-  getDependencyCards() {
-    const card = Template.currentData();
-    if (!card || typeof card.getDependencies !== 'function') return [];
-    return card
-      .getDependencies()
-      .map(dep => {
-        const target = ReactiveCache.getCard(dep.cardId);
-        if (!target) return null;
-        return {
-          card: target,
-          linkUrl: target.originRelativeUrl(),
-          type: dep.type,
-          color: dep.color,
-          icon: dep.icon,
-          typeLabel: `dependency-type-${dep.type}`,
-          // Per-row relation-type dropdown options with the current one marked.
-          typeOption: DEPENDENCY_TYPES.map(t => ({
-            id: t.id,
-            label: `dependency-type-${t.id}`,
-            selected: t.id === dep.type,
-          })),
-        };
-      })
-      .filter(Boolean);
-  },
-
-  customFieldsGrid() {
-    return ReactiveCache.getCurrentUser().hasCustomFieldsGrid();
+    if (board && typeof board.getCardFieldOrder === 'function') {
+      return board.getCardFieldOrder();
+    }
+    const { applyCardFieldOrder } = require('/models/lib/cardFieldOrder');
+    return applyCardFieldOrder(board?.cardFieldOrder);
   },
 
   cardMaximized() {
@@ -658,14 +771,6 @@ Template.cardDetails.helpers({
       ? currentUser.hasCardMaximized()
       : window.localStorage.getItem('cardMaximized') === 'true';
     return !Utils.getPopupCardId() && maximized;
-  },
-
-  showActivities() {
-    const card = Template.currentData();
-    const realCard = card && typeof card.getRealCard === 'function'
-      ? card.getRealCard()
-      : card;
-    return realCard && realCard.showActivities;
   },
 
   cardCollapsed() {
@@ -705,59 +810,9 @@ Template.cardDetails.helpers({
     return result;
   },
 
-  showVotingButtons() {
-    const card = Template.currentData();
-    // #6420: currentUser was referenced but never defined here, so the helper
-    // threw "ReferenceError: currentUser is not defined" on every card render and
-    // the voting buttons disappeared. Define it and guard the board-member call.
-    const currentUser = ReactiveCache.getCurrentUser();
-    return (
-      currentUser &&
-      (currentUser.isBoardMember() || card.voteAllowNonBoardMembers()) &&
-      !card.expiredVote()
-    );
-  },
-
-  showPlanningPokerButtons() {
-    const card = Template.currentData();
-    // #6420: same as showVotingButtons — currentUser was undefined here.
-    const currentUser = ReactiveCache.getCurrentUser();
-    return (
-      currentUser &&
-      (currentUser.isBoardMember() || card.pokerAllowNonBoardMembers()) &&
-      !card.expiredPoker()
-    );
-  },
-
   isVerticalScrollbars() {
     const user = ReactiveCache.getCurrentUser();
     return user && user.isVerticalScrollbars();
-  },
-
-  currentSwimlaneListsSorted() {
-    const card = Template.currentData();
-    if (!card || !card.boardId) return [];
-    const board = ReactiveCache.getBoard(card.boardId);
-    if (!board) return [];
-    const swimlaneId = card.swimlaneId;
-    const selector = { boardId: card.boardId, archived: false };
-    if (swimlaneId) {
-      // Board-wide lists have no swimlaneId. They are shared by EVERY
-      // swimlane, not only by the first/default one. Restricting this fallback
-      // to the default swimlane made the List chooser (and move/copy chooser)
-      // empty for valid cards in every later swimlane (#6614/#6618).
-      selector.swimlaneId = { $in: [swimlaneId, null, ''] };
-    }
-    return ReactiveCache.getLists(selector, { sort: { sort: 1 } });
-  },
-
-  isCurrentListId(listId) {
-    let data = Template.currentData();
-    if (!data || typeof data.listId === 'undefined') {
-      data = Template.parentData(1);
-    }
-    if (!data || typeof data.listId === 'undefined') return false;
-    return data.listId == listId;
   },
 
   isLoaded() {
@@ -1413,18 +1468,25 @@ Template.cardDetails.events({
   },
 });
 
+// isDateFormat is used by cardFieldSectionDates.jade's date-format
+// selector, a SEPARATE template from cardDetails - a template-local helper
+// (Template.cardDetails.helpers) is invisible there, which threw "No such
+// function: isDateFormat" the instant that section rendered and broke
+// opening the card popup entirely. Registered globally, like isSectionOpen
+// just below, so every template can see it.
+Template.registerHelper('isDateFormat', function isDateFormat(format) {
+  const currentUser = ReactiveCache.getCurrentUser();
+  if (!currentUser) {
+    const stored = window.localStorage.getItem('dateFormat') || 'YYYY-MM-DD';
+    return format === stored;
+  }
+  return currentUser.getDateFormat() === format;
+});
+
 Template.cardDetails.helpers({
   isPopup() {
     let ret = !!Utils.getPopupCardId();
     return ret;
-  },
-  isDateFormat(format) {
-    const currentUser = ReactiveCache.getCurrentUser();
-    if (!currentUser) {
-      const stored = window.localStorage.getItem('dateFormat') || 'YYYY-MM-DD';
-      return format === stored;
-    }
-    return currentUser.getDateFormat() === format;
   },
   // Upload progress helpers
   hasActiveUploads() {
@@ -1556,6 +1618,13 @@ Template.cardDetailsActionsPopup.helpers({
   showListOnMinicard() {
     return this.showListOnMinicard;
   },
+
+  // #1172: per-user star, same shape as boards/swimlanes/lists.
+  isCardItemStarred() {
+    const card = this.card || this;
+    const user = ReactiveCache.getCurrentUser();
+    return !!(card && card._id && user && user.hasStarredCard(card._id));
+  },
 });
 
 Template.cardDetailsActionsPopup.events({
@@ -1586,6 +1655,13 @@ Template.cardDetailsActionsPopup.events({
     if (!url) return;
     Utils.showCopied(Utils.copyTextToClipboard(url), tpl.$('.copied-tooltip'));
   },
+  // #1172: star/unstar this card for the current user only.
+  async 'click .js-star-card-item'(event) {
+    event.preventDefault();
+    const card = this.card || this;
+    if (!card || !card._id) return;
+    await Meteor.callAsync('toggleCardStar', card._id);
+  },
   // "Custom Fields" is ONE entry: it opens the picker for which of the board's
   // fields are on THIS card, and that popup's own Settings cog opens the
   // board's list of fields, where one is created, renamed or deleted. Two
@@ -1606,6 +1682,25 @@ Template.cardDetailsActionsPopup.events({
   'click .js-spent-time': Popup.open('editCardSpentTime'),
   'click .js-move-card': Popup.open('moveCard'),
   'click .js-copy-card': Popup.open('copyCard'),
+  // #2209: "Create template from element" - save THIS card as a card template
+  // in the user's own Templates board, the reverse direction of the existing
+  // "insert a card FROM a template" flow (Template.searchElementPopup,
+  // client/components/lists/listBody.js). Server does the actual copy
+  // (server/models/cards.js saveCardAsTemplate), reusing the same lazy
+  // per-user Templates board #4205's default-template application already
+  // relies on.
+  async 'click .js-save-card-as-template'(event) {
+    event.preventDefault();
+    const cardId = getCardId();
+    if (!cardId) return;
+    try {
+      await Meteor.callAsync('saveCardAsTemplate', cardId);
+      Popup.back();
+    } catch (err) {
+      alert(err?.reason || err?.message || 'Failed to save card as template');
+    }
+  },
+  'click .js-set-card-recurrence-interval': Popup.open('cardRecurrenceInterval'),
   'click .js-convert-checklist-item-to-card': Popup.open('convertChecklistItemToCard'),
   'click .js-copy-checklist-cards': Popup.open('copyManyCards'),
   'click .js-set-card-color': Popup.open('setCardColor'),
@@ -1642,7 +1737,32 @@ Template.cardDetailsActionsPopup.events({
     }
     Utils.goBoardId(card.boardId);
   }),
+  // #1504: restoring an archived card from the FULL card-detail view - the
+  // same target-list fallback the Archive sidebar's own "Restore" link uses
+  // (client/components/sidebar/sidebarArchives.js `.js-restore-card`), so a
+  // card whose list was itself archived/deleted still gets a place to land
+  // instead of `canBeRestored()` crashing on a missing list.
+  async 'click .js-restore-archived-card'(event) {
+    event.preventDefault();
+    const card = Cards.findOne(getCardId());
+    if (!card) return;
+
+    const currentList = ReactiveCache.getList(card.listId);
+    if (!currentList) {
+      Popup.open('restoreArchivedCardToList')(event, {
+        dataContextIfCurrentDataIsUndefined: { _id: card._id },
+      });
+      return;
+    }
+
+    if (typeof card.canBeRestored === 'function' && card.canBeRestored()) {
+      await card.restore();
+    }
+    Popup.back();
+  },
   'click .js-more': Popup.open('cardMore'),
+  'click .js-create-board-from-card': Popup.open('createBoardFromCard'),
+  'click .js-link-card-to-board': Popup.open('linkCardToBoard'),
   'click .js-toggle-watch-card'() {
     const currentCard = Cards.findOne(getCardId());
     if (!currentCard) return;
@@ -2072,9 +2192,18 @@ Template.moveCardPopup.onCreated(function () {
       const tpl = Template.instance();
       const title = tpl.$('#move-card-title').val().trim();
       const position = tpl.$('input[name="position"]:checked').val();
+      // #2719: optionally leave a linked-card mirror behind at the card's
+      // ORIGINAL board/swimlane/list once the move completes, reusing the
+      // same linked-card mechanism as #4281's "Link to board" action rather
+      // than inventing a new one. Unchecked (the default) leaves plain move
+      // behavior completely unchanged.
+      const leaveLinkAtOrigin = tpl.$('#js-leave-link-at-origin').is(':checked');
 
       ReactiveCache.getCurrentUser().setMoveAndCopyDialogOption(this.currentBoardId, options);
       const card = Template.currentData();
+      const originalBoardId = card.boardId;
+      const originalSwimlaneId = card.swimlaneId;
+      const originalListId = card.listId;
       let sortIndex = 0;
 
       if (cardId) {
@@ -2095,6 +2224,13 @@ Template.moveCardPopup.onCreated(function () {
       await card.move(options.boardId, options.swimlaneId, options.listId, sortIndex);
       if (title && title !== card.title) {
         await card.setTitle(title);
+      }
+
+      if (leaveLinkAtOrigin) {
+        const linkCardId = await card.link(originalBoardId, originalSwimlaneId, originalListId);
+        if (linkCardId) {
+          Filter.addException(linkCardId);
+        }
       }
     },
   });
@@ -2153,6 +2289,51 @@ Template.copyCardPopup.onCreated(function () {
   });
 });
 registerCardDialogTemplate('copyCardPopup');
+
+/**
+ * Link Card to Board Dialog (#4281) - creates a linked-card mirror of the
+ * current card on a different, existing board, reusing the same
+ * board/swimlane/list picker as Move/Copy and the existing linked-card
+ * mechanism (Cards.helpers().link(), models/cards.js) rather than inventing
+ * a new data model. The original card is never mutated.
+ */
+Template.linkCardToBoardPopup.onCreated(function () {
+  this.dialog = new BoardSwimlaneListCardDialog(this, {
+    getDialogOptions() {
+      return ReactiveCache.getCurrentUser().getMoveAndCopyDialogOptions();
+    },
+    async setDone(cardId, options) {
+      ReactiveCache.getCurrentUser().setMoveAndCopyDialogOption(this.currentBoardId, options);
+      const card = Template.currentData();
+      const tpl = Template.instance();
+      const position = tpl.$('input[name="position"]:checked').val();
+
+      const newCardId = await card.link(options.boardId, options.swimlaneId, options.listId);
+      if (newCardId) {
+        const newCard = ReactiveCache.getCard(newCardId);
+        if (newCard) {
+          let sortIndex = 0;
+
+          if (cardId) {
+            const targetCard = ReactiveCache.getCard(cardId);
+            if (targetCard) {
+              const targetSort = targetCard.sort || 0;
+              sortIndex = position === 'above' ? targetSort - 0.5 : targetSort + 0.5;
+            }
+          } else {
+            const maxSort = await newCard.getMaxSort(options.listId, options.swimlaneId);
+            sortIndex = (typeof maxSort === 'number' && !Number.isNaN(maxSort)) ? maxSort + 1 : 0;
+          }
+
+          await newCard.move(options.boardId, options.swimlaneId, options.listId, sortIndex);
+        }
+
+        Filter.addException(newCardId);
+      }
+    },
+  });
+});
+registerCardDialogTemplate('linkCardToBoardPopup');
 
 /** Convert Checklist-Item to card dialog */
 Template.convertChecklistItemToCardPopup.onCreated(function () {
@@ -2500,6 +2681,47 @@ Template.cardMorePopup.events({
   'change .js-field-parent-card'(event, tpl) {
     const selection = $(event.currentTarget).val();
     tpl.setParentCardId(selection);
+  },
+});
+
+// #4495: create a brand-new board from THIS existing card, and link the card
+// to it, in one step. Adjacent to, and independent from, the existing
+// "Link to board" flow (Template.linkCardPopup in
+// client/components/lists/listBody.js), which links a NEW card to an
+// EXISTING board. This popup only asks for the new board's title (defaulting
+// to the card's own title); the actual board creation and linking happen
+// server-side, in the `createBoardFromCard` method (server/models/cards.js),
+// which sets on the card the exact same `type`/`linkedId` fields that flow
+// sets when linking to a whole board.
+Template.createBoardFromCardPopup.helpers({
+  cardTitle() {
+    const card = Cards.findOne(getCardId());
+    return card ? card.title : '';
+  },
+});
+
+Template.createBoardFromCardPopup.events({
+  'submit .js-create-board-from-card-form'(evt, tpl) {
+    evt.preventDefault();
+    const card = Cards.findOne(getCardId());
+    if (!card) {
+      Popup.back();
+      return;
+    }
+    const title = tpl.$('.js-create-board-from-card-title').val();
+    Meteor.call('createBoardFromCard', card._id, title, (err, boardId) => {
+      if (err) {
+        alert(err.reason || err.message);
+        return;
+      }
+      if (boardId) {
+        Session.set(
+          'boardSubscriptionGeneration',
+          (Session.get('boardSubscriptionGeneration') || 0) + 1,
+        );
+      }
+      Popup.back();
+    });
   },
 });
 
@@ -2907,6 +3129,32 @@ Template.cardDependencyIconPopup.events({
     }
     editingDependencyTargetId = null;
     editingDependencyCard = null;
+    Popup.back();
+  },
+});
+
+// Kanboard-style whole-card recurrence: pick (or clear) the card's
+// automatic-recurrence interval. Mirrors checklists.js's
+// Template.checklistResetIntervalPopup.
+Template.cardRecurrenceIntervalPopup.helpers({
+  recurrenceIntervals() {
+    return CARD_RECURRENCE_INTERVALS;
+  },
+  isCurrentCardInterval() {
+    const card = Cards.findOne(getCardId());
+    const current = (card && card.recurrenceInterval) || 'none';
+    return current === this.toString();
+  },
+});
+
+Template.cardRecurrenceIntervalPopup.events({
+  'click .js-set-card-recurrence'(event) {
+    event.preventDefault();
+    const interval = event.currentTarget.getAttribute('data-interval');
+    const card = Cards.findOne(getCardId());
+    if (card) {
+      card.setRecurrenceInterval(interval);
+    }
     Popup.back();
   },
 });

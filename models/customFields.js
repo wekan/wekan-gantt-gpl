@@ -34,6 +34,7 @@ CustomFields.attachSchema(
         'number',
         'date',
         'dropdown',
+        'dropdownMultiSelect',
         'checkbox',
         'currency',
         'stringtemplate',
@@ -114,6 +115,30 @@ CustomFields.attachSchema(
        */
       type: Boolean,
       defaultValue: false,
+    },
+    adminOnly: {
+      /**
+       * #3141: when true, this custom field's VALUE is hidden from - and
+       * cannot be set by - a non board-admin board member: not on the card
+       * detail view, not on the minicard, and not through the server-side
+       * setCustomField method (a UI-only hide is not real access control).
+       * Defaults to false so every existing custom field is unaffected.
+       */
+      type: Boolean,
+      defaultValue: false,
+    },
+    sort: {
+      /**
+       * #4165: the user-settable DISPLAY order of the custom field, both in the
+       * board-settings list and on a card. Ascending, lower first - mirrors
+       * Lists' own `sort` field. A newly created field defaults to the end of
+       * the board's current list (the client passes `existingCount` on insert)
+       * rather than jumping to the top; fields created before this existed have
+       * no `sort` of their own and fall back to name order (see
+       * models/lib/customFieldsWD.js).
+       */
+      type: Number,
+      optional: true,
     },
     createdAt: {
       type: Date,
