@@ -5,6 +5,7 @@ import { Random } from 'meteor/random';
 import { ReactiveCache } from '/imports/reactiveCache';
 const { notHelperBoardTitle } = require('/models/lib/helperBoards');
 const { boardVisibilitySelectors } = require('/models/lib/boardVisibilitySelectors');
+const boardViewSettings = require('/models/lib/boardViewSettings');
 import escapeForRegex from 'escape-string-regexp';
 import CustomFields from './customFields';
 import {
@@ -745,19 +746,33 @@ Boards.attachSchema(
       defaultValue: false,
     },
 
-    // #4448: the order the major sections of the opened card (Labels, Dates,
-    // Members, Custom Fields, Description) render in. A missing/partial/unknown
-    // value falls back to the historical fixed order via
-    // applyCardFieldOrder() in models/lib/cardFieldOrder.js - see that file for
-    // which sections are (and are not) covered by this setting.
+    // #4448: the order the fields of the opened card render in - field keys
+    // of models/lib/cardFieldOrder.js (the first version stored the five
+    // SECTION keys; those stay valid). A missing/partial/unknown value falls
+    // back to the historical fixed order via applyCardOrder() /
+    // applyCardFieldOrder() there - see that file for what is reorderable.
     cardFieldOrder: {
       /**
-       * The order of the reorderable card-detail-view sections
+       * The order of the opened card's fields (models/lib/cardFieldOrder.js keys)
        */
       type: Array,
       optional: true,
     },
     'cardFieldOrder.$': {
+      type: String,
+    },
+    // The same for the minicard, independently: the order its dates, labels,
+    // avatars, badges and the rest render in, from Board Settings / Card's
+    // "Show on Minicard" column. applyMinicardOrder() in
+    // models/lib/cardFieldOrder.js; missing means the historical order.
+    minicardFieldOrder: {
+      /**
+       * The order of the minicard's fields (models/lib/cardFieldOrder.js keys)
+       */
+      type: Array,
+      optional: true,
+    },
+    'minicardFieldOrder.$': {
       type: String,
     },
 
@@ -1030,6 +1045,104 @@ Boards.attachSchema(
       type: Boolean,
       defaultValue: true,
     },
+    // #6688: the card sections that shipped WITHOUT a Board Settings / Card
+    // toggle - Stickers, Location, Dependencies, Flowtime, Pomodoro, Vote,
+    // Planning Poker, Text Notes - and the minicard badges of the ones that
+    // have one (Stickers, Dependencies, Vote, Poker, the comment count). All
+    // default to TRUE because every one of them rendered unconditionally
+    // before, so an existing board keeps showing exactly what it showed; the
+    // toggle only lets an admin turn one OFF, the allowsSpentTime pattern.
+    allowsStickers: {
+      /**
+       * Does the board show the Stickers section on the opened card?
+       */
+      type: Boolean,
+      defaultValue: true,
+    },
+    allowsStickersOnMinicard: {
+      /**
+       * Does the board show the stickers badge on the minicard?
+       */
+      type: Boolean,
+      defaultValue: true,
+    },
+    allowsLocation: {
+      /**
+       * Does the board show the Location section on the opened card?
+       */
+      type: Boolean,
+      defaultValue: true,
+    },
+    allowsDependencies: {
+      /**
+       * Does the board show the Dependencies section on the opened card?
+       */
+      type: Boolean,
+      defaultValue: true,
+    },
+    allowsDependenciesOnMinicard: {
+      /**
+       * Does the board show the dependencies badge on the minicard?
+       */
+      type: Boolean,
+      defaultValue: true,
+    },
+    allowsFlowtime: {
+      /**
+       * Does the board show the Flowtime timer on the opened card?
+       */
+      type: Boolean,
+      defaultValue: true,
+    },
+    allowsPomodoro: {
+      /**
+       * Does the board show the Pomodoro timer on the opened card?
+       */
+      type: Boolean,
+      defaultValue: true,
+    },
+    allowsVote: {
+      /**
+       * Does the board show a card's voting question and buttons on the opened card?
+       */
+      type: Boolean,
+      defaultValue: true,
+    },
+    allowsVoteOnMinicard: {
+      /**
+       * Does the board show the vote-count badge on the minicard?
+       */
+      type: Boolean,
+      defaultValue: true,
+    },
+    allowsPoker: {
+      /**
+       * Does the board show a card's Planning Poker on the opened card?
+       */
+      type: Boolean,
+      defaultValue: true,
+    },
+    allowsPokerOnMinicard: {
+      /**
+       * Does the board show the Planning Poker badge on the minicard?
+       */
+      type: Boolean,
+      defaultValue: true,
+    },
+    allowsTextNotes: {
+      /**
+       * Does the board show the Text Notes section on the opened card?
+       */
+      type: Boolean,
+      defaultValue: true,
+    },
+    allowsCommentCountOnMinicard: {
+      /**
+       * Does the board show the comment-count badge on the minicard?
+       */
+      type: Boolean,
+      defaultValue: true,
+    },
     restrictCommentEditing: {
       /**
        * When true, board admins can NOT edit or delete comments authored by
@@ -1098,6 +1211,52 @@ Boards.attachSchema(
       type: Boolean,
       optional: true,
       defaultValue: false,
+    },
+    // Board Settings / Board View (docs/Features/Board/Board-View-Settings.md):
+    // which Board View menu entries this board offers, and which one it opens
+    // in, separately for a public and a private board. The decisions live in
+    // models/lib/boardViewSettings.js; a missing entry/side means SHOWN and a
+    // missing default means Swimlanes, so a board that never opened the popup
+    // behaves as it always did.
+    boardViewSettings: {
+      /**
+       * Per view: { '<board-view-key>': { showOnPublic: Boolean, showOnPrivate: Boolean } }
+       */
+      type: Object,
+      blackbox: true,
+      optional: true,
+    },
+    defaultPublicBoardView: {
+      /**
+       * The Board View a PUBLIC board opens in when the viewer has no stored
+       * choice (or a choice this board hides). Always shown on public.
+       */
+      type: String,
+      optional: true,
+      defaultValue: 'board-view-swimlanes',
+    },
+    defaultPrivateBoardView: {
+      /**
+       * The Board View a PRIVATE board opens in when the viewer has no stored
+       * choice (or a choice this board hides). Always shown on private.
+       */
+      type: String,
+      optional: true,
+      defaultValue: 'board-view-swimlanes',
+    },
+    // The order of the Board View menu on this board, set with the up/down
+    // arrows in Board Settings / Board View. Missing, partial or unknown
+    // values are made whole by normalizeBoardViewOrder() in
+    // models/lib/boardViewSettings.js, the same way cardFieldOrder is.
+    boardViewOrder: {
+      /**
+       * The Board View menu's order: board-view keys, first to last
+       */
+      type: Array,
+      optional: true,
+    },
+    'boardViewOrder.$': {
+      type: String,
     },
     sameWidthForAllLists: {
       /**
@@ -1790,6 +1949,28 @@ Boards.helpers({
   hasAnyAllowsDate() {
     const ret = this.allowsReceivedDate || this.allowsStartDate || this.allowsDueDate || this.allowsEndDate;
     return ret;
+  },
+
+  // The minicard's field order (models/lib/cardFieldOrder.js), canonical.
+  getMinicardFieldOrder() {
+    const { applyMinicardOrder } = require('/models/lib/cardFieldOrder');
+    return applyMinicardOrder(this.minicardFieldOrder);
+  },
+
+  // Board Settings / Card's up/down arrows write through these two, the way
+  // Board View's popup writes through setBoardViewShown: the order is
+  // normalised before it is stored, so the database never holds an unknown
+  // or duplicated key. Who may call them is decided where it is for every
+  // other board setting - Boards.allow's update rule in
+  // server/permissions/boards.js, which requires a board admin.
+  async setCardFieldOrder(order) {
+    const { applyCardOrder } = require('/models/lib/cardFieldOrder');
+    return await Boards.updateAsync(this._id, { $set: { cardFieldOrder: applyCardOrder(order) } });
+  },
+
+  async setMinicardFieldOrder(order) {
+    const { applyMinicardOrder } = require('/models/lib/cardFieldOrder');
+    return await Boards.updateAsync(this._id, { $set: { minicardFieldOrder: applyMinicardOrder(order) } });
   },
 
   hasAnyAllowsUser() {
@@ -2643,6 +2824,59 @@ Boards.helpers({
     return await Boards.updateAsync(this._id, { $set: { allowsSpentTimeOnMinicard } });
   },
 
+  // #6688: the card sections and minicard badges that had no toggle before.
+  async setAllowsStickers(allowsStickers) {
+    return await Boards.updateAsync(this._id, { $set: { allowsStickers } });
+  },
+
+  async setAllowsStickersOnMinicard(allowsStickersOnMinicard) {
+    return await Boards.updateAsync(this._id, { $set: { allowsStickersOnMinicard } });
+  },
+
+  async setAllowsLocation(allowsLocation) {
+    return await Boards.updateAsync(this._id, { $set: { allowsLocation } });
+  },
+
+  async setAllowsDependencies(allowsDependencies) {
+    return await Boards.updateAsync(this._id, { $set: { allowsDependencies } });
+  },
+
+  async setAllowsDependenciesOnMinicard(allowsDependenciesOnMinicard) {
+    return await Boards.updateAsync(this._id, { $set: { allowsDependenciesOnMinicard } });
+  },
+
+  async setAllowsFlowtime(allowsFlowtime) {
+    return await Boards.updateAsync(this._id, { $set: { allowsFlowtime } });
+  },
+
+  async setAllowsPomodoro(allowsPomodoro) {
+    return await Boards.updateAsync(this._id, { $set: { allowsPomodoro } });
+  },
+
+  async setAllowsVote(allowsVote) {
+    return await Boards.updateAsync(this._id, { $set: { allowsVote } });
+  },
+
+  async setAllowsVoteOnMinicard(allowsVoteOnMinicard) {
+    return await Boards.updateAsync(this._id, { $set: { allowsVoteOnMinicard } });
+  },
+
+  async setAllowsPoker(allowsPoker) {
+    return await Boards.updateAsync(this._id, { $set: { allowsPoker } });
+  },
+
+  async setAllowsPokerOnMinicard(allowsPokerOnMinicard) {
+    return await Boards.updateAsync(this._id, { $set: { allowsPokerOnMinicard } });
+  },
+
+  async setAllowsTextNotes(allowsTextNotes) {
+    return await Boards.updateAsync(this._id, { $set: { allowsTextNotes } });
+  },
+
+  async setAllowsCommentCountOnMinicard(allowsCommentCountOnMinicard) {
+    return await Boards.updateAsync(this._id, { $set: { allowsCommentCountOnMinicard } });
+  },
+
   getRestrictCommentEditing() {
     return !!this.restrictCommentEditing;
   },
@@ -2703,6 +2937,43 @@ Boards.helpers({
     return await Boards.updateAsync(this._id, {
       $set: { swimlaneHeightResizeLocked: !!swimlaneHeightResizeLocked },
     });
+  },
+
+  // Board Settings / Board View. Both setters apply the pure modifiers of
+  // models/lib/boardViewSettings.js and are called from the popup the way
+  // setSwimlaneHeightResizeLocked is; Boards.allow's update rule
+  // (server/permissions/boards.js) is what limits them to a board admin.
+  // A null modifier is a refused click (hiding the default view, an unknown
+  // view) and writes nothing.
+  isBoardViewShown(view, visibility) {
+    return boardViewSettings.isBoardViewShown(this, view, visibility);
+  },
+
+  defaultBoardView(visibility) {
+    return boardViewSettings.defaultBoardView(this, visibility);
+  },
+
+  async setBoardViewShown(view, visibility, shown) {
+    const $set = boardViewSettings.showBoardViewModifier(this, view, visibility, shown);
+    if (!$set) return false;
+    return await Boards.updateAsync(this._id, { $set });
+  },
+
+  async setDefaultBoardView(view, visibility) {
+    const $set = boardViewSettings.defaultBoardViewModifier(this, view, visibility);
+    if (!$set) return false;
+    return await Boards.updateAsync(this._id, { $set });
+  },
+
+  // The up/down arrows of Board Settings / Board View. Re-reads this
+  // board's current order, so two quick clicks each move from where the
+  // previous one left it; a no-op (first row up, last row down) writes
+  // nothing.
+  async moveBoardView(view, direction) {
+    const order = boardViewSettings.moveBoardView(this.boardViewOrder, view, direction);
+    const before = boardViewSettings.normalizeBoardViewOrder(this.boardViewOrder);
+    if (order.every((v, i) => v === before[i])) return false;
+    return await Boards.updateAsync(this._id, { $set: { boardViewOrder: order } });
   },
 
   getSameWidthForAllLists() {

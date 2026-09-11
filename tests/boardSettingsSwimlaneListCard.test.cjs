@@ -62,35 +62,53 @@ test('the three toggles are gone from the header (negative)', () => {
 
 test('Board Settings has an <hr> above and below the Swimlane/List/Card group', () => {
   const lines = boardMenu.split('\n').map(l => l.trim());
+  // The group's FIRST entry is Board View (docs/Features/Board/Board-View-
+  // Settings.md, tests/boardViewSettings.test.cjs), which sits directly
+  // above Swimlane; the hr-above check is anchored on it, so that the group
+  // still starts right after the rule. The Swimlane -> Card order stays.
+  // Since the menu reorder (tests/boardMenuOrder.test.cjs) the rule above
+  // it closes the Rules / Change color / Change Background Image group and
+  // the rule below it opens the Export group; the group itself is unchanged.
+  const firstAt = lines.findIndex(l => l.includes('js-open-board-view-settings'));
   const swimlaneAt = lines.findIndex(l => l.includes('js-open-board-swimlane-settings'));
   const cardAt = lines.findIndex(l => l.includes('js-open-board-card-settings'));
-  assert.ok(swimlaneAt !== -1 && cardAt !== -1 && swimlaneAt < cardAt, 'the group exists, in order');
+  assert.ok(firstAt !== -1 && swimlaneAt !== -1 && cardAt !== -1 && firstAt < swimlaneAt && swimlaneAt < cardAt,
+    'the group exists, in order: Board View, Swimlane, ..., Card');
   // Reduce to only the structural markup lines that matter here (hr, ul, the
   // admin if-gate, li) - dropping comment prose entirely, rather than trying
   // to detect where a multi-line jade comment ends.
   const structural = /^(hr|ul\.pop-over-list|if currentUser\.isBoardAdmin|li)$/;
-  const before = lines.slice(0, swimlaneAt).filter(l => structural.test(l));
+  const before = lines.slice(0, firstAt).filter(l => structural.test(l));
   assert.strictEqual(before[before.length - 4], 'hr',
     'an hr directly precedes the group\'s ul (only ul/if/li wrappers in between)');
   const after = lines.slice(cardAt + 1).filter(l => structural.test(l));
   assert.strictEqual(after[0], 'hr', 'an hr directly follows the group');
 });
 
-test('only one hr sits between the group and Archive Board (negative)', () => {
+test('no doubled hr between the group and Archive Board (negative)', () => {
   // The group's closing hr and Archive Board's own opening hr used to be two
   // consecutive `hr` lines - only the second was ever reachable, one board
   // admin away from Move Board to Archive, and it read as a doubled rule.
+  // The menu was then reordered (tests/boardMenuOrder.test.cjs): the
+  // Export / Notifications / Outgoing Webhooks group now sits between this
+  // group and the Archive group, so exactly TWO rules separate Card from
+  // Move Board to Archive - one under each group - and never two in a row.
   const archiveAt = boardMenu.indexOf('js-archive-board');
   const cardAt = boardMenu.indexOf('js-open-board-card-settings');
   const structural = /^(hr|ul\.pop-over-list|if currentUser\.isBoardAdmin|li|unless currentBoard\.isTemplatesBoard)$/;
   const between = boardMenu.slice(cardAt, archiveAt).split('\n').map(l => l.trim())
     .filter(l => structural.test(l));
-  assert.strictEqual(between.filter(l => l === 'hr').length, 1,
-    'exactly one hr sits between the group and Archive Board');
+  assert.strictEqual(between.filter(l => l === 'hr').length, 2,
+    'one hr under the Swimlane/List/Card group and one under the Export group');
+  assert.ok(!between.some((l, i) => l === 'hr' && between[i + 1] === 'hr'),
+    'no two consecutive hr lines');
 });
 
 test('Swimlane and List are board-admin only; Card is open to any board member', () => {
-  const group = boardMenu.slice(boardMenu.indexOf('js-open-board-swimlane-settings') - 200,
+  // The slice starts before the group's first entry (Board View, whose jade
+  // comment now sits between the if-gate and Swimlane), so the gate is still
+  // inside the window the regex reads.
+  const group = boardMenu.slice(boardMenu.indexOf('js-open-board-view-settings') - 600,
     boardMenu.indexOf('js-open-board-card-settings') + 40);
   assert.ok(/if currentUser\.isBoardAdmin\n(?:[\s\S]*?)li\n(?:[\s\S]*?)js-open-board-swimlane-settings/.test(group),
     'Swimlane sits behind an isBoardAdmin gate');
@@ -137,6 +155,40 @@ test('Board Settings / Swimlane has the swimlane-height resize lock', () => {
   const body = handler.slice(0, handler.indexOf('});'));
   assert.ok(body.includes('setSwimlaneHeightResizeLocked') && body.includes('getSwimlaneHeightResizeLocked'),
     'the click handler flips it');
+});
+
+// #2489 follow-up: "WIP Limit Groups" used to be a fourth top-level entry of
+// the Board Settings group, between List and Card. A group most often caps
+// one swimlane's lists together, so it was deliberately moved INTO Board
+// Settings / Swimlane as a row there - the path is now Board Settings /
+// Swimlane / WIP Limit Groups. The wipLimitGroupsPopup itself and its
+// handlers are unchanged; only where it is opened from moved.
+test('Board Settings / Swimlane has the WIP Limit Groups row, opening the existing popup', () => {
+  const tpl = sidebarJade.slice(sidebarJade.indexOf('template(name="boardSwimlaneSettingsPopup")'),
+    sidebarJade.indexOf('template(name="boardListSettingsPopup")'));
+  assert.ok(tpl.includes(`a.js-open-board-wip-limit-groups(title="{{_ 'wip-limit-groups'}}")`),
+    'the row is in the Swimlane popup, titled from the existing wip-limit-groups key');
+  assert.ok(tpl.indexOf('js-toggle-swimlane-height-resize-lock') < tpl.indexOf('js-open-board-wip-limit-groups'),
+    'below the resize lock');
+  assert.ok(en['wip-limit-groups'], 'the key already exists');
+  const handler = sidebarJs.slice(sidebarJs.indexOf('Template.boardSwimlaneSettingsPopup.events'));
+  const body = handler.slice(0, handler.indexOf('});'));
+  assert.ok(/'click \.js-open-board-wip-limit-groups': Popup\.open\('wipLimitGroups', \{ titleKey: 'wip-limit-groups' \}\)/
+    .test(body), 'the Swimlane popup opens the unchanged wipLimitGroupsPopup, stacked on itself');
+  assert.ok(sidebarJade.includes('template(name="wipLimitGroupsPopup")'), 'the popup still exists');
+});
+
+test('the top-level Board Settings list no longer has a WIP Limit Groups entry (negative)', () => {
+  assert.ok(!boardMenu.includes('js-open-board-wip-limit-groups'),
+    'no js-open-board-wip-limit-groups link in the Board Settings menu');
+  assert.ok(!boardMenu.includes("{{_ 'wip-limit-groups'}}"),
+    'the menu does not render the wip-limit-groups label');
+  const menuEvents = sidebarJs.slice(sidebarJs.indexOf('Template.boardMenuPopup.events'),
+    sidebarJs.indexOf('Template.boardSwimlaneSettingsPopup.helpers'));
+  assert.ok(!/'click \.js-open-board-wip-limit-groups'/.test(menuEvents),
+    'and boardMenuPopup has no handler for it - the one handler lives in the Swimlane popup');
+  assert.strictEqual((sidebarJs.match(/'click \.js-open-board-wip-limit-groups'/g) || []).length, 1,
+    'exactly one handler opens it');
 });
 
 test('Board Settings / List has the list-width resize lock and same-width-for-all-lists', () => {
@@ -190,63 +242,42 @@ test('a non-admin still reaches the one PERSONAL row ("Labels text") via persona
   assert.ok(/personalOnly:\s*true/.test(handler), 'and asks for personalOnly when the user is not an admin');
 });
 
-// ── the column headings, back from git history (commit 02025aa6c) ──────────
+// ── the headings: "Card field order" over two lists ───────────────────────────
 
-test('the heading row is back: Show on Card / Show on Minicard / Description', () => {
+test('one "Card field order" heading, above both lists, then Show on Minicard and Show on Card', () => {
+  // The popup was a three-column table (Show on Card / Show on Minicard /
+  // Description) with a separate "Card field order" list of arrows under it.
+  // It is two LISTS now - the minicard's rows in the board's minicard order,
+  // the card's rows in its card order - under one heading, with the arrows
+  // on every row (models/lib/cardFieldOrder.js, models/lib/cardSettingsRows.js).
   const tpl = sidebarJade.slice(sidebarJade.indexOf('template(name="boardCardSettingsPopup")'));
   const form = tpl.slice(0, tpl.indexOf('\ntemplate(name='));
-  const heading = form.slice(0, form.indexOf('js-toggle-show-list-on-minicard'));
-  // Markup order (1st/2nd/3rd here is DOM order, not what is drawn where -
-  // CSS swaps Card and Minicard visually, see the `order` test below).
-  assert.ok(/\.card-settings-row\n\s+\.card-settings-column\n\s+h4 \{\{_ 'show-on-card'\}\}/.test(heading),
-    'first column in markup: Show on Card');
-  assert.ok(/\.card-settings-column\n\s+h4 \{\{_ 'show-on-minicard'\}\}/.test(heading),
-    'second column in markup: Show on Minicard');
-  assert.ok(/\.card-settings-column\n\s+h4 \{\{_ 'description'\}\}/.test(heading),
-    'third column in markup: Description');
-  // All three are existing, already-translated keys - no new *-title-style
-  // key was added for this.
-  assert.ok(en['show-on-card'] && en['show-on-minicard'] && en['description'],
-    'all three keys already exist');
-});
-
-test('the heading is the first row, above every setting', () => {
-  const tpl = sidebarJade.slice(sidebarJade.indexOf('template(name="boardCardSettingsPopup")'));
-  const form = tpl.slice(tpl.indexOf('form.board-card-settings'));
-  const headingAt = form.indexOf("h4 {{_ 'show-on-card'}}");
-  const firstSetting = form.indexOf('js-toggle-show-list-on-minicard');
-  assert.ok(headingAt !== -1 && headingAt < firstSetting, 'the heading comes before any setting row');
-});
-
-test('the heading is a plain .card-settings-row, so it hides with a hidden column or personalOnly', () => {
-  // It is not a special .card-settings-grid element (that markup, and the
-  // sticky-header CSS/z-index that came with it, is gone for good - see
-  // commit 02025aa6c) - it is an ordinary row, so the SAME CSS that hides one
-  // checkbox column for Show on Card / Show on Minicard (settingsSideClass())
-  // hides the matching heading with it, and personalOnly hides the whole
-  // heading along with every other non-personal row.
+  const heading = form.indexOf("h4.card-field-order-heading {{_ 'card-field-order'}}");
+  const minicard = form.indexOf("{{_ 'show-on-minicard'}}");
+  const card = form.indexOf("{{_ 'show-on-card'}}");
+  const firstRow = form.indexOf('each row in');
+  assert.ok(heading !== -1, 'the heading is there');
+  assert.ok(heading < minicard && heading < card, 'and above both column headings');
+  assert.ok(minicard < firstRow, 'Show on Minicard heads the first list');
+  assert.ok(card > firstRow, 'Show on Card heads the second');
+  assert.ok(en['card-field-order'] && en['show-on-card'] && en['show-on-minicard'],
+    'all three are existing, already-translated keys');
   assert.ok(!sidebarJade.includes('card-settings-grid'), 'no separate grid/heading markup is reintroduced');
   assert.ok(!sidebarCss.includes('card-settings-grid'), 'and no CSS for one either');
 });
 
-test('Show on Minicard reads to the LEFT of Show on Card - by CSS order, not markup order', () => {
-  // The markup itself keeps its original order (column 1 = card, column 2 =
-  // minicard, column 3 = description) so the show-card-only/show-minicard-only
-  // nth-child hiding rules still target the right element regardless of how
-  // the columns are drawn; only the VISUAL position is swapped, with `order`
-  // on the grid items.
-  const block = sidebarCss.slice(sidebarCss.indexOf('.card-settings-row > .card-settings-column:nth-child(1) {'),
-    sidebarCss.indexOf('.card-settings-column {\n  display: flex;'));
-  assert.ok(/nth-child\(1\) \{\n\s+order: 2;/.test(block), 'the card column (1st in markup) moves right');
-  assert.ok(/nth-child\(2\) \{\n\s+order: 1;/.test(block), 'the minicard column (2nd in markup) moves left');
-  assert.ok(/nth-child\(3\) \{\n\s+order: 3;/.test(block),
-    'and description keeps the highest order, so it is not pulled in front by the default order:0');
-  // The nth-child hiding rules read the DOM, not the visual order, so they
-  // are unaffected by the swap above and still need no changes.
+test('Show on Minicard reads to the LEFT of Show on Card - now by markup order', () => {
+  // The old table kept the card column first in markup and swapped the two
+  // visually with `order`; with two lists there is nothing to swap, the
+  // minicard list is simply first, and the side-hiding rules name the list.
+  const tpl = sidebarJade.slice(sidebarJade.indexOf('template(name="boardCardSettingsPopup")'));
+  assert.ok(tpl.indexOf('card-field-order-column-minicard') < tpl.indexOf('card-field-order-column-card'));
   assert.ok(sidebarCss.includes(
-    '.board-card-settings.show-card-only .card-settings-row > .card-settings-column:nth-child(2),\n'
-    + '.board-card-settings.show-minicard-only .card-settings-row > .card-settings-column:nth-child(1) {'),
-    'hiding still targets column 2 for show-card-only and column 1 for show-minicard-only');
+    '.board-card-settings.show-card-only .card-field-order-column-minicard,\n'
+    + '.board-card-settings.show-minicard-only .card-field-order-column-card {'),
+    'show-card-only hides the minicard list and show-minicard-only the card list');
+  assert.ok(!/card-settings-column:nth-child\(\d\) \{\n\s+order:/.test(sidebarCss),
+    'the nth-child order swap of the old table is gone (negative)');
 });
 
 console.log(`\nboardSettingsSwimlaneListCard: ${passed} tests passed`);

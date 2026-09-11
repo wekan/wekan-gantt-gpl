@@ -28,7 +28,14 @@ function test(name, fn) {
 }
 
 // --- default / fallback behaviour -------------------------------------------
+// The "historical fixed order" is the section order cardDetails.jade rendered
+// at 59f7d61df, before #4448 (131514d61) made it orderable: Labels, Dates,
+// Members, Dependencies, Sort, Custom Fields, Vote/Poker, Description. The
+// per-field sequence is pinned in
+// tests/cardFieldOrderDefaultIsPreFeatureOrder.test.cjs.
 test('no stored order at all falls back to the historical fixed order', () => {
+  assert.deepStrictEqual(DEFAULT_CARD_FIELD_ORDER,
+    ['labels', 'dates', 'members', 'dependencies', 'sort', 'customFields', 'voteAndPoker', 'description']);
   assert.deepStrictEqual(applyCardFieldOrder(undefined), DEFAULT_CARD_FIELD_ORDER);
   assert.deepStrictEqual(applyCardFieldOrder(null), DEFAULT_CARD_FIELD_ORDER);
   assert.deepStrictEqual(applyCardFieldOrder([]), DEFAULT_CARD_FIELD_ORDER);
@@ -42,7 +49,12 @@ test('a non-array stored order falls back to the default order', () => {
 // --- the actual issue: move description earlier, custom fields after it ----
 test('#4448: description can be moved to third, with custom fields right after it', () => {
   const stored = ['labels', 'dates', 'description', 'customFields', 'members'];
-  assert.deepStrictEqual(applyCardFieldOrder(stored), stored);
+  // The five keys the first version of #4448 stored stay valid. Dependencies
+  // and Sort were a fixed appendage of Members then, Vote/Poker of Custom
+  // Fields; they are sections now (Board Settings / Card orders per field),
+  // so a legacy value expands to exactly what it rendered.
+  assert.deepStrictEqual(applyCardFieldOrder(stored),
+    ['labels', 'dates', 'description', 'customFields', 'voteAndPoker', 'members', 'dependencies', 'sort']);
   const order = applyCardFieldOrder(stored);
   assert.strictEqual(order.indexOf('description'), 2, 'description is third (0-indexed 2)');
   assert.ok(

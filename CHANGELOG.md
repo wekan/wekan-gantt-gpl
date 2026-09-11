@@ -524,6 +524,473 @@ the Markdown commit as the template.
 </details>
 </details>
 
+# v11.71 2026-09-11 WeKan ® release
+
+**In short:** deleting an **attachment** from a card is now a **soft delete**
+that the **card history** shows and restores; the only hard delete left is
+deleting an archived board with permanent delete enabled. **Board Settings /
+Card** gains a toggle for every card section and minicard badge and orders
+**card** and **minicard** fields independently; a new **Board Settings /
+Board View** chooses which views a **public** or **private** board offers,
+and in what order. The **REST API** covers those and the other recent
+features, and its OpenAPI spec carries the Boards API again. The **Windows
+release builds** work on **Visual Studio 2026** again, and a **MongoDB 8.2**
+crash loop after a full disk is explained and remediated.
+
+This release adds the following new features:
+
+**Attachments** - soft delete, card-history restore, and the one real delete.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9a322618113a88e922772acb6cbca3ad45b513f2">Design: how an attachment is deleted, shown in the card history, restored and purged</a>. Thanks to xet7.</summary>
+
+`docs/Features/Reports/History/History.md` gains section 12 and closes the
+section 11 question about restoring a removed attachment. The decisions:
+Delete on a card is a soft delete that keeps the file and unsets the cover;
+the card, its count and the minicard badge hide a deleted attachment; the
+card history shows who deleted it and when, and restores it with the same
+preview and download controls the card has, but never cover or background,
+because only a live attachment on a card can be either; no per-attachment
+hard delete exists anywhere; and the one hard delete is Admin Panel /
+Problems / Delete enabled, board archived, board deleted from the archive,
+which removes the board's attachments, live and soft-deleted, with their
+files.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/dce28983820f99927b2cb3626e586488c962e084">Delete soft-deletes, the card history restores, and only the archived-board purge removes files</a>. Thanks to xet7.</summary>
+
+Delete on an attachment used to remove the document and its file at once.
+It is now the `attachments.softDelete` method: the document gets
+`deletedAt`, `deletedBy` and `deleteBatchId` with the same helpers lists
+use, the file is kept, and the card's cover is unset if this was it. Every
+card-facing read - the opened card's gallery and "Attachments (N)" count,
+the minicard paperclip badge, the slideshow, the cover, the board-background
+picker, My Attachments, the API list endpoints and the exporters - filters
+to live attachments; the publications keep sending the deleted ones so the
+card history can reach them.
+
+The card history records who deleted it and when, with the filename in the
+row. Restore - the table's selection and Restore button, or the row's own
+Restore, both through `changeHistory.restore` - clears the mark, so the
+card, its count and the minicard badge include the attachment again; the
+cover is never re-set. An attachment row previews with the existing
+attachment viewer slideshow and downloads with the same link the gallery
+draws, and never offers cover or background. Uploads and renames are
+recorded through the existing history hooks.
+
+There is no per-attachment hard delete any more: `api.attachment.delete`,
+`DELETE /api/attachment/delete/:id` and `removeBoardBackground`
+soft-delete, the Files report's delete button and its method are gone, and
+the attachment collection refuses every client remove and logs the attempt
+under Admin Panel / Problems. The one hard delete is Admin Panel / Problems
+/ Delete enabled, board archived, board deleted from the archive, which now
+removes every attachment of the board, live and soft-deleted, with its
+file. The delete confirmation says the attachment can be restored from the
+card history (one new translation key, `attachment-soft-delete-pop`).
+
+`tests/attachmentSoftDelete.test.cjs` pins the decisions as arithmetic -
+what a delete sets, that it unsets the cover, that a restore never re-sets
+it, that Restore on the "Removed" row restores rather than deletes again.
+`tests/attachmentSoftDeleteNoHardDelete.test.cjs` sweeps the whole tree for
+any remaining hard delete outside the board purge and the upload
+rejections, `tests/attachmentSoftDeleteReads.test.cjs` pins every
+card-facing read to the live filter and the publications to not filtering,
+and `tests/attachmentHistoryRowControls.test.cjs` pins the history row's
+controls and that it never offers cover or background.
+
+</details>
+
+**Board Settings** - card section toggles, field order, the Board View table, WIP Limit Groups under Swimlane, and the menu's order.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/970213010013529150101d3fd6c59f33eab542d4">A toggle for every card section and minicard badge, listed in card order</a>. Thanks to rmb82 and xet7.</summary>
+
+Flowtime, Pomodoro, Stickers and Location were added to the opened card
+without an `allows*` board toggle, so they rendered on every card and Board
+Settings / Card had no row to hide them. Dependencies, Vote, Planning Poker,
+Text Notes and the activity history had the same gap on the card, and the
+dependencies, stickers, comment-count, vote and poker badges had it on the
+minicard. Each now has a board field that defaults to true (an existing
+board keeps showing exactly what it showed), a setter, a REST card-setting
+key, a healed default in the schema upgrade, a row in Board Settings / Card
+with its click handler, and a gate in the card or minicard template.
+`allowsActivities` already existed but gated nothing and its row was
+commented out; it is wired now.
+
+The rows are in the order the fields appear on the opened card: Mark
+complete, card number and cover first; then the reorderable sections through
+the same `orderedCardFieldSections` source the card renders from, so moving
+Description up with the arrows at the bottom of the popup moves its rows up
+too; then checklists, subtasks, attachments, text notes, comments and
+activities. Minicard-only rows (Labels text, List title, Swimlane, Comment
+count) sit beside the card row they belong with. No new translation keys:
+every row reuses the field's existing name.
+
+`tests/cardSettingsCoverage.test.cjs` derives the card's order from
+`cardDetails.jade` and pins the popup to it, checks that every board gate of
+the card and the minicard has a row and every new row is read by a template,
+and that none of the four sections the issue names is unconditional.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/349c7490e72f93b4e692ff1ff22c7f0eda2431da">Board View: which views a public or private board offers, and which one it opens in</a>. Thanks to xet7.</summary>
+
+A new **Board View** entry at the top of Board Settings, above Swimlane,
+opens a table like Card Settings: one row per entry of the Board View menu,
+in the menu's order and with the menu's own labels, under the columns
+*Default on Public Board*, *Show on Public Board*, *Default on Private
+Board*, *Show on Private Board* and *Description*. The two Default columns
+are radio groups drawn as checkboxes - one default per side, and making a
+view the default also ticks its Show box; the default's Show box cannot be
+un-ticked, so a board always opens in a view it offers. When Admin Panel /
+Settings / Visibility hides public boards, the two public columns are not
+rendered and the table has three columns.
+
+The Board View menu lists only the views ticked for the board's current
+visibility, and the view WeKan renders is now resolved through the board:
+the viewer's stored choice when the board offers it, otherwise that side's
+default, otherwise Swimlanes - nobody is left on a view the menu no longer
+lists, and switching a board Private ⇄ Public swaps the menu on the spot.
+A board that never opened the popup behaves as before: every view on both
+sides, Swimlanes as the default.
+
+Stored per board as `boardViewSettings`, `defaultPublicBoardView` and
+`defaultPrivateBoardView`; every decision is the pure module
+`models/lib/boardViewSettings.js`, applied by the Board setters
+`setBoardViewShown` and `setDefaultBoardView` under the existing board-admin
+allow rule. The four column headers are new translation keys, filled in
+every locale. `docs/Features/Board/Board-View-Settings.md` describes the
+design and `tests/boardViewSettings.test.cjs` pins it: the entry above
+Swimlane, the five columns and their public-hidden variant, one row per
+menu view in menu order, the schema fields and setters, the radio and
+"default stays shown" semantics, the menu filter, the fallback in
+`Utils.boardView()`, and the translations.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/82646e4bc0f891ed044bdc5c6cf910cd8dd4a4ea">Board View: reorder the menu with up/down arrows on each row</a>. Thanks to xet7.</summary>
+
+Each row of the Board View table carries an up and a down arrow in front of
+its name - real links, so the keyboard reaches them, titled with the
+existing *Move up* / *Move down* keys of Card Settings' card field order -
+and the Board View menu lists its entries in that order for everybody on
+the board. The first row's up and the last row's down are no-ops, drawn
+disabled. Stored per board as `boardViewOrder`; `normalizeBoardViewOrder()`
+drops unknown keys and duplicates and appends missing views in default
+order, so the menu always lists every view exactly once whatever an old or
+hand-edited document holds.
+
+The menu is now rendered from the same table as the popup - one `each
+boardViewMenuEntries` loop over `models/lib/boardViewSettings.js` instead
+of 25 static entries - keeping the per-view `js-open-<view>-view` class each
+click handler listens for. The group separators are drawn only while the
+order is the default one, since a custom order has no groups.
+`tests/boardViewMenu.test.cjs`'s order, icon, label and separator pins now
+read that table, the same thing the template reads, and
+`tests/boardViewSettings.test.cjs` pins the arrows, the field, the setter
+and the normalize/move logic, with the no-op and unknown-key cases.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/bbe8b40d903c516491c45c69d3b220415dfd2b32">Board View: the default menu order is the order it had before views became orderable</a>. Thanks to xet7.</summary>
+
+The default order - what a board with no stored `boardViewOrder` renders,
+the popup's default row order, and the order in which views a stored order
+does not name follow it - is now pinned to the Board View menu as it was
+right before views became orderable: the 25 static entries of
+`boardChangeViewPopup` in `boardHeader.jade` at `525bcab1b`, the parent of
+the Board Settings / Board View feature commit, read top to bottom with its
+six separators after Table, Timeline, Statistics, Group by Assignee, DHTMLX
+Gantt and Bigboard. Reading that template gives exactly the sequence
+`BOARD_VIEWS` already held, so no board changes what it shows and a board
+with a stored order is untouched. What changes is where the order comes
+from: `DEFAULT_BOARD_VIEW_ORDER` in `models/lib/boardViewSettings.js` is a
+literal list transcribed from that template rather than a slice of the
+table, so re-sorting `BOARD_VIEWS` can no longer silently reorder every
+board's menu, and `normalizeBoardViewOrder` appends any view the table knows
+but the list does not, so a view can never vanish from the menu.
+`tests/boardViewSettings.test.cjs` pins the literal sequence, the six
+separator positions on a board with no stored order (public and private,
+for a missing, null, empty and garbage `boardViewOrder`), the fallback for
+a partial stored order, and that the list is not derived from the table.
+`docs/Features/Board/Board-View-Settings.md` says where the default comes
+from.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/15b2b6c5339979341d8237aa592ae37a5fd0607d">One "Card field order" heading over two lists, with arrows on every row</a>. Thanks to xet7.</summary>
+
+Board Settings / Card was a three-column table (Show on Card, Show on
+Minicard, the name) with a separate "Card field order" list of arrows at the
+bottom that reordered five sections of the opened card. It is one heading,
+**Card field order**, over two lists now: **Show on Minicard** in the
+board's minicard order and **Show on Card** in its card order, and every row
+of either list is `[checkbox] [up] [down] icon label` - the checkbox is
+whether that side shows the field, the arrows move it on that side only, and
+the icon and name are the field's own. The lists are independent because the
+orders are: a field can be third on the minicard and last on the card.
+
+The arithmetic is `models/lib/cardFieldOrder.js`, pure and tested without
+Meteor: each surface is a fixed head (the card's title bar), reorderable
+sections of fields, and a fixed tail (the card's galleries and right
+column). A field moves within its section; at the section's edge it moves
+the whole section; a section's header - Labels, Members, Sort number,
+Description title - stays first. What is stored is one flat array of field
+keys per surface: `cardFieldOrder`, which the first #4448 filled with five
+section keys that stay valid and expand to exactly what they rendered, and
+the new `minicardFieldOrder`. Two board setters normalise before storing and
+the update allow rule keeps them to a board admin; the REST `cardFieldOrder`
+endpoints still speak in section keys, eight now. `cardDetails.jade` renders
+its sections in the board's order and, inside Labels, Dates, Members, Sort
+and Vote/Poker, the fields in theirs; `minicard.jade` renders every block
+under the title through the minicard order. Every gate is unchanged, and a
+board that never touched the order shows what it always has.
+
+The popup's rows are a table, `models/lib/cardSettingsRows.js`, drawn twice,
+so no row is hand-written and each checkbox reads the helper it always read.
+`tests/cardFieldOrderLayout.test.cjs` pins the arithmetic and its negatives
+(unknown keys dropped, missing keys appended, a first row's up and a fixed
+row's arrows no-ops, one side's move leaving the other alone);
+`tests/cardSettingsCoverage.test.cjs` derives each layout's default order
+from the templates and pins the heading, the five parts of every row, the
+admin-only setters and that no locale lacks the heading and arrow keys.
+[Card field display order](docs/Features/Board/Card-Field-Display-Order.md)
+describes the layout and both orders.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/859771a10ece44f1c48c371d182b4c079c84faad">The default card and minicard field order is the order they had before fields became orderable</a>. Thanks to xet7.</summary>
+
+The default of the two layouts - what a board that never touched Board
+Settings / Card renders, and where any field a stored order does not name
+goes - is pinned to the render order of `cardDetails.jade` and
+`minicard.jade` as they were right before the first field-order commit
+(#4448's parent, `59f7d61df`), read top to bottom: on the card, Mark
+complete, number and cover, then Labels, Dates, Members, Dependencies, Sort,
+Custom Fields, Vote and Poker, Description, then the galleries, comments and
+activities; on the minicard, the dates line, cover, labels, custom fields,
+assignees, members, creator, checklists, the badge strip, description text,
+the comment preview and the list name. Reading those templates gives exactly
+the sequence the layout module already held, so no existing card changes
+shape and a board with a stored order is untouched; the module, the docs and
+the tests now say where the order comes from. The two fields newer than that
+commit stay beside their closest older neighbour: Text notes in the card's
+fixed tail, Swimlane name last on the minicard.
+`tests/cardFieldOrderDefaultIsPreFeatureOrder.test.cjs` pins both literal
+sequences, the section sequence, the fallback for a partial stored order and
+the popup's two lists, so a reshuffle of a layout cannot pass by reshuffling
+the template with it.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/921c7f301ccf85c94c5b463a361be2fea195eeed">WIP Limit Groups moved into Board Settings / Swimlane</a>. Thanks to xet7.</summary>
+
+"WIP Limit Groups" was a fourth top-level entry of the Board Settings group,
+between List and Card. A group most often caps one swimlane's lists
+together, so it is a row of the Swimlane settings popup now - Board Settings
+/ Swimlane / WIP Limit Groups. The row opens the unchanged WIP Limit Groups
+popup stacked on the Swimlane popup, so its back arrow returns there, and it
+reuses the existing `wip-limit-groups` key rather than adding one.
+`tests/boardSettingsSwimlaneListCard.test.cjs` pins the row and its single
+click handler in the Swimlane popup, and that the top-level list no longer
+carries the entry. The docs describe the new path.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/74f3db87d4f3fb6d15fd4a8adb7015ca8b22291d">The menu is four groups: Rules and colours, the views, in and out, and the archive</a>. Thanks to xet7.</summary>
+
+The Board Settings menu is ordered, top to bottom: Rules, Change color,
+Change Background Image; then Board View, Swimlane, List, Card; then Export,
+Import, Notifications, Outgoing Webhooks; then Archived items and Move Board
+to Archive - a rule between each group. Before, Archived items sat second in
+the first group, Notifications sat among the colours, and Move Board to
+Archive was alone at the end. Every entry keeps the guard it had: the
+board-admin entries stay board-admin, Export and Import stay behind the API
+setting, Card stays open to any member for its personal "Labels text" row,
+and Move Board to Archive stays off the templates board. No translation keys
+are added. `tests/boardMenuOrder.test.cjs` derives the sequence of entries
+and rules from the template and pins it exactly, pins each entry's guards so
+a reorder cannot loosen who sees what, and pins the diagram in
+[Board View settings](docs/Features/Board/Board-View-Settings.md) to the
+same order.
+
+</details>
+
+**REST API** - endpoints for recent features that had a UI but no API.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/bbcd98d9d83b874200ba45b2cbc2a495585031d9">Endpoints for attachment restore, Problems, OAuth providers, card field order and rule pausing</a>. Thanks to xet7.</summary>
+
+Each endpoint runs the same server-side code its UI uses, as the request's
+user, so the permission checks and side effects are the ones the UI gets:
+
+- `DELETE /api/boards/:boardId/attachments/:attachmentId` soft-deletes,
+  `POST .../attachments/:attachmentId/restore` restores, and
+  `GET /api/boards/:boardId/attachments/deleted` lists what is restorable,
+  through the `attachments.softDelete` / `attachments.restore` methods the
+  card and the card history use. There is no hard delete over the API.
+- `GET /api/admin/problems` is the Problems status overview with the
+  new-problem count per stream, `GET /api/admin/problems/:stream` one page
+  of a stream (`limit`, `skip`, `search`), and
+  `POST /api/admin/problems/:stream/acknowledge` the acknowledge button -
+  all through the admin-only `eventLog*` methods the Admin Panel calls.
+- `GET /api/admin/oauth-providers`, `PUT /api/admin/oauth-providers/:providerKey`
+  and `PUT /api/admin/passwordless` read and save the Admin Panel / People /
+  Login provider settings; a secret is reported only as `{ source, hasValue }`.
+- `GET`/`PUT /api/boards/:boardId/cardFieldOrder` read and set the opened
+  card's section order, normalised with the same `applyCardFieldOrder()`.
+- `PUT /api/boards/:boardId/rules/:ruleId` accepts `enabled` to pause and
+  resume a rule, and `GET` reports it.
+
+The OpenAPI generator is fixed on the way: `server/models/boards.js` has had
+a bare `catch {` since v11.67, the esprima parser cannot read that, and a
+parse failure was skipped silently - so `public/api/wekan.yml` has shipped
+without the whole Boards API since then. It now downlevels `catch {` and
+`for await (`, warns when a file cannot be parsed, and no longer emits an
+empty sub-schema for a primitive array-element marker such as
+`wipLimitGroups.$.listIds.$`, which made the spec unparseable YAML.
+`public/api/wekan.yml` and `wekan.html` are regenerated with the release
+workflow's own commands: 156 operations, up from 122. `docs/API/REST-API.md`
+and `docs/API/Rules.md` document every new endpoint with a curl example.
+
+`tests/restApiNewFeatureRoutes.test.cjs` pins every new route to its method,
+path, `@operation` block and authentication check, that the OAuth endpoints
+never mention a secret outside the input whitelist, the generator's fixes,
+that the generated and the committed spec carry the Boards API and the new
+operations, and - as the negative sweep - that no route in `models/` or
+`server/models/` lacks an authentication check.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c64d3454ac625f8c16d267decad88a9113417659">Endpoints for Board Settings / Board View, and OpenAPI blocks for the card settings routes</a>. Thanks to xet7.</summary>
+
+`GET /api/boards/:boardId/boardViewSettings` (board access) answers which
+entries of the Board View menu a board offers, which one it opens in -
+separately for a public and a private board - and the menu order, in the
+normalised shape the menu renders with: every view once with both
+`showOnPublic` and `showOnPrivate` explicit, the two defaults resolved
+(missing or unknown reads as Swimlanes), `boardViewOrder` made whole, and
+`keys` listing the known views.
+
+`PUT /api/boards/:boardId/boardViewSettings` (board admin) takes any subset
+of `boardViewSettings`, `defaultPublicBoardView`, `defaultPrivateBoardView`
+and `boardViewOrder`, through the same pure modifiers the popup's clicks
+apply, composed by `boardViewSettingsRequest()` in
+`models/lib/boardViewSettings.js`: a default is always shown on its side,
+hiding a side's current default is a `400` (set another default first - or
+in the same request, since defaults are applied before the show flags), an
+unknown view key anywhere in the body is a `400` and nothing of that request
+is written, and the order is normalised so the menu lists every view exactly
+once.
+
+The existing `GET`/`PUT /api/boards/:boardId/cardSettings` routes get the
+JSDoc `@operation` blocks the OpenAPI generator reads, so the hand-written
+copy in `openapi/extra_paths.yml` - which now duplicated the operationId - is
+removed; `public/api/wekan.yml` and `wekan.html` are regenerated: 158
+operations. `docs/API/REST-API.md` documents both endpoints with curl
+examples and `docs/Features/Board/Board-View-Settings.md` links to them.
+`tests/restApiNewFeatureRoutes.test.cjs` pins the four routes to method,
+path, `@operation` and auth check, that the PUT writes only the helper's
+`$set`, the snapshot's shape, the helper's positive and negative cases
+(unknown keys, hiding a default, malformed bodies, a partly-invalid body
+applies nothing), and that both specs carry the four operations exactly once.
+
+</details>
+
+and fixes the following bugs:
+
+**The release workflow** - what stopped the v11.70 release run.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0001d09a8deb021b1b0696e52aced36a596561e9">The Windows legs compile argon2 again on the Visual Studio 2026 runner image</a>. Thanks to xet7.</summary>
+
+`build-win64` and `build-win-arm64` both failed in "Rebuild native modules
+for Windows" while argon2 compiled during `npm install`:
+`gyp ERR! find VS unknown version "undefined" found at "C:\Program
+Files\Microsoft Visual Studio\18\Enterprise"`. On 2026-09-07 GitHub's
+`windows-latest` became the `windows-2025-vs2026` image, with Visual Studio 18
+and no longer 17, and the node-gyp doing the compiling was not one this
+repository installs: Meteor's bundler pins `programs/server/package.json` to
+the node-gyp inside the Meteor tool - 10.2.0 in Meteor 3.5.2 - which knows
+nothing newer than Visual Studio 2022. argon2 always compiles on Windows,
+because `node-gyp-build`'s prebuild probe runs through the Linux-made `.bin/`
+shims and fails there, so a compiler that cannot find Visual Studio ends the
+job.
+
+`releases/bump-bundle-node-gyp.mjs` now raises that pin to node-gyp 13.0.2
+(12.1.0 added Visual Studio 2026; 13.0.1/13.0.2 fixed its version detection)
+once, in `build-amd64` before its first `npm install`, from where every other
+architecture's bundle inherits it. A pin already at or above the minimum, a
+range, or a bundle without one is left alone. `releases/build-release-bundle.sh`
+does the same, so a local release bundle matches what a release ships.
+`tests/bumpBundleNodeGyp.test.cjs` pins each decision, the minimum, the
+step order in the workflow, and that no leg hard-codes node-gyp 10.2.0 or a
+`GYP_MSVS_VERSION` workaround.
+
+The same run's other failures are not the repository's: the three amd64 snap
+jobs timed out creating snapcraft's LXD base instance (`apt-get install -y
+snapd`, 600 s; the arm64 twins passed) and `snap-launchpad riscv64` was still
+building on Launchpad when the job cap cancelled it. Both pass on a re-run.
+
+</details>
+
+**The database** - a MongoDB 8.2 crash loop, explained, reported and remediated.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/faaa83ed0922603bb143317213911d7e38691641">MongoDB 8.2 that will not start after a full disk: the scratch directory to delete, and the snap deletes it</a>. Thanks to xet7.</summary>
+
+A reported test environment (`mongo:8.2.2` in Kubernetes) filled its data
+volume: the checkpoint's `fdatasync` returned `ENOSPC`, WiredTiger panicked and
+mongod aborted - and then it kept failing on every start, with the disk long
+since freed. MongoDB 8.2 keeps a throwaway WiredTiger instance under
+`<dbPath>/_tmp/spilldb` for queries that spill to disk and empties it itself on
+each start; after the abort that emptying failed ("Failed to clear dbpath of
+the internal WiredTiger instance: Directory not empty"), mongod opened the
+half-emptied directory, found no version file, reported "Failed to open the
+spill WiredTiger instance ... database corruption detected" and fasserted.
+Nothing retries, so the pod restarts forever. The data is intact; deleting that
+one directory is the whole fix.
+
+The snap's `mongodb-control` now deletes `_tmp/spilldb` before every mongod
+start (no mongod is running then, and mongod recreates it), and its
+start-failure handler recognises the log line and names the directory. Admin
+Panel / Problems' `db.restart` row now says what a "No space left on device"
+abort means for a full disk as well as for a network filesystem, and both it
+and `db.disk-space` name the exact directory to delete when MongoDB 8.2 will
+not start afterwards. `docs/Databases/MongoDB/Storage-Requirements.md` carries
+the log signature of both stages, the one command, what must not be touched,
+and that Docker and Kubernetes users run it themselves, since the database
+container is MongoDB's own image. `tests/databaseHealth.test.cjs` pins the
+path, both rows, the probe wiring, the snap's pre-start deletion and the page.
+
+</details>
+
+and improves the translation workflow:
+
+- [Translate the attachment soft-delete confirmation for Russian, Aromanian, Kinyarwanda, Sakha, Sardinian, Sicilian, Sindhi, Northern Sami, Sinhala, Slovak, Slovenian, Samoan, Shona, Somali, Albanian, Serbian, Swati, Sotho, Swedish, Swahili, Silesian, Tamil, Telugu, Tajik, Thai, Tigrinya, Tigre, Turkmen, Tagalog, Klingon, Tswana, Tongan, Tok Pisin, Turkish, Tsonga, Tatar and Uyghur](https://github.com/wekan/wekan/commit/aa2ff7a8a27e314f58ec61a6173d6b225e4c8953). Thanks to xet7.
+
+- [Translate the attachment soft-delete confirmation for Danish, German, Greek, Spanish, French, Finnish and 15 more languages](https://github.com/wekan/wekan/commit/1815d97f3). Thanks to xet7.
+
+- [Translate the attachment soft-delete confirmation for Ukrainian, Urdu, Uzbek, Vietnamese, Chinese, Cantonese, Wu, Yiddish, Yoruba, Xhosa, Zulu and 10 more languages](https://github.com/wekan/wekan/commit/7f2d644e2). Thanks to xet7.
+
+- [Translate the attachment soft-delete confirmation for Lithuanian, Latvian, Macedonian, Malay, Dutch, Norwegian Bokmål, Polish, Portuguese, Romanian and 23 more languages](https://github.com/wekan/wekan/commit/73e476e93a6ed6fff379f8417aea74954fb706d9). Thanks to xet7.
+
+- [Translate the attachment soft-delete confirmation for Gujarati, Hebrew, Hindi, Croatian, Hungarian, Indonesian, Italian, Japanese, Korean and 24 more languages](https://github.com/wekan/wekan/commit/f6eeb18b75884f547265f776e015059c16c07854). Thanks to xet7.
+
+- [Translate the attachment soft-delete confirmation for Afrikaans, Amharic, Arabic, Azerbaijani, Belarusian, Bulgarian, Bengali, Catalan, Czech, Welsh and 22 more languages](https://github.com/wekan/wekan/commit/55bf153b2). Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v11.70 2026-09-11 WeKan ® release
 
 **In short:** this release adds every way to log in that Meteor's accounts

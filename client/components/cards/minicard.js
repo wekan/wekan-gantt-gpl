@@ -7,6 +7,7 @@ import { Utils } from '/client/lib/utils';
 import ChecklistItems from '/models/checklistItems';
 import Cards from '/models/cards';
 import { resolveCoverId } from '/models/lib/linkedCardCover';
+import { isLiveAttachment } from '/models/lib/attachmentSoftDelete';
 import { isChecklistShownAtMinicard } from '/models/lib/minicardChecklistVisibility';
 import { hasUnreadComments } from '/models/lib/unreadComments';
 import {
@@ -17,6 +18,10 @@ import {
   hiddenMinicardLabelText,
   toggleMinicardLabelText,
 } from '/client/lib/minicardLabelText';
+const {
+  orderedMinicardSections,
+  orderedMinicardFieldsOf,
+} = require('/models/lib/cardFieldOrder');
 
 function getMinicardFlag(board, onMinicardField, legacyField, defaultValue) {
   if (!board) return false;
@@ -37,6 +42,23 @@ Template.minicard.helpers({
   // #1591: the whole-minicard fold, same shape as a list's collapsed() helper.
   minicardCollapsed() {
     return Utils.getCardCollapseState(this);
+  },
+  // The minicard's field order from Board Settings / Card's "Show on
+  // Minicard" column (board.minicardFieldOrder): the sections top to bottom,
+  // and the fields inside the two grouped ones - the `.dates` line and the
+  // `.badges` strip. A board that never set it gets the historical order.
+  // models/lib/cardFieldOrder.js
+  orderedMinicardSections() {
+    const board = this.board();
+    return orderedMinicardSections(board?.minicardFieldOrder);
+  },
+  orderedMinicardDates() {
+    const board = this.board();
+    return orderedMinicardFieldsOf(board?.minicardFieldOrder, 'dates');
+  },
+  orderedMinicardBadges() {
+    const board = this.board();
+    return orderedMinicardFieldsOf(board?.minicardFieldOrder, 'badges');
   },
   showCustomFieldsOnMinicard() {
     const board = this.board();
@@ -207,6 +229,31 @@ Template.minicard.helpers({
     const board = this.board();
     return getMinicardFlag(board, 'allowsSubtasksOnMinicard', 'allowsSubtasks', true);
   },
+  // #6688: the minicard badges that had no Board Settings / Card toggle.
+  // Each defaults to TRUE (models/boards.js) because it always rendered
+  // before; a legacy board without the field keeps showing it. The card-side
+  // flag is NOT a fallback here - hiding the Dependencies section of the
+  // opened card is a different decision from hiding its badge.
+  showDependenciesOnMinicard() {
+    const board = this.board();
+    return getMinicardFlag(board, 'allowsDependenciesOnMinicard', null, true);
+  },
+  showStickersOnMinicard() {
+    const board = this.board();
+    return getMinicardFlag(board, 'allowsStickersOnMinicard', null, true);
+  },
+  showCommentCountOnMinicard() {
+    const board = this.board();
+    return getMinicardFlag(board, 'allowsCommentCountOnMinicard', null, true);
+  },
+  showVoteOnMinicard() {
+    const board = this.board();
+    return getMinicardFlag(board, 'allowsVoteOnMinicard', null, true);
+  },
+  showPokerOnMinicard() {
+    const board = this.board();
+    return getMinicardFlag(board, 'allowsPokerOnMinicard', null, true);
+  },
   // #6431: compact checklist item-count badge (finished/total) on the minicard.
   // Opt-in, OFF by default. Only a cheap boolean read here; the actual checklist
   // counting (checklistFinishedCount/checklistItemCount) is gated behind this in
@@ -261,7 +308,8 @@ Template.minicard.helpers({
     const coverId = resolveCoverId(this, id => ReactiveCache.getCard(id));
     if (!coverId) return null;
     const attachment = ReactiveCache.getAttachment(coverId);
-    if (!attachment) return null;
+    // A soft-deleted attachment is never a cover (History.md §12.1).
+    if (!isLiveAttachment(attachment)) return null;
     const coverLink = typeof attachment.link === 'function' ? attachment.link() : '';
     if (!coverLink) return null;
     return {
