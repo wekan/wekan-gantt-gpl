@@ -232,3 +232,52 @@ If you are changing Meteor and Node.js versions, you may need to reset Meteor:
 meteor reset
 ```
 Or alternatively, delete wekan repo (if you did not need any changes you made), and clone wekan repo again, and then build etc.
+
+The `build.sh` development bundle option announces cache removal, compilation to resolve Meteor plugin npm
+dependencies, dependency installation and compilation before each starts.
+Each stage streams its output to the terminal and the printed build log:
+`.tools/log/build-dev-bundle/YYYY-MM-DD/HH-MM-SS/dev.txt` for development bundles and
+`.tools/log/build-release-bundle/YYYY-MM-DD/HH-MM-SS/release.txt` for release bundles.
+Both scripts print the selected build log path again when the build finishes, including
+failed builds. Successful shell builds also append that completion message to the log.
+Each build gets its own time directory, keeping earlier runs separate. Same-second
+builds reserve a directory with a numeric suffix to avoid collisions. EVERYTHING also keeps its existing run-level `wekan-build.log`. Quiet stages report elapsed time and their process ID every
+15 seconds; this indicates that the command is running, rather than a percentage
+of completion. Required cache removal or dependency installation failures stop
+the build. Meteor plugin npm dependency compilation remains best effort and reports a warning
+when it fails. Release bundle preparation uses the same progress reporting and makes
+Meteor’s read-only server package manifest writable before updating node-gyp and
+installing the server dependencies, matching the release workflow.
+
+Build stages print the exact command before it starts. npm uses verbose logging
+and runs dependency lifecycle scripts in the foreground so their output is
+visible. Meteor bundle compilation uses its supported `--verbose` option;
+`meteor update --npm` has no verbose option and compiles the app to resolve
+plugin npm dependencies. `METEOR_PROFILE` defaults to 100 milliseconds, exposing
+Meteor tool timing diagnostics when available. Profiling output may appear only
+when a measured operation finishes; elapsed status still appears while it is quiet.
+
+During builds, Node module debugging prints module resolution as it happens. The
+local `tools/build-command-output.cjs` preload prints resolver subprocess commands
+and echoes their captured stdout and stderr while preserving exit codes and callback
+results. Both terminal and build log receive this output. Command arguments redact
+common credential fields; the tracer does not print the process environment.
+
+All logging managed by `build.sh` and `build.bat` uses
+`.tools/log/<operation>/YYYY-MM-DD/HH-MM-SS/`. Both honor `WEKAN_LOG_ROOT`.
+Same-second runs reserve a numeric suffix; previous run directories stay intact.
+
+| Operation | Directory type | Main log |
+| --- | --- | --- |
+| Development bundle | `build-dev-bundle` | `dev.txt` |
+| Release bundle | `build-release-bundle` | `release.txt` |
+| Development server | `dev-server` | `wekan-dev-server.log` (shell), `dev.txt` (Windows) |
+| Single test | `test-<test-name>` | `wekan-<test-name>.log` |
+| Full test matrix | `test-all-<mode>` | Existing per-job logs |
+| EVERYTHING (shell or Windows via Bash) | `test-everything-<mode>` | Existing per-stage logs |
+| All browsers (shell) | `test-playwright-all` | Existing per-browser logs |
+
+`WEKAN_LOGDIR` keeps child test jobs in the parent run directory. Windows build
+commands stream through PowerShell to the selected log; command exit status is
+retained. Native Windows execution was not available for this change; directory
+reservation logic and Windows menu/logger wiring are tested locally.

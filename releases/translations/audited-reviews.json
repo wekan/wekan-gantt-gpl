@@ -1,0 +1,1076 @@
+[
+  {
+    "locale": "da",
+    "key": "MongoDB_version",
+    "value": "MongoDB-kompatibel version",
+    "reason": "Inspected Danish wording and meaning are correct. Shared Danish/Norwegian terminology or matching Swedish calendar terminology does not make this Danish string erroneous."
+  },
+  {
+    "locale": "da",
+    "key": "admin-only-field",
+    "value": "Kun synlig for tavleadministratorer",
+    "reason": "Inspected Danish wording and meaning are correct. Shared Danish/Norwegian terminology or matching Swedish calendar terminology does not make this Danish string erroneous."
+  },
+  {
+    "locale": "da",
+    "key": "azure-account-key-menu-path",
+    "value": "Azure Portal → Storage accounts → din konto → Security + networking → Access keys → key1 → Show → Key.",
+    "reason": "Danish din konto/din bucket localizes the instruction. English vendor menu names are literal navigation labels for the documented vendor interface, not untranslated WeKan prose."
+  },
+  {
+    "locale": "da",
+    "key": "azure-connection-string-menu-path",
+    "value": "Azure Portal → Storage accounts → din konto → Security + networking → Access keys → key1 → Connection string → Show.",
+    "reason": "Danish din konto/din bucket localizes the instruction. English vendor menu names are literal navigation labels for the documented vendor interface, not untranslated WeKan prose."
+  },
+  {
+    "locale": "da",
+    "key": "calendar-system",
+    "value": "Kalendersystem (datovisning)",
+    "reason": "Inspected Danish wording and meaning are correct. Shared Danish/Norwegian terminology or matching Swedish calendar terminology does not make this Danish string erroneous."
+  },
+  {
+    "locale": "da",
+    "key": "calendar-system-ethioaa",
+    "value": "etiopisk amete-alem-kalender",
+    "reason": "Inspected Danish wording and meaning are correct. Shared Danish/Norwegian terminology or matching Swedish calendar terminology does not make this Danish string erroneous."
+  },
+  {
+    "locale": "da",
+    "key": "card-comments-on-minicard",
+    "value": "Kommentarer på minikortet",
+    "reason": "Inspected Danish wording and meaning are correct. Shared Danish/Norwegian terminology or matching Swedish calendar terminology does not make this Danish string erroneous."
+  },
+  {
+    "locale": "da",
+    "key": "default-on-public-board",
+    "value": "Standard på offentlig tavle",
+    "reason": "Inspected Danish wording and meaning are correct. Shared Danish/Norwegian terminology or matching Swedish calendar terminology does not make this Danish string erroneous."
+  },
+  {
+    "locale": "da",
+    "key": "export-card-details",
+    "value": "Kortdetaljer (hvert kort som i korteksporten)",
+    "reason": "Inspected Danish wording and meaning are correct. Shared Danish/Norwegian terminology or matching Swedish calendar terminology does not make this Danish string erroneous."
+  },
+  {
+    "locale": "da",
+    "key": "filename-invisible-legend",
+    "value": "Rød: filnavnet har usynlige tegn",
+    "reason": "Inspected Danish wording and meaning are correct. Shared Danish/Norwegian terminology or matching Swedish calendar terminology does not make this Danish string erroneous."
+  },
+  {
+    "locale": "da",
+    "key": "fixed-list-width",
+    "value": "Samme bredde for alle lister",
+    "reason": "Inspected Danish wording and meaning are correct. Shared Danish/Norwegian terminology or matching Swedish calendar terminology does not make this Danish string erroneous."
+  },
+  {
+    "locale": "da",
+    "key": "r-export-json",
+    "value": "Eksporter regler til JSON",
+    "reason": "Inspected Danish wording and meaning are correct. Shared Danish/Norwegian terminology or matching Swedish calendar terminology does not make this Danish string erroneous."
+  },
+  {
+    "locale": "da",
+    "key": "r-remove-all",
+    "value": "Fjern alle medlemmer fra kortet",
+    "reason": "Inspected Danish wording and meaning are correct. Shared Danish/Norwegian terminology or matching Swedish calendar terminology does not make this Danish string erroneous."
+  },
+  {
+    "locale": "da",
+    "key": "r-remove-all-labels",
+    "value": "Fjern alle etiketter fra kortet",
+    "reason": "Inspected Danish wording and meaning are correct. Shared Danish/Norwegian terminology or matching Swedish calendar terminology does not make this Danish string erroneous."
+  },
+  {
+    "locale": "da",
+    "key": "s3-region-menu-path",
+    "value": "AWS Console → S3 → Buckets → din bucket → Properties → AWS Region.",
+    "reason": "Danish din konto/din bucket localizes the instruction. English vendor menu names are literal navigation labels for the documented vendor interface, not untranslated WeKan prose."
+  },
+  {
+    "locale": "da",
+    "key": "same-width-for-all-lists",
+    "value": "Samme bredde for alle lister (hele tavlen)",
+    "reason": "Inspected Danish wording and meaning are correct. Shared Danish/Norwegian terminology or matching Swedish calendar terminology does not make this Danish string erroneous."
+  },
+  {
+    "locale": "da",
+    "key": "sandstorm-raw-mongodb",
+    "value": "Rå MongoDB 3-databasefiler",
+    "reason": "Inspected Danish wording and meaning are correct. Shared Danish/Norwegian terminology or matching Swedish calendar terminology does not make this Danish string erroneous."
+  },
+  {
+    "locale": "da",
+    "key": "sandstorm-raw-mongodb-deleted",
+    "value": "Rå MongoDB-databasefiler slettet, frigjort",
+    "reason": "Inspected Danish wording and meaning are correct. Shared Danish/Norwegian terminology or matching Swedish calendar terminology does not make this Danish string erroneous."
+  },
+  {
+    "locale": "da",
+    "key": "DDP_transport",
+    "value": "DDP-transport (DDP_TRANSPORT)",
+    "reason": "Transport is also the Danish technical noun; DDP and DDP_TRANSPORT are protocol identifiers. The localized hyphenation is valid."
+  },
+  {
+    "locale": "gl-ES",
+    "key": "DDP_transport",
+    "value": "Transporte DDP (DDP_TRANSPORT)",
+    "reason": "Reviewed local technical terminology: Transport/transport/transporte is valid in this locale. DDP is a protocol acronym and DDP_TRANSPORT is an exact configuration identifier; neither should be translated. Retain the correct existing label."
+  },
+  {
+    "locale": "gl",
+    "key": "DDP_transport",
+    "value": "Transporte DDP (DDP_TRANSPORT)",
+    "reason": "Reviewed local technical terminology: Transport/transport/transporte is valid in this locale. DDP is a protocol acronym and DDP_TRANSPORT is an exact configuration identifier; neither should be translated. Retain the correct existing label."
+  },
+  {
+    "locale": "ace",
+    "key": "r-items-list",
+    "value": "item1, item2, item3",
+    "reason": "Reviewed in client/components/rules/actions/checklistActions.jade:55: this input placeholder demonstrates three arbitrary comma-separated checklist item names, not English prose. Spaces do not alter the example separator. Retain the existing illustrative identifiers."
+  },
+  {
+    "locale": "br",
+    "key": "r-items-list",
+    "value": "item1, item2, item3",
+    "reason": "Reviewed in client/components/rules/actions/checklistActions.jade:55: this input placeholder demonstrates three arbitrary comma-separated checklist item names, not English prose. Spaces do not alter the example separator. Retain the existing illustrative identifiers."
+  },
+  {
+    "locale": "de-AT",
+    "key": "DDP_transport",
+    "value": "DDP-Transport (DDP_TRANSPORT)",
+    "reason": "Reviewed local technical terminology: Transport/transport/transporte is valid in this locale. DDP is a protocol acronym and DDP_TRANSPORT is an exact configuration identifier; neither should be translated. Retain the correct existing label."
+  },
+  {
+    "locale": "de-CH",
+    "key": "DDP_transport",
+    "value": "DDP-Transport (DDP_TRANSPORT)",
+    "reason": "Reviewed local technical terminology: Transport/transport/transporte is valid in this locale. DDP is a protocol acronym and DDP_TRANSPORT is an exact configuration identifier; neither should be translated. Retain the correct existing label."
+  },
+  {
+    "locale": "de",
+    "key": "DDP_transport",
+    "value": "DDP-Transport (DDP_TRANSPORT)",
+    "reason": "Reviewed local technical terminology: Transport/transport/transporte is valid in this locale. DDP is a protocol acronym and DDP_TRANSPORT is an exact configuration identifier; neither should be translated. Retain the correct existing label."
+  },
+  {
+    "locale": "de_DE",
+    "key": "DDP_transport",
+    "value": "DDP-Transport (DDP_TRANSPORT)",
+    "reason": "Reviewed local technical terminology: Transport/transport/transporte is valid in this locale. DDP is a protocol acronym and DDP_TRANSPORT is an exact configuration identifier; neither should be translated. Retain the correct existing label."
+  },
+  {
+    "locale": "fr-BE",
+    "key": "r-items-list",
+    "value": "item1, item2, item3",
+    "reason": "Reviewed in client/components/rules/actions/checklistActions.jade:55: this input placeholder demonstrates three arbitrary comma-separated checklist item names, not English prose. Spaces do not alter the example separator. Retain the existing illustrative identifiers."
+  },
+  {
+    "locale": "fr-CA",
+    "key": "r-items-list",
+    "value": "item1, item2, item3",
+    "reason": "Reviewed in client/components/rules/actions/checklistActions.jade:55: this input placeholder demonstrates three arbitrary comma-separated checklist item names, not English prose. Spaces do not alter the example separator. Retain the existing illustrative identifiers."
+  },
+  {
+    "locale": "fr-CH",
+    "key": "r-items-list",
+    "value": "item1, item2, item3",
+    "reason": "Reviewed in client/components/rules/actions/checklistActions.jade:55: this input placeholder demonstrates three arbitrary comma-separated checklist item names, not English prose. Spaces do not alter the example separator. Retain the existing illustrative identifiers."
+  },
+  {
+    "locale": "fr-FR",
+    "key": "r-items-list",
+    "value": "item1, item2, item3",
+    "reason": "Reviewed in client/components/rules/actions/checklistActions.jade:55: this input placeholder demonstrates three arbitrary comma-separated checklist item names, not English prose. Spaces do not alter the example separator. Retain the existing illustrative identifiers."
+  },
+  {
+    "locale": "fr",
+    "key": "r-items-list",
+    "value": "item1, item2, item3",
+    "reason": "Reviewed in client/components/rules/actions/checklistActions.jade:55: this input placeholder demonstrates three arbitrary comma-separated checklist item names, not English prose. Spaces do not alter the example separator. Retain the existing illustrative identifiers."
+  },
+  {
+    "locale": "fy-NL",
+    "key": "DDP_transport",
+    "value": "DDP-transport (DDP_TRANSPORT)",
+    "reason": "Reviewed local technical terminology: Transport/transport/transporte is valid in this locale. DDP is a protocol acronym and DDP_TRANSPORT is an exact configuration identifier; neither should be translated. Retain the correct existing label."
+  },
+  {
+    "locale": "fy-NL",
+    "key": "r-items-list",
+    "value": "item 1, item 2, item 3",
+    "reason": "Reviewed in client/components/rules/actions/checklistActions.jade:55: this input placeholder demonstrates three arbitrary comma-separated checklist item names, not English prose. Spaces do not alter the example separator. Retain the existing illustrative identifiers."
+  },
+  {
+    "locale": "fy",
+    "key": "DDP_transport",
+    "value": "DDP-transport (DDP_TRANSPORT)",
+    "reason": "Reviewed local technical terminology: Transport/transport/transporte is valid in this locale. DDP is a protocol acronym and DDP_TRANSPORT is an exact configuration identifier; neither should be translated. Retain the correct existing label."
+  },
+  {
+    "locale": "fy",
+    "key": "r-items-list",
+    "value": "item 1, item 2, item 3",
+    "reason": "Reviewed in client/components/rules/actions/checklistActions.jade:55: this input placeholder demonstrates three arbitrary comma-separated checklist item names, not English prose. Spaces do not alter the example separator. Retain the existing illustrative identifiers."
+  },
+  {
+    "locale": "id",
+    "key": "r-items-list",
+    "value": "item1, item2, item3",
+    "reason": "Reviewed in client/components/rules/actions/checklistActions.jade:55: this input placeholder demonstrates three arbitrary comma-separated checklist item names, not English prose. Spaces do not alter the example separator. Retain the existing illustrative identifiers."
+  },
+  {
+    "locale": "lb",
+    "key": "DDP_transport",
+    "value": "DDP-Transport (DDP_TRANSPORT)",
+    "reason": "Reviewed local technical terminology: Transport/transport/transporte is valid in this locale. DDP is a protocol acronym and DDP_TRANSPORT is an exact configuration identifier; neither should be translated. Retain the correct existing label."
+  },
+  {
+    "locale": "ms-MY",
+    "key": "r-items-list",
+    "value": "item1, item2, item3",
+    "reason": "Reviewed in client/components/rules/actions/checklistActions.jade:55: this input placeholder demonstrates three arbitrary comma-separated checklist item names, not English prose. Spaces do not alter the example separator. Retain the existing illustrative identifiers."
+  },
+  {
+    "locale": "ms",
+    "key": "r-items-list",
+    "value": "item1, item2, item3",
+    "reason": "Reviewed in client/components/rules/actions/checklistActions.jade:55: this input placeholder demonstrates three arbitrary comma-separated checklist item names, not English prose. Spaces do not alter the example separator. Retain the existing illustrative identifiers."
+  },
+  {
+    "locale": "nb",
+    "key": "DDP_transport",
+    "value": "DDP-transport (DDP_TRANSPORT)",
+    "reason": "Reviewed local technical terminology: Transport/transport/transporte is valid in this locale. DDP is a protocol acronym and DDP_TRANSPORT is an exact configuration identifier; neither should be translated. Retain the correct existing label."
+  },
+  {
+    "locale": "nl-NL",
+    "key": "DDP_transport",
+    "value": "DDP-transport (DDP_TRANSPORT)",
+    "reason": "Reviewed local technical terminology: Transport/transport/transporte is valid in this locale. DDP is a protocol acronym and DDP_TRANSPORT is an exact configuration identifier; neither should be translated. Retain the correct existing label."
+  },
+  {
+    "locale": "nl-NL",
+    "key": "r-items-list",
+    "value": "item1, item2, item3",
+    "reason": "Reviewed in client/components/rules/actions/checklistActions.jade:55: this input placeholder demonstrates three arbitrary comma-separated checklist item names, not English prose. Spaces do not alter the example separator. Retain the existing illustrative identifiers."
+  },
+  {
+    "locale": "nl",
+    "key": "DDP_transport",
+    "value": "DDP-transport (DDP_TRANSPORT)",
+    "reason": "Reviewed local technical terminology: Transport/transport/transporte is valid in this locale. DDP is a protocol acronym and DDP_TRANSPORT is an exact configuration identifier; neither should be translated. Retain the correct existing label."
+  },
+  {
+    "locale": "nl",
+    "key": "r-items-list",
+    "value": "item1, item2, item3",
+    "reason": "Reviewed in client/components/rules/actions/checklistActions.jade:55: this input placeholder demonstrates three arbitrary comma-separated checklist item names, not English prose. Spaces do not alter the example separator. Retain the existing illustrative identifiers."
+  },
+  {
+    "locale": "oc",
+    "key": "r-items-list",
+    "value": "item1, item2, item3",
+    "reason": "Reviewed in client/components/rules/actions/checklistActions.jade:55: this input placeholder demonstrates three arbitrary comma-separated checklist item names, not English prose. Spaces do not alter the example separator. Retain the existing illustrative identifiers."
+  },
+  {
+    "locale": "sv",
+    "key": "DDP_transport",
+    "value": "DDP-transport (DDP_TRANSPORT)",
+    "reason": "Reviewed local technical terminology: Transport/transport/transporte is valid in this locale. DDP is a protocol acronym and DDP_TRANSPORT is an exact configuration identifier; neither should be translated. Retain the correct existing label."
+  },
+  {
+    "locale": "th",
+    "key": "r-items-list",
+    "value": "item1, item2, item3",
+    "reason": "Reviewed in client/components/rules/actions/checklistActions.jade:55: this input placeholder demonstrates three arbitrary comma-separated checklist item names, not English prose. Spaces do not alter the example separator. Retain the existing illustrative identifiers."
+  },
+  {
+    "locale": "ug",
+    "key": "r-items-list",
+    "value": "item1, item2, item3",
+    "reason": "Reviewed in client/components/rules/actions/checklistActions.jade:55: this input placeholder demonstrates three arbitrary comma-separated checklist item names, not English prose. Spaces do not alter the example separator. Retain the existing illustrative identifiers."
+  },
+  {
+    "locale": "vi-VN",
+    "key": "r-items-list",
+    "value": "item1, item2, item3",
+    "reason": "Reviewed in client/components/rules/actions/checklistActions.jade:55: this input placeholder demonstrates three arbitrary comma-separated checklist item names, not English prose. Spaces do not alter the example separator. Retain the existing illustrative identifiers."
+  },
+  {
+    "locale": "vi",
+    "key": "r-items-list",
+    "value": "item1, item2, item3",
+    "reason": "Reviewed in client/components/rules/actions/checklistActions.jade:55: this input placeholder demonstrates three arbitrary comma-separated checklist item names, not English prose. Spaces do not alter the example separator. Retain the existing illustrative identifiers."
+  },
+  {
+    "locale": "vl-SS",
+    "key": "r-items-list",
+    "value": "item1, item2, item3",
+    "reason": "Reviewed in client/components/rules/actions/checklistActions.jade:55: this input placeholder demonstrates three arbitrary comma-separated checklist item names, not English prose. Spaces do not alter the example separator. Retain the existing illustrative identifiers."
+  },
+  {
+    "locale": "vo",
+    "key": "r-items-list",
+    "value": "item1, item2, item3",
+    "reason": "Reviewed in client/components/rules/actions/checklistActions.jade:55: this input placeholder demonstrates three arbitrary comma-separated checklist item names, not English prose. Spaces do not alter the example separator. Retain the existing illustrative identifiers."
+  },
+  {
+    "locale": "wa-RR",
+    "key": "r-items-list",
+    "value": "item1, item2, item3",
+    "reason": "Reviewed in client/components/rules/actions/checklistActions.jade:55: this input placeholder demonstrates three arbitrary comma-separated checklist item names, not English prose. Spaces do not alter the example separator. Retain the existing illustrative identifiers."
+  },
+  {
+    "locale": "wa",
+    "key": "r-items-list",
+    "value": "item1, item2, item3",
+    "reason": "Reviewed in client/components/rules/actions/checklistActions.jade:55: this input placeholder demonstrates three arbitrary comma-separated checklist item names, not English prose. Spaces do not alter the example separator. Retain the existing illustrative identifiers."
+  },
+  {
+    "locale": "wo",
+    "key": "r-items-list",
+    "value": "item1, item2, item3",
+    "reason": "Reviewed in client/components/rules/actions/checklistActions.jade:55: this input placeholder demonstrates three arbitrary comma-separated checklist item names, not English prose. Spaces do not alter the example separator. Retain the existing illustrative identifiers."
+  },
+  {
+    "locale": "zgh",
+    "key": "r-items-list",
+    "value": "item1, item2, item3",
+    "reason": "Reviewed in client/components/rules/actions/checklistActions.jade:55: this input placeholder demonstrates three arbitrary comma-separated checklist item names, not English prose. Spaces do not alter the example separator. Retain the existing illustrative identifiers."
+  },
+  {
+    "locale": "sk",
+    "key": "Reactivity_mode",
+    "value": "Režim reaktivity (changeStreams / oplog / polling)",
+    "reason": "Individually reviewed: Režim reaktivity is valid Slovak as well as Czech technical wording. changeStreams, oplog and polling name actual reactivity modes and remain literal."
+  },
+  {
+    "locale": "sk",
+    "key": "azure-account-key-menu-path",
+    "value": "Azure Portal → Storage accounts → váš účet → Security + networking → Access keys → key1 → Show → Key.",
+    "reason": "Individually reviewed: váš účet is valid Slovak. The remaining Azure Portal navigation labels and key1 are literal vendor menu names or identifiers, so they remain unchanged."
+  },
+  {
+    "locale": "sk",
+    "key": "azure-connection-string-menu-path",
+    "value": "Azure Portal → Storage accounts → váš účet → Security + networking → Access keys → key1 → Connection string → Show.",
+    "reason": "Individually reviewed: váš účet is valid Slovak. The remaining Azure Portal navigation labels and key1 are literal vendor menu names or identifiers, so they remain unchanged."
+  },
+  {
+    "locale": "sk",
+    "key": "email-templates-activity-vars-hint",
+    "value": "Dostupné značky: {board} {card} {list} {username} {url} {comment} {action}",
+    "reason": "Individually reviewed: Dostupné značky is valid Slovak as well as Czech. Brace-delimited template variable names are literal code tokens and must remain unchanged."
+  },
+  {
+    "locale": "sk",
+    "key": "email-templates-invite-vars-hint",
+    "value": "Dostupné značky: {email} {inviter} {user} {icode} {url}",
+    "reason": "Individually reviewed: Dostupné značky is valid Slovak as well as Czech. Brace-delimited template variable names are literal code tokens and must remain unchanged."
+  },
+  {
+    "locale": "sk",
+    "key": "r-email-vars-hint",
+    "value": "Dostupné značky: {card}, {cardLink}, {list}, {board}, {member}",
+    "reason": "Individually reviewed: Dostupné značky is valid Slovak. Brace-delimited names are exact template variables and remain literal."
+  },
+  {
+    "locale": "sk",
+    "key": "r-items-list",
+    "value": "položka1,položka2,položka3",
+    "reason": "Individually reviewed: položka is the correct Slovak word for item. The comma-separated numbered example names are valid in Slovak and Czech."
+  },
+  {
+    "locale": "sk",
+    "key": "s3-region-menu-path",
+    "value": "AWS Console → S3 → Buckets → váš bucket → Properties → AWS Region.",
+    "reason": "Individually reviewed: váš bucket is valid Slovak technical wording. The AWS Console navigation labels are literal vendor menu names and remain unchanged."
+  },
+  {
+    "locale": "de",
+    "key": "soft-wip-limit",
+    "value": "Soft WIP-Limit",
+    "reason": "Individually reviewed: Soft WIP-Limit is established German technical wording for a non-blocking warning limit, contrasting with a hard limit. WIP is an acronym and Limit is a German word. The valid existing technical label is retained."
+  },
+  {
+    "locale": "de-AT",
+    "key": "soft-wip-limit",
+    "value": "Soft WIP-Limit",
+    "reason": "Individually reviewed: Soft WIP-Limit is established German technical wording for a non-blocking warning limit, contrasting with a hard limit. WIP is an acronym and Limit is a German word. The valid existing technical label is retained."
+  },
+  {
+    "locale": "de-CH",
+    "key": "soft-wip-limit",
+    "value": "Soft WIP-Limit",
+    "reason": "Individually reviewed: Soft WIP-Limit is established German technical wording for a non-blocking warning limit, contrasting with a hard limit. WIP is an acronym and Limit is a German word. The valid existing technical label is retained."
+  },
+  {
+    "locale": "de_DE",
+    "key": "soft-wip-limit",
+    "value": "Soft WIP-Limit",
+    "reason": "Individually reviewed: Soft WIP-Limit is established German technical wording for a non-blocking warning limit, contrasting with a hard limit. WIP is an acronym and Limit is a German word. The valid existing technical label is retained."
+  },
+  {
+    "locale": "mk",
+    "key": "Reactivity_mode",
+    "value": "Режим на реактивност (changeStreams / oplog / polling)",
+    "reason": "Individually reviewed: Режим на реактивност is valid Macedonian. changeStreams, oplog and polling identify actual runtime modes and remain literal."
+  },
+  {
+    "locale": "mk",
+    "key": "sidebar-close",
+    "value": "Затворете страничната лента",
+    "reason": "Reviewed Macedonian imperative and sidebar terminology are correct. Shared wording with Bulgarian is not evidence of a wrong-language value; preserve the existing translation."
+  },
+  {
+    "locale": "mk",
+    "key": "sidebar-open",
+    "value": "Отворете страничната лента",
+    "reason": "Reviewed Macedonian imperative and sidebar terminology are correct. Shared wording with Bulgarian is not evidence of a wrong-language value; preserve the existing translation."
+  },
+  {
+    "locale": "sl",
+    "key": "Reactivity_mode",
+    "value": "Način reaktivnosti (changeStreams / oplog / polling)",
+    "reason": "Reviewed Slovenian phrase Način reaktivnosti is correct; changeStreams, oplog and polling are literal implementation identifiers. Shared Croatian wording is not a language error."
+  },
+  {
+    "locale": "sl_SI",
+    "key": "Reactivity_mode",
+    "value": "Način reaktivnosti (changeStreams / oplog / polling)",
+    "reason": "Reviewed Slovenian phrase Način reaktivnosti is correct; changeStreams, oplog and polling are literal implementation identifiers. Shared Croatian wording is not a language error."
+  },
+  {
+    "locale": "sl",
+    "key": "azure-account-key-menu-path",
+    "value": "Azure Portal → Storage accounts → vaš račun → Security + networking → Access keys → key1 → Show → Key.",
+    "reason": "Reviewed: vaš račun is correct Slovenian for your account. Azure menu names, key1 and navigation arrows remain literal labels; shared Croatian wording does not make this phrase incorrect."
+  },
+  {
+    "locale": "sl",
+    "key": "azure-connection-string-menu-path",
+    "value": "Azure Portal → Storage accounts → vaš račun → Security + networking → Access keys → key1 → Connection string → Show.",
+    "reason": "Reviewed: vaš račun is correct Slovenian for your account. Azure menu names, key1 and navigation arrows remain literal labels; shared Croatian wording does not make this phrase incorrect."
+  },
+  {
+    "locale": "sl_SI",
+    "key": "azure-account-key-menu-path",
+    "value": "Azure Portal → Storage accounts → vaš račun → Security + networking → Access keys → key1 → Show → Key.",
+    "reason": "Reviewed: vaš račun is correct Slovenian for your account. Azure menu names, key1 and navigation arrows remain literal labels; shared Croatian wording does not make this phrase incorrect."
+  },
+  {
+    "locale": "sl_SI",
+    "key": "azure-connection-string-menu-path",
+    "value": "Azure Portal → Storage accounts → vaš račun → Security + networking → Access keys → key1 → Connection string → Show.",
+    "reason": "Reviewed: vaš račun is correct Slovenian for your account. Azure menu names, key1 and navigation arrows remain literal labels; shared Croatian wording does not make this phrase incorrect."
+  },
+  {
+    "locale": "gl-ES",
+    "key": "card-edit-custom-fields",
+    "value": "Editar campos personalizados",
+    "reason": "Reviewed against the English source and existing Galician terminology: Editar campos personalizados is correct Galician for Edit custom fields; shared Portuguese vocabulary is not a wrong-language error."
+  },
+  {
+    "locale": "gl-ES",
+    "key": "cardCustomFieldsPopup-title",
+    "value": "Editar campos personalizados",
+    "reason": "Reviewed against the English source and existing Galician terminology: Editar campos personalizados is correct Galician for Edit custom fields; shared Portuguese vocabulary is not a wrong-language error."
+  },
+  {
+    "locale": "gl-ES",
+    "key": "filter-custom-fields-label",
+    "value": "Filtrar por campos personalizados",
+    "reason": "Reviewed Galician wording correctly means Filter by Custom Fields. Shared Portuguese wording is valid Galician and must be preserved."
+  },
+  {
+    "locale": "gl-ES",
+    "key": "integrityReportTitle",
+    "value": "Integridade do sistema de ficheiros",
+    "reason": "Inspected wording is correct Galician for Filesystem integrity. Shared Portuguese vocabulary does not justify changing the translation."
+  },
+  {
+    "locale": "gl-ES",
+    "key": "r-items-list",
+    "value": "elemento1,elemento2,elemento3",
+    "reason": "Reviewed Galician is correct. The checklist placeholder demonstrates three comma-separated example elements in Galician; Importar / Exportar regras correctly names rule import/export. Shared Portuguese wording is not an error."
+  },
+  {
+    "locale": "gl-ES",
+    "key": "rulesImportExportPopup-title",
+    "value": "Importar / Exportar regras",
+    "reason": "Reviewed Galician is correct. The checklist placeholder demonstrates three comma-separated example elements in Galician; Importar / Exportar regras correctly names rule import/export. Shared Portuguese wording is not an error."
+  },
+  {
+    "locale": "gl-ES",
+    "key": "twoFactorAuth-manual-entry",
+    "value": "Ou introduza este código manualmente: ",
+    "reason": "Reviewed instruction is correct Galician: Ou introduza este código manualmente. Trailing spaces and vocabulary shared with Portuguese do not make it a wrong-language translation."
+  },
+  {
+    "locale": "gl",
+    "key": "card-edit-custom-fields",
+    "value": "Editar campos personalizados",
+    "reason": "Contextual review confirms correct Galician wording or the established Pomodoro method name. Shared vocabulary with Portuguese or English is not an error. The checklist placeholder demonstrates three comma-separated native example elements."
+  },
+  {
+    "locale": "gl",
+    "key": "cardCustomFieldsPopup-title",
+    "value": "Editar campos personalizados",
+    "reason": "Contextual review confirms correct Galician wording or the established Pomodoro method name. Shared vocabulary with Portuguese or English is not an error. The checklist placeholder demonstrates three comma-separated native example elements."
+  },
+  {
+    "locale": "gl",
+    "key": "filter-custom-fields-label",
+    "value": "Filtrar por campos personalizados",
+    "reason": "Contextual review confirms correct Galician wording or the established Pomodoro method name. Shared vocabulary with Portuguese or English is not an error. The checklist placeholder demonstrates three comma-separated native example elements."
+  },
+  {
+    "locale": "gl",
+    "key": "integrityReportTitle",
+    "value": "Integridade do sistema de ficheiros",
+    "reason": "Contextual review confirms correct Galician wording or the established Pomodoro method name. Shared vocabulary with Portuguese or English is not an error. The checklist placeholder demonstrates three comma-separated native example elements."
+  },
+  {
+    "locale": "gl",
+    "key": "r-items-list",
+    "value": "elemento1,elemento2,elemento3",
+    "reason": "Contextual review confirms correct Galician wording or the established Pomodoro method name. Shared vocabulary with Portuguese or English is not an error. The checklist placeholder demonstrates three comma-separated native example elements."
+  },
+  {
+    "locale": "gl",
+    "key": "rulesImportExportPopup-title",
+    "value": "Importar / Exportar regras",
+    "reason": "Contextual review confirms correct Galician wording or the established Pomodoro method name. Shared vocabulary with Portuguese or English is not an error. The checklist placeholder demonstrates three comma-separated native example elements."
+  },
+  {
+    "locale": "gl",
+    "key": "twoFactorAuth-manual-entry",
+    "value": "Ou introduza este código manualmente: ",
+    "reason": "Contextual review confirms correct Galician wording or the established Pomodoro method name. Shared vocabulary with Portuguese or English is not an error. The checklist placeholder demonstrates three comma-separated native example elements."
+  },
+  {
+    "locale": "gl",
+    "key": "board-view-control-chart",
+    "value": "Control",
+    "reason": "Contextual review confirms correct Galician wording or the established Pomodoro method name. Shared vocabulary with Portuguese or English is not an error. The checklist placeholder demonstrates three comma-separated native example elements."
+  },
+  {
+    "locale": "gl",
+    "key": "pomodoro",
+    "value": "Pomodoro",
+    "reason": "Contextual review confirms correct Galician wording or the established Pomodoro method name. Shared vocabulary with Portuguese or English is not an error. The checklist placeholder demonstrates three comma-separated native example elements."
+  },
+  {
+    "locale": "ast-ES",
+    "key": "Database_commit",
+    "value": "Commit de la base de datos",
+    "reason": "Contextual review confirms valid Asturian shared vocabulary. Memoria libre/total del sistema correctly labels system memory; Commit is the retained technical identifier for a source revision. No wrong-language prose requires replacement."
+  },
+  {
+    "locale": "ast-ES",
+    "key": "OS_Freemem",
+    "value": "Memoria libre del sistema",
+    "reason": "Contextual review confirms valid Asturian shared vocabulary. Memoria libre/total del sistema correctly labels system memory; Commit is the retained technical identifier for a source revision. No wrong-language prose requires replacement."
+  },
+  {
+    "locale": "ast-ES",
+    "key": "OS_Totalmem",
+    "value": "Memoria total del sistema",
+    "reason": "Contextual review confirms valid Asturian shared vocabulary. Memoria libre/total del sistema correctly labels system memory; Commit is the retained technical identifier for a source revision. No wrong-language prose requires replacement."
+  },
+  {
+    "locale": "ast-ES",
+    "key": "accounts-lockout-failure-window",
+    "value": "Ventana de fallos (segundos)",
+    "reason": "Reviewed wording is valid Asturian shared vocabulary and preserves the seconds unit. Similarity to Spanish alone is not an error."
+  },
+  {
+    "locale": "ast-ES",
+    "key": "backup-day-of-month",
+    "value": "Día del mes (mensual, 1-28)",
+    "reason": "Asturian shares día, mes and mensual with Spanish; the monthly backup label preserves the source range 1-28 and is valid unchanged."
+  },
+  {
+    "locale": "ast-ES",
+    "key": "newTranslationPopup-title",
+    "value": "Nueva cadena de traducción personalizada",
+    "reason": "Nueva cadena de traducción personalizada is shared valid Asturian wording and correctly labels creation of a custom translation string; no change required."
+  },
+  {
+    "locale": "an",
+    "key": "DDP_transport",
+    "value": "Transporte DDP (DDP_TRANSPORT)",
+    "reason": "Transporte is valid shared Aragonese technical vocabulary; DDP and the literal configuration variable DDP_TRANSPORT must remain unchanged."
+  },
+  {
+    "locale": "an",
+    "key": "MongoDB_version",
+    "value": "Versión compatible con MongoDB",
+    "reason": "Versión compatible con MongoDB uses valid shared Aragonese technical vocabulary and preserves compatibility semantics."
+  },
+  {
+    "locale": "an",
+    "key": "Node_heap_malloced_memory",
+    "value": "Heap de Node: memoria reservada con malloc",
+    "reason": "Heap de Node: memoria reservada con malloc is valid Aragonese technical wording; heap, Node and malloc are literal technical terms, and reserved memory is accurately described."
+  },
+  {
+    "locale": "an",
+    "key": "Node_memory_usage_external",
+    "value": "Uso de memoria de Node: externa",
+    "reason": "Valid shared Aragonese memory terminology; Node remains a technical name and the external/actual-use distinction matches the English source."
+  },
+  {
+    "locale": "an",
+    "key": "Node_memory_usage_heap_used",
+    "value": "Uso de memoria de Node: memoria realmente usada",
+    "reason": "Valid shared Aragonese memory terminology; Node remains a technical name and the external/actual-use distinction matches the English source."
+  },
+  {
+    "locale": "an",
+    "key": "accounts-lockout-failure-window",
+    "value": "Ventana de fallos (segundos)",
+    "reason": "Ventana de fallos (segundos) uses valid shared Aragonese terminology for the failure counting window and preserves the seconds unit."
+  },
+  {
+    "locale": "an",
+    "key": "board-view-throughput-histogram",
+    "value": "Histograma de rendimiento",
+    "reason": "Histograma de rendimiento is valid shared Aragonese chart terminology and describes the throughput histogram without changing its metric."
+  },
+  {
+    "locale": "an",
+    "key": "custom-field-stringtemplate-format",
+    "value": "Formato (usa %{value} como marcador)",
+    "reason": "Valid shared Aragonese technical wording; preserve the literal format placeholder or HTML link element name and the source meaning."
+  },
+  {
+    "locale": "an",
+    "key": "custom-head-link-tags",
+    "value": "Etiquetas link personalizadas (HTML)",
+    "reason": "Valid shared Aragonese technical wording; preserve the literal format placeholder or HTML link element name and the source meaning."
+  },
+  {
+    "locale": "an",
+    "key": "custom-head-meta-tags",
+    "value": "Etiquetas meta personalizadas (HTML)",
+    "reason": "Valid shared Aragonese feminine plural wording; meta and HTML identify literal technical elements and must remain unchanged."
+  },
+  {
+    "locale": "an",
+    "key": "database-migrate-to-ferretdb",
+    "value": "Migrar datos de texto a FerretDB v1 (SQLite)",
+    "reason": "Valid shared Aragonese technical wording about migration of text data; preserves the source database destination/version or completion meaning without changing correct text."
+  },
+  {
+    "locale": "an",
+    "key": "database-migrate-to-mongodb",
+    "value": "Migrar datos de texto a MongoDB",
+    "reason": "Valid shared Aragonese technical wording about migration of text data; preserves the source database destination/version or completion meaning without changing correct text."
+  },
+  {
+    "locale": "an",
+    "key": "database-migration-done",
+    "value": "Migración de datos de texto completada.",
+    "reason": "Valid shared Aragonese technical wording about migration of text data; preserves the source database destination/version or completion meaning without changing correct text."
+  },
+  {
+    "locale": "an",
+    "key": "editTranslationPopup-title",
+    "value": "Editar cadena de traducción personalizada",
+    "reason": "Reviewed shared Aragonese vocabulary: editing a personalized translation string; no foreign article or loss of source meaning."
+  },
+  {
+    "locale": "an",
+    "key": "email-templates-activity-vars-hint",
+    "value": "Etiquetas disponibles: {board} {card} {list} {username} {url} {comment} {action}",
+    "reason": "Reviewed shared Aragonese vocabulary for available template tags; all literal brace-delimited variable names retain source spelling and order."
+  },
+  {
+    "locale": "an",
+    "key": "email-templates-invite-vars-hint",
+    "value": "Etiquetas disponibles: {email} {inviter} {user} {icode} {url}",
+    "reason": "Reviewed shared Aragonese vocabulary for available template tags; all literal brace-delimited variable names retain source spelling and order."
+  },
+  {
+    "locale": "an",
+    "key": "export-monitoring",
+    "value": "Monitorización de exportación",
+    "reason": "Reviewed shared technical vocabulary for monitoring export operations; no foreign articles or missing source meaning."
+  },
+  {
+    "locale": "an",
+    "key": "label-default",
+    "value": "etiqueta %s (por defecto)",
+    "reason": "Reviewed shared Aragonese label terminology and por defecto default qualifier; exact percent placeholder preserved."
+  },
+  {
+    "locale": "an",
+    "key": "login-allow",
+    "value": "Inicio de sesión: permitir",
+    "reason": "Reviewed shared Aragonese session and permission vocabulary; login allow remains distinct from denying login."
+  },
+  {
+    "locale": "an",
+    "key": "newTranslationPopup-title",
+    "value": "Nueva cadena de traducción personalizada",
+    "reason": "Reviewed shared Aragonese vocabulary for a new personalized translation string; correctly distinguishes creation from editing."
+  },
+  {
+    "locale": "an",
+    "key": "no-shared-templates",
+    "value": "Sin plantillas compartidas",
+    "reason": "Reviewed shared Aragonese vocabulary: absence of shared templates, without foreign articles or loss of source meaning."
+  },
+  {
+    "locale": "an",
+    "key": "prefix-with-full-path",
+    "value": "Prefijo con ruta completa",
+    "reason": "Reviewed shared technical vocabulary for a full-path prefix; no foreign article or loss of meaning."
+  },
+  {
+    "locale": "an",
+    "key": "r-drop-trigger",
+    "value": "suelta un disparador aquí",
+    "reason": "Reviewed shared Aragonese vocabulary for dropping an automation trigger here; action and location are preserved."
+  },
+  {
+    "locale": "an",
+    "key": "r-email-vars-hint",
+    "value": "Etiquetas disponibles: {card}, {cardLink}, {list}, {board}, {member}",
+    "reason": "Reviewed shared Aragonese available-tag terminology; all case-sensitive literal template variables are preserved in source order."
+  },
+  {
+    "locale": "an",
+    "key": "refresh-monitoring",
+    "value": "Actualizar monitorización",
+    "reason": "Reviewed shared Aragonese technical vocabulary for refreshing monitoring; source action and object are preserved."
+  },
+  {
+    "locale": "an",
+    "key": "rulesImportExportPopup-title",
+    "value": "Importar / Exportar reglas",
+    "reason": "Reviewed shared Aragonese vocabulary for importing and exporting rules; both opposite operations remain explicit."
+  },
+  {
+    "locale": "an",
+    "key": "s3-force-path-style",
+    "value": "Forzar URLs de estilo de ruta",
+    "reason": "Reviewed shared technical vocabulary: force path-style URLs rather than host-style addressing; no source meaning omitted."
+  },
+  {
+    "locale": "an",
+    "key": "s3-region-description",
+    "value": "Región de AWS S3 (p. ej., us-east-1)",
+    "reason": "Reviewed shared regional terminology and preserved AWS S3 acronym and literal us-east-1 region example."
+  },
+  {
+    "locale": "an",
+    "key": "set-swimlane-height-value",
+    "value": "Altura de carril (píxeles)",
+    "reason": "Reviewed shared Aragonese height and lane terminology; pixel unit and source meaning preserved."
+  },
+  {
+    "locale": "an",
+    "key": "setSelectionColorPopup-title",
+    "value": "Establecer color de selección",
+    "reason": "Reviewed shared Aragonese action and selection-color terminology; correctly describes setting a selection color."
+  },
+  {
+    "locale": "an",
+    "key": "step-convert-shared-lists",
+    "value": "Convertir listas compartidas",
+    "reason": "Reviewed shared Aragonese vocabulary for converting shared lists; source action and shared scope remain explicit."
+  },
+  {
+    "locale": "an",
+    "key": "step-ensure-per-swimlane-lists",
+    "value": "Asegurar listas por carril",
+    "reason": "Reviewed shared Aragonese vocabulary for ensuring lists per lane; preserves per-swimlane rather than per-board scope."
+  },
+  {
+    "locale": "an",
+    "key": "subtext-with-full-path",
+    "value": "Subtexto con ruta completa",
+    "reason": "Reviewed shared Aragonese technical vocabulary for secondary text showing the full path; source meaning preserved."
+  },
+  {
+    "locale": "an",
+    "key": "writable-path",
+    "value": "Ruta con permiso de escritura",
+    "reason": "Reviewed shared Aragonese path and write-permission terminology; preserves writable rather than readable path meaning."
+  },
+  {
+    "locale": "fur",
+    "key": "attachment-limits",
+    "value": "Limits",
+    "reason": "Reviewed Friulian plural limits, which coincides with English; names attachment limits rather than English prose."
+  },
+  {
+    "locale": "fur",
+    "key": "avatars",
+    "value": "Avatars",
+    "reason": "Reviewed conventional avatar terminology used for user images; shared loanword does not establish wrong-language prose."
+  },
+  {
+    "locale": "fur",
+    "key": "avatars-upload-blocked-label",
+    "value": "Avatars",
+    "reason": "Reviewed conventional avatar loanword; matches the reviewed avatars label for user images."
+  },
+  {
+    "locale": "fur",
+    "key": "file",
+    "value": "File",
+    "reason": "Reviewed conventional technical file loanword; no foreign prose or omitted meaning."
+  },
+  {
+    "locale": "fur",
+    "key": "info",
+    "value": "Version",
+    "reason": "Reviewed Friulian version, identical to English spelling; the locale word correctly labels version information."
+  },
+  {
+    "locale": "fur",
+    "key": "map-region-europe",
+    "value": "Europe",
+    "reason": "Reviewed Friulian geographical name Europe, identical to English spelling."
+  },
+  {
+    "locale": "fur",
+    "key": "move-progress-file",
+    "value": "File",
+    "reason": "Reviewed conventional technical file loanword; matches the file label in the locale."
+  },
+  {
+    "locale": "fur",
+    "key": "move-scope-avatars",
+    "value": "Avatars",
+    "reason": "Reviewed avatar scope loanword; matches the reviewed user-image labels."
+  },
+  {
+    "locale": "fur",
+    "key": "operator-debug",
+    "value": "debug",
+    "reason": "Preserve literal search operator spelling accepted by the search syntax; operator identifiers are code rather than prose."
+  },
+  {
+    "locale": "fur",
+    "key": "operator-limit",
+    "value": "limit",
+    "reason": "Preserve literal search operator spelling accepted by the search syntax; operator identifiers are code rather than prose."
+  },
+  {
+    "locale": "fur",
+    "key": "operator-team",
+    "value": "team",
+    "reason": "Preserve literal search operator spelling accepted by the search syntax; operator identifiers are code rather than prose."
+  },
+  {
+    "locale": "fur",
+    "key": "protocol",
+    "value": "Protocol",
+    "reason": "Reviewed conventional technical loanword or shared Friulian vocabulary; source label meaning preserved."
+  },
+  {
+    "locale": "fur",
+    "key": "recovery-event",
+    "value": "Event",
+    "reason": "Reviewed conventional technical loanword or shared Friulian vocabulary; source label meaning preserved."
+  },
+  {
+    "locale": "fur",
+    "key": "ticket",
+    "value": "Ticket",
+    "reason": "Reviewed conventional technical loanword or shared Friulian vocabulary; source label meaning preserved."
+  },
+  {
+    "locale": "fur",
+    "key": "tickets",
+    "value": "Tickets",
+    "reason": "Reviewed conventional technical loanword or shared Friulian vocabulary; source label meaning preserved."
+  },
+  {
+    "locale": "hi",
+    "key": "azure-blob-storage-description",
+    "value": "Microsoft Azure Blob Storage।",
+    "reason": "Preserve exact cloud-storage product name; Hindi sentence-ending danda punctuation is valid and does not make the vendor name wrong-language prose."
+  },
+  {
+    "locale": "hi",
+    "key": "gcs-storage-description",
+    "value": "Google Cloud Storage।",
+    "reason": "Preserve exact cloud-storage product name; Hindi sentence-ending danda punctuation is valid and does not make the vendor name wrong-language prose."
+  },
+  {
+    "locale": "hi-IN",
+    "key": "azure-blob-storage-description",
+    "value": "Microsoft Azure Blob Storage।",
+    "reason": "Preserve exact cloud-storage product name; Hindi sentence-ending danda punctuation is valid and does not make the vendor name wrong-language prose."
+  },
+  {
+    "locale": "hi-IN",
+    "key": "gcs-storage-description",
+    "value": "Google Cloud Storage।",
+    "reason": "Preserve exact cloud-storage product name; Hindi sentence-ending danda punctuation is valid and does not make the vendor name wrong-language prose."
+  },
+  {
+    "locale": "ja",
+    "key": "azure-blob-storage-description",
+    "value": "Microsoft Azure Blob Storage。",
+    "reason": "Retain the official cloud-storage product name with valid Japanese sentence-ending punctuation; this is a proper name, not untranslated explanatory prose."
+  },
+  {
+    "locale": "ja",
+    "key": "gcs-storage-description",
+    "value": "Google Cloud Storage。",
+    "reason": "Retain the official cloud-storage product name with valid Japanese sentence-ending punctuation; this is a proper name, not untranslated explanatory prose."
+  },
+  {
+    "locale": "ja-HI",
+    "key": "azure-blob-storage-description",
+    "value": "Microsoft Azure Blob Storage。",
+    "reason": "Retain the official cloud-storage product name with valid Japanese sentence-ending punctuation; this is a proper name, not untranslated explanatory prose."
+  },
+  {
+    "locale": "ja-HI",
+    "key": "gcs-storage-description",
+    "value": "Google Cloud Storage。",
+    "reason": "Retain the official cloud-storage product name with valid Japanese sentence-ending punctuation; this is a proper name, not untranslated explanatory prose."
+  },
+  {
+    "locale": "ja-JP",
+    "key": "azure-blob-storage-description",
+    "value": "Microsoft Azure Blob Storage。",
+    "reason": "Retain the official cloud-storage product name with valid Japanese sentence-ending punctuation; this is a proper name, not untranslated explanatory prose."
+  },
+  {
+    "locale": "ja-JP",
+    "key": "gcs-storage-description",
+    "value": "Google Cloud Storage。",
+    "reason": "Retain the official cloud-storage product name with valid Japanese sentence-ending punctuation; this is a proper name, not untranslated explanatory prose."
+  },
+  {
+    "locale": "zh",
+    "key": "azure-blob-storage-description",
+    "value": "Microsoft Azure Blob Storage。",
+    "reason": "Retain the official cloud-storage product name with valid Chinese sentence-ending punctuation; the source contains only a proper name, not explanatory prose."
+  },
+  {
+    "locale": "zh",
+    "key": "gcs-storage-description",
+    "value": "Google Cloud Storage。",
+    "reason": "Retain the official cloud-storage product name with valid Chinese sentence-ending punctuation; the source contains only a proper name, not explanatory prose."
+  },
+  {
+    "locale": "zh-CN",
+    "key": "azure-blob-storage-description",
+    "value": "Microsoft Azure Blob Storage。",
+    "reason": "Retain the official cloud-storage product name with valid Chinese sentence-ending punctuation; the source contains only a proper name, not explanatory prose."
+  },
+  {
+    "locale": "zh-CN",
+    "key": "gcs-storage-description",
+    "value": "Google Cloud Storage。",
+    "reason": "Retain the official cloud-storage product name with valid Chinese sentence-ending punctuation; the source contains only a proper name, not explanatory prose."
+  },
+  {
+    "locale": "zh-GB",
+    "key": "azure-blob-storage-description",
+    "value": "Microsoft Azure Blob Storage。",
+    "reason": "Retain the official cloud-storage product name with valid Chinese sentence-ending punctuation; the source contains only a proper name, not explanatory prose."
+  },
+  {
+    "locale": "zh-GB",
+    "key": "gcs-storage-description",
+    "value": "Google Cloud Storage。",
+    "reason": "Retain the official cloud-storage product name with valid Chinese sentence-ending punctuation; the source contains only a proper name, not explanatory prose."
+  },
+  {
+    "locale": "zh-Hans",
+    "key": "azure-blob-storage-description",
+    "value": "Microsoft Azure Blob Storage。",
+    "reason": "Retain the official cloud-storage product name with valid Chinese sentence-ending punctuation; the source contains only a proper name, not explanatory prose."
+  },
+  {
+    "locale": "zh-Hans",
+    "key": "gcs-storage-description",
+    "value": "Google Cloud Storage。",
+    "reason": "Retain the official cloud-storage product name with valid Chinese sentence-ending punctuation; the source contains only a proper name, not explanatory prose."
+  },
+  {
+    "locale": "zh_SG",
+    "key": "azure-blob-storage-description",
+    "value": "Microsoft Azure Blob Storage。",
+    "reason": "Retain the official cloud-storage product name with valid Chinese sentence-ending punctuation; the source contains only a proper name, not explanatory prose."
+  },
+  {
+    "locale": "zh_SG",
+    "key": "gcs-storage-description",
+    "value": "Google Cloud Storage。",
+    "reason": "Retain the official cloud-storage product name with valid Chinese sentence-ending punctuation; the source contains only a proper name, not explanatory prose."
+  },
+  {
+    "locale": "zh-Hant",
+    "key": "gcs-storage-description",
+    "value": "Google Cloud Storage。",
+    "reason": "Retain the official cloud-storage product name with valid Chinese sentence-ending punctuation; the source contains only a proper name, not explanatory prose."
+  },
+  {
+    "locale": "zh-HK",
+    "key": "gcs-storage-description",
+    "value": "Google Cloud Storage。",
+    "reason": "Retain the official cloud-storage product name with valid Chinese sentence-ending punctuation; the source contains only a proper name, not explanatory prose."
+  },
+  {
+    "locale": "zh-TW",
+    "key": "gcs-storage-description",
+    "value": "Google Cloud Storage。",
+    "reason": "Retain the official cloud-storage product name with valid Chinese sentence-ending punctuation; the source contains only a proper name, not explanatory prose."
+  },
+  {
+    "locale": "pa",
+    "key": "azure-blob-storage-description",
+    "value": "Microsoft Azure Blob Storage।",
+    "reason": "Retain the official cloud-storage product name with valid Punjabi danda punctuation; the source contains only a proper name."
+  },
+  {
+    "locale": "pa",
+    "key": "gcs-storage-description",
+    "value": "Google Cloud Storage।",
+    "reason": "Retain the official cloud-storage product name with valid Punjabi danda punctuation; the source contains only a proper name."
+  },
+  {
+    "locale": "lb",
+    "key": "email-smtp-test-subject",
+    "value": "SMTP Test-E-Mail",
+    "reason": "Retain the technical acronym SMTP and the valid Luxembourgish compound Test-E-Mail; shared technical vocabulary is not wrong-language prose."
+  },
+  {
+    "locale": "szl",
+    "key": "DDP_transport",
+    "value": "Transport DDP (DDP_TRANSPORT)",
+    "reason": "Transport is shared Silesian technical vocabulary; DDP and DDP_TRANSPORT are code identifiers. Retain this correct technical label rather than treating shared Polish spelling as proof of a wrong language."
+  },
+  {
+    "locale": "sc",
+    "key": "computer",
+    "value": "Computer",
+    "reason": "Retained as a valid Sardinian technical borrowing. https://sc.wikipedia.org/wiki/Computer uses computer in actual Sardinian article prose (Unu computer), alongside elaboradore and carculadore. Matching English alone does not make this existing translation wrong; capitalization suits the standalone UI label."
+  },
+  {
+    "locale": "an",
+    "key": "r-items-list",
+    "value": "elemento1,elemento2,elemento3",
+    "reason": "Restore original Aragonese elemento examples: identical Romance spelling did not justify replacing them with English item examples. Three numbered comma-separated native elements are preserved. Supersedes the mistaken correction inventory row; the regression introduced by item1 is repaired, not hidden. Aragonario uses elemento in native definitions: https://aragonario.aragon.es/words/1372614/."
+  },
+  {
+    "locale": "co",
+    "key": "Reactivity_order",
+    "value": "Ordine di reattività (METEOR_REACTIVITY_ORDER)",
+    "reason": "Retain existing Corsican wording: reattività occurs in Corsican Assembly proceedings and native Corsican business prose; ordine di is also compatible with Corsican. Shared Italian spelling alone is insufficient evidence of wrong language. Preserve METEOR_REACTIVITY_ORDER. Sources: https://www.isula.corsica/file/247459/ and https://hestiasecurite.corsica/co/lintrapresa"
+  }
+]

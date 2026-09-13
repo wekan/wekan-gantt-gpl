@@ -5,8 +5,8 @@ echo "Recommended for development: Newest Debian or Ubuntu amd64 based distro, d
 echo "Note1: If you use other locale than en_US.UTF-8 , you need to additionally install en_US.UTF-8"
 echo "       with 'sudo dpkg-reconfigure locales' , so that MongoDB works correctly."
 echo "       You can still use any other locale as your main locale."
-echo "Note2: Console output is also logged to <logs>/wekan-log.log"
-echo "Note3: All logs this script produces go into a log/<datetime>/ directory -"
+echo "Note2: Console output is also logged to the operation-specific path printed below."
+echo "Note3: All logs use .tools/log/<operation>/YYYY-MM-DD/HH-MM-SS/."
 echo "       .tools/log/ inside this repository. The path is printed when a run"
 echo "       starts."
 echo "Note4: Two build directories, and they are not the same thing:"
@@ -72,7 +72,7 @@ fi
 export TOOL_NODE_FLAGS="${TOOL_NODE_FLAGS:---max-old-space-size=$_heap_mb}"
 export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=$_heap_mb}"
 
-# Every log this script writes goes into a `log/<datetime>/` directory, and
+# Every log this script writes goes into a `log/<operation>/<date>/<time>/` directory, and
 # WEKAN_LOG_ROOT is where those directories live.
 #
 # `.tools/log` is inside the repository's ignored tool area, so test output is
@@ -101,6 +101,7 @@ mkdir -p "$WEKAN_LOG_ROOT"
 WEKAN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WEKAN_TOOLS_DIR="$WEKAN_DIR/.tools"
 export WEKAN_DIR WEKAN_TOOLS_DIR
+export PATH="$WEKAN_TOOLS_DIR/bin:${GOBIN:+$GOBIN:}$PATH"
 . "$WEKAN_DIR/releases/ensure-tools.sh"
 
 # Prefer the repository-local toolchain installed under .tools. A fresh shell
@@ -325,10 +326,68 @@ function kill_all_dev_servers(){
 	fi
 }
 
+# Announce quiet build commands without buffering their own output.
+function build_stage(){
+	(
+		local label="$1"; shift
+		local started=$SECONDS command_pid status elapsed
+		echo "==> $label"
+		printf '    Command:'; printf ' %q' "$@"; printf '\n'
+		"$@" <&0 &
+		command_pid=$!
+		trap 'kill "$command_pid" 2>/dev/null; exit 130' INT
+		trap 'kill "$command_pid" 2>/dev/null; exit 143' TERM
+		# Polling also reaps short commands promptly; SECONDS works in macOS Bash.
+		local next_report=15
+		while kill -0 "$command_pid" 2>/dev/null; do
+			elapsed=$((SECONDS - started))
+			if [ "$elapsed" -ge "$next_report" ]; then
+				echo "    $label: still running (${elapsed}s; PID $command_pid)"
+				next_report=$((elapsed + 15))
+			fi
+			sleep 1
+		done
+		wait "$command_pid"; status=$?
+		echo "<== $label finished ($((SECONDS - started))s; exit $status)"
+		exit "$status"
+	)
+}
+
 # Build WeKan from scratch: reinstall npm deps and produce the .build directory.
 # Used by menu option 2 and auto-invoked by option 9 when .build is missing.
 # Also clears the rspack dev-build caches (_build and node_modules/.cache) so the
 # next `meteor run` recompiles from scratch instead of serving stale modules.
+# Reserve one operation/type/date/time directory, including same-second collisions.
+function log_directory(){
+	local type="$1" day dir suffix=1 candidate
+	case "$type" in ""|*[!a-zA-Z0-9_-]*) echo "ERROR: invalid log type: $type" >&2; return 1 ;; esac
+	day="${WEKAN_LOG_ROOT:-.tools/log}/$type/$(date '+%Y-%m-%d')"
+	mkdir -p "$day" || return $?
+	dir="$day/$(date '+%H-%M-%S')"
+	if ! mkdir "$dir" 2>/dev/null; then
+		while :; do
+			candidate="$dir-$suffix"
+			if mkdir "$candidate" 2>/dev/null; then dir="$candidate"; break; fi
+			if [ ! -d "$candidate" ]; then echo "ERROR: cannot create log directory: $candidate" >&2; return 1; fi
+			suffix=$((suffix + 1))
+		done
+	fi
+	local absolute
+	absolute="$(cd "$dir" && pwd)" || return $?
+	echo "Log directory: $absolute" >&2
+	printf '%s\n' "$absolute"
+}
+
+function build_log(){
+	local type="$1" name="$2" dir
+	case "$type/$name" in
+		build-dev-bundle/dev|build-release-bundle/release) ;;
+		*) echo "ERROR: unknown build log type: $type/$name" >&2; return 1 ;;
+	esac
+	dir="$(log_directory "$type")" || return $?
+	printf '%s/%s.txt' "$dir" "$name"
+}
+
 function build_wekan(){
 	echo "Building WeKan."
 	# The build's output goes to the run's log directory, not only to the
@@ -342,7 +401,20 @@ function build_wekan(){
 	# snapshot mode below caps it. The failure message quoted the computed one
 	# either way, which read as "allowed 15542 MB and reached 4280 MB".
 	_effective_heap_mb="$_heap_mb"
-	buildlog="$(one_log build)"
+	local build_type=build-dev-bundle build_name=dev
+	if [ "${WEKAN_BUILD_RELEASE_BUNDLE:-0}" = "1" ]; then
+		build_type=build-release-bundle; build_name=release
+	fi
+	buildlog="$(build_log "$build_type" "$build_name")" || return $?
+	local buildlog_start_line=1
+	if [ -f "$buildlog" ]; then
+		buildlog_start_line=$(( $(wc -l < "$buildlog") + 1 ))
+	fi
+	local buildlogs=("$buildlog")
+	# EVERYTHING retains its existing run-level build log as well.
+	if [ -n "${WEKAN_LOGDIR:-}" ]; then
+		buildlogs+=("$(one_log build)")
+	fi
 	echo "Build log: $buildlog"
 
 	# WEKAN_BUILD_HEAP_SNAPSHOT=1 makes the build write a heap snapshot just
@@ -388,13 +460,21 @@ function build_wekan(){
 	fi
 	{
 		echo "===== wekan build started $(date '+%F %T') ====="
-		rm -rf node_modules node_modules/.cache .meteor/local .build _build
-		(meteor update --npm || true) && meteor npm install
-		meteor build .build --directory
+		export npm_config_loglevel=verbose npm_config_foreground_scripts=true
+		export METEOR_PROFILE="${METEOR_PROFILE:-100}"
+		export NODE_DEBUG="${NODE_DEBUG:+$NODE_DEBUG,}module"
+		# NODE_OPTIONS parses quoted paths, including checkouts with spaces.
+		export NODE_OPTIONS="${NODE_OPTIONS:-} --require=\"$(pwd)/tools/build-command-output.cjs\""
+		echo "Build diagnostics: resolver command/output tracing, Node module resolution, npm verbose output, foreground install scripts, METEOR_PROFILE=$METEOR_PROFILE (milliseconds)."
+		build_stage "1/4 Remove dependencies and build caches" rm -rf node_modules node_modules/.cache .meteor/local .build _build || return $?
+		# Updating npm metadata has historically been best effort; installation is required.
+		build_stage "2/4 Compile app to resolve Meteor plugin npm dependencies" meteor update --npm || echo "WARNING: Meteor plugin npm dependency compilation failed; trying dependency installation."
+		build_stage "3/4 Install npm dependencies" meteor npm install || return $?
+		build_stage "4/4 Compile Meteor development bundle" meteor build .build --directory --verbose
 		local rc=$?
 		echo "===== wekan build finished $(date '+%F %T') (exit $rc) ====="
 		return $rc
-	} 2>&1 | tee "$buildlog"
+	} 2>&1 | tee -a "${buildlogs[@]}"
 	# The exit status of the pipeline is tee's; take the build's.
 	local rc="${PIPESTATUS[0]}"
 	if [ "$rc" -ne 0 ] || [ ! -d .build/bundle ]; then
@@ -402,9 +482,9 @@ function build_wekan(){
 		# Name the failure when it is one we can recognise, rather than leaving
 		# a V8 stack trace as the last word. Running out of heap and failing to
 		# compile look identical at this level and have nothing in common.
-		if grep -q "JavaScript heap out of memory" "$buildlog" 2>/dev/null; then
+		if tail -n +"$buildlog_start_line" "$buildlog" 2>/dev/null | grep -q "JavaScript heap out of memory"; then
 			local peak
-			peak="$(grep -ao 'Mark-Compact ([a-z ]*) [0-9.]*' "$buildlog" \
+			peak="$(tail -n +"$buildlog_start_line" "$buildlog" | grep -ao 'Mark-Compact ([a-z ]*) [0-9.]*' \
 				| tail -1 | awk '{print $NF}')"
 			# Appended to the log as well as printed. The whole point of the
 			# build log is that "check the newest test logs" answers the
@@ -454,14 +534,14 @@ function build_wekan(){
 	# hundred megabytes of binaries it will not use to test WeKan's source is
 	# the wrong trade.
 	if [ "${WEKAN_BUILD_RELEASE_BUNDLE:-0}" = "1" ]; then
-		bash releases/build-release-bundle.sh .build/bundle 2>&1 | tee -a "$buildlog"
+		build_stage "Prepare release bundle" bash releases/build-release-bundle.sh .build/bundle 2>&1 | tee -a "${buildlogs[@]}"
 		local rrc="${PIPESTATUS[0]}"
 		if [ "$rrc" -ne 0 ]; then
 			echo "ERROR: the bundle built, but the release post-processing failed. Its output is in $buildlog"
 			return 1
 		fi
 	fi
-	echo Done.
+	echo "Done. Build log: $buildlog" | tee -a "${buildlogs[@]}"
 }
 
 # Detect OS (linux/macos) and CPU arch (amd64/arm64) so tests run on
@@ -551,10 +631,7 @@ function run_playwright_docker(){
 		echo "       Install Docker, or run this browser natively (set WEKAN_PLAYWRIGHT_DOCKER=0)."
 		return 127
 	fi
-	if [ ! -d "$pwdir/node_modules/@playwright/test" ]; then
-		echo "Installing Playwright test dependencies (the container reuses the mounted node_modules)."
-		( cd "$pwdir" && meteor npm install )
-	fi
+	ensure_playwright_test_dependencies || return 1
 	local pwver
 	pwver="$(node -e "console.log(require('$pwdir/node_modules/@playwright/test/package.json').version)" 2>/dev/null)"
 	[ -z "$pwver" ] && pwver="1.60.0"
@@ -571,7 +648,8 @@ function run_playwright_docker(){
 	docker_exec run --rm --init --ipc=host --network host \
 		--label org.wekan.test-run=everything \
 		--user "$(id -u):$(id -g)" \
-		-e HOME=/tmp \
+		-e HOME=/repo/.tools/tmp \
+		-e TMPDIR=/repo/.tools/tmp \
 		-e WEKAN_BASE_URL="${WEKAN_BASE_URL:-http://127.0.0.1:3000}" \
 		-e WEKAN_MONGO_URL="${WEKAN_MONGO_URL:-mongodb://127.0.0.1:3001/meteor}" \
 		-e WEKAN_PLAYWRIGHT_ALL=1 \
@@ -598,10 +676,7 @@ function run_node_e2e_docker(){
 		echo "ERROR: Docker is required for Node E2E on this platform, but 'docker' was not found."
 		return 127
 	fi
-	if [ ! -d "$pwdir/node_modules/@playwright/test" ]; then
-		echo "Installing Playwright test dependencies for the browser container."
-		( cd "$pwdir" && meteor npm install ) || return 1
-	fi
+	ensure_playwright_test_dependencies || return 1
 	local pwver
 	pwver="$(node -e "console.log(require('$pwdir/node_modules/@playwright/test/package.json').version)" 2>/dev/null)"
 	[ -z "$pwver" ] && pwver="1.60.0"
@@ -610,13 +685,14 @@ function run_node_e2e_docker(){
 	docker_exec run --rm --init --ipc=host --network host \
 		--label org.wekan.test-run=everything \
 		--user "$(id -u):$(id -g)" \
-		-e HOME=/tmp \
+		-e HOME=/repo/.tools/tmp \
+		-e TMPDIR=/repo/.tools/tmp \
 		-e NODE_OPTIONS="${NODE_OPTIONS:-}" \
 		-e WEKAN_BASE_URL="${WEKAN_BASE_URL:-http://127.0.0.1:3000}" \
 		-e WEKAN_MONGO_URL="${WEKAN_MONGO_URL:-mongodb://127.0.0.1:3001/meteor}" \
 		-v "$reporoot":/repo -w /repo \
 		"$image" \
-		sh -c 'browser_path="$(find /ms-playwright -type f \( -path "*/chrome-linux/chrome" -o -path "*/chrome-linux64/chrome" \) -perm -111 | sort -r | head -n 1)"; test -n "$browser_path" || { echo "No Chromium executable found in Playwright image" >&2; exit 127; }; CHROMIUM_PATH="$browser_path" exec node tests/e2e/list-regressions.js'
+		sh -c 'browser_path="$(find /ms-playwright -type f -path "*/chrome-linux*/chrome" -perm -111 | sort -r | head -n 1)"; test -n "$browser_path" || { echo "No Chromium executable found in Playwright image" >&2; exit 127; }; CHROMIUM_PATH="$browser_path" exec node tests/e2e/list-regressions.js'
 }
 
 # Back-compat wrapper: run the WebKit project in Docker.
@@ -631,10 +707,7 @@ function install_playwright_browsers(){
 	ORIG_HOME="$HOME"
 	local reporoot="$WEKAN_DIR"
 	local pwdir="$reporoot/tests/playwright"
-	if [ ! -d "$pwdir/node_modules/@playwright/test" ]; then
-		echo "Installing Playwright test dependencies (npm)..."
-		( cd "$pwdir" && meteor npm install )
-	fi
+	ensure_playwright_test_dependencies || return 1
 
 	# Native install for whichever browsers are NOT configured for Docker.
 	local nativeList=""
@@ -700,8 +773,9 @@ function set_playwright_browser_path(){
 
 function ensure_playwright_test_dependencies(){
 	local pwdir="$WEKAN_DIR/tests/playwright"
-	if [ ! -x "$pwdir/node_modules/.bin/playwright" ]; then
-		echo "Installing Playwright test dependencies under tests/playwright/node_modules."
+	if [ ! -x "$pwdir/node_modules/.bin/playwright" ] ||
+		! ( cd "$pwdir" && meteor npm ls --depth=0 ) >/dev/null 2>&1; then
+		echo "Installing current Playwright test dependencies under tests/playwright/node_modules."
 		( cd "$pwdir" && meteor npm install ) || return 1
 	fi
 }
@@ -798,9 +872,9 @@ function run_playwright_parallel(){
 	read -p "Install Playwright test dependencies first? [y/N] " INSTALL_DEPS
 	case "$INSTALL_DEPS" in [Yy]*) ( cd "$pwdir" && meteor npm install ) ;; esac
 
-	# This run's own .tools/log/<timestamp>/ dir, so logs are never overwritten.
+	# This run's own .tools/log/<operation>/<date>/<time>/ dir, so logs are never overwritten.
 	local RUN_LOGDIR
-	RUN_LOGDIR="$WEKAN_LOG_ROOT/$(date '+%Y-%m-%d_%H-%M-%S')"
+	RUN_LOGDIR="$(log_directory test-playwright-all)" || return $?
 	mkdir -p "$RUN_LOGDIR"
 
 	echo "Running Chromium, Firefox and WebKit Playwright suites sequentially (one browser at a time)."
@@ -814,7 +888,7 @@ function run_playwright_parallel(){
 	local rc_chromium rc_firefox rc_webkit
 	local ts
 	# Stream live to the console with tee while also saving to this run's
-	# .tools/log/<timestamp>/ dir. PIPESTATUS[0] is run_pw_all_browser's exit code (the
+	# .tools/log/<operation>/<date>/<time>/ dir. PIPESTATUS[0] is run_pw_all_browser's exit code (the
 	# left side of the pipe), not tee's, so the pass/fail result stays accurate.
 	for entry in "chromium:Chromium" "firefox:Firefox" "webkit:WebKit"; do
 		browser="${entry%%:*}"; label="${entry#*:}"
@@ -867,15 +941,17 @@ function run_playwright_parallel(){
 }
 
 # Run one Playwright browser project interactively (single-browser menu items).
-# one_log <name> — a fresh log/<datetime>/ for a single test option, and the
+# one_log <name> — an operation/date/time directory for a single test option, and the
 # path of the file to tee into. Every option in the Tests menu writes there, so
 # "the newest test logs" is one directory whichever option produced them. When a
 # larger run is driving this (EVERYTHING), WEKAN_LOGDIR is already set and is used
 # instead, so one run stays in one directory.
 one_log() {
 	local name="$1" dir
-	dir="${WEKAN_LOGDIR:-$WEKAN_LOG_ROOT/$(date '+%Y-%m-%d_%H-%M-%S')}"
-	mkdir -p "$dir" 2>/dev/null || dir="."
+	if [ -n "${WEKAN_LOGDIR:-}" ]; then dir="$WEKAN_LOGDIR"
+	elif [ "$name" = dev-server ]; then dir="$(log_directory dev-server)" || return $?
+	else dir="$(log_directory "test-$name")" || return $?; fi
+	mkdir -p "$dir" || return $?
 	printf '%s/wekan-%s.log' "$(cd "$dir" && pwd)" "$name"
 }
 
@@ -954,7 +1030,7 @@ function run_all_tests(){
 	local TEST_NODE_OPTIONS="${WEKAN_TEST_NODE_OPTIONS:---max-old-space-size=$TEST_HEAP_MB}"
 	echo "Node heap limit for test runtime processes: ${TEST_HEAP_MB} MB."
 	echo "  Override by exporting WEKAN_TEST_NODE_OPTIONS yourself."
-	# Each whole-suite run gets its own .tools/log/<timestamp>/ directory
+	# Each whole-suite run gets its own .tools/log/<operation>/<date>/<time>/ directory
 	# (stamped once, when the run starts), so logs are never overwritten and
 	# previous runs are kept.
 	local RUN_TS RUN_LOGDIR
@@ -968,7 +1044,7 @@ function run_all_tests(){
 		RUN_LOGDIR="$WEKAN_LOGDIR"
 	else
 		RUN_TS="$(date '+%Y-%m-%d_%H-%M-%S')"
-		RUN_LOGDIR="$WEKAN_LOG_ROOT/$RUN_TS"
+		RUN_LOGDIR="$(log_directory "test-all-$RUN_MODE")" || return $?
 	fi
 	mkdir -p "$RUN_LOGDIR"
 	RUN_LOGDIR="$(cd "$RUN_LOGDIR" && pwd)"
@@ -1304,7 +1380,7 @@ function run_all_tests(){
 		local DBPATH="../mongodb-test-$TEST_DB_PORT"
 		mkdir -p "$DBPATH"
 		echo "==> Starting MongoDB (Meteor's mongod) on :$TEST_DB_PORT, dbpath $DBPATH."
-		{ echo "===== mongod :$TEST_DB_PORT - started $(date '+%Y-%m-%d %H:%M:%S %Z') ====="; "$MONGOD_BIN" --port "$TEST_DB_PORT" --dbpath "$DBPATH" --bind_ip 127.0.0.1 --nounixsocket; } > "$RUN_LOGDIR/wekan-test-mongod.log" 2>&1 &
+		{ echo "===== mongod :$TEST_DB_PORT - started $(date '+%Y-%m-%d %H:%M:%S %Z') ====="; exec "$MONGOD_BIN" --port "$TEST_DB_PORT" --dbpath "$DBPATH" --bind_ip 127.0.0.1 --nounixsocket; } > "$RUN_LOGDIR/wekan-test-mongod.log" 2>&1 &
 		MONGOD_PID=$!
 		local db_ready=0
 		for i in $(seq 1 60); do
@@ -1353,7 +1429,7 @@ function run_all_tests(){
 	  MONGO_URL="$TEST_MONGO_URL" ROOT_URL="http://localhost:3000" PORT=3000 \
 	  WRITABLE_PATH="$WRITABLE_ABS" WITH_API=true RICHER_CARD_COMMENT_EDITOR=false \
 	  DEFAULT_METEOR_REACTIVITY_ORDER="changeStreams,oplog,polling" \
-	  NODE_OPTIONS="$TEST_NODE_OPTIONS" "$NODE_BIN" "$BUNDLE_DIR/main.js"; } >> "$RUN_LOGDIR/wekan-test-server.log" 2>&1 &
+	  NODE_OPTIONS="$TEST_NODE_OPTIONS" exec "$NODE_BIN" "$BUNDLE_DIR/main.js"; } >> "$RUN_LOGDIR/wekan-test-server.log" 2>&1 &
 	TEST_SERVER_PID=$!
 
 	SERVER_READY=0
@@ -1560,7 +1636,7 @@ function run_everything(){
 	local FERRET_GOFLAGS="${WEKAN_FERRETDB_GOFLAGS:--p=$FERRET_GO_JOBS}"
 	local FERRET_GOMEMLIMIT="${WEKAN_FERRETDB_GOMEMLIMIT:-${FERRET_GO_MEMORY_MB}MiB}"
 	RUN_TS="$(date '+%Y-%m-%d_%H-%M-%S')"
-	RUN_LOGDIR="$WEKAN_LOG_ROOT/$RUN_TS"
+	RUN_LOGDIR="$(log_directory "test-everything-$EVERYTHING_MODE")" || return $?
 	mkdir -p "$RUN_LOGDIR"
 	RUN_LOGDIR="$(cd "$RUN_LOGDIR" && pwd)"
 	export WEKAN_LOGDIR="$RUN_LOGDIR"
@@ -1674,13 +1750,31 @@ everything_pid_running() {
 	[ -n "$state" ] && [ "${state#Z}" = "$state" ]
 }
 
+# A shell launcher can contain the test command in its -c argument. It is
+# part of this run's ancestry, never an abandoned previous test process.
+everything_ancestor_pids() {
+	local pid="${1:-$$}" parent pids=""
+	while [ "$pid" -gt 0 ] 2>/dev/null; do
+		case " $pids " in *" $pid "*) break ;; esac
+		pids="$pids $pid"
+		parent="$(ps -o ppid= -p "$pid" 2>/dev/null)"
+		parent="${parent//[[:space:]]/}"
+		case "$parent" in ''|*[!0-9]*) break ;; esac
+		pid="$parent"
+	done
+	printf "%s\n" "$pids"
+}
+
 cleanup_everything_processes() {
 	local scope="${1:-all}" pid pids="" survivors="" containers=""
+	local ancestors="$(everything_ancestor_pids)"
 	if [ "$scope" != own ] && command -v pgrep >/dev/null 2>&1; then
 		for pid in $(pgrep -f "[b]uild\.sh --run-everything" 2>/dev/null); do
+			case " $ancestors " in *" $pid "*) continue ;; esac
 			[ "$pid" = "$$" ] || pids="$pids $pid"
 		done
 		for pid in $(pgrep -f "$WEKAN_DIR/(tests|\.build/bundle|releases/db-conformance)" 2>/dev/null); do
+			case " $ancestors " in *" $pid "*) continue ;; esac
 			[ "$pid" = "$$" ] || pids="$pids $pid"
 		done
 	fi
@@ -1770,122 +1864,70 @@ acquire_everything_lock() {
 # ============================================================================
 # Multi-forge tooling (menu options below).
 #   * install_forge_tools: install gh-like CLIs (gh, glab, tea, git-bug, forge).
-#   * mirror_forge: mirror a repo from GitHub to GitLab/Codeberg/Forgejo/Gitea.
-# Code history is pushed with `git push --mirror`; issues, PRs and CI workflow
-# syntax (which git cannot carry) are handled by tools/forge-mirror.js (Node).
-# Forge registry: index = menu number - 1.
+#   * mirror_forge: run the active GitLab/Codeberg/SourceForge mirror scripts.
+# Shared Node helpers synchronize missing issue and release data as well as Git.
 # ============================================================================
-FORGE_NAMES=("GitHub" "GitLab" "Codeberg" "Forgejo (self-hosted)" "Gitea (self-hosted)")
-FORGE_HOST=("github.com" "gitlab.com" "codeberg.org" "" "")
-FORGE_TOOL=("gh" "glab" "tea" "tea" "tea")
-FORGE_KIND=("github" "gitlab" "codeberg" "forgejo" "gitea")
-
-function forge_list(){
-	local i
-	for i in "${!FORGE_NAMES[@]}"; do printf "  %d) %s\n" "$((i+1))" "${FORGE_NAMES[$i]}"; done
-}
-
 function install_forge_tools(){
-	echo
-	echo "Installing gh-like forge CLIs: gh, glab, tea, git-bug, forge (git-pkgs/forge)."
-	echo "Already-installed tools are skipped. Package manager is auto-detected."
-	local PM=""
-	if command -v brew >/dev/null 2>&1; then PM=brew
-	elif command -v apt  >/dev/null 2>&1; then PM=apt
-	elif command -v dnf  >/dev/null 2>&1; then PM=dnf
-	elif command -v yum  >/dev/null 2>&1; then PM=yum
-	elif command -v apk  >/dev/null 2>&1; then PM=apk
-	elif command -v pacman >/dev/null 2>&1; then PM=pacman
-	fi
-	echo "Detected package manager: ${PM:-none}"
-
-	# gh - GitHub CLI (source forge)
-	if command -v gh >/dev/null 2>&1; then echo "OK: gh present"
-	else ensure_tools gh || echo "Install gh manually: https://github.com/cli/cli#installation"; fi
-
-	# glab - GitLab CLI
-	if command -v glab >/dev/null 2>&1; then echo "OK: glab present"
-	else ensure_tools glab || echo "Install glab manually: https://gitlab.com/gitlab-org/cli/-/releases"; fi
-	# tea - Gitea/Forgejo CLI (covers Codeberg, Forgejo, Gitea)
-	if command -v tea >/dev/null 2>&1; then echo "OK: tea present"
-	elif [ "$PM" = brew ]; then brew install tea
-	elif command -v go >/dev/null 2>&1; then go install code.gitea.io/tea@latest
-	else echo "Install tea manually: https://gitea.com/gitea/tea/releases (or 'brew install tea')"; fi
-
-	# git-bug - distributed issue tracker / bridges
-	if command -v git-bug >/dev/null 2>&1; then echo "OK: git-bug present"
-	elif [ "$PM" = brew ]; then brew install git-bug
-	elif command -v go >/dev/null 2>&1; then go install github.com/git-bug/git-bug@latest
-	else echo "Install git-bug manually: https://github.com/git-bug/git-bug/releases"; fi
-
-	# forge - git-pkgs/forge unified multi-forge CLI
-	if command -v forge >/dev/null 2>&1; then echo "OK: forge present"
-	elif command -v go >/dev/null 2>&1; then
-		go install github.com/git-pkgs/forge@latest \
-			|| echo "go install failed; see https://github.com/git-pkgs/forge for the current install path"
-	else echo "Install forge manually (needs Go): https://github.com/git-pkgs/forge"; fi
-
-	echo
-	echo "Authenticate before mirroring:  gh auth login | glab auth login | tea login add"
-	command -v go >/dev/null 2>&1 && echo "Note: Go tools install to \$(go env GOPATH)/bin — ensure it is on your PATH."
+	local tool module forge_install_status=0
+	local forge_bin="${GOBIN:-$WEKAN_TOOLS_DIR/bin}"
+	mkdir -p "$forge_bin" "$WEKAN_TOOLS_DIR/tmp" || return 1
+	export TMPDIR="$WEKAN_TOOLS_DIR/tmp"
+	export PATH="$forge_bin:$PATH"
+	echo "Installing tools for GitHub, GitLab, Codeberg and SourceForge mirrors."
+	echo "Native packages are preferred; missing Go CLIs are built for this host CPU."
+	# SourceForge uses Git/SSH, HTTP APIs and SCP/SFTP release transfers.
+	# Node runs the issue/release mirror helper; Go builds missing CLIs.
+	for tool in git ssh scp sftp curl jq rsync node go; do
+		if ! command -v "$tool" >/dev/null 2>&1; then
+			ensure_tools "$tool" || echo "Package installation failed for $tool."
+		fi
+	done
+	ensure_forge_go || echo "A current native Go toolchain could not be prepared."
+	for tool in gh glab tea git-bug forge; do
+		if command -v "$tool" >/dev/null 2>&1; then
+			echo "OK: $tool present"
+			continue
+		fi
+		# Brew has maintained Tea/git-bug packages; gh/glab use distro packages.
+		case "$tool" in
+			gh|glab) ensure_tools "$tool" || true ;;
+			tea|git-bug)
+				if [ "$(_et_os)" = macos ]; then ensure_tools "$tool" || true; fi ;;
+		esac
+		command -v "$tool" >/dev/null 2>&1 && continue
+		case "$tool" in
+			gh) module=github.com/cli/cli/v2/cmd/gh ;;
+			glab) module=gitlab.com/gitlab-org/cli/cmd/glab ;;
+			tea) module=gitea.dev/tea ;;
+			git-bug) module=github.com/git-bug/git-bug ;;
+			forge) module=github.com/git-pkgs/forge/cmd/forge ;;
+		esac
+		if command -v go >/dev/null 2>&1; then
+			GOBIN="$forge_bin" go install "$module@latest" || {
+				echo "$tool installation failed ($module); check the Go version and host CPU support."
+			}
+		else
+			echo "Cannot build $tool: Go installation failed."
+		fi
+	done
+	echo "Mirror tool status:"
+	for tool in git ssh scp sftp curl jq rsync node go gh glab tea git-bug forge; do
+		if command -v "$tool" >/dev/null 2>&1; then
+			echo "  OK $tool: $(command -v "$tool")"
+		else
+			echo "  MISSING $tool"
+			forge_install_status=1
+		fi
+	done
+	echo "Go CLI directory: $forge_bin (added to this build session's PATH)."
+	echo "Authenticate separately: gh auth login; glab auth login; tea login add."
+	echo "SourceForge uses your project account with SSH/SFTP and its API credentials."
+	return "$forge_install_status"
 }
 
 function mirror_forge(){
 	local scriptdir; scriptdir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-	echo
-	echo "Mirror a repository between forges (code + issues + PRs + Actions)."
-	echo "Forges:"
-	forge_list
-	echo
-	read -p "Enter SOURCE and TARGET numbers, e.g. '1 3' (GitHub -> Codeberg): " SRC TGT
-	case "${SRC}${TGT}" in *[!12345]*|"") echo "Invalid selection."; return ;; esac
-	if [ "$SRC" = "$TGT" ]; then echo "Source and target must differ."; return; fi
-	local si=$((SRC-1)) ti=$((TGT-1))
-	echo "Source: ${FORGE_NAMES[$si]}   ->   Target: ${FORGE_NAMES[$ti]}"
-	if [ "${FORGE_TOOL[$si]}" != gh ]; then
-		echo "NOTE: automated issue/PR sync supports GitHub as SOURCE only;"
-		echo "      code mirroring + CI conversion still work for any source."
-	fi
-	read -p "Source repo (owner/name): " SREPO
-	read -p "Target repo (owner/name): " TREPO
-	if [ -z "$SREPO" ] || [ -z "$TREPO" ]; then echo "Both repos are required."; return; fi
-	local shost="${FORGE_HOST[$si]}" thost="${FORGE_HOST[$ti]}"
-	[ -z "$shost" ] && read -p "Source host (e.g. git.example.com): " shost
-	[ -z "$thost" ] && read -p "Target host (e.g. git.example.com): " thost
-
-	# 1. Code: mirror all branches + tags.
-	echo
-	read -p "Mirror code (all branches/tags) with 'git push --mirror'? [y/N] " DOCODE
-	case "$DOCODE" in [Yy]*)
-		local work; work="$(mktemp -d)"
-		echo "Cloning https://$shost/$SREPO.git (mirror) ..."
-		if git clone --mirror "https://$shost/$SREPO.git" "$work/repo.git"; then
-			echo "Pushing to https://$thost/$TREPO.git (target must exist; push credentials required) ..."
-			( cd "$work/repo.git" && git push --mirror "https://$thost/$TREPO.git" ) \
-				|| echo "Push failed — check the target repo exists and credentials are set."
-		else
-			echo "Clone failed — check the source URL/host."
-		fi
-		rm -rf "$work"
-		;;
-	esac
-
-	# 2 + 3. Issues / PRs / Actions via the Node engine (dry run first).
-	echo
-	echo "Now syncing issues + PRs (missing only) and converting CI workflows (DRY RUN)..."
-	node "$scriptdir/tools/forge-mirror.js" \
-		--source-tool "${FORGE_TOOL[$si]}" --source-repo "$SREPO" --source-host "$shost" \
-		--target-tool "${FORGE_TOOL[$ti]}" --target-repo "$TREPO" --target-host "$thost" \
-		--target-kind "${FORGE_KIND[$ti]}" --include-closed
-	echo
-	read -p "Apply the issue/PR creation at the target now (not a dry run)? [y/N] " APPLYNOW
-	case "$APPLYNOW" in [Yy]*)
-		node "$scriptdir/tools/forge-mirror.js" \
-			--source-tool "${FORGE_TOOL[$si]}" --source-repo "$SREPO" --source-host "$shost" \
-			--target-tool "${FORGE_TOOL[$ti]}" --target-repo "$TREPO" --target-host "$thost" \
-			--target-kind "${FORGE_KIND[$ti]}" --include-closed --issues --prs --apply ;;
-	esac
-	echo "Mirror flow complete."
+	bash "$scriptdir/releases/mirror.sh"
 }
 
 # Run a docker compose subcommand against one of the docker-compose*.yml files
@@ -2438,6 +2480,8 @@ RELEASE_SCRIPTS=(	"Release|Release ALL platforms: push CHANGELOG, trigger releas
 	"Git and repo|Update Node.js everywhere in the sources|releases/node-update.sh|||"
 	"Git and repo|Update the local Node.js version|releases/node-update-local.sh|||"
 	"Git and repo|Migrate a MongoDB database to FerretDB (--help first)|releases/migrate-mongodb-to-ferretdb.mjs|Arguments, e.g. --help||"
+	"Git and repo|Export local Git history to a new Fossil repository|releases/fossil.sh|||fossil-export"
+	"Git and repo|Open the local Fossil repository UI|releases/fossil-ui.sh|||fossil-ui"
 	"Server and VM|Enable and start the SSH server|!sudo systemctl enable ssh && sudo systemctl start ssh||linux|ssh-start"
 	"Server and VM|Disable and stop the SSH server|!sudo systemctl disable ssh && sudo systemctl stop ssh||linux|ssh-stop"
 	"Server and VM|Enable the ufw firewall|!sudo ufw enable||linux|ufw-enable"
@@ -2670,7 +2714,7 @@ while [ -z "$opt" ]; do
 				choose "Tools" \
 					"Save Meteor deps list|Save Meteor dependency chain to ../meteor-deps.txt" \
 					"Install forge CLI tools|Install forge CLI tools (gh, glab, tea, git-bug, forge) for GitHub/GitLab/Codeberg/Forgejo/Gitea" \
-					"Mirror repo to forges|Mirror repo GitHub -> GitLab/Codeberg/Forgejo/Gitea: code + issues + PRs + Actions (sync missing, convert CI syntax)" ;;
+					"Mirror repo to forges|Mirror GitHub to active mirrors: code, issues, PR conversations, releases and assets" ;;
 			"Docker") if docker_menu; then exit 0; fi ;;
 			"Releases") if releases_menu; then exit 0; fi ;;
 			"CLI commands")
@@ -2838,9 +2882,9 @@ for _once in 1; do
 		kill_meteor_on_port 3000 || break
 		#Not in use, could increase RAM usage: NODE_OPTIONS="--max_old_space_size=4096"
 		#---------------------------------------------------------------------
-		# Logging of terminal output to console and to .tools/log/wekan-log.log at end of this line: 2>&1 | tee "$WEKAN_LOG_ROOT/wekan-log.log"
+		# Logging of terminal output to console and to .tools/log/wekan-log.log at end of this line: 2>&1 | tee "$(one_log dev-server)"
 		#WARN_WHEN_USING_OLD_API=true NODE_OPTIONS="--trace-warnings"
-		DEFAULT_METEOR_REACTIVITY_ORDER="changeStreams,oplog,polling" DDP_TRANSPORT=sockjs DEBUG=true WRITABLE_PATH=.. WITH_API=true RICHER_CARD_COMMENT_EDITOR=false ROOT_URL=http://localhost:3000 meteor run --port 3000 2>&1 | tee "$WEKAN_LOG_ROOT/wekan-log.log"
+		DEFAULT_METEOR_REACTIVITY_ORDER="changeStreams,oplog,polling" DDP_TRANSPORT=sockjs DEBUG=true WRITABLE_PATH=.. WITH_API=true RICHER_CARD_COMMENT_EDITOR=false ROOT_URL=http://localhost:3000 meteor run --port 3000 2>&1 | tee "$(one_log dev-server)"
 		#---------------------------------------------------------------------
 		break
 		;;
@@ -2851,8 +2895,8 @@ for _once in 1; do
 		kill_meteor_on_port 3000 || break
                 #Not in use, could increase RAM usage: NODE_OPTIONS="--max_old_space_size=4096"
                 #---------------------------------------------------------------------
-                # Logging of terminal output to console and to .tools/log/wekan-log.log at end of this line: 2>&1 | tee "$WEKAN_LOG_ROOT/wekan-log.log"
-                DEFAULT_METEOR_REACTIVITY_ORDER="changeStreams,oplog,polling" DDP_TRANSPORT=sockjs DEBUG=true WARN_WHEN_USING_OLD_API=true NODE_OPTIONS="--trace-warnings --max-old-space-size=$_heap_mb" WRITABLE_PATH=.. WITH_API=true RICHER_CARD_COMMENT_EDITOR=false ROOT_URL=http://localhost:3000 meteor run --port 3000 2>&1 | tee "$WEKAN_LOG_ROOT/wekan-log.log"
+                # Logging of terminal output to console and to .tools/log/wekan-log.log at end of this line: 2>&1 | tee "$(one_log dev-server)"
+                DEFAULT_METEOR_REACTIVITY_ORDER="changeStreams,oplog,polling" DDP_TRANSPORT=sockjs DEBUG=true WARN_WHEN_USING_OLD_API=true NODE_OPTIONS="--trace-warnings --max-old-space-size=$_heap_mb" WRITABLE_PATH=.. WITH_API=true RICHER_CARD_COMMENT_EDITOR=false ROOT_URL=http://localhost:3000 meteor run --port 3000 2>&1 | tee "$(one_log dev-server)"
                 #---------------------------------------------------------------------
                 break
                 ;;
@@ -2862,9 +2906,9 @@ for _once in 1; do
 		kill_meteor_on_port 3000 || break
 		#Not in use, could increase RAM usage: NODE_OPTIONS="--max_old_space_size=4096"
 		#---------------------------------------------------------------------
-		#Logging of terminal output to console and to .tools/log/wekan-log.log at end of this line: 2>&1 | tee "$WEKAN_LOG_ROOT/wekan-log.log"
+		#Logging of terminal output to console and to .tools/log/wekan-log.log at end of this line: 2>&1 | tee "$(one_log dev-server)"
 		#WARN_WHEN_USING_OLD_API=true NODE_OPTIONS="--trace-warnings"
-		DEFAULT_METEOR_REACTIVITY_ORDER="changeStreams,oplog,polling" DDP_TRANSPORT=sockjs DEBUG=true WRITABLE_PATH=.. WITH_API=true RICHER_CARD_COMMENT_EDITOR=false ROOT_URL=http://localhost:3000 meteor run --port 3000 --extra-packages bundle-visualizer --production  2>&1 | tee "$WEKAN_LOG_ROOT/wekan-log.log"
+		DEFAULT_METEOR_REACTIVITY_ORDER="changeStreams,oplog,polling" DDP_TRANSPORT=sockjs DEBUG=true WRITABLE_PATH=.. WITH_API=true RICHER_CARD_COMMENT_EDITOR=false ROOT_URL=http://localhost:3000 meteor run --port 3000 --extra-packages bundle-visualizer --production  2>&1 | tee "$(one_log dev-server)"
 		#---------------------------------------------------------------------
 		break
 		;;
@@ -2881,9 +2925,9 @@ for _once in 1; do
 		#---------------------------------------------------------------------
 		#Not in use, could increase RAM usage: NODE_OPTIONS="--max_old_space_size=4096"
 		#---------------------------------------------------------------------
-		#Logging of terminal output to console and to .tools/log/wekan-log.log at end of this line: 2>&1 | tee "$WEKAN_LOG_ROOT/wekan-log.log"
+		#Logging of terminal output to console and to .tools/log/wekan-log.log at end of this line: 2>&1 | tee "$(one_log dev-server)"
 		#WARN_WHEN_USING_OLD_API=true NODE_OPTIONS="--trace-warnings"
-		DEFAULT_METEOR_REACTIVITY_ORDER="changeStreams,oplog,polling" DDP_TRANSPORT=sockjs DEBUG=true WRITABLE_PATH=.. WITH_API=true RICHER_CARD_COMMENT_EDITOR=false ROOT_URL=http://$IPADDRESS:3000 meteor run --port 3000 2>&1 | tee "$WEKAN_LOG_ROOT/wekan-log.log"
+		DEFAULT_METEOR_REACTIVITY_ORDER="changeStreams,oplog,polling" DDP_TRANSPORT=sockjs DEBUG=true WRITABLE_PATH=.. WITH_API=true RICHER_CARD_COMMENT_EDITOR=false ROOT_URL=http://$IPADDRESS:3000 meteor run --port 3000 2>&1 | tee "$(one_log dev-server)"
 		#---------------------------------------------------------------------
 		break
 		;;
@@ -2900,9 +2944,9 @@ for _once in 1; do
                 #---------------------------------------------------------------------
                 #Not in use, could increase RAM usage: NODE_OPTIONS="--max_old_space_size=4096"
                 #---------------------------------------------------------------------
-                #Logging of terminal output to console and to .tools/log/wekan-log.log at end of this line: 2>&1 | tee "$WEKAN_LOG_ROOT/wekan-log.log"
+                #Logging of terminal output to console and to .tools/log/wekan-log.log at end of this line: 2>&1 | tee "$(one_log dev-server)"
                 #WARN_WHEN_USING_OLD_API=true NODE_OPTIONS="--trace-warnings"
-                DEFAULT_METEOR_REACTIVITY_ORDER="changeStreams,oplog,polling" DDP_TRANSPORT=sockjs DEBUG=true MONGO_URL=mongodb://127.0.0.1:27019/wekan WRITABLE_PATH=.. WITH_API=true RICHER_CARD_COMMENT_EDITOR=false ROOT_URL=http://$IPADDRESS:3000 meteor run --port 3000 2>&1 | tee "$WEKAN_LOG_ROOT/wekan-log.log"
+                DEFAULT_METEOR_REACTIVITY_ORDER="changeStreams,oplog,polling" DDP_TRANSPORT=sockjs DEBUG=true MONGO_URL=mongodb://127.0.0.1:27019/wekan WRITABLE_PATH=.. WITH_API=true RICHER_CARD_COMMENT_EDITOR=false ROOT_URL=http://$IPADDRESS:3000 meteor run --port 3000 2>&1 | tee "$(one_log dev-server)"
                 #---------------------------------------------------------------------
                 break
                 ;;
@@ -2914,9 +2958,9 @@ for _once in 1; do
 		#---------------------------------------------------------------------
 		# Same environment as the plain localhost:3000 option; only the port and
 		# ROOT_URL differ. Logging of terminal output to console and to
-		# .tools/log/wekan-log.log at the end of the line: 2>&1 | tee "$WEKAN_LOG_ROOT/wekan-log.log"
+		# .tools/log/wekan-log.log at the end of the line: 2>&1 | tee "$(one_log dev-server)"
 		#---------------------------------------------------------------------
-		DEFAULT_METEOR_REACTIVITY_ORDER="changeStreams,oplog,polling" DDP_TRANSPORT=sockjs DEBUG=true WRITABLE_PATH=.. WITH_API=true RICHER_CARD_COMMENT_EDITOR=false ROOT_URL="$DEV_ROOT_URL" meteor run --port "$DEV_PORT" 2>&1 | tee "$WEKAN_LOG_ROOT/wekan-log.log"
+		DEFAULT_METEOR_REACTIVITY_ORDER="changeStreams,oplog,polling" DDP_TRANSPORT=sockjs DEBUG=true WRITABLE_PATH=.. WITH_API=true RICHER_CARD_COMMENT_EDITOR=false ROOT_URL="$DEV_ROOT_URL" meteor run --port "$DEV_PORT" 2>&1 | tee "$(one_log dev-server)"
 		#---------------------------------------------------------------------
 		break
 		;;
@@ -2933,9 +2977,9 @@ for _once in 1; do
 		#---------------------------------------------------------------------
 		#Not in use, could increase RAM usage: NODE_OPTIONS="--max_old_space_size=4096"
 		#---------------------------------------------------------------------
-		#Logging of terminal output to console and to .tools/log/wekan-log.log at end of this line: 2>&1 | tee "$WEKAN_LOG_ROOT/wekan-log.log"
+		#Logging of terminal output to console and to .tools/log/wekan-log.log at end of this line: 2>&1 | tee "$(one_log dev-server)"
 		#WARN_WHEN_USING_OLD_API=true NODE_OPTIONS="--trace-warnings"
-		DEFAULT_METEOR_REACTIVITY_ORDER="changeStreams,oplog,polling" DDP_TRANSPORT=sockjs DEBUG=true WRITABLE_PATH=.. WITH_API=true RICHER_CARD_COMMENT_EDITOR=false ROOT_URL=http://$IPADDRESS:$PORT meteor run --port $PORT 2>&1 | tee "$WEKAN_LOG_ROOT/wekan-log.log"
+		DEFAULT_METEOR_REACTIVITY_ORDER="changeStreams,oplog,polling" DDP_TRANSPORT=sockjs DEBUG=true WRITABLE_PATH=.. WITH_API=true RICHER_CARD_COMMENT_EDITOR=false ROOT_URL=http://$IPADDRESS:$PORT meteor run --port $PORT 2>&1 | tee "$(one_log dev-server)"
 		#---------------------------------------------------------------------
 		break
 		;;
@@ -3046,6 +3090,11 @@ for _once in 1; do
 			# .eslintrc.json, and a test run must do neither.
 			floating_promises_checks
 		} 2>&1 | tee "$LOG"
+		break
+		;;
+
+    "Mirror GitHub to active mirrors: code, issues, PR conversations, releases and assets")
+		mirror_forge
 		break
 		;;
 

@@ -1,3 +1,4 @@
+const { CALENDAR_SYSTEM_IDS } = require('/imports/lib/calendarSystems');
 import { Meteor } from 'meteor/meteor';
 import { WebApp } from 'meteor/webapp';
 import { Accounts } from 'meteor/accounts-base';
@@ -1114,15 +1115,15 @@ Meteor.methods({
   },
 
   // #4335: per-user, display-only Jalali (Persian/Solar Hijri) calendar
-  // toggle for minicard/card-detail dates. Storage stays Gregorian.
+  // toggle for rendered dates. Storage stays Gregorian.
   async changeCalendarSystem(calendarSystem) {
     check(calendarSystem, String);
-    if (!['gregorian', 'jalali'].includes(calendarSystem)) {
+    if (!CALENDAR_SYSTEM_IDS.includes(calendarSystem)) {
       throw new Meteor.Error('invalid-calendar-system');
     }
     const user = await ReactiveCache.getCurrentUser();
     if (!user) return;
-    user.setCalendarSystem(calendarSystem);
+    return await user.setCalendarSystem(calendarSystem);
   },
 
   async applyListWidth(boardId, listId, width, constraint) {
@@ -1746,7 +1747,9 @@ Meteor.methods({
       userId,
       reason: 'clickedImpersonate',
     });
-    this.setUserId(userId);
+    // Meteor 3 restarts subscriptions asynchronously. Finish that transition
+    // before the client switches its identity and subscribes again (#6691).
+    await this.setUserId(userId);
   },
 
   async isImpersonated(userId) {

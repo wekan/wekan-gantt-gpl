@@ -231,6 +231,15 @@ function seedBoard({ ownerId, title, listCount = 3, cardTitlesPerList = [] } = {
         subtasksDefaultBoardId: null, subtasksDefaultListId: null,
         dateSettingsDefaultBoardId: null, dateSettingsDefaultListId: null,
         allowsSubtasks: true, allowsAttachments: true, allowsChecklists: true,
+        // Direct Mongo inserts bypass schema defaults. Match the enabled
+        // card sections of a board created through the application.
+        allowsStickers: true, allowsStickersOnMinicard: true,
+        allowsLocation: true, allowsDependencies: true,
+        allowsDependenciesOnMinicard: true,
+        allowsVote: true, allowsVoteOnMinicard: true,
+        allowsPoker: true, allowsPokerOnMinicard: true,
+        allowsFlowtime: true, allowsPomodoro: true, allowsTextNotes: true,
+        allowsCommentCountOnMinicard: true,
         allowsComments: true, allowsDescriptionTitle: true,
         allowsDescriptionText: true, allowsDescriptionTextOnMinicard: false,
         allowsCoverAttachmentOnMinicard: true, allowsBadgeAttachmentOnMinicard: false,

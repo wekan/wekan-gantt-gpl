@@ -1,3 +1,6 @@
+import { Filter } from '/client/lib/filter';
+import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
+import { calendarDateDisplayOptions } from '/client/lib/dateDisplay';
 import { ReactiveCache } from '/imports/reactiveCache';
 import { TAPi18n } from '/imports/i18n';
 import { ReactiveVar } from 'meteor/reactive-var';
@@ -58,9 +61,11 @@ Template.multiboardCalendarView.helpers({
       currentUser ? currentUser.getStartDayOfWeek() : 1,
     );
 
+    const displayOptions = calendarDateDisplayOptions('multiboard-calendar-view');
     return {
       id: 'multiboard-calendar-view',
-      initialView: 'dayGridMonth',
+      ...displayOptions,
+      initialView: displayOptions.initialView || 'dayGridMonth',
       firstDay,
       // #2469 scope: cross-board drag-to-reschedule is out of scope for
       // this pass (a card's board isn't necessarily the one currently

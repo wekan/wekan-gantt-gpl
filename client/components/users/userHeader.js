@@ -1,3 +1,4 @@
+const { availableCalendarSystems } = require('/imports/lib/calendarSystems');
 import { ReactiveCache } from '/imports/reactiveCache';
 import { TAPi18n } from '/imports/i18n';
 import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
@@ -443,7 +444,23 @@ Template.changeLanguagePopup.helpers({
       'kl': '🇬🇱', 'iu': '🇨🇦', 'chr': '🇺🇸', 'nah': '🇲🇽', 'bua': '🇷🇺', 'csb': '🇵🇱', 'szl': '🇵🇱', 'an': '🇪🇸', 'lld': '🇮🇹', 'rup': '🇬🇷',
       'mai': '🇮🇳', 'bho': '🇮🇳', 'kok': '🇮🇳', 'ks': '🇮🇳', 'ckb': '🇮🇶', 'tig': '🇪🇷', 'wal': '🇪🇹'
     };
-    return flagMap[this.tag] || '🌐';
+    // These legacy locale prefixes name different languages, not Venda/Walloon.
+    const languageOverrides = { 've-CC': '🇮🇹', 've-PP': '🇷🇺', 'wa-RR': '🇵🇭' };
+    const tag = this.tag;
+    const base = tag.split(/[-_@]/)[0];
+    const language = languageOverrides[tag] || flagMap[base] || '🌐';
+    if (!/[-_@]/.test(tag)) return language;
+    const countryOverrides = {
+      'be-BE': '🇧🇾', 've-CC': '🇮🇹', 've-PP': '🇷🇺', 'vl-SS': '🇧🇪',
+      'wa-RR': '🇵🇭', 'es-LA': '🌐', 'zh-GB': '🇨🇳', 'en-YS': '🌐',
+      'az-LA': '🇦🇿', 'uz-LA': '🇺🇿', 'uz-AR': '🇺🇿',
+    };
+    const countries = new Set('ZA AU DZ EG AZ ES CZ GB AT CH DE GR BR IT MY AR CL CO MX PE PY EE IR BE CA NL IN IL JP KH KR PT RO RU SI UA UZ VN CN HK SG TW ID TR TM'.split(' '));
+    const suffix = tag.split(/[-_@]/)[1];
+    const country = countryOverrides[tag] || (countries.has(suffix)
+      ? String.fromCodePoint(...[...suffix].map(letter => 0x1f1e6 + letter.charCodeAt(0) - 65))
+      : language);
+    return `${country} ${language}`;
   },
 });
 
@@ -514,17 +531,15 @@ Template.changeSettingsPopup.helpers({
       return window.localStorage.getItem('startDayOfWeek');
     }
   },
-  // #4335: display-only Jalali (Persian/Solar Hijri) calendar toggle.
+  // Supported calendar choices are independent of the interface language.
   calendarSystems() {
     const currentUser = ReactiveCache.getCurrentUser();
     const current = currentUser
       ? currentUser.getCalendarSystem()
       : window.localStorage.getItem('calendarSystem') || 'gregorian';
-    return [
-      { name: TAPi18n.__('calendar-system-gregorian'), value: 'gregorian' },
-      { name: TAPi18n.__('calendar-system-jalali'), value: 'jalali' },
-    ].map(system => ({
+    return availableCalendarSystems().map(system => ({
       ...system,
+      name: TAPi18n.__(system.labelKey),
       isSelected: system.value === current,
     }));
   },

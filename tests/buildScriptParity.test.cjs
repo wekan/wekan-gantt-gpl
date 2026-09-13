@@ -54,7 +54,8 @@ test('build.sh builds before the tests, every time', () => {
 });
 
 test('build.sh keeps dependency-install errors visible in the console and log', () => {
-  assert.ok(sh.includes('(meteor update --npm || true) && meteor npm install'),
+  assert.ok(sh.includes('build_stage "2/4 Compile app to resolve Meteor plugin npm dependencies" meteor update --npm') &&
+    sh.includes('build_stage "3/4 Install npm dependencies" meteor npm install || return $?'),
     'meteor update and npm install must remain inside the build log stream');
   assert.ok(!sh.includes('meteor update --npm 2>/dev/null'),
     'meteor update stderr must not be hidden from the console or timestamped log');
@@ -224,11 +225,8 @@ test('every script in releases/ is reachable from BOTH menus', () => {
     'ferretdb/start-wekan.bat': 'shipped INSIDE the Windows bundle, to start it',
     'build-bundle-win64.bat': 'a Windows batch script - bash cannot run it, so it '
       + 'is not a menu entry; build.bat\'s Bundles menu says to run it directly',
-    'mirror.sh': 'standalone Linux/macOS mirror updater; its Windows '
-      + 'counterpart cannot share one cross-platform menu entry, and each pushes '
-      + 'two external mirrors rather than performing a WeKan release step',
-    'mirror.bat': 'standalone Windows counterpart of '
-      + 'mirror.sh, tied to the documented Windows checkout path',
+    'mirror.sh': 'Tools menu opens mirror settings and synchronization on Unix',
+    'mirror.bat': 'Windows Tools menu counterpart of the Unix mirror launcher',
     // Release-workflow helpers. These are called by
     // .github/workflows/release-all.yml, not by a person from a menu: they take
     // their input from the matrix and the environment of a build job and would
@@ -316,6 +314,17 @@ test('every script in releases/ is reachable from BOTH menus', () => {
       + '      require-binaries.sh; it verifies a downloaded FerretDB fork before\n'
       + '      a release build and is not an operator-facing menu command',
   };
+
+  // These are explicit audit/internal helpers, not independent release-menu actions.
+  SKIP['translations/audit-progress.mjs'] = 'read-only audit reporting; run directly';
+  SKIP['translations/repair-audited-translations.mjs'] = 'reviewed repair helper; run directly';
+  SKIP['translations/push-all-translations.mjs'] = 'implementation invoked by push-all-translations.sh';
+
+  for (const mirror of ['github', 'gitlab', 'codeberg', 'sourceforge']) {
+    for (const extension of ['sh', 'bat']) {
+      SKIP[`mirror-${mirror}.${extension}`] = 'per-target launcher invoked by the Tools mirror flow; verified in activeForgeMirror';
+    }
+  }
 
   const missing = { sh: [], bat: [] };
   for (const f of files) {

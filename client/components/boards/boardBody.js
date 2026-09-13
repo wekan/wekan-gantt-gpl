@@ -12,6 +12,7 @@ import { boardConverter } from '/client/lib/boardConverter';
 // Bring the swimlane or list a link named into view, once it has rendered.
 import { watchBoardItemReveals } from '/client/lib/revealBoardItem';
 import { formatDateByUserPreference } from '/imports/lib/dateUtils';
+import { calendarDateDisplayOptions } from '/client/lib/dateDisplay';
 import { toFullCalendarFirstDay } from '/client/lib/calendarFirstDay';
 import { weekNumberByFirstDay } from '/models/lib/weekStart';
 import Swimlanes from '/models/swimlanes';
@@ -1181,9 +1182,11 @@ Template.calendarView.helpers({
       currentUser ? currentUser.getStartDayOfWeek() : 1,
     );
 
+    const displayOptions = calendarDateDisplayOptions('calendar-view');
     return {
       id: 'calendar-view',
-      initialView: 'dayGridMonth',
+      ...displayOptions,
+      initialView: displayOptions.initialView || 'dayGridMonth',
       firstDay,
       editable: true,
       selectable: true,
@@ -1446,12 +1449,7 @@ Template.calendarView.helpers({
     };
   },
   isViewCalendar() {
-    const currentUser = ReactiveCache.getCurrentUser();
-    if (currentUser) {
-      return (currentUser.profile || {}).boardView === 'board-view-cal';
-    } else {
-      return window.localStorage.getItem('boardView') === 'board-view-cal';
-    }
+    return Utils.boardView() === 'board-view-cal';
   },
 });
 

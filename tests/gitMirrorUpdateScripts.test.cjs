@@ -25,26 +25,32 @@ test('Unix resolves Linux and macOS checkouts from the script location', () => {
   assert.ok(!/["']~\/repos\/wekan/.test(shell), 'a quoted tilde cannot return');
 });
 
-test('Windows uses the documented Downloads checkout', () => {
+test('Windows discovers its checkout from the script, including the documented Downloads location', () => {
   assert.ok(/%USERPROFILE%\\Downloads\\repos\\wekan/i.test(batch));
   assert.ok(/set "TOOLS_DIR=%WEKAN_ROOT%\\\.tools"/i.test(batch));
+  assert.ok(batch.includes('for %%I in ("%~dp0..") do set "WEKAN_ROOT=%%~fI"'));
 });
 
-test('both scripts update existing mirrors as well as new clones', () => {
-  for (const [name, script] of [['Unix', shell], ['Windows', batch]]) {
-    for (const command of ['pull', 'fetch upstream', 'merge upstream/main', 'push']) {
-      assert.ok(script.includes(command), `${name} runs git ${command}`);
-    }
-  }
-  assert.ok(shell.indexOf('git -C "$mirror_dir" pull') > shell.indexOf('fi\n\n  git -C'),
-    'Unix update commands are outside the clone-only condition');
+test('both launchers export once and dispatch each active target', () => {
+  const menu = read('tools/mirror-menu.mjs');
+  assert.ok(shell.includes('mirror-menu.mjs'));
+  assert.ok(batch.includes('mirror-menu.mjs'));
+  assert.ok(menu.includes('--export-source'));
+  assert.ok(menu.includes('mirror-${target}.sh'));
+  assert.ok(menu.includes('mirror-${target}.bat'));
+  assert.ok(menu.includes('--snapshot'));
+  const engine = read('tools/mirror-active-forges.mjs');
+  assert.ok(engine.includes("'fetch', 'origin'"), 'existing Git cache fetches new commits');
+  assert.ok(engine.includes("'refs/heads/*:refs/heads/*', 'refs/tags/*:refs/tags/*'"), 'only branches and tags are pushed');
+  assert.ok(!engine.includes("'--force'"), 'no forced destination updates');
 });
 
-test('both configured mirrors use their SSH clone URLs', () => {
-  for (const script of [shell, batch]) {
-    assert.ok(script.includes('git@gitlab.com:wekan/wekan'));
-    assert.ok(script.includes('git@codeberg.org:wekan/wekan'));
-  }
+test('the active registry has SSH destinations and Windows reads the same registry', () => {
+  assert.ok(shell.includes('git@gitlab.com:wekan/wekan'));
+  assert.ok(shell.includes('git@codeberg.org:wekan/wekan'));
+  assert.ok(shell.includes('ssh://wekan@git.code.sf.net/p/wekan/code'));
+  assert.ok(batch.includes('mirror-menu.mjs'));
+  assert.ok(read('tools/mirror-menu.mjs').includes('loadSettings'));
 });
 
 console.log(`\ngitMirrorUpdateScripts: ${passed} tests passed`);

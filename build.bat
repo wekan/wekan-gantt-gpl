@@ -1,5 +1,6 @@
 @ECHO OFF
 SETLOCAL EnableDelayedExpansion
+set "PATH=%~dp0.tools\bin;%GOBIN%;%PATH%"
 
 REM ============================================================================
 REM  WeKan rebuild / run / test helper for Windows.
@@ -71,7 +72,8 @@ if not defined NODE_OPTIONS set "NODE_OPTIONS=--max-old-space-size=%WEKAN_BUILD_
 
 REM Every log this script writes goes into the repo-local ignored .tools\log\.
 REM Create it up front so redirections never fail on a missing directory.
-if not exist ".tools\log" md ".tools\log"
+if not defined WEKAN_LOG_ROOT set "WEKAN_LOG_ROOT=%REPO%\.tools\log"
+if not exist "%WEKAN_LOG_ROOT%" md "%WEKAN_LOG_ROOT%"
 
 REM --- Platform detection (OS + CPU arch), like detect_platform in the .sh ---
 set "PLATFORM_OS=windows"
@@ -80,7 +82,7 @@ if /i "%PROCESSOR_ARCHITECTURE%"=="ARM64" set "PLATFORM_ARCH=arm64"
 if /i "%PROCESSOR_ARCHITEW6432%"=="ARM64" set "PLATFORM_ARCH=arm64"
 echo Platform: %PLATFORM_OS% %PLATFORM_ARCH%
 echo Repo: %REPO%
-echo Note: Dev-server console output is also logged to .tools\log\wekan-log.log
+echo Note: Logs use .tools\log\<operation>\YYYY-MM-DD\HH-MM-SS\.
 
 :menu
 echo.
@@ -227,7 +229,7 @@ echo   3^) Bundles ^(10 entries^)
 echo   4^) Docker images ^(5 entries^)
 echo   5^) Sandstorm ^(5 entries^)
 echo   6^) Translations ^(9 entries^)
-echo   7^) Git and repo ^(8 entries^)
+echo   7^) Git and repo ^(10 entries^)
 echo   8^) Server and VM ^(4 entries^)
 set "choice="
 set /p "choice=Choose: "
@@ -438,6 +440,8 @@ echo   5^) Convert the remaining Stylus to CSS
 echo   6^) Update Node.js everywhere in the sources
 echo   7^) Update the local Node.js version
 echo   8^) Migrate a MongoDB database to FerretDB ^(--help first^)
+echo   9^) Export local Git history to a new Fossil repository
+echo   10^) Open the local Fossil repository UI
 set "choice="
 set /p "choice=Choose: "
 if "%choice%"=="1" call :rel_run "releases/commit.sh" ""
@@ -448,6 +452,8 @@ if "%choice%"=="5" call :rel_run "releases/stylus-to-css.sh" ""
 if "%choice%"=="6" call :rel_run "releases/node-update.sh" ""
 if "%choice%"=="7" call :rel_run "releases/node-update-local.sh" ""
 if "%choice%"=="8" call :rel_run "releases/migrate-mongodb-to-ferretdb.mjs" "Arguments, e.g. --help"
+if "%choice%"=="9" call :rel_run "releases/fossil.sh" ""
+if "%choice%"=="10" call :rel_run "releases/fossil-ui.sh" ""
 if "%choice%"=="0" goto menu_releases
 goto rel_gitandrepo
 
@@ -620,6 +626,8 @@ echo   stylus-to-css                      Convert the remaining Stylus to CSS
 echo   node-update                        Update Node.js everywhere in the sources
 echo   node-update-local                  Update the local Node.js version
 echo   migrate-mongodb-to-ferretdb        Migrate a MongoDB database to FerretDB ^(--help first^)   ^<Arguments, e.g. --help^>
+echo   fossil-export                    Export local Git history to a new Fossil repository
+echo   fossil-ui                        Open the local Fossil repository UI
 echo   ipaddress                          Show the VirtualBox VM's IP address
 echo   node-allow-port-80                 Let Node.js bind port 80 in the VM
 echo   start-wekan                        Start WeKan in the VirtualBox VM
@@ -710,6 +718,8 @@ if /I "%K%"=="stylus-to-css" (set "CMD=bash releases/stylus-to-css.sh" ^& goto c
 if /I "%K%"=="node-update" (set "CMD=bash releases/node-update.sh" ^& goto cli_go)
 if /I "%K%"=="node-update-local" (set "CMD=bash releases/node-update-local.sh" ^& goto cli_go)
 if /I "%K%"=="migrate-mongodb-to-ferretdb" (set "CMD=node releases/migrate-mongodb-to-ferretdb.mjs" ^& goto cli_go)
+if /I "%K%"=="fossil-export" (set "CMD=bash releases/fossil.sh" ^& goto cli_go)
+if /I "%K%"=="fossil-ui" (set "CMD=bash releases/fossil-ui.sh" ^& goto cli_go)
 if /I "%K%"=="ipaddress" (set "CMD=bash releases/virtualbox/ipaddress.sh" ^& goto cli_go)
 if /I "%K%"=="node-allow-port-80" (set "CMD=bash releases/virtualbox/node-allow-port-80.sh" ^& goto cli_go)
 if /I "%K%"=="start-wekan" (set "CMD=bash releases/virtualbox/start-wekan.sh" ^& goto cli_go)
@@ -816,20 +826,31 @@ REM Two entries, one build. :build adds what a RELEASE bundle is on top of
 REM :builddev, and both share :buildcommon - so the plain build cannot drift
 REM from the one the release steps run on.
 :builddev
+call :buildlog build-dev-bundle dev
+if errorlevel 1 goto end
 echo Building the WeKan DEVELOPMENT bundle ^(plain meteor build^).
 call :buildcommon
-if errorlevel 1 goto end
+if errorlevel 1 (
+  echo Build log: %WEKAN_BUILD_LOG%
+  goto end
+)
 echo.
 echo Done. This is NOT what a release ships: it still has the legacy client, the
 echo source maps and uWebSockets.js, and no Node.js, FerretDB or launcher of its
 echo own. Use "Build WeKan release bundle" to find out whether a release starts.
+echo Build log: %WEKAN_BUILD_LOG%
 goto end
 
 REM ===========================================================================
 :build
+call :buildlog build-release-bundle release
+if errorlevel 1 goto end
 echo Building the WeKan RELEASE bundle.
 call :buildcommon
-if errorlevel 1 goto end
+if errorlevel 1 (
+  echo Build log: %WEKAN_BUILD_LOG%
+  goto end
+)
 REM THE REST OF WHAT A RELEASE BUNDLE IS - the same steps as the Release All
 REM workflow for this platform, minus the .zip: the server's npm modules, the
 REM three prunes, the sockjs / legacy-client / source-map trim, a verified
@@ -846,25 +867,46 @@ if errorlevel 1 (
   echo WARNING: bash was not found, so .build\bundle is a plain `meteor build`
   echo          bundle - no Node.js, no FerretDB, no launcher, nothing trimmed.
   echo          bash comes with Git for Windows ^(Git Bash^) and with WSL.
+  echo Build log: %WEKAN_BUILD_LOG%
   goto end
 )
-bash releases/build-release-bundle.sh .build/bundle
+call :build_logged bash releases/build-release-bundle.sh .build/bundle
+if errorlevel 1 (
+  echo Build log: %WEKAN_BUILD_LOG%
+  goto end
+)
 echo Done.
+echo Build log: %WEKAN_BUILD_LOG%
 goto end
 
 REM ===========================================================================
 REM The part both build entries do: clear the rspack dev-build caches (_build and
 REM node_modules\.cache) so the next `meteor run` recompiles from scratch instead
 REM of serving stale modules, then build the bundle.
+:buildlog
+call :logdir %~1
+if errorlevel 1 exit /b 1
+set "WEKAN_BUILD_LOG=%LOG_DIRECTORY%\%~2.txt"
+echo Build log: %WEKAN_BUILD_LOG%
+exit /b 0
+
+:build_logged
+set "WEKAN_LOG_COMMAND=%*"
+echo Command: %*
+powershell -NoProfile -Command "& cmd /d /c $env:WEKAN_LOG_COMMAND 2>&1 | Tee-Object -FilePath $env:WEKAN_BUILD_LOG -Append; exit $LASTEXITCODE"
+exit /b %errorlevel%
+
 :buildcommon
-if exist "%REPO%\node_modules"        rmdir /s /q "%REPO%\node_modules"
-if exist "%REPO%\node_modules\.cache" rmdir /s /q "%REPO%\node_modules\.cache"
-if exist "%REPO%\.meteor\local"       rmdir /s /q "%REPO%\.meteor\local"
-if exist "%REPO%\.build"              rmdir /s /q "%REPO%\.build"
-if exist "%REPO%\_build"              rmdir /s /q "%REPO%\_build"
-call meteor update --npm
-call meteor npm install
-call meteor build .build --directory
+if exist "%REPO%\node_modules"        call :build_logged rmdir /s /q "%REPO%\node_modules"
+if exist "%REPO%\node_modules\.cache" call :build_logged rmdir /s /q "%REPO%\node_modules\.cache"
+if exist "%REPO%\.meteor\local"       call :build_logged rmdir /s /q "%REPO%\.meteor\local"
+if exist "%REPO%\.build"              call :build_logged rmdir /s /q "%REPO%\.build"
+if exist "%REPO%\_build"              call :build_logged rmdir /s /q "%REPO%\_build"
+call :build_logged meteor update --npm
+call :build_logged meteor npm install
+if errorlevel 1 exit /b 1
+call :build_logged meteor build .build --directory --verbose
+if errorlevel 1 exit /b 1
 if not exist "%REPO%\.build\bundle\main.js" (
   echo ERROR: the build produced no .build\bundle\main.js.
   exit /b 1
@@ -1013,12 +1055,14 @@ set "S_mocha=RUN" & set "S_unit=RUN" & set "S_import=RUN" & set "S_e2e=RUN"
 set "S_chromium=RUN" & set "S_firefox=RUN" & set "S_webkit=RUN"
 set "C_mocha=0" & set "C_unit=0" & set "C_import=0" & set "C_e2e=0"
 set "C_chromium=0" & set "C_firefox=0" & set "C_webkit=0"
-REM Each run gets its own .tools\log\<timestamp>\ dir (stamped once at run start), so
+REM Each run gets its own .tools\log\<operation>\YYYY-MM-DD\HH-MM-SS\ dir (stamped once at run start), so
 REM logs are never overwritten and previous runs are kept. PowerShell gives a
 REM locale-independent yyyy-MM-dd_HH-mm-ss; %RUN_LOGDIR% is absolute so it works
 REM from any job's working directory (e.g. the browser job runs in tests\playwright).
 for /f %%i in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd_HH-mm-ss"') do set "RUN_TS=%%i"
-set "RUN_LOGDIR=%REPO%\.tools\log\%RUN_TS%"
+call :logdir test-all-parallel
+if errorlevel 1 goto end
+set "RUN_LOGDIR=%LOG_DIRECTORY%"
 if not exist "%RUN_LOGDIR%" md "%RUN_LOGDIR%"
 echo Logs for this run: %RUN_LOGDIR%\  - previous runs are kept
 REM Clear completion flags from any previous run.
@@ -1155,12 +1199,14 @@ set "S_mocha=RUN" & set "S_unit=RUN" & set "S_import=RUN" & set "S_e2e=RUN"
 set "S_chromium=RUN" & set "S_firefox=RUN" & set "S_webkit=RUN"
 set "C_mocha=0" & set "C_unit=0" & set "C_import=0" & set "C_e2e=0"
 set "C_chromium=0" & set "C_firefox=0" & set "C_webkit=0"
-REM Each run gets its own .tools\log\<timestamp>\ dir (stamped once at run start), so
+REM Each run gets its own .tools\log\<operation>\YYYY-MM-DD\HH-MM-SS\ dir (stamped once at run start), so
 REM logs are never overwritten and previous runs are kept. PowerShell gives a
 REM locale-independent yyyy-MM-dd_HH-mm-ss; %RUN_LOGDIR% is absolute so it works
 REM from any job's working directory (e.g. the browser job runs in tests\playwright).
 for /f %%i in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd_HH-mm-ss"') do set "RUN_TS=%%i"
-set "RUN_LOGDIR=%REPO%\.tools\log\%RUN_TS%"
+call :logdir test-all-sequential
+if errorlevel 1 goto end
+set "RUN_LOGDIR=%LOG_DIRECTORY%"
 if not exist "%RUN_LOGDIR%" md "%RUN_LOGDIR%"
 echo Logs for this run: %RUN_LOGDIR%\  - previous runs are kept
 REM Clear completion flags from any previous run.
@@ -1415,115 +1461,22 @@ goto end
 
 REM ===========================================================================
 :install_forge_tools
-echo.
-echo Installing gh-like forge CLIs: gh, glab, tea, git-bug, forge ^(git-pkgs/forge^).
-echo Already-installed tools are skipped.
-set "HASWINGET="
-set "HASGO="
-where /q winget && set "HASWINGET=1"
-where /q go && set "HASGO=1"
-
-where /q gh
-if %errorlevel%==0 (
-	echo OK: gh present
-) else (
-	if defined HASWINGET ( winget install --id GitHub.cli -e --source winget ) else ( echo Install gh manually: https://github.com/cli/cli#installation )
-)
-where /q glab
-if %errorlevel%==0 (
-	echo OK: glab present
-) else (
-	if defined HASWINGET ( winget install --id GLab.GLab -e --source winget ) else ( echo Install glab manually: https://gitlab.com/gitlab-org/cli#installation )
-)
-where /q tea
-if %errorlevel%==0 (
-	echo OK: tea present
-) else (
-	if defined HASGO ( go install code.gitea.io/tea@latest ) else ( echo Install tea manually: https://gitea.com/gitea/tea/releases )
-)
-where /q git-bug
-if %errorlevel%==0 (
-	echo OK: git-bug present
-) else (
-	if defined HASGO ( go install github.com/git-bug/git-bug@latest ) else ( echo Install git-bug manually: https://github.com/git-bug/git-bug/releases )
-)
-where /q forge
-if %errorlevel%==0 (
-	echo OK: forge present
-) else (
-	if defined HASGO ( go install github.com/git-pkgs/forge@latest ) else ( echo Install forge manually ^(needs Go^): https://github.com/git-pkgs/forge )
-)
-echo.
-echo Authenticate before mirroring: gh auth login ^| glab auth login ^| tea login add
-if defined HASGO echo Note: Go tools install to %%GOPATH%%\bin - ensure it is on your PATH.
-goto end
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0tools\install-forge-tools.ps1"
+set "FORGE_INSTALL_STATUS=%errorlevel%"
+for /f "usebackq delims=" %%P in (`powershell.exe -NoProfile -Command "[Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [Environment]::GetEnvironmentVariable('Path','User')"`) do set "PATH=%~dp0.tools\bin;%GOBIN%;%%P;%PATH%"
+if not "%FORGE_INSTALL_STATUS%"=="0" echo One or more mirror tools could not be installed. See MISSING entries above.
+exit /b %FORGE_INSTALL_STATUS%
 
 REM ===========================================================================
 :mirror_forge
-echo.
-echo Mirror a repository between forges ^(code + issues + PRs + Actions^).
-echo Forges:
-echo   1^) GitHub
-echo   2^) GitLab
-echo   3^) Codeberg
-echo   4^) Forgejo ^(self-hosted^)
-echo   5^) Gitea ^(self-hosted^)
-echo.
-set "SRC="
-set "TGT="
-set /p "FORGESEL=Enter SOURCE and TARGET numbers, e.g. 1 3 (GitHub -> Codeberg): "
-for /f "tokens=1,2" %%a in ("%FORGESEL%") do ( set "SRC=%%a" & set "TGT=%%b" )
-call :forge_props "%SRC%" S
-if not defined SNAME ( echo Invalid source number. & goto end )
-call :forge_props "%TGT%" T
-if not defined TNAME ( echo Invalid target number. & goto end )
-if "%SRC%"=="%TGT%" ( echo Source and target must differ. & goto end )
-echo Source: %SNAME%   -^>   Target: %TNAME%
-if not "%STOOL%"=="gh" echo NOTE: automated issue/PR sync supports GitHub as SOURCE only; code + CI conversion still work.
-set /p "SREPO=Source repo (owner/name): "
-set /p "TREPO=Target repo (owner/name): "
-if "%SREPO%"=="" ( echo Both repos are required. & goto end )
-if "%TREPO%"=="" ( echo Both repos are required. & goto end )
-if not defined SHOST set /p "SHOST=Source host (e.g. git.example.com): "
-if not defined THOST set /p "THOST=Target host (e.g. git.example.com): "
-
-set /p "DOCODE=Mirror code (all branches/tags) with git push --mirror? [y/N] "
-if /i not "%DOCODE%"=="y" goto forge_extras
-set "FWORK=%TEMP%\wekan-mirror-%RANDOM%"
-echo Cloning https://%SHOST%/%SREPO%.git (mirror) ...
-git clone --mirror "https://%SHOST%/%SREPO%.git" "%FWORK%\repo.git"
-echo Pushing to https://%THOST%/%TREPO%.git (target must exist; push credentials required) ...
-pushd "%FWORK%\repo.git"
-git push --mirror "https://%THOST%/%TREPO%.git"
-popd
-rmdir /s /q "%FWORK%"
-
-:forge_extras
-echo.
-echo Now syncing issues + PRs (missing only) and converting CI workflows (DRY RUN)...
-node "%REPO%\tools\forge-mirror.js" --source-tool %STOOL% --source-repo "%SREPO%" --source-host "%SHOST%" --target-tool %TTOOL% --target-repo "%TREPO%" --target-host "%THOST%" --target-kind %TKIND% --include-closed
-echo.
-set /p "APPLYNOW=Apply the issue/PR creation at the target now (not a dry run)? [y/N] "
-if /i "%APPLYNOW%"=="y" node "%REPO%\tools\forge-mirror.js" --source-tool %STOOL% --source-repo "%SREPO%" --source-host "%SHOST%" --target-tool %TTOOL% --target-repo "%TREPO%" --target-host "%THOST%" --target-kind %TKIND% --include-closed --issues --prs --apply
-echo Mirror flow complete.
+call "%REPO%\releases\mirror.bat"
+set "MIRROR_STATUS=%ERRORLEVEL%"
+if not "%MIRROR_STATUS%"=="0" echo Mirror finished with errors. See .tools\log\mirror-*\report.json.
 goto end
 
 REM ===========================================================================
 REM  Subroutines
 REM ===========================================================================
-:forge_props
-REM %1 = forge number, %2 = output prefix (S or T).
-REM Sets <prefix>NAME <prefix>HOST <prefix>TOOL <prefix>KIND. HOST empty = ask.
-set "_n=%~1"
-set "%2NAME="
-set "%2HOST="
-if "%_n%"=="1" ( set "%2NAME=GitHub"   & set "%2HOST=github.com"   & set "%2TOOL=gh"   & set "%2KIND=github" )
-if "%_n%"=="2" ( set "%2NAME=GitLab"   & set "%2HOST=gitlab.com"   & set "%2TOOL=glab" & set "%2KIND=gitlab" )
-if "%_n%"=="3" ( set "%2NAME=Codeberg" & set "%2HOST=codeberg.org" & set "%2TOOL=tea"  & set "%2KIND=codeberg" )
-if "%_n%"=="4" ( set "%2NAME=Forgejo"  & set "%2HOST="             & set "%2TOOL=tea"  & set "%2KIND=forgejo" )
-if "%_n%"=="5" ( set "%2NAME=Gitea"    & set "%2HOST="             & set "%2TOOL=tea"  & set "%2KIND=gitea" )
-exit /b 0
-
 :ensure_dirs
 if not exist "%REPO%\public\build-chunks" md "%REPO%\public\build-chunks"
 if not exist "%REPO%\public\build-assets" md "%REPO%\public\build-assets"
@@ -1539,17 +1492,27 @@ set "WITH_API=true"
 set "RICHER_CARD_COMMENT_EDITOR=false"
 exit /b 0
 
+:logdir
+set "LOG_DIRECTORY="
+for /f "usebackq delims=" %%D in (`node "%REPO%\tools\log-directory.cjs" "%~1"`) do set "LOG_DIRECTORY=%%D"
+if not defined LOG_DIRECTORY exit /b 1
+echo Log directory: %LOG_DIRECTORY%
+exit /b 0
+
 :onelog
-REM Set ONELOG to .tools\log\<datetime>\wekan-%1.log - the same place every other
+REM Set ONELOG to .tools\log\<operation>\YYYY-MM-DD\HH-MM-SS\wekan-%1.log - the same place every other
 REM test run writes, so "the newest test logs" is one directory whichever option
 REM produced them. A larger run (EVERYTHING) exports WEKAN_LOGDIR first, and then
 REM the whole run stays in that one directory. The Windows equivalent of build.sh's
 REM one_log().
 if defined WEKAN_LOGDIR (
 	set "ONELOGDIR=%WEKAN_LOGDIR%"
-) else (
-	for /f %%T in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd_HH-mm-ss"') do set "ONELOGDIR=.tools\log\%%T"
+	goto onelog_ready
 )
+call :logdir test-%~1
+if errorlevel 1 exit /b 1
+set "ONELOGDIR=%LOG_DIRECTORY%"
+:onelog_ready
 if not exist "%ONELOGDIR%" md "%ONELOGDIR%" >nul 2>&1
 set "ONELOG=%ONELOGDIR%\wekan-%~1.log"
 echo Log: %ONELOG%
@@ -1573,8 +1536,13 @@ REM Callers always pass "--port <PORT>" first, so %2 is the port: kill any
 REM Meteor dev server already listening there before starting a new one.
 call :kill_meteor_on_port %2
 if errorlevel 1 exit /b 1
-if not exist ".tools\log" md ".tools\log"
-call meteor run %* 2>&1 | powershell -NoProfile -Command "$input | Tee-Object -FilePath '.tools\log\wekan-log.log'"
+if not defined WEKAN_LOG_ROOT set "WEKAN_LOG_ROOT=%REPO%\.tools\log"
+if not exist "%WEKAN_LOG_ROOT%" md "%WEKAN_LOG_ROOT%"
+call :logdir dev-server
+if errorlevel 1 exit /b 1
+set "WEKAN_SERVER_LOG=%LOG_DIRECTORY%\dev.txt"
+echo Log: %WEKAN_SERVER_LOG%
+call meteor run %* 2>&1 | powershell -NoProfile -Command "$input | Tee-Object -FilePath $env:WEKAN_SERVER_LOG"
 exit /b 0
 
 :kill_meteor_on_port
@@ -1928,7 +1896,7 @@ REM there, and installing Go and the module dependencies if they are
 REM missing), then run the whole FerretDB v1 query catalogue against every
 REM database that has a Docker image for THIS CPU - one at a time, because they
 REM all use the same FerretDB port - and compare that they all answered the same.
-REM Results go to .tools\log\<datetime>\ with every other test run's.
+REM Results go to .tools\log\<operation>\YYYY-MM-DD\HH-MM-SS\ with every other test run's.
 REM
 REM The orchestration is one bash script, shared with build.sh rather than
 REM rewritten here: a second implementation would drift, and Docker Desktop on
@@ -1951,7 +1919,7 @@ REM that .gitignore and .meteorignore already exclude, instead of one ignored
 REM subdirectory each at the repo root. It is cloned here when it is not there,
 REM the same as build.sh's ensure_tool_repo does, so neither script depends on
 REM the other having been run first. Its build.sh installs Go and the Go modules
-REM when they are missing, and writes its logs to .tools\log\<datetime>\ with every
+REM when they are missing, and writes its logs to .tools\log\<operation>\YYYY-MM-DD\HH-MM-SS\ with every
 REM other test run's.
 where bash >nul 2>&1
 if errorlevel 1 (
@@ -1997,7 +1965,7 @@ goto test_everything
 :test_everything
 REM Every test WeKan and FerretDB have, one stage at a time: WeKan's own suite,
 REM then the database conformance run for every database with an image for this
-REM CPU, then all of FerretDB's tests. One .tools\log\<datetime>\ directory for the
+REM CPU, then all of FerretDB's tests. One .tools\log\<operation>\YYYY-MM-DD\HH-MM-SS\ directory for the
 REM whole run, and nothing runs concurrently, which is what makes a failure
 REM readable.
 REM

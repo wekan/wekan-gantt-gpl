@@ -1,7 +1,7 @@
 import { ReactiveCache } from '/imports/reactiveCache';
 import { headerPathVar } from '/client/lib/headerPathVar';
 const { pageDocumentTitle } = require('/models/lib/starredPages');
-const { resolveBoardView } = require('/models/lib/boardViewSettings');
+const { resolveBoardView, isKnownBoardView, DEFAULT_BOARD_VIEW } = require('/models/lib/boardViewSettings');
 import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
 import { Tracker } from 'meteor/tracker';
 import { ReactiveVar } from 'meteor/reactive-var';
@@ -353,19 +353,25 @@ export const Utils = {
   storedBoardView() {
     const pending = pendingBoardView.get();
     const currentUser = ReactiveCache.getCurrentUser();
+    const publishedView = currentUser?.boardViewPreference;
+    const profileView = isKnownBoardView(publishedView)
+      ? publishedView : (currentUser?.profile || {}).boardView;
     if (pending) {
       // #6659: a successful method callback can run before the reactive user
       // document carries the persisted profile value. Keep rendering the
       // chosen view until that document catches up instead of briefly exposing
       // the old value and snapping back to it.
-      if (currentUser && (currentUser.profile || {}).boardView === pending) {
+      if (currentUser && profileView === pending) {
         pendingBoardView.set(null);
       }
       return pending;
     }
-    if (currentUser) {
-      return (currentUser.profile || {}).boardView;
-    } else if (
+    // #6691: impersonation and subscriptions still loading can expose a partial
+    // profile. Fall back to the browser preference, then the normal default.
+    if (isKnownBoardView(profileView)) {
+      return profileView;
+    }
+    if (
       window.localStorage.getItem('boardView') === 'board-view-swimlanes'
     ) {
       return 'board-view-swimlanes';
@@ -404,9 +410,7 @@ export const Utils = {
     ) {
       return window.localStorage.getItem('boardView');
     } else {
-      window.localStorage.setItem('boardView', 'board-view-swimlanes'); //true
-      Utils.reload();
-      return 'board-view-swimlanes';
+      return DEFAULT_BOARD_VIEW;
     }
   },
 
@@ -1125,6 +1129,10 @@ export const Utils = {
           .find('.trigger-text')
           .text()
           .toLowerCase()} ${username}`;
+      } else if (element.find('.js-calendar-toggle').length > 0) {
+        finalString += element.find('.js-calendar-toggle').text().trim();
+      } else if (element.find('.js-calendar-native-time').length > 0) {
+        finalString += element.find('.js-calendar-native-time').val();
       } else if (element.find('select').length > 0) {
         finalString += element
           .find('select option:selected')
