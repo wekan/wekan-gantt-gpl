@@ -127055,5 +127055,173 @@
     "before": "Malsukcesa fenestro (sekundoj)",
     "after": "Tempofenestro por malsukcesoj (sekundoj)",
     "reason": "2026-09-14: Failure window is a time interval for counting failed attempts, not a failed window. Make the temporal and failure-counting relationship explicit; preserve seconds unit."
+  },
+  {
+    "locale": "eo",
+    "key": "Node_heap_does_zap_garbage",
+    "before": "Node-amaso: ĉu nuligas rubon",
+    "after": "Node-amaso: ĉu superskribas rubon per bitŝablono",
+    "reason": "2026-09-14: Official Node V8 docs specify heap garbage overwritten with a bit pattern; nuligas incorrectly suggests zeroing. Translate overwrite and bit-pattern explicitly. https://nodejs.org/api/v8.html#v8getheapstatistics"
+  },
+  {
+    "locale": "eo",
+    "key": "advanced-filter-description",
+    "before": "La altnivela filtrilo permesas skribi ĉenon kun la jenaj operatoroj: == != <= >= && || ( ) Spaco estas uzata kiel apartigilo inter la operatoroj. Vi povas filtri laŭ ĉiuj propraj kampoj tajpante iliajn nomojn kaj valorojn. Ekzemple: Kampo1 == Valoro1. Rimarko: se kampoj aŭ valoroj enhavas spacojn, vi devas meti ilin inter unuopajn citilojn. Ekzemple: 'Kampo 1' == 'Valoro 1'. Por preterlasi unuopajn regsignojn (' \\/) vi povas uzi \\. Ekzemple: Kampo1 == I\\'m. Vi ankaŭ povas kombini plurajn kondiĉojn. Ekzemple: F1 == V1 || F1 == V2. Normale ĉiuj operatoroj estas interpretataj de maldekstre dekstren. Vi povas ŝanĝi la ordon per krampoj. Ekzemple: F1 == V1 && ( F2 == V2 || F2 == V3 ). Vi ankaŭ povas serĉi en tekstaj kampoj per regulesprimo: F1 == /Tes.*/i",
+    "after": "La altnivela filtrilo permesas skribi ĉenon kun la jenaj operatoroj: == != <= >= && || ( ) Spaco estas uzata kiel apartigilo inter la operatoroj. Vi povas filtri laŭ ĉiuj propraj kampoj tajpante iliajn nomojn kaj valorojn. Ekzemple: Field1 == Value1. Rimarko: se kampoj aŭ valoroj enhavas spacojn, vi devas meti ilin inter unuopajn citilojn. Ekzemple: 'Field 1' == 'Value 1'. Por trakti la specialajn signojn (' \\/) kiel literalajn signojn, vi povas uzi \\. Ekzemple: Field1 == I\\'m. Vi ankaŭ povas kombini plurajn kondiĉojn. Ekzemple: F1 == V1 || F1 == V2. Normale ĉiuj operatoroj estas interpretataj de maldekstre dekstren. Vi povas ŝanĝi la ordon per krampoj. Ekzemple: F1 == V1 && ( F2 == V2 || F2 == V3 ). Vi ankaŭ povas serĉi en tekstaj kampoj per regulesprimo: F1 == /Tes.*/i",
+    "reason": "2026-09-14: Preserve shared literal executable Field1/Value1 and quoted field examples; describe escaping special punctuation as literal characters, not skipping control characters. Operators, backslash inventory and regex example remain unchanged."
+  },
+  {
+    "locale": "eo",
+    "key": "overtime",
+    "before": "Kroma tempo",
+    "after": "Kromlaboro",
+    "reason": "2026-09-14: The manually selected isOvertime flag classifies recorded work hours, not a deadline or granted extra time. Use Esperanto kromlaboro (overtime work) consistently instead of generic kroma tempo; hours unit retained. Dictionary references recorded in audit evidence."
+  },
+  {
+    "locale": "eo",
+    "key": "overtime-hours",
+    "before": "Kroma tempo (horoj)",
+    "after": "Kromlaboro (horoj)",
+    "reason": "2026-09-14: The manually selected isOvertime flag classifies recorded work hours, not a deadline or granted extra time. Use Esperanto kromlaboro (overtime work) consistently instead of generic kroma tempo; hours unit retained. Dictionary references recorded in audit evidence."
+  },
+  {
+    "locale": "eo",
+    "key": "has-overtime-cards",
+    "before": "Havas kartojn kun kroma tempo",
+    "after": "Havas kartojn kun kromlaboro",
+    "reason": "2026-09-14: The manually selected isOvertime flag classifies recorded work hours, not a deadline or granted extra time. Use Esperanto kromlaboro (overtime work) consistently instead of generic kroma tempo; hours unit retained. Dictionary references recorded in audit evidence."
+  },
+  {
+    "locale": "gl",
+    "key": "import-board-instruction-trello",
+    "before": "No teu taboleiro de Trello, vai a 'Menú', despois a 'Máis', 'Imprimir e exportar', 'Exportar JSON', e copia o texto resultante.",
+    "after": "No teu taboleiro de Trello, vai a 'Menu', despois a 'More', 'Print and Export', 'Export JSON', e copia o texto resultante.",
+    "reason": "2026-09-14: Restore literal source Trello navigation labels Menu/More/Print and Export/Export JSON, matching the existing audited import-instruction policy. Retain Galician instruction prose."
+  },
+  {
+    "locale": "gl",
+    "key": "r-when-a-due-date-changed",
+    "before": "Data limite: a data cambiou",
+    "after": "Cando se establece ou cambia a data de vencemento",
+    "reason": "Replace Portuguese wording and restore the English distinction between setting and changing the date in the Galician automation trigger."
+  },
+  {
+    "locale": "gl",
+    "key": "r-when-a-start-date-changed",
+    "before": "Data de início: a data cambiou",
+    "after": "Cando se establece ou cambia a data de inicio",
+    "reason": "Replace Portuguese wording and restore the English distinction between setting and changing the date in the Galician automation trigger."
+  },
+  {
+    "locale": "gl",
+    "key": "r-when-a-end-date-changed",
+    "before": "Fim: a data cambiou",
+    "after": "Cando se establece ou cambia a data de fin",
+    "reason": "Replace Portuguese wording and restore the English distinction between setting and changing the date in the Galician automation trigger."
+  },
+  {
+    "locale": "gl",
+    "key": "r-when-a-received-date-changed",
+    "before": "Recebido: a data cambiou",
+    "after": "Cando se establece ou cambia a data de recepción",
+    "reason": "Replace Portuguese wording and restore the English distinction between setting and changing the date in the Galician automation trigger."
+  },
+  {
+    "locale": "gl",
+    "key": "activity-unset-customfield",
+    "before": "quitou o campo personalizado '%s' en %s",
+    "after": "quitou o valor do campo personalizado '%s' en %s",
+    "reason": "The models/cards.js unsetCustomField activity clears an individual card custom-field value, not the custom-field definition. Preserve both percent tokens and state value removal explicitly."
+  },
+  {
+    "locale": "gl",
+    "key": "Node_heap_does_zap_garbage",
+    "before": "Memoria heap de Node: limpa o lixo (zap garbage)",
+    "after": "Memoria heap de Node: sobrescribe o lixo cun patrón de bits",
+    "reason": "Node V8 getHeapStatistics does_zap_garbage reports whether heap garbage is overwritten with a bit pattern, rather than garbage collection or cleaning. Node official V8 API documentation establishes the distinction."
+  },
+  {
+    "locale": "gl",
+    "key": "card-received",
+    "before": "Recibido",
+    "after": "Recibida",
+    "reason": "Received date headings and tooltips describe the card (Galician tarxeta, feminine), not a masculine received object. cardDetails.jade and cardDate.js establish the card/date context; retain the date-introducing o."
+  },
+  {
+    "locale": "gl",
+    "key": "card-received-on",
+    "before": "Recibido o",
+    "after": "Recibida o",
+    "reason": "Received date headings and tooltips describe the card (Galician tarxeta, feminine), not a masculine received object. cardDetails.jade and cardDate.js establish the card/date context; retain the date-introducing o."
+  },
+  {
+    "locale": "gl",
+    "key": "completed",
+    "before": "Completado",
+    "after": "Completada",
+    "reason": "client/components/cards/subtasks.jade uses completed as the completed-subtask icon tooltip. Galician subtarefa is feminine, requiring Completada rather than masculine Completado."
+  },
+  {
+    "locale": "eu",
+    "key": "act-archivedBoard",
+    "before": "__board__ arbela biltegira eraman da",
+    "after": "__board__ arbela artxibora eraman da",
+    "reason": "Use artxibo (archive), documented in UPV/EHU Egungo Euskararen Hiztegia https://www.ehu.eus/eeh/cgi/bila?h=artxibo, to distinguish archived board/card/list/swimlane state from a generic storage repository. Preserve every activity token."
+  },
+  {
+    "locale": "eu",
+    "key": "act-archivedCard",
+    "before": "__card__ txartela biltegira eraman da, __list__ zerrendatik, __swimlane__ errailean, __board__ arbelean",
+    "after": "__card__ txartela artxibora eraman da, __list__ zerrendatik, __swimlane__ errailean, __board__ arbelean",
+    "reason": "Use artxibo (archive), documented in UPV/EHU Egungo Euskararen Hiztegia https://www.ehu.eus/eeh/cgi/bila?h=artxibo, to distinguish archived board/card/list/swimlane state from a generic storage repository. Preserve every activity token."
+  },
+  {
+    "locale": "eu",
+    "key": "act-archivedList",
+    "before": "__list__ zerrenda biltegira eraman da, __swimlane__ errailean, __board__ arbelean",
+    "after": "__list__ zerrenda artxibora eraman da, __swimlane__ errailean, __board__ arbelean",
+    "reason": "Use artxibo (archive), documented in UPV/EHU Egungo Euskararen Hiztegia https://www.ehu.eus/eeh/cgi/bila?h=artxibo, to distinguish archived board/card/list/swimlane state from a generic storage repository. Preserve every activity token."
+  },
+  {
+    "locale": "eu",
+    "key": "act-archivedSwimlane",
+    "before": "__swimlane__ erraila biltegira eraman da, __board__ arbelean",
+    "after": "__swimlane__ erraila artxibora eraman da, __board__ arbelean",
+    "reason": "Use artxibo (archive), documented in UPV/EHU Egungo Euskararen Hiztegia https://www.ehu.eus/eeh/cgi/bila?h=artxibo, to distinguish archived board/card/list/swimlane state from a generic storage repository. Preserve every activity token."
+  },
+  {
+    "locale": "eu",
+    "key": "globalSearch-instructions-status-all",
+    "before": "`__predicate_all__` - biltegiratutako eta biltegiratu gabeko txartel guztiak",
+    "after": "`__predicate_all__` - artxibatutako eta artxibatu gabeko txartel guztiak",
+    "reason": "Search status-all includes archived and unarchived cards, not stored and unstored cards. Use archive terminology consistently with dictionary-verified artxibo activity captions and retain __predicate_all__ exactly."
+  },
+  {
+    "locale": "eu",
+    "key": "r-archived",
+    "before": "Biltegira eraman da",
+    "after": "Artxibora eraman da",
+    "reason": "Replace generic storage biltegi with archive artxibo, consistent with reviewed Basque activity/search archive terminology and EHU archive dictionary https://www.ehu.eus/eeh/cgi/bila?h=artxibo. Retain archive versus restore direction. Shared r-is Spanish auxiliary and full conditional phrase composition remain unresolved; this lexical correction does not certify trigger grammar."
+  },
+  {
+    "locale": "eu",
+    "key": "r-unarchived",
+    "before": "Biltegitik berreskuratu da",
+    "after": "Artxibotik berreskuratu da",
+    "reason": "Replace generic storage biltegi with archive artxibo, consistent with reviewed Basque activity/search archive terminology and EHU archive dictionary https://www.ehu.eus/eeh/cgi/bila?h=artxibo. Retain archive versus restore direction. Shared r-is Spanish auxiliary and full conditional phrase composition remain unresolved; this lexical correction does not certify trigger grammar."
+  },
+  {
+    "locale": "ve-PP",
+    "key": "server-error",
+    "before": "Palvelin virhe",
+    "after": "Serveran viga",
+    "reason": "Replace Finnish Palvelin virhe with Veps serveran viga, consistent with existing serveran terminology in server-error-troubleshooting and dictionary viga (error/fault), https://kaikki.org/dictionary/Veps/meaning/v/vi/viga.html . Borrowed server stem and its exact normative form remain low confidence pending terminology reference; standalone English-identical Server is not accepted by this repair."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "shortcut-add-self",
+    "before": "Afegeix-vos a la fitxa actual",
+    "after": "Afegiu-vos a la fitxa actual",
+    "reason": "Repair imperative/reflexive person mismatch: Afegeix-vos mixes singular imperative with plural vos; Afegiu-vos agrees and matches existing formal Feu clic instructions. Imperative reference https://ca.wiktionary.org/wiki/afegir and CPNL pronoun guidance https://www.cpnl.cat/gramatica/66/37-els-pronoms-febles/nivell/basic-3 . Broader Valencian regional vocabulary review remains open."
   }
 ]

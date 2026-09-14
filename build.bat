@@ -246,6 +246,8 @@ goto menu_releases
 
 REM ---------------------------------------------------------------------------
 :rel_release
+REM Release notes: In short, Security, translation languages, thanks and changelog link.
+REM Binary provenance stays in build artifacts.
 echo.
 echo -- Releases / Release --   ^(0 = Back^)
 echo   1^) Release ALL platforms: push CHANGELOG, trigger release-all.yml

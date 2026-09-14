@@ -2237,11 +2237,45 @@ Thanks to xet7 !"
 	return 0
 }
 
-# git pull: fast-forward when that is all it takes, rebase when the branch has
-# diverged, and never end half-way through either.
+# git pull: fast-forward or merge origin without rewriting local commit hashes.
+# Preserve actual content conflicts for explicit resolution.
+# Recover only Git's incomplete autostash-only setup, never an active rebase.
+function git_recover_orphan_autostash(){
+ local directory stash
+ directory="$(git rev-parse --git-path rebase-merge)"
+ [ -d "$directory" ] || return 0
+ [ -f "$directory/autostash" ] || return 0
+ [ "$(find "$directory" -mindepth 1 -maxdepth 1 | wc -l)" -eq 1 ] || return 0
+ [ ! -e "$(git rev-parse --git-path index.lock)" ] || return 0
+ if ps -eo args | grep -E '^git (rebase|merge|stash|commit)( |$)' >/dev/null; then
+  echo "ERROR: another Git operation is running; recovery deferred."; return 1
+ fi
+ stash="$(cat "$directory/autostash")"
+ git cat-file -e "$stash^{commit}" || return 1
+ git stash store -m 'Recovered build.sh interrupted pull autostash' "$stash" || return 1
+ rm -- "$directory/autostash" && rmdir -- "$directory" || return 1
+ echo "==> Preserved interrupted pull autostash in git stash list."
+}
+
+function git_operation_ready(){
+ local state
+ for state in rebase-merge rebase-apply MERGE_HEAD CHERRY_PICK_HEAD REVERT_HEAD index.lock; do
+  if [ -e "$(git rev-parse --git-path "$state")" ]; then
+   echo "ERROR: existing Git operation or lock: $state. Resolve it before pulling or pushing."
+   echo "       Run git status; do not delete a lock while another Git process is running."
+   return 1
+  fi
+ done
+ [ "$(git rev-parse --abbrev-ref HEAD)" != HEAD ] || {
+  echo "ERROR: detached HEAD; select a branch first."; return 1;
+ }
+}
+
 function git_pull(){
 	git rev-parse --git-dir >/dev/null 2>&1 || { echo "Not a git repository."; return 1; }
 	local branch upstream before ahead behind
+	git_recover_orphan_autostash || return 1
+	git_operation_ready || return 1
 	branch="$(git rev-parse --abbrev-ref HEAD)"
 	upstream="origin/$branch"
 	echo "== git pull - branch $branch =="
@@ -2269,23 +2303,15 @@ function git_pull(){
 		# Nothing of ours to replay: a fast-forward moves the branch pointer and
 		# rewrites no commit, so no link can go stale.
 		echo "--- fast-forward (no local commits to replay) ---"
-		git merge --ff-only "$upstream" || { echo "ERROR: fast-forward failed. Nothing changed."; return 1; }
+		git -c merge.autoStash=true merge --ff-only "$upstream" || { echo "ERROR: fast-forward failed. Nothing changed."; return 1; }
 	else
-		echo "--- rebase: replaying $ahead local commit(s) onto $upstream ---"
-		echo "    This gives them NEW hashes, which is why the CHANGELOG links are"
-		echo "    repaired straight after."
-		if ! git -c rebase.autoStash=true rebase "$upstream"; then
-			git rebase --abort 2>/dev/null
-			git stash list >/dev/null 2>&1
-			echo
-			echo "ERROR: the rebase hit a conflict, so it was ABORTED - this repo is"
-			echo "       exactly as it was before ($(git rev-parse --short "$before"))."
-			echo "       Resolve it by hand:"
-			echo "         git rebase $upstream        # then fix the conflicts"
-			echo "         git rebase --continue       # or: git rebase --abort"
-			echo "       and run this option again afterwards."
-			return 1
-		fi
+        echo "--- merge: integrating $upstream while preserving local commit hashes ---"
+        if ! git -c merge.autoStash=true merge --no-edit "$upstream"; then
+            echo "ERROR: merge did not finish. Your edits and conflict state are preserved."
+            git status --short
+            echo "Resolve the listed conflicts, git add the resolved files, then git merge --continue."
+            return 1
+        fi
 	fi
 
 	git_fix_changelog_links || return 1
@@ -2299,6 +2325,8 @@ function git_pull(){
 function git_push(){
 	git rev-parse --git-dir >/dev/null 2>&1 || { echo "Not a git repository."; return 1; }
 	local branch ahead
+	git_recover_orphan_autostash || return 1
+	git_operation_ready || return 1
 	branch="$(git rev-parse --abbrev-ref HEAD)"
 	echo "== git push - branch $branch =="
 
@@ -2311,7 +2339,11 @@ function git_push(){
 	# everyone who reads the release notes.
 	git_fix_changelog_links || return 1
 
-	git fetch origin "$branch" >/dev/null 2>&1 || true
+	git fetch origin "$branch" || { echo "ERROR: fetch failed; nothing pushed."; return 1; }
+    if git rev-parse --verify --quiet "origin/$branch" >/dev/null &&
+       [ "$(git rev-list --count HEAD.."origin/$branch")" -gt 0 ]; then
+        git_pull || { echo "ERROR: pull failed; nothing pushed."; return 1; }
+    fi
 	if git rev-parse --verify --quiet "origin/$branch" >/dev/null; then
 		ahead="$(git rev-list --count "origin/$branch"..HEAD)"
 		[ "$ahead" -eq 0 ] && { echo "==> Nothing to push; origin/$branch is already at this commit."; return 0; }
@@ -2400,6 +2432,10 @@ choose() {
 # (a helper other scripts source), ferretdb/* (they run INSIDE the built
 # snap/bundle, not on a maintainer's machine) and the superseded old-*.sh and
 # translations/fill_translations.py.
+# Release notes summarize translations as affected languages; other changelog
+# details stay in CHANGELOG.md. Notes include only In short, Security,
+# Translations language list, thanks and the changelog link. Binary provenance remains
+# a build artifact and must not be appended by any release entry point.
 RELEASE_SCRIPTS=(	"Release|Release ALL platforms: push CHANGELOG, trigger release-all.yml|releases/release-all.sh|||"
 	"Release|Release (older local flow), for one version|releases/release.sh|WeKan version, e.g. 10.50||"
 	"Release|Show the version numbers this checkout would release|releases/version.sh|||"
@@ -2469,7 +2505,7 @@ RELEASE_SCRIPTS=(	"Release|Release ALL platforms: push CHANGELOG, trigger releas
 	"Translations|Report English strings that regressed|releases/translations/report-english-regressions.mjs|||"
 	"Translations|Prove a pull keeps human translations (no network)|releases/translations/verify-human-preference.mjs|||"
 	"Translations|Merge a finished pull by hand|releases/translations/merge-translations.mjs|||"
-	"Git and repo|git pull - fetch, fast-forward or rebase, repoint moved CHANGELOG links|!git_pull|||git-pull"
+	"Git and repo|git pull - fetch, fast-forward or merge, repoint moved CHANGELOG links|!git_pull|||git-pull"
 	"Git and repo|git push - verify the CHANGELOG links, push, pull-and-retry once if origin moved|!git_push|||git-push"
 	"Git and repo|Commit with the editor open for a multi-line message|releases/commit.sh|||"
 	"Git and repo|Add everything, then revert it again|!git restore --staged|Path to unstage||git-add-revert"
@@ -2681,7 +2717,7 @@ while [ -z "$opt" ]; do
 					"Install dependencies|Install WeKan dependencies" \
 					"Build WeKan release bundle|Build WeKan release bundle" \
 					"Build WeKan development bundle|Build WeKan development bundle" \
-					"git pull|git pull: fetch, fast-forward or rebase onto origin, repoint the CHANGELOG commit links the rebase moved, and leave the repo unchanged if anything conflicts" \
+					"git pull|git pull: fetch, fast-forward or merge onto origin, repoint the CHANGELOG commit links the rebase moved, and preserve unresolved conflict state" \
 					"git push|git push: check the CHANGELOG commit links resolve before publishing them, push this branch to origin, and pull-then-retry once if origin moved meanwhile" ;;
 			"Dev server")
 				choose "Dev server" \
@@ -2867,7 +2903,7 @@ for _once in 1; do
 		break
 		;;
 
-    "git pull: fetch, fast-forward or rebase onto origin, repoint the CHANGELOG commit links the rebase moved, and leave the repo unchanged if anything conflicts")
+    "git pull: fetch, fast-forward or merge onto origin, repoint the CHANGELOG commit links the rebase moved, and preserve unresolved conflict state")
 		git_pull
 		break
 		;;

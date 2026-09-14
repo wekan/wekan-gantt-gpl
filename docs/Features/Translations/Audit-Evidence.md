@@ -21741,3 +21741,786 @@ accessibility and account labels retained, including login-only access,
 not-yet-added information and only-locked-user filtering. All 18,151
 corrections and 1,981 reviews pass. 2,237 restored values and 308 pending
 findings plus broader language/browser verification remain open.
+
+
+### Esperanto scheduled-job and migration review — 2026-09-14
+
+Local commit `5946767b1` retains twenty-nine correct scheduled-job,
+migration-error and account-unlock labels. Resume/start, failed/paused and
+success/failure outcomes remain distinct. No-failed/no-paused negation and
+clear-all-errors scope are preserved. Isolated Complete remains ambiguous
+between an action and state and is not accepted merely by vocabulary match.
+2,010 review records pass; 2,208 restored values and 308 pending findings
+plus broader language/browser verification remain open.
+
+
+### Esperanto storage and migration settings — 2026-09-14
+
+Local commit `460df4ada` retains thirty correct migration actions/progress,
+S3 storage/connection labels and integrity descriptions. Empty duplicate
+list deletion requires no cards AND a same-title counterpart with cards;
+Esperanto KAJ preserves both conditions. Start/pause/stop and connection
+success/failure remain distinct. All 2,040 review records pass; 2,178
+restored values and 308 pending findings plus wider language/browser
+verification remain open.
+
+
+### Esperanto migration repair descriptions — 2026-09-14
+
+Local commit `036cbff31` retains nineteen correct restoration, URL-repair,
+data-integrity and migration outcome/permission values. Field names
+swimlaneId/listId stay literal; all archived object types, this-board scope,
+individual execution and board-admin-only restriction remain accurate.
+Complete and migration-complete remain unvalidated: no current literal
+consumer was found for the latter, so its state/action meaning is uncertain.
+All 2,059 reviews pass. 2,159 restored values and 308 pending findings plus
+broader language/browser verification remain open.
+
+
+### Esperanto migration confirmations and steps — 2026-09-14
+
+Local commit `07756eecd` retains thirty correct confirmations and progress
+steps. Shared-list conversion precedes empty duplicate deletion; lost-card
+restoration affects nonarchived items, whereas archive restoration affects
+all archived types. Difficult-undo warning, field identifiers and this-board
+URL scope remain explicit. All 2,089 reviews pass; 2,129 restored values and
+308 pending findings plus broader language/browser verification remain open.
+
+
+### Esperanto scheduling intervals and diagnostics — 2026-09-14
+
+Local commit `5a398d5ac` retains thirty correct restoration/scanning,
+completion, resource and interval labels. Ĉiun/Ĉiujn agrees with singular
+and plural day/hour/minute quantities. CPU percentage, run-once scope and
+previous/next order remain intact. All 2,119 reviews pass; 2,099 restored
+values and 308 pending findings plus broader language/browser verification
+remain open.
+
+
+### Esperanto repository and authentication review — 2026-09-14
+
+Local commit `9ba7cfcb8` retains thirty correct repository, storage/minicard
+and authentication values. Temporary lockout from excessive failed logins,
+username AND password requirements, minimum three characters and byte units
+remain explicit. Cron/OTP/API/S3 names stay literal. All 2,149 reviews pass;
+2,069 restored values and 308 pending findings plus wider language/browser
+verification remain open.
+
+
+### Esperanto remaining basic labels — 2026-09-14
+
+Local commit `f523001c3` retains ten correct account-outcome and basic
+labels, preserving success/failure and sign-in/sign-out distinctions.
+Nine Esperanto restored findings remain uncertain: overtime variants,
+lime color, scrollbar, advanced filter, garbage zapping and two Complete
+labels. These are not certified by this basic-label batch. All 2,159 reviews
+pass; globally 2,059 restored and 308 pending findings plus broader
+language/browser verification remain open.
+
+
+### Esperanto heap garbage-zapping — 2026-09-14
+
+Local commit `05217bbb9` replaces nuligas with superskribas rubon per
+bitŝablono. Official https://nodejs.org/api/v8.html#v8getheapstatistics
+specifies overwrite with a bit pattern, not necessarily zeroing. This
+resolves the earlier diagnostic uncertainty. All 18,152 correction records
+pass. Eight Esperanto restored findings remain; globally 2,058 restored
+and 308 pending findings plus broader language/browser review stay open.
+
+
+### Esperanto scrollbar terminology — 2026-09-14
+
+Local commit `41fb26dff` retains Ŝalti vertikalajn rulumskalojn. Primary
+references https://komputeko.net/Komputeko2012.pdf and
+https://help.libreoffice.org/latest/eo/text/shared/02/01170000.html confirm
+rulumskalo as scrollbar, resolving the earlier terminology suspicion.
+Lime remains uncertain: document renderers use #00ff00 while contrastColor
+uses #51e898, so a single exact hue cannot be inferred from the token alone.
+2,160 review records pass; seven Esperanto restored findings remain.
+Globally 2,057 restored and 308 pending findings and wider language/browser
+validation remain open.
+
+
+### Esperanto advanced-filter repair — 2026-09-14
+
+Local commit `5d94f1b92` preserves canonical Field1/Value1 and quoted
+examples while retaining Esperanto prose. The tokenizer escapes punctuation
+as literal characters; help now says specialajn signojn ... literalajn
+signojn rather than skipping control characters. Operators, regex and
+backslash inventory remain exact. Focused positive examples and negative
+wording coverage pass; all 18,153 corrections pass. Six Esperanto restored
+findings remain. Globally 2,056 restored and 308 pending findings plus wider
+language/browser verification remain open.
+
+
+### Esperanto overtime-work wording — 2026-09-14
+
+Local commit `9b6b1ffe6` uses Kromlaboro consistently in three overtime
+labels. cardTime.js stores the manually selected isOvertime alongside
+spentTime; this is work classification, not computed deadline expiry or
+extra time granted. Hours unit remains intact. Reference comparison:
+https://www.learnentry.com/english-esperanto/meaning/overtime/ gives
+kromlaboro; https://retavortaro.de/revo/art/labor.html establishes the
+compound for additional work, though its example is unofficial side work,
+not a payroll-specific definition. Thus native full-phrase fluency still
+belongs to the broader review. All 18,156 corrections pass. Three Esperanto
+restored findings remain; globally 2,053 restored and 308 pending findings
+plus broader language/browser verification remain open.
+
+
+### Galician card and checklist activities — 2026-09-14
+
+Local commit `0d2e977d9` retains twenty-five correct attachment, label,
+checklist, comment, creation and custom-field actions. Galician past verbs
+and marcado/desmarcado distinctions preserve their actions; object
+relationships and placeholders remain intact. All 2,185 reviews pass;
+2,028 restored values and 308 pending findings plus broader language and
+browser verification remain open. Three uncertain Esperanto findings remain.
+
+
+### Galician membership and movement activities — 2026-09-14
+
+Local commit `b82f539a4` retains twenty-five correct membership,
+archive/import/restore, card-movement and checklist activity values.
+Old/new lists, lanes and boards retain source/destination direction;
+checked/unchecked and complete/reopened states remain distinct. Exact
+interpolation retained. All 2,210 reviews pass; 2,003 restored values and
+308 pending findings plus wider language/browser verification remain open.
+
+
+### Galician creation controls and warnings — 2026-09-14
+
+Local commit `f1add7ab2` retains twenty-five correct creation, placement,
+member-setting/privilege, count and archive values. Offline warning
+preserves refresh-causes-data-loss and server-not-stopped checks. Counts
+retain singular/plural agreement and interpolation. All 2,235 review records
+pass; 1,978 restored values and 308 pending findings plus broader language
+and browser verification remain open.
+
+
+### Galician board settings and archive controls — 2026-09-14
+
+Local commit `68277a708` retains twenty-five correct archive, background,
+board-info, member/assignee and privacy controls. All-card versus current-card
+scope, public/private distinction, HTML emphasis and archive-empty negation
+remain intact. All 2,260 review records pass; 1,953 restored values and
+308 pending findings plus wider language/browser verification remain open.
+
+
+### Galician deletion and archive guidance — 2026-09-14
+
+Local commit `4c585a2b8` retains twenty-five correct board-view,
+deletion/archive, membership and card-type values. Permanent deletion,
+activity loss and inability to undo/reopen remain explicit, distinct from
+reversible archival and restore guidance. All 2,285 review records pass;
+1,928 restored values and 308 pending findings plus broader language/browser
+verification remain open.
+
+
+### Galician role descriptions and card controls — 2026-09-14
+
+Local commit `96367d213` retains twenty-five correct favorite, close,
+comment/role, deletion and link/copy values. Assigned-only visibility,
+no-edit and no-comment-visibility restrictions, worker self-assignment and
+favorite/unfavorite opposites remain explicit. All 2,310 reviews pass;
+1,903 restored values and 308 pending findings plus broader language/browser
+verification remain open.
+
+
+### Galician import, template and export review — 2026-09-14
+
+Local commit `316232f69` restores literal source Trello menu labels in
+Galician import help, matching existing audited navigation policy. Galician
+prose remains; 29 template, invitation, role-error, export and filter values
+retained. JSON title/description properties, placeholders, permanent
+custom-field deletion and free-disk-space warning remain exact. All 18,157
+corrections and 2,339 reviews pass. 1,873 restored values and 308 pending
+findings plus wider language/browser verification remain open.
+
+
+### Galician import mapping and privacy — 2026-09-14
+
+Local commit `7f7db419c` retains twenty-five correct import/member,
+list-action, notification and privacy values. Unmapped members map to the
+current user; at least one administrator remains required. Assigned-only
+visibility, creator/member participation and public-view/member-only-edit
+qualifiers remain exact. All 2,364 reviews pass; 1,848 restored values and
+308 pending findings plus wider language/browser verification remain open.
+
+
+### Galician removal and card shortcuts — 2026-09-14
+
+Local commit `4f0293f5c` retains twenty-five correct removal, rescue,
+shortcut, favorite and time-indicator values. Singular member notification,
+all-card removal effects, unsaved-description overwrite warning and
+self-membership/assignment remain distinct. More-than threshold and 1-9
+ordering are preserved. All 2,389 reviews pass; 1,823 restored values and
+308 pending findings plus wider language/browser verification remain open.
+
+
+### Galician visibility and deletion warnings — 2026-09-14
+
+Local commit `e74cc6464` retains twenty-five correct visibility,
+invitation, field-application and deletion-warning values. Private-only,
+new/all-card scope, invitation placeholders and no-undo warnings remain
+explicit. Duplicate-list deletion retains same-name AND empty conditions.
+All 2,414 reviews pass; 1,798 restored values and 308 pending findings plus
+broader language/browser verification remain open.
+
+
+### 2026-09-14 — Galician card settings and automation review
+
+Local commit `edea4b20e` retains 25 directly reviewed values unchanged.
+Card/minicard settings preserve parent relationships, subtask destinations,
+attachment counts and source-board meaning. Activity verbs retain exact
+percent placeholders; automation controls preserve add-action/add-trigger
+and move-all scope. Review ledger checks pass.
+Tracked status: 15,561 corrected, 1,773 restored awaiting validation,
+2,439 reviewed unchanged and 308 pending. Broader language, uncertain
+terminology and browser verification remain open; nothing pushed.
+
+
+### 2026-09-14 — Galician automation date triggers and assembled grammar
+
+Local commit `54fdfd33c` repairs four unflagged date-trigger values:
+due/start/end/received conditions now cover both setting and changing dates,
+replacing Portuguese início/Fim/Recebido wording and incomplete meanings.
+Retained 39 directly inspected automation, HTML-placement and duplicate-board
+values unchanged. Positive/negative date tests and all ledger checks pass.
+Actual cardTriggers.jade attachment control combines masculine anexo with
+shared feminine r-added-to/r-removed-from labels; member/assignee controls
+share these labels too. Leave r-when-a-attach unaccepted pending contextual
+agreement repair rather than certify the assembled sentence as correct.
+Tracked: 15,561 corrected, 1,734 restored awaiting validation, 2,478 reviewed
+unchanged and 308 pending; correction ledger 18,161. Broader grammar and
+browser verification remain open. No external translation service or push.
+
+
+### 2026-09-14 — Galician deletion warnings and personal card views
+
+Local commit `2cb3f6b13` retains 34 directly reviewed values unchanged.
+Warnings preserve irreversible deletion and linked-card removal order.
+Mention text preserves every exact interpolation token; due-card help keeps
+incomplete-card and user-permission restrictions and markdown emphasis.
+Personal/due-card view, sorting, unread and visibility labels retain meaning.
+Review checks pass: 15,561 corrected, 1,700 restored awaiting validation,
+2,512 reviewed unchanged and 308 pending. Attachment/member participle
+agreement, broader language review and browser validation remain open.
+Nothing pushed; no external translation service used.
+
+
+### 2026-09-14 — Galician search results and operator instructions
+
+Local commit `cf1e89bb9` retains 40 directly reviewed values unchanged.
+Search errors retain object names and format tokens; result counts preserve
+start/end/total. Help retains literal query syntax and quotation examples,
+member-or-assignee alternatives, creator and organization/team scopes,
+created/modified day thresholds and archived/end-date distinctions.
+Review checks pass: 15,561 corrected, 1,660 restored awaiting validation,
+2,552 reviewed unchanged and 308 pending. Contextual rule agreement,
+broader language review and browser validation remain open; nothing pushed.
+
+
+### 2026-09-14 — Galician search predicates and checklist instructions
+
+Local commit `f22aeb7bc` retains 39 directly reviewed values unchanged.
+Search help preserves absence, positive per-page limits, OR/AND logic,
+case insensitivity, archive defaults and literal examples. Deletion warnings
+retain at-least-one membership constraints. Checklist copy/move and
+one-line-per-item original order remain distinct. Legal acceptance noso
+agrees with aviso legal in layouts.jade. Card-show-lists remains unaccepted
+pending field-context inspection; attachment grammar remains open.
+Review checks pass: 15,561 corrected, 1,621 restored awaiting validation,
+2,591 reviewed unchanged and 308 pending. Broader language and browser
+validation remain open. Nothing pushed.
+
+
+### 2026-09-14 — Galician storage and account-lockout labels
+
+Local commit `2f141de75` retains 30 directly reviewed values unchanged.
+Storage help distinguishes all attachments from board-only scope and retains
+GridFS/S3/ZIP/JSON names. PDF fallback, irreversible custom-string deletion,
+support visibility and known/unknown/locked-account distinctions are intact.
+Card-show-lists context is resolved: cardSettingsRows.js showLists row and
+sidebar allowsShowLists toggle show that its declarative visibility wording
+is appropriate; retained unchanged. Attachment grammar remains open.
+Review checks pass: 15,561 corrected, 1,591 restored awaiting validation,
+2,621 reviewed unchanged and 308 pending. Broader language and browser
+validation remain open. Nothing pushed.
+
+
+### 2026-09-14 — Galician account states and scheduled board actions
+
+Local commit `3b524f071` retains 29 directly reviewed values unchanged.
+Unlock confirmations preserve this-user/all-users and only-locked scope;
+activation controls preserve active/inactive inversion. Archive, backup and
+cleanup messages distinguish successful scheduling from failed scheduling,
+without claiming execution has completed. Storage-path and job labels retain
+meaning. Complete remains unaccepted pending action/status context.
+Review checks pass: 15,561 corrected, 1,562 restored awaiting validation,
+2,650 reviewed unchanged and 308 pending. Contextual agreement, broader
+language and browser validation remain open. Nothing pushed.
+
+
+### 2026-09-14 — Galician migration scopes and confirmations
+
+Local commit `ff77543b5` retains 34 directly reviewed values unchanged.
+Duplicate-list repair preserves empty AND same-title populated counterpart
+and conversion-before-deletion order. Lost-card restore excludes archived
+items; restore-all includes them and preserves the undo warning. Missing
+IDs, administrator-only and individual execution restrictions, URL storage
+references and progress steps retain meaning. Completion label remains open.
+Review checks pass: 15,561 corrected, 1,528 restored awaiting validation,
+2,684 reviewed unchanged and 308 pending. Broader grammar, terminology and
+browser validation remain open. Nothing pushed.
+
+
+### 2026-09-14 — Galician migration execution and account messages
+
+Local commit `e8766c17b` retains 30 directly reviewed values unchanged.
+Migration text preserves once-per-board conversion, background continuation
+when closing the browser, longer completion warning, 1-100 batch limits
+and migrated/remaining/total attachment states. Authentication keeps invalid
+credential alternatives, both required inputs, password mismatch and at-least
+three-character username. Activity tokens and visibility labels remain intact.
+Review checks pass: 15,561 corrected, 1,498 restored awaiting validation,
+2,714 reviewed unchanged and 308 pending. Broader grammar, terminology and
+browser validation remain open. Nothing pushed.
+
+
+### 2026-09-14 — Galician activities and workspace controls
+
+Local commit `4b926a60f` retains 35 directly reviewed values unchanged.
+Activities preserve move/import directions, join/leave actions, received,
+start/due/end date distinctions and exact percent tokens. Workspace and
+subworkspace controls, deletion confirmation, equal list width and swimlane
+height preserve meaning. Keyboard shortcut labels correctly invert current
+state and click action; markdown retains its actual format name.
+Review checks pass: 15,561 corrected, 1,463 restored awaiting validation,
+2,749 reviewed unchanged and 308 pending. Broader language and browser
+validation remain open. Nothing pushed.
+
+
+### 2026-09-14 — Galician display settings and archive controls
+
+Local commit `708478423` retains 30 directly reviewed values unchanged.
+Height controls retain positive-integer and pixel constraints. Checklist edit
+closure, active system-wide announcements, archive-all/list/swimlane/selection
+scope, avatar size token, background URLs and opposing zoom directions are
+intact. Mobile/desktop switching and visibility/watch settings retain meaning.
+Review checks pass: 15,561 corrected, 1,433 restored awaiting validation,
+2,779 reviewed unchanged and 308 pending. Broader language and browser
+validation remain open. Nothing pushed.
+
+
+### 2026-09-14 — Galician calendar and voting labels
+
+Local commit `e5e09f52c` retains 30 directly reviewed values unchanged.
+Zoom range, calendar month directions, deadline/start/spent-time labels and
+attachment origin retain meaning. Voting preserves proponents/opponents,
+all logged-in eligibility, visible vote choices, end-date editing and
+permanent loss of all associated actions. Wish-list example retains meaning.
+Review checks pass: 15,561 corrected, 1,403 restored awaiting validation,
+2,809 reviewed unchanged and 308 pending. Broader language and browser
+validation remain open. Nothing pushed.
+
+
+### 2026-09-14 — Galician estimation controls and color labels
+
+Local commit `47fb0f277` retains 30 directly reviewed values unchanged.
+Planning Poker remains the named estimation practice; vote end-date,
+replay/edit/delete and dependency/template controls preserve action meaning.
+CAS, avatar confirmations and clipboard alternatives retain meaning.
+Automatic-width labels invert current state and click action correctly.
+Color labels preserve hue and pale distinctions, including verde lima.
+Review checks pass: 15,561 corrected, 1,373 restored awaiting validation,
+2,839 reviewed unchanged and 308 pending. Broader language and browser
+validation remain open. Nothing pushed.
+
+
+### 2026-09-14 — Galician custom fields and access labels
+
+Local commit `98c90fd8a` retains 30 directly reviewed values unchanged.
+Access labels distinguish read-only from assigned-only; custom-field types,
+currency code, none/unknown dropdown alternatives, action disambiguation,
+soft WIP limit and siteName email interpolation retain meaning. Peach/brown
+palette names identify their actual swatches (contrastColor.js); no competing
+peach/brown names require speculative new qualifiers.
+Review checks pass: 15,561 corrected, 1,343 restored awaiting validation,
+2,869 reviewed unchanged and 308 pending. Broader language and browser
+validation remain open. Nothing pushed.
+
+
+### 2026-09-14 — Galician account emails and export fields
+
+Local commit `ac0f8696f` retains 29 directly reviewed values unchanged.
+Enrollment/reset/verification emails preserve purpose, exact user/URL/site
+and inviter tokens and paragraph layout. Sent/failed/invalid and taken-name
+states remain distinct. Excel fields preserve people roles and attachment
+filename/size/uploader/time. Scrollbars, WIP and sorting scope retain meaning.
+Export free remains unaccepted pending context.
+Review checks pass: 15,561 corrected, 1,314 restored awaiting validation,
+2,898 reviewed unchanged and 308 pending. Broader language and browser
+validation remain open. Nothing pushed.
+
+
+### 2026-09-14 — Galician filters and import mapping labels
+
+Local commit `c45e99b02` retains 30 directly reviewed values unchanged.
+Filters preserve manual order, absent/overdue and relative-date distinctions,
+assignee absence, archived/empty-list visibility and activity show/hide.
+Import help preserves CSV/TSV separators, valid JSON, ZIP size failure,
+cancellation and member mapping to an existing user.
+Review checks pass: 15,561 corrected, 1,284 restored awaiting validation,
+2,928 reviewed unchanged and 308 pending. Broader language and browser
+validation remain open. Nothing pushed.
+
+
+### 2026-09-14 — Galician selection and board-management labels
+
+Local commit `885d65b3b` retains 30 directly reviewed values unchanged.
+Selection color/label/member controls preserve selection scope; assigned-only
+Normal preserves the named role restriction. Private-page login help retains
+possibility, HTML link and exact href format token. Image paste help remains
+image-only. Version, user/team/organization, list and swimlane labels retain
+meaning and label-default preserves interpolation.
+Review checks pass: 15,561 corrected, 1,254 restored awaiting validation,
+2,958 reviewed unchanged and 308 pending. Broader language and browser
+validation remain open. Nothing pushed.
+
+
+### 2026-09-14 — Galician shortcuts and custom branding labels
+
+Local commit `64a60f189` retains 30 directly reviewed values unchanged.
+WIP maximum tasks per list, hours units, labels 1-9 removal and shortcut
+sidebar/dialog actions retain scope. Upload/ongoing/failure states remain
+distinct. Custom logo image/link URLs, upper-left placement, default height
+27, text-below position and one clickable URL scheme per line retain meaning.
+Milestone example remains Fito 1.
+Review checks pass: 15,561 corrected, 1,224 restored awaiting validation,
+2,988 reviewed unchanged and 308 pending. Broader language and browser
+validation remain open. Nothing pushed.
+
+
+### 2026-09-14 — Galician SMTP and system diagnostic labels
+
+Local commit `6c534f40f` retains 30 directly reviewed values unchanged.
+WIP warning preserves over-limit scope and either move-out or raise-limit
+remedies. SMTP/TLS and test success retain purpose; inviter token is exact.
+Webhook labels preserve optional authentication, two-way/global/outgoing
+scope and disable action. System diagnostics preserve actual product names,
+CPU count, free/total memory, load average and uptime distinctions.
+Review checks pass: 15,561 corrected, 1,194 restored awaiting validation,
+3,018 reviewed unchanged and 308 pending. Broader language and browser
+validation remain open. Nothing pushed.
+
+
+### 2026-09-14 — Galician account permissions and subtask settings
+
+Local commit `dda51a1e5` retains 28 directly reviewed values unchanged.
+Account-change permissions, created/modified metadata, active team/org/person,
+role attribution, selection color and all-notification scope retain meaning.
+Subtask landing list, full-path/parent prefixes and full-path subtext retain
+relationship scope. Received/received-on participles remain unaccepted pending
+agreement and presentation-context inspection.
+Review checks pass: 15,561 corrected, 1,166 restored awaiting validation,
+3,046 reviewed unchanged and 308 pending. Broader language and browser
+validation remain open. Nothing pushed.
+
+
+### 2026-09-14 — Galician custom-field value clearing
+
+Local commit `29f1980b2` repairs activity-unset-customfield: models/cards.js
+registers clearing a card value, not deleting the field definition. Both
+percent tokens remain exact. Retain 25 directly reviewed movement, archive,
+checklist and rule controls. Shared added/removed and member fragments remain
+unaccepted pending contextual agreement repair.
+Positive/negative regression and ledger checks pass: 15,562 corrected,
+1,140 restored awaiting validation, 3,071 reviewed unchanged and 308 pending.
+Correction ledger 18,162. Broader language/browser validation remains open.
+Nothing pushed.
+
+
+### 2026-09-14 — Galician rule actions and web metadata labels
+
+Local commit `87b9e45fb` retains 30 directly reviewed values unchanged.
+Email recipient/subject/message, all/one checklist check/uncheck and swimlane
+scope retain meaning. Empty-field wildcard and current date/time actions
+remain distinct. Authentication method/type and custom head/meta/link tags,
+manifest JSON and literal assetlinks.json configuration names are intact.
+Review checks pass: 15,562 corrected, 1,110 restored awaiting validation,
+3,101 reviewed unchanged and 308 pending. Contextual agreement and broader
+language/browser validation remain open. Nothing pushed.
+
+
+### 2026-09-14 — Galician date activities and placement labels
+
+Local commit `44ff8c566` retains 30 directly reviewed values unchanged.
+Authentication display/default and OIDC controls, login failure, counts and
+restore/delete-all retain meaning. Date activities preserve new/old tokens,
+line breaks and received/start/end/due distinctions. Placement retains
+above/below swimlanes and left/right lists; approaching/past/today deadlines
+remain distinct.
+Review checks pass: 15,562 corrected, 1,080 restored awaiting validation,
+3,131 reviewed unchanged and 308 pending. Broader language and browser
+validation remain open. Nothing pushed.
+
+
+### 2026-09-14 — Galician reminders and notification controls
+
+Local commit `92b911aa9` retains 30 directly reviewed values unchanged.
+First-reminder and approaching/past/now conditions preserve exact list/card,
+board/time tokens. Self-delete, drag handles and assignee singular/plural/
+absence retain meaning. Entity create/edit, all-read notification scope,
+rename permission, week-start setting and weekdays remain correct.
+Review checks pass: 15,562 corrected, 1,050 restored awaiting validation,
+3,161 reviewed unchanged and 308 pending. Broader language and browser
+validation remain open. Nothing pushed.
+
+
+### 2026-09-14 — Galician entity and search predicate labels
+
+Local commit `c78c7f3c5` retains 30 directly reviewed values unchanged.
+Owner/person/team/organization, display/short names and modified metadata
+retain meaning. Checked-item hiding, task creation, table view, due-date
+sorting and all-user scope remain correct. Search operators and predicates
+retain role/object names and ended/overdue/due distinctions.
+Review checks pass: 15,562 corrected, 1,020 restored awaiting validation,
+3,191 reviewed unchanged and 308 pending. Broader language and browser
+validation remain open. Nothing pushed.
+
+
+### 2026-09-14 — Galician query syntax and troubleshooting instructions
+
+Local commit `d2d90abf5` retains 30 directly reviewed values unchanged.
+Query shorthand, exact operator/value tokens, pagination, descending minus,
+positive/negative day integers and current-period predicates remain intact.
+Server troubleshooting preserves exact snap/docker commands. Alphabetic and
+newest/oldest ordering remain distinct.
+Review checks pass: 15,562 corrected, 990 restored awaiting validation,
+3,221 reviewed unchanged and 308 pending. Broader language and browser
+validation remain open. Nothing pushed.
+
+
+### 2026-09-14 — Galician format instructions and request states
+
+Local commit `1adfb3bec` retains 27 directly reviewed values unchanged.
+String templates retain literal %{value} and exact space entities &#32;/&nbsp;.
+Copy/move and report labels retain scope. Spinner animation labels remain
+meaningful in their selector. Email Cc/subject, closed/resolved/history and
+request singular/plural remain distinct. Ticket orthography is unaccepted
+pending dictionary review.
+Review checks pass: 15,562 corrected, 963 restored awaiting validation,
+3,248 reviewed unchanged and 308 pending. Broader language and browser
+validation remain open. Nothing pushed.
+
+### 2026-09-14 — Galician heap diagnostic and ticket spelling
+
+Local commit `c6c3b90be` repairs Node_heap_does_zap_garbage: overwriting
+heap garbage with a bit pattern is distinct from garbage collection.
+Source: https://nodejs.org/download/release/latest-v16.x/docs/api/v8.html
+Retained ticket, tickets and ticket-number after dictionary verification:
+https://academia.gal/dicionario/-/termo/t%C3%ADcket
+Correction and review ledger checks pass; full language/browser scope remains open.
+
+### 2026-09-14 — Galician diagnostics and storage labels
+
+Local commit `8fbc62075` retains 35 correct memory/context statistic,
+invitation, organization, storage, attachment progress and time labels.
+The diagnostics correspond to fields in client/components/settings/informationBody.jade;
+attachment progress is a file counter, and timeView displays elapsed time.
+Technical heap/malloc identifiers remain intact. Exact unchanged-review checks
+pass. Ambiguous Complete/Received labels and shared rule agreement remain open.
+
+### 2026-09-14 — Galician uploads and accessibility settings
+
+Local commit `f51c7439f` retains 30 correct account, upload/avatar byte-limit,
+file-type, cancellation, custom translation, ISO week and page-settings labels.
+Context checked in cardDetails.jade, userAvatar.jade, sidebar.jade,
+settingBody.jade and peopleBody.jade. No interpolation tokens changed.
+Exact unchanged-review checks pass; full grammar/browser scope remains open.
+
+### 2026-09-14 — Galician received-card agreement and scheduler labels
+
+Local commit `cfc2480e5` changes card-received and card-received-on to
+Recibida and Recibida o. cardDetails.jade/cardDate.js describe the feminine
+tarxeta and its date. Thirty lockout/scheduler values retain correct meanings.
+Exact positive/negative corrections and unchanged-review checks pass.
+Browser rendering, shared rule agreement and full language review remain open.
+
+### 2026-09-14 — Galician migration retries and backups
+
+Local commit `4e3802901` retains 30 correct migration retry/resume messages,
+backup completion/scheduling/listing, storage and migration control labels.
+Success/failure/absence polarity and GridFS identifiers are preserved.
+Exact unchanged-review checks pass; full language/browser scope remains open.
+
+### 2026-09-14 — Galician S3 settings and migration outcomes
+
+Local commit `9683042c4` retains 30 correct migration start/stop messages,
+S3/MinIO access/secret-key, bucket, endpoint, port, region and storage values.
+Settings form and required-secret alerts confirm the field context.
+Literal product names, endpoint examples and us-east-1 are preserved.
+Exact unchanged-review checks pass; full language/browser scope remains open.
+
+### 2026-09-14 — Galician storage migrations and progress
+
+Local commit `b71db72ab` retains 30 storage, writable-path, migration action,
+restoration/repair and step-progress labels. Duplicate/empty/all qualifiers
+and technical SSL/TLS, S3 and URL identifiers preserve the English meaning.
+The progress component displays overall/current-step labels and step counts.
+Exact unchanged-review checks pass; full language/browser scope remains open.
+
+### 2026-09-14 — Galician completed subtask and migration steps
+
+Local commit `01fa30d1c` corrects completed to Completada, matching feminine
+subtarefa in client/components/cards/subtasks.jade's completed icon tooltip.
+Twenty-nine migration-step, interval and monitoring labels retain correct
+meaning, numeric intervals, missing/duplicate/empty scope and technical IDs.
+Exact positive/negative correction and unchanged-review checks pass.
+Full language/browser scope remains open.
+
+### 2026-09-14 — Galician scheduler and migration thresholds
+
+Local commit `d2780f008` retains 30 scheduler, monitoring, storage destination
+and migration threshold values. attachmentSettings.jade confirms CPU pause
+percentage and millisecond-delay fields. Numeric ranges 10-90 and 100-10000,
+last/next execution, failure polarity and pause/resume/run-once meanings remain.
+Exact unchanged-review checks pass; full language/browser scope remains open.
+
+### 2026-09-14 — Galician repository and account labels
+
+Local commit `a5e111f91` retains 29 resource, repository and account values,
+including lockout cause, retry timing and required OTP. Schedule is pending
+because its action/noun context is not established. Exact reviews pass.
+Activity rendering repaired separately in `888e0e6bc`; formatting failures
+were caller API misuse, not incorrect translation placeholders.
+
+### 2026-09-14 — Basque activities and Galician file/session labels
+
+Local commit `641062f8c` retains 26 Basque activity messages and two Galician
+file/session labels. Basque add/remove, check/uncheck and complete/uncomplete
+prose preserves source action meanings and all underscore tokens, including
+checkList casing. Archive terminology is excluded pending verification.
+Nine Galician restored findings remain. Exact unchanged reviews pass;
+full language/browser scope remains open.
+
+### 2026-09-14 — Basque archive activity terminology
+
+Local commit `629577951` replaces biltegira with artxibora in four archived
+board/card/list/swimlane activities, distinguishing archive state from storage.
+Dictionary source: https://www.ehu.eus/eeh/cgi/bila?h=artxibo
+Twenty-six activity, permission, JSON-copy, mapping and invitation values retain
+correct meanings and canonical keys/tokens. Exact positive/negative correction
+and unchanged-review checks pass; full grammar/browser scope remains open.
+
+### 2026-09-14 — Basque rule fragments and activity settings
+
+Local commit `e34b55d69` retains 30 webhook, subtask, activity, rule builder,
+custom HTML insertion and account/settings values. Conditional denean follows
+card/label/checklist subjects in the trigger builder. Optional authentication,
+irreversible removal, first reminder and literal body tags retain meaning.
+Exact unchanged-review checks pass; full grammar/browser scope remains open.
+
+### 2026-09-14 — Basque archived search status and operators
+
+Local commit `9910a2c13` repairs all-status archived/unarchived terminology,
+using artxibatutako/artxibatu gabeko consistently with artxibo activity captions.
+Twenty-nine user, label, operator and troubleshooting values retain meanings.
+Canonical syntax, quoted examples, OR/AND, absence/sort/page instructions,
+interpolation tokens and snap/docker commands remain exact.
+Positive/negative correction and review checks pass; browser scope remains open.
+
+### 2026-09-14 — Basque reports, teams and storage migration
+
+Local commit `ea16ef95e` retains 30 correct report, team/organization,
+invitation, item-entry, migration and storage configuration values.
+Team deletion remains blocked while a user belongs to it; migration all-scope
+and success/failure polarity are preserved. Literal endpoint examples,
+product identifiers and percent tokens remain unchanged.
+Exact reviews pass; full language/browser scope remains open.
+
+### 2026-09-14 — Basque dates, uploads and webhooks
+
+Local commit `a076987c9` retains 28 date/checklist activities, calendar/table
+navigation, upload outcome, URL scheme, milestone and webhook/database values.
+50-300%, one scheme per line, receipt-date meaning and source tokens remain.
+Free and impersonation wording are excluded pending contextual review.
+Exact unchanged reviews pass; full language/browser scope remains open.
+
+**2026-09-14 — Basque impersonation review (`f29c14def`).**
+
+Retained `impersonate-user`: Euskadi dictionary includes acting in another
+person’s place in `ordezkatu`, matching the actual administrator handler.
+Source: https://www.euskadi.eus/web01-a2lurhiz/es/contenidos/termino/_c04593/eu_o_1340/o1340.html
+All 3,696 exact review records pass; broader repairs remain open.
+
+**2026-09-14 — Basque dates and standalone rules (`4c788beef`).**
+
+Retained 23 inspected date, requester/assigner, parent-card presentation,
+custom-field activity and standalone rule labels. Actual minicard parentCardName
+confirms the parent relationship; unset activities clear a value, not a definition.
+All 3,719 exact reviews pass. Compound conditional trigger phrases remain open.
+
+**2026-09-14 — Basque rule actions (`ffde8e84e`).**
+
+Retained 17 inspected action and date-field labels; 3,736 exact reviews pass.
+Found unflagged Spanish `es` in shared `r-is`. Actual board/card/checklist
+triggers combine it with Basque conditional verbs already ending in `denean`.
+A literal copula replacement alone would leave redundant composed grammar;
+coordinated phrase repair is required before accepting these trigger values.
+
+**2026-09-14 — Basque rule archive terminology (`2a22a42a9`).**
+
+Corrected `r-archived` and `r-unarchived` from generic storage to archive
+terminology, preserving into/from directions. Exact archive regression and
+all 18,173 correction records pass, including token preservation and newer
+translation protection. Spanish `r-is` and composed grammar remain open.
+
+**2026-09-14 — Veps server-error repair (`9f0f038cd`).**
+
+Replaced Finnish `Palvelin virhe` with `Serveran viga`; Veps dictionary attests
+error/fault `viga`: https://kaikki.org/dictionary/Veps/meaning/v/vi/viga.html .
+Existing troubleshooting prose uses `serveran`. Normative borrowed server
+terminology remains low confidence, and standalone `Server` is not accepted.
+Exact regression and all 18,174 correction records pass. Global completeness
+gate failure remains recorded. Full node run finished: 1,043 suites, nine
+failures; log is `.tools/tmp/upcoming-node-suites.txt`.
+
+**2026-09-14 — Basque reminders and flag verification.**
+
+Retained 28 reminders, no-undo deletion warnings, notifications/read states,
+rename permissions and account labels in `685b50fe1`; 3,764 reviews pass.
+Updated stale flag gate in `0397fc89b` to exercise the shared picker helper
+for every loaded locale, constructed globe fallback and Veps/Venetian overrides.
+Its six checks pass; two Veps Server completeness failures remain unresolved.
+
+**2026-09-14 — Basque settings and search vocabulary (`097b04e1d`).**
+
+Retained 61 inspected weekday/status/ownership, organization and display labels,
+missing-object errors, operators and predicates. Quarter is a three-month
+period; not-found negation and sprintf tokens remain intact. Actual globalSearch
+helper uses translated operators in its instructions. All 3,825 review records
+pass; conditional grammar, Veps terminology and wider verification remain open.
+
+**2026-09-14 — Basque search validation and legal labels (`fbf809882`).**
+
+Retained 41 inspected search errors, pagination, sorting, report/request status,
+legal acceptance, copied confirmation and checklist moves. Actual layouts.jade
+combines acceptance and legal-notice fragments. Positive-integer requirements,
+negation, sort directions and tokens remain intact. All 3,866 reviews pass.
+Borrowed ticket spelling and previously recorded unresolved grammar stay open.
+
+**2026-09-14 — Basque storage and intervals (`241fc457a`).**
+
+Retained 35 inspected password, attachment-path, scheduled confirmation,
+migration/status, S3 access/connection and duration/recurrence labels. Exact
+intervals and failure/success distinctions remain intact; Cron retains the tool
+name. Complete, Idle and bucket wording excluded. All 3,901 reviews pass.
+
+**2026-09-14 — Basque authentication and date activities (`12ba3ba1a`).**
+
+Retained 16 inspected authentication error/display/default labels, customization,
+date-value removal, deletion/restoration, loading and old/new date activities.
+Actual settings distinguish display and default method; rule action removes
+a value. Tokens and all-item scopes preserved. All 3,917 reviews pass.

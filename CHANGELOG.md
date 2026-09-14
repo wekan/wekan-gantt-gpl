@@ -80,9 +80,12 @@ held only issues \#4774 and \#4055, and both are closed now.
 
 Resumed at the maintainer's request on 2026-09-13, beginning with Klingon.
 The audit tracks 20,081
-findings: 15,555 corrected, 2,237 restored pre-pull values awaiting
-validation, 1,981 reviewed and retained, and 308 pending review or repair.
-The correction inventory records 18,151 exact before/after values,
+findings: 15,571 corrected, 285 restored pre-pull values awaiting
+validation, 3,917 reviewed and retained, and 308 pending review or repair.
+The correction inventory records 18,173 exact before/after values,
+Global completeness verification also identifies Veps `server` (currently
+English-identical “Server”) for terminology review; it is not accepted yet.
+
 including repairs outside the original findings.
 All 361 originally flagged Klingon findings are repaired. The broader review
 of 829
@@ -106,10 +109,11 @@ performed. Preserve correct translations and source placeholders during repairs.
 The requested organization, linked-file/static-archive and rate-limit mirror
 changes are implemented in local commit 02383521a; translation repairs have
 resumed.
-Latest translation fix/review is 6eaabcaea (2026-09-14): Esperanto failure
-time window clarified; 29 correct support and account labels retained.
-Latest unchanged-value review is 1439290a6 (2026-09-14): 30 Esperanto
-attachment, upload, authentication and custom-translation labels retained.
+Latest translation fix/review is 29f1980b2 (2026-09-14): Galician field
+value clearing clarified; 25 correct rule/activity values retained.
+Latest unchanged-value review is 1adfb3bec (2026-09-14): 27 Galician
+format and request-state values retained. Shared attachment/member
+participles still need contextual agreement repair.
 Of 611 restored Danish values reviewed, 606 are retained and five repaired.
 Latest unchanged-value reviews are 944243917 and ed9be5431 (2026-09-14),
 retaining 156 correct Danish storage, migration and monitoring/account labels.
@@ -629,6 +633,954 @@ the Markdown commit as the template.
 
 </details>
 </details>
+
+# v11.79 2026-09-14 WeKan ® release
+
+**In short:** **Veps translations** replace Finnish server-error prose with
+Veps error terminology, consistent with existing troubleshooting wording.
+Exact regression checks preserve placeholders and protect newer translations.
+Borrowed server terminology and the standalone English-identical label still
+need review; broader translation repairs and browser verification remain open.
+
+This release fixes the following developer tooling:
+
+**Release workflow** - Recognize translation group headings.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ac63da6d0">Avoid treating translation summary prose as a section</a>. Thanks to xet7.</summary>
+
+The v11.78 prepare stage failed because a summary line starting with emphasized
+Translations was mistaken for a group heading. Require the actual heading
+syntax before collecting language metadata. The existing v11.78 notes now
+render successfully; regression tests retain missing-metadata failures and
+compact output. No workflow was published or rerun remotely.
+
+</details>
+
+and improves the following verification:
+
+**Language picker tests** - Shared flag helper coverage.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0397fc89b">Check flags through the actual picker helper</a>. Thanks to xet7.</summary>
+
+The registry test now exercises the shared module instead of reading a map
+that moved out of the user header. All loaded locales, constructed globe
+fallbacks and Veps/Venetian overrides pass. Unknown tags retain the globe.
+
+</details>
+
+and fixes the following translations:
+
+**Translations** - Veps server-error terminology.
+
+**Languages updated:** Veps
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9f0f038cd">Repair Veps server-error prose</a>. Thanks to xet7.</summary>
+
+Replaced Finnish prose with Veps error terminology. Exact regression and
+correction checks pass. Borrowed server terminology remains low confidence;
+standalone Server and wider translation validation still require review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/685b50fe1">Validate Basque reminder and notification wording</a>. Thanks to xet7.</summary>
+
+Retained 28 correct reminders, irreversible deletion warnings and notification
+labels. Deadline states, negation and placeholders remain distinct and intact.
+Review checks pass; remaining translation findings stay open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/097b04e1d">Validate Basque settings and search vocabulary</a>. Thanks to xet7.</summary>
+
+Retained 61 correct weekday/settings labels, missing-object errors and search
+operators and predicates. Quarter, not-found negation and placeholders keep
+their meanings. Review checks pass; remaining translation findings stay open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/fbf809882">Validate Basque search and legal wording</a>. Thanks to xet7.</summary>
+
+Retained 41 correct search validation, sorting, report/status and legal/checklist
+labels. Positive-integer requirements, direction and placeholders remain intact.
+Borrowed ticket spelling and the remaining audit findings stay under review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/241fc457a">Validate Basque storage and schedule labels</a>. Thanks to xet7.</summary>
+
+Retained 35 correct storage/connection, migration status and scheduled interval
+labels. Frequencies and failure/success distinctions remain intact. Complete,
+Idle and bucket wording remain under review. Exact review checks pass.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/12ba3ba1a">Validate Basque authentication and date activities</a>. Thanks to xet7.</summary>
+
+Retained 16 correct authentication, deletion/restoration and old/new date-activity
+labels. Default versus displayed method, all-item scopes and source tokens
+remain intact. Exact review checks pass; remaining audit findings stay open.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
+
+# v11.78 2026-09-14 WeKan ® release
+
+**In short:** **Board views** use the full available width, and Frappe Gantt
+avoids a browser-blocking translation observer loop. **LDAP login** handles an
+unset search filter after service-account binding. **Activity feeds** substitute
+message values while preserving security-aware rendering. **Language selection**
+uses full-width, two-line entries. **Developer tools** recover interrupted Git
+pulls, synchronize mirrors in stages and produce compact release notes.
+**Translations** repair Basque, Esperanto and Galician wording; broader language
+and browser validation remains under review.
+
+This release fixes the following bugs:
+
+**LDAP login** - Optional user search filter.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2c5cdd78a">Handle an unset filter after service-account binding.</a>. Thanks to Nissulya and xet7.</summary>
+
+An unset optional LDAP_USER_SEARCH_FILTER caused an undefined-index TypeError
+before searching users. Configured restrictions remain active. Regression,
+encryption, connection-release and redacted error-logging checks pass.
+Live directory login remains unverified.
+
+
+Fixes #6692,
+
+</details>
+
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/dad65fb6c">Verify the LDAP post-bind fix through actual user search methods.</a>. Thanks to Nissulya and xet7.</summary>
+
+The latest 11.77 report predates the local fix. Exercise binding followed
+by user search with unset and configured filters, and verify failed binding
+stops search. The separate oplog observer error remains unproven as a login
+cause. Offline regression passes; live directory confirmation remains open.
+
+
+Fixes #6692,
+
+</details>
+
+**Board layout and navigation** - Full-width content and responsive Gantt.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/fda197bb0">Full-width board report views</a>. Thanks to xet7.</summary>
+
+Timeline, Time, Statistics, grouping and chart views use the full available
+board width instead of centered 900px or 1100px content caps. Content padding
+stays inside the available width. Regression tests cover the shared shells;
+a browser test checks Timeline, Time and Statistics at desktop and mobile widths.
+
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/670c20311">Keep Frappe Gantt responsive</a>. Thanks to xet7.</summary>
+
+The header translation observer skips identical text updates, preventing an
+endless mutation loop when English labels already match their translations.
+Tests cover English and translated labels; a browser regression opens Frappe
+Gantt and switches back to Swimlanes.
+
+
+</details>
+
+**Language picker** - Full-width two-line entries.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c3ce54fa2">Show language and regional flags on separate lines.</a>. Thanks to xet7.</summary>
+
+The popup fills the viewport width, with a language flag/name first and
+parenthesized country flag/name below. Wider responsive columns and wrapping
+prevent clipped names. All 245 locale/flag checks pass. Browser assertions
+cover full width, narrow windows and RTL order; syntax checked but not run live.
+
+
+</details>
+
+**Activity feeds** - Substitute message values.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/888e0e6bc">Show activity titles and labels instead of literal percent placeholders.</a>. Thanks to xet7.</summary>
+
+Card and right-sidebar activities now pass values through the current
+translation API's sprintf options. Discard Spacebars helper metadata while
+preserving security-aware formatting and sanitizing. Real formatter tests
+cover labels, moves, comments, attachment deletion and link stripping.
+Both-feed browser assertions are registered and syntax-checked; live browser
+execution was not available.
+
+
+</details>
+
+
+
+
+
+and improves the following developer tooling:
+
+**Release workflow** - Changelog-only release notes.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ccfceb7b7">Exclude binary provenance tables from release notes</a>. Thanks to xet7.</summary>
+
+Initial and refreshed release notes contain only the selected changelog
+section. Keep checksum verification and provenance build artifacts separately.
+Update build.sh, build.bat, release-all.sh and repository instructions.
+Release-note, binary-source, menu-parity and shell syntax checks pass.
+No release was published; native Windows execution was not tested.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8db16132c">Summarize release-note translations as updated languages</a>. Thanks to xet7.</summary>
+
+Release notes list only affected languages for translation updates. Keep
+full translation entries in the changelog and audit; preserve other release
+sections. Explicit language metadata prevents guessed names. Offline tests
+verify nested detail removal, non-translation preservation, missing metadata
+and exact release-heading selection. No release was published.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f7def463b">Restrict release notes to summary, security and language updates</a>. Thanks to xet7.</summary>
+
+Release notes contain only In short, Security, updated translation languages,
+the standard thanks line and More details at ChangeLog with the release
+anchor. Keep full entries in the changelog. Offline tests verify retained
+security details, omitted other entries, exact headings and version links.
+Script parity and shell syntax checks pass; no release was published.
+
+</details>
+
+
+
+**Git menu** - Recover interrupted pulls and preserve commit links.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f665f7cda">Recover interrupted Git menu operations safely</a>. Thanks to xet7.</summary>
+
+Pull and push stop before an existing rebase, merge or Git lock. Failed rebase
+cleanup reports the remaining operation instead of claiming it was aborted.
+Fast-forward pulls can autostash tracked edits; pushes check fetch errors and
+integrate newer origin commits before publishing. Offline regression tests
+cover operation guards and cleanup behavior.
+
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f23a18515">Automate interrupted pull recovery and merge integration</a>. Thanks to xet7.</summary>
+
+The Git menu preserves an orphaned autostash and removes only the verified
+incomplete rebase setup. Diverged branches merge origin with automatic merge
+commits, preserving existing changelog commit hashes. Existing changelog link
+repair still commits repairs before a human-run push. Actual content conflicts
+remain visible for resolution, and active operations or locks stop recovery.
+
+
+</details>
+
+**Mirroring** - Staged synchronization and parallel target progress.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/103e4dfac">Synchronize Git, archive locally, then mirror content concurrently.</a>. Thanks to xet7.</summary>
+
+Option 1 synchronizes Git with every active target before source content
+collection. After the local archive succeeds, target content processes run
+concurrently with combined start-time and issue/release counters. Separate
+mirror-named text logs retain each target's output. Restart checkpoints skip
+completed content targets. Offline concurrency, failure, restart, archive,
+attachment and rate-limit tests pass. No remote synchronization was run.
+
+
+</details>
+
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/44e3e1fd7">Recover unavailable linked files from historical captures.</a>. Thanks to xet7.</summary>
+
+Use archive.org history near the issue/comment creation date when public
+links are unavailable. Bound attachment requests to 30 seconds, defer long
+cooldowns without bypassing rate limits, and skip optional network failures.
+Keep recovered-file provenance and existing bytes. Offline fallback, private
+link, attachment, archive, restart and rate-limit tests pass. No remote
+synchronization was run.
+
+
+</details>
+
+
+and includes the following translation repairs and reviews:
+
+**Translations** - Terminology, instructions and activity validation.
+
+**Languages updated:** Basque, Esperanto, Galician
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/316232f69">Preserve Trello navigation labels in Galician import help</a>. Thanks to xet7.</summary>
+
+Keep literal navigation labels with Galician prose. Retain 29 correct
+invitation, template, export and filter values. Correction and review
+checks pass; broader language and browser verification remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9b6b1ffe6">Clarify Esperanto overtime work labels</a>. Thanks to xet7.</summary>
+
+Use consistent overtime-work wording for manually classified recorded
+hours. Preserve the hours unit and distinguish the flag from deadline
+expiry. Correction checks pass; wider fluency/browser review remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5d94f1b92">Repair Esperanto advanced-filter examples and escaping</a>. Thanks to xet7.</summary>
+
+Preserve canonical query examples and explain special-character escaping.
+Positive examples and negative wording checks pass with correction checks;
+broader language and browser verification remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/05217bbb9">Correct Esperanto heap garbage-zapping diagnostic</a>. Thanks to xet7.</summary>
+
+Describe heap garbage overwritten with a bit pattern instead of zeroing,
+matching official Node V8 documentation. All correction records pass;
+wider language and browser verification remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5946767b1">Validate Esperanto scheduled-job and migration labels</a>. Thanks to xet7.</summary>
+
+Retain 29 correct administration values. Failed/paused and success/failure
+states remain distinct. Review checks pass; isolated Complete and broader
+language/browser validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/460df4ada">Validate Esperanto storage and migration settings</a>. Thanks to xet7.</summary>
+
+Retain 30 correct labels and instructions. Preserve the empty-list AND
+same-title populated-list condition, migration action distinctions and
+connection success/failure. Review checks pass; broader validation is open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/036cbff31">Validate Esperanto migration repair descriptions</a>. Thanks to xet7.</summary>
+
+Retain 19 correct restoration and repair translations. Preserve literal
+field identifiers, board scope and administrator-only permission. Review
+checks pass; ambiguous completion labels and broader validation stay open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/07756eecd">Validate Esperanto migration confirmations and steps</a>. Thanks to xet7.</summary>
+
+Retain 30 correct warnings and progress labels. Preserve archived versus
+nonarchived scope, conversion before deletion and difficult-undo warnings.
+Review checks pass; broader language and browser verification stays open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5a398d5ac">Validate Esperanto scheduling intervals and diagnostics</a>. Thanks to xet7.</summary>
+
+Retain 30 correct restoration, scheduling and resource labels. Preserve
+interval quantities, singular/plural agreement, run-once scope and percent
+units. Review checks pass; broader validation remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9ba7cfcb8">Validate Esperanto repository and authentication labels</a>. Thanks to xet7.</summary>
+
+Retain 30 correct labels and warnings. Preserve temporary lockout from
+failed logins, required credentials, minimum username length and byte units.
+Review checks pass; wider language and browser verification remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f523001c3">Validate Esperanto account outcomes and basic labels</a>. Thanks to xet7.</summary>
+
+Retain ten correct labels, preserving account creation success/failure and
+login/logout distinctions. Review checks pass; nine uncertain Esperanto
+findings and broader language/browser verification remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/41fb26dff">Validate Esperanto scrollbar terminology</a>. Thanks to xet7.</summary>
+
+Retain the correct vertical-scrollbar translation, supported by Komputeko
+and LibreOffice terminology. Review checks pass; broader review stays open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0d2e977d9">Validate Galician card and checklist activities</a>. Thanks to xet7.</summary>
+
+Retain 25 correct activity translations. Preserve action distinctions,
+object relationships and exact placeholders. Review checks pass; broader
+language and browser verification remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b82f539a4">Validate Galician membership and card-movement activities</a>. Thanks to xet7.</summary>
+
+Retain 25 correct activity translations. Preserve movement direction,
+old/new object references and checklist states. Review checks pass;
+broader language and browser verification remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f1add7ab2">Validate Galician creation controls and offline warning</a>. Thanks to xet7.</summary>
+
+Retain 25 correct translations. Preserve placement, privilege scope,
+singular/plural counts and data-loss conditions. Review checks pass;
+broader language and browser verification remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/68277a708">Validate Galician board settings and archive controls</a>. Thanks to xet7.</summary>
+
+Retain 25 correct translations. Preserve member/assignee scopes,
+public/private distinctions and HTML emphasis. Review checks pass;
+broader language and browser verification remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4c585a2b8">Validate Galician deletion warnings and archive guidance</a>. Thanks to xet7.</summary>
+
+Retain 25 correct translations. Preserve permanent deletion, activity loss
+and no-undo warnings versus reversible archive guidance. Review checks
+pass; broader language and browser verification remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/96367d213">Validate Galician role descriptions and card controls</a>. Thanks to xet7.</summary>
+
+Retain 25 correct translations. Preserve assigned-only visibility,
+editing restrictions and worker self-assignment scope. Review checks pass;
+broader language and browser verification remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7f7db419c">Validate Galician import mapping and board privacy descriptions</a>. Thanks to xet7.</summary>
+
+Retain 25 correct values. Preserve mapping fallback, last-admin constraint,
+notification scope and public-view/member-only-edit distinctions. Review
+checks pass; broader language and browser verification remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4f0293f5c">Validate Galician removal and card-shortcut labels</a>. Thanks to xet7.</summary>
+
+Retain 25 correct values. Preserve removal effects, unsaved-description
+warnings, thresholds and self-assignment distinctions. Review checks pass;
+broader language and browser verification remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e74cc6464">Validate Galician visibility and deletion warnings</a>. Thanks to xet7.</summary>
+
+Retain 25 correct values. Preserve private-only scope, invitation tokens,
+field application distinctions and irreversible deletion warnings. Review
+checks pass; broader language and browser verification remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/edea4b20e">Validate Galician card settings and automation labels</a>. Thanks to xet7.</summary>
+
+Retain 25 correct values. Preserve parent relationships, subtask destinations,
+attachment counts, activity tokens and automation action scope. Review checks
+pass; broader language and browser verification remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/54fdfd33c">Repair Galician automation date-trigger meanings</a>. Thanks to xet7.</summary>
+
+Four date-trigger conditions now preserve both setting and changing dates
+in Galician, replacing Portuguese wording. Retain 39 correct automation and
+HTML-placement values. Positive/negative regression and ledger checks pass;
+shared attachment/member participle agreement and browser validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2cb3f6b13">Validate Galician deletion warnings and personal card views</a>. Thanks to xet7.</summary>
+
+Retain 34 correct values. Preserve irreversible deletion, linked-card removal
+order, mention tokens and due-card permission restrictions. Review checks
+pass; broader language and browser verification remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/cf1e89bb9">Validate Galician search results and operator instructions</a>. Thanks to xet7.</summary>
+
+Retain 40 correct values. Preserve query syntax, quoted examples, result
+tokens, role alternatives and created/modified day thresholds. Review checks
+pass; broader language and browser verification remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f22aeb7bc">Validate Galician search predicates and checklist instructions</a>. Thanks to xet7.</summary>
+
+Retain 39 correct values. Preserve boolean search logic, absence checks,
+positive limits, deletion constraints, checklist order and legal agreement.
+Review checks pass; field-context and browser validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2f141de75">Validate Galician storage and account-lockout labels</a>. Thanks to xet7.</summary>
+
+Retain 30 correct values. Preserve attachment/storage scope, account states
+and support visibility. Resolve card-show-lists wording against its settings
+row and toggle. Review checks pass; broader browser validation remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3b524f071">Validate Galician account states and scheduled board actions</a>. Thanks to xet7.</summary>
+
+Retain 29 correct values. Preserve activation, unlock scope and successful
+scheduling versus completed execution. Review checks pass; Complete wording
+and broader language/browser validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ff77543b5">Validate Galician migration scopes and confirmations</a>. Thanks to xet7.</summary>
+
+Retain 34 correct values. Preserve duplicate-list conditions, archive scope,
+repair order, administrator restrictions and progress meanings. Review checks
+pass; completion terminology and broader browser validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e8766c17b">Validate Galician migration execution and account messages</a>. Thanks to xet7.</summary>
+
+Retain 30 correct values. Preserve background execution, batch limits,
+attachment states, account validation and activity tokens. Review checks
+pass; broader language and browser validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4b926a60f">Validate Galician activities and workspace controls</a>. Thanks to xet7.</summary>
+
+Retain 35 correct values. Preserve action directions, date interpolation,
+workspace settings, layout scope and keyboard shortcut inversions. Review
+checks pass; broader language and browser validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/708478423">Validate Galician display settings and archive controls</a>. Thanks to xet7.</summary>
+
+Retain 30 correct values. Preserve pixel/integer constraints, archive scope,
+avatar tokens, mobile/desktop switching and opposing zoom directions.
+Review checks pass; broader language and browser validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e5e09f52c">Validate Galician calendar and voting labels</a>. Thanks to xet7.</summary>
+
+Retain 30 correct values. Preserve month directions, date distinctions,
+voting eligibility, visibility and permanent deletion warnings. Review checks
+pass; broader language and browser validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/47fb0f277">Validate Galician estimation controls and color labels</a>. Thanks to xet7.</summary>
+
+Retain 30 correct values. Preserve Planning Poker actions, feature names,
+automatic-width inversion, clipboard alternatives and color distinctions.
+Review checks pass; broader language and browser validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/98c90fd8a">Validate Galician custom fields and access labels</a>. Thanks to xet7.</summary>
+
+Retain 30 correct values. Preserve access restrictions, custom-field types,
+dropdown alternatives, WIP limits and account email interpolation. Review
+checks pass; broader language and browser validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ac0f8696f">Validate Galician account emails and export fields</a>. Thanks to xet7.</summary>
+
+Retain 29 correct values. Preserve email purposes and tokens, account states,
+export roles, attachment metadata and sorting scope. Review checks pass;
+export free wording and broader browser validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c45e99b02">Validate Galician filters and import mapping labels</a>. Thanks to xet7.</summary>
+
+Retain 30 correct values. Preserve relative date filters, list visibility,
+import formats and existing-user mapping. Review checks pass; broader
+language and browser validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/885d65b3b">Validate Galician selection and board-management labels</a>. Thanks to xet7.</summary>
+
+Retain 30 correct values. Preserve selection scope, role restrictions,
+private-page login interpolation and image-only input. Review checks pass;
+broader language and browser validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/64a60f189">Validate Galician shortcuts and custom branding labels</a>. Thanks to xet7.</summary>
+
+Retain 30 correct values. Preserve shortcut actions, task/hour limits,
+upload states and logo/URL configuration distinctions. Review checks pass;
+broader language and browser validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6c534f40f">Validate Galician SMTP and system diagnostic labels</a>. Thanks to xet7.</summary>
+
+Retain 30 correct values. Preserve WIP remedies, SMTP purpose, invitation
+tokens, webhook scope and system-diagnostic distinctions. Review checks pass;
+broader language and browser validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/dda51a1e5">Validate Galician account permissions and subtask settings</a>. Thanks to xet7.</summary>
+
+Retain 28 correct values. Preserve permissions, metadata, role attribution,
+notification scope and subtask path relationships. Review checks pass;
+received-label agreement and broader browser validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/29f1980b2">Clarify Galician custom-field value clearing activity</a>. Thanks to xet7.</summary>
+
+Describe clearing the card value instead of deleting the field definition.
+Preserve both percent tokens and retain 25 correct rule/activity values.
+Positive/negative regression and ledger checks pass; contextual rule grammar
+and broader browser validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/87b9e45fb">Validate Galician rule actions and web metadata labels</a>. Thanks to xet7.</summary>
+
+Retain 30 correct values. Preserve checklist check/uncheck scope, wildcard
+meaning, date actions and literal HTML/JSON configuration names. Review
+checks pass; broader language and browser validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/44ff8c566">Validate Galician date activities and placement labels</a>. Thanks to xet7.</summary>
+
+Retain 30 correct values. Preserve authentication settings, date tokens,
+placement directions and approaching/past/today deadline distinctions.
+Review checks pass; broader language and browser validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/92b911aa9">Validate Galician reminders and notification controls</a>. Thanks to xet7.</summary>
+
+Retain 30 correct values. Preserve due conditions, exact reminder tokens,
+read-state scope, account controls and weekday names. Review checks pass;
+broader language and browser validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c78c7f3c5">Validate Galician entity and search predicate labels</a>. Thanks to xet7.</summary>
+
+Retain 30 correct values. Preserve entity names, view scope, date sorting
+and ended/overdue/due predicate distinctions. Review checks pass; broader
+language and browser validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d2d90abf5">Validate Galician query syntax and troubleshooting instructions</a>. Thanks to xet7.</summary>
+
+Retain 30 correct values. Preserve query shorthand, descending sort, period
+predicates and executable diagnostic commands. Review checks pass; broader
+language and browser validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1adfb3bec">Validate Galician format instructions and request states</a>. Thanks to xet7.</summary>
+
+Retain 27 correct values. Preserve template tokens, exact space entities,
+spinner options and closed/resolved distinctions. Review checks pass;
+ticket orthography and broader browser validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c6c3b90be">Clarify Galician Node heap garbage overwriting and validate ticket spelling.</a>. Thanks to xet7.</summary>
+
+The diagnostic describes overwriting garbage with a bit pattern. Three
+Galician ticket labels retain dictionary-accepted spelling. Exact correction,
+placeholder, key-order and unchanged-review checks pass.
+
+
+</details>
+
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8fbc62075">Validate Galician memory statistics and storage controls.</a>. Thanks to xet7.</summary>
+
+Retained 35 correct diagnostic, invitation, organization, attachment,
+progress and time-summary labels after meaning and UI-context review.
+Exact unchanged-review checks pass; broader language review remains open.
+
+
+</details>
+
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f51c7439f">Validate Galician upload limits and accessibility settings.</a>. Thanks to xet7.</summary>
+
+Retained 30 correct registration, visibility, upload/avatar, custom
+translation, ISO week, support and accessibility labels. Exact review
+checks pass; uncertain rule fragments and broader language review remain open.
+
+
+</details>
+
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/cfc2480e5">Fix Galician Received captions and validate scheduled jobs.</a>. Thanks to xet7.</summary>
+
+Two Received captions now agree with the feminine card noun. Retained
+30 correct lockout, scheduler and diagnostic values. Exact correction,
+placeholder and unchanged-review checks pass; browser review remains open.
+
+
+</details>
+
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4e3802901">Validate Galician migration retry and backup labels.</a>. Thanks to xet7.</summary>
+
+Retained 30 correct retry/resume, completion, backup, storage and migration
+control values. Exact review checks pass; broader language review remains open.
+
+
+</details>
+
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9683042c4">Validate Galician S3 settings and migration outcomes.</a>. Thanks to xet7.</summary>
+
+Retained 30 correct migration start/stop, S3/MinIO endpoint, credential,
+region and storage labels. Technical identifiers remain intact. Exact
+review checks pass; broader language and browser review remain open.
+
+
+</details>
+
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b71db72ab">Validate Galician storage migrations and progress labels.</a>. Thanks to xet7.</summary>
+
+Retained 30 correct storage, permission, restore/repair migration and
+progress labels. Scope qualifiers and technical identifiers remain intact.
+Exact review checks pass; broader language/browser review remains open.
+
+
+</details>
+
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/01fa30d1c">Fix Galician completed-subtask agreement and validate migration steps.</a>. Thanks to xet7.</summary>
+
+The completed tooltip now agrees with the feminine subtask noun. Retained
+29 correct migration-step, scheduling interval and monitoring labels.
+Exact correction, placeholder and review checks pass; browser review remains open.
+
+
+</details>
+
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d2780f008">Validate Galician scheduler and migration threshold wording.</a>. Thanks to xet7.</summary>
+
+Retained 30 correct queue, run, concurrency, monitoring and migration
+threshold labels. Numeric ranges and pause/resume meanings remain intact.
+Exact review checks pass; broader language/browser review remains open.
+
+
+</details>
+
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a5e111f91">Validate Galician repository and account messages.</a>. Thanks to xet7.</summary>
+
+Retained 29 correct resource, repository and account values. Temporary
+lockout instructions preserve cause and retry timing; Schedule remains
+pending context review. Exact unchanged-review checks pass.
+
+
+</details>
+
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/641062f8c">Validate Basque activity messages and Galician session labels.</a>. Thanks to xet7.</summary>
+
+Retained 26 correct Basque activity messages and two Galician labels.
+Action polarity and underscore placeholders remain intact. Basque archive
+wording and nine Galician context-dependent findings remain pending.
+Exact review checks pass; broader language/browser review remains open.
+
+
+</details>
+
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/629577951">Clarify Basque archive activity terminology.</a>. Thanks to xet7.</summary>
+
+Four messages distinguish archive state from generic storage. Retained
+26 correct activity, permission, JSON-copy and invitation values. Exact
+correction, token and review checks pass; browser validation remains open.
+
+
+</details>
+
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e34b55d69">Validate Basque rule fragments and activity settings.</a>. Thanks to xet7.</summary>
+
+Retained 30 correct webhook, subtask, rule, activity and settings values.
+Conditional fragments, optional authentication, irreversible deletion and
+literal HTML tags retain their meanings. Exact review checks pass;
+broader language/browser validation remains open.
+
+
+</details>
+
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9910a2c13">Clarify Basque archived search status and validate instructions.</a>. Thanks to xet7.</summary>
+
+Search help distinguishes archived/unarchived cards from generic storage.
+Retained 29 correct search, label and troubleshooting values. Operator
+examples, commands and interpolation tokens remain intact. Exact correction
+and review checks pass; browser validation remains open.
+
+
+</details>
+
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ea16ef95e">Validate Basque reports and storage migration messages.</a>. Thanks to xet7.</summary>
+
+Retained 30 correct report, team/organization, invitation, storage and
+migration values. Deletion restrictions, outcome polarity and technical
+examples remain intact. Exact review checks pass; broader review remains open.
+
+
+</details>
+
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a076987c9">Validate Basque date activities and webhook labels.</a>. Thanks to xet7.</summary>
+
+Retained 28 correct date, upload, navigation, URL-scheme and webhook values.
+Numeric ranges, outcomes and source tokens remain intact. Free and
+impersonation terminology remain pending. Exact review checks pass.
+
+
+</details>
+
+
+
+
+
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4c788beef">Validate Basque date and standalone rule labels</a>. Thanks to xet7.</summary>
+
+Retained 23 correct date, parent-card presentation, custom-field activity and
+rule labels after inspecting their use and placeholders. Compound trigger
+phrases and remaining translation findings are still under review.
+
+
+</details>
+
+
+
+
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ffde8e84e">Validate Basque rule actions and date-field labels</a>. Thanks to xet7.</summary>
+
+Retained 17 correct action and date-field labels. Shared conditional trigger
+composition still requires repair; the audit records its Spanish auxiliary.
+
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2a22a42a9">Correct Basque rule archive terminology</a>. Thanks to xet7.</summary>
+
+Archive and restore rule labels now refer to the archive instead of generic
+storage. Regression checks preserve both directions. Shared trigger auxiliary
+and composed grammar remain under review in the translation audit.
+
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
 
 # v11.77 2026-09-14 WeKan ® release
 

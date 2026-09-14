@@ -31,13 +31,14 @@ pins.
 </details>
 ```
 
-**No Platform/Binary/From/Version/SHA256 table belongs here, in any shape.**
-It was tried twice - right under the summary, then moved to a `**Binaries in
-these bundles:**` label at the end - and removed both times: it made the
-entry mostly a giant table nobody read. That data lives in the **GitHub
-Release notes** instead, built fresh by `releases/provenance-table.sh` from
-`releases/record-provenance.sh`'s recordings every time a release is made -
-see CLAUDE.md's/AGENTS.md's CHANGELOG section.
+**Do not add a binaries provenance section or table to the changelog or
+release notes.** Release notes list only updated languages for each Translations group.
+Add `**Languages updated:** Esperanto, Galician` below that group label
+with the actual affected full language names. Detailed entries stay here;
+release notes include only In short, Security, translation languages,
+the standard thanks line and a More details at ChangeLog release anchor link.
+Keep checksum verification and `provenance.tsv` build artifacts separately;
+never append `releases/provenance-table.sh` output to release notes.
 
 ## Why this exists instead of an auto-created empty section
 

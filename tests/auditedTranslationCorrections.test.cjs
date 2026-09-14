@@ -2946,3 +2946,66 @@ const tokens = value => [...value.matchAll(/__[A-Za-z0-9]+(?:_[A-Za-z0-9]+)*__|%
   require('node:assert/strict').match(da.Node_heap_malloced_memory, /hukommelse allokeret med malloc$/);
   require('node:assert/strict').notEqual(da.Node_heap_malloced_memory, 'Node heap: allokeret hukommelse');
 }
+
+// Galician automation date triggers must cover both first setting and changes.
+{
+  const gl = JSON.parse(require('node:fs').readFileSync(require('node:path').join(__dirname, '../imports/i18n/data/gl.i18n.json'), 'utf8'));
+  const assert = require('node:assert/strict');
+  const kinds = { due: 'vencemento', start: 'inicio', end: 'fin', received: 'recepción' };
+  for (const [kind, noun] of Object.entries(kinds)) {
+    const value = gl[`r-when-a-${kind}-date-changed`];
+    assert.equal(value, `Cando se establece ou cambia a data de ${noun}`);
+    assert.doesNotMatch(value, /início|Fim|Recebido|limite/);
+  }
+}
+
+// Clearing a Galician card field value must not claim its definition was deleted.
+{
+  const gl = JSON.parse(require('node:fs').readFileSync(require('node:path').join(__dirname, '../imports/i18n/data/gl.i18n.json'), 'utf8'));
+  const assert = require('node:assert/strict');
+  assert.equal(gl['activity-unset-customfield'], "quitou o valor do campo personalizado '%s' en %s");
+  assert.notEqual(gl['activity-unset-customfield'], "quitou o campo personalizado '%s' en %s");
+}
+
+{
+  const gl = JSON.parse(require('node:fs').readFileSync(require('node:path').join(__dirname, '../imports/i18n/data/gl.i18n.json'), 'utf8'));
+  const assert = require('node:assert/strict');
+  assert.equal(gl.Node_heap_does_zap_garbage, 'Memoria heap de Node: sobrescribe o lixo cun patrón de bits');
+  assert.notEqual(gl.Node_heap_does_zap_garbage, 'Memoria heap de Node: limpa o lixo (zap garbage)');
+}
+
+// Received date captions describe a feminine Galician tarxeta.
+{
+  const gl = JSON.parse(require('node:fs').readFileSync(require('node:path').join(__dirname, '../imports/i18n/data/gl.i18n.json'), 'utf8'));
+  const assert = require('node:assert/strict');
+  assert.equal(gl['card-received'], 'Recibida');
+  assert.equal(gl['card-received-on'], 'Recibida o');
+  assert.notEqual(gl['card-received'], 'Recibido');
+  assert.notEqual(gl['card-received-on'], 'Recibido o');
+}
+
+// Completed subtask tooltip agrees with feminine Galician subtarefa.
+{
+  const gl = JSON.parse(require('node:fs').readFileSync(require('node:path').join(__dirname, '../imports/i18n/data/gl.i18n.json'), 'utf8'));
+  const assert = require('node:assert/strict');
+  assert.equal(gl.completed, 'Completada');
+  assert.notEqual(gl.completed, 'Completado');
+}
+
+// Basque archived activity states use archive terminology, not generic storage.
+{
+  const eu = JSON.parse(require('node:fs').readFileSync(require('node:path').join(__dirname, '../imports/i18n/data/eu.i18n.json'), 'utf8'));
+  const assert = require('node:assert/strict');
+  for (const kind of ['Board', 'Card', 'List', 'Swimlane']) {
+    assert.match(eu['act-archived' + kind], /artxibora eraman da/);
+    assert.doesNotMatch(eu['act-archived' + kind], /biltegira/);
+  }
+}
+
+// Basque all-status search distinguishes archiving from generic storage.
+{
+  const eu = JSON.parse(require('node:fs').readFileSync(require('node:path').join(__dirname, '../imports/i18n/data/eu.i18n.json'), 'utf8'));
+  const assert = require('node:assert/strict');
+  assert.equal(eu['globalSearch-instructions-status-all'], '`__predicate_all__` - artxibatutako eta artxibatu gabeko txartel guztiak');
+  assert.doesNotMatch(eu['globalSearch-instructions-status-all'], /biltegiratu/);
+}

@@ -40,6 +40,13 @@ if [ -n "${ZSH_VERSION:-}" ]; then exec /bin/bash "$0" "$@"; fi
 #   - builds:  tags v<new>, builds amd64/arm64/win64/mac bundles, creates the
 #              GitHub Release, builds+pushes Docker images, builds the snap.
 #
+# Release notes summarize translation details as updated language names.
+# Add **Languages updated:** metadata beneath the Translations group label.
+# Notes include only In short, Security, translation languages, thanks and
+# the changelog link. Other details stay in CHANGELOG.md. Never append
+# "Binaries in these bundles" or a provenance table; retain provenance.tsv
+# build artifacts and checksum verification separately.
+#
 # Track progress at: https://github.com/wekan/wekan/actions
 #
 # Required GitHub secrets (DOCKERHUB_AUTH, QUAY_AUTH, GHCR_AUTH, SNAP_AUTH,
