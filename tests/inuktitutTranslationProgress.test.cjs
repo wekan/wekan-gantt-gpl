@@ -24,6 +24,31 @@ for (const [key, value] of Object.entries(inuktitut)) {
 }
 
 assert.equal(inuktitut.accept, 'ᐊᖏᖅᐸᕋ');
+// Microsoft's native software guide, p. 34: New -> Nutaaq. Preserve the
+// existing syllabic equivalent in actual admin creation controls.
+assert.equal(inuktitut.new, 'ᓄᑖᖅ');
+assert.notEqual(inuktitut.new, english.new);
+for (const [file, selectors] of [
+  ['peopleBody.jade', ['new-org', 'new-team', 'new-user']],
+  ['translationBody.jade', ['new-translation']],
+]) {
+  const jade = fs.readFileSync(path.join(root, 'client/components/settings', file), 'utf8');
+  for (const selector of selectors) {
+    assert.match(jade, new RegExp(`a\\.${selector}\\n\\s+i\\.fa\\.fa-plus\\n\\s+\\| \\{\\{_ 'new'\\}\\}`));
+  }
+}
+
+for (const stem of ['card-recurrence-interval', 'checklist-reset-interval']) {
+  assert.equal(inuktitut[`${stem}-daily`], 'ᖃᐅᑕᒫᑦ');
+  assert.equal(inuktitut[`${stem}-monthly`], 'ᑕᖅᑭᑕᒫᑦ');
+  assert.equal(inuktitut[`${stem}-weekly`], 'ᐱᓇᓱᐊᕈᓯᑕᒫᑦ');
+  assert.equal(inuktitut[`${stem}-weekly`], inuktitut['backup-frequency-weekly']);
+  assert.equal(new Set(['daily', 'weekly', 'monthly'].map(f => inuktitut[`${stem}-${f}`])).size, 3);
+  assert.notEqual(inuktitut[`${stem}-daily`], inuktitut[`${stem}-monthly`]);
+  for (const frequency of ['daily', 'weekly', 'monthly']) {
+    assert.doesNotMatch(inuktitut[`${stem}-${frequency}`], /Ullut|Taqqiit|Pinasuarutit|tamaasa/);
+  }
+}
 assert.equal(inuktitut.board, 'ᐊᓪᓚᕕᒃ');
 assert.equal(inuktitut.card, 'ᐊᓪᓚᖅᓯᒪᔪᖅ');
 assert.equal(inuktitut.list, 'ᑎᑎᖅᑲᓕᐊᖅ');
@@ -203,3 +228,33 @@ assert.equal(inuktitut['board-operations'], 'ᐊᓪᓚᕕᐅᑉ ᐱᓕᕆᐊᖏ�
 assert.deepEqual(tokens(inuktitut['database-migration-confirm']), ['__db__']);
 assert.match(inuktitut['database-migration-description'], /WEKAN_FERRETDB_URL/);
 assert.equal(inuktitut['sandstorm-migration-success'], 'ᐱᔭᕇᖅᑐᖅ');
+
+assert.equal(inuktitut['r-rule-enabled'], 'ᐊᑐᖅᑕᐅᔪᖅ');
+assert.equal(inuktitut['r-rule-disabled'], 'ᐊᑐᖅᑕᐅᙱᑦᑐᖅ');
+assert.notEqual(inuktitut['r-rule-enabled'], inuktitut['r-rule-disabled']);
+for (const key of ['r-rule-enabled', 'r-rule-disabled']) {
+  assert.doesNotMatch(inuktitut[key], /Atur|lauqtuq/);
+}
+
+assert.equal(inuktitut['r-toggle-rule-enabled'], 'ᒪᓕᒐᖅ ᐅᓇ ᐊᑐᓕᖅᑎᓪᓗᒍ ᐅᕝᕙᓘᓐᓃᑦ ᖃᒥᓪᓗᒍ');
+assert.match(inuktitut['r-toggle-rule-enabled'], /ᐊᑐᓕᖅᑎᓪᓗᒍ.*ᐅᕝᕙᓘᓐᓃᑦ.*ᖃᒥᓪᓗᒍ/, 'retain both enable and disable alternatives');
+assert.doesNotMatch(inuktitut['r-toggle-rule-enabled'], /Una maligaq|aturtitigit|uvvaluunniit|aturunnaitittigit/);
+
+assert.equal(inuktitut['ldap-test-connection-error'], 'ᐊᑦᑕᕕᖃᕐᓂᖅ ᐃᑎᒐᖅᑐᖅ: %s');
+assert.deepEqual(tokens(inuktitut['ldap-test-connection-error']), ['%s']);
+assert.doesNotMatch(inuktitut['ldap-test-connection-error'], /Attaviguti|asianngittuq/);
+assert.notEqual(inuktitut['ldap-test-connection-error'], inuktitut['ldap-test-connection-success']);
+
+// Native software imperatives distinguish commands from passive status labels.
+assert.equal(inuktitut.edit, 'Aaqqigiarli');
+assert.equal(inuktitut.delete, 'Piirli');
+assert.doesNotMatch(inuktitut.edit, /ᐊᓯᔾᔨᖅᑕᐅᔪᖅ/);
+assert.doesNotMatch(inuktitut.delete, /ᐲᖅᑕᐅᔪᖅ/);
+assert.notEqual(inuktitut.edit, inuktitut.delete);
+
+for (const [key, name] of [['calendar-system-dangi', 'Dangi'], ['calendar-system-roc', 'Minguo']]) {
+ assert.equal(inuktitut[key], `${name} (${inuktitut.calendar})`);
+ assert.doesNotMatch(inuktitut[key], /Korean|Republic of China/);
+}
+assert.notEqual(inuktitut['calendar-system-dangi'], inuktitut['calendar-system-roc']);
+assert.notEqual(inuktitut['calendar-system-roc'], inuktitut['calendar-system-chinese']);

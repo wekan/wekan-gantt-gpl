@@ -36,6 +36,30 @@ const examples = ['== != <= >= && || ( )', 'Field1 == Value1', "'Field 1' == 'Va
     'Veps: standalone escape markers match source inventory');
   assert.ok(result.pendingByLocale['ve-PP'] > 0, 'Veps language review stays open');
   assert.ok(!vepsHelp.includes("Field1 = I"), 'Veps: reject malformed comparison');
+  // Tamazight full prose is repaired; executable syntax stays exact.
+  const tamazightHelp = read('zgh')['advanced-filter-description'];
+  for (const example of examples) {
+    assert.ok(tamazightHelp.includes(example), `Tamazight: exact example ${example}`);
+  }
+  assert.deepEqual(tamazightHelp.match(/\\+/g), source.match(/\\+/g));
+  assert.ok(!tamazightHelp.includes("Field1 == I\\\\'m"), 'reject doubled escape');
+  assert.equal(result.rows.find(row => row.locale === 'zgh'
+    && row.key === 'advanced-filter-description').status, 'corrected',
+    'full help repair is tracked without claiming native fluency');
+  assert.doesNotMatch(tamazightHelp, /Advanced Filter allows|For Example|Normally/);
+  assert.ok(tamazightHelp.startsWith(read('zgh')['advanced-filter-label']));
+  assert.match(tamazightHelp, /ⵜⴰⵙⴽⴰⵔⵉⵏ.*'Field 1'/);
+  assert.match(tamazightHelp, /ⵜⵉⵙⴽⵉⵡⵉⵏ.*F1 == V1 &&/);
+  assert.doesNotMatch(tamazightHelp, /ⵜⵉⵙⵇⵇⵍⵜⵉⵏ|ⵜⵓⵛⵛⵉⵍ/);
+  assert.ok(tamazightHelp.includes("ⵜⴰⵙⴽⴰⵔⵉⵏ ⵙ ⵢⴰⵏ ⵓⵙⴽⴽⵉⵍ '"));
+  assert.doesNotMatch(tamazightHelp, /ⵉⵎⵢⵉⵡⵏⵏ/);
+  const trelloHelp = read('zgh')['import-board-instruction-trello'];
+  assert.deepEqual(trelloHelp.match(/'[^']+'/g),
+    ["'Menu'", "'More'", "'Print and Export'", "'Export JSON'"]);
+  assert.doesNotMatch(trelloHelp, /In your Trello board|copy the resulting text/);
+  assert.match(trelloHelp, /ⵙⵙⵏⵖⵍ ⴰⴹⵕⵉⵚ/);
+
+
   assert.match(read('lt')['advanced-filter-description'], /Išplėstinis filtras/);
   assert.match(read('mn')['advanced-filter-description'], /Нарийвчилсан шүүлтүүр/);
   assert.match(read('el')['advanced-filter-description'], /προηγμένο φίλτρο/);

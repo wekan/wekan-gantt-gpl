@@ -865,3 +865,74 @@ test.describe('Cards – operations', () => {
     ).toContain('New Bottom Card');
   });
 });
+
+
+test('Tamazight numeric total tooltip describes only display-enabled fields', async ({ boardPage, board, user }) => {
+  const shownId = db.uid('shownNumber');
+  const hiddenId = db.uid('hiddenNumber');
+  const cardId = db.findCardIdByTitle({ boardId: board.boardId, title: 'Alpha Card' });
+  const locale = require('../../../imports/i18n/data/zgh.i18n.json');
+  try {
+    for (const [id, shown] of [[shownId, true], [hiddenId, false]]) {
+      db.insertOne('customFields', {
+        _id: id, boardIds: [board.boardId], name: id, type: 'number', settings: {},
+        showOnCard: true, automaticallyOnCard: false, alwaysOnCard: false,
+        showLabelOnMiniCard: false, showSumAtTopOfList: shown,
+        createdAt: new Date(), modifiedAt: new Date(),
+      });
+    }
+    db.updateOne('cards', { _id: cardId }, { $set: {
+      customFields: [{ _id: shownId, value: 7 }, { _id: hiddenId, value: 100 }],
+    } });
+    db.updateOne('users', { _id: user.id }, { $set: { 'profile.language': 'zgh', 'profile.showCardsCountAt': 0 } });
+    await boardPage.reload();
+    await loginWithToken(boardPage, user.id, user.token);
+    await openBoard(boardPage, board.boardId, board.slug);
+    await expect(boardPage.locator('.swimlane-header').first()).toHaveText(locale.defaultdefault);
+    await expect(boardPage.locator('.swimlane-header').first()).not.toHaveText('Défaut');
+    await expect(boardPage.locator('.js-toggle-page-sidebar')).toHaveAttribute('title', `${locale['sidebar-open']} ${locale.or} ${locale['sidebar-close']}`);
+    await expect(boardPage.locator('.js-toggle-page-sidebar')).not.toHaveAttribute('title', /\bou\b/);
+    for (const [selector, key] of [['.js-open-list-menu', 'listActionPopup-title'], ['.js-open-swimlane-menu', 'swimlaneActionPopup-title'], ['.js-open-add-swimlane-menu', 'add-swimlane']]) {
+      await expect(boardPage.locator(selector).first()).toHaveAttribute('title', locale[key]);
+      await expect(boardPage.locator(selector).first()).not.toHaveAttribute('title', /Ajouter|couloir|[\u0600-\u06ff]/u);
+    }
+    const badge = new BoardPage(boardPage).list(board.listIds[0]).locator('.list-sum-badge').first();
+    await expect(badge).toHaveText('∑ 7');
+    await expect(badge).not.toHaveText('∑ 107');
+    await expect(badge).toHaveAttribute('title', new RegExp(`^${locale['sum-of-number-fields']}`));
+    await expect(badge).not.toHaveAttribute('title', /ⴰⵥⴰⵢⵏ|ⵓⵙⴰⴽⴰ/);
+    await boardPage.locator('.js-open-list-menu').first().click();
+    await boardPage.locator('.pop-over .js-close-list').click();
+    const archivePopup = boardPage.locator('.pop-over[data-popup="listArchivePopup"]');
+    await expect(archivePopup.locator('.header-title')).toHaveText(locale['listArchivePopup-title']);
+    await expect(archivePopup.locator('.header-title')).not.toHaveText(/Archiver|liste/);
+    await archivePopup.locator('.js-close-pop-over').click();
+    await expect(new BoardPage(boardPage).list(board.listIds[0])).toBeVisible();
+
+  } finally {
+    db.deleteMany('customFields', { _id: { $in: [shownId, hiddenId] } });
+  }
+});
+
+test('#6694 multi-selection adds labels and members to a mixed selection', async ({ boardPage, board, user }) => {
+  const labelId = db.uid('bulk-label');
+  db.updateOne('boards', { _id: board.boardId }, { $push: { labels: { _id: labelId, name: 'Bulk regression label', color: 'green' } } });
+  const bp = new BoardPage(boardPage);
+  await bp.openAddCardTop(board.listIds[0]);
+  await bp.submitNewCard(board.listIds[0], 'Bulk mixed second card');
+  const cards = db.find('cards', { boardId: board.boardId, listId: board.listIds[0] });
+  expect(cards.length).toBeGreaterThan(1);
+  db.updateOne('cards', { _id: cards[0]._id }, { $addToSet: { labelIds: labelId, members: user.id } });
+  for (const card of cards.slice(1)) db.updateOne('cards', { _id: card._id }, { $pull: { labelIds: labelId, members: user.id } });
+  await boardPage.locator('.js-multiselection-activate').click();
+  await bp.openListMenu(board.listIds[0]);
+  await bp.clickListMenuItem('.js-select-cards');
+  const labelRow = boardPage.locator('.board-sidebar .js-toggle-label-multiselection').filter({ hasText: 'Bulk regression label' });
+  await expect(labelRow).toContainText('⋯');
+  await labelRow.click();
+  await boardPage.locator('.pop-over .js-add-selection-label').click();
+  await expect.poll(() => cards.every(card => db.findOne('cards', { _id: card._id }).labelIds.includes(labelId))).toBe(true);
+  await boardPage.locator('.board-sidebar .js-toggle-member-multiselection').filter({ hasText: user.username }).click();
+  await boardPage.locator('.pop-over .js-assign-member').click();
+  await expect.poll(() => cards.every(card => db.findOne('cards', { _id: card._id }).members.includes(user.id))).toBe(true);
+});

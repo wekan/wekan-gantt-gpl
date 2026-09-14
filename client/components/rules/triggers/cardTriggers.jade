@@ -21,15 +21,19 @@ template(name="cardTriggers")
 
   div.trigger-item
     div.trigger-content
-      div.trigger-text
-        | {{_'r-when-the-label'}}
+      unless ruleNameBeforeSubject
+        div.trigger-text
+          | {{_'r-when-the-label'}}
       div.trigger-dropdown
         select(id="spec-label")
           each labels
             option(value="#{_id}" style="background-color: #{name}")
               = translatedname
+      if ruleNameBeforeSubject
+        div.trigger-text
+          | {{_'r-when-the-label'}}
       div.trigger-text
-        | {{_'r-is'}}
+        | {{ruleTriggerCopula}}
       div.trigger-dropdown
         select(id="spec-label-action")
           option(value="added") {{_'r-added-to'}}
@@ -69,12 +73,16 @@ template(name="cardTriggers")
 
   div.trigger-item
     div.trigger-content
-      div.trigger-text
-        | {{_'r-when-the-member'}}
+      unless ruleNameBeforeSubject
+        div.trigger-text
+          | {{_'r-when-the-member'}}
       div.trigger-dropdown
         input(id="spec-member",type=text,placeholder="{{_'r-name'}}")
+      if ruleNameBeforeSubject
+        div.trigger-text
+          | {{_'r-when-the-member'}}
       div.trigger-text
-        | {{_'r-is'}}
+        | {{ruleTriggerCopula}}
       div.trigger-dropdown
         select(id="spec-member-action")
           option(value="added") {{_'r-added-to'}}
@@ -114,12 +122,16 @@ template(name="cardTriggers")
 
   div.trigger-item
     div.trigger-content
-      div.trigger-text
-        | {{_'r-when-the-assignee'}}
+      unless ruleNameBeforeSubject
+        div.trigger-text
+          | {{_'r-when-the-assignee'}}
       div.trigger-dropdown
         input(id="spec-assignee",type=text,placeholder="{{_'r-name'}}")
+      if ruleNameBeforeSubject
+        div.trigger-text
+          | {{_'r-when-the-assignee'}}
       div.trigger-text
-        | {{_'r-is'}}
+        | {{ruleTriggerCopula}}
       div.trigger-dropdown
         select(id="spec-assignee-action")
           option(value="added") {{_'r-added-to'}}
@@ -141,11 +153,11 @@ template(name="cardTriggers")
       div.trigger-text
         | {{_'r-when-a-attach'}}
       div.trigger-text
-        | {{_'r-is'}}
+        | {{ruleTriggerCopula}}
       div.trigger-dropdown
         select(id="attach-action")
-          option(value="added") {{_'r-added-to'}}
-          option(value="removed") {{_'r-removed-from'}}
+          option(value="added") {{_'r-attachment-added-to'}}
+          option(value="removed") {{_'r-attachment-removed-from'}}
       div.trigger-text
         | {{_'r-a-card'}}
       div.trigger-button.trigger-button-person.js-show-user-field

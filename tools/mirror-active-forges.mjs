@@ -69,9 +69,15 @@ export async function pages(request, endpoint, { key, start = 1, size = 100, pag
 }
 export function command(tool, args, input, options = {}) {
   waitCommand(commandHost(tool,args));
-  const p = spawnSync(tool, args, { cwd: root, input, encoding: 'utf8', maxBuffer: 128 * 1024 * 1024, shell: false, windowsHide: true, ...options });
+  const gitOperation = tool === 'git' && args.find(arg => ['clone', 'fetch', 'push', 'merge'].includes(arg));
+  const commandArgs = gitOperation && ['clone', 'fetch', 'push'].includes(gitOperation) && !args.includes('--progress')
+    ? [...args.slice(0, args.indexOf(gitOperation) + 1), '--progress', ...args.slice(args.indexOf(gitOperation) + 1)] : args;
+  if (gitOperation) console.log(`[git] ${gitOperation} started`);
+  const p = spawnSync(tool, commandArgs, { cwd: root, input, encoding: 'utf8', maxBuffer: 128 * 1024 * 1024, shell: false, windowsHide: true,
+    ...(gitOperation ? { stdio: ['pipe', 'inherit', 'inherit'] } : {}), ...options });
+  if (gitOperation) console.log(`[git] ${gitOperation} finished (exit ${p.status ?? 'error'})`);
   if (p.error || p.status !== 0) { const message=`${tool} failed: ${p.error?.message || p.stderr?.trim() || `exit ${p.status}`}`;noteCommandFailure(commandHost(tool,args),message);throw new Error(message); }
-  return p.stdout;
+  return p.stdout || '';
 }
 export function cliApi(kind, endpoint, method = 'GET', data) {
   if (kind === 'github') return githubJson(endpoint,method,data);
@@ -552,8 +558,23 @@ async function digestMatches(file, digest) {
 }
 export function syncGit(mirror, run = command, exists = fs.existsSync, tools) {
   const sourceName = mirror.sourceName || 'github', sourceUrl = forges[sourceName].git;
-  tools ||= path.join(repositoryArchive(root,repository,sourceName==='github'?organization:destinationNamespaces[sourceName],{github:'github.com',gitlab:'gitlab.com',codeberg:'codeberg.org',sourceforge:'sourceforge.net'}[sourceName]),'git');
+  tools ||= organization === 'wekan' && repository === 'wekan'
+    ? path.join(root, '.tools')
+    : path.join(root, '.tools', 'mirror-git', organization, repository);
   const defaultBranch = mirror.defaultBranch || process.env.WEKAN_MIRROR_DEFAULT_BRANCH || 'main';
+  const existingCheckout = path.join(tools, `wekan-${mirror.name}`);
+  if (exists(existingCheckout)) {
+    if (run('git', ['-C', existingCheckout, 'status', '--porcelain']).trim()) throw new Error('Mirror checkout has local changes; preserved');
+    if (run('git', ['-C', existingCheckout, 'symbolic-ref', '--short', 'HEAD']).trim() !== defaultBranch) throw new Error('Mirror checkout is not on its default branch; preserved');
+    run('git', ['-C', existingCheckout, 'fetch', mirror.url, defaultBranch]);
+    run('git', ['-C', existingCheckout, 'merge', '--no-edit', 'FETCH_HEAD']);
+    run('git', ['-C', existingCheckout, 'fetch', sourceUrl, '+refs/heads/*:refs/mirror-source/heads/*', '+refs/tags/*:refs/mirror-source/tags/*']);
+    run('git', ['-C', existingCheckout, 'merge', '--no-edit', `refs/mirror-source/heads/${defaultBranch}`]);
+    const refs = run('git', ['-C', existingCheckout, 'for-each-ref', '--format=%(refname)', 'refs/mirror-source/heads', 'refs/mirror-source/tags']).trim().split(/\r?\n/).filter(Boolean);
+    if (refs.some(ref => !/^refs\/mirror-source\/(heads|tags)\//.test(ref))) throw new Error('Unexpected source Git ref');
+    run('git', ['-C', existingCheckout, 'push', mirror.url, `HEAD:refs/heads/${defaultBranch}`, ...refs.filter(ref => ref !== `refs/mirror-source/heads/${defaultBranch}`).map(ref => `${ref}:${ref.replace('refs/mirror-source/', 'refs/')}`)]);
+    return true;
+  }
   const gitdir = path.join(tools, `wekan-${sourceName}-mirror.git`);
   fs.mkdirSync(tools, { recursive: true });
   if (!exists(gitdir)) run('git', ['clone', '--mirror', sourceUrl, gitdir]);

@@ -377,6 +377,26 @@ node tools/mirror-active-forges.mjs --archive-only --apply
 The archive can be large when retaining all releases and historical versions.
 It remains gitignored and Meteor-ignored under `.tools/`.
 
+The launcher immediately reports whether `gh` is on PATH. GitHub source
+metadata prefers authenticated `gh api` when the CLI and a token are available
+(GH_TOKEN, GITHUB_TOKEN or the CLI's configured GitHub account). Issues,
+comments, pulls, reviews and releases retain the same paginated API inventory
+and incremental disk checkpoints; no whole-organization CLI output is buffered.
+Each CLI request has a two-minute timeout and a 16 MiB output limit. Response
+headers preserve pagination and the existing persisted rate-limit cooldowns.
+Missing CLI/authentication uses HTTP API access; rejected authentication retries
+public REST reads. Binary release attachments keep streaming HTTP downloads.
+Tokens are not included in command arguments or logs. CLI permissions depend
+on its account/token scopes; using the CLI does not grant extra access itself.
+See the [GitHub CLI API manual](https://cli.github.com/manual/gh_api).
+
+Missing WeKan branch-content links (`github.com/wekan/wekan/tree/...`,
+`blob/...` and equivalent `raw.githubusercontent.com` branch URLs) do not
+use archive.org fallback. The live URL is still attempted, but a missing or
+failed branch URL is reported and mirroring continues. Repository Git history
+preserves that content. Immutable full commit-hash links and other missing
+attachments remain eligible for creation-date historical recovery.
+
 
 The tool reports its practical scope. Original authors and timestamps appear
 in provenance, rather than creating accounts or impersonating authors. It does
@@ -540,3 +560,22 @@ linked-file failures are logged as skipped and preserve existing local bytes,
 so remaining content and target synchronization can continue. Repository/API
 inventory failures still stop incomplete synchronization. Private/local links
 remain blocked and no forge credentials are sent to archive.org or linked sites.
+
+### Git command progress
+
+Clone, fetch and push force `--progress`; these commands and merge inherit
+stdout/stderr so the menu streams output into the console, main mirror log
+and destination log. Start and completion messages include the operation and
+exit status. Git inventories retain captured stdout for parsing. Offline
+regression verifies stream settings, progress flags and failure propagation;
+no remote Git command is needed to run it.
+
+### Existing Git checkout directories
+
+WeKan Git mirrors reuse `.tools/wekan-gitlab`, `.tools/wekan-codeberg` and
+`.tools/wekan-sourceforge`. Existing checkouts are checked for local changes
+and the default branch before fetching and merging. Source branch/tag refs
+are fetched separately; other source branches and tags remain available for
+synchronization. Content archives remain under `.tools/mirror/<host>/<owner>/<repo>`.
+New source Git caches live directly under `.tools`; other organizations use
+`.tools/mirror-git/<organization>/<repo>` to avoid checkout collisions.

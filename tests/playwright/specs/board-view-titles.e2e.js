@@ -5,6 +5,9 @@ const { loginWithToken, openBoard } = require('../helpers/auth');
 // These tests change instance-wide policies and restore them after each case.
 test.describe.configure({ mode: 'serial' });
 for (const view of [
+  { name: 'minicard', title: '.minicard-title-text' },
+  { name: 'opened card', title: '.card-details-title' },
+  { name: 'opened card List dropdown', title: '.card-details-list-picker > summary' },
   { name: 'timeline', menu: '.js-open-timeline-view', title: '.timeline-card-title' },
   { name: 'assignee', menu: '.js-open-group-by-assignee-view', title: '.group-by-assignee-card-title' },
   { name: 'control chart', menu: '.js-open-control-chart-view', title: '.chart-data-table tbody td' },
@@ -23,29 +26,43 @@ for (const view of [
       } });
       try {
         db.updateOne('cards', { _id: card._id }, { $set: {
-          title: '# Demo [card](https://example.com/) :thumbsup:',
+          title: '# Demo [card](https://example.com/) :thumbsup: :heart: :tada:',
           startAt: new Date(Date.now() - 86400000), dueAt: new Date(Date.now() + 86400000),
           endAt: new Date(),
         } });
-        if (view.name === 'cumulative flow') {
+        if (['cumulative flow', 'opened card List dropdown'].includes(view.name)) {
           db.updateOne('lists', { _id: card.listId }, { $set: {
-            title: '# Demo [card](https://example.com/) :thumbsup:',
+            title: '# Demo [card](https://example.com/) :thumbsup: :heart: :tada:',
           } });
         }
         await loginWithToken(page, user.id, user.token);
         await openBoard(page, board.boardId, board.slug);
-        await page.locator(view.menu).first().click();
+        if (view.menu) await page.locator(view.menu).first().click();
+        if (['opened card', 'opened card List dropdown'].includes(view.name)) {
+          await page.locator('.minicard').filter({ hasText: 'Demo' }).first().click();
+        }
         if (['control chart', 'cumulative flow'].includes(view.name)) {
           await expect(page.locator('.stats-view-title > .viewer')).toBeVisible();
           await expect(page.locator('.stats-view-title pre')).toHaveCount(policy === 'plain-source' ? 1 : 0);
         }
         const title = page.locator(view.title).filter({ hasText: 'Demo' }).first();
         if (policy === 'plain-source') {
-          await expect(title.locator('pre')).toHaveText('# Demo [card](https://example.com/) :thumbsup:');
+          await expect(title.locator('pre')).toHaveText('# Demo [card](https://example.com/) :thumbsup: :heart: :tada:');
           await expect(title.locator('h1')).toHaveCount(0);
         } else {
           await expect(title.locator('h1')).toContainText('Demo card');
+          if (['minicard', 'opened card'].includes(view.name)) {
+            const sizes = await title.evaluate(el => [
+              parseFloat(getComputedStyle(el.querySelector('h1')).fontSize),
+              parseFloat(getComputedStyle(el.querySelector('.viewer')).fontSize),
+            ]);
+            expect(sizes[0]).toBeGreaterThan(sizes[1]);
+          }
           await expect(title).toContainText('👍');
+          if (view.name !== 'cumulative flow') {
+            await expect(title).toContainText('❤️');
+            await expect(title).toContainText('🎉');
+          }
           await expect(title.locator('a[href="https://example.com/"]')).toHaveCount(policy === 'plain-links' ? 0 : 1);
         }
         await expect(title.locator('script')).toHaveCount(0);

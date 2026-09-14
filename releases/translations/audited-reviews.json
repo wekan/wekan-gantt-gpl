@@ -13729,12 +13729,6 @@
   },
   {
     "locale": "gl",
-    "key": "close-board-pop",
-    "value": "Poderás restaurar o taboleiro premendo o botón «Arquivo» na cabeceira de inicio.",
-    "reason": "2026-09-14: Direct semantic review confirms favorite/unfavorite, restore guidance, comments and role permissions, checklist deletion and card-link/copy labels. Assigned-only visibility, no-edit/no-comment visibility and worker self-assignment restrictions remain explicit; action opposites preserved."
-  },
-  {
-    "locale": "gl",
     "key": "close-card",
     "value": "Pechar a tarxeta",
     "reason": "2026-09-14: Direct semantic review confirms favorite/unfavorite, restore guidance, comments and role permissions, checklist deletion and card-link/copy labels. Assigned-only visibility, no-edit/no-comment visibility and worker self-assignment restrictions remain explicit; action opposites preserved."
@@ -23680,5 +23674,1373 @@
     "key": "import-board-zip",
     "value": "Afegeix un fitxer .zip que tingui els fitxers JSON del tauler, i subdirectoris amb el nom del tauler amb els adjunts",
     "reason": "Inspected Valencian keyboard enable/disable labels, swimlane height and positive-integer validation, covers/backgrounds, zoom, text labels, list width, board archive/duplicate and minicard display options, drag, week numbering and ZIP import. Toggle direction, 1-9 assignment order, ISO 8601 and JSON/ZIP attachment structure preserve source meaning. English checklist prose and regional possessive wording excluded; broader dialect fluency remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "accounts-lockout-settings",
+    "value": "Configuració de la protecció contra força bruta",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "accounts-lockout-info",
+    "value": "Aquesta configuració controla com es protegeixen els intents d'inici de sessió contra atacs de força bruta.",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "accounts-lockout-known-users",
+    "value": "Configuració per a usuaris coneguts (nom d'usuari correcte, contrasenya incorrecta)",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "accounts-lockout-unknown-users",
+    "value": "Configuració per a usuaris desconeguts (nom d'usuari inexistent)",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "accounts-lockout-settings-updated",
+    "value": "S'ha actualitzat la configuració de la protecció contra força bruta",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "accounts-lockout-locked-users-info",
+    "value": "Usuaris actualment bloquejats per massa intents d'inici de sessió fallits",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "accounts-lockout-confirm-unlock",
+    "value": "Segur que voleu desbloquejar aquest usuari?",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "accounts-lockout-confirm-unlock-all",
+    "value": "Segur que voleu desbloquejar tots els usuaris bloquejats?",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "accounts-lockout-user-locked",
+    "value": "L'usuari està bloquejat",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "accounts-lockout-click-to-unlock",
+    "value": "Feu clic per desbloquejar aquest usuari",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "admin-people-filter-locked",
+    "value": "Només usuaris bloquejats",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "admin-people-user-active",
+    "value": "L'usuari està actiu - feu clic per desactivar",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "admin-people-user-inactive",
+    "value": "L'usuari està inactiu - feu clic per activar",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "attachment-storage-configuration",
+    "value": "Configuració de l'emmagatzematge d'adjunts",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "board-archive-failed",
+    "value": "No s'ha pogut programar l'arxivament del tauler",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "board-backup-failed",
+    "value": "No s'ha pogut programar la còpia de seguretat del tauler",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "board-cleanup-failed",
+    "value": "No s'ha pogut programar la neteja del tauler",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "migration-pause-failed",
+    "value": "No s'han pogut posar en pausa les migracions",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "migration-start-failed",
+    "value": "No s'han pogut iniciar les migracions",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "migration-started",
+    "value": "Les migracions s'han iniciat correctament",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "migration-stop-confirm",
+    "value": "Segur que voleu aturar totes les migracions?",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "migration-stop-failed",
+    "value": "No s'han pogut aturar les migracions",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "migration-stopped",
+    "value": "Les migracions s'han aturat correctament",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "pause-all-migrations",
+    "value": "Posa en pausa totes les migracions",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "s3-access-key-description",
+    "value": "Clau d'accés d'AWS S3 per a l'autenticació",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "s3-enabled-description",
+    "value": "Fes servir AWS S3 o MinIO per a l'emmagatzematge de fitxers",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "s3-settings-save-failed",
+    "value": "No s'ha pogut desar la configuració S3",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "s3-settings-saved",
+    "value": "La configuració S3 s'ha desat correctament",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "save-s3-settings",
+    "value": "Desa la configuració S3",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "bucket-example",
+    "value": "Com ara \"Llista de desitjos\" per exemple",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "activity-changedListTitle",
+    "value": "ha reanomenat la llista a %s",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "board-change-background-image",
+    "value": "Canvia la imatge de fons",
+    "reason": "Inspected Valencian brute-force known/unknown-user settings, locked-user versus active/inactive actions, scheduled archive/backup/cleanup failures, migration start/pause/stop outcomes and confirmations, attachment/S3 save settings, list renaming and background. Negation, correct-username/wrong-password contrast, all-user/all-migration scopes and placeholders remain intact. Bucket List example retains wishes-list meaning. English checklist/bucket/endpoint loans excluded; broader regional wording remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "allBoardsChangeBackgroundImagePopup-title",
+    "value": "Canvia la imatge de fons",
+    "reason": "Inspected Valencian mobile/desktop mode, background/zoom and 50-300% range, next month, width/scrollbar settings, next-week deadline, activities, upload outcomes, custom translation CRUD and no-undo warnings, PDF fallback, subtasks and expand actions. Negation, numeric range, completed/failed uploads and deletion scope remain precise. Markdown is the format name. Color and search token wording excluded for separate review; broader dialect/browser validation remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "desktop-mode",
+    "value": "Mode d'escriptori",
+    "reason": "Inspected Valencian mobile/desktop mode, background/zoom and 50-300% range, next month, width/scrollbar settings, next-week deadline, activities, upload outcomes, custom translation CRUD and no-undo warnings, PDF fallback, subtasks and expand actions. Negation, numeric range, completed/failed uploads and deletion scope remain precise. Markdown is the format name. Color and search token wording excluded for separate review; broader dialect/browser validation remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "mobile-mode",
+    "value": "Mode mòbil",
+    "reason": "Inspected Valencian mobile/desktop mode, background/zoom and 50-300% range, next month, width/scrollbar settings, next-week deadline, activities, upload outcomes, custom translation CRUD and no-undo warnings, PDF fallback, subtasks and expand actions. Negation, numeric range, completed/failed uploads and deletion scope remain precise. Markdown is the format name. Color and search token wording excluded for separate review; broader dialect/browser validation remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "mobile-desktop-toggle",
+    "value": "Commuta entre el mode mòbil i el mode d'escriptori",
+    "reason": "Inspected Valencian mobile/desktop mode, background/zoom and 50-300% range, next month, width/scrollbar settings, next-week deadline, activities, upload outcomes, custom translation CRUD and no-undo warnings, PDF fallback, subtasks and expand actions. Negation, numeric range, completed/failed uploads and deletion scope remain precise. Markdown is the format name. Color and search token wording excluded for separate review; broader dialect/browser validation remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "zoom-level",
+    "value": "Nivell d'ampliació",
+    "reason": "Inspected Valencian mobile/desktop mode, background/zoom and 50-300% range, next month, width/scrollbar settings, next-week deadline, activities, upload outcomes, custom translation CRUD and no-undo warnings, PDF fallback, subtasks and expand actions. Negation, numeric range, completed/failed uploads and deletion scope remain precise. Markdown is the format name. Color and search token wording excluded for separate review; broader dialect/browser validation remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "enter-zoom-level",
+    "value": "Introduïu el nivell d'ampliació (50-300%):",
+    "reason": "Inspected Valencian mobile/desktop mode, background/zoom and 50-300% range, next month, width/scrollbar settings, next-week deadline, activities, upload outcomes, custom translation CRUD and no-undo warnings, PDF fallback, subtasks and expand actions. Negation, numeric range, completed/failed uploads and deletion scope remain precise. Markdown is the format name. Color and search token wording excluded for separate review; broader dialect/browser validation remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "calendar-next-month-label",
+    "value": "Mes següent",
+    "reason": "Inspected Valencian mobile/desktop mode, background/zoom and 50-300% range, next month, width/scrollbar settings, next-week deadline, activities, upload outcomes, custom translation CRUD and no-undo warnings, PDF fallback, subtasks and expand actions. Negation, numeric range, completed/failed uploads and deletion scope remain precise. Markdown is the format name. Color and search token wording excluded for separate review; broader dialect/browser validation remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "auto-list-width",
+    "value": "Amplada automàtica de la llista",
+    "reason": "Inspected Valencian mobile/desktop mode, background/zoom and 50-300% range, next month, width/scrollbar settings, next-week deadline, activities, upload outcomes, custom translation CRUD and no-undo warnings, PDF fallback, subtasks and expand actions. Negation, numeric range, completed/failed uploads and deletion scope remain precise. Markdown is the format name. Color and search token wording excluded for separate review; broader dialect/browser validation remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "comments",
+    "value": "Comentaris",
+    "reason": "Inspected Valencian mobile/desktop mode, background/zoom and 50-300% range, next month, width/scrollbar settings, next-week deadline, activities, upload outcomes, custom translation CRUD and no-undo warnings, PDF fallback, subtasks and expand actions. Negation, numeric range, completed/failed uploads and deletion scope remain precise. Markdown is the format name. Color and search token wording excluded for separate review; broader dialect/browser validation remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "date-format",
+    "value": "Format de data",
+    "reason": "Inspected Valencian mobile/desktop mode, background/zoom and 50-300% range, next month, width/scrollbar settings, next-week deadline, activities, upload outcomes, custom translation CRUD and no-undo warnings, PDF fallback, subtasks and expand actions. Negation, numeric range, completed/failed uploads and deletion scope remain precise. Markdown is the format name. Color and search token wording excluded for separate review; broader dialect/browser validation remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "enable-vertical-scrollbars",
+    "value": "Activa les barres de desplaçament verticals",
+    "reason": "Inspected Valencian mobile/desktop mode, background/zoom and 50-300% range, next month, width/scrollbar settings, next-week deadline, activities, upload outcomes, custom translation CRUD and no-undo warnings, PDF fallback, subtasks and expand actions. Negation, numeric range, completed/failed uploads and deletion scope remain precise. Markdown is the format name. Color and search token wording excluded for separate review; broader dialect/browser validation remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "filter-due-next-week",
+    "value": "Venç la setmana vinent",
+    "reason": "Inspected Valencian mobile/desktop mode, background/zoom and 50-300% range, next month, width/scrollbar settings, next-week deadline, activities, upload outcomes, custom translation CRUD and no-undo warnings, PDF fallback, subtasks and expand actions. Negation, numeric range, completed/failed uploads and deletion scope remain precise. Markdown is the format name. Color and search token wording excluded for separate review; broader dialect/browser validation remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "show-activities",
+    "value": "Mostra les activitats",
+    "reason": "Inspected Valencian mobile/desktop mode, background/zoom and 50-300% range, next month, width/scrollbar settings, next-week deadline, activities, upload outcomes, custom translation CRUD and no-undo warnings, PDF fallback, subtasks and expand actions. Negation, numeric range, completed/failed uploads and deletion scope remain precise. Markdown is the format name. Color and search token wording excluded for separate review; broader dialect/browser validation remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "uploading-files",
+    "value": "S'estan pujant els fitxers",
+    "reason": "Inspected Valencian mobile/desktop mode, background/zoom and 50-300% range, next month, width/scrollbar settings, next-week deadline, activities, upload outcomes, custom translation CRUD and no-undo warnings, PDF fallback, subtasks and expand actions. Negation, numeric range, completed/failed uploads and deletion scope remain precise. Markdown is the format name. Color and search token wording excluded for separate review; broader dialect/browser validation remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "upload-failed",
+    "value": "La pujada ha fallat",
+    "reason": "Inspected Valencian mobile/desktop mode, background/zoom and 50-300% range, next month, width/scrollbar settings, next-week deadline, activities, upload outcomes, custom translation CRUD and no-undo warnings, PDF fallback, subtasks and expand actions. Negation, numeric range, completed/failed uploads and deletion scope remain precise. Markdown is the format name. Color and search token wording excluded for separate review; broader dialect/browser validation remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "upload-completed",
+    "value": "Pujada completada",
+    "reason": "Inspected Valencian mobile/desktop mode, background/zoom and 50-300% range, next month, width/scrollbar settings, next-week deadline, activities, upload outcomes, custom translation CRUD and no-undo warnings, PDF fallback, subtasks and expand actions. Negation, numeric range, completed/failed uploads and deletion scope remain precise. Markdown is the format name. Color and search token wording excluded for separate review; broader dialect/browser validation remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "heading-notes",
+    "value": "Apunts",
+    "reason": "Inspected Valencian mobile/desktop mode, background/zoom and 50-300% range, next month, width/scrollbar settings, next-week deadline, activities, upload outcomes, custom translation CRUD and no-undo warnings, PDF fallback, subtasks and expand actions. Negation, numeric range, completed/failed uploads and deletion scope remain precise. Markdown is the format name. Color and search token wording excluded for separate review; broader dialect/browser validation remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "sort-is-on",
+    "value": "L'ordenació està activada",
+    "reason": "Inspected Valencian mobile/desktop mode, background/zoom and 50-300% range, next month, width/scrollbar settings, next-week deadline, activities, upload outcomes, custom translation CRUD and no-undo warnings, PDF fallback, subtasks and expand actions. Negation, numeric range, completed/failed uploads and deletion scope remain precise. Markdown is the format name. Color and search token wording excluded for separate review; broader dialect/browser validation remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "originOrder",
+    "value": "ordre original",
+    "reason": "Inspected Valencian mobile/desktop mode, background/zoom and 50-300% range, next month, width/scrollbar settings, next-week deadline, activities, upload outcomes, custom translation CRUD and no-undo warnings, PDF fallback, subtasks and expand actions. Negation, numeric range, completed/failed uploads and deletion scope remain precise. Markdown is the format name. Color and search token wording excluded for separate review; broader dialect/browser validation remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "preview-pdf-not-supported",
+    "value": "El vostre dispositiu no admet la vista prèvia de PDF. Proveu de descarregar-lo.",
+    "reason": "Inspected Valencian mobile/desktop mode, background/zoom and 50-300% range, next month, width/scrollbar settings, next-week deadline, activities, upload outcomes, custom translation CRUD and no-undo warnings, PDF fallback, subtasks and expand actions. Negation, numeric range, completed/failed uploads and deletion scope remain precise. Markdown is the format name. Color and search token wording excluded for separate review; broader dialect/browser validation remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "translation-number",
+    "value": "El nombre de cadenes de traducció personalitzades és:",
+    "reason": "Inspected Valencian mobile/desktop mode, background/zoom and 50-300% range, next month, width/scrollbar settings, next-week deadline, activities, upload outcomes, custom translation CRUD and no-undo warnings, PDF fallback, subtasks and expand actions. Negation, numeric range, completed/failed uploads and deletion scope remain precise. Markdown is the format name. Color and search token wording excluded for separate review; broader dialect/browser validation remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "delete-translation-confirm-popup",
+    "value": "Segur que voleu esborrar aquesta cadena de traducció personalitzada? No es pot desfer.",
+    "reason": "Inspected Valencian mobile/desktop mode, background/zoom and 50-300% range, next month, width/scrollbar settings, next-week deadline, activities, upload outcomes, custom translation CRUD and no-undo warnings, PDF fallback, subtasks and expand actions. Negation, numeric range, completed/failed uploads and deletion scope remain precise. Markdown is the format name. Color and search token wording excluded for separate review; broader dialect/browser validation remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "newTranslationPopup-title",
+    "value": "Cadena de traducció personalitzada nova",
+    "reason": "Inspected Valencian mobile/desktop mode, background/zoom and 50-300% range, next month, width/scrollbar settings, next-week deadline, activities, upload outcomes, custom translation CRUD and no-undo warnings, PDF fallback, subtasks and expand actions. Negation, numeric range, completed/failed uploads and deletion scope remain precise. Markdown is the format name. Color and search token wording excluded for separate review; broader dialect/browser validation remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "editTranslationPopup-title",
+    "value": "Edita la cadena de traducció personalitzada",
+    "reason": "Inspected Valencian mobile/desktop mode, background/zoom and 50-300% range, next month, width/scrollbar settings, next-week deadline, activities, upload outcomes, custom translation CRUD and no-undo warnings, PDF fallback, subtasks and expand actions. Negation, numeric range, completed/failed uploads and deletion scope remain precise. Markdown is the format name. Color and search token wording excluded for separate review; broader dialect/browser validation remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "settingsTranslationPopup-title",
+    "value": "Voleu esborrar aquesta cadena de traducció personalitzada?",
+    "reason": "Inspected Valencian mobile/desktop mode, background/zoom and 50-300% range, next month, width/scrollbar settings, next-week deadline, activities, upload outcomes, custom translation CRUD and no-undo warnings, PDF fallback, subtasks and expand actions. Negation, numeric range, completed/failed uploads and deletion scope remain precise. Markdown is the format name. Color and search token wording excluded for separate review; broader dialect/browser validation remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "translation",
+    "value": "Traducció",
+    "reason": "Inspected Valencian mobile/desktop mode, background/zoom and 50-300% range, next month, width/scrollbar settings, next-week deadline, activities, upload outcomes, custom translation CRUD and no-undo warnings, PDF fallback, subtasks and expand actions. Negation, numeric range, completed/failed uploads and deletion scope remain precise. Markdown is the format name. Color and search token wording excluded for separate review; broader dialect/browser validation remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "show-subtasks-field",
+    "value": "Mostra el camp de subtasques",
+    "reason": "Inspected Valencian mobile/desktop mode, background/zoom and 50-300% range, next month, width/scrollbar settings, next-week deadline, activities, upload outcomes, custom translation CRUD and no-undo warnings, PDF fallback, subtasks and expand actions. Negation, numeric range, completed/failed uploads and deletion scope remain precise. Markdown is the format name. Color and search token wording excluded for separate review; broader dialect/browser validation remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "convert-to-markdown",
+    "value": "Converteix a markdown",
+    "reason": "Inspected Valencian mobile/desktop mode, background/zoom and 50-300% range, next month, width/scrollbar settings, next-week deadline, activities, upload outcomes, custom translation CRUD and no-undo warnings, PDF fallback, subtasks and expand actions. Negation, numeric range, completed/failed uploads and deletion scope remain precise. Markdown is the format name. Color and search token wording excluded for separate review; broader dialect/browser validation remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "uncollapse",
+    "value": "Desplega",
+    "reason": "Inspected Valencian mobile/desktop mode, background/zoom and 50-300% range, next month, width/scrollbar settings, next-week deadline, activities, upload outcomes, custom translation CRUD and no-undo warnings, PDF fallback, subtasks and expand actions. Negation, numeric range, completed/failed uploads and deletion scope remain precise. Markdown is the format name. Color and search token wording excluded for separate review; broader dialect/browser validation remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "board-background-image-url",
+    "value": "URL de la imatge de fons",
+    "reason": "Inspected Valencian background URL/change/removal, support/accessibility, failed-attempt and scheduled-job labels, attachment paths, migration progress/status, S3 access/connection/storage fields, duration/estimated-time and recurrence intervals. Connection failure versus success and minute/hour/day frequencies preserve meaning; Cron remains the actual tool name. Complete/Idle/error scope, unlock-all, technical loans, search tokens and colors excluded for deeper context or reference review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "remove-background-image",
+    "value": "Elimina la imatge de fons",
+    "reason": "Inspected Valencian background URL/change/removal, support/accessibility, failed-attempt and scheduled-job labels, attachment paths, migration progress/status, S3 access/connection/storage fields, duration/estimated-time and recurrence intervals. Connection failure versus success and minute/hour/day frequencies preserve meaning; Cron remains the actual tool name. Complete/Idle/error scope, unlock-all, technical loans, search tokens and colors excluded for deeper context or reference review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "boardChangeBackgroundImagePopup-title",
+    "value": "Canvia la imatge de fons",
+    "reason": "Inspected Valencian background URL/change/removal, support/accessibility, failed-attempt and scheduled-job labels, attachment paths, migration progress/status, S3 access/connection/storage fields, duration/estimated-time and recurrence intervals. Connection failure versus success and minute/hour/day frequencies preserve meaning; Cron remains the actual tool name. Complete/Idle/error scope, unlock-all, technical loans, search tokens and colors excluded for deeper context or reference review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "support",
+    "value": "Suport",
+    "reason": "Inspected Valencian background URL/change/removal, support/accessibility, failed-attempt and scheduled-job labels, attachment paths, migration progress/status, S3 access/connection/storage fields, duration/estimated-time and recurrence intervals. Connection failure versus success and minute/hour/day frequencies preserve meaning; Cron remains the actual tool name. Complete/Idle/error scope, unlock-all, technical loans, search tokens and colors excluded for deeper context or reference review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "supportPopup-title",
+    "value": "Suport",
+    "reason": "Inspected Valencian background URL/change/removal, support/accessibility, failed-attempt and scheduled-job labels, attachment paths, migration progress/status, S3 access/connection/storage fields, duration/estimated-time and recurrence intervals. Connection failure versus success and minute/hour/day frequencies preserve meaning; Cron remains the actual tool name. Complete/Idle/error scope, unlock-all, technical loans, search tokens and colors excluded for deeper context or reference review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "accessibility-page-enabled",
+    "value": "Pàgina d'accessibilitat activada",
+    "reason": "Inspected Valencian background URL/change/removal, support/accessibility, failed-attempt and scheduled-job labels, attachment paths, migration progress/status, S3 access/connection/storage fields, duration/estimated-time and recurrence intervals. Connection failure versus success and minute/hour/day frequencies preserve meaning; Cron remains the actual tool name. Complete/Idle/error scope, unlock-all, technical loans, search tokens and colors excluded for deeper context or reference review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "accessibility-content",
+    "value": "Contingut d'accessibilitat",
+    "reason": "Inspected Valencian background URL/change/removal, support/accessibility, failed-attempt and scheduled-job labels, attachment paths, migration progress/status, S3 access/connection/storage fields, duration/estimated-time and recurrence intervals. Connection failure versus success and minute/hour/day frequencies preserve meaning; Cron remains the actual tool name. Complete/Idle/error scope, unlock-all, technical loans, search tokens and colors excluded for deeper context or reference review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "accounts-lockout-failed-attempts",
+    "value": "Intents fallits",
+    "reason": "Inspected Valencian background URL/change/removal, support/accessibility, failed-attempt and scheduled-job labels, attachment paths, migration progress/status, S3 access/connection/storage fields, duration/estimated-time and recurrence intervals. Connection failure versus success and minute/hour/day frequencies preserve meaning; Cron remains the actual tool name. Complete/Idle/error scope, unlock-all, technical loans, search tokens and colors excluded for deeper context or reference review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "attachments-path",
+    "value": "Camí dels adjunts",
+    "reason": "Inspected Valencian background URL/change/removal, support/accessibility, failed-attempt and scheduled-job labels, attachment paths, migration progress/status, S3 access/connection/storage fields, duration/estimated-time and recurrence intervals. Connection failure versus success and minute/hour/day frequencies preserve meaning; Cron remains the actual tool name. Complete/Idle/error scope, unlock-all, technical loans, search tokens and colors excluded for deeper context or reference review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "cron-job-delete-confirm",
+    "value": "Segur que voleu esborrar aquesta tasca programada?",
+    "reason": "Inspected Valencian background URL/change/removal, support/accessibility, failed-attempt and scheduled-job labels, attachment paths, migration progress/status, S3 access/connection/storage fields, duration/estimated-time and recurrence intervals. Connection failure versus success and minute/hour/day frequencies preserve meaning; Cron remains the actual tool name. Complete/Idle/error scope, unlock-all, technical loans, search tokens and colors excluded for deeper context or reference review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "migration-progress",
+    "value": "Progrés de la migració",
+    "reason": "Inspected Valencian background URL/change/removal, support/accessibility, failed-attempt and scheduled-job labels, attachment paths, migration progress/status, S3 access/connection/storage fields, duration/estimated-time and recurrence intervals. Connection failure versus success and minute/hour/day frequencies preserve meaning; Cron remains the actual tool name. Complete/Idle/error scope, unlock-all, technical loans, search tokens and colors excluded for deeper context or reference review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "migration-status",
+    "value": "Estat de la migració",
+    "reason": "Inspected Valencian background URL/change/removal, support/accessibility, failed-attempt and scheduled-job labels, attachment paths, migration progress/status, S3 access/connection/storage fields, duration/estimated-time and recurrence intervals. Connection failure versus success and minute/hour/day frequencies preserve meaning; Cron remains the actual tool name. Complete/Idle/error scope, unlock-all, technical loans, search tokens and colors excluded for deeper context or reference review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "mongodb-gridfs-storage",
+    "value": "Emmagatzematge MongoDB GridFS",
+    "reason": "Inspected Valencian background URL/change/removal, support/accessibility, failed-attempt and scheduled-job labels, attachment paths, migration progress/status, S3 access/connection/storage fields, duration/estimated-time and recurrence intervals. Connection failure versus success and minute/hour/day frequencies preserve meaning; Cron remains the actual tool name. Complete/Idle/error scope, unlock-all, technical loans, search tokens and colors excluded for deeper context or reference review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "s3-access-key",
+    "value": "Clau d'accés S3",
+    "reason": "Inspected Valencian background URL/change/removal, support/accessibility, failed-attempt and scheduled-job labels, attachment paths, migration progress/status, S3 access/connection/storage fields, duration/estimated-time and recurrence intervals. Connection failure versus success and minute/hour/day frequencies preserve meaning; Cron remains the actual tool name. Complete/Idle/error scope, unlock-all, technical loans, search tokens and colors excluded for deeper context or reference review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "s3-access-key-placeholder",
+    "value": "Introduïu la clau d'accés S3",
+    "reason": "Inspected Valencian background URL/change/removal, support/accessibility, failed-attempt and scheduled-job labels, attachment paths, migration progress/status, S3 access/connection/storage fields, duration/estimated-time and recurrence intervals. Connection failure versus success and minute/hour/day frequencies preserve meaning; Cron remains the actual tool name. Complete/Idle/error scope, unlock-all, technical loans, search tokens and colors excluded for deeper context or reference review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "s3-connection-failed",
+    "value": "La connexió S3 ha fallat",
+    "reason": "Inspected Valencian background URL/change/removal, support/accessibility, failed-attempt and scheduled-job labels, attachment paths, migration progress/status, S3 access/connection/storage fields, duration/estimated-time and recurrence intervals. Connection failure versus success and minute/hour/day frequencies preserve meaning; Cron remains the actual tool name. Complete/Idle/error scope, unlock-all, technical loans, search tokens and colors excluded for deeper context or reference review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "s3-connection-success",
+    "value": "Connexió S3 correcta",
+    "reason": "Inspected Valencian background URL/change/removal, support/accessibility, failed-attempt and scheduled-job labels, attachment paths, migration progress/status, S3 access/connection/storage fields, duration/estimated-time and recurrence intervals. Connection failure versus success and minute/hour/day frequencies preserve meaning; Cron remains the actual tool name. Complete/Idle/error scope, unlock-all, technical loans, search tokens and colors excluded for deeper context or reference review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "s3-enabled",
+    "value": "S3 activat",
+    "reason": "Inspected Valencian background URL/change/removal, support/accessibility, failed-attempt and scheduled-job labels, attachment paths, migration progress/status, S3 access/connection/storage fields, duration/estimated-time and recurrence intervals. Connection failure versus success and minute/hour/day frequencies preserve meaning; Cron remains the actual tool name. Complete/Idle/error scope, unlock-all, technical loans, search tokens and colors excluded for deeper context or reference review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "s3-minio-storage",
+    "value": "Emmagatzematge S3/MinIO",
+    "reason": "Inspected Valencian background URL/change/removal, support/accessibility, failed-attempt and scheduled-job labels, attachment paths, migration progress/status, S3 access/connection/storage fields, duration/estimated-time and recurrence intervals. Connection failure versus success and minute/hour/day frequencies preserve meaning; Cron remains the actual tool name. Complete/Idle/error scope, unlock-all, technical loans, search tokens and colors excluded for deeper context or reference review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "s3-port",
+    "value": "Port S3",
+    "reason": "Inspected Valencian background URL/change/removal, support/accessibility, failed-attempt and scheduled-job labels, attachment paths, migration progress/status, S3 access/connection/storage fields, duration/estimated-time and recurrence intervals. Connection failure versus success and minute/hour/day frequencies preserve meaning; Cron remains the actual tool name. Complete/Idle/error scope, unlock-all, technical loans, search tokens and colors excluded for deeper context or reference review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "s3-region",
+    "value": "Regió S3",
+    "reason": "Inspected Valencian background URL/change/removal, support/accessibility, failed-attempt and scheduled-job labels, attachment paths, migration progress/status, S3 access/connection/storage fields, duration/estimated-time and recurrence intervals. Connection failure versus success and minute/hour/day frequencies preserve meaning; Cron remains the actual tool name. Complete/Idle/error scope, unlock-all, technical loans, search tokens and colors excluded for deeper context or reference review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "duration",
+    "value": "Durada",
+    "reason": "Inspected Valencian background URL/change/removal, support/accessibility, failed-attempt and scheduled-job labels, attachment paths, migration progress/status, S3 access/connection/storage fields, duration/estimated-time and recurrence intervals. Connection failure versus success and minute/hour/day frequencies preserve meaning; Cron remains the actual tool name. Complete/Idle/error scope, unlock-all, technical loans, search tokens and colors excluded for deeper context or reference review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "estimated-time-remaining",
+    "value": "Temps restant estimat",
+    "reason": "Inspected Valencian background URL/change/removal, support/accessibility, failed-attempt and scheduled-job labels, attachment paths, migration progress/status, S3 access/connection/storage fields, duration/estimated-time and recurrence intervals. Connection failure versus success and minute/hour/day frequencies preserve meaning; Cron remains the actual tool name. Complete/Idle/error scope, unlock-all, technical loans, search tokens and colors excluded for deeper context or reference review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "every-1-day",
+    "value": "Cada dia",
+    "reason": "Inspected Valencian background URL/change/removal, support/accessibility, failed-attempt and scheduled-job labels, attachment paths, migration progress/status, S3 access/connection/storage fields, duration/estimated-time and recurrence intervals. Connection failure versus success and minute/hour/day frequencies preserve meaning; Cron remains the actual tool name. Complete/Idle/error scope, unlock-all, technical loans, search tokens and colors excluded for deeper context or reference review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "every-1-minute",
+    "value": "Cada minut",
+    "reason": "Inspected Valencian background URL/change/removal, support/accessibility, failed-attempt and scheduled-job labels, attachment paths, migration progress/status, S3 access/connection/storage fields, duration/estimated-time and recurrence intervals. Connection failure versus success and minute/hour/day frequencies preserve meaning; Cron remains the actual tool name. Complete/Idle/error scope, unlock-all, technical loans, search tokens and colors excluded for deeper context or reference review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "every-10-minutes",
+    "value": "Cada 10 minuts",
+    "reason": "Inspected Valencian background URL/change/removal, support/accessibility, failed-attempt and scheduled-job labels, attachment paths, migration progress/status, S3 access/connection/storage fields, duration/estimated-time and recurrence intervals. Connection failure versus success and minute/hour/day frequencies preserve meaning; Cron remains the actual tool name. Complete/Idle/error scope, unlock-all, technical loans, search tokens and colors excluded for deeper context or reference review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "every-30-minutes",
+    "value": "Cada 30 minuts",
+    "reason": "Inspected Valencian background URL/change/removal, support/accessibility, failed-attempt and scheduled-job labels, attachment paths, migration progress/status, S3 access/connection/storage fields, duration/estimated-time and recurrence intervals. Connection failure versus success and minute/hour/day frequencies preserve meaning; Cron remains the actual tool name. Complete/Idle/error scope, unlock-all, technical loans, search tokens and colors excluded for deeper context or reference review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "every-5-minutes",
+    "value": "Cada 5 minuts",
+    "reason": "Inspected Valencian background URL/change/removal, support/accessibility, failed-attempt and scheduled-job labels, attachment paths, migration progress/status, S3 access/connection/storage fields, duration/estimated-time and recurrence intervals. Connection failure versus success and minute/hour/day frequencies preserve meaning; Cron remains the actual tool name. Complete/Idle/error scope, unlock-all, technical loans, search tokens and colors excluded for deeper context or reference review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "every-6-hours",
+    "value": "Cada 6 hores",
+    "reason": "Inspected Valencian background URL/change/removal, support/accessibility, failed-attempt and scheduled-job labels, attachment paths, migration progress/status, S3 access/connection/storage fields, duration/estimated-time and recurrence intervals. Connection failure versus success and minute/hour/day frequencies preserve meaning; Cron remains the actual tool name. Complete/Idle/error scope, unlock-all, technical loans, search tokens and colors excluded for deeper context or reference review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "weight",
+    "value": "Pes",
+    "reason": "Inspected Valencian background URL/change/removal, support/accessibility, failed-attempt and scheduled-job labels, attachment paths, migration progress/status, S3 access/connection/storage fields, duration/estimated-time and recurrence intervals. Connection failure versus success and minute/hour/day frequencies preserve meaning; Cron remains the actual tool name. Complete/Idle/error scope, unlock-all, technical loans, search tokens and colors excluded for deeper context or reference review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "cron",
+    "value": "Cron",
+    "reason": "Inspected Valencian background URL/change/removal, support/accessibility, failed-attempt and scheduled-job labels, attachment paths, migration progress/status, S3 access/connection/storage fields, duration/estimated-time and recurrence intervals. Connection failure versus success and minute/hour/day frequencies preserve meaning; Cron remains the actual tool name. Complete/Idle/error scope, unlock-all, technical loans, search tokens and colors excluded for deeper context or reference review."
+  },
+  {
+    "locale": "th",
+    "key": "template",
+    "value": "เทมเพลต",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "board-view-cal",
+    "value": "ปฏิทิน",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "cards-count-one",
+    "value": "การ์ด",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "cardType-card",
+    "value": "การ์ด",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "custom-field-number",
+    "value": "ตัวเลข",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "export-card-attachment-type",
+    "value": "ประเภท",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "calendar",
+    "value": "ปฏิทิน",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "type",
+    "value": "ประเภท",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "invite",
+    "value": "เชิญ",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "send-from",
+    "value": "จาก",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "days",
+    "value": "วัน",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "hours",
+    "value": "ชั่วโมง",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "minutes",
+    "value": "นาที",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "seconds",
+    "value": "วินาที",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "yes",
+    "value": "ใช่",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "r-board",
+    "value": "บอร์ด",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "r-sort-by",
+    "value": "โดย",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "r-sort-name",
+    "value": "ชื่อ",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "r-the-board",
+    "value": "บอร์ด",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "r-a-card",
+    "value": "การ์ด",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "r-name",
+    "value": "ชื่อ",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "r-card",
+    "value": "การ์ด",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "r-remove",
+    "value": "นำออก",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "r-label",
+    "value": "ป้ายกำกับ",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "r-check",
+    "value": "ทำเครื่องหมาย",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "r-item",
+    "value": "รายการ",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "r-to",
+    "value": "ไปยัง",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "r-of",
+    "value": "ของ",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "r-d-send-email-to",
+    "value": "ถึง",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "r-by",
+    "value": "โดย",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "r-set",
+    "value": "ตั้งค่า",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "new",
+    "value": "ใหม่",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "card",
+    "value": "การ์ด",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "board",
+    "value": "บอร์ด",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "dueCardsViewChange-choice-me",
+    "value": "ฉัน",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "operator-board",
+    "value": "บอร์ด",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "operator-label",
+    "value": "ป้ายกำกับ",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "operator-has",
+    "value": "มี",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "operator-description",
+    "value": "คำอธิบาย",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "predicate-open",
+    "value": "เปิด",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "predicate-week",
+    "value": "สัปดาห์",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "predicate-quarter",
+    "value": "ไตรมาส",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "predicate-year",
+    "value": "ปี",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "predicate-description",
+    "value": "คำอธิบาย",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "number",
+    "value": "ตัวเลข",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "remove-btn",
+    "value": "นำออก",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "stats-scope",
+    "value": "ประเภท",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "of",
+    "value": "ของ",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "azure-blob-storage-description",
+    "value": "Microsoft Azure Blob Storage.",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "th",
+    "key": "gcs-storage-description",
+    "value": "Google Cloud Storage.",
+    "reason": "Inspected Thai template/calendar/card/type labels, invitation/sender, day/hour/minute/second units, rule nouns/actions and prepositions, search operators and period/state predicates. Quarter is ไตรมาส (three months), Me retains first person; removal is not deletion and check means marking. Azure/Google storage descriptions are exact product names, not untranslated prose. Shared r-is identity copula excluded because passive trigger composition needs separate review; broader Thai grammar/browser validation remains open."
+  },
+  {
+    "locale": "ar-DZ",
+    "key": "due-today",
+    "value": "مستحق اليوم",
+    "reason": "Inspected Swedish type/sorting labels, global-admin role warning and irreversible team deletion; Arabic due-today and no-assignee values in generic/Algerian/Egyptian locales; Moroccan Darija due/no-assignee/no-label and daily/weekly/monthly intervals. Swedish negation and global-admin exception, Arabic assignee absence and Darija colloquial negation/frequencies preserve meaning. Standard Arabic is valid for country-tagged Arabic locales; shared spelling alone is not wrong language. Broader fluency/browser review remains open."
+  },
+  {
+    "locale": "ar-DZ",
+    "key": "filter-due-today",
+    "value": "مستحق اليوم",
+    "reason": "Inspected Swedish type/sorting labels, global-admin role warning and irreversible team deletion; Arabic due-today and no-assignee values in generic/Algerian/Egyptian locales; Moroccan Darija due/no-assignee/no-label and daily/weekly/monthly intervals. Swedish negation and global-admin exception, Arabic assignee absence and Darija colloquial negation/frequencies preserve meaning. Standard Arabic is valid for country-tagged Arabic locales; shared spelling alone is not wrong language. Broader fluency/browser review remains open."
+  },
+  {
+    "locale": "ar-DZ",
+    "key": "filter-no-assignee",
+    "value": "لا يوجد مُكلَّف",
+    "reason": "Inspected Swedish type/sorting labels, global-admin role warning and irreversible team deletion; Arabic due-today and no-assignee values in generic/Algerian/Egyptian locales; Moroccan Darija due/no-assignee/no-label and daily/weekly/monthly intervals. Swedish negation and global-admin exception, Arabic assignee absence and Darija colloquial negation/frequencies preserve meaning. Standard Arabic is valid for country-tagged Arabic locales; shared spelling alone is not wrong language. Broader fluency/browser review remains open."
+  },
+  {
+    "locale": "ar-DZ",
+    "key": "no-assignee",
+    "value": "لا يوجد مُكلَّف",
+    "reason": "Inspected Swedish type/sorting labels, global-admin role warning and irreversible team deletion; Arabic due-today and no-assignee values in generic/Algerian/Egyptian locales; Moroccan Darija due/no-assignee/no-label and daily/weekly/monthly intervals. Swedish negation and global-admin exception, Arabic assignee absence and Darija colloquial negation/frequencies preserve meaning. Standard Arabic is valid for country-tagged Arabic locales; shared spelling alone is not wrong language. Broader fluency/browser review remains open."
+  },
+  {
+    "locale": "ar-EG",
+    "key": "due-today",
+    "value": "مستحق اليوم",
+    "reason": "Inspected Swedish type/sorting labels, global-admin role warning and irreversible team deletion; Arabic due-today and no-assignee values in generic/Algerian/Egyptian locales; Moroccan Darija due/no-assignee/no-label and daily/weekly/monthly intervals. Swedish negation and global-admin exception, Arabic assignee absence and Darija colloquial negation/frequencies preserve meaning. Standard Arabic is valid for country-tagged Arabic locales; shared spelling alone is not wrong language. Broader fluency/browser review remains open."
+  },
+  {
+    "locale": "ar-EG",
+    "key": "filter-due-today",
+    "value": "مستحق اليوم",
+    "reason": "Inspected Swedish type/sorting labels, global-admin role warning and irreversible team deletion; Arabic due-today and no-assignee values in generic/Algerian/Egyptian locales; Moroccan Darija due/no-assignee/no-label and daily/weekly/monthly intervals. Swedish negation and global-admin exception, Arabic assignee absence and Darija colloquial negation/frequencies preserve meaning. Standard Arabic is valid for country-tagged Arabic locales; shared spelling alone is not wrong language. Broader fluency/browser review remains open."
+  },
+  {
+    "locale": "ar-EG",
+    "key": "filter-no-assignee",
+    "value": "لا يوجد مُكلَّف",
+    "reason": "Inspected Swedish type/sorting labels, global-admin role warning and irreversible team deletion; Arabic due-today and no-assignee values in generic/Algerian/Egyptian locales; Moroccan Darija due/no-assignee/no-label and daily/weekly/monthly intervals. Swedish negation and global-admin exception, Arabic assignee absence and Darija colloquial negation/frequencies preserve meaning. Standard Arabic is valid for country-tagged Arabic locales; shared spelling alone is not wrong language. Broader fluency/browser review remains open."
+  },
+  {
+    "locale": "ar-EG",
+    "key": "no-assignee",
+    "value": "لا يوجد مُكلَّف",
+    "reason": "Inspected Swedish type/sorting labels, global-admin role warning and irreversible team deletion; Arabic due-today and no-assignee values in generic/Algerian/Egyptian locales; Moroccan Darija due/no-assignee/no-label and daily/weekly/monthly intervals. Swedish negation and global-admin exception, Arabic assignee absence and Darija colloquial negation/frequencies preserve meaning. Standard Arabic is valid for country-tagged Arabic locales; shared spelling alone is not wrong language. Broader fluency/browser review remains open."
+  },
+  {
+    "locale": "ar",
+    "key": "due-today",
+    "value": "مستحق اليوم",
+    "reason": "Inspected Swedish type/sorting labels, global-admin role warning and irreversible team deletion; Arabic due-today and no-assignee values in generic/Algerian/Egyptian locales; Moroccan Darija due/no-assignee/no-label and daily/weekly/monthly intervals. Swedish negation and global-admin exception, Arabic assignee absence and Darija colloquial negation/frequencies preserve meaning. Standard Arabic is valid for country-tagged Arabic locales; shared spelling alone is not wrong language. Broader fluency/browser review remains open."
+  },
+  {
+    "locale": "ar",
+    "key": "filter-due-today",
+    "value": "مستحق اليوم",
+    "reason": "Inspected Swedish type/sorting labels, global-admin role warning and irreversible team deletion; Arabic due-today and no-assignee values in generic/Algerian/Egyptian locales; Moroccan Darija due/no-assignee/no-label and daily/weekly/monthly intervals. Swedish negation and global-admin exception, Arabic assignee absence and Darija colloquial negation/frequencies preserve meaning. Standard Arabic is valid for country-tagged Arabic locales; shared spelling alone is not wrong language. Broader fluency/browser review remains open."
+  },
+  {
+    "locale": "ar",
+    "key": "filter-no-assignee",
+    "value": "لا يوجد مُكلَّف",
+    "reason": "Inspected Swedish type/sorting labels, global-admin role warning and irreversible team deletion; Arabic due-today and no-assignee values in generic/Algerian/Egyptian locales; Moroccan Darija due/no-assignee/no-label and daily/weekly/monthly intervals. Swedish negation and global-admin exception, Arabic assignee absence and Darija colloquial negation/frequencies preserve meaning. Standard Arabic is valid for country-tagged Arabic locales; shared spelling alone is not wrong language. Broader fluency/browser review remains open."
+  },
+  {
+    "locale": "ar",
+    "key": "no-assignee",
+    "value": "لا يوجد مُكلَّف",
+    "reason": "Inspected Swedish type/sorting labels, global-admin role warning and irreversible team deletion; Arabic due-today and no-assignee values in generic/Algerian/Egyptian locales; Moroccan Darija due/no-assignee/no-label and daily/weekly/monthly intervals. Swedish negation and global-admin exception, Arabic assignee absence and Darija colloquial negation/frequencies preserve meaning. Standard Arabic is valid for country-tagged Arabic locales; shared spelling alone is not wrong language. Broader fluency/browser review remains open."
+  },
+  {
+    "locale": "ary",
+    "key": "due-today",
+    "value": "خاصو اليوم",
+    "reason": "Inspected Swedish type/sorting labels, global-admin role warning and irreversible team deletion; Arabic due-today and no-assignee values in generic/Algerian/Egyptian locales; Moroccan Darija due/no-assignee/no-label and daily/weekly/monthly intervals. Swedish negation and global-admin exception, Arabic assignee absence and Darija colloquial negation/frequencies preserve meaning. Standard Arabic is valid for country-tagged Arabic locales; shared spelling alone is not wrong language. Broader fluency/browser review remains open."
+  },
+  {
+    "locale": "ary",
+    "key": "filter-due-today",
+    "value": "خاصو اليوم",
+    "reason": "Inspected Swedish type/sorting labels, global-admin role warning and irreversible team deletion; Arabic due-today and no-assignee values in generic/Algerian/Egyptian locales; Moroccan Darija due/no-assignee/no-label and daily/weekly/monthly intervals. Swedish negation and global-admin exception, Arabic assignee absence and Darija colloquial negation/frequencies preserve meaning. Standard Arabic is valid for country-tagged Arabic locales; shared spelling alone is not wrong language. Broader fluency/browser review remains open."
+  },
+  {
+    "locale": "ary",
+    "key": "filter-no-assignee",
+    "value": "ماكاينش لي تعطات ليه",
+    "reason": "Inspected Swedish type/sorting labels, global-admin role warning and irreversible team deletion; Arabic due-today and no-assignee values in generic/Algerian/Egyptian locales; Moroccan Darija due/no-assignee/no-label and daily/weekly/monthly intervals. Swedish negation and global-admin exception, Arabic assignee absence and Darija colloquial negation/frequencies preserve meaning. Standard Arabic is valid for country-tagged Arabic locales; shared spelling alone is not wrong language. Broader fluency/browser review remains open."
+  },
+  {
+    "locale": "ary",
+    "key": "no-assignee",
+    "value": "ماكاينش لي تعطات ليه",
+    "reason": "Inspected Swedish type/sorting labels, global-admin role warning and irreversible team deletion; Arabic due-today and no-assignee values in generic/Algerian/Egyptian locales; Moroccan Darija due/no-assignee/no-label and daily/weekly/monthly intervals. Swedish negation and global-admin exception, Arabic assignee absence and Darija colloquial negation/frequencies preserve meaning. Standard Arabic is valid for country-tagged Arabic locales; shared spelling alone is not wrong language. Broader fluency/browser review remains open."
+  },
+  {
+    "locale": "sv",
+    "key": "export-card-attachment-type",
+    "value": "Typ",
+    "reason": "Inspected Swedish type/sorting labels, global-admin role warning and irreversible team deletion; Arabic due-today and no-assignee values in generic/Algerian/Egyptian locales; Moroccan Darija due/no-assignee/no-label and daily/weekly/monthly intervals. Swedish negation and global-admin exception, Arabic assignee absence and Darija colloquial negation/frequencies preserve meaning. Standard Arabic is valid for country-tagged Arabic locales; shared spelling alone is not wrong language. Broader fluency/browser review remains open."
+  },
+  {
+    "locale": "sv",
+    "key": "type",
+    "value": "Typ",
+    "reason": "Inspected Swedish type/sorting labels, global-admin role warning and irreversible team deletion; Arabic due-today and no-assignee values in generic/Algerian/Egyptian locales; Moroccan Darija due/no-assignee/no-label and daily/weekly/monthly intervals. Swedish negation and global-admin exception, Arabic assignee absence and Darija colloquial negation/frequencies preserve meaning. Standard Arabic is valid for country-tagged Arabic locales; shared spelling alone is not wrong language. Broader fluency/browser review remains open."
+  },
+  {
+    "locale": "sv",
+    "key": "myCardsSortChange-title",
+    "value": "Sortering av mina kort",
+    "reason": "Inspected Swedish type/sorting labels, global-admin role warning and irreversible team deletion; Arabic due-today and no-assignee values in generic/Algerian/Egyptian locales; Moroccan Darija due/no-assignee/no-label and daily/weekly/monthly intervals. Swedish negation and global-admin exception, Arabic assignee absence and Darija colloquial negation/frequencies preserve meaning. Standard Arabic is valid for country-tagged Arabic locales; shared spelling alone is not wrong language. Broader fluency/browser review remains open."
+  },
+  {
+    "locale": "sv",
+    "key": "myCardsSortChangePopup-title",
+    "value": "Sortering av mina kort",
+    "reason": "Inspected Swedish type/sorting labels, global-admin role warning and irreversible team deletion; Arabic due-today and no-assignee values in generic/Algerian/Egyptian locales; Moroccan Darija due/no-assignee/no-label and daily/weekly/monthly intervals. Swedish negation and global-admin exception, Arabic assignee absence and Darija colloquial negation/frequencies preserve meaning. Standard Arabic is valid for country-tagged Arabic locales; shared spelling alone is not wrong language. Broader fluency/browser review remains open."
+  },
+  {
+    "locale": "sv",
+    "key": "stats-scope",
+    "value": "Typ",
+    "reason": "Inspected Swedish type/sorting labels, global-admin role warning and irreversible team deletion; Arabic due-today and no-assignee values in generic/Algerian/Egyptian locales; Moroccan Darija due/no-assignee/no-label and daily/weekly/monthly intervals. Swedish negation and global-admin exception, Arabic assignee absence and Darija colloquial negation/frequencies preserve meaning. Standard Arabic is valid for country-tagged Arabic locales; shared spelling alone is not wrong language. Broader fluency/browser review remains open."
+  },
+  {
+    "locale": "sv",
+    "key": "roles-info",
+    "value": "Välj vilka tavelroller som får utföra varje åtgärd. Användare i adminpanelen (globala administratörer) har alltid alla rättigheter och kan inte begränsas här.",
+    "reason": "Inspected Swedish type/sorting labels, global-admin role warning and irreversible team deletion; Arabic due-today and no-assignee values in generic/Algerian/Egyptian locales; Moroccan Darija due/no-assignee/no-label and daily/weekly/monthly intervals. Swedish negation and global-admin exception, Arabic assignee absence and Darija colloquial negation/frequencies preserve meaning. Standard Arabic is valid for country-tagged Arabic locales; shared spelling alone is not wrong language. Broader fluency/browser review remains open."
+  },
+  {
+    "locale": "sv",
+    "key": "delete-team-confirm-popup",
+    "value": "Är du säker på att du vill ta bort det här teamet? Det går inte att ångra.",
+    "reason": "Inspected Swedish type/sorting labels, global-admin role warning and irreversible team deletion; Arabic due-today and no-assignee values in generic/Algerian/Egyptian locales; Moroccan Darija due/no-assignee/no-label and daily/weekly/monthly intervals. Swedish negation and global-admin exception, Arabic assignee absence and Darija colloquial negation/frequencies preserve meaning. Standard Arabic is valid for country-tagged Arabic locales; shared spelling alone is not wrong language. Broader fluency/browser review remains open."
+  },
+  {
+    "locale": "ary",
+    "key": "card-comments-more",
+    "value": "كتر",
+    "reason": "Inspected Swedish type/sorting labels, global-admin role warning and irreversible team deletion; Arabic due-today and no-assignee values in generic/Algerian/Egyptian locales; Moroccan Darija due/no-assignee/no-label and daily/weekly/monthly intervals. Swedish negation and global-admin exception, Arabic assignee absence and Darija colloquial negation/frequencies preserve meaning. Standard Arabic is valid for country-tagged Arabic locales; shared spelling alone is not wrong language. Broader fluency/browser review remains open."
+  },
+  {
+    "locale": "ary",
+    "key": "no-label",
+    "value": "ماكاينش علامة",
+    "reason": "Inspected Swedish type/sorting labels, global-admin role warning and irreversible team deletion; Arabic due-today and no-assignee values in generic/Algerian/Egyptian locales; Moroccan Darija due/no-assignee/no-label and daily/weekly/monthly intervals. Swedish negation and global-admin exception, Arabic assignee absence and Darija colloquial negation/frequencies preserve meaning. Standard Arabic is valid for country-tagged Arabic locales; shared spelling alone is not wrong language. Broader fluency/browser review remains open."
+  },
+  {
+    "locale": "ary",
+    "key": "checklist-reset-interval-daily",
+    "value": "كل نهار",
+    "reason": "Inspected Swedish type/sorting labels, global-admin role warning and irreversible team deletion; Arabic due-today and no-assignee values in generic/Algerian/Egyptian locales; Moroccan Darija due/no-assignee/no-label and daily/weekly/monthly intervals. Swedish negation and global-admin exception, Arabic assignee absence and Darija colloquial negation/frequencies preserve meaning. Standard Arabic is valid for country-tagged Arabic locales; shared spelling alone is not wrong language. Broader fluency/browser review remains open."
+  },
+  {
+    "locale": "ary",
+    "key": "checklist-reset-interval-weekly",
+    "value": "كل سيمانة",
+    "reason": "Inspected Swedish type/sorting labels, global-admin role warning and irreversible team deletion; Arabic due-today and no-assignee values in generic/Algerian/Egyptian locales; Moroccan Darija due/no-assignee/no-label and daily/weekly/monthly intervals. Swedish negation and global-admin exception, Arabic assignee absence and Darija colloquial negation/frequencies preserve meaning. Standard Arabic is valid for country-tagged Arabic locales; shared spelling alone is not wrong language. Broader fluency/browser review remains open."
+  },
+  {
+    "locale": "ary",
+    "key": "checklist-reset-interval-monthly",
+    "value": "كل شهر",
+    "reason": "Inspected Swedish type/sorting labels, global-admin role warning and irreversible team deletion; Arabic due-today and no-assignee values in generic/Algerian/Egyptian locales; Moroccan Darija due/no-assignee/no-label and daily/weekly/monthly intervals. Swedish negation and global-admin exception, Arabic assignee absence and Darija colloquial negation/frequencies preserve meaning. Standard Arabic is valid for country-tagged Arabic locales; shared spelling alone is not wrong language. Broader fluency/browser review remains open."
+  },
+  {
+    "locale": "ary",
+    "key": "card-recurrence-interval-daily",
+    "value": "كل نهار",
+    "reason": "Inspected Swedish type/sorting labels, global-admin role warning and irreversible team deletion; Arabic due-today and no-assignee values in generic/Algerian/Egyptian locales; Moroccan Darija due/no-assignee/no-label and daily/weekly/monthly intervals. Swedish negation and global-admin exception, Arabic assignee absence and Darija colloquial negation/frequencies preserve meaning. Standard Arabic is valid for country-tagged Arabic locales; shared spelling alone is not wrong language. Broader fluency/browser review remains open."
+  },
+  {
+    "locale": "ary",
+    "key": "card-recurrence-interval-monthly",
+    "value": "كل شهر",
+    "reason": "Inspected Swedish type/sorting labels, global-admin role warning and irreversible team deletion; Arabic due-today and no-assignee values in generic/Algerian/Egyptian locales; Moroccan Darija due/no-assignee/no-label and daily/weekly/monthly intervals. Swedish negation and global-admin exception, Arabic assignee absence and Darija colloquial negation/frequencies preserve meaning. Standard Arabic is valid for country-tagged Arabic locales; shared spelling alone is not wrong language. Broader fluency/browser review remains open."
+  },
+  {
+    "locale": "ast-ES",
+    "key": "text-note-text",
+    "value": "Testu",
+    "reason": "Asturian Testu correctly names text in the text-note control. Shared Romance vocabulary is not evidence of a wrong language."
+  },
+  {
+    "locale": "ast-ES",
+    "key": "no-assignee",
+    "value": "Ensin asignar",
+    "reason": "Asturian Ensin asignar correctly expresses unassigned, preserving absence of an assignee."
+  },
+  {
+    "locale": "ast-ES",
+    "key": "no-label",
+    "value": "Ensin etiqueta",
+    "reason": "Asturian Ensin etiqueta correctly expresses no label, preserving the negative scope."
+  },
+  {
+    "locale": "ta",
+    "key": "poker-result-who",
+    "value": "யார்",
+    "reason": "Tamil யார் is the interrogative who used as the planning-poker participant column heading. No English prose or malformed placeholder is present."
+  },
+  {
+    "locale": "te-IN",
+    "key": "poker-result-who",
+    "value": "ఎవరు",
+    "reason": "Telugu ఎవరు is the interrogative who used as the planning-poker participant column heading. Correct Telugu wording remains unchanged."
+  },
+  {
+    "locale": "ug",
+    "key": "copyManyCardsPopup-format",
+    "value": "[ {\"title\": \"بىرىنچى كارتا ماۋزۇسى\", \"description\":\"بىرىنچى كارتا چۈشەندۈرۈشى\"}, {\"title\":\"ئىككىنچى كارتا ماۋزۇسى\",\"description\":\"ئىككىنچى كارتا چۈشەندۈرۈشى\"},{\"title\":\"ئاخىرقى كارتا ماۋزۇسى\",\"description\":\"ئاخىرقى كارتا چۈشەندۈرۈشى\"} ]",
+    "reason": "Uyghur example titles and descriptions name first, second and last cards. Literal JSON property names title and description remain English code identifiers; the three-object array is valid JSON and is not wrong-language prose."
+  },
+  {
+    "locale": "ast-ES",
+    "key": "twoFactorCode-cancel",
+    "value": "Encaboxar",
+    "reason": "Encaboxar is an attested Asturian cancellation action in LibreOffice Asturian help, https://help.libreoffice.org/latest/ast/text/scalc/02/06060000.html . Shared Cancelar elsewhere does not invalidate this correct synonym."
+  },
+  {
+    "locale": "tk_TM",
+    "key": "twoFactorCode-cancel",
+    "value": "Ýatyr",
+    "reason": "Ýatyr is the cancellation imperative associated with ýatyrmak, attested for cancellation in Turkmen migration law https://www.mfa.gov.tm/articles/79 and licensing law https://mejlis.gov.tm/single-law/51?lang=tm . Its homography with a form of lie down does not invalidate the cancellation meaning in this button context."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "color-indigo",
+    "value": "indi",
+    "reason": "Indi is the dictionary-attested spectral color between blue and violet, https://www.diccionari.cat/GDLC/indi . The homonymous nationality adjective does not make this color label incorrect."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "color-mistyrose",
+    "value": "rosa boirós",
+    "reason": "Rosa boirós localizes misty rose: boirós means misty or fog-covered, https://www.diccionari.cat/GDLC/nebulos . A descriptive translated color name is valid; the CSS color identifier is not used as the translation value."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "accounts-lockout-unlock-all",
+    "value": "Desbloqueja-ho tot",
+    "reason": "Desbloqueja-ho tot correctly expresses Unlock All in its contextual people-panel action. peopleBody.js links the button to unlockAllUsers and an explicit confirmation for tots els usuaris bloquejats; lockedUsers.js removes only existing account lockouts. The short contextual label does not mean arbitrary board content is unlocked."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "operator-checklist-text",
+    "value": "llistadecontrol",
+    "reason": "Joined llistadecontrol is an intentional localized search token, not ordinary prose. Regression executes actual search-const/query-classes with Valencian translations: checklist-text searches and positive/negative has:checklist presence predicates parse correctly; an unknown field is rejected. Preserve working syntax and existing translation."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "predicate-checklist",
+    "value": "llistadecontrol",
+    "reason": "Joined llistadecontrol is an intentional localized search token, not ordinary prose. Regression executes actual search-const/query-classes with Valencian translations: checklist-text searches and positive/negative has:checklist presence predicates parse correctly; an unknown field is rejected. Preserve working syntax and existing translation."
+  },
+  {
+    "locale": "eu",
+    "key": "r-top-of",
+    "value": "Goialdera:",
+    "reason": "Goialdera correctly expresses movement to the top; colon introduces the destination list. Actual boardActions select option value top retains the placement semantics."
+  },
+  {
+    "locale": "eu",
+    "key": "r-bottom-of",
+    "value": "Behealdera:",
+    "reason": "Behealdera correctly expresses movement to the bottom; colon introduces the destination list. Actual boardActions select option value bottom retains the opposite placement semantics."
+  },
+  {
+    "locale": "eu",
+    "key": "r-its-list",
+    "value": "bere zerrenda",
+    "reason": "Bere zerrenda correctly names its own list in the move-card action. boardActions composes this after the top/bottom position selector; no other list ownership is implied."
+  },
+  {
+    "locale": "ace",
+    "key": "card-comments-more",
+    "value": "Leubeh",
+    "reason": "Leubeh correctly means more in Acehnese. Primary Balai Bahasa dictionary example at https://kamusbbpa.kemendikdasmen.go.id/kamus/Aceh/C uses leubeh with Indonesian lebih; Kaidah Bahasa Aceh also attests leubèh as more. Preserve valid existing orthography rather than treating a spelling variant as wrong-language."
+  },
+  {
+    "locale": "eu",
+    "key": "ticket-number",
+    "value": "Tiket-zenbakia",
+    "reason": "Tiket-zenbakia is valid Basque ticket-number wording. Basque government bulletin https://www.euskadi.eus/bopv2/datos/2014/12/1405234e.pdf uses tiket- edo albaran-zenbakia; loanword tiket is native usage, not untranslated English. No current UI consumer was found; this accepts lexical meaning only, not an unobserved workflow."
+  },
+  {
+    "locale": "da",
+    "key": "export-card-excel-free",
+    "value": "ledig",
+    "reason": "Correct available/free wording for disk capacity. Actual historical export code in 7de1b04eb and 5c5ed102c pairs this label with mbFree MB and mbNeeded, establishing available disk space rather than no-cost licensing. No current consumer found; preserve correct existing language value."
+  },
+  {
+    "locale": "eu",
+    "key": "export-card-excel-free",
+    "value": "librea",
+    "reason": "Correct available/free wording for disk capacity. Actual historical export code in 7de1b04eb and 5c5ed102c pairs this label with mbFree MB and mbNeeded, establishing available disk space rather than no-cost licensing. No current consumer found; preserve correct existing language value."
+  },
+  {
+    "locale": "gl",
+    "key": "export-card-excel-free",
+    "value": "libre",
+    "reason": "Correct available/free wording for disk capacity. Actual historical export code in 7de1b04eb and 5c5ed102c pairs this label with mbFree MB and mbNeeded, establishing available disk space rather than no-cost licensing. No current consumer found; preserve correct existing language value."
+  },
+  {
+    "locale": "da",
+    "key": "complete",
+    "value": "Fuldført",
+    "reason": "Correct completed-state/percentage wording. Actual historical migration template removed in a440d44ea displays migrationProgress% followed by complete; this is completion status, not an imperative. No current consumer found."
+  },
+  {
+    "locale": "eo",
+    "key": "complete",
+    "value": "Kompleta",
+    "reason": "Correct completed-state/percentage wording. Actual historical migration template removed in a440d44ea displays migrationProgress% followed by complete; this is completion status, not an imperative. No current consumer found."
+  },
+  {
+    "locale": "eo",
+    "key": "migration-complete",
+    "value": "Kompleta",
+    "reason": "Correct completed migration badge wording. Historical template removed in cbb1cd78d shows migration-complete when a migration is not needed, establishing finished-state context. No current consumer found."
+  },
+  {
+    "locale": "eu",
+    "key": "complete",
+    "value": "Osatua",
+    "reason": "Correct completed-state/percentage wording. Actual historical migration template removed in a440d44ea displays migrationProgress% followed by complete; this is completion status, not an imperative. No current consumer found."
+  },
+  {
+    "locale": "eu",
+    "key": "migration-complete",
+    "value": "Osatua",
+    "reason": "Correct completed migration badge wording. Historical template removed in cbb1cd78d shows migration-complete when a migration is not needed, establishing finished-state context. No current consumer found."
+  },
+  {
+    "locale": "gl",
+    "key": "complete",
+    "value": "Completado",
+    "reason": "Correct completed-state/percentage wording. Actual historical migration template removed in a440d44ea displays migrationProgress% followed by complete; this is completion status, not an imperative. No current consumer found."
+  },
+  {
+    "locale": "gl",
+    "key": "migration-complete",
+    "value": "Completada",
+    "reason": "Correct completed migration badge wording. Historical template removed in cbb1cd78d shows migration-complete when a migration is not needed, establishing finished-state context. No current consumer found."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "complete",
+    "value": "Complet",
+    "reason": "Correct completed-state/percentage wording. Actual historical migration template removed in a440d44ea displays migrationProgress% followed by complete; this is completion status, not an imperative. No current consumer found."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "migration-complete",
+    "value": "Completa",
+    "reason": "Correct completed migration badge wording. Historical template removed in cbb1cd78d shows migration-complete when a migration is not needed, establishing finished-state context. No current consumer found."
+  },
+  {
+    "locale": "da",
+    "key": "schedule",
+    "value": "Tidsplan",
+    "reason": "Danish Tidsplan is the schedule noun used as cron table heading and job-schedule dropdown label in historical a440d44ea; this is not a scheduling imperative. No current consumer found; lexical/context review does not establish live workflow behavior."
+  },
+  {
+    "locale": "eu",
+    "key": "idle",
+    "value": "Geldi",
+    "reason": "Basque Geldi correctly denotes an idle/stopped state. Historical cronMigrationStatus fallback in a440d44ea establishes state-label context rather than an imperative. No current consumer found; lexical/context review does not establish live workflow behavior."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "idle",
+    "value": "Inactiu",
+    "reason": "Valencian Inactiu correctly denotes an inactive/idle state. Historical cronMigrationStatus fallback in a440d44ea establishes state-label context rather than an imperative. No current consumer found; lexical/context review does not establish live workflow behavior."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "s3-bucket-description",
+    "value": "Nom del bucket S3 per emmagatzemar fitxers",
+    "reason": "Correct Valencian surrounding prose describes the bucket name, endpoint URL or endpoint port; bucket and endpoint retain S3 protocol terminology rather than indicate wrong-language prose. Actual attachmentSettings.jade binds descriptions to corresponding controls. Example hostnames remain literal, including on-premise minio.example.com. AWS RESTAPI documentation confirms bucket/endpoint distinction; storage runtime/browser connectivity not verified by this lexical review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "s3-endpoint-description",
+    "value": "URL de l'endpoint S3 (p. ex., s3.amazonaws.com o minio.example.com)",
+    "reason": "Correct Valencian surrounding prose describes the bucket name, endpoint URL or endpoint port; bucket and endpoint retain S3 protocol terminology rather than indicate wrong-language prose. Actual attachmentSettings.jade binds descriptions to corresponding controls. Example hostnames remain literal, including on-premise minio.example.com. AWS RESTAPI documentation confirms bucket/endpoint distinction; storage runtime/browser connectivity not verified by this lexical review."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "s3-port-description",
+    "value": "Número de port de l'endpoint S3",
+    "reason": "Correct Valencian surrounding prose describes the bucket name, endpoint URL or endpoint port; bucket and endpoint retain S3 protocol terminology rather than indicate wrong-language prose. Actual attachmentSettings.jade binds descriptions to corresponding controls. Example hostnames remain literal, including on-premise minio.example.com. AWS RESTAPI documentation confirms bucket/endpoint distinction; storage runtime/browser connectivity not verified by this lexical review."
+  },
+  {
+    "locale": "ace",
+    "key": "no-label",
+    "value": "Hana label",
+    "reason": "Correct Acehnese absence negation Hana with UI technical loan label. Primary Balai Bahasa Aceh dictionary T page 2 uses hana in a negated example. Native terminology and browser review remain open."
+  },
+  {
+    "locale": "br",
+    "key": "no-assignee",
+    "value": "Den ebet deverket",
+    "reason": "Correct Breton Den ebet deverket means no assigned person. Preder JEDOII17.pdf p22/p46 lists deverkañ as attribuer; existing assigned-only labels use deverket consistently. Retain correct absence/person wording; lexical review does not verify live UI."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "shortcut-filter-my-assigned-cards",
+    "value": "Filtra les meves fitxes assignades",
+    "reason": "Correct shared Catalan Filter my assigned cards meaning, feminine plural possessive/participle agree with fitxes. IEC aoe.iec.cat/els-possessius/ recognizes meves and meues as dialect variants: meves predominates eastern, meues western; this is not wrong-language prose. Actual keyboard.js a action toggles Filter.assignees for current user. Retained correct-language translation under preservation policy; preferred Valencian regional style and browser review remain open."
+  },
+  {
+    "locale": "gl",
+    "key": "r-when-a-attach",
+    "value": "Cando un anexo",
+    "reason": "Retain correct Galician noun/shared feminine action wording after attachment template receives separate masculine Engadido a/Quitado de labels. RAG defines anexo as a masculine computer attachment noun; shared feminine labels still agree with persoa membro, labels and cards. Complete live browser validation remains open."
+  },
+  {
+    "locale": "gl",
+    "key": "r-added-to",
+    "value": "Engadida a",
+    "reason": "Retain correct Galician noun/shared feminine action wording after attachment template receives separate masculine Engadido a/Quitado de labels. RAG defines anexo as a masculine computer attachment noun; shared feminine labels still agree with persoa membro, labels and cards. Complete live browser validation remains open."
+  },
+  {
+    "locale": "gl",
+    "key": "r-removed-from",
+    "value": "Quitada de",
+    "reason": "Retain correct Galician noun/shared feminine action wording after attachment template receives separate masculine Engadido a/Quitado de labels. RAG defines anexo as a masculine computer attachment noun; shared feminine labels still agree with persoa membro, labels and cards. Complete live browser validation remains open."
+  },
+  {
+    "locale": "da",
+    "key": "days-old",
+    "value": "Dage gammel",
+    "reason": "Retain native Danish age wording. DSL Ordbog over det danske Sprog, gammel sense 4.2, gives flere dage gammel for the age of a thing. The source label means Days Old; current application-source search found no runtime use, so no live UI context is claimed. Swedish Dagar gammal from the pull is not the retained value. https://ordnet.dk/ods/ordbog/gammel"
+  },
+  {
+    "locale": "th",
+    "key": "r-is",
+    "value": "คือ",
+    "reason": "Retain correct Thai equative/identification word คือ. Native MediaWiki Thai uses it in identity/explanatory noun statements; actual rule-action context is repaired by omitting the separately inserted copula for Thai (9e34218c7), since action phrases already include their predicate. Regression executes reactive helper and negative duplicate-copula checks. Full browser execution remains open."
+  },
+  {
+    "locale": "ca@valencia",
+    "key": "color-peachpuff",
+    "value": "préssec",
+    "reason": "Retain native Valencian peach color label: actual palette is pale peach #ffdab9, with no separate competing peach key. Native Valencian color usage attests préssec; this is a descriptive UI color label, not a claim that native sources standardize the CSS keyword."
+  },
+  {
+    "locale": "eu",
+    "key": "r-is-moved",
+    "value": "lekuz aldatzen denean",
+    "reason": "Retained after checking the actual generic board movement trigger: Txartel bat lekuz aldatzen denean. EHU EEH leku entry section 16 attests lekuz aldatu and temporal lekuz aldatzen garenean; Euskadi native grammar section 13.1 explains -ENEAN and singular gelditzen denean. Singular card changes location is the complete generic temporal predicate; this row inserts no separate copula or destination noun. Other directional fragments and live browser review remain open."
+  },
+  {
+    "locale": "eu",
+    "key": "r-checked",
+    "value": "Markatzen denean",
+    "reason": "Retain the checklist-item temporal action. Actual generic checklist row combines Kontrol-zerrendako elementu bat with this singular predicate and no extra copula. Native EHU employment portal instructions explicitly use desmarkatu for unchecking a default check; Euskadi procurement FAQ independently uses desmarkatu for a software option. Euskadi grammar section 13.1 supports singular -tzen denean temporal clauses. The checked/unchecked opposition remains distinct; specific named-item word order and live browser validation remain open."
+  },
+  {
+    "locale": "eu",
+    "key": "r-unchecked",
+    "value": "Desmarkatzen denean",
+    "reason": "Retain the checklist-item temporal action. Actual generic checklist row combines Kontrol-zerrendako elementu bat with this singular predicate and no extra copula. Native EHU employment portal instructions explicitly use desmarkatu for unchecking a default check; Euskadi procurement FAQ independently uses desmarkatu for a software option. Euskadi grammar section 13.1 supports singular -tzen denean temporal clauses. The checked/unchecked opposition remains distinct; specific named-item word order and live browser validation remain open."
+  },
+  {
+    "locale": "eu",
+    "key": "r-completed",
+    "value": "Osatzen denean",
+    "reason": "Retain the singular completion predicate. Native GNOME Basque software help bluetooth-send-file.html.eu uses transferentzia osatzen denean for completion. EHU EEH osatu independently attests zerrenda osatu. Actual generic completion row supplies Kontrol-zerrenda bat and the completed option without an extra copula. Incomplete transition wording, named checklist order, the separately documented runtime predicate mismatch and browser execution remain open."
+  },
+  {
+    "locale": "szl",
+    "key": "sandstorm-raw-mongodb",
+    "value": "Surowe pliki bazy danych MongoDB 3",
+    "reason": "Retain the shared Silesian vocabulary rather than rejecting it for Polish identity. Authored Silesian lesson by Barbara Szmatloch (Wyborcza, Swiynto krepla, 2017-02-17) explicitly uses plural surowe for untreated/raw; native Wachtyrz Silesian Hamlet article independently uses surowy. MediaWiki szl software messages use pliki and bazy danych. The label preserves raw physical database files and MongoDB 3 rather than implying a converted export. Native sources support vocabulary, not an exact standardized database compound. Current attachment template use is commented out; browser and broader locale review remain open."
+  },
+  {
+    "locale": "eu",
+    "key": "s3-bucket",
+    "value": "S3 bucket-a",
+    "reason": "Native Basque ZIUR technical specification explicitly uses AWS S3 Bucket for storage; retain technical loan with Basque article in the bucket-name field. Source attests terminology, not exact hyphenation."
+  },
+  {
+    "locale": "eu",
+    "key": "r-when-a-item",
+    "value": "Kontrol-zerrendako elementu bat",
+    "reason": "Retain singular generic checklist-item subject in actual check/uncheck rows. Native software references support list-item terminology; assembled generic temporal clauses use no redundant copula. Named-item order and browser review remain open."
+  },
+  {
+    "locale": "eu",
+    "key": "r-moved-to",
+    "value": "Eramaten denean hona:",
+    "reason": "Retain restored Basque movement condition: eramaten denean is the temporal passive clause, hona/hemendik distinguish destination/origin, and the colon introduces the separate list field. EHU native direction terminology and GNOME source-field usage support this actual UI construction; broader/browser review is not claimed."
+  },
+  {
+    "locale": "eu",
+    "key": "r-moved-from",
+    "value": "Eramaten denean hemendik:",
+    "reason": "Retain restored Basque movement condition: eramaten denean is the temporal passive clause, hona/hemendik distinguish destination/origin, and the colon introduces the separate list field. EHU native direction terminology and GNOME source-field usage support this actual UI construction; broader/browser review is not claimed."
+  },
+  {
+    "locale": "eu",
+    "key": "r-when-a-member",
+    "value": "Kide bat",
+    "reason": "Retain restored indefinite singular Basque subject after EHU noun definitions, native member/software-attachment usage and actual generic add/remove row composition review. Named-subject and browser review are not inferred."
+  },
+  {
+    "locale": "eu",
+    "key": "r-when-a-attach",
+    "value": "Eranskin bat",
+    "reason": "Retain restored indefinite singular Basque subject after EHU noun definitions, native member/software-attachment usage and actual generic add/remove row composition review. Named-subject and browser review are not inferred."
   }
 ]

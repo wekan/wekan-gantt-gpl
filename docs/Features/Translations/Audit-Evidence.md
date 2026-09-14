@@ -22524,3 +22524,5412 @@ Retained 16 inspected authentication error/display/default labels, customization
 date-value removal, deletion/restoration, loading and old/new date activities.
 Actual settings distinguish display and default method; rule action removes
 a value. Tokens and all-item scopes preserved. All 3,917 reviews pass.
+
+**2026-09-14 — Valencian imperative and settings (`264ca788c`).**
+
+Repaired Afegeix-vos to Afegiu-vos (imperative/reflexive agreement), using
+https://ca.wiktionary.org/wiki/afegir and CPNL pronoun guidance. Retained 30
+inspected board/keyboard/cover/zoom/import values. The maintainer release
+command captured these working-tree edits in its release preparation commit.
+All 18,175 corrections and 3,947 reviews pass. Checklist loans and broader
+regional vocabulary remain unresolved; released changelog sections untouched.
+
+**2026-09-14 — Valencian lockout and migrations (`25818620c`).**
+
+Retained 32 inspected lockout, active/inactive actions, scheduled maintenance
+failures, migration outcomes and confirmations, S3 saving, rename/background
+values. Negation, known/unknown-user contrasts and all scopes remain intact.
+All 3,979 exact reviews pass; English technical loans remain under review.
+
+**2026-09-14 — Valencian checklist prose (`e4a846162`).**
+
+Repaired six ordinary rule/display values containing English checklist(s) or
+joined llistadecontrol, using existing localized llista de verificació.
+Preserve each-line mapping, original order, all-item and finished-list scopes.
+Exact positive/negative regression and all 18,181 correction records pass.
+Search tokens excluded for separate parser review; broader verification open.
+
+**2026-09-14 — Valencian display and uploads (`aa1006207`).**
+
+Repaired mixed-English checked-item visibility prose with existing checklist
+terminology. Retained 29 display, date/upload, translation CRUD, PDF fallback,
+subtask/expand values. Checked-only scope, 50-300% range, failure/completion
+and no-undo warnings intact. All 18,182 corrections and 4,008 reviews pass.
+Color terminology and search tokens excluded pending separate investigation.
+
+**2026-09-14 — Valencian accessibility/storage (`ff7e2b082`).**
+
+Retained 31 background, support/accessibility, failure/confirmation, attachment,
+migration status, S3, duration/estimated-time and recurrence labels. Connection
+outcomes and interval frequencies remain intact. All 4,039 reviews pass.
+Fourteen Valencian restored values remain excluded for deeper contextual review.
+
+**2026-09-14 — Thai restored review (`9111dcfbe`).**
+
+Retained 50 interface/unit/search/product values; quarter retains three-month
+meaning, removal differs from deletion, and Azure/Google descriptions are
+product names. Shared r-is identity copula excluded for passive phrase review.
+All 4,089 review records pass. Broader Thai grammar/browser review remains open.
+
+**2026-09-14 — Swedish Due Cards (`93f284c8a`).**
+
+Repaired three labels using förfallna (overdue), because actual dueCards.js
+selects every card with a dueAt and its helper includes future dates. Wording
+now says cards with due dates. Regression drives the real sorting helper with
+past and future cards; all 18,185 corrections pass. Browser review remains open.
+
+**2026-09-14 — Swedish and Arabic restored review (`4da4c40e4`).**
+
+Retained seven Swedish and 23 generic/Algerian/Egyptian Arabic and Moroccan
+Darija values. Role exception, no-undo, due-today/assignee absence and
+recurrence frequencies remain intact. Standard Arabic is valid in country
+locales; identical spelling is not evidence of wrong language. All 4,119
+reviews pass. Broader grammar/browser verification remains open.
+
+Dated review, 2026-09-14, local commit `69b8202ed`: retained six exact
+Asturian/Tamil/Telugu/Uyghur values after semantic review. The Uyghur example
+parses as three JSON objects with literal title/description property names.
+No locale values changed. Cancellation and Breton wording remain uncertain;
+this acceptance does not establish broader fluency or browser validation.
+Exact review checks verify all 4,125 records.
+
+Dated review, 2026-09-14, local commit `d3ad084e7`: retained Asturian
+Encaboxar and Turkmen Ýatyr for two-factor cancellation. LibreOffice Asturian
+help https://help.libreoffice.org/latest/ast/text/scalc/02/06060000.html
+uses Encaboxar for cancelling edits. Turkmen government migration law
+https://www.mfa.gov.tm/articles/79 uses ýatyrmak for visa cancellation.
+No locale values changed. Exact review checks verify all 4,127 records;
+64 restored values and 308 original findings remain unresolved.
+
+Dated review, 2026-09-14, local commit `5c7199050`: retained Valencian
+color-indigo, color-mistyrose and accounts-lockout-unlock-all. Dictionary
+references https://www.diccionari.cat/GDLC/indi and
+https://www.diccionari.cat/GDLC/nebulos support the color meanings.
+The people-panel action and confirmation target all locked users; the server
+selector removes existing account lockouts, supporting the contextual label.
+No values changed. Exact checks pass for 4,130 review records. Eleven
+restored Valencian values and wider language/browser validation remain open.
+
+Dated review, 2026-09-14, local commit `be334a5bf`: retained Valencian
+operator-checklist-text and predicate-checklist, both llistadecontrol.
+The joined values are parser tokens. Extended localizedSearchApostrophes
+executes actual config/search-const.js and config/query-classes.js with
+Valencian labels, checking quoted checklist text, present/absent checklist
+predicates and rejection of unknown fields. All cases pass. No locale values
+changed. Nine restored Valencian values and live browser review remain open.
+
+Dated repair, 2026-09-14, local commit `ed5a0d879`: Greenlandic
+calendar-system replaces Azerbaijani Kalendar sistem (data görünüşü) with
+Ullorsiutit aaqqissuussaanerat (ullunik takutitsineq). Government calendar
+usage https://socialstyrelsen.gl/6_kursuskatalog/aktivitetskalender?sc_lang=kl-gl
+supports ullorsiutit. Compound grammar remains provisional; native review and
+six calendar variants remain open. Regression rejects the wrong-language seed;
+18,186 exact corrections pass placeholder, JSON and key-order checks.
+
+Dated repair, 2026-09-14, local commit `cc3e80e8b`: Manx Hijri civil
+and astronomical tabular labels replace English placeholders. Dictionary
+https://archive.gaelg.im/www.gaelg.iofm.net/DICTIONARY/dict/T.html supports
+taablagh; C.html supports shivoil and A.html supports rollageagh. Epoch is
+described as dait toshee, starting date; this technical phrase is provisional
+and needs native review. Coptic naming remains pending. Distinct-variant
+regression and all 18,188 exact correction checks pass; no browser claim.
+
+Reference review, 2026-09-14: first 25 pending zgh values inspected and
+confirmed French prose. Tamazight-Review.md records three searchable
+IRCAM-derived dictionary leads and explicit primary-source/grammar checks.
+The primary dictionary returned 502; scraped vocabulary is not accepted as
+verified, and no correction or unchanged acceptance was added. Mapping-role,
+lockout, warning negation and placeholder requirements remain mandatory.
+
+Dated repair, 2026-09-14, local commit `d454a58ff`: Esperanto color-lime
+changes limeda to explicit limekolora. Reference
+https://en.wiktionary.org/wiki/verdo lists limekolora among Esperanto colors.
+All 18,189 exact correction checks pass. Two Esperanto Complete labels
+remain unresolved. IRCAM primary dictionary cross-check still failed: web
+fetch returned 502 and verified Python HTTPS reported a certificate-chain
+error. Tamazight scraped entries were not accepted as verified.
+
+Dated repair, 2026-09-14, local commit `e9d46cb11`: unflagged Basque
+r-when-a-end-date-changed replaces Spanish Finalizado with Amaiera.
+Existing card-end/card-end-on establish localized end-date vocabulary.
+All 18,190 exact corrections pass token, key-order and newer-translation
+checks. Shared r-is remains Spanish; it cannot be replaced with a copula
+without reviewing ten composed trigger contexts containing denean verbs.
+No full grammar or browser completion is claimed.
+
+Dated repair, 2026-09-14, local commit `1b228a63f`: six unflagged Basque
+archive actions/descriptions replace biltegi storage with artxibo archive,
+consistent with corrected r-archived/r-unarchived. Regression verifies
+archive/restore directions, when clauses, absence of storage wording and
+actual boardActions options. All 18,196 correction records pass. Original
+queue counts unchanged; shared trigger grammar and browser review stay open.
+
+Dated review, 2026-09-14, local commit `918d17c6b`: retained Basque
+r-top-of Goialdera:, r-bottom-of Behealdera: and r-its-list bere zerrenda.
+Actual boardActions top/bottom options and following own-list label confirm
+placement/ownership context. All 4,135 exact review records pass. Twenty
+restored Basque values and complete trigger grammar remain unresolved.
+
+Dated review, 2026-09-14, local commit `c44dca170`: Acehnese Leubeh
+retained for More. Primary dictionary example at
+https://kamusbbpa.kemendikdasmen.go.id/kamus/Aceh/C supports the meaning.
+All 4,136 exact reviews pass; six Acehnese restored values remain open.
+
+Reference review, 2026-09-14: Silesian sandstorm-raw-mongodb remains
+pending. Inspected existing locale file vocabulary includes both plik/pliki
+and zbiōr, as well as baza danych. Searches for Silesian raw database/file
+terminology returned Polish publications and did not establish a native
+technical phrase. Polish dictionary entries for surowy establish Polish
+usage only; they do not prove that shared vocabulary is invalid Silesian.
+Do not mechanically substitute zbiōr or transliterate Polish to close this
+finding. Review the entire phrase against a Silesian technical dictionary or
+corpus before accepting or replacing it. No locale strings changed.
+
+Dated repair, 2026-09-14, local commit `c4e6aa1c0`: Valencian
+my-attachments changes Les meves Adjunts to Els meus adjunts, repairing
+masculine plural agreement and preserving ownership. Possessive reference
+https://aoe.iec.cat/els-possessius/ distinguishes regional meves/meues;
+regional variation alone is not evidence of another language. The assigned
+filter shortcut remains under regional review. All 18,197 exact corrections
+pass. Original queue counts and broader verification scope are unchanged.
+
+Dated review, 2026-09-14, local commit `37a664a5c`: retained Basque
+ticket-number Tiket-zenbakia. Government bulletin
+https://www.euskadi.eus/bopv2/datos/2014/12/1405234e.pdf attests
+tiket- edo albaran-zenbakia. This validates lexical meaning; no current
+UI consumer was found. All 4,137 exact review records pass. Nineteen
+restored Basque values and wider language/browser verification remain open.
+
+Dated review, 2026-09-14, local commit `99a1e4835`: retained Danish ledig,
+Basque librea and Galician libre for export-card-excel-free. Actual historical
+code diffs 7de1b04eb and 5c5ed102c pair the translated label with mbFree MB
+and mbNeeded, proving available disk capacity rather than no-cost licensing.
+No current consumer found. All 4,140 review records pass; 50 restored
+values and 305 original pending findings remain.
+
+Dated repair/review, 2026-09-14, local commit `3b4941c34`: Valencian
+errors changes Missatges d’error to Errors, following operationStats.error
+count in historical a440d44ea. Nine completion values retained against
+migrationProgress% complete (a440d44ea) and finished migration badges
+(cbb1cd78d). No current consumers found. All 18,198 corrections and
+4,149 reviews pass; 40 restored values and 305 original findings remain.
+
+Dated repair/review, 2026-09-14, local commit `287e99dd2`: Galician
+schedule changes Programar to Programación: historical a440d44ea uses
+it as cron table heading and job-schedule dropdown label, not an action.
+Real Academia Galega defines programación as a feminine noun for setting
+or planning a programme: https://academia.gal/dicionario/-/termo/programación .
+Danish Tidsplan retained; Basque Geldi and Valencian Inactiu retained for
+historical idle status. No current consumers found. All 18,199 correction
+and 4,152 review records pass; 36 restored and 305 pending findings remain.
+Full language and browser verification remain open.
+
+Dated unflagged repair, 2026-09-14, local commit `f52ab6adf`: Galician
+r-mark-complete/incomplete contained Portuguese cartão and masculine
+completo/incompleto. Replaced with Marcar a tarxeta como completa/incompleta.
+Actual cardActions.jade options and rulesWorkflow action labels establish
+context. Dedicated regression verifies wiring, agreement, absence of Portuguese
+noun and distinct actions. All 18,201 correction records pass. Browser not run;
+shared Galician member/attachment participle agreement remains unresolved.
+
+Dated provisional fill, 2026-09-14, local commit `c5c91129b`: Manx
+calendar-system-coptic replaces English-only Coptic with Feaillere Coptagh.
+https://archive.gaelg.im/www.gaelg.iofm.net/DICTIONARY/dict/C.html attests
+feaillere for calendar but has no Coptic entry. Coptagh is a low-confidence
+coinage following existing calendar adjectives, not an attested dictionary
+translation. Native terminology review is required. Calendar and all 18,202
+correction checks pass; 304 original pending and 36 restored values remain.
+Manx original placeholder queue is filled, not fully language-verified.
+
+Dated unchanged review, 2026-09-14, local commit `4ddcb81c9`: retained
+Valencian S3 bucket/endpoint/port descriptions. attachmentSettings.jade binds
+these to s3Bucket, s3Endpoint and numeric s3Port respectively. Surrounding
+Valencian prose preserves name/storage, URL/examples and port-number meaning;
+protocol words and literal hostnames are not wrong-language prose.
+https://docs.aws.amazon.com/AmazonS3/latest/developerguide/RESTAPI.html
+confirms endpoint/bucket distinction. All 4,155 review records pass; 33 restored
+and 304 pending findings remain. This does not verify storage connectivity
+or live browser behavior. Other technical and grammar review remains open.
+
+Dated repair/review, 2026-09-14, local commit `66a3da76c`: retained
+Acehnese no-label Hana label and replaced unflagged Indonesian filter-no-label
+Tidak ada label with that existing Acehnese wording. Primary dictionary
+https://kamusbbpa.kemendikdasmen.go.id/index.php/kamus/Aceh/T?page=2
+uses hana in a negated example. This supports absence negation, not a native
+technical-label glossary. All 18,203 correction and 4,156 review records
+pass; 32 restored and 304 pending findings remain. Searches did not establish
+connection-success or assignee replacements. Broader mixed filters, native
+terminology and browser review remain open.
+
+Reference review, 2026-09-14: Nahuatl-Review.md records dictionary and
+UNAM evidence distinguishing historical calendar counts. No blanket generic
+modern-calendar meaning is established for tonalpohualli; tlamantli alone
+does not attest a software compound. All 17 Nahuatl findings stay pending;
+no locale changes or unchanged acceptances were made. Modern/dialect wording
+and full Hijri variant distinctions still require translation and validation.
+
+Dated Veps authentication-label repair, 2026-09-14, local commit
+`780f51f5d`: twoFactorCode-cancel Hül'gäta → Heitä. Direct source
+https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/vep.json
+uses Heitä in login-popup/password-reset cancellation. Existing general
+WeKan cancel agrees. All 18,204 correction records pass; 31 restored and
+304 pending findings remain. No live browser or full Veps fluency claim.
+
+Dated calendar fill, 2026-09-14, local commit `e4860ab8e`: Greenlandic
+calendar-system-buddhist changes Buddhist to Buddhasiortut ullorsiutaat.
+Direct HTTPS retrieval of Kalaallit Meerartaat article
+https://km.gl/nutaarsiassat/kalaallit-meeqqat-inuusuttullu-vejle-kaajallallugu-sikkilerput
+confirms Buddhasiortut in native prose. The complete phrase is adapted from
+existing Juutit ullorsiutaat, not attested as a calendar phrase. Native
+inflection/terminology review remains open. All 18,205 corrections and
+calendar checks pass; 303 pending and 31 restored values remain. Browser
+validation and the five remaining Greenlandic original findings remain open.
+
+Dated colour repair, 2026-09-14, local commit `04711b646`: Sardinian
+color-magenta now fùcsia. Native-language publication directly inspected:
+https://www.lanuovasardegna.it/tempo-libero/2018/11/11/news/de-cantos-colores-podent-essere-sos-pitzinnos-de-cada-colore-1.17453815 .
+https://www.w3.org/TR/css-color-3/ lists magenta and fuchsia as #ff00ff;
+models/lib/contrastColor.js uses that same magenta value. Thus the native
+label preserves this UI colour identity. Does not establish that borrowed
+magenta is wrong Sardinian. GNOME/LibreOffice sc paths tried returned 404;
+MediaWiki sc had no magenta entry, so those were not evidence of a term.
+All 18,206 corrections pass; 302 pending and 31 restored findings remain.
+Broader language/browser review remains open.
+
+Dated repair/review, 2026-09-14, local commit `87e2ed6fa`: retained
+Breton no-assignee Den ebet deverket. Preder's publisher reference
+https://www.preder.net/r/bibli/JEDOII/JEDOII17.pdf p22/p46 lists
+deverkañ = attribuer. Existing assigned-only labels corroborate deverket.
+Unflagged filter-no-assignee, assignee and cardAssigneePopup-title French
+values become Den ebet deverket / Den deverket, preserving absence versus
+assigned-person meaning. All 18,209 correction and 4,157 review records
+pass; 30 restored and 302 pending findings remain. No live browser claim;
+assign-member and broader French-seeded Breton prose remain review work.
+
+Dated unflagged repair, 2026-09-14, local commit `b72b9d1fd`: Breton
+assign-member, card-edit-members, filter-member-label, filter-no-member,
+labels and cardLabelsPopup-title no longer contain French. Use existing
+Ezel/Izili and Silañ, Preder deverkañ, and native MediaWiki Merañ/tikedennoù:
+https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/br.json .
+Direct source inspection shows Merañ tikedennoù in watchlist/tag controls.
+sidebarFilters.jade provides member filter, no-member option and assignment
+button. card-edit-members consumer is commented out, but remains translation
+scope. All 18,215 corrections pass; 30 restored and 302 pending original
+findings remain. Other French-seeded Breton prose and browser remain open.
+
+Dated unflagged popup repair, 2026-09-14, local commit `6db6c7b16`:
+12 Breton board/list/label/date/language controls no longer contain French.
+Use existing action verbs and nouns, with direct article/initial-mutation
+adaptation. Preserve delete confirmation questions and creation/edit/delete
+meaning; archive actions were deliberately not conflated with deletion.
+All 18,227 correction records pass, including token inventories, order and
+newer-human preference. Original counts remain 30 restored and 302 pending.
+Native inflection and live browser review remain open; a structurally passing
+ledger is not evidence that broader French-seeded Breton prose is repaired.
+
+Dated provisional fill, 2026-09-14, local commit `a06bf0cca`: Bambara
+Hijri civil and astronomical epoch placeholders become full labels using
+Hijri kalandiriye, tabali fɛ jateli and distinct sivili damindon / dolo dɔnni
+damindon. Existing locale supplies calendar/table/starting-day terms.
+https://www.mali-pense.net/bm/lexicon/s.htm attests sivili (civil loan) and
+science synonyms including dɔnni. Its civil entry is a noun, not evidence
+of calendar-epoch usage. Star vocabulary search also consulted
+https://kemelang.com/bambara/d%C3%B2lo/ . Full epoch compounds and astronomy
+phrase are low-confidence direct adaptations, not attested complete labels.
+Native terminology and grammar remain review requirements. All 18,229
+correction checks pass; 300 pending and 30 restored original findings remain.
+Filled Bambara placeholder queue does not establish full language completion.
+
+Dated unchanged review, 2026-09-14, local commit `64f1d7367`: retain
+Valencian shortcut-filter-my-assigned-cards Filtra les meves fitxes assignades.
+Actual keyboard.js a hotkey checks current board/user and toggles
+Filter.assignees for currentUserId; label preserves assigned rather than
+member semantics. Feminine plurals agree. https://aoe.iec.cat/els-possessius/
+recognizes meves and meues, with eastern versus western predominance.
+This does not make meves wrong-language prose; retained under correct-language
+preservation policy. Preferred Valencian regional style is not declared
+resolved. All 4,158 review records pass; 29 restored and 300 pending remain.
+Full language and browser verification remain open.
+
+Dated subject-agreement repair, 2026-09-14, local commit `a196c64eb`:
+Galician generic/specific member and assignee subjects use persoa membro /
+persoa asignada, agreeing with shared Engadida/Quitada. Specific copula
+remains supplied by r-is in cardTriggers.jade; generic prefix includes it.
+Official usage of persoa membro:
+https://sede.xunta.gal/detalle-procedemento?ano=2025&codtram=BS310Q&lang=gl430&numpub=1 .
+Dedicated regression checks both selected actions and named/unnamed subjects
+against template keys, and rejects old masculine generic subjects. All
+18,233 correction records pass; 27 restored and 300 pending findings remain.
+Attachment subject agreement is not solved by this repair. Complete UI/browser
+and other shared-language grammar review remain open.
+
+Dated unflagged archive repair, 2026-09-14, local commit `b1170bc33`:
+15 Breton archive actions/confirmations/states no longer contain French.
+Existing archive-board-confirm uses diellañ. Official Meurgorf diell entry
+https://niverel.brezhoneg.bzh/fr/meurgorf/8756 attests dielloù and links
+diellañ. Native scientific terminology source supports archiving verb:
+https://www.brezhoneg21.com/geriadurGB.php?galleg=archivage .
+Retain distinction from Dilemel permanent-delete titles and questions;
+all-target/selection scope and absent archived-board meaning remain intact.
+All 18,248 correction records pass. Original counts remain 27 restored and
+300 pending. Whole phrases are direct adaptations; native inflection and
+live archive/browser verification are not established by these checks.
+
+Dated unflagged repair, 2026-09-14, local commit `625436b63`: 14 Breton
+copy/move/template/checklist/account controls no longer contain French or
+English placeholders. Reuse existing patrom, roll-gwiriañ and diuzad.
+Direct native software source inspection:
+https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/br.json
+createaccount uses Krouiñ ur gont nevez; move-page uses Dilec'hiañ;
+import-interwiki-history uses Eilañ. Do not confuse generic MediaWiki move
+(Adenvel, rename) with physically moving board objects. Target noun and
+copy/move/delete distinctions remain intact. All 18,262 correction records
+pass; original counts remain 27 restored and 300 pending. Whole-phrase
+inflection, other French-seeded Breton prose and browser review remain open.
+
+Dated unflagged repair, 2026-09-14, local commit `cd100eeaa`: Breton
+swimlaneDeletePopup-title replaces French Supprimer le couloir ? with
+Dilemel ar vandenn ?. Reuse existing deletion titles and the swimlane
+noun phrase already used for archiving/moving; preserve question and target.
+All 18,263 corrections pass token, JSON, ordering and merge-preference checks.
+Original pending/restored counts remain 300/27. Native phrase and browser
+validation remain open; this correction does not close those wider reviews.
+
+Dated unflagged repair, 2026-09-14, local commit `787ffdf74`: 11 Breton
+French-seeded date/duration/filter labels repaired. Reuse activity-endDate's
+deiziad echuiñ, board-status-time-spent-total's amzer tremenet, overtime-hours'
+amzer ouzhpenn, board-status-remaining-time-total's amzer a chom, and existing
+Silañ dre filter pattern. cardTime.jade uses time for a numeric spent-duration
+field, so Amzer preserves that meaning rather than implying a clock hour.
+All 18,274 correction and 4,158 unchanged-review records pass. Original
+pending/restored scope remains open; vocabulary reuse alone does not prove
+native complete-phrase fluency or rendered browser behavior.
+
+Dated unflagged repair, 2026-09-14, local commit `98947b824`: 14 Breton
+date headings, date filters, invalid-date/time and duration-hour labels
+replace French prose. Existing activities and popup labels support kregiñ,
+degemer, echuiñ and termen. Existing invalid-year supports direizh; native
+MediaWiki feed-invalid/title-invalid also use direizh:
+https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/br.json
+Tomorrow wording is directly translated, not attested in that source.
+All 18,288 correction and 4,158 unchanged records pass structural checks;
+full phrase/date-prefix inflection and browser behavior remain unverified.
+Original pending/restored counts remain 300/27; wider scope stays open.
+
+Dated unflagged repair, 2026-09-14, local commit `7223612e7`: 16 Breton
+settings, permissions and team labels replace French. Existing workspace,
+user, organization and storage labels support Arventennoù; team-name and
+membership warnings support skipailh/skipailhoù. Native MediaWiki
+backend-fail-usable uses an aotreoù,
+customjsonprotected uses arventennoù, and returnto uses Distreiñ:
+https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/br.json
+Profil remains unchanged pending native loan-word review; French verbs
+around it still need repair. All 18,304 correction and 4,158 unchanged checks
+pass. Adapted phrase inflection and browser review remain open. Original
+300 pending and 27 restored findings remain in scope.
+
+Dated unflagged repair, 2026-09-14, local commit `7c44e4f55`: 10 Breton
+avatar, profile and notification controls replace French prose. Reuse existing
+avatars/avatar-too-big's skeudennig, avatars-upload-blocked-description's
+enkargañ, and deletion notification's kemennadenn. Keep the profil noun:
+native MediaWiki search-unknown-profile uses ar profil klask, and existing
+disable-import-avatars-description uses skeudennoù profil. This establishes
+software loan usage, not complete user-profile phrase attestation:
+https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/br.json
+All 18,314 correction and 4,158 unchanged checks pass. Native phrase and
+browser validation remain open; original pending/restored scope stays 300/27.
+
+Dated unflagged repair, 2026-09-14, local commit `a4aa7e3e7`: 17 Breton
+French-seeded add/item/user labels repaired. Reuse existing Ouzhpennañ,
+attachment-settings's stagadennoù, subtask-settings's is-trevelloù,
+roll-gwiriañ, patrom, kartenn and bandenn. Month's French Moi is semantically
+wrong even in French; use Miz from existing month units. Separate user
+Me choice and An holl implijerien from that month label. Full article
+mutations and adapted phrase fluency remain open, as does browser validation.
+All 18,331 correction and 4,158 unchanged checks pass. Original pending
+and restored findings remain 300/27; unflagged review is not complete.
+
+Dated unflagged repair, 2026-09-14, local commit `000d7ee63`: 19 Breton
+rule/trigger/action/item labels replace French. Existing r-new-rule-name and
+r-edit-rule support reolenn; r-drop-trigger supports tarzher, r-action supports
+ober. Reuse established item names and Ouzhpennañ add controls. This does
+not certify the remaining assembled trigger clauses, which still contain
+French prefixes and shared grammatical constraints. Native article mutations,
+full phrase fluency and browser checks remain open. All 18,350 correction
+and 4,158 unchanged checks pass. Original pending/restored remains 300/27.
+
+Dated unflagged repair, 2026-09-14, local commit `c576850ef`: 12 Breton
+removal/update actions and related labels replace French. Existing
+r-remove-all-labels uses Lemel, storage/migration messages use Hizivaat.
+Actual cardActions.jade/checklistActions.jade select remove actions; workflow
+removeMember removes card membership. This does not delete user accounts.
+Preserve all-board scope and checklist linkage. Full assembled clause grammar,
+article mutations and browser execution remain open. All 18,362 correction
+and 4,158 unchanged checks pass; original pending/restored remains 300/27.
+
+Dated unflagged repair, 2026-09-14, local commit `66c45f644`: Breton
+calendar-previous-month-label and calendar-next-month-label replace French
+with Miz kent and Miz war-lerc’h. Native MediaWiki block-expiry-custom-months
+uses miz; previousrevision/nextrevision use kent/war-lerc'h respectively:
+https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/br.json
+Preserve direction distinction. All 18,364 correction records pass token,
+JSON, order and newer-translation protection checks. Browser calendar control
+validation remains open; original pending/restored scope remains 300/27.
+
+Dated unflagged repair, 2026-09-14, local commit `dda942c11`: 14 Breton
+sorting labels replace French. Reuse sort-desc's urzhiañ and the numeric
+sorting-on-minicard phrase. Preserve manual order, numeric order, board and
+due-date choices, sort removal and enabled-state semantics. Manual-order
+wording urzh dre zorn is a direct adaptation, not an attested complete UI
+phrase. All 18,378 correction and 4,158 unchanged checks pass. Native
+mutation/phrase and browser checks remain open. Original pending/restored
+scope stays 300/27, with broader unflagged review still required.
+
+Dated unflagged repair, 2026-09-14, local commit `14cb8393b`: 11 Breton
+organization, watch and read labels replace French. Reuse existing aozadurioù,
+disable-watch's evezhiañ, storage-read's Lenn and mark-all-as-unread pattern.
+Preserve watch/unwatch, read/unread and organization create/edit distinctions.
+All 18,389 correction and 4,158 unchanged checks pass. Complete phrase
+inflection and rendered interaction remain unverified; original pending and
+restored scope stays 300/27. Broader unflagged/native review remains open.
+
+Dated unflagged repair, 2026-09-14, local commit `9f4e6a56f`: six Breton
+voting/public-board labels replace French. Preserve for/against choices,
+visibility of who voted what, permanent deletion question and public visibility.
+Native MediaWiki uses a-enep in opposition/protection contexts and goulenn
+for questions/requests; full voting phrase adaptation remains unverified:
+https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/br.json
+All 18,395 correction checks pass. Native phrasing and live voting/browser
+review remain open; original pending/restored scope stays 300/27.
+
+Dated unflagged repair, 2026-09-14, local commit `3bddd8e14`: seven Breton
+date-rule fields/current date-time/activity labels replace French. Reuse
+existing kregiñ, termen, echuiñ, degemer, maezienn, deiziad and eur vocabulary.
+The legacy a-dueAt activity phrase follows existing a-receivedAt wording,
+retaining due-time meaning. Shared clause order and whole-phrase inflection
+still need native review; browser execution remains unverified. All 18,402
+correction and 4,158 unchanged checks pass. Original pending/restored scope
+remains 300/27, with broader unflagged repairs still required.
+
+Dated unflagged repair, 2026-09-14, local commit `6af6d3ac3`: seven Breton
+account controls replace French. Native MediaWiki login/logout use Kevreañ
+and Digevreañ; userlogin-yourname uses Anv implijer; repeat-password uses
+adarre and reset-password link uses Ankouaet ho ker-tremen. Preserve sign-in
+versus sign-out and repeated versus forgotten password meanings:
+https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/br.json
+All 18,409 correction checks pass. Full phrase and account/browser validation
+remain open; original pending/restored scope stays 300/27.
+
+Dated unflagged repair, 2026-09-14, local commit `e7f8f5a13`: 10 Breton
+board privacy/title/filter controls repaired. Reuse private-desc's Prevez,
+existing Titl, rolloù goullo and sil terminology. Excluded label previously
+used liñvel instead of tikedenn; restore the actual label noun. Preserve
+strong emphasis in the private-board message and opposite filter states.
+All 18,419 correction and 4,158 unchanged checks pass. Native complete
+phrasing/browser validation remain open; original pending/restored remains
+300/27 and broader unflagged review remains required.
+
+Dated unflagged repair, 2026-09-14, local commit `0a3320e69`: 12 Breton
+attachment/export/upload labels replace French. Existing attachment transfer
+limits distinguish enkargañ upload from pellgargañ download. Reuse restr,
+ment, stagadennoù and native software Adenvel rename terminology. Export
+preview wording and uploaded-date prefix are direct adaptations requiring
+native full-phrase/date validation. All 18,431 correction and 4,158 unchanged
+checks pass. Browser execution remains unverified; original pending/restored
+scope stays 300/27, and broader unflagged review remains required.
+
+Dated unflagged repair, 2026-09-14, local commit `04510ecd2`: six Breton
+card controls and missing-list/team messages replace French. Reuse established
+archive dielloù, Kemmañ, tikedennoù, vot, roll and skipailh vocabulary.
+Not-found messages follow existing org-name-not-found structure and retain
+English %s token inventory exactly. Planning Poker remains a tool name.
+All 18,437 correction and 4,158 unchanged checks pass. Native phrase/browser
+validation remain open; original pending/restored remains 300/27.
+
+Dated unflagged repair, 2026-09-14, local commit `ed962d026`: three Breton
+list-menu labels replace French with Anv ar roll, Patromoù rolloù and
+Ouzhpennañ goude ar roll. Reuse existing name/list/template vocabulary;
+preserve list-template scope and insertion after the list. Last-access-time
+wording remains under review, rather than being guessed from the sort key.
+All 18,440 correction checks pass. Native phrase/browser validation remains
+open; original pending/restored scope stays 300/27.
+
+Dated unflagged repair, 2026-09-14, local commit `698acc666`: nine Breton
+migration/recurrence/status labels replace French. Existing analyze-board and
+restore-lost-cards messages support Dielfennañ and Adsevel; existing daily
+recurrence supports Bemdez. Estimated remaining-time uses brasjedet: native
+municipal Le Tambour 135 uses brasjedet for an estimated population:
+https://www.landerneau.bzh/wp-content/uploads/2025/02/WEB_078026_Le_Tambour_135_210x270mm_pages.pdf
+This attests the estimation word, not the complete time-estimation phrase;
+that wording remains provisional. All 18,449 correction and 4,158 unchanged
+checks pass. Native phrase/browser validation remain open; original pending/
+restored scope stays 300/27. Migration validation label still needs repair.
+
+Dated unflagged repair, 2026-09-14, local commit `ba815b531`: four Breton
+board/general/all-data restore controls replace French. Reuse Adsevel already
+used in restore-lost-cards-migration and restoration steps. Preserve board
+scope and restore-all scope. All 18,453 correction checks pass. Native phrase
+and actual backup/archive/browser validation remain open; original pending/
+restored scope stays 300/27 and broader unflagged review remains required.
+
+Dated unflagged repair, 2026-09-14, local commit `48c7e8aa4`: four Breton
+received/start/due/end date-change triggers replace mixed French labels with
+Pa vez lakaet pe kemmet clauses. Existing date labels retain distinct field
+names; actual cardTriggers.jade consumers preserve optional actor controls.
+English set-or-changed behavior is restored rather than only reporting changed.
+All 18,457 correction and 4,158 unchanged-review checks pass. Complete native
+phrase and browser validation remain open; original pending/restored scope
+stays 300/27. Shared trigger agreement remains a separate unresolved review.
+
+Dated unflagged repair, 2026-09-14, local commit `a9ea9d462`: three Breton
+completion-state labels replace French. Echu follows pomodoro-completed;
+Lakaet da vezañ diechu follows activity-checklist-uncompleted. Actual generic
+and named checklist completion dropdowns retain completed/uncompleted values.
+MediaWiki's native Breton confirmemail_html_par2 uses echu for completion:
+https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/br.json
+This supports completion vocabulary, not the entire shared checklist-trigger
+clause. No diechu match was found in that external catalogue; the existing
+local uncompletion wording is reused pending full native verification.
+All 18,460 correction and 4,158 unchanged checks pass. Shared trigger grammar,
+full native phrase and browser review remain open; tracked pending/restored
+scope remains 300/27. Generic completed label remains in obsolete-key scope.
+
+Dated unflagged repair, 2026-09-14, local commit `49bd242c9`: eight Breton
+rule-editor field/action labels replace French. Name fields preserve list/
+swimlane scope, mail action preserves sending and recipient, date-operation
+select preserves Set, and palette action preserves setting a color.
+Primary Ofis ar Brezhoneg TermBret computing glossary directly attests definir
+as termeniñ/spisaat, envoyer as kas, email as postel, and modifier la couleur
+as kemmañ al liv. It also supports previously reused software copy/move,
+connection, preview, field and upload vocabulary, without proving every compound.
+https://www.brezhoneg.bzh/uploads/Document/20/798_536_an-urzhiataerezh.pdf
+Glossary is dated March 2006; browser discovery dates do not make it new.
+Complete color/swimlane clauses remain adapted rather than directly attested.
+Actual card/board/checklist trigger templates show r-is separately inserted for
+named subjects and attachments but omitted after generic label/member/checklist
+prefixes. Current French r-is and prefixes require a coordinated repair; simply
+replacing all prefixes with Pa vez would duplicate the verb in named triggers.
+All 18,468 correction and 4,158 unchanged checks pass. Complete native phrase,
+shared grammar and browser review remain open; pending/restored scope is 300/27.
+
+Dated unflagged unchanged review, 2026-09-14, local commit `39af6aae5`:
+Veps server = Server retained after native MediaWiki view-pool-error and
+api-clientside-error-http establish the nominative noun in software context.
+Valencian errors = Errors retained: Generalitat Valenciana's native technical
+help uses errors for software incidents, and IEC records error as a noun.
+https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/vep.json
+https://sede.gva.es/va/formulari-problemes-tecnics-malo
+https://dlc.iec.cat/results.asp?operEntrada=0&txtEntrada=error
+These unflagged values are protected with exact locale/key invariants, outside
+the original-row unchanged ledger. Do not invent alternate spellings solely
+to differ from English. Fixture tests exercise actual CLI list/apply paths:
+other locales and sentences remain translatable; the reviewed noun survives
+fill. Updated global completeness guard requires zero unreviewed placeholders
+rather than the obsolete Sardinian magenta exception (repaired in 04711b646).
+Three focused node suites and 20 human-preference checks pass. No locale
+values changed. Original 300 pending and 27 restored findings remain open;
+English-placeholder completeness is not wrong-language or fluency completion.
+
+Dated calendar repair, 2026-09-14, local commit `019040ce1`: Greenlandic
+calendar-system-indian replaces English Indian national with Indiap nuna
+tamakkerlugu ullorsiutaa. KNR's native India/Nepal flood report attests Indiap;
+KNR's organizational page and native government digital strategy attest
+nuna tamakkerlugu for nationwide/national. CLDR kl.xml records ullorsiut,
+and native calendar publishers independently use that noun. CLDR's draft
+unconfirmed Gregorian phrase is not treated as certification of new compounds.
+https://www.knr.gl/kl/nutaarsiassat/millioner-drevet-p%C3%A5-flugt-af-vandmasser-i-indien-og-nepal
+https://www.knr.gl/kl/knr-pillugu
+https://naalakkersuisut.gl/Nyheder/2024/10/3010_digital_strategi?sc_lang=kl-GL
+https://raw.githubusercontent.com/unicode-org/cldr/main/common/main/kl.xml
+The complete calendar label is adapted, not directly attested; native whole-
+phrase and inflection validation remain open. All 18,469 correction and 4,158
+unchanged checks pass, along with the extended Greenlandic calendar check.
+Existing Member Settings browser suite gains a positive Indian-option label
+check and negative English-label check, accounting for runtime calendar support.
+Syntax check passes. Configured localhost:3000 returns connection failure,
+so live browser execution is unverified. Original counts now 15,597 corrected,
+4,158 retained, 27 restored and 299 pending; Greenlandic has four remaining
+calendar findings, including exact civil/astronomical epoch and sighting terms.
+
+Dated restored/unflagged repair, 2026-09-14, local commit `6aa5991de`:
+Acehnese twoFactorCode-cancel uses Pubateuë, directly matching native MediaWiki
+resetpass-submit-cancel; general cancel remains untouched pending its own review.
+text-note-text uses Naseukah, attested by native yourtext/defaultmessagetext.
+LDAP success uses Sambongan meuhasé: native loginsuccesstitle/pagemovedsub and
+success sentences establish meuhasé, and the actual settingBody callback only
+shows this on connection success. Full connection phrase is adapted.
+no-assignee and the Malay filter-no-assignee now use Hana nyang geubri buët,
+retaining absence and work-assignment relationship. Native dictionary examples
+attest buet as work; local assigned-card instructions already use geubri.
+Geutanyong is not proven a malformed pronoun: native folklore uses it for
+asking/questioning. The initial working hypothesis was corrected before commit.
+https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/ace.json
+https://kamusbbpa.kemendikdasmen.go.id/index.php/kamus/Aceh/P?page=4
+https://repositori.kemendikdasmen.go.id/8931/1/Cerita%20rakyat%20aceh.pdf
+Assignment phrase is adapted, not a directly attested software sentence;
+full native grammar/browser validation remains open. Primary sources do not
+certify every value in a catalogue: MediaWiki itself has mixed/untranslated
+entries, so only inspected meanings were used. No inference from absence of
+a search hit alone established that Batai or Teuks is impossible in all usage.
+All 18,474 correction and 4,158 retained-review checks pass. Original counts:
+15,601 corrected, 23 restored, 4,158 retained and 299 pending. Restored Acehnese
+Due today and broader wrong-language filter/role/search prose remain open.
+
+Dated unflagged grammar repair, 2026-09-14, local commit `afbff51df`:
+Basque r-is changes Spanish es to da. More importantly, actual board/card/
+checklist trigger templates use the shared ruleTriggerCopula helper. Basque
+shared actions already contain denean temporal clauses, so the extra linking
+verb is omitted for eu and its regional tag forms. Other locales still receive
+their translated r-is, preserving English is and Galician é. No empty locale
+translation is introduced, and no unconditional template deletion is used.
+Native MediaWiki Basque software sentences attest denean and native finite da:
+https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/eu.json
+This supports the grammatical distinction, not certification of every restored
+subject/destination phrase. Existing shared actions/subjects remain unchanged.
+Positive/negative node tests exercise actual registered helper execution with
+language changes, assembled named-member/assignee phrases, template wiring and
+other-locale preservation. All Jade templates compile with the real compiler.
+Browser regression covers named-member rule creation in Basque and English;
+syntax check passes, execution remains open without a running test application.
+All 18,475 correction and 4,158 retained checks pass. Original counts remain
+15,601 corrected, 23 restored, 4,158 retained and 299 pending. The 15 restored
+Basque findings still require full phrase review; this linking-verb repair is
+not a claim that their destination wording or subject terminology is certified.
+
+### 2026-09-14 — Galician attachment agreement and regional fragments
+
+Local commit `bc26fa890` separates attachment action labels from the shared
+feminine actions used for other subjects. The native
+[RAG anexo entry](https://academia.gal/dicionario/-/termo/anexo/1)
+marks the computing noun as masculine. The new attachment labels are
+Engadido a and Quitado de; shared Engadida a and Quitada de remain unchanged.
+[RAG quitar](https://academia.gal/dicionario/-/termo/quitar) documents removal;
+[RAG engadir](https://academia.gal/dicionario/-/termo/engadir) documents adding.
+The assembled regional test exposed Portuguese Quando um anexo and um cartão;
+these are repaired to Cando un anexo and unha tarxeta. Whole-sentence native
+attestation was not established by these dictionary entries.
+
+Three original flagged fragments are retained with contextual review records.
+Two new keys reuse existing action values in all other locales, preserving
+English key order and exact tokens; 244 locale files changed. Six focused
+suites pass, including exact correction/review inventories, positive and
+negative agreement checks, all-locale reuse and real Jade compilation.
+The browser rule-creation regression is added and syntax-checked, not run live.
+No new dependency or translation service is used.
+
+Tracked: 15,601 corrected, 20 restored awaiting validation, 4,161 retained,
+299 pending, 20,081 total; correction ledger 18,477. Broader unflagged,
+low-confidence, restored phrase and browser review remains open.
+
+### 2026-09-14 — Restored Danish age label
+
+Local commit `824dd005e` retains days-old = Dage gammel. The native
+[DSL dictionary, gammel sense 4.2](https://ordnet.dk/ods/ordbog/gammel)
+documents an age construction for things, including flere dage gammel.
+This supports the retained Danish wording rather than pulled Swedish Dagar
+gammal. Current application-source search found no use of days-old outside
+translation/audit artifacts; no current rendered context is claimed.
+
+Regression coverage protects the exact Danish value and rejects the Swedish
+replacement. Both complete correction and unchanged-review suites pass.
+Tracked: 15,601 corrected, 19 restored awaiting validation, 4,162 retained,
+299 pending, 20,081 total. No locale value was changed; low-confidence,
+unflagged, remaining restored and browser reviews remain open.
+
+### 2026-09-14 — Breton selection/filter controls
+
+Local commit `fb0b34b7d` repairs ten remaining French values: move-selection,
+copy-selection, selection-color, multi-selection, select-color, select-board,
+other-filters-label, set-filter, cardAttachmentsPopup-title and
+filter-to-selection. Existing local diuzad, sil, liv, taolenn and stagañ are
+reused. The native
+[Ofis computing glossary](https://www.brezhoneg.bzh/uploads/Document/20/798_536_an-urzhiataerezh.pdf)
+is dated March 2006 and attests dilec’hiañ, eilañ and termeniñ. These term
+attestations are not proof of every adapted compound's full grammar.
+
+sidebarFilters.js resolves the currently filtered cards and calls
+MultiSelection.add with their IDs. The translated command explicitly adds
+those filtered cards to the selection; it does not describe filtering an
+existing selection. Regression coverage keeps copy/move distinct and rejects
+the previous French seed. Four focused suites pass: exact correction/review
+inventories, Breton/Lithuanian/Yiddish coverage and all-locale completeness.
+No browser execution or native whole-sentence validation is claimed.
+
+Correction ledger: 18,487. Original tracked queue remains 15,601 corrected,
+19 restored awaiting validation, 4,162 retained and 299 pending (20,081 total).
+These ten repairs were outside that original flagged queue. Basque shared
+trigger noun fragments remain unaccepted because surrounding order and case
+composition still need review. No subagents, service or remote push used.
+
+### 2026-09-14 — Breton shortcuts, People filters and migration label
+
+Local commit `961713c56` repairs eight remaining French values:
+shortcut-clear-filters, shortcut-filter-my-cards, advanced-filter-label,
+step-validate-migration, admin-people-filter-show,
+admin-people-filter-active, admin-people-filter-inactive and active.
+The native [Ofis computing glossary](https://www.brezhoneg.bzh/uploads/Document/20/798_536_an-urzhiataerezh.pdf)
+(March 2006) attests dilemel, diskwel and kadarnaat. Existing local sil,
+araokaet, treuzkas roadennoù, Gweredekaet and Diweredekaet are reused.
+The native [Ofis dioberiant entry](https://niverel.brezhoneg.bzh/br/meurgorf/9751)
+defines the opposite of oberiant;
+[Ofis digital strategy](https://niverel.brezhoneg.bzh/media/strategiezh_niverel_27032023_br.pdf)
+uses oberiant for active software contributors. This establishes the generic
+activity term, not every possible future use of the generic active key.
+
+peopleBody.js active/inactive filters inspect loginDisabled and provide a
+separate locked option. Their translations use enabled/disabled terminology
+rather than activity-frequency or lockout labels. Keyboard help exposes the
+my-cards and clear-all-filters actions. The migration label currently has no
+application-source occurrence; no rendered migration status is claimed.
+Regression coverage checks exact shortcut labels, enabled/disabled mapping,
+the validation phrase and rejection of French seeds. Four focused suites pass.
+Adapted whole-phrase grammar and live browser validation remain open.
+
+Correction ledger: 18,495; original queue remains 15,601 corrected,
+19 restored awaiting validation, 4,162 retained and 299 pending (20,081 total).
+These eight repairs are outside the original flagged queue. No translation
+service, subagent or remote push was used.
+
+### 2026-09-14 — Breton navigation, exports and checklist controls
+
+Local commit `bb51e1fcf` repairs eighteen French values: close, close-board,
+close-card, chooseBoardSourcePopup-title, import-board-c, r-import,
+export-card, export-card-pdf, exportBoardPopup-title, exportCardPopup-title,
+show-activities, show-on-card, sidebar-open, sidebar-close, moveChecklist,
+copyChecklist, attachment-move and move-progress-cancel.
+The native [Ofis computing glossary](https://www.brezhoneg.bzh/uploads/Document/20/798_536_an-urzhiataerezh.pdf)
+(March 2006) supports the close/open, display, import, move/copy and cancel
+verbs. Existing Breton entity nouns and Ezporzhiañ are reused. The full
+compounds are adapted, not independently attested complete UI sentences.
+
+sidebar.js switches the open/close tooltip according to sidebar state.
+cardDetails.jade exposes distinct card movement/export controls; the PDF
+format name stays literal. Regression coverage protects opposite sidebar
+and checklist actions, exact cancellation/import reuse, equivalent export
+and import popup labels, PDF and rejection of the French seed.
+Four focused suites pass: correction/review ledgers, focused locale coverage
+and all-locale completeness. Browser execution remains unverified.
+
+Correction ledger: 18,513. Original queue remains 15,601 corrected,
+19 restored awaiting validation, 4,162 retained and 299 pending (20,081 total).
+The eighteen repairs are outside the original flagged queue. Remaining
+restored, uncertain, unflagged, low-confidence and browser review is open.
+No external translation service, dependency, subagent or push was used.
+
+### 2026-09-14 — Breton creation, movement and entity names
+
+Local commit `d95b0dd5c` repairs fourteen French-seeded or mixed labels:
+label-create, linkCardToNewBoard, moveCardToBottom-title,
+moveCardToTop-title, r-move-card-to, r-create-card, create-task,
+move-swimlane, create-account, task, copy-swimlane, accounts,
+export-card-subtasks and add-existing-card-as-subtask-empty.
+Existing local entity nouns, direction and task/subtask terminology are
+reused. Native [Kuzul ar Brezhoneg account navigation](https://brezhoneg.org/bz/plan-site)
+uses Krouiñ ur gont nevez. The native Ofis
+[lein](https://niverel.brezhoneg.bzh/fr/meurgorf/19752) and
+[traoñ](https://niverel.brezhoneg.bzh/fr/meurgorf/29318) entries establish
+opposite top/bottom meanings. The computing glossary supports create/move/copy
+verbs; these references do not attest every adapted kanban compound.
+
+cardDetails.jade exposes the opposite top/bottom actions; boardActions.jade
+uses card creation/movement labels. The card-to-board command now identifies
+creation from this card explicitly. Swimlane move/copy remain distinct.
+Regression coverage protects these actions, account creation, task naming,
+subtask export consistency and rejection of French seeds. Four focused suites
+pass, including exact ledgers, tokens and all-locale completeness. Native
+whole-phrase and live browser validation remain open. Reaction/repository
+terminology needs more reference work and was not accepted in this batch.
+
+Correction ledger: 18,527. Original queue remains 15,601 corrected,
+19 restored awaiting validation, 4,162 retained and 299 pending (20,081 total).
+These fourteen repairs are outside the original flagged queue. Remaining
+restored, uncertain, unflagged and low-confidence reviews remain open.
+No external service, dependency, subagent or push was used.
+
+### 2026-09-14 — Breton entity views, archives and lockout controls
+
+Local commit `9ccd4b8ce` repairs fifteen French-seeded labels:
+board-view-swimlanes, swimlaneActionPopup-title, no-archived-swimlanes,
+card-templates-swimlane, board-templates-swimlane, subtaskActionsPopup-title,
+has-swimlanes, swimlane-title-not-found, default-subtasks-board,
+accounts-lockout-locked-users, accounts-lockout-status,
+accounts-lockout-unlock-all, no-archived-cards, no-archived-lists and
+listActionPopup-title. Existing local entity nouns, patromoù, dielloù,
+Oberoù, Stad and stanket/distankañ terminology are reused. Native
+[Ofis public-action material](https://www.fr.brezhoneg.bzh/uploads/Document/9d/641_246_Panellerezh-hent.pdf)
+uses oberoù for actions. This is lexical evidence, not independent native
+attestation of every complete kanban compound.
+
+sidebarArchives.jade exposes the empty swimlane archive label; boardBody.jade
+uses the has-swimlanes diagnostic, and boards.js uses the default-subtasks
+board title. Exact %s and __board__ tokens are preserved. Regression coverage
+checks consistency with existing swimlane/status labels, lockout actions,
+placeholders and rejection of French seeds. Four focused suites pass,
+including exact ledgers, tokens and all-locale completeness. Full phrase
+and live browser validation remain open.
+
+Correction ledger: 18,542; original queue remains 15,601 corrected,
+19 restored awaiting validation, 4,162 retained and 299 pending (20,081 total).
+These fifteen repairs are outside the original flagged queue. Remaining
+restored, uncertain, unflagged and low-confidence reviews remain open.
+No external service, dependency, subagent or push was used.
+
+### 2026-09-14 — Breton diagnostics and migration states
+
+Local commit `cdff2d19d` repairs fourteen French-seeded values:
+accounts-lockout-failed-attempts, cron-migration-errors, migration-failed,
+migration-progress-status, errors, error, problems-status-title,
+cron-no-errors, migration-complete, migration-running, pending, complete,
+no-cards-found and no-issues-found. Pending previously said En cours,
+conflating waiting with execution. Native
+[Ofis gortoz](https://niverel.brezhoneg.bzh/fr/meurgorf/14798) attests
+War c’hortoz for waiting. The computing glossary attests War ober for work
+in progress; existing Echu completion terminology is reused.
+[Ofis fazi](https://niverel.brezhoneg.bzh/fr/meurgorf/13916) attests singular
+and plural error terms. Native
+[Kelennomp grammar reference](https://kelennomp.bzh/wp-content/uploads/geriaoueg-ereadurezh-skolvamm-v2.2.pdf)
+gives c’hwitet eo for failure. These lexical/construction references do not
+attest every adapted diagnostic phrase in full.
+
+migrationProgress.jade renders its translated status label. Current source
+search found no direct uses of several generic/migration-state keys; no
+rendered context is claimed for those keys. Regression coverage preserves
+four distinct state meanings, error number, status/completion consistency,
+failed-login wording and rejection of the French seed. Four focused suites
+pass; the corrected waiting form also passes a correction/focused recheck.
+Native complete-phrase and live browser validation remain open.
+
+Correction ledger: 18,556. Original queue remains 15,601 corrected,
+19 restored awaiting validation, 4,162 retained and 299 pending (20,081 total).
+These fourteen repairs are outside the original flagged queue. Remaining
+restored, uncertain, unflagged and low-confidence reviews remain open.
+No external service, dependency, subagent or push was used.
+
+### 2026-09-14 — Breton board view and comment labels
+
+Local commit `059d1fe4a` repairs nine French-seeded values: board-view,
+board-view-cal, board-view-lists, board-view-table, board-view-collapse,
+collapse, uncollapse, comments and no-comments. Existing local taolenn,
+rolloù and evezhiadenn terminology is reused. Native Ofis dictionary entries
+[deiziadur](https://niverel.brezhoneg.bzh/fr/meurgorf/7818),
+[plegañ](https://niverel.brezhoneg.bzh/fr/meurgorf/24104) and
+[displegañ](https://niverel.brezhoneg.bzh/fr/meurgorf/10381)
+support calendar and fold/unfold terms. This lexical evidence is not native
+attestation of every complete interface phrase.
+
+boardHeader.js selects calendar/table views; boardsList.jade renders the
+table option. Existing local checklist controls already use folding/expanding
+terminology. Comments reuse the noun from card-comments-title and other
+comment labels. Regression coverage protects opposite collapse/expand
+labels, view/entity consistency, comment number and literal Gantt/vendor
+names. Four focused suites pass: exact correction/review ledgers, focused
+locale coverage and all-locale completeness. Full contextual and live
+browser validation remain open; timeline snapshot/date grammar still needs
+review and was not accepted in this batch.
+
+Correction ledger: 18,565. Original queue remains 15,601 corrected,
+19 restored awaiting validation, 4,162 retained and 299 pending (20,081 total).
+These nine repairs are outside the original flagged queue. Remaining
+restored, uncertain, unflagged and low-confidence reviews remain open.
+No external service, dependency, subagent or push was used.
+
+### 2026-09-14 — Breton settings and diagnostic labels (619eeb1c7)
+
+Three remaining French values were replaced: email-address → Chomlec’h postel,
+webhook-title → Anv ar webhook, server-error → Fazi ar servijer.
+[Native MediaWiki Breton source](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/br.json)
+uses chomlec'h postel in email preferences and servijerioù for overloaded
+servers; existing local Fazi and Anv supply error/name. These compound labels
+are adapted; exact full-phrase attestation is not claimed. Webhook stays a
+literal technical term. sidebar.jade renders email member-search and webhook
+name placeholders; globalSearch.jade and client error handlers use server-error.
+Four offline suites pass: correction and unchanged-review ledgers, focused
+Breton coverage and all-locale completeness. Ledger: 18,568; original counts
+remain 15,601 corrected, 19 restored, 4,162 retained and 299 pending.
+Full-name/display-name grammar, other uncertain findings and live browser
+validation remain open. No external translation service or remote push.
+
+### 2026-09-14 — Breton optional and name labels (4b1c92cb5)
+
+Five French-seeded labels repaired: optional → Diret;
+wip-limit-group-name-placeholder → Anv ar strollad (diret); fullname →
+Anv klok; displayName → Anv da ziskwel; shortName → Anv berr.
+[Native MediaWiki Breton](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/br.json)
+attests htmlform-optional-flag (diret), createacct-realname optional wording,
+and duplicate/restricted-displaytitle titl da ziskwel. Local migration-batch-size
+uses strollad; existing full-path wording supplies klok and sound/shortcut
+wording supplies berr. This supports vocabulary, not exact attestation of every
+compound. Full name is a profile field (userHeader.jade); display and short names
+are separate organization/team fields (peopleBody.jade). sidebar.jade renders
+the group-name input; previous Anv (optionnel) also omitted the group noun.
+Four offline suites pass; exact ledger 18,573, retained reviews 4,162.
+Original 299 pending and 19 restored findings remain open, as do uncertain
+phrases, native grammar and browser execution. No remote writes or subagents.
+
+### 2026-09-14 — Basque actor label and restored phrase recheck (2cabcdb17)
+
+r-by Spanish por → Nork:, a question label before the optional username
+field in board/card/checklist trigger templates.
+[EHU native grammar, chapter 8](https://egeo.ehu.eus/kapitulu/ikuspegia/8)
+identifies nork as ergative actor interrogative (8.3.2); field labeling avoids
+concatenating an English/Spanish-style preposition with an uninflected username.
+Actual template context and helper regression checks pass. This is outside
+the original flagged queue. Ledger 18,574; original counts remain unchanged.
+
+Restored r-added-to/r-removed-from plus shared r-a-card are not accepted.
+The same txartel bat follows both Gehitzen denean hona: and Kentzen denean
+hemendik:. EHU 8.3.3 attests indefinite dative noun + bati and distinguishes
+ablative morphology; one shared uninflected noun cannot cover both cases.
+[EHU computing teaching source](https://ocw.ehu.eus/file.php/149/konputagailuen_arkitektura_i/teoria/oinarri-txartela.pdf)
+uses gehitu with txartelari, corroborating dative addition. No isolated lexical
+review closes these composition defects. A later repair needs action-sensitive
+case/ordering without changing stored trigger identifiers or other locales.
+Four offline suites pass; full phrase and browser validation remain open.
+No external translation service, subagents or remote writes.
+
+### 2026-09-14 — Thai rule copula context repair (9e34218c7)
+
+Restored th r-is คือ retained unchanged: valid identity/equative word, but
+incorrect before the existing ถูกเพิ่มใน, ถูกนำออกจาก, ถูกย้าย and other
+action/state predicates. The shared ruleTriggerCopula helper now omits it
+for th, th-TH/th_TH and case variants, preserving other locales and stored
+rule identifiers.
+[Native MediaWiki Thai](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/th.json)
+uses identity/explanatory คือ constructions (img-auth-public, template-loop-category-desc)
+and standalone passive predicates (blockedtext-tempuser, logentry-rights-rights-revoked).
+This supports the distinction, not full attestation of every rule sentence.
+Actual client helper executes reactively in regression; negative composition
+checks ensure no คือ is prepended to existing actions. Thai named-member
+rule-creation browser coverage is added to 20-rules.e2e.js and syntax-checked.
+No local application is listening on port 3000; live execution remains open.
+Correction records remain 18,574; retained reviews become 4,163, restored
+findings 18; pending remains 299. Other uncertain and complete phrase reviews
+remain open. No translation service, subagents or remote writes were used.
+
+### 2026-09-14 — Acehnese deadline labels (e74dd20cc)
+
+card-due → Bataih watèë; due-date → Uroe bataih; due-today and
+filter-due-today → Bataih watèë uroe nyoe. Indonesian/Malay labels
+Jatuh Tempo, Tamat Hari ini and Tarikh Akhir are replaced; unclear Jitôh
+is avoided. Deadline compounds are adapted with low confidence; full native
+phrase validation remains open, despite passing structural checks.
+[Native MediaWiki Acehnese](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/ace.json)
+attests bataih in request limits, watèë in time contexts and uroe as day.
+[ANU thesaurus record](https://openresearch-repository.anu.edu.au/items/10cde6fc-da4d-4868-a7f1-600413b5e07c)
+identifies the reference book; its publisher download returned 403.
+[Mirrored book text](https://dokumen.pub/kamus-basa-aceh-kamus-bahasa-aceh-acehneseindonesianenglish-thesaurus-0858835061.html)
+attests uroe nyoe as today (section 10e); OCR is secondary access, not complete
+primary-page or compound-grammar verification. dueCountdown compares local
+calendar days; cardDate and sidebarFilters use matching today labels. Today
+does not imply completed or already overdue; countdown tokens are unchanged.
+Four offline suites pass. Ledger 18,578; original corrected 15,602, restored
+17, retained 4,163, pending 299. Native contextual/browser review and uncertain
+repairs remain open. No translation service, subagents or remote writes.
+
+### 2026-09-14 — Inuktitut daily/monthly frequencies (9a511101d)
+
+Four original pending findings repaired: card-recurrence-interval and
+checklist-reset-interval daily → ᖃᐅᑕᒫᑦ; monthly → ᑕᖅᑭᑕᒫᑦ.
+These agree with existing backup-frequency labels. This replaces Greenlandic
+Ullut tamaasa/Taqqiit tamaasa; converting those words to syllabics alone would
+not establish Inuktitut.
+[Nunavut Healthy Living native IU page](https://livehealthy.gov.nu.ca/iu/node/754)
+uses the daily term in an everyday repeated-eating instruction.
+[Nunavut bilingual IQ sessions document](https://www.gov.nu.ca/sites/default/files/documents/2022-01/2016-05-25-iq-tc_elizabeth_work-_colors-xwebsite-_finished_3.pdf)
+page 15 (zero-based page 14) pairs the monthly native term with English monthly
+IQ sessions. Text extraction was inspected; screenshot rendering was unavailable
+in this environment. This is lexical frequency evidence, not verification of
+calendar scheduler behavior or every complete Inuktitut phrase.
+cardDetails.jade/checklists.jade render these frequency keys in popup options.
+Focused coverage distinguishes daily/monthly, rejects seeded forms, preserves
+all English tokens and checks locale completeness. Four offline suites pass.
+Ledger 18,582; original corrected 15,606, restored 17, retained 4,163, pending
+295. Inuktitut pending 46; weekly terms and longer phrases remain open.
+Veps keyboard terminology search did not provide new native evidence; its ten
+original findings remain open. No translation service, subagents or remote push.
+
+### 2026-09-14 — Inuktitut weekly frequencies (06af4a4a8)
+
+Two original pending findings repaired: card-recurrence-interval-weekly and
+checklist-reset-interval-weekly → ᐱᓇᓱᐊᕈᓯᑕᒫᑦ. This matches the existing
+backup-frequency-weekly, while daily/monthly remain distinct.
+[Qikiqtani Inuit Association bilingual training application](https://www.qia.ca/applications/qstep-heavy-equipment-training/)
+directly pairs Gross weekly rate of Employment Insurance with a native
+phrase containing the term. This supports weekly meaning and spelling;
+longer interface grammar and live scheduler/browser behavior are not proven.
+Focused regression verifies both contexts, rejects the Greenlandic seed, and
+protects three distinct frequencies. Exact correction/review ledger and all
+locale-completeness checks pass. Ledger 18,584; original corrected 15,608,
+restored 17, retained 4,163, pending 293; Inuktitut pending 44.
+Broader native review and previous low-confidence compounds remain open.
+No translation service, subagents or remote writes.
+
+### 2026-09-14 — Breton WIP and webhook labels (a7e99aea5)
+
+Six unflagged French-seeded settings labels repaired: edit-wip-limit →
+Kemmañ ar vevenn WIP; enable-wip-limit → Gweredekaat ar vevenn WIP;
+setWipLimitPopup-title → Termeniñ ar vevenn WIP; wipLimitErrorPopup-title →
+Bevenn WIP didalvoudek; wip-limit-groups → Strolladoù bevennoù WIP;
+disable-webhook → Diweredekaat ar webhook-mañ. WIP and webhook stay literal.
+[Native MediaWiki Breton](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/br.json)
+attests activate/deactivate verbs in tags-activate/tags-deactivate and
+bevenn in media-limit-reached / transaction-duration-limit-exceeded. Existing
+local migration-batch-size supplies strollad and invalid-file/email-invalid
+supply invalid terminology. Compounds are adapted, not exact full-phrase
+attestation. Group title was incorrectly an enable action with Roll appended;
+sidebar.jade renders it as the group-management heading/menu label. That same
+file renders the group enable checkbox and webhook-disable checkbox;
+listHeader.jade renders enable WIP. Separate edit/enable/set/error/group
+meanings are protected by regression. Four offline suites pass, preserving
+18,590 corrections and 4,163 retained values, exact tokens and completeness.
+Original queue remains 15,608 corrected, 17 restored and 293 pending.
+Full contextual compounds, uncertain values and live browser review remain open.
+No translation service, subagents or remote writes.
+
+
+Breton product-name label — 2026-09-14, local commit `feab87240`.
+
+The Admin Panel product-name input (settingBody.jade) and organization/team
+settings (peopleBody.jade) use custom-product-name. French Nom personnalisé
+omitted the product qualifier; Anv personelaet ar produ restores it.
+[Ofis TermBret computing glossary](https://www.brezhoneg.bzh/uploads/Document/20/798_536_an-urzhiataerezh.pdf)
+attests personelaat (customize); existing local custom-field wording uses
+personelaet. [Geriafurch product entry](https://geriafurch.bzh/fr/frbr/produit)
+quotes Favereau and Termofis produ, including product-denomination vocabulary.
+[Produit en Bretagne](https://www.produitenbretagne.bzh/nos-produits-bretons/)
+independently pairs produioù with products. These support the component words,
+not an exact attestation of the complete adapted interface phrase. Native full
+phrase and browser validation remain open. Positive/negative label, exact
+ledger, unchanged-review and completeness checks passed; no live UI was run.
+
+
+Inuktitut rule states — 2026-09-14, local commit `8f96ec2bc`.
+
+Actual rulesList.jade shows enabled/disabled on the current isEnabled state
+of the toggle button, rather than historical actions. Aturtaulauqtuq and
+Aturunnaitittauqtuq are replaced with ᐊᑐᖅᑕᐅᔪᖅ / ᐊᑐᖅᑕᐅᙱᑦᑐᖅ
+(in use / not in use). Existing locale values use both native component forms.
+[Legislative Assembly bilingual hearing, April 29 2025](https://assembly.nu.ca/sites/default/files/2025-09/OGOPA%20CFS%2020250429.pdf)
+PDF page 58 (zero-based 57), extracted lines 4685–4691, uses the negative
+form for Matrix software not being used by all staff. This supports software
+usage wording, not an exact native translation of a rule enabled-state toggle.
+The adapted UI pair is low confidence and remains in broader native/browser
+review despite correcting the two flagged writing-state findings.
+Exact ledger, distinct-positive/negative state labels and completeness checks
+pass. No live rules popup or browser test was run. Pending 291, restored 17;
+Inuktitut original pending queue is now 42.
+
+
+Breton repository labels — 2026-09-14, local commit `7c2e8f891`.
+
+repository-name, no-repositories and create-repository replace French prose
+with Anv ar mirlec’h, N’eus bet kavet mirlec’h ebet and Krouiñ ur mirlec’h.
+[Synaptic's native Breton source translation](https://sources.debian.org/src/synaptic/0.84.6/po/br.po/)
+attests mirlec'h / mirlec'hioù specifically for software repositories,
+including the repository dialog and APT source-line instructions. This is
+software evidence, unlike a water-reservoir definition alone. Ofis TermBret
+computing glossary supports create as krouiñ; local native wording supports
+name and not-found construction. Complete adapted phrases are not exact
+attestations from Synaptic and remain in full native/browser review.
+No current application call sites for these three keys were found by searching
+client, imports and tools; dormant strings remain in audit scope. Existing
+upload-repository already uses the same repository noun. Exact corrections,
+positive/negative distinct label checks and completeness pass. Original pending
+and restored counts remain 291/17; the correction ledger now has 18,596 entries.
+
+
+Valencian restored peach-color review — 2026-09-14, local commit `9f7f94825`.
+
+Retain color-peachpuff = préssec unchanged. The cardDetails stylesheet defines
+its swatch as #ffdab9, and exports use the same RGB color. The palette has no
+separate peach key; plum and lime remain different labels.
+[Valencian reporting of Borriana textile colors](https://www.elperiodic.com/val/burriana/colors-portaran-reines-falleres-burriana-2019-blau-ultramar-pressec_591965)
+explicitly describes préssec as a textile color (article body, 2018-11-04),
+with native seua/sigut/lluirà constructions in surrounding prose.
+[IEC Catalan-Valencian-Balear dictionary](https://dcvb.iec.cat/results.asp?word=pressec)
+supports the noun and its regional usage. The reporting supports the color
+sense rather than a specific standardized CSS shade. This is sufficient for
+a descriptive palette label; no claim is made that the article specifies
+#ffdab9. Preserve the correct native translation instead of replacing it with
+a guessed technical phrase. Exact review, distinct palette-label/swatch and
+completeness checks pass. Browser color-picker validation remains open.
+Restored findings decrease from 17 to 16; retained reviews increase to 4,164.
+
+Basque generic movement review — 2026-09-14, local commit `aba731e82`.
+
+Retain r-is-moved = lekuz aldatzen denean unchanged. The actual trigger-three
+row in boardTriggers.jade assembles Txartel bat lekuz aldatzen denean, with
+no separate copula or destination noun.
+[EHU EEH leku, section 16](https://www.ehu.eus/eeh/cgi/bila?h=leku)
+attests the movement collocation and its temporal construction.
+[Euskadi native grammar, section 13.1](https://www.euskadi.eus/web01-a2nekaza/eu/contenidos/articulo/c0301/eu_d0301007/0301007.html)
+explains the temporal -ENEAN construction with a singular intransitive example.
+The assembled kanban sentence is a contextual grammatical adaptation; the
+references do not attest that exact product sentence. The focused regression
+checks actual template order and absence of an extra linking verb. Other
+directional fragments and browser execution remain unverified.
+
+Basque checklist check actions — 2026-09-14, local commit `1439c4c61`.
+
+Retain r-checked = Markatzen denean and r-unchecked = Desmarkatzen denean.
+The generic checklist-item trigger supplies a singular item noun and no
+additional copula. The opposite checked/unchecked actions remain distinct.
+[Native EHU portal instructions](https://www.ehu.eus/eu/web/azp/lanpoltseen-sarrera)
+use desmarkatu for a default check in the software interface.
+[Native government procurement FAQ](https://www.contratacion.euskadi.eus/faqs/faq-kontratazio-publikoaren-plataforma-euskadin/webkpe00-kpeform/eu/)
+independently uses desmarkatu for a software option. The previously recorded
+Euskadi temporal grammar supports the singular -tzen denean construction.
+This is contextual grammatical review, not exact product-sentence attestation.
+Specific named-item noun/name order remains open; these action reviews do not
+validate that separate fragment or directional add/remove clauses. Four focused
+translation suites pass; browser execution remains unverified.
+
+Breton modification/access repairs — 2026-09-14, local commit `e3d6a1ace`.
+
+Four unflagged French values were replaced: operator-modified and
+predicate-modified become kemmet; last-modified becomes Kemm diwezhañ;
+list-label-modifiedAt becomes Eur ar moned diwezhañ. Its English source is
+Last Access Time despite its legacy modifiedAt key, so it must not become
+a last-modification label.
+[Native MediaWiki Breton software strings](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/br.json)
+attest kemmet in updatedmarker and singular kemm diwezhañ in
+new-messages-diff-link-plural.
+[Ofis computing glossary](https://www.brezhoneg.bzh/uploads/Document/20/798_536_an-urzhiataerezh.pdf)
+attests accès = moned (printed page 2). The existing local Eur supplies the
+clock-time noun; the full access-time compound is adapted, not exactly
+attested as a native software label. Keep that confidence limit open for
+native wording/browser review. Four focused suites pass, including exact
+placeholder and key-order coverage and distinct access/modification meanings.
+No live browser validation was performed. Original pending/restored counts
+remain 291/13; the broader correction ledger now contains 18,600 entries.
+
+Breton accessibility terminology — 2026-09-14, local commit `669f0b31d`.
+
+Five values use haezadusted: accessibility, its page title/body labels,
+the enabled-page label and the not-added-yet information warning. Three
+French values were replaced; two existing corrections were revised while
+retaining their original before values in the ledger.
+[An Drouizig native computing glossary, February 2017](https://www.drouizig.org/images/stories/dafar/geriaduriaou/Gerva-an-Drouizig-2017.pdf)
+explicitly distinguishes haezadusted (accessibility) from haeziñ (access,
+to access) on page 13. The previous two repairs confused those concepts.
+Actual settingBody.jade accessibilitySettings fields edit the public page's
+title and body and toggle its enabled state. The title/body labels therefore
+identify the page explicitly. Existing local syntax preserves negation,
+addition and yet in the warning; the enabled state remains distinct.
+Ofis computing terminology supports title/content/activate/add vocabulary.
+Full adapted page compounds and warning grammar still need native/browser
+review; reference vocabulary alone is not full phrase validation. Four
+focused suites pass, including negative access-verb coverage and exact
+placeholder inventories. The correction ledger now has 18,603 records;
+original pending/restored counts remain 291/13. No live UI validation ran.
+
+Inuktitut rule toggle — 2026-09-14, local commit `45d232fda`.
+
+Replace r-toggle-rule-enabled Latin-script wording with a direct syllabic
+adaptation using the local rule noun and keyboard-toggle activation vocabulary.
+Both alternatives and the scope of this specific rule remain explicit. The
+actual rulesList.jade submit button uses this tooltip with data-rule-id.
+[NWAC Safe Passage Inuktitut guide](https://nwac-afac.ca/assets-documents/SafePassage_FamilyViolence_Inuktitut_review.pdf)
+uses ᖃᒥᓪᓗᒍ for Bluetooth and other apps (PDF page 7). This directly supports
+software turn-off vocabulary, but not the full rule-toggle compound.
+[Traces project terminology](https://www.tracesresearch.nl/projects)
+provides Maligaq / ᒪᓕᒐᖅ as a rule to be followed. Native assembly references
+also use that noun for procedural rules. Software-rule adaptation, activation
+command and full clause grammar remain low confidence; no exact native
+product-tooltip attestation or live UI validation is claimed. A new focused
+guard preserves the two alternatives and rejects the previous romanized value.
+Four translation suites pass; the correction ledger has 18,604 records and
+the original queue has 15,611 corrected, 4,167 retained, 13 restored and 290
+pending findings. Inuktitut has 41 pending; broader low-confidence review stays
+open. MediaWiki's native files are ike-cans/ike-latn, not iu; they were inspected
+as possible references, without accepting any of their strings automatically.
+
+Inuktitut LDAP failure repair — 2026-09-14, local commit `ea1df33fa`.
+
+Replace ldap-test-connection-error with a direct syllabic adaptation preserving
+connection-failure meaning and the exact %s server-error details token.
+[Microsoft Inuktitut localization style guide](https://download.microsoft.com/download/0/b/6/0b65bcfe-5fac-4b20-86fe-f613200667c1/iku-can-styleguide.pdf)
+was downloaded from the primary publisher and text-extracted locally: 41 pages.
+Page 35 explicitly recommends Itigaqtuq for Failed to/Failure of. Its syllabic
+adaptation supports the failure term; it does not verify the entire network
+connection sentence. The connection/contact noun and noun/verb grammar remain
+low confidence and require native/browser review. The test action and success
+message remain open; they were not accepted from unrelated generic Done wording.
+The guide's native examples use Latin orthography, citing the 1976 writing-system
+proposal (page 7). Latin script alone therefore cannot prove a value is in the
+wrong language. Review vocabulary and dialect independently; the original
+wrong-script findings are review warnings, not blanket invalidations.
+
+Actual settingBody.js calls ldap_test_connection and interpolates err.reason
+or err.message into the failure message. testConnection.js connects and binds
+with the configured credentials, then disconnects. A successful method call
+is not proof that an individual user login succeeded. Four focused suites pass;
+there are 18,605 exact corrections, 15,612 corrected original findings,
+4,167 retained, 13 restored and 289 pending. Inuktitut has 40 pending. Full
+sentence and live LDAP/UI validation remain unverified. No external translation
+service was used and no remote translations were pushed.
+
+Breton date/activity/execution labels — 2026-09-14, `1ba55107f`.
+
+Replace modifiedAt, last-modified-at, last-activity and last-run French values.
+The first two retain distinct modified/last-modified meanings and a timestamp
+prefix. modifiedAt is actually used as a sort-field option in boardActions.jade;
+some other labels have no current application call site, but remain in scope.
+[Native MediaWiki software strings](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/br.json)
+attest kemmet, kemm diwezhañ and da before clock time. The adapted timestamp
+prefixes are not exactly attested full product labels and still need formatting
+review when paired with the application's selected calendar date/time.
+[Native translatewiki statistics documentation](https://translatewiki.net/wiki/Translating:Statistics/br)
+uses oberiantiz diwezhañ in its project-statistics description (line 286).
+[An Drouizig computing glossary](https://www.drouizig.org/images/stories/dafar/geriaduriaou/Gerva-an-Drouizig-2017.pdf)
+attests erounezadur as execution (page 11); the local last-run compound adapts
+that technical noun with the last qualifier. Distinct meanings and negative
+French-value coverage pass with token/key-order/completeness checks. Browser
+validation remains open. The correction ledger now has 18,609 records;
+original pending/restored findings remain 289/13. Outgoing-webhook, reaction
+and soft-WIP terminology were inspected but not repaired from insufficient
+component evidence during this review.
+
+### 2026-09-14 — Inuktitut unchanged New label and script review
+
+The existing unflagged `iu:new` value `ᓄᑖᖅ` is retained. Microsoft's
+[Inuktitut software style guide](https://download.microsoft.com/download/0/b/6/0b65bcfe-5fac-4b20-86fe-f613200667c1/iku-can-styleguide.pdf),
+printed page 34, gives `Nutaaq` for the New command. This is the syllabic
+equivalent already used locally. Actual `newOrgRow`, `newTeamRow`,
+`newUserRow` and `newTranslationRow` templates use this standalone creation
+label beside a plus icon. Focused coverage preserves the value and checks
+those contexts; it does not certify surrounding prose or browser layout.
+
+The primary guide uses Latin Inuktitut throughout. Consequently the original
+“Wrong writing script — review required” rows remain review warnings, not
+proof of a wrong language. Review vocabulary and meaning independently of
+script. Greenlandic-looking phrases, network sense and complete calendar
+qualifiers still require their own evidence. No pending finding is accepted
+from the New entry or from a script-only test. No locale value changed.
+
+### 2026-09-14 — Inuktitut recurrence/reset semantic constraints
+
+[Recurrence and reset review](Inuktitut-Recurrence-Review.md) records actual
+new-card insertion versus in-place unchecking and native repeat/again affix
+evidence. Six heading/off values remain open. A generic return verb or
+secondary reset translation does not establish the complete native product
+labels. Existing frequency repairs are preserved. No values or counts change.
+
+### 2026-09-14 — Basque completion predicate retained
+
+Local commit `1e62fca35` retains `eu:r-completed` as `Osatzen denean`.
+[Native GNOME software help](https://help.gnome.org/gnome-help/bluetooth-send-file.html.eu)
+attests the same temporal completion predicate; EHU confirms list-completion
+vocabulary. Actual generic trigger wiring supplies a singular checklist and
+no additional copula. Four focused translation suites pass: 4,168 unchanged
+reviews, 18,609 corrections, Basque grammar and 234-locale completeness. One
+restored finding resolves; 12 remain with 289 pending. Specific named clauses,
+incomplete transition, runtime mismatch and browser review remain open.
+
+### 2026-09-14 — Silesian raw database label retained
+
+Local commit `a0aacc7a9` retains `sandstorm-raw-mongodb` as
+`Surowe pliki bazy danych MongoDB 3`. Shared Polish spelling is not itself
+proof of wrong-language prose. [Barbara Szmatloch's native Silesian lesson](https://katowice.wyborcza.pl/katowice/7,156347,21383873,pogodomy-se-po-slonsku-swiynto-krepla.html)
+uses plural `surowe` for raw/untreated food;
+[Wachtyrz's Silesian Hamlet article](https://wachtyrz.eu/tyjater-slonski-prymiera-hamleta-po-slonsku/)
+independently uses the adjective.
+[MediaWiki's native Silesian software translations](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/szl.json)
+use `pliki` in file messages and `bazy danych` in database error messages.
+The complete label is a compositional software usage; these sources do not
+attest an exact standardized database phrase. The legacy attachment template
+call is currently commented out. Browser and broader language review remain
+open. Focused exact-value/technical-identity and negative export coverage pass,
+as do 4,169 unchanged reviews, 18,609 corrections and completeness checks.
+One pending finding resolves: 288 pending and 12 restored remain.
+
+### 2026-09-14 — Breton WIP group/swimlane repairs
+
+Local commit `0dc75532b` replaces four unflagged French/mixed values:
+`apply` becomes `Arloañ`; group creation becomes
+`Ouzhpennañ ur strollad bevennoù WIP`; swimlane selection becomes
+`Dibab ur vandenn`; quick application becomes `Arloañ ouzh ar vandenn`.
+[An Drouizig's native computing glossary](https://www.drouizig.org/images/stories/dafar/geriaduriaou/Gerva-an-Drouizig-2017.pdf),
+printed page 4, attests applying an operation with `arloañ ouzh`. Existing
+Breton group/limit and swimlane nouns supply product terminology. Compounds
+are direct adaptations; native full-phrase and browser review remain open.
+Actual sidebar controls distinguish creation from enablement, selection and
+quick application. The latter preselects a swimlane's list checkboxes; group
+creation is still a separate submit action. Exact-value, foreign-prose and
+actual template checks pass with 18,613 corrections, 4,169 unchanged reviews
+and 234-locale completeness. Pending/restored totals remain 288/12.
+
+Calendar reference follow-up did not establish Greenlandic Coptic or complete
+Hijri qualifiers. CLDR's Greenlandic file contains an unconfirmed generic
+calendar noun and Gregorian entry, not those missing phrases. No acceptance
+was made from that incomplete evidence. All four findings remain open.
+
+### 2026-09-14 — Moroccan dictionary lead cross-checks
+
+[Tamazight reference review](Tamazight-Review.md) now records independent
+native university evidence for the calendar noun and native software evidence
+for the user noun and click imperative. These verify specific dictionary
+components, not the complete scraped dataset or full product warnings.
+Dictionary/publication access limitations and the next grammatical review
+steps are recorded. No locale values or counts changed; Tamazight still has
+173 pending findings and invalidated Tuareg provenance remains unresolved.
+
+### 2026-09-14 — Breton common controls and diagnostics
+
+Local commit `092678576` repairs 14 unflagged French values: three detail
+labels, two file labels, text/translated text, translation, history, two
+confirmation controls, subject, server and computer.
+[Native MediaWiki Breton software messages](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/br.json)
+support these terms: password-reset details, file-count/file-page messages,
+interface text, translation instructions, short history, confirmation, subject,
+server diagnostics and a shared-computer warning. Complete translated-text
+wording is a direct compound adaptation, not an exact source quotation.
+
+The admin translation table distinguishes source and translated text; leave
+board/team/domain submits use the confirmation label; computer upload uses
+the computer noun; migration details remain a distinct diagnostic heading.
+Exact values, foreign-prose exclusions and equivalent-field consistency pass
+with 18,627 corrections, 4,169 retained reviews and 234-locale completeness.
+Browser and broader native compound review remain open. Pending/restored
+counts remain 288/12 because these were unflagged values.
+
+A fresh Breton/French comparison found hundreds of short identical candidates.
+The comparison is a lead, not a wrong-language verdict for all matches: proper
+names, technical loans and shared vocabulary require individual review. The
+14 confirmed cases above are repaired; the wider unflagged review continues.
+
+### 2026-09-14 — Breton palette color senses (2a86c331f)
+
+Three unflagged French labels are repaired: dark green `vert foncé` becomes
+`gwer teñval`, gold `or` becomes `aour`, and silver `argent` becomes
+`arc'hant`. OPLB Meurgorf explicitly defines the relevant color senses:
+[green, including its dark form](https://niverel.brezhoneg.bzh/fr/meurgorf/38471),
+[gold, section II.A.2](https://niverel.brezhoneg.bzh/fr/meurgorf/1809), and
+[silver, section II.2](https://niverel.brezhoneg.bzh/br/meurgorf/1989).
+These are color meanings, rather than inference from metal names alone.
+
+The unflagged gray value `gris` is retained: the
+[native definition](https://niverel.brezhoneg.bzh/fr/meurgorf/15268) explicitly
+describes a color between black and white. Identical French spelling is not
+a wrong-language verdict. Exact values, foreign-label exclusions and distinct
+palette names pass with all 18,630 correction records, 4,169 unchanged reviews
+and 234-locale structural completeness. Browser verification remains open;
+these checks do not establish fluency across the remaining audit.
+Original pending/restored counts remain 288/12. Other palette candidates and
+the wider unflagged review still need individual evidence.
+
+### 2026-09-14 — Breton white palette repair (a123f9428)
+
+Unflagged `color-white` changes from French `blanc` to Breton `gwenn`.
+[OPLB native Meurgorf entry](https://niverel.brezhoneg.bzh/br/meurgorf/15481)
+defines the snow color and provides explicit `liv gwenn` usage. This
+establishes the palette meaning, rather than the word's other figurative
+senses. Focused checks distinguish white from retained gray `gris` and
+silver `arc'hant`; all 18,631 correction records, 4,169 unchanged reviews
+and 234-locale structural completeness pass. Browser verification and the
+wider native-context review remain open. Pending/restored counts stay 288/12.
+
+### 2026-09-14 — Basque completion-status reference review
+
+The Basque review now records independent native EHU software guidance for
+manually marked and conditional completion status, plus the native gabe
+dictionary's lack/unfinished collocations. These change the repair constraint:
+`r-made-incomplete` must express an incomplete-status transition, not only
+leaving work unfinished. The source does not attest an exact replacement
+predicate. No restored finding is accepted and no locale value changes.
+Generic and named options share this key; both require composition review.
+Pending/restored counts remain 288/12.
+
+### 2026-09-14 — Basque S3 technical loan retained (5bf97e219)
+
+The restored `s3-bucket` value `S3 bucket-a` is retained with native ZIUR
+Basque specifications using AWS S3 Bucket for storage (pages 6 and 7).
+[Source and confidence limits](Basque-Review.md) distinguish technical-term
+attestation from exact label hyphenation. Focused checks verify the existing
+label, related name description and bucket-name input association. All 4,170
+retained reviews and 234-locale structural completeness pass. One restored
+finding is resolved; pending/restored counts are now 288/11. Browser and
+broader review remain open. No locale values were overwritten.
+
+### 2026-09-14 — Breton navigation and templates (bb65bf79d)
+
+Six unflagged French values are repaired: back Retour becomes Distreiñ;
+home Accueil becomes Degemer; font-size-default Défaut becomes Dre ziouer;
+custom-field-text Texte becomes Testenn; templates and allboards.templates
+Modèles become Patromoù.
+[Native MediaWiki software messages](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/br.json)
+attest Distreiñ in return controls, Degemer for the main page, dre ziouer
+for defaults, Testenn for text and patromoù for template plural contexts.
+The return verb is extracted from a longer native return instruction; these
+are vocabulary/context adaptations, not six exact source label quotations.
+Actual rule controls return to the previous view, while template navigation
+and list selectors share the template noun. Tests preserve equivalent text
+and template labels and distinguish return from home. All 18,637 corrections,
+4,170 retained reviews and 234-locale structural completeness pass.
+Pending/restored counts remain 288/11. Full browser verification and wider
+native review remain open.
+
+### 2026-09-14 — Breton selection states and color (b0f7f924f)
+
+Three unflagged French labels are repaired: custom-field-dropdown-none
+(aucun) becomes (hini ebet), custom-field-dropdown-unknown (inconnu)
+becomes (dianav), and allboards.workspace-color Couleur becomes Liv.
+[Native MediaWiki Breton software messages](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/br.json)
+attest (hini ebet) for absent values, Dianav for unknown information and
+liv in color-selection controls. Parentheses and case follow local label
+conventions. Actual dropdown controls use none/null sentinels for no
+selection; unknown must remain a distinct state. Focused exact-value and
+foreign-word checks preserve that distinction. All 18,640 corrections,
+4,170 retained reviews and 234-locale structural completeness pass.
+Pending/restored counts remain 288/11. Live browser and broader native
+verification remain open.
+
+### 2026-09-14 — Breton card and numeric nouns (6962b2cc4)
+
+Unflagged cards-count-one and cardType-card change from French Carte to
+Kartenn, matching existing WeKan Breton card wording. Custom-field-number
+changes from French Nombre to Niver. The native OPLB dictionary defines
+[kartenn](https://niverel.brezhoneg.bzh/br/meurgorf/17427) as a card as well
+as a map, and [niver](https://niverel.brezhoneg.bzh/br/meurgorf/22642)
+as a number including fractional values. These definitions support the
+chosen nouns; the kanban usage also follows existing local terminology.
+The actual list-header singular counter and normal-card type share Kartenn.
+Focused checks preserve that equivalence and distinguish numeric from text
+fields. All 18,643 corrections, 4,170 unchanged reviews and 234-locale
+structural completeness pass. Counts remain 288 pending and 11 restored.
+Live browser and broader native verification remain open.
+
+### 2026-09-14 — Breton action labels (c8a14d2d0)
+
+Four unflagged French labels are repaired: preview Prévisualiser becomes
+Rakwelet; discard Mettre à la corbeille becomes Nullañ; unset-color Enlever
+becomes Dilemel; comment Commenter becomes Ouzhpennañ un evezhiadenn.
+[Native MediaWiki software messages](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/br.json)
+attest the preview/cancel labels, remove verb and add verb. The comment noun
+follows existing local Evezhiadennoù vocabulary; its complete action phrase
+is a direct adaptation, not an exact native source quotation.
+Actual discard resets the inline unsaved description form rather than
+trashing a card. The custom-text-color reset clears its override to default;
+the shared removal label also covers palette/background removal controls.
+The comment control submits a new comment, so a noun-only label would lose
+its action meaning. Exact values, foreign exclusions and action distinctions
+pass with all 18,647 corrections, 4,170 retained reviews and 234-locale
+structural completeness. Pending/restored counts remain 288/11. Broader
+phrase and live browser verification remain open.
+
+### 2026-09-14 — Breton custom-field terminology (3539edd8b)
+
+Four unflagged French labels are repaired: custom-field-checkbox Case à
+cocher becomes Log askañ; custom-field-dropdown Liste de choix becomes
+Roll diskenn; custom-field-dropdown-options Options de liste becomes
+Dibarzhioù ar roll; custom-fields Champs personnalisés becomes
+Maeziennoù personelaet.
+[Primary TermBret computing vocabulary](https://www.brezhoneg.bzh/uploads/Document/20/798_536_an-urzhiataerezh.pdf)
+explicitly attests log askañ (page 2), maezienn, dibarzh and personelaat.
+The grammatical gender markers are dictionary notation, not label text.
+Dropdown follows the existing local multi-select Roll diskenn wording;
+custom-field wording follows existing card-edit-custom-fields terminology.
+Full option/heading compounds are direct adaptations and remain open to
+broader native review. Actual custom-field settings share the same option
+definition between dropdown and multi-select and render separate field types.
+Focused checks preserve dropdown consistency and checkbox distinction.
+All 18,651 corrections, 4,170 retained reviews and 234-locale structural
+completeness pass. Counts remain 288 pending and 11 restored. Browser
+verification and wider language review remain open.
+
+### 2026-09-14 — Breton zoom controls (0aeac5744)
+
+Unflagged zoom-in Agrandir becomes Brasaat, zoom-out Réduire becomes
+Bihanaat, and zoom-level Niveau d'agrandissement becomes Live zoum.
+[TermBret computing glossary](https://www.brezhoneg.bzh/uploads/Document/20/798_536_an-urzhiataerezh.pdf)
+attests brasaat for enlarging (page 2). The native
+[bihanaat definition](https://niverel.brezhoneg.bzh/br/meurgorf/4257)
+explicitly includes making size smaller and contrasts brasaat. Live zoum
+follows the existing enter-zoom-level prompt; it is an adapted level phrase,
+not an exact glossary quotation. Actual opened-card zoom buttons use these
+opposing action titles. Checks preserve direction and level/prompt consistency.
+All 18,654 corrections, 4,170 retained reviews and 234-locale structural
+completeness pass. Counts remain 288 pending and 11 restored. Broader native
+phrase and browser verification remain open.
+
+### 2026-09-14 — Breton currency labels (f9e3111b0)
+
+Unflagged custom-field-currency Devise becomes Moneiz, and
+custom-field-currency-option Code devise becomes Kod moneiz. The native
+[moneiz dictionary entry](https://niverel.brezhoneg.bzh/br/meurgorf/21729)
+explicitly includes a country's unit of value, beyond coins/cash. Kod is
+existing native software code vocabulary; the complete code phrase is
+adapted, not an exact dictionary quotation. The actual field settings store
+currencyCode separately from the field's monetary value. Checks preserve
+that distinction and exclude French labels. All 18,656 corrections, 4,170
+retained reviews and 234-locale structural completeness pass. Counts remain
+288 pending and 11 restored. Broader compound and live browser review remain
+open; no unverified string-template replacement was made in this review.
+
+## Breton string-template label, 2026-09-14
+
+Local repair commit: `65a0f76ab`. The French `Modèle de chaîne` becomes
+`Patrom chadenn` in `custom-field-stringtemplate`.
+
+[Native MediaWiki Breton translations](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/br.json)
+use `chadenn` in `paramvalidator-badtitle` and `Patrom` in `nstab-template`.
+[The corresponding English source](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/en.json)
+specifies a title string, establishing the technical rather than metal-chain
+sense. The complete WeKan compound is adapted, not an exact source quotation.
+
+`client/lib/customFields.js` formats nonempty text values using the stored
+format and separator. This field type differs from plain text; no formatter
+instructions or tokens changed. Focused exact-value, French-negative and
+text-field distinction checks pass, as do all 18,657 correction records,
+4,170 unchanged reviews and completeness checks for 234 locales. Browser and
+broader native compound review remain open. Original findings remain at
+288 pending and 11 restored awaiting validation; this repair was unflagged.
+
+## Tamazight layout-change action, 2026-09-14
+
+Local commit `9024c6cf8` repairs unflagged French change = Modifier using
+native Moroccan edit imperative `ⵙⵏⴼⵍ`. Existing edit remains unchanged.
+[Tamazight review](Tamazight-Review.md) records primary software evidence,
+actual layout-control context and the incomplete native throttling warning.
+All 18,658 correction records, 4,170 retained reviews, focused locale checks
+and completeness for 234 locales pass. Original counts remain 288 pending
+and 11 restored; browser and broader native phrase review remain open.
+
+## Basque incomplete checklist predicate, 2026-09-14
+
+Local repair commit `33cc02ced` replaces the ambiguous restored phrase
+`Osatu gabe uzten denean` with adapted `Osatu gabe markatzen denean`.
+[Basque review](Basque-Review.md) records native Moodle software-state evidence
+and actual generic checklist composition. Exact-value, ambiguity-negative,
+option wiring, all 18,659 corrections, 4,170 retained reviews and completeness
+for 234 locales pass. Original counts are 15,613 corrected, 10 restored,
+4,170 retained and 288 pending. Full named-clause grammar, runtime discrepancy
+and browser execution remain open; the source does not quote this full clause.
+
+## Wrong-language date-format labels, 2026-09-14
+
+Local repair commit `b8c6fed39` changes three date-format labels in each of
+ak, bs, sl, sl_SI, br and zgh (18 values). Akan had unrelated repeated prose;
+Bosnian and Slovenian used Serbian Cyrillic date words; Breton and Tamazight
+had French AAAA/JJ notation. Labels now show YYYY-MM-DD, DD-MM-YYYY and
+MM-DD-YYYY, matching the actual option values in cardDetails.jade.
+
+These are display labels rather than a change to date formatting. Correct
+localized notation in other languages remains protected: focused regression
+checks retain Danish and Basque notation. No human correct-language values
+were overwritten. All 18,677 correction records, 4,170 retained reviews,
+234-locale completeness and focused format/option/distinction checks pass.
+The existing fill workflow already protects literal format patterns from
+placeholder translation. No dependency or external service is introduced.
+These unflagged repairs leave 288 original pending and 10 restored findings.
+Browser rendering and broader native-language review remain open.
+
+## Tamazight registration/log/summary, 2026-09-14
+
+Local commit `d5d2bf518` repairs register, log and summary. French registration
+and log labels become native account-creation and log wording; summary changes
+from the section noun to the native summary noun, without the source colon.
+[Native Moroccan MediaWiki source](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json)
+attests createaccount, log and summary, with search-section distinguishing
+the section noun. The actual problemsSummary.jade uses summary as a heading.
+The log label has no current direct client use; obsolete strings remain in
+translation scope. Registration uses account-creation wording rather than
+sign-in wording. Full runtime/browser flow was not verified.
+
+Focused exact-value, French/section-negative and summary/history distinction
+checks pass, with all 18,680 corrections, 4,170 retained reviews and completeness
+for 234 locales. Original counts remain 288 pending and 10 restored. Remaining
+calendar qualifiers are not supplied by current CLDR zgh; no pending calendar
+finding was accepted from generic component evidence.
+
+## Inuktitut command forms, 2026-09-14
+
+Local repair commit `b8e746289` changes edit from passive changed wording to
+Aaqqigiarli, and delete from passive removed wording to Piirli.
+[Microsoft's native Inuktitut software style guide](https://download.microsoft.com/download/0/b/6/0b65bcfe-5fac-4b20-86fe-f613200667c1/iku-can-styleguide.pdf)
+provides these exact Edit/Delete commands in its User Interface section on
+printed page 32. It explains the imperative suffix, separately from status
+messages. Actual avatar and confirmation buttons use delete as an action;
+these labels do not report that deletion has already happened. Roman spelling
+is a valid Inuktitut orthography, not an automatic script defect.
+
+Focused exact-command, old-status-negative and command-distinction checks,
+all 18,682 corrections, 4,170 retained reviews and completeness for 234 locales
+pass. The unused open value has not been changed without its intended context.
+These unflagged repairs leave 288 pending and 10 restored original findings.
+Full browser flows, LDAP diagnostics and broader native grammar remain open.
+
+## Basque generic checklist-item review, 2026-09-14
+
+Local commit `d36499d43` retains r-when-a-item after contextual review.
+[Basque review](Basque-Review.md) distinguishes component-source evidence from
+full generic grammar and keeps named-item order and browser checks open.
+Focused subject/action/coplanar linking-verb checks, 4,171 unchanged reviews
+and completeness for 234 locales pass. Original counts are 15,613 corrected,
+9 restored, 4,171 retained and 288 pending; correction ledger remains 18,682.
+
+## Tamazight Buddhist calendar, 2026-09-14
+
+Local commit `8422804a4` replaces English Buddhist with an adapted native
+calendar label. [Tamazight review](Tamazight-Review.md) records the directly
+fetched article revision, its missing-reference status, native caption
+vocabulary and limits. No historical claim or English infobox fallback was
+used to validate the translation. All 18,683 correction records, 4,171 retained
+reviews, 234-locale completeness and focused name/distinction checks pass.
+Original counts: 15,614 corrected, 9 restored, 4,171 retained, 287 pending.
+Full native compound and browser verification remain open.
+
+## Tamazight Hebrew calendar, 2026-09-14
+
+Local commit `bd4a6a494` replaces English Hebrew with a native adapted
+calendar label. [Tamazight review](Tamazight-Review.md) records native Safi
+article revision 156843 and its adjective usage; this is vocabulary evidence,
+not an exact calendar-name quotation or acceptance of historical claims.
+LOW CONFIDENCE full naming and browser review remain open. Focused exact-name,
+English-negative and Buddhist distinction checks pass, as do all 18,684
+corrections, 4,171 retained reviews and 234-locale completeness checks.
+Original counts: 15,615 corrected, 9 restored, 4,171 retained, 286 pending.
+
+## Tamazight Indian National Calendar, 2026-09-14
+
+Local commit `7ba02a179` replaces English Indian national with an adapted
+native label preserving the national qualifier. [Tamazight review](Tamazight-Review.md)
+records CLDR/dictionary component sources and unavailable IRCAM full sources.
+LOW CONFIDENCE full naming and browser review remain open. All 18,685
+corrections, 4,171 unchanged reviews, 234-locale completeness and focused
+name/qualifier/distinction checks pass. Original counts: 15,616 corrected,
+9 restored, 4,171 retained, 285 pending. Components alone do not prove the
+complete calendar phrase is fluent or standard.
+
+## Inuktitut Dangi/Minguo labels, 2026-09-14
+
+Local commit `da6762a48` repairs two original calendar findings.
+[Inuktitut calendar review](Inuktitut-Calendar-Review.md) records the reopened
+native official calendar reference, proper-name preservation and low confidence
+combined naming. Focused name/noun/English-negative/calendar distinction checks,
+all 18,687 corrections, 4,171 unchanged reviews and 234-locale completeness
+pass. Original counts: 15,618 corrected, 9 restored, 4,171 retained, 283 pending.
+Full native naming and browser review remain open; no other qualifier or
+calendar-system heading is accepted from the generic noun alone.
+
+## Tigre/Wolaytta calendar provenance review, 2026-09-14
+
+Local review commit `5da10eee5`.
+
+[Tigre/Wolaytta review](Tigre-Wolaytta-Calendar-Review.md) records the exact
+local Tigre noun in an explicitly Tigrinya primary publication. This is a
+source-language warning, not proof that shared vocabulary is impossible.
+CLDR Tigre formatting data does not supply native calendar-system names.
+The unflagged Wolaytta calendar noun remains English with a language prefix.
+Independent native terminology is required before composing full labels.
+No values or classifications changed; all 34 original findings stay pending.
+
+## Tamazight generic rule name labels, 2026-09-14
+
+Local commit `7f3a0d7db` repairs two additional French generic name labels.
+[Tamazight review](Tamazight-Review.md) records native complete name-field
+labels and the actual rule placeholder/sort-option uses. Qualified name
+compounds are not validated from this noun alone. Focused exact-value and
+wrong-language negative checks, all 18,689 correction records, 4,171 unchanged
+reviews and 234-locale completeness pass. Browser validation remains open.
+Original counts remain 15,618 corrected, 9 restored, 4,171 retained, 283 pending.
+
+## Tamazight one-unit recurrence labels, 2026-09-14
+
+Local commit `5b3ca809d` repairs three additional French recurrence labels.
+[Tamazight review](Tamazight-Review.md) records native daily phrase evidence,
+CLDR time nouns and low-confidence adapted hourly/minute constructions.
+Numeric plural intervals are not accepted from these components. No current
+UI use of these legacy keys was found; browser execution is not claimed.
+Focused values/negative/distinction checks, all 18,692 corrections, 4,171
+retained reviews and 234-locale completeness pass. Original counts remain
+15,618 corrected, 9 restored, 4,171 retained and 283 pending.
+
+## Basque restored movement conditions retained, 2026-09-14
+
+Local commit `2bb54a30b` retains two restored directional labels.
+[Basque review](Basque-Review.md) records native direction/source-field
+references, full UI fragment review and destination/origin handler mappings.
+Focused exact values, direction distinction, extra-copula negatives and
+actual mapping checks pass, with all 4,173 unchanged reviews and 234-locale
+completeness. Browser and broader style review remain open. Counts are
+15,618 corrected, 7 restored, 4,173 retained and 283 pending; 18,692 corrections.
+
+## Basque generic member/attachment subjects retained, 2026-09-14
+
+Local commit `946e1a29b` retains two restored subjects with native noun
+and contextual grammar evidence recorded in [Basque review](Basque-Review.md).
+Both add/remove control compositions, copula negatives and actual row wiring
+checks pass, with all 4,175 unchanged reviews and 234-locale completeness.
+No translations change. Browser and named-subject review remain open.
+Counts: 15,618 corrected, 5 restored, 4,175 retained and 283 pending.
+Correction ledger remains 18,692 entries.
+
+## Afghan Uzbek cancellation spelling, 2026-09-14
+
+Local commit `b433730e3` restores the missing alif in a restored cancellation
+label. [Uzbek review](Uzbek-Arabic-Review.md) distinguishes indexed native
+spelling support from failed full-source fetches. LOW CONFIDENCE complete
+orthographic and browser verification remain open. Exact spelling and negative
+checks, all 18,693 corrections, 4,175 reviews and 234-locale completeness pass.
+Counts: 15,619 corrected, 4 restored, 4,175 retained and 283 pending.
+Named Basque subject order remains open; actual trigger descriptions include
+field values in DOM order, so word-order validation must include those values.
+
+## Basque named-subject integration evidence, 2026-09-14
+
+Local review commit `209d1088b`.
+
+[Basque review](Basque-Review.md) records the fully opened EHU grammar chapter
+and actual template/description-generator source. Names occur after the final
+demonstrative in controls and saved descriptions. Isolated noun/script checks
+cannot validate these four restored findings. Locale-aware complete subject
+construction must preserve DOM/control semantics and saved description order.
+No classifications change: 283 pending, 4 restored, 4,175 retained,
+15,619 corrected; 18,693 correction records. Browser verification is open.
+
+## Basque named-subject DOM repair, 2026-09-14
+
+Local commit `1e4411183` corrects the Basque name-control order in five rows
+while preserving all translated noun phrases. [Basque review](Basque-Review.md)
+records shared saved-description ordering and other-locale preservation.
+Focused locale/branch/negative checks, actual Jade compilation, retained
+review and completeness suites pass. Browser spec 88 covers control order,
+persisted description and English preservation; syntax checked, not executed.
+No local app listens on port 3000. Four restored findings remain open for
+browser/full native phrase validation; 283 pending, 18,693 correction records.
+
+## Production saved-description execution, 2026-09-14
+
+Local commit `0c51a3261` fixes separator handling in the actual method after
+VM execution reproduced its undefined browser-global length dependency.
+[Basque review](Basque-Review.md) records production-method tests for all
+named subjects, predicates, blank controls, unchanged English, literal names,
+wildcards, dates/times and user details. Five relevant source suites pass.
+Playwright successfully lists browser spec 88; it is still unrun.
+No translation classifications change: 283 pending and 4 restored remain.
+Native full-phrase and browser verification are required before acceptance.
+
+## Aromanian color evidence — 2026-09-14
+
+Local review commit `4f63929ee`: [primary sources and limits](Aromanian-Review.md).
+The inspected dictionary sequence lacks a magenta entry; modern loanword usage
+is not ruled out. Field-study color families do not justify a nearby-color
+replacement. No finding was accepted; counts remain unchanged.
+
+## Quechua generic calendar noun — 2026-09-14
+
+Local fix `5c5ee40b6`: [native dictionary evidence](Quechua-Review.md).
+The generic calendar label uses Watanqillqa instead of an untranslated noun
+with a language prefix. Four source/locale checks pass; no pending specific
+calendar compound was accepted. Ledger: 18,694 corrections; pending/restored:
+283/4. Browser settings review remains open.
+
+## Quechua day vocabulary — 2026-09-14
+
+Local fix `34dbfa64c`: [native terms and actual calendar context](Quechua-Review.md).
+Day and every-one-day labels no longer contain English with a language prefix.
+Primary dictionary printed pages 18 and 158 directly attest the terms. Four
+checks pass; no browser rendering was verified. Ledger: 18,696 corrections;
+original pending/restored counts remain 283/4.
+
+## Quechua named calendar nouns — 2026-09-14
+
+Local fix `6e3663c83`: [dictionary distinction and confidence limits](Quechua-Review.md).
+Dangi, Minguo and generic Hijri labels now use the generic calendar noun while
+preserving names. Adapted compounds remain low confidence pending native phrase
+and browser review. Four checks pass; ledger 18,699; pending/restored 283/4.
+
+## Tamazight interface-button sense review — 2026-09-14
+
+Local review `555b6631d`: [sense mismatch and next primary reference](Tamazight-Review.md).
+French bouton glosses with skin-bump Arabic definitions cannot establish the
+OIDC UI-control noun. The computing-reference body remains unread after timeout.
+No replacement or acceptance was made; original counts remain 283 pending/4
+restored and the correction ledger remains 18,699.
+
+## Primary IRCAM dictionary review — 2026-09-14
+
+Local review `d1d06c706`: [page references and software-sense limits](Tamazight-Review.md).
+The full 2019 primary dictionary was downloaded and relevant entries read.
+Subtitle and activation components are independently verified; complete phrases
+are not accepted from components. Computing-PDF certificate verification failed.
+Counts remain unchanged: 283 pending/4 restored; 18,699 correction records.
+
+## Tamazight numeric intervals — 2026-09-14
+
+Local fix `23583a790`: [native plurals and adapted phrase limits](Tamazight-Review.md).
+Four French interval labels are replaced, preserving 5/10/30 minutes and 6
+hours. Full phrases remain low confidence; four checks pass. No browser test
+ran. Ledger: 18,703; original pending/restored counts remain 283/4.
+
+## Tamazight daily workflow clause — 2026-09-14
+
+Local fix `947366780`: [primary forms and confidence limits](Tamazight-Review.md).
+Active daily trigger wording follows native references and preserves __time__.
+Four checks pass; adapted full clause remains low confidence. No browser
+validation ran. Ledger: 18,704; original pending/restored remain 283/4.
+
+## Tamazight migration progress — 2026-09-14
+
+Local fix `e424d4de6`: [primary vocabulary and adapted clause limits](Tamazight-Review.md).
+French progress prose is replaced while preserving wait, board migration and
+latest structure meaning. Four checks pass; full native grammar, courtesy and
+browser validation remain low confidence/open. Ledger: 18,705. Original
+counts: 15,620 corrected, 282 pending, 4 restored, 4,175 retained.
+
+## Tamazight orphaned-card label — 2026-09-14
+
+Local fix `2c38b996b`: [source meaning and confidence limits](Tamazight-Review.md).
+French repair wording is replaced; source confirms missing swimlane references.
+Four checks pass; adapted metaphor/agreement and rendering remain open.
+Ledger: 18,706; original counts: 15,621 corrected, 281 pending, 4 restored,
+4,175 retained. No browser validation ran.
+
+## Active migration translation gap — 2026-09-14
+
+Local source review `94c8857fd`: [actual reactive helper and caller trace](Tamazight-Review.md).
+Raw repair_board_data/copy_collections labels lack translation keys; the popup
+capitalizes raw IDs rather than reading step translations. Legacy migrations
+must stay removed. No runtime or translation change; 281 pending/4 restored.
+
+## Tamazight computer-server terminology — 2026-09-14
+
+Local fix `5e2a93287`: [explicit primary technical term](Tamazight-Review.md).
+French server noun replaced with the dictionary computer-server phrase. Four
+checks pass; TLS support semantics remain pending. No browser rendering was
+claimed. Ledger: 18,707; original pending/restored counts remain 281/4.
+
+## Tamazight OIDC caption setting — 2026-09-14
+
+Local fix `0ba2e0f6c`: [actual setting and adapted phrase limits](Tamazight-Review.md).
+French wording replaced; OIDC preserved. Four checks pass. Interface-button
+metaphor and complete grammar remain low confidence; no browser validation.
+Ledger: 18,708; original counts: 15,622 corrected, 280 pending, 4 restored,
+4,175 retained.
+
+## Archived summary before consolidation — 2026-09-14
+
+The following is historical; current counts are in Audit.md.
+
+### Translation audit progress
+
+Audit date: **2026-09-12**. Last updated: **2026-09-14**.
+
+| Status | Flagged keys |
+| --- | ---: |
+| Corrected | 15,622 |
+| Restored pre-pull; awaiting validation | 4 |
+| Reviewed; retained unchanged | 4,175 |
+| Pending review or repair | 280 |
+| Total tracked | 20,081 |
+
+[Aromanian color review](Aromanian-Review.md), local commit `4f63929ee`
+(2026-09-14), records primary dictionary page inspection and field-study
+evidence. Magenta remains pending; nearby color names do not establish a
+correct replacement. Counts are unchanged.
+
+Latest integration review: **2026-09-14**, `94c8857fd` —
+[Tamazight review](Tamazight-Review.md) traces raw active migration stage IDs
+that bypass translations, plus an unreachable legacy step key. New stage labels
+and locale coverage are required; removed migrations must stay removed.
+No translation changed and counts remain 281 pending/4 restored.
+
+Previous primary-source review: **2026-09-14**, `d1d06c706` —
+[Tamazight review](Tamazight-Review.md) records independently read IRCAM
+dictionary entries and grammatical forms. Subtitle and activation components
+are confirmed; complete software phrases remain open. Counts are unchanged.
+
+Previous terminology research: **2026-09-14**, `555b6631d` —
+[Tamazight review](Tamazight-Review.md) rejects skin-bump dictionary senses
+for the pending OIDC interface-button label. A domain reference is identified
+but its full fetch timed out; no value was accepted. Counts are unchanged.
+
+Review is ongoing. [Tigre/Wolaytta calendar review](Tigre-Wolaytta-Calendar-Review.md)
+records review `5da10eee5` (2026-09-14): a Tigrinya provenance warning for the Tigre base noun and an additional
+untranslated Wolaytta calendar key. Both require native terminology evidence;
+no finding was accepted and counts are unchanged.
+
+[Basque rule review](Basque-Review.md) records native
+completion/negation evidence (local commit `c4db1c19c`) and a runtime predicate
+mismatch. The named incomplete clause remains open; the completed predicate is retained
+with native software usage. No finding was accepted from spelling alone.
+[Inuktitut calendar review](Inuktitut-Calendar-Review.md)
+records primary evidence for the calendar noun, the actual settings context,
+and why a complete calendar-system/date-display phrase is still unverified.
+No calendar findings were accepted from incomplete component-word evidence.
+[Nahuatl terminology review](Nahuatl-Review.md)
+records why historical tonalpohualli is not yet a verified generic label
+for all modern calendars; all 17 findings remain open.
+Silesian raw-database wording is retained with native vocabulary evidence
+in `a0aacc7a9`; shared Polish spelling alone does not prove an error.
+Exact standardized compound and browser review remain open.
+ [Tamazight reference review](Tamazight-Review.md) confirms
+French prose in the first 25 pending entries. Review `009fa7dde` independently
+cross-checks calendar, user and click components in native Moroccan sources.
+Full phrases, warnings and invalidated Tuareg records remain open; no pending
+finding was accepted from component evidence.
+ The records in the [correction ledger](../../../releases/translations/audited-corrections.json)
+contain **18,708** exact before/after values, including unflagged repairs.
+[Detailed evidence](Audit-Evidence.md) retains categorized findings,
+source references, confidence limits and archived progress notes.
+
+Latest uncertain-phrase repair: **2026-09-14**, `0c51a3261` —
+[Basque rule review](Basque-Review.md) records execution of the actual saved
+rule-description method. It now joins nonempty fragments without the browser
+frame-count global, preserving names, dates, times and user details.
+Basque subject order and English preservation tests pass; all Jade compiles.
+Browser spec 88 is registered but unrun. Four restored findings remain open
+for browser/full native validation. DOM ordering repair is `1e4411183`.
+Latest unflagged unchanged review: **2026-09-14**, `5bf34bc48` —
+Inuktitut `new` retains `ᓄᑖᖅ`, matching the native software guide's New
+command and actual admin creation labels. Focused checks pass; browser review
+remains open. Latin Inuktitut spelling is valid; original script warnings
+require vocabulary/context review rather than automatic replacement.
+Current pending/restored counts are 283/4.
+
+Latest translation fix: **2026-09-14**, local commit `0ba2e0f6c` —
+[Tamazight review](Tamazight-Review.md) replaces French OIDC caption-setting
+wording, preserving OIDC. Four checks pass. Adapted interface-button metaphor
+and full grammar remain low confidence; native domain/browser validation is
+open. Original pending/restored counts are now 280/4.
+
+Previous server-term fix: **2026-09-14**, local commit `5e2a93287` —
+[Tamazight review](Tamazight-Review.md) replaces French server wording with
+an explicitly attested computer-server phrase. Four checks pass. TLS support
+semantics and complete phrases remain open; no live rendering is claimed.
+Original pending/restored counts remain 281/4.
+
+Previous repair-label fix: **2026-09-14**, local commit `2c38b996b` —
+[Tamazight review](Tamazight-Review.md) replaces the French orphaned-card repair
+label. Four checks pass. Adapted metaphor and agreement remain low confidence;
+progress-label integration and browser validation remain open. Original
+pending/restored counts are now 281/4.
+
+Previous progress-message fix: **2026-09-14**, local commit `e424d4de6` —
+[Tamazight review](Tamazight-Review.md) replaces the French migration progress
+message. Four checks pass. The adapted clause remains low confidence for native
+grammar, courtesy and browser validation. Original pending/restored counts
+are now 282/4; corrected wording does not close those broader uncertainties.
+
+Previous daily-label fix: **2026-09-14**, local commit `947366780` —
+[Tamazight review](Tamazight-Review.md) aligns the active daily trigger clause
+with native references, preserving its time placeholder. Four checks pass.
+The adapted clause remains low confidence pending native grammar and browser
+validation; original pending/restored counts remain 283/4.
+
+Previous interval fix: **2026-09-14**, local commit `23583a790` —
+[Tamazight review](Tamazight-Review.md) records four numeric interval repairs.
+Exact numbers and hour/minute distinctions are preserved; four checks pass.
+Adapted phrases remain low confidence pending native grammar and browser review.
+Original pending/restored counts remain 283/4.
+
+Previous named-calendar fix: **2026-09-14**, local commit `6e3663c83` —
+[Quechua review](Quechua-Review.md) records three named calendar noun repairs.
+Proper names remain unchanged. Adapted compounds are explicitly low confidence;
+full native phrase and browser validation remain open. Four checks pass;
+original pending/restored counts remain 283/4.
+
+Previous day-label fix: **2026-09-14**, local commit `34dbfa64c` —
+[Quechua review](Quechua-Review.md) records native day and daily recurrence
+terms replacing English wrappers. Four locale and ledger checks pass; calendar
+toolbar wiring is checked. Browser and full calendar-compound review remain
+open. Original pending/restored counts remain 283/4.
+
+Previous generic-label fix: **2026-09-14**, local commit `5c5ee40b6` —
+[Quechua review](Quechua-Review.md) records the native dictionary calendar noun.
+Four correction, unchanged-review and locale checks pass. Specific calendar
+compounds and browser verification remain open; original counts are unchanged.
+
+Previous translation fix: **2026-09-14**, local commit `b433730e3` —
+Afghan Uzbek cancellation spelling restores a missing alif. Indexed native
+sources support the spelling, but full pages failed to fetch: full-source
+orthographic and browser validation remain open, explicitly low confidence.
+[Uzbek Arabic review](Uzbek-Arabic-Review.md) records those limits.
+Focused checks and all 18,693 correction/token/completeness checks pass.
+Counts are 283 pending and 4 restored; broader uncertain repairs remain open.
+Latest unchanged review: **2026-09-14**, local commit `946e1a29b` —
+Restored Basque generic member and attachment subjects are retained after
+native noun evidence and both actual add/remove control labels were reviewed.
+Focused subject/composition/negative/wiring checks, all 4,175 unchanged
+acceptances and 234-locale completeness pass. Named subjects and browser
+review remain open. Counts are 283 pending and 4 restored.
+Earlier movement review is in `2bb54a30b`.
+Earlier unchanged review: **2026-09-14**, Thai r-is —
+คือ retained after removing its incorrect insertion before action predicates.
+Danish Dage gammel remains validated in `824dd005e` with native age-construction
+evidence; no current application use was found for that Danish key.
+Three Galician fragments remain validated by the previous contextual repair.
+Basque restored phrase review, provisional calendar compounds and broader
+language/browser review remain open.
+Card-show-lists context is verified against its settings row and toggle.
+Additional unflagged unchanged review: **2026-09-14**, `39af6aae5` —
+Veps Server and Valencian Errors retained with native software evidence and
+protected per locale from filling. Zero unreviewed English placeholders remain;
+this does not establish correct language or fluency in all values. These two reviews are outside the original flagged ledger; current
+pending/restored counts are 283/4.
+
+
+
+Fixed categories include wrong-language prose, terminology, warnings,
+placeholders and JSON/calendar/search formatting. All 361 originally flagged
+Klingon findings and the broader 829 German-identical values were repaired;
+the cron label retains the actual tool name Cron. The complete Danish flagged queue
+now has 629 retained values and seven corrected meanings.
+Danish Schedule and Days Old are validated; live browser review remains open.
+Esperanto lime-color wording was repaired in `d454a58ff`.
+Reviewed subtask actions/settings retain correct subordinate-task compounds.
+
+| Pending locale | Findings |
+| --- | ---: |
+| zgh — Standard Moroccan Tamazight | 170 |
+| iu — Inuktitut | 38 |
+| nah — Nahuatl | 17 |
+| tig — Tigre | 17 |
+| wal — Wolaytta | 17 |
+| ve-PP — Veps | 10 |
+| kl — Greenlandic | 4 |
+| dz — Dzongkha | 3 |
+| ff — Fulah | 2 |
+| ks — Kashmiri | 2 |
+| ee — Ewe | 1 |
+| qu — Quechua | 1 |
+| rup — Aromanian | 1 |
+
+Completion also requires reviewing all restored and unflagged values and
+previous low-confidence repairs. In particular, 98 Tamazight correction
+records have invalidated Moroccan provenance: CNAM MCΓ denotes Tuareg,
+not Moroccan. Corrected source notes are not full dialect/grammar validation.
+Calendar civil/astronomical epochs and moon-sighting distinctions, memory
+and authentication diagnostics, migration labels, archive/logo terminology,
+search-case instructions and full command grammar retain the evidence's
+recorded limits. Obsolete migration strings remain in translation scope.
+Veps filter syntax repairs preserve literal examples; Finnish prose still
+needs full Veps translation. [Veps review](Veps-Review.md) records limits.
+
+Placeholder, JSON and key-order checks verify structure, not fluency.
+Preserve every English interpolation/format token exactly and retain correct
+translations unchanged. No external translation service is used.
+
+Not all wrong values came from Transifex: the audit tracks 4,061 pulled
+changes and 16,020 additional local findings; some Bosnian errors predate
+the pull. Correct-language human translations remain preferred. Keep the
+full review scope open until language and browser validation is supported
+by evidence. Issue #6692 post-bind optional-filter TypeError is repaired in local commit
+`2c5cdd78a`; live LDAP login remains unverified. Translation work continues.
+
+## Tamazight overdue-time warning — 2026-09-14
+
+Local fix `ea286df3d`: [primary words and adapted deadline limits](Tamazight-Review.md).
+French warning replaced; %s preserved. Four checks pass. Native deadline
+terminology, grammar and browser validation remain low confidence/open.
+Ledger: 18,709; original counts: 15,623 corrected, 279 pending, 4 restored,
+4,175 retained.
+
+## Tamazight parser vocabulary review — 2026-09-14
+
+Local review `e4fb6c394`: [primary sense exclusions and native leads](Tamazight-Review.md).
+Physical invalid/paralysis entries cannot establish parser invalidity. Existence,
+check and correctness leads are read independently, while debug predicate and
+positive-integer meanings remain required. No value changed; 279 pending/4
+restored, 18,709 correction records.
+
+## Tamazight existence-check error — 2026-09-14
+
+Local fix `d32a96745`: [actual parser meaning and clause limits](Tamazight-Review.md).
+French warning replaced; %s and existence-check meaning preserved. Four
+checks pass; adapted negative grammar and browser validation remain open.
+Ledger: 18,710; original counts: 15,624 corrected, 278 pending, 4 restored,
+4,175 retained.
+
+### Debug-predicate source review — 2026-09-14
+
+Local commit `9669c2d84` records the primary dictionary's explicitly
+grammatical predicate sense and the actual parser's debug-option catalogue.
+No translation was accepted from that mismatched sense. The warning, French
+selector value and projection terminology remain under native review.
+Counts remain 278 pending and four restored awaiting validation.
+
+## Parent-subtitle option repair — 2026-09-14
+
+Local commit `b93379067` replaces French `subtext-with-parent` with
+`ⴰⴷⵓⵣⵡⵍ ⴰⴽⴷ ⵓⵎⴰⵔⴰⵡ`. Primary IRCAM General Dictionary PDF page
+57, entry 795, supplies subtitle; page 122, entry 2198, supplies father
+and its construct form. The latter reuses the existing `parent-card`
+metaphor, not an independently attested computing term. The conjunction
+`ⴰⴽⴷ` follows existing locale usage.
+
+Sidebar options at sidebar.jade lines 355–357 display this label;
+minicard.jade lines 353–355 show `parentCardName` below the title. This
+differs from the full ancestor path option. Software parent terminology
+and complete phrase grammar remain **low confidence**. Four translation
+checks pass, preserving placeholders and unchanged reviewed translations;
+no live browser validation ran. Counts are 15,625 corrected, 277 pending
+(including 164 Tamazight), four restored and 4,175 retained.
+
+## Full-path subtitle repair — 2026-09-14
+
+Local commit `7acd0f72c` replaces French `subtext-with-full-path` with
+`ⴰⴷⵓⵣⵡⵍ ⴰⴽⴷ ⵓⴱⵔⵉⴷ ⴰⴽⴽⵯ`. Primary IRCAM General Dictionary
+PDF page 57, entry 795, gives subtitle; page 76, entry 1196, gives with;
+page 33, entry 287, gives path and its construct form; page 77, entry
+1214, gives all/entirely. This also strengthens the preceding parent
+label's conjunction evidence beyond existing locale usage.
+
+The sidebar displays this option, and minicard.jade calls
+`parentString(' > ')`; models/cards.js maps parent-list card titles and
+joins them. The translation preserves the full ancestor-path distinction
+from the single parent. **Low confidence** remains for the software path
+metaphor, noun/adverb construction and full native phrase. Component
+entries are not a complete attested software label. Four focused checks
+pass, including exact wording, French negatives and preservation of the
+fullness term; no live browser validation ran.
+
+Counts now: 15,626 corrected, 276 pending (163 Tamazight), four restored
+and 4,175 retained; 18,712 correction-ledger records. Broader validation
+remains open after the original French finding is classified corrected.
+
+## Parent display-prefix repairs — 2026-09-14
+
+Local commit `16232ae09` replaces French `prefix-with-full-path` and
+`prefix-with-parent` with `ⴰⵣⵡⵉⵔ ⴰⴽⴷ ⵓⴱⵔⵉⴷ ⴰⴽⴽⵯ` and
+`ⴰⵣⵡⵉⵔ ⴰⴽⴷ ⵓⵎⴰⵔⴰⵡ`. Primary IRCAM General Dictionary PDF
+page 284, entry 5564, gives prefix, explicitly grammatical. Its extension
+to prepended display text is an adaptation, not an attested software
+term. Previously documented entries establish with, path, entirely and
+father; existing `parent-card` supplies the software parent convention.
+
+Minicard.jade lines 52–57 put either the joined ancestor path or single
+parent title in `.parent-prefix` before the card title. Lines 350–355
+put the corresponding subtext below it. The two new labels preserve
+both contrasts. Unlike the debug-predicate catalogue, this is prepended
+text; nevertheless the grammatical sense extension and full noun phrases
+remain **low confidence**, requiring native validation. Four translation
+checks pass, including French/subtitle negatives and distinct values.
+Browser rendering is unverified. Counts: 15,628 corrected, 274 pending
+(161 Tamazight), four restored, 4,175 retained; 18,714 ledger records.
+
+## Multi-selection label repairs — 2026-09-14
+
+Local commit `027bdc446` repairs five additional, previously unflagged
+French values: move/copy selection, both popup titles, and selection color.
+Primary IRCAM General Dictionary PDF page 70, entry 1069, gives selection
+`ⴰⴼⵔⴰⵏ` and construct `ⵓⴼⵔⴰⵏ`; page 503, entry 9495, gives move
+`ⵙⵎⵓⵜⵜⵉ`; page 532, entry 10013, gives copy `ⵙⵙⵏⵖⵍ`; page 77,
+entry 1233, gives color `ⴰⴽⵍⵓ`. The adjacent poison homonym is entry
+1232, not the cited color sense. The dictionary's `ⵉⵏⵉ` entry inspected
+at page 388 means say; it does not establish the color noun by spelling.
+
+SidebarFilters.jade displays the three action labels; sidebarFilters.js
+opens their popups. The move handler calls card.move and the copy handler
+calls copyCard for selected cards. Both action/popup titles now agree;
+move and copy remain distinct. Selection-color uses a color-of-selection
+construction. **Low confidence** remains for treating selection as the
+selected-card collection and for complete grammar; component entries do
+not attest the full software phrases. Four focused checks pass, preserving
+all English placeholders and reviewed unchanged values. Browser validation
+was not run. Original counts remain 15,628 corrected, 274 pending, four
+restored and 4,175 retained; the ledger grows to 18,719 records.
+
+## Parent-change and card-display repairs — 2026-09-14
+
+Local commit `f3d3aa4b2` repairs original pending `change-card-parent`
+and additional French `show-on-card`. Primary IRCAM General Dictionary
+PDF page 532, entry 10003, gives transitive change `ⵙⵙⵏⴼⵍ`; page 521,
+entry 9816, gives show `ⵙⵙⴽⵏ`; page 122, entry 2198, gives father;
+page 306, entry 5962, establishes the in preposition. Existing locale
+card vocabulary and software parent convention are reused.
+
+CardDetails.jade line 1415 introduces the parent-board/card selectors,
+so the replacement says change the parent of the card, not merely change
+the card. Sidebar.jade line 323 labels the card field-display column,
+so show-on-card retains its display-on-card meaning. **Low confidence**
+remains for the full grammar and software parent metaphor. Dictionary
+action entries do not attest these complete software phrases. Four
+focused translation checks pass; live browser validation was not run.
+Counts: 15,629 corrected, 273 pending (160 Tamazight), four restored and
+4,175 retained. The ledger contains 18,721 corrections; broader native
+validation remains open after changed findings are classified corrected.
+
+## Moroccan authentication-term repair — 2026-09-14
+
+Local commit `40491764c` revises four already corrected keys:
+`authentication-method`, `authentication-type`,
+`default-authentication-method`, and `display-authentication-method`.
+Primary IRCAM General Dictionary PDF page 249, entry 4801, explicitly
+gives authentication `ⴰⵙⵖⵣⵏ` and construct `ⵓⵙⵖⵣⵏ`. This replaces
+`ⵓⵙⵙⵜⴱ`, previously derived from CNAM's Tuareg-marked Asesteb.
+The exact Moroccan component no longer depends on that cross-variety
+source; the complete phrases still require native technical review.
+
+ConnectionMethod.jade displays method; peopleBody.jade displays type;
+settingBody.jade displays default-method and display-method controls.
+All four modifiers and distinctions survive. The dictionary's method
+entry at page 621, entry 11649, says way of education, not an attested
+computational authentication method. Existing method wording is retained
+as an adaptation, not newly accepted from this narrower sense. **Low
+confidence** remains for full software phrases and native/browser
+validation. Four focused checks pass; original before-values and exact
+placeholder inventories remain preserved. No live browser test ran.
+
+Original counts stay 15,629 corrected, 273 pending, four restored and
+4,175 retained. Ledger count stays 18,721: existing records were revised,
+not duplicated. Other Tuareg-sourced records remain under renewed review.
+
+## Moroccan analysis/structure revision — 2026-09-14
+
+Local commit `776840a4c` revises already corrected
+`step-analyze-board-structure` to
+`ⴰⵙⴼⵙⵉ ⵏ ⵜⵓⵚⴽⵉⵡⵜ ⵏ ⵜⴼⵍⵡⵉⵜ`. Primary IRCAM General
+Dictionary PDF page 221, entry 4239, explicitly gives the neologism
+analysis in addition to melting. The cited sense is analysis, not
+physical melting. Page 703, entry 13278, gives structure. This replaces
+unsupported `ⵙⵍⴹ` and cross-variety `ⵜⴰⵎⵚⵓⴽⵜ` with a nominal
+analysis-of-board-structure stage label and verified Moroccan components.
+
+The full noun phrase, genitive agreement and software structure metaphor
+remain **low confidence**, requiring native validation. The source review
+already establishes that active migration progress formats raw stage IDs
+and removed legacy migrations must stay removed. A repository search
+found no current client/server reference to this key; this repair does
+not claim the stage is visible or solve that integration gap. Four
+translation checks pass, preserving original ledger before-values and
+placeholders; no live browser test ran. Counts stay 15,629 corrected,
+273 pending, four restored, 4,175 retained and 18,721 ledger records.
+
+## Approaching-deadline warning repair — 2026-09-14
+
+Local commit `4f99247e8` replaces French `almostdue` with an adapted
+current-due-time/approaching clause, preserving the exact `%s`. Primary
+IRCAM General Dictionary PDF page 59, entry 845, gives approach/be close
+`ⴰⴷⵙ` with imperfect `ⵜⵜⴰⴷⵙ`. Earlier cited time and last components
+are reused consistently with `pastdue`. **Low confidence** remains for
+the deadline/current-time compound, temporal metaphor and full ongoing
+conjugation. Component entries do not attest the complete warning.
+
+Models/cards.js selects `almostdue` for positive day offsets, starting
+tomorrow; negative offsets select `pastdue`, and zero selects `duenow`.
+The warning retains approaching versus passed, not a generic due status.
+Four focused translation checks pass, including exact placeholder and
+French/overdue negatives. Browser rendering was not tested. Counts now:
+15,630 corrected, 272 pending (159 Tamazight), four restored, 4,175
+retained, 18,722 ledger records. Broader native review remains open.
+
+Migration follow-up also confirms boardBody.js emits `repair_board_data`,
+in addition to attachments.js. Active repair/copy stages need accurate
+new locale labels and reactive integration; legacy stage labels describe
+different operations and must not be substituted as a shortcut.
+
+## Swimlane-height label repairs — 2026-09-14
+
+Local commit `c986121af` repairs original pending
+`set-swimlane-height-value` and additional Arabic action/popup-title
+values. Primary IRCAM General Dictionary PDF page 686, entry 12929,
+gives height `ⵜⵉⵖⵣⵉ`; page 513, entry 9675, gives put `ⵙⵔⵙ`. The
+existing path/swimlane convention is retained. Setting a numeric dimension
+and the software swimlane metaphor remain adaptations, not independently
+attested complete software phrases; full native grammar remains **low
+confidence**. Pixels are retained using `px`, not replaced by a different
+unit. Action and popup title agree.
+
+SwimlaneHeader.jade displays the value label over a number input with
+min=100; the error popup appends >=100 to its separate constraint text.
+The Arabic positive-integer error remains pending: primary page 450,
+entry 8544, gives positive, while page 457, entry 8684, contrasts negative
+with positive, but these do not establish the complete integer requirement.
+Do not replace that constraint with only a positive-number clause.
+
+Four translation checks pass, including exact labels, action/title
+agreement, Arabic negatives and pixel-unit preservation. Browser
+validation did not run. Counts: 15,630 corrected, 272 pending (159
+Tamazight), four restored, 4,175 retained; 18,725 ledger records.
+Broader native and runtime verification remains open.
+
+These counts are reconstructed from the original tables and current
+ledgers. Earlier narrative totals are historical reported snapshots; the
+current summary uses the live reconstruction, not arithmetic increments.
+
+## Complete progress-table refresh — 2026-09-14
+
+Local commit `9c7a845a3` fixes the audit CLI updater to rebuild pending
+locale rows together with totals. It derives names from existing summary
+rows or original audit evidence, removes resolved locales and includes
+newly pending ones. Missing tables, unknown names, invalid counts and
+non-reconciling totals cause an error before the file is written.
+Regression coverage checks stale counts, returning Latvian findings,
+resolved Tamazight findings, inconsistent totals, missing table, preserved
+fix details and idempotence. These fixtures exercise progress bookkeeping;
+they do not accept those hypothetical locale findings or prove fluency.
+The real --update-summary CLI ran successfully and left the already correct
+summary unchanged. Live counts remain 15,630 corrected, 272 pending,
+four restored and 4,175 retained; translation repairs remain unfinished.
+
+## Integer-source evidence review — 2026-09-14
+
+Local commit `e702bdf0b` records a successfully downloaded primary IRCAM
+2009 general dictionary, its visually inspected title and limits of legacy
+Arabic extraction. Secondary whole/complete and positive-number leads
+are not accepted as mathematical integer proof. The school-lexicon
+publication lead remains unread; catalogue hosting is not proof of locale
+or technical sense. Both integer-constraint findings remain pending.
+Counts stay 15,630 corrected, 272 pending, four restored and 4,175
+retained; native terminology and browser validation remain unfinished.
+
+## Veps dictionary/sense expansion — 2026-09-14
+
+Local commit `726abda52` records newly inspected dictionary senses and
+forms for top position, distinguishes stationary päl from movement päle,
+and rejects summarize as arithmetic sum. The pinned primary Veps analyzer
+source contains frequency evidence, not proof of software-parent meaning.
+These distinctions narrow future repairs without accepting incomplete
+Finnish-prose replacements. Ten original Veps findings remain pending,
+alongside unflagged values. Live total: 272 pending/four restored;
+complete native and browser verification remains unfinished.
+
+## SMTP TLS description repair — 2026-09-14
+
+Local commit `086a02734` replaces Arabic `smtp-tls-description` with
+an adapted enable-TLS-use-for-SMTP-computer-server clause. Primary IRCAM
+General Dictionary PDF page 537, entry 10106, gives activate; page 236,
+entry 4544, gives use `ⴰⵙⵎⵔⵙ`; page 120, entry 2157, gives the exact
+computer-server compound and the noun's construct form. The full phrase
+retains literal `TLS` and `SMTP`, avoiding a physical support noun.
+
+SettingBody.jade binds this checkbox to mailConfiguration.secure; its
+JavaScript saves mailServer.enableTLS, and mailTransport.js reads secure.
+The repaired prose therefore describes enabling TLS use on this SMTP
+server, not generic help/support or authentication. This source review
+does not claim unchecked means all TLS negotiation is disabled. **Low
+confidence** remains for the full technical clause, preposition and
+genitive agreement. The component entries are not a full attested warning.
+Four focused translation checks pass, preserving placeholders, protocol
+names and enabled-action wording; no live browser validation ran.
+
+The repaired CLI updater reconstructs both count tables: 15,631 corrected,
+271 pending (158 Tamazight), four restored and 4,175 retained; 18,726
+ledger records. Broader native and runtime verification remain open.
+
+## Private-board description repair — 2026-09-14
+
+Local commit `d7bdf6ac6` replaces Arabic `private-desc` with an adapted
+Tamazight private-board/members-only description. Current English explicitly
+contains both view and edit actions; the Arabic seed only described members
+as allowed. The repair restores both actions, not just the privacy adjective.
+
+Primary IRCAM General Dictionary PDF page 454, entry 8633, gives private;
+page 43, entry 502, gives member; page 468, entry 8843, gives only; page
+719, entry 13518, gives be able; page 727, entry 13642, gives see/look.
+The only sense is entry 8843, not adjacent except entry 8845. Native
+MediaWiki supplies edit `ⵙⵏⴼⵍ`; existing board vocabulary is reused.
+These are component attestations, not a complete published software phrase.
+**Low confidence** remains for feminine agreement, focus construction,
+plural verbs/object pronouns and full software wording. No authorization
+logic or board-role permissions were changed by this translation repair.
+
+BoardHeader.js chooses this translated fallback through visibilityDesc
+when there is no custom private-board description. Four focused checks
+pass, preserving exact placeholders and both action terms; live browser
+validation was not run. The CLI recounts 15,632 corrected, 270 pending
+(157 Tamazight), four restored, 4,175 retained and 18,727 ledger records.
+Broader native phrasing, prior low-confidence and browser review remain open.
+
+## Custom assetlinks labels — 2026-09-14
+
+Local commit `d6a358160` repairs French custom-assetlinks-enabled and
+custom-assetlinks-content in Tamazight. IRCAM 2019 General Dictionary
+PDF page 537 entry 10106 attests activate; page 83 entry 1346 attests
+content; page 404 entry 7686 attests specific/exclusive. Dictionary source:
+https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+
+Specific is adapted to custom user-provided configuration. This is not
+an attestation of a complete personalized software phrase. **Low confidence**
+remains for this adaptation, modifier scope and full native grammar.
+SettingBody.jade displays the activation checkbox and JSON textarea title;
+settingBody.js validates and cleans JSON before saving. Literal assetlinks.json
+and (JSON) survive exactly; activation and content labels remain distinct.
+Four focused checks pass, including placeholder, key-order and ledger checks.
+No live browser validation was run. Recount: 15,634 corrected, 268 pending
+(155 Tamazight), four restored, 4,175 retained and 18,729 correction records.
+Broader native and runtime verification remain open.
+
+## WIP activation label — 2026-09-14
+
+Local commit `a5edc6d3c` repairs unflagged French enable-wip-limit.
+IRCAM 2019 PDF page 537 entry 10106 attests activate; page 270 entry
+5271 attests limit/boundary/border. Source:
+https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+
+The label uses activate plus boundary, preserving WIP exactly. **Low
+confidence** remains for applying boundary to a numerical work-in-progress
+limit and for full native phrasing. ListHeader.jade displays the action;
+ListHeader.js enables the limit and ensures it is at least the card count.
+No limit logic is changed. Four focused translation checks pass; browser
+validation was not run. This key was outside the original flagged queue:
+268 original findings remain pending; the correction ledger now has 18,730
+records. Prior low-confidence and broader runtime/native reviews remain open.
+
+## Custom product name — 2026-09-14
+
+Local commit `c4a40896b` repairs unflagged French custom-product-name,
+restoring product, which was absent from the French seed. IRCAM 2019
+PDF page 397 entry 7541 attests name; page 271 entry 5286 attests product
+and construct uyafu; page 404 entry 7686 attests specific/exclusive.
+Source: https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+
+**Low confidence** remains for custom branding, complete grammar and final
+modifier scope. The dictionary's ism izlin proper-noun compound does not
+prove custom product-name software wording. This adaptation instead retains
+the explicit product component. SettingBody.jade uses the label above the
+product-name input. Four focused translation checks pass; no live browser
+validation was run. Original pending count stays 268; correction records
+increase to 18,731. Broader native and runtime reviews remain open.
+
+## Show parent in minicard — 2026-09-14
+
+Local commit `89ebd29cc` repairs French show-parent-in-minicard. IRCAM
+2019 PDF page 521 entry 9816 attests show, page 122 entry 2198 father
+and page 575 entry 10775 card. Source:
+https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+
+The small-card adjective is reused from existing minicard-settings and
+nearby card controls; this reuse does not independently validate agreement.
+**Low confidence** remains for the feminine small adjective, complete
+clause and software-parent metaphor. Sidebar.jade uses the label above
+prefix/subtext/full-path/parent choices; those choices remain distinct.
+Four focused translation checks pass; no browser validation was run.
+Recount: 15,635 corrected, 267 pending (154 Tamazight), four restored,
+4,175 retained and 18,732 correction records. Broader reviews remain open.
+
+## SMTP host sentence terminology review — 2026-09-14
+
+The French smtp-host-description remains pending. Primary IRCAM 2019
+General Dictionary PDF page 185 entry 3464 attests ansa (construct wansa)
+with address as a neologism and an explicit email-address compound.
+Page 533 entry 10031 attests ssugur with administer/manage as sense two;
+its physical drive/make-walk sense is not the intended software meaning.
+Page 342 entry 6519 instead gives hawl xf take care of/manage; the
+English index's manage-to heading must not be treated as an interchangeable
+bare verb. Management nouns occur at entries 4565 (page 237), 4874
+(page 252, neologism) and 11897 (page 634).
+Source: https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+
+Native MediaWiki tool-link-emailuser attests singular electronic message,
+not the full possessive plural/relative clause required by this sentence.
+The actual input is mail-server-host with placeholder smtp.domain.com;
+settingBody.js trims configuration.host and saves mailServer.host. This is
+the SMTP computer server's address, not the user's own email address.
+Do not substitute the dictionary's email-address compound for the host.
+No translation or ledger acceptance was made: the full message plural,
+possession, participle and server-relative clause remain to verify.
+Original pending count remains 267; low-confidence and browser reviews
+remain open. This review changes the next translation choice by excluding
+email-address and the wrong manage sense.
+
+## SMTP host description repair — 2026-09-14
+
+Local commit `584dbfc7c` repairs smtp-host-description after finding the
+missing primary email noun evidence. IRCAM 2019 PDF page 608 entry 11389
+attests correspondence, plural timyazanin and the explicit singular
+email compound tamyazant taliktrunit. Native MediaWiki tool-link-emailuser
+independently uses that electronic-message compound. Earlier verified
+address, computer-server and administer/manage components are reused.
+Source: https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+
+The sentence keeps SMTP, a server's address and your electronic correspondence;
+it does not change the input to a user's email address. **Low confidence**
+remains for the electronic adjective plural, participle, possession and
+complete relative-clause grammar. The dictionary attests components, not
+this complete software sentence. Four focused checks pass; no browser
+validation was run. Recount: 15,636 corrected, 266 pending (153 Tamazight),
+four restored, 4,175 retained and 18,733 correction records. The prior
+pending note is historical; full native validation remains open.
+
+## SMTP host label and port review — 2026-09-14
+
+Local commit `eb710395b` repairs unflagged Arabic smtp-host with the
+explicit computer-server compound from IRCAM 2019 PDF page 120 entry
+2157. SMTP is preserved; actual settingBody.jade host input is distinct
+from the adjacent port input. Four focused translation checks pass.
+Source: https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+
+The related smtp-port-description remains pending. Primary PDF page 530
+entry 9981 attests use/exploit; page 524 entry 9873 attests send/ship.
+Page 513 entry 9685 specifically use land is not the preferred bare
+software-use verb. These do not establish a networking-port noun or
+complete outgoing-email sentence. smtp-port remains Arabic and needs a
+separate direct repair; no port acceptance is recorded. Host-label repair
+increases correction records to 18,734 but leaves 266 original findings
+pending. Full native/browser validation remains open.
+
+## Advanced-filter escape repair — 2026-09-14
+
+Local commit `72b212a5d` removes doubled backslashes from Tamazight
+advanced-filter-description, matching all literal examples and escape
+markers to English. Syntax regression rejects the doubled apostrophe
+escape and explicitly requires the original audit row to stay pending.
+No correction-ledger acceptance was added: the prose is still English.
+
+Three checks pass (syntax examples, correction ledger, retained reviews).
+allTranslationCompleteness.test.cjs now correctly fails with one unreviewed
+English placeholder in zgh. Before the repair, malformed backslashes made
+English look different from the source, bypassing the structural fill gate.
+This is exposed missing translation work, not a reason to restore broken
+syntax, change punctuation to evade detection or weaken the gate. Translate
+the full prose while retaining exact operators/examples to resolve it.
+Original pending count stays 266 and ledger records stay 18,734. No live
+browser validation was run; broader native/runtime work remains open.
+
+## Full advanced-filter help repair — 2026-09-14
+
+Local commit `04aba67e0` directly translates the full advanced-filter help
+and its unflagged French label. IRCAM 2019 PDF page 165 entry 3053 attests
+filter and page 570 entry 10673 attests condition; existing locale custom
+field wording is reused. Every operator, comparison, quoted-field example,
+escape marker, Boolean combination, grouped expression and regex example
+is preserved exactly. The label and help opening use the same filter name.
+Source: https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+
+**Low confidence** remains for the advanced modifier, computational operator
+and value adaptations, spaces/quotes/brackets, interpretation order and full
+technical grammar. These component sources are not a native attestation of
+the complete prose. Direct fill is recorded for future correct-language
+human replacement, without external translation services or remote writes.
+Four checks pass; completeness again reports zero placeholders across 234
+locales. The earlier one-placeholder failure is resolved by translation,
+not by weakening the gate or reintroducing malformed escapes. Native/browser
+validation was not run. Recount: 15,637 corrected, 265 pending (152 Tamazight),
+four restored, 4,175 retained and 18,736 correction records. Full uncertain
+and broader runtime/native review remains open.
+
+## Filter punctuation terminology revision — 2026-09-14
+
+Local commit `ac4b1dcdc` revises the prior direct filter-help repair after
+primary evidence exposed unsupported conflated quote/bracket forms.
+IRCAM 2019 PDF page 633 entry 11892 attests quotation marks and plural
+taskarin; page 687 entry 12948 attests parentheses/brackets and plural
+tiskiwin. Page 212 entry 4045 attests space and plural isayrarn; applying
+this to whitespace remains an adaptation. These exact nouns replace the
+previous unverified forms. Source:
+https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+
+Tests require distinct quotation-mark and grouped-expression nouns,
+reject old conflated forms, and preserve all literal syntax examples.
+Original ledger before value is preserved; its after/reason are revised,
+not duplicated. Four focused checks pass and completeness stays green.
+**Low confidence** remains for single modifier, plural case/agreement,
+operator/value and advanced adaptations, full software prose and grammar.
+No native/browser validation was run. Original pending count remains 265;
+ledger records remain 18,736. Broader validation remains open.
+
+## Single quotation mark and value review — 2026-09-14
+
+Local commit `d1214818b` replaces an unsupported single-quote modifier
+with explicit one-character wording and the literal apostrophe. This keeps
+single quotes distinct from grouping parentheses and makes the required
+character visible. The complete explanatory construction remains **low
+confidence** for native grammar, not an attested dictionary phrase.
+
+IRCAM 2019 PDF page 263 entry 5110 explicitly gives both price and value
+for atig; existing value terminology is retained rather than discarded
+because of the price sense. Page 273 entry 5342 supplies azal value as an
+alternative, not proof that shared existing atig is wrong. Page 282 entry
+5518 single means unmarried and is unsuitable for parser quotation marks.
+Source: https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+
+Four focused checks pass; exact syntax/escape examples and original ledger
+before value survive. No new ledger acceptance or duplicate is added.
+265 original findings remain pending; 18,736 corrections are recorded.
+Full native/browser validation and earlier technical adaptations stay open.
+
+## Trello import instruction repair — 2026-09-14
+
+Local commit `91ebdcc27` repairs cosmetically changed English
+import-board-instruction-trello. The direct Tamazight instruction keeps
+Trello and the exact ordered UI labels Menu, More, Print and Export,
+Export JSON. Copy text is explicit, using IRCAM 2019 PDF page 532
+entry 10013 copy and existing board/text/navigation vocabulary.
+Source: https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+
+**Low confidence** remains for board possession, navigation/then wording,
+result relative clause and complete instruction grammar. No exact current
+client reference was found for this legacy key; no claim is made that a
+live import popup was exercised. Four focused translation checks pass;
+menu literals/order and copy instruction have regression coverage.
+Recount: 15,638 corrected, 264 pending (151 Tamazight), four restored,
+4,175 retained and 18,737 correction records. Native/browser and earlier
+uncertain repairs remain open.
+
+## New board invitation notification — 2026-09-14
+
+Local commit `7dfbbecbd` repairs French just-invited using a nominal
+new invitation for you to this board notification. IRCAM 2019 PDF page
+227 entry 4358 attests invitation; existing new/board vocabulary is reused.
+Page 506 entry 9539 invite/receive differs from page 523 entry 9861,
+which specifically invites to a meal and is unsuitable as sole authority
+for board membership. Source:
+https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+
+**Low confidence** remains for rendering just-invited recency with new,
+recipient/preposition and complete nominal notification grammar. BoardsList
+and Sidebar display this notification; it must stay distinct from
+not-accepted-yet, which remains French and pending. The dictionary's
+accept destiny/God's will/intercession entries do not establish generic
+accepting a board invitation; no such acceptance is recorded.
+Four focused checks pass; no browser validation was run. Recount: 15,639
+corrected, 263 pending (150 Tamazight), four restored, 4,175 retained and
+18,738 correction records. Broader native/runtime verification stays open.
+
+## Accept versus kiss search ambiguity — 2026-09-14
+
+The remaining not-accepted-yet finding was reviewed against new external
+search evidence. An Arabic-to-zgh Glosbe result for unvocalized يقبل gives
+ssudm. This spelling can represent a kiss reading and must not be treated
+as invitation acceptance. Primary IRCAM 2019 PDF page 533 entry 10038
+explicitly attests ssudm, variant ssudn, as to kiss. Reject this candidate
+for accept/not-accepted-yet; no translation or acceptance is recorded.
+Sources:
+https://ar.glosbe.com/ar/zgh/يقبل
+https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+
+The currently indexed official DGLAI site is a further primary lead:
+https://tal.ircam.ma/dglai/
+A live open returned 502; the accepter search URL was not retrieved.
+Neither result establishes an accept lemma. No external translation service
+was used. not-accepted-yet remains French and pending; the dictionary's
+accept-destiny/intercession senses also remain unsuitable. This negative
+semantic evidence excludes a newly encountered false candidate, rather
+than asserting no suitable Tamazight word exists. Original pending findings
+remain 263; full native and browser validation remain open.
+
+## Support-page enabled label — 2026-09-14
+
+Local commit `46090ad0e` repairs French support-page-enabled with page,
+assistance and activated wording. IRCAM 2019 PDF page 691 entry 13033
+attests tiwisi help/assistance and construct twisi, which also occurs in
+the existing support label; page 537 entry 10106 attests activate.
+The collective-work sense is not the intended support-page meaning;
+physical supporting-beam terms are likewise not used. Source:
+https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+
+**Low confidence** remains for the adapted passive activated form and
+complete page-status grammar. SettingBody.jade displays this checkbox
+label for the support page. Four focused translation checks pass; no
+live browser validation was run. Recount: 15,640 corrected, 262 pending
+(149 Tamazight), four restored, 4,175 retained and 18,739 correction
+records. Prior low-confidence and broader native/runtime work remain open.
+
+## Hidden activities notification — 2026-09-14
+
+Local commit `c0edf1104` repairs Arabic
+now-activities-of-all-boards-are-hidden. IRCAM 2019 PDF page 327 entry
+6267 attests hide/be hidden; existing activities/boards terminology is
+reused. Now and both all quantifiers survive, so this does not collapse
+all activities across all boards into only some board's activities.
+Source: https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+
+**Low confidence** remains for feminine plural verb, genitive and complete
+notification grammar. No exact current client reference was found for
+this key; no live rendering was verified. Four focused checks pass,
+including both quantifiers, Arabic removal and exact ledger/token checks.
+Recount: 15,641 corrected, 261 pending (148 Tamazight), four restored,
+4,175 retained and 18,740 correction records. Broader native/browser
+validation and earlier low-confidence wording remain open.
+
+## Board visibility and private-only restriction — 2026-09-14
+
+Local commit `267913e2f` repairs French tableVisibilityMode (unflagged)
+and tableVisibilityMode-allowPrivateOnly (flagged). Existing visibility
+and boards vocabulary is reused. IRCAM 2019 PDF page 477 entry 9012
+attests allow/authorize; page 454 entry 8633 attests private; page 468
+entry 8843 attests only. The label retains all three restriction meanings.
+Source: https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+
+**Low confidence** remains for feminine plural private agreement,
+visibility genitive and the full restriction grammar. BoardBody renders
+the message; board-header/settings code reads the matching setting.
+No permission or visibility logic is changed. Four focused checks pass;
+heading prefix consistency and only/private scope have regression checks.
+No browser validation was run. Recount: 15,642 corrected, 260 pending
+(147 Tamazight), four restored, 4,175 retained and 18,742 correction
+records. Broader native/runtime and prior low-confidence work stays open.
+
+## Card-count threshold label — 2026-09-14
+
+Local commit `529775d9c` repairs Arabic show-cards-minimum-count.
+IRCAM 2019 PDF page 444 entry 8404 gives ugar, variant uggar, more
+than/more. Existing card/list/count vocabulary is reused. The label
+retains the if condition and unfinished more-than comparison before
+the numeric threshold control, rather than becoming unconditional show.
+Source: https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+
+UserHeader.jade places this label above show-cards-count-at, a number
+input with minimum -1. No numeric sentinel or counting logic is changed.
+**Low confidence** remains for full conditional/existential grammar,
+count terminology and plural/genitive agreement. Four focused checks
+pass; no browser validation was run. Recount: 15,643 corrected, 259
+pending (146 Tamazight), four restored, 4,175 retained and 18,743
+correction records. Broader native/runtime reviews remain open.
+
+## Nine calendar-option noun repairs — 2026-09-14
+
+Local commit `474a2909e` replaces Intiwatana (clock) with Watanqillqa
+(calendar) in Gregorian, Buddhist, Chinese, Coptic, Ethiopic Amete Alem,
+Ethiopic, Hebrew, Japanese and Umm al-Qura options. The Chilean Ministry
+of Education Cusco Collao dictionary 2019 printed page 18 attests calendar;
+printed page 42 identifies Inti watana as clock. Source:
+https://aprendoenlinea.mineduc.gob.cl/sites/default/files/newtenberg/614/articles-134497_recurso_pdf.pdf
+
+Exact existing names and qualifiers are preserved. **Low confidence**
+remains for retained naming/modifiers, native full compounds and browser
+rendering. This lexical repair does not certify all components or all
+Quechua varieties. The generic calendar-system heading and remaining
+Jalali, ISO week and civil/sighting/astronomical labels still need their
+complete source meanings checked. No pending qualifier is accepted here.
+Existing ledger original-before values are preserved where present; eight
+new unflagged records and one revision bring total records to 18,751.
+Four focused checks pass; no browser validation was run. Original pending
+findings remain 259; native/runtime and prior uncertain repairs stay open.
+
+## Jalali, ISO weeks and week label — 2026-09-14
+
+Local commit `2307b8332` repairs three Quechua values. Jalali's omitted
+proper name is restored while retaining Persian identification. ISO 8601
+now explicitly identifies the Gregorian calendar and weeks, rather than
+only naming the standard with a clock noun. The generic week label is
+Simana, removing the unrelated Kay willaymi wrapper.
+
+The Chilean Ministry of Education Cusco Collao dictionary 2019 PDF pages
+45, 83 and 159 explicitly attest Simana as Quechuized week. A word being
+a Spanish loan does not make it wrong-language when the primary native
+dictionary explicitly accepts it. Calendar Watanqillqa is separately
+attested; the previous clock/calendar distinction applies here too.
+Source:
+https://aprendoenlinea.mineduc.gob.cl/sites/default/files/newtenberg/614/articles-134497_recurso_pdf.pdf
+
+**Low confidence** remains for retained Persa/Gregoriano names, adapted
+plural simanakuna and full native compounds. The generic calendar-system
+heading and civil/sighting/astronomical labels remain open. Four focused
+checks pass; no browser validation was run. Original ledger before values
+are preserved on revisions; two new records bring total to 18,753.
+Original pending findings remain 259; broader native/runtime review stays open.
+
+## Calendar-system heading — 2026-09-14
+
+Local commit `06f88d5ed` replaces clock-only calendar-system with a
+calendar/system/date-display heading. Peru Ministry of Education Central
+Quechua vocabulary PDF page 85 (printed 84) attests llika system/network
+with a respiratory-system example; PDF page 141 (printed 140) repeats the
+Spanish-to-Quechua system/network entry. This is primary evidence, not
+sole reliance on crowdsourced system candidates. Source:
+https://formacionenservicio.minedu.gob.pe/sifods/centro-recurso/2022/Material-educativo/726.ITEM-56-VOCABULARIO-QUECHUA-CENTRAL-PDFWEB.pdf
+
+**Low confidence** remains for borrowing this component across Central
+Quechua and the locale's Cusco Collao base, day-to-date interpretation,
+existing display rikuchiy and full compound grammar. The complete calendar
+system phrase is adapted, not quoted from either dictionary. UserHeader.jade
+uses the heading above the calendar-system selector. No live browser
+verification was run. Four focused translation checks pass; original ledger
+before is preserved on revision. Original pending remains 259; records stay
+18,753. Specific civil/sighting/astronomical qualifiers and broader native
+verification remain open.
+
+## Kashmiri sighting terminology and source reliability — 2026-09-14
+
+Both ks calendar-system-islamic-rgsa and calendar-system-islamic-tbla
+remain pending, respectively English country-only and tabular-only labels.
+The sighting qualifier must specify moon observation, not merely Saudi
+Arabia. Wiktionary's Kashmiri moon entry gives zoon written زوٗن (initial
+zay), not an inferred initial che letter. This supplies a spelling lead,
+not proof of the complete sighting label or inflected see construction.
+https://en.wiktionary.org/wiki/زوٗن
+
+The linked Grierson primary query was followed directly and returned no
+results for this exact Unicode spelling. Do not describe this as a read
+primary lemma or as evidence that the word does not exist:
+https://dsal.uchicago.edu/cgi-bin/app/grierson_query.py?qs=%D8%B2%D9%88%D9%97%D9%86
+
+A search-indexed M. K. Raina dictionary PDF URL was opened but redirected
+to an unrelated BIG777 gambling page. Its indexed dictionary snippet is
+not a verified current primary source; no redirected content was used
+for translations. Excluded URL:
+https://mkraina.com/wp-content/uploads/2025/01/A-Dictionary-of-Peculiar-Uncommon-Kashmiri-Words-and-Phrases-Edition-4.pdf
+
+Generic calendar/Hijri, Saudi Arabia, moon-sighting inflection, tabular
+and astronomical-epoch wording still require native evidence and direct
+repair. Urdu-only Hijri pages from the search are not Kashmiri evidence.
+No translation or ledger acceptance was made. Original pending remains
+259, including two Kashmiri findings; full native/browser work stays open.
+
+
+Primary Kashmiri grammar review — 2026-09-14, local commit `3567bf197`.
+Modern Kashmiri Grammar supplies moon/seeing vocabulary, infinitive
+agreement and nominalization evidence. Full calendar compounds and script
+remain unverified. No values accepted; 259 original findings stay pending.
+See Kashmiri-Review.md for page references and source limitations.
+
+
+Tamazight field total — 2026-09-14, local commit `af4faeb70`.
+showSum-field-on-list replaces French with native aggregate/top wording.
+IRCAM Amazigh-English dictionary PDF page 602 entry 11282 supplies total;
+page 67 entry 1008 supplies top and its construct form. Existing show,
+field and list terms are reused. The actual currency/number controls in
+sidebarCustomFields.jade lines 54–61 share this label. Aggregate meaning
+is distinguished from a count and a prose summary in regression coverage.
+Low confidence: plural genitive and full software phrase remain subject to
+native review. Four structural/source checks pass across all 234 locales;
+these do not prove native fluency or browser layout. Browser not executed.
+Original pending 259 → 258, Tamazight 146 → 145; ledger 18,754.
+Primary source: https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+
+
+Tamazight rule destinations — 2026-09-14, local commit `a4439d400`.
+Unflagged r-top-of and r-bottom-of replace French with aflla n and
+abraw n, respectively. Primary IRCAM Amazigh-English PDF page 67 entry
+1008 attests top; page 32 entry 262 attests bottom and a noun+n example.
+Actual boardActions.jade top/bottom options precede list/board fragments.
+Positive/negative checks preserve distinct positions and the of component;
+four suites pass, including token and human-preference checks. Low
+confidence: physical position nouns adapted to software list ordering and
+full assembled rule grammar. Browser verification remains unexecuted.
+Both keys are outside the original queue: pending stays 258, Tamazight
+145. Correction ledger grows from 18,754 to 18,756.
+Primary source: https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+
+
+Tamazight custom-field operator — 2026-09-14, local commit `d0175d46a`.
+Unflagged operator-customfield French is replaced with joined igr izlin
+from the existing singular custom-field activity phrase. IRCAM dictionary
+PDF page 404 entry 7686 supports specific/exclusive modifier terminology.
+Query.buildParams maps localized operators but its operator expression
+does not accept spaces: translating this as a spaced label would fail.
+Regression invokes the actual Query implementation with both quoted and
+unquoted values and verifies the customfield predicate. Four suites pass;
+placeholders and newer human translations remain preserved. Low confidence:
+joined technical operator and native software compound; browser not run.
+Original pending remains 258; correction ledger grows to 18,757.
+
+
+Tamazight numeric-field total — 2026-09-14, local commit `318e5030b`.
+Unflagged sum-of-number-fields now uses primary total/top/mark components
+in place of unsupported seed wording, reusing existing custom-field and
+number terms. IRCAM PDF 602 entry 11282, PDF 67 entry 1008 and PDF 467
+entry 8828 supply the respective components. Actual listHeader.js helper
+uses summarizableCustomFields with number type, so the numeric and
+marked-for-display restrictions must both remain. Regression checks
+preserve those components and reject previous aggregate/top wording.
+Four suites pass with exact tokens, JSON order and human preference.
+Low confidence: plural genitive, passive marking and full relative clause;
+browser not run. Original pending remains 258; ledger grows to 18,758.
+
+
+Tamazight custom-field creation — 2026-09-14, local commit `b2f574536`.
+Unflagged activity-customfield-created Arabic is replaced with Tamazight
+isnulfa igr izlin %s. IRCAM PDF page 509 entry 9599 supplies create/invent
+and its preterite stem; existing singular custom-field terminology is
+reused. activities.jade passes activityValue(customField), so the lone
+%s denotes the field value, with actor rendered separately. Tests retain
+that inventory and reject Arabic prose; four suites pass. Low confidence:
+finite-verb morphology and full activity fragment. Browser not run.
+Original pending remains 258; correction ledger grows to 18,759.
+
+
+Tamazight exceeded WIP — 2026-09-14, local commit `fc73c77eb`.
+wipLimitErrorPopup-dialog-pt1 French becomes Tamazight with task count,
+this list, greater-than WIP limit and user-defined qualifier preserved.
+IRCAM PDF 270 entry 5271 supplies limit/construct, PDF 444 entry 8404
+more than, PDF 508 entry 9575 define. Actual exceededWipLimit uses
+strict value < count; reachedWipLimit separately uses <=. Regression
+checks retain the comparison and defining qualifier, reject French, and
+four suites pass with exact token/human-preference preservation. Low
+confidence: second-person defining form and complete comparative relative
+clause; browser not run. Original pending 258 → 257, Tamazight 145 → 144;
+correction ledger grows to 18,760.
+
+
+Tamazight WIP-value setting — 2026-09-14, local commit `6e1292cd0`.
+set-wip-limit-value French is replaced with imperative define, limit,
+maximum task count and this-list wording. IRCAM PDF page 508 entry 9575
+supplies define, PDF 270 entry 5271 limit, PDF 457 entry 8699 maximum
+and its construct form. The actual numeric setting label is rendered in
+listHeader.jade; no WIP logic changes. Regression preserves maximum and
+imperative meanings and distinguishes the exceedance warning. Four suites
+pass with token, order and human-preference protection. Low confidence:
+maximum-of-count compound, construct grammar and full software phrase;
+browser not run. Pending 257 → 256, Tamazight 144 → 143; ledger 18,761.
+
+
+Browser coverage — 2026-09-14, local commit `c8bcfb258`.
+Spec 03 seeds numeric fields valued 7 and 100, enables display only for 7,
+sets zgh profile language and checks the rendered total and translated
+tooltip. Negative assertions reject 107 and obsolete aggregate/top words.
+Syntax and Playwright discovery pass. Default HTML reporter encountered
+an existing report-file permission error during discovery; line reporter
+discovery succeeded without changing ownership or claiming execution.
+HTTP probe to localhost:3000 failed connection: no app was running there.
+The browser regression is registered, not executed, and no native fluency
+acceptance or pending-count reduction is made.
+
+
+Tamazight plural error review — 2026-09-14, `a693a0093`.
+IRCAM PDF page 658 entry 12346 explicitly attests tazglt singular and
+tizglin plural. Errors now matches Error; unsupported izgaln is replaced.
+The previous correction record is revised, preserving original before
+and reason history; ledger stays 18,761 and pending stays 256. Four suites
+pass, including exact tokens, order and human-preference preservation.
+Related cron error strings still use the prior plural and need contextual
+grammar repairs; account lockout failures must not be equated with errors
+without semantic review. The full import warning remains French and
+pending; no incomplete component-only translation is accepted for it.
+Browser verification remains open.
+
+
+Tamazight migration errors — 2026-09-14, local commit `3d891b203`.
+cron-migration-errors and cron-clear-errors revise earlier corrections to
+use tizglin error plural (IRCAM PDF 658 entry 12346) and mhu delete/erase
+(PDF 418 entry 7924). Clear retains all scope; heading retains migration.
+PDF 519 entry 9788 ssfd means clean/wipe, while the earlier emphatic
+ss spelling was not supported by that entry. Erase better fits removing
+diagnostic records. Original before/reason history retained; ledger stays
+18,761 and pending stays 256. Four suites pass. Low confidence: software
+diagnostic metaphor and complete migration genitive; browser not run.
+cron-errors-cleared still needs complete success semantics and plural
+agreement; account lockout failures remain separate semantic review.
+
+
+Tamazight successful clearing — 2026-09-14, `233955a45`.
+cron-errors-cleared now restores the omitted successful qualifier and
+attested error plural. IRCAM PDF 146 entry 2672 gives amurs success and
+construct umurs; PDF 418 entry 7924 gives delete/be deleted, PDF 658
+entry 12346 error plural. Earlier exact-arrow search missed the success
+entry because it has two glosses; the full-text/index search found it.
+Original ledger before and reason history preserved; four suites pass.
+Low confidence: mhant feminine plural and s umurs adverbial construction,
+complete status grammar and browser behavior. Components do not attest
+the whole sentence. Original pending remains 256; ledger remains 18,761.
+
+
+Dzongkha sighting calendar — 2026-09-14, local commit `98cf2cda5`.
+calendar-system-islamic-rgsa replaces English country-only seed with Hijri
+calendar, Saudi Arabia and moon-seeing components. Grammar of Dzongkha
+PDF page 191 example 35 attests the moon noun; PDF page 325 section 7.1
+attests seeing infinitive and verbal-noun use. Existing calendar noun and
+proper names are retained. Low confidence: full technical compound and
+native grammar, not the attested individual components; browser not run.
+Four suites pass, with placeholder/order/human-preference invariants.
+Original pending 256 → 255; Dzongkha 3 → 2; ledger 18,762. Civil and
+astronomical epoch variants still need complete native repair. Official
+2023 dictionary retrieval timed out and classified-lexicon PDF returned
+429; neither failed retrieval was treated as lexical absence or authority.
+Primary grammar: https://escholarship.org/content/qt1h4211k0/qt1h4211k0_noSplash_b3843a79888f78f39713ded5f61ad772.pdf?t=s10u2j
+
+
+Dzongkha ISO label — 2026-09-14, local commit `7dd8c10c9`.
+Unflagged calendar-system-iso8601 now includes Gregorian calendar and
+native week wording rather than the identifier alone. Grammar of Dzongkha
+PDF page 373 (printed 363) explicitly attests the week noun used by the
+existing locale. Gregorian/calendar wording is reused; identifier exact.
+Four suites pass, including all token/order/human-preference checks.
+Low confidence: full technical compound and existing Gregorian name
+transliteration; browser not run. Native grammar discusses Bhutanese
+weekday reckoning separately: this label repair does not alter date math
+or claim that traditional weekday rules equal ISO 8601. Original pending
+stays 255, Dzongkha 2; correction ledger grows to 18,763.
+
+
+Tamazight Optional — 2026-09-14, local commit `855219d70`.
+Unflagged optional Arabic becomes aruccil, explicitly attested by IRCAM
+Amazigh-English dictionary PDF page 194 entry 3684. Positive/negative
+checks verify the adjective and reject Arabic; four suites pass including
+all token/order/human-preference invariants. Longer webhook token and
+authentication phrase remains pending rather than being accepted after
+a component-only change. Original pending 255; ledger grows to 18,764.
+Dzongkha official 2023 dictionary direct download timed out at connection
+setup after 10 seconds, confirming current retrieval failure; no epoch
+translation or absence claim follows from that timeout. Browser open.
+
+
+Tamazight webhook qualifier — 2026-09-14, `5b89d5168`.
+webhook-token French prose is replaced with optional/authentication
+components: IRCAM PDF page 194 entry 3684 optional, PDF 249 entry 4801
+authentication and its construct. Token is explicitly a technical borrowing,
+not certified native terminology. Full prepositional phrase/borrowing
+remain low confidence, browser not run. Actual outgoing notification
+adds X-Wekan-Token only for a nonempty configured token; wording preserves
+optional role and no auth logic changes. Four suites pass with exact
+placeholders, order and human preference. Original pending 255 → 254;
+Tamazight 143 → 142; correction ledger grows to 18,765.
+
+
+Account-status review — 2026-09-14, `ac5a9f69b`.
+Native MediaWiki active-user statistics uses a permanent adjective in the
+IRCAM dictionary. This is not direct proof of account-enabled meaning.
+Primary active/activate/click entries are recorded in Tamazight-Review.md;
+complete enabled/disabled purpose clauses remain pending, count 254.
+No values changed or native/browser acceptance made.
+
+
+Tamazight WIP tasks — 2026-09-14, local commit `a9406c278`.
+IRCAM PDF page 605 entry 11328 gives tamskirt task, plural timskirin,
+and complex-task compound. Entry 11329 instead means billhook: spelling
+without i must not be substituted for the task term. Two existing WIP
+repairs replace general work vocabulary with a task plural adaptation.
+Original before/reason history retained; ledger stays 18,765, pending 254.
+Four suites pass, preserving maximum/greater-than/user-defined meanings
+and exact placeholders/order/human preference. Low confidence: plural
+genitive tmskirin and full maximum/comparative clauses; browser not run.
+Account-status activation/deactivation wording remains separately open.
+
+
+Tamazight task/subtask batch — 2026-09-14, `8bf9f58cf`.
+Task French is replaced with directly attested tamskirt (IRCAM PDF 605
+entry 11328). Four prior subtask labels reuse its plural/construct forms,
+retaining add/show/field and below-parent-task qualifiers. IRCAM PDF 315
+entry 6099 supplies ddaw below/under. Export and general subtask labels
+remain identical. Four suites pass with placeholder/order/human preference
+preservation; original before and reasons retained for prior revisions.
+Low confidence: below-task adaptation, plural genitive and full software
+compounds; standalone task is directly attested. Browser not executed.
+One new unflagged record, four revisions: ledger 18,766, pending stays 254.
+
+
+Tamazight subtask board — 2026-09-14, `9515511af`.
+default-subtasks-board French description is replaced with current
+subtask terms and for-board wording, preserving __board__ exactly.
+models/boards.js uses it for the generated board description, not its
+title. Deposit-to-this-board label reuses the same updated task phrase.
+Primary task/below components remain IRCAM PDF 605 entry 11328 and PDF
+315 entry 6099. Four suites pass; token/order/human preference preserved.
+Low confidence: below-task software compound and full prepositional/
+description grammar. Browser not run; original pending remains 254.
+Landing-list French phrase remains a separate complete repair.
+
+
+Tamazight subtask landing list — 2026-09-14, `d968e4bb2`.
+deposit-subtasks-list French is replaced with complete arrival-list,
+subtasks and deposited-here components. IRCAM PDF 265 entry 5164
+arrival/construct; PDF 469 entry 8866 here; PDF 464 set-down verb;
+PDF 605 entry 11328 task and PDF 315 entry 6099 below. Actual sidebar
+label precedes target-list selection. Four suites pass and preserve exact
+placeholders/order/newer human translations. Low confidence: landing-list
+metaphor, rsant relative-clause agreement and genitive subtask compounds;
+components do not certify full phrase, browser not run. Original pending
+254 → 253; Tamazight 142 → 141; correction ledger grows to 18,768.
+
+
+Tamazight currency and integer evidence — 2026-09-14, `551e1ec04`.
+Unflagged custom-field-currency Arabic is replaced with adrim anzmar,
+explicitly glossed currency in IRCAM PDF page 58 entry 810, alongside
+adrim money/currency and national-currency compound. This is full primary
+compound evidence rather than a money-only extrapolation. Four suites
+pass with token/order/human-preference protection. Currency-code label
+remains French and needs separate review; browser unexecuted.
+Integer research: PDF 450 entry 8544 supplies positive; PDF 162 entry
+3011 zero. Fraction entries 7482/11605 mean tribal subdivisions, not
+mathematical fractions. Neither those nor positive alone completes the
+positive-integer error. That full message remains Arabic and pending.
+No partial acceptance made; pending 253, ledger grows to 18,769.
+
+Currency-code repair — 2026-09-14, `356836c4f`.
+French custom-field-currency-option is replaced with inigl n udrim anzmar.
+IRCAM Amazigh-English PDF page 388 entry 7364 explicitly glosses inigl
+as code, with postal and bank code examples; page 58 entry 810 explicitly
+glosses adrim anzmar as currency and gives construct udrim.
+Source: https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+The locally cached primary PDF was inspected; web retrieval rejected its
+63 MB length. The full currency-code phrase is an assembled genitive,
+not an attested dictionary sentence: low confidence for native grammar
+and adjective agreement. Both currency and code meanings are retained.
+Four source checks pass; browser/native review remains open. This key was
+unflagged, so the original 253-finding queue is unchanged; ledger 18,770.
+
+Basic color repairs — 2026-09-14, `502c7e0cf`.
+Six unflagged French/Arabic color labels now use exact standalone IRCAM
+Amazigh-English entries: black abrkan (PDF 32, 276), blue anili (178,
+3332), green azgza (275, 5385), red azggʷaɣ (275, 5375), white amllal
+(138, 2526), yellow awraɣ (268, 5233). No inflections were invented.
+Source: https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+Green has green/blue polysemy in the primary entry; blue uses a distinct
+explicitly blue lemma, with regression coverage preventing conflation.
+Four source checks pass, including exact values, wrong-language negatives,
+tokens, ordering and human preference. Complex CSS shades remain separate
+review; browser rendering is not certified. Ledger: 18,776; original
+pending queue remains 253 because these six keys were unflagged.
+
+Planning Poker repair and integer review — 2026-09-14, `8d48c0e3e`.
+French poker-finish and poker-replay become smd and als respectively.
+IRCAM Amazigh-English PDF page 499 entry 9408 explicitly means to
+complete/finish; page 117 entry 2103 means repeat/do again/start again.
+Source: https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+Actual cardDetails.js handlers set the poker end date for Finish, and
+replay/unset end and estimation for Replay. Short action imperatives use
+verb lemmas; native/browser context review remains open. Four source
+checks pass. These keys were unflagged: original pending remains 253,
+ledger 18,778.
+The same complete-verb entry glosses participle ismdn as integral. That
+is not explicit attestation of the mathematical noun integer, so it is
+not substituted into swimlane-height-error-message. Comprehensive-board
+migration likewise needs a full-scope modifier, not a completed-status
+verb that would suggest the operation already finished. Both stay open.
+
+Positive integer error repair — 2026-09-14, `597098ac1`.
+The Arabic swimlane-height-error-message is replaced with a complete
+Tamazight draft retaining height, swimlane, obligation, integer and positive.
+IRCAM Amazigh-English gives height ijgil (PDF 376, 7115), positive umnig
+(450, 8544) and have-to xss (356, 6770). Existing number and swimlane
+terms are reused. Source:
+https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+New mathematics evidence: University Mouloud Mammeri 2015/2016 study,
+PDF page 59 table, explicitly maps Entier to ummid, referencing the
+1984 mathematics lexicon page 52. This establishes a mathematical
+meaning beyond the earlier integral adjective search. Source:
+https://dspace.ummto.dz/server/api/core/bitstreams/c93d3708-e773-47ec-af3b-1173a10436f5/content
+Low confidence: transferring Algerian pan-Amazigh technical terminology
+to Moroccan standard, genitive ubrid and the full modal/be sentence.
+Native/browser review remains open; this is a draft, not fluent certification.
+Four checks pass with independent positive/integer components and Arabic
+negatives. Corrected original findings 15,650; pending 252 (zgh 140);
+ledger 18,779. Earlier dated notes leaving this message Arabic are superseded.
+Catalogue PDF fetch failed certificate verification; no TLS checks were
+disabled. System pdftotext is unavailable; neither is evidence of lexical
+absence. Comprehensive-board-migration remains separately open.
+
+Comprehensive migration title — 2026-09-14, `4091c14e4`.
+French comprehensive-board-migration becomes a full board migration title
+(exact Tifinagh value recorded in the correction ledger). IRCAM Amazigh-English
+PDF page 63 entry 916 explicitly uses ismdn in full text, which provides
+a scope-modifier example beyond the earlier complete/finish verb search.
+Source: https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+Low confidence: full-text modifier adapted to comprehensive software
+migration, and genitive attachment. Avoid worldwide/global and physical
+filled-container senses. No migration implementation or description is
+changed. No direct title-key consumer was found in client/models search;
+this repairs stored translation data, not proof of a visible active UI.
+Four source checks pass; native/browser review remains open. Corrected
+original findings 15,651; pending 251 (zgh 139); ledger 18,780. Earlier
+dated notes leaving this title French are superseded by this draft.
+
+Shared-list conversion repair — 2026-09-14, `7817aa29f`.
+French step-convert-shared-lists becomes a complete Tamazight draft,
+with exact value in the correction ledger. IRCAM Amazigh-English gives
+ssnfl transitively change/transform (PDF 532, entry 10003), talgamt list
+and plural tilgamin (589, 11039), ssur be common/be shared (535, 10073).
+Source: https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+Low confidence: applying transformation to software conversion and
+feminine plural ssurnt in the relative clause. The label retains shared
+status; it does not mean public/general lists or partition the lists.
+Only stored translation data changes; no obsolete migration is restored.
+Four source checks pass, covering exact full components and wrong-language
+negatives alongside tokens, ordering and human preference. An initial
+command had a misspelled suite filename; corrected invocation passed.
+Native/browser context review remains open. Corrected original findings
+15,652; pending 250 (zgh 138); correction ledger 18,781.
+
+Time label repairs — 2026-09-14, `e9ef2b88b`.
+French duration becomes azmz, explicitly used in duration compounds in
+IRCAM Amazigh-English PDF 279 entry 5472. Estimated-time-remaining
+becomes estimation of the time that remains, retaining all components:
+asutg estimation/assessment (PDF 244, 4716), azmz/uzmz time period
+(279, 5472), qqim remain (359, 6809). Source:
+https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+Low confidence: full genitive phrase and relative participle qqimn.
+Native/browser context review remains open; timing logic is unchanged.
+Four source checks pass with full-value positives, French negatives,
+token inventories, ordering and human preference. These keys were
+unflagged, so pending stays 250 and ledger rises to 18,783.
+
+Greenlandic calendar repair — 2026-09-14, `f09b5d264`.
+calendar-system-coptic changes from bare Coptic to Qaammatisiutit (Coptic).
+The Greenlandic Language Secretariat's official library subject glossary
+explicitly gives qaammatisiutit for calendars; committee minutes also
+confirm the almanac equivalent. Sources:
+https://oqaasileriffik.gl/nunatta-atuagaateqarfiani-taaguusersuutit/nunatta-atuagaateqarfiani-sammisamut-nalunaarsuutit/
+https://oqaasileriffik.gl/en/2012/04/30/oqaasiliortut-2012-6-gl/
+Low confidence: Coptic remains an international identifier, not an attested
+Greenlandic demonym. Native/browser terminology review remains open.
+Four source checks pass; label includes calendar and retains identity,
+with negatives rejecting bare Coptic and conflation with Ethiopic.
+Corrected original findings 15,653; pending 249 (kl 3); ledger 18,784.
+The official lunar-phase article distinguishes full and new moon:
+https://oqaasileriffik.gl/en/2021/02/07/lunar-phases-on-greenlandic/
+That does not establish sighting, civil/astronomical epoch or tabular
+terminology. All three Greenlandic Hijri variants remain pending.
+
+Greenlandic moon-sighting repair — 2026-09-14, `602ea4090`.
+calendar-system-islamic-rgsa now includes the native calendar noun, Hijri,
+Saudi Arabia and qaammatip takuneqarnera (moon being seen). Official
+calendar and moon vocabulary sources:
+https://oqaasileriffik.gl/nunatta-atuagaateqarfiani-taaguusersuutit/nunatta-atuagaateqarfiani-sammisamut-nalunaarsuutit/
+https://oqaasileriffik.gl/en/2021/02/07/lunar-phases-on-greenlandic/
+Lybech's Introduction to West Greenlandic, second edition, supports taku
+see (PDF 181), action nominalization (180) and dynamic passive (190):
+https://oqa.dk/assets/aitwg2ED.pdf
+The whole phrase is derived, not an attested calendar label. Low confidence
+for nominalization, possessive spelling and technical sighting terminology.
+Passive action is used rather than a possessed passive-participle phrase
+that could mean something the moon sees. Proper identifiers are retained.
+Four source checks pass; native/browser review remains open. Original
+corrected 15,654; pending 248 (kl 2); ledger 18,785. Earlier dated
+notes leaving this label English are superseded. Civil/astronomical
+tabular epochs remain pending; moon-phase terms do not resolve those.
+
+Greenlandic epoch evidence — 2026-09-14.
+Official committee decisions attest mathematical tables and start-date
+terms; ICU establishes Friday civil versus Thursday astronomical epochs.
+See Greenlandic-Calendar-Review.md for primary references and boundaries.
+Both values remain pending; no generic label is accepted as full repair.
+
+Greenlandic epoch label drafts — 2026-09-14, `3a6936cce`.
+Both remaining abbreviated English tabular Hijri labels are replaced with
+complete explanatory drafts. Calendar/Hijri and table-based method are
+retained. Civil epoch is described by its defining Friday starting
+reference; the astronomical label retains astronomy and Thursday.
+ICU definition and primary vocabulary sources are linked in
+Greenlandic-Calendar-Review.md. Official weekday usage is also attested:
+https://oqaasileriffik.gl/da/kategori/medarbejdere/
+https://oqaasileriffik.gl/da/2025/06/20/oqaasiliortut-2025-4-gl/
+Low confidence: table-based phrase, astronomy possessive and explanatory
+epoch wording require native review. Civil is not translated as civilian
+people. Date arithmetic remains unchanged. Four source checks pass with
+exact full labels, English negatives and distinct-epoch coverage.
+Original corrected 15,656; pending 246; Greenlandic original queue zero
+is not fluency certification. Ledger 18,787. Earlier pending notes are
+superseded by drafts, with native/browser validation still outstanding.
+
+Account tooltip drafts — 2026-09-14, `439ac5789`.
+Both French admin-people-user-active/inactive values become complete
+Tamazight drafts retaining user, account state, click and opposite action.
+The actual peopleBody.jade loginDisabled true branch uses inactive with
+activation; false uses active with deactivation. IRCAM Amazigh-English:
+user anssmrs (PDF 186, 3493), click kliki (333, 6391), activate ssrfu
+(537, 10106), be active zwr (727, 13652), switch off ssns (532, 10015).
+Source: https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+Low confidence: finite/negative state verb, second-person purpose clause,
+and switch-off metaphor for account deactivation. These are assembled
+drafts, not attested whole sentences or browser-validated wording. The
+previous permanent-user alternative remains excluded. Earlier dated
+notes leaving these tooltips French are superseded, not native approval.
+Four source checks pass including exact components, French negatives,
+and protection against reversing activation/deactivation. Original
+corrected 15,658; pending 244 (zgh 136); ledger 18,789.
+
+Automatic-width drafts — 2026-09-14, `9978b92d2`.
+Arabic auto-list-width and both click-to-enable/disable-auto-width
+values become complete Tamazight drafts. Width and list use IRCAM
+Amazigh-English afltas (PDF 68, 1016) and talgamt (589, 11039).
+Source: https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+Automatic awurman is explicitly listed as a coined adjective in the
+Bouzefrane computer lexicon, PDF page 24, not the Tuareg MC alternative.
+Source: https://cedric.cnam.fr/~bouzefra/books/amawal.pdf
+Native MediaWiki automatic log messages corroborate this terminology:
+https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json
+Low confidence: coined cross-variety adjective, width compound and
+finite/negative/purpose-clause grammar. State/action terms reuse the
+account-tooltip drafts, so their outstanding native review also applies.
+Four source checks pass, including Arabic negatives and protection
+against reversed click actions. No layout logic is changed. Two original
+findings corrected plus one unflagged label: original corrected 15,660,
+pending 242 (zgh 134); ledger 18,792. Native/browser review remains open.
+
+Computing domain — 2026-09-14, `da45e203a`.
+The unflagged domain label changes from geographic region to taɣult.
+Bouzefrane computer lexicon: PDF 52 domain (MW/CLH), 71 domain
+identifiers, 132 DNS, https://cedric.cnam.fr/~bouzefra/books/amawal.pdf
+These attestations are distinct from the invalidated Tuareg MC records.
+Consumers: sidebar.jade domain sharing and peopleBody.js email-domain
+column. Four focused translation checks pass; ledger 18,793. Original
+pending stays 242 (zgh 134); this is an additional unflagged repair.
+Cross-variety native software usage and browser review remain open.
+The autoAddUsersWithDomainName Arabic sentence remains pending: the
+orgsToAutoAddForEmail helper matches email domains exactly, ignores
+empty domains and does not match subdomains. The signup hook adds
+matching organization memberships. Its label is a text-input label,
+not a checkbox. A generic “add users using a domain name” draft would
+lose the condition; the documented domain noun alone does not validate
+that complete sentence. No automatic-addition behavior was changed.
+
+Search-limit terminology review — 2026-09-14.
+operator-limit-invalid is still French and remains pending. Its English
+source requires both invalid-limit diagnosis and positive-integer guidance,
+with the exact %s placeholder. IRCAM Amazigh-English PDF 177 entry 3292
+ankruf means bound/tied, invalid in the disability sense, paralyzed or
+immobilized. PDF 354 entry 6732 likewise describes inability to move.
+Neither is evidence for invalid query syntax or an unacceptable limit.
+Source: https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+The local cached primary PDF extraction was inspected; the web viewer
+rejects this 63 MB document, which does not invalidate that local evidence.
+Boundary/limit candidates include agguttu (40, 445), amari (122, 2201),
+awttu (270, 5271) and tiggumra (666, 12525). No whole software-error clause
+is attested by these lemmas. The positive-integer draft terminology has
+separate cross-variety provenance and cannot alone validate the sentence.
+No locale value is changed or counted as corrected by this review.
+Outstanding work: faithful complete diagnosis, modal guidance, native
+syntax and runtime interpolation; do not translate %s or use disability
+terms merely because their dictionary English gloss includes “invalid”.
+
+Search-limit complete draft — 2026-09-14, `10b47a7ed`.
+French operator-limit-invalid becomes a full Tamazight draft: invalid
+limit diagnosis, required positive integer, exact %s. MediaWiki zgh
+feed-invalid supplies the software not-valid construction:
+https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json
+IRCAM PDF 270 entry 5271 awttu limit, 356 entry 6770 obligation,
+450 entry 8544 positive; integer ummid retains separate mathematics
+thesis provenance from the height-error repair. Primary dictionary:
+https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+Low confidence: assembled negative and modal clauses, noun state,
+software-boundary metaphor and cross-variety integer terminology.
+The earlier French-pending note is superseded by this draft, not native
+approval. Disability terminology stays excluded. Four translation checks
+pass, including complete components, exact token inventory and French/
+disability negatives. Native/browser acceptance remains open. Original
+corrected 15,661; pending 241 (zgh 133); correction ledger 18,794.
+
+Search-limit runtime dispatch — 2026-09-14, `8715c094e`.
+The real Query parser is exercised in localizedSearchApostrophes.test.cjs
+with zgh operator-limit: abc and -2 produce operator-limit-invalid and
+retain the exact offending string; 12 and 0 are accepted. The error draft
+has one %s. This verifies dispatch and data retention, not actual TAPi18n
+interpolation, browser rendering or native fluency. query-classes.js treats
+zero as no limit and uses parseInt, so its accepted input set is broader
+than strict positive integers. Translation still matches English guidance;
+this behavioral distinction must not be described as strict validation.
+The focused parser test passes; no locale values or audit counts change.
+
+Positional runtime formatting fix — 2026-09-14, `c74009b21`.
+Actual installed i18next/sprintf reproduced a raw %s when the search error
+argument was passed directly as a string. TAPi18n now converts non-null
+scalar arguments to sprintf options. The actual translation method is
+executed with the installed formatter: Tamazight abc/-2/50% values render,
+zero formats, named objects and explicit arrays retain their behavior,
+English fallback formats and null/absent arguments do not crash.
+Three runtime/parser/lazy-loading suites pass. This supersedes the earlier
+unverified runtime-interpolation note for this tested path; browser
+rendering and native wording remain unverified. No locale/count changes.
+
+Lost-card restoration title — 2026-09-14, `73543f47a`.
+French restore-lost-cards-migration becomes a complete Tamazight draft.
+IRCAM Amazigh-English PDF 534 entry 10051 ssukn restore/repair,
+575 entry 10775 tikarḍiwin cards, 383 entry 7266 imnidi lost.
+Source: https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+Low confidence: adapted feminine plural timnidin, imperative context and
+software restoration metaphor. Textile-card and bereavement senses are
+excluded. No active key consumer was found in client/models/server; this
+repairs stored translation data and does not restore removed migrations.
+Four focused checks pass for complete components, negative wrong-language
+and wrong-sense coverage, token inventory and protected newer values.
+Native/browser review remains open. Original corrected 15,662;
+pending 240 (zgh 132); correction ledger 18,795.
+
+Automatic user addition — 2026-09-14, `94205ae5f`.
+The Arabic autoAddUsersWithDomainName label becomes a complete Tamazight
+draft: add automatically users who have the domain name. The possessive
+relative clause preserves the condition instead of describing unrestricted
+addition using a domain. Actual orgsToAutoAddForEmail requires exact email
+matching, excludes empty domains and does not match subdomains. Creation
+and editing templates use this key above a text field, not a checkbox.
+IRCAM PDF 463 entry 8773 add, 186 entry 3493 users, 397 entry 7541 name:
+https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+Native automatic adverb: MediaWiki logentry-newusers-autocreate:
+https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json
+Computing-domain provenance remains in the domain repair. Low confidence:
+assembled relative possessive ghursn, noun state and adverb placement;
+the complete sentence is not attested or native/browser accepted. Earlier
+Arabic-pending notes are superseded by this draft, not native approval.
+Four source checks pass for complete condition, wrong-language negatives,
+tokens, key order and protected newer translations. Original corrected
+15,663; pending 239 (zgh 131); correction ledger 18,796.
+
+Possession grammar review — 2026-09-14.
+New primary source: Faits de syntaxe amazighe, Miloud Taifi,
+“De la prédication seconde en berbère”, PDF 286–288 (printed 285–287).
+https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=216
+PDF 287 explains that a prepositional construction can express possession,
+not physical location, and equate to French avoir. PDF 288 identifies
+preposition + noun/pronoun + noun as the minimal structure. Singular
+examples use ġur-s. This supports a possessive construction for users
+with a domain name in draft 94205ae5f; it does not attest ghursn, the
+plural relative clause, its standard orthography or the complete label.
+Those uncertainties stay open. The primary PDF was downloaded and
+page text inspected locally after the web viewer rejected its size.
+Social-media search snippets were not used as grammar proof. No locale
+value or pending count changes; this review strengthens specific evidence
+without claiming native acceptance.
+
+Relative clause provenance — 2026-09-14, `44cb2f6ca`.
+Faits de syntaxe amazighe, Ali Barakate, relative-clause standardization
+study, PDF 22–25 (printed 21–24), documents lli as a relative marker
+with variation among dialects. Primary source:
+https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=216
+This evidence is appended directly to the automatic-addition correction
+record, preserving its original before/after values. Taifi possession
+evidence remains restricted to the inspected singular examples. No exact
+ghursn match was located in the extracted text; this is not proof of
+absence. Whole plural relative syntax and standard wording remain open.
+The correction-ledger regression passes for all 18,796 records. No locale
+values, corrected counts or pending counts change in this review.
+
+Repository action review — 2026-09-14.
+Upload/Update Repository and Sign In to upload repositories remain French.
+Native MediaWiki zgh upload/uploadbtn use sktr with file as an object;
+login uses kcm; externaldberror uses an inflected update verb sdɣi.
+https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json
+IRCAM Amazigh-English PDF 218 entry 4175 asdɣi is the update noun,
+not evidence that a noun alone is the required imperative. PDF 68 entry
+1021 gives afniq n tmuca as data warehouse. That is not an attested source
+repository term. Warehouse/depot and cabinet entries do not resolve this
+software distinction. No repository lemma was found by the bounded
+English-gloss search; negative search is not proof that none exists.
+https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+No active consumers for upload-repository/sign-in-to-upload were found
+under client. Correcting these stored labels must preserve repository
+singular/plural, both upload/update actions and login purpose. Do not
+reuse the upload message's file noun as repository or silently drop update.
+No locale changes or corrected-count increase result from this review.
+Terminology, assembled purpose grammar and native runtime wording remain
+open; existing correct-language values and placeholders are preserved.
+
+Additional native software corpus — 2026-09-14.
+Read-only GitHub tree inspection located current Common Voice zgh Fluent
+resources under web/locales/common-voice/zgh/, not web/locales/zgh/ or
+locales/zgh/. The complete tree response was not truncated; locales/
+contains generated/test metadata, not the requested translation bundles.
+The failed old paths are not evidence of absent language support.
+Inspected primary resources:
+https://raw.githubusercontent.com/common-voice/common-voice/main/web/locales/common-voice/zgh/pages/common.ftl
+https://raw.githubusercontent.com/common-voice/common-voice/main/web/locales/common-voice/zgh/pages/about.ftl
+Neither inspected resource contains a repo key. Repository labels remain
+unresolved; project-info “Repository” metadata and machine-translation
+sites are not native terminology evidence. The corpus also includes
+profile, contribution, guidelines and request-language resources suitable
+for subsequent contextual review. Read translations against source keys
+and full meanings before adopting terms; do not convert Fluent variables
+to WeKan placeholders without comparing the exact English token inventory.
+No locale values or counts change. This records a usable primary corpus
+location and avoids repeatedly treating obsolete URLs as lexical proof.
+
+Email warning retained review — 2026-09-14, `3eaad375b`.
+Common Voice zgh email-already-used corroborates the already-used predicate
+in an actual email/account message. Keep error-email-taken unchanged and
+attach this evidence to its prior correction record:
+https://raw.githubusercontent.com/common-voice/common-voice/main/web/locales/common-voice/zgh/pages/profile/settings.ftl
+The primary software context strengthens earlier generic MediaWiki
+already-used evidence. Full noun/predicate agreement and browser output
+remain unverified; unrelated import and plural uncertainties in the older
+shared reason must not be treated as evidence against this email clause.
+The full correction-ledger check passes; no counts or locale values change.
+Invitation review remains open: IRCAM invitation asigr PDF 227/4358 and
+not-yet ur ta PDF 452/8585 are attested, but ssidn accepts destiny and
+sslɣd accepts intercession. Those senses do not establish accepting a
+board invitation; approve/agree alternatives do not certify equivalence.
+
+Invitation acceptance drafts — 2026-09-14, `a47e7141d`.
+Arabic accept and French not-accepted-yet become Tamazight drafts. The
+full status includes invitation, not yet and a derived passive accept.
+Secondary vocabulary qbl accept: https://learnamazigh.com/words
+Primary IRCAM invitation asigr PDF 227 entry 4358 and ur ta not yet
+PDF 452 entry 8585:
+https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+Low confidence: secondary verb provenance and dialect fit, derived
+ittu qbil passive spelling/inflection and complete status-clause grammar.
+This is not primary attestation of the whole sentence. Acceptance-of-
+destiny and intercession senses stay excluded. Earlier French-pending
+notes are superseded by drafts, not native acceptance. Four checks pass
+for full components, wrong-language/wrong-sense negatives, tokens and
+protected newer values. Native/browser review remains open. One original
+finding and one unflagged repair: original corrected 15,664; pending 238
+(zgh 130); correction ledger 18,798.
+
+Wait-spinner descriptions — 2026-09-14, `aebb361d2`.
+Cube-Grid, Double-Bounce, Rotateplane and Scaleout French descriptions
+become Tamazight waiting-indicator compounds with exact style identifiers
+retained. IRCAM PDF 180 entry 3376 anmmal indicator, 39 entry 415 agani
+waiting, 566 entry 10591 n ugani in waiting-room compound:
+https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+The preserved strings are named animation identifiers, not English prose
+substituted for a missing translation. Spinner selection maps identifiers
+to template names in settingBody.js; no mapping is changed. Low confidence:
+assembled software waiting-indicator compound; no full native/browser
+acceptance. Textile spinning senses are excluded. Four focused checks
+pass for exact style distinctions, wrong-language and wrong-sense negatives,
+tokens and protected newer translations. Original corrected 15,668;
+pending 234 (zgh 126); correction ledger 18,802.
+
+Start/end field consistency — 2026-09-14, `b0f447c57`.
+Four unflagged Arabic labels r-df-start-at/r-df-end-at and predicate-start/
+predicate-end now match card-start/card-end native vocabulary. Exact
+IRCAM PDF 696 entry 13146 tuddma beginning/start and 666 entry 12533
+tigira end: https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+Rule cardActions.jade option values remain startAt/endAt; Query maps
+predicates to the existing date fields. No derived word or full sentence
+is introduced. Four translation checks pass for consistency, distinction,
+tokens and newer-value preservation. Browser context remains unverified.
+Original pending stays 234 (zgh 126); four additional corrections bring
+ledger to 18,806. Export-card-field-dates is still French and actually
+contains five types including Created. Received and due semantics must
+be preserved independently; dictionary “receive” used for hosting guests
+is not alone evidence for software reception. No export label repair is
+counted by this batch.
+
+Start/end runtime verification — 2026-09-14, `bc9860dff`.
+Actual Query parsing with Tamazight has operator and repaired start/end
+predicate names preserves startAt/endAt for present and negated-absent
+queries. Using those existence predicates for sorting is rejected. The
+focused parser suite passes; no query implementation or locale changes.
+This verifies runtime metadata mapping rather than merely comparing JSON
+labels. Native UI usage and live browser rendering remain unverified;
+original pending 234 and correction counts do not change.
+
+Export dates and creation — 2026-09-14, `49aec4fa9`.
+French export-card-field-dates becomes a complete five-field draft:
+Created, Received, Start, Due, End in unchanged order. French
+operator-created/predicate-created become creation noun labels.
+IRCAM PDF 209 entry 3982 date plural isakudn, 238 entry 4583 creation
+asnflul, 382 entry 7245 reception imiẓ, 696 entry 13146 start and
+666 entry 12533 end:
+https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+Due reuses the existing due-date label. PDF 279 entry 5472 expiry-date
+compound supports related vocabulary, not exact deadline equivalence.
+Low confidence: software reception and creation noun adaptation plus
+software due-date semantics; no native/browser acceptance. Earlier
+French-pending export notes are superseded by this draft, not approval.
+Four source checks pass for complete ordered types, French negatives,
+tokens and protected newer values. One original and two unflagged repairs:
+original corrected 15,669; pending 233 (zgh 125); ledger 18,809.
+
+Creation runtime verification — 2026-09-14, `27f6c9d2a`.
+Actual Query parsing with the repaired Tamazight creation operator maps
+three-day filtering to createdAt, using deterministic date helpers.
+Invalid periods are rejected. The repaired creation sort predicate maps
+to createdAt for ascending and descending queries, preserving direction.
+The focused parser regression passes. This validates metadata dispatch,
+not date-library internals, native fluency or browser rendering. Export
+field metadata still maps dates to export-card-field-dates. Original
+pending remains 233; no locale values or audit counts change.
+
+Summary consolidation — 2026-09-14.
+Audit.md runtime history is consolidated into current verification scope.
+Formatter/parser source commits and outstanding browser/native review
+remain explicit; dated individual notes are preserved above. A fresh
+localhost:3000 probe failed to connect. No translation is changed or
+classified as repaired by shortening the summary.
+
+Received/due field drafts — 2026-09-14, `822d6dfb5`.
+French card-received/r-df-received-at and Arabic card-due are repaired
+using the export reception noun and existing due-date terminology.
+IRCAM PDF 382 entry 7245 imiẓ reception; related expiry vocabulary
+PDF 279 entry 5472:
+https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+Actual cardDate.jade badges distinguish received-date and due-date;
+rule options retain receivedAt. Low confidence: software reception noun
+and due-versus-expiry semantic adaptation. Native deadline terminology
+and browser output remain unverified. Four translation checks pass for
+consistency, field distinctions, wrong-language negatives, tokens and
+protected newer values. Three unflagged repairs; original pending stays
+233 (zgh 125), ledger 18,812. No date calculation or query mapping changes.
+
+Received-time activity revision — 2026-09-14, `e3ae37bc5`.
+Two prior drafts act-a-receivedAt/a-receivedAt replace derived bound
+tarmest with primary IRCAM reception imiẓ, PDF 382 entry 7245:
+https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+This aligns reception vocabulary with received-date labels. The old MW
+reception entry was not itself Tuareg-marked; the supporting root had
+been misattributed. Preserve that distinction and all earlier evidence.
+Original before values stay unchanged; current after values and revision
+reasons update in place. Four translation checks pass for new noun,
+old-term negatives and complete previous/new time token inventories.
+Genitive form, finite activity clause and software reception remain low
+confidence. Native/browser review remains open. No extra repair record is
+added; ledger remains 18,812 and original pending 233 (zgh 125).
+
+All-locale positional formatting — 2026-09-14, `55562f666`.
+The actual TAPi18n translation method with installed i18next/sprintf is
+executed against operator-limit-invalid in all 246 existing locale files,
+including English variants. Each value has one %s and substitutes the
+exact argument including its literal percent character. The full label
+is compared against expected substitution, preserving surrounding prose.
+The regression passes. This covers runtime scalar formatting across the
+files, not language loading, normalization, native quality or browser
+rendering. No locale values or pending counts change; remaining 233
+original findings and prior uncertain wording remain open.
+
+Veps action-label repairs, **2026-09-14**, local commit `6c30c4cfc`:
+three additional Finnish values (`view-all`, `delete-all`, `remove-btn`)
+replaced with complete native MediaWiki Veps action labels. See
+[Veps review](Veps-Review.md) for source keys and verification limits.
+Five registered assertions/suites pass across four test files; correction
+ledger now contains 18,815 records. Original pending remains 233.
+Native review of longer phrases and browser rendering remains unfinished.
+
+Veps title/page repairs **2026-09-14**, local commit `70d9264f1`:
+three additional Finnish values repaired from native MediaWiki terminology.
+[Veps review](Veps-Review.md) records exact source keys and parser behavior.
+Seven tests across five files pass; 18,818 correction records, original
+pending count 233 unchanged. Live browser and longer phrase review remain open.
+
+Veps More popup-title repairs **2026-09-14**, local commit `84bffe61a`:
+two additional Finnish values replaced with native Enamba. Source and
+remaining phrase-research limits are recorded in [Veps review](Veps-Review.md).
+Seven tests across four files pass; correction ledger 18,820, original
+pending 233 unchanged. Broader phrase and browser review remains open.
+
+Veps filter-heading drafts **2026-09-14**, local commit `a60cf42ad`:
+two additional Finnish values replaced with native-source terminology.
+Both full headings remain low confidence; [Veps review](Veps-Review.md)
+records source keys and adaptation limits. Eight tests across four files
+pass; ledger 18,822, original pending 233 unchanged. Longer prose and
+native/browser review remain open.
+
+Veps hide-empty action repair **2026-09-14**, local commit `3a10fb927`:
+reversed Finnish Show wording replaced with a complete Veps Hide draft.
+[Veps review](Veps-Review.md) documents primary terms, existing plural noun
+and low-confidence agreement/spelling. Ten tests across five files pass
+for labels, filter source wiring, placeholders and translation preference.
+Ledger 18,823; original pending 233 unchanged. Native/browser review is open.
+
+Veps primary inheritance evidence **2026-09-14**, local commit `e1ab5e4fa`:
+visually verified page 253 of Zaiceva/Mullonen's 2007 Russian–Veps dictionary
+for the inheritance verb. [Veps review](Veps-Review.md) records sources,
+extraction/rendering limits and the unresolved complete parent-card phrase.
+No locale values or counts changed; original pending remains 233.
+
+Veps inheritance instruction draft **2026-09-14**, local commit `3ba133c10`:
+Venda-seeded value replaced with a complete Veps draft supported by the
+primary inheritance verb and existing/native noun terminology.
+[Veps review](Veps-Review.md) records the low-confidence complete grammar
+and software metaphor. Ten tests across four files pass; ledger 18,824,
+original pending 233 unchanged. Native/browser verification remains open.
+
+Primary Veps arithmetic/location review **2026-09-14**, local commit
+`a9d68dc92`: visually verified dictionary pages 419 and 60 establish
+arithmetic addition, vertical and upper-part terms. [Veps review](Veps-Review.md)
+records exact entries and distinguishes addition from result noun Sum.
+No locale changes or completed classifications; 233 original findings
+remain pending, with full field-sum and scrollbar wording still open.
+
+Veps parent-card draft **2026-09-14**, local commit `439a18989`:
+additional Finnish label replaced with Veps terminology.
+[Veps review](Veps-Review.md) records the source and low-confidence
+compound/software metaphor. Eleven tests across four files pass; ledger
+18,825, original pending 233 unchanged. Native/browser review remains open.
+
+Parent display draft **2026-09-14**, local commit `e8692f14a`:
+`show-parent-in-minicard` now reads **Ozuta vanhemb kart minikartal:**.
+Native MediaWiki Show and the existing parent-card noun support terminology;
+minikartal is a derived location form. Full compound/object/location grammar
+remains **low confidence**, requiring native review. Display, relationship,
+location and colon are preserved. Twelve tests across four files pass for
+exact values, placeholders and preference. Original pending 232, Veps 9;
+ledger 18,826. Changed classification does not establish native fluency
+or live browser verification. Earlier counts describe prior review stages.
+
+Parent-control drafts **2026-09-14**, local commit `b479af98f`:
+`change-card-parent` now reads **Vajehta kartan vanhemb**, and
+`no-parent` **Peitä vanhemb kart**, replacing Finnish. Native MediaWiki
+edit/protect_change and hidetoc attest change/hide; existing card and reviewed
+parent nouns support terminology. Full genitive/object grammar and parent-card
+software metaphor remain **low confidence**. The opened-card parent form
+uses Change; sidebar no-parent changes display, not the relationship.
+Thirteen tests across four files pass for exact values, action distinction,
+placeholders and preference. Original pending remains 232; ledger 18,828.
+No live browser/native fluency claim.
+
+Card-display drafts **2026-09-14**, local commit `3b12f68c7`:
+`show-on-card` becomes **Ozuta kartal** and `show-on-minicard`
+**Ozuta minikartal**, replacing Finnish. Native MediaWiki Show and
+existing Kart support terminology; derived location forms and software
+phrasing remain **low confidence**. Card/minicard targets stay distinct.
+Fourteen tests across four files pass for exact values, placeholders and
+preference. Ledger 18,830; original pending 232 unchanged. Native/browser
+verification remains open. A bounded primary dictionary search did not
+establish keyboard/shortcut terminology; it is not absence proof.
+
+Assignee noun-phrase repair **2026-09-14**, local commit `486be5743`:
+`r-when-the-assignee` changes **Esleitu hau** (Assign this) to
+**Esleitutako erabiltzaile hau** (This assigned user). Existing assignee
+terminology and Basque technical references support the component wording.
+The actual named-assignee row still places its input after the subject,
+unlike the five Basque named-object rows already reordered. Full named
+assignee add/remove composition and browser verification remain open.
+This lexical repair does not accept the four restored findings. Four
+affected test files pass; ledger 18,831, pending 232/restored 4 unchanged.
+Source: https://learn.microsoft.com/eu-es/power-platform/admin/create-users
+
+Named-assignee order repair **2026-09-14**, local commit `cff1fdc32`:
+`cardTriggers.jade` now applies the same Basque-only name-before-subject
+branches to `spec-assignee` as the other named-object controls. Other
+locales keep subject-before-name. Focused grammar and actual production
+saved-description method checks pass. Playwright spec 88 includes the
+assignee row and is syntax checked, but not executed: a fresh localhost
+port 3000 probe was refused, so no running app was available.
+No locale values/counts changed; the four restored findings and full
+assignee add/remove clause/native/browser review remain open. Earlier
+notes describing this row as unreordered are superseded by this dated fix.
+
+
+Browser verification **2026-09-14**, local commit `c9005ee0a`:
+Playwright spec 88 executed against the running local Meteor app with
+Chromium: **1 passed (3.1s)**. Corrected test fixture ownership, login helper
+arguments and resumed-login navigation after reload. Verified all six
+named Basque controls, saved Demo checklist description, and unchanged
+English subject-before-name order. Earlier browser-unavailable notes are
+superseded. This proves rendering and composition, not native fluency of
+full add/remove clauses. Pending 232, restored 4 and ledger 18,831 unchanged.
+
+
+Link action repair **2026-09-14**, local commit `3f8363836`:
+Unflagged Veps `link` changes Finnish **Linkitä** to **Ližada tarkenduz**.
+Native MediaWiki `create-local` supplies Ližada (add), while `nlinks`
+supplies singular tarkenduz (link). Actual listBody.jade and listBody.js
+use this action to create linked card/board relations. A bare noun would
+lose the action; the draft keeps both addition and relation concepts.
+Low confidence: assembled imperative/object grammar and relation terminology
+need native review. This is a direct draft, not a claimed human translation.
+All four affected suites pass, including tokens, key order and newer
+translation preference. Ledger 18,832; pending 232/restored 4 unchanged.
+Source: https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/vep.json
+Further evidence: `http-invalid-scheme` supplies native URL-scheme wording
+and `lineno` supplies rivi (line), but those components alone do not verify
+the full automatic-clickability and one-scheme-per-line instructions.
+
+
+Link wording revision **2026-09-14**, local commit `2dbc6ba3a`:
+Replace the assembled **Ližada tarkenduz** draft with **Ühtenzoita**.
+Primary native MediaWiki `linkaccounts-submit` and `linkaccounts` both
+use **Ühtenzoita lehtpoled** for linking existing accounts; this supplies
+the actual linking imperative, rather than separate add/link components.
+WeKan listBody creates linked-card/board relations, not a deletion or merge.
+Ledger preserves original Finnish Linkitä and both revision reasons.
+The assembled imperative/object uncertainty is superseded by direct native
+verb evidence; software-specific card/board terminology still merits review.
+Four affected suites pass; ledger 18,832 and original pending 232/restored 4
+unchanged. No new human translation provenance is claimed.
+Source: https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/vep.json
+
+
+Ewe primary-source review **2026-09-14**, local commit `e7d0f821c`:
+Current CLDR Ewe XML marks generic/civil Islamic names provisional; CLDR
+49 summary returns identifier islamic-tbla for the astronomical-tabular
+variant. Neither proves a complete native label. The remaining English
+Islamic tabular value also omits epoch. New Ewe-Review.md distinguishes
+computational table terminology from furniture and reference-date epoch
+from astronomy/era/sighting. Existing Ewe structural test passes; it does
+not verify native wording. Counts and locale values unchanged. Primary
+sources and remaining research requirements are recorded in that review.
+
+
+Numeric-total browser verification **2026-09-14**, local commit `75fbb698c`:
+Spec 03 executed against the live Meteor app in Chromium: **1 passed
+(3.5s)**. Test fixture now enables profile.showCardsCountAt, the actual
+setting gating total-badge visibility, and waits for resumed login before
+reopening the board after reload. Rendered sum is 7; hidden-field 100 is
+excluded, 107 rejected, and translated tooltip checked against the locale.
+Earlier registered-but-unrun notes are superseded. This verifies rendering
+and calculation scope, not native phrase fluency. Browser snapshots also
+show remaining mixed French/Arabic Tamazight values; those require repair.
+No locale values/counts changed: pending 232, restored 4, ledger 18,832.
+
+
+Conjunction repair **2026-09-14**, local commit `4941f33fd`:
+Unflagged zgh `or` changes French **ou** to **ⵏⵖ**. Native MediaWiki
+`category-empty` directly places ⵏⵖ between media and page alternatives.
+The actual main/header.jade sidebar toggle composes sidebar-open, or,
+sidebar-close. Source regression checks that composition and rejects ou;
+Chromium checks the rendered title and rejects French ou: **1 passed
+(4.1s)**. Four translation suites pass with exact placeholders, English
+key order and newer-translation preference. This repairs the conjunction
+only; full sidebar noun compounds and other French/Arabic values remain
+under review. Ledger 18,833; original pending 232/restored 4 unchanged.
+Source: https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json
+
+
+Board control repairs **2026-09-14**, local commit `164268616`;
+Chromium coverage `1efbb9034`, **1 passed (3.6s)**.
+Four additional unflagged values replace French/Arabic: add-swimlane and
+r-add-swimlane become ⵔⵏⵓ ⴰⴱⵔⵉⴷ; listActionPopup-title becomes
+ⵜⵉⴳⴰⵡⵉⵏ ⵏ ⵜⵍⴳⴰⵎⵜ; swimlaneActionPopup-title becomes
+ⵜⵉⴳⴰⵡⵉⵏ ⵏ ⵓⴱⵔⵉⴷ. Native MediaWiki actions/create-local support
+actions/add; list noun follows existing native talgamt repair, while abrid
+retains the established path/swimlane convention. Low confidence: composed
+construct-state grammar and software swimlane metaphor require native
+review. Actual list/swimlane/add-swimlane title attributes pass browser
+checks, including rejection of old French/Arabic. The rule label receives
+source coverage, not a separate browser execution. Four locale suites pass
+with exact placeholders, ordering and newer-translation preference. Ledger
+18,837; original pending 232/restored 4 unchanged. Correct counts do not
+certify native fluency. French Default labels remain for further review.
+Source: https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json
+
+
+Default label repairs **2026-09-14**, local commit `58169ab23`:
+Additional unflagged default, defaultdefault and font-size-default change
+French Défaut to ⵙ ⵓⵡⵏⵓⵍ. Native MediaWiki img-lang-default supplies the
+exact by-default phrase; pageinfo-default-sort and metadata-fields also
+attest it. Preserve the default-setting meaning rather than substituting
+First. Actual swimlaneHeader.jade renders defaultdefault for the reserved
+Default lane. Chromium verifies the rendered label and rejects Défaut:
+**1 passed (3.5s)**. Setting keys receive source regression coverage, not
+separate browser execution. Low confidence: adapting the native adverbial
+phrase to standalone setting and lane labels merits native review. Four
+locale suites pass with tokens/order/newer human translations preserved.
+Ledger 18,840; original pending 232/restored 4 unchanged. Earlier notes
+that these three French labels remain unchanged are superseded.
+Source: https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json
+
+
+Excel prompt repair **2026-09-14**, local commit `56c2c5331`:
+Original flagged export-card-excel-fields replaces French with
+ⵙⵜⵉ ⵉⴳⵔⴰⵏ ⵍⵍⵉ ⵔⴰ ⵜⵙⵙⵓⴼⵖⴷ ⵖⵔ Excel: (choose the fields you
+will export to Excel). Native MediaWiki history-fieldset-title supports
+choose, metadata-fields supplies fields and export supplies export verb.
+Excel and the trailing colon remain. Low confidence: relative/future
+conjugation and complete software phrase require native review. No active
+client source reference was found for this key, so no browser execution
+is claimed and no UI was added solely to exercise a translation. Four
+locale suites pass with exact tokens, order and newer-human preference.
+Ledger 18,841; original corrected 15,671, pending 232 → 231, zgh 125 → 124;
+restored 4 unchanged. Queue classification records repair, not fluency.
+Source: https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json
+
+
+Debug catalogue error repair **2026-09-14**, local commit `138b1b0af`:
+operator-debug-invalid replaces French with **%s: ⴰⵣⴰⵍ ⵏ debug ⵓⵔ ⵉⵣⵔⵉ**
+(%s: invalid debug value). Actual query-classes.js rejects unsupported
+values in the debug catalogue. This rephrases predicate as its actual
+catalogue-value meaning; it does not replace a Boolean test or use IRCAM's
+grammatical predicate noun. Native MediaWiki unexpected supplies value
+ⴰⵣⴰⵍ, while title-invalid supplies ⵓⵔ ⵉⵣⵔⵉ for invalid. Technical debug
+and exact %s remain. Low confidence: complete diagnostic grammar requires
+native review; existing selector/projection catalogue vocabulary remains
+separate unresolved work. Four affected suites pass with token/order/newer
+translation preference. Source regression checks the debug branch and
+keeps existence-check warnings distinct. This is source coverage, not
+browser execution. Earlier unchanged-French warning notes are superseded.
+Ledger 18,842; corrected 15,672, pending 231 → 230, zgh 124 → 123;
+restored 4 unchanged. Corrected classification does not certify fluency.
+Source: https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json
+
+
+Free-memory repair **2026-09-14**, local commit `1bfe76828`:
+OS_Freemem replaces Arabic with **OS: ⵜⴰⴽⴰⵜⵓⵜ ⵜⴰⵎⵛⵉⵅⵜ**. Primary
+IRCAM General Dictionary PDF page 160, entry 2970 gives amcix vacant/free;
+free-of-charge is a separate entry 5739. Derived feminine tamcixt agrees
+with existing memory noun takatut. Low confidence: derived form and
+computing collocation require native review; the source is not an attested
+complete computing phrase. server/statistics.js uses os.freemem(), which
+Node documents as free system memory in bytes. informationBody.jade
+renders that value via fileSize; no byte/metric logic changed. Regression
+distinguishes free from total memory and rejects Arabic/total wording.
+Four locale suites pass with tokens, order and newer-translation preference.
+No browser execution is claimed for this admin diagnostic. Ledger 18,843;
+corrected 15,673, pending 230 → 229, zgh 123 → 122, restored 4 unchanged.
+Sources:
+https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+https://nodejs.org/api/os.html#osfreemem
+
+
+OS release/type repair **2026-09-14**, local commit `163a755c0`:
+OS_Release is **OS: ⵜⵓⵏⵖⵉⵍⵜ**; OS_Type is **OS: ⴰⵏⴰⵡ**;
+generic type is **ⴰⵏⴰⵡ**. These replace three additional unflagged
+Arabic values. Native MediaWiki versionrequiredtext attests software
+version tunɣilt; file-info-size attests MIME type anaw. Actual
+server/statistics.js reads os.release() and os.type(), separately from
+platform and Node version. Node documents type as the operating-system
+name (Linux, Darwin, Windows_NT); release uses platform release APIs.
+Low confidence: adapting the native terms to OS diagnostics remains open.
+Four focused locale suites pass, including exact values, Arabic rejection,
+metric-source distinctions, placeholder inventories and human preference.
+No admin browser execution is claimed. Ledger 18,846; original corrected
+15,673, pending 229 (zgh 122), restored 4 unchanged: these unflagged
+repairs do not reduce the original pending list or prove native fluency.
+Sources:
+https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json
+https://nodejs.org/api/os.html#ostype
+https://nodejs.org/api/os.html#osrelease
+
+
+Architecture repair **2026-09-14**, local commit `69d9adb6c`:
+OS_Arch is **OS: ⵜⴰⵎⵙⴷⴰⴳⵜ**, replacing an additional unflagged Arabic
+label. IRCAM General Dictionary PDF page 604, entry 11323 attests tamsdagt
+for architecture and a modular-architecture compound. Actual statistics
+reads os.arch(); the information table renders statistics.os.arch. Node
+identifies this as the CPU architecture for which its binary was compiled,
+not the OS name, platform, bit count or CPU count. Low confidence:
+specializing this native architecture term to computing remains open.
+Four locale suites pass, with exact wording, Arabic rejection, distinct
+OS labels and metric-source/template regressions. Tokens, order and newer
+correct-language translations are preserved. No admin browser execution
+is claimed. Ledger 18,847; original corrected 15,673, pending 229
+(zgh 122), restored 4 unchanged. Changed-value checks do not prove fluency.
+Sources:
+https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+https://nodejs.org/api/os.html#osarch
+
+Reference follow-up **2026-09-14**: IRCAM document 333 was downloaded
+from its working ircam.biblio.ma endpoint and 306 pages extracted. The
+biblio.ircam.ma endpoint failed certificate verification; validation was
+not bypassed. Document 333 is the TICAM conference proceedings, published
+2020, not a dedicated computing lexicon. Its title or French technical
+prose cannot establish native diagnostic vocabulary. This bounded check
+provides no acceptance for load-average, platform, uptime or heap labels.
+https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=333
+
+Short audit verification summary corrected **2026-09-14**: earlier
+registered-but-unrun notes are superseded by the dated successful Basque
+and Tamazight Chromium executions already recorded in their reviews.
+Full clauses and other UI paths remain open; no additional browser run is
+claimed by this documentation correction.
+
+
+Troubleshooting repair **2026-09-14**, local commit `1f0d46494`:
+server-error-troubleshooting replaces the full French message with a
+Tamazight draft asking the user to submit the server-generated error,
+then giving separate Snap and Docker installation instructions. Native
+MediaWiki wrongpassword attests the please phrase; emailuser and
+htmlform-submit attest send; internalerror attests error. Its blockedtext
+also attests using a feature. IRCAM General Dictionary page 120 entry 2157
+attests computer server amakkay asnmalay; page 246 entry 4749 attests
+installation asrus, with bound form usrus. The instruction uses commands
+rather than translating their code. Both literal backtick command bodies
+match English exactly, including wekan.wekan and wekan-app; three separate
+lines are retained. globalSearch.jade uses this actual translation key.
+Four locale suites pass, including rejection of French/Arabic prose,
+command inventory, distinct installation lines, placeholders, key order
+and newer correct-language preference. No browser error-path execution is
+claimed. Low confidence: the full relative clause and instruction grammar
+remain open for native review; lexical evidence alone is not full fluency.
+Ledger 18,848; corrected original findings 15,674; pending 229 → 228,
+zgh 122 → 121; restored 4 unchanged. Other remaining French, Arabic,
+calendar, diagnostic and prior uncertain values remain in the full scope.
+Sources:
+https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json
+https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+
+
+Archive/restore repairs **2026-09-14**, local commit `1e3ccd4f0`:
+listArchivePopup-title uses the existing complete list-to-archive phrase
+with a question mark. restore-board becomes **ⵙⵙⵓⴽⵏ ⵜⴰⴼⵍⵡⵉⵜ**,
+replacing Arabic. MediaWiki logentry-delete-restore attests this restore
+verb in a software restoration action. IRCAM General Dictionary page 534,
+entry 10051 independently attests ssukn as restore/repair. The existing
+generic restore key already uses ssukn. The actual boardArchive click
+handler calls board.restore(), whereas the list confirmation archives.
+Four locale suites pass, preserving exact placeholders/order and newer
+translations, and rejecting French/Arabic and archive/restore conflation.
+Playwright spec 03 executed in Chromium: **1 passed (3.8s)**. It verifies
+the translated list confirmation title, rejects French, closes the popup
+without confirmation and checks that the list remains visible. The first
+run passed title checks but timed out using the detached-popup close
+selector. The ordinary popup uses js-close-pop-over; corrected fixture
+then passed. This proves archive title/cancellation rendering, not actual
+board restoration. Board restore has source coverage only. Low confidence:
+computing board/list noun compounds remain in the native review scope.
+Two additional unflagged repairs: ledger 18,850; original corrected 15,674,
+pending 228 (zgh 121), restored 4 unchanged. Full native clauses, prior
+low-confidence values and remaining wrong-language prose remain open.
+Sources:
+https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json
+https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+
+SMTP terminology check **2026-09-14**: the bounded IRCAM dictionary port
+hits identify a harbour, not a network port. They cannot justify replacing
+SMTP terminology with the harbour noun. SMTP label/description and the
+full board-restoration guidance remain unresolved; no acceptance is
+recorded from these unrelated senses.
+
+
+Temporary account lockout repair **2026-09-14**, `b54bc8935`:
+account-locked replaces the complete French message with a Tamazight
+draft: an account blocked for a period because login failed many times,
+followed by please try again later. Native MediaWiki blockedtext attests
+blocking; passwordreset-emailtitle attests account; wrongpassword attests
+login and please; userlogin-authpopup-retry attests try again. The existing
+lockout-period uses tizi for period. The draft paraphrases repeated failed
+attempts as login failing many times; it does not substitute an unrelated
+assassination-attempt noun. It retains a time limit and retry instruction,
+separate from the generic user-is-locked status. Four locale suites pass,
+including concept checks, French/Arabic rejection, tokens, key order and
+newer correct-language preference. No authentication UI execution is
+claimed. Low confidence: complete causal and temporal collocations remain
+under native review; these checks do not establish full native fluency.
+Ledger 18,851; original corrected 15,675; pending 228 → 227, zgh 121 → 120;
+restored 4 unchanged. Other lockout settings/info and all prior uncertain
+findings remain within scope. Bounded searches supplied no trustworthy
+native brute-force technical term, so those messages remain unresolved.
+Source:
+https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json
+
+
+Locked-users description repair **2026-09-14**, `8d3dca66a`:
+accounts-lockout-locked-users-info replaces the complete French value
+with a Tamazight draft. It preserves the existing localized plural
+blocked-users subject and ghila/currently, followed by the reason that
+login failed many times. The individual account-locked and no-locked-users
+messages stay distinct and unchanged. Native MediaWiki blockedtext supports
+block/login vocabulary; the existing correct-language plural empty-state
+supplies the blocked-users construction. Full causal phrasing and the
+per-user interpretation remain low confidence, not accepted as native
+fluency solely from component terms. Four locale suites pass, including
+concept retention, French/Arabic rejection, exact token inventories,
+English key order and newer correct-language translation preference.
+A bounded search found no active Jade reference to this description key.
+No UI code was added to expose a dormant catalogue message; no browser
+verification is claimed. lockedUsersBody.js obtains remainingLockTime
+from getLockedUsers; this source check does not prove this key is rendered.
+Ledger 18,852; original corrected 15,676; pending 227 → 226,
+zgh 120 → 119; restored 4 unchanged. All remaining full phrases and
+prior low-confidence values remain within the audit scope.
+Source:
+https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json
+
+
+Remaining-time repair **2026-09-14**, local commit `852861ce0`:
+accounts-lockout-remaining-time replaces French Temps restant with
+**ⴰⴽⵓⴷ ⵍⵍⵉ ⵉⵇⵇⵉⵎⵏ**, a draft meaning time that remains. Primary
+IRCAM General Dictionary page 79 entry 1260 attests akud/time; page 359
+entry 6809 attests qqim/stay-remain. Low confidence: the derived relative
+verb and countdown collocation require native review; the dictionary
+attests the component roots, not this full computing phrase. Four locale
+suites pass with exact wording, French/Arabic rejection and distinction
+from configured lockout period/failure window. Tokens, English key order
+and newer correct-language translation preference remain protected.
+No active Jade/JS reference to this key was found in the bounded client
+search. No UI was added to expose a dormant key, and no browser execution
+is claimed. lockedUsersBody.js formats remainingLockTime separately;
+that source does not prove this label is rendered. Additional unflagged
+repair: ledger 18,853; original corrected 15,676, pending 226 (zgh 119),
+restored 4 unchanged. Full phrases and prior uncertainties stay in scope.
+Attempt terminology follow-up: the tirmit hits concern experience/travel
+or geological experimentation, not unsuccessful authentication attempts.
+No acceptance of failed-attempts is inferred from those different senses.
+Source:
+https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+
+
+Board archive guidance review **2026-09-14**:
+close-board-pop remains French and unresolved. A complete replacement must
+retain restoration, clicking the Archive button and its home-header
+location; lexical fragments are insufficient. Native MediaWiki
+nstab-mainpage directly attests tasna n usnubg (home page), so the existing
+home term is supported in this software context and is retained. A
+hypothesis that this could only mean hospitality is not an acceptance or
+reason to replace it. Native logentry-delete-restore supports ssukn for
+restoration. However IRCAM General Dictionary page 584 entry 10946 defines
+taqffalt as a pad/plug blocking a hole, not a UI button. Clothing-button
+entries 258 (page 31), 1558 (page 92), 10955 (page 585), 12100 (page 645)
+and button/round-jewel entry 10528 (page 562) do not by themselves attest
+computing controls. Do not cite those senses as an attested complete UI
+instruction. Existing taqffalt occurrences need software-terminology
+review; they are not accepted merely because they use Tifinagh. The actual
+archiveBoardPopup renders close-board-pop and its Archive confirmation
+button. The bounded header search did not locate the home Archive control,
+so its location still needs source/runtime verification. No locale was
+changed in this review and no browser execution is claimed. Counts remain
+ledger 18,853, original pending 226 (zgh 119), restored 4. This evidence
+changes the next action: verify UI button/header terminology and actual
+restoration entry location before writing the full guidance.
+Sources:
+https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json
+https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+
+
+Archive guidance source discrepancy **2026-09-14**:
+The earlier bounded header search is superseded by direct source inspection.
+boardsList.js menuSections supplies archive with labelKey archives and
+extraClass js-open-archived-board. boardsList.jade renders these sections
+as js-select-menu links; the click handler selects the archive section.
+The old board-header-btn js-open-archived-board markup at lines 390 onward
+is commented out. Thus close-board-pop's English home-header button location
+is outdated too; translating that location literally would perpetuate the
+error. Full repairs must use the active All Boards menu Archive location
+and preserve board restoration. This is an additional source-language
+finding, not proof that all other locales already describe it correctly.
+Do not make UI changes just to match obsolete prose. No locale/count
+changes or new browser execution are claimed. Original pending remains
+226 (zgh 119), restored 4, correction ledger 18,853. Next action includes
+repairing English and reviewing the same location in other locales, along
+with the unresolved Tamazight full sentence and UI terminology.
+
+
+Archive guidance repair **2026-09-14**, `143965460`:
+close-board-pop now directs users to Archive on the All Boards page in
+English and six English variants (en-BR, en-DE, en-GB, en-IT, en-MY, en-YS).
+The full French Tamazight value is replaced with a draft using restore,
+board and the exact existing Archive/All Boards UI labels. This supersedes
+notes leaving the source location and French value unchanged. Active
+boardsList menuSections supplies the Archive row and the template/click
+handler selects it; obsolete header markup stays commented out. No UI
+was changed to reproduce obsolete guidance. Native MediaWiki supports the
+restore verb and home/page terminology; full Tamazight navigation grammar
+and conjugation remain low confidence. Five focused suites pass, covering
+all English variants, distinct active place labels, obsolete/French/Arabic
+rejection, menu behavior, exact tokens, key order and human preference.
+No new browser execution is claimed for board archive/restoration.
+Other locales must still be audited for this same obsolete location;
+retain ones already correct, repair erroneous locations directly. This
+additional multilingual requirement remains within the full goal even
+though it is not represented by the original pending table. Ledger
+18,861; original corrected 15,677; pending 226 → 225, zgh 119 → 118;
+restored 4 unchanged. Prior low-confidence full phrases remain open.
+Source:
+https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json
+
+
+Archive guidance batch **2026-09-14**, `f1c15bd0e`:
+Repaired close-board-pop in 27 locale files: fi; de, de-AT, de-CH, de_DE;
+fr, fr-BE, fr-CA, fr-CH, fr-FR; es, es-CL, es-CO, es-LA, es-MX, es-PY,
+es_CO; it; pt, pt-PT, pt_PT; nl, nl-NL; da; nb; pl, pl-PL.
+Each full sentence keeps board restoration and names the locale's actual
+Archive and All Boards place labels, replacing obsolete header locations.
+Polish previously named the Archive action rather than the Archive place;
+this is corrected to Archiwum. Correct Swedish main-menu guidance remains
+unchanged. Regional copies were updated only where their entire old value
+matched the reviewed base language; independently worded variants remain
+for review. No bulk English fallback or translation service was used.
+Five suites pass: batch place-label and obsolete-location checks, exact
+correction ledger, explicit unchanged reviews, all-locale completeness and
+All Boards menu routing. Tokens, key order and newer correct-language
+human preference remain protected. No new browser execution is claimed.
+These checks do not alone prove all native grammar. Ledger 18,888;
+original corrected 15,677, pending 225 (zgh 118), restored 4 unchanged.
+Other locale archive guidance and all prior uncertain findings remain open.
+
+
+Archive guidance batch 2 **2026-09-14**, `f8708e3d2`:
+Repaired 21 files: sk, sl, sl_SI, hr, bs, hu, ro, ro-RO, ru, ru-RU,
+ru-UA, ru_RU, uk, uk-UA, bg, el, el-GR, tr, es-AR, es-PE, pt-BR.
+Full guidance retains restoration and names each existing All Boards
+page and Archive section. Turkish archives changes Arşivle (action) to
+Arşiv (place); Argentine Spanish Archivar to Archivo; Brazilian Portuguese
+Arquivos morto (incorrect agreement/place label) to Arquivo. Correction
+ledger revisions preserve original before values and append dated reasons.
+Independent Argentine/Peruvian Spanish and Brazilian Portuguese guidance
+was explicitly reviewed, rather than overwritten through base-language
+copying. Other variants changed only where the old guidance matched the
+reviewed base. Czech main-menu wording remains intact. Serbian guidance
+needs closer review of existing board/page terms and obsolete name-menu
+navigation; no acceptance is recorded. Five focused suites pass, covering
+localized place labels, obsolete locations, the three corrected Archive
+labels, exact tokens, key order, newer correct-language preference and
+All Boards menu routing. No new browser run is claimed; these checks do
+not alone prove full native grammar. Ledger 18,909, original corrected
+15,677, pending 225 (zgh 118), restored 4 unchanged. Other archive locales
+and all prior uncertain findings remain within the full audit scope.
+
+
+Archive guidance batch 3 **2026-09-14**, `801dcf1a8`:
+34 repaired files: ja, ja-HI, ja-JP; ko, ko-KR; zh, zh-CN, zh-GB,
+zh-Hans, zh_SG, zh-TW, zh-HK; ar, ar-DZ, ar-EG; he, he-IL; fa, fa-IR;
+id; ms, ms-MY; vi, vi-VN; th; ca, ca_ES; eu; gl, gl-ES; is; lv; lt; et-EE.
+Complete native guidance replaces obsolete locations, including Persian
+in Arabic and Malay in Indonesian. Catalan save, Galician archive action
+and Hebrew archive action place labels are corrected in base and matching
+regional files (six labels). Guidance matches the resulting UI labels.
+One stale Galician unchanged acceptance is superseded by a correction;
+its original value remains in historical evidence and correction ledger.
+Tests caught the stale acceptance and regional label/guidance mismatches;
+all were resolved, then focused locale suites passed. All Boards routing
+passed before the regional consistency corrections; no routing code changed.
+No new browser run is claimed. Structural checks do not certify all native
+phrases. Ledger 18,948; corrected original 15,678, reviewed unchanged 4,174;
+pending 225 (zgh 118), restored 4 unchanged. Other locales, wrong-language
+values elsewhere and all prior uncertain findings remain in scope.
+
+
+Archive guidance batch 4 **2026-09-14**, `262f23764`:
+21 files repaired: af, af_ZA; sq; az, az-AZ, az-LA; be; bn; hi, hi-IN;
+ta; ur; mk; ka; hy; sw; zu, zu-ZA; cy, cy-GB; mt. Full restoration
+meaning and exact existing All Boards/Archive labels are preserved while
+obsolete locations are removed. Macedonian guidance had Bulgarian prose;
+Urdu was English rendered phonetically in Arabic script; Maltese mixed
+English and Maltese. Those values are replaced directly in their declared
+languages. Zulu Archive action label becomes Ingobo yomlando in both base
+and matching regional file. Five locale/menu suites pass with wrong-language
+and location regressions, exact placeholders/order and human preference.
+No new browser execution is claimed. Low confidence: complete Maltese and
+Zulu computing collocations still need native review; structural checks
+cannot certify fluency. Welsh adfer is supported by Learn Welsh's native
+course materials. Irish restore research distinguishes text renovation
+from reinstatement; Irish/Scottish/Faroese guidance and Serbian terminology
+were not changed and remain open. No acceptance is inferred from Maltese
+Kaikki's entry carrying an incorrect-language-header warning.
+Ledger 18,971; original corrected 15,678, reviewed unchanged 4,174,
+pending 225 (zgh 118), restored 4 unchanged. All remaining native and
+other locale repairs remain within scope.
+Sources:
+https://learnwelsh.cymru/media/7687/uwch-2.pdf
+https://www.focloir.ie/en/dictionary/ei/restore
+https://www.focloir.ie/en/dictionary/ei/restoration
+
+
+### 2026-09-14 — Irish, Serbian and Tagalog archive guidance
+
+Local source commit `110c58002`; three additional unflagged corrections.
+Ledger 18,974, original pending 225 and four restored values unchanged.
+All three now name the existing Archive section and All Boards page rather
+than obsolete home-header/profile navigation. Serbian keeps the existing
+plural Списи vocabulary and actual localized menu/page names. Tagalog's
+mixed English prose is replaced with a complete instruction.
+
+Irish uses `a thabhairt ar ais` for bringing back/reinstating, supported by
+[Foras na Gaeilge: bring back](https://www.focloir.ie/en/dictionary/ei/bring%2Bback)
+and [restore](https://www.focloir.ie/en/dictionary/ei/restore).
+The previous `athchóiriú` corresponds to renovation/restoring original
+condition in that dictionary; this action makes an archived board available
+again. Dictionary senses support the choice, not full native navigation
+syntax certification; that derived phrase remains open to native review.
+
+Five suites pass: archive guidance, correction ledger (exact tokens, examples,
+key order, idempotency and newer human translations), unchanged reviews,
+translation completeness and All Boards URLs. No additional browser run in
+this batch; source routing and previously executed archive-popup coverage do
+not certify native fluency. Remaining locales and prior low-confidence
+findings remain in scope. No external translation service or remote push.
+
+
+### 2026-09-14 — Eight additional archive instruction repairs
+
+Source commit `2070173c0`: Malayalam (ml), Marathi (mr), Gujarati (gu-IN),
+Punjabi (pa), Nepali (ne), Sinhala (si), Mongolian (mn), Kazakh (kk).
+Eight previously unflagged location errors repaired; ledger 18,982.
+Original tracked pending 225 and four restored values remain unchanged.
+
+Complete instructions now describe the Archive section on All Boards,
+using exact existing localized place labels and restoration terminology.
+Sinhala's English Archive label was replaced with සංරක්ෂිතය. No independent
+regional sentence was overwritten; matching regional candidates were checked,
+and only these eight files required this batch. Correct-language prose was
+preserved where possible while the obsolete header location was corrected.
+
+Five focused suites pass: archive guidance (including negative old-header and
+English-label checks), correction ledger (tokens, examples, ordering,
+idempotency and newer human values), unchanged reviews, completeness and
+All Boards URLs. Native full-sentence collocations remain reviewable; exact
+label/script tests do not certify fluency. No new browser run in this batch.
+
+Remaining archive guidance includes Scottish Gaelic, Faroese, Veps and other
+locales. Uzbek All Boards currently says Barcha kengashlar (all councils),
+so its place label must be reviewed with the instruction rather than copied
+as though correct. Khmer's board-of-directors wording needs the same review.
+These unflagged issues and all prior low-confidence findings stay in scope.
+No external translation service and no remote push.
+
+
+### 2026-09-14 — Uzbek/Khmer board-sense repairs
+
+Source commit `ca9bf7a97`: 11 stored values, 14 locale/key identities including
+km-KH alias coverage. Uzbek board/boards/all-boards/restore-board and full
+archive guidance corrected. Khmer base and regional All Boards, restore
+board and complete archive instructions corrected; km-KH remains a symlink
+to km_KH. Ledger 18,996; original pending 225, four restored values unchanged.
+
+[Izoh.uz: taxta](https://izoh.uz/word/taxta) attests physical boards and
+notice/chess-board uses; [kengash](https://izoh.uz/word/kengash) is consultation
+in the accessed dictionary entry, not a Kanban work surface. Uzbek uses
+Taxta/Taxtalar and the accusative Taxtani in the restoration action.
+[Wiktionary: ក្តារ](https://en.wiktionary.org/wiki/ក្តារ) supports the Khmer
+board/plank noun already established in this locale. The substituted noun
+repairs the governing-body ambiguity without certifying every computing
+collocation. Khmer dictionary endpoint access failed; no claim that it
+independently validated the complete instruction.
+
+Five focused suites pass. Correction ledger initially rejected km_KH rows
+whose before-values were read after the alias had already updated its target;
+restored actual pre-change values from HEAD, then ledger and unchanged-review
+suites passed. Other archive, completeness and route suites had passed.
+Tokens, examples, key order and newer human values remain protected.
+No new browser run. Full computing phrase review remains open.
+
+A wider search found 182 Uzbek and 71 each Khmer council-term values before
+this batch. Remaining: 179 Uzbek and 69 each km/km_KH (km-KH shares the latter).
+Each surrounding sentence needs review, including Uzbek possessive forms:
+kengashi cannot be replaced mechanically with taxtai; taxtasi is required.
+Do not mistake absence from the original 225-key queue for completion.
+No external translation service or remote push.
+
+
+### 2026-09-14 — Remaining Khmer council-sense sweep
+
+Source commit `bc8d3b233`: 69 values each in km and km_KH, 138 stored changes;
+207 locale/key identities including km-KH alias. Ledger 19,203. Original
+pending 225 and four restored values unchanged; no unchanged acceptances
+were superseded. All source/value pairs containing ក្រុមប្រឹក្សាភិបាល were
+read before editing; regional sentences matched the reviewed base sentences.
+Each English source referred to a Kanban board, not a governing council.
+
+Use the already established ក្តារ noun, supported by
+[Wiktionary's board/plank sense](https://en.wiktionary.org/wiki/ក្តារ).
+Preserve surrounding Khmer grammar and exact placeholder inventories. The
+sweep includes activities, invitations, roles, rule subjects, search guidance,
+exports and migration descriptions. Removed migration code stays removed.
+
+Related source comparison found additional wrong senses: deposit-subtasks
+used financial ប្រាក់, list ordering used purchasing បញ្ជាទិញ, and the
+swimlane choice included an unrelated board. Correct these meanings, use
+existing translated private/public labels inside original strong tags, and
+express Multi Board Calendar without the inaccurate all-boards parenthesis.
+All changes are within the same reviewed 69-key set per stored locale.
+
+Five focused suites pass: whole-locale council-term absence and meaning
+regressions, ledger exact values/tokens/examples/order/idempotency/newer
+human preservation, unchanged reviews, completeness and board routes.
+No new browser run. These tests prove the stated errors are removed, not
+full native fluency or every technical compound. Other Khmer terminology,
+including computing migration and swimlane wording, remains reviewable.
+Remaining Uzbek council-term inventory is 179 values; each sentence and
+possessive suffix still requires review. All prior uncertain findings remain
+in scope. No external translation service and no remote push.
+
+
+### 2026-09-14 — Remaining Uzbek board-sense sweep
+
+Source commit `51dd39523`: 179 Uzbek values reviewed against English source
+and repaired. Ledger 19,382; original pending 225 and four restored values
+unchanged. No previously unchanged acceptance superseded. Every remaining
+kengash occurrence described a Kanban board, not a governing council.
+
+[Izoh.uz: taxta](https://izoh.uz/word/taxta) supports the board noun, including
+notice-board usage. Preserve suffixes by adapting consonant-final kengash
+to vowel-final taxta: kengashi becomes taxtasi, kengashingiz becomes
+ taxtangiz, with following case suffixes retained. Plural taxtalar keeps its
+own possessive/case forms. The vowel-final possessive rule is supported by
+[Duke's hosted Uzbek grammar](https://slaviccenters.duke.edu/sites/slaviccenters.duke.edu/files/file-attachments/uzbek.original.pdf).
+Dictionary/grammar evidence supports morphology, not every native software
+collocation. Full technical sentences remain reviewable.
+
+Explicit related corrections remove governing-administration wording from
+adding a member; preserve only-one-board guidance; fix selection, board
+sorting, search, schedule and template grammar; clarify Multi Board Calendar
+and imported ZIP board-named directories. Visibility notices reuse existing
+private/public translations inside unchanged strong tags. Placeholders,
+backticked examples and surrounding correct-language prose are preserved.
+
+Five focused suites pass: full Uzbek council-term absence, possessive-case
+negative regressions and meaning checks; exact ledger tokens/examples/order,
+idempotency and newer-human preservation; unchanged reviews; completeness;
+All Boards routing. No new browser run; these checks do not prove fluency.
+
+Independent stale prose remains: cards-loading-description still describes
+old all/lazy configuration rather than current automatic loading and omits
+CARDS_LOADING_LAZY_THRESHOLD. cards-loading-lazy-note and other technical
+instructions need current-source review. Keep these in scope even though
+they are outside the original 225-key pending table. Other archive locales,
+restored values and all prior low-confidence findings remain unfinished.
+No external translation service or remote push.
+
+
+### 2026-09-14 — Latin Uzbek regional/loading repairs
+
+Source commit `11db75449`; 376 stored values changed (two base, 187 each
+uz-LA/uz-UZ). Base loading values revise existing ledger identities; regional
+repairs add 374. Ledger 19,756; original pending 225/restored four unchanged.
+
+models/lib/cardsLoading.js and server/models/settings.js confirm automatic
+per-board loading, strictly above-threshold lazy loading, complete smaller
+board loading, no admin toggle, and literal CARDS_LOADING (all/lazy/auto) plus
+CARDS_LOADING_LAZY_THRESHOLD operator variables. Performance Jade displays
+the description directly. Correct stale all/lazy prose to these behaviors;
+replace personal laziness wording with on-demand loading in the separate
+experimental note, preserving accurate counts, WIP, partial-view and reload
+qualifiers. The latter key has no active template reference found in the
+initial search; no claim that a hidden/dormant note was exercised in the UI.
+
+Regional board sentences matched the earlier reviewed base before-values;
+eight differing core/roadmap/card-creation/clone/notification values were
+read separately against English. Keep Version/Release literals and existing
+correct-language prose. Five suites pass: regional language regression,
+loading behavior (28 checks), ledger exact tokens/examples/order/newer human
+preservation, unchanged reviews and completeness. No new browser run.
+Arabic-script Uzbek loading prose still requires its own orthographic and
+current-source review. Full native technical phrasing and all other uncertain
+findings remain open. No translation service or remote push.
+
+
+### 2026-09-14 — Full migration-description draft
+
+Local source commit `ef2b560fc`. French comprehensive-board-migration-description
+replaced with a Tamazight draft, preserving data-integrity checks and repairs
+and list ordering, card positioning and swimlane structure. Original corrected
+15,679; pending 224 (zgh 117); restored four unchanged. Ledger 19,757.
+
+[IRCAM General Dictionary](https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339),
+previously downloaded and extracted under .tools/tmp/tamazight-reference:
+p523 entry 9864 ssided check; p534 entry 10051 ssukn restore/repair;
+p476 entry 9000 sastwa put in order; p678 data-integrity phrase
+ⵜⴰⵢⴰⵏⵜ ⵏ ⵜⵎⵓⵛⴰ and entry 12781 timrsi positioning;
+p703 entry 13278 tuṣkiwt structure. Current web reader reports the
+63,806,653-byte PDF too large; cached primary text remains readable.
+
+Derived asastwa ordering noun (written ⴰⵙⴰⵙⵜⵡⴰ), inflections, technical
+list/card/swimlane compounds and general/comprehensive phrasing require
+further native review. The draft removes French but does not close these
+uncertain findings. Do not use the script/lexical checks as fluency proof.
+No active client/server reference found for this description in the source
+search; no browser execution claimed, and removed migrations stay removed.
+Four focused suites pass (locale meaning/token checks, full correction ledger,
+unchanged reviews and completeness), after correcting ROOT in the test.
+No external translation service and no remote push.
+
+
+### 2026-09-14 — Supersede speculative ordering noun
+
+Source commit `3e7b05f82` revises comprehensive-board-migration-description;
+original French before-value preserved. Ledger 19,757; pending 224 (zgh 117),
+restored four unchanged. IRCAM General Dictionary p180 entry 3360 attests
+anmala (order), including word order and classification/tidying compounds.
+[MediaWiki primary Tamazight catalogue](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json),
+pageinfo-default-sort, independently uses the noun in software sorting.
+Replace derived ⴰⵙⴰⵙⵜⵡⴰ with ⴰⵏⵎⴰⵍⴰ; dictionary plus actual computing
+usage is stronger than deriving a noun solely from sastwa put-in-order verb.
+No remaining superseded noun in the local Tamazight locale search.
+
+Four focused suites pass, including positive ordering phrase and negative
+superseded-form checks, ledger exact tokens/order/examples/newer-human
+preservation, unchanged reviews and completeness. No browser run or migration
+activation. These sources resolve the noun choice, not complete sentence
+fluency: comprehensive/general wording, inflection and remaining list/card/
+swimlane compounds still require review. Earlier draft evidence is historical
+and superseded on this noun only. No service translation or remote push.
+
+
+### 2026-09-14 — OS uptime label draft
+
+Source commit `2ad05d681`: unflagged Arabic OS_Uptime replaced with a Tamazight
+time-elapsed-since-OS-start label. Ledger 19,758; original pending 224
+(zgh 117), four restored values unchanged. server/statistics.js obtains
+statistics.os.uptime from os.uptime(); informationBody.jade renders it with
+humanReadableTime. It is distinct from statistics.process.uptime.
+[Node OS documentation](https://nodejs.org/api/os.html#osuptime) supports the
+OS-uptime semantics; no numeric values or runtime behavior were changed.
+
+Cached IRCAM General Dictionary: p240 entry 4642 asnti beginning; p721
+entry 13549 zri pass; p688 entry 12970 tisnsi application/operating system.
+Existing akud time reused. The phrase ⴰⴽⵓⴷ ⵍⵍⵉ ⵉⵣⵔⵉⵏ ⵙⴳ ⵓⵙⵏⵜⵉ
+ⵏ ⵜⵉⵙⵏⵙⵉ is a derived computing clause requiring native inflection and
+startup adaptation review. Avoid aswuri use/employment and dictionary
+projection-period/running-time phrase: neither directly attests OS uptime.
+Physical platform senses found in the dictionary do not establish a term for
+os.platform(); platform and load-average terminology remain unresolved.
+
+Four focused suites pass after renaming a duplicate statisticsSource constant:
+locale meaning checks and actual source/template binding, exact ledger
+values/tokens/examples/order/newer-human preservation, unchanged reviews and
+completeness. No admin browser run claimed. Structural/script checks do not
+certify native fluency. No translation service or remote push.
+
+
+### 2026-09-14 — Distinct due reminder drafts
+
+Source commit `6171a92af`: act-almostdue, act-duenow and act-pastdue French
+replaced with Tamazight drafts retaining exact __timeValue__/__card__ tokens.
+Ledger 19,761; original corrected 15,682; pending 221 (zgh 114), restored four
+unchanged. models/cards.js routes positive, zero and negative day windows to
+almostdue, duenow and pastdue respectively; retain all three distinctions.
+
+Cached IRCAM General Dictionary p521 entry 9825 attests sskti with marked
+variant sskwti for reminding/helping remember. Entry 9826 shares unmarked
+sskti for fanning/kindling fire. Use the explicit marked reminder variant;
+do not incorrectly reject unmarked sskti, which is valid for reminding too.
+P59 entry 845 ads/uds approach; p721 entry 13549 zri pass. Existing deadline
+term reused. Relative clause, imperfect aspect and computing deadline
+collocation remain low-confidence; lexical/script tests do not certify them.
+
+Four suites pass: meaning-state distinction/token inventory checks, ledger
+exact values/order/examples/idempotency/newer-human preservation, unchanged
+reviews and completeness. A stricter negative check was removed because it
+incorrectly rejected a valid unmarked variant; marked-form check retained.
+No new browser run. Original queue reduction removes French findings, not
+all grammar uncertainties. No external service translation or remote push.
+
+Additional terminology searches: IRCAM p208 entry 3966 asadf is entrance/
+access, not itself proof of disability/software accessibility. Easy/ease
+entries and inaccessible shelter likewise do not attest that full concept;
+accessibility French/Arabic values remain open. Aromanian magenta searches
+returned Romanian-context pages, not Aromanian attestations; do not count
+those as proof or mark that pending finding resolved.
+
+
+### 2026-09-14 — Muted/tracking notification drafts
+
+Local source commit `3121eea2f`: two complete French instructions replaced.
+Original corrected 15,684; pending 219 (zgh 112); restored four unchanged.
+Ledger 19,763. boardHeader.jade renders muted-info and tracking-info in the
+watch menu, alongside already translated watching-info. Preserve never
+notified for this board vs changes on cards involving creator/member.
+
+Cached [IRCAM General Dictionary](https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339):
+p452 entry 8585 explicitly distinguishes ur sar (never in the future) from
+ur jju (never in the past); p155 entry 2866 amsnflul creator/designer/inventor;
+p43 entry 502 agmam member, plural igmamn. Reuse existing notification and
+change terms, not a newly invented participant label. Whole notification
+passive, future-negation placement and card-relative agreement are derived
+low-confidence prose and require full native review. Original watching-info
+reuse is consistency evidence, not independent fluency proof.
+
+Four focused suites pass: notification-scope distinction, rejection of French/
+Arabic and actual watch-menu source references; ledger exact values, tokens,
+examples, key order, idempotency and newer-human preservation; unchanged
+reviews; completeness. No new watch-menu browser execution claimed. Queue
+reduction records French removal, not complete native clause acceptance.
+All prior grammar/restored/uncertain findings remain open. No external
+translation service or remote push.
+
+## Tabular Hijri epoch labels — 2026-09-14
+
+Local commit `963a3965b` repairs civil and astronomical tabular Hijri labels.
+Both use Watanqillqa rather than the clock-related Intiwatana. The previously
+English-only astronomical label now has the same table/count and beginning
+wording as the civil variant. Explicit Julian starting dates preserve their
+one-day difference: 622-07-15 versus 622-07-16. These are fixed epoch
+identifiers in selector labels, not a second user calendar or date formatter.
+
+Primary references:
+- [Peru Ministry of Education mathematics glossary](https://formacionenservicio.minedu.gob.pe/sifods/centro-recurso/2022/Material-educativo/392.Matematica-2-Quechua-2021-ITEM-18-PAG-WEB.pdf): tawla (table), yupay (number/count).
+- [USMP Quechua dictionary, volume 2](https://fcctp.usmp.edu.pe/librosfcctp/DICCIONARIO-Quechua-espanol-VOL_2.pdf): qallariy includes beginning and point of departure.
+- [Unicode CLDR calendar types](https://cldr.unicode.org/development/development-process/design-proposals/islamic-calendar-types): civil Friday and astronomical Thursday epochs, both tabular, with Julian dates.
+
+**Low confidence:** tawla yupay is an assembled technical description, not
+an attested complete translation of tabular-calendar calculation. Using
+qallariy for a calendar epoch is likewise an adaptation. Dialect consistency,
+Juliano borrowing, the complete grammar and Saudi sighting wording still
+need review. Zero original Quechua pending entries does not close this
+broader review. Four focused suites pass; no live calendar-selector browser
+validation was run. Ledger 19,765; original corrected 15,685, pending 218,
+restored 4 unchanged. No remote push.
+
+## Saudi moon-sighting label — 2026-09-14
+
+Local commit `3edd8d499` revises calendar-system-islamic-rgsa: replace
+clock-only Intiwatana with Watanqillqa, and explicitly identify moon sighting
+in Saudi Arabia. The old rikusqa qualifier left the observed object unclear.
+
+Primary references:
+- [USMP Quechua dictionary, volume 1](https://fcctp.usmp.edu.pe/librosfcctp/DICCIONARIO-Quechua-espanol-VOL_1.pdf): AVISTAMIENTO gives qhawarisqa for the result of sighting.
+- [Peru Ministry of Education Southern Quechua vocabulary](https://formacionenservicio.minedu.gob.pe/sifods/centro-recurso/2022/Material-educativo/757.018453-ITEM-16-Vocabulario-pedinaria-Quechua-Sureno-ALTA.pdf): killa in lunar vocabulary and a moon-phase section.
+- [Unicode CLDR calendar types](https://cldr.unicode.org/development/development-process/design-proposals/islamic-calendar-types): rgsa is Saudi Arabia sighting, distinct from both tabular epochs.
+
+Full calendar compound and dialect consistency remain low confidence.
+The individual dictionary entries do not attest the assembled technical
+phrase. Four focused suites pass, preserving all locale placeholders,
+key order, original ledger before values and newer translations. The
+regression rejects clock wording in all calendar-system labels and tabular
+calculation/epoch wording in the Saudi sighting label. No browser run.
+Counts unchanged: ledger 19,765, original pending 218, restored 4. This
+revises an existing correction; zero Quechua queue entries does not prove
+completion of broader native review. No remote push.
+
+## Fulah component evidence — 2026-09-14
+
+
+Reviewed **2026-09-14**. Both original epoch findings remain pending.
+
+The current civil and astronomical labels are English-only. They need
+complete tabular-calendar wording and distinct epoch identification, not
+merely the generic Islamic calendar name. Existing Haatumeere Lislaam
+has earlier calendar-context evidence and is not replaced by this review.
+
+New primary component evidence:
+
+- [Senegal Ministry of Education terminology guide](https://senprof.education.sn/PROGRAMME%20LECTURE%20POUR%20TOUS/documentation/Terminologies/Terminologie%20Pulaar%20fusion.pdf) gives Haatumeere for a grid/table, with tracking and analysis grid compounds. This supports a structured data-table sense rather than a furniture-table interpretation. The guide also supplies calendar names and uses the verb Fuɗɗaade for starting an activity.
+- [Oumar Bah Pular–French dictionary](https://www.webonary.work/pular/files/Dictionnaire-Pular-Fran%C3%A7ais.pdf), printed page 160, gives fuɗɗoode for beginning/start. The indexed primary entry was available; direct browser PDF retrieval returned an internal error. Do not claim a full PDF or grammar review from that indexed entry.
+- [Unicode CLDR calendar types](https://cldr.unicode.org/development/development-process/design-proposals/islamic-calendar-types) distinguishes tabular civil Friday epoch (Julian 622-07-16) from astronomical Thursday epoch (Julian 622-07-15). Explicit starting dates can preserve that distinction, but cannot stand in for translating the tabular calculation component.
+
+The table-to-calendar calculation compound remains unverified. Search
+results mentioning hiisaade were not accepted as proof of a particular
+calculation meaning without the complete dictionary entry. Likewise a
+Pular beginning noun cannot alone establish Pulaar dialect consistency or
+technical epoch usage. The spelling of the Julian proper name also needs
+review rather than copying an English qualifier into an otherwise native
+label.
+
+Next: retrieve the calculation entry and a native educational example of
+computational tables, then compose both complete labels and verify their
+grammar. Preserve the current translated generic/sighting/Umm al-Qura
+values unless evidence establishes a specific defect. No locale changes,
+new correction records or unchanged-language acceptances were made.
+Original pending 218 overall, Fulah 2; ledger 19,765, restored 4 unchanged.
+Structural tests cannot certify native phrase quality. No browser run or
+remote push.
+
+## Tabular epoch repairs — 2026-09-14
+
+Local commit `206859259` replaces both English-only epoch labels with
+component-based Fulah drafts. Existing Haatumeere Lislaam is retained;
+hiisa e haatumeere describes calculation with a structured table, and
+fuɗɗoode identifies the starting date. The civil Julian epoch is 622-07-16;
+the astronomical Julian epoch is 622-07-15. Explicit dates disambiguate the
+epochs without confusing astronomical epoch with moon sighting. These are
+fixed identifiers in labels, not a second user calendar or date formatter.
+
+New primary lexical evidence:
+[Smith/Niggli Fulfulde dictionary](https://mooreburkina.com/sites/www.mooreburkina.com/files/pdf-files/03%20Dictionnaire%20fulfulde%20-%20francais%20%20English.pdf)
+explicitly gives hiisa for arithmetic/calculation/counting and hiisaade for
+the calculation verb. The indexed entry resolves the previous unsupported
+calculation-term lead. It does not attest the assembled calendar phrase.
+The Senegal ministry structured-table evidence and Bah beginning entry
+above remain component references, not complete technical translations.
+
+**Low confidence:** full compound grammar, table-to-calendar calculation
+adaptation, Pular/Pulaar/Burkina dialect consistency, and the borrowed Julian
+proper name still need native review. Repeated Haatumeere uses retain the
+existing calendar-context name plus the attested structured-table sense;
+this does not certify generic calendar nomenclature throughout Fulah.
+Four focused suites pass, including exact placeholder/tag inventories,
+key order, correction provenance and newer human-translation preference.
+Existing Saudi sighting wording remains unchanged. No live calendar-selector
+browser test was run. Ledger 19,767; original corrected 15,687, pending 216,
+restored 4 unchanged. Zero original Fulah pending findings does not close
+broader uncertain or unflagged wording review. No remote push.
+
+## Saudi sighting draft — 2026-09-14
+
+Local commit `58809a724` replaces English-only country wording with a
+Kashmiri Hijri/calendar, Saudi Arabia and moon-seeing draft. This repairs
+the missing observation component as well as the wrong-language seed.
+The existing generic Hijri calendar wording is retained.
+
+Primary component sources:
+- [Unicode CLDR Kashmiri XML](https://raw.githubusercontent.com/unicode-org/cldr/main/common/main/ks.xml): Saudi Arabia territory spelling.
+- [IGNCA sentence of the day, number 50](https://ignca.gov.in/PDF_sentences/Sentectoftheday_050.pdf): indexed Kashmiri football sentence uses the Unicode seeing infinitive. This supports spelling, not lunar-object agreement.
+- [Modern Kashmiri Grammar](https://ikashmir.net/onkoul/pdf/ModernKashmiriGrammar.pdf): moon and seeing components, nominalized infinitives and agreement, as read and described above.
+- [G. N. Atish native literary text](https://www.kashmirilanguage.com/WORD_Books/GN_Atish_3of3.html): Zoon spelling also occurs in a discussion of Nakhshab's moon. The same page uses Zoon as a person's name; those personal-name occurrences alone are not moon evidence.
+
+**Low confidence:** the assembled phrase is not attested as a complete
+calendar name. Infinitive agreement with the feminine moon object,
+nominalization and the inflected Arabic-script phrase still require native
+review. The attested standalone seeing form does not prove that form is
+correct in this compound. This correction does not mark that uncertainty
+resolved. Tabular/astronomical epoch wording and the existing civil-calendar
+translation also remain open.
+
+Four focused suites pass: exact source placeholders/tags and key order,
+correction provenance, newer translations and the specific label. No live
+calendar-selector browser test was run. Ledger 19,768, original corrected
+15,688, pending 215 (Kashmiri 1), restored 4 unchanged. No remote push.
+
+## Participation and watch notification messages — 2026-09-14
+
+Local commit `3eb7ae103` replaces two full French catalogue values with
+Tamazight drafts. notify-participate reuses the tracking-info notification
+sentence, preserving creator/member participation in cards. notify-watch
+specifies watched boards, lists or cards, rather than restricting delivery
+to card membership or all board changes. English source values establish
+these different scopes. No active client/model references were found for
+these two keys; this repair does not activate a removed notification UI.
+
+[Primary MediaWiki Tamazight source](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json)
+attests the monitoring verb and the relative watchlist phrase used as a
+component of the watched-object qualifier (tooltip-pt-watchlist). Its
+watchlist and mywatchlist values also support a native list/monitoring
+combination. This does not independently establish WeKan's passive
+notification sentence or its adapted mixed-object agreement. Existing
+tracking-info provenance and creator/member dictionary references remain
+recorded above, including their uncertainty.
+
+**Low confidence:** complete passive inflection, plural/mixed-object
+agreement, relative grammar and adapting MediaWiki monitoring to WeKan
+notifications still need native review. Reusing a recent draft improves
+consistency, not confidence in its full grammar. Existing Latin-script
+list label and Tifinagh dictionary list wording also remain broader
+terminology-review items.
+
+Four focused suites pass, covering placeholders/tags, key order, original
+provenance and newer translation preference, plus distinct message scopes.
+No live notification UI/browser test was run. Ledger 19,770; original
+corrected 15,690, pending 213 (zgh 110), restored 4 unchanged. Other
+uncertain/restored/unflagged findings remain open. No remote push.
+
+## WIP recovery guidance — 2026-09-15
+
+Local commit `414beceef` replaces the French WIP-limit recovery sentence
+with a Tamazight draft. English source says move some tasks out of the
+list OR set a higher WIP limit. The French seed's remove-card wording
+must not be turned into a delete instruction. The replacement names
+moving tasks from this list and increasing the WIP limit. Active
+listHeader.jade renders this sentence below the limit-exceeded message.
+
+[Primary MediaWiki Tamazight source](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json)
+provides the move action (tooltip-ca-move) and enlarge action
+(thumbnail-more). Enlarging a thumbnail supports the verb, not an attested
+complete phrase for increasing a numerical WIP limit. Existing first
+WIP-error paragraph supplies task/list/limit components for consistency.
+
+**Low confidence:** adapting enlargement to a numerical threshold, full
+imperative/object grammar, indefinite-task quantity and the existing
+politeness/dialect form remain under native review. Reusing existing
+components does not independently validate their complete wording.
+Four focused suites pass, including exact placeholders, key order,
+correction provenance/newer translation preference and the active template
+reference. No live WIP popup browser test was run. Ledger 19,771;
+original corrected 15,691, pending 212 (zgh 109), restored 4 unchanged.
+All broader uncertain/restored/unflagged findings remain open. No push.
+
+## Bulk-card instructions and description — 2026-09-15
+
+Local commit `df50d9f6e` translates French bulk-card instructions and
+repairs description terminology in the generic label and three example
+objects. Description uses aglam, not the existing summary noun asgzl.
+The instruction identifies titles/descriptions of the cards the user will
+create in the displayed JSON format. The title and description JSON
+property names remain literal code; only sample prose changes.
+
+[Primary IRCAM English dictionary](https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339)
+PDF page 42, entry 486, explicitly attests aglam (description) with plural
+iglamn. Cached full dictionary text was inspected. The dictionary marks
+this noun as a neologism. This is component evidence, not an attested
+complete bulk-card instruction. Existing MediaWiki title/create components
+and WeKan's card-example terminology provide consistent vocabulary.
+
+Active cardDetails.jade renders the instruction above the JSON textarea
+and destination picker. cardDetails.js parses each object and uses its
+literal properties for the resulting cards. No JSON schema or application
+behavior is changed by this translation repair.
+
+**Low confidence:** complete future-relative grammar, destination-as-created
+card interpretation, plural title morphology and the JSON-format compound
+remain under native review. The description noun is supported directly;
+that does not establish full fluency of every field/example sentence.
+Five focused suites pass, including summary remaining distinct, exact JSON
+properties, placeholders/tags/key order, original correction provenance
+and newer translations. No live bulk-copy browser test was run. Two existing
+ledger records are revised with their original before values retained; one
+new record brings total to 19,772. Original corrected 15,692, pending 211
+(zgh 108), restored 4 unchanged. Broader uncertain review remains open.
+No remote push.
+
+## Remaining description noun corrections — 2026-09-15
+
+Local commit `cb7df8bbc` corrects description-on-minicard and addmore-detail
+from summary noun to aglam (description). The full locale scan found only
+these two remaining description-labelled values containing that summary
+noun. Actual summary and search shorthand values remain unchanged; this
+is a selected terminology correction, not a global string replacement.
+
+[Primary IRCAM dictionary](https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339)
+page 42, entry 486, directly supports description aglam. Cached full PDF
+text was inspected again; browser retrieval rejects the oversized PDF.
+The compound surrounding this noun, especially more detailed wording,
+remains under native review. No active client references were found for
+these two catalogue keys. No UI activation or live browser verification
+is claimed. Existing Latin/Tifinagh terminology consistency also stays open.
+
+Five focused suites pass, including all description-labelled values staying
+distinct from summary and preservation of literal JSON properties and
+placeholders. Both existing ledger records retain their original before
+values with revised after/reasons. Ledger 19,772; original pending 211
+(zgh 108), restored 4 unchanged. Broader uncertain/unflagged review remains
+open. No remote push.
+
+## Missing-list repair description — 2026-09-15
+
+Local commit `59aa02a7e` replaces the French missing/corrupted-list
+migration description with a Tamazight draft. It retains discovering AND
+repairing, missing OR damaged lists, and the board structure. No active
+client/server/model references were found for this removed migration key;
+the repair does not reactivate migration code. Its confirmation remains
+French and pending, rather than being silently declared complete.
+
+[Primary IRCAM dictionary](https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339)
+cached full text supplies discover/find (entry 10232, PDF page 546) and
+spoil/damage (entry 9847, page 522). Earlier recorded repair, list and
+structure component evidence remains applicable. Physical damage is not
+independent attestation of software data corruption; that adaptation stays
+low confidence. The dictionary lack entry has a second obligation sense,
+so the draft instead reuses the existing not-present list-heading wording.
+
+**Low confidence:** passive formation, feminine/plural object agreement,
+existential missing-list clause, tense and software corruption/structure
+compounds still need native review. Individual dictionary verbs do not
+prove the assembled sentence. Four focused suites pass, covering original
+provenance, placeholders/tags/key order and newer human translations. No
+live migration/browser test was run. Ledger 19,773; original corrected
+15,693, pending 210 (zgh 107), restored 4 unchanged. Full uncertain,
+restored and unflagged reviews remain open. No remote push.
+
+## Missing-list confirmation draft — 2026-09-15
+
+Local commit `8e7006cde` repairs the matching French confirmation. It
+preserves the description's discovery/repair scope and missing-or-damaged
+lists in board structure, with future wording and an explicit continuation
+question. This supersedes the earlier note that this confirmation remains
+French; native grammatical review is still open.
+
+[Primary MediaWiki Tamazight source](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json)
+pt-login-continue-button uses the continuation/follow verb in a software
+workflow. This supports a component, not the full interrogative adapted
+here. Dictionary continue/last/remain entries were also checked; their
+durational senses were not treated as independent proof of a workflow
+confirmation. Earlier discovery/repair/damage references remain recorded.
+
+**Low confidence:** the complete continuation question, future coordination,
+passive agreement and data-corruption compound require native review.
+Four focused suites pass, including confirmation distinct from description,
+exact placeholders/tags/key order, provenance and newer human translation
+preference. No active references to this removed migration were found and
+no live browser test was run. No removed code is reactivated. Ledger
+19,774; original corrected 15,694, pending 209 (zgh 106), restored 4 unchanged.
+All broader uncertain/restored/unflagged findings remain open. No push.
+
+## Duplicate-list deletion confirmation — 2026-09-15
+
+Local commit `8b44ebd33` replaces the French confirmation with a Tamazight
+draft. It retains the certainty question, future deletion, all duplicate
+lists, a shared name AND absence of cards. This is distinct from the more
+specific empty-list migration messages, whose extra conditions and
+shared-list conversion remain pending. Their conditions are not silently
+substituted into this different source string.
+
+Active sidebar.jade deleteDuplicateListsPopup renders this confirmation
+above the delete button. Only translation data changed; deletion behavior
+is not modified. [Primary MediaWiki Tamazight source](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json)
+attests deletion and a no-matching-action negative existential formulation
+(delete-confirm and logempty). Those support components, not the full
+adapted no-card/shared-name compound. Existing duplicate-list label and
+workspace confirmation provide consistent local vocabulary.
+
+**Low confidence:** full passive and plural/feminine agreement, repeated-
+list terminology, shared-name construction and adapting the negative
+existential to cards still need native review. Existing compound reuse is
+not independent attestation. Four focused suites pass, preserving exact
+placeholder/tag inventories, key order, provenance and newer translations,
+with regressions for all deletion conditions and question structure. No
+live deletion-popup browser test was run. Ledger 19,775; original corrected
+15,695, pending 208 (zgh 105), restored 4 unchanged. Full uncertain,
+restored and unflagged review remains open. No remote push.
+
+## Empty-duplicate-list restriction — 2026-09-15
+
+Local commit `8378f9f39` translates the French migration description.
+It retains safely, only, no cards AND another same-title list containing
+cards. The counterpart's populated state is essential; generic duplicate-
+list wording alone would omit a deletion restriction.
+
+[Primary IRCAM dictionary](https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339)
+PDF page 613, entry 11473, attests tanfrut safety/guarantee. Cached full
+text was inspected. Adapting safety to data deletion is not attestation of
+the complete software phrase. Existing deletion, list/card and title
+components provide consistent vocabulary, not independent grammar proof.
+
+**Low confidence:** full restriction and relative grammar, same-title
+construction, plural/feminine agreement and duplicate terminology remain
+under native review. No active references to this removed migration key
+were found. The separate conversion/confirmation message remains pending;
+no migration is reactivated. Four focused suites pass, preserving literal
+code and placeholders, original provenance and newer human translations.
+No live browser test was run. Ledger 19,776; original corrected 15,696,
+pending 207 (zgh 104), restored 4 unchanged. Broader uncertain review stays
+open. No remote push.
+
+## Ordered empty-duplicate-list confirmation — 2026-09-15
+
+Local commit `38c76afb7` replaces the French confirmation with a Tamazight
+draft using explicit ordered steps. Shared lists become lists for each
+swimlane before deletion. Only empty duplicates with another same-title
+list containing cards are described as removed, followed by a continuation
+question. The source's redundant-empty-list assurance is expressed through
+these deletion restrictions, rather than inventing a new redundancy noun.
+
+[Primary IRCAM dictionary](https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339)
+PDF page 535 attests ssur common/shared (also mix/mixed). Cached full text
+was inspected; the mixed sense does not prove software shared-list usage.
+Religious convert terminology was excluded as inappropriate. The draft
+adapts the existing change verb to the representation transformation.
+Earlier list/card/swimlane, deletion and continuation evidence remains
+recorded, with its limitations.
+
+**Low confidence:** sharing inflection, change-to-convert interpretation,
+same-title grammar, relative agreement and expressing redundancy through
+conditions need native review. Ordered numeric steps make the sequence
+explicit without translating a new unverified temporal adverb. Four
+focused suites pass for order, both restrictions, continuation, exact
+placeholders, provenance and newer translations. No active migration
+references or live browser test; removed code remains removed. Ledger
+19,777; original corrected 15,697, pending 206 (zgh 103), restored 4 unchanged.
+All broader uncertain/restored/unflagged review remains open. No push.
+
+## SMTP networking-port evidence boundary — 2026-09-15
+
+The full cached [primary IRCAM dictionary](https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339)
+was rechecked by numbered lexical entries, excluding its English index.
+Page 120 entry 2157 explicitly attests computer server as
+ⴰⵎⴰⴽⴽⴰⵢ ⴰⵙⵏⵎⴰⵍⴰⵢ (amakkay asnmalay). The existing SMTP host label
+and server compound are retained; this supports the noun, not complete
+host-description grammar. A scan found no mistakenly split
+ⴰⵎⴰⴽⴽⴰ ⵢⴰⵙⵏⵎⴰⵍⴰⵢ form in the locale.
+
+Page 74 entry 1154 gives aftas as harbour/port; page 176 entry 3283
+gives anftas as of the port. Neither attests a numbered TCP endpoint.
+Those entries must not justify replacing smtp-port with a harbour term.
+Cross-dialect computing lexicons and Chilean hosting pages returned by
+search do not establish Standard Moroccan Tamazight networking terminology.
+The Arabic smtp-port label and French smtp-port-description remain open,
+including the complete outgoing-email clause. No locale value, acceptance
+or correction count changes in this evidence review. Original pending
+206, zgh 103; restored 4 and all broader uncertain findings remain open.
+
+## Unsaved card description warning — 2026-09-15
+
+Local commit `ed8256d45` replaces the unflagged Arabic unsaved-description
+warning with a Tamazight draft retaining possession and not-yet-saved status.
+[Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json)
+new-messages supplies ghurk possession;
+rcfilters-quickfilters-placeholder-title supplies not-yet-saved passive
+wording for a feminine filter. IRCAM PDF page 42 entry 486 attests aglam
+as description. Adapting the passive to a masculine description is
+**low confidence**, and the full clause remains under native review.
+CardDetails.jade line 913 renders this warning; four focused suites pass
+for vocabulary, negative status, source registration, exact placeholders,
+key order, provenance and newer human translations. No live UI test ran.
+Ledger 19,778; original pending 206 (zgh 103) and restored 4 unchanged.
+All broader uncertain findings remain open. No remote push.
+
+## Card description recovery confirmation — 2026-09-15
+
+Local commit `d9cebf2b0` replaces French rescue-card-description-dialogue
+with a Tamazight draft asking to change the current card description with
+your changes. CardDetails.js line 2972 confirms before setDescription
+replaces the stored value with the editor contents; cancelling does not
+save. This is distinct from the unsaved-status warning.
+
+[Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json)
+changeemail-no-info supplies the change verb in a second-person clause;
+changeemail-oldemail attests current and savechanges attests changes.
+IRCAM page 42 entry 486 supplies the description noun.
+**Low confidence:** change-to-overwrite interpretation, complete question,
+card/description construction and possession need native review. These
+component attestations do not prove the full recovery prompt. Four focused
+suites pass for scope, question, source registration, placeholders,
+provenance and newer human translations; no live browser test ran. Ledger
+19,779; original corrected 15,698, pending 205 (zgh 102), restored 4.
+All broader uncertain/restored/unflagged review remains open. No push.
+
+## Migration help and individual execution — 2026-09-15
+
+Local commit `a00a983c1` replaces French migrations-description with a
+Tamazight draft retaining data-integrity checking and repairing for this
+board, followed by each migration being executable by itself. Existing
+documented IRCAM check/repair/integrity components are reused; the full
+cached [IRCAM dictionary](https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339)
+page 488 entry 9202 attests skr do/make. Physical division/separation
+entries were excluded as proof of individual software execution. Entry
+7184 iman soul is not evidence for the adapted reflexive phrase.
+
+**Low confidence:** the by-itself reflexive construction, modal/passive
+agreement, migration metaphor and complete integrity compound remain under
+native review. Four focused suites pass for both actions, board scope,
+each/individual execution, placeholders, provenance and newer translations.
+No active key reference or live browser run; removed migrations remain
+removed. Ledger 19,780; original corrected 15,699, pending 204 (zgh 101),
+restored 4 unchanged. All broader uncertain/restored findings remain open.
+No push.
+
+## Numerical sum evidence boundary — 2026-09-15
+
+The remaining Finnish showSum-field-on-list value was rechecked against
+the full cached Zaiceva/Mullonen 2007 Russian–Veps dictionary. Page 419
+explicitly gives numerical addition as luguiden ližaduz and the imperative
+add the numbers as ližada lugud. This is direct numerical-operation
+evidence, but does not establish a noun meaning the resulting total.
+The separate Wiktionary candidate ühthevedota is glossed summarize/sum up,
+not expressly arithmetic, and its cached entry carries an incorrect-
+language-header category. Its generated imperative must not be treated
+as primary evidence for this UI label.
+
+Source context: sidebarCustomFields.jade lines 56 and 61 render the
+setting; listHeader.js computes number-field statistics and a numeric sum
+badge, while date fields use a range rather than summing dates. A prose
+summary verb would blur that distinction. The next repair therefore needs
+a numerical-total noun or a complete explicitly numerical formulation.
+No translation or acceptance changed. Pending 204, including nine Veps
+findings; broader prior drafts and native grammar remain open.
+
+## Tabular Hijri drafts and civil-word revision — 2026-09-15
+
+Local commit `59541a5ae` repairs the English tabular label and revises the
+previous civil label's inappropriate social-word rendering. Both use the
+existing Hijri/calendar, table and starting components, plus arithmetic
+حساب attested explicitly in the
+[primary Bharatavani Hindi–Kashmiri–English dictionary](https://bharatavani.in//kashmiri/dictionarysurf/?did=485&language=Hindi),
+entry अंकगणित. This is arithmetic-word evidence, not a full calendar name.
+[Unicode CLDR calendar definitions](https://cldr.unicode.org/development/development-process/design-proposals/islamic-calendar-types)
+distinguish tabular civil 622-07-16 from astronomical 622-07-15, both Julian.
+The explicit ISO starting dates preserve that distinction without confusing
+the astronomical epoch with lunar observation. Original civil provenance
+and revision reasons remain in the correction ledger.
+
+**Low confidence:** the table-arithmetic compound, starting-date/epoch
+formulation, Julian borrowing and complete Arabic-script grammar remain
+under native review. Existing source terminology reuse is not independent
+proof of those complete phrases. Four focused suites pass, including
+negative coverage excluding the old social wording, distinct dates, exact
+placeholders, original provenance and newer human translations. A prior
+regression expectation for the superseded civil wording was updated.
+No live calendar-popup browser test ran. Ledger 19,781; original corrected
+15,700, pending 203, restored 4. Kashmiri has no original pending flags,
+but these drafts and earlier sighting agreement remain open. No push.
+
+## Wolaytta calendar noun repair — 2026-09-15
+
+Local commit `12dfa02ae` repairs four unflagged English calendar nouns:
+calendar, single-board and multiboard calendar views, and iCal export.
+[Native Wolaytta Gifaataa article](https://incubator.wikimedia.org/w/index.php?title=Wp/wal/Gifaataa_(baalaa)&oldid=5971248)
+explicitly pairs wodiyaa qoodaa with calendar in its native prose.
+[Wolaytta kawotettaa](https://incubator.wikimedia.org/wiki/Wp/wal/Wolaytta_kawotettaa)
+independently uses Wodiyaa Qoodaa in dating its historical period. The
+general noun now replaces Wolayttatto: Calendar, whose prefix did not
+translate English. Existing multiboard and iCal qualifiers are preserved.
+
+The earlier unflagged-calendar pending note is superseded for this noun.
+**Still open:** complete software-label grammar, the existing all-boards
+qualifier and every specific calendar-system compound/epoch/sighting label.
+Tigre terminology is not inferred from Wolaytta or Tigrinya. Four focused
+suites pass for all four replacements, preserved qualifiers, placeholders,
+key order, original provenance and newer human translations. No live
+calendar-view browser test ran. Ledger 19,785; original pending 203,
+including all 17 Wolaytta calendar-system findings; restored 4 unchanged.
+Broader uncertain/unflagged reviews remain open. No remote push.
+
+## Wolaytta Ethiopian calendar drafts — 2026-09-15
+
+Local commit `b7f18f9ce` replaces English Ethiopian and Ethiopian Amete
+Alem labels with Wolaytta drafts combining country and calendar terms.
+[Native Wolaytta Moottaa](https://incubator.wikimedia.org/w/index.php?title=Wp/wal/Wolaytta_Moottaa&oldid=6829964)
+uses Toophphiyaa as the country label and inflected Toophphiyan in prose;
+Toophphiya also occurs in its regional heading. The previously documented
+Gifaataa calendar noun wodiyaa qoodaa is reused. Amete Alem is retained
+as the proper era name, distinguishing the two calendar selections.
+
+**Low confidence:** the exact country-calendar construction is assembled,
+not attested as a complete native calendar name. Country inflection, full
+compound and proper-name adaptation still require native review. Four
+focused suites pass for native components, preserved era, distinct labels,
+exact placeholders, provenance and newer human translations. No live
+calendar-selector UI run. Ledger 19,787; original corrected 15,702, pending
+201 (Wolaytta 15), restored 4 unchanged. Broader uncertain and unflagged
+review remains open; no remote push.
+
+## Wolaytta Dangi and Minguo drafts — 2026-09-15
+
+Local commit `af7388566` replaces English Dangi (Korean) and Republic of
+China seeds with Dangi/Minguo plus the attested native calendar noun
+wodiyaa qoodaa. The proper calendar names come directly from each English
+source key; they are not claimed as dictionary-attested Wolaytta spellings.
+The noun evidence remains
+[the native Gifaataa article](https://incubator.wikimedia.org/w/index.php?title=Wp/wal/Gifaataa_(baalaa)&oldid=5971248),
+which explicitly glosses wodiyaa qoodaa as calendar. Searches for country
+spellings returned unrelated languages, including Oromo; those results
+were excluded and did not justify these translations.
+
+**Low confidence:** complete proper-name/calendar construction and local
+proper-name adaptation require native review. Source names preserve both
+calendar identities without relying on unverified country adjectives. Four
+focused suites pass for distinct canonical names, noun, negative English
+seed checks, placeholders, provenance and newer translations. No live UI
+run. Ledger 19,789; original corrected 15,704, pending 199 (Wolaytta 13),
+restored 4 unchanged. All broader uncertain review remains open. No push.
+
+## Wolaytta generic and Umm al-Qura Hijri drafts — 2026-09-15
+
+Local commit `ca3b8764b` replaces two English Islamic seeds with Hijri
+plus native wodiyaa qoodaa, retaining Umm al-Qura on the specific variant.
+[Current Unicode CLDR calendar definitions](https://raw.githubusercontent.com/unicode-org/cldr/main/common/bcp47/calendar.xml)
+explicitly identify generic Hijri and Hijri Umm al-Qura as separate types.
+The names are preserved from the English source; they are not claimed as
+attested Wolaytta transliterations. Native calendar-noun evidence remains
+[the Wolaytta Gifaataa article](https://incubator.wikimedia.org/w/index.php?title=Wp/wal/Gifaataa_(baalaa)&oldid=5971248).
+
+**Low confidence:** borrowed-name adaptation and complete compound grammar
+remain under native review. This does not resolve the tabular civil,
+astronomical epoch or Saudi sighting labels, which retain separate required
+qualifiers. Four focused suites pass for identity, variant distinction,
+negative English-seed checks, placeholders, provenance and newer human
+translations; no live calendar-selector UI run. Ledger 19,791; original
+corrected 15,706, pending 197 (Wolaytta 11), restored 4 unchanged. All
+broader uncertain/restored/unflagged review remains open. No push.
+
+## Wolaytta calendar-system label draft — 2026-09-15
+
+Local commit `c5738aa53` replaces Azerbaijani calendar-system prose with
+a Wolaytta draft retaining calendar/method and the date-display qualifier.
+Native Gifaataa prose supplies wodiyaa qoodaa and calendar-method maaraa
+components; the existing locale date noun gallassaa is reused. The
+[primary native publication title](https://www.jw.org/wal/laybreriyaa/jw-xanna%EA%9E%8Ciyo-xuufiya/laappune-2019-mwb/shiiquwaa-prograamiyaa-laa4-10/kiristtaane-siiquwaa-bessiyoogaa/)
+and its search-indexed prose supply nominalized bessiyoogaa in a showing
+love context. A direct page open timed out: do not claim the full source
+was read. Other occurrences mean should/deserves and do not independently
+prove a software display noun.
+
+**Low confidence:** showing-to-display adaptation, date versus day noun,
+calendar-system construction and complete qualifier grammar remain open.
+UserHeader.jade line 348 renders this label above the selector. Four
+focused suites pass for distinct system/date-display wording, negative
+Azerbaijani checks, source registration, placeholders, provenance and newer
+translations; no live selector UI run. Ledger 19,792; original corrected
+15,707, pending 196 (Wolaytta 10), restored 4 unchanged. All broader
+uncertain/restored/unflagged review remains open. No push.
+
+## Full-source showing-word verification — 2026-09-15
+
+The previously timed-out Wolaytta source was fetched successfully with a
+bounded curl request into .tools/tmp/wolaytta-display-review/showing-love.html
+(about 359 KiB). Its HTML declares lang=wal; the actual title, h1 and
+bodyTxt text were inspected rather than relying on search snippets.
+[Native article](https://www.jw.org/wal/laybreriyaa/jw-xanna%EA%9E%8Ciyo-xuufiya/laappune-2019-mwb/shiiquwaa-prograamiyaa-laa4-10/kiristtaane-siiquwaa-bessiyoogaa/)
+uses bessiyoogaa in the showing-love title and bessiyo with kindness in
+its body. The
+[matching English article](https://www.jw.org/en/library/jw-meeting-workbook/march-2019-mwb/meeting-schedule-mar4-10/show-christian-love/)
+has the same publication identifier 202019083 and confirms the show sense.
+This supersedes the previous full-source-unread limitation for this page.
+
+The native showing component in calendar-system is retained. **Still
+open:** adapting showing to a software date display, date/day wording and
+the complete calendar-method/qualifier construction. Reading this source
+does not certify that full UI phrase. No locale value or acceptance
+changes; original pending 196 (Wolaytta 10), restored 4, ledger 19,792.
+Broader native, uncertain and unflagged reviews remain open. No push.
+
+## Wolaytta dictionary catalogue verification — 2026-09-15
+
+The advertised
+[English–Welaytta dictionary B page](https://ethiopiadictionary.com/online-dictionary/?from=English&language=Welaytta&letter=B)
+was opened and downloaded successfully to
+.tools/tmp/wolaytta-dictionary-review/letter-b.html (about 260 KiB).
+Its dictionary table contains 207 English headword rows and 207 empty
+Welaytta target cells; direct HTML inspection confirms this is not merely
+a web-parser omission. Buddhist does not occur in the fetched page.
+The catalogue heading and English definitions therefore cannot justify
+Wolaytta terminology, including the remaining Buddhist-calendar label.
+This bounded observation does not prove the language lacks a term or that
+every page of this dictionary is empty.
+
+Searches for Buddhist spellings also returned unrelated-language material;
+none was used as Wolaytta evidence. The next repair needs native prose or
+a populated dictionary entry, rather than copying another language's
+spelling. No locale value or acceptance changed. Pending 196 (Wolaytta
+10), restored 4 and ledger 19,792 unchanged. All broader uncertain reviews
+remain open. No remote push.
+
+## Checklist item and comma instructions — 2026-09-15
+
+Local commit `35dcd699a` replaces French r-items-check and
+r-checklist-note with Tamazight drafts. The instruction remains mandatory:
+write checklist items with commas between them. The existing checklist
+compound and item noun are reused.
+
+The [IRCAM dictionary](https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339)
+page 686 entry 12946 explicitly attests tiskrt, plural tiskrin, as a
+punctuation comma, alongside garlic and small-fingernail senses. Page 194
+entry 3669 attests aru write; the separate childbirth homograph is excluded.
+[Native MediaWiki messages](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json)
+attest the item plural in transaction-duration-limit-exceeded.
+
+**Low confidence:** full checklist compound, note noun and between-them
+agreement remain under native review. These components do not prove the
+complete clause. checklistActions.jade registers the instruction beside
+its input; no live browser test ran. Four focused suites verify exact
+values, mandatory input wording, negative French checks, registration,
+placeholders, key order and newer human translation preference. Ledger
+19,794; original corrected 15,708, pending 195 (zgh 100), restored 4.
+The item label additionally repairs an unflagged value. Broader uncertain,
+restored and unflagged review remains open. No push.
+
+## Rule objects and add-label action — 2026-09-15
+
+Local commit `54218b150` replaces French r-card, r-item and r-d-add-label.
+Reuse the existing card noun, singular checklist-item noun and r-add plus
+r-label terminology. The object nouns remain separate from the action;
+add label remains distinct from remove label. checklistActions.jade uses
+r-item beside the selected check/uncheck action and item-name input.
+This consistency repair supplies no new independent lexical attestation.
+**Low confidence:** complete contextual rule wording remains under native
+review. Four focused suites pass for exact values, add/remove distinction,
+negative French checks, placeholders, key order and human preference. No
+live browser test ran. Ledger 19,797; original pending 195 (zgh 100),
+restored 4 unchanged: all three repairs were unflagged. Broader uncertain,
+restored and unflagged review remains open. No push.
+
+## Rule destinations and member fragments — 2026-09-15
+
+Local commit `d9bcfcd2f` replaces eight French rule fragments:
+r-its-list, r-in-list, r-in-swimlane, r-d-add-member,
+r-d-remove-member, r-d-check-of-list, r-with-items and r-swimlane-name.
+Reuse existing list/swimlane/member/item/name nouns, add/remove imperatives,
+and possession/destination constructions. r-d-check-of-list matches the
+existing r-of-checklist; member removal matches remove-member. The English
+source requests member, rather than retaining the old French participant.
+boardActions.jade registers list ownership and distinct list/swimlane
+locations around action selectors and name inputs. This consistency repair
+adds no independent lexical attestation.
+
+**Low confidence:** complete contextual grammar, including the swimlane
+locative and fragment composition, remains under native review. Four
+focused suites pass for exact values, object/action distinctions, negative
+French checks, placeholders, JSON examples, order and human preference.
+No live browser test ran. Ledger 19,805; original pending 195 (zgh 100),
+restored 4 unchanged. All eight repairs were unflagged; broader uncertain,
+restored and unflagged review remains open. No push.
+
+## Unsaved-description rescue setting — 2026-09-15
+
+Local commit `c9f033fe3` replaces French rescue-card-description with a
+Tamazight draft retaining rescue dialogue before closing an unsaved card
+description. The cached full IRCAM dictionary, page 152 entry 2806,
+attests amsawal dialogue. Existing show, restore, close, card-description
+and not-yet-saved terms are reused. A fresh browser fetch of the dictionary
+failed because the PDF exceeds the tool's size limit; the cached full
+source supplied the entry, rather than relying on the index.
+Source: https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+
+**Low confidence:** the software-dialogue metaphor, before-closing temporal
+construction and agreement remain under native review. userHeader.jade
+registers the setting label; cardDetails.js uses its separate rescue prompt.
+Four focused suites pass for scope, timing, negative French checks,
+registration, placeholders, key order and human preference. No live browser
+test ran. Ledger 19,806; original corrected 15,709, pending 194 (zgh 99),
+restored 4 unchanged. Broader uncertain/restored/unflagged review remains
+open. No push.
+
+## No lost objects to restore — 2026-09-15
+
+Local commit `ab336422a` replaces French
+restore-lost-cards-nothing-to-restore with a Tamazight draft. Preserve
+negative existence, swimlanes OR lists OR cards, their lost state and
+restoration purpose. Reuse existing negative/object/conjunction/restore
+terms; the cached full IRCAM dictionary page 120 entry 2158 attests
+amakul lost/misplaced and plural imakuln. This is an object adjective,
+rather than a lost-person expression.
+Source: https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+
+**Low confidence:** mixed-gender agreement, the collective qualifier and
+complete software phrasing remain under native review. No active key
+reference was found in client/server/models; removed migrations stay
+removed. No live browser test ran. Four focused suites pass for all three
+objects, negation, lost/restoration scope, negative French checks,
+placeholders, order and human preference. Ledger 19,807; original corrected
+15,710, pending 193 (zgh 98), restored 4 unchanged. Broader uncertain,
+restored and unflagged review remains open. No push.
+
+## Card and vote deletion notices — 2026-09-15
+
+Local commit `9e26815db` replaces Arabic card-delete-notice and French
+vote-delete-pop. Retain permanent deletion as an explicit cannot-undo
+clause and loss of all activities associated with this card or vote.
+Reuse existing account/team deletion cannot-undo wording, board deletion
+future passive, activity plural and card/voting nouns. Vote and card
+objects remain distinct. cardDetails.jade registers the vote notice.
+This consistency repair adds no independent lexical attestation.
+
+**Low confidence:** permanence paraphrase, possessive scope and passive
+agreement remain under native review. Four focused suites pass for
+non-undoable deletion, all activities, distinct objects, negative
+wrong-language checks, placeholders, order and human preference. No live
+browser test ran. Ledger 19,809; original corrected 15,712, pending 191
+(zgh 96), restored 4 unchanged. Broader uncertain/restored/unflagged
+review remains open. No push.
+
+## Card and swimlane deletion popups — 2026-09-15
+
+Local commit `7a51038bf` replaces Arabic card-delete-pop and French
+swimlane-delete-pop. Preserve all actions removed from the activity feed,
+no card reopening versus no swimlane recovery, and no undo. Reuse existing
+future deletion, activity/list nouns, board-open and restore verbs, and
+cannot-undo clauses. Activity feed is adapted as activity list; this
+consistency repair adds no independent lexical attestation.
+
+**Low confidence:** feed adaptation, again adverb and full contextual
+agreement remain under native review. cardDetails.jade and
+swimlaneHeader.jade register the respective warnings. Four focused suites
+pass for feed/all-actions scope, distinct restrictions, no undo, negative
+wrong-language checks, placeholders, order and human preference. No live
+browser test ran. Ledger 19,811; original corrected 15,714, pending 189
+(zgh 94), restored 4 unchanged. Broader uncertain/restored/unflagged review
+remains open. No push.
+
+## Update noun and repository-label review — 2026-09-15
+
+Local commit `52b264894` replaces Arabic r-update with asdghi, the update
+noun explicitly attested by the cached full IRCAM dictionary page 218
+entry 4175. The noun is used as a standalone UI action label; this does
+not attest an imperative verb. **Low confidence:** contextual action-label
+suitability remains under native review.
+Source: https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+
+A bounded search through cached lexical pages 1–729 found this update
+entry but no repository/upload entry. This is not proof that the language
+lacks those terms. Existing upload terminology is available locally, but
+repository/repositories/upload-repository/sign-in-to-upload remain French
+pending appropriate repository terminology. Do not derive a software
+repository noun from an unattested physical-deposit sense. No active
+upload-repository/sign-in-to-upload reference was found under client.
+
+Four focused suites pass for the exact update noun, negative Arabic/English
+checks, placeholders, order and human preference. No live browser test
+ran. Ledger 19,812; original pending 189 (zgh 94), restored 4 unchanged.
+The repaired rule label was unflagged; broader uncertain/restored/unflagged
+review remains open. No push.
+
+## Checklist mark terminology — 2026-09-15
+
+Local commit `cda3ca904` repairs six French check/uncheck/one/all labels
+and revises two existing rule descriptions. Cached IRCAM page 467 entry
+8828 attests rcm mark; page 595 entry 11152 attests tamatart sign and plural
+timitar. Check is adapted as mark, uncheck as remove sign. These components
+replace reliance on the existing, unverified smatr wording. One/all and
+item/checklist scope remain distinct. **Low confidence:** checkbox
+adaptation and full phrase grammar remain open. Four focused suites pass;
+no live browser test ran. Ledger 19,818, original pending 189 (zgh 94),
+restored 4 unchanged. Six new records and two revisions were unflagged.
+Source: https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+Issue fixes #6694/#6693 now take priority; broader translation work remains
+active and incomplete. No push.
+
+## Quick-access hint and technical-term review — 2026-09-15
+
+Local commit `636dae2df` replaces Arabic quick-access-description with a
+Tamazight draft retaining star-board action and the resulting shortcut at
+this location. The cached full IRCAM dictionary page 210 entry 4007
+attests asanf shortcut. Existing star/add/purpose/here terms are reused.
+The hint is registered in header.jade's quick-access empty-message row;
+contextual here identifies the containing bar. Physical door-bar entries
+2442/10905 were excluded as proof of a software bar term.
+Source: https://ircam.biblio.ma/catalogue/doc_num.php?explnum_id=339
+
+**Low confidence:** the software-shortcut metaphor, purpose clause and
+contextual location adaptation remain under native review. Four focused
+suites pass for star action, board/shortcut/location scope, negative Arabic
+checks, source registration, placeholders, order and human preference.
+No live browser test ran. Ledger 19,819; original corrected 15,715,
+pending 188 (zgh 93), restored 4 unchanged.
+
+Brute-force settings/info remain French. IRCAM protection entries alone
+do not attest the complete cybersecurity compound; literal violent-force
+wording would not establish exhaustive credential-guessing meaning. No
+change was made to these labels. Broader uncertain/restored/unflagged
+review remains open. No push.
+
+## Multi-selection and label shortcuts — 2026-09-15
+
+Local commit `3a090333c` replaces Arabic multi-selection and French
+toggle-labels using existing Tamazight terminology. Express toggle as add
+or remove labels 1-9 for a card; multi-selection adds labels 1-9. Both
+numeric ranges remain exact. Existing remove-labels-multiselect supplies
+the selection compound, while add/remove/labels/card terms are reused.
+keyboard.js lines 197/210 implement add for selection versus toggle for a
+card, and its shortcut list registers toggle-labels. This consistency
+repair adds no independent lexical attestation.
+
+**Low confidence:** computing selection compound and complete contextual
+grammar remain under native review. Four focused suites pass for both
+behaviors, exact ranges, negative wrong-language checks, placeholders,
+order and newer human translation preference. No live browser test ran.
+Ledger 19,821; original corrected 15,716, pending 187 (zgh 92), restored 4
+unchanged. multi-selection additionally repairs an unflagged value.
+Broader uncertain/restored/unflagged review remains open. No push.
+
+The supplied Transifex support response promises catalogue support for
+gv/lld/rup/tig/wal; it does not prove live availability or translation
+quality. The existing force-push regression verifies re-registration and
+upload after previously missing targets become supported, without network
+writes. Unicode CLDR validates Manx's four integer categories plus decimal
+many, and Ladin/Tigre integer rules. Aromanian/Wolaytta proposed two-form
+rules remain provisional, not native-translator approval. None of this
+closes the local native wording review.
+Reference: https://raw.githubusercontent.com/unicode-org/cldr/main/common/supplemental/plurals.xml

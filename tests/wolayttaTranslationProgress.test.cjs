@@ -44,3 +44,29 @@ assert.equal(JSON.parse(wolaytta['copyManyCardsPopup-format']).length, 3);
 assert.match(wolaytta['enable-permanent-delete'], /Wolayttatto/);
 
 console.log('wolayttaTranslationProgress: complete locale passed');
+
+const repairedCalendarLocale = JSON.parse(require('node:fs').readFileSync(require('node:path').resolve(__dirname, '../imports/i18n/data/wal.i18n.json'), 'utf8'));
+for (const key of ['calendar','board-view-cal']) assert.equal(repairedCalendarLocale[key], 'Wodiyaa qoodaa');
+assert.equal(repairedCalendarLocale['board-view-multiboard-cal'], 'Wodiyaa qoodaa (Ubba bookkiyata)');
+assert.equal(repairedCalendarLocale['export-ical-feed'], 'Wodiyaa qoodaa (iCal)');
+for (const key of ['calendar','board-view-cal','board-view-multiboard-cal','export-ical-feed']) assert.doesNotMatch(repairedCalendarLocale[key], /Wolayttatto: Calendar/);
+
+assert.equal(wolaytta['calendar-system-ethiopic'], 'Toophphiya wodiyaa qoodaa');
+assert.equal(wolaytta['calendar-system-ethioaa'], 'Toophphiya wodiyaa qoodaa (Amete Alem)');
+assert.notEqual(wolaytta['calendar-system-ethioaa'], wolaytta['calendar-system-ethiopic']);
+assert.doesNotMatch(wolaytta['calendar-system-ethioaa'] + wolaytta['calendar-system-ethiopic'], /Ethiopic/);
+
+assert.equal(wolaytta['calendar-system-dangi'], 'Dangi wodiyaa qoodaa');
+assert.equal(wolaytta['calendar-system-roc'], 'Minguo wodiyaa qoodaa');
+assert.notEqual(wolaytta['calendar-system-dangi'], wolaytta['calendar-system-roc']);
+assert.doesNotMatch(wolaytta['calendar-system-dangi'] + wolaytta['calendar-system-roc'], /Korean|Republic of China/);
+
+assert.equal(wolaytta['calendar-system-islamic'], 'Hijri wodiyaa qoodaa');
+assert.equal(wolaytta['calendar-system-islamic-umalqura'], 'Hijri wodiyaa qoodaa (Umm al-Qura)');
+assert.notEqual(wolaytta['calendar-system-islamic'], wolaytta['calendar-system-islamic-umalqura']);
+assert.doesNotMatch(wolaytta['calendar-system-islamic'] + wolaytta['calendar-system-islamic-umalqura'], /Islamic/);
+
+assert.equal(wolaytta['calendar-system'], 'Wodiyaa qoodaa maaraa (gallassaa bessiyoogaa)');
+assert.notEqual(wolaytta['calendar-system'], wolaytta.calendar);
+assert.doesNotMatch(wolaytta['calendar-system'], /Kalendar|görünüşü/);
+assert.match(require('node:fs').readFileSync(require('node:path').join(root, 'client/components/users/userHeader.jade'), 'utf8'), /{{_ 'calendar-system'}}/);

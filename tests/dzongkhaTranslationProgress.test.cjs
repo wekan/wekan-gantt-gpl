@@ -374,3 +374,10 @@ assert.match(dzongkha['globalSearch-instructions-operator-number'], /`__operator
 assert.match(dzongkha['globalSearch-instructions-operator-number'], /\*<number>\*/);
 assert.match(dzongkha['import-here-instruction'], /\.json.*\.zip/);
 assert.match(dzongkha['import-board-source'], /Trello.*Jira.*WeKan.*CSV.*Excel/);
+
+// Sighting variant must include moon observation, not only a country.
+assert.match(dzongkha['calendar-system-islamic-rgsa'], /^Hijri ཟླ་ཐོ.*Saudi Arabia.*ཟླཝ་མཐོང་ནི་/);
+assert.doesNotMatch(dzongkha['calendar-system-islamic-rgsa'], /^Islamic \(Saudi Arabia\)$/);
+
+assert.equal(dzongkha['calendar-system-iso8601'], dzongkha['calendar-system-gregorian'] + ' (ISO 8601 བདུན་ཕྲག)');
+assert.notEqual(dzongkha['calendar-system-iso8601'], 'ISO 8601');

@@ -22,7 +22,14 @@ test('new board fields use the shared policy-aware viewer', () => {
       `${file}: ${field} must use viewer`);
     }
   }
-  assert.match(read('client/components/cards/minicard.jade'), /span\.minicard-title-text\n\s+\+viewer[\s\S]*?= getTitle/);
+  assert.match(read('client/components/cards/minicard.jade'), /span\.minicard-title-text[\s\S]*?\+viewer\n\s+= getTitle/);
+  const opened = read('client/components/cards/cardDetails.jade');
+  const titleBlock = opened.slice(opened.indexOf('h2.card-details-title.js-card-title('), opened.indexOf('if isWatching', opened.indexOf('h2.card-details-title.js-card-title(')));
+  assert.match(titleBlock, /\+viewer\n\s+= getTitle/);
+  for (const source of [titleBlock, read('client/components/cards/minicard.jade')]) {
+    assert.doesNotMatch(source, /\+viewer\n\s+if (?:showCardNumber|currentBoard\.allowsCardNumber)/, 'card-number markup must not precede Markdown source inside viewer');
+  }
+  assert.doesNotMatch(titleBlock, /\{\{\{?\s*(?:getTitle|title)\s*\}\}\}?/);
   assert.doesNotMatch(read('client/components/boards/timelineView.jade'), /timeline-(?:list|card)-title \{\{/);
   const editor = read('client/components/main/editor.js');
   assert.match(editor, /setting\.renderLinksAsPlainText/);
@@ -78,4 +85,26 @@ test('assignee helpers use native dates without undeclared Moment dependency', (
   assert.equal(helpers.formatDueAt(null), '');
   context.ReactiveCache.getBoard = () => null;
   assert.equal(helpers.cardUrl('card'), '#');
+});
+
+test('card numbers stay outside Markdown heading source', () => {
+  const MarkdownIt = require('markdown-it');
+  const emoji = require('markdown-it-emoji');
+  const renderer = new MarkdownIt({ html: true, linkify: true, typographer: true, breaks: true }).use(emoji.full);
+  const source = '# Demo card :thumbsup: :heart: :tada:';
+  assert.match(renderer.render(source), /<h1>Demo card 👍 ❤️ 🎉<\/h1>/);
+  assert.doesNotMatch(renderer.render('<span class="card-number">#1 &nbsp;</span>' + source), /<h1>/,
+    'number markup before the source reproduces the former heading failure');
+});
+
+test('title Markdown heading sizes survive global and mobile resets', () => {
+  for (const [file, selector] of [
+    ['minicard.css', '.minicard-title-text'], ['cardDetails.css', '.card-details-title'],
+  ]) {
+    const css = read(`client/components/cards/${file}`);
+    for (const [level, size] of [[1, 2], [2, 1.5], [3, 1.25], [4, 1.125], [5, 1], [6, 0.875]]) {
+      assert.ok(css.includes(`#content ${selector} .viewer h${level} { font-size: ${size}em !important; }`));
+    }
+    assert.doesNotMatch(css.slice(css.lastIndexOf('/*')), /color\s*:/, 'headings keep theme color');
+  }
 });
