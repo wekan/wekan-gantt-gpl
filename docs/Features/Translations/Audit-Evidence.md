@@ -1,6 +1,928 @@
 # Detailed translation audit evidence
 
+2026-09-14 (`04df440db`): restored Danish Scaleout's outward qualifier;
+`spinner_scaleout.css` grows from scale(0) to scale(1). Retained 29 correct
+values, preserving sorting direction, creator roles, %{value}, spinner shapes
+and ticket states. Danish review total 349: 346 retained, three repaired.
+Overall corrected 15,539, retained 525, restored awaiting validation 3,709,
+pending 308; correction inventory 18,134. Review remains incomplete and
+the maintainer's wekansec21 security request is now prioritized.
+
+
+2026-09-14 (`c6d3b9e0e`): retained thirty correct Danish restored values.
+Review preserves similar-operator OR versus differing-operator AND, literal
+examples, list/swimlane title matching, comments containing text, label
+color/name alternatives, archived versus end-date cards, pagination and date
+predicates. Source Markdown defects are not validated by prose review.
+Ambiguous export free remains open. Danish reviewed total 319; overall
+retained 496, restored awaiting validation 3,739. No translations changed.
+
+
+2026-09-14 (`6531c37d2`): retained thirty correct restored Danish values
+after full review of search labels/counts. Preserve no/one/n-card counts,
+organization/team not-found, creator versus assignee, created versus modified,
+archived/open/ended/all predicates, current absence of due cards, due-date
+sorting and time periods. Tokens and quotes unchanged. Operator vocabulary
+review does not independently verify runtime parsing. Ambiguous export free
+remains open. Danish total reviewed 289; overall retained 466, restored
+awaiting validation 3,769. No correction/pending counts changed.
+
+
+2026-09-14 (`b8b7f8235`): retained 29 correct Danish restored display/
+task values, including selected above/below, ALL unread, checked-item and
+finished-checklist hiding, JSON content and OIDC text customization. Team/
+Teams, Database and Layout are valid shared Danish terms. Leave
+`export-card-excel-free` (`ledig`) unclassified: English free is ambiguous,
+and source search found no runtime key use establishing its meaning.
+Danish reviewed total 259; overall retained 436, restored awaiting review
+3,799. Do not treat the excluded value as validated.
+
+
+2026-09-14 (`2250b6716`): retained thirty correct Danish restored values.
+Confirm conversion once per board with normal continued use, migration
+background continuation even after browser closure, slower-completion
+warning, 1-100 batch range, migrated/remaining/total attachment counters,
+minicard list show/hide, unmigrated boards, temporary account lock due to
+too many failed logins plus retry later, credential requirements/mismatch.
+Danish orange is valid; English identity alone is not an error. Danish
+reviewed total 230; overall retained 407, restored awaiting validation 3,828.
+
+
+2026-09-14 (`12d02f4dc`): retained thirty correct restored Danish migration
+and S3 values. Confirm duplicate empty-list deletion requires no cards AND
+a same-title list containing cards; shared-list conversion occurs first.
+Preserve missing swimlaneId/listId, non-archived-only recovery, ALL archived
+restoration, difficult undo, board-member avatars versus all board files,
+correct storage backends and individual execution. S3/MinIO, port, secret
+authentication and SSL/TLS remain distinct. Obsolete migration labels stay
+in scope without a runtime-availability claim. Danish reviewed total 200;
+overall retained 377, restored awaiting validation 3,858.
+
+
+2026-09-14 (`5fcf0d284`): retained thirty correct Danish restored values
+after full review. Preserve active/inactive state plus inverse click action,
+all/locked/inactive filters, successful scheduling versus failures, scheduled
+job deletion/pause, failed migration retry versus paused resume, start/pause/
+stop including All, filesystem paths, GridFS storage and S3 authentication/
+bucket descriptions. Danish reviewed total is 170; overall retained 347,
+restored awaiting validation 3,888. Corrected and pending counts unchanged.
+
+
+2026-09-14 (`807ceeee2`): retained thirty more correct restored Danish
+values unchanged. Confirmed attachment All versus board-only scope and
+storage destinations, invalid filename cancellation of upload or rename,
+PDF download alternative, custom-translation no-undo warning, ZIP JSON and
+named attachment directories, support logged-in-only and not-yet states,
+accessibility not-yet, known versus nonexistent lockout users, failure-window
+seconds, failed-login cause and unlock one/all controls. Exact values are
+in audited-reviews. Danish total reviewed 140; overall retained 317 and
+restored awaiting validation 3,918. No repair/completion counts were inflated.
+
+
+2026-09-14 (`e5d7da30e`): thirty more restored Danish values reviewed.
+Repair peak malloc allocation and zap-garbage bit-pattern overwriting;
+[Node V8 documentation](https://nodejs.org/api/v8.html#v8getheapstatistics)
+confirms these are distinct from generic allocation and ordinary cleanup.
+Retain 28 correct values, including membership deletion constraints, literal
+space entities, Enter action, legal continuation, checklist and attachment
+movement with All and storage destinations preserved. Overall corrected
+15,538; retained 287; restored awaiting validation 3,948; pending 308.
+Correction inventory is 18,133. Wording review remains incomplete.
+
+
+2026-09-14 (`eb1f433e2`): retained thirty more Danish restored values
+after full source-meaning review, principally search instructions/errors.
+Confirmed operator examples, member/assignee and organization/team scopes,
+from-now due ranges, inclusive ages, missing-value and descending-sort minus,
+positive per-page limits, signed day periods, case-insensitivity and archive
+default. Troubleshooting commands remain literal. Source Markdown/parser
+correctness is not certified by source-correspondence review. Eighty Danish
+values now reviewed; overall retained is 259, restored awaiting review 3,978.
+
+
+2026-09-14 (`9abcbc424`): retained thirty more restored Danish values
+after direct full-meaning review. Exact keys/values are in audited-reviews.
+Verified irreversible team/organization deletion, automatic domain users,
+my-card sorting, all-user due-card views limited to incomplete cards from
+permitted boards, not-found subject distinctions, activity location chain
+and search/operator errors. Tokens, quotes and emphasis are preserved.
+Fifty Danish restored values are now reviewed in total; overall retained
+count is 229 and restored awaiting validation is 4,008. No wording changed.
+
+
+2026-09-14 (`159886821`): direct complete-meaning review retained twenty
+restored Danish values unchanged. Exact keys/values are in audited-reviews;
+these include Add Template, Move List, Currency Code, minicard description
+and attachment count, custom HTML/JSON settings, duplication confirmation,
+organization/team/people counts and selected-list left/right directions.
+Technical/shared Computer and Type are valid Danish; English identity alone
+is not an error. Reviewed/retained increases to 199; restored awaiting
+validation decreases to 4,038. All remaining wording review stays open.
+
+
+2026-09-14: inspected all 4,058 `restoredPrePull` rows against the English
+underscore-delimited and percent-format token inventories. Zero mismatches.
+Extended `translationAuditProgress.test.cjs` to verify every restored row
+and reject renamed/missing token inventories, without promoting mechanically
+valid values to language-reviewed status. No values or counts changed.
+This check does not establish fluency, terminology, or correct-language prose.
+
+
+2026-09-14 (`edfed8176`): repaired additional Tamazight `card-spent`,
+`editCardSpentTimePopup-title` and `editCardSortOrderPopup-title`. Reuse
+existing Spent Time wording without the hours qualifier. Native MediaWiki
+`edit` supplies Change and `sort-ascending` / `sort-descending` supply
+Sorting. Noun-only time and Change actions remain distinct. Full spent-time
+participle and agreement remain low confidence. All 18,131 records pass
+structural checks; these additional repairs do not reduce original counts.
+
+
+2026-09-14 (`db8421e9b`): repaired the additional Arabic Tamazight
+Change Due Date popup title. Native MediaWiki `edit` supplies `ⵙⵏⴼⵍ`;
+existing Due Date is `ⴰⵙⴰⴽⵓⴷ ⴰⵎⴳⴳⴰⵔⵓ`. The title now follows the
+same Change imperative as start, received and end date popups. This
+repair does not validate approaching/overdue tooltips, which remain open.
+The existing Due Date terminology still belongs to wider fluent review.
+No original pending count changed; correction inventory increased to 18,128.
+
+
+2026-09-14: synchronized the changelog's current TODO Later and upcoming
+aggregate with authoritative audit-progress output: 15,536 corrected,
+4,058 restored awaiting validation, 179 retained, 308 pending; 18,127
+correction records and 173 pending Tamazight findings. Dated per-repair
+counts remain historical snapshots. Aggregate updates do not establish
+fluency or close restored/low-confidence review work.
+
+
+2026-09-14 (`9b11c99d9`): repaired Tamazight Parent Card and Don't
+Show Parent. Native MediaWiki `rcfilters-activefilters-hide` supplies
+`ⵙⵙⵏⵜⵍ`; indexed IRCAM General Dictionary supports `ⴰⵎⴰⵔⴰⵡ`.
+Existing Card terminology supplies `ⵜⴰⴽⴰⵔⴹⴰ`. The compound and bound
+state are adaptations and remain low confidence. `presentParentTask()`
+in `client/components/cards/cardDetails.js` defaults to `no-parent` as
+a display mode; the translation hides the parent without removing it.
+One original finding and one additional wrong-language value repaired.
+
+
+2026-09-14 (`084d44fab`): repaired Tamazight public/private board
+notices, retaining this board, future visibility and exact strong tags.
+Existing public/private adjectives were adapted to feminine board agreement.
+[HACA public-sector terminology](https://www.haca.ma/tf/%E2%B5%89%E2%B4%B3%E2%B5%94-%E2%B4%B0%E2%B4%B3%E2%B4%B7%E2%B5%93%E2%B4%B7%E2%B4%B0%E2%B5%8F)
+and indexed institutional feminine forms support vocabulary; they do not
+verify the entire future-tense sentence. Full grammar remains low confidence.
+One original finding and one additional wrong-language value were repaired.
+
+
+2026-09-14: repaired `zgh/error-notAuthorized`, replacing Arabic with
+`ⵓⵔ ⴷⴰⵔⴽ ⵜⵓⵔⴰⴳⵜ ⴰⴼⴰⴷ ⴰⴷ ⵜⵙⴽⵏⴷ ⵜⴰⵙⵏⴰ ⴰⴷ.`
+Native [MediaWiki wording](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json)
+provides permission denial (`permissionserrorstext-withaction`), conjugated
+view (`viewsourcetext`) and this-page terminology (`pageinfo`). This is
+a derived complete sentence, not a verbatim source translation; full grammar
+remains low confidence. No placeholders were present or added.
+
+
+2026-09-14 — `cd563cce5`: Veps escape-marker follow-up to d0c247094.
+Direct decoded JSON showed one remaining doubled backslash in the standalone
+escape instruction, despite the restored examples. English has three single
+backslash runs; the locale had single/double/single. Corrected the middle
+run and extended regression coverage to compare every backslash run against
+English. All canonical examples still pass, malformed comparison remains
+rejected and the Veps language queue stays open. This fixes code syntax only,
+not the Finnish prose; no completed-language ledger entry or count change.
+Dictionary metadata/access results remain separately documented in Veps-Review.md.
+
+2026-09-14 — `d0c247094`: partial Veps filter-help syntax repair.
+Direct decoded JSON showed a single equality sign and extra backslashes in
+the apostrophe example. Restored English executable comparison/escape,
+control-character, quoted field/value and parenthesized Boolean examples.
+Extended advancedFilterAuditedTranslations coverage to check every canonical
+example, reject the malformed comparison and assert Veps language review
+remains pending. These checks passed; they do not establish Veps fluency.
+Finnish prose remains unresolved; no completed-language ledger entry or
+original progress-count change. Separate Veps-Review.md records native field
+and control terminology and the complete remaining requirements.
+
+2026-09-14 — Veps follow-up: current language registry explicitly maps
+ve-PP to Vepsän kelʹ; do not reinterpret its legacy ve code as Venda.
+Directly read MediaWiki vep native translations: show/rcfilters-activefilters-show
+use Ozuta, tags-activate uses pane radho, tags-deactivate uses kel'dä,
+and default-skin-not-found-row-enabled/disabled distinguish om lasktud
+from om kel'tüd. These attest native software components beyond the Finnish
+seed values. The inspected file has no keyboard or shortcut keys, so it does
+not independently establish a full keyboard-shortcut label. Ten original
+Veps findings remain pending, including long operator help whose exact
+examples and escaping must survive repair. Related-language cognates alone
+cannot prove the complete Finnish-seeded sentences are valid Veps. Values,
+correction records and counts unchanged: 311 original findings pending.
+Reference: https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/vep.json
+
+2026-09-14 — allocation/context visual follow-up: directly inspected
+CNAM PDF18 and PDF41 local renders, superseding the previous text-only
+status for these entries. Allocation is Aḥeṛṛi (KBL root ḥeṛṛ), visibly
+confirming emphatic ḥ and doubled ṛ; the extracted Aêeôôi is not the native
+spelling. Context is Tawennaṭ (plural tiwennaḍin, environment MW), visibly
+confirming final emphatic ṭ and plural ḍ rather than extraction substitutions.
+MW is modern lexicon, not MediaWiki. These are cross-variety candidates,
+not independent Moroccan diagnostic phrases. Allocation does not by itself
+establish malloced memory or peak malloced memory; Context does not by itself
+establish native or detached V8 contexts. Preserve those modifiers and exact
+Node identifiers during repairs. No translation values, correction records
+or counts changed; original pending remains 311, including 176 Tamazight.
+Reference: https://cedric.cnam.fr/~bouzefra/books/amawal.pdf
+
+2026-09-14 — Node heap terminology review: directly inspected rendered
+CNAM Amawal PDF139/printed135. Heap is Tirect KBL/MAT, plural tirac;
+its c is the Kabyle spelling convention, requiring careful Tifinagh adaptation
+rather than Latin c-to-k substitution. This cross-variety dictionary entry
+is not normative Moroccan evidence. PDF text also offers Context on page41
+and Allocation on page18; those entries have not been visually verified in
+this review. Heap diagnostics remain pending: preserve total versus used,
+available versus limit, malloced versus peak malloced, native versus detached
+contexts, and does_zap_garbage semantics. A bare Heap label cannot replace
+those full meanings. No values, correction records or counts changed;
+original pending remains 311, including 176 Tamazight.
+Reference: https://cedric.cnam.fr/~bouzefra/books/amawal.pdf
+
+2026-09-14 — CLDR calendar source-status review: directly inspected
+current zgh.xml localeDisplayNames/calendar entries. Coptic, Ethiopic and
+Gregorian labels exactly match the existing local labels. Islamic has native
+wording but explicitly draft="provisional"; updated its correction-record
+explanation without changing the value. The inspected native XML contains
+no Buddhist or Hebrew entries and no Indian calendar display name. This
+source gap is not proof that Tamazight terms do not exist; English inherited
+fallbacks are not native evidence. Keep Buddhist/Hebrew/Indian National and
+civil/sighting/astronomical Hijri variants pending until their full names and
+distinctions are reviewed. No values or progress counts changed: 311 pending.
+Reference: https://raw.githubusercontent.com/unicode-org/cldr/main/common/main/zgh.xml
+
+2026-09-14 — `6352fbd5e`: two additional selection instructions
+repaired. Replace Kabyle Only One Board and Arabic Select Cards In This List;
+the latter omitted English All. Reuse native selection root, feminine One
+from MediaWiki tooltip-pt-watchlist and Only from Mastodon local_only.
+Preserve ONLY ONE board versus ALL cards IN THIS list. Full command,
+imperative derivation and agreement remain LOW CONFIDENCE. All 18,122
+correction checks pass; original counts remain 311 pending, 176 Tamazight.
+Wider restored/unflagged review remains open; live browser was not run.
+References: https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json ; https://raw.githubusercontent.com/mastodon/mastodon/main/app/javascript/mastodon/locales/zgh.json
+
+2026-09-14 — `3f72fb6e8`: four additional Select All/Unselect All
+controls repaired, including their r-prefixed counterparts. Native MediaWiki
+compareselectedversions attests selected ittustayn; derive the selection
+command and action noun from that root, reusing native Remove and All.
+Preserve selection of ALL versus removal of selection from ALL, not deletion
+of selected content. Derived imperative, action noun and complete unselection
+phrase remain LOW CONFIDENCE. All 18,120 correction checks pass; original
+counts unchanged at 311 pending, including 176 Tamazight. Restored/unflagged
+and earlier low-confidence validation remains open; no live browser run.
+Reference: https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json
+
+2026-09-14 — migration-label scope review: inspected current
+server/imports.js migration imports and repository-wide source references.
+The comprehensiveBoardMigration and fixMissingListsMigration implementations
+were removed in #6521; server/imports.js explains their harmful conversion
+of shared lists into duplicate per-swimlane columns. Current schema upgrades
+instead detect their historical completion markers and repair the damage.
+English comprehensive-board-migration and its description remain in the
+locale inventory. Do not describe those obsolete strings as an active or
+verified migration feature. They remain in translation-repair scope;
+accurate source meaning must still be preserved while their use is reviewed.
+The visually inspected CNAM Integrity Timmad MAT is distinct from
+Integration Aseddu KBL on PDF75. This supports candidate integrity wording,
+not a verified Moroccan comprehensive-migration phrase. Values, correction
+records and progress counts unchanged; original pending remains 311.
+
+2026-09-14 — `afca796a0`: MongoDB storage engine repaired. Directly
+inspected CNAM renders PDF96 Engine Amsadday MC and PDF134 Storage Aḥraz
+KBL; visibly confirmed emphatic ḥ. MC is Mokrane Chemim, not a Moroccan
+dialect marker. Preserve Engine, Storage and exact MongoDB product name.
+Cross-variety terms, Tifinagh adaptation, bound form and full compound remain
+LOW CONFIDENCE. PDF75 also supplies Integrity Timmad MAT with a database
+compound; this is evidence for further migration review, not yet a verified
+Moroccan full warning. All 18,116 correction checks pass; 311 original
+findings remain pending, including 176 Tamazight. Wider validation remains
+open; live browser verification was not run.
+Reference: https://cedric.cnam.fr/~bouzefra/books/amawal.pdf
+
+2026-09-14 — `35eb7e7ab`: four zoom controls repaired using the
+previously visually inspected Level/Zoom candidates. Keep the dictionary's
+Zoom loan, distinguish In versus Out, and preserve Level and input command
+with literal 50-300% range. One original finding and three additional repairs;
+progress now 15,532 corrected, 312 pending, including 177 Tamazight.
+All 18,115 correction checks pass. KBL/modern-lexicon terms, Tifinagh
+adaptation and complete level/input phrases remain LOW CONFIDENCE for
+Moroccan usage. Restored/unflagged and earlier low-confidence review remain
+open; no live browser verification or remote upload.
+
+2026-09-14 — zoom control terminology review: directly inspected local
+renders of CNAM Amawal PDF pages 98 and 154. Level is Aswir MW (modern
+lexicon, not MediaWiki); Zoom is retained as a loan, with Zoom ɣer deffir
+for Zoom Out and Zoom ɣer zdat for Zoom In, both KBL. These are cross-variety
+software candidates, not normative Moroccan phrases. The rendered images
+confirm ɣ rather than the extracted dollar sign. Current zoom-in/out,
+zoom-level and enter-zoom-level are French and need repair; keep the literal
+50-300% range and input command. Tifinagh adaptation and full level command
+require review. No translation values, records or original counts changed.
+Reference: https://cedric.cnam.fr/~bouzefra/books/amawal.pdf
+
+2026-09-14 — `ca3ba7006`: three additional labels repaired. Native
+Mastodon account.muted directly attests the Muted label and
+column.notifications/notifications.clear attest Notifications. Replace Arabic
+Muted and align two inconsistent notification labels with existing WeKan
+Delete All Notifications wording. Exact lexical evidence is stronger than
+transliteration; account-to-board Muted adaptation still needs semantic review.
+The full muted-info warning remains pending: preserve NEVER, ANY changes and
+THIS board. Three additional records; original counts unchanged. All 18,111
+correction checks pass. No live browser verification or remote upload.
+Reference: https://raw.githubusercontent.com/mastodon/mastodon/main/app/javascript/mastodon/locales/zgh.json
+
+2026-09-14 — `f8a1255dd`: permanent board deletion notice repaired.
+Reuse the previously reviewed no-undo and future-deletion constructions;
+native MediaWiki dellogpage supports deletion, actions supports activities,
+and tooltip-t-whatlinkshere/nolinkshere support association. Preserve
+irreversibility plus ALL lists, cards and actions associated with THIS board
+WILL be lost through deletion. This is not reversible archiving or loss of
+unrelated boards. Relative agreement, future passive plural and complete
+warning remain LOW CONFIDENCE. All 18,108 correction checks pass; 313
+original findings remain pending, including 178 Tamazight. Restored/unflagged
+and earlier low-confidence values still need validation; no live browser run.
+Reference: https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json
+
+2026-09-14 — `a56e507e9`: broader unflagged review repairs generic
+Import (`Kter`) and Import Board (Arabic). Native MediaWiki zgh
+`importlogpage` supplies the import root; existing WeKan Import Usernames
+uses the command. Preserve generic action versus board-specific action.
+Singular action noun and full command are LOW CONFIDENCE adaptations,
+not independently verified native phrases. Two additional correction records;
+original progress counts unchanged: 314 pending, 179 Tamazight. All 18,107
+correction checks pass; restored/unflagged and earlier low-confidence review
+remain open. Reference: https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json
+
+2026-09-14 — visual source-marker and authentication follow-up:
+directly inspected rendered CNAM PDF pages 12, 23 and 91. The bibliography
+prints MCΓ for the Tuareg dictionaries; `MC£` was a legacy extraction
+substitution. Corrected that marker in 105 correction-record explanations,
+including the earlier 98 provenance-affected records. This does not validate
+those translations for Moroccan usage. Rendered entries confirm Authentication
+Asesteb MCΓ and Method Tarrayt MW; four authentication explanations now
+explicitly distinguish confirmed source letters from unverified Tifinagh
+adaptation, bound forms and complete grammar. No translation values or
+progress counts changed. Renewed native review remains open.
+
+2026-09-14 — `a6647173f`: board-analysis follow-up supersedes the earlier
+legacy-font ambiguity. Directly inspected local rendered images of
+[CNAM Amawal](https://cedric.cnam.fr/~bouzefra/books/amawal.pdf) PDF pages
+19 and 134: Analysis Tasleṭ, Analyze sleḍ (MW modern lexicon), and Structure
+Tamṣukt (MAT mathematical lexicon). The images visibly confirm emphatic
+ḍ and ṣ; prior extracted `slev` and `Tamûukt` were substitutions.
+Repaired the French board-analysis command with Tifinagh candidates,
+preserving Analyze, Structure and Board. These are cross-variety sources,
+not normative Moroccan software evidence. Transliteration, bound board form
+and complete command remain LOW CONFIDENCE pending native review.
+All 18,105 correction checks pass; 314 original findings remain pending,
+including 179 Tamazight. Restored/unflagged values and earlier low-confidence
+wording remain open; no live browser or remote upload verification.
+
+2026-09-14 — board-structure analysis terminology review: directly read
+[CNAM Amawal](https://cedric.cnam.fr/~bouzefra/books/amawal.pdf) PDF text.
+PDF page 19 gives Analysis with MW marker and an Analyze root; PDF page 134
+gives Structure with MAT marker, including Data and List Structure compounds.
+MW is modern lexicon, not MediaWiki; MAT is a mathematical lexicon, not
+normative Moroccan software usage. Extracted spellings `slev`, `Tasleî` and
+`Tamûukt` contain legacy-font substitutions; do not treat extraction glyphs
+as verified native letters or silently convert them to Tifinagh. Screenshot
+requests returned references without inspectable images in this review.
+Keep `step-analyze-board-structure` pending until candidate spellings and
+full Analyze Board Structure wording are reviewed. No values, correction
+records or progress counts changed.
+
+2026-09-14 — `c5092a51f`: four French authentication labels repaired,
+three original findings and one additional Type repair. Direct CNAM PDF
+page 23 Authentication Asesteb MC£ and page 91 Method Tarrayt MW support
+cross-variety candidates; MC£ is not Central Moroccan authority and MW is
+modern lexicon, not MediaWiki. Native MediaWiki supplies Default, Show and
+Type. Preserve Method versus Type and Default/Display modifiers. Standard
+script rendering, bound form and full phrases remain low confidence. All
+18,104 correction checks pass; 315 original findings remain pending,
+including 180 Tamazight.
+
+2026-09-14 — `925a40f58`: French board-icon instructions repaired. Preserve
+Drag AND Drop icons TO change THEIR ORDER, distinct from Click an icon TO
+Open its board. Native MediaWiki supports loan Click kliki and Change snfl;
+reuse previously reviewed dictionary Drag, indexed Place, proposed Icon,
+cross-variety Order and local Board/Open. These do not prove full Moroccan
+software wording; board plural, Drop adaptation, icon/order proposals and
+purpose clauses remain low confidence. All 18,100 correction checks pass;
+318 original findings remain pending, including 183 Tamazight.
+
+2026-09-14 — `b6b30d0a4`: Clipboard OR Drag AND Drop label repaired from
+French, preserving alternative methods and combined drag/drop action.
+Inspected Wiktionary Central Atlas zughr Drag entry cites Penchoen 1973,
+Ayt Ndhir page 104; original book not inspected. Prior indexed IRCAM Asinag 9
+Place command adapts Drop; direct PDF retrieval failed. Earlier directly
+inspected Kabyle clipboard metaphor retained. These component sources do
+not prove full Moroccan software phrasing; adaptation remains low confidence.
+All 18,099 correction checks pass; 319 original findings remain pending,
+including 184 Tamazight. Supersedes earlier pending clipboard-method status.
+
+2026-09-14 — `15fc620cb`: Text Copy and Card Link Copy clipboard actions
+repaired from French/Arabic. Direct CNAM PDF page 112 gives Clipboard ghef
+ufus, at hand, KBL; quoted technical borrowing is not normative Moroccan
+software evidence. Native MediaWiki supports Copy, Link and Text components.
+Preserve distinct objects and clipboard destination. Copy imperative,
+borrowing, bound card form and full phrases remain low confidence. All
+18,098 correction checks pass; 320 original findings remain pending,
+including 185 Tamazight. Clipboard-or-drag/drop label is still pending.
+
+2026-09-14 — case-insensitive search terminology review: preserve the English
+instruction's uppercase/lowercase matching meaning; do not substitute font
+size, accents or universal equivalence. Indexed IRCAM typography material
+[Typo.pdf, printed page 226](https://www.ircam.ma/sites/default/files/2021-02/Typo.pdf)
+distinguishes lowercase/uppercase collation keys in French, while
+[alphabet discussion, printed page 54](https://biblio.ircam.ma/pmb/uploads/publications/47.pdf)
+discusses a proposed Tifinagh alphabet without uppercase. Neither excerpt
+establishes native Moroccan software case-insensitivity vocabulary. Directly
+searched the cached CNAM PDF text for uppercase/lowercase candidates;
+no entries found by those searches, which is not proof none exist.
+Keep `globalSearch-instructions-notes-4` pending, and preserve its applicability
+to board text in languages with letter case. No values, records or counts
+changed; full native terminology still needs review.
+
+2026-09-14 — `b579a024b`: format-help Value bound form refined from derived
+uzal to wazal. IRCAM grammatical vocabulary indexed printed page 80 gives
+Value azal – wazal – azalen, unlike daytime/hour uzal context found elsewhere.
+Source: https://biblio.ircam.ma/pmb/uploads/publications/134.pdf
+Direct PDF retrieval failed; indexed paradigm evidence only, not visual
+inspection. Preserve %{value}, substitution meaning and original French
+before-value. Full instruction remains low confidence. All 18,096 correction
+checks pass; counts unchanged: 322 pending, including 187 Tamazight.
+
+2026-09-14 — `0968a9dc6`: French separator help repaired, retaining literal
+&#32; and &nbsp; and OR. Directly inspected CNAM PDF page 131 has Anabraz
+Separator with MC£,MC markers and KBL/MAT separate versus MC£ clear-land
+roots; page 31 has Asekkil amellal Space Character, alternate Ilem KBL-sekkil.
+These are cross-variety candidates, not normative Moroccan authority. Native
+MediaWiki supports Use and OR. Bound form and full instruction remain low
+confidence. This supersedes pending separator wording in earlier notes;
+HTML space semantics remain unchanged. All 18,096 correction checks pass;
+322 original findings remain pending, including 187 Tamazight.
+
+2026-09-14 — `080225ac9`: French custom-format instruction repaired with
+“use %{value} in place of the value”. client/lib/customFields.js substitutes
+this token with each item value; retain its exact spelling. Indexed HACA
+entry 461 supports Format, native MediaWiki supports Use, Place and Value.
+Direct HACA PDF remains uninspected; bound forms and full software paraphrase
+remain low confidence. This supersedes pending status in the earlier Format
+review, not its evidence limits. All 18,095 correction checks pass; 323
+original findings remain pending, including 188 Tamazight.
+
+2026-09-14 — parent-card terminology review: models/boards.js documents
+`no-parent` as not showing the parent at all; it is a display option, not
+relationship removal. Keep this distinct from Change Card Parent and
+Show Parent In Minicard. Native MediaWiki directly supports Show, but does
+not by itself establish hierarchical parent terminology. The indexed
+[Amawal dictionary](https://imedyazen1.tripod.com/id38.html) search family
+has amaraw ancestor/parent and amawlan lexical/dictionary-related;
+Kabyle imawlan parents does not justify deriving singular amawlan for
+Standard Moroccan software Parent. These indexed, cross-variety candidates
+are not normative Moroccan proof. Earlier parent-label inheritance wording
+and full hierarchical terminology still need review. Leave current French
+parent controls pending; do not substitute a visually higher card for its
+actual parent relationship. No values, correction records or counts changed.
+
+2026-09-14 — `12163bc6b`: workspace icon label repaired from French,
+preserving literal markdown. Direct inspection of CNAM Amawal PDF page 71
+shows Icon Tignit*, diminutive of silhouette tigni with MC£ marker, not
+Central Moroccan authority. Asterisk marks a proposal. Reuse existing WeKan
+icon/workspace terms; cross-variety borrowing and full phrase remain low
+confidence. All 18,094 correction checks pass; 324 original findings remain
+pending, including 189 Tamazight. Source: https://cedric.cnam.fr/~bouzefra/books/amawal.pdf
+
+2026-09-14 — `d1b8f6ca1`: workspace deletion confirmation checkbox repaired
+from French. MediaWiki userlogin-reauth supports Verify and dellogpage supports
+Deletion. Adapt Verify as Confirm, retaining local workspace terminology;
+full action phrase and workspace adaptation remain low confidence. Preserve
+confirmation and deletion scope. All 18,093 correction checks pass; 325
+original findings remain pending, including 190 Tamazight.
+
+2026-09-14 — `bf6faabb7`: Uploading, Uploading Files and Upload Failed repaired
+from French outside the original flagged queue. MediaWiki uploadlogpage supports Upload; category-file-count
+explicitly supplies plural Files `ⵉⴼⵓⵢⵍⴰ`, replacing derived `ⵉⴼⴰⵢⵍⵓ`
+in both previous file-type repairs. Non-fuzzy pinned Dialect Suggestion
+Failed and Translation Failed support `ⵉⵜⵜⵡⴰⵣⴳⵍ`. Full status adaptation
+and permission constructions remain low confidence. Preserve progress versus
+failure and upload versus avatar scope. All 18,092 correction checks pass;
+326 original findings remain pending, including 191 Tamazight.
+
+2026-09-14 — `9685a1107`: two permitted-file-type labels repaired from Arabic.
+MediaWiki file-info-size supplies Type and File, permissionserrorstext-withaction
+supplies Permission, and uploadlogpage supplies Upload. Allowed is adapted
+as with Permission; retain distinct upload and avatar-file scopes and colons.
+Plural forms, profile-image adaptation and full permission constructions
+remain low confidence. All 18,089 correction checks pass; 326 original
+findings remain pending, including 191 Tamazight.
+
+2026-09-14 — `c863bb1a2`: earlier Hide All Checklist Items repair refined.
+MediaWiki rcfilters-activefilters-hide directly attests command `ⵙⵙⵏⵜⵍ`,
+replacing the earlier derived `ⵏⵜⵍ`. Retain ALL, distinct from checked-only
+visibility, and original Arabic before-value. Checklist compound and full
+noun phrase remain low confidence. All 18,087 correction checks pass;
+original progress counts unchanged: 328 pending, including 193 Tamazight.
+
+2026-09-14 — `93d592c07`: Hide Checked Checklist Items repaired from Arabic.
+MediaWiki native Hide and checkbox Check support components. Preserve only
+checked items, distinct from Hide All Checklist Items. Passive plural and
+full noun phrase are derived and remain low confidence. All 18,087 correction
+checks pass; 328 original findings remain pending, including 193 Tamazight.
+
+2026-09-14 — custom-format terminology review: the search-index excerpt of
+[HACA Lexique, entry 461, printed page 72](https://biblio.ircam.ma/pmb/uploads/publications/197.pdf)
+aligns native `ⵜⴰⵍⵖⴰ` with French and English Format. Direct PDF access
+returned HTTP 502; the document was not visually inspected. This establishes
+an indexed noun candidate only, not the full software instruction “use
+%{value} as placeholder”. Keep `custom-field-stringtemplate-format` pending
+until the entire instruction is repaired, preserving `%{value}` exactly.
+The separator instruction must separately retain `&#32;` and `&nbsp;` as
+literal HTML space syntax; a Tifinagh word separator is not a replacement.
+No locale values, correction records or progress counts changed.
+
+2026-09-14 — `ee5f6301f`: field deletion warning scope refined. Repeat future Delete predicate before ITS HISTORY to prevent attachment to FROM ALL CARDS phrase. Preserve no undo and original French before-value. All 18,086 correction checks pass; original counts unchanged. Full coordination still requires language validation.
+
+2026-09-14 — `1b8797450`: custom-field definition deletion warning repaired. Native MediaWiki no-undo, Removed, All and History support components. Preserve no undo, this field removed from all cards and its history destroyed (paraphrased Delete History), distinct from unsetting one card value. Future actor, coordination and full warning remain low confidence. All 18,086 correction checks pass; 329 original findings remain pending, including 194 Tamazight.
+
+2026-09-14 — `7c0384e5a`: failure counting-window label repaired. Actual settings distinguish failureWindow from lockoutPeriod/count threshold; native Duration/Second and Errors support components. Time window paraphrased period of failures, retaining seconds and distinct lockout duration label. Full adaptations remain low confidence. Direct IRCAM school lexicon fetch timed out, so Before evidence remains indexed only. All 18,085 correction checks pass; 330 original findings remain pending, including 195 Tamazight.
+
+2026-09-14 — `ee8fc5f24`: failure threshold repaired. IRCAM school lexicon `amz_fr_ar.pdf` indexed printed page 103 gives Before `dat`; CNDH native Errors retained. Preserve FAILURES BEFORE LOCKOUT, a count distinct from seconds-based period/window. Indexed source is not direct PDF inspection; temporal Before, failure-as-error adaptation and full bound label remain low confidence. All 18,084 correction checks pass; 331 original findings remain pending, including 196 Tamazight.
+
+2026-09-14 — `5be2812bd`: lockout duration label repaired. Actual known/unknown settings distinguish lockoutPeriod from failureWindow. Native MediaWiki duration/second and Mastodon Block support components; preserve LOCKOUT PERIOD IN SECONDS. Bound lockout noun, seconds plural and full label remain low confidence. All 18,083 correction checks pass; 332 original findings remain pending, including 197 Tamazight.
+
+2026-09-14 — `e5cb150bc`: custom-field unsetting activity repaired. Actual card `$unset` hook removes field value, not board field definition. Native MediaWiki Removed, Value (`redirect-value`), Field/Special support components. Preserve Remove Value paraphrase, two exact percent placeholders and quoted field name. Technical Value adaptation and full field relation remain low confidence. All 18,082 correction checks pass; 333 original findings remain pending, including 198 Tamazight.
+
+2026-09-14 — `c45999486`: custom-field assignment activity repaired. Indexed native Place imperative and native MediaWiki Field/Special components support wording. Preserve active SET CUSTOM FIELD name TO value IN card, three percent placeholders and quotes on first two. Derived past actor, software Set-as-Place adaptation and full assignment grammar remain low confidence. All 18,081 correction checks pass; 334 original findings remain pending, including 199 Tamazight.
+
+2026-09-14 — `e2cdae25d`: import activity repaired. Native MediaWiki `importlogpage` Imports supports root; local native Into/From components preserve object, destination and source direction with three exact percent placeholders. Derived past actor and full location grammar remain low confidence. All 18,080 correction checks pass; 335 original findings remain pending, including 200 Tamazight.
+
+2026-09-14 — `28c88263f`: two unchecked-item activities repaired. Native MediaWiki Removed actor (`logentry-delete-delete`) and Check checkbox tooltips support components. Preserve active removal of CHECKMARK, not mere unchecked state or item deletion, with checklist/card relations and exact percent placeholders. Derived mark noun and full local relations remain low confidence. All 18,079 correction checks pass; 336 original findings remain pending, including 201 Tamazight.
+
+2026-09-14 — `dccca19d4`: two checked-item activities repaired. Native MediaWiki checkbox tooltips directly attest Check `smatr`. Preserve active checking of item IN CHECKLIST and card relation where present, plus all exact percent placeholders. Derived past actor and full local verification/checklist relations remain low confidence. All 18,077 correction checks pass; 338 original findings remain pending, including 203 Tamazight.
+
+2026-09-14 — `73b5d0eed`: subtask deposit destination repaired. Indexed IRCAM-hosted Asinag 9 printed page 173 glosses `ssrs it da` as Place it here, imperative. Direct fetch failed 502; preserve SEARCH-INDEX evidence status. Reuse local hierarchy Tasks Below Task and native Work/Below components. Preserve subtasks IN THIS BOARD and colon; Deposit-as-Place and full hierarchy/destination remain low confidence. All 18,075 correction checks pass; 340 original findings remain pending, including 205 Tamazight.
+
+2026-09-14 — Migration Wait reference review: IRCAM Asinag 13 (2018), Kamal Naït Zerrad, [polysemous roots](https://www.ircam.ma/sites/default/files/doc/asinag-13/notes-sur-quelques-racines-polysemiques-en-berbere.pdf), indexed printed page 158, distinguishes Wait/Hope senses across regional roots. Its MC `agum/aggum` example means HOPE (in God), not direct Wait proof; southern Chleuh waiting candidate and cross-variety QQL/SWD table require exact regional inspection. Direct PDF fetch returned 502. Do not translate Please Wait as Hope or View merely from shared roots. `migration-progress-note` remains pending, preserving waiting WHILE WE migrate YOUR BOARD TO LATEST STRUCTURE. Values/counts unchanged.
+
+2026-09-14 — WIP comparative evidence review: IRCAM-hosted morphosyntactic article `Ataa Allah-etiq-Asinag9.pdf` search excerpt uses French supérieur in a VIETNAMESE ambiguity example (`trên`), not a Tamazight Higher translation. Its `amqqran` example is an aged man/proper name, not independently a numeric comparison. Generic French mentions of limite in other hosted research papers likewise do not supply native WIP limit terminology. Do not promote these search matches into component evidence. WIP guidance stays pending; values/counts unchanged.
+
+2026-09-14 — WIP scope review: `client/components/lists/listHeader.js` uses `lazyListCardCount`/`list.cards().length` when enabling WIP and raising a stored limit; the popup is a numeric limit control. English Tasks refers here to list cards, distinct from the subtask hierarchy. Preserve SOME tasks moved OUT OF THIS LIST OR a HIGHER WIP LIMIT, not task deletion, AND both remedies, or a generic increase without WIP scope. Native Move/Task components exist, but full higher-limit terminology still needs validation. Keep the pending guidance; no values/counts changed.
+
+2026-09-14 — Search-limit semantic review: actual `config/query-classes.js` limit parser uses `parseInt`, rejects NaN/negative values and explicitly accepts zero as no limit. Thus English positive-integer help does not describe every accepted input; do not claim parser proves strictly positive only. Preserve English source meaning during locale repair and record source-help discrepancy separately. IRCAM school lexicon is a promising primary reference; a Kabylie blog's integer/positive candidates are cross-variety and not Moroccan authority merely because it recommends IRCAM fonts. Values/counts unchanged; native full integer terminology remains pending.
+
+2026-09-14 — Search-limit PDF access follow-up: direct fetch of IRCAM grammatical vocabulary `134.pdf` timed out. The subsequent Integer/Positive find results operate on the failed-fetch error page and are NOT evidence that the PDF lacks those entries. Broad follow-up searches did not establish native positive-integer terminology. Keep both limit messages pending; seek mathematical rather than grammatical vocabulary next. Values/counts unchanged.
+
+2026-09-14 — Search-limit terminology review: IRCAM [grammatical vocabulary](https://biblio.ircam.ma/pmb/uploads/publications/134.pdf), indexed printed page 119, gives Number `amdan` but does not establish POSITIVE INTEGER. The [publisher description](https://www.ircam.ma/index.php/ar/edition/%D9%85%D8%B9%D8%AC%D9%85-%D8%A7%D9%84%D9%86%D8%AD%D9%88) explicitly covers teaching in Morocco and Algeria; exact regional suitability still needs inspection. Native MediaWiki generic limit controls likewise do not establish integer terminology. Keep both search-limit findings pending, preserving positive integer, per-page scope, operator syntax and `%s`; do not replace integer with generic Number or omit positivity. No values/counts changed.
+
+2026-09-14 — `7525d9271`: imported-board relative agreement refined. Remove masculine actor prefix from relative modifying feminine Board, retaining the original French before-value in the correction record. No exact native import-passive phrase was independently attested; derived feminine passive and full mapping grammar remain low confidence. All 18,074 correction checks pass; original counts unchanged at 341 pending findings.
+
+2026-09-14 — `77a0023cc`: unmapped-member fallback note repaired. Native MediaWiki association relative, Given, Current (`filehist-current`) and User support components. Preserve UNMAPPED MEMBERS WILL BE ASSIGNED TO CURRENT USER. Unmapped-as-unassociated and assignment-as-Given adaptations, negated relative and future plural passive remain low confidence. All 18,074 correction checks pass; 341 original findings remain pending, including 206 Tamazight. Broader validation remains open.
+
+2026-09-14 — Member mapping provenance follow-up: MediaWiki association is directly attested in relative `izdin` (`namespace_association`, `nolinkshere`, `tooltip-t-whatlinkshere`), whereas the bare `zdi` in account-creation controls means Continue. Do not cite that homograph as association proof. Mapping imperative is derived from the association relative and remains low confidence. Record exact keys in the ledger; correct the earlier Copy source key to `filecopyerror`. Translation values/counts unchanged; 18,073 correction checks pass.
+
+2026-09-14 — `a9c0a3a55`: imported-board member mapping repaired. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) supplies Please, Some, User plural and association root. Local Import/Member terms retained. Preserve YOUR IMPORTED BOARD HAS SOME MEMBERS and mapping MEMBERS YOU WANT TO IMPORT TO YOUR USERS. Mapping paraphrased association, without granting permissions or importing all members unconditionally. Import passive agreement, association imperative, Member plural and full mapping clause remain low confidence. All 18,073 correction checks pass; 342 original findings remain pending, including 207 Tamazight. Broader validation remains open.
+
+2026-09-14 — Invitation retrieval follow-up: tried the normalized once-encoded IRCAM programme URL and the indexed double-encoded URL through independent clients. Python and curl both fail certificate-chain verification (unable to get local issuer certificate); browser fetch also fails. No PDF was obtained or inspected. Do not treat the indexed invitation description as verb evidence. Keep `just-invited` pending and pursue another accessible primary invitation source; this retrieval failure does not block other translation repairs. Values/counts unchanged.
+
+2026-09-14 — Invitation reference review: the IRCAM [2018 programme](https://www.ircam.ma/sites/default/files/sites/default/files/Prochaine%20Events%20/programmes/Programme%2520de%2520la%2520journ%25C3%25A9e_3.pdf) search index identifies a French/Tamazight/Arabic invitation, but supplies no reliable native invitation verb. Direct fetch failed with HTTP 502. Native MediaWiki `welcomeuser` means Welcome, not proof of Invited; existing local Invite is unvalidated. Keep `just-invited` pending, preserving YOU JUST INVITED TO THIS BOARD; inspect actual parallel invitation wording before replacement. No values/counts changed.
+
+2026-09-14 — `e091ab50d`: unflagged Kabyle-seeded card checklist completion activity repaired. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) `resetpass_announce` supports transitive Complete Login root. Preserve active completion and all five exact location placeholders, in source order. Native List and existing Card/Board/Swimlane wording reused. Derived past actor, verification noun, Swimlane-as-Path adaptation and full location chain remain low confidence. All 18,072 correction checks pass; original counts unchanged at 343 pending findings. Broader validation remains open.
+
+2026-09-14 — `bc0e7f13a`: two checklist uncompletion activities repaired. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) `editundo` directly supports Undo in edit-reversal context; `resetpass_announce` supports Complete Login root. Preserve active actor UNDOING COMPLETION and exact percent placeholder counts/order, rather than merely incomplete state. Derived actor past, completion nominalization and full local checklist paraphrase remain low confidence. All 18,071 correction checks pass; 343 original findings remain pending, including 208 Tamazight. Broader validation remains open.
+
+2026-09-14 — `4ee286985`: imported-member user selection repaired. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) supports User, Select, Use (`rcfilters-search-placeholder`), As (`export-download`) and existence relative (`newarticletext`). Preserve YOUR EXISTING USER you WANT TO USE AS THIS MEMBER. Positive existence derived from negative native context, local Member noun, bound state and full use-as clause remain low confidence. All 18,069 correction checks pass; 345 original findings remain pending, including 210 Tamazight. Broader validation remains open.
+
+2026-09-14 — `f827f29de`: list-card archive instructions repaired. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) supports Remove, View and Restore/Return (`rcfilters-restore-default-filters`); institutional archive noun evidence retained. Preserve ALL cards OF THIS LIST removed FROM BOARD, viewing cards IN ARCHIVE and bringing THEM BACK TO BOARD via matching Menu > Archive labels. Reversible archiving is distinct from permanent deletion. Future actor, feminine plural object, purpose/return coordination and click wording remain low confidence. All 18,068 correction checks pass; 346 original findings remain pending, including 211 Tamazight. Broader validation remains open.
+
+2026-09-14 — `6800bb1ec`: WeKan board import instructions and Menu/Export Board labels repaired together. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) supports Menu bound form (`rcfilters-search-placeholder`), Export (`export`), Copy noun (`filecopyerror`), Download and Go. Local Board/File/Text terms retained. Preserve YOUR BOARD, Menu THEN Export Board and copying TEXT from the DOWNLOADED FILE. Quoted labels match actual controls. Free-state Menu, Copy imperative derived from noun, downloaded relative passive and full sequence remain low confidence. All 18,067 correction checks pass; 347 original findings remain pending, including 212 Tamazight. Broader validation remains open.
+
+2026-09-14 — `8a9719417`: Arabic Leave Board and French membership confirmation repaired. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) supplies Exit (`logout`), removal passive and From (`recentchanges-page-removed-from-category`) and All. Local confirmation and Card/Board wording reused. Preserve exact board-title placeholder and future removal of YOU FROM ALL CARDS ON THIS BOARD, without implying deletion of those cards. Exit-to-Leave membership adaptation, second-person passive, future scope and full confirmation remain low confidence. All 18,064 correction checks pass; 348 original findings remain pending, including 213 Tamazight. Broader validation remains open.
+
+2026-09-14 — `4a03ba96c`: permanent board deletion warning repaired. Native [MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) supports Restore (`thisisdeleted`), Can (`noarticletext`), deletion passive (`restorelink`) and the no-undo clause (`undo-failure`). Native List plural and local Card/Label/Activity wording retained. Preserve ALL four content categories, future deletion, future inability to recover board contents and unconditional NO UNDO. Restore-to-Recover adaptation, future negative/modal, plural agreement and full warning remain low confidence. All 18,062 correction checks pass; 349 original findings remain pending, including 214 Tamazight. Broader restored/unflagged and low-confidence validation remains open.
+
+2026-09-14 — `7caee4baa`: notification deletion confirmation repaired; related notification label refined. Native [Mastodon Notifications](https://raw.githubusercontent.com/mastodon/mastodon/main/app/javascript/mastodon/locales/zgh.json) and [MediaWiki Delete/All/undo-failure](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) support components. Preserve ALL notifications, explicit confirmation and unconditional inability to undo; omit the source edit-conflict reason only. Local confirmation wording reused; Change-to-Action singular adaptation, agreement and full confirmation remain low confidence. All 18,061 correction checks pass; 350 original findings remain pending, including 215 Tamazight. Restored/unflagged and low-confidence validation remains open.
+
 Historical snapshot retained for reproducible repair tracking. See [Audit.md](Audit.md) for current progress.
+
+## Tamazight checklist checkbox controls — 2026-09-14
+
+Commit `fee3de6db` repairs three original French findings. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) tooltip-invert/tooltip-namespace_association supplies Check in checkbox context, hide Hide, All and Remove components. Preserve Hide CHECKED items, Check ALL items OF A LIST and active Uncheck ALL reversal, not mere unchecked state. Uncheck uses Remove Mark paraphrase; mark nominalization, checked plural passive, bound list and full scope grammar remain LOW CONFIDENCE. 351 original findings remain pending, including 216 Tamazight; all 18,060 mechanical correction checks pass. Restored, unflagged and earlier uncertain wording remain in scope. Browser verification and remote uploads were not performed.
+
+## Tamazight migration start and pause controls — 2026-09-14
+
+Commit `371ccad6b` repairs six unflagged inherited Kabyle-leaning values; script alone is not proof. [Native Red Moon](https://raw.githubusercontent.com/LibreShift/red-moon/master/app/src/main/res/values-zgh/strings.xml) directly supplies Pause and Start-time noun; Start imperative retains indexed IRCAM plain-d versus emphatic-d distinction recorded below. [MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) supplies All and failure frame. Preserve Start versus Pause, ALL versus singular and failed operation versus completed Started notification. Red Moon uses sbdd for both Pause and Stop; this does not independently establish distinct migration operations, so Stop values remain unchanged and await review. Migration adaptation, nominalization, derived Started plural and full grammar remain LOW CONFIDENCE. Original counts unchanged: 354 pending, including 219 Tamazight; all 18,057 mechanical correction checks pass. Restored, unflagged and earlier uncertain wording remain in scope. Browser verification and remote uploads were not performed.
+
+## Tamazight migration scheduling and resumption — 2026-09-14
+
+Commit `df6e03f46` repairs four unflagged French or inherited Kabyle-leaning values; script alone is not language proof. [Native Red Moon](https://raw.githubusercontent.com/LibreShift/red-moon/master/app/src/main/res/values-zgh/strings.xml) attests Resume and Schedule; [pinned non-fuzzy Dialect](https://raw.githubusercontent.com/dialect-app/po/366f2ad81ddfc5af1f75075436a3da6cadf4ca08/ui/zgh.po) Automatic language detection/Auto attests Automatic. Preserve Scheduled PLURAL versus Automatic SINGULAR, Resume versus Complete, failed resume versus completed resumption. Migration movement adaptation, scheduled plural passive, Resume nominalization/past passive and whole grammar remain LOW CONFIDENCE. Original counts unchanged: 354 pending, including 219 Tamazight; all 18,051 mechanical correction checks pass. Restored, unflagged and earlier uncertain wording remain in scope. Browser verification and remote uploads were not performed.
+
+## Tamazight worker role permissions — 2026-09-14
+
+Commit `cda2d947b` repairs one original French finding. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) supplies Can, Only, Move, Comment and Give components. [Mastodon](https://raw.githubusercontent.com/mastodon/mastodon/main/app/javascript/mastodon/locales/zgh.json) compose_form.placeholder supplies self/head component, not reflexive assignment proof. Preserve ONLY three permissions: MOVE cards, SELF-assignment to card, COMMENT; no permission to edit title/content/settings or assign others added. Give Card To Yourself paraphrase, whole coordination and grammar remain LOW CONFIDENCE. 354 original findings remain pending, including 219 Tamazight; all 18,047 mechanical correction checks pass. Restored, unflagged and earlier uncertain wording remain in scope. Browser verification and remote uploads were not performed.
+
+## Tamazight watcher explanation — 2026-09-14
+
+Commit `c002054d5` repairs one original French finding. [Native Mastodon](https://raw.githubusercontent.com/mastodon/mastodon/main/app/javascript/mastodon/locales/zgh.json) column.notifications supplies Notifications; [MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) statistics-edits-average supplies Each, resetpass-temp-emailed Sent To You component. Preserve future YOU notification for ANY change on THIS board without adding email-specific delivery. Notify paraphrased as Notifications Sent To You; derived feminine plural passive and full future/each grammar remain LOW CONFIDENCE. 355 original findings remain pending, including 220 Tamazight; all 18,046 mechanical correction checks pass. Restored, unflagged and earlier uncertain wording remain in scope. Browser verification and remote uploads were not performed.
+
+## Tamazight All predicate and date reference follow-up — 2026-09-14
+
+Commit `5e5519f2f` repairs unflagged Arabic All predicate using exact [native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) searchall. Inspected globalSearch.js predicate_all mapping; preserve one token without whitespace/colon. Exact and negative token regressions added. Date-boundary searches did not establish full ago-or-less phrase. [Additional IRCAM PDF](https://ircam.biblio.ma/uploads/publications/450.pdf) exceeded browser tool size and direct download returned HTTP 403; its content was not inspected and cannot corroborate earlier mention wording. These findings remain open; access failure is not proof of terminology absence. Original counts unchanged: 356 pending, including 221 Tamazight; all 18,045 mechanical correction checks pass. Restored, unflagged and earlier uncertain wording remain in scope. Browser verification and remote uploads were not performed.
+
+## Tamazight swimlane search and date boundary review — 2026-09-14
+
+Commit `9daf257e4` repairs one original French swimlane instruction. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) search-nonefound supplies Matching With, pageinfo-display-title Title and recentchanges-noresult Given component. Preserve exact operator, colon/code ticks, repeated title metaparameter and emphasis; cards IN swimlanes matching SPECIFIED TITLE. Swimlane-as-Path, specified-as-given adaptation and full grammar remain LOW CONFIDENCE. Created/modified days-ago-or-less findings remain pending: inspected [CLDR zgh](https://raw.githubusercontent.com/unicode-org/cldr/main/common/main/zgh.xml) has no relativeTimePattern and MediaWiki no ago key; component absence does not prove no native term exists. Seek full inclusive boundary wording. 356 original findings remain pending, including 221 Tamazight; all 18,044 mechanical correction checks pass. Restored, unflagged and earlier uncertain wording remain in scope. Browser verification and remote uploads were not performed.
+
+## Tamazight search scope and archive defaults — 2026-09-14
+
+Commit `3f2d9c726` repairs three original French findings. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) img-lang-default/pageinfo-default-sort attest By Default, searchbutton Search, pageinfo-display-title Title and native All component. Archive noun retains directly inspected institutional evidence below; description/custom fields reuse local vocabulary. Preserve default EXCLUSION of archived cards, ALL archived AND unarchived cards with exact predicate token, and card/list TITLES, DESCRIPTIONS and CUSTOM FIELDS on THIS board. Derived negative search passive, description plural, kanban archive adaptation and full scope grammar remain LOW CONFIDENCE. 357 original findings remain pending, including 222 Tamazight; all 18,043 mechanical correction checks pass. Restored, unflagged and earlier uncertain wording remain in scope. Browser verification and remote uploads were not performed.
+
+## Tamazight organization/team search — 2026-09-14
+
+Commit `e0f16c497` repairs two original French descriptions. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) redirect-summary supports Given component. Local Organization/Team vocabulary reused; reuse is not independent whole-language validation. Preserve exact source query metasyntax, display-name/short-name pipe alternatives and emphasized name parameter. Cards belong to a BOARD assigned TO organization/team; do not reverse assignment or describe direct card assignment. Relative feminine passive, Given-to-Assigned adaptation and whole clause remain LOW CONFIDENCE. 360 original findings remain pending, including 225 Tamazight; all 18,040 mechanical correction checks pass. Restored, unflagged and earlier uncertain wording remain in scope. Browser verification and remote uploads were not performed.
+
+## Tamazight assignee and user search — 2026-09-14
+
+Commit `129fa829e` repairs two original French instructions. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) userlogin-yourname directly supplies Username. Reuse existing member operator relative clause and local Assigned Person Given Card paraphrase; reuse alone is not independent full-language validation. Preserve exact operator tokens, colon/code ticks, repeated angle-bracket parameter and emphasis. Assignee operator means assignee only; user operator means MEMBER OR ASSIGNEE. Role paraphrase and whole grammar remain LOW CONFIDENCE. 362 original findings remain pending, including 227 Tamazight; all 18,038 mechanical correction checks pass. Restored, unflagged and earlier uncertain wording remain in scope. Browser verification and remote uploads were not performed.
+
+## Tamazight card mention activity — 2026-09-14
+
+Commit `1493cc244` repairs one original French finding. Search-indexed [IRCAM conjugation manual](https://www.temehu.com/imazighen/dictionaries/Amawals/manuel-de-conjugaison-Tamazight-Tifinagh-IRCAM.pdf) supplies bdr Mention; direct access redirects to dictionary HTML, not inspected PDF. [Native Mastodon](https://raw.githubusercontent.com/mastodon/mastodon/main/app/javascript/mastodon/locales/zgh.json) notification.follow supports object k only, not mention verb. Actor/object grammar, Swimlane-as-Path adaptation and full phrase remain LOW CONFIDENCE. Preserve YOU, card/comment/list/swimlane/board and five exact placeholders. 364 original findings remain pending, including 229 Tamazight; all 18,036 mechanical correction checks pass. Restored, unflagged and earlier uncertain wording remain in scope. Browser verification and remote uploads were not performed.
+
+## Tamazight board role permissions — 2026-09-14
+
+Commit `381d18eb3` repairs two original findings and unflagged Arabic Activities. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) supplies Actions, Edit, View in skin-view-history, Settings in quickfilters and Delete/Remove; search-ignored-headings supplies Can construction. Preserve administrator card VIEW/EDIT, MEMBER removal, BOARD settings and separate activity VIEW. Normal members can view/edit cards but CANNOT change settings. Activities adapts Actions to activity log; card/member vocabulary reuses local terms. Derived negative/personal forms, coordinated permission grammar and full phrases remain LOW CONFIDENCE. 365 original findings remain pending, including 230 Tamazight; all 18,035 mechanical correction checks pass. Restored, unflagged and earlier uncertain wording remain in scope. Browser verification and remote uploads were not performed.
+
+## Tamazight Home and archive restoration review — 2026-09-14
+
+Commit `f903af89d` repairs unflagged Arabic Home using [native Mastodon](https://raw.githubusercontent.com/mastodon/mastodon/main/app/javascript/mastodon/locales/zgh.json) column.home directly; [MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) mainpage/tooltip-n-mainpage corroborate bound Home component. Exact standalone UI label evidence is stronger than a derived compound. Inspected WeKan userHeader.jade: Archive action is present in the header menu. `close-board-pop` still needs full ability/restore/click/button/home-header wording; do not drop qualifiers or treat Home as proof of Header. 367 original findings remain pending, including 232 Tamazight; all 18,032 mechanical correction checks pass. Restored, unflagged and earlier uncertain wording remain in scope. Browser verification and remote uploads were not performed.
+
+## Tamazight board selection checkboxes — 2026-09-14
+
+Commit `7d1e0ef15` repairs one original French instruction. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) tooltip-invert/tooltip-namespace_association directly attest checkbox Box and selected components. Preserve clicking CHECKBOXES to SELECT BOARDS, distinct from opening a board by clicking its icon. Selection Box compound, derived bound plural, locally reused click verb and whole purpose clause remain LOW CONFIDENCE. 367 original findings remain pending, including 232 Tamazight; all 18,031 mechanical correction checks pass. Restored, unflagged and earlier uncertain wording remain in scope. Browser verification and remote uploads were not performed.
+
+## Tamazight failed migration retry — 2026-09-14
+
+Commit `7dcaf17cf` repairs three original French findings. [Native Mastodon](https://raw.githubusercontent.com/mastodon/mastodon/main/app/javascript/mastodon/locales/zgh.json) directly attests Retry in both bundle retry keys; [pinned Dialect](https://raw.githubusercontent.com/dialect-app/po/366f2ad81ddfc5af1f75075436a3da6cadf4ca08/ui/zgh.po) non-fuzzy Translation failed supplies Failed. Fuzzy provider messages were excluded. Again retains [MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) actionthrottledtext component. Preserve FAILED scope, Retry versus Resume, NO failed items to retry and successful retry notification without guaranteeing migration success. Migration movement adaptation, failed plural modifier, tried-again passive and no-items-purpose grammar remain LOW CONFIDENCE. 368 original findings remain pending, including 233 Tamazight; all 18,030 mechanical correction checks pass. Restored, unflagged and earlier low-confidence wording still need validation. Live browser verification and remote uploads were not performed.
+
+## Tamazight scheduled job deletion and pause — 2026-09-14
+
+Commit `bc7b01940` repairs five unflagged inherited Kabyle-leaning values; script alone is not language proof. [Native Mastodon](https://raw.githubusercontent.com/mastodon/mastodon/main/app/javascript/mastodon/locales/zgh.json) supplies Are you sure you want/Delete THIS frame; [Red Moon](https://raw.githubusercontent.com/LibreShift/red-moon/master/app/src/main/res/values-zgh/strings.xml) supplies Pause/Paused; [MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) `filedeleteerror` supplies failure/deletion noun. Preserve Delete versus Pause, THIS scheduled job, confirmation question and failed versus successful completion. Scheduled Work reuses the earlier LOW CONFIDENCE adaptation; feminine passives, pause nominalization and whole phrases remain LOW CONFIDENCE. Success uses completed notification. Original counts unchanged: 371 pending, including 236 Tamazight; all 18,027 mechanical checks pass. Browser verification and remote uploads were not performed.
+
+## Tamazight scheduled job labels and statuses — 2026-09-14
+
+Commit `7a49eb16b` repairs five original findings and two unflagged French values. [Native Red Moon](https://raw.githubusercontent.com/LibreShift/red-moon/master/app/src/main/res/values-zgh/strings.xml) attests Schedule, Resume and Start; [Ministry employment usage](https://www.mmsp.gov.ma/amz/nos-metiers/absence-non-justifi%C3%A9e) supplies Work. [MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) supplies failure frame and Active component. Preserve Add, plural jobs, ACTIVE scope, Resume versus Start and failure versus successful completion. Scheduled passive, feminine active agreement, Resume nominalization/past passive and Started form are derived, not directly attested full job labels. Job adaptation and whole grammar remain LOW CONFIDENCE. Success is expressed as completed notification. 371 original findings remain pending, including 236 Tamazight; all 18,022 mechanical checks pass. Browser verification and remote uploads were not performed.
+
+## Tamazight migration resume and error statuses — 2026-09-14
+
+Commit `34a98e0d1` repairs four original French findings. [Native Red Moon](https://raw.githubusercontent.com/LibreShift/red-moon/master/app/src/main/res/values-zgh/strings.xml) directly attests Resume `als` and Paused `ittusbdd`; [Mastodon](https://raw.githubusercontent.com/mastodon/mastodon/main/app/javascript/mastodon/locales/zgh.json) attests Clear in `notifications.clear`. Error noun retains directly inspected [native CNDH evidence](https://cndh.ma/sites/default/files/2024-01/memo_code_penal_v_amazighe.pdf) recorded below. Preserve PAUSED migration scope, NO paused items to resume, successful completed resumption and ALL errors cleared. Success is expressed as completed notification. Migration reuses earlier LOW CONFIDENCE movement adaptation; plural paused/resumed/cleared passives, no-items-purpose clause and whole grammar remain LOW CONFIDENCE. 376 original findings remain pending, including 241 Tamazight; all 18,015 mechanical checks pass. Browser verification and remote uploads were not performed.
+
+## Tamazight settings navigation and save status — 2026-09-14
+
+Commit `10b082127` repairs five unflagged French or inherited Kabyle-leaning labels. Latin script alone is not an error. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) directly supplies Return in `returnto`, Settings/Saved components in `rcfilters-quickfilters-placeholder-description`/`rcfilters-savedqueries-already-saved`, and failure frame in `filedeleteerror`. Success is expressed as completed Saved!, matching native `changepassword-success` notification rather than inventing a success adverb. Preserve Team settings, Return versus Save, exact S3 identifier and failure versus successful completion. Team reuses local vocabulary; derived Save nominalization, passive agreement, bound Team and full phrases remain LOW CONFIDENCE. Original counts unchanged: 380 pending, including 245 Tamazight; all 18,011 mechanical checks pass. Browser verification and remote uploads were not performed.
+
+## Tamazight star selection and empty state — 2026-09-14
+
+Commit `c82cef74f` repairs six unflagged inherited Kabyle-leaning or English-mixed values. Latin script alone is not an error. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) attests Not Yet in `recentchanges-label-unpatrolled`/`rcfilters-quickfilters-placeholder-title`, Selected passive component in `tooltip-compareselectedversions`, and Item/View. Selected is adapted to feminine plural Boards. Preserve SELECTED boards, star versus unstar, ALL starred items and YOU have not starred ANYTHING YET. With Star replaces unexplained written-star passive. Star/object vocabulary reuses local terms; Swimlane remains provisional Path. Selected agreement, not-yet/any syntax, star adaptation and whole grammar remain LOW CONFIDENCE. Original counts unchanged: 380 pending, including 245 Tamazight; all 18,006 mechanical checks pass. Browser verification and remote uploads were not performed.
+
+## Tamazight starred board and page controls — 2026-09-14
+
+Commit `d6a73fae4` repairs four original findings and five unflagged French/Arabic or inherited Kabyle-leaning labels. Latin script alone is not an error. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) `wlnote`/`recentchanges-notargetpage` directly attest UI Above/Top `g uflla`; `tooltip-watch` supplies Page-to-YOUR-list grammar and Page vocabulary. Preserve star versus unstar, THIS board versus THIS page, top of YOUR board list and exact `%s` count. Star `itri` / plural `itran` reuse local vocabulary rather than new independent attestation. Star-to-favorite software adaptation, click purpose clauses, passive/future visibility and whole phrases remain LOW CONFIDENCE. 380 original findings remain pending, including 245 Tamazight; all 18,000 mechanical checks pass. Browser verification and remote uploads were not performed.
+
+## Tamazight due-time activity — 2026-09-14
+
+Commit `9af74b9d0` repairs one original French finding. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) uses When `managu` for expiry in `enterlockreason`, Where `mani` in `tooltip-n-portal`, feminine Previous `taqburt` in `previousrevision`, plus Edit/Time components. Adapt Previous to masculine Time and existing Due Date deadline adjective to Due TIME; do not imply the value has already expired. Preserve modified due time TO new value, When/Where labels, PREVIOUS value, all four lines and exact `__timeValue__`, `__card__`, `__timeOldValue__` inventories. Actor past, deadline compound, derived masculine Previous, was clause and whole grammar remain LOW CONFIDENCE. 384 original findings remain pending, including 249 Tamazight; all 17,991 mechanical checks pass. Browser verification and remote uploads were not performed.
+
+## Tamazight board duplicate and information labels — 2026-09-14
+
+Commit `2557151f0` repairs two original findings and two unflagged French/Arabic labels. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) supplies second-person Copy in `viewsourcetext` and Info in `pageinfo-title`; [Mastodon](https://raw.githubusercontent.com/mastodon/mastodon/main/app/javascript/mastodon/locales/zgh.json) supplies the confirmation frame. Preserve Duplicate THIS board as Copy board, confirmation question, ALL boards settings and Board/List/Swimlane information tuple. Board/Settings reuse local vocabulary; Swimlane provisionally Path. Copy-to-Duplicate semantic adaptation, assembled confirmation, bound/plural nouns and whole phrases remain LOW CONFIDENCE. 385 original findings remain pending, including 250 Tamazight; all 17,990 mechanical checks pass. Browser verification and remote uploads were not performed.
+
+## Tamazight template container and copy controls — 2026-09-14
+
+Commit `6c1388962` repairs three original findings and three unflagged French/mixed values. `models/boards.js` (`isTemplatesBoard`) and `models/lib/unusedTemplateContainers.js` confirm the container holds template boards and differs from a single template. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) attests Box `tafniqt` for checkbox in `tooltip-invert`, Template in `nstab-template`, Copy in `viewsourcetext` and several/multiple in `transaction-duration-limit-exceeded`. Box-to-software-container is a LOW CONFIDENCE semantic adaptation, not independently attested container terminology. Bound template plural and several-cards grammar are derived. Checklist retains the earlier LOW CONFIDENCE List of Verification proposal; verification noun is not independently attested here. Preserve Copy Template TO MANY Cards versus Copy Checklist FROM Template. Full phrases need fluent validation. 387 original findings remain pending, including 252 Tamazight; all 17,986 mechanical checks pass. Browser verification and remote uploads were not performed.
+
+## Tamazight template labels and save action — 2026-09-14
+
+Commit `747e1d96e` repairs seven unflagged labels, including Save as Template previously using Subject `asntl`. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) directly attests singular Template `albudh` in `nstab-template`/`tooltip-ca-nstab-template`, plus Add/Create/Save components. Preserve Add versus Create versus Save AS, and card/list/board template scopes. Plural `albudhn` reuses the existing local Templates entry rather than independent plural attestation; bound nouns and software-template/full-phrase adaptation remain LOW CONFIDENCE. Card/Board reuse local vocabulary; [Mastodon](https://raw.githubusercontent.com/mastodon/mastodon/main/app/javascript/mastodon/locales/zgh.json) supplies List plural evidence. Original counts unchanged: 390 pending, including 255 Tamazight; all 17,980 mechanical checks pass. Browser verification and remote uploads were not performed.
+
+## Tamazight translation deletion warning and count — 2026-09-14
+
+Commit `1f30de7d6` repairs two original Arabic findings. [Native Mastodon](https://raw.githubusercontent.com/mastodon/mastodon/main/app/javascript/mastodon/locales/zgh.json) supplies the confirmation frame; [MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) `undo-failure` supplies This change cannot be undone, with only its conflict reason removed to preserve the absolute no-undo warning here. `pageinfo-watchers` directly attests Count. [Pinned non-fuzzy Dialect](https://raw.githubusercontent.com/dialect-app/po/366f2ad81ddfc5af1f75075436a3da6cadf4ca08/ui/zgh.po) supplies Translation and Text components. Preserve Delete THIS custom string, confirmation question, no-undo clause and trailing count colon. Text plural `idhrichn` is derived rather than independently attested; custom modifier attachment and whole grammar remain LOW CONFIDENCE. 390 original findings remain pending, including 255 Tamazight; all 17,973 mechanical checks pass. Browser verification and remote uploads were not performed.
+
+## Tamazight custom translation controls — 2026-09-14
+
+Commit `67e2d101b` repairs two original findings and three unflagged Arabic labels. [Pinned Dialect translation](https://raw.githubusercontent.com/dialect-app/po/366f2ad81ddfc5af1f75075436a3da6cadf4ca08/ui/zgh.po) directly attests non-fuzzy Translation `asughl` / bound `usughl` in Translation history, Live Translation and Translation Shortcut, and Text `adhrich` in Text to speech. Fuzzy provider strings are not evidence. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) supplies Edit/Delete/New components. Software String is adapted as Text, preserving New/Edit/Delete THIS, custom scope and the deletion question. Custom modifier reuses local `izhlin`; String-to-Text adaptation, modifier attachment and whole phrases remain LOW CONFIDENCE. Component attestation does not prove fluency. 392 original findings remain pending, including 257 Tamazight; all 17,971 mechanical checks pass. Browser verification and remote uploads were not performed.
+
+## Tamazight archive states and recovery titles — 2026-09-14
+
+Commit `148e72446` repairs one original finding and six unflagged French or inherited Kabyle-leaning labels. Latin script alone is not an error. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) directly attests Restore in `thisisdeleted`; [Mastodon](https://raw.githubusercontent.com/mastodon/mastodon/main/app/javascript/mastodon/locales/zgh.json) attests List. Archive noun has directly inspected institutional evidence below. Preserve archived state versus completed recovery, Card-to-List and List-to-Swimlane destinations, and exact backticked search placeholder. Predicate itself remains unchanged because the parser requires one token. Card/Settings reuse local vocabulary; provisional Path-to-Swimlane, masculine negative plural, passive recovery, bound nouns and full software phrases remain LOW CONFIDENCE. 394 original findings remain pending, including 259 Tamazight; all 17,966 mechanical checks pass. Browser verification and remote uploads were not performed.
+
+## Tamazight archive visibility and recovery guidance — 2026-09-14
+
+Commit `a2a88d405` repairs seven original French/Arabic findings. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) directly uses After `dffir n` in `rc-change-size-new` and retry-after-a-little-while in `actionthrottledtext`; Restore `swrri` appears in `thisisdeleted`. This supports temporal components, not the full derived Later clauses. Preserve invisibility AFTER archiving, card location in THIS list versus list/swimlane location on board, later restoration FROM Archive in Board Settings, and removal/preservation of activity in the card alternative. Settings/Card/Board reuse local terminology and Swimlane provisionally uses Path. Future negative/passive visibility, nominalized movement, second-person restoration, temporal Later adaptation and whole clauses remain LOW CONFIDENCE. Component evidence does not prove fluency. 395 original findings remain pending, including 260 Tamazight; all 17,959 mechanical checks pass. Browser verification and remote uploads were not performed.
+
+## Tamazight archive and restore scope controls — 2026-09-14
+
+Commit `a9e68b414` repairs three original French/Arabic findings and one unflagged French value. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) directly attests Restore `swrri` in `thisisdeleted` and All `akkw` in `collapsible-collapse-all-text`. Preserve Move Swimlane TO Archive, ALL cards in THIS list, Restore ALL and Restore ALL FROM Archive. Archive noun has the directly inspected institutional logo evidence recorded below; software adaptation and full phrases remain LOW CONFIDENCE. Swimlane provisionally retains local Path `abrid`, requiring terminology review. The generic Restore record uses a different restoration verb with its own evidence and is retained rather than declared wrong merely for differing. 402 original findings remain pending, including 267 Tamazight; all 17,952 mechanical checks pass. Browser verification and remote uploads were not performed.
+
+## Tamazight archive alternative and native controls — 2026-09-14
+
+Commit `14c2b82da` repairs one original French archive hint and two unflagged inherited Kabyle controls (`Sekles`, `Nadi`). Latin script alone is not considered an error. [Pinned Dialect native translation](https://raw.githubusercontent.com/dialect-app/po/366f2ad81ddfc5af1f75075436a3da6cadf4ca08/ui/zgh.po) directly attests non-fuzzy Save `ⵃⴹⵓ`; [native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) and [Mastodon](https://raw.githubusercontent.com/mastodon/mastodon/main/app/javascript/mastodon/locales/zgh.json) attest Search `ⵔⵣⵓ`. The archive hint preserves ability to move a list to Archive, removal from the board and preservation of activity. Ability/purpose clauses, pronoun placement, activity noun and Save-to-Preserve adaptation remain LOW CONFIDENCE; component evidence does not validate the whole sentence. One original finding repaired; 405 remain pending, including 270 Tamazight. All 17,948 mechanical correction checks pass; browser verification and remote uploads were not performed.
+
+## Tamazight archive activity vocabulary — 2026-09-14
+
+Commit `dce7f41cd` repairs four unflagged activities with inherited Kabyle-leaning `tabdart`, `deg` and `aɣbar` wording. Latin script alone is not considered wrong language. Preserve Board/Card/List/Swimlane identity, all nested locations, completed moved-to-archive meaning and exact underscore placeholders. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) attests active Move, not the newly derived passive forms. List and Archive components have native evidence; Card/Board reuse local terminology. Swimlane provisionally retains Path (`abrid`), a software adaptation needing validation. Bound nouns, passive/gender agreement and whole clauses remain LOW CONFIDENCE. All four lie outside original findings; counts unchanged: 406 pending, including 271 Tamazight. 17,945 mechanical correction checks pass; no live browser verification or remote uploads.
+
+## Tamazight archive confirmation and activity — 2026-09-14
+
+Commit `66c5df4fe` replaces three French/Arabic values: one original finding and two unflagged labels. [Native Mastodon](https://raw.githubusercontent.com/mastodon/mastodon/main/app/javascript/mastodon/locales/zgh.json) directly supplies the Are you sure you want ...? frame in `confirmations.delete.message`. Adapt Delete post to Move THIS board TO Archive, preserving the question. Popup title also retains its source question mark absent from old Arabic. Activity retains exactly one `%s` and completed moved-to-archive meaning. Second-person Move, generic passive/gender agreement, institutional archive adaptation and whole clauses remain LOW CONFIDENCE for native validation. One original repaired; 406 remain pending, including 271 Tamazight. 17,941 mechanical checks pass; no live browser verification or remote uploads.
+
+## Tamazight archive rule actions and states — 2026-09-14
+
+Commit `cbc2bf400` replaces seven Arabic/French values, three original findings and four unflagged labels. Rule choices preserve Move TO Archive versus Restore FROM Archive, explicit Card scope and completed Moved/Restored states. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) directly attests Restore in `thisisdeleted` and Move in `tooltip-ca-move`. Restore deleted-page-to-archived-item adaptation, derived passive states, prepositional archive form and whole clauses remain LOW CONFIDENCE for native validation. Generic Archived is provisionally In Archive; the separate search predicate was not substituted with a multiword phrase. Institutional archive noun evidence does not validate the full action grammar. Three originals repaired; 407 remain pending, including 272 Tamazight. 17,938 mechanical checks pass; no live browser verification or remote uploads.
+
+## Tamazight archive status and empty states — 2026-09-14
+
+Commit `38debcc33` replaces seven Arabic/French labels: four original findings and three unflagged values. Preserve boards in archive, separate No Boards/Lists/Cards negatives, THIS card/board moved-to-archive status, and the warning that this card is inside a LIST in archive (not an assertion that the card itself is archived). Fix the old Arabic board plural to source singular. Archive noun uses the directly inspected [native institutional logo](https://www.um5.ac.ma/um5/sites/default/files/2019-12/Communiqu%C3%A9%20JNA%202019.pdf); native software supplies Move/No/Warning/List components. Plural feminine negative agreement, passive moved form, nested archive-location grammar and full clauses remain LOW CONFIDENCE for native validation. Institutional noun evidence does not validate whole kanban labels. Four originals repaired; 410 remain pending, including 275 Tamazight. 17,931 mechanical checks pass; no live browser verification or remote uploads.
+
+## Tamazight archive noun direct provenance — 2026-09-14
+
+Commit `fbe388603` adds provenance to nine records from `5dca9f38d`, without changing values/counts. Directly downloaded and inspected [University Mohammed V's 2019 National Archives Day press release](https://www.um5.ac.ma/um5/sites/default/files/2019-12/Communiqu%C3%A9%20JNA%202019.pdf). Page 1 contains an Archives du Maroc institutional logo with a Tifinagh Archive-of-Morocco caption, corroborating `ⴰⵔⵛⵉⴼ`. PDF text extraction only reads the French body; native evidence comes from the inspected embedded logo image (`/Image11`), not the body. This is stronger lexical provenance than the earlier Ministry search-index excerpt whose direct fetch timed out. Institutional archive usage still does not attest a kanban control: semantic adaptation, prepositional form and assembled labels remain LOW CONFIDENCE for native validation. All 17,924 mechanical checks pass; 414 originals remain pending, including 279 Tamazight. No live browser verification or remote uploads.
+
+## Tamazight archive controls — 2026-09-14
+
+Commit `5dca9f38d` replaces nine Arabic/French values, one original finding and eight unflagged labels. Preserve Archive noun versus Move-to-Archive, All, Board/Card/List/Selection and Show archived Lists scopes. A [Moroccan Ministry catalogue](https://mjcc.gov.ma/zgh/cp-textes-juridiques/page/14/) search-index excerpt uses Archive in records/archiving legal headings. Direct page access timed out, so this is indexed lexical evidence, not an inspected complete page or direct kanban control attestation. Native MediaWiki supplies Move/Show; native Mastodon supplies Lists. Card/Board/Selection reuse local terminology without independent validation. Borrowed institutional archive noun, prepositional form and full labels remain LOW CONFIDENCE for native review. Inherited Kabyle aɣbar was not treated as established Moroccan terminology. One original repaired; 414 remain pending, including 279 Tamazight. 17,924 mechanical checks pass; no live browser verification or remote uploads.
+
+## Tamazight assignee filter recipient follow-up — 2026-09-14
+
+Commit `0488199cf` refines two existing records from `5da9a2084`. Earlier Person given card wording left the recipient relation implicit and used masculine Given with a feminine card noun. Match the explicit Person to whom card is given construction in `2e15e9f7b`, preserving the recipient and No assignee scopes. Original French before values remain unchanged. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) attests Given as a component, not these relative clauses or responsibility-assignment meaning. Feminine agreement and the recipient relative are derived; complete labels remain LOW CONFIDENCE for native review. This is a correction of ambiguity and consistency, not proof of fluency. All 17,915 mechanical checks pass. Counts unchanged: 415 originals pending, including 280 Tamazight. No live browser verification or remote uploads.
+
+## Tamazight assignee labels and card scopes — 2026-09-14
+
+Commit `2e15e9f7b` replaces five French values: two original findings and three unflagged labels. Preserve Assignee versus Assignees, No assignee, all assignees of ALL cards on THIS board versus all assignees of CURRENT card on THIS board. Responsibility provisionally uses Person(s) to whom card(s) given, distinct from membership. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) supplies Given and Current components, not the full responsibility-assignment term. Relative To whom, plural person, feminine passive/card agreement, bound forms and full labels remain LOW CONFIDENCE for native validation. Local Card vocabulary is reused without claiming independent proof. Two originals repaired; 415 remain pending, including 280 Tamazight. 17,915 mechanical correction checks pass; no live browser verification or remote uploads.
+
+## Tamazight assigned-only permissions — 2026-09-14
+
+Commit `13f8fbd14` replaces six original French labels/descriptions. Sidebar role choices pair each label with its capability description. Preserve Only assigned cards visible for all three, Normal-user editing, Read cannot edit and Comment can only comment. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) supplies Only, User, Read, Edit, Show and ability components. Responsibility assignment provisionally uses Given cards; this is a semantic adaptation, not an attested permission phrase. Derived passive/plural forms, Read noun, Normal adjective, Comment wording and full role/capability clauses remain LOW CONFIDENCE for native review. Component attestations and source-code checks do not validate complete grammar. Six originals repaired; 417 remain pending, including 282 Tamazight. 17,910 mechanical correction checks pass; no live browser verification or remote uploads.
+
+## Tamazight filter labels and status — 2026-09-14
+
+Commit `5da9a2084` replaces seven Arabic/French values, two original findings and five unflagged values. Preserve membership versus responsibility assignment, No member/No assignee negation, Other filters, active-filter status and You filtering this board plus Click here to edit. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) supplies No, Given, Edit and Here components. Assignee provisionally uses Person given the card; membership uses the separate member noun. Local Filter/Card/Member reuse is not independent validation. Derived member bound forms, assignment adaptation, active/working and second-person forms, Other plural adjective and complete clauses remain LOW CONFIDENCE for native review. Two originals repaired; 423 remain pending, including 288 Tamazight. 17,904 mechanical correction checks pass; no live browser verification or remote uploads.
+
+## Tamazight time-tracking labels — 2026-09-14
+
+Commit `9f60960f4` replaces five Arabic/French values: two original findings and three unflagged labels. Card details uses separate hours fields; boards-list tooltips distinguish Has overtime cards from Has spent-time cards. [CLDR native locale](https://raw.githubusercontent.com/unicode-org/cldr/main/common/main/zgh.xml) directly attests singular Hour in `dates/fields/hour`, not the derived plural. Spent provisionally uses Used time; Overtime uses Additional time. These semantic adaptations, derived passive/plural forms, reused Additional vocabulary and Has constructions remain LOW CONFIDENCE, requiring native validation. Neither CLDR nor source-code scope checks attest the whole phrases. Spent/overtime and card-presence scopes and parentheses are preserved. 425 originals remain pending, including 290 Tamazight. 17,897 mechanical correction checks pass; no live browser verification or remote uploads.
+
+## Tamazight account and starred item labels — 2026-09-14
+
+Commit `47758fc61` repairs three unflagged values. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) directly supplies the identical Create Account action (`pt-createaccount`), replacing Arabic without a new noun adaptation. [Native Mastodon](https://raw.githubusercontent.com/mastodon/mastodon/main/app/javascript/mastodon/locales/zgh.json) directly supplies plural Lists (`navigation_bar.lists`), correcting the different local noun. Starred Boards replaces Arabic with Boards with a Star; Starred Lists preserves that state using the corrected noun. Star and Board vocabulary reuse local usage, which is not independent validation. Full starred compounds remain LOW CONFIDENCE for native review. All three are outside the original findings: original counts remain 427 pending, including 292 Tamazight. 17,892 mechanical correction checks pass; no live browser verification or remote uploads.
+
+## Tamazight membership and assignment shortcuts — 2026-09-14
+
+Commit `cffc0bd98` replaces four Arabic/French descriptions, three original findings and one unflagged value. `keyboard.js` uses member filtering for q, assignee filtering for a, and separate self-add/self-assignment actions. Current-card scope is retained in both actions. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) attests Current and Given components; feminine Current and plural passive Given are derived. Assignment provisionally uses Give-to-self/Given-to-me, not a directly attested responsibility-assignment term. Local Add, Filter and Card vocabulary is reused without claiming independent validation. Reflexive and possessive forms, assignment adaptation and complete grammar remain LOW CONFIDENCE for native review. An IRCAM search snippet describes smun as causative Accompany, not Assign; it was not adopted as an assignment verb. Three originals repaired; 427 remain pending, including 292 Tamazight. Mechanical checks pass; no live browser verification or remote uploads.
+
+## Tamazight sidebar and dialog controls — 2026-09-14
+
+Commit `abaa87ed9` replaces six Arabic/French values, three original findings and three unflagged values. `keyboard.js` confirms the ESC, w, f and slash actions. [Native Mastodon](https://raw.githubusercontent.com/mastodon/mastodon/main/app/javascript/mastodon/locales/zgh.json) attests Close in lightbox/video controls and Hide in video controls; its English keyboard descriptions are not native evidence. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) supplies Show/View, Search, Discussion and Window components. [Pinned non-fuzzy Dialect](https://raw.githubusercontent.com/dialect-app/po/366f2ad81ddfc5af1f75075436a3da6cadf4ca08/ui/zgh.po) supplies Open Preferences. Sidebar reuses the local Side Panel paraphrase; reuse is not independent validation. Dialog is provisionally Discussion Window, not a directly attested software Dialog term. Open/Close versus Show/Hide and filter/search/board scopes are preserved. Noun paraphrases, bound forms and complete grammar remain LOW CONFIDENCE. 430 originals remain pending, including 295 Tamazight. Mechanical checks pass; no live browser verification or remote uploads.
+
+## Tamazight autocomplete labels — 2026-09-14
+
+Commit `e5625d884` replaces two Arabic shortcut descriptions, preserving automatic completion and distinct emoji/member targets. [MediaWiki native source](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) attests transitive Complete Login; the completion noun is derived, not a directly attested autocomplete label. [Pinned Dialect native PO](https://raw.githubusercontent.com/dialect-app/po/366f2ad81ddfc5af1f75075436a3da6cadf4ca08/ui/zgh.po) attests non-fuzzy Automatic in language detection/Auto. [Native Mastodon](https://raw.githubusercontent.com/mastodon/mastodon/main/app/javascript/mastodon/locales/zgh.json) attests Emoji in its not-found message. Members reuses local WeKan terminology, which is not independent validation. Full compounds, adjective agreement and member terminology remain LOW CONFIDENCE. IRCAM's TALAM portal has a French autocomplete tool heading, which does not establish a native compound; exact-phrase search absence is not evidence of nonexistence. Two originals repaired; 433 remain pending, including 298 Tamazight. Mechanical checks pass; native fluency and live browser verification remain open. No remote uploads.
+
+## Tamazight shortcut list action — 2026-09-14
+
+Commit `786d29cfb` replaces Arabic `shortcut-show-shortcuts`, preserving the action bound to `?` in `client/lib/keyboard.js`. [Pinned Dialect native PO](https://raw.githubusercontent.com/dialect-app/po/366f2ad81ddfc5af1f75075436a3da6cadf4ca08/ui/zgh.po) directly supplies non-fuzzy Shortcuts in a shortcut-window context and Keyboard Shortcuts. [Native Mastodon](https://raw.githubusercontent.com/mastodon/mastodon/main/app/javascript/mastodon/locales/zgh.json) supplies List in its edit/delete controls; its keyboard descriptions are English placeholders and are not native evidence. [Native MediaWiki](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) supplies Show/View. The assembled demonstrative clause and Bring up-to-Show adaptation remain LOW CONFIDENCE; lexical attestations do not validate complete grammar. Emoji naming has native Mastodon evidence, but autocomplete wording still needs review. One original repaired; 435 remain pending, including 300 Tamazight. Mechanical checks pass; no live browser validation or remote upload.
+
+## Tamazight Paste terminology follow-up — 2026-09-14
+
+Commit `5e2c3c708` replaces tentative `sntdh` with `slgh` in both import hints. [Dialect’s pinned native source](https://raw.githubusercontent.com/dialect-app/po/366f2ad81ddfc5af1f75075436a3da6cadf4ca08/ui/zgh.po) supplies a non-fuzzy `msgid "Paste"` translation. The `po` directory is a separate submodule, explaining why guessed main-repository paths returned 404. Native control usage is now direct lexical evidence; full clauses and validity-to-structured-data adaptation remain LOW CONFIDENCE. Ledger before values retain the original French. Counts are unchanged because existing correction records were refined.
+
+## Tamazight logo dictionary provenance follow-up — 2026-09-14
+
+The newly inspected Asawaliw atrar preface also limits the dictionary evidence mentioned in the two custom login logo URL corrections. Their ledger reasons now explicitly classify that dictionary as cross-variety candidate evidence. The independently declared zgh Commons caption remains direct community usage of Logo, not normative IRCAM terminology. No values/counts changed; full labels remain LOW CONFIDENCE. This follow-up prevents a dictionary corroboration from being mistaken for independent Moroccan standardization.
+
+## Tamazight original-order repair — 2026-09-14
+
+Commit `996cc65c7` repairs two Arabic values using Order `asedwa` and Original `asakran` from Asawaliw atrar, PDF pages 160–161. The inspected preface (page 6, zero-based 5) explicitly adopts vocabulary across Tarifit, Tasousit, Kabyle, Tuareg and Tamazight and permits creative derivation. Therefore this dictionary is cross-variety candidate evidence, not normative IRCAM/Standard Moroccan attestation. List-sequence meaning and full wording remain LOW CONFIDENCE. This supersedes the unrepaired original-order status below; the Become review remains open.
+
+## Tamazight checklist conversion review — 2026-09-14
+
+Direct native [Ministry public-service statute](https://www.mmsp.gov.ma/amz/nos-metiers/statut-g%C3%A9n%C3%A9ral-de-la-fonction-publique) uses `ittaghul` when dating the statute back to 1958. This establishes Return/date-back usage, not the proposed `ittughal` for a text line becoming an item. The morphological difference must not be silently normalized. Exact candidate Become and ordering searches supplied no authoritative matches; this does not prove absence. Keep the current correction low confidence and review conversion separately from Return. The original-order variant remains unrepaired; its constraint must survive translation. No values or counts changed.
+
+## Tamazight custom login logo labels — 2026-09-14
+
+Local commit `800934571` repairs the image and destination-link URL labels. The explicitly Standard Moroccan Tamazight caption on [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Wikipedia-logo-v5-zgh.png) uses `ⴰⵍⵓⴳⵓ` for Logo. This is native community usage, not normative IRCAM terminology. MediaWiki supplies the Login noun `akchchum`. Bound noun forms, Specified-to-Custom adaptation and complete label grammar remain LOW CONFIDENCE. This follow-up supersedes the unresolved-logo finding below without claiming that MediaWiki attests Logo.
+
+## Tamazight checklist completion review — 2026-09-14
+
+Login-label review found stronger software evidence: current [MediaWiki zgh](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) `resetpass_announce` directly uses `ad tsmdt akchchum` (to complete login). This supports transitive software completion beyond temporal ending/legal supplementation. Past actor form `ismd` and full checklist phrase are still adaptations requiring review; no values/counts changed. The current file supplies Login noun `akchchum` in `pt-login-continue-button`; it does not attest proposed Logo loan `alugu`, so custom-logo labels need further terminology review rather than an unmarked invented loan.
+
+Native [CNDH penal-code memorandum](https://cndh.ma/sites/default/files/2024-01/memo_code_penal_v_amazighe.pdf), PDF page 56 (zero-based 55), recommendation passage, has `ad ismd usnti` and `ad smdnt` in amendment/supplement context. This adds root evidence beyond MediaWiki temporal Finish/End, but does not establish past transitive checklist completion. Preserve LOW CONFIDENCE on `activity-checklist-completed` (`2544843d6`); no value or count changes. Uncompleted activities require active reversal, not mere negative state. Next review must distinguish legal supplementation, finishing a process, completing an item and undoing its completion.
+
+## Tamazight subtask wording review — 2026-09-14
+
+Linked-entity follow-up local repair `af33f6640`: Linked Subtask, Linked Card and Linked Board now use native MediaWiki izdin Linked/Associated component. Preserve each entity and the subtask hierarchy; do not infer unattested passive ittuzdin. Full kanban noun/participle agreement and hierarchical paraphrases remain LOW CONFIDENCE. Earlier pending-linked-label observations below are historical.
+
+Activity follow-up local repair `b26d1ddc1`: `activity-subtask-added` and general `activity-added` now preserve completed past action and all percent placeholders using existing local irna/i wording. Full grammar and past conjugation remain LOW CONFIDENCE; the current MediaWiki file has no direct irna occurrence, so local wording is not independent canonical attestation. Linked-subtask wording still needs review; earlier pending-activity observations below are historical.
+
+Follow-up local repair `23c82a5c1`: existing-card action now uses hierarchical Task wording and As instead of Language and With. Add Subtask, deletion confirmation and plural Subtask Actions also repaired. Native MediaWiki As references and Mastodon confirmation frame support components; complete paraphrases, morphology and kanban extension remain LOW CONFIDENCE. Original activity and other linked-subtask wording remain under review. Earlier pending-action observations below describe the historical review before this repair.
+
+Follow-up local repair `f13775594`: five noun/settings/delete labels now explicitly paraphrase Task(s) under a Task, using ministry task nouns and indexed IRCAM Under wording. Complete hierarchy phrasing, noun state and kanban adaptation remain LOW CONFIDENCE, not a canonical attested Subtask term. Three original findings and two unflagged labels were changed; the existing-card action still requires repair. The initial no-values-changed observation below describes the earlier review.
+
+Current `add-existing-card-as-subtask` contains `ⵜⵓⵜⵍⴰⵢⵜ ⵜⴰⵎⵥⵢⴰⵏⵜ`, meaning a small language rather than a subtask. The indexed [IRCAM children’s vocabulary portal](https://tal2.ircam.ma/tamawalt/) uses `ⵜⵓⵜⵍⴰⵢⵜ ⵜⴰⵎⴰⵣⵉⵖⵜ` for Amazigh language; direct fetching timed out. [IRCAM’s conjugator](https://tal.ircam.ma/conjugueur/) likewise identifies language with this noun. Script alone cannot validate a Tifinagh value.
+
+Indexed [Moroccan administration ministry text](https://www.mmsp.gov.ma/amz/nos-metiers/absence-non-justifi%C3%A9e) uses `ⵜⴰⵡⵓⵔⵉ` for work and bound `ⵜⵡⵓⵔⵉ`; it does not attest the complete kanban Subtask term. The indexed [computer lexicon](https://www.temehu.com/imazighen/dictionaries/Amawals/Computer_dictionary_Berber_English_French.pdf) gives Task `Tawuri`, plural `tiwura`, citing MW/MCG. MW is a modern Amazighe lexicon, not MediaWiki or proof of Standard Moroccan usage. Do not infer canonical Moroccan Subtask terminology from that entry.
+
+Review the complete hierarchical subtask noun, free/bound state and existing-card relation before replacing this value. A small task alone loses the parent/subtask relationship. Also review `checklistItem-linked-subtask` and Arabic/French subtask headings together; preserve Linked, Add Existing Card as, singular/plural and any placeholders. This additional finding is outside the original queue; no translation values or counts changed.
+
+## Bambara tabular-calendar terminology review — 2026-09-14
+
+The two remaining original `bm` findings are `calendar-system-islamic-civil` and `calendar-system-islamic-tbla`. Their English legacy names omit source qualifiers. Preserve Hijri, tabular calculation and civil versus astronomical epoch; these variants must remain distinct.
+
+Directly reviewed [current CLDR bm.xml](https://raw.githubusercontent.com/unicode-org/cldr/main/common/main/bm.xml) contains no localized calendar display names or islamic-civil/tbla entries. Its dates/fields give `tile` for Era, `san` Year, `kalo` Month, `dɔgɔkun` Week and `don` Day. Native date fields and Gregorian era names do not independently validate the calendar reference-date meaning of Epoch. Older CLDR summary pages can show inherited Islamic names; inherited English is not native Bambara terminology evidence.
+
+Do not accept a generic era or astronomical approach as the complete required epoch qualifier. Seek Bambara terminology for reference date and table-based calculation, then review both complete labels. No translation values or counts changed; both findings remain pending.
+
+## Tamazight Start/Share spelling review — 2026-09-14
+
+The expanded search-index excerpt of the [IRCAM conjugation manual](https://www.temehu.com/imazighen/dictionaries/Amawals/manuel-de-conjugaison-Tamazight-Tifinagh-IRCAM.pdf), ending printed page 94, lists `ⴱⴷⴰ (ⴱⴷⵓ)` (class 4) and `ⴱⴷⵓ (ⴱⴷⴰ)` (class 12) for begin/start. Separately, emphatic `ⴱⴹⵓ` (class 12) means share/divide. Preserve plain `ⴷ` in `cardStartPlanningPokerPopup-title`; the emphatic spelling would change the action.
+
+Both direct browser access and curl currently redirect the PDF URL to an HTML dictionary catalogue. Thus the page number and entries are indexed-only evidence. The full Planning Poker command and imperative application remain low confidence and need direct/fluent review. No locale values or counts changed. The two French Subworkspace labels were subsequently repaired in `8dc2224c7` using an explicitly derived adu- compound. Native MediaWiki Subpages and indexed Brahim Hamek prefix analysis support the derivation pattern, not the exact organizational term; full compound, bound form and workspace extension remain low confidence. See the correction ledger for sources and direct-fetch limits.
+
+## Tamazight authentication terminology review — 2026-09-14
+
+`authentication-method`, `display-authentication-method` and
+`default-authentication-method` remain French and pending; the unflagged
+`authentication-type` also remains French. Preserve authentication rather
+than substitute ordinary sign-in, authorization or verification alone;
+retain method/type, display and default distinctions.
+
+The downloaded [CNAM dictionary](https://cedric.cnam.fr/~bouzefra/books/amawal.pdf)
+PDF page 23/printed 19 directly gives `Asesteb` (authentication) and `Sesteb`
+(authenticate), both marked **MC£**. The search index renders this code as
+**MCF**, an extraction discrepancy. PDF page 12/printed 8 defines MC£ as
+Tuareg dictionary sources. Neither rendering establishes Standard Moroccan
+attestation; do not interpret indexed MCF as a Moroccan dialect abbreviation.
+Message/password-authentication compounds additionally use modern-lexicon
+and Kabyle components, which do not validate the complete Moroccan labels.
+
+This direct PDF verification rules out accepting the indexed term as
+Moroccan proof. Native authentication terminology and full method/type,
+display/default phrases still need review. No locale values or counts changed.
+
+## Silesian raw-database label follow-up — 2026-09-14
+
+`sandstorm-raw-mongodb` remains pending. Preserve the existing file/database
+terminology while reviewing `Surowe` and the complete label.
+
+[Tuudi’s 16 March 2018 dictionary interview](https://tuudi.net/dykcjonorz-czyli-slownik-slaski/)
+quotes dictionary creator Stasiek Neblik describing accidentally deleting an
+Excel database, using `cołko baza danych`. This corroborates human Silesian
+computer-database usage separately from MediaWiki. The article’s surrounding
+prose is Polish; only the attributed speech is relevant language evidence.
+Neblik describes home/Rybnik usage and explicitly says he is not a linguist.
+This is regional usage evidence, not normative validation of the complete
+WeKan label or its genitive construction.
+
+The article was directly read during the earlier investigation; this follow-up
+retrieval timed out, while the search-index excerpt still exposes the attributed
+speech. The [dictionary homepage](https://dykcjonorz.eu/) is accessible, but the
+attempted `surowy` search could not be retrieved. Neither failure establishes
+that the qualifier is absent or incorrect. No translation or counts changed;
+continue with legible dictionary/native examples of raw database files.
+
+## Tamazight troubleshooting terminology review — 2026-09-14
+
+`server-error-troubleshooting` remains French and pending. Preserve all three
+instructions: submit the error generated by the server, run the snap command
+for a snap installation, and run the Docker command for a Docker installation.
+Keep `sudo snap logs wekan.wekan` and `sudo docker logs wekan-app` exactly.
+
+The [native MediaWiki locale](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json)
+directly supplies server `ⵓⵎⵙⵙⵉⴹⵏ` in `pool-servererror` and error
+`ⴰⵣⴳⴰⵍ` in `poolcounter-usage-error`; neither entry translates installation
+or command execution. Generic submit buttons do not establish the complete
+error-submission instruction.
+
+Indexed [CNAM dictionary](https://cedric.cnam.fr/~bouzefra/books/amawal.pdf)
+execution-unit entry gives `uselkem` from `selkem: exécuter`, marked **MW**
+(modern lexicon), whereas other computing entries derive `selkem` from **MC£**
+(Tuareg). Do not infer Moroccan attestation from either code. The indexed
+[Mammeri lexicon](https://www.temehu.com/imazighen/dictionaries/Amawals/amawal-n-Tmazight-tatrart_Mouloud_Mammeri.pdf)
+printed page 93 independently lists `SELKEM` for execute. An indexed
+[native software installation article](https://adrar-inu.blogspot.com/2018/05/amaynut-imdanen-s-tmazit-tasenfelt-20.html?m=0)
+uses `Selkem-t` to execute a setup file and `usbeddi` for installation, but
+its Kabyle wording does not validate Standard Moroccan instructions.
+
+These indexed excerpts narrow the glossary search; full dictionaries and
+fluent Moroccan phrase validation were not completed. No locale values or
+classification counts changed. Do not omit installation scope, substitute
+running the server for running the commands, or translate command tokens.
 
 # Local and Transifex translation audit
 
@@ -20263,3 +21185,559 @@ This is an all-values screening audit with inspected examples, not a native-spea
 | tpi.i18n.json | Tok Pisin (Tok Pisin) | calendar-system-gregorian | Gregorian | Not available — not queried | The existing fill-translations invariant-aware scan flags this exact English source value. A borrowed word may be valid; confirm language and meaning before calling it untranslated. |
 | tpi.i18n.json | Tok Pisin (Tok Pisin) | changeFontPopup-title | Font | Not available — not queried | The existing fill-translations invariant-aware scan flags this exact English source value. A borrowed word may be valid; confirm language and meaning before calling it untranslated. |
 | tpi.i18n.json | Tok Pisin (Tok Pisin) | theme-category-flat | Flat | Not available — not queried | The existing fill-translations invariant-aware scan flags this exact English source value. A borrowed word may be valid; confirm language and meaning before calling it untranslated. |
+
+
+### Restored Danish follow-up — 2026-09-14
+
+Local commit `cceae079c` corrects singular adjective agreement in the legal
+notice footer and restores the malloc allocation method in the heap metric.
+[Node V8 documentation](https://nodejs.org/api/v8.html#v8getheapstatistics)
+distinguishes this metric from general heap allocation. Reviewed 41 restored
+values directly and retained correct Danish wording unchanged. Ledger and
+placeholder/key-order tests pass. Ambiguous unused free wording and team
+terminology remain in the restored queue; no browser or remote verification
+was performed.
+
+
+### Restored Danish control review — 2026-09-14
+
+Local commit `3eeef4905` retains 63 directly reviewed translations unchanged.
+Start, Stop and Support are valid Danish vocabulary despite matching English.
+Added groups wording follows the existing add-teams terminology. Byte-size
+units, ISO week numbering, accessibility, lockout and job outcome distinctions
+are preserved. Free and Complete remain open pending source-context review.
+Unchanged-value ledger tests pass; browser rendering was not tested.
+
+
+### Restored Danish storage and monitoring review — 2026-09-14
+
+Local commits `944243917` and `ed9be5431` retain 156 values after direct
+review. Literal S3 endpoint/region examples, resource threshold units and
+bounds, interval frequencies and account identifier requirements remain
+unchanged. Correct obsolete migration strings remain in scope without
+claiming those migrations are active. Four context-dependent Danish labels
+remain: free, Complete, Schedule and Days Old. Unchanged-value ledger tests
+pass; browser rendering remains unverified.
+
+
+### Esperanto restored activities — 2026-09-14
+
+Local commit `2092f7860` retains 60 directly reviewed correct activity and
+card-control translations. Past-tense verbs, accusative direct objects,
+old/new movement directions and interpolation tokens remain intact.
+Completion and subtask terms are excluded pending further terminology review.
+Unchanged-value ledger tests pass; browser rendering was not verified.
+
+
+### Esperanto watch and board-control review — 2026-09-14
+
+Local commit `1c4a07cde` repairs automatic-watch wording: observi expresses
+ongoing observation, consistent with existing observado terminology, whereas
+rigardi primarily means looking. Retained 59 directly reviewed controls and
+warnings, preserving deletion permanence, archive recovery, role limits and
+toggle polarity. Completion/subtask terminology remains open. Correction and
+unchanged-value ledger tests pass; browser behavior was not verified.
+
+
+### Esperanto Enter-key and transfer review — 2026-09-14
+
+Local commit `620007ebc` replaces Enen (inwards) with an explicit Enter-key
+instruction in Esperanto prose. Retained 64 directly reviewed transfer,
+invitation and deletion values. Literal Trello menu names and JSON property
+names are intentional; interpolation tokens and URLs remain intact.
+Correction and unchanged-value ledgers pass. Completion/subtask wording and
+broader browser validation remain open.
+
+
+### Esperanto notifications and search review — 2026-09-14
+
+Local commit `ab4da5ab2` repairs ongoing watch/observation semantics in
+notification preferences and explicitly names Enter in search instructions.
+Retained 61 directly reviewed correct values, preserving role restrictions,
+creator/member participation, shortcut ranges, WIP and unsaved-change
+warnings, SMTP settings and invitation tokens. Completion, subtask, member
+pronoun and overtime wording remain open. Correction and unchanged-value
+ledger tests pass; browser behavior remains unverified.
+
+
+### Archived progress notes — 2026-09-14
+
+# Translation audit progress
+
+Audit date: **2026-09-12**. Last updated: **2026-09-14**.
+
+| Status | Flagged keys |
+| --- | ---: |
+| Corrected | 15,545 |
+| Restored pre-pull; awaiting validation | 3,141 |
+| Reviewed; retained unchanged | 1,087 |
+| Pending review or repair | 308 |
+| Total tracked | 20,081 |
+
+**Resumed at the maintainer’s request on 2026-09-13.** Reviewing and repairing the remaining local findings, beginning with Klingon. All **361** originally flagged Klingon findings are repaired. The broader check of **829** German-identical values is reviewed: **829** repaired, including the mistaken German `cron` retention corrected to the actual tool name **Cron**. Restored and unflagged translations still need validation.
+
+Fixed: wrong-language text, terminology, warnings, placeholders and JSON/calendar/search formatting. [Correction records](../../../releases/translations/audited-corrections.json) contain **18,140** exact before/after values, including unflagged repairs.
+
+Latest translation fix: **2026-09-14**, local commit `ab4da5ab2` — repaired Esperanto watch-notification semantics and search Enter-key wording. Retained 61 correct role, shortcut, warning and configuration values unchanged. All **18,140** correction records pass structural verification; **308** original findings remain pending across **17** locales. The **3,199** restored values, unflagged values, provenance-affected records and earlier low-confidence wording still need validation. Live browser verification was not run; no translations were pushed.
+
+**Latest syntax repair (2026-09-14, `d0c247094`, follow-up `cd563cce5`):** Veps filter help now
+preserves canonical comparison, escaping, quoted field/value and Boolean
+examples; the follow-up also fixes the standalone escape marker and checks
+all backslash runs. Regression checks passed and assert its language queue stays open;
+Finnish prose still needs full Veps translation. No completed language
+correction was added; original counts remain unchanged. Native Show,
+Activate/Deactivate and field terminology are reviewed, while full shortcut
+wording is unresolved. [Veps review](Veps-Review.md) records detailed limits;
+[Evidence](Audit-Evidence.md) retains the earlier findings.
+
+**Diagnostic terminology review (2026-09-14):** directly inspected Heap,
+Allocation and Context entries, resolving extraction substitutions in emphatic
+letters. Cross-variety candidates need adaptation; full diagnostics retain
+total/used, available/limit, allocation/peak and native/detached distinctions.
+Values/counts unchanged. [Evidence](Audit-Evidence.md) records exact spellings
+and limits; lexical inspection alone does not verify complete labels.
+
+**Calendar evidence review (2026-09-14):** CLDR directly confirms existing
+Coptic/Ethiopic/Gregorian labels; Islamic wording is explicitly provisional.
+Updated that evidence record. Missing native display names and full Hijri
+variants remain under review; English fallbacks are not verification.
+Values/counts unchanged. [Evidence](Audit-Evidence.md) records source limits.
+
+**Migration scope review (2026-09-14):** current source removed the
+comprehensive/missing-list migrations in #6521, but their locale strings
+remain. Keep them in repair scope without claiming the obsolete feature is
+active. Dictionary Integrity is distinct from Integration; full Moroccan
+migration wording remains unverified. Values/counts unchanged.
+[Evidence](Audit-Evidence.md) records the inspected source and limits.
+
+**Zoom control follow-up (2026-09-14, `35eb7e7ab`):** applied visually
+inspected Level and Zoom In/Out candidates to four French controls,
+preserving the 50-300% input range. One original finding and three additional
+repairs; cross-variety adaptation and full grammar remain low confidence.
+[Evidence](Audit-Evidence.md) records exact pages and source limits.
+
+**Source typography review (2026-09-14):** rendered dictionary pages confirm
+Tuareg marker MCΓ, previously extracted as MC£, and Authentication/Method
+spellings. Corrected 105 record explanations; values/counts unchanged.
+Moroccan suitability, transliteration and full grammar remain unverified.
+[Evidence](Audit-Evidence.md) records the visual findings.
+
+**Board-analysis follow-up (2026-09-14, `a6647173f`):** directly inspected local renders of dictionary PDF pages 19 and 134, confirming emphatic letters in Analyze and Structure. This resolves the earlier extraction ambiguity; the full command is repaired but remains low confidence for Moroccan usage and grammar. [Evidence](Audit-Evidence.md) retains the earlier limits and new visual findings.
+
+**Search-case review (2026-09-14):** preserve uppercase/lowercase matching,
+not font-size or accent equivalence. Indexed IRCAM discussions do not
+establish native case-insensitivity terms; the instruction remains pending.
+[Evidence](Audit-Evidence.md) records source limits; values/counts unchanged.
+
+**Parent-card review (2026-09-14):** code confirms No Parent is display-only,
+distinct from changing the relationship. Indexed cross-variety vocabulary
+does not establish a singular Moroccan parent term; earlier inheritance
+wording and pending French controls still need review.
+[Evidence](Audit-Evidence.md) records the limits; values/counts unchanged.
+
+**Format review (2026-09-14, follow-up `080225ac9`):** indexed HACA terminology
+supports Format; help is now repaired with an in-place-of-value paraphrase.
+Direct PDF retrieval failed; full grammar remains low confidence.
+Separator help is repaired in `0968a9dc6`, retaining literal HTML space
+entities; cross-variety terms and full grammar remain low confidence.
+[Evidence](Audit-Evidence.md) records the limits.
+
+**Archive noun review (2026-09-14, `fbe388603`):** directly inspected a native Archives du Maroc logo in a university PDF, corroborating the archive noun beyond the earlier search-index excerpt. Updated nine provenance records; values/counts unchanged. Institutional-to-kanban adaptation and full labels remain low confidence. [Evidence](Audit-Evidence.md) records the exact source and scope.
+
+**Logo provenance review (2026-09-14, `89f36d41f`):** applied the inspected dictionary’s cross-variety preface to two earlier logo URL records. Separate native caption usage remains; full labels stay low confidence. No values/counts changed. [Evidence](Audit-Evidence.md) records the authority limits.
+
+**Conversion evidence review (2026-09-14, `ecae7d919`):** native Ministry usage supports Return/date-back, not the proposed Become verb. Preserve low confidence; follow-up `996cc65c7` repairs the Arabic original-order variant using low-confidence cross-variety dictionary candidates. The evidence-only review changed no values/counts. [Evidence](Audit-Evidence.md) records the morphological and semantic limits.
+
+**Checklist completion review (2026-09-14, `9de9f2c15`, follow-up `4139001a3`):** native MediaWiki now directly supports transitive Complete Login, stronger than legal supplementation. Past actor form and full checklist grammar remain low confidence; active uncompletion is repaired with distinct Undo Completion wording in `bc0e7f13a`; derived morphology remains low confidence. Login noun is attested. Follow-up `800934571` repairs the custom-logo labels using a native community caption; full wording remains low confidence. The completion evidence review itself changed no values/counts. [Evidence](Audit-Evidence.md) records source context.
+
+**Subtask review (2026-09-14):** finding `92f69f58d` is repaired in `23c82a5c1`: existing-card action now uses As and hierarchical Task wording. Nine noun/settings/delete/action labels are repaired across `f13775594` and `23c82a5c1`; full paraphrases remain low confidence. Added-subtask activity is repaired in `b26d1ddc1` with low-confidence grammar; Linked Subtask is repaired in `af33f6640`; full phrases and other related wording still need review. [Evidence](Audit-Evidence.md) retains source limits.
+
+**Bambara calendar review (2026-09-14, `5610dff52`):** current CLDR supplies date units and Era `tile`, but no native Hijri variant names. Era does not establish reference-date Epoch. Both tabular calendar findings remain pending; preserve civil versus astronomical epoch and seek full native terminology. [Evidence](Audit-Evidence.md) records limits; no values or counts changed.
+
+**Start spelling review (2026-09-14, `2219d5358`):** expanded indexed IRCAM entries distinguish plain `ⴱⴷⵓ` Begin/Start from emphatic `ⴱⴹⵓ` Share/Divide. Preserve the corrected spelling; direct PDF access redirects to HTML, so full command validation remains open. Subworkspace wording was subsequently repaired in `8dc2224c7`; the new compound and full phrases remain low confidence for validation. [Evidence](Audit-Evidence.md) records limits; no values or counts changed.
+
+**Authentication reference review (2026-09-14, `9bcb5e162`):** direct [dictionary](https://cedric.cnam.fr/~bouzefra/books/amawal.pdf) extraction marks `Asesteb`/`Sesteb` **MC£** (Tuareg); search-index **MCF** is a rendering discrepancy, not Moroccan proof. Keep authentication method/display/default findings and unflagged type wording under review, preserving authentication versus sign-in/authorization and all qualifiers. [Evidence](Audit-Evidence.md) records pages and limits; no values or counts changed.
+
+**Troubleshooting review (2026-09-14, `ccd2ff8b0`):** [Evidence](Audit-Evidence.md) separates native server/error vocabulary from indexed cross-dialect execution/installation terms. Complete Moroccan instructions remain unresolved; retain both literal commands and their snap/Docker installation conditions. No locale values or counts changed.
+
+**Memory reference follow-up (2026-09-14):** [Moroccan hardware site](https://pcpicker.ma/prebuilts?lang=zgh) directly uses `ⵜⴰⴽⴰⵜⵓⵜ (RAM)`. This independently corroborates computer-memory usage after correcting the CNAM dialect attribution; it does not establish canonical Standard Moroccan terminology. Translation authorship/review is unknown and CPU labels vary on the page. Added evidence to three memory correction records, retaining low-confidence and renewed-review requirements. No locale values or counts changed. Further review must validate full diagnostics, free/allocated memory distinctions and grammatical adaptation.
+
+**Reference provenance correction (2026-09-14):** CNAM bibliography (PDF 12/printed 8) defines `MC£` as Tuareg sources and `MC` as Mokrane Chemim’s lexicon, not Central Moroccan dialect abbreviations. Corrected source notes in **98** Tamazight correction records. Earlier claims of Moroccan attestation inferred from these codes are invalid; affected terminology and full wording require renewed dialect review. The memory entry is marked `MC£`. No locale values or counts changed. This expands the explicit validation work beyond the pending queue; mechanical passing checks cannot resolve it.
+
+**Dzongkha variant reference review (2026-09-14):** downloaded both [GNU-hosted](https://download.savannah.gnu.org/releases/dzongkha-gnome/dzongkha_computer_terms.pdf) and [publisher-hosted](https://www.cle.org.pk/research/rep/DCT.pdf) computing dictionaries. Both directly extracted copies confirm Coptic `ཀོཔ་ཊིཀ` (PDF 47). Tabular (PDF 196) and Saudi Arabia (PDF 175) provide candidate components, but extracted glyphs are corrupt and indexed wording differs. The epoch entry (PDF 69) describes an important time; it does not establish a calendar reference date. No astronomical or moon-sighting term was found in this extraction, which does not prove absence. Keep all three Hijri variants pending; obtain legible native terms and preserve civil/astronomical reference-date and sighting distinctions. No translation values or counts changed.
+
+**Tamazight open-command review (2026-09-14):** [IRCAM’s generative grammar](https://www.ircam.ma/sites/default/files/2024-12/grammaire-generative-de-amazighe.pdf), printed page 36, gives a transitive open-door example; the indexed [children’s poems](https://biblio.ircam.ma/pmb/uploads/publications/224.pdf), printed page 44, give imperative `ⵕⵥⵎ` in an open-your-heart expression. These strengthen verb evidence, but the poem spelling differs from MediaWiki’s `ⵔⵥⵎ` root and full PDF retrieval failed certificate verification. Keep native spelling, imperative-to-software adaptation and the complete bulk-opening phrase under review. No values or counts changed; indexed examples do not prove full language validation.
+
+**Tamazight field-sum review (2026-09-14):** `showSum-field-on-list` remains pending. Native MediaWiki supports show and top placement, but the [comparative mathematics terminology study](https://asjp.cerist.dz/en/downArticle/244/9/1/33058) discusses `timernit`/`timerna` as the addition operation, not proof of the resulting sum. Its full PDF could not be fetched (502). CNAM’s indexed sum-of-money example also does not establish a field sum; Kabyle lexicon reproductions do not establish Standard Moroccan usage. Do not substitute count, addition operation or a financial amount. No values or counts changed; further research must establish the resulting numeric sum and complete display phrase.
+
+**Fulah terminology review (2026-09-14):** The [Senegal education ministry terminology guide](https://senprof.education.sn/PROGRAMME%20LECTURE%20POUR%20TOUS/documentation/Terminologies/Terminologie%20Pulaar%20fusion.pdf), printed pages 8, 17 and 34, gives calendar names `Lim-lebbi`, `arminaat`, `kalanndiriyee`, distinguishes `Haatumeere` as grid/table, and uses `Alluwal` for table/classroom board. This strengthens component evidence but does not establish technical tabular calendar usage or civil/astronomical epochs. The earlier native Hijri article supports calendar-context use of Haatumeere, so the guide alone does not justify replacing it; that composition remains under review. No locale values or counts changed. Both Fulah epoch findings remain pending.
+
+**Build interruption follow-up (2026-09-14):** `.tools/wekan22` contains the old v11.75 missing-Moment failure, already repaired in `43adfe1a7`. A fresh Meteor 3.6-beta.0 bundle build passes on Linux arm64, and six assignee/calendar/release-preflight Node test entries pass. Log: `.tools/log/build-dev-bundle/2026-09-14/04-25-58/dev.txt`. Native amd64 and live browser checks were not run. Translation counts and the remaining validation scope above are unchanged.
+
+**Color-name reference review (2026-09-14):** Sardinian and Aromanian `color-magenta` remain pending. Searches did not establish native usage; Italian publications and English WordPress changelogs are insufficient. The [Vrabie English–Aromanian dictionary](https://s3.wasabisys.com/fars-media/wp-content/uploads/2020/07/An-English-Aromanian-Macedo-Romanian-Dictionary-%C2%A9Society-Farsharotu-1.pdf) has poor OCR and no searchable magenta/fuchsia entry, which does not prove absence. Further review needs a legible dictionary entry or native usage; neither color value was changed or accepted as verified.
+
+**Checklist reference review (2026-09-14):** the candidate [computing lexicon](https://www.fichier-pdf.fr/2014/08/31/lexique-informatique/) labels `asenqed` (check/control) **KBL**. Its indexed entry does not establish Standard Moroccan checklist usage; the original hosting could not be fetched. A [readable CNAM-hosted edition](https://cedric.cnam.fr/~bouzefra/books/amawal.pdf) was subsequently found; it distinguishes mixed source dialects and proposed neologisms, so it does not justify blanket Standard Moroccan acceptance. Existing schwa-heavy checklist strings and full confirmation wording remain pending terminology and dialect review. No blanket retention or replacement is justified by this reference.
+
+**Language validation (2026-09-14), local commit `e4e3aa590`:** Wiktionary’s Veps transitive inflection tables confirm `surenda` (make larger) and `penenda` (make smaller) as second-person singular commands. Their imperative morphology is now reference-supported; screen-zoom usage remains open. The original keyboard findings remain unresolved: searches and the cached dictionary did not establish reliable keyboard-shortcut terminology. Counts are unchanged. References and the remaining scope are recorded per key in the correction ledger.
+
+**Kashmiri reference review (2026-09-14), local commit `0db69cf6c`:** CLDR marks Islamic/civil names provisional and has no Saudi-sighting or astronomical-tabular names. Existing civil wording also lacks explicit tabular/civil-epoch qualifiers. Keep these technical terms pending further research; no values changed and counts are unchanged. All 17,236 correction checks pass.
+
+**Tamazight calendar reference review (2026-09-14), local commit `dd2aaa19a`:** Current CLDR marks the Islamic name provisional and supplies no Buddhist or Hijri variant display names. Calendar terms and full variant qualifiers require additional research. No values changed; counts remain unchanged and all 17,273 correction checks pass.
+
+**Manx calendar reference review (2026-09-14), local commit `669be8895`:** Current CLDR supplies no calendar display names. Coptic terminology was not established by dictionary searches; full tabular/civil/astronomical-epoch qualifiers and the composed sighting phrase remain open. No values changed; three Manx originals remain pending. All 17,276 correction checks pass.
+
+**Silesian reference review (2026-09-14, `45d98c94f`):** [Native MediaWiki messages](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/szl.json) use shared database/file terms. The [dictionary creator’s attributed speech](https://tuudi.net/dykcjonorz-czyli-slownik-slaski/) independently uses `baza danych` for an Excel database; the article wrapper is Polish and the quotation describes regional usage. Preserve this terminology. The raw-file qualifier and full `sandstorm-raw-mongodb` label remain pending; [evidence](Audit-Evidence.md) records retrieval limits. No values or counts changed.
+
+**Language popup follow-up, 2026-09-14:** local commit `c8d17877e` places
+language flags beside language names and country flags inside regional
+parentheses, reversing visual placement for RTL. All 245 registry/helper
+checks and Jade compilation pass; LTR/RTL browser regressions are added and
+syntax-checked but not run live. Translation repair counts are unchanged.
+
+**Board View Settings follow-up, 2026-09-14:** local commit `3b74d2c3c`
+keeps the wide popup visible and enables title dragging and bottom-right
+resizing. Geometry, pointer and Jade checks pass; browser coverage is added
+and syntax-checked, with live execution pending. Translation counts are
+unchanged; the translation audit remains active.
+
+**Activity viewer follow-up (2026-09-14):** local commit `02f233649`
+renders activity values in card and sidebar feeds through the shared
+Markdown/emoji/permitted-HTML viewer, respecting security display modes.
+Focused viewer, navigation, source-URL and Jade checks pass; browser coverage
+is syntax-checked, not run live. Translation counts are unchanged; repairs
+and wording validation remain active.
+
+**Current research limits (2026-09-14):** invitation and migration Wait wording remain unverified after failed primary PDF retrieval; Welcome/Hope do not establish Invited/Wait. Mapping imperative is derived from association `izdin`, distinct from Continue `zdi`. Search positive-integer terminology remains open; the parser accepts zero as no limit despite English help. WIP counts list cards and requires moving some out OR raising the limit; unrelated comparative examples are insufficient. Preserve all qualifiers/placeholders and low-confidence status. [Detailed evidence](Audit-Evidence.md) retains source keys, regional limits, access failures and next references. Latest TODO Later text now matches its linked repair.
+
+**Remaining validation:** all restored/unflagged values and low-confidence replacements remain open. Detailed per-key caveats are retained in the correction ledger and source commits. These include Veps composed UI, card, notification, calendar, timing, file/archive, metric and legal terminology/inflection; Neapolitan technical checklist usage; Fulah/Bambara calendar composition; and CLDR-provisional Ewe civil-calendar and Tongan tabular-calendar/astronomical-epoch phrase composition, and Sakha civil/astronomical-calendar/era-to-epoch and sighting-phrase composition. Field sums, parent-card terminology, keyboard shortcuts, remaining migration/search messages and other calendar variants need further language research. Wrong-language/script and fluent-speaker checks remain unfinished.
+
+**Security interruption (2026-09-14):** `c1246d720` reviews both saved `.tools/wekansec20` alerts and hardens exact archive-host checks and shell-free mirror dispatch, including direct Windows Node execution. All 25 focused mirror test entries pass; native Windows and remote CodeQL rescanning remain unverified. Translation counts and remaining validation are unchanged.
+
+**Time view interruption (2026-09-14):** local commit `dc0855711` renders card titles through the shared Markdown/emoji viewer, respecting Admin Panel plain-text security mode. The report regression passes; both browser modes are added and syntax-checked, not run live. The shared viewer also obeys Admin Panel plain-link mode; `a7b333dad` adds both clickable/non-clickable browser regressions, syntax-checked but not run live. Timeline, DHTMLX Gantt and shared report viewers are also repaired (`457614a2a`, `5ca16f32e`); Control chart coverage is explicit (`ca8d59978`). Combined focused verification passes 33 Node entries; browser tests remain syntax-checked only. Authenticated legacy avatar prefix fallback is repaired (`c2a390928`); the production attachment 404 remains undiagnosed. Translation counts remain unchanged.
+
+**Calendar interruption (2026-09-14):** local commit `ef12548a9` replaces the rejected FullCalendar 5 `isRTL` option with `direction` in both board calendars. Four focused calendar test entries pass, including RTL/LTR and negative legacy-option checks. Browser regressions are added and syntax-checked, not run live. Translation counts and remaining language validation are unchanged.
+
+**Build logging update (2026-09-14):** `5f8f22f8c` unifies build.sh/build.bat logger directories; `3fedee2b9` prints completion log paths and fixes read-only server manifests in local release preparation. Linux arm64 development and release builds and release startup smoke check pass; 13 targeted test entries pass. Native Windows execution was unavailable. Translation counts and remaining review work are unchanged; translation repairs remain unfinished.
+
+**Build interruption (2026-09-13):** local commit `6cd193879` repairs the Meteor 3.6/Rspack 2 build's undeclared body-parser import using Meteor's existing Express parsers. Seven HTTP/build regressions pass. Meteor 3.6-beta.0/Rspack 2.2 and matching Docker metadata are committed locally (`35082f7d7`), and both previously failing version checks pass. All **1,015** Node suites pass. The actual Meteor bundle build remains under verification: the local beta tool is still starting before compilation. Translation counts and the latest translation commit remain unchanged.
+
+**Mirror interruption completed (2026-09-13):** local commit `02383540a` adds organization management, destination namespaces, host/organization/repository archives, linked comment attachments/webpage HTML, static HTML/CSV indexes and rate limits for all forges with tokenless public GitHub reads. Full Node verification: **1,014 suites, zero failures**; final targeted checks and Chromium/Firefox static checks pass. WebKit is unavailable locally (ICU 74/Docker). Translation repairs subsequently resumed; current counts and latest fix are above.
+
+**Language workflow (2026-09-13):** all 245 popup locales are wired and country-then-language flags are checked (`8549b6c4c`). Browser preference ordering, legacy/script aliases, delayed saved profiles and no automatic profile writes pass runtime checks (`1666a2012`, `37ae64fa8`); actual browser execution remains pending. Uzbek Arabic (`uz-AR`) still contains Latin core labels and needs repair.
+
+**Upload workflow (2026-09-13):** Colombian/French/Khmer/Guarani/Portuguese/Russian mappings are repaired, with 241 distinct targets and reported local aliases. All nine Colombian differences were reviewed (`6db460891`), retaining seven valid alternatives. Timestamped terminal/error logs and failure exit codes pass offline checks (`196c0addc`). Chinese script mapping now uses supported `zh-Hans` (`c2a9168c4`). Manx, Ladin, Aromanian, Tigre and Wolaytta remain unsupported catalogue failures; no substitution by different languages or remote uploads was performed.
+
+**Maintainer-run upload (2026-09-13):** inspected local report `translations-push-2026-09-13T19-02-29-845Z/report.json`: **237 successful uploads**, including English source, and **five failures** (`gv`, `lld`, `rup`, `tig`, `wal`). All eight formerly failing mappings succeeded; the latest saved run confirms the same outcome. The trailing catalogue list, including `wuu-Hant`, `xcl`, `yue`, `zh_MO`, `zh_TW.Big5` and `zza`, lists supported codes without local upload targets, not failed uploads. Catalogue discovery completed: zero supported-but-failed targets, five unsupported local codes and 500 supported catalogue codes without local upload targets. Those 500 codes need suitable local translations/mappings before upload. This verifies the saved report, not current remote contents; no uploads were run here. The outcome/support summary (`637dbebd6`) passes offline regressions. Retry regression (`ad294f707`) verifies all five missing codes are added and fully uploaded on a later run once supported; prior reports never suppress retries.
+
+**Verification (2026-09-13):** **1,014 Node suites, zero failures** after the latest Veps list/storage and mirror changes; final targeted mirror regressions pass; the final mirror retry adjustment also passes its targeted regression. Correction and audit-progress regressions pass. The original 19 failures are resolved. The first complete EVERYTHING run passes all four stages: Meteor (**527**), import (**10**), Node E2E (**10**), three browsers, **103** conformance cases on each of SQLite/PostgreSQL/MySQL/MariaDB and FerretDB unit/vet/integration. Separate URL-prefix preference/logout/invalid-cookie checks pass in all browsers. Two WebKit retries exposed refresh readiness and competing template autofocus; both are repaired, and the refresh check passes ten repetitions without retries. #6691 partial-profile/impersonation regression passes in all three browsers without retries. The second EVERYTHING run finished with failures in the now-fixed Fossil menu registration check and Chromium board-export popup readiness; database conformance, FerretDB and the other two browsers passed. Board-export verification remains outstanding. Static mirror browser checks pass in Chromium and Firefox; WebKit cannot launch locally because ICU 74 is missing and Docker is unavailable. Fluent-speaker checks remain outstanding; translation repairs resume next.
+
+**Unresolved reviews:** Member popup click handlers in sidebarFilters.js appear to invoke opposite assignment operations; this requires separate runtime review. Apostrophe support for Klingon search operators is implemented in local commit `0026390bb`; actual Query runtime and card-number regressions pass. All 37 remaining search keywords are replaced and actual-locale parser regressions pass; localized browser verification remains pending. Silesian database terminology and 17 Tigre calendar findings need language-specific validation.
+
+**Origin:** not all errors came from Transifex. The audit covers 4,061 pulled changes and 16,020 additional local findings; Bosnian errors predate the pull (`bdb3b15886a749b725b5290ba0109fcba955f983`). Other origins remain unverified.
+
+[Detailed evidence](Audit-Evidence.md) retains categorized tables. Refresh counts after each repair batch with `node releases/translations/audit-progress.mjs --update-summary`, then record the fix commit and verification. No remote uploads performed.
+
+Expanded Veps review (2026-09-14): ten additional local keys remain
+wrong-language, including a Venda label-inheritance instruction and Finnish
+accessibility/parent-card controls. See [Veps review](Veps-Review.md) for
+exact values and semantic requirements. Original-finding counts are unchanged;
+these additional values remain within the repair scope.
+
+Restored-value check (2026-09-14): all 4,058 restored values match the
+English underscore/percent placeholder inventory. Regression coverage now
+checks this separately and keeps these values awaiting language validation.
+No translation values or completion counts changed.
+
+Restored Danish wording review (2026-09-14, latest `cceae079c`): reviewed
+611 values: 606 retained unchanged and five meanings repaired. Latest review
+preserves sort directions, creator roles, string-template tokens, spinner
+shapes and ticket states. Ambiguous export free remains open. Now 1,029 original
+findings are reviewed/retained and 3,199 restored values await validation.
+Translation work remains open while the requested wekansec21 security
+repairs are prioritized.
+
+Latest restored-value review: **2026-09-14**, local commit `3eeef4905`.
+Retained 63 correct Danish controls and administrator labels, including valid
+shared Start/Stop/Support vocabulary, byte units and ISO week numbering.
+Uncertain free/Complete meanings remain open. Ledger checks pass.
+
+Restored Danish review follow-up: **2026-09-14**, local commits
+`944243917` and `ed9be5431`. Retained 156 correct storage, migration,
+monitoring, repository and account values. Danish restored validation now
+has four context-dependent labels left: free, Complete, Schedule and Days Old.
+Ledger tests pass; original pending queues and wider validation remain open.
+
+Latest restored-value review: **2026-09-14**, local commit `2092f7860`.
+Retained 60 correct Esperanto activity and card-control values, preserving
+past tense, accusative objects, movement directions and placeholders.
+Completion/subtask terminology remains under review. Ledger checks pass.
+Translation work remains open while requested issue #6692 is investigated.
+
+
+### Esperanto settings and rule review — 2026-09-14
+
+Local commit `b999becb4` retains 58 directly reviewed correct values.
+Preserve free/total memory distinctions, custom-field application scope,
+parent/source relationships and rule movement directions. Completion,
+subtask, member-pronoun and overtime terminology remain open. Ledger tests
+pass; browser behavior was not verified.
+
+
+### Esperanto rule and search review — 2026-09-14
+
+Local commit `e2ef875c8` retains 53 directly reviewed correct values.
+Preserve rule action polarity, wildcard and comma-separated-value guidance,
+card-view labels and search operators. Literal body tags, metavariables,
+colon/quotation syntax and interpolation tokens remain intact.
+Unchanged-value checks pass; uncertain terminology and browser validation
+remain open.
+
+
+### Esperanto string-template and advanced-search review — 2026-09-14
+
+Local commit `b92bbca3e` explicitly names Enter in string-template item
+guidance and retains 52 directly reviewed correct values. Preserve OR/AND,
+negative existence checks, descending sort, positive integer limits, case
+insensitivity and archive exclusion. Commands, syntax and placeholders remain
+literal. Correction and unchanged-value checks pass; browser behavior remains
+unverified. Direct ReVo task/complete article retrieval timed out; search
+results supply component candidates only. Completion/subtask wording remains
+open, without claiming failed retrieval validates or disproves it.
+
+
+### Esperanto lockout and storage review — 2026-09-14
+
+Local commit `e88feb32a` retains 48 directly reviewed correct values.
+Preserve upload byte units, ZIP import layout, known/unknown-user lockout
+conditions, activation and lock/unlock polarity, scheduled operation failures,
+S3 endpoint examples and authentication wording. Activity placeholders remain
+verbatim. Unchanged-value tests pass; uncertain terminology and browser
+validation remain open.
+
+
+### Esperanto workspace and activity review — 2026-09-14
+
+Local commit `6f096bfeb` retains 47 directly reviewed correct workspace,
+activity, date and administrator labels. Preserve source/destination order,
+received/start/due/end distinctions, positive-integer height requirement and
+the loading warning that refreshing causes data loss. Ledger tests pass;
+completion wording remains open. Direct
+[ReVo task source](https://raw.githubusercontent.com/revuloj/revo-fonto/master/revo/task.xml)
+now confirms tasko as assigned work; the komplet source was also fetched.
+This resolves the earlier retrieval failure, but individual completion and
+compound labels still need semantic review. Browser behavior was not tested.
+
+
+### Esperanto subtask and watch-title review — 2026-09-14
+
+Local commit `9ee9d2357` repairs the watch-settings title to observation
+terminology and retains 33 directly reviewed correct values. ReVo task.xml
+confirms tasko as assigned work; subordinate-task compounds and their
+plural/accusative forms are appropriate in the reviewed actions/settings.
+Completion remains open: earlier fetched komple.xml is the complex entry,
+not komplet/complete, and therefore supplies no completion evidence. The
+komplet.xml URL returned 404. This corrects the prior retrieval description;
+no completion values are accepted on that basis. Ledger tests pass; browser
+behavior remains unverified.
+
+
+### Esperanto calendar and voting controls — 2026-09-14
+
+Local commit `8be47d3b3` retains 50 directly reviewed correct labels.
+Preserve zoom direction/range, month navigation, due/spent-time distinctions,
+archive restoration, voting for/against and identity visibility. Planning
+Poker/CAS names and question-mark notation are intentional. Avatar, assignee
+and template actions retain correct wording. Unchanged-value tests pass;
+uncertain terminology and browser validation remain open.
+
+
+### Esperanto role and custom-field review — 2026-09-14
+
+Local commit `5ba04c102` retains 49 directly reviewed correct values.
+Preserve assigned-card visibility, comment/read permission limits, field
+types and none/unknown states. Reviewed subtask compounds and deletion
+confirmations retain correct grammar. Lime wording is excluded pending
+color-versus-fruit review; earlier completion/member/overtime questions remain
+open. Unchanged-value tests pass; browser behavior was not verified.
+
+
+### Esperanto date-format and export review — 2026-09-14
+
+Local commit `1b2232534` restores three format labels from foreign JJJJ/TT
+abbreviations to canonical YYYY/DD notation. Retained 37 directly reviewed
+correct field, email and export values, preserving delimiter distinctions,
+role/date categories, attachment metadata, disk-space warnings and literal
+placeholders. Correction and unchanged-value checks pass; scrollbar wording
+is excluded for terminology review and earlier uncertainties remain open.
+Browser behavior was not verified.
+
+
+### Esperanto sorting and filters — 2026-09-14
+
+Local commit `5ab78031d` retains 34 directly reviewed correct labels.
+Preserve manual order, last-access time, today/tomorrow/current/next-week
+distinctions, missing-date/member/field states and CSV/TSV import meanings.
+Long advanced-filter syntax is excluded for separate operator, escaping and
+example review. Unchanged-value tests pass; browser behavior and earlier
+uncertain terminology remain unverified.
+
+
+### Esperanto member mapping and selection review — 2026-09-14
+
+Local commit `ba7f76e53` retains 40 directly reviewed correct values.
+Preserve member mapping, invalid date/time states, administrator minimum,
+assigned-only visibility, invitation state, image-only drop restrictions
+and private-page login links. Emoji autocomplete wording is correct and
+distinct from checklist task completion. Placeholders remain verbatim.
+Unchanged-value tests pass; browser validation and uncertain terms remain open.
+
+
+### Esperanto Unwatch and mail review — 2026-09-14
+
+Local commit `5ef075987` repairs Unwatch to mean stopping observation.
+Retained 37 directly reviewed correct shortcut, upload, invitation and SMTP
+values, preserving action polarity, hour units, upload outcome distinctions,
+one custom URL scheme per line, test-email recipient and authorization
+denial. Overtime wording remains open. Correction and unchanged-value checks
+pass; browser behavior was not verified.
+
+
+### Esperanto webhook, policy and date review — 2026-09-14
+
+Local commit `e4e614f29` retains 40 directly reviewed correct values.
+Preserve outgoing/two-way webhook directions, disable controls, runtime
+labels and time units, field sums at top of list, private-only board policy,
+received/end date distinctions, assignment/request attribution and the
+notification deletion cannot-undo warning. Unchanged-value tests pass;
+uncertain terminology and browser validation remain open.
+
+
+### Esperanto member and subtask repair — 2026-09-14
+
+Local commit `fbc39261f` replaces plural Ili in the singular member-removal
+notice with La membro. The unflagged act-addSubtask replaces passive
+aldonita with finite past aldonis and erroneous naĝotubo with the established
+locale swimlane term naĝlinio. Fourteen rule/filter/deletion labels retained
+unchanged after direct semantic review. All source interpolation tokens
+remain intact. Original tracked counts: 15,552 corrected, 2,600 restored,
+1,621 retained, 308 pending; 18,148 exact correction records. Browser and
+remaining language validation are still open.
+
+
+### Esperanto custom-field and rule review — 2026-09-14
+
+Local commit `3b44bfb5e` repairs activity-unset-customfield: actual
+models/cards.js $unset activity removes a field value, rather than
+misconfiguring it. Both %s interpolation slots remain intact. Fifty-two
+rule/hierarchy/date/authentication labels retained unchanged. The
+checklist-items placeholder is a translated comma-separated example;
+ero1,ero2,ero3 is valid, and review coverage now preserves it instead of
+requiring English item names. All 18,149 correction and 1,673 review
+records pass. Remaining completion, overtime, color and broader language
+and browser validation stays open.
+
+
+### Esperanto checklist completion validation — 2026-09-14
+
+Local commit `5b1ec70e9` retains six completion/reversal translations and
+30 metadata/authentication/date labels. Correct dictionary source:
+https://raw.githubusercontent.com/revuloj/revo-fonto/master/revo/komple2.xml
+has rad komplet; drv 0igi defines making complete, with a building example,
+and ne0a also lists malkompleta. This supports existing kompletigis and
+malkompletigis for checklist state transitions. Earlier komple.xml denotes
+kompleks and komple1.xml denotes komplement; neither proves this meaning.
+models/checklistItems.js checks the all-items-finished state for completion.
+No translation was changed merely to prefer a synonym. 1,709 unchanged
+reviews pass; 2,511 restored and 308 pending findings remain. Browser and
+broader language verification remains open.
+
+
+### Esperanto reminder and notification review — 2026-09-14
+
+Local commit `35792c787` retains forty correct placement, deadline reminder,
+irreversible deletion, assignee, organization/team, notification and
+week-start values. proksimiĝas and pasis preserve approaching/past deadline
+states; Ne eblas malfari preserves the no-undo warning; legita/nelegita
+preserve read/unread states. Exact interpolation remains unchanged.
+1,749 review records pass. 2,471 restored values and 308 pending findings
+remain, alongside broader language and browser validation.
+
+
+### Esperanto due-card and search review — 2026-09-14
+
+Local commit `53044af0b` retains forty-five correct weekday, task/checklist,
+organization/person, due-card and search values. The all-incomplete-card
+permission qualifier and no-due-card negation remain explicit; markdown
+and interpolation inventories are unchanged. Search diagnostic names and
+operator labels remain localized. 1,794 review records pass; 2,426 restored
+values and 308 pending findings, broader language and browser validation
+remain open.
+
+
+### Esperanto search label and validation review — 2026-09-14
+
+Local commit `18cf8b11b` retains forty correct search display labels,
+predicates, validation errors and pagination values. globalSearch.js passes
+localized operator/predicate vocabulary to display instructions. The
+positive-integer requirement, invalid-state negation and all interpolation
+are preserved; canonical query examples were not changed. 1,834 unchanged
+review records pass. 2,386 restored values and 308 pending findings remain,
+with broader language and browser validation open.
+
+
+### Esperanto search instructions and sorting — 2026-09-14
+
+Local commit `bc927c112` retains thirty correct search-instruction, sorting,
+swimlane-movement and string-template translations. Query syntax and
+%{value} remain literal; membership/assignment, public-only qualifier,
+positive/negative integers, current period and newest/oldest order are
+preserved. The label instruction's missing closing markdown star is also
+present in English; it is a shared source formatting issue, not an Esperanto
+language error. 1,864 review records pass. 2,356 restored values and 308
+pending findings plus broader language and browser review remain open.
+
+
+### Esperanto requests and spinner review — 2026-09-14
+
+Local commit `59ad2ce12` retains thirty correct separator, copy-swimlane,
+spinner and help-request values. Space entities and Cc remain literal.
+Atendoindikilo localizes the spinner label while animation names match
+existing template choices (settingBody.js maps Cube-Grid to spinnerCubeGrid).
+The organization deletion warning retains the at-least-one-member condition.
+1,894 review records pass. 2,326 restored and 308 pending findings plus
+broader language/browser validation remain open.
+
+
+### Esperanto memory and legal labels — 2026-09-14
+
+Local commit `3e0c49da9` restores grando in resident-set-size diagnostics;
+28 memory, legal and checklist labels retained. Technical native vocabulary
+is supported by https://komputeko.net/Komputeko2008.pdf (native = indiĝena,
+including native compiler/mode). This supersedes any ordinary-language
+suspicion that indiĝena must be erroneous in a computing context.
+Garbage-zapping nuligas remains uncertain: zeroing and debug-pattern
+replacement must not be conflated. All 18,150 corrections and 1,922 reviews
+pass. 2,297 restored values and 308 pending findings remain; wider language
+and browser validation remain open.
+
+
+### Esperanto attachment and custom-translation review — 2026-09-14
+
+Local commit `1439290a6` retains thirty correct storage-move, upload,
+authentication and custom-translation values. GridFS/S3 identifiers and
+byte units remain accurate; invalid-filename cancellation, PDF-download
+fallback and irreversible deletion warnings remain explicit. All 1,952
+unchanged review records pass. 2,267 restored values and 308 pending
+findings plus broader language and browser verification remain open.
+
+
+### Esperanto account-failure window — 2026-09-14
+
+Local commit `6eaabcaea` replaces Malsukcesa fenestro (an unsuccessful
+window) with Tempofenestro por malsukcesoj, explicitly a time window for
+failures. peopleBody.jade labels the failureWindow settings separately
+from lockout periods. Seconds remain unchanged. Twenty-nine support,
+accessibility and account labels retained, including login-only access,
+not-yet-added information and only-locked-user filtering. All 18,151
+corrections and 1,981 reviews pass. 2,237 restored values and 308 pending
+findings plus broader language/browser verification remain open.

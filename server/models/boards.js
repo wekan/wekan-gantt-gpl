@@ -146,7 +146,7 @@ Meteor.methods({
     const {
       title,
       slug,
-      permission = 'private',
+      permission: requestedPermission = 'private',
       type = 'board',
       migrationVersion = 1,
       swimlanes = [],
@@ -180,6 +180,22 @@ Meteor.methods({
           'Board creation is restricted to admins.',
         );
       }
+    }
+
+    // Apply the instance visibility policy on this server-side insert too.
+    // Collection allow/deny does not run for insertAsync inside a method.
+    const privateOnly = await TableVisibilityModeSettings.findOneAsync(
+      'tableVisibilityMode-allowPrivateOnly',
+    );
+    const permission = privateOnly?.booleanValue ? 'private' : requestedPermission;
+    if (privateOnly?.booleanValue && requestedPermission === 'public') {
+      try {
+        require('/server/lib/securityLog').record({
+          key: 'authz.board-visibility', action: 'blocked',
+          source: 'createBoardWithInitialSwimlanes',
+          detail: 'Public board creation overridden by private-only policy.',
+        });
+      } catch (e) { /* logging must never break the guard */ }
     }
 
     const boardId = await Boards.insertAsync({
@@ -683,6 +699,20 @@ Meteor.methods({
 });
 
 Boards.before.insert(async (userId, doc) => {
+  // Trusted copies, imports and lazy helper creation bypass collection allow
+  // rules too. Enforce the instance policy at the shared insertion boundary.
+  if (doc.permission === 'public') {
+    const privateOnly = await TableVisibilityModeSettings.findOneAsync('tableVisibilityMode-allowPrivateOnly');
+    if (privateOnly?.booleanValue) {
+      doc.permission = 'private';
+      try {
+        require('/server/lib/securityLog').record({
+          key: 'authz.board-visibility', action: 'blocked', source: 'board:insert-policy',
+          detail: 'Public board insertion overridden by private-only policy.',
+        });
+      } catch (e) { /* logging must never break the guard */ }
+    }
+  }
   const lastBoard = await ReactiveCache.getBoard(
     { sort: { $exists: true } },
     { sort: { sort: -1 } },
@@ -1099,7 +1129,7 @@ WebApp.handlers.delete('/api/boards/:boardId', async function(req, res) {
 WebApp.handlers.put('/api/boards/:boardId/title', async function(req, res) {
   try {
     const boardId = req.params.boardId;
-    await Authentication.checkBoardWriteAccess(req.userId, boardId);
+    await Authentication.checkBoardAdmin(req.userId, boardId);
     const title = req.body.title;
 
     await Boards.direct.updateAsync({ _id: boardId }, { $set: { title } });
@@ -1294,7 +1324,7 @@ WebApp.handlers.get('/api/boards/:boardId/cardSettings', async function(req, res
  * key of the board, as `true`/`false`) and of the card-aging thresholds
  * (`cardAgingDays1`..`cardAgingDays3`, non-negative integers). Keys not in
  * the body are left as they are; a body with no recognised key is a 400.
- * Requires board write access. Returns the settings in effect, in the same
+ * Requires board administrator access. Returns the settings in effect, in the same
  * shape as GET.
  *
  * @param {string} boardId the board ID
@@ -1312,7 +1342,7 @@ WebApp.handlers.get('/api/boards/:boardId/cardSettings', async function(req, res
  */
 WebApp.handlers.put('/api/boards/:boardId/cardSettings', async function(req, res) {
   const id = req.params.boardId;
-  await Authentication.checkBoardWriteAccess(req.userId, id);
+  await Authentication.checkBoardAdmin(req.userId, id);
   const board = await ReactiveCache.getBoard(id);
   if (!board) {
     sendJsonResult(res, { code: 404, data: { error: 'Board not found' } });

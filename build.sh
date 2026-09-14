@@ -6,7 +6,7 @@ echo "Note1: If you use other locale than en_US.UTF-8 , you need to additionally
 echo "       with 'sudo dpkg-reconfigure locales' , so that MongoDB works correctly."
 echo "       You can still use any other locale as your main locale."
 echo "Note2: Console output is also logged to the operation-specific path printed below."
-echo "Note3: All logs use .tools/log/<operation>/YYYY-MM-DD/HH-MM-SS/."
+echo "Note3: All logs use .tools/log/<operation>/YYYY-MM-DD_HH-MM-SS/."
 echo "       .tools/log/ inside this repository. The path is printed when a run"
 echo "       starts."
 echo "Note4: Two build directories, and they are not the same thing:"
@@ -357,13 +357,13 @@ function build_stage(){
 # Used by menu option 2 and auto-invoked by option 9 when .build is missing.
 # Also clears the rspack dev-build caches (_build and node_modules/.cache) so the
 # next `meteor run` recompiles from scratch instead of serving stale modules.
-# Reserve one operation/type/date/time directory, including same-second collisions.
+# Reserve one operation/type/datetime directory, including same-second collisions.
 function log_directory(){
 	local type="$1" day dir suffix=1 candidate
 	case "$type" in ""|*[!a-zA-Z0-9_-]*) echo "ERROR: invalid log type: $type" >&2; return 1 ;; esac
-	day="${WEKAN_LOG_ROOT:-.tools/log}/$type/$(date '+%Y-%m-%d')"
+	day="${WEKAN_LOG_ROOT:-.tools/log}/$type"
 	mkdir -p "$day" || return $?
-	dir="$day/$(date '+%H-%M-%S')"
+	dir="$day/$(date '+%Y-%m-%d_%H-%M-%S')"
 	if ! mkdir "$dir" 2>/dev/null; then
 		while :; do
 			candidate="$dir-$suffix"
@@ -872,7 +872,7 @@ function run_playwright_parallel(){
 	read -p "Install Playwright test dependencies first? [y/N] " INSTALL_DEPS
 	case "$INSTALL_DEPS" in [Yy]*) ( cd "$pwdir" && meteor npm install ) ;; esac
 
-	# This run's own .tools/log/<operation>/<date>/<time>/ dir, so logs are never overwritten.
+	# This run's own .tools/log/<operation>/YYYY-MM-DD_HH-MM-SS/ dir, so logs are never overwritten.
 	local RUN_LOGDIR
 	RUN_LOGDIR="$(log_directory test-playwright-all)" || return $?
 	mkdir -p "$RUN_LOGDIR"
@@ -888,7 +888,7 @@ function run_playwright_parallel(){
 	local rc_chromium rc_firefox rc_webkit
 	local ts
 	# Stream live to the console with tee while also saving to this run's
-	# .tools/log/<operation>/<date>/<time>/ dir. PIPESTATUS[0] is run_pw_all_browser's exit code (the
+	# .tools/log/<operation>/YYYY-MM-DD_HH-MM-SS/ dir. PIPESTATUS[0] is run_pw_all_browser's exit code (the
 	# left side of the pipe), not tee's, so the pass/fail result stays accurate.
 	for entry in "chromium:Chromium" "firefox:Firefox" "webkit:WebKit"; do
 		browser="${entry%%:*}"; label="${entry#*:}"
@@ -1030,7 +1030,7 @@ function run_all_tests(){
 	local TEST_NODE_OPTIONS="${WEKAN_TEST_NODE_OPTIONS:---max-old-space-size=$TEST_HEAP_MB}"
 	echo "Node heap limit for test runtime processes: ${TEST_HEAP_MB} MB."
 	echo "  Override by exporting WEKAN_TEST_NODE_OPTIONS yourself."
-	# Each whole-suite run gets its own .tools/log/<operation>/<date>/<time>/ directory
+	# Each whole-suite run gets its own .tools/log/<operation>/YYYY-MM-DD_HH-MM-SS/ directory
 	# (stamped once, when the run starts), so logs are never overwritten and
 	# previous runs are kept.
 	local RUN_TS RUN_LOGDIR
@@ -2220,7 +2220,7 @@ function ask_dev_url(){
 function git_fix_changelog_links(){
 	local script="$WEKAN_DIR/releases/fix-changelog-hashes.sh"
 	[ -f "$script" ] || return 1
-	bash "$script" || true
+	bash "$script" || return 1
 	if [ -n "$(git status --porcelain -- CHANGELOG.md 2>/dev/null)" ]; then
 		git add CHANGELOG.md
 		git commit -q -m "CHANGELOG: repoint commit links after history moved.
@@ -2234,7 +2234,7 @@ Thanks to xet7 !"
 		echo "==> CHANGELOG commit links repointed and committed."
 		return 0
 	fi
-	return 1
+	return 0
 }
 
 # git pull: fast-forward when that is all it takes, rebase when the branch has
@@ -2288,7 +2288,7 @@ function git_pull(){
 		fi
 	fi
 
-	git_fix_changelog_links || echo "==> CHANGELOG commit links all resolve; nothing to repoint."
+	git_fix_changelog_links || return 1
 	echo "--- git status ---"
 	git status --short --branch
 	return 0
@@ -2309,7 +2309,7 @@ function git_push(){
 
 	# Before publishing, not after: a stale link that reaches GitHub 404s for
 	# everyone who reads the release notes.
-	git_fix_changelog_links || echo "==> CHANGELOG commit links all resolve."
+	git_fix_changelog_links || return 1
 
 	git fetch origin "$branch" >/dev/null 2>&1 || true
 	if git rev-parse --verify --quiet "origin/$branch" >/dev/null; then

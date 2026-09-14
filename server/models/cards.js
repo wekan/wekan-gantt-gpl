@@ -1,3 +1,5 @@
+import { canWriteSubtaskDeposit, recordSubtaskDepositDenial } from '/server/lib/subtaskDepositAccess';
+import { recordLinkedWriteDenial } from '/models/lib/linkedWritePolicy';
 import { Meteor } from 'meteor/meteor';
 import { WebApp } from 'meteor/webapp';
 import { check, Match } from 'meteor/check';
@@ -17,6 +19,7 @@ import { assertParentCardIsVisible } from '/server/lib/visibleBoardIds';
 import { computeSubtaskLabelIds } from '/models/lib/subtaskLabelInheritance';
 import Activities from '/models/activities';
 import Boards from '/models/boards';
+import TableVisibilityModeSettings from '/models/tableVisibilityModeSettings';
 import Cards, {
   addCronJob,
   cardAssignees,
@@ -84,6 +87,21 @@ Meteor.methods({
     const boardTitle = (title && title.trim()) || card.title || '';
     if (!boardTitle) throw new Meteor.Error('invalid-title');
 
+    const privateOnly = await TableVisibilityModeSettings.findOneAsync(
+      'tableVisibilityMode-allowPrivateOnly',
+    );
+    const requestedPermission = sourceBoard.permission === 'public' ? 'public' : 'private';
+    const permission = privateOnly?.booleanValue ? 'private' : requestedPermission;
+    if (privateOnly?.booleanValue && requestedPermission === 'public') {
+      try {
+        require('/server/lib/securityLog').record({
+          key: 'authz.board-visibility', action: 'blocked',
+          source: 'createBoardFromCard',
+          detail: 'Inherited public visibility overridden by private-only policy.',
+        });
+      } catch (e) { /* logging must never break the guard */ }
+    }
+
     const boardId = await Boards.insertAsync({
       title: boardTitle,
       slug: getSlug(boardTitle) || 'board',
@@ -97,7 +115,7 @@ Meteor.methods({
           isWorker: false,
         },
       ],
-      permission: sourceBoard.permission === 'public' ? 'public' : 'private',
+      permission,
       color: sourceBoard.color,
       migrationVersion: 1,
     });
@@ -140,7 +158,8 @@ Meteor.methods({
       throw new Meteor.Error('not-found');
     }
     const sourceBoard = await Boards.findOneAsync(sourceCard.boardId);
-    if (!sourceBoard || !allowIsBoardMember(this.userId, sourceBoard)) {
+    if (!sourceBoard || !allowIsBoardMemberWithWriteAccess(this.userId, sourceBoard)) {
+      recordLinkedWriteDenial('createLinkedCard');
       throw new Meteor.Error('not-authorized');
     }
     if (!allowIsBoardMemberWithWriteAccess(this.userId, destinationBoard)) {
@@ -348,6 +367,10 @@ Meteor.methods({
     // board + landing list. These getters never duplicate on the server.
     const targetBoard = await parentBoard.getDefaultSubtasksBoardAsync();
     if (!targetBoard) return undefined;
+    if (!(await canWriteSubtaskDeposit(this.userId, targetBoard._id))) {
+      recordSubtaskDepositDenial('addSubtaskCard');
+      throw new Meteor.Error('not-authorized');
+    }
     const targetList = await targetBoard.getDefaultSubtasksListAsync();
     if (!targetList) return undefined;
 

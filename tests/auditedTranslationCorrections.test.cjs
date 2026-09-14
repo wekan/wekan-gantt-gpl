@@ -21,6 +21,11 @@ const tokens = value => [...value.matchAll(/__[A-Za-z0-9]+(?:_[A-Za-z0-9]+)*__|%
     assert.notEqual(row.before, row.after, identity);
     assert.equal(repairLocale(row.locale, { [row.key]: row.before }).data[row.key], row.after);
     assert.equal(repairLocale(row.locale, { [row.key]: 'NEW REVIEWED TRANSLATION' }).data[row.key], 'NEW REVIEWED TRANSLATION', 'preserve newer wording');
+    if (row.locale === 'zgh' && ['board-public-info', 'board-private-info'].includes(row.key)) {
+      assert.deepEqual(row.after.match(/<[^>]+>/g), english[row.key].match(/<[^>]+>/g), 'visibility notice retains source HTML emphasis');
+      assert.ok(!/[\u0600-\u06ff]/u.test(row.after), 'visibility notice no longer contains Arabic');
+      assert.ok(row.after.includes('ⵔⴰ ⴰⴷ ⵜⵉⵍⵉ'), 'visibility notice retains the future state');
+    }
     if (row.key === 'copyManyCardsPopup-format') {
       const example = JSON.parse(row.after);
       assert.ok(Array.isArray(example));
@@ -35,6 +40,8 @@ const tokens = value => [...value.matchAll(/__[A-Za-z0-9]+(?:_[A-Za-z0-9]+)*__|%
     assert.doesNotMatch(cache.zgh[key], /Mot de passe|Nom d.utilisateur|requis/);
     assert.match(cache.zgh[key], /ⵜⴰⴳⵓⵔⵉ ⵏ ⵓⵣⵔⴰⵢ/);
   }
+  assert.equal(cache.zgh['predicate-all'], 'ⴰⴽⴽⵯ');
+  assert.doesNotMatch(cache.zgh['predicate-all'], /[\s:]/, 'All remains a single query predicate token');
   assert.equal(cache.zgh.labels, 'ⵉⵔⵛⵓⵎⵏ');
   assert.equal(cache.zgh['no-results'], 'ⵓⵔ ⵍⵍⵉⵏⵜ ⵜⵢⴰⴼⵓⵜⵉⵏ');
   for (const key of ['user-username-not-found', 'label-not-found', 'label-color-not-found']) {
@@ -2893,8 +2900,8 @@ const tokens = value => [...value.matchAll(/__[A-Za-z0-9]+(?:_[A-Za-z0-9]+)*__|%
     assert.doesNotMatch(value, /[\u0600-\u06FF]|Connexion|Déconnexion|Les mots/, key);
   }
   assert.notEqual(cache.zgh.login, cache.zgh.logout);
-  assert.equal(cache.zgh['delete-all-notifications'], 'ⴽⴽⵙ ⵉⵍⵖⴰ ⴰⴽⴽ');
-  assert.match(cache.zgh['delete-all-notifications'], /ⵉⵍⵖⴰ ⴰⴽⴽ$/);
+  assert.equal(cache.zgh['delete-all-notifications'], 'ⴽⴽⵙ ⴰⴽⴽⵯ ⵜⵉⵏⵖⵎⵉⵙⵉⵏ');
+  assert.match(cache.zgh['delete-all-notifications'], /ⴰⴽⴽⵯ ⵜⵉⵏⵖⵎⵉⵙⵉⵏ$/);
   assert.doesNotMatch(cache.zgh['delete-all-notifications'], /Supprimer|notifications/);
   const quechuaBasicColors = {"color-black": "yana", "color-red": "puka", "color-white": "yuraq"};
   for (const [key, value] of Object.entries(quechuaBasicColors)) {
@@ -2931,3 +2938,11 @@ const tokens = value => [...value.matchAll(/__[A-Za-z0-9]+(?:_[A-Za-z0-9]+)*__|%
   assert.notEqual(cache.chr['calendar-system-islamic-rgsa'], cache.chr['calendar-system-islamic-tbla']);
   console.log(`auditedTranslationCorrections: ${corrections.length} corrections verified; tokens, JSON examples, key order, idempotency and newer translations preserved`);
 })().catch(error => { console.error(error); process.exitCode = 1; });
+
+// Danish restored-value review: legal-link agreement and the malloc metric.
+{
+  const da = JSON.parse(require('node:fs').readFileSync(require('node:path').join(__dirname, '../imports/i18n/data/da.i18n.json'), 'utf8'));
+  require('node:assert/strict').equal(da.legalNotice, 'juridisk meddelelse');
+  require('node:assert/strict').match(da.Node_heap_malloced_memory, /hukommelse allokeret med malloc$/);
+  require('node:assert/strict').notEqual(da.Node_heap_malloced_memory, 'Node heap: allokeret hukommelse');
+}

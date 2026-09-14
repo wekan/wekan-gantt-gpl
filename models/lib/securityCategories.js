@@ -9,6 +9,15 @@
 // so both the server ESM code and the tests/*.test.cjs guards can load it.
 
 const CATALOG = {
+  'authz.subtask-deposit': { category: 'authz', bleed: 'SubtaskDepositBleed', severity: 'high', cwe: 'CWE-639' },
+  'authz.linked-write': { category: 'authz', bleed: 'LinkedWriteBleed', severity: 'high', cwe: 'CWE-863' },
+  'authz.invitation-boards': { category: 'authz', bleed: 'InvitationBoardBleed', severity: 'high', cwe: 'CWE-639' },
+  'authz.invitation-profile': { category: 'authz', bleed: 'InviteProfileBleed', severity: 'high', cwe: 'CWE-863' },
+  'authz.rule-button': { category: 'authz', bleed: 'RuleButtonBleed', severity: 'high', cwe: 'CWE-639' },
+  'authz.manage-board': { category: 'authz', bleed: 'ManageBoardBleed', severity: 'high', cwe: 'CWE-863' },
+  'authz.comment-card': { category: 'authz', bleed: 'CommentBoundaryBleed', severity: 'high', cwe: 'CWE-639' },
+  'authz.mutation': { category: 'authz', bleed: 'MutationBleed', severity: 'high', cwe: 'CWE-863' },
+  'authz.board-visibility': { category: 'authz', bleed: 'VisibilityBleed', severity: 'medium', cwe: 'CWE-863' },
   'ssrf.redirect':   { category: 'ssrf', bleed: 'RedirectBleed', severity: 'high', cwe: 'CWE-918' },
   'ssrf.attachment': { category: 'ssrf', bleed: 'LiveBleed', severity: 'high', cwe: 'CWE-918' },
   'ssrf.fetch':      { category: 'ssrf', bleed: 'DnsBleed', severity: 'high', cwe: 'CWE-918' },
