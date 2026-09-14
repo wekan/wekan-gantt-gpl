@@ -1,3 +1,8 @@
+import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
+import { format } from '/imports/lib/dateUtils';
+import { Template } from 'meteor/templating';
+import { Meteor } from 'meteor/meteor';
+import { Session } from 'meteor/session';
 import { formatDateForDisplay } from '/client/lib/dateDisplay';
 import { ReactiveCache } from '/imports/reactiveCache';
 import { ReactiveVar } from 'meteor/reactive-var';
@@ -58,7 +63,7 @@ Template.groupByAssigneeView.helpers({
     return translateGroupLabel(label, key => TAPi18n.__(key));
   },
   formatDueAt(dueAt) {
-    return dueAt ? formatDateForDisplay(dueAt, true, date => moment(date).format('llll')) : '';
+    return dueAt ? formatDateForDisplay(dueAt, true, date => format(date, 'llll')) : '';
   },
   cardUrl(cardId) {
     const boardId = Session.get('currentBoard');

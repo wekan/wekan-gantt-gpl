@@ -80,17 +80,19 @@ held only issues \#4774 and \#4055, and both are closed now.
 
 Resumed at the maintainer's request on 2026-09-13, beginning with Klingon.
 The audit tracks 20,081
-findings: 15,049 corrected, 4,058 restored pre-pull values awaiting
-validation, 179 reviewed and retained, and 795 pending review or repair.
-The correction inventory records 17,103 exact before/after values,
+findings: 15,218 corrected, 4,058 restored pre-pull values awaiting
+validation, 179 reviewed and retained, and 626 pending review or repair.
+The correction inventory records 17,476 exact before/after values,
 including repairs outside the original findings.
 All 361 originally flagged Klingon findings are repaired. The broader review of 829
 German-identical Klingon values repaired all 829, including the mistaken
 German cron label, which now uses the actual tool name Cron.
-The largest original finding queues remain in Veps (54) and Standard Moroccan
-Tamazight (595). Silesian database terminology and 17 Tigre
+The largest original queues are Standard Moroccan Tamazight (483) and
+Inuktitut (50); Veps retains 10 original findings. Silesian database terminology and 17 Tigre
 calendar findings need language-specific review. Restored and unflagged
 values, low-confidence wording and browser rendering remain unverified.
+Kashmiri reference review 0db69cf6c (2026-09-14) identifies provisional
+civil wording and unresolved sighting/tabular/epoch terminology; no values changed.
 
 [Translation audit status](docs/Features/Translations/Audit.md) is the short
 resume record; [detailed evidence](docs/Features/Translations/Audit-Evidence.md)
@@ -100,10 +102,25 @@ local findings, and Bosnian errors predate the pull. No remote uploads were
 performed. Preserve correct translations and source placeholders during repairs.
 The requested organization, linked-file/static-archive and rate-limit mirror
 changes are implemented in local commit 02383540a; translation repairs have resumed.
-Latest translation fix is fcb7fdaf9 (2026-09-14), covering five Veps
-file-storage and invalid-filename values. All correction/rendering checks
-pass; low-confidence technical terminology remains explicitly tracked.
-The 1,015-suite Node result is historical and predates the latest batches.
+Latest translation fix is efd0ef8e6 (2026-09-14), repairing ten rule labels
+and actions. IRCAM distinguishes rule from regular; software adaptation
+and full phrases remain low confidence pending fluent review.
+Greenlandic CLDR-unconfirmed wording and twelve Quechua color wrappers
+still need review, alongside the wider restored and unflagged values.
+Tamazight calendar review dd2aaa19a (2026-09-14) records provisional
+Islamic naming and missing variant terminology; no values changed.
+Manx calendar review 669be8895 (2026-09-14) records missing CLDR display
+names and unresolved Coptic/tabular/epoch terminology; no values changed. Previous fix e07d2be5f replaced two English
+Cherokee Hijri labels with exact native-script CLDR variant names. Cherokee’s
+original queue is empty. Compact tabular epoch wording still needs fluent
+technical review. Quechua palette compounds and remaining color wrappers
+remain open. There are 483 Tamazight findings remaining.
+Silesian reference review (2026-09-14) confirms shared database/file terms
+in native MediaWiki messages; the full raw-file label remains pending.
+No translation value or finding count changed in that review.
+All correction/rendering checks pass; wider language validation remains open.
+Member assignment popup handlers need separate review for apparent reversed
+operations. The 1,015-suite Node result is historical and predates the latest batches.
 
 Node regressions resolved on 2026-09-13: the original audit ran 986 suites
 with 19 failures. After the recorded source and guard repairs and one new
@@ -571,6 +588,1655 @@ the Markdown commit as the template.
 
 </details>
 </details>
+
+# v11.76 2026-09-14 WeKan ® release
+
+**In short:** Fix the **assignee view** build by using WeKan's existing native
+date formatter while preserving the selected calendar. The release script
+now requires actual **Upcoming release notes** before installing tools or
+changing release files, preventing an existing release from being reused
+when there is nothing upcoming to publish. **Tamazight translations** repair
+email, member, deletion, card-order, permission, sorting and calendar
+settings, plus custom-field Enter instructions. Complete composed phrases
+still need fluent review.
+
+This release fixes the following build and release behavior:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6f6e78a9a0961ede38d53d0fd8fac4c4b8602cdf">Fix assignee builds and reject releases without Upcoming notes</a>. Thanks to xet7.</summary>
+
+Replace the unresolved Moment import with the existing native date utility,
+keeping date output under the member's selected calendar. The Meteor bundle
+build passes on Linux arm64. Existing assignee browser tests cover dated
+cards; their live browser execution was not run in this verification.
+
+The saved `.tools/wekan22` logs are the v11.75 run with this same missing
+Moment import; source already contains the repair above. Repeat assignee,
+calendar and release-preflight regressions pass (six Node test entries).
+A fresh Meteor 3.6-beta.0 bundle build also passes on Linux arm64; its log is
+`.tools/log/build-dev-bundle/2026-09-14/04-25-58/dev.txt`. Live browser
+execution and a native amd64 build were not run locally.
+
+Run a read-only changelog preflight before tool installation, hash repair,
+version overrides or release mutations. Missing, empty and duplicate
+Upcoming sections stop with an explanatory error. Explicit versions still
+require notes and rename the Upcoming heading. Focused positive and negative
+regressions, calendar display checks and shell syntax checks pass.
+
+</details>
+
+**Translations** - Tamazight labels and command consistency.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/bfad1aa76">Translate Tamazight email-change permission</a>. Thanks to xet7.</summary>
+
+Replace Arabic with native permission, change and email components,
+preserving the setting's permission meaning. Complete phrase composition
+remains low confidence pending fluent review. All 17,388 correction checks
+pass; 677 original findings remain pending, including 534 Tamazight.
+Restored/unflagged values and wider language validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/004796543">Repair Tamazight Subject and current-card member labels</a>. Thanks to xet7.</summary>
+
+Replace Arabic in the generic email Subject label with a directly attested
+native noun. Replace French in current-card member scope, preserving all
+members of this card at this board. Full genitives and card/board wording
+remain low confidence. All 17,390 correction checks pass. One original and
+one unflagged value are repaired; 676 originals remain pending, including
+533 Tamazight. Restored and wider wording validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8682dbae5">Repair Tamazight deletion and member-removal wording</a>. Thanks to xet7.</summary>
+
+Normalize the generic Delete command to native Tifinagh and replace French
+in custom-field confirmation and board-member removal activity. Preserve
+member/board placeholders and membership removal rather than account
+deletion. Full software-field and activity composition remain low confidence.
+All 17,393 correction checks pass. Two original and one unflagged value are
+repaired; 674 originals remain pending, including 531 Tamazight. Restored
+and wider language validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e8e35db55">Translate Tamazight card-order commands</a>. Thanks to xet7.</summary>
+
+Replace six French top/bottom labels with consistent first/last list-place
+wording. Preserve adding versus moving and the card's own list versus a
+selected destination. Rule source confirms minimum/maximum sort semantics.
+Full order/genitive composition, card terminology and possessive attachment
+remain low confidence. All 17,399 correction checks pass; 668 original
+findings remain pending, including 525 Tamazight. Wider validation remains
+open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a72de5246">Translate Tamazight bulk-card JSON examples</a>. Thanks to xet7.</summary>
+
+Replace six French sample values, keeping title/description property names,
+three-card structure and first/second/last identity. Full card genitives
+and derived feminine agreement remain low confidence. All 17,400 correction
+checks pass, including JSON parsing and property-name preservation. One
+original finding is repaired; 667 remain pending, including 524 Tamazight.
+Wider language validation remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1eca0d45b">Translate Tamazight board access requirements</a>. Thanks to xet7.</summary>
+
+Replace French in signed-in-user permission and board-member/admin errors.
+Preserve anonymous versus signed-in access and required board membership
+versus board administration. Full conjugation, singular role forms and
+board genitives remain low confidence. All 17,403 correction checks pass;
+664 original findings remain pending, including 521 Tamazight. Restored
+and wider language validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/07f665ef0">Translate Tamazight comment and read-only permissions</a>. Thanks to xet7.</summary>
+
+Replace Arabic/French in comment-only, no-comment-visibility and read-only
+role descriptions. Preserve posting versus viewing comments and explicit
+viewing versus editing restrictions. Complete capability conjugations and
+permission scope remain low confidence. All 17,406 correction checks pass;
+661 original findings remain pending, including 518 Tamazight. Restored
+and wider language validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e0b706b0a">Translate Tamazight sorting label and diagnostic</a>. Thanks to xet7.</summary>
+
+Replace Arabic/French with native sorting and invalid-value components.
+Preserve the single format token and invalid-sort meaning. Complete
+diagnostic composition remains low confidence. All 17,408 correction checks
+pass. One original and one unflagged value are repaired; 660 originals
+remain pending, including 517 Tamazight. Operator/predicate terminology,
+restored values and wider language validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/62daaf033">Translate Tamazight week and page-display settings</a>. Thanks to xet7.</summary>
+
+Replace Arabic/French in ISO week-of-year display, first-weekday selection
+and All Boards page display. Preserve ISO 8601 and distinct setting scopes.
+CLDR and MediaWiki support the native components; full genitives and
+selection phrases remain low confidence. All 17,411 correction checks pass;
+657 original findings remain pending, including 514 Tamazight. Restored
+and wider language validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e07e742d2">Translate Tamazight custom-field Enter instructions</a>. Thanks to xet7.</summary>
+
+Replace French instructions for adding more options/items with Enter.
+Preserve the physical key name and distinct field scopes. Full keyboard
+instrumental/plural composition and inherited item terminology remain low
+confidence. All 17,413 correction checks pass; 655 original findings remain
+pending, including 512 Tamazight. Restored and wider language validation
+remain open.
+
+</details>
+
+Translation audit progress as of 2026-09-14: 15,218 original findings are
+corrected, 179 are reviewed and retained, 4,058 restored values await
+validation, and 626 original findings remain pending across 17 locales,
+including 483 Tamazight findings. The ledger contains 17,476 correction
+records, including repairs outside the original audit. Regression checks
+validate placeholders, rendering and merge behavior; fluency and wider
+language validation remain open. See the
+<a href="docs/Features/Translations/Audit.md">translation audit</a>.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/93c1fe9ef">Translate Tamazight account creation and existing-account prompts</a>. Thanks to xet7.</summary>
+
+Replace two French values, preserving account creation followed by the
+availability of sign-in and the existing-account question with sign-in.
+Native MediaWiki supports the components; full capability and affirmative
+possession phrasing remains low confidence. All 17,415 correction checks
+pass. Restored values and wider language validation remain open; live
+browser verification was not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1f3156f93">Repair Tamazight creation-date ordering and export messages</a>. Thanks to xet7.</summary>
+
+Repair ten values, preserving opposite newest/oldest-first ordering, card
+versus board export, explicit export restrictions and Excel/PDF names.
+Five original findings and four unflagged French values are repaired; one
+existing mixed-script correction is refined. Native reference components
+support the wording; full noun, ordering and negative capability phrases
+remain low confidence. All 17,424 correction checks pass. Wider language
+validation and live browser verification remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0f4d5adc3">Repair Tamazight Time, Now and due-date activity values</a>. Thanks to xet7.</summary>
+
+Replace Arabic/French time labels, distinguish Now from today and preserve
+updated due-date destination/card placeholder order. Six values are repaired,
+including five unflagged problems. Full diagnostics, verb conjugation and
+inherited due-date terminology remain low confidence. All 17,430 correction
+checks pass; wider language validation and live browser execution remain
+open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1c80a78ea">Translate Tamazight creator label and scoped search help</a>. Thanks to xet7.</summary>
+
+Replace French search help and the Arabic Creator label. Preserve member
+versus creator scope, board versus list title matching and executable
+operator tokens. Four original findings and one unflagged value are
+repaired. Full relative clauses, plurals, agreement and possessives remain
+low confidence. All 17,435 correction checks pass; wider language validation
+and live browser verification remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/50c35f1fb">Translate Tamazight comment and label search help</a>. Thanks to xet7.</summary>
+
+Replace French search instructions and Arabic/French Text/label values.
+Preserve comment containment, color-or-name alternatives and expanded and
+abbreviated executable operator syntax. Three original findings and two
+unflagged values are repaired. Derived nouns, agreement and full search
+phrases remain low confidence. All 17,440 correction checks pass; wider
+language validation and live browser verification remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/85d88589f">Repair Tamazight status help and validation labels</a>. Thanks to xet7.</summary>
+
+Replace French/Arabic status labels, status search help and invalid date/user
+messages. Preserve status choices and executable/format tokens. Seven
+values are repaired, including five unflagged problems. Derived nouns,
+plurals, agreement and full diagnostics remain low confidence. All 17,447
+correction checks pass; wider language validation and live browser
+verification remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/105e51ebf">Translate Tamazight visibility and descending-sort search help</a>. Thanks to xet7.</summary>
+
+Replace Arabic visibility labels and French public/private and sorting help.
+Preserve board visibility scope, sort alternatives and leading minus syntax.
+Three original findings and two unflagged values are repaired. Full phrases,
+agreement and prefix terminology adaptation remain low confidence.
+All 17,452 correction checks pass; wider language validation and live browser
+verification remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e40b678fd">Repair Tamazight operator and expected-number diagnostics</a>. Thanks to xet7.</summary>
+
+Replace French diagnostics and the Arabic Number label. Preserve operator
+classification, required versus received numeric value and format tokens.
+Two original findings and one unflagged value are repaired. Terminology
+adaptation, derived forms and full diagnostics remain low confidence.
+All 17,455 correction checks pass; wider language validation remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/44c26d4c9">Translate Tamazight received-time activities</a>. Thanks to xet7.</summary>
+
+Replace two French activity fragments, preserving destination versus previous
+time, parentheses and exact placeholders. Reception terminology adaptation
+from a mixed-source computing lexicon, bound forms and full phrase composition
+remain low confidence. All 17,457 correction checks pass; wider language
+validation and live browser verification remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/914360650">Translate Tamazight start and end time messages</a>. Thanks to xet7.</summary>
+
+Replace seven French/Arabic labels and activity fragments: two original
+findings and five unflagged values. Preserve start versus end, current versus
+previous time and exact placeholders. Native MediaWiki start/expiration
+components support the vocabulary; generic calendar adaptation and full
+phrase composition remain low confidence. All 17,464 correction checks pass;
+wider language validation and live browser verification remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4901ec298">Translate Tamazight custom HTML insertion actions</a>. Thanks to xet7.</summary>
+
+Replace two French actions, preserving literal opening and closing body tags,
+HTML identifier and before/after insertion directions. Native MediaWiki
+components support the vocabulary; custom qualifier adaptation and full
+phrase composition remain low confidence. All 17,466 correction checks pass;
+wider language validation and live browser verification remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/289231a7c">Translate Tamazight password-reset and email-verification subjects</a>. Thanks to xet7.</summary>
+
+Replace two French subjects while preserving the site-name placeholder.
+Native component terms are attested; full subjects, possessive attachment
+and verification verb dialect spelling remain low confidence.
+All 17,387 correction checks pass. Two original findings are repaired;
+678 originals remain pending, including 535 Tamazight. Wider wording and
+mail-failure/success validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f85bbbf5b">Translate Tamazight dropdown choices and selected-card-color title</a>. Thanks to xet7.</summary>
+
+Replace three French values. Keep unknown distinct from no selection and
+color changes scoped to selected cards. Native component terms are
+supported; full phrases, derived noun forms and dropdown-choice sense remain
+low confidence. All 17,385 correction checks pass. One original and two
+unflagged values are repaired; 680 originals remain pending, including
+537 Tamazight. Wider language validation remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/614ba7687">Translate Tamazight field display and card-scope settings</a>. Thanks to xet7.</summary>
+
+Replace four French and Arabic values, preserving new-card versus all-card
+scope and full-card field display. Native component terms are supported;
+software-field usage, full phrases and derived card forms remain low
+confidence. All 17,382 correction checks pass. Three original and one
+unflagged value are repaired; 681 originals remain pending, including
+538 Tamazight. Wider language validation remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9639aabe3">Translate Tamazight create-edit and date-field labels</a>. Thanks to xet7.</summary>
+
+Replace four Arabic and French values, keeping create-button and popup
+wording identical and preserving the date-field distinction. IRCAM attests
+the field noun; software-field sense, full phrases and bound date
+composition remain low confidence. All 17,378 correction checks pass.
+One original and three unflagged values are repaired; 684 originals remain
+pending, including 541 Tamazight. Wider language validation remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/520b0d8f8">Repair Tamazight notification controls and unread-comment noun</a>. Thanks to xet7.</summary>
+
+Replace three French controls and the image noun incorrectly used for
+unread comments. Preserve opposite read/unread states and comment meaning.
+Complete commands and inherited passive-read inflection remain low
+confidence. All 17,374 correction checks pass. One original and three
+unflagged values are repaired; 685 originals remain pending, including
+542 Tamazight. Wider language validation remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b0b3520cc">Repair Tamazight rule labels and actions</a>. Thanks to xet7.</summary>
+
+Repair ten values: one original finding and nine unflagged values. Distinguish
+IRCAM rule terminology from regular, preserve singular/plural and board
+ownership, and correct the required rule-title prompt. Software adaptation,
+full phrases and agreement remain low confidence. All 17,476 correction
+checks pass; wider language validation and live browser verification remain
+open.
+
+</details>
+
+Thanks to above GitHub users for their contributions and xet7 for maintaining WeKan !
+
+# v11.75 2026-09-14 WeKan ® release
+
+**In short:** Card and sidebar activity values render Markdown, emojis and
+permitted HTML through the shared security-aware viewer. Plain-source and
+plain-link settings apply, with existing sanitization and source-URL checks.
+Tamazight description, all-users and member labels replace French and Arabic.
+The text-editing label removes an extra qualifier. Composed translation
+wording and Moroccan checklist terminology still need fluent review.
+
+This release fixes the following activity rendering:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e5937d531">Use the shared viewer for card and sidebar activities</a>. Thanks to xet7.</summary>
+
+Render activity values as Markdown, emojis and permitted HTML using the
+existing viewer. Preserve plain-source behavior; sanitize completed activity
+sentences and remove their links in plain-link mode. Keep imported source
+URL scheme checks and avoid nested rich-title/application anchors.
+Focused viewer, activity navigation, source-URL and Jade checks pass.
+Browser regressions cover both feeds and all modes; syntax checked, not run
+live. No sanitizer permissions or URL schemes were broadened.
+
+</details>
+
+This release adds the following translation improvements:
+
+
+
+
+
+
+
+
+
+
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8b34511fe">Translate Tamazight member-removal and error-clearing labels</a>. Thanks to xet7.</summary>
+
+Replace four French values with native component wording, including an
+attested plural error noun. Preserve member removal rather than account
+deletion and error clearing rather than repairing failures. Full commands,
+card compounds and software-error usage remain low confidence.
+All 17,370 correction checks pass. Three original and one unflagged value
+are repaired; 686 originals remain pending, including 543 Tamazight.
+Wider language validation remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c60ea35b7">Translate Tamazight member selection and card-list controls</a>. Thanks to xet7.</summary>
+
+Replace three French labels, preserving import-member selection, full-card
+list display and a card count for each list. Native component vocabulary is
+reference-supported; complete phrases, derived noun forms and kanban card
+terminology remain low confidence. All 17,366 correction checks pass.
+Three original findings are repaired; 689 remain pending, including 546
+Tamazight. Wider language validation remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4f37e7278">Translate Tamazight search-link and board-renaming labels</a>. Thanks to xet7.</summary>
+
+Replace French and Arabic using native MediaWiki components, preserving
+search-link purpose and the board target. Complete demonstrative and board
+genitive phrases remain low confidence. All 17,363 correction checks pass.
+One original and one unflagged value are repaired; 692 originals remain
+pending, including 549 Tamazight. Wider language validation remains open.
+
+</details>
+
+Translation audit progress as of 2026-09-14: 15,166 original findings are
+corrected, 179 are reviewed and retained, 4,058 restored values await
+validation, and 678 original findings remain pending across 17 locales.
+Of those pending findings, 535 are Tamazight. Repairs found outside the
+original audit are also recorded. Passing regression checks validate
+placeholders, rendering and merge behavior; they do not establish fluency.
+See <a href="docs/Features/Translations/Audit.md">the translation audit</a>
+for the remaining review scope and low-confidence wording.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4ca8e5d1b">Translate Tamazight member labels</a>. Thanks to xet7.</summary>
+
+Replace Arabic and French with a native plural member noun and composed
+board-members label, preserving membership scope. Full board phrasing and
+kanban terminology remain low confidence. All 17,361 correction checks pass.
+One original and one unflagged value are repaired; 693 originals remain
+pending, including 550 Tamazight. Broader wording validation remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0b8895ab8">Repair Tamazight text-editing label</a>. Thanks to xet7.</summary>
+
+Remove the extra first qualifier from Edit as text using native edit/text
+components. Complete phrasing and bound spelling remain low confidence.
+All 17,359 correction checks pass. This unflagged repair leaves 694 originals
+pending. Candidate checklist control vocabulary is marked Kabyle; Moroccan
+checklist wording still needs reference and dialect review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4dd56bc53">Translate Tamazight description and all-users choices</a>. Thanks to xet7.</summary>
+
+Replace French and Arabic using native component terms. The full
+more-detailed-description phrase remains low confidence; combined all-users
+view usage also needs fluent review. All 17,358 correction checks pass.
+One original and one unflagged value are repaired; 694 originals remain
+pending, including 551 Tamazight. Broader wording validation remains open.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
+# v11.74 2026-09-14 WeKan ® release
+
+**In short:** Veps board-view labels replace Finnish and Venda values, while
+Neapolitan rule-item labels and examples use dictionary-attested terminology.
+Calendar, list and time labels reuse existing wording. Multiple-board calendars,
+current-time actions and comma-separated examples retain their distinctions.
+Fulah and Bambara Persian calendar qualifiers use Unicode locale terminology.
+The audit records verified repairs and remaining language reviews. A Meteor
+skills review documents current safeguards and remaining code improvements.
+Mirror tools reject unknown archive hosts and executables, and Windows sync
+passes paths directly to Node without a command-shell string.
+
+This release adds the following security hardening:
+
+**Security hardening** - Mirror archive validation and process dispatch.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3a86fc7e3">Harden mirror host checks and Windows command dispatch</a>. Thanks to xet7.</summary>
+
+Review saved scanning alerts 537 and 539. Require exact string archive hosts,
+restrict executables and run Windows destinations directly through the
+existing Node engine. Preserve literal paths, preview flags and resumable
+archives. All 25 focused mirror test entries pass, including lookalike hosts,
+metacharacter arguments, failure handling and source-wide dispatch checks.
+The reported original substring/shell bypasses were not reproduced; these
+are hardening changes. Native Windows and remote CodeQL rescanning remain
+unverified. Details are in docs/Security/WeKanSec20.md.
+
+</details>
+
+**Bug fixes** - Search All Boards membership scope.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4c59f0372">Search only boards the logged-in user is an active member of</a>. Thanks to xet7 !</summary>
+
+Public and private boards require active direct board membership in global
+search and pagination. Organization, team and domain access alone does not
+include a board. Public discovery remains available elsewhere.
+
+Search scope regression checks pass. Added a public-board member/nonmember
+browser regression; syntax checked, not run against a live application.
+
+</details>
+
+**Bug fixes** - Language and country flag placement.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c8d17877e">Place country flags inside regional language labels</a>. Thanks to xet7.</summary>
+
+Show the language flag beside its name and the country flag inside regional
+parentheses, for example 🇺🇸 English (🇧🇷 Brazil). Reverse visual placement
+for RTL interfaces while isolating flags and native names. Preserve all 245
+registered locales and existing profile/browser language selection. Registry
+and helper checks, lazy-loading checks and all Jade compilation pass. LTR/RTL
+browser regressions are syntax-checked; live execution remains pending.
+
+</details>
+
+**Bug fixes** - Board View Settings popup placement and controls.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3b74d2c3c">Keep Board View Settings visible and movable</a>. Thanks to xet7.</summary>
+
+Open the wide settings panel in visible viewport coordinates instead of
+clamping it as a narrow sidebar menu. Allow title-bar dragging and bottom-right
+resizing, including arrow-key resizing, with viewport limits and interactive
+header exclusions. Retain the physical right-hand grip in RTL layouts.
+Geometry, pointer and Jade checks pass. Browser coverage is syntax-checked;
+live execution remains pending. Document usage in BoardViews/Settings-Popup.md.
+
+</details>
+
+This release fixes the following board-view problems:
+
+**Bug fixes** - Consistent title viewers and assignee dependencies.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/457614a2a">Use security-aware title viewers in timeline and Gantt views</a>. Thanks to xet7.</summary>
+
+Render timeline list/card titles, assignee cards, table group headings,
+Bigboard names, original titles and Roadmap headings with the shared viewer.
+DHTMLX Gantt task names use formatted, sanitized Markdown and emoji. Frappe
+and Roadmap SVG labels use escaped viewer text; popups use formatted HTML.
+Honor plain-link and literal-source security settings when charts refresh.
+Import FlowRouter and moment explicitly to fix assignee-view ReferenceErrors.
+Focused Node tests and all Jade template compilation pass. Nine browser
+policy cases were added and syntax-checked; live browser execution remains
+unverified. See docs/Features/BoardViews/Title-Rendering.md.
+
+</details>
+
+**Bug fixes** - Report titles and legacy avatar routing.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5ca16f32e">Render cumulative flow and report titles through the shared viewer</a>. Thanks to xet7.</summary>
+
+Use Markdown, emoji and sanitized HTML in report headings and table headers
+and cells, including cumulative-flow list titles. Canvas labels retain
+viewer text and emoji. Observe plain-link and literal-source policies
+before afterFlush so changes refresh the chart. Extend Node guards and add
+cumulative-flow browser policy cases; live UI remains unverified.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c2a390928">Restore authenticated CollectionFS avatar fallback in prefix routes</a>. Thanks to xet7.</summary>
+
+The earlier universal avatar handler returned 404 before the narrower legacy
+handler could run. Handle authenticated legacy avatars in both prefix
+routes, including versioned URLs. Preserve safe headers, close unused
+streams on conditional responses and reject anonymous public-board claims.
+Missing records or binaries still return 404. The production attachment
+404 has not been diagnosed from server data. Focused tests pass; a browser
+image test was added and syntax-checked but not run live.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ca8d59978">Cover Control chart heading and card-title policies</a>. Thanks to xet7.</summary>
+
+Confirm Control chart uses the shared report viewer for its heading and
+card-title cells. Add completed-card fixtures for all three security modes
+and check cumulative-flow headings too. Focused Node checks pass. All 15
+board-view browser policy cases are syntax-checked; live UI remains
+unverified.
+
+</details>
+
+This release fixes the following mirror problems:
+
+**Bug fixes** - Missing comment parents and mirror log visibility.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b53d81cea">Recover missing mirror comment parents and print final log paths</a>. Thanks to xet7.</summary>
+
+Fetch an issue or pull request referenced by a comment when it is absent from
+an earlier paginated inventory. Save responses directly to the archive and
+preserve checkpoints when a parent fetch fails. Reuse the existing rate-limited
+API client. Print the mirror log path after sync/check menu commands, including
+failures, and at shell command exit, preserving the exit status. Offline disk
+collection, checkpoint, menu and launcher tests pass; no live remote sync was run.
+
+</details>
+
+and improves the following Time view rendering:
+
+**Time view** - Security-aware card-title display.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a7b333dad">Cover Time view plain-link security modes</a>. Thanks to xet7.</summary>
+
+The shared viewer also obeys Admin Panel / Problems / Security / Render links
+as plain text. When enabled, title links are non-clickable while Markdown
+and emojis still render unless all-code plain-text mode is enabled. The
+report guard passes; browser tests for both link modes are registered and
+syntax-checked, not run live.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/dc0855711">Use the shared viewer for Time view card titles</a>. Thanks to xet7.</summary>
+
+Card titles now use the same Markdown and emoji viewer as other view fields.
+Admin Panel plain-text security mode still shows the raw title. Keep the
+overtime annotation separate. The Time report regression passes; normal
+and plain-text browser tests are added and syntax-checked, not run live.
+
+</details>
+
+and fixes the following calendar compatibility problem:
+
+**Calendars** - FullCalendar direction options.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ef12548a9">Use the supported calendar direction option</a>. Thanks to xet7.</summary>
+
+Single-board and multiple-board calendars passed legacy isRTL to FullCalendar
+5, producing repeated unknown-option warnings. Pass direction as rtl or ltr
+according to the active language. Four focused calendar test entries pass;
+RTL/LTR browser checks are added and syntax-checked, but not run live.
+
+</details>
+
+This release fixes the following localized search problem:
+
+**Bug fixes** - Translated overdue search predicates and Veps help.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6b0bf168e">Recognize translated overdue predicates and repair Veps search help</a>. Thanks to xet7.</summary>
+
+Use the existing translated predicate map for due-date overdue searches,
+retaining the English alias and rejecting unknown or inappropriate predicates.
+Repair two Finnish help explanations and an unflagged Finnish overdue keyword
+in Veps. Preserve placeholders, examples, quoted names and date bounds.
+All 17,205 correction checks and actual Query regressions pass. A browser
+regression is added and syntax-checked; live execution remains pending.
+Composed grammar and the overdue terminology adaptation need fluent review.
+The audit records 749 pending original findings and wider unfinished validation.
+
+</details>
+
+This release adds the following translation improvements:
+
+**Translations** - Locale wording repairs and remaining audit progress.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9c2d625d5">Translate Tamazight missing and weekly due-date filters</a>. Thanks to xet7.</summary>
+
+Replace three French/Arabic labels, preserving no-date and separate
+calendar-week scopes. Native components support the repairs; complete
+deadline wording, next-week agreement and bound state remain low confidence.
+All 17,356 correction checks pass. One original and two unflagged values
+are repaired; 695 originals remain pending, including 552 Tamazight.
+Broader wording validation remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/47796391a">Translate Tamazight due-date labels</a>. Thanks to xet7.</summary>
+
+Replace three French labels, preserving due-date/completion and
+today/tomorrow distinctions. CLDR attests the relative-day names;
+complete deadline wording and filter usage remain low confidence.
+All 17,353 correction checks pass. One original and two unflagged values
+are repaired; 696 originals remain pending, including 553 Tamazight.
+Broader wording validation remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/66cba71ec">Translate Tamazight avatar controls</a>. Thanks to xet7.</summary>
+
+Replace Arabic and French while preserving profile-picture scope and the
+confirmation question. Native component terms support the repairs; full
+compounds, bound state and demonstrative placement remain low confidence.
+All 17,350 correction checks pass. One original and one unflagged value
+are repaired; 697 originals remain pending, including 554 Tamazight.
+Broader wording validation remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f25f84ade">Translate Tamazight filtering and empty locked-user status</a>. Thanks to xet7.</summary>
+
+Replace two French values, preserving cards-or-lists scope and the
+current-time qualifier. Native component terms support the repairs;
+full phrases, card plural and login-lockout usage remain low confidence.
+All 17,348 correction checks pass. Original progress: 15,146 corrected,
+698 pending, including 555 Tamazight. Broader validation remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5ce0c18aa">Translate Tamazight title-filter labels</a>. Thanks to xet7.</summary>
+
+Replace three French labels, preserving list-title/card-title scope and
+command/heading distinctions. Native component terms support the changes;
+full phrasing, card bound state and filter-noun morphology remain low
+confidence for fluent review. All 17,346 correction checks pass.
+Original progress: 15,144 corrected, 700 pending, including 557 Tamazight.
+Restored/unflagged translations and broader wording validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c718b0ebe">Translate Tamazight minicard list visibility</a>. Thanks to xet7.</summary>
+
+Replace three French controls, preserving show/hide and singular/plural
+list distinctions. Reuse native component terms and record full minicard
+phrases as low confidence for fluent review. All 17,343 correction checks
+pass. Original progress is 15,141 corrected and 703 pending, including
+560 Tamazight. Broader wording validation remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/506a188a2">Translate Tamazight description and minicard controls</a>. Thanks to xet7.</summary>
+
+Replace three French/Arabic values using native description/show terms and
+consistent minicard wording. Record full on-minicard phrases as low confidence
+for fluent review. All 17,340 correction checks pass. Two originals and one
+unflagged value are repaired; progress is 15,138 corrected and 706 pending,
+including 563 Tamazight. Broader wording validation remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/18bbe07e4">Translate Tamazight minicard settings headings consistently</a>. Thanks to xet7.</summary>
+
+Replace two French headings while retaining the minicard distinction.
+Record full composition and bound-state morphology as low confidence for
+fluent review. All 17,337 correction checks pass. Original progress is
+15,136 corrected and 708 pending, including 565 Tamazight. Broader wording
+validation remains open; no translations were pushed.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9f0c7828b">Use native Tamazight settings labels</a>. Thanks to xet7.</summary>
+
+Replace two unflagged Arabic Settings and Change Settings values using
+native UI terminology. Preserve generic settings meaning. All 17,335
+correction checks pass. Original counts remain 710 pending, including
+567 Tamazight. Combined command usage and wider wording validation remain
+open; no translations were pushed.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/81f487305">Refine Tamazight lockout and confirmation morphology</a>. Thanks to xet7.</summary>
+
+Replace derived plural blocked-user and want/delete question forms in three
+previous corrections with native Mastodon wording. Preserve original
+before-values and the 17,333-record ledger. All correction checks pass.
+Combined filter usage and comment-object substitution still need fluent
+review. Original counts remain 710 pending, including 567 Tamazight;
+wider restored, unflagged and composed wording validation remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3d190b286">Translate Tamazight loading and wait text</a>. Thanks to xet7.</summary>
+
+Replace French loading text using native loading and wait components.
+Pin the historical Mastodon loading source accurately in the correction
+ledger; current upstream no longer contains that key. All 17,333 correction
+checks pass. Original progress is 15,134 corrected and 710 pending,
+including 567 Tamazight. Combined usage and wider validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/52c833e18">Translate Tamazight generic failure wording</a>. Thanks to xet7.</summary>
+
+Replace the French generic failure with an attested native error clause.
+Do not add an unknown or database-specific cause. All 17,332 correction
+checks pass. Original progress is 15,133 corrected and 711 pending,
+including 568 Tamazight. Wider wording and fluent usage validation remain
+open; no translations were pushed.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/13dc65f61">Use native Tamazight credential-error wording</a>. Thanks to xet7.</summary>
+
+Replace the French invalid-credentials value with an attested native error
+sentence. Preserve username-or-password ambiguity; omit the reference's
+separate retry instruction. All 17,331 correction checks pass. Original
+progress is 15,132 corrected and 712 pending, including 569 Tamazight.
+Restored, unflagged and low-confidence wording validation remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/448d33abb">Translate Tamazight date and label criteria</a>. Thanks to xet7.</summary>
+
+Replace three unflagged French/Arabic filter values. Preserve by-date,
+by-label and no-label meanings using native component terminology. Record
+full compositions and bound-state morphology as low confidence for fluent
+review. All 17,330 correction checks pass; original counts remain 713 pending,
+including 570 Tamazight. Wider wording validation remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/883fcb85c">Translate Tamazight user display and filter controls</a>. Thanks to xet7.</summary>
+
+Replace three unflagged French/Arabic Show, All Users and Clear filter values
+with native UI terms. Preserve the Show colon and singular filter meaning.
+All 17,327 correction checks pass, including rendered values, placeholders,
+key order and newer correct-language preference. Original counts remain
+713 pending, including 570 Tamazight. Composed usage and wider restored,
+unflagged and low-confidence wording validation remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ad3a4f2dc">Translate Tamazight deletion confirmation and self-account setting</a>. Thanks to xet7.</summary>
+
+Replace two French values, preserving the comment confirmation/action and
+self-account-deletion meaning. Reuse native confirmation, delete, account
+and possessive wording; mark full composed phrases low confidence for fluent
+review. All 17,324 correction checks pass. Original progress is 15,131
+corrected and 713 pending, including 570 Tamazight. Wider validation remains
+open; no translations were pushed.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/fef3c7e46">Translate Tamazight label removal and comment deletion</a>. Thanks to xet7.</summary>
+
+Replace four unflagged French/Arabic values. Reuse native delete/tag nouns
+for label controls and active deletion/comment wording for the activity.
+Preserve its placeholder and popup question marker. Full activity phrasing,
+default actor form and kanban tag terminology still need fluent review.
+All 17,322 correction checks pass. Original counts remain 715 pending,
+including 572 Tamazight; wider wording validation remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8fc453f50">Translate Tamazight login-lockout status and filters</a>. Thanks to xet7.</summary>
+
+Replace three French lockout labels with Tamazight. Reuse native login-blocking
+wording for the singular status; record composed plural filter inflection as
+low confidence pending fluent review. All 17,318 correction checks pass,
+including rendering, placeholders, key order and newer translation preference.
+Original audit progress: 15,129 corrected and 715 pending, including 572
+Tamazight. Restored, unflagged and low-confidence validation remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/fe2a8097e">Use native Tamazight attachment metadata labels</a>. Thanks to xet7.</summary>
+
+Replace two unflagged Arabic Size and Type values with Tamazight nouns
+attested in native MediaWiki file metadata. Preserve all translation keys
+and formatting. All 17,315 correction checks pass, including rendered values,
+placeholder inventories, key order and newer correct-language translations.
+Original audit counts remain unchanged: 718 pending, including 575 Tamazight.
+Restored, unflagged and low-confidence wording validation remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c6ee67cb1">Repair Tamazight label activity text and refine filename wording</a>. Thanks to xet7.</summary>
+
+Replace four French label add/remove activity messages with native tag and
+directional wording. Preserve label/card percent placeholders and keep
+addition-to-card distinct from removal-from-card. Complete clauses,
+active-addition inflection and default actor form remain low confidence
+pending fluent review. Refine the earlier filename correction with native
+upload-form wording, retaining its original before value. All 17,313
+correction/rendering checks pass. The original queue has 718 pending
+findings; wider language validation and live UI remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1d4ad977d">Repair Tamazight label/search text and lookup errors</a>. Thanks to xet7.</summary>
+
+Replace Arabic label/create-label/no-results text and French username,
+label and label-color lookup errors. Use native tag terminology and the
+attested negative-results clause; composed errors/create-label usage and
+color/tag morphology remain low confidence pending fluent review. Preserve
+percent placeholders and keep missing-color and missing-label meanings
+distinct. Three original findings and three unflagged values are repaired.
+All 17,309 correction/rendering checks pass. The original queue has 722
+pending findings; wider language validation and live UI remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e335ef034">Repair Tamazight password confirmation and recovery text</a>. Thanks to xet7.</summary>
+
+Replace French repeated-password and recovery labels with directly attested
+native MediaWiki wording. Compose the required username/password message
+from native obligation and credential terms; the complete clause remains
+low confidence pending fluent review. One original finding and two
+unflagged values are repaired. All 17,303 correction/rendering checks pass,
+including placeholders, key order, newer-translation preference and negative
+French-text checks. The original queue has 725 pending findings; wider
+restored/unflagged/low-confidence validation and live UI remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/acafc7951">Repair Tamazight account creation command and error</a>. Thanks to xet7.</summary>
+
+Use the native create-account command and adapt a native not-created clause
+for the user error. Preserve its distinction from duplicate and nonexistent
+users. The complete adapted error remains low confidence pending fluent
+review. All 17,300 correction checks pass; the original queue has 726 pending
+findings. Broader language validation remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b5db9509e">Use native Tamazight account-creation failure wording</a>. Thanks to xet7.</summary>
+
+Replace the French failure message with the native MediaWiki clause. Omit
+its upstream error-detail suffix because the WeKan source has none. All
+17,298 correction checks pass; the original queue has 727 pending findings.
+Wider restored, unflagged and low-confidence language validation remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9443ef3ae">Use native Tamazight text and number field labels</a>. Thanks to xet7.</summary>
+
+Replace Arabic field-type labels with native terminology. The text noun is
+attested in MediaWiki; the standalone number form and numeric field-type
+usage remain low confidence pending fluent review. All 17,297 correction
+checks pass. These additional unflagged repairs leave the original 728
+pending findings unchanged; wider language validation remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f0d42d57f">Localize Tamazight Persian and Excel export wording</a>. Thanks to xet7.</summary>
+
+Use the CLDR Persian language name in the Jalali label. Replace the French
+Excel card-export command with an attested-term composition, preserving the
+existing card noun and product name. The full export phrase remains low
+confidence pending fluent review. All 17,295 correction checks pass; 728
+original findings and wider language validation remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f31ff3c1f">Repair Tamazight user-existence messages</a>. Thanks to xet7.</summary>
+
+Replace French messages with native compositions that distinguish an
+existing user from a nonexistent user. Attested vocabulary supports the
+components; both complete sentences remain low confidence pending fluent
+review. All 17,293 correction checks pass. The original queue has 730
+pending findings; broader language validation remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ab785976f">Repair native Tamazight file and preview labels</a>. Thanks to xet7.</summary>
+
+Replace thirteen French or Arabic template, file, preview, watch and role
+labels with matching native MediaWiki wording. Preserve valid existing
+Tamazight alternatives. All 17,291 correction checks pass; these additional
+unflagged repairs do not reduce the 732 pending original findings. Broader
+language validation and live browser verification remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e56bc53e3">Use native Tamazight invalid-email wording</a>. Thanks to xet7.</summary>
+
+Replace the French email-validation label with the exact native MediaWiki
+invalid-email-address message. Correction regressions verify rendering and
+source placeholders. The original audit now has 732 pending findings; wider
+language validation remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b373e0734">Repair Greenlandic Jalali qualifier</a>. Thanks to xet7.</summary>
+
+Localize Persian as persiskisut while retaining Jalali. CLDR marks the name
+unconfirmed; fluent technical review remains open. All 17,277 correction
+checks pass; 733 original findings and broader linguistic validation remain
+unfinished. Live browser verification was not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/669be8895">Record Manx calendar terminology review</a>. Thanks to xet7.</summary>
+
+Record missing CLDR display names and unresolved Coptic/tabular/epoch terms.
+Keep composed sighting wording under review. No values changed; all 17,276
+correction checks pass. Three Manx originals and wider linguistic validation
+remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/114c5d992">Repair Quechua crimson wording</a>. Thanks to xet7.</summary>
+
+Replace unrelated English message wrapper with dictionary-attested adjective
+sañi. Its polysemous color range requires dialect/exact-hue review. All
+17,276 correction checks pass; 734 original findings, twelve wrappers and
+broader linguistic validation remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c149ce516">Repair Quechua sky blue wording</a>. Thanks to xet7.</summary>
+
+Replace unrelated message wrapper with dictionary-attested sky-blue adjective
+qhusi, distinct from blue. All 17,275 correction checks pass; 734 original
+findings, thirteen palette wrappers and wider linguistic validation remain
+unfinished. Pale-turquoise wording requires further research.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f6dd287e0">Repair Quechua orange wording</a>. Thanks to xet7.</summary>
+
+Replace English wrapped in unrelated message wording with dictionary-attested
+orange adjective killmu, distinct from yellow. All 17,274 correction checks
+pass; 734 original findings, remaining palette wrappers and wider linguistic
+validation remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/dd2aaa19a">Record Tamazight calendar reference gaps</a>. Thanks to xet7.</summary>
+
+Record provisional CLDR Islamic naming and missing Buddhist/Hijri variant
+terminology. No values changed. All 17,273 correction checks pass; 734
+original findings and full technical/fluent calendar validation remain
+unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9dcd0aaa5">Repair Tamazight upload wording</a>. Thanks to xet7.</summary>
+
+Replace French Upload with the native Upload-file command, distinct from
+Download. All 17,273 correction checks pass. This unflagged repair leaves
+734 original findings pending; broader linguistic and browser validation
+remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ee60f87d2">Repair Tamazight user settings heading</a>. Thanks to xet7.</summary>
+
+Replace French with native preference/user terminology. Full heading grammar
+and terminology adaptation remain low confidence. All 17,272 correction
+checks pass; 734 original findings and broader linguistic validation remain
+unfinished. Live browser verification was not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5babc392f">Repair Tamazight username change label</a>. Thanks to xet7.</summary>
+
+Replace French with native change/username terminology matching the source.
+Combined label grammar remains low confidence and needs fluent review. All
+17,271 correction checks pass; 735 original findings and wider linguistic
+validation remain unfinished. Live browser verification was not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/852beaa44">Repair Tamazight comment deletion prompt</a>. Thanks to xet7.</summary>
+
+Replace French with native delete/comment terminology and question marking.
+Full prompt grammar remains low confidence and needs fluent review. All
+17,270 correction checks pass; 736 original findings and broader language
+validation remain unfinished. Live browser verification was not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0b006e44d">Repair Tamazight removal and filter wording</a>. Thanks to xet7.</summary>
+
+Replace Arabic Remove, Clear-all-filters and user-fallback labels with
+matching native UI terms. All 17,269 correction checks pass; these four
+unflagged repairs leave 737 original findings pending. Wider linguistic
+and live browser validation remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d2923884d">Repair Tamazight collapse and rename wording</a>. Thanks to xet7.</summary>
+
+Replace eleven Arabic collapse, More, comment, rename and action labels with
+matching native UI terms. Keep popup titles consistent. All 17,265
+correction checks pass; 737 original findings and broader language/browser
+validation remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ebee06d86">Repair Tamazight account and date labels</a>. Thanks to xet7.</summary>
+
+Replace twelve Arabic account, date/history, credential, cancel and search
+labels with matching native UI terminology. Distinguish Date from History
+and login from logout. All 17,254 correction checks pass; 737 original
+findings and broader linguistic/browser validation remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b692ef9f4">Repair Tamazight action and error labels</a>. Thanks to xet7.</summary>
+
+Replace Arabic/French Actions, Create, Download and Error labels with exact
+native MediaWiki UI terms. All 17,242 correction checks pass; these four
+unflagged repairs leave 737 original findings pending. Broader linguistic
+validation and live browser verification remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5f3cfb608">Repair Tamazight help and next labels</a>. Thanks to xet7.</summary>
+
+Replace two unflagged French labels with matching native MediaWiki UI terms.
+Preserve valid Latin-script wording. All 17,238 correction checks pass;
+737 original findings and wider linguistic validation remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0db69cf6c">Record Kashmiri calendar terminology review</a>. Thanks to xet7.</summary>
+
+Record provisional CLDR Islamic/civil names and missing sighting/tabular
+variant names. Full epoch qualifiers need further terminology research.
+No values changed; all 17,236 correction checks pass and 737 findings remain.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e07d2be5f">Repair Cherokee Hijri variant wording</a>. Thanks to xet7.</summary>
+
+Replace English Saudi sighting and tabular labels with exact native-script
+CLDR core names. Preserve distinct calendar variants. All 17,236 correction
+checks pass; Cherokee’s original queue is empty and 737 findings remain
+elsewhere. Compact tabular epoch wording needs fluent technical review.
+Live browser verification was not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/190fd16a2">Repair Quechua metallic color wording</a>. Thanks to xet7.</summary>
+
+Replace English gold/silver names wrapped in unrelated prose with composed
+material-plus-color labels. Record compound grammar and palette adaptation
+as low confidence. All 17,234 correction checks pass. Two unflagged repairs
+leave 739 original findings pending. Pink/orange and shade wording need review.
+Live browser verification was not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/89c0eb466">Repair Quechua gray and purple wording</a>. Thanks to xet7.</summary>
+
+Replace English color names wrapped in unrelated prose with attested Quechua
+adjectives. Preserve gray/purple distinctions from blue. All 17,232 correction
+checks pass. Two unflagged repairs leave 739 original findings pending.
+Silver’s metal-to-color adaptation and remaining palette wording need review.
+Live browser verification was not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/158f18152">Repair more Quechua basic color wording</a>. Thanks to xet7.</summary>
+
+Replace English blue/green/yellow names wrapped in unrelated prose with
+reference-attested adjectives. Six repaired basic colors remain distinct.
+All 17,230 correction checks pass. Three unflagged repairs leave 739 original
+findings pending. Orange and remaining shade terminology need further review;
+the dictionary’s shared yellow/orange gloss does not distinguish UI colors.
+Live browser verification was not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b7b810c1b">Repair Quechua basic color wording</a>. Thanks to xet7.</summary>
+
+Replace English black/red/white names wrapped in unrelated message prose
+with dictionary-attested standalone adjectives. All 17,227 correction checks
+pass. These three unflagged repairs leave original pending counts unchanged
+at 739. Other color wrappers and two Quechua calendar findings need review.
+Live browser verification was not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4cd629494">Repair Tamazight notification deletion wording</a>. Thanks to xet7.</summary>
+
+Replace the French action with Tamazight while preserving all-notifications
+scope. Reuse existing terminology and reference-supported action/all words.
+All 17,224 correction checks pass; 739 original findings remain overall.
+Composed wording needs fluent regional and technical review. Read/unread
+controls and irreversible confirmation remain unresolved.
+Live browser verification was not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/123d7a531">Repair Tamazight core account wording</a>. Thanks to xet7.</summary>
+
+Replace seven Arabic/French values with matching native-script Tamazight
+reference messages for account fields, edit, email, login/logout and password
+mismatch. One original finding and six unflagged values are repaired.
+All 17,223 correction checks pass; 740 original findings remain overall,
+including 594 Tamazight findings. Wider language validation remains open.
+Live browser verification was not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/02ef178a5">Repair Aromanian indigo wording</a>. Thanks to xet7.</summary>
+
+Use lulachi, explicitly glossed as indigo in a linguistic paper, preserving
+lowercase standalone color labeling. All 17,216 correction checks pass.
+Aromanian magenta remains pending; 741 original findings remain overall.
+Dialect preference and UI palette usage remain under review.
+Live browser verification was not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/160e02ae3">Repair Bambara Hebrew-calendar wording</a>. Thanks to xet7.</summary>
+
+Replace the English label using dictionary-attested Jewish terminology and
+existing Bambara calendar wording. All 17,215 correction checks pass.
+The composed calendar name needs fluent technical review. Four original
+Bambara findings and 742 original findings overall remain pending.
+Live browser verification was not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2ec5ad0e3">Repair Sakha Saudi sighting-calendar wording</a>. Thanks to xet7.</summary>
+
+Preserve Saudi Arabia and moon-observation qualifiers using native reference
+terms. All 17,214 correction checks pass, including distinct calendar variants.
+Sakha’s original queue is empty; 743 original findings remain elsewhere.
+Moon-observation phrase composition and crescent-sighting adaptation need
+fluent technical review. Live browser verification was not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/36f57a4b7">Repair Sakha astronomical-epoch calendar wording</a>. Thanks to xet7.</summary>
+
+Replace English using native astronomy wording and existing table/calendar-era
+terms. Preserve tabular and astronomical-epoch qualifiers, distinct from civil.
+All 17,213 correction checks pass. CLDR’s Islamic base is provisional, and noun
+composition/era-to-epoch adaptation need fluent technical review. The sighting
+variant remains unresolved. Original pending findings total 744; live browser
+verification was not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/bceecefb8">Repair Sakha civil Hijri calendar wording</a>. Thanks to xet7.</summary>
+
+Replace English using CLDR/native-reference calendar, table, civil and era
+terms. Preserve tabular and civil-epoch qualifiers. All 17,212 correction checks
+pass. The Islamic base is CLDR-provisional; composition and era-to-epoch
+adaptation need fluent technical review. Two Sakha variants remain unresolved.
+Original pending findings total 745; live browser verification was not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/335a9bcd3">Preserve the astronomical epoch in Tongan calendar wording</a>. Thanks to xet7.</summary>
+
+Refine the existing tabular Hijri label using a dictionary epoch term and
+CLDR’s astronomical adjective. Supply the qualifier missing from the provisional
+repair while preserving provenance and distinct calendar variants. All 17,211
+correction checks pass. The calendar base is CLDR-unconfirmed and the composed
+phrase needs fluent review. Original pending findings remain at 746.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/de0d3d821">Use provisional CLDR Tongan tabular Hijri wording</a>. Thanks to xet7.</summary>
+
+Replace the English display name with the exact non-core Tongan CLDR label,
+distinct from existing civil and sighting variants. All 17,211 correction checks
+pass. CLDR marks this name unconfirmed, and an explicit astronomical-epoch
+qualifier still needs language research and fluent review. This is a provisional
+repair, not completed linguistic validation. Original pending findings total 746.
+Live browser verification was not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e4e3aa590">Validate Veps zoom imperative morphology</a>. Thanks to xet7.</summary>
+
+Confirm the transitive increase/decrease commands against Veps inflection
+tables and distinguish the intransitive forms. Record references per key;
+technical screen-zoom usage and keyboard terminology remain open. All 17,210
+correction/rendering checks pass. Original pending findings remain at 747.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/bc84ca78b">Repair Veps zoom scale and range prompt</a>. Thanks to xet7.</summary>
+
+Replace two Finnish values with dictionary-based scale terminology and existing
+Veps prompt wording. Preserve the exact 50-300% range and punctuation.
+All 17,210 correction/rendering checks pass. Screen-zoom adaptation of the
+map-scale term and prompt inflection need fluent technical review; live browser
+verification was not run. Original pending findings decrease to 747.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/85de9ea7d">Repair Veps zoom directions</a>. Thanks to xet7.</summary>
+
+Replace two unflagged Finnish labels with distinct Veps increase/decrease
+commands based on dictionary verbs. Preserve zoom handlers and their limits.
+All 17,208 correction/rendering checks pass; technical usage and imperative
+forms need fluent review. Zoom-level/range labels remain unresolved, and live
+browser verification was not run. Original pending findings remain at 748.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/55c197366">Repair Veps MongoDB storage-engine terminology</a>. Thanks to xet7.</summary>
+
+Replace the Finnish label using Veps dictionary words for storage and engine,
+preserving the MongoDB name. All 17,206 exact correction/rendering checks pass.
+The composed technical label needs fluent review; live browser verification
+was not run. There are 748 pending original findings and wider validation remains
+unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a2929974e">Repair Veps recovery labels and migration step names</a>. Thanks to xet7.</summary>
+
+Replace four Finnish labels, preserving per-swimlane and ensure-if-missing
+scope. Distinguish lost cards from restored items and retain the recovery
+action. All 17,202 correction/rendering checks pass, including tokens, JSON,
+key order and newer translations. Expanded ensure clauses and case agreement
+need fluent review. Live browser checks were not run. The original queue has
+751 pending findings; wider validation remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/83361230d">Repair Veps board conversion and migration progress messages</a>. Thanks to xet7.</summary>
+
+Replace four Finnish explanations, preserving one-time scope, continued board
+use, performance improvement, brief duration and background continuation after
+browser closure. All 17,198 correction/rendering checks pass, including tokens,
+JSON, key order and newer translations. Technical performance/structure
+clauses need fluent review. Live browser checks were not run. The original
+queue has 753 pending findings; wider validation remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/08d1f9e9b">Repair Veps duplicate-list safety warnings</a>. Thanks to xet7.</summary>
+
+Replace three Finnish warnings, preserving empty-list AND populated-same-name
+duplicate conditions, initial shared-list conversion and redundant-only
+removal. Checked the migration source. All 17,194 correction/rendering checks
+pass, including tokens, JSON, key order and newer translations. Composed
+clauses and case agreement need fluent review. Live browser checks were not
+run. The original queue has 757 pending findings; wider validation continues.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ef7d530e9">Repair Veps migration integrity explanations</a>. Thanks to xet7.</summary>
+
+Replace six Finnish messages, preserving list order, card positions, swimlane
+structure, independent migrations and brief duration. All 17,191 correction
+and rendering checks pass, including tokens, JSON, key order and newer
+translations. Composed purpose clauses and case agreement need fluent review.
+Live browser checks were not run. The original queue has 760 pending findings;
+restored, unflagged and low-confidence validation remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c6eaeb9ce">Repair Veps board-structure migration controls</a>. Thanks to xet7.</summary>
+
+Replace five Finnish values, preserving comprehensive scope, board analysis,
+missing/corrupt list alternatives and continuation confirmation. All 17,185
+correction/rendering checks pass, including tokens, JSON, key order and newer
+translations. Structure borrowing/inflection and absent-list repair clauses
+need fluent review. Live browser checks were not run. The original queue has
+763 pending findings; restored, unflagged and low-confidence review continues.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/66cd9b69e">Repair Veps wait-spinner descriptions</a>. Thanks to xet7.</summary>
+
+Replace nine Finnish labels, preserving all eight wait-animation choices
+and identifiers. All 17,180 correction/rendering checks pass, including
+tokens, JSON, key order and newer translations. Technical cube borrowing
+and composed wait-indicator terminology need fluent review. Live browser
+checks were not run. The original queue has 767 pending findings; restored,
+unflagged and low-confidence validation remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/182983fe2">Repair Veps spent-time card and hours labels</a>. Thanks to xet7.</summary>
+
+Replace two Finnish values, preserving the distinction between boards with
+tracked-time cards and the hours field. Retain existing hours terminology.
+All 17,171 correction/rendering checks pass, including tokens, JSON, key order
+and newer translations. The composed time-tracked-card phrase needs fluent
+review. Live browser checks were not run. The original queue has 771 pending
+findings; restored, unflagged and low-confidence validation continues.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/27e76175d">Repair Veps device modes and PDF preview fallback</a>. Thanks to xet7.</summary>
+
+Replace four Finnish values, preserving mobile/desktop mode distinctions,
+the toggle and alternative download action. Retain the existing download label.
+All 17,169 correction/rendering checks pass, including tokens, JSON, key order
+and newer translations. Composed mobile-device terminology and PDF-preview
+inflection need fluent review. Live browser checks were not run. The original
+queue has 772 pending findings; restored and unflagged validation continues.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2c1b453ed">Repair Veps announcement and repository controls</a>. Thanks to xet7.</summary>
+
+Replace ten Finnish values, preserving system-wide and administrator
+announcements, create/upload/update/sign-in actions and the existing technical
+repository noun. All 17,165 correction/rendering checks pass, including tokens,
+JSON, key order and newer translations. Repository inflection and the
+system-wide qualifier need fluent review. Live browser checks were not run.
+The original queue has 774 pending findings; wider validation continues.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c0bd1cecb">Repair Veps remaining-time label and assigned-card pronoun</a>. Thanks to xet7.</summary>
+
+Replace the Finnish remaining-time label and refine an earlier shortcut
+correction from assigned to you to assigned to me. Preserve distinct own-card
+and self-assignment actions and the original correction-ledger before-value.
+All 17,155 correction/rendering checks pass, preserving tokens, JSON,
+key order and newer translations. Timing participle composition needs fluent
+review. Live browser checks were not run; 777 original findings remain pending.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/db9a1e001">Repair Veps drag instructions and sidebar controls</a>. Thanks to xet7.</summary>
+
+Replace eight Finnish/Venda instructions, preserving click, drag, drop,
+resize, opening and closing distinctions and workspace placeholders.
+All 17,154 correction/rendering checks pass, including tokens, JSON,
+key order and newer translations. Icon inflection and desktop drag-handle
+compounds have low confidence and need fluent review. Live browser checks
+were not run. The original queue has 778 pending findings; review continues.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f72f22254">Repair Veps workspace controls and submenu labels</a>. Thanks to xet7.</summary>
+
+Replace 13 Finnish labels with Veps, preserving workspace/subworkspace
+names, markdown notation and the existing deletion question. All 17,146
+correction and runtime rendering checks pass, including tokens, JSON,
+key order and newer translations. Composed subworkspace and technical icon
+terms have low confidence and need fluent review. Live browser checks were
+not run. The original queue has 782 pending findings; validation continues.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/fe8a52076">Repair Veps subtask destination and action controls</a>. Thanks to xet7.</summary>
+
+Replace nine Finnish values with Veps, preserving board/list destinations,
+matching-card absence, deletion confirmation and the board placeholder. Retain
+the existing subtask heading. Actual rendering and all 17,133 correction checks
+pass, including tokens, JSON, key order and newer translations. Composed
+destination and matching-card grammar need fluent review. Live browser checks
+were not run. The original queue has 783 pending findings, including 46 in
+Veps; parent-card terminology and wider validation remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8a1c76264">Repair Veps card mention notification</a>. Thanks to xet7.</summary>
+
+Replace Finnish prose with Veps, preserving five card/comment/list/swimlane/
+board placeholders and existing location terminology. Actual substituted
+rendering and all 17,124 correction checks pass, including tokens, JSON, key
+order and newer translations. Mention adaptation and composed grammar need
+fluent review. Live browser checks were not run. The original queue has 785
+pending findings, including 48 in Veps; wider validation remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/28f37f0ab">Repair Veps wildcard and board-shortcut guidance</a>. Thanks to xet7.</summary>
+
+Replace two Finnish hints with Veps. Explain that empty rule fields match every
+possible value and starring adds the board link to the quick-access bar.
+Actual rendering and all 17,123 correction checks pass, preserving tokens,
+JSON, key order and newer translations. Wildcard grammar and navigation-bar
+terminology need fluent review. Live browser checks were not run. The original
+queue has 786 pending findings, including 49 in Veps; wider work is unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/60d14076a">Localize Ewe civil Hijri calendar name</a>. Thanks to xet7.</summary>
+
+Replace the English civil-calendar label with Unicode CLDR Ewe terminology.
+Actual locale rendering and all 17,121 correction checks pass, including
+tokens, JSON, key order and newer correct translations. CLDR marks the name
+provisional; native validation remains required. Live browser checks were not
+run. The original queue has 788 pending findings, including two in Ewe.
+Other calendar variants and wider translation validation remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ff742c414">Localize Persian calendar qualifiers in Fulah and Bambara</a>. Thanks to xet7.</summary>
+
+Use Unicode CLDR Persian language names with existing calendar nouns,
+preserving Jalali identity and distinction from Hijri. Actual locale rendering
+and all 17,120 correction checks pass, including tokens, JSON, key order and
+newer correct translations. Calendar-name composition needs native review;
+live browser checks were not run. The original queue has 789 pending findings,
+including five each in Fulah and Bambara. Wider validation remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/25dbf6409">Repair Veps multi-selection action choice translations</a>. Thanks to xet7.</summary>
+
+Replace four Finnish popup values with Veps, preserving label/member action
+choices and member removal from cards. Retain existing assignment and
+label-removal wording. Production rendering and all 17,118 correction checks
+pass, including tokens, JSON, key order and newer translations. Popup-title
+grammar needs fluent review; apparent reversed member handlers need separate
+runtime review. Live browser checks were not run for this batch.
+The original queue has 791 pending findings; wider validation is unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/62c011b86">Repair Neapolitan rule item label and list example</a>. Thanks to xet7.</summary>
+
+Use dictionary-attested alimento for the item label and comma-separated rule
+example, preserving three entries and numeric suffixes. Production rendering
+and all 17,114 correction regressions pass, including token, JSON, key-order
+and newer-translation checks. Technical checklist usage needs native review;
+live browser checks were not run. The original Neapolitan queue is empty,
+with 793 findings still pending globally and wider validation unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/19d4abdf7">Repair Veps board-view labels and current-time action</a>. Thanks to xet7.</summary>
+
+Replace nine Finnish or Venda values with Veps. Preserve single and multiple
+board calendars, swimlanes, lists, table, time, collapse and current-time
+labels. Retain existing calendar/list/time wording and Gantt proper names.
+Production rendering and all 17,112 correction regressions pass, preserving
+placeholders, JSON, key order and newer correct translations. View-name grammar
+and collapse terminology have low confidence and need fluent review. Live
+browser checks were not run. The original queue has 794 pending findings.
+
+</details>
+
+This release adds the following developer documentation:
+
+**Developer documentation** - Meteor skills audit and remaining improvements.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ab05c974d">Document Meteor skills review findings and verification limits</a>. Thanks to xet7.</summary>
+
+Record four confirmed search, browser-policy and multi-card popup findings,
+publication and permission review candidates, and existing safeguards in
+docs/Security/Skills/Audit.md. Seven focused Node test entries pass. Full
+builds, live DDP and browser tests remain open for this audit. This entry
+documents recommendations; it does not claim application fixes.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
 
 # v11.73 2026-09-14 WeKan ® release
 

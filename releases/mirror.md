@@ -30,8 +30,14 @@ The source cannot also be a mirror. Invalid, duplicate or unknown settings fail
 instead of silently choosing another destination. All mirrors may be disabled;
 sync then asks for an active destination. The uncommented registry in
 `releases/mirror.sh` supplies defaults until settings exist. Bitbucket is inactive.
-The menu delegates to separate `mirror-github`, `mirror-gitlab`, `mirror-codeberg`
-and `mirror-sourceforge` scripts (`.sh` on Unix, `.bat` on Windows).
+On Unix the menu delegates to separate `mirror-github`, `mirror-gitlab`,
+`mirror-codeberg` and `mirror-sourceforge` `.sh` scripts. On Windows it invokes
+their shared Node engine directly with the same target/code/apply flags; paths
+remain separate arguments rather than command-shell text. The `.bat` wrappers
+remain available for direct human use. Preview never includes `--apply`.
+The menu command runner permits only its current Node executable and fixed
+`bash` interpreter, always with `shell: false`. Archive hosts use an exact
+string allowlist; URLs, lookalike domains and path components are rejected.
 Build menu **Tools → Mirror repo to forges** opens this menu on both platforms.
 Shared implementations are `tools/mirror-menu.mjs`, `tools/mirror-settings.mjs`,
 `tools/mirror-active-forges.mjs` and `tools/mirror-archive.mjs`.
@@ -488,4 +494,10 @@ without printing authentication headers or tokens. Rate-limit waits remain in ef
 
 The `releases/mirror.sh` launcher also saves stdout and stderr to
 `.tools/log/mirror/YYYY-MM-DD_HH-MM_SS/mirror-log.txt` while printing them
-to stdout. It prints the log path at startup and preserves command failure status.
+to stdout. It prints the log path at startup, after each sync/check menu operation (including
+failures), and on command exit, preserving command failure status.
+
+If a comment references a parent missing from the paginated issue inventory, the
+collector fetches that issue and any pull metadata through the same rate-limited
+API client, saves them directly to their issue/pull directory and continues. A
+failed parent fetch preserves the checkpoint so a subsequent run retries the page.

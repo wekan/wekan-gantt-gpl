@@ -31,6 +31,121 @@ const tokens = value => [...value.matchAll(/__[A-Za-z0-9]+(?:_[A-Za-z0-9]+)*__|%
     assert.deepEqual(Object.keys(data), Object.keys(english), locale);
     assert.equal(repairLocale(locale, data).changed, 0, 'idempotent after correction');
   }
+  for (const key of ['password-again', 'forgot-password', 'username-password-required']) {
+    assert.doesNotMatch(cache.zgh[key], /Mot de passe|Nom d.utilisateur|requis/);
+    assert.match(cache.zgh[key], /ⵜⴰⴳⵓⵔⵉ ⵏ ⵓⵣⵔⴰⵢ/);
+  }
+  assert.equal(cache.zgh.labels, 'ⵉⵔⵛⵓⵎⵏ');
+  assert.equal(cache.zgh['no-results'], 'ⵓⵔ ⵍⵍⵉⵏⵜ ⵜⵢⴰⴼⵓⵜⵉⵏ');
+  for (const key of ['user-username-not-found', 'label-not-found', 'label-color-not-found']) {
+    assert.doesNotMatch(cache.zgh[key], /Utilisateur|Étiquette|non trouv/);
+    assert.match(cache.zgh[key], /%s/);
+    assert.match(cache.zgh[key], /ⵓⵔ ⵉⵍⵍⴰ/);
+  }
+  assert.doesNotMatch(cache.zgh['label-create'], /[\u0600-\u06ff]/);
+  assert.equal(cache.zgh['export-card-attachment-filename'], 'ⵉⵙⵎ ⵏ ⵓⴼⴰⵢⵍⵓ');
+  assert.match(cache.zgh['activity-added-label'], /'%s' ⵉ %s$/);
+  assert.match(cache.zgh['activity-removed-label'], /'%s' ⵙⴳ %s$/);
+  for (const key of ['activity-added-label', 'activity-added-label-card', 'activity-removed-label', 'activity-removed-label-card']) {
+    assert.doesNotMatch(cache.zgh[key], /ajouté|supprimé|étiquette/);
+    assert.match(cache.zgh[key], /ⴰⵔⵛⵓⵎ '%s'/);
+  }
+  // Exact native UI references replace French without normalizing valid Latin-script Tamazight.
+  assert.equal(cache.zgh.help, 'ⵜⵉⵡⵉⵙⵉ');
+  assert.equal(cache.zgh.next, 'ⵉⵏⴹⴼⵔ');
+  assert.notEqual(cache.zgh.help, 'Aide');
+  assert.notEqual(cache.zgh.next, 'Suivant');
+  assert.equal(cache.zgh.cancel, 'Sefsex');
+  assert.equal(cache.zgh.upload, 'ⵙⴽⵜⵔ ⴰⴼⴰⵢⵍⵓ');
+  assert.notEqual(cache.zgh.upload, cache.zgh.download);
+  assert.notEqual(cache.zgh.upload, 'Télécharger');
+  assert.equal(cache.zgh['settingsUserPopup-title'], 'ⵉⵙⵎⵏⵢⵉⴼⵏ ⵏ ⵓⵏⵙⵙⵎⵔⵙ');
+  assert.doesNotMatch(cache.zgh['settingsUserPopup-title'], /Paramètres|utilisateur/);
+  assert.equal(cache.zgh['accounts-allowUserNameChange'], 'ⵙⵏⴼⵍ ⵉⵙⵎ ⵏ ⵓⵏⵙⵙⵎⵔⵙ');
+  assert.doesNotMatch(cache.zgh['accounts-allowUserNameChange'], /Autoriser|identifiant/);
+  assert.equal(cache.zgh['deleteCommentPopup-title'], 'ⴽⴽⵙ ⴰⵖⴼⴰⵡⴰⵍ?');
+  assert.doesNotMatch(cache.zgh['deleteCommentPopup-title'], /Supprimer|commentaire/);
+  assert.ok(cache.zgh['deleteCommentPopup-title'].endsWith('?'));
+  assert.equal(cache.zgh['remove-btn'], 'ⵙⵉⵜⵜⵢ');
+  assert.doesNotMatch(cache.zgh['remove-btn'], /[\u0600-\u06ff]/);
+  assert.equal(cache.zgh['r-remove'], 'ⵙⵉⵜⵜⵢ');
+  assert.doesNotMatch(cache.zgh['r-remove'], /[\u0600-\u06ff]/);
+  assert.equal(cache.zgh['shortcut-clear-filters'], 'ⵚⵚⴼⴹ ⴰⴽⴽⵯ ⵜⵉⵎⵣⵉⵣⴷⴳⵉⵜⵉⵏ');
+  assert.doesNotMatch(cache.zgh['shortcut-clear-filters'], /[\u0600-\u06ff]/);
+  assert.equal(cache.zgh['anonymized-user'], 'ⴰⵏⵙⵙⵎⵔⵙ');
+  assert.doesNotMatch(cache.zgh['anonymized-user'], /[\u0600-\u06ff]/);
+
+  assert.equal(cache.zgh['board-view-collapse'], 'ⵙⵎⵓⵏ');
+  assert.doesNotMatch(cache.zgh['board-view-collapse'], /[\u0600-\u06ff]/);
+  assert.equal(cache.zgh['collapse'], 'ⵙⵎⵓⵏ');
+  assert.doesNotMatch(cache.zgh['collapse'], /[\u0600-\u06ff]/);
+  assert.equal(cache.zgh['card-comments-more'], 'ⵓⴳⴳⴰⵔ');
+  assert.doesNotMatch(cache.zgh['card-comments-more'], /[\u0600-\u06ff]/);
+  assert.equal(cache.zgh['cardMorePopup-title'], 'ⵓⴳⴳⴰⵔ');
+  assert.doesNotMatch(cache.zgh['cardMorePopup-title'], /[\u0600-\u06ff]/);
+  assert.equal(cache.zgh['listMorePopup-title'], 'ⵓⴳⴳⴰⵔ');
+  assert.doesNotMatch(cache.zgh['listMorePopup-title'], /[\u0600-\u06ff]/);
+  assert.equal(cache.zgh['comment'], 'ⴰⵖⴼⴰⵡⴰⵍ');
+  assert.doesNotMatch(cache.zgh['comment'], /[\u0600-\u06ff]/);
+  assert.equal(cache.zgh['rename'], 'ⴰⵍⵙ ⵉ ⵉⵙⵎ');
+  assert.doesNotMatch(cache.zgh['rename'], /[\u0600-\u06ff]/);
+  assert.equal(cache.zgh['attachmentRenamePopup-title'], 'ⴰⵍⵙ ⵉ ⵉⵙⵎ');
+  assert.doesNotMatch(cache.zgh['attachmentRenamePopup-title'], /[\u0600-\u06ff]/);
+  assert.equal(cache.zgh['current'], 'ⴰⵎⵉⵔⴰⵏ');
+  assert.doesNotMatch(cache.zgh['current'], /[\u0600-\u06ff]/);
+  assert.equal(cache.zgh['r-add'], 'ⵔⵏⵓ');
+  assert.doesNotMatch(cache.zgh['r-add'], /[\u0600-\u06ff]/);
+  assert.equal(cache.zgh['delete-all'], 'ⴽⴽⵙ ⵎⴰⵕⵕⴰ');
+  assert.doesNotMatch(cache.zgh['delete-all'], /[\u0600-\u06ff]/);
+
+  assert.equal(cache.zgh['change-password'], 'ⵙⵏⴼⵍ ⵜⴰⴳⵓⵔⵉ ⵏ ⵓⵣⵔⴰⵢ');
+  assert.doesNotMatch(cache.zgh['change-password'], /[\u0600-\u06ff]/);
+  assert.equal(cache.zgh['changePasswordPopup-title'], 'ⵙⵏⴼⵍ ⵜⴰⴳⵓⵔⵉ ⵏ ⵓⵣⵔⴰⵢ');
+  assert.doesNotMatch(cache.zgh['changePasswordPopup-title'], /[\u0600-\u06ff]/);
+  assert.equal(cache.zgh['date'], 'ⴰⵙⴰⴽⵓⴷ');
+  assert.doesNotMatch(cache.zgh['date'], /[\u0600-\u06ff]/);
+  assert.equal(cache.zgh['custom-field-date'], 'ⴰⵙⴰⴽⵓⴷ');
+  assert.doesNotMatch(cache.zgh['custom-field-date'], /[\u0600-\u06ff]/);
+  assert.equal(cache.zgh['history'], 'ⴰⵎⵣⵔⵓⵢ');
+  assert.doesNotMatch(cache.zgh['history'], /[\u0600-\u06ff]/);
+  assert.equal(cache.zgh['log-in'], 'ⴽⵛⵎ');
+  assert.doesNotMatch(cache.zgh['log-in'], /[\u0600-\u06ff]/);
+  assert.equal(cache.zgh['loginPopup-title'], 'ⴽⵛⵎ');
+  assert.doesNotMatch(cache.zgh['loginPopup-title'], /[\u0600-\u06ff]/);
+  assert.equal(cache.zgh['log-out'], 'ⴼⴼⵖ');
+  assert.doesNotMatch(cache.zgh['log-out'], /[\u0600-\u06ff]/);
+  assert.equal(cache.zgh['smtp-username'], 'ⵉⵙⵎ ⵏ ⵓⵏⵙⵙⵎⵔⵙ');
+  assert.doesNotMatch(cache.zgh['smtp-username'], /[\u0600-\u06ff]/);
+  assert.equal(cache.zgh['smtp-password'], 'ⵜⴰⴳⵓⵔⵉ ⵏ ⵓⵣⵔⴰⵢ');
+  assert.doesNotMatch(cache.zgh['smtp-password'], /[\u0600-\u06ff]/);
+  assert.equal(cache.zgh['move-progress-cancel'], 'ⵙⵙⵔ');
+  assert.doesNotMatch(cache.zgh['move-progress-cancel'], /[\u0600-\u06ff]/);
+  assert.equal(cache.zgh['searchElementPopup-title'], 'ⴰⵔⵣⵣⵓ');
+  assert.doesNotMatch(cache.zgh['searchElementPopup-title'], /[\u0600-\u06ff]/);
+  assert.notEqual(cache.zgh.date, cache.zgh.history);
+  assert.notEqual(cache.zgh['log-in'], cache.zgh['log-out']);
+
+  assert.equal(cache.zgh.actions, 'ⵜⵉⴳⴰⵡⵉⵏ');
+  assert.doesNotMatch(cache.zgh.actions, /[\u0600-\u06ffA-Za-z]/);
+  assert.equal(cache.zgh.create, 'ⵙⵏⵓⵍⴼⵓ');
+  assert.doesNotMatch(cache.zgh.create, /[\u0600-\u06ffA-Za-z]/);
+  assert.equal(cache.zgh.download, 'ⴰⴳⵎ');
+  assert.doesNotMatch(cache.zgh.download, /[\u0600-\u06ffA-Za-z]/);
+  assert.equal(cache.zgh.error, 'ⵜⴰⵣⴳⵍⵜ');
+  assert.doesNotMatch(cache.zgh.error, /[\u0600-\u06ffA-Za-z]/);
+
+  assert.equal(cache.qu['color-orange'], 'killmu');
+  assert.doesNotMatch(cache.qu['color-orange'], /Kay willaymi|orange/);
+  assert.notEqual(cache.qu['color-orange'], cache.qu['color-yellow']);
+  assert.equal(cache.qu['color-sky'], 'qhusi');
+  assert.doesNotMatch(cache.qu['color-sky'], /Kay willaymi|sky/);
+  assert.notEqual(cache.qu['color-sky'], cache.qu['color-blue']);
+  assert.equal(cache.qu['color-crimson'], 'sañi');
+  assert.doesNotMatch(cache.qu['color-crimson'], /Kay willaymi|crimson/);
+  assert.notEqual(cache.qu['color-crimson'], cache.qu['color-red']);
+  assert.notEqual(cache.qu['color-crimson'], cache.qu['color-purple']);
+  assert.equal(cache.kl['calendar-system-jalali'], 'Jalali (persiskisut)');
+  assert.doesNotMatch(cache.kl['calendar-system-jalali'], /Fars/);
   // Card descriptions use a feminine plural creation form.
   for (const key of ['globalSearch-instructions-operator-creator', 'globalSearch-instructions-operator-created']) {
     assert.match(cache.wa[key], /cåtes askepieyes/);
@@ -967,7 +1082,7 @@ const tokens = value => [...value.matchAll(/__[A-Za-z0-9]+(?:_[A-Za-z0-9]+)*__|%
   "remove-member-pop": "Heitä __name__ (__username__) laudaspäi __boardTitle__? Ühtnik linneb heittud kaikiš necen laudan kartoišpäi. Hän sab tedotuz.",
   "shortcut-add-self": "Ližada ičtaze nügüdläižele kartale",
   "shortcut-assign-self": "Märiče ičtaze nügüdläižele kartale",
-  "shortcut-filter-my-assigned-cards": "Puhtasta sinei märitud kartad",
+  "shortcut-filter-my-assigned-cards": "Puhtasta minei märitud kartad",
   "multi-selection-active": "Paina valičuznellikid, miše valita laudoid",
   "multi-selection-label": "Pane znam valičusele",
   "remove-labels-multiselect": "Äjiden valičuz heitäb znamad 1-9",
@@ -1567,7 +1682,7 @@ const tokens = value => [...value.matchAll(/__[A-Za-z0-9]+(?:_[A-Za-z0-9]+)*__|%
   assert.match(cache['ve-PP']['to-create-teams-contact-admin'], /^Joukuiden.*kosketusiš administratoranke/);
   assert.equal(cache['ve-PP']['shortcut-filter-my-cards'], 'Puhtasta minun kartad');
   assert.doesNotMatch(cache['ve-PP']['shortcut-filter-my-cards'], /märitud/);
-  assert.equal(cache['ve-PP']['shortcut-filter-my-assigned-cards'], 'Puhtasta sinei märitud kartad');
+  assert.equal(cache['ve-PP']['shortcut-filter-my-assigned-cards'], 'Puhtasta minei märitud kartad');
   const vepsArchiveRecoveryRepairs = {
   "archive-board-confirm": "Oled-ik sinä tozi mugošt mel’t, miše tahtoid sirtta necen laudan Arhivaha?",
   "archive-swimlane": "Sirdä ujundšoid Arhivaha",
@@ -2461,5 +2576,358 @@ const tokens = value => [...value.matchAll(/__[A-Za-z0-9]+(?:_[A-Za-z0-9]+)*__|%
   assert.notEqual(vepsTranslator.t('board-view-cal'), vepsTranslator.t('board-view-multiboard-cal'));
   assert.match(vepsTranslator.t('board-view-multiboard-cal'), /Äjiden laudoiden/);
   assert.equal(cache['ve-PP']['board-view-gantt'], 'Gantt', 'retain the chart proper name');
+  const neapolitanItems = require('i18next').createInstance();
+  await neapolitanItems.init({ lng: 'nap', fallbackLng: false, keySeparator: false, resources: { nap: { translation: cache.nap } } });
+  assert.equal(neapolitanItems.t('r-item'), 'alimento');
+  assert.equal(neapolitanItems.t('r-items-list'), 'alimento1,alimento2,alimento3');
+  assert.deepEqual(neapolitanItems.t('r-items-list').split(','), [1, 2, 3].map(n => neapolitanItems.t('r-item') + n));
+  assert.doesNotMatch(neapolitanItems.t('r-items-list'), /elemento/);
+  const vepsActionChoice = {
+  "disambiguateMultiLabelPopup-title": "Valiče znaman tegend",
+  "disambiguateMultiMemberPopup-title": "Valiče ühtnikan tegend",
+  "what-to-do": "Midä sinä tahtoid tehta?",
+  "unassign-member": "Heitä ühtnik kartaspäi"
+};
+  for (const [key, value] of Object.entries(vepsActionChoice)) {
+    assert.equal(cache['ve-PP'][key], value, key);
+    assert.equal(vepsTranslator.t(key), value, key);
+    assert.doesNotMatch(value, /Yksikäsitteistä|nimilapputoiminta|jäsentoiminta|Mitä haluat|Peru jäsenvalinta/, key);
+  }
+  assert.notEqual(vepsTranslator.t('disambiguateMultiLabelPopup-title'), vepsTranslator.t('disambiguateMultiMemberPopup-title'));
+  assert.match(vepsTranslator.t('unassign-member'), /^Heitä ühtnik kartaspäi$/);
+  assert.equal(cache['ve-PP']['assign-member'], 'Märiče ühtnik', 'retain existing correct assignment wording');
+  assert.equal(cache['ve-PP']['remove-label'], 'Heitä znam', 'retain existing correct label-removal wording');
+  const localizedPersianCalendars = {
+  "ff": "Haatumeere Jalali (Perseere)",
+  "bm": "Jalali kalandiriye (perisanikan)"
+};
+  for (const [locale, value] of Object.entries(localizedPersianCalendars)) {
+    const translator = require('i18next').createInstance();
+    await translator.init({ lng: locale, fallbackLng: false, keySeparator: false, resources: { [locale]: { translation: cache[locale] } } });
+    assert.equal(translator.t('calendar-system-jalali'), value);
+    assert.match(value, /Jalali/);
+    assert.doesNotMatch(value, /Fars|Persian/);
+    assert.notEqual(translator.t('calendar-system-jalali'), translator.t('calendar-system-islamic'));
+  }
+  const eweCalendar = require('i18next').createInstance();
+  await eweCalendar.init({ lng: 'ee', fallbackLng: false, keySeparator: false, resources: { ee: { translation: cache.ee } } });
+  assert.equal(eweCalendar.t('calendar-system-islamic-civil'), 'islam subɔlawo ƒe sivil kalenda');
+  assert.doesNotMatch(eweCalendar.t('calendar-system-islamic-civil'), /Islamic civil/);
+  assert.notEqual(eweCalendar.t('calendar-system-islamic-civil'), eweCalendar.t('calendar-system-islamic'));
+  const vepsWildcardAndShortcut = {
+  "r-board-note": "Homaiče: jäta pöud tühjaks. Tühj pöud sättub jogaha voimusižehe znamoičendaha.",
+  "quick-access-description": "Znamoiče laud tähthanke, miše ližata laudan link necile šoidule."
+};
+  for (const [key, value] of Object.entries(vepsWildcardAndShortcut)) {
+    assert.equal(cache['ve-PP'][key], value, key);
+    assert.equal(vepsTranslator.t(key), value, key);
+    assert.doesNotMatch(value, /Huom:|jätä kenttä|tyhjäksi|täsmätäksesi|mahdolliseen arvoon|Merkkaa taulu|tähdellä|pikavalinta|palkkiin/, key);
+  }
+  assert.match(vepsTranslator.t('r-board-note'), /jäta pöud tühjaks.*jogaha voimusižehe znamoičendaha/);
+  assert.match(vepsTranslator.t('quick-access-description'), /Znamoiče laud tähthanke.*ližata laudan link necile šoidule/);
+  assert.equal(cache['ve-PP']['click-to-star'], 'Painda, miše znamoita nece laud tähthanke.', 'preserve the existing star hint');
+  assert.equal(vepsTranslator.t('act-atUserComment', { card: 'CARD', comment: 'COMMENT', list: 'LIST', swimlane: 'SWIMLANE', board: 'BOARD' }),
+    'Nimiti sinud kartal CARD: COMMENT lugetišes LIST ujundšoidul SWIMLANE laudal BOARD');
+  assert.doesNotMatch(cache['ve-PP']['act-atUserComment'], /mainitsi sinut|kortilla|listalla|uimaradalla|taululla/);
+  const vepsSubtaskControls = {
+  "default-subtasks-board": "Alategendad laudale __board__",
+  "subtask-settings": "Alategendoiden sändod",
+  "deposit-subtasks-board": "Pane alategendad necile laudale:",
+  "deposit-subtasks-list": "Lugetiž sihe pandud alategendoiden täht:",
+  "subtaskDeletePopup-title": "Heitta alategend?",
+  "export-card-subtasks": "Alategendad",
+  "subtaskActionsPopup-title": "Alategendan tegendad",
+  "show-subtasks-field": "Ozuta alategendoiden pöud",
+  "add-existing-card-as-subtask-empty": "Kartoid, miččed sättuba kodvindoihe, ei ole löutud."
+};
+  for (const [key, value] of Object.entries(vepsSubtaskControls)) {
+    assert.equal(cache['ve-PP'][key], value, key);
+    const rendered = vepsTranslator.t(key, { board: 'BOARD' });
+    assert.equal(rendered, value.replace('__board__', 'BOARD'), key);
+    assert.doesNotMatch(rendered, /Alitehtäv|Talleta|Laskeutumislista|alatehtäville|Poista alitehtävä|Näytä alitehtävät|Kortteja ei löytynyt/, key);
+  }
+  assert.match(vepsTranslator.t('deposit-subtasks-board'), /laudale:$/);
+  assert.match(vepsTranslator.t('deposit-subtasks-list'), /^Lugetiž.*alategendoiden/);
+  assert.match(vepsTranslator.t('add-existing-card-as-subtask-empty'), /sättuba kodvindoihe.*ei ole löutud/);
+  assert.ok(vepsTranslator.t('subtaskDeletePopup-title').endsWith('?'));
+  assert.equal(cache['ve-PP'].subtasks, 'Alategendad', 'retain the existing correct subtask heading');
+  const vepsWorkspaceControls = {
+  "allboards.workspaces": "Tötilad",
+  "allboards.add-workspace": "Ližada tötila",
+  "allboards.add-workspace-prompt": "Tötilan nimi",
+  "allboards.add-subworkspace": "Ližada alatötila",
+  "allboards.add-subworkspace-prompt": "Alatötilan nimi",
+  "allboards.edit-workspace": "Vajehta tötila",
+  "allboards.edit-workspace-name": "Tötilan nimi",
+  "allboards.edit-workspace-icon": "Tötilan ikon (markdown)",
+  "allboards.workspace-menu": "Tötilan menülist",
+  "workspace-settings": "Tötilan valičused",
+  "workspaceActionsPopup-title": "Tötilan valičused",
+  "addWorkspacePopup-title": "Ližada tötila",
+  "allboards.delete-workspace-confirm-check": "Vahvištoita tötilan heittand"
+};
+  for (const [key, value] of Object.entries(vepsWorkspaceControls)) {
+    assert.equal(cache['ve-PP'][key], value, key);
+    assert.equal(vepsTranslator.t(key), value, key);
+    assert.doesNotMatch(value, /Työtila|työtila|Alityötila|alityötila|Lisää|Muokkaa|Varmista|asetukset|valikko/, key);
+  }
+  assert.notEqual(vepsTranslator.t('allboards.add-workspace-prompt'), vepsTranslator.t('allboards.add-subworkspace-prompt'));
+  assert.match(vepsTranslator.t('allboards.edit-workspace-icon'), /\(markdown\)$/);
+  assert.equal(cache['ve-PP']['allboards.delete-workspace-confirm'], 'Tahod-ik heitta necen tötilan?', 'preserve existing Veps confirmation');
+  const vepsDragControls = {
+  "board-drag-drop-reorder-or-click-open": "Vajehta laudoiden ikonoiden jäl’genduz: vedä da pästa. Painda laudan ikon, miše avaita laud.",
+  "board-open-and-move-between-remaining-and-workspaces": "Painda, miše avaita laud. Vedä pidim, miše panda laud __workspaces__ (pästa tötilaha čuramenülistas).",
+  "drag-board-to-workspace": "Vedä laud, miše panda se __workspaces__ (pästa tötilaha čuramenülistas)",
+  "drag-board": "Vedä laud",
+  "show-desktop-drag-handles": "Ozuta radpöudon vedändan pidimed",
+  "sidebar-open": "Avaida čuramenülist",
+  "sidebar-close": "Saupta čuramenülist",
+  "drag-to-resize-sidebar": "Vedä, miše vajehtada čuramenülistan suruz’"
+};
+  for (const [key, value] of Object.entries(vepsDragControls)) {
+    assert.equal(cache['ve-PP'][key], value, key);
+    assert.equal(vepsTranslator.t(key, { workspaces: 'WORKSPACES' }), value.replace('__workspaces__', 'WORKSPACES'), key);
+    assert.doesNotMatch(value, /Järjestele|taulu|Klikkaa|Avaa|kahvaa|pudota|työtila|sivupalk|Sulje|Näytä|Kokodza|shandukisa/, key);
+  }
+  assert.match(vepsTranslator.t('board-drag-drop-reorder-or-click-open'), /vedä da pästa.*Painda/);
+  assert.match(vepsTranslator.t('board-open-and-move-between-remaining-and-workspaces', { workspaces: 'WORKSPACES' }), /Painda.*Vedä pidim.*WORKSPACES.*pästa tötilaha/);
+  assert.notEqual(vepsTranslator.t('sidebar-open'), vepsTranslator.t('sidebar-close'));
+  assert.match(vepsTranslator.t('drag-to-resize-sidebar'), /^Vedä.*suruz’$/);
+  assert.equal(cache['ve-PP']['shortcut-toggle-sidebar'], 'Ozuta libo peitä laudan čuramenülist', 'retain existing sidebar terminology');
+  assert.equal(vepsTranslator.t('estimated-time-remaining'), 'Arvosteldud jänu aig');
+  assert.doesNotMatch(vepsTranslator.t('estimated-time-remaining'), /Arvioitu|jäljellä oleva aika/);
+  assert.equal(vepsTranslator.t('shortcut-filter-my-assigned-cards'), 'Puhtasta minei märitud kartad');
+  assert.doesNotMatch(vepsTranslator.t('shortcut-filter-my-assigned-cards'), /sinei/);
+  assert.equal(cache['ve-PP']['shortcut-filter-my-cards'], 'Puhtasta minun kartad', 'retain distinct own-card filter');
+  assert.equal(cache['ve-PP']['shortcut-assign-self'], 'Märiče ičtaze nügüdläižele kartale', 'retain distinct self-assignment action');
+  const vepsAnnouncementsAndRepositories = {
+  "admin-announcement": "Tedotuz",
+  "admin-announcement-active": "Aktivine tedotuz kaiken sisteman täht",
+  "admin-announcement-title": "Administratoran tedotuz",
+  "available-repositories": "Kävutandaha joudai repod",
+  "repositories": "Repod",
+  "repository-name": "Repon nimi",
+  "no-repositories": "Repoid ei ole löutud",
+  "create-repository": "Tege repo",
+  "upload-repository": "Sa/Udišta repo",
+  "sign-in-to-upload": "Tule sistemaha, miše sada repoid"
+};
+  for (const [key, value] of Object.entries(vepsAnnouncementsAndRepositories)) {
+    assert.equal(cache['ve-PP'][key], value, key);
+    assert.equal(vepsTranslator.t(key), value, key);
+    assert.doesNotMatch(value, /Ilmoitus|ilmoitus|Aktiivinen|järjestelmänlaajuinen|ylläpitäjältä|Käytettävissä|Repot|Repoja|Luo|Uppaa|Päivitä|Kirjaudu|upataksesi/, key);
+  }
+  assert.match(vepsTranslator.t('admin-announcement-active'), /Aktivine.*kaiken sisteman/);
+  assert.match(vepsTranslator.t('upload-repository'), /^Sa\/Udišta/);
+  assert.match(vepsTranslator.t('sign-in-to-upload'), /^Tule sistemaha.*sada repoid$/);
+  assert.equal(cache['ve-PP'].repository, 'Repo', 'retain the existing technical repository noun');
+  const vepsDeviceControls = {
+  "desktop-mode": "Radpöudon režim",
+  "mobile-mode": "Matkladehen režim",
+  "mobile-desktop-toggle": "Vajehta matkladehen režiman da radpöudon režiman keskes",
+  "preview-pdf-not-supported": "Sinun ladeh ei voi ozutada PDF-ezikacundad. Ladi sen sijas panda fail muštho."
+};
+  for (const [key, value] of Object.entries(vepsDeviceControls)) {
+    assert.equal(cache['ve-PP'][key], value, key);
+    assert.equal(vepsTranslator.t(key), value, key);
+    assert.doesNotMatch(value, /Työpöytätila|Mobiilitila|Vaihda|mobiili-|työpöytätilan|Laitteesi|esikatselua|Yritä|ladata/, key);
+  }
+  assert.notEqual(vepsTranslator.t('desktop-mode'), vepsTranslator.t('mobile-mode'));
+  assert.match(vepsTranslator.t('mobile-desktop-toggle'), /matkladehen režiman.*radpöudon režiman/);
+  assert.match(vepsTranslator.t('preview-pdf-not-supported'), /ei voi ozutada PDF-ezikacundad.*sen sijas panda fail muštho/);
+  assert.equal(cache['ve-PP'].download, 'Pane muštho kut fail', 'retain existing download action');
+  assert.equal(vepsTranslator.t('has-spenttime-cards'), 'Om kartoid kävutadud aiganke');
+  assert.doesNotMatch(vepsTranslator.t('has-spenttime-cards'), /Sisältää|käytetty aika|kortteja/);
+  assert.equal(vepsTranslator.t('spent-time-hours'), 'Kävutadud aig (časud)');
+  assert.doesNotMatch(vepsTranslator.t('spent-time-hours'), /Käytetty|tuntia/);
+  assert.notEqual(vepsTranslator.t('has-spenttime-cards'), vepsTranslator.t('has-overtime-cards'));
+  assert.equal(cache['ve-PP'].hours, 'časud', 'retain existing hours terminology');
+  const vepsWaitIndicators = {
+  "wait-spinner": "Varastusen znam",
+  "Bounce": "Hüpke – varastusen znam",
+  "Cube": "Kub – varastusen znam",
+  "Cube-Grid": "Kuboiden verk – varastusen znam",
+  "Dot": "Čokim – varastusen znam",
+  "Double-Bounce": "Kaks’kerdaine hüpke – varastusen znam",
+  "Rotateplane": "Tazan punond – varastusen znam",
+  "Scaleout": "Kazvand – varastusen znam",
+  "Wave": "Laineh – varastusen znam"
+};
+  for (const [key, value] of Object.entries(vepsWaitIndicators)) {
+    assert.equal(cache['ve-PP'][key], value, key);
+    assert.equal(vepsTranslator.t(key), value, key);
+    assert.doesNotMatch(value, /odotus|Odotus|pyörijä|Kuutio|ristikko|Tupla|pomppu|Pomppu|Pyöritä|Skaalaus|Aalto|Piste/, key);
+  }
+  assert.equal(new Set(Object.values(vepsWaitIndicators)).size, 9, 'preserve all wait-indicator distinctions');
+  assert.notEqual(vepsTranslator.t('Bounce'), vepsTranslator.t('Double-Bounce'));
+  assert.notEqual(vepsTranslator.t('Cube'), vepsTranslator.t('Cube-Grid'));
+  const vepsStructureMigration = {
+  "comprehensive-board-migration": "Kaikenpoline laudan migracii",
+  "step-analyze-board-structure": "Tarkištele laudan struktur",
+  "fix-missing-lists-migration": "Kohenda lugetišed, miččid ei ole",
+  "fix-missing-lists-migration-description": "Löudab da kohendab laudan strukturas lugetišid, miččid ei ole libo oma travitud.",
+  "run-fix-missing-lists-migration-confirm": "Nece löudab da kohendab laudan strukturas lugetišid, miččid ei ole libo oma travitud. Jatkta?"
+};
+  for (const [key, value] of Object.entries(vepsStructureMigration)) {
+    assert.equal(cache['ve-PP'][key], value, key);
+    assert.equal(vepsTranslator.t(key), value, key);
+    assert.doesNotMatch(value, /Perusteellinen|taulu|Analysoi|rakennetta|Korjaa|puuttuvat|Havaitsee|korjaa|vioittuneet|Jatketaanko/, key);
+  }
+  assert.match(vepsTranslator.t('fix-missing-lists-migration-description'), /ei ole libo oma travitud/);
+  assert.equal(vepsTranslator.t('run-fix-missing-lists-migration-confirm'), 'Nece '+vepsTranslator.t('fix-missing-lists-migration-description').replace(/^L/, 'l')+' Jatkta?');
+  assert.equal(cache['ve-PP']['step-analyze-lists'], 'Tarkištele lugetišid', 'retain existing analysis terminology');
+  const vepsMigrationIntegrity = {
+  "back-to-settings": "Pörte valičusihe",
+  "board-migration": "Laudan migracii",
+  "board-migrations": "Laudan migracijad",
+  "comprehensive-board-migration-description": "Kaikenpoližešti kodvib da kohendab laudan andmusid, mugažo lugetišiden jäl’gendust, kartoiden sijoid da ujundšoidoiden strukturad, miše niil ei oliži vigoid.",
+  "migrations-description": "Kodvi da kohenda necen laudan andmused, miše niil ei oliži vigoid. Kaikuččen migracijan voib tehta eriži.",
+  "run-comprehensive-migration-confirm": "Nece tegeb kaikenpoline migracii, miše kodvda da kohendada laudan andmusid, miše niil ei oliži vigoid. Nece voib otta vähän aigad. Jatkta?"
+};
+  for (const [key, value] of Object.entries(vepsMigrationIntegrity)) {
+    assert.equal(cache['ve-PP'][key], value, key);
+    assert.equal(vepsTranslator.t(key), value, key);
+    assert.doesNotMatch(value, /Takaisin|asetuksiin|Taulun siirto|Taulu siirrot|Suorittaa|tarkistuksia|eheyden|varmistamiseksi|Jokainen|erikseen|kestää hetken|Jatketaanko/, key);
+  }
+  assert.match(vepsTranslator.t('comprehensive-board-migration-description'), /lugetišiden jäl’gendust.*kartoiden sijoid.*ujundšoidoiden strukturad/);
+  assert.match(vepsTranslator.t('migrations-description'), /Kaikuččen migracijan voib tehta eriži/);
+  assert.match(vepsTranslator.t('run-comprehensive-migration-confirm'), /voib otta vähän aigad.*Jatkta\?$/);
+  assert.notEqual(vepsTranslator.t('board-migration'), vepsTranslator.t('board-migrations'));
+  const vepsDuplicateWarnings = {
+  "delete-duplicate-lists-confirm": "Oled-ik tozi mugošt mel’t? Nece heittäb kaik lugetišiden dublikatad, kudambil om ühtejiččen nimi da kudambiš ei ole kartoid.",
+  "delete-duplicate-empty-lists-migration-description": "Heittäb tühjiden lugetišiden dublikatad ilman varuta. Heittäb vaiše lugetišed, kudambiš ei ole kartoid DA kudambil om toine ühtejiččen nimenke lugetiž, kudambas om kartoid.",
+  "run-delete-duplicate-empty-lists-migration-confirm": "Nece vajehtab ezmäi kaik ühthižed lugetišed eriližihe lugetišihe kaikuččen ujundšoidun täht, sid’ heittäb tühjad lugetišed, kudambil om toine ühtejiččen nimenke lugetiž kartoidenke. Heittas vaiše todesižešti tarbhatomad tühjad lugetišed. Jatkta?"
+};
+  for (const [key, value] of Object.entries(vepsDuplicateWarnings)) {
+    assert.equal(cache['ve-PP'][key], value, key);
+    assert.equal(vepsTranslator.t(key), value, key);
+    assert.doesNotMatch(value, /Oletko varma|poistaa|kaksoiskappale|turvallisesti|sisältää kortteja|muuntaa ensin|uimaratakohtaisiksi|tarpeettomat|Jatketaanko/, key);
+  }
+  assert.match(vepsTranslator.t('delete-duplicate-empty-lists-migration-description'), /ei ole kartoid DA.*ühtejiččen nimenke.*om kartoid/);
+  assert.match(vepsTranslator.t('run-delete-duplicate-empty-lists-migration-confirm'), /ezmäi.*ühthižed lugetišed.*kaikuččen ujundšoidun.*sid’ heittäb.*kartoidenke.*vaiše.*tarbhatomad.*Jatkta\?$/);
+  assert.match(vepsTranslator.t('delete-duplicate-lists-confirm'), /ühtejiččen nimi.*ei ole kartoid/);
+  const vepsConversionProgress = {
+  "migration-progress-note": "Ole hüvä, varasta, kuni mö vajehtam sinun laudan strukturan jäl’gmäižele strukturale...",
+  "conversion-info-text": "Nece vajehtab kaikuččen laudan vaiše ühten kerdan da paremboičeb radon tulotuzmärad. Sinä void jatkata laudan kävutandad kut aigemba.",
+  "converting-board-description": "Vajehtadas laudan strukturan, miše paremboita sen funkcijoid. Nece voib otta vähän aigad.",
+  "migration-info-text": "Sistem tegeb kaikuččen andmbazan migracijan vaiše ühten kerdan. Nece paremboičeb sisteman radon tulotuzmärad. Process jatktase tagamal, eskai ku sinä sauptad brauzeran."
+};
+  for (const [key, value] of Object.entries(vepsConversionProgress)) {
+    assert.equal(cache['ve-PP'][key], value, key);
+    assert.equal(vepsTranslator.t(key), value, key);
+    assert.doesNotMatch(value, /Odota hetki|siirrämme|uusimpaan rakenteeseen|muunnos suoritetaan|parantaa suorituskykyä|normaalisti|Muunnetaan|Tietokannan|Prosessi jatkuu|suljet selaimen/, key);
+  }
+  assert.match(vepsTranslator.t('conversion-info-text'), /kaikuččen laudan vaiše ühten kerdan.*void jatkata/);
+  assert.match(vepsTranslator.t('migration-info-text'), /kaikuččen andmbazan migracijan vaiše ühten kerdan.*jatktase tagamal.*sauptad brauzeran/);
+  assert.match(vepsTranslator.t('converting-board-description'), /paremboita sen funkcijoid.*voib otta vähän aigad/);
+  const vepsRecoverySteps = {
+  "step-ensure-per-swimlane-lists": "Kodvi da tege lugetišed kaikuččen ujundšoidun täht, ku niid ei ole",
+  "step-ensure-lost-cards-swimlane": "Kodvi da tege kadonu kartoiden ujundšoid, ku sidä ei ole",
+  "lost-cards": "Kadonu kartad",
+  "lost-cards-list": "Endištadud azjad"
+};
+  for (const [key, value] of Object.entries(vepsRecoverySteps)) {
+    assert.equal(cache['ve-PP'][key], value, key);
+    assert.equal(vepsTranslator.t(key), value, key);
+    assert.doesNotMatch(value, /Varmista|uimaratakohtaiset|hävinneiden|Kadonneet|Palautetut kohteet/, key);
+  }
+  assert.match(vepsTranslator.t('step-ensure-per-swimlane-lists'), /kaikuččen ujundšoidun.*ku niid ei ole/);
+  assert.match(vepsTranslator.t('step-ensure-lost-cards-swimlane'), /kadonu kartoiden ujundšoid.*ku sidä ei ole/);
+  assert.notEqual(vepsTranslator.t('lost-cards'), vepsTranslator.t('lost-cards-list'));
+  assert.equal(cache['ve-PP']['restore-lost-cards-migration'], 'Endišta kadonu kartad', 'retain existing recovery action');
+  const vepsSearchHelp = {
+  "globalSearch-instructions-description": "Ecindas voib kävutada operatoroid, miše röunatada ecindad. Operatoran nimi da znamoičend kirjutadas erigoittud \":\"-znamal. Ozutesikš operator `lugetiž:Blocked` ecib vaiše kartoid lugetišespäi nimenke *Blocked*. Ku znamoičendas om keskustoid libo eriližid simvoloid, pane se velgznamoihe (ozutesikš `__operator_list__:\"Kodvi\"`).",
+  "globalSearch-instructions-operator-due": "`__operator_due__:<n>` – kartad, miččiden märaig tuleb nügüdläižen aigan jäl’ghe *<n>* päivässai. `__operator_due__:__predicate_overdue__` ozutab kaik kartad, miččiden märaig om männu."
+};
+  for (const [key, value] of Object.entries(vepsSearchHelp)) {
+    assert.equal(cache['ve-PP'][key], value, key);
+    assert.equal(vepsTranslator.t(key, { operator_list: 'lugetiž', operator_due: 'märaig', predicate_overdue: cache['ve-PP']['predicate-overdue'] }), value.replace('__operator_list__', 'lugetiž').replaceAll('__operator_due__', 'märaig').replace('__predicate_overdue__', cache['ve-PP']['predicate-overdue']), key);
+    assert.doesNotMatch(value, /Etsinnät|määritellään|kirjoittamalla|lainausmerkeissä|kortit joilla|eräpäivä|korkeitaan/, key);
+    assert.equal((value.match(/`/g) || []).length % 2, 0, 'balanced code spans');
+  }
+  assert.match(vepsTranslator.t('globalSearch-instructions-description', { operator_list: 'lugetiž' }), /`lugetiž:Blocked`.*keskustoid libo eriližid simvoloid.*`lugetiž:"Kodvi"`/);
+  assert.match(vepsTranslator.t('globalSearch-instructions-operator-due', { operator_due: 'märaig', predicate_overdue: cache['ve-PP']['predicate-overdue'] }), /`märaig:<n>`.*\*<n>\* päivässai.*`märaig:möhäline`.*märaig om männu/);
+  assert.equal(vepsTranslator.t('MongoDB_storage_engine'), 'MongoDB kaičusen motor');
+  assert.doesNotMatch(vepsTranslator.t('MongoDB_storage_engine'), /tallennusmoottori/);
+  assert.equal(vepsTranslator.t('zoom-in'), 'Surenda');
+  assert.equal(vepsTranslator.t('zoom-out'), 'Penenda');
+  assert.notEqual(vepsTranslator.t('zoom-in'), vepsTranslator.t('zoom-out'));
+  assert.doesNotMatch(vepsTranslator.t('zoom-in') + vepsTranslator.t('zoom-out'), /Lähennä|Loitonna/);
+  assert.equal(vepsTranslator.t('zoom-level'), 'Kartmär');
+  assert.equal(vepsTranslator.t('enter-zoom-level'), 'Kirjuta kartmär (50-300%):');
+  assert.match(vepsTranslator.t('enter-zoom-level'), /\(50-300%\):$/);
+  assert.doesNotMatch(vepsTranslator.t('zoom-level') + vepsTranslator.t('enter-zoom-level'), /Zoomaus|Kirjoita|taso/);
+  assert.equal(cache.to['calendar-system-islamic-tbla'], 'tohi māhina fakamohameti (fakatēpile, ʻepoki fakaʻasitalōnoma)');
+  assert.match(cache.to['calendar-system-islamic-tbla'], /fakatēpile, ʻepoki fakaʻasitalōnoma/);
+  assert.doesNotMatch(cache.to['calendar-system-islamic-tbla'], /Islamic tabular/);
+  assert.notEqual(cache.to['calendar-system-islamic-tbla'], cache.to['calendar-system-islamic-civil']);
+  assert.notEqual(cache.to['calendar-system-islamic-tbla'], cache.to['calendar-system-islamic-rgsa']);
+  assert.equal(cache.sah['calendar-system-islamic-civil'], 'Ислаам халандаара (табылыысса, гражданскай ээрэ)');
+  assert.doesNotMatch(cache.sah['calendar-system-islamic-civil'], /Islamic civil/);
+  assert.notEqual(cache.sah['calendar-system-islamic-civil'], cache.sah['calendar-system-islamic']);
+  assert.equal(cache.sah['calendar-system-islamic-tbla'], 'Ислаам халандаара (табылыысса, астрономия ээрэтэ)');
+  assert.match(cache.sah['calendar-system-islamic-tbla'], /табылыысса, астрономия ээрэтэ/);
+  assert.doesNotMatch(cache.sah['calendar-system-islamic-tbla'], /Islamic tabular/);
+  assert.notEqual(cache.sah['calendar-system-islamic-tbla'], cache.sah['calendar-system-islamic-civil']);
+  assert.equal(cache.sah['calendar-system-islamic-rgsa'], 'Ислаам халандаара (Сауд Арабията, ыйы кэтээн көрүү)');
+  assert.doesNotMatch(cache.sah['calendar-system-islamic-rgsa'], /Islamic|Saudi Arabia/);
+  for (const variant of ['civil', 'tbla', 'umalqura']) assert.notEqual(cache.sah['calendar-system-islamic-rgsa'], cache.sah[`calendar-system-islamic-${variant}`]);
+  assert.equal(cache.bm['calendar-system-hebrew'], 'Yahudiya ka kalandiriye');
+  assert.doesNotMatch(cache.bm['calendar-system-hebrew'], /Hebrew/);
+  assert.notEqual(cache.bm['calendar-system-hebrew'], cache.bm['calendar-system-islamic']);
+  assert.equal(cache.rup['color-indigo'], 'lulachi');
+  assert.notEqual(cache.rup['color-indigo'], 'indigo');
+  assert.notEqual(cache.rup['color-indigo'], cache.rup['color-blue']);
+  const tamazightAccountLabels = {
+  "username": "ⵉⵙⵎ ⵏ ⵓⵏⵙⵙⵎⵔⵙ",
+  "password": "ⵜⴰⴳⵓⵔⵉ ⵏ ⵓⵣⵔⴰⵢ",
+  "edit": "ⵙⵏⴼⵍ",
+  "email": "ⵉⵎⴰⵢⵍ",
+  "login": "ⴽⵛⵎ",
+  "logout": "ⴼⴼⵖ",
+  "password-mismatch": "ⵜⴰⴳⵓⵔⵉ ⵏ ⵓⵣⵔⴰⵢ ⵏⵏⴰ ⵜⵙⴽⵛⵎⴷ ⵓⵔ ⵜⵎⵙⴰⵙⴰ"
+};
+  for (const [key, value] of Object.entries(tamazightAccountLabels)) {
+    assert.equal(cache.zgh[key], value, key);
+    assert.match(value, /[\u2D30-\u2D7F]/, key);
+    assert.doesNotMatch(value, /[\u0600-\u06FF]|Connexion|Déconnexion|Les mots/, key);
+  }
+  assert.notEqual(cache.zgh.login, cache.zgh.logout);
+  assert.equal(cache.zgh['delete-all-notifications'], 'ⴽⴽⵙ ⵉⵍⵖⴰ ⴰⴽⴽ');
+  assert.match(cache.zgh['delete-all-notifications'], /ⵉⵍⵖⴰ ⴰⴽⴽ$/);
+  assert.doesNotMatch(cache.zgh['delete-all-notifications'], /Supprimer|notifications/);
+  const quechuaBasicColors = {"color-black": "yana", "color-red": "puka", "color-white": "yuraq"};
+  for (const [key, value] of Object.entries(quechuaBasicColors)) {
+    assert.equal(cache.qu[key], value, key);
+    assert.doesNotMatch(cache.qu[key], /Kay willaymi|black|red|white/, key);
+  }
+  assert.equal(new Set(Object.values(quechuaBasicColors)).size, 3);
+  const quechuaAdditionalColors = {"color-blue": "anqas", "color-green": "q'umir", "color-yellow": "q'illu"};
+  for (const [key, value] of Object.entries(quechuaAdditionalColors)) {
+    assert.equal(cache.qu[key], value, key);
+    assert.doesNotMatch(cache.qu[key], /Kay willaymi|blue|green|yellow/, key);
+  }
+  assert.equal(new Set([...Object.values(quechuaBasicColors), ...Object.values(quechuaAdditionalColors)]).size, 6);
+  const quechuaGrayPurple = {"color-gray": "uqi", "color-purple": "kulli"};
+  for (const [key, value] of Object.entries(quechuaGrayPurple)) {
+    assert.equal(cache.qu[key], value, key);
+    assert.doesNotMatch(cache.qu[key], /Kay willaymi|gray|purple/, key);
+    assert.notEqual(value, cache.qu['color-blue']);
+  }
+  const quechuaMetalColors = {"color-gold": "quri llimpi", "color-silver": "qullqi llimpi"};
+  for (const [key, value] of Object.entries(quechuaMetalColors)) {
+    assert.equal(cache.qu[key], value, key);
+    assert.match(value, / llimpi$/);
+    assert.doesNotMatch(value, /Kay willaymi|gold|silver/);
+  }
+  assert.notEqual(cache.qu['color-gold'], cache.qu['color-silver']);
+  const cherokeeHijriVariants = {"calendar-system-islamic-rgsa": "ᎢᏌᎳᎻᎩ, ᏌᏗ ᎠᎳᏈᎠ ᎠᎪᏩᏘᎭ", "calendar-system-islamic-tbla": "ᎢᏌᎳᎻᎩ (ᏅᏯ, ᏃᏈᏏ ᎢᏳᏍᏗ)"};
+  for (const [key, value] of Object.entries(cherokeeHijriVariants)) {
+    assert.equal(cache.chr[key], value, key);
+    assert.doesNotMatch(value, /Islamic|Saudi|tabular/);
+    assert.match(value, /[\u13A0-\u13FF]/);
+    assert.notEqual(value, cache.chr['calendar-system-islamic-civil']);
+  }
+  assert.notEqual(cache.chr['calendar-system-islamic-rgsa'], cache.chr['calendar-system-islamic-tbla']);
   console.log(`auditedTranslationCorrections: ${corrections.length} corrections verified; tokens, JSON examples, key order, idempotency and newer translations preserved`);
 })().catch(error => { console.error(error); process.exitCode = 1; });
