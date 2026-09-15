@@ -2854,6 +2854,140 @@ const tokens = value => [...value.matchAll(/__[A-Za-z0-9]+(?:_[A-Za-z0-9]+)*__|%
   }
   assert.match(vepsTranslator.t('globalSearch-instructions-description', { operator_list: 'lugetiž' }), /`lugetiž:Blocked`.*keskustoid libo eriližid simvoloid.*`lugetiž:"Kodvi"`/);
   assert.match(vepsTranslator.t('globalSearch-instructions-operator-due', { operator_due: 'märaig', predicate_overdue: cache['ve-PP']['predicate-overdue'] }), /`märaig:<n>`.*\*<n>\* päivässai.*`märaig:möhäline`.*märaig om männu/);
+  const vepsCardNumberSearch = {
+    'card-number': 'Kartan nomer',
+    'operator-number': 'lugu',
+    'globalSearch-instructions-operator-number': '`__operator_number__:<number>` - kartad, miččiden kartan nomer om *<number>*',
+  };
+  for (const [key, value] of Object.entries(vepsCardNumberSearch)) {
+    assert.equal(cache['ve-PP'][key], value, key);
+    assert.doesNotMatch(value, /Inombolo|ikhadi|amakhadi|anenombolo|engu-/i, key);
+  }
+  assert.equal(
+    vepsTranslator.t('globalSearch-instructions-operator-number', { operator_number: 'nomer' }),
+    '`nomer:<number>` - kartad, miččiden kartan nomer om *<number>*',
+  );
+  assert.equal(cache['ve-PP']['operator-number'], cache['ve-PP'].number.toLowerCase());
+  assert.match(cache['ve-PP']['card-sorting-by-number'], /Kartoiden.*nomeran mödhe/);
+  assert.equal(cache['ve-PP'].summary, 'Lühüd südäimišt');
+  assert.equal(cache['ve-PP']['problems-status-title'], cache['ve-PP'].status);
+  assert.equal(cache['ve-PP']['problems-status-title'], 'Olo');
+  assert.doesNotMatch(cache['ve-PP'].summary, /Manweledzo/);
+  assert.doesNotMatch(cache['ve-PP']['problems-status-title'], /Tilanne/);
+  const vepsVotingSides = {
+    'positiveVoteMembersPopup-title': 'Polestajad',
+    'negativeVoteMembersPopup-title': 'Vastustajad',
+    'vote-for-it': 'Polestada',
+    'vote-against': 'Vastustada',
+  };
+  for (const [key, value] of Object.entries(vepsVotingSides)) {
+    assert.equal(cache['ve-PP'][key], value, key);
+    assert.doesNotMatch(value, /Kannattajat|Vastustajat|puolesta|vastaan/, key);
+  }
+  assert.notEqual(vepsVotingSides['positiveVoteMembersPopup-title'], vepsVotingSides['negativeVoteMembersPopup-title']);
+  assert.notEqual(vepsVotingSides['vote-for-it'], vepsVotingSides['vote-against']);
+  assert.match(cache['ve-PP'].voting, /Änestamine/);
+  const vepsCardLoading = {
+    'board-status-loading-mode': 'Kartoiden ladind',
+    'cards-loading-auto': 'Avtomatine (lašk vaiše suril laudoil)',
+    'cards-loading-all': 'Kaik kartad',
+    'cards-loading-description': "WeKan ladib laudan kartad avtomatižešti: sur laud (suruzülimärad suremb) ladib vaiše nügüd' nägujad kartad (loppmatoi skrolind) da elävan lugun, muga se radab piged, kävutab vähemba muštad da sirdab vähemba andmusid verkon mödhe; penembad laudad ladiba kaik kartad, miše kävutand oliži kaikuten kebn da kaik funkcijad oližiba kävutandaha. Ei pidagoi sädada midä-se. Operatorad voiba völ pakita režiman CARDS_LOADING (all/lazy/auto) da CARDS_LOADING_LAZY_THRESHOLD -ümbrišton vajehtujiden abul.",
+    'cards-loading-lazy-note': "Laškan kartoiden ladind om eksperimentaline: kartoiden lugijad i WIP-rajad oma tarkad, no Kalendar/Tablic/Gantt-nägud i äi valičuz ozutaba vaiše nenäd kartad, kudambad om jo ladidud. Lada avoinad laudad uzin necen vajehtandan jäl'ghe.",
+  };
+  for (const [key, value] of Object.entries(vepsCardLoading)) {
+    assert.equal(cache['ve-PP'][key], value, key);
+    assert.doesNotMatch(value, /Zwi ḓi itaho|u laisa|mabodo|dzikhadi|mnog-valind|ümbristön muuttujal|\(alolane\)/, key);
+  }
+  assert.equal(cache['ve-PP']['board-status-loading-mode'], cache['ve-PP']['cards-loading']);
+  assert.match(cache['ve-PP']['cards-loading-description'], /avtomatižešti.*suruzülimärad suremb.*vaiše nügüd' nägujad kartad.*elävan lugun/);
+  assert.match(cache['ve-PP']['cards-loading-description'], /vähemba muštad.*vähemba andmusid verkon mödhe.*penembad laudad.*kaik kartad/);
+  assert.match(cache['ve-PP']['cards-loading-description'], /Ei pidagoi sädada.*pakita režiman/);
+  assert.deepEqual(
+    cache['ve-PP']['cards-loading-description'].match(/CARDS_LOADING(?:_LAZY_THRESHOLD)?/g),
+    english['cards-loading-description'].match(/CARDS_LOADING(?:_LAZY_THRESHOLD)?/g),
+  );
+  assert.match(cache['ve-PP']['cards-loading-description'], /CARDS_LOADING \(all\/lazy\/auto\)/);
+  assert.match(cache['ve-PP']['cards-loading-lazy-note'], /WIP.*Kalendar\/Tablic\/Gantt.*äi valičuz.*jo ladidud.*Lada avoinad laudad uzin/);
+  const cardLoadingProblems = fs.readFileSync(path.join(root, 'client/components/settings/adminProblems.jade'), 'utf8');
+  const boardStatusView = fs.readFileSync(path.join(root, 'client/components/boards/statsView.jade'), 'utf8');
+  const boardStatusLogic = fs.readFileSync(path.join(root, 'client/components/boards/statsView.js'), 'utf8');
+  assert.match(cardLoadingProblems, /\{\{_ 'cards-loading-description'\}\}/);
+  assert.match(boardStatusView, /\{\{_ 'board-status-loading-mode'\}\}/);
+  assert.match(boardStatusLogic, /TAPi18n\.__\('cards-loading-(?:lazy|all)'\)/);
+  assert.match(boardStatusLogic, /TAPi18n\.__\('cards-loading-auto'\)/);
+  const vepsAccessibility = {
+    accessibility: 'Jogahižen pästand',
+    'accessibility-page-enabled': "Jogahižen pästandan lehtpol' om päl",
+    'accessibility-info-not-added-yet': 'Jogahižen pästandan tedoid ei ole völ ližatud',
+    'accessibility-title': 'Jogahižen pästandan pälkirjutez',
+    'accessibility-content': 'Jogahižen pästandan südäimuz',
+  };
+  for (const [key, value] of Object.entries(vepsAccessibility)) {
+    assert.equal(cache['ve-PP'][key], value, key);
+    assert.doesNotMatch(value, /Saavutettavuus|sivu käytössä|tietoja ei ole lisätty|otsikko|sisältö/, key);
+    assert.match(value, /^Jogahižen pästand/);
+  }
+  assert.equal(new Set(Object.values(vepsAccessibility)).size, 5, 'preserve every accessibility UI role');
+  assert.match(cache['ve-PP']['accessibility-page-enabled'], /lehtpol'.*om päl$/);
+  assert.match(cache['ve-PP']['accessibility-info-not-added-yet'], /tedoid.*ei ole völ ližatud$/);
+  assert.match(cache['ve-PP']['accessibility-title'], /pälkirjutez$/);
+  assert.match(cache['ve-PP']['accessibility-content'], /südäimuz$/);
+  const accessibilitySettings = fs.readFileSync(path.join(root, 'client/components/settings/settingBody.jade'), 'utf8');
+  const accessibilityPage = fs.readFileSync(path.join(root, 'client/components/main/accessibility.jade'), 'utf8');
+  const accessibilityLogic = fs.readFileSync(path.join(root, 'client/components/main/accessibility.js'), 'utf8');
+  for (const key of ['accessibility', 'accessibility-page-enabled', 'accessibility-title', 'accessibility-content']) {
+    assert.match(accessibilitySettings, new RegExp(`\\{\\{_ '${key}'\\}\\}`), `${key} is bound in Admin Settings`);
+  }
+  assert.match(accessibilityPage, /\{\{_ 'accessibility-info-not-added-yet'\}\}/);
+  assert.match(accessibilityLogic, /TAPi18n\.__\('accessibility-title'\)/);
+  assert.match(accessibilityLogic, /TAPi18n\.__\('accessibility-content'\)/);
+  assert.equal(cache['ve-PP']['showSum-field-on-list'], 'Ozuta pöudoiden luguiden ližaduz lugetižen ülähäl');
+  assert.doesNotMatch(cache['ve-PP']['showSum-field-on-list'], /Näytä|kenttien|summa|listan|yläosassa/);
+  assert.match(cache['ve-PP']['showSum-field-on-list'], /^Ozuta.*pöudoiden.*luguiden ližaduz.*lugetižen ülähäl$/);
+  assert.match(cache['ve-PP']['sum-of-number-fields'], /lugu-pöudoiden luguiden ližaduz.*lugetižen ülähäl/);
+  assert.match(cache['ve-PP']['date-range-of-fields'], /Päivmäriden keskust/);
+  assert.doesNotMatch(cache['ve-PP']['date-range-of-fields'], /ližaduz/);
+  const customFieldForm = fs.readFileSync(path.join(root, 'client/components/sidebar/sidebarCustomFields.jade'), 'utf8');
+  const sumControlBindings = customFieldForm.match(/span \{\{_ 'showSum-field-on-list'\}\}/g) || [];
+  assert.equal(sumControlBindings.length, 2, 'number and currency controls use the numeric-sum label');
+  assert.match(customFieldForm, /isTypeNotSelected 'currency'[\s\S]*showSum-field-on-list/);
+  assert.match(customFieldForm, /isTypeNotSelected 'number'[\s\S]*showSum-field-on-list/);
+  const sumLogic = fs.readFileSync(path.join(root, 'client/components/lists/listHeader.js'), 'utf8');
+  assert.match(sumLogic, /TAPi18n\.__\('sum-of-number-fields'\)/);
+  assert.equal(cache['ve-PP']['enable-vertical-scrollbars'], 'Pane päle vertikaližed skrolindan čurad');
+  assert.doesNotMatch(cache['ve-PP']['enable-vertical-scrollbars'], /Ota|pystysuuntaiset|vierityspalkit|käyttöön/);
+  assert.match(cache['ve-PP']['enable-vertical-scrollbars'], /^Pane päle.*vertikaližed.*skrolindan čurad$/);
+  const sidebarTemplate = fs.readFileSync(path.join(root, 'client/components/sidebar/sidebar.jade'), 'utf8');
+  assert.match(sidebarTemplate, /js-vertical-scrollbars-toggle\(title="\{\{_ 'enable-vertical-scrollbars'\}\}"\)/);
+  assert.match(sidebarTemplate, /span \{\{_ 'enable-vertical-scrollbars'\}\}/);
+  for (const template of [
+    'client/components/boards/boardBody.jade',
+    'client/components/cards/cardDetails.jade',
+    'client/components/lists/listBody.jade',
+    'client/components/sidebar/sidebar.jade',
+  ]) {
+    assert.match(fs.readFileSync(path.join(root, template), 'utf8'), /unless isVerticalScrollbars.*no-scrollbars/, template);
+  }
+  const vepsKeyboardCommands = {
+    'keyboard-shortcuts': 'Klaviaturan käskud',
+    'keyboard-shortcuts-enabled': 'Klaviaturan käskud oma päl. Painda sammutandaks.',
+    'keyboard-shortcuts-disabled': 'Klaviaturan käskud oma sammutadud. Painda pälepanendaks.',
+    'shortcut-show-shortcuts': 'Ozuta nece klaviaturan käskuiden lugetiž',
+  };
+  for (const [key, value] of Object.entries(vepsKeyboardCommands)) {
+    assert.equal(cache['ve-PP'][key], value, key);
+    assert.doesNotMatch(value, /Pikanäppäimet|käytössä|Klikkaa|poistaaksesi|käyttöön|Tuo esiin|pikavalintalista/, key);
+  }
+  assert.match(cache['ve-PP']['keyboard-shortcuts-enabled'], /oma päl.*Painda sammutandaks\.$/);
+  assert.match(cache['ve-PP']['keyboard-shortcuts-disabled'], /oma sammutadud.*Painda pälepanendaks\.$/);
+  assert.notEqual(cache['ve-PP']['keyboard-shortcuts-enabled'], cache['ve-PP']['keyboard-shortcuts-disabled']);
+  assert.match(cache['ve-PP']['shortcut-show-shortcuts'], /^Ozuta.*käskuiden lugetiž$/);
+  const shortcutsTemplate = fs.readFileSync(path.join(root, 'client/components/main/keyboardShortcuts.jade'), 'utf8');
+  const keyboardLogic = fs.readFileSync(path.join(root, 'client/lib/keyboard.js'), 'utf8');
+  assert.match(sidebarTemplate, /js-shortcuts\(title="\{\{_ 'keyboard-shortcuts' \}\}"\)/);
+  assert.match(sidebarTemplate, /isKeyboardShortcuts.*keyboard-shortcuts-enabled.*keyboard-shortcuts-disabled/);
+  assert.match(shortcutsTemplate, /\{\{_ 'keyboard-shortcuts'\}\}/);
+  assert.match(keyboardLogic, /keys: \['\?'\],[\s\S]*action: 'shortcut-show-shortcuts'/);
   assert.equal(vepsTranslator.t('MongoDB_storage_engine'), 'MongoDB kaičusen motor');
   assert.doesNotMatch(vepsTranslator.t('MongoDB_storage_engine'), /tallennusmoottori/);
   assert.equal(vepsTranslator.t('zoom-in'), 'Surenda');

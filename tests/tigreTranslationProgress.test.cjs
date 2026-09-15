@@ -10,11 +10,40 @@ const readLocale = code => JSON.parse(fs.readFileSync(
 ));
 const english = readLocale('en');
 const tigre = readLocale('tig');
+const tigrinya = readLocale('ti');
 const tokens = value => [...value.matchAll(
   /__[A-Za-z0-9_]+__|%[A-Za-z]|%{[A-Za-z0-9]+}|{{[A-Za-z0-9]+}}/g,
 )].map(([token]) => token).sort();
 const tags = value => [...value.matchAll(/<\/?[A-Za-z][^>]*>/g)]
   .map(([tag]) => tag).sort();
+
+const tigreCalendar = 'አምዕል ለልተዐለብ እቱ ወድና አወርሕት';
+const calendarSystems = {
+  'calendar-system': 'ንዛም አወርሕት (ተመር ራኣው)',
+  'calendar-system-jalali': `ጃላሊ — ${tigreCalendar} (ፋርስ)`,
+  'calendar-system-buddhist': `ቡድሂስት — ${tigreCalendar}`,
+  'calendar-system-chinese': `ቻይነ — ${tigreCalendar}`,
+  'calendar-system-coptic': `ቆብጢ — ${tigreCalendar}`,
+  'calendar-system-dangi': `ዳንጊ — ${tigreCalendar} (ኮርየ)`,
+  'calendar-system-ethioaa': `ኢትዮጵያ ዓመተ ዓለም — ${tigreCalendar}`,
+  'calendar-system-ethiopic': `ኢትዮጵያ — ${tigreCalendar}`,
+  'calendar-system-hebrew': `ያሁድ — ${tigreCalendar}`,
+  'calendar-system-indian': `ህንድ ወጠናይ — ${tigreCalendar}`,
+  'calendar-system-islamic': `ሂጅሪ — ${tigreCalendar}`,
+  'calendar-system-islamic-civil': `ሂጅሪ — ${tigreCalendar} (ሕሳብ፣ ሲቪል መትጀምሮ)`,
+  'calendar-system-islamic-rgsa': `ሂጅሪ — ${tigreCalendar} (ስዑድያ፣ ወርሕ ረኤ)`,
+  'calendar-system-islamic-tbla': `ሂጅሪ — ${tigreCalendar} (ሕሳብ፣ ከዋክብ ዐስተር መትጀምሮ)`,
+  'calendar-system-islamic-umalqura': `ሂጅሪ — ${tigreCalendar} (ኡም አል-ቁራ)`,
+  'calendar-system-japanese': `ጃፓን — ${tigreCalendar}`,
+  'calendar-system-roc': `ሚንጉዎ — ${tigreCalendar} (ሲን)`,
+};
+
+for (const [key, value] of Object.entries(calendarSystems)) {
+  assert.equal(tigre[key], value, `${key}: exact reviewed Tigre calendar label`);
+  assert.notEqual(tigre[key], english[key], `${key}: no English fallback`);
+}
+assert.equal(new Set(Object.values(calendarSystems)).size,
+  Object.keys(calendarSystems).length, 'calendar choices remain distinct');
 
 const fillResult = spawnSync(process.execPath, [
   path.join(root, 'releases/translations/fill-translations.mjs'),
@@ -34,13 +63,13 @@ for (const [key, value] of Object.entries(tigre)) {
     `${key}: locale-wide HTML tag inventory`);
 }
 
-assert.equal(tigre.accept, 'ተቐበል');
+assert.equal(tigre.accept, 'ቀብል');
 assert.deepEqual(tokens(tigre['activity-changedTitle']), ['%s', '%s']);
 assert.deepEqual(tokens(tigre['act-deleteCard']),
   ['__board__', '__card__', '__list__', '__swimlane__']);
 assert.match(tigre['act-deleteCard'], /መገዲ/);
-assert.match(tigre['board-members-same-org-only'], /ውድብ/);
-assert.match(tigre['board-members-same-team-only'], /ጉጅለ/);
+assert.match(tigre['board-members-same-org-only'], /መነዘመት/);
+assert.match(tigre['board-members-same-team-only'], /ፈሪቅ/);
 assert.deepEqual(tokens(tigre['act-addChecklistItem']),
   ['__board__', '__card__', '__checklistItem__', '__checklist__', '__list__',
     '__swimlane__']);
@@ -50,7 +79,7 @@ assert.deepEqual(tokens(tigre['act-removeChecklistItem']),
 assert.deepEqual(tokens(tigre['act-setCustomField']),
   ['__board__', '__card__', '__customFieldValue__', '__customField__',
     '__list__', '__swimlane__']);
-assert.equal(tigre['act-importBoard'], 'ሰሌዳ __board__ ኣእተወ');
+assert.equal(tigre['act-importBoard'], 'ምዱድ __board__ ኣእተወ');
 assert.match(tigre['act-addAttachment'], /ተለጣፊ/);
 assert.match(tigre['act-addChecklist'], /ናይ ምርመራ ዝርዝር/);
 assert.deepEqual(tokens(tigre['act-moveCardToOtherBoard']),
@@ -63,11 +92,11 @@ assert.equal(tigre['allboards.workspaces'], 'ቦታታት ዕዮ');
 assert.match(tigre['allboards.edit-workspace-icon'], /markdown/);
 assert.deepEqual(tokens(tigre['activity-dueDate']), ['%s', '%s']);
 assert.match(tigre['archive-permanent-delete-disabled-hint'], /ፓነል/);
-assert.match(tigre['list-width-error-message'], /270/);
+assert.match(tigre['list-width-error-message'], /200/);
 assert.equal(tigre['fixed-list-width'], 'ንኩሎም ዝርዝራት ሓደ ግፍሒ');
 assert.match(tigre['set-swimlane-height-value'], /ፒክሰል/);
 assert.equal(tigre['convertChecklistItemToCardPopup-title'],
-  'ናብ ካርድ ቀይር');
+  'ዲብ ወረቀት ካርድ ተቅዪር');
 assert.deepEqual(tokens(tigre['and-n-other-card']), ['__count__']);
 assert.deepEqual(tokens(tigre['and-n-other-card_plural']), ['__count__']);
 assert.deepEqual(tokens(tigre['avatar-too-big']), ['__size__']);
@@ -87,8 +116,8 @@ assert.match(tigre['cardStartPlanningPokerPopup-title'], /Planning Poker/);
 assert.match(tigre['editPokerEndDatePopup-title'], /Planning Poker/);
 assert.match(tigre['poker-delete-pop'], /Planning Poker/);
 assert.equal(tigre['importSwimlanePopup-title'], 'መገዲ ኣእቱ');
-assert.match(tigre['addBoardOrgPopup-title'], /ውድብ/);
-assert.match(tigre['addBoardTeamPopup-title'], /ጉጅለ/);
+assert.match(tigre['addBoardOrgPopup-title'], /መነዘመት/);
+assert.match(tigre['addBoardTeamPopup-title'], /ፈሪቅ/);
 assert.match(tigre.casSignIn, /CAS/);
 assert.match(tigre['font-preview-text'], /0123456789/);
 assert.equal(tigre['restoreArchivedListToSwimlanePopup-title'],
@@ -101,8 +130,8 @@ assert.match(tigre['card-aging-tier2'], /2/);
 assert.match(tigre['card-aging-tier3'], /3/);
 assert.equal(tigre['color-black'], 'ጸሊም');
 assert.equal(tigre['color-red'], 'ቀይሕ');
-assert.equal(tigre['color-white'], 'ጻዕዳ');
-assert.equal(tigre['color-yellow'], 'ብጫ');
+assert.equal(tigre['color-white'], 'ጸዕደ');
+assert.equal(tigre['color-yellow'], 'ቢጫይ');
 assert.match(tigre['copyManyCardsPopup-instructions'], /JSON/);
 const copiedCards = JSON.parse(tigre['copyManyCardsPopup-format']);
 assert.equal(copiedCards.length, 3);
@@ -184,7 +213,7 @@ assert.match(tigre['checklist-count-on-minicard'], /0\/0/);
 assert.match(tigre['checklist-count'], /0\/0/);
 assert.equal(tigre['delete-all-notifications-confirm'],
   'ኩሎም ምልክታታት ክትድምስስ ርግጸኛ ዲኻ? እዚ ትግባር ክምለስ ኣይክእልን።');
-assert.equal(tigre['parent-card'], 'ወላዲ ካርድ');
+assert.equal(tigre['parent-card'], 'ወላዲ ወረቀት ካርድ');
 assert.deepEqual(tokens(tigre['activity-set-customfield']), ['%s', '%s', '%s']);
 assert.deepEqual(tokens(tigre['r-w-every-day-at']), ['__time__']);
 assert.deepEqual(tokens(tigre['r-import-done']), ['__count__']);
@@ -194,13 +223,14 @@ assert.deepEqual(tokens(tigre['r-import-unmapped']), ['__count__']);
 assert.match(tigre['r-import-workflow-note'], /n8n.*Node-RED.*WeKan/);
 assert.match(tigre['r-schedule-weekday'], /ሰኑይ–ዓርቢ/);
 assert.match(tigre['r-for-n-days'], /N/);
-assert.equal(tigre['r-trigger'], 'መበገሲ');
+assert.equal(tigre['r-trigger'], 'መንሸጢ');
 assert.equal(tigre['r-action'], 'ትግባር');
 
 assert.equal(tigre['r-archived'], 'ናብ መዕቀቢ ተዛወረ');
-assert.equal(tigre['r-remove-all'], 'ኵሎም ኣባላት ካብ ካርድ ኣልይ');
+assert.equal(tigre['r-remove-all'],
+  'ኵሎም ኣባላት ካብ ወረቀት ካርድ ኣልይ');
 assert.equal(tigre['r-d-move-to-bottom-gen'],
-  'ካርድ ናብ ታሕቲ ዝርዝራ ኣዛውር');
+  'ወረቀት ካርድ ናብ ታሕቲ ዝርዝራ ኣዛውር');
 
 assert.equal(tigre['r-items-list'], 'ንጥል1,ንጥል2,ንጥል3');
 assert.match(tigre['custom-head-meta-tags'], /HTML/);
@@ -216,13 +246,89 @@ assert.match(tigre['submit-on-enter-description'], /Ctrl\/Cmd\+Enter/);
 assert.deepEqual([
   tigre.monday, tigre.tuesday, tigre.wednesday, tigre.thursday,
   tigre.friday, tigre.saturday, tigre.sunday,
-], ['ሰኑይ', 'ሰሉስ', 'ረቡዕ', 'ሓሙስ', 'ዓርቢ', 'ቀዳም', 'ሰንበት']);
+], ['አትኒን', 'አተሉት', 'አረቡዕ', 'ከሚሽ', 'ጅምዐት', 'ሰንበት ንኢሽ', 'ሰምበት ዓባይ']);
+
+const corpusBackedUiTerms = {
+  'boardChangeVisibilityPopup-title': 'ርእየት ቀይር',
+  'change-visibility': 'ርእየት ቀይር',
+  'board-view-cal': tigreCalendar,
+  calendar: tigreCalendar,
+  'board-view-collapse': 'ኣክብ',
+  collapse: 'ኣክብ',
+  'board-view-stats': 'አትዐለቦት',
+  'board-view-time': 'ወቅት',
+  change: 'ተቅዪር',
+  'color-green': 'ሰዐር-ሰዕሮ',
+  'color-navy': 'ኔቪ ቅዋት-በሐር',
+  'color-orange': 'ኣራንሺ',
+  create: 'ኽለቅ',
+  discard: 'ወኬ',
+  'export-card-attachment-filename': 'ስሜት ፋይል',
+  'log-out': 'ፈጊር',
+  preview: 'ርእየት-ሰልፍ',
+  'previewAttachedImagePopup-title': 'ርእየት-ሰልፍ',
+  'previewClipboardImagePopup-title': 'ርእየት-ሰልፍ',
+  'r-label': 'ናይ እተአመሮት እሻረት',
+  'operator-label': 'ናይ እተአመሮት እሻረት',
+  'r-subject': 'ኣርእስ፡',
+  'r-d-send-email-subject': 'ኣርእስ፡',
+  subject: 'ኣርእስ፡',
+  'r-d-send-email-message': 'ልእከት',
+  'error-undefined': 'ገለ ጸገም እትረከባ ሃላ',
+  'domain-user-count': 'መትነፍዕያም',
+  'operator-user': 'መትነፍዓይ',
+  'anonymized-user': 'መትነፍዓይ',
+  'previous-page': 'ቀዳሚት ገጽ',
+  'location-latitude': 'ላቲትዩድ',
+  'recovery-event': 'ሓላት ለገብእ',
+  register: 'ሰጅል።',
+  'azure-account-name': 'ስሜት ሕሳብ',
+  features: 'ክትምዬት',
+};
+for (const [key, value] of Object.entries(corpusBackedUiTerms)) {
+  assert.equal(tigre[key], value, `${key}: exact corpus-backed Tigre value`);
+  assert.notEqual(tigre[key], tigrinya[key],
+    `${key}: no copied Tigrinya value`);
+}
+
+// Identical Ethiopic text is not by itself evidence of a Tigrinya seed. These
+// forms occur verbatim as Tigre headwords for the matching English gloss in
+// the BeitTigreAI corpus, so retaining them is an explicit reviewed decision.
+const corpusAttestedSharedTerms = {
+  'color-red': 'ቀይሕ',
+  'database-migration-phase': 'ደረጃ',
+  'font-size-default': 'ነባሪ',
+  default: 'ነባሪ',
+  defaultdefault: 'ነባሪ',
+  translation: 'ትርጉም',
+  seconds: 'ካልኢታት',
+  'poker-result-who': 'መን',
+  'theme-category-clear': 'ንጹር',
+  'color-black': 'ጸሊም',
+  email: 'ኢመይል',
+  'r-list': 'ዝርዝር',
+  'gantt-view-hour': 'ሰዓት',
+  list: 'ዝርዝር',
+  'operator-list': 'ዝርዝር',
+  'predicate-open': 'ክፉት',
+  open: 'ክፉት',
+  history: 'ታሪኽ',
+  page: 'ገጽ',
+  error: 'ጌጋ',
+  accounts: 'ሕሳባት',
+  errors: 'ጌጋታት',
+};
+for (const [key, value] of Object.entries(corpusAttestedSharedTerms)) {
+  assert.equal(tigre[key], value, `${key}: corpus-attested shared Tigre term`);
+  assert.equal(tigrinya[key], value,
+    `${key}: reviewed as legitimately shared with Tigrinya`);
+}
 
 assert.match(tigre['invalid-domain'], /example\.com/);
 assert.deepEqual(tokens(tigre['board-title-not-found']),
   tokens(english['board-title-not-found']));
 assert.match(tigre['globalSearchViewChange-choice-all-description'],
-  /\*ካርድታተይ\*/);
+  /\*ወረቀት ካርድታተይ\*/);
 
 assert.deepEqual(tokens(tigre['n-n-of-n-cards-found']),
   tokens(english['n-n-of-n-cards-found']));
@@ -288,7 +394,7 @@ assert.match(tigre['restore-lost-cards-migration-description'], /swimlaneId.*lis
 assert.match(tigre['run-delete-duplicate-empty-lists-migration-confirm'], /ይቕጽል\?/);
 assert.match(tigre['fix-all-file-urls-migration-description'], /URL/);
 
-assert.match(tigre['step-fix-orphaned-cards'], /ካርድታት/);
+assert.match(tigre['step-fix-orphaned-cards'], /ወረቀት ካርዳት/);
 assert.match(tigre['step-fix-missing-ids'], /ID/);
 assert.match(tigre['cpu-usage'], /CPU/);
 
@@ -308,3 +414,15 @@ assert.deepEqual(tokens(tigre['globalSearch-instructions-operator-number']),
 assert.match(tigre['import-wekan-file'], /\.json.*\.zip/);
 
 console.log('tigreTranslationProgress: all Tigre values passed');
+
+
+assert.equal(tigre.date, 'ተመር');
+assert.equal(tigre['custom-field-date'], 'ተመር');
+assert.equal(tigre.day, 'ምዕል');
+assert.equal(tigre.month, 'ወርሕ');
+assert.equal(tigre['predicate-month'], 'ወርሕ');
+for (const key of ['date', 'custom-field-date', 'day', 'month', 'predicate-month',
+  'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']) {
+  assert.notEqual(tigre[key], readLocale('ti')[key],
+    `${key}: Tigre-specific date vocabulary must not retain the Tigrinya seed`);
+}

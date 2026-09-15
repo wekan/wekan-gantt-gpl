@@ -417,3 +417,129 @@ for (const key of ['act-a-receivedAt', 'a-receivedAt']) {
   assert.doesNotMatch(locales.zgh[key], /ⵜⵔⵎⵙⵜ/);
 }
 assert.match(locales.zgh['act-a-receivedAt'], /__timeValue__.*__timeOldValue__/);
+
+for (const [key, epoch] of [
+  ['calendar-system-islamic-civil', '622-07-16'],
+  ['calendar-system-islamic-tbla', '622-07-15'],
+]) {
+  assert.match(locales.zgh[key], /ⴰⵙⵎⵍⵓⵙⵙⴰⵏ.*ⵓⵙⵉⴹⴻⵏ.*ⵜⵓⴷⴷⵎⴰ/);
+  assert.match(locales.zgh[key], new RegExp(epoch));
+  assert.doesNotMatch(locales.zgh[key], /Islamic (?:civil|tabular)/);
+}
+assert.notEqual(locales.zgh['calendar-system-islamic-civil'],
+  locales.zgh['calendar-system-islamic-tbla']);
+
+for (const key of [
+  'accessibility', 'accessibility-page-enabled',
+  'accessibility-info-not-added-yet', 'disambiguateMultiLabelPopup-title',
+  'enable-vertical-scrollbars', 'import-board-zip',
+  'open-many-cards-at-once-description',
+]) {
+  assert.doesNotMatch(locales.zgh[key], /[\u0600-\u06ff]/,
+    `${key}: no Arabic seed remains`);
+  assert.match(locales.zgh[key], /[\u2d30-\u2d7f]/,
+    `${key}: Standard Moroccan Tamazight script`);
+}
+assert.match(locales.zgh['import-board-zip'], /\.zip.*JSON/);
+assert.match(locales.zgh['open-many-cards-at-once-description'], /ⵜⴰⴽⴰⵕⴹⴰ.*ⵜⵔⵥⵎ.*ⵢⵔⴳⵍ/);
+
+for (const key of [
+  'Node_memory_usage_heap_total', 'export-card-excel-no-disk-space',
+  'sign-in-to-upload', 'upload-repository',
+]) {
+  const prose = locales.zgh[key].replaceAll('Node', '').replaceAll('Excel', '');
+  assert.doesNotMatch(prose, /[A-Za-zÀ-ÿ]{4,}/,
+    `${key}: no French prose remains`);
+  assert.match(locales.zgh[key], /[\u2d30-\u2d7f]/,
+    `${key}: Standard Moroccan Tamazight script`);
+}
+assert.match(locales.zgh.Node_memory_usage_heap_total, /Node.*ⴰⵇⵓⴷⴷⵉ.*ⵓⴳⵓⴷⵉ/);
+assert.match(locales.zgh['export-card-excel-no-disk-space'], /Excel.*ⵓⴹⴱⵙⵉ/);
+assert.match(locales.zgh['sign-in-to-upload'], /ⴽⵛⵎ.*ⵜⵙⴽⵜⵔⴷ/);
+assert.match(locales.zgh['upload-repository'], /ⵙⴽⵜⵔ.*ⵙⵏⴼⵍ/);
+
+for (const key of [
+  'app-is-offline', 'dueCardsViewChange-choice-all-description',
+  'automatic-linked-url-schemes', 'bucket-example', 'public-desc',
+]) {
+  const prose = locales.zgh[key]
+    .replaceAll('URL', '').replaceAll('Google', '');
+  assert.doesNotMatch(prose, /[\u0600-\u06ff]|[A-Za-zÀ-ÿ]{4,}/,
+    `${key}: no Arabic or French prose remains`);
+  assert.match(locales.zgh[key], /[\u2d30-\u2d7f]/,
+    `${key}: Standard Moroccan Tamazight script`);
+}
+assert.match(locales.zgh['dueCardsViewChange-choice-all-description'], /\*[^*]+\*/);
+assert.match(locales.zgh['automatic-linked-url-schemes'], /URL.*URL/);
+assert.match(locales.zgh['public-desc'], /Google.*ⵖⴰⵙ/);
+for (const literal of ['markdown-kanban', 'Obsidian Kanban', '## Isem n tebdart', '- [ ]', '- [x]']) {
+  assert.ok(locales.zgh['import-board-instruction-markdown'].includes(literal),
+    `import-board-instruction-markdown: preserves ${literal}`);
+}
+assert.match(locales.zgh['import-board-instruction-markdown'], /tixxamin n usenqed.*tikarḍiwin yeldin/,
+  'plain bullet lists import as open cards');
+
+for (const key of [
+  'globalSearch-instructions-description',
+  'globalSearch-instructions-notes-3-2',
+  'globalSearch-instructions-operator-limit',
+]) {
+  const prose = locales.zgh[key]
+    .replaceAll('list:Blocked', '').replaceAll('Blocked', '')
+    .replaceAll('To Review', '').replace(/__[A-Za-z0-9_]+__/g, '');
+  assert.doesNotMatch(prose, /[A-Za-zÀ-ÿ]{4,}/,
+    `${key}: no French prose remains outside literal examples`);
+  assert.match(locales.zgh[key], /[\u2d30-\u2d7f]/,
+    `${key}: Standard Moroccan Tamazight script`);
+}
+for (const literal of ['list:Blocked', '*Blocked*', '`__operator_list__:"To Review"`']) {
+  assert.ok(locales.zgh['globalSearch-instructions-description'].includes(literal),
+    `global search description preserves ${literal}`);
+}
+for (const literal of ['`__predicate_week__`', '`__predicate_month__`', '`__predicate_quarter__`', '`__predicate_year__`']) {
+  assert.ok(locales.zgh['globalSearch-instructions-notes-3-2'].includes(literal),
+    `global search period note preserves ${literal}`);
+}
+for (const literal of ['`__operator_limit__:<n>`', '*<n>*']) {
+  assert.ok(locales.zgh['globalSearch-instructions-operator-limit'].includes(literal),
+    `global search limit preserves ${literal}`);
+}
+
+const zghMigrationKeys = [
+  'fix-all-file-urls-migration-description',
+  'fix-avatar-urls-migration-description',
+  'map-to-existing-user-desc', 'map-to-existing-user-none',
+  'run-comprehensive-migration-confirm',
+  'run-fix-all-file-urls-migration-confirm',
+  'run-fix-avatar-urls-migration-confirm',
+  'restore-all-archived-migration-description',
+  'restore-lost-cards-migration-description',
+  'run-restore-all-archived-migration-confirm',
+  'run-restore-lost-cards-migration-confirm',
+  'step-ensure-lost-cards-swimlane',
+  'step-ensure-per-swimlane-lists',
+];
+for (const key of zghMigrationKeys) {
+  const prose = locales.zgh[key]
+    .replaceAll('URL', '').replaceAll('ID', '')
+    .replaceAll('swimlaneId', '').replaceAll('listId', '');
+  assert.doesNotMatch(prose, /[A-Za-zÀ-ÿ]{4,}/,
+    `${key}: no French prose remains outside technical literals`);
+  assert.match(locales.zgh[key], /[\u2d30-\u2d7f]/,
+    `${key}: Standard Moroccan Tamazight script`);
+}
+for (const key of [
+  'restore-all-archived-migration-description',
+  'restore-lost-cards-migration-description',
+  'run-restore-lost-cards-migration-confirm',
+]) {
+  assert.match(locales.zgh[key], /swimlaneId.*listId/,
+    `${key}: preserves both field identifiers`);
+}
+for (const key of [
+  'run-comprehensive-migration-confirm',
+  'run-fix-all-file-urls-migration-confirm',
+  'run-fix-avatar-urls-migration-confirm',
+  'run-restore-all-archived-migration-confirm',
+  'run-restore-lost-cards-migration-confirm',
+]) assert.match(locales.zgh[key], /\?$/, `${key}: remains a confirmation question`);

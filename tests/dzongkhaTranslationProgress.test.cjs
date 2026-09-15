@@ -77,7 +77,8 @@ assert.match(dzongkha['allboards.add-workspace'], /ལཱ་གི་ས་ས�
 assert.match(dzongkha['allboards.edit-workspace-icon'], /markdown/);
 assert.deepEqual(tokens(dzongkha['activity-dueDate']), ['%s', '%s']);
 assert.match(dzongkha['home-board-remove-confirm'], /བཏོན་ནི་མེན/);
-assert.match(dzongkha['list-width-error-message'], /270/);
+assert.match(dzongkha['list-width-error-message'], /ཉུང་མཐར་ 200 པིག་སེལ.*ཧྲིལ་གྲངས/);
+assert.doesNotMatch(dzongkha['list-width-error-message'], /270/);
 assert.match(dzongkha['set-swimlane-height'], /ཆུ་ལམ/);
 assert.match(dzongkha['convertChecklistItemToCardPopup-title'], /ཤོག་བྱང/);
 assert.deepEqual(tokens(dzongkha['and-n-other-card']), ['__count__']);
@@ -381,3 +382,10 @@ assert.doesNotMatch(dzongkha['calendar-system-islamic-rgsa'], /^Islamic \(Saudi 
 
 assert.equal(dzongkha['calendar-system-iso8601'], dzongkha['calendar-system-gregorian'] + ' (ISO 8601 བདུན་ཕྲག)');
 assert.notEqual(dzongkha['calendar-system-iso8601'], 'ISO 8601');
+
+assert.equal(dzongkha["calendar-system-islamic-civil"], "Hijri ཟླ་ཐོ (རེའུ་མིག་ཅན་, འགོ་བཙུགས་ཚེས་ Julian 622-07-16)");
+
+assert.equal(dzongkha["calendar-system-islamic-tbla"], "Hijri ཟླ་ཐོ (རེའུ་མིག་ཅན་, འགོ་བཙུགས་ཚེས་ Julian 622-07-15)");
+assert.notEqual(dzongkha['calendar-system-islamic-civil'], dzongkha['calendar-system-islamic-tbla']);
+assert.doesNotMatch(dzongkha['calendar-system-islamic-civil'], /Gregorian|622-07-15/);
+assert.doesNotMatch(dzongkha['calendar-system-islamic-tbla'], /Gregorian|622-07-16/);

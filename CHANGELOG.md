@@ -81,23 +81,28 @@ held only issues \#4774 and \#4055, and both are closed now.
 <summary>Local translation repairs and validation in progress.</summary>
 
 Resumed at the maintainer's request on 2026-09-13, beginning with Klingon.
-The audit tracks 20,081
-findings: 15,587 corrected, 40 restored pre-pull values awaiting
-validation, 4,149 reviewed and retained, and 305 pending review or repair.
-The correction inventory records 18,198 exact before/after values,
-including repairs outside the original findings.
-Global completeness verification also identifies Veps `server` (currently
-English-identical “Server”) for terminology review; it is not accepted yet.
+As of 2026-09-16, all 20,081 original findings are classified:
+15,880 corrected, 4,201 reviewed and retained, and zero restored or
+pending. The correction inventory records 22,302 exact before/after
+values, including repairs outside the original findings. This closes
+the original flagged queue; broader wrong-language, low-confidence
+wording and browser review remain unfinished.
+Global completeness and terminology review remains separate from the
+original queue.
 
 All 361 originally flagged Klingon findings are repaired. The broader review
 of 829
 German-identical Klingon values repaired all 829, including the mistaken
 German cron label, which now uses the actual tool name Cron.
-The largest original queues are Standard Moroccan Tamazight (173) and
-Inuktitut (50); Veps retains 10 original findings. Silesian database
-terminology and 17 Tigre
-calendar findings need language-specific review. Restored and unflagged
-values, low-confidence wording and browser rendering remain unverified.
+The original Standard Moroccan Tamazight, Inuktitut and Veps queues are
+classified. Silesian database terminology, Tigre calendar wording and
+unflagged values still need language-specific review. Low-confidence
+wording and browser rendering remain unverified.
+The latest committed Tamazight card/list URL repair is 1cf93f7e52
+(2026-09-15); its two exact correction records bring the ledger to
+22,302. The zgh file still has 102 Arabic-script values awaiting
+semantic classification. The translation working tree was clean at
+this 2026-09-16 interruption checkpoint; no remote upload occurred.
 Kashmiri reference review 0db69cf6c (2026-09-14) identifies provisional
 civil wording and unresolved sighting/tabular/epoch terminology; no values
 changed.
@@ -633,6 +638,2418 @@ the Markdown commit as the template.
 
 </details>
 </details>
+
+# v11.82 2026-09-16 WeKan ® release
+
+**In short:** Release preparation now checks translation-language metadata
+before tagging, so an incomplete language list is caught locally.
+
+This release includes the following developer-tooling fix:
+
+**Developer tooling** - Release-note preflight.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7489120eb">Check translation language lists before tagging</a>. Thanks to xet7.</summary>
+
+The v11.81 tag was created before release-note validation found missing
+language metadata. The prepared v11.81 notes now include the full list
+of changed languages, and the local Upcoming preflight rejects a
+Translations group without that list. The release-notes command and
+focused preflight tests pass.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
+# v11.81 2026-09-16 WeKan ® release
+
+**In short:** Docker images reach Docker Hub and GHCR even while Quay
+refuses writes; Quay receives the published manifest when available.
+The local Docker build follows the same registry order, and enabled
+Admin Panel assetlinks are public at both well-known URLs.
+Markdown security settings now apply to viewers; canonical avatar URLs
+serve authenticated legacy images. Board View UI regressions are repaired.
+Security Problems now use distinct names for CAS account merge,
+attachment path, filename and stored MIME refusals.
+Tamazight rule, popup, warning and activity text replaces wrong-language
+values. Three Arabic common labels now use native Tamazight comment,
+link and email-address terms; five popup/copy labels reuse native
+control wording. Six shared UI labels reuse native import, invite, unknown,
+type, size and restore terms. Admin Panel version labels now use a native
+Tamazight noun; its version-check button and failure text use local
+check/number terms. Board/card headings and removal actions use native
+local components. Rules distinguish states from actions, and deletion warnings
+name irreversible effects. Import, PDF, administrator and filename
+messages retain their conditions. Tigre help and error drafts replace
+English and Tigrinya. The list-width popup states its 200-pixel
+whole-number rule. Regression checks preserve placeholders and source
+wiring; complete Tamazight grammar remains under native review.
+Human Traditional Chinese translations replace 390 older values and
+stay protected during machine fills, Transifex pulls and force-pushes.
+
+This release includes the following features and fixes:
+
+**Security** - Distinct Problems names for published advisories.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c4c6e34ec">Align Hall of Fame security names and repair test guards</a>. Thanks to xet7.</summary>
+
+CAS account conflicts, unsafe attachment paths, exploit filenames
+and rejected MIME types now appear in Problems under their distinct
+Hall of Fame names. The CAS race fix has no denied event to log.
+Existing security guards and regression suites remain green;
+the complete node run passes 1,152 suites with no failures.
+
+</details>
+
+**Bug fixes** - Docker registry, markdown viewer and avatar routing.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e6685eb0b">Keep Docker publication available during Quay read-only outages</a>. Thanks to xet7.</summary>
+
+Build the multi-arch image once for Docker Hub and GHCR, then
+copy its published manifest to Quay. A Quay-wide read-only
+outage warns while the available registries stay published;
+other refusals still fail. Mocked shell, YAML and Docker guards
+pass. Live registry publishing remains a maintainer step.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/25ed0c306">Keep local Docker builds available during Quay outages</a>. Thanks to xet7.</summary>
+
+The local Docker script now publishes to Docker Hub and GHCR before
+copying the manifest to Quay. A Quay read-only response no longer fails
+the completed primary build; permission errors and primary-build failures
+still fail. Mocked outage tests and shell syntax checks pass. Live
+publishing remains a maintainer step.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/99570e213">Serve enabled Admin Panel assetlinks publicly</a>. Thanks to xet7.</summary>
+
+Configured assetlinks JSON is served without authentication at
+`/well-known/assetlinks.json` and the standard
+`/.well-known/assetlinks.json`. Both paths share the setting guard and
+default-file fallback. The focused public-route test passes.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/fb66fa95c">Restore markdown security settings and legacy avatar downloads</a>. Thanks to xet7.</summary>
+
+Export the Meteor markdown renderer so the Admin Panel raw-source
+and link settings reach card, activity and view titles. Avoid
+repeated reactive invalidation during viewer rendering. Keep
+canonical avatar URLs on WeKan's guarded current-and-legacy route
+instead of Meteor-Files' broad download middleware. Repair browser
+flows for visible Board View and list menus, REST Bearer auth,
+fixture IDs and post-reload navigation. The complete sequential
+EVERYTHING run passes: Chromium 404 cases, Firefox 393 and WebKit 393,
+with only the suite's browser-specific skips. All 1,152 node suites,
+527 Meteor Mocha cases, import and node E2E checks, four-backend
+database conformance, and FerretDB unit, vet and integration pass.
+
+</details>
+
+**Developer tooling** - Board title viewer UI and translation
+protection coverage.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3865c3fde">Avoid incomplete escaping in Veps sync test</a>. Thanks to xet7.</summary>
+
+Check the immediate-sync label's final apostrophe directly instead of
+using a partial string replacement. All 37 Veps cases pass.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c399aeeee">Protect human Chinese translations from machine fills</a>. Thanks to s8321414 and xet7.</summary>
+
+Pin the 390 superseded values from the Traditional Chinese translation
+pull request as negative fixtures. Tests reject reversion to those values
+or English, and run the real fill command to prove the human values are
+neither offered nor overwritten. Focused Chinese suites pass.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8acf5d947">Preserve human Chinese translations across pull and push</a>. Thanks to s8321414 and xet7.</summary>
+
+Reject stale machine values during pulls while accepting newer valid
+human translations. The force-push helper skips whole-file uploads for
+the human-owned `zh-Hant` and `zh-TW` targets, and pulls fail before
+overwriting local files if Node is unavailable for the merge. Mocked
+pull/push and existing Transifex tests pass; no upload was run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/66c5b85c3">Correct legacy avatar PNG test data</a>. Thanks to xet7.</summary>
+
+Replace the malformed PNG fixture whose image-data checksum Firefox
+rejected. The authenticated avatar still returns exact fixture bytes;
+the image-decoding check passes in Chromium, Firefox and WebKit.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/929326ba2">Exercise board title viewers through visible controls</a>. Thanks to xet7.</summary>
+
+Open card details through the card link and choose views from
+the visible Board View popup. All 24 title-viewer cases pass
+sequentially in Chromium across formatted, plain-links and
+plain-source security settings.
+
+</details>
+
+**Documentation** - Translation audit resume status.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0e962bba3">Record interrupted translation audit status</a>. Thanks to xet7.</summary>
+
+The original 20,081 flagged findings are fully classified while broader
+wrong-language and native-wording review remains open. The dated audit
+record and TODO Later status match the committed 22,302 correction
+records. Focused audit and translation checks pass.
+
+</details>
+
+**Translations** - Human Traditional Chinese, Tamazight, Tigre and
+multilingual list-width repairs.
+
+**Languages updated:** Acehnese, Afrikaans, Akan, Albanian, Amharic, Arabic, Aragonese, Armenian, Aromanian, Assamese, Asturian, Aymara, Azerbaijani, Bambara, Bangla, Bashkir, Basque, Belarusian, Bhojpuri, Bislama, Bosnian, Breton, Bulgarian, Buriat, Burmese, Cantonese, Catalan, Central Kurdish, Cherokee, Chinese, Chuvash, Cornish, Corsican, Croatian, Czech, Danish, Dutch, Dzongkha, English, Esperanto, Estonian, Ewe, Faroese, Fijian, Filipino, Finnish, Flemish, French, Friulian, Fula, Galician, Ganda, Georgian, German, Greek, Guarani, Gujarati, Haitian Creole, Hausa, Hawaiian, Hebrew, Hindi, Hungarian, Icelandic, Igbo, Indonesian, Inuktitut, Irish, Italian, Japanese, Javanese, Kalaallisut, Kannada, Kashmiri, Kashubian, Kazakh, Khmer, Kinyarwanda, Klingon, Konkani, Korean, Kurdish, Kyrgyz, Ladin, Latin, Latvian, Lithuanian, Luxembourgish, Macedonian, Maithili, Malagasy, Malay, Malayalam, Maltese, Manx, Marathi, Mongolian, Moroccan Arabic, Māori, Nahuatl, Neapolitan, Nepali, North Ndebele, Northern Sami, Northern Sotho, Norwegian Bokmål, Nyanja, Occitan, Odia, Oromo, Papiamento, Pashto, Persian, Polish, Portuguese, Punjabi, Quechua, Romanian, Romansh, Rundi, Russian, Samoan, Sardinian, Scottish Gaelic, Serbian, Shona, Sicilian, Silesian, Sindhi, Sinhala, Slovak, Slovenian, Somali, Southern Sotho, Spanish, Standard Moroccan Tamazight, Swahili, Swati, Swedish, Tajik, Tamil, Tatar, Telugu, Thai, Tibetan, Tigre, Tigrinya, Tok Pisin, Tongan, Tsonga, Tswana, Turkish, Turkmen, Ukrainian, Upper Sorbian, Urdu, Uyghur, Uzbek, Valencian, Venda, Veps, Vietnamese, Volapük, Walloon, Waray, Welsh, Western Frisian, Wolaytta, Wolof, Wu Chinese, Xhosa, Yakut, Yiddish, Yoruba, Zulu
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2078c21819">Use human Traditional Chinese translations</a>. Thanks to s8321414 and xet7.</summary>
+
+The merged pull request replaces 252 `zh-Hant` and 138 `zh-TW` values
+with Transifex human translations. The focused Chinese checks pass;
+machine-fill and pull/push guards now preserve these values.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1cf93f7e52">Repair Tamazight card and list URL labels</a>. Thanks to xet7.</summary>
+
+Two Arabic-seeded card/list URL labels use local native link, card and
+list terms. Focused source, negative, ledger and 234-locale checks pass;
+full compound wording awaits fluent review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/18a11d121">Repair Tamazight board/card headings and actions</a>. Thanks to xet7.</summary>
+
+My Boards, My Cards, To boards, Close Board and two member-removal
+labels replace Arabic/French seeds with native local terms. Focused
+source, token, ledger and 234-locale checks pass; the full compounds
+still await fluent review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ff5a286b5">Replace mixed Tamazight version-check messages</a>. Thanks to xet7.</summary>
+
+The Admin Panel's Check Version button and failure text use native
+check, version and number terms instead of French/Arabic shorthand.
+Focused, ledger and 234-locale checks pass; the complete error clause
+awaits fluent grammar review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/413b4ef40">Use native Tamazight version noun in Admin Panel</a>. Thanks to xet7.</summary>
+
+WeKan, Meteor, MongoDB, FerretDB and Node version labels reuse a
+Standard Moroccan Tamazight version noun attested in MediaWiki.
+Proper names and MongoDB's compatibility qualifier remain intact.
+Focused, ledger and 234-locale checks pass; full compound wording
+still needs fluent review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/63da3d3c9">Reuse native Tamazight shared UI labels</a>. Thanks to xet7.</summary>
+
+Import Board, Invite People, Unknown, Type, Size and Restore replace
+Arabic-seeded text with native terms already used in the locale. Focused
+source, token, ledger and 234-locale checks pass; remaining native
+wording needs fluent review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e11a2654c">Align Tamazight popup and copy-link labels</a>. Thanks to xet7.</summary>
+
+Member Settings, Move Card, Leave Board, Remove Member and Copy Link
+use the native wording already shown by related controls. Focused,
+source-wiring, ledger and 234-locale checks pass; fluent phrase review
+continues.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2b22dd0be">Replace Arabic Tamazight common UI labels</a>. Thanks to xet7.</summary>
+
+Comments and Link reuse terms already present in local card and search
+text. Email Addresses uses the plural attested in an IRCAM glossary
+with the local email noun. The focused, correction-ledger and
+234-locale structural checks pass; full native wording review continues.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/79e5a93b4">Repair Tamazight common popup titles</a>. Thanks to xet7.</summary>
+
+Replace 13 Arabic popup titles with native local board,
+card, label and member-setting terms. Focused, ledger and
+all-locale checks pass; full phrase grammar needs fluent review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f0ceb8d72">Separate translated removal actions from Unset status</a>. Thanks to xet7.</summary>
+
+Color and image removal buttons use existing translated
+action keys; setting-status displays keep Unset. Tamazight's
+Arabic Unset becomes native not-set prose. Source, Jade,
+ledger, inventory and focused Chromium UI checks pass.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/87c049571">Repair Tamazight board and color popups</a>. Thanks to xet7.</summary>
+
+Replace eight Arabic board, visibility, watch and color popup
+labels with local native terms. Rename-board and choose-color
+labels reuse exact existing values. Full command grammar
+remains under fluent review; focused, ledger and inventory
+checks pass.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/79d58098f">Repair Tamazight board background controls</a>. Thanks to xet7.</summary>
+
+Replace nine Arabic board color/image controls and popup
+titles with local native terms. The popup names the board
+backdrop rather than the screen; technical URL remains.
+Compound grammar remains under fluent review; focused,
+ledger and inventory checks pass.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ada7e3533">Repair Tamazight activity messages</a>. Thanks to xet7.</summary>
+
+Replace nine Arabic/French activity and show/notify messages
+with native terms aligned to their production UI meanings.
+Preserve all `%s` tokens. Full clause grammar remains under
+fluent review; focused, ledger and inventory checks pass.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f10daf2ae">Repair Tamazight admin status labels</a>. Thanks to xet7.</summary>
+
+Replace four Arabic/French active, inactive and status labels
+with local native terms. Agreement and compound grammar remain
+under fluent review; focused, ledger and inventory checks pass.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/65c667419">Repair Tamazight filter and sort controls</a>. Thanks to xet7.</summary>
+
+Replace three French/Arabic controls with local native hide,
+filter and sort terms. Full sentence grammar remains under
+fluent review; focused, ledger and inventory checks pass.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/bea96680e">Repair Tamazight creator labels</a>. Thanks to xet7.</summary>
+
+Replace mixed French/Arabic and Arabic creator labels in filter
+and minicard settings with local native terms. Complete phrase
+grammar remains under fluent review; focused, ledger and inventory
+checks pass.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/32c2d9575">Repair Tamazight search predicates</a>. Thanks to xet7.</summary>
+
+Replace 15 French/Arabic operator and predicate seeds with native
+short terms or portable one-word syntax codes. Exact fill exceptions
+protect the codes and leave prose fillable. Status nuance and two
+existing multiword operators remain under review; focused, ledger
+and inventory checks pass.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c365e2cf6">Repair Tamazight search operators</a>. Thanks to xet7.</summary>
+
+Replace Arabic and French operator names with native search terms.
+Keep the short aliases portable and collision-free. Focused parser,
+ledger and inventory checks pass; the swimlane term needs native review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d1c4a7290">Repair Tamazight board and missing labels</a>. Thanks to xet7.</summary>
+
+Replace six Arabic and French board, page, list and swimlane labels
+with native terms; keep named-item `%s` tokens. Full clause grammar
+needs fluent review. Focused, ledger and inventory checks pass.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e114ffde8">Repair Tamazight sky, gold and silver labels</a>. Thanks to xet7.</summary>
+
+Replace French and Arabic color seeds with native terms for sky,
+gold and silver. Metal nouns as CSS color names need fluent review;
+focused, ledger and inventory checks pass.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/06678678d">Repair Tamazight color labels</a>. Thanks to xet7.</summary>
+
+Replace French pink with IRCAM's native color word and Arabic
+dark-green with native components. The full dark-green compound
+needs fluent review; focused, ledger and inventory checks pass.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ce5092966">Use native Tamazight email-address label</a>. Thanks to xet7.</summary>
+
+Replace French in the member-search placeholder with an attested
+Tamazight address-and-email phrase. Focused, ledger and inventory
+checks pass; the separate Arabic plural placeholder remains under review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6f14c9a8c">Repair Tigre slate-blue wording</a>. Thanks to xet7.</summary>
+
+Replace its copied Tigrinya blue word with a corpus-glossed Tigre term.
+Keep independently attested red and black labels despite their shared
+spelling. The slate compound needs fluent review; focused, ledger and
+inventory checks pass.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/de0cc0ce4">Repair copied Tigre dark-green label</a>. Thanks to xet7.</summary>
+
+Use Tigre corpus terms for dark and green in the color label.
+The copied Tigrinya value is gone; the complete compound still
+needs fluent review. Focused and ledger checks pass.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ae76ba79d">Use corpus Tigre noun for DDP transport</a>. Thanks to xet7.</summary>
+
+Replace the Tigrinya-copied transport noun in the Tigre DDP label
+with a corpus-glossed Tigre term. Keep the literal DDP identifier.
+Focused, runtime, ledger and inventory checks pass; the complete
+phrase remains under native review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/31a238d91">Correct Cherokee and Wolaytta list-width bounds</a>. Thanks to xet7.</summary>
+
+The final two obsolete error messages now use the inclusive
+200-pixel minimum, and Wolaytta's width label drops its English
+seed. Focused, runtime, ledger and inventory checks pass; exact
+technical and complete native clauses remain under review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/21319c523">Replace corrupt Tsonga list-width seeds</a>. Thanks to xet7.</summary>
+
+Replace repeated `mhaka` seeds in the Xitsonga width label and
+error with local list, width and whole-number terms and the
+inclusive 200-pixel bound. Focused, runtime, ledger and inventory
+checks pass; the complete clause remains under native review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/83c8d0c2b">Repair Aymara and Quechua list-width strings</a>. Thanks to xet7.</summary>
+
+Replace Spanish/English-seeded width labels and errors with native
+list and whole-number terms and the inclusive 200-pixel rule.
+Focused, runtime, ledger and inventory checks pass; full clauses
+and Quechua dialect fit remain under native review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c18780d5b">Correct three more native list-width bounds</a>. Thanks to xet7.</summary>
+
+Hawaiian, Klingon and Inuktitut list-width errors now show the
+inclusive 200-pixel minimum. Focused, runtime, ledger and inventory
+checks pass; full clauses remain under native grammar review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/bb2d2dfeb">Correct three native list-width minimum messages</a>. Thanks to xet7.</summary>
+
+Nahuatl, Volapük and Tamazight now describe the inclusive 200-pixel
+minimum in their list-width errors. Focused, Nahuatl progress,
+runtime, ledger and inventory checks pass; complete clauses remain
+under native grammar review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/beddec7cb">Repair Serbian list-width controls and four locale rules</a>. Thanks to xet7.</summary>
+
+Use “листа” consistently across the Serbian list-width popup,
+notes, toggles and error. Correct the obsolete threshold in
+Venetian, Veps, Twi and Tongan. Focused UI-string, Serbian runtime,
+ledger and inventory checks pass; four complete regional clauses
+remain under native grammar review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3eaeac9e7">Repair ten wrong-language and obsolete list-width values</a>. Thanks to xet7.</summary>
+
+Replace ten obsolete greater-than-270 messages with inclusive 200-pixel
+whole-number wording, including Turkish, Czech and English-seeded
+requirements. Focused, Tatar runtime, Greenlandic progress, ledger
+and inventory checks pass; complete clauses remain under native
+grammar review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/92ea2a0f0">Repair ten native list-width minimum values</a>. Thanks to xet7.</summary>
+
+Update ten locale messages to express an inclusive 200-pixel whole-number
+minimum; replace Urdu's transliterated English requirement with Urdu
+prose. Older Ewe and Chuvash suites now check the current rule. Focused,
+runtime, ledger and inventory checks pass; seven complete clauses
+remain under native grammar review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9c1388a49">Repair ten native and mixed-seed list-width values</a>. Thanks to xet7.</summary>
+
+Replace obsolete greater-than-270 messages with inclusive 200-pixel
+whole-number wording in ten locale files, including English-seeded
+requirements. The Maithili progress suite now tests the current rule.
+Focused, runtime, ledger and inventory checks pass; eight complete
+clauses remain under native grammar review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3bf6a4c82">Repair nine African and Pacific list-width values</a>. Thanks to xet7.</summary>
+
+Update nine locale messages to express an inclusive 200-pixel whole-number
+minimum. Three older progress suites now check the current rule. Focused,
+runtime, ledger and inventory checks pass; four complete clauses remain
+under native grammar review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/74e6deabe">Repair twelve African, Kurdish and Yiddish list-width values</a>. Thanks to xet7.</summary>
+
+Replace obsolete greater-than-270 messages with inclusive 200-pixel
+whole-number wording in 12 locale files. Four older progress suites now
+check the current rule. Focused, runtime, ledger and locale inventory
+checks pass; Central Kurdish and Yiddish complete clauses remain under
+native grammar review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8cc659ac9">Repair 24 Asian list-width values</a>. Thanks to xet7.</summary>
+
+Correct native-script messages to express a whole-number width of at
+least 200 pixels. Update seven progress suites that expected the old
+270 rule. Focused, language, ledger and inventory checks pass; eight
+complete clauses remain under native grammar review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0fe4ecb48">Repair 20 Romance and Celtic list-width values</a>. Thanks to xet7.</summary>
+
+Replace obsolete list-width wording in 20 locales with an inclusive
+200-pixel integer rule. Correct Italian and English seeded clauses
+where present, and update Aragonese and Cornish regression checks.
+Focused, language, ledger and inventory checks pass. Ten full clauses
+remain under native grammar review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6d94f4edb">Repair 28 list-width locale values</a>. Thanks to xet7.</summary>
+
+Correct the inclusive 200-pixel integer rule in 28 more locales,
+including English-seeded Maltese. Update Kazakh, Kyrgyz, Tajik and
+Latvian regression assertions to verify current values and ledger
+integrity. Focused, language, inventory and ledger checks pass;
+four full clauses remain under native grammar review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0b0349d34">Repair eleven Chinese-variant list-width values</a>. Thanks to xet7.</summary>
+
+Correct six Simplified Mandarin and three Traditional Chinese values.
+Wu and Cantonese replace Mandarin-seeded text with dialect terms while
+stating the same inclusive 200-pixel integer rule; full dialect phrasing
+remains under native review. Variant, runtime, ledger and inventory
+checks pass, with remaining locales recorded in the audit.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/212a46c07">Repair 33 native list-width translations</a>. Thanks to xet7.</summary>
+
+Correct grouped Azerbaijani, Catalan, Uzbek Latin, Greek, Welsh,
+Romanian, Slovenian, Vietnamese, Afrikaans, Frisian, Galician, Hindi,
+Malay, Bosnian/Croatian and Khmer values to state the whole-number
+minimum of 200 pixels. Align the Galician archive-help regression check
+with the current All Boards control. Focused, ledger and related-language
+checks pass; remaining locales are tracked in the audit.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d6e6c558d">Repair 22 multilingual list-width translations</a>. Thanks to xet7.</summary>
+
+Correct Arabic, Hebrew, Russian, Ukrainian, Japanese, Korean, Polish,
+Czech and Dutch messages to state the inclusive 200-pixel whole-number
+minimum. The Russian regional alias shares its tracked translation file.
+Focused, runtime, ledger and inventory checks pass; remaining locales
+are tracked in the audit.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e6895b3de">Repair 23 list-width translations</a>. Thanks to xet7.</summary>
+
+Correct German, Spanish, French, Italian and Portuguese variants to state
+the whole-number minimum of 200 pixels. Keep native width terminology
+and regional style. Focused, related-language, ledger and inventory checks
+pass; remaining stale locales are tracked in the audit.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/196bc49df">Repair Persian-digit list-width translations</a>. Thanks to xet7.</summary>
+
+Correct Persian, Persian (Iran) and Uzbek Arabic messages from the obsolete
+270 threshold to a whole-number minimum of 200 pixels. Keep native numerals
+and established local words. Focused, runtime and ledger checks pass;
+Uzbek Arabic sentence order remains under native review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/68d679c6c">Correct list-width rule and first locale messages</a>. Thanks to xet7.</summary>
+
+The Set Width popup now advertises the shared 200-pixel minimum and rejects
+fractional or trailing-text values instead of truncating them. Correct the
+English source, its 11 regional copies and Tigre wording. Boundary, UI
+wiring, locale and ledger checks pass; other stale locales remain in audit.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6909fb85e">Repair Tigre Trello key and S3 File plural</a>. Thanks to xet7.</summary>
+
+Use a Tigre corpus key noun across seven Trello credential messages,
+including the prompt for both values. Restore the corpus-attested File
+plural in S3 bucket help. All 50 Tigre suites pass; complete Trello
+compounds remain under native review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/78f2c9bf7">Repair Tigre PDF preview warning</a>. Thanks to xet7.</summary>
+
+Replace a long Tigrinya copy with Tigre phrasebook terms for preview,
+device and trying a download instead. The complete sentence remains
+under native review. Source, UI wiring, ledger and runtime checks pass.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/36c2148ec">Repair Tigre authentication error</a>. Thanks to xet7.</summary>
+
+Replace a long clause copied from Tigrinya using Tigre phrasebook forms
+for “wrong”, “please” and “try again”. The authentication-code compound
+remains under native review. Source, seed, ledger and runtime checks pass.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/970d9e664">Fill Tigre S3 settings translations</a>. Thanks to xet7.</summary>
+
+Fill 21 English placeholders for storage, connection, keys and endpoint
+help with established Tigre vocabulary. Keep service names and example
+hostnames literal. Focused meaning and ledger checks pass; full compound
+grammar remains under native review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/780a75a2b">Repair Tamazight due-reminder activity</a>. Thanks to xet7.</summary>
+
+Replace a French activity phrase with Tamazight while keeping its three
+runtime placeholders. A focused test verifies selector wiring, source
+meaning and interpolation. Reminder terminology is sourced from IRCAM;
+the plural phrase awaits native review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4e8f1b7dd">Repair Tamazight checklist trigger state labels</a>. Thanks to xet7.</summary>
+
+Replace French checked/unchecked labels with Tamazight state phrases,
+keeping them distinct from imperative checklist actions. Regression checks
+cover exact values, negative wrong-language checks and template wiring.
+Correction, retained-review and completeness suites also pass. Checkbox
+terminology and complete trigger grammar remain under native review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7c6688b63">Repair Tamazight card movement and creation rule labels</a>. Thanks to xet7.</summary>
+
+Replace French move-card and create-new-card action labels using existing
+Tamazight terminology and IRCAM lexical evidence. Preserve destination
+and new-card meaning. Four focused suites pass; full contextual grammar
+remains under review. Audit records both additional unflagged repairs.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/53fba5240">Repair Tamazight Planning Poker deletion warning</a>. Thanks to xet7.</summary>
+
+Replace French deletion warning while preserving irreversibility and loss
+of all associated actions. Reuse related Tamazight warning constructions.
+Four focused suites pass for warning scope, negative wrong-language checks,
+template wiring and translation structure. Complete contextual grammar
+remains under native review. Dated audit records the remaining 185 findings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4f07f43d8">Repair Tamazight label deletion warning</a>. Thanks to xet7.</summary>
+
+Replace Arabic warning while preserving no undo, label removal from all
+cards and deletion of its history. Four focused suites pass for warning
+scope, negative Arabic checks, popup wiring and translation structure.
+Complete contextual grammar remains under native review. Dated audit
+records 184 original findings still pending.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/260258983">Repair Tamazight keyboard shortcut status labels</a>. Thanks to xet7.</summary>
+
+Replace Arabic shortcut heading and status messages, retaining current
+activation state and the opposite click action. Four focused suites pass
+for heading consistency, action direction, negative Arabic checks, template
+conditional wiring and translation structure. Full contextual grammar
+remains under native review. Dated audit records 182 pending findings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9680e2393">Repair Tamazight PDF preview warning</a>. Thanks to xet7.</summary>
+
+Replace Arabic warning, preserving device inability to preview PDF and
+trying a download instead. Four focused suites pass for warning meaning,
+negative Arabic checks and translation structure. Full contextual grammar
+remains under native review. Dated audit records 181 pending findings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/14af25915">Repair Tamazight last administrator warning</a>. Thanks to xet7.</summary>
+
+Replace Arabic's incorrect permission explanation with the requirement to
+retain at least one administrator. Four focused suites pass for role-change
+negation, minimum administrator count, negative Arabic checks, template
+wiring and translation structure. Full contextual grammar remains under
+native review. Dated audit records 180 pending findings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/40f06e1d8">Repair Tamazight import error guidance</a>. Thanks to xet7.</summary>
+
+Replace French guidance, retaining possible import success despite errors
+and the translated All Boards page location. Four focused suites pass for
+conditional wording, possible success, page naming, negative French checks,
+template wiring and translation structure. Complete contextual grammar
+remains under native review. Dated audit records 179 pending findings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/45d2b2b2e">Repair Tamazight watching label and disabled warning</a>. Thanks to xet7.</summary>
+
+Replace Arabic/French watch text using monitoring terminology. Preserve
+administrator action and both board and card scope. Four focused suites
+pass for wording, negative wrong-language checks, source error wiring and
+translation structure. Full contextual grammar remains under native review.
+Dated audit records 178 pending findings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/35f74fd04">Repair Tamazight case-insensitive search guidance</a>. Thanks to xet7.</summary>
+
+Replace French search help, retaining case-insensitive text matching and
+using A/a to clarify letter case. Four focused suites pass for negation,
+letter forms, negative French checks and translation structure. Complete
+computing terminology and contextual grammar remain under native review.
+Dated audit records 177 pending findings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/327a35b82">Repair Tamazight invalid filename warning</a>. Thanks to xet7.</summary>
+
+Replace Arabic warning, preserving invalid filename condition and cancelled
+upload or renaming. Four focused suites pass for operation scope, negative
+wrong-language checks and translation structure. Full contextual grammar
+remains under native review. Dated audit records 176 pending findings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4a2821835">Repair Tamazight import member mapping label</a>. Thanks to xet7.</summary>
+
+Replace French mapping-review label using the attested check verb, distinct
+from the similar spelling for light. Four focused suites pass for exact
+wording, negative wrong-language checks and translation structure. Mapping
+compound remains under native review. Dated audit records 175 pending
+findings and the need to recheck older checklist compounds.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5434775ba">Repair Tamazight checklist verification terminology</a>. Thanks to xet7.</summary>
+
+Revise 49 prior checklist compounds with an attested verification noun,
+preserving surrounding prose and placeholders. Four focused suites pass
+for exact repairs, rejection of the old compound and translation structure.
+Full software compound and contextual grammar remain under native review.
+Dated audit retains 175 pending original findings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/cc2b110ba">Repair Tamazight CSV and TSV import guidance</a>. Thanks to xet7.</summary>
+
+Replace French import guidance with paste, values and separator wording,
+keeping CSV and TSV literal. Four focused translation suites pass.
+Computing adaptations, passive grammar and borrowed Tab terminology
+remain under native review. Dated audit records 174 pending findings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8362a8a2e">Repair Tamazight custom head-tag activation label</a>. Thanks to xet7.</summary>
+
+Replace French activation text with Tamazight, keeping HTML head scope
+explicit. Four focused translation suites pass. Borrowed technical wording
+and full compound remain under native review. Audit records 173 pending
+findings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7c1c4623d">Repair Tamazight custom web-manifest labels</a>. Thanks to xet7.</summary>
+
+Replace two French settings labels with Tamazight activate/content wording,
+preserving web-manifest identity and JSON format. Four focused translation
+suites pass. Borrowed compounds remain under native review. Dated audit
+records 171 pending findings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9baa8f69d">Repair Tamazight legal-notice labels</a>. Thanks to xet7.</summary>
+
+Replace French custom-link and Arabic legal-notice wording, preserving URL
+and custom page scope. Four focused translation suites pass. Derived
+agreement and full legal-notice compound remain under native review.
+Dated audit records 170 pending original findings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3ce7ed2a0">Repair Tamazight due-card empty states</a>. Thanks to xet7.</summary>
+
+Replace three French empty-state values, retaining the due-date condition,
+possession and current-time qualifier where applicable. Four focused
+translation suites pass. Passive agreement and due-date terminology remain
+under native review. Dated audit records 168 pending original findings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d0bf77715">Repair Tamazight automatic board-watching instruction</a>. Thanks to xet7.</summary>
+
+Replace Arabic legacy instruction, preserving automatic watching when
+boards are created. Four focused translation suites pass. Conditional
+and passive agreement remain under native review; no active caller found.
+Dated audit records 167 pending original findings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/897c89740">Repair Tamazight card-export people label</a>. Thanks to xet7.</summary>
+
+Replace French export-field wording, preserving all four roles and their
+order. Four focused translation suites pass. Computing ownership and
+assignee phrasing remain under native review. Dated audit records 166
+pending original findings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5f41f83ca">Repair Tamazight mobile and desktop mode labels</a>. Thanks to xet7.</summary>
+
+Replace three French labels, keeping both modes and switching between
+them explicit. Four focused translation suites pass. Borrowed identifiers
+and mode adaptation remain under native review. Dated audit records 165
+pending original findings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d90707d5d">Repair Tamazight blank rule-field instruction</a>. Thanks to xet7.</summary>
+
+Replace Arabic instruction, preserving empty fields matching every possible
+value. Native computing messages support matching terminology. Four
+focused translation suites pass. Derived noun and full grammar remain
+under native review. Dated audit records 164 pending original findings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ecbe3856d">Repair Tamazight permanent-attachment warning</a>. Thanks to xet7.</summary>
+
+Replace Arabic legacy warning with added-file wording, permanence and
+no undo. Four focused translation suites pass. Active soft-delete message
+remains separate. Adverbial and passive grammar remain under native review.
+Dated audit records 163 pending original findings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/efdf49b29">Repair Tamazight linked-card deletion warning</a>. Thanks to xet7.</summary>
+
+Replace French dependency fragment, retaining deletion order and diagnostic
+continuation. Four focused translation suites pass. Full subordinate
+clause and linked participle remain under native review. Dated audit
+records 162 pending original findings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/18e197947">Repair Tamazight list linked-card deletion warning</a>. Thanks to xet7.</summary>
+
+Replace French dependency warning, retaining linked cards connected to
+cards in this list and deletion order. Four focused translation suites
+pass. Relative/plural grammar and connection paraphrase remain under
+native review. Dated audit records 161 pending original findings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/27dbc30c2">Repair Tamazight private-page login guidance</a>. Thanks to xet7.</summary>
+
+Replace Arabic guidance, keeping both uncertainty clauses and the login
+link placeholder. Four focused translation suites pass. Derived adjective
+and conditional grammar remain under native review. Dated audit records
+160 pending original findings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/047c860ea">Repair Tamazight clipboard-image gesture instruction</a>. Thanks to xet7.</summary>
+
+Replace French fragment, keeping paste or drag-and-drop an image file and
+image-only restriction. Four focused translation suites pass. Computing
+gesture adaptations and full grammar remain under native review. Dated
+audit records 159 pending original findings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1a174e357">Repair Dzongkha tabular Hijri epoch labels</a>. Thanks to xet7.</summary>
+
+Replace two English seeds with native tabular terminology and distinct
+Julian starting dates. Four focused translation suites pass. Starting-date
+compound remains under native review. Dated audit records 157 pending
+original findings; broader Dzongkha review remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/103457ada">Repair Tamazight Saudi sighting-calendar label</a>. Thanks to xet7.</summary>
+
+Replace country-only English seed with calendar and moon-sighting wording.
+Four focused translation suites pass. Full sighting-calendar compound
+remains under native review. Dated audit records 156 pending original
+findings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3fd9413b3">Repair Tamazight member-removal confirmation</a>. Thanks to xet7.</summary>
+
+Replace Arabic confirmation, preserving named tokens, member removal from
+all cards on the board and notification. Four focused translation suites
+pass. Notification/passive and full grammar remain under native review.
+Dated audit records 155 pending original findings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0f393c5c8f">Repair Tamazight list-deletion warning</a></summary>
+
+Replace French text with Tamazight wording preserving activity removal,
+list recovery and no-undo semantics. Four focused suites pass. Full grammar
+and the English warning's conflict with soft removal remain under review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3da9c1f4e">Repair Tamazight card-owner export heading</a></summary>
+
+Replace an unflagged French heading with the card-owner compound already
+used in export-field descriptions. Four focused suites pass; software
+compound and gender-neutral wording remain under contextual review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/11fc595a0">Repair Tamazight SMTP labels and test-email subject</a></summary>
+
+Replace unflagged Arabic and French strings with existing Tamazight TLS
+and test-email wording, preserving protocol identifiers. Four focused
+suites pass; complete contextual phrasing remains under review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e1c372071">Repair Tamazight SMTP port wording</a></summary>
+
+Replace Arabic and French port strings with a borrowed network term and
+Tamazight outgoing-email description. Preserve your SMTP server's use of
+this port. Four focused suites pass; contextual grammar review remains open.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b0ad9320f">Repair Tamazight desktop drag-handle label</a></summary>
+
+Replace French text with Tamazight show, handle and drag wording, retaining
+Desktop as a borrowed mode identifier. Four focused suites pass; derived
+action noun and full contextual compound remain under review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/66f2a8fee">Repair Tamazight search date-filter instructions</a></summary>
+
+Replace French created and modified hints with recent-day wording,
+preserving distinct operators and literal examples. Four focused suites
+pass; complete passive and temporal grammar remain under review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/64e524f27">Repair Tamazight due-date search instruction</a></summary>
+
+Replace French prose, preserving numeric and overdue examples and literal
+operators. Four focused suites pass. Temporal grammar and the numeric
+cutoff's discrepancy with the English instruction remain under review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e908ec0a2">Repair Tamazight locked-users navigation label</a></summary>
+
+Replace an unflagged French label with the plural locked-user wording
+already used in its description. Four focused suites pass; existing
+passive participle grammar remains under contextual review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/bf9a929e1">Repair Tamazight failed-attempts label</a></summary>
+
+Replace unflagged French text with trial and failure terminology. Four
+focused suites pass. Software attempt adaptation and complete phrase
+remain low confidence and open to contextual improvement.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7c58d6c3d">Repair Tamazight account-protection settings wording</a></summary>
+
+Replace French heading and update confirmation with Tamazight prose,
+retaining brute force as a technical loan. Four focused suites pass;
+complete compound and passive plural remain under contextual review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5211bf315">Repair Tamazight account-protection explanation</a></summary>
+
+Replace French text with a Tamazight paraphrase preserving login-attempt
+protection and brute-force attacks. Four focused suites pass; complete
+nominal grammar and software attempt terminology remain under review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0567c1aac">Repair Tamazight total and used heap-size labels</a></summary>
+
+Replace French diagnostics with distinct Tamazight wording for total and
+used heap size. Four focused suites pass; computing metaphor and full
+label grammar remain under contextual review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/88add3006">Repair Tamazight heap-size-limit label</a></summary>
+
+Replace French text with abstract-limit wording, preserving the distinction
+from total and used heap size. Four focused suites pass; computing metaphor
+and full nominal chain remain under contextual review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6481e8bbd">Repair Tamazight malloc-memory diagnostic labels</a></summary>
+
+Replace French memory and peak labels with concise Tamazight wording,
+preserving malloc and maximum distinctions. Four focused suites pass;
+allocation paraphrase and complete computing phrases remain under review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0f545fd8a">Repair Tamazight available and executable heap labels</a></summary>
+
+Replace French diagnostics with distinct availability and execution
+paraphrases. Four focused suites pass; availability participle, executable
+capability and full computing compounds remain under contextual review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8516ab9a7">Repair Tamazight garbage-flag diagnostic label</a></summary>
+
+Replace French text with Tamazight heap/use wording, preserving the exact
+diagnostic flag identifier. Four focused suites pass; complete computing
+compound remains under contextual review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0f4fc5d22">Repair Tamazight V8 context-count labels</a></summary>
+
+Replace French count/context prose with Tamazight, retaining native and
+detached as distinct technical qualifiers. Four focused suites pass;
+complete computing compounds and loan localization remain under review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0b259c2d3">Repair Tamazight physical heap-size label</a></summary>
+
+Replace the final French heap diagnostic label with Tamazight wording.
+Four focused suites pass; computing physical-memory sense and complete
+phrase grammar remain low confidence and under review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ec1f2cb21">Repair Tamazight top-left logo URL labels</a></summary>
+
+Replace French image and link labels using existing Tamazight logo patterns,
+preserving the two URL meanings. Four focused suites pass; full spatial
+chain and computing compounds remain under contextual review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8d9facf9a">Repair Tamazight logo height and navigation wording</a></summary>
+
+Replace French and Arabic logo labels, preserving hide, board-page return
+and default height 27. Four focused suites pass; spatial chain, default
+terminology and possessive grammar remain under contextual review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ac95ce3aa">Repair Tamazight JSON-schema error</a></summary>
+
+Replace French prose while preserving generic information and format
+validation meaning. Four focused suites pass; technical format loan and
+complete participle/possessive grammar remain under contextual review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/52b73cacc">Repair Tamazight CSV and TSV schema warning</a></summary>
+
+Replace Arabic prose, preserving comma and Tab-separated-value explanations
+and information/format meaning. Four focused suites pass; full grammatical
+phrasing and technical loans remain under contextual review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a6d77ba0e">Fix Tamazight first due-reminder activity translation</a></summary>
+
+Replace French wording with a Tamazight draft preserving named activity
+placeholders. Four focused checks pass. Full deadline compound and grammar
+remain low confidence; the source also uses this message for initial due-date
+assignment. Dated translation audit records that discrepancy and open review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/06be23201">Fix Tamazight actual used-memory diagnostic wording</a></summary>
+
+Replace French wording with a Tamazight draft. Four focused checks pass.
+The displayed field is V8 heapUsed; full terminology and grammar remain
+under review. Record dated evidence and remaining repairs in the audit.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ef5a6c5ba">Fix Tamazight resident-memory diagnostic label</a></summary>
+
+Replace French with Tamazight memory-usage and size wording, retaining the
+precise RSS acronym. Four focused checks pass. Full computing grammar and
+native expansion of resident set remain in the dated translation audit.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f10fe2fa5">Fix Veps automatic URL scheme setting translation</a></summary>
+
+Replace Finnish instructions with a Veps draft retaining automatic
+clickability and one scheme per line. Four focused test files pass.
+Assembled grammar remains low confidence in the dated translation audit.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/29bf7aa22">Fix unflagged Finnish rules heading in Veps translation</a></summary>
+
+Use the native Veps rules plural. Four focused test files pass. The dated
+audit records additional mixed-language rule and 2FA values for repair.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3658f1755">Fix Tshivenda rule-state text in Veps translations</a></summary>
+
+Replace two wrong-language rule messages with Veps drafts while preserving
+both toggle actions and the existing enabled label. Four focused test files
+pass. Full assembled grammar remains under review in the dated audit.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/93a48d724">Fix five wrong-language Veps synchronization labels</a></summary>
+
+Reuse existing Veps wording while preserving literal project and credential
+examples. Four focused test files pass. Remaining synchronization messages
+and full grammar review stay open in the dated translation audit.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c379de7d7">Fix six Veps synchronization state and result translations</a></summary>
+
+Replace wrong-language states/results with Veps drafts, preserving distinct
+pending/success/error states and exact error placeholder. Four focused test
+files pass. Derived grammar remains open in the dated translation audit.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0ca3422a4">Fix wrong-language Veps synchronization source label</a></summary>
+
+Use the directly attested native source noun. Four focused test files pass.
+The dated audit retains remaining synchronization and optional-field repairs.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5d0583ef5">Fix Veps optional-field and synchronization username wording</a></summary>
+
+Replace wrong-language wording while preserving the optional qualifier.
+Four focused test files pass. Full contextual grammar remains under review
+in the dated translation audit.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c117936ed">Fix Veps synchronization credential labels and status messages</a></summary>
+
+Replace wrong-language credential wording with Veps drafts, retaining set
+and not-set-yet states. Four focused test files pass. Full status grammar
+and credential paraphrase remain under review in the dated audit.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/81c17c196">Fix Veps never-synced state with native adverb</a></summary>
+
+Use the directly attested native never adverb, keeping it distinct from
+failed synchronization. Four focused test files pass. Remaining wording
+repairs stay open in the dated translation audit.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b30fa05a9">Fix Veps inactive synchronization source label.</a></summary>
+
+Replace wrong-language text in the empty synchronization source option.
+Preserve its distinction from enabled, failed and never-synced states.
+Derived terminology and complete grammar remain low confidence.
+Four focused test files pass (25 checks); no live synchronization UI ran.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/25e6eefba">Replace wrong-language Veps synchronization instructions.</a></summary>
+
+Preserve the external tracker, background 15-minute checking interval,
+and immediate manual synchronization action. Complete draft grammar and
+computing terminology remain low confidence and under review.
+Four focused files pass (26 checks); no live synchronization UI ran.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/29f93a888">Fix Veps multi-tracker project identifier label.</a></summary>
+
+Replace wrong-language project-key text with a project-code paraphrase
+covering IDs and owner/repo paths accepted by tracker integrations.
+Complete native terminology remains low confidence and under review.
+Four focused files pass (27 checks); no live synchronization UI ran.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7deff5697">Replace wrong-language Veps two-factor controls.</a></summary>
+
+Preserve enable and disable actions, popup title and account-specific
+status. Complete draft terminology and grammar remain low confidence;
+setup instructions are still under translation review.
+Four focused files pass (28 checks); no live authentication UI ran.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f9d9c454d">Replace wrong-language Veps two-factor setup and login text.</a></summary>
+
+Preserve QR and manual setup alternatives, six-digit codes, the code
+requirement at every login and invalid-code retry. Complete draft grammar
+and computing compounds remain low confidence and under review.
+Four focused files pass (29 checks); no live authentication UI ran.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e722a6c17">Improve Veps synchronization title and software-key wording.</a></summary>
+
+Replace the overlooked wrong-language popup title and use native software
+sort-key evidence for project-key wording. Retain ID/path alternatives.
+Complete compound grammar remains low confidence and under review.
+Four focused files pass (30 checks); no live synchronization UI ran.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4b2009229">Fix Veps voting and event detail labels.</a></summary>
+
+Replace wrong-language vote sorting, voting heading and event details.
+Preserve sorting and detail meanings. Complete terminology and case
+remain under review; four focused files pass (31 checks).
+No live voting or event UI ran.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f5d72bae8">Replace wrong-language Veps repair and restore messages.</a></summary>
+
+Preserve result counters, missing-board explanation and automatic-repair
+limits. Complete count and case grammar remains low confidence.
+Four focused files pass (32 checks); no live repair UI ran.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/201f8d0a4">Replace wrong-language Veps chart forecast messages.</a></summary>
+
+Preserve completed and missing-velocity states, weekly pace and conditional
+completion date. Full projection and count grammar remains under review.
+Four focused files pass (33 checks); no live chart UI ran.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e8826e71a">Replace wrong-language Veps loading and migration status.</a></summary>
+
+Preserve active/inactive work and possible login delays until completion
+and lower CPU load. Complete draft grammar and terms remain under review.
+Four focused files pass (34 checks); no live status/login UI ran.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9e0680331">Replace wrong-language Veps CPU usage and load labels.</a></summary>
+
+Preserve current versus generic CPU usage and average-load distinction.
+Full computing terminology remains under review. Four focused files
+pass (35 checks); no live CPU UI ran.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/bc8988c9d">Replace wrong-language Veps problem acknowledgment text.</a></summary>
+
+Preserve reviewed-area selection and resetting new-problem counts.
+Complete acknowledgment terminology and grammar remain under review.
+Four focused files pass (36 checks); no live acknowledgment UI ran.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/cfed82e70">Replace wrong-language Veps backup scope text.</a></summary>
+
+Preserve organization attachments, shared accounts/settings exclusions
+and restore ownership restrictions. Whole-instance paraphrase and full
+grammar remain under review. Four focused files pass (37 checks).
+No live backup UI ran.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/91d0cbf5e">Replace wrong-language Veps event severity label.</a></summary>
+
+Use verified native noun forms in a severity-level draft. Complete
+technical terminology remains low confidence and under review.
+Four focused files pass (38 checks); no live event UI ran.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/046830b35">Replace wrong-language Veps list date range description.</a></summary>
+
+Preserve custom date fields marked for list top using a native interval
+noun. Full draft grammar remains under review. Four focused files pass
+(39 checks); no live date-range UI ran.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7c17acd34">Replace wrong-language Veps numeric total description.</a></summary>
+
+Use an attested native phrase for addition of numbers and preserve custom
+number fields marked for list top. Surrounding grammar remains under review.
+Four focused files pass (40 checks); no live tooltip UI ran.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/21e43e8b5">Replace wrong-language Veps card-number search text.</a></summary>
+
+Use existing Veps card, number and identifier terminology while preserving
+search placeholders and literal examples. Four focused files pass (40 checks).
+The complete relative-clause grammar remains under review, and the expanded
+Veps wrong-language candidate scan remains active.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/052937ff0">Repair Veps Problems-page headings.</a></summary>
+
+Replace Tshivenda Summary with an attested native Veps heading and Finnish
+Status with the locale's existing Veps status label. Four focused files pass
+(40 checks); the expanded Veps candidate review remains active.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8a66f4c74">Repair Veps voting-side labels.</a></summary>
+
+Replace four Finnish participant and action labels using rendered native Veps
+voting, defense and opposition references. Four focused files pass (40 checks).
+Derived participant wording remains under native review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8480bee00">Repair Veps card-loading translations.</a></summary>
+
+Replace two Tshivenda labels, obsolete/manual loading wording and a Russian
+multi-select hybrid. The Veps description now matches automatic above-threshold
+loading and preserves exact operator configuration literals. Four focused files
+pass (40 checks). Full technical grammar remains under native review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/09b62ffa4">Repair Veps accessibility translations.</a></summary>
+
+Replace five Finnish labels and messages with one consistent Veps “access for
+everyone” family across navigation, settings fields and the public empty state.
+Four focused files pass (40 checks). The descriptive term remains under native
+review because no dedicated accessibility noun was found.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1b35cd8b4">Repair Veps numeric-field sum control.</a></summary>
+
+Replace the Finnish checkbox label with the dictionary-attested arithmetic
+addition and established list-top terminology used by its numeric-total tooltip.
+Four focused files pass (40 checks). Full compound grammar remains under native
+review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b82d5761e">Repair Veps vertical-scrollbar control.</a></summary>
+
+Replace the Finnish toggle label with a Veps draft that preserves vertical
+scrollbar visibility and verify its board, list, card and sidebar scope. Four
+focused files pass (40 checks). The compound remains under native review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4d74f7080">Repair Veps keyboard-shortcut translations.</a></summary>
+
+Replace three tracked Finnish messages and their unflagged popup title with a
+consistent keyboard-command draft. Verify opposite setting actions, popup and
+route bindings, and the literal question-mark shortcut. Four focused files pass
+(40 checks). The technical compound remains under native review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7bc3b73b0">Translate Veps advanced-filter help.</a></summary>
+
+Replace the final tracked Finnish Veps paragraph while preserving every
+executable operator, quote, escape, grouping and regex example. Six focused
+files pass (42 checks), including the real parser suite. Technical prose remains
+under native review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/52836b241">Complete Ewe tabular Hijri calendar label.</a></summary>
+
+Replace an incomplete English label with an Ewe calculation-and-astronomical-
+epoch draft, preserving its distinction from civil and moon-sighting variants.
+Four focused files pass. The technical construction remains under native
+review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/56ce505d0">Translate Nahuatl calendar-system labels.</a></summary>
+
+Replace 17 Azerbaijani, English and incomplete labels with a coordinated modern
+date-reckoning family. Preserve every named calendar, country, epoch and
+moon-sighting distinction. Four focused files pass. Modern compounds remain
+under native review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e97f8fb20">Complete Wolaytta calendar-system labels.</a></summary>
+
+Replace ten English seeds with the attested Wolaytta calendar-noun family.
+Preserve named systems, calculated civil and astronomical starting points, and
+Saudi moon sighting. Four focused files pass. Technical compounds remain under
+native review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/88caf1751">Translate Tigre calendar-system labels.</a></summary>
+
+Replace 17 Azerbaijani, English and incomplete labels using a Tigre corpus-
+attested calendar expression and native date, view, calculation, astronomy,
+country and religious terms. Preserve all named systems and epoch/sighting
+distinctions. Four focused files pass. Full compounds remain under native
+review, along with broader Tigrinya-seeded locale values.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a0eeee9d6">Retain valid Roman Inuktitut translations.</a></summary>
+
+Review 23 script findings against official territorial and Nunavut language
+guidance. Preserve the correct-language Qaliujaaqpait values because Roman
+orthography and Qaniujaaqpait syllabics are both valid Inuktitut writing
+systems. Four focused files pass.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b5acfdaec">Complete Inuktitut calendar labels.</a></summary>
+
+Replace 15 Azerbaijani and incomplete English labels with the official
+Nunavut-attested calendar noun and existing syllabic UI vocabulary. Preserve
+all named systems and civil, astronomical and moon-sighting distinctions.
+Four focused files pass. Full compounds remain under native review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/10aa31003">Translate Tamazight tabular Hijri labels.</a></summary>
+
+Replace two English seeds with calculated Islamic-calendar labels and exact,
+distinct Julian civil and astronomical start dates. Avoid the unrelated
+furniture-table noun. Four focused files pass; full compounds remain under
+native review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7d87955de">Repair Tamazight accessibility and UI labels.</a></summary>
+
+Replace seven Arabic or French accessibility, label-action, scrollbar,
+ZIP-import and multi-card-window values. Preserve `.zip` and `JSON` literals
+and add focused script and terminology checks. Full accessibility, scrollbar
+and window compounds remain under native review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3d79d5ca5">Repair Tamazight diagnostics and repository actions.</a></summary>
+
+Replace four French memory, Excel export and repository-action values with
+Tamazight drafts. Add focused terminology and wrong-language checks. Complete
+allocated-heap and software-repository compounds remain under native review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/36c8afc8e">Repair Tamazight board and import guidance.</a></summary>
+
+Replace Arabic or French offline, Due Cards, URL, bucket and public-board text,
+and complete the Roman Tamazight Markdown-import instruction. Preserve all
+syntax and product literals. Longer phrasing remains under native review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a11978016">Repair Tamazight global search guidance.</a></summary>
+
+Replace three French search instructions while preserving every operator,
+placeholder, quoted example and Markdown delimiter. Explanatory grammar
+remains under native review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ee9228ab6">Complete tracked Tamazight migration translations.</a></summary>
+
+Replace the final thirteen French member-mapping and board-migration values.
+Preserve URL and database field identifiers and verify confirmation questions.
+Long technical clauses remain under native review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f18a925c2">Translate the Aromanian magenta color label.</a></summary>
+
+Replace the English placeholder with a red-violet compound built from attested
+Aromanian color components. The exact compound remains under native review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2ecd74637">Complete restored Basque rule translation review.</a></summary>
+
+Retain four named-subject fragments after checking production rule-builder and
+saved-description order. The original audit now has no pending or restored
+rows; broader full-locale review continues.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9ab9215c6">Repair Tigre basic date vocabulary.</a></summary>
+
+Replace 12 Date, Day, Month and weekday values copied from Tigrinya with
+corpus-backed Tigre forms. Focused checks keep date/day semantics distinct and
+reject the Tigrinya seeds. Broader whole-locale review continues.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0e9418960">Repair corpus-backed Tigre interface terms.</a></summary>
+
+Replace 35 navigation, board-view, action, color and field labels copied from
+Tigrinya with Tigre corpus entries. Focused checks preserve exact values and
+reject the copied seeds; broader phrase review continues.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5b2c5942e">Record corpus-attested shared Tigre terms.</a></summary>
+
+Retain 13 Tigre values that validly match Tigrinya because the Tigre corpus
+independently attests each exact form for the same English gloss. Focused
+checks distinguish reviewed shared vocabulary from unclassified overlap.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f27cb82ca6">Repair lexical Tigre interface terms.</a></summary>
+
+Replace 91 more Tigrinya-seeded labels with Tigre corpus headwords and short
+phrases. Focused checks preserve exact source placeholders and reject the
+former seeds; broader phrase review continues.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/62956f2819">Repair Tigre address and name labels.</a></summary>
+
+Replace three more Tigrinya-seeded labels with the context-appropriate Tigre
+corpus senses already used for Address and Name. Broader review continues.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2530126f2">Repair repeated Tigre interface families.</a></summary>
+
+Replace 32 repeated Tigrinya-seeded labels with consistent Tigre corpus terms
+for status, color actions, intervals and related interface families.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/77e08a8f6">Repair Tigre Azure menu paths.</a></summary>
+
+Use Tigre Account and Show forms in two Azure paths while preserving every
+vendor menu token and separator.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f9b716fd6">Repair repeated Tigre interface nouns.</a></summary>
+
+Use consistent Tigre corpus roots for text, title, source, support, public,
+boards, labels and avatars across related controls.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b2caad45b">Retain additional shared Tigre terms.</a></summary>
+
+Record direct corpus evidence for six valid Tigre/Tigrinya cognates in their
+specific red, phase, Default and translation controls.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/67632637c">Repair conflicting Tigre interface senses.</a></summary>
+
+Replace four Tigrinya-seeded labels whose attested meanings conflict with the
+Task, Sort, Person and Trigger UI contexts.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/62ff72c60">Repair basic Tigre interface terms.</a></summary>
+
+Replace 17 basic Tigrinya-seeded labels with distinct Tigre forms attested in
+complete corpus sentences.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a268d6167">Repair Tigre operational terms.</a></summary>
+
+Replace 22 Tigrinya-seeded operational labels with distinct Tigre corpus forms
+covering actions, limits, work, reports, security and progress.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/fa6cbd166">Retain the shared Tigre seconds term.</a></summary>
+
+Keep the existing Seconds label after direct Tigre corpus attestation proves
+that its equality with Tigrinya is a valid cognate.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6f2592814">Repair Tigre interface compounds.</a></summary>
+
+Replace 27 Tigrinya-seeded time-unit and interface compounds by consistently
+reusing corpus-established Tigre roots.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2bb4b88cb">Correct Tigre member terminology.</a></summary>
+
+Use the corpus Member/Members pair across seven controls and replace an earlier
+association-sense choice.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9f5f2d1db">Repair Tigre administrative and location controls.</a></summary>
+
+Replace 14 Tigrinya-seeded Admin, confirmation, type and location controls with
+corpus-attested Tigre terminology.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6d8f830a7">Repair Tigre export controls.</a></summary>
+
+Use one corpus-attested Tigre export action across seven generic, list and board
+Export controls.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e27abadf6">Repair Tigre severity controls.</a></summary>
+
+Replace physical-weight wording in three Severity controls with a corpus-
+grounded severity-level compound.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b4586ba97">Repair Tigre status controls.</a></summary>
+
+Replace eight Tigrinya-seeded progress, CPU usage, card loading and remaining-
+time controls with corpus-attested Tigre terminology.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f1b12cc66">Repair Tigre visual controls.</a></summary>
+
+Replace eight Tigrinya-seeded Rename and board-background controls with corpus-
+attested Tigre terminology.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e4ae5173f">Repair Tigre interface actions.</a></summary>
+
+Replace seven Tigrinya-seeded Font, Invite People and Change permissions
+controls with corpus-grounded Tigre terminology.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b8ebfc67e">Repair Tigre speed and storage terms.</a></summary>
+
+Replace four Tigrinya-specific Speed and Storage spellings with independently
+attested Tigre forms.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0651f745b">Repair ledger-grounded Tigre compounds.</a></summary>
+
+Replace 17 compact Tigrinya-seeded interface labels using independently
+reviewed Tigre terms from earlier corpus-backed corrections.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/284fcff14">Repair Tigre member compounds.</a></summary>
+
+Use the explicit Tigre Member and Members terms across seven board, filter,
+selection and rule controls.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a03aa027c">Repair Tigre date controls.</a></summary>
+
+Distinguish Due, Due Date and End and replace copied Tigrinya wording in seven
+date-popup titles with corpus-grounded Tigre terminology.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a6dd320fd">Repair Tigre selection controls.</a></summary>
+
+Replace copied Tigrinya wording in six board selection, show/hide and
+select-all controls with corpus-grounded Tigre terminology.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/22615501d">Reuse reviewed Tigre interface terms.</a></summary>
+
+Apply established Tigre wording to the remaining matching List name, Create an
+Account, Not Active and Logout labels.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b8bbd8fa3">Repair Tigre import controls.</a></summary>
+
+Replace copied Tigrinya wording in eleven general, board, list, card and rule
+Import controls with corpus-grounded Tigre terminology.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/002f8bc7b">Repair Tigre name controls.</a></summary>
+
+Replace the copied Tigrinya name noun in four Full Name, Location, Webhook and
+Version labels with corpus-grounded Tigre terminology.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5d53aa990">Correct Tigre plurals using corpus evidence.</a></summary>
+
+Use attested Files, Names and Organizations plurals in 28 Tigre values.
+Retain the legitimately shared File spelling and reconcile the correction
+ledger and regression tests; all 46 Tigre suites pass.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/009d7f832">Repair Tigre Star and Break terminology.</a></summary>
+
+Use corpus-attested Tigre singular and irregular plural Star forms in board,
+page, list and card controls, plus the attested Pomodoro Break form. Refresh
+ledger-confirmed older Tigre tests; all 45 Tigre suites pass.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6b78c88cb">Repair Tigre Endpoint terminology.</a></summary>
+
+Use the existing technical Endpoint term in three API/S3 contexts instead of
+translating it as a temporal end.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0eac733cd">Repair corpus-supported Tigre exact controls.</a></summary>
+
+Replace Tigrinya Website, Special, Buttons and Collections values with
+Tigre corpus-grounded terms; mark derived plurals for fluent review.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0ef3ca6dd">Repair missed Tigre Organizations control.</a></summary>
+
+Replace the remaining exact Tigrinya Organizations plural and extend the
+full-locale regression guard to reject it.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/08e7092c3">Repair established Tigre noun families throughout.</a></summary>
+
+Replace Tigrinya File, User, Name, Label, Organization, Team, Path, Status,
+Size, Color and Count components across all 193 matching Tigre values, with
+context guards for unrelated meanings.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/83546ed24">Repair Tigre board and card terms throughout.</a></summary>
+
+Replace embedded Tigrinya Board and Card nouns in 407 Tigre values while
+preserving Clipboard wording and existing Tigre compounds.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/40a20207b">Repair Tigre short interface controls.</a></summary>
+
+Use established Tigre terms in 16 At, Remove, Sign In, All, Delete, Failed
+and Count controls.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/088b01587">Repair additional Tigre interface terms.</a></summary>
+
+Use established Tigre Files, Address, Visibility, Format, First and Usage
+terms in 12 remaining exact-copy contexts.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/45a568aea">Reuse reviewed Tigre terms in remaining controls.</a></summary>
+
+Repair 44 exact Tigrinya copies by reusing established Tigre terms only in
+their matching UI senses.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e50072bc3">Repair Tigre edit and template terms.</a></summary>
+
+Use exact Tigre corpus terms in 31 Edit and singular Template contexts while
+preserving unrelated example phrases.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/eb1add1f2">Repair embedded Tigre account, storage and description terms.</a></summary>
+
+Replace remaining copied Tigrinya Account inflections, Storage/Repository
+spellings and Description components inside 60 Tigre values.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8296c12a5">Repair Tigre account, storage and template terms.</a></summary>
+
+Replace 17 copied Tigrinya Account, Storage and Templates components with
+established Tigre terminology.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c73362aae">Repair remaining Tigre card terms.</a></summary>
+
+Replace all 17 remaining copied Tigrinya Card components with established
+Tigre singular, plural and possessive forms.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c91e56a50">Repair Tigre outcome and account terms.</a></summary>
+
+Replace nine copied Tigrinya Failed, Succeeded, Registration and Private
+forms with sense-matched Tigre corpus forms.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0896117b5">Repair Tigre date and time terms.</a></summary>
+
+Replace seven copied Tigrinya Time components and repair three date/hour
+prepositions while preserving independently attested Tigre nouns.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/242c1f27b">Repair Tigre label, organization and team terms.</a></summary>
+
+Replace 13 copied Tigrinya nouns in semantically matched Label, Organization
+and singular Team controls while preserving distinct icon and checkbox senses.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8b6c21ff9">Repair repeated Tigre interface components.</a></summary>
+
+Replace 32 copied Tigrinya Change, Show, Import, All, Size, Path and User
+components while retaining the separate Enter-field meaning.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1196bebaa">Repair Tigre board terms.</a></summary>
+
+Replace 31 copied Tigrinya Board singular, plural and possessive components
+with established Tigre forms while preserving surrounding context.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/71a15613c">Repair Tigre file terms in longer clauses.</a></summary>
+
+Replace the remaining eight copied Tigrinya File spellings with established
+Tigre terminology while preserving surrounding clauses and identifiers.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8560f3d7c">Repair Tigre card and file terms.</a></summary>
+
+Replace 21 copied Tigrinya Card and File components with established Tigre
+terms while preserving product names, extensions and surrounding context.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a69ed2325">Retain attested Tigre account and error plurals.</a></summary>
+
+Preserve two byte-identical Tigre and Tigrinya plurals after independent Tigre
+corpus sentences establish the matching Accounts and Errors senses.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f64f9c98d">Repair multi-component Tigre labels.</a></summary>
+
+Replace copied Tigrinya components in 31 user, board, card, date, label, file
+and invitation controls with previously attested Tigre terminology.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/fc6139745">Repair compact Tigre terminology.</a></summary>
+
+Replace copied Tigrinya components in 31 configuration labels with consistent,
+previously attested Tigre interface terms.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e17bb2b5e">Repair native-catalogue Veps interface terms.</a></summary>
+
+Replace 31 Finnish-seeded labels through exact English-source matching with
+the native MediaWiki Veps catalogue. Focused checks also preserve five terms
+independently attested as valid in both languages; broader review continues.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c67a91a41">Repair lexical Veps interface terms.</a></summary>
+
+Replace 29 Finnish-seeded colors, weekdays and common interface terms with
+exact Veps lexical entries. Focused checks preserve 60 repaired terms and six
+independently attested forms shared with Finnish; broader review continues.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a222bad2d">Repair Veps board interface families.</a></summary>
+
+Replace 128 Finnish-seeded board, card, list, swimlane, member, label,
+settings, archive and CRUD labels using established Veps vocabulary. Focused
+checks keep related actions and objects consistent; broader review continues.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4caef872b">Repair Veps account and rule interface families.</a></summary>
+
+Replace 165 Finnish-seeded account, email, profile, color, status, rules and
+settings values with Veps drafts based on native lexical sources and existing
+locale vocabulary. Focused checks preserve placeholders and product literals.
+
+Thanks to xet7 !
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a4ec295ff">Complete Finnish-seeded Veps translation review.</a></summary>
+
+Replace the final 177 Finnish-seeded search, report, status, storage and
+migration values. Exact checks classify every remaining match as an attested
+native cognate or intentional slash syntax and preserve all placeholders.
+
+Thanks to xet7 !
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their
+translations.
 
 # v11.80 2026-09-15 WeKan ® release
 

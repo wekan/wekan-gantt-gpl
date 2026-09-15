@@ -84,7 +84,8 @@ assert.deepEqual(tokens(ewe['activity-checklist-completed-card']), [
 ]);
 assert.match(ewe['allboards.edit-workspace-icon'], /markdown/);
 assert.deepEqual(tokens(ewe['activity-dueDate']), ['%s', '%s']);
-assert.match(ewe['list-width-error-message'], /270/);
+assert.match(ewe['list-width-error-message'], /blibo si le 200 pixels ya teti/);
+assert.doesNotMatch(ewe['list-width-error-message'], /270/);
 assert.match(ewe['set-swimlane-height'], /tsiƒuƒu/);
 assert.match(ewe['convertChecklistItemToCardPopup-title'], /kaɖi/);
 assert.deepEqual(tokens(ewe['and-n-other-card']), ['__count__']);
@@ -133,6 +134,23 @@ assert.match(ewe['export-card-excel'], /Excel/);
 assert.match(ewe['export-card-excel-no-disk-space'], /Excel.*disk/);
 assert.match(ewe['advanced-filter-description'], /== != <= >= && \|\| \( \)/);
 assert.match(ewe['advanced-filter-description'], /F1 == \/Tes\.\*\/i/);
+assert.equal(
+  ewe['calendar-system-islamic-tbla'],
+  'Hijri kalenda (akɔ́nta dzi, astronomi ƒe gɔmedzedze)',
+);
+assert.match(ewe['calendar-system-islamic-tbla'], /akɔ́nta.*gɔmedzedze/);
+assert.notEqual(
+  ewe['calendar-system-islamic-tbla'],
+  ewe['calendar-system-islamic-civil'],
+);
+assert.doesNotMatch(
+  ewe['calendar-system-islamic-tbla'],
+  /^Islamic tabular$|ɣleti kpɔkpɔ/,
+);
+assert.match(
+  fs.readFileSync(path.join(root, 'imports/lib/calendarSystems.js'), 'utf8'),
+  /'islamic-tbla'/,
+);
 assert.deepEqual(tokens(ewe['import-board-instruction-issues']), [
   '__endpoint__',
   '__sourceName__',

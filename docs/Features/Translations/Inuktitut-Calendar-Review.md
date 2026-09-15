@@ -48,3 +48,40 @@ checks pass, with all 18,687 corrections, 4,171 retained reviews and 234-locale
 completeness. Two original findings are corrected; 38 Inuktitut findings and
 283 original findings overall remain pending. Nine restored findings remain.
 Earlier paragraphs describe the state before these two repairs.
+
+## Qaliujaaqpait Roman orthography retained — 2026-09-15
+
+Source commit `a0eeee9d63` reviews and retains all 23 findings whose only
+detector reason was Latin script. The
+[Government of Northwest Territories Inuktitut guidance](https://www.ece.gov.nt.ca/en/inuktitut)
+states that Inuktitut is traditionally written in both Qaniujaaqpait
+syllabics and Qaliujaaqpait Roman orthography. The Nunavut-based
+[Pirurvik resources](https://www.pirurvikmedia.ca/online-resources)
+likewise provide conversion in both directions and describe both writing
+systems. Latin characters alone therefore do not establish a wrong-language
+or wrong-script translation.
+
+The exact existing values are recorded as unchanged acceptances; no automatic
+transliteration or semantic rewrite is applied. Four focused files pass for
+all 4,197 retained reviews, 20,035 corrections, placeholders, key order and
+all 234 locale inventories. Original pending falls from 73 to 50, with 15
+Inuktitut calendar labels remaining; restored four unchanged. Semantic
+fluency and live browser behavior remain in the broader review. No remote
+write occurred.
+
+## Remaining calendar labels repaired — 2026-09-15
+
+Source commit `b5acfdaec3` repairs all 15 remaining Inuktitut findings. Every
+label uses the official Nunavut-attested `ᐅᓪᓗᖅᓯᐅᑎ` calendar noun. The heading
+uses existing local `ᐱᓕᕆᔾᔪᓯᖓ` method, `ᐅᓪᓗᖅ` date and `ᑕᑯᑎᑕᐅᔪᖅ`
+displayed vocabulary. Calendar identifiers remain recognizable. Existing
+syllabic table, beginning, national, space/science, month and seen vocabulary
+distinguishes calculated civil and astronomical starting points from Saudi
+moon sighting.
+
+**Low confidence:** complete technical compounds and proper-name adaptation
+remain under fluent review. Four focused files pass for exact labels, all
+20,050 correction records, distinct runtime calendar choices, newer-value
+preservation and all 234 locale token/key inventories. No live selector ran.
+Original pending is 35 with no Inuktitut row; restored four unchanged. No
+external translation service or remote write.
