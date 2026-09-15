@@ -639,6 +639,46 @@ the Markdown commit as the template.
 </details>
 </details>
 
+# v11.83 2026-09-16 WeKan ® release
+
+**In short:** **Custom logos** appear directly on login and board pages, and site
+admins can upload them to Default Storage. Repository mirroring now checks
+linked files at their live URLs.
+
+This release adds the following new feature:
+
+**The Admin Panel** - custom logos for login and board pages.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/593cab591">Load custom logos first and upload them to Default Storage</a>. Thanks to xet7.</summary>
+
+The login page and board header wait for the Visibility settings before showing
+a logo, so a configured image does not flash the stock WeKan logo first. Site
+admins can keep using an image URL or upload a PNG, JPEG, GIF or WebP image
+through Admin Panel / Settings / Visibility. Uploaded logos use Default Storage,
+and only the currently configured logo is public on the login page. Unit tests
+cover accepted and rejected images and public access; the Jade compiler passes.
+A Playwright regression test is registered and syntax-checked, but could not
+run because no local WeKan server was available.
+
+</details>
+
+and has the following developer-tooling fix:
+
+**Repository mirrors** - linked files use their live sources.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f7da598ad">Stop using archive.org for mirror linked files</a>. Thanks to xet7.</summary>
+
+Repository mirrors now download public issue and comment links only from their
+live URLs. Missing links are reported, and transient failures preserve any
+existing local files. The mirror linked-file tests cover successful, missing
+and failed downloads without a historical fallback.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v11.82 2026-09-16 WeKan ® release
 
 **In short:** Release preparation now checks translation-language metadata
