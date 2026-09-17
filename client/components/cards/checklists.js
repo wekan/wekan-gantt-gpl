@@ -221,9 +221,11 @@ Template.checklists.events({
   // #4017: apply/append a template card's checklists onto this already
   // existing card, alongside whatever checklists it already has.
   'click .js-copy-checklist-from-template': Popup.open('copyChecklistFromTemplate'),
-  'submit .js-add-checklist'(event, tpl) {
+  async 'submit .js-add-checklist'(event, tpl) {
     event.preventDefault();
-    const textarea = tpl.find('textarea.js-add-checklist-item');
+    const form = event.currentTarget;
+    if (form.dataset.submitting === 'true') return;
+    const textarea = form.querySelector('textarea.js-add-checklist-item');
     const title = textarea.value.trim();
     let cardId = Template.currentData().cardId;
     const card = ReactiveCache.getCard(cardId);
@@ -242,11 +244,22 @@ Template.checklists.events({
     }
 
     if (title) {
-      Checklists.insert({
-        cardId,
-        title,
-        sort: sortIndex,
-      });
+      form.dataset.submitting = 'true';
+      try {
+        // Keep the client insert path used by this form; wait for the server
+        // acknowledgement before accepting another submission.
+        await new Promise((resolve, reject) => {
+          Checklists.insert({ cardId, title, sort: sortIndex }, (error, id) => {
+            if (error) reject(error);
+            else resolve(id);
+          });
+        });
+      } catch (error) {
+        delete form.dataset.submitting;
+        alert(error.reason || error.message || TAPi18n.__('server-error'));
+        return;
+      }
+      textarea.value = '';
       tpl.$('.js-close-inlined-form').click();
       setTimeout(() => {
         tpl.$('.add-checklist-item')

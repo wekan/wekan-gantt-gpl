@@ -78,6 +78,20 @@ held only issues \#4774 and \#4055, and both are closed now.
 </details>
 
 <details>
+<summary>Snap login delay (#6701): confirmation pending.</summary>
+
+The report does not identify whether the snap uses MongoDB or FerretDB. The
+reported duplicate-insert oplog errors and delayed resumes were reproduced
+with FerretDB. [Cursor and oplog fixes](https://github.com/wekan/FerretDB/commit/aa58fe12)
+now pass race-checked regression tests and the LDAP session browser test with
+1,600 directory records. The same browser test passes on MongoDB 7.0.16 without
+an application login change. Confirm the affected snap's database and retest
+with the patched FerretDB build before closing [#6701](https://github.com/wekan/wekan/issues/6701).
+A cause specific to MongoDB or legacy data has not been established.
+
+</details>
+
+<details>
 <summary>Local translation repairs and validation in progress.</summary>
 
 Resumed at the maintainer's request on 2026-09-13, beginning with Klingon.
@@ -638,6 +652,123 @@ the Markdown commit as the template.
 
 </details>
 </details>
+
+# v11.84 2026-09-17 WeKan ® release
+
+**In short:** Notification subscriptions and settings work at their intended
+scope, hidden card fields no longer leave empty sections, WIP groups can be
+selected and edited, and a checklist submission creates one checklist.
+My Cards and My Attachments open the selected card in a popup again.
+FerretDB oplog fixes address a reproduced cause of slow session restoration;
+confirmation of the database in #6701 is still needed.
+
+This release has the following bug fixes:
+
+**Notifications** - subscriptions and settings.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/03e8a6bf66">Honor scoped notification subscriptions and settings</a>. Thanks to Nissulya and xet7.</summary>
+
+Explicit list and card subscriptions remain eligible on an otherwise muted
+board; assignment or mention alone does not override muting, and recipients
+must still be active board members. Member and board notification popups keep
+their scope when a service option is clicked, and selected options display
+correctly. Unit tests cover recipient filtering and all three settings scopes.
+[Browser delivery checks](https://github.com/wekan/wekan/commit/762e742b2)
+verify both muted assignments and explicit list comments, alongside persistent
+member/board settings. Fixes #6658.
+
+</details>
+
+**Card fields** - hide empty groups.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5c7f455285">Hide empty card field groups and their separators</a>. Thanks to fabiosalles and xet7.</summary>
+
+Dates, Members and Sort render their whole group only when a visible field is
+available. Disabling the fields removes the empty heading and horizontal line;
+reenabling a field restores its group. Unit and browser tests cover both
+states and the conditional spent-time field. Fixes #6696.
+
+</details>
+
+**Personal lists** - open the selected card in place.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d01b3a3d9">Restore card popups on My Cards and My Attachments</a>. Thanks to Mathia2 and xet7.</summary>
+
+Links pass their card and board identifiers explicitly: named `each` loops
+do not change the outer Blaze data context. Clicking a card or its nested
+content opens the correct popup without leaving the list. Modified clicks
+keep native link behavior. Unit tests cover incorrect outer contexts,
+missing identifiers and modified clicks. Browser tests open two cards in
+sequence on both pages and pass in Chromium, Firefox and WebKit with polling
+reactivity. Fixes #6702.
+
+</details>
+
+**Board settings** - select and edit WIP groups.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/87d69358dc">Make WIP group list checkboxes visible and editable</a>. Thanks to Mahgozar and xet7.</summary>
+
+The group editor restores native checkbox visibility and resolves the list
+helper inside existing groups. [Saved-group edits](https://github.com/wekan/wekan/commit/783733623)
+use a validated server method with board/site-admin authorization and compare
+the existing group array to prevent overwriting a concurrent edit. Unit and
+browser tests cover mouse and keyboard selection, persistent edits, invalid
+lists and limits, and unauthorized users. Fixes #6699.
+
+</details>
+
+**Checklists** - prevent duplicate submissions.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0a8ee08d56">Submit checklist creation once per user action</a>. Thanks to rmb82 and xet7.</summary>
+
+Handled Enter events stop at the inline form instead of triggering the enclosing
+checklist handler too. A submission guard remains active until the
+[server acknowledgement](https://github.com/wekan/wekan/commit/5c9e5045f), and a
+failed write leaves the editor available for retry. Unit tests cover overlapping
+submissions and failures; browser tests verify one persisted checklist after
+click, Enter and Ctrl+Enter, including a page reload. Fixes #6700.
+
+</details>
+
+**Sessions** - directory-scale regression coverage.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/fd41207c5">Verify LDAP session restoration with a large directory</a>. Thanks to Nissulya and xet7.</summary>
+
+The browser regression resumes an LDAP account with 1,600 directory records,
+checks reloads before and after a bulk directory deletion, verifies that the
+directory is not published to the browser, and rejects an invalid session
+cookie. It passes on MongoDB 7.0.16 and with the
+[FerretDB oplog fixes](https://github.com/wekan/FerretDB/commit/aa58fe12).
+Those fixes preserve cursor checkpoints, drain pending batches without waiting
+for another write, seek directly on SQLite, and avoid sorting the whole oplog
+for newest-entry reads. They require a newly built FerretDB binary; existing
+bundled binaries are unchanged. #6701 remains in TODO Later until the affected
+snap's database and the result there are confirmed.
+
+</details>
+
+and has the following developer-tooling fix:
+
+**Regression tests** - preserve reviewed translations and card visibility.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5dd0b11f7">Align historical translation repairs and card visibility guards</a>. Thanks to xet7.</summary>
+
+Historical repair records retain the newer reviewed Traditional Chinese
+wording. The read-only requester and assigner guard follows its conditional
+branch after optional field grouping changes, while still rejecting missing
+avatars. All 1,169 Node suites pass, including translation token, idempotency,
+and newer-human-translation protection checks.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
 
 # v11.83 2026-09-16 WeKan ® release
 
