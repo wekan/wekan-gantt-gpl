@@ -43,12 +43,13 @@ textarea.js-edit-checklist-item {
 .checklist-progress-bar-container .checklist-progress-bar .checklist-progress {
   color: #fff;
   background-color: #666;
-  padding: 0.01em 16px;
+  padding: 0;
+  box-sizing: border-box;
   border-radius: 16px;
   height: 100%;
 }
 .checklist-title {
-  padding: 10px;
+  padding: calc(10px * min(1, var(--wekan-ui-font-scale, 1)));
 }
 .checklist-title .checkbox {
   float: inline-start;
@@ -134,6 +135,8 @@ textarea.js-edit-checklist-item {
 }
 .checklist-item .item-title {
   flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .checklist-item .item-title.is-checked {
   color: #8c8c8c;
@@ -143,7 +146,7 @@ textarea.js-edit-checklist-item {
 .checklist-item .item-title .viewer p {
   margin-bottom: 2px;
   display: block;
-  word-wrap: break-word;
+  overflow-wrap: anywhere;
   max-width: 420px;
 }
 .checklist-item span.fa.checklistitem-handle {
@@ -233,4 +236,15 @@ textarea.js-edit-checklist-item {
 .checklist-title .checklist-collapse:hover,
 .checklist-title .checklist-collapse:focus-visible {
   color: #2980b9;
+}
+
+.checklist-title .checklist-due-date-add {
+  float: inline-end;
+  width: auto;
+  min-width: 28px;
+  padding: 4px 6px;
+  margin: 0 4px;
+  background: transparent;
+  color: inherit;
+  border: 0;
 }

@@ -14,7 +14,7 @@
 
 const { test, expect } = require('../fixtures');
 const db = require('../helpers/db');
-const { loginWithToken } = require('../helpers/auth');
+const { loginWithToken, openBoard } = require('../helpers/auth');
 const BoardPage = require('../pages/BoardPage');
 const CardPage = require('../pages/CardPage');
 
@@ -230,4 +230,70 @@ test.describe('Notifications & activity log', () => {
       .toBeVisible({ timeout: 10_000 });
     await page2.close();
   });
+});
+
+for (const authenticationMethod of ['password', 'ldap']) {
+  test(`#6704 ${authenticationMethod} textarea selects comment mention suggestions`, async ({
+    page: boardPage, board, user, user2,
+  }) => {
+    db.updateOne('users', { _id: user2.id }, {
+      $set: { authenticationMethod, 'profile.fullname': 'Mention Target' },
+    });
+    db.updateOne('boards', { _id: board.boardId }, {
+      $push: { members: { userId: user2.id, isActive: true, isAdmin: false } },
+    });
+    await loginWithToken(boardPage, user.id, user.token);
+    await openBoard(boardPage, board.boardId, board.slug);
+    const bp = new BoardPage(boardPage);
+    const cp = new CardPage(boardPage);
+    await bp.clickCard(board.listIds[0], 'Alpha Card');
+    await cp.waitForOpen();
+    const input = cp.root.locator('textarea.js-new-comment-input');
+    const expectMention = () => expect(input).toHaveValue(`@${user2.username} (Mention Target) `);
+    await input.fill(`@${user2.username}`);
+    const menu = boardPage.locator('.textcomplete-dropdown:visible');
+    const suggestion = menu.locator('.textcomplete-item').filter({ hasText: user2.username });
+    await expect(menu).toHaveCount(1);
+    await expect(suggestion).toBeVisible();
+    // Visibility alone misses the regression: the menu can exist behind the
+    // card. Require hit testing and a real, unforced pointer selection.
+    await expect.poll(() => suggestion.evaluate(el => {
+      const r = el.getBoundingClientRect();
+      return el.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
+    })).toBe(true);
+    await suggestion.click();
+    await expectMention();
+    await expect(cp.root).toBeVisible();
+    const card = db.findOne('cards', { boardId: board.boardId, title: 'Alpha Card' });
+    expect(db.countDocuments('card_comments', { cardId: card._id })).toBe(0);
+    // A nonmatching username must not leave the previous user suggestion.
+    await input.fill('@no_such_board_member_6704');
+    await expect(menu.locator('.textcomplete-item').filter({ hasText: user2.username })).toHaveCount(0);
+    // Enter selects a fresh suggestion without submitting the comment.
+    await input.fill(`@${user2.username}`);
+    await expect(suggestion).toBeVisible();
+    await input.press('Enter');
+    await expectMention();
+    expect(db.countDocuments('card_comments', { cardId: card._id })).toBe(0);
+  });
+}
+
+test('textarea editing preserves Markdown and emoji without executing pasted HTML', async ({ boardPage: page, board }) => {
+  const bp = new BoardPage(page);
+  const cp = new CardPage(page);
+  await bp.clickCard(board.listIds[0], 'Alpha Card');
+  await cp.waitForOpen();
+  const card = db.findOne('cards', { boardId: board.boardId, title: 'Alpha Card' });
+  const markdown = '**Bold** 😀 :smile:\n\n- [ ] Task\n\n```js\nconst value = "<tag>";\n```';
+  await cp.setDescription(markdown);
+  await expect.poll(() => db.findOne('cards', { _id: card._id }).description).toBe(markdown);
+  const comment = `${markdown}\n\n<img src=x onerror="window.editorInjected=true">`;
+  await cp.addComment(comment);
+  await expect.poll(() => db.countDocuments('card_comments', { cardId: card._id, text: comment })).toBe(1);
+  await expect(cp.comments().filter({ hasText: 'Bold' })).toBeVisible();
+  expect(await page.evaluate(() => window.editorInjected)).toBeUndefined();
+  await expect(cp.root.locator('textarea.js-new-comment-input')).toHaveValue('');
+  const pencil = cp.root.locator('a.js-open-inlined-form').filter({ has: page.locator('i.fa-pencil-square-o') }).first();
+  await pencil.click();
+  await expect(cp.root.locator('.js-card-description textarea.editor')).toHaveValue(markdown);
 });

@@ -653,6 +653,180 @@ the Markdown commit as the template.
 </details>
 </details>
 
+# v11.87 2026-09-19 WeKan ® release
+
+**In short:** Launchpad Snap builds recover the correct repository, wait for
+new refs to become available, and retain completed builds when downloads fail.
+Card dragging, comment mentions, destination dialogs, keyboard controls and
+scaled layouts gain regression-tested fixes. Boards gain optional cleaner cards
+and date-only display.
+
+This release adds the following features:
+
+**Task board presentation** - optional cleaner cards and date-only display.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/16b1b307f">Add cleaner minicard and checklist options and date-only formats</a>. Thanks to xet7.</summary>
+
+Board Settings can hide the minicard collapse control, place labels above the
+minicard title, hide checklist due-date controls and hide the outer Checklists
+heading. Previously collapsed contents remain accessible when their control is
+hidden. These options preserve stored dates, label settings and existing
+defaults.
+Unset checklist due dates use a small, named clock beside the checklist title.
+
+Users and administrators can select date-only versions of the three date orders.
+The selected calendar and export format are respected without changing stored
+timestamps, reminders or date/time editing. Existing smaller-font presets also
+reduce checklist and Card Settings spacing.
+
+The <a href="https://github.com/wekan/wekan/blob/main/docs/Features/Clean-Task-Boards.md">clean task board guide</a>
+maps all eight supplied observations to new or existing behavior. Existing fixes
+for inline completion controls, disabled ordering arrows and the
+admin-controlled
+date selector are retained. Labels reuse existing translations.
+
+Regression coverage checks compatible defaults, saved collapsed states, label
+placement and visibility, board-admin permissions, checklist data retention,
+personal/admin date-only choices, multiple calendar systems and compact spacing.
+A fresh Meteor build passed. The full 1,177-suite Node run found one outdated
+collapse assertion; its updated suite passed on rerun. All ten browser scenarios
+passed across Chromium and Firefox after allowing browser font-size rounding.
+Browser checks used MongoDB; FerretDB, WebKit and native packages were not
+tested.
+
+</details>
+
+This release fixes the following bugs:
+
+**Cards and comments** - restored dragging and mention suggestions.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/337f601852">Restore dragging after expanding collapsed lists</a>. Thanks to Nich01asFox and xet7.</summary>
+
+Expanded lists recreate their sortable behavior and dispose it when removed.
+Repeated collapse/expand cycles and reloads support dragging cards both into
+and out of the list. Fixes <a href="https://github.com/wekan/wekan/issues/6705">#6705</a>.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/193c799539">Restore visible, selectable comment mention suggestions</a>. Thanks to bbyszio and xet7.</summary>
+
+Comment editors initialize one correctly scoped autocomplete menu with visible
+placement above the card. The plain editor remains usable when the richer editor
+is unavailable. Fixes <a href="https://github.com/wekan/wekan/issues/6704">#6704</a>.
+
+</details>
+
+**Board usability** - implement the useful audited fixes with additional
+safeguards.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/896f1222b">Improve ordering, destination dialogs, keyboard controls and scaled layouts</a>. Thanks to xet7.</summary>
+
+Relative card insertion uses real gaps and handles tied ranks. Destination
+dialogs stop stale subscriptions, retain failed operations and protect against
+double submission. Checklist rules save strings, overtime waits for Save,
+translation search treats punctuation literally, and registered long language
+tags are accepted.
+
+Keyboard users can operate rule buttons, checklist rows, switches, password
+reveal and attachment previews. One shared viewer handles focus entry,
+containment and return. Popup and Gantt geometry scales with text, progress bars
+fit their tracks, and settings stack on narrow screens. Missing labels reuse
+existing translations.
+
+The <a href="https://github.com/wekan/wekan/blob/main/docs/Security/Fixes2026-09-18/Implementation.md">implementation report</a>
+records all 36 findings, revised proposals, tests and remaining validation
+limits.
+A fresh Meteor bundle and all 1,176 Node suites passed. Chromium and Firefox
+regression scenarios cover the compiled app with MongoDB; no FerretDB or live
+LDAP
+integration, WebKit run or screen-reader session is claimed.
+
+</details>
+
+**Markdown editor** - remove obsolete visual-editor code and configuration.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5ed9fc944">Remove the obsolete Summernote integration and editor setting</a>. Thanks to xet7.</summary>
+
+Removed `RICHER_CARD_COMMENT_EDITOR`, its Snap option, server setting bridge,
+unused editor initialization, upload/paste callbacks and editor-specific styles
+and selectors. Docker, Snap, Sandstorm, development containers, Windows and Unix
+launchers, build/test scripts and current documentation no longer advertise it.
+Released and archived changelog entries remain unchanged.
+
+WeKan edits Markdown in textareas. No existing WYSIWYG editor supports its full
+combination of Markdown, emoji, security requirements and other editing
+features. Mention suggestions, Markdown rendering, HTML-to-Markdown conversion
+and existing attachment links remain available. Notification emails use the
+shared escaped HTML formatter independently of editor settings; custom body
+templates retain their existing behavior.
+
+The <a href="https://github.com/wekan/wekan/blob/main/docs/Features/Markdown-Editor.md">Markdown editor documentation</a>
+describes the supported editor. Regression checks exercise per-template mention
+initialization, Markdown/emoji round trips, pasted-HTML safety, attachment links
+and escaped notification email output. A missing translation import in the
+attachment error handler was also corrected.
+
+A fresh Meteor build and six Chromium/Firefox checks passed. Shell syntax and
+platform YAML checks passed; native Windows, Snap and Sandstorm packages were
+not built in this Linux test environment.
+
+</details>
+
+This release fixes the following build and release tooling:
+
+**Snap builds** - repository recovery and reliable artifact retrieval.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/29bd491e8">Fix Launchpad recovery, ref indexing and artifact downloads</a>. Thanks to xet7.</summary>
+
+The v11.86 build logs showed recovery looking up the wrong repository,
+recipe creation racing Launchpad's indexing of `main`, and a successful
+PPC64EL build downloading an unusable 2,043-byte artifact before cleanup
+deleted the remote recipe.
+
+Remote builds now use a compatibility wrapper inside Snapcraft's installed
+environment. Recovery looks up the project repository, recipe creation
+retries the specific missing-ref response for up to fifteen minutes, and
+invalid snap downloads retry before cleanup. Repeated invalid downloads
+retain the remote build for recovery. The existing five-hour total wait
+budget remains in effect.
+
+All 1,173 Node test files passed sequentially, including positive and
+negative regression tests for repository lookup, delayed refs, bounded
+retries, incomplete downloads and launcher arguments. Actionlint and shell
+and Python syntax checks passed. Remote services were mocked; live
+Launchpad builds and publication remain for a human-run release job.
+
+</details>
+
+This release improves regression testing and documentation:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/fd238d34c">Verify muted-board fixes through actual SMTP delivery</a>. Thanks to Nissulya and xet7.</summary>
+
+The earlier muted-assignment and scoped-subscription fixes for
+<a href="https://github.com/wekan/wekan/issues/6658">#6658</a> are already present.
+New browser regressions capture real SMTP submissions for watched boards,
+lists and cards, covering comments, title changes and new cards. Muted
+assignments, member email opt-outs and the actor's own changes stay silent.
+The notification guide now describes the actual channels, watch levels,
+settings precedence and delivery prerequisites.
+
+All ten SMTP scenarios and six existing tray/settings scenarios passed across
+Chromium and Firefox using the current Meteor bundle with MongoDB. Focused
+notification and recipient Node suites passed. The latest reported delivery
+failure was not reproduced; external inbox delivery and FerretDB runtime
+remain unverified.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v11.86 2026-09-18 WeKan ® release
 
 **In short:** Interrupted Snap builds recover their existing Launchpad work,
