@@ -1,6 +1,6 @@
 {
   "name": "wekan-gantt-gpl",
-  "version": "v11.87.0",
+  "version": "v11.88.0",
   "description": "Open-Source kanban",
   "private": true,
   "repository": {
@@ -48,6 +48,7 @@
     "chai": "^6.2.2",
     "chai-as-promised": "^8.0.2",
     "css-loader": "^7.1.4",
+    "enhanced-resolve": "5.25.1",
     "mongodb": "^7.5.0",
     "puppeteer": "^25.9.0",
     "sinon": "^22.1.0",
@@ -110,7 +111,8 @@
     "sharp": "^0.35.4",
     "temml": "^0.13.3",
     "underscore": "^1.13.8",
-    "unzipper": "^0.12.5"
+    "unzipper": "^0.12.5",
+    "wasmagic": "1.0.10"
   },
   "overrides": {
     "sourcemap-codec": "npm:@jridgewell/sourcemap-codec@^1.4.15",

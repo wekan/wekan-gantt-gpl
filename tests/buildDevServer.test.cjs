@@ -18,6 +18,24 @@ function test(name, fn) { fn(); passed += 1; console.log('  ok -', name); }
 
 console.log('buildDevServer:');
 
+test('development logging defaults to quiet and preserves an explicit DEBUG setting', () => {
+  const { execFileSync } = require('child_process');
+  const assignments = sh.match(/DDP_TRANSPORT=sockjs (DEBUG="[^"]+")/g);
+  assert.strictEqual(assignments.length, 7);
+  for (const assignment of assignments) {
+    for (const value of [undefined, 'true', 'false']) {
+      const env = { ...process.env };
+      delete env.DEBUG;
+      if (value !== undefined) env.DEBUG = value;
+      const actual = execFileSync('sh', ['-c', `${assignment} sh -c 'printf %s "$DEBUG"'`], { env, encoding: 'utf8' });
+      assert.strictEqual(actual, value || 'false');
+    }
+  }
+  const bat = fs.readFileSync(path.join(__dirname, '..', 'build.bat'), 'utf8');
+  assert.ok(bat.includes('if not defined DEBUG set "DEBUG=false"'));
+  assert.ok(!bat.includes('set "DEBUG=true"'));
+});
+
 test('the Dev server menu offers a custom port + ROOT_URL host', () => {
   assert.ok(sh.includes('CUSTOM PORT + SUBDOMAIN|Run Meteor for dev on a custom port and ROOT_URL host (asks)'),
     'menu entry is missing');
@@ -25,12 +43,16 @@ test('the Dev server menu offers a custom port + ROOT_URL host', () => {
     'no case handler matches the menu entry');
 });
 
-test('the handler runs Meteor with the answers, not with hard-coded 3000', () => {
+test('both dev handlers use the selected command and the answered port', () => {
   const start = sh.indexOf('"Run Meteor for dev on a custom port and ROOT_URL host (asks)")');
   const body = sh.slice(start, sh.indexOf('\n\t\t;;', start));
+  // The shared menu now selects Meteor or the source loader before dispatch;
+  // both must still receive the same URL and port answers.
+  assert.ok(sh.includes('DEV_COMMAND=(meteor run)'));
+  assert.ok(sh.includes('DEV_COMMAND=(node "$WEKAN_DIR/scripts/dev-source/start.cjs")'));
   assert.ok(/ask_dev_url/.test(body), 'the handler asks for the port/host');
   assert.ok(/ROOT_URL="\$DEV_ROOT_URL"/.test(body), 'ROOT_URL comes from the answer');
-  assert.ok(/meteor run --port "\$DEV_PORT"/.test(body), 'the port comes from the answer');
+  assert.ok(body.includes('"${DEV_COMMAND[@]}" --port "$DEV_PORT"'), 'the port comes from the answer');
   assert.ok(/kill_meteor_on_port "\$DEV_PORT"/.test(body),
     'the chosen port is freed first, like the other dev options');
   // Comments may mention it; no COMMAND in the handler may pin it.

@@ -20,7 +20,7 @@ LABEL org.opencontainers.image.source="https://github.com/wekan/wekan-gantt-gpl"
 # TARGETARCH and TARGETVARIANT are automatically provided by Docker Buildx
 ARG TARGETARCH
 ARG TARGETVARIANT
-ARG VERSION=11.87
+ARG VERSION=11.88
 ARG DEBIAN_FRONTEND=noninteractive
 
 ENV BUILD_DEPS="apt-utils gnupg wget bzip2 g++ curl libarchive-tools build-essential git ca-certificates python3 unzip"
@@ -260,6 +260,8 @@ useradd --user-group --system --create-home --home-dir /home/wekan wekan
 apt-get update --assume-yes
 apt-get upgrade --assume-yes
 apt-get install --assume-yes --no-install-recommends ${BUILD_DEPS}
+# Runtime MIME detection: keep this outside BUILD_DEPS so cleanup retains it.
+apt-get install --assume-yes --no-install-recommends file
 
 # Multi-arch mapping: Docker TARGETARCH -> WeKan's own platform name, which is
 # both the bundle .zip's name and what resolve-node-source.sh is asked about.
