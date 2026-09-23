@@ -20,7 +20,7 @@ LABEL org.opencontainers.image.source="https://github.com/wekan/wekan-gantt-gpl"
 # TARGETARCH and TARGETVARIANT are automatically provided by Docker Buildx
 ARG TARGETARCH
 ARG TARGETVARIANT
-ARG VERSION=11.90
+ARG VERSION=11.93
 ARG DEBIAN_FRONTEND=noninteractive
 
 ENV BUILD_DEPS="apt-utils gnupg wget bzip2 g++ curl libarchive-tools build-essential git ca-certificates python3 unzip"
@@ -28,10 +28,10 @@ ENV BUILD_DEPS="apt-utils gnupg wget bzip2 g++ curl libarchive-tools build-essen
 ENV \
     DEBUG=false \
     DDP_TRANSPORT=sockjs \
-    NODE_VERSION=v24.21.0 \
-    METEOR_RELEASE=METEOR@3.6-beta.0 \
+    NODE_VERSION=v26.10.0 \
+    METEOR_RELEASE=METEOR@3.6-beta.1 \
     USE_EDGE=false \
-    NPM_VERSION=11.12.1 \
+    NPM_VERSION=12.1.0 \
     SRC_PATH=./ \
     WITH_API=true \
     MONGO_OPLOG_URL="" \
@@ -224,6 +224,8 @@ COPY --chmod=755 releases/resolve-node-source.sh /tmp/resolve-node-source.sh
 # The two travel together: without this line the resolve step dies on the first
 # lookup. tests/releaseDownloads.test.cjs pins the pair.
 COPY --chmod=755 releases/fetch.sh /tmp/fetch.sh
+COPY --chmod=755 releases/check-telemetry.py /tmp/check-telemetry.py
+COPY --chmod=755 releases/prepare-bundle-npm.mjs /tmp/prepare-bundle-npm.mjs
 # The bundle's `npm install` leaves node-gyp's whole tree - 83 of the 120
 # packages in programs/server/node_modules - in a bundle that compiles nothing at
 # run time, and a scan of the published image reads it as what it is. The same
@@ -372,6 +374,7 @@ wget --tries=20 --waitretry=20 --retry-on-http-error=404,403,500,502,503 "${WEKA
   || { echo "Failed to download ${WEKAN_ZIP_URL} after retries"; exit 8; }
 unzip "wekan-${VERSION}-${WEKAN_ARCH}.zip"
 rm "wekan-${VERSION}-${WEKAN_ARCH}.zip"
+node /tmp/prepare-bundle-npm.mjs ./bundle
 npm install --prefix ./bundle/programs/server
 # node-gyp and @mapbox/node-pre-gyp compiled nothing here - every native module
 # in the bundle is a prebuilt .node - and nothing in boot.js reaches them. Their
@@ -388,6 +391,7 @@ node /tmp/bundle-trim.mjs ./bundle --transport sockjs --drop-legacy-client
 # And the npm tree rspack cannot tree-shake, because Atmosphere packages load it
 # through Npm.require(). Only what it can prove nothing requires.
 node /tmp/prune-unreachable-npm.mjs ./bundle
+python3 /tmp/check-telemetry.py --bundle ./bundle
 mv /home/wekan/app/bundle /build
 
 # The .zip bundle now ships a self-contained launcher + its own Node.js for the

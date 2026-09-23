@@ -7,8 +7,8 @@
 # FOUR channels — stable, candidate, beta and edge. Every snap job does exactly
 # that (snap-native, snap-launchpad and snap-variants all publish
 # `stable,candidate,beta,edge`), for the default snap and for the wekan-ondra and
-# wekan-gantt-gpl variants alike. It ships the newest WeKan (Meteor 3.5,
-# Node.js 24, FerretDB v1, MongoDB 7, Caddy 2).
+# wekan-gantt-gpl variants alike. It ships the newest WeKan (Meteor 3.6-beta.1,
+# Node.js 26, FerretDB v1, MongoDB 7, Caddy 2).
 #
 # snapcraft-core26.yaml is the SAME WeKan on `base: core26`, kept for testing the
 # next base and NOT built by the release: core26 is still experimental, it
@@ -19,7 +19,7 @@
 #   base: core24 (not core26) · no build-base: devel · grade: stable
 # ─────────────────────────────────────────────────────────────────────────────
 name: wekan-gantt-gpl
-version: '11.90'
+version: '11.93'
 base: core24
 confinement: strict
 grade: stable
@@ -254,7 +254,7 @@ parts:
                 # mongodb-control disables the mongodb service when database=ferretdb.
                 *) echo "No MongoDB server for ${CRAFT_ARCH_BUILD_FOR}; FerretDB-only arch, skipping mongod."; exit 0 ;;
             esac
-            MONGO_URL="https://fastdl.mongodb.org/linux/mongodb-linux-${MONGO_ARCH}-ubuntu2204-7.0.34.tgz"
+            MONGO_URL="https://fastdl.mongodb.org/linux/mongodb-linux-${MONGO_ARCH}-ubuntu2204-7.0.43.tgz"
             bash "${CRAFT_PROJECT_DIR:-${SNAPCRAFT_PROJECT_DIR:-$PWD}}/releases/fetch.sh" -o mongodb.tgz "$MONGO_URL"
             tar -xzf mongodb.tgz --strip-components=1
             mkdir -p "$SNAPCRAFT_PART_INSTALL/bin"
@@ -311,7 +311,7 @@ parts:
 
     # No mongosh part: WeKan no longer bundles the MongoDB Shell. All scripted DB
     # access (readiness, replica-set init, schema migration) uses the bundled
-    # Node.js 24 + the `mongodb` driver via $SNAP/bin/db-eval (see snap-src/bin).
+    # Node.js 26 + the `mongodb` driver via $SNAP/bin/db-eval (see snap-src/bin).
 
     # No separate mongotools part: the per-arch MongoDB Database Tools are already
     # embedded in the wekan-<arch>.zip bundle (built from wekan/mongo-tools-patches by
@@ -676,6 +676,7 @@ parts:
         # node_modules tree and repeat npm install on the slow exotic builder.
         plugin: nil
         build-packages:
+            - python3
             - ca-certificates
             - wget
             - unzip
@@ -695,19 +696,20 @@ parts:
                 armhf)   WEKAN_ARCH="armhf"   ;;
                 *) echo "Unsupported architecture: ${CRAFT_ARCH_BUILD_FOR}"; exit 1 ;;
             esac
-            WEKAN_ZIP="wekan-11.90-${WEKAN_ARCH}.zip"
+            WEKAN_ZIP="wekan-11.93-${WEKAN_ARCH}.zip"
             echo "Cleaning environment first"
             rm -rf .build
             mkdir .build
             cd .build
-            #wget https://github.com/wekan/wekan/releases/download/v11.90/wekan-11.90-amd64.zip
+            #wget https://github.com/wekan/wekan/releases/download/v11.93/wekan-11.93-amd64.zip
             # Retry: a release asset can 404 for a short while right after it is
             # uploaded (CDN/propagation lag), and a plain wget treated that as
             # fatal. --retry-on-http-error covers the 404/5xx window; a genuinely
             # missing bundle still fails after the tries are spent.
             wget --tries=20 --waitretry=20 --retry-on-http-error=404,403,500,502,503 \
-              "https://github.com/wekan/wekan/releases/download/v11.90/${WEKAN_ZIP}"
+              "https://github.com/wekan/wekan/releases/download/v11.93/${WEKAN_ZIP}"
             unzip "${WEKAN_ZIP}"
+            python3 ../releases/check-telemetry.py --bundle bundle
             rm "${WEKAN_ZIP}"
             # Copy to Snap. Use the bundle's OWN arch-correct Node.js: the
             # wekan-<arch>.zip already ships the right node for this platform

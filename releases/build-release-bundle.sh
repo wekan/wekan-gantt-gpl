@@ -27,7 +27,7 @@
 #                             mac-arm64, mac-x64, win64, win32, win-arm64)
 #     WEKAN_BUNDLE_REFRESH=1  ignore the download cache and fetch again
 #     WEKAN_BUNDLE_SKIP_SMOKE=1  skip the boot check (it is the point; do not)
-#     NODE_VERSION            the Node MAJOR to embed, default 24 — the same
+#     NODE_VERSION            the Node MAJOR to embed, default 26 — the same
 #                             value .github/workflows/release-all.yml pins
 #
 # WHAT IT DOES NOT DO, on purpose: no zip, no checksum file, no provenance row,
@@ -50,9 +50,10 @@ set -uo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/.." && pwd)"
+python3 "$ROOT/releases/check-telemetry.py" --source "$ROOT" || exit 1
 BUNDLE="${1:-$ROOT/.build/bundle}"
 BUNDLE="$(cd "$(dirname "$BUNDLE")" 2>/dev/null && pwd)/$(basename "$BUNDLE")"
-NODE_VERSION="${NODE_VERSION:-24}"
+NODE_VERSION="${NODE_VERSION:-26}"
 CACHE_ROOT="${WEKAN_BUNDLE_CACHE:-$ROOT/.tools/bundle-binaries}"
 
 say()  { printf '\n==> %s\n' "$*"; }
@@ -134,6 +135,7 @@ echo "    the same steps as .github/workflows/release-all.yml, without the zip"
 # Verbatim from the workflow's "Install server npm modules" step, in its order.
 # The order is not arbitrary: bump-bundle-npm-deps raises what Meteor's own
 # packages bundle, and both trims measure the tree the bump left.
+node "$ROOT/releases/prepare-bundle-npm.mjs" "$BUNDLE" || fail "bundle npm policy preparation failed."
 say "1/6  bump-bundle-node-gyp + npm install + prune-build-only + bump-bundle-npm-deps"
 # BEFORE the install, as in the workflow: Meteor pins programs/server's
 # node-gyp to the tool's own (10.2.0), which cannot see Visual Studio 2026, and
@@ -275,6 +277,8 @@ if [ -n "$QEMU_NAME" ]; then
         echo "    warning: $QEMU_SRC is not installed (apt install qemu-user-static), so this bundle has no $QEMU_NAME."
     fi
 fi
+
+python3 "$ROOT/releases/check-telemetry.py" --bundle "$BUNDLE" || exit 1
 
 # ── 4. Say what is there ─────────────────────────────────────────────────────
 say "6/6  done"

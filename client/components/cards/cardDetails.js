@@ -1,6 +1,5 @@
 import { relativeCardSort } from '/client/lib/relativeCardPosition';
 import { Random } from 'meteor/random';
-import { dateDisplayPreferences, isDateFormatForced } from '/client/lib/dateDisplay';
 import { ReactiveCache } from '/imports/reactiveCache';
 import { TAPi18n } from '/imports/i18n';
 import { ReactiveDict } from 'meteor/reactive-dict';
@@ -350,6 +349,7 @@ Template.cardDetails.onCreated(function () {
   this.infiniteScrolling = new InfiniteScrolling();
   const openedCardId = this.data?._id;
   const openedBoardId = this.data?.boardId;
+  const cardSubscription = openedCardId ? this.subscribe('card', openedCardId) : null;
 
   // #3114: another client can delete/archive this card or move it to another
   // board. Minimongo then removed the data while the mobile details view kept
@@ -357,6 +357,9 @@ Template.cardDetails.onCreated(function () {
   // close every way it can be open as soon as it no longer belongs here.
   this.autorun(() => {
     if (!openedCardId || !openedBoardId) return;
+    // A same-tab card link can render the details before the destination card
+    // publication arrives. Only a ready subscription can prove it is gone.
+    if (!cardSubscription?.ready()) return;
     const card = ReactiveCache.getCard(openedCardId);
     if (!openCardIsUnavailable(card, openedBoardId)) return;
 
@@ -1112,15 +1115,6 @@ Template.cardDetails.events({
       Utils.goBoardId(boardId);
     }
   },
-  'change .js-date-format-selector'(event) {
-    if (isDateFormatForced()) return;
-    const dateFormat = event.target.value;
-    if (Meteor.userId()) {
-      Meteor.call('changeDateFormat', dateFormat);
-    } else {
-      window.localStorage.setItem('dateFormat', dateFormat);
-    }
-  },
   'click .js-open-card-details-menu': Popup.open('cardDetailsActions'),
   // Mobile: switch to desktop popup view (maximize)
   'click .js-mobile-switch-to-desktop'(event) {
@@ -1537,18 +1531,6 @@ Template.cardDetails.events({
   },
 });
 
-// isDateFormat is used by cardFieldSectionDates.jade's date-format
-// selector, a SEPARATE template from cardDetails - a template-local helper
-// (Template.cardDetails.helpers) is invisible there, which threw "No such
-// function: isDateFormat" the instant that section rendered and broke
-// opening the card popup entirely. Registered globally, like isSectionOpen
-// just below, so every template can see it.
-Template.registerHelper('isDateFormatForced', isDateFormatForced);
-Template.registerHelper('dateSectionLabel', () => isDateFormatForced() ? 'date' : 'date-format');
-
-Template.registerHelper('isDateFormat', function isDateFormat(format) {
-  return dateDisplayPreferences().dateFormat === format;
-});
 
 Template.cardDetails.helpers({
   isPopup() {

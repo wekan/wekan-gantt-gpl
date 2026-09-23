@@ -363,12 +363,9 @@ class CardPage {
    * on the clipboard, which is the ABSOLUTE url - a relative path is only a
    * link inside this page.
    *
-   * The clipboard is RECORDED, not read back. Reading it needs a `clipboard-read`
-   * permission that only Chromium can be granted, so a test that read it would
-   * pass on one browser of the three. WeKan copies through
-   * `navigator.clipboard.writeText` (client/lib/utils.js), so wrapping that
-   * captures the real value in every browser - and still proves the button
-   * copied, rather than merely that clicking it threw nothing.
+   * Record the real Clipboard API call without reading the clipboard back.
+   * Firefox now runs through a localhost bridge, so it has a secure origin
+   * and uses the same Clipboard API path as Chromium.
    */
   async copyLink() {
     await this.page.evaluate(() => {
@@ -401,7 +398,7 @@ class CardPage {
     // Try the "+" add button first; fall back to the existing date badge.
     const addBtn = this.root.locator('a.js-due-date').first();
     const badge  = this.root.locator('a.js-edit-date.card-date').first();
-    if (await addBtn.count() > 0) {
+    if (await addBtn.isVisible()) {
       await addBtn.click({ timeout: 10_000 });
     } else {
       await badge.click({ timeout: 10_000 });

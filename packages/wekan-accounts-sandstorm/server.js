@@ -179,7 +179,7 @@ if (__meteor_runtime_config__.SANDSTORM) {
           // The user is logged into Sandstorm. Create a Meteor account for them, or find the
           // existing one, and record the user ID.
           var login = await Package["accounts-base"].Accounts.updateOrCreateUserFromExternalService(
-              "sandstorm", sandstormInfo, {profile: {name: sandstormInfo.name}});
+              "sandstorm", sandstormInfo, {profile: {fullname: sandstormInfo.name}});
           userInfo.userId = login.userId;
         } else {
           userInfo.userId = null;
@@ -199,7 +199,9 @@ if (__meteor_runtime_config__.SANDSTORM) {
       res.writeHead(500, {
         "Content-Type": "text/plain"
       });
-      res.end(err.stack);
+      // Do not expose server paths, exception messages or request data through
+      // the trusted-proxy login endpoint's error response.
+      res.end("Sandstorm login failed");
     }
   };
 }

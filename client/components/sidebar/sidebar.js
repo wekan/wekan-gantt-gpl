@@ -1,3 +1,4 @@
+import '/client/components/forms/dateFormatSettings';
 import { Meteor } from 'meteor/meteor';
 import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
@@ -371,15 +372,6 @@ Template.sidebar.events({
   'click .js-vertical-scrollbars-toggle'() {
     ReactiveCache.getCurrentUser().toggleVerticalScrollbars();
   },
-  'click .js-show-week-of-year-toggle'() {
-    const user = ReactiveCache.getCurrentUser();
-    if (user) {
-      user.toggleShowWeekOfYear();
-    } else {
-      const current = window.localStorage.getItem('showWeekOfYear') === 'true';
-      window.localStorage.setItem('showWeekOfYear', String(!current));
-    }
-  },
   'click .sidebar-accessibility'(event, tpl) {
     FlowRouter.go('accessibility');
     tpl.toggle();
@@ -400,11 +392,6 @@ Template.homeSidebar.helpers({
   isVerticalScrollbars() {
     const user = ReactiveCache.getCurrentUser();
     return user && user.isVerticalScrollbars();
-  },
-  isShowWeekOfYear() {
-    const user = ReactiveCache.getCurrentUser();
-    if (!user) return window.localStorage.getItem('showWeekOfYear') === 'true';
-    return user.isShowWeekOfYear();
   },
   showActivities() {
     let ret = Utils.getCurrentBoard().showActivities ?? false;
@@ -604,6 +591,7 @@ Template.boardMenuPopup.events({
   // "Board View" key the view switcher already uses.
   'click .js-open-board-view-settings': Popup.open('boardViewSettings', { titleKey: 'board-view' }),
   'click .js-open-board-swimlane-settings': Popup.open('boardSwimlaneSettings', { titleKey: 'swimlane' }),
+  'click .js-open-board-date-settings': Popup.open('boardDateSettings', { titleKey: 'date' }),
   'click .js-open-board-list-settings': Popup.open('boardListSettings', { titleKey: 'list' }),
   // #2489: WIP Limit Groups is reached from Board Settings / Swimlane now -
   // its click handler sits with the Swimlane popup's events below.

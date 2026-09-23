@@ -60,6 +60,83 @@ const WRONG_LANGUAGE_REFERENCES = {
   br: ['fr.i18n.json'], oc: ['fr.i18n.json'], vo: ['fr.i18n.json'],
   wa: ['fr.i18n.json'], wo: ['fr.i18n.json'], zgh: ['fr.i18n.json'],
 };
+// These established Mongolian loanwords also occur verbatim in the Russian
+// resource. Exact reference equality alone cannot identify their language.
+const REVIEWED_SHARED_VALUES = {
+  br: {
+    'operator-board-abbrev': 't',
+    'color-gray': 'gris',
+  },
+  mn: {
+    archives: 'Архив',
+    'text-note-text': 'Текст',
+    'custom-field-text': 'Текст',
+    pomodoro: 'Помодоро',
+  },
+  oc: {
+    'allboards.remaining': 'Restant',
+    'allBoardsMenuPopup-title': 'Paramètres',
+    'poker-result-who': 'Qui',
+    'font-size-large': 'Grand',
+    'color-gray': 'gris',
+    'color-purple': 'violet',
+    'color-white': 'blanc',
+    'color-yellow': 'jaune',
+    'list-label-short-modifiedAt': '(D)',
+    'other-filters-label': 'Autres filtres',
+    name: 'Nom',
+    participating: 'Participant',
+    settings: 'Paramètres',
+    'send-from': 'De',
+    package: 'Paquet',
+    Node_version: 'Version de Node',
+    Meteor_version: 'Version de Meteor',
+    FerretDB_version: 'Version de FerretDB',
+    FerretDB_commit: 'Commit de FerretDB',
+    no: 'Non',
+    accounts: 'Comptes',
+    'card-end': 'Fin',
+    'r-when': 'Quand',
+    'r-sort-name': 'nom',
+    'r-name': 'nom',
+    'operator-board-abbrev': 't',
+    'predicate-quarter': 'trimestre',
+    reports: 'Rapports',
+    'office-logins': 'Connexions',
+    subject: 'Sujet',
+    'stats-count': 'Nombre',
+    remaining_time: 'Temps restant',
+    Mongo_sessions_count: 'Nombre de sessions Mongo',
+    'convert-to-markdown': 'Convertir en markdown',
+    'accounts-lockout-remaining-time': 'Temps restant',
+    login: 'Connexion',
+    'event-bleed': 'Nom',
+  },
+  wo: {
+    'operator-board-abbrev': 't',
+  },
+  wa: {
+    'calendar-system-jalali': 'Jalali (persan)',
+    'color-purple': 'violet',
+    'color-white': 'blanc',
+    private: 'Privé',
+    'attachment-limits': 'Limites',
+    'r-is': 'est',
+    'operator-board-abbrev': 't',
+    'operator-swimlane-abbrev': 'c',
+    'operator-has': 'a',
+    'operator-limit': 'limite',
+    'location-address': 'Adresse',
+    'office-address': 'Adresse',
+    accessibility: 'Accessibilité',
+    protocol: 'Protocole',
+    'event-ip': 'Adresse IP',
+  },
+  vo: {
+    'send-from': 'De',
+    'r-df-end-at': 'fin',
+  },
+};
 const KNOWN_WRONG_VALUES = {
   'cy-GB': {
     'board-public-info': 'Y bwrdd hwn fydd <strong>public</strong>.',
@@ -120,7 +197,8 @@ for (const f of changed) {
     .map(name => readFile(path.join(DATA_DIR, name)) || {});
 
   const isRejected = (key, value) => typeof value === 'string' && (
-    wrongLanguageDocs.some(doc => doc[key] === value)
+    (REVIEWED_SHARED_VALUES[lang]?.[key] !== value
+      && wrongLanguageDocs.some(doc => doc[key] === value))
     || KNOWN_WRONG_VALUES[lang]?.[key] === value
     || REJECTED_PULL_VALUES[lang]?.[key] === value
     || PR_6695_SUPERSEDED[lang]?.[key] === value

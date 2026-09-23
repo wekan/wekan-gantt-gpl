@@ -2696,5 +2696,7 @@
   "list-sync-now-pending": "Naligiisillugu…",
   "list-sync-now-success": "Naligiisitsineq iluatsillunilu naammassivoq.",
   "list-sync-now-error": "Naligiisitsineq kukkunerpoq: %s",
-  "list-sync-clear": "Naligiisitsineq unitsigit"
+  "list-sync-clear": "Naligiisitsineq unitsigit",
+  "add-many-lines-as": "Titarnit arlallit ima ilanngukkit:",
+  "many-items": "__items__ arlallit"
 }

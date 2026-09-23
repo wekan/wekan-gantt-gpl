@@ -636,9 +636,25 @@ function run_playwright_docker(){
 	pwver="$(node -e "console.log(require('$pwdir/node_modules/@playwright/test/package.json').version)" 2>/dev/null)"
 	[ -z "$pwver" ] && pwver="1.60.0"
 	local image="mcr.microsoft.com/playwright:v${pwver}-noble"
+	local docker_base_url="${WEKAN_BASE_URL:-http://127.0.0.1:3000}"
+	local docker_mongo_url="${WEKAN_MONGO_URL:-mongodb://127.0.0.1:3001/meteor}"
+	local docker_host_proxy_port=""
+	# Docker Desktop on macOS keeps the host outside the container's loopback.
+	if [ "$(uname -s)" = Darwin ]; then
+		# Meteor's dynamic imports use ROOT_URL (localhost in the test server).
+		# Keep the browser on that same origin and bridge its loopback to the host.
+		# Browsing host.docker.internal while ROOT_URL is localhost makes Firefox
+		# fetch dynamic modules from the container's unreachable localhost.
+		if [[ "$docker_base_url" =~ ^http://(127\.0\.0\.1|localhost):([0-9]+)$ ]]; then
+			docker_host_proxy_port="${BASH_REMATCH[2]}"
+			docker_base_url="http://localhost:$docker_host_proxy_port"
+		fi
+		docker_mongo_url="${docker_mongo_url//127.0.0.1/host.docker.internal}"
+		docker_mongo_url="${docker_mongo_url//localhost/host.docker.internal}"
+	fi
 	mkdir -p "$filesroot"
 	echo "Running Playwright $browser in Docker ($image)."
-	echo "Expecting WeKan at ${WEKAN_BASE_URL:-http://127.0.0.1:3000} (container uses --network host)."
+	echo "Expecting WeKan at $docker_base_url."
 	# Mount the whole repo so specs that reach the repo-root node_modules
 	# (e.g. @wekanteam/exceljs) and .tools resolve; run from tests/playwright.
 	# Run as the host user (--user) with a writable HOME so the container does
@@ -650,8 +666,9 @@ function run_playwright_docker(){
 		--user "$(id -u):$(id -g)" \
 		-e HOME=/repo/.tools/tmp \
 		-e TMPDIR=/repo/.tools/tmp \
-		-e WEKAN_BASE_URL="${WEKAN_BASE_URL:-http://127.0.0.1:3000}" \
-		-e WEKAN_MONGO_URL="${WEKAN_MONGO_URL:-mongodb://127.0.0.1:3001/meteor}" \
+		-e WEKAN_BASE_URL="$docker_base_url" \
+		-e WEKAN_DOCKER_HOST_PROXY_PORT="$docker_host_proxy_port" \
+		-e WEKAN_MONGO_URL="$docker_mongo_url" \
 		-e WEKAN_PLAYWRIGHT_ALL=1 \
 		-e WEKAN_PLAYWRIGHT_PROJECT="$browser" \
 		-e WEKAN_PLAYWRIGHT_WORKERS="${WEKAN_PLAYWRIGHT_WORKERS:-1}" \
@@ -666,7 +683,21 @@ function run_playwright_docker(){
 		-v "$filesroot":/wekan-files \
 		-v "$reporoot":/repo -w /repo/tests/playwright \
 		"$image" \
-		sh -c 'export PATH=/repo/tests/playwright/node_modules/.bin:$PATH; exec npx playwright test --project="$0" "$@"' "$browser" "$@"
+		sh -c '
+			export PATH=/repo/tests/playwright/node_modules/.bin:$PATH
+			if [ -n "$WEKAN_DOCKER_HOST_PROXY_PORT" ]; then
+				node /repo/tests/playwright/helpers/docker-host-proxy.cjs &
+				proxy_pid=$!
+				trap '\''kill "$proxy_pid" 2>/dev/null || true; wait "$proxy_pid" 2>/dev/null || true'\'' EXIT
+				ready=0
+				for i in 1 2 3 4 5 6 7 8 9 10; do
+					if curl -fsS --max-time 3 -o /dev/null "$WEKAN_BASE_URL/sign-in"; then ready=1; break; fi
+					sleep 1
+				done
+				[ "$ready" -eq 1 ] || { echo "Local WeKan proxy did not become ready" >&2; exit 1; }
+			fi
+			npx playwright test --project="$0" "$@"
+		' "$browser" "$@"
 }
 
 # Run the older Puppeteer-based Node E2E regression suite in the same browser
@@ -2489,7 +2520,8 @@ choose() {
 # details stay in CHANGELOG.md. Notes include only In short, Security,
 # Translations language list, thanks and the changelog link. Binary provenance remains
 # a build artifact and must not be appended by any release entry point.
-RELEASE_SCRIPTS=(	"Release|Release ALL platforms: push CHANGELOG, trigger release-all.yml|releases/release-all.sh|||"
+RELEASE_SCRIPTS=(	"Release|Release All: audit, commit, push and build with Actions|releases/release-all.sh|||"
+	"Release|Release All Missing: audit, commit, push and complete release|releases/release-all-missing.sh|||"
 	"Release|Release (older local flow), for one version|releases/release.sh|WeKan version, e.g. 10.50||"
 	"Release|Show the version numbers this checkout would release|releases/version.sh|||"
 	"Release|Show the CHANGELOG of the release being prepared|releases/changelog.sh|||"
@@ -2856,16 +2888,17 @@ for _once in 1; do
 			#sudo chown -R $(id -u):$(id -g) $HOME/.npm
 			sudo npm -g install n
 			sudo n "$_wekan_node_version"
+			sudo npm install -g npm@12.0.2
 			sudo npm -g install meteor --unsafe-perm
 			#sudo chown -R $(id -u):$(id -g) $HOME/.npm $HOME/.meteor
 		elif [[ "$OSTYPE" == "darwin"* ]]; then
 			echo "macOS"
-			# Node comes from nvm, not from Homebrew's node@24 keg.
+			# Node comes from nvm, not from Homebrew's node@26 keg.
 			#
-			# `brew install node@24` gives whatever 24.x Homebrew currently has
+			# `brew install node@26` gives whatever 26.x Homebrew currently has
 			# bottled - which trails nodejs.org - and, being keg-only, needs
-			# PATH, LDFLAGS and CPPFLAGS exported by hand. `nvm install 24`
-			# resolves to the NEWEST 24.x on nodejs.org every time it runs and
+			# PATH, LDFLAGS and CPPFLAGS exported by hand. `nvm install 26`
+			# resolves to the NEWEST 26.x on nodejs.org every time it runs and
 			# puts that on PATH itself, so this does not go stale the way a
 			# pinned version does. npm comes with the Node it installs, so
 			# there is no `brew install npm` either.
@@ -2891,10 +2924,11 @@ for _once in 1; do
 			# switch versions while it is set. The old Homebrew path set it, so
 			# clear it before installing anything.
 			npm config delete prefix >/dev/null 2>&1 || true
-			# The newest 24.x, and the default for every new shell.
-			nvm install 24
-			nvm alias default 24
-			nvm use 24
+			# The newest 26.x, and the default for every new shell.
+			nvm install 26
+			nvm alias default 26
+			nvm use 26
+			npm install -g npm@12.0.2
 			echo "Node $(node --version), npm $(npm --version)"
 			# Let new shells find nvm too. Its installer appends these itself,
 			# but only to the rc file it detects and only when IT did the

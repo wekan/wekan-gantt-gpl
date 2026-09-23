@@ -12,6 +12,7 @@ import { leftMenuData, paneTitle } from '/models/lib/leftMenu';
 // table, no search box and no pager, while Organizations, Teams and Domains -
 // which use neither function - drew theirs normally.
 import { adjacentPage, buildActions, buildFilters, buildHeader, buildRows, docsByIds, pageInfo, TABLE_PAGE_ROWS_PER_PAGE } from "/models/lib/tablePage";
+const { addressReportColumns } = require('/models/lib/addressReportColumns');
 import { avatarUpdateCounter } from '/client/components/users/avatarUpdateCounter';
 import { InfiniteScrolling } from '/client/lib/infiniteScrolling';
 import LockoutSettings from '/models/lockoutSettings';
@@ -601,9 +602,7 @@ const PEOPLE_COLUMNS = [
 ];
 
 const LOGIN_LOCATION_COLUMNS = [
-  { labelKey: 'office-location', value: row => row.city },
-  { labelKey: 'event-ipv4', nowrap: true, value: row => row.ipv4 },
-  { labelKey: 'event-ipv6', nowrap: true, value: row => row.ipv6 },
+  ...addressReportColumns(),
   { labelKey: 'office-first-seen', nowrap: true,
     value: row => (row.firstAt ? formatDateForDisplay(row.firstAt, true, value => value.toLocaleString()) : '') },
   { labelKey: 'office-last-seen', nowrap: true,
@@ -794,7 +793,7 @@ Template.people.helpers({
         String(value || '').toLowerCase().includes(term)));
     const info = pageInfo(all.length, tpl.loginLocationPage.get());
     const pageRows = all.slice((info.page - 1) * TABLE_PAGE_ROWS_PER_PAGE,
-      info.page * TABLE_PAGE_ROWS_PER_PAGE);
+      info.page * TABLE_PAGE_ROWS_PER_PAGE).map(row => ({ ...row, flag: country.flag }));
     return {
       searchTerm: tpl.loginLocationSearch.get(),
       actions: buildActions([{ id: 'back-from-login-locations', icon: 'fa-arrow-left',
@@ -1664,6 +1663,21 @@ const TEAM_FEATURE_METHODS = {
   teamPropagateMembersToBoards: 'setTeamPropagateMembersToBoards',
   teamSyncMembersFromAuth: 'setTeamSyncMembersFromAuth',
 };
+
+// The header is its own template, so its controls need their own handler.
+Template.orgFeatureHeader.events({
+  async 'click .js-org-feature-all'(event, tpl) {
+    event.preventDefault();
+    const field = event.currentTarget.getAttribute('data-feature');
+    if (!ORG_FEATURE_METHODS[field]) return;
+    const value = event.currentTarget.getAttribute('data-value') === 'true';
+    // Preserve rapid select/unselect clicks while an earlier save is pending.
+    tpl.saving = (tpl.saving || Promise.resolve())
+      .then(() => Meteor.callAsync('setAllOrgsFeature', field, value))
+      .catch(error => window.alert(error.reason || error.message));
+    await tpl.saving;
+  },
+});
 
 Template.orgRow.events({
   'click a.edit-org': Popup.open('editOrg'),

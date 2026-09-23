@@ -7,6 +7,7 @@ import { EscapeActions } from '/client/lib/escapeActions';
 import { enablePageDragscroll, disablePageDragscroll } from '/client/lib/pageDragscroll';
 import { trapTabKey } from '/client/lib/accessibility';
 import { OidcAutoRedirect } from '/client/lib/oidcAutoRedirect';
+import { createAuthenticationSubmitHandler } from '/client/lib/authenticationSubmit';
 
 let alreadyCheck = 1;
 let isCheckDone = false;
@@ -72,7 +73,8 @@ Template.userFormsLayout.onCreated(function () {
   }
 });
 
-Template.userFormsLayout.onRendered(() => {
+Template.userFormsLayout.onRendered(function () {
+  const instance = this;
   // Login / register pages scroll on <body>; enable drag-to-scroll there so the
   // gesture works the same as on the board swimlanes view.
   enablePageDragscroll();
@@ -151,8 +153,7 @@ Template.userFormsLayout.onRendered(() => {
     // enabled provider, and the form renders one .js-oauth-provider button
     // per key from the catalog (models/lib/oauthProviders.js). Passwordless
     // (e-mailed one-time code) gets its own small form.
-    const instance = Template.instance();
-    if (instance) {
+    if (!instance.view.isDestroyed) {
       instance.enabledOauthProviders.set(
         OAUTH_PROVIDERS.filter(p => enabledAuthenticationMethods.indexOf(p.key) !== -1).map(
           p => p.key,
@@ -369,15 +370,6 @@ Template.userFormsLayout.events({
     });
     event.preventDefault();
   },
-  'click #at-btn'(event, templateInstance) {
-    if (FlowRouter.getRouteName() === 'atSignIn') {
-      templateInstance.isLoading.set(true);
-      authentication(event, templateInstance).then(() => {
-        templateInstance.isLoading.set(false);
-      });
-    }
-    isCheckDone = false;
-  },
   'click #at-saml'(event) {
     event.preventDefault();
     const provider = Meteor.settings.public.SAML_PROVIDER;
@@ -414,7 +406,7 @@ Template.userFormsLayout.events({
     if (!email) return;
     showLoginError('');
     Accounts.requestLoginTokenForUser(
-      { selector: email, userData: { email, passwordless: true } },
+      { selector: { email }, userData: { email, passwordless: true } },
       (err) => {
         if (err) {
           showLoginError(err);
@@ -521,55 +513,41 @@ Template.defaultLayout.onRendered(function () {
   });
 });
 
-async function authentication(event, templateInstance) {
-  const match = $('#at-field-username_and_email').val();
-  const password = $('#at-field-password').val();
+// A capture listener runs before useraccounts' nested submit handler. A click
+// handler that awaits a subscription cannot cancel the browser's submit in time.
+Template.userFormsLayout.onRendered(function () {
+  const instance = this;
+  const dialog = this.find('.auth-dialog');
+  const submit = createAuthenticationSubmitHandler({
+    isSignIn: () => FlowRouter.getRouteName() === 'atSignIn',
+    readCredentials: form => ({
+      username: form.querySelector('#at-field-username_and_email')?.value,
+      password: form.querySelector('#at-field-password')?.value,
+    }),
+    resolveMethod: username => getAuthenticationMethod(instance.currentSetting.get(), username),
+    submitPassword: form => form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })),
+    login(method, username, password, callback) {
+      if (method === 'ldap') Meteor.loginWithLDAP(username, password, callback);
+      else if (method === 'cas') Meteor.loginWithCas(username, password, callback);
+      else Meteor.loginWithSaml({ provider: Meteor.settings.public.SAML_PROVIDER }, callback);
+    },
+    setBusy(busy) {
+      AccountsTemplates.setDisabled(busy);
+      if (busy) showLoginError('');
+      isCheckDone = false;
+    },
+    complete(error) {
+      if (error) showLoginError(error);
+      else AccountsTemplates.submitCallback(null, 'signIn');
+    },
+  });
+  dialog.addEventListener('submit', submit, true);
+  this.removeAuthenticationSubmit = () => dialog.removeEventListener('submit', submit, true);
+});
 
-  if (!match || !password) return undefined;
-
-  const result = await getAuthenticationMethod(
-    templateInstance.currentSetting.get(),
-    match,
-  );
-
-  if (result === 'password') return undefined;
-
-  // Stop submit #at-pwd-form
-  event.preventDefault();
-  event.stopImmediatePropagation();
-
-  switch (result) {
-    case 'ldap':
-      return new Promise((resolve) => {
-        Meteor.loginWithLDAP(match, password, function () {
-          resolve(FlowRouter.go('/'));
-        });
-      });
-
-    case 'saml':
-      return new Promise((resolve) => {
-        const provider = Meteor.settings.public.SAML_PROVIDER;
-        Meteor.loginWithSaml(
-          {
-            provider,
-          },
-          function () {
-            resolve(FlowRouter.go('/'));
-          },
-        );
-      });
-
-    case 'cas':
-      return new Promise((resolve) => {
-        Meteor.loginWithCas(match, password, function () {
-          resolve(FlowRouter.go('/'));
-        });
-      });
-
-    default:
-      return undefined;
-  }
-}
+Template.userFormsLayout.onDestroyed(function () {
+  this.removeAuthenticationSubmit?.();
+});
 
 function getAuthenticationMethod(
   settings,

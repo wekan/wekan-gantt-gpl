@@ -192,6 +192,9 @@ test('every script in releases/ is reachable from BOTH menus', () => {
   // Deliberately not in the Releases menu, each for a stated reason. A script
   // added here must be given one.
   const SKIP = {
+    'use-release-npm.sh': 'internal helper installs the checked-out release npm version',
+    'latest-release-version.sh': 'read-only version resolver called by release-all.sh',
+    'prepare-bundle-npm.mjs': 'internal bundle package normalization called before npm install',
     'snapcraft-remote-compat.sh': 'internal Launchpad workflow launcher using the installed Snapcraft runtime',
     'github-release-upload.sh': 'internal release-workflow helper: bounded upload of already-built assets, called by Snap attachment steps',
     'prepare-launchpad-source.sh': 'internal release-workflow helper: prepares the isolated per-architecture source for snap-launchpad',
@@ -318,6 +321,11 @@ test('every script in releases/ is reachable from BOTH menus', () => {
       + '      a release build and is not an operator-facing menu command',
     'check-upcoming-release.sh': 'an internal release-all.sh preflight;\n'
       + '      the release launcher runs it before any release operation',
+    'snap-upload-retry.sh': 'an internal GitHub workflow helper for\n'
+      + '      publishing built snaps; it needs a snap path and channels,\n'
+      + '      so it is not an operator-facing build menu command',
+    'mac/package-app.sh': 'an internal GitHub workflow helper that wraps an\n'
+      + '      existing macOS bundle; it is not an operator-facing build menu command',
   };
 
   // These are explicit audit/internal helpers, not independent release-menu actions.

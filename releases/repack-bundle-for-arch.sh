@@ -59,7 +59,7 @@ bash releases/record-provenance.sh "$ARCH" 'Node.js' \
 
 # ── Native modules, rebuilt for the target under emulation ───────────────────
 # bcrypt 5.0.1 (Meteor accounts-password) ships node-addon-api@3 which fails to
-# compile on Node 24; the npm install inside the container compiles it (and any
+# compile on Node 26; the npm install inside the container compiles it (and any
 # other native module) for the target arch.
 BCRYPT_DIR="$(pwd)/bundle/programs/server/npm/node_modules/meteor/accounts-password/node_modules/bcrypt"
 if [ -d "$BCRYPT_DIR" ]; then
@@ -147,6 +147,7 @@ touch bundle/.ferretdb-default
 # ── The zip, and whether it is one that works ────────────────────────────────
 zip="wekan-${VERSION}-${ARCH}.zip"
 rm -f "$zip"
+python3 "$(dirname "${BASH_SOURCE[0]}")/check-telemetry.py" --bundle bundle || exit 1
 zip -r "$zip" bundle
 
 # A zip that EXISTS is not a zip that WORKS, and the log should say which of the

@@ -157,6 +157,14 @@ test('buildRows preserves supplied initials for users absent from client cache',
   assert.deepStrictEqual(row.cells[0].users.map(user => user.initials), ['LO']);
 });
 
+test('buildRows supplies initials to single-user cells with a safe empty fallback', () => {
+  const rows = lib.buildRows([{ uid: 'known' }, { uid: 'deleted' }], [{
+    labelKey: 'user', value: d => d.uid, userId: d => d.uid,
+    initials: d => d.uid === 'known' ? 'K' : undefined,
+  }]);
+  assert.deepStrictEqual(rows.map(row => row.cells[0].initials), ['K', '']);
+});
+
 test('buildRows survives junk input (negative)', () => {
   assert.deepStrictEqual(lib.buildRows(null, null), []);
   assert.deepStrictEqual(lib.buildRows(undefined, [{ label: 'A' }]), []);
@@ -266,11 +274,11 @@ test('the controls have one handler each, not one per report', () => {
   for (const cls of ['js-table-page-prev', 'js-table-page-next']) {
     const count = (reportsJs.match(new RegExp(`'click \\.${cls}'`, 'g')) || []).length;
     // One on the reports parent, plus one per METHOD-BACKED report template -
-    // eventStreamReport and officeReport. Those two do not go through the
+    // eventStreamReport, officeReport and instrumentationReport. These do not go through the
     // parent's reportConfig(), which is built around publications, so they carry
     // their own paginator. What this guards against is a handler per REPORT,
     // which is what the parent's single pair exists to avoid.
-    assert.ok(count <= 3, `${cls} should have at most 3 handlers, found ${count}`);
+    assert.ok(count <= 4, `${cls} should have at most 4 handlers, found ${count}`);
   }
   // The six per-report page/total helper pairs are gone.
   for (const helper of ['filesCurrentPage', 'rulesTotalPages', 'boardsCurrentPage',
@@ -853,6 +861,10 @@ test('the admin panel does not force ANY table wide', () => {
   const cells = /\.main-body table:not\(\.table-page-table\) td,\s*\n[^{]*\{([^}]*)\}/.exec(settings);
   assert.ok(cells && /white-space:\s*normal/.test(cells[1]) && /overflow-wrap/.test(cells[1]),
     'admin table cells wrap rather than push the table wide');
+  const shared = read('client/components/settings/tablePage.css');
+  const marked = /\.table-page-table \.table-page-nowrap \{([^}]*)\}/.exec(shared);
+  assert.ok(marked && /white-space:\s*normal/.test(marked[1]) && /overflow-wrap:\s*anywhere/.test(marked[1]),
+    'long dates and IP addresses wrap even when older column specs mark them nowrap');
   // ...and the panel no longer shows a scrollbar for content that fits.
   const body = /\.main-body \{([^}]*)\}/.exec(settings);
   assert.ok(/overflow-x:\s*auto/.test(body[1]),
@@ -1000,8 +1012,13 @@ test('action buttons are themed, not black', () => {
   const at = pager.indexOf('.table-page-controls button.js-table-page-action');
   assert.ok(at > 0, 'the action buttons must be themed with the rest of the row');
   const block = pager.slice(at);
-  assert.ok(/background:\s*var\(--theme-accent, #01628c\)/.test(block),
+  assert.ok(/background:\s*var\(--theme-accent-fill, var\(--theme-accent, #01628c\)\)/.test(block),
     'filled with the theme accent, WeKan blue as the fallback');
+  for (const selector of ['.file-status-audit .file-status-audit-actions button',
+    '.table-page .table-page-attachment-actions button', '.table-page .table-page-attachment-actions a',
+    '.table-page button.table-page-attachment-preview']) {
+    assert.ok(block.includes(selector), `${selector} must share the report action theme`);
+  }
   for (const state of [':hover', ':focus', ':active', ':active:hover']) {
     assert.ok(pager.includes(`.table-page-controls button.js-table-page-action${state}`),
       `every state must be spelled out - ${state} is missing, so forms.css wins there`);

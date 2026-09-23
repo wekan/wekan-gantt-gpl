@@ -126,8 +126,7 @@ test('unknown and special location codes do not invent country counters', () => 
 test('the report requests and renders separate IPv4 and IPv6 columns', () => {
   const source = read('client/components/settings/adminProblems.js');
   assert.ok(/labelKey: 'office-people'/.test(source));
-  assert.ok(/labelKey: 'event-ipv4'/.test(source));
-  assert.ok(/labelKey: 'event-ipv6'/.test(source));
+  assert.ok(/addressReportColumns\(\{ map: true \}\)/.test(source));
   assert.ok(/officeRowsByPerson\(\(res && res\.people\)/.test(source));
   assert.ok(!/this\.rows\.set\(\(res && res\.offices\)/.test(source),
     'the UI must not fall back to address-grouped rows');
@@ -142,7 +141,7 @@ test('the report requests and renders separate IPv4 and IPv6 columns', () => {
 test('the server joins proxy locations without replacing per-person counts', () => {
   const source = read('server/methods/loginOffices.js');
   assert.ok(/const addresses = tallyList\(user\.loginAddresses\)/.test(source));
-  assert.ok(/location: doc\.location \|\| null/.test(source));
+  assert.ok(/location: doc\.location \|\| entry\.location \|\| null/.test(source));
   assert.ok(/logins: entry\.count \|\| 0/.test(source));
   assert.ok(/initials: initialsFor\(user\)/.test(source));
   assert.ok(/return \{ total, people: await peopleSummaries\(users\) \}/.test(source));
@@ -170,9 +169,9 @@ test('People puts Location before Status and opens a country-menu table', () => 
     < js.indexOf("labelKey: 'accounts-lockout-status'"));
   assert.ok(/loginLocationReportOpen[\s\S]*?leftMenu\(loginLocationMenuItems\)[\s\S]*?tablePage\(loginLocationTablePageData\)/
     .test(jade));
-  for (const key of ['office-location', 'event-ipv4', 'event-ipv6',
+  for (const key of ['event-ipv4', 'event-ipv6',
     'office-first-seen', 'office-last-seen']) {
-    assert.ok(js.includes(`labelKey: '${key}'`), `missing detail column ${key}`);
+    assert.ok(js.includes(`labelKey: '${key}'`) || read('models/lib/addressReportColumns.js').includes(`labelKey: '${key}'`), `missing detail column ${key}`);
   }
   assert.ok(/\(requested \|\| report\.countries\[0\]\)\.country/.test(js),
     'opening without a matching country must select the top country');
@@ -189,6 +188,15 @@ test('login-location methods are batched and tenant-scoped (negative)', () => {
 test('new logins retain their supplied location on the person-address tally', () => {
   const source = read('server/lib/loginTally.js');
   assert.ok(/if \(location\) \{[\s\S]*?loginAddresses\.entries\.\$\{key\}\.location`] = location/.test(source));
+});
+
+test('location is visible beside both address families when recorded', () => {
+  const server = read('server/methods/loginOffices.js');
+  const client = read('client/components/settings/adminProblems.js');
+  const people = read('client/components/settings/peopleBody.js');
+  assert.match(server, /location: doc\.location \|\| entry\.location \|\| null/);
+  assert.match(client, /addressReportColumns\(\{ map: true \}\)/);
+  assert.match(people, /addressReportColumns\(\)/);
 });
 
 console.log(`\nofficesGroupedByPerson: ${passed} tests passed`);

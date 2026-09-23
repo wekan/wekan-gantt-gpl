@@ -1,6 +1,6 @@
 {
   "name": "wekan-gantt-gpl",
-  "version": "v11.90.0",
+  "version": "v11.93.0",
   "description": "Open-Source kanban",
   "private": true,
   "repository": {
@@ -37,7 +37,7 @@
     "postinstall": "node scripts/patch-yargs-dirname.cjs && node scripts/patch-pdfkit-entry.cjs"
   },
   "devDependencies": {
-    "@meteorjs/rspack": "^3.0.0-beta.1",
+    "@meteorjs/rspack": "^3.0.0-beta.2",
     "@rsdoctor/rspack-plugin": "^1.5.9",
     "@rspack/cli": "^2.2.0",
     "@rspack/core": "^2.2.0",

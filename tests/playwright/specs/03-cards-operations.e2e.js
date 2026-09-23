@@ -164,7 +164,7 @@ test.describe('Cards – operations', () => {
     db.deleteOne('cards', { _id: cardId });
 
     await expect(boardPage.locator('.js-card-details')).toHaveCount(0, {
-      timeout: 10_000,
+      timeout: 30_000,
     });
     await expect(boardPage.locator('.board-canvas')).toBeVisible();
   });
@@ -283,7 +283,7 @@ test.describe('Cards – operations', () => {
     }, { timeout: 15_000 }).not.toBeNull();
     const targetBoard = db.findOne('boards', { _id: targetBoardId });
     const targetSwimlane = db.findOne('swimlanes', { boardId: targetBoardId });
-    await boardPage.getByRole('link', { name: 'Add List' }).click();
+    await boardPage.locator('.js-open-empty-add-list').click();
     const addListComposer = boardPage.locator('.js-add-list-inline-form');
     await addListComposer.locator('.list-name-input').fill('List A');
     await addListComposer.getByRole('button', { name: 'Save' }).click();

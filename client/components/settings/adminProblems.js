@@ -14,8 +14,7 @@ import ImpersonatedUsers from '/models/impersonatedUsers';
 import RecoveryEvents from '/models/recoveryEvents';
 import { Mongo } from 'meteor/mongo';
 import { adjacentPage, buildFilters, buildHeader, buildRows, docsByIds, pageInfo, TABLE_PAGE_ROWS_PER_PAGE } from '/models/lib/tablePage';
-// The flag and city an office row leads with (models/lib/geoHeaders.js).
-const { officeLabel } = require('/models/lib/geoHeaders');
+const { addressReportColumns } = require('/models/lib/addressReportColumns');
 const { officeRowsByPerson } = require('/models/lib/loginTally');
 import { ReportPages } from '/client/lib/reportPages';
 import { leftMenuData, paneTitle } from '/models/lib/leftMenu';
@@ -320,6 +319,7 @@ const PROBLEMS_MENU = [
   { id: 'report-speed', icon: 'fa-tachometer', labelKey: 'speedReportTitle' },
   { id: 'report-tests', icon: 'fa-flask', labelKey: 'testsReportTitle' },
   { id: 'report-cpu', icon: 'fa-tachometer', labelKey: 'cpuReportTitle' },
+  { id: 'report-instrumentation', icon: 'fa-line-chart', label: 'Instrumentation' },
   { id: 'report-broken', icon: 'fa-chain-broken', labelKey: 'broken-cards' },
   { id: 'report-files', icon: 'fa-paperclip', labelKey: 'filesReportTitle' },
   { id: 'report-rules', icon: 'fa-magic', labelKey: 'rulesReportTitle' },
@@ -520,7 +520,7 @@ function switchMenu(event, tmpl) {
 const SELF_LOADING_PANES = [
   'report-summary',
   'features-performance', 'features-security', 'features-delete', 'features-notifications',
-  'report-security', 'report-speed', 'report-tests', 'report-cpu',
+  'report-security', 'report-speed', 'report-tests', 'report-cpu', 'report-instrumentation',
   'report-database', 'report-integrity', 'report-office', 'report-api',
 ];
 
@@ -615,6 +615,14 @@ function userIdNames(userIds) {
 function userName(userId) {
   if (!userId) return '';
   return ReactiveCache.getUser(userId)?.username || userId;
+}
+
+function userInitials(userId) {
+  const user = userId && ReactiveCache.getUser(userId);
+  const display = user?.profile?.initials || user?.profile?.fullname
+    || user?.username || userId || '';
+  return String(display).trim().split(/\s+/).filter(Boolean)
+    .map(part => part[0]).join('').slice(0, 2).toUpperCase();
 }
 
 function formatDate(date) {
@@ -750,8 +758,10 @@ const REPORT_TABLES = {
     columns: [
       { labelKey: 'date', nowrap: true, value: d => formatDate(d.createdAt) },
       // Clicking a username opens the same "Edit user" popup as Admin Panel / People.
-      { labelKey: 'impersonation-admin', value: d => userName(d.adminId), userId: d => d.adminId },
-      { labelKey: 'impersonation-user', value: d => userName(d.userId), userId: d => d.userId },
+      { labelKey: 'impersonation-admin', value: d => userName(d.adminId), userId: d => d.adminId,
+        initials: d => userInitials(d.adminId) },
+      { labelKey: 'impersonation-user', value: d => userName(d.userId), userId: d => d.userId,
+        initials: d => userInitials(d.userId) },
       { labelKey: 'board', value: d => d.boardId },
       { labelKey: 'reason', value: d => d.reason },
     ],
@@ -784,16 +794,7 @@ const REPORT_TABLES = {
       { labelKey: 'recovery-event', value: d => d.type },
       { label: 'User ID', value: d => d.userId },
       { labelKey: 'username', value: d => d.username },
-      { labelKey: 'event-ipv4', value: d => d.ipv4 },
-      { labelKey: 'event-ipv6', value: d => d.ipv6 },
-      {
-        labelKey: 'location',
-        value: d => {
-          const label = locationLabel(d.location);
-          const flag = countryFlag(d.location && d.location.country);
-          return [flag, label].filter(Boolean).join(' ');
-        },
-      },
+      ...addressReportColumns(),
       { labelKey: 'recovery-detail', value: d => d.detail },
     ],
   },
@@ -858,6 +859,87 @@ const EVENTS_PER_PAGE = TABLE_PAGE_ROWS_PER_PAGE;
 // i18n keys - securityReportTitle, speedReportTitle, testsReportTitle,
 // cpuReportTitle - so the words are unchanged and there is only one of them.
 
+const INSTRUMENTATION_COLUMNS = [
+  { label: 'Type', value: row => row.kind },
+  { label: 'Method or publication', value: row => row.name },
+  { label: 'Calls', align: 'end', value: row => row.calls },
+  { label: 'Completed', align: 'end', value: row => row.completed },
+  { label: 'Errors', align: 'end', value: row => row.errors },
+  { label: 'Avg ms', align: 'end', value: row => row.averageMs ?? '' },
+  { label: 'Max ms', align: 'end', value: row => row.maxMs ?? '' },
+];
+
+Template.instrumentationReport.onCreated(function () {
+  this.snapshot = new ReactiveVar(null);
+  this.error = new ReactiveVar('');
+  this.search = new ReactiveVar('');
+  this.page = new ReactiveVar(1);
+  this.load = () => Meteor.call('getInstrumentationReport', (error, snapshot) => {
+    if (error) this.error.set(error.reason || error.message || 'Unable to load instrumentation');
+    else {
+      this.error.set('');
+      this.snapshot.set(snapshot);
+    }
+  });
+  this.load();
+  this.timer = Meteor.setInterval(this.load, 5000);
+});
+
+Template.instrumentationReport.onDestroyed(function () {
+  Meteor.clearInterval(this.timer);
+});
+
+Template.instrumentationReport.helpers({
+  error() { return Template.instance().error.get(); },
+  tablePageData() {
+    const t = Template.instance();
+    const snapshot = t.snapshot.get();
+    const term = t.search.get().toLowerCase();
+    const all = (snapshot?.operations || []).filter(row =>
+      `${row.kind} ${row.name}`.toLowerCase().includes(term));
+    const info = pageInfo(all.length, t.page.get(), TABLE_PAGE_ROWS_PER_PAGE);
+    return {
+      header: buildHeader(INSTRUMENTATION_COLUMNS),
+      rows: buildRows(all.slice(info.skip, info.skip + info.limit), INSTRUMENTATION_COLUMNS),
+      rowCount: all.length,
+      total: all.length,
+      searchTerm: t.search.get(),
+      page: info.page,
+      totalPages: info.totalPages,
+      hasPrev: info.hasPrev,
+      hasNext: info.hasNext,
+      statusTemplate: snapshot ? 'instrumentationStatus' : null,
+      statusData: snapshot ? {
+        ...snapshot.connections,
+        startedAt: formatEventAt(snapshot.startedAt),
+      } : null,
+    };
+  },
+});
+
+Template.instrumentationReport.events({
+  'input .js-table-page-search'(event, t) {
+    t.search.set(event.currentTarget.value.trim());
+    t.page.set(1);
+  },
+  'click .js-table-page-prev'(event, t) {
+    event.preventDefault();
+    event.stopPropagation();
+    const term = t.search.get().toLowerCase();
+    const count = (t.snapshot.get()?.operations || []).filter(row =>
+      `${row.kind} ${row.name}`.toLowerCase().includes(term)).length;
+    t.page.set(adjacentPage(count, t.page.get(), -1, TABLE_PAGE_ROWS_PER_PAGE));
+  },
+  'click .js-table-page-next'(event, t) {
+    event.preventDefault();
+    event.stopPropagation();
+    const term = t.search.get().toLowerCase();
+    const count = (t.snapshot.get()?.operations || []).filter(row =>
+      `${row.kind} ${row.name}`.toLowerCase().includes(term)).length;
+    t.page.set(adjacentPage(count, t.page.get(), 1, TABLE_PAGE_ROWS_PER_PAGE));
+  },
+});
+
 Template.eventStreamReport.onCreated(function () {
   this.stream = this.data.stream;
   this.page = new ReactiveVar(1);
@@ -901,28 +983,13 @@ Template.eventStreamReport.onDestroyed(function () {
 // The event streams (Security, Speed, Tests, CPU usage) use the SAME shared
 // table page as the six reports - same markup, same controls, same layout - so
 // their only difference is these columns and the CPU status row.
-// FROM WHERE, in two columns rather than one. An instance reached over IPv6 and
-// one reached over IPv4 are different situations, and a single column that
-// sometimes holds one and sometimes the other cannot be scanned down.
+// FROM WHERE, with each address followed by its own location. An instance
+// reached over IPv6 and one reached over IPv4 are different situations.
 //
 // The fold writes `ipv4`/`ipv6` on every row now, but rows written BEFORE it did
 // have only `ip` - so the address is classified here as the fallback, and the
 // history displays correctly instead of showing two empty columns for everything
 // older than this change.
-const { classifyAddress } = require('/models/lib/ipAddress');
-const { countryFlag, locationLabel } = require('/models/lib/geoHeaders');
-const addressColumns = () => [
-  { labelKey: 'event-ipv4', nowrap: true, value: r => r.ipv4 || classifyAddress(r.ip).ipv4 || '' },
-  { labelKey: 'event-ipv6', nowrap: true, value: r => r.ipv6 || classifyAddress(r.ip).ipv6 || '' },
-];
-const locationColumn = () => ({
-  labelKey: 'location',
-  value: r => {
-    const label = locationLabel(r.location);
-    const flag = countryFlag(r.location && r.location.country);
-    return [flag, label].filter(Boolean).join(' ');
-  },
-});
 
 // The API stream is a USAGE report, not a problem report, so its columns are the
 // question it answers - who called what, how often, between when and when, from
@@ -944,8 +1011,7 @@ const API_COLUMNS = [
   { labelKey: 'api-calls', align: 'end', value: r => r.count || 0 },
   { labelKey: 'api-first-called', nowrap: true, value: r => formatEventAt(r.firstAt) },
   { labelKey: 'api-last-called', nowrap: true, value: r => formatEventAt(r.at) },
-  ...addressColumns(),
-  locationColumn(),
+  ...addressReportColumns(),
 ];
 
 const EVENT_STREAM_COLUMNS = [
@@ -968,12 +1034,11 @@ const EVENT_STREAM_COLUMNS = [
     value: r => r.username || userName(r.userId),
     userId: r => r.userId,
   },
-  // FROM WHERE, in the same two columns every report uses. Resolved with the
+  // FROM WHERE, in the same four columns every report uses. Resolved with the
   // same spoofing-safe rule as the login throttle - X-Forwarded-For only as far
   // as HTTP_FORWARDED_COUNT says to trust it - so neither can be written by
   // sending a header.
-  ...addressColumns(),
-  locationColumn(),
+  ...addressReportColumns(),
   // HOW MANY attempts this row stands for. A canary counts repeats inside its
   // window rather than writing one row each, so "1" is an ordinary event and a
   // larger number is a burst that was deliberately not written out in full
@@ -1193,24 +1258,7 @@ const OFFICE_COLUMNS = [
     }],
     value: () => '',
   },
-  { labelKey: 'event-ipv4', nowrap: true, value: d => d.ipv4 },
-  { labelKey: 'event-ipv6', nowrap: true, value: d => d.ipv6 },
-  // The flag and the city: an admin recognises "London" instantly and the flag
-  // says WHICH London.
-  {
-    labelKey: 'office-location', nowrap: true,
-    value: d => (d.locationLabel ? officeLabel(d.location).text : ''),
-    flag: d => (d.location ? officeLabel(d.location).flag : ''),
-    // And clicking it asks which map to open it at - the same chooser a card's
-    // location uses. Only when the CDN sent coordinates: buildRows drops a
-    // location without them, so a row that has a country and no lat/lon is a
-    // label to read rather than a link that would search for the word.
-    location: d => (d.location && {
-      latitude: d.location.latitude,
-      longitude: d.location.longitude,
-      label: d.locationLabel || d.address || '',
-    }),
-  },
+  ...addressReportColumns({ map: true }),
   { labelKey: 'office-logins', align: 'end', value: d => d.logins },
   { labelKey: 'office-first-seen', nowrap: true, value: d => formatDate(d.firstAt) },
   { labelKey: 'office-last-seen', nowrap: true, value: d => formatDate(d.at) },
@@ -1315,8 +1363,14 @@ Template.fileStatusAudit.helpers({
     return result ? `${result.state} — ${result.phase} — ${new Date(result.startedAt).toLocaleString()}` : '';
   },
   countText() {
-    const c = Template.instance().result.get()?.counts;
-    return c ? `Records: ${c.records}; versions: ${c.versions}; disk files: ${c.diskFiles}; history rows: ${c.historyRows}; bytes inspected: ${c.bytesRead}` : '';
+    const result = Template.instance().result.get();
+    const c = result?.counts;
+    return c ? `Records: ${c.records}; versions: ${c.versions}; disk files: ${result.filesystemScanned ? c.diskFiles : 'not scanned'}; history rows: ${c.historyRows}; bytes inspected: ${c.bytesRead}` : '';
+  },
+  coverageText() {
+    const result = Template.instance().result.get();
+    if (!result || result.state !== 'partial') return '';
+    return `Partial scan: ${(result.limitations || []).join(' ')} Unscanned files cannot be counted as missing or healthy.`;
   },
 });
 function startFileAudit(mode, instance) {

@@ -202,7 +202,7 @@ update_releases_node_versions() {
   # Only touch files that clearly contain Node.js release references.
   # Portable read loop instead of `mapfile` (bash 4+ only; macOS ships bash 3.2).
   files=()
-  while IFS= read -r f; do files+=("$f"); done < <(grep -RIlE 'nodejs\.org/dist|node-v24\.[0-9]+\.[0-9]+-linux-|npm-node-version: 24\.' releases || true)
+  while IFS= read -r f; do files+=("$f"); done < <(grep -RIlE 'nodejs\.org/dist|node-v26\.[0-9]+\.[0-9]+-linux-|npm-node-version: 26\.' releases || true)
   if [ ${#files[@]} -eq 0 ]; then
     echo "[DEBUG] No Node.js references found under releases/."
     return 0
@@ -211,21 +211,21 @@ update_releases_node_versions() {
   echo "[DEBUG] Updating Node.js references in ${#files[@]} releases files..."
   local f
   for f in "${files[@]}"; do
-    # Update the explicit, stable Node.js dist path (e.g. nodejs.org/dist/v24.21.0).
-    # The old floating `latest-v24.x/` path is intentionally NOT handled here: it
-    # only ever holds the single newest v24 release, so a pinned filename under it
+    # Update the explicit, stable Node.js dist path (e.g. nodejs.org/dist/v26.10.0).
+    # The old floating `latest-v26.x/` path is intentionally NOT handled here: it
+    # only ever holds the single newest v26 release, so a pinned filename under it
     # 404s once upstream advances — that is what broke the snap build. snapcraft.yaml
     # and the Dockerfile now use the explicit version path only.
-    # WeKan is pinned to Node.js 24.x, so the major is intentionally hard-coded:
-    # this bumps any older 24.x reference to the newest 24.x (${new_node}) and
+    # WeKan is pinned to Node.js 26.x, so the major is intentionally hard-coded:
+    # this bumps any older 26.x reference to the newest 26.x (${new_node}) and
     # never rewrites a reference to a different major. The Node-specific anchors
     # ('nodejs.org/dist/v', 'node-v...-linux-', 'npm-node-version:', 'NODE_TAR=')
     # also keep this from touching MongoDB/WeKan or other version numbers.
-    sedi -E "s#nodejs.org/dist/v24\.[0-9]+\.[0-9]+#nodejs.org/dist/v${new_node}#g" "$f"
-    sedi -E "s#node-v24\.[0-9]+\.[0-9]+-linux-(x64|arm64|armv7l|s390x|ppc64le)\.tar\.(xz|gz)#node-v${new_node}-linux-\1.tar.\2#g" "$f"
-    sedi -E "s#npm-node-version: 24\.[0-9]+\.[0-9]+#npm-node-version: ${new_node}#g" "$f"
-    sedi -E "s#NODE_TAR=\"node-v24\.[0-9]+\.[0-9]+-linux-\$\{NODE_ARCH\}\.tar\.xz\"#NODE_TAR=\"node-v${new_node}-linux-\${NODE_ARCH}.tar.xz\"#g" "$f"
-    sedi -E "s#node-v24\.[0-9]+\.[0-9]+-linux-\$\{NODE_ARCH\}/bin/node#node-v${new_node}-linux-\${NODE_ARCH}/bin/node#g" "$f"
+    sedi -E "s#nodejs.org/dist/v26\.[0-9]+\.[0-9]+#nodejs.org/dist/v${new_node}#g" "$f"
+    sedi -E "s#node-v26\.[0-9]+\.[0-9]+-linux-(x64|arm64|armv7l|s390x|ppc64le)\.tar\.(xz|gz)#node-v${new_node}-linux-\1.tar.\2#g" "$f"
+    sedi -E "s#npm-node-version: 26\.[0-9]+\.[0-9]+#npm-node-version: ${new_node}#g" "$f"
+    sedi -E "s#NODE_TAR=\"node-v26\.[0-9]+\.[0-9]+-linux-[$]\{NODE_ARCH\}\.tar\.xz\"#NODE_TAR=\"node-v${new_node}-linux-\${NODE_ARCH}.tar.xz\"#g" "$f"
+    sedi -E "s#node-v26\.[0-9]+\.[0-9]+-linux-[$]\{NODE_ARCH\}/bin/node#node-v${new_node}-linux-\${NODE_ARCH}/bin/node#g" "$f"
   done
 }
 
@@ -247,7 +247,7 @@ update_releases_mongo_versions() {
   echo "[DEBUG] Updating MongoDB server references in ${#files[@]} releases files..."
   local f
   for f in "${files[@]}"; do
-    sedi -E "s#(mongodb-linux-(x86_64|aarch64|\$\{MONGO_ARCH\})-ubuntu2204-)[0-9]+\.[0-9]+\.[0-9]+(\.tgz)#\1${mongo_ver}\3#g" "$f"
+    sedi -E "s#(mongodb-linux-(x86_64|aarch64|[$]\{MONGO_ARCH\})-ubuntu2204-)[0-9]+\.[0-9]+\.[0-9]+(\.tgz)#\1${mongo_ver}\3#g" "$f"
   done
 }
 
@@ -270,60 +270,37 @@ version_bump_logic() {
     echo "Local Node.js detected: $NEW_NODE"
     echo "Local MongoDB detected: $MONGO_VER"
   else
-    # 1. Fetch latest Node.js 24.x (shared by amd64+arm64)
-    echo "[DEBUG] Fetching latest Node.js 24.x with amd64+arm64 availability..."
-    NODE_HTML=$(curl -fsSL https://nodejs.org/dist/latest-v24.x/)
-    FIRST_MATCH=$(echo "$NODE_HTML" | grep -oE 'node-v24\.[0-9]+\.[0-9]+-linux-x64\.tar\.xz' | head -1)
-    NEW_NODE=$(echo "$FIRST_MATCH" | sed -E 's/node-v([0-9]+\.[0-9]+\.[0-9]+)-linux-x64\.tar\.xz/\1/')
-
-    if [[ -z "$NEW_NODE" ]]; then
-      echo "Error: Could not determine latest Node.js 24.x version." >&2
-      exit 1
-    fi
-
-    if ! http_ok "https://nodejs.org/dist/v${NEW_NODE}/node-v${NEW_NODE}-linux-arm64.tar.xz"; then
-      echo "Error: Node.js v${NEW_NODE} does not have linux-arm64 tar.xz." >&2
-      exit 1
-    fi
-    echo "Latest Node.js detected: $NEW_NODE"
-
-    # 2. Detect latest MongoDB 7.x available for both amd64 and arm64
-    echo "[DEBUG] Detecting latest MongoDB 7.x for ubuntu2204 on amd64+arm64..."
-    CURRENT_MONGO_VER=$(get_current_version_from_file snapcraft.yaml 'mongodb-linux-\$\{MONGO_ARCH\}-ubuntu2204-[0-9]+\.[0-9]+\.[0-9]+' | sed -E 's/.*-ubuntu2204-//')
-    MONGO_VER=$(latest_common_semver_by_probe \
-      "$CURRENT_MONGO_VER" \
-      3 \
-      80 \
+    # Resolve published stable releases, not guessed version URLs. Fail before
+    # editing any files if metadata is unavailable or has no supported pair.
+    DEPENDENCY_VERSIONS=$(python3 "$SCRIPT_DIR/dependency-versions.py")
+    read -r NEW_NODE MONGO_VER NEW_NPM <<< "$DEPENDENCY_VERSIONS"
+    version_pair_exists "$NEW_NODE" \
+      "https://nodejs.org/dist/v%s/node-v${NEW_NODE}-linux-x64.tar.xz" \
+      "https://nodejs.org/dist/v%s/node-v${NEW_NODE}-linux-arm64.tar.xz" || {
+      echo 'Error: selected Node.js artifacts are unavailable.' >&2; exit 1;
+    }
+    version_pair_exists "$MONGO_VER" \
       'https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-ubuntu2204-%s.tgz' \
-      'https://fastdl.mongodb.org/linux/mongodb-linux-aarch64-ubuntu2204-%s.tgz') || true
+      'https://fastdl.mongodb.org/linux/mongodb-linux-aarch64-ubuntu2204-%s.tgz' || {
+      echo 'Error: selected MongoDB artifacts are unavailable.' >&2; exit 1;
+    }
+    echo "Latest supported versions: Node.js $NEW_NODE, MongoDB $MONGO_VER, npm $NEW_NPM"
 
-    if [ -z "${MONGO_VER:-}" ]; then
-      echo "[WARN] Could not probe newer MongoDB version. Using current value from snapcraft.yaml." >&2
-      MONGO_VER="$CURRENT_MONGO_VER"
-    fi
+  fi
 
-    if [ -z "$MONGO_VER" ]; then
-      echo "Error: Could not determine latest/common MongoDB version." >&2
-      exit 1
-    fi
-    echo "Latest common MongoDB detected: $MONGO_VER"
-
-    # mongosh and the MongoDB Database Tools are no longer probed from mongodb.com:
-    # mongosh is not bundled anymore (WeKan uses the bundled Node.js + `mongodb`
-    # driver), and the Database Tools come from wekan/mongo-tools-patches' newest
-    # release (no version pinned in snapcraft.yaml). Only the MongoDB 7 server
-    # (mongod, amd64/arm64) is still version-managed here.
+  if [ -n "${NEW_NPM:-}" ]; then
+    sedi -E "s#NPM_VERSION=[0-9]+\.[0-9]+\.[0-9]+#NPM_VERSION=${NEW_NPM}#g" Dockerfile
   fi
 
   # 5. Update dependency versions in snap files and Dockerfile
   echo "[DEBUG] Updating dependency versions in files..."
-  sedi -E "s|NODE_VERSION=v24\.[0-9]+\.[0-9]+|NODE_VERSION=v${NEW_NODE}|g" Dockerfile
-  sedi -E "s|npm-node-version: 24\.[0-9]+\.[0-9]+|npm-node-version: ${NEW_NODE}|g" snapcraft.yaml
-  sedi -E "s|NODE_TAR=\"node-v24\.[0-9]+\.[0-9]+-linux-\$\{NODE_ARCH\}\.tar\.xz\"|NODE_TAR=\"node-v${NEW_NODE}-linux-\${NODE_ARCH}.tar.xz\"|g" snapcraft.yaml
-  sedi -E "s|node-v24\.[0-9]+\.[0-9]+-linux-\$\{NODE_ARCH\}/bin/node|node-v${NEW_NODE}-linux-\${NODE_ARCH}/bin/node|g" snapcraft.yaml
+  sedi -E "s|NODE_VERSION=v26\.[0-9]+\.[0-9]+|NODE_VERSION=v${NEW_NODE}|g" Dockerfile
+  sedi -E "s|npm-node-version: 26\.[0-9]+\.[0-9]+|npm-node-version: ${NEW_NODE}|g" snapcraft.yaml
+  sedi -E "s|NODE_TAR=\"node-v26\.[0-9]+\.[0-9]+-linux-[$]\{NODE_ARCH\}\.tar\.xz\"|NODE_TAR=\"node-v${NEW_NODE}-linux-\${NODE_ARCH}.tar.xz\"|g" snapcraft.yaml
+  sedi -E "s|node-v26\.[0-9]+\.[0-9]+-linux-[$]\{NODE_ARCH\}/bin/node|node-v${NEW_NODE}-linux-\${NODE_ARCH}/bin/node|g" snapcraft.yaml
   update_releases_node_versions "$NEW_NODE"
 
-  sedi -E "s|mongodb-linux-\$\{MONGO_ARCH\}-ubuntu2204-7\.[0-9]+\.[0-9]+\.tgz|mongodb-linux-\${MONGO_ARCH}-ubuntu2204-${MONGO_VER}.tgz|g" snapcraft.yaml
+  sedi -E "s|mongodb-linux-[$]\{MONGO_ARCH\}-ubuntu2204-7\.[0-9]+\.[0-9]+\.tgz|mongodb-linux-\${MONGO_ARCH}-ubuntu2204-${MONGO_VER}.tgz|g" snapcraft.yaml
   update_releases_mongo_versions "$MONGO_VER"
 
   # 6. Update application versions (existing logic retained)
@@ -350,7 +327,7 @@ version_bump_logic() {
   # would push a package-lock.json whose packages."".version stays stale.
   sedi -E "s/\"version\": \"v[0-9][^\"]*\"/\"version\": \"${PKG_VER}\"/g" package.json
   sedi -E "s/\"version\": \"v[0-9][^\"]*\"/\"version\": \"${PKG_VER}\"/g" package-lock.json
-  sedi "0,/appVersion: \"[^\"]*\"/s/appVersion: \"[^\"]*\"/appVersion: \"${PKG_VER}\"/" Stackerfile.yml
+  sedi -E "s/appVersion: \"[^\"]*\"/appVersion: \"${PKG_VER}\"/" Stackerfile.yml
   # Set the snap version (the `version: '<x>'` line). Match by `^version:`
   # instead of a hard-coded line number, and tolerate any quoting, so this can
   # never silently miss if the line moves or the quotes change — a stale snap
@@ -466,6 +443,7 @@ version_bump_logic() {
       ".tools/wekan.fi" "$PWD" "$NEW_VERSION"
     sedi "s|<span id=\"meteor-version\">[^<]*</span>|<span id=\"meteor-version\">$METEOR_VER</span>|g" "$INSTALL_PAGE"
     sedi "s|<span id=\"node-version\">[^<]*</span>|<span id=\"node-version\">$NODE_VER</span>|g" "$INSTALL_PAGE"
+    sedi "s|<span id=\"npm-version\">[^<]*</span>|<span id=\"npm-version\">$NPM_VER</span>|g" "$INSTALL_PAGE"
     # Node.js download URL paths: OFFICIAL nodejs.org (amd64/arm64/s390x/ppc64le)
     # and UNOFFICIAL unofficial-builds.nodejs.org (riscv64). Keep them in sync with
     # release-website.sh so the install links never go stale after a Node.js bump.

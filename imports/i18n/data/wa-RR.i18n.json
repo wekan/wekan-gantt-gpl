@@ -2696,5 +2696,7 @@
   "list-sync-now-pending": "Sincronijhant…",
   "list-sync-now-success": "Sincronijhaedje fini avou seucès.",
   "list-sync-now-error": "Sincronijhaedje raté: %s",
-  "list-sync-clear": "Arester li sincronijhaedje"
+  "list-sync-clear": "Arester li sincronijhaedje",
+  "add-many-lines-as": "Idugang an damu nga linya sugad hin:",
+  "many-items": "Damu nga __items__"
 }

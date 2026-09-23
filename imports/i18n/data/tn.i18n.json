@@ -2696,5 +2696,7 @@
   "list-sync-now-pending": "E a tsamaisana…",
   "list-sync-now-success": "Tsamaisano e feditse ka botlalo.",
   "list-sync-now-error": "Tsamaisano e paletswe: %s",
-  "list-sync-clear": "Emisa tsamaisano"
+  "list-sync-clear": "Emisa tsamaisano",
+  "add-many-lines-as": "Tsenya mela e mentsi jaaka:",
+  "many-items": "__items__ (tse dintsi)"
 }

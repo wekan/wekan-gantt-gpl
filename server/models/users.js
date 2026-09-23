@@ -1104,14 +1104,17 @@ Meteor.methods({
 
   async changeStartDayOfWeek(startDay) {
     check(startDay, Number);
-    (await ReactiveCache.getCurrentUser()).setStartDayOfWeek(startDay);
+    const user = await ReactiveCache.getCurrentUser();
+    if (!user) throw new Meteor.Error('not-authorized');
+    return await user.setStartDayOfWeek(startDay);
   },
 
-  async changeDateFormat(dateFormat) {
+  async changeDateFormat(dateFormat, override = true) {
+    check(override, Boolean);
     check(dateFormat, String);
     const user = await ReactiveCache.getCurrentUser();
-    if (!user) return;
-    return await user.setDateFormat(dateFormat);
+    if (!user) throw new Meteor.Error('not-authorized');
+    return await user.setDateFormat(dateFormat, override);
   },
 
   // #4335: per-user, display-only Jalali (Persian/Solar Hijri) calendar
@@ -1857,6 +1860,11 @@ Accounts.onCreateUser(async (options, user) => {
   // server/lib/oauthProviders.js with the same fail-closed linking rule as
   // OIDC below. An existing account comes back ready to return; a brand-new
   // one falls through to the ordinary registration checks further down.
+  // Sandstorm supplies its trusted display name in options, like Meteor's
+  // social adapters. Our onCreateUser hook must copy it explicitly.
+  if (user.services?.sandstorm) {
+    user.profile = { ...(user.profile || {}), fullname: options.profile?.fullname || user.services.sandstorm.name };
+  }
   const oauthProvider = providerOfUser(user);
   if (oauthProvider) {
     const created = await onCreateProviderUser(options, user, oauthProvider);
