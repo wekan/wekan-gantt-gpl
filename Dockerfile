@@ -20,7 +20,7 @@ LABEL org.opencontainers.image.source="https://github.com/wekan/wekan-gantt-gpl"
 # TARGETARCH and TARGETVARIANT are automatically provided by Docker Buildx
 ARG TARGETARCH
 ARG TARGETVARIANT
-ARG VERSION=11.93
+ARG VERSION=11.94
 ARG DEBIAN_FRONTEND=noninteractive
 
 ENV BUILD_DEPS="apt-utils gnupg wget bzip2 g++ curl libarchive-tools build-essential git ca-certificates python3 unzip"
@@ -225,6 +225,7 @@ COPY --chmod=755 releases/resolve-node-source.sh /tmp/resolve-node-source.sh
 # lookup. tests/releaseDownloads.test.cjs pins the pair.
 COPY --chmod=755 releases/fetch.sh /tmp/fetch.sh
 COPY --chmod=755 releases/check-telemetry.py /tmp/check-telemetry.py
+COPY releases/risk-baseline.json /tmp/risk-baseline.json
 COPY --chmod=755 releases/prepare-bundle-npm.mjs /tmp/prepare-bundle-npm.mjs
 # The bundle's `npm install` leaves node-gyp's whole tree - 83 of the 120
 # packages in programs/server/node_modules - in a bundle that compiles nothing at
@@ -262,8 +263,8 @@ useradd --user-group --system --create-home --home-dir /home/wekan wekan
 apt-get update --assume-yes
 apt-get upgrade --assume-yes
 apt-get install --assume-yes --no-install-recommends ${BUILD_DEPS}
-# Runtime MIME detection: keep this outside BUILD_DEPS so cleanup retains it.
-apt-get install --assume-yes --no-install-recommends file
+# Runtime MIME detection and Node.js atomic operations survive build cleanup.
+apt-get install --assume-yes --no-install-recommends file libatomic1
 
 # Multi-arch mapping: Docker TARGETARCH -> WeKan's own platform name, which is
 # both the bundle .zip's name and what resolve-node-source.sh is asked about.

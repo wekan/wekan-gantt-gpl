@@ -253,6 +253,12 @@ doubts and asks for a Windows/AD-experienced contributor).
 <details>
 <summary>Need the running app to reproduce/verify (runtime UI or publication/mergebox state), not unit-testable here.</summary>
 
+[#6692](https://github.com/wekan/wekan/issues/6692#issuecomment-5811473169)
+(the invitation account-block and anonymous metadata-subscription defects are
+fixed; the separate HistoryIntegrity checksum mismatch needs the affected
+stored row and predecessor to reproduce. Do not regenerate hashes to hide it.
+See [investigation notes](docs/DeveloperDocs/LDAP-6692.md)).
+
 [#1942](https://github.com/wekan/wekan/issues/1942) (a card linked from board A
 into board B shows a blank view / freezes when the viewer has no rights on board
 A — the linked-card open resolves the real card the viewer cannot see; needs a
@@ -652,6 +658,89 @@ the Markdown commit as the template.
 
 </details>
 </details>
+
+# v11.94 2026-09-24 WeKan ® release
+
+**In short:** **Linux packages** include the library needed by Node.js.
+**Board invitations** no longer disable accounts through a rejected client
+write, and signed-out login avoids a protected metadata subscription.
+**Release packaging** fixes Mac archive verification, Docker scanning and
+foreign native addons inherited by platform bundles.
+
+This release fixes the following bugs:
+
+**Linux packages** - restore startup with the bundled Node.js runtime.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d55b2d3e8">Include the missing libatomic runtime library</a>. Thanks to Nissulya, PetitManchot and xet7.</summary>
+
+Stage libatomic1 in both Snap recipes so Node.js can load libatomic.so.1
+inside confinement, independently of libraries installed on the host.
+Regression checks cover runtime staging and reject removal during packaging.
+The waiting-for-database HTTP regression also passes. A deployed Linux Snap
+was not available on this macOS host.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/54ce3015e">Carry libatomic through every Linux packaging path</a>. Thanks to Nissulya, PetitManchot and xet7.</summary>
+
+Docker retains libatomic1 after build-tool cleanup. Linux ZIP builders copy a
+library matching Node's ELF architecture into node-runtime, including license
+files, and the shared launcher adds that directory to its library search path.
+AppImage and Flatpak inherit it and reject input ZIPs that lack the dependency.
+Sandstorm includes libatomic in its private library tree. Native and emulated
+builders install the package explicitly; Windows and macOS repacks remove
+inherited Linux runtime files.
+
+Eight focused suites pass, including positive and negative library-selection
+fixtures for eight architectures. An offline Linux container also packaged a
+real Node executable and successfully loaded the copied library. Shell syntax
+checks pass. Full release builds were not run. A broader local-bundle parity
+suite reports a pre-existing missing use-release-npm.sh call, reproduced on the
+unchanged commit; it is separate from the runtime-library changes.
+
+</details>
+
+**Board invitations and login** - use authorized server operations.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e1b13e688">Accept sidebar invitations without triggering an account block</a>. Thanks to Nissulya and xet7.</summary>
+
+Use acceptInvite for sidebar acceptance and let quitBoard consume declined
+invitations. Neither flow writes the protected invitation profile from the
+client. Both methods explicitly require authentication, and forged writes
+remain forbidden. Signed-out login uses the configured provider instead of
+requesting protected authentication metadata and creating a security event.
+
+Focused handler, server-method and negative permission tests pass. Browser
+acceptance/decline tests were added and syntax-checked, but require a running
+Meteor/database/browser stack. Already blocked accounts need administrator
+review and re-enabling in Admin Panel / People. The separate history checksum
+report remains under investigation; see the developer investigation notes.
+
+</details>
+
+and fixes release packaging:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ba5ecaf14">Verify Mac archives and keep foreign addons out of platform bundles</a>. Thanks to xet7.</summary>
+
+Replace the unsupported ditto listing option with unzip -Z1. Keep Docker's
+telemetry scanner working from a shallow filesystem path and copy its deny-hash
+policy alongside it. When a target prebuild exists, discard positively
+identified foreign ELF addons inherited under build/Release or build/Debug;
+node-gyp-build otherwise selects those before the correct platform prebuild.
+Matching native output and unrecognized formats remain untouched.
+
+Twelve focused Node suites pass in about five seconds, including Python scanner
+regressions and an actual macOS archive test. The separate Snap waiting-page
+suite passes with loopback access. Hosted Windows, ARM64 AppImage, Docker and
+Snap builds still need to run; none was published from this checkout.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
 
 # v11.93 2026-09-24 WeKan ® release
 
