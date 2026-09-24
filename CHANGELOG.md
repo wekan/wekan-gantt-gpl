@@ -659,6 +659,53 @@ the Markdown commit as the template.
 </details>
 </details>
 
+# v11.97 2026-09-24 WeKan ® release
+
+**In short:** **Release preparation** checks changelog summaries before changing
+versions or creating tags. The missing v11.96 summary is restored so release
+notes can be generated and platform builds can proceed.
+
+This release fixes the following build preparation:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4101e8fd4">Validate release notes before version changes and tagging</a>. Thanks to xet7.</summary>
+
+v11.96 stopped in prepare because its changelog lacked the required summary.
+Restore that metadata without changing the release's entries. Local preflight
+now rejects missing and empty Upcoming summaries; the workflow validates notes
+before version changes and before creating a tag.
+
+Regression tests cover valid notes, missing and empty summaries, summaries in
+older sections, the newest release's actual notes, and workflow ordering. The
+focused release suites and YAML validation pass. Hosted builds were not rerun.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
+# v11.96 2026-09-24 WeKan ® release
+
+**In short:** **Snap builds** recover from stale Ubuntu package indexes by
+refreshing the failed managed container and retrying once. Unrelated build
+errors remain fatal.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4913f4abb">Recover Snap builds from stale Ubuntu package indexes</a>. Thanks to xet7.</summary>
+
+The wekan-ondra amd64 build failed while provisioning Snapcraft's managed base:
+an obsolete libexpat1-dev package URL returned HTTP 404. For native and variant
+Snap builds, refresh APT indexes inside the identified failed LXD base and retry
+once. Restore the container's original running/stopped state; unrelated errors,
+failed refreshes and failed retries remain fatal.
+
+Six focused test suites pass, including package-error detection, container state
+restoration, refresh failures and workflow integration. Workflow YAML parses.
+The hosted Snapcraft/LXD build has not been rerun from this Mac checkout.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v11.95 2026-09-24 WeKan ® release
 
 **In short:** **Mac app builds** finish their smoke tests without hanging during
