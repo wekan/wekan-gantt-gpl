@@ -659,6 +659,62 @@ the Markdown commit as the template.
 </details>
 </details>
 
+# v12.00 2026-09-25 WeKan ® release
+
+**In short:** **Dependency installation** works again after the S3 upload
+library update. The recent Dependabot merges have a documented security and
+telemetry review, with focused regression checks for the repaired dependency
+pair. **Test maintenance** restores checks for the current UI, documentation and
+translations, and local release preparation uses the same npm version as CI.
+
+This release fixes dependency compatibility and test regressions:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/670ae80ff">Align the S3 client with its upload library</a>. Thanks to xet7.</summary>
+
+lib-storage 3.1137.0 requires client-s3 3.1137.0 or newer, but the merged
+lockfile retained client-s3 3.1127.0. npm stopped with ERESOLVE before the
+WeKan tests could build. The missing MongoDB driver also stopped database
+conformance before any queries ran. Update the direct client to 3.1137.0,
+regenerate the lockfile and check the peer requirement in a regression test.
+
+The [dependency review](docs/Security/Dependabot-2026-09-24.md) records the
+scope, findings and limitations for the six merged Dependabot updates and
+this repair. Archive checksums match and npm reports no known advisories;
+the indicator-driven review found no telemetry implementation. These checks
+do not prove the absence of unknown vulnerabilities.
+
+Six focused suites, dependency installation and npm ci dry-run pass. S3 upload
+construction and MongoDB driver loading pass without service requests. The
+full Meteor/browser and database-conformance suites still need rerunning.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/55c6b48c1">Repair the remaining full-test failures</a>. Thanks to xet7.</summary>
+
+Update regression checks for moved All Boards documentation, component-owned
+Blaze templates, shared date settings, reviewed translations and the existing
+AuthTraceBleed coverage. Give the backup containment helper a name recognized
+by the archive security guard. Select the release npm version during local
+bundle preparation and specify the repository when looking up a recovery
+release.
+
+Browser tests open the invitation sidebar and use a separate invited member,
+so declining does not ask the sole administrator to leave their own board.
+The swimlane check uses the multiline composer, and the keyboard check waits
+for the username field to be interactable before pressing Tab.
+
+All 1,216 Node suites pass. Targeted Chromium, Firefox and WebKit checks pass,
+including three consecutive Firefox keyboard checks. Nine real database backup
+and restore checks pass, including malicious paths, symlinks and corrupt data.
+The supplied run already passed database conformance and FerretDB; the entire
+three-browser suite and hosted release builds were not rerun for this change.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v11.99 2026-09-24 WeKan ® release
 
 **In short:** **Developer tooling** updates Rsdoctor to fix source disclosure
