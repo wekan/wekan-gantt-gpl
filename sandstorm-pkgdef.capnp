@@ -22,10 +22,10 @@ const pkgdef :Spk.PackageDefinition = (
     appTitle = (defaultText = "Wekan"),
     # The name of the app as it is displayed to the user.
 
-    appVersion = 1201,
+    appVersion = 1202,
     # Increment this for every release.
 
-    appMarketingVersion = (defaultText = "12.01~2026-09-24"),
+    appMarketingVersion = (defaultText = "12.02~2026-09-25"),
     # Human-readable presentation of the app version.
 
     minUpgradableAppVersion = 0,
@@ -296,6 +296,18 @@ const myCommand :Spk.Manifest.Command = (
     (key = "OAUTH_MEETUP_SECRET_FILE", value=""),
     (key = "OAUTH_PROVIDERS_LOGIN_STYLE", value="popup"),
     (key = "OAUTH_PROVIDERS_MERGE_EXISTING_USERS", value="false"),
+    (key = "SAML_ENABLED", value="false"),
+    (key = "SAML_PROVIDER", value=""),
+    (key = "SAML_ENTRYPOINT", value=""),
+    (key = "SAML_ISSUER", value=""),
+    (key = "SAML_CERT", value=""),
+    (key = "SAML_IDPSLO_REDIRECTURL", value=""),
+    (key = "SAML_PRIVATE_KEYFILE", value=""),
+    (key = "SAML_PUBLIC_CERTFILE", value=""),
+    (key = "SAML_IDENTIFIER_FORMAT", value=""),
+    (key = "SAML_LOCAL_PROFILE_MATCH_ATTRIBUTE", value=""),
+    (key = "SAML_ATTRIBUTES", value=""),
+    (key = "SAML_MERGE_EXISTING_USERS", value="false"),
     (key = "PASSWORDLESS_ENABLED", value="false"),
     (key = "LDAP_ENABLE", value="false"),
     (key = "PASSWORD_LOGIN_ENABLED", value="true"),

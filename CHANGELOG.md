@@ -680,6 +680,91 @@ the Markdown commit as the template.
 </details>
 </details>
 
+# v12.02 2026-09-25 WeKan ® release
+
+**In short:** **Admin Panel / People** opens Email and provides separate login
+settings, including SAML environment overrides, metadata and logout configuration.
+**SSO** stops automatically retrying failed OIDC callbacks. **Login buttons** share
+blue backgrounds and white text/icons. **Release notes** omit empty categories.
+
+This release adds SAML administration and improves login behavior and navigation:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/05f1f0a03">Configure SAML in Admin Panel / People</a>. Thanks to xet7.</summary>
+
+Add a SAML menu entry and reusable catalog-driven authentication settings form.
+Site administrators can override environment settings, see each value's source,
+and restore environment/default values by clearing an override. Apply saves
+without restarting; disabling SAML removes its service configuration and rejects
+pending logins. Keep configuration out of ordinary settings publications.
+
+Expose service-provider metadata and callback URLs, and add service-provider
+initiated logout through the existing MIT-licensed node-saml library. Accept
+validated logout responses; IdP-initiated logout requests are not supported.
+Document account merging as an explicit opt-in and include its environment setting
+in platform configurations, including Snap, Docker and launch scripts.
+
+Verified configuration precedence, rejected inputs, platform coverage, metadata
+and logout route delegation and rejection paths. Chromium verifies settings
+save/reset and non-admin denial. The Meteor build passed. Live identity-provider
+login/logout interoperability remains unverified; this does not claim to fix the
+reported SAML popup completion problem or add other authentication providers.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ecdae60a8">Separate People authentication settings and open Email by default</a>. Thanks to xet7.</summary>
+
+Admin Panel / People opens Email first. Move Login, LDAP, OAuth providers and
+Passwordless to separate left-menu entries below Shared templates, retaining
+shared settings templates and direct routes. SAML follows Login with this release.
+
+Regression coverage verifies route resolution, site-admin restrictions and
+handlers. Chromium verifies menu order, separate panes and selection after reload.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8263734f5">Stop repeated automatic OIDC login after a failed callback</a>. Thanks to Alishara and xet7.</summary>
+
+Keep the automatic-login guard after failed login attempts so an unsuccessful
+SSO callback does not repeatedly redirect to the identity provider. Recheck
+login state when the settings response arrives, and require writable session
+storage before automatic navigation. Manual sign-in remains available.
+Fixes [#6722](https://github.com/wekan/wekan/issues/6722).
+
+Verified with eight executable redirect regressions, the OAuth login-style and
+OIDC state-isolation suites, and a Chromium callback-reload regression. The
+reporter's Microsoft Entra configuration was not available for end-to-end testing.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9dd295079">Use consistent authentication button colors</a>. Thanks to xet7.</summary>
+
+SAML and other authentication actions use the same blue background as Login,
+with white text and icons. Share the styling between package-provided buttons
+and standalone provider actions. A Chromium regression verifies normal and
+hover colors for SAML and both kinds of provider button.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3163ccfc1">Omit empty release-note sections</a>. Thanks to xet7.</summary>
+
+Only include Security and Translations when the selected release contains
+entries for them. Remove the empty-category placeholder sentences and omit
+translator credits when no languages were updated. Keep the summary and
+ChangeLog link, and preserve populated security and translation sections.
+
+The release-note regression suite verifies all four combinations of present
+and absent sections, version selection, retained details and language lists.
+Shell syntax validation also passes.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v12.01 2026-09-25 WeKan ® release
 
 **In short:** **Files Report previews and downloads** work for site

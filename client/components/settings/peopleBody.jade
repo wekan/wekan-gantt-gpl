@@ -33,6 +33,10 @@ template(name="people")
               +spinner
             else if registrationSetting.get
               +general
+            else if samlSetting
+              +authProviderSettings(samlSettingsData)
+            else if authenticationSection
+              +general(section=authenticationSection)
             else if emailSetting.get
               +email
             else if notifySetting.get
