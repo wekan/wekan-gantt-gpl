@@ -50,7 +50,7 @@ function resolveListDropTarget(evt) {
   const x = pageX - window.scrollX;
   const y = pageY - window.scrollY;
   const el = document.elementFromPoint(x, y);
-  if (!el) return null;
+  if (!el || $(el).closest('.js-checklist-items').length) return null;
   const $minicards = $(el).closest('.js-minicards');
   if (!$minicards.length) return null;
   const list = Blaze.getData($minicards.get(0));
@@ -90,14 +90,13 @@ function initSorting(items) {
       const checklistData = Blaze.getData(checklistDomElement);
       const checklistItem = checklistData.item;
 
-      items.sortable('cancel');
-
       // #3294: dropped onto a list rather than back into a checklist -
       // create a new card from the item's text instead of reordering. The
       // original checklist item is left exactly as it was (see
       // buildCardFromChecklistItem's scope note - this never marks it done).
       const dropTarget = resolveListDropTarget(evt);
       if (dropTarget) {
+        items.sortable('cancel');
         const maxSort = ReactiveCache.getCards({
           listId: dropTarget.list._id,
         }).reduce((max, c) => Math.max(max, c.sort || 0), 0);
@@ -115,23 +114,26 @@ function initSorting(items) {
 
       const parent = ui.item.parents('.js-checklist-items');
       const checklistId = Blaze.getData(parent.get(0)).checklist._id;
-      let prevItem = ui.item.prev('.js-checklist-item').get(0);
-      if (prevItem) {
-        prevItem = Blaze.getData(prevItem).item;
-      }
-      let nextItem = ui.item.next('.js-checklist-item').get(0);
-      if (nextItem) {
-        nextItem = Blaze.getData(nextItem).item;
-      }
+      // Inline-form wrappers use display: contents: visual neighbors are not
+      // necessarily DOM siblings. Walk all real rows in destination order,
+      // excluding the helper clone and placeholder left by jQuery UI.
+      const rows = parent.find('.js-checklist-item:not(.ui-sortable-helper):not(.placeholder)');
+      const index = rows.index(checklistDomElement);
+      const prevItem = index > 0 ? Blaze.getData(rows.get(index - 1)).item : null;
+      const nextItem = index >= 0 && index + 1 < rows.length
+        ? Blaze.getData(rows.get(index + 1)).item : null;
       const nItems = 1;
       const sortIndex = calculateIndexData(prevItem, nextItem, nItems);
 
+      // Read the destination and neighbors before cancel restores the original
+      // DOM order (#6723). Blaze then renders the persisted move.
+      items.sortable('cancel');
       checklistItem.move(checklistId, sortIndex.base);
     },
   });
 }
 
-Template.checklistDetail.onRendered(function () {
+Template.checklistSortableItems.onRendered(function () {
   const tpl = this;
   tpl.itemsDom = this.$('.js-checklist-items');
   initSorting(tpl.itemsDom);
@@ -147,22 +149,22 @@ Template.checklistDetail.onRendered(function () {
   tpl.autorun(() => {
     const $itemsDom = $(tpl.itemsDom);
     if ($itemsDom.data('uiSortable') || $itemsDom.data('sortable')) {
-      $(tpl.itemsDom).sortable('option', 'disabled', !userIsMember());
-      if (Utils.isTouchScreenOrShowDesktopDragHandles()) {
-        $(tpl.itemsDom).sortable({
-          handle: 'span.fa.checklistitem-handle',
-        });
-      }
+      $(tpl.itemsDom).sortable('option', 'disabled', !userIsMember() || !Utils.canDragBoardObject('item'));
+      $(tpl.itemsDom).sortable('option', 'handle',
+        Utils.isTouchScreenOrShowDesktopDragHandles() ? 'span.fa.checklistitem-handle' : false);
     }
   });
 });
 
+Template.checklistSortableItems.onDestroyed(function () {
+  if (this.itemsDom?.data('uiSortable')) this.itemsDom.sortable('destroy');
+});
+
+Template.checklistProgress.helpers({
+  finishedPercent() { return this.checklist.finishedPercent(); },
+});
+
 Template.checklistDetail.helpers({
-  /** returns the finished percent of the checklist */
-  finishedPercent() {
-    const ret = this.checklist.finishedPercent();
-    return ret;
-  },
   /** #1591: is this checklist folded for THIS user?
    *
    * Per-user, keyed by card and checklist, exactly like collapsed lists and

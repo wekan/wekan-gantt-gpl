@@ -77,11 +77,7 @@ template(name="checklistDetail")
 
     //- The progress bar stays visible when folded: it is the summary of what was
       folded away, so hiding it too would leave a title that says nothing.
-    if $gt finishedPercent 0
-      .checklist-progress-bar-container
-        .checklist-progress-text {{finishedPercent}}%
-        .checklist-progress-bar
-          .checklist-progress(style="width:{{finishedPercent}}%")
+    +checklistProgress(checklist=checklist)
     unless checklistCollapsed
       +checklistItems(checklist = checklist card = card)
 
@@ -153,7 +149,7 @@ template(name="checklistItems")
       else
         a.add-checklist-item.js-open-inlined-form(title="{{_ 'add-checklist-item'}}")
           i.fa.fa-plus
-  .checklist-items.js-checklist-items
+  +checklistSortableItems(checklist=checklist card=card)
     each item in checklist.items
       +inlinedForm(classNames="js-edit-checklist-item" item = item checklist = checklist)
         +editChecklistItemForm(type = 'item' item = item checklist = checklist)
@@ -169,6 +165,7 @@ template(name="checklistItems")
 template(name='checklistItemDetail')
   .js-checklist-item.checklist-item(class="{{#if item.isFinished }}is-checked{{#if checklist.isItemHidden item.isFinished}} invisible{{/if}}{{/if}}{{#if checklist.hideAllChecklistItems}} is-checked invisible{{/if}}"
     role="checkbox" aria-checked="{{#if item.isFinished }}true{{else}}false{{/if}}" aria-readonly="{{#if canCheckChecklistItem}}false{{else}}true{{/if}}" tabindex="{{#if canCheckChecklistItem}}0{{else}}-1{{/if}}")
+    +structuralSelectionCheckbox(kind="item" id=item._id label=item.title)
     //- #3307: checking off an item is a lower bar than editing/deleting one - a
       Worker may do the former but not the latter, so the checkbox itself is
       gated on canCheckChecklistItem while everything else here still needs
@@ -348,3 +345,15 @@ template(name="checklistDueDateAdd")
 
 template(name="editChecklistDueDatePopup")
   +editDateForm(showDate=showDate showTime=showTime error=error datePicker=datePicker)
+
+//- Shared by opened cards and minicards; owns sortable lifecycle.
+template(name="checklistSortableItems")
+  .checklist-items.js-checklist-items.nodragscroll
+    +Template.contentBlock
+
+template(name="checklistProgress")
+  if $gt finishedPercent 0
+    .checklist-progress-bar-container
+      .checklist-progress-text {{finishedPercent}}%
+      .checklist-progress-bar(role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow=finishedPercent aria-label=checklist.title)
+        .checklist-progress(style="width:{{finishedPercent}}%")

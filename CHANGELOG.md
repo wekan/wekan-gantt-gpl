@@ -55,6 +55,25 @@ https://wekan.fi/status/
 
 
 <details>
+<summary><a href="https://github.com/wekan/wekan/commit/f772663e5">Fix multi-list swimlane drops and show tilted named drag previews</a>. Thanks to xet7.</summary>
+
+Dragging selected lists onto the empty area of another swimlane now moves them
+and their cards there. Previously only the swimlane header was recognized as a
+destination. Keep nested list/card targets and header-only swimlane drag starts.
+
+Multi-Selection dragging shows a tilted stack with the selected objects' names
+and icons, alongside the count. Render titles as literal text, including mixed
+object selections, and limit large previews to eight names plus a remaining count.
+
+Six Chromium cases move two lists via swimlane bodies or headers, including
+collapsed sources/destinations, with handles on and off. Check the named tilted
+preview, list order, card parents and persistence after reload. Three existing
+mixed-selection browser cases, three focused Node suites and the Meteor build
+also pass. The empty-body case was reproduced failing before the fix.
+
+</details>
+
+<details>
 <summary><a href="https://github.com/wekan/wekan/commit/2016d15f2">Preview ZIP contents from cards and Files Report</a>. Thanks to xet7.</summary>
 
 Click a ZIP attachment preview to see the filenames and folder paths inside
@@ -679,6 +698,129 @@ the Markdown commit as the template.
 
 </details>
 </details>
+
+# v12.03 2026-09-26 WeKan ® release
+
+**In short:** **Board drag settings** independently enable dragging for each
+object type. **Mixed multi-selection** moves lists, swimlanes, cards and
+checklist content together, including folded containers. **Minicard checklists**
+show progress and support item reordering and transfers across lists and
+swimlanes. **Checklist drag-and-drop** saves the new item order and matches the
+visible drop placeholder.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/43b0daf14">Select or unselect all settings in a board settings column</a>. Thanks to xet7.</summary>
+
+Board Settings / Swimlane, List and Card offer Select all and Unselect all for
+each settings column: Draggable, the swimlane/list options, Show on Minicard and
+Show on Card. A shared component sets the column in one board-admin-authorized
+update. Repeated clicks keep the requested state; other columns, other boards,
+field order and personal overrides remain unchanged.
+
+Four Chromium cases cover all seven columns, both actions, repeated clicks,
+reload persistence, board isolation and rejected non-admin or invalid requests.
+The four existing drag-settings browser cases, three focused Node suites and
+the Meteor build also pass.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7950979cb">Choose which objects can be dragged on each board</a>. Thanks to xet7.</summary>
+
+Board Settings / Swimlane, List and Card settings have a shared Draggable column.
+Swimlanes, lists, cards, checklists, checklist items and subtasks default to checked,
+including existing boards. Board administrators can uncheck each independently;
+the settings persist for the whole board, separately from personal drag handles.
+
+Ordinary sorting responds immediately. Disabled checklist items cannot fall through
+to dragging their parent card, and mixed selections cannot drag a disabled selected
+object. Explicit menu moves remain available. Disabling swimlane reordering retains
+the container needed for cross-swimlane card transfers.
+
+Four new Chromium cases cover saved settings, independent switches, authorization,
+rejected mixed drags and disabling/re-enabling checklist-item dragging on minicards
+and opened cards with handles on and off. Together with existing mixed-selection,
+collapsed-container and checklist suites, 26 distinct Chromium cases pass. Thirteen
+focused Node suites and the Meteor build pass.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b0c8acc98">Move mixed selections of cards, lists, swimlanes and checklist content</a>. Thanks to xet7.</summary>
+
+Multi-Selection adds matching left-side checkboxes to list and swimlane headers,
+minicard checklists and checklist items. Mix object types in one selection and
+move them together by dragging or by choosing another board and destination
+position. Selected parents carry their children once. Checklist content dropped
+onto a list goes into one new destination card.
+
+Folded sources, folded destinations and hidden selected items keep their correct
+parents, including board-wide lists repeated in several swimlanes. Dropping onto
+a folded swimlane retains that swimlane in the destination picker and asks for
+the missing list. Keep selection checkboxes separate from collapse controls.
+
+The shared server move path checks both boards and every selected object before
+writing, rejects moving targets and preserves card metadata through existing
+move helpers. Moving a swimlane updates its parent before moving cards, avoiding
+an unintended move into the destination board's default swimlane.
+
+Twenty-two Chromium cases cover mixed moves, permissions, cross-board positions,
+collapsed containers, shared lists and existing checklist dragging. Eleven
+focused Node suites and the Meteor build pass.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b65b45e52">Show checklist progress and support item dragging on minicards</a>. Thanks to xet7.</summary>
+
+Minicard checklists share the opened-card percentage and progress bar, keeping
+progress visible while folded. Reuse one sortable component in both views,
+including initialization after unfolding and the drag-handle preference.
+
+Items can be reordered within a minicard checklist or moved to another card's
+checklist across lists and swimlanes. An internal checklist drop no longer looks
+like a drop on the enclosing board list, which would create an extra card.
+
+Six Chromium cases cover opened-card sorting, minicard progress and sorting,
+and cross-list/cross-swimlane transfers with handles both enabled and disabled.
+They verify persistence after reload, the destination card/checklist and no extra
+card creation. Focused reorder, drop-target, collapse, visibility and conversion
+checks and the Meteor build pass.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/cb4d29b01">Fix checklist item reordering</a>. Thanks to AmigaAbattoir and xet7.</summary>
+
+Read the destination checklist and neighboring items before restoring the DOM
+for Blaze. Previously, restoration happened first, so dropping an item saved its
+original position. Preserve checklist-to-list card creation.
+Fixes [#6723](https://github.com/wekan/wekan/issues/6723).
+
+Regression tests cover first, middle, last and cross-checklist positions, plus
+card drops. Chromium verifies real dragging, database order and persistence after
+reload; all seven existing checklist browser tests also pass. The Meteor build
+and eleven checklist-to-card checks pass.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7afbce763">Match checklist drops to the visible placeholder</a>. Thanks to AmigaAbattoir and xet7.</summary>
+
+The first reorder repair still missed neighboring rows inside inline-form
+wrappers. Read all real destination rows in document order, excluding the helper
+clone and placeholder, before calculating the saved position. This prevents a
+middle drop from landing farther down the checklist.
+
+Chromium reproduces the reported sequence with items 2, 3, 1, 4, 45: move 45 to
+the top, then to the third-position placeholder. Both drag-handle preferences
+failed before this repair and pass afterward, including database order and
+reload persistence. Wrapped-row unit regressions, checklist-to-card checks and
+the Meteor build also pass. Follow-up to [#6723](https://github.com/wekan/wekan/issues/6723).
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
 
 # v12.02 2026-09-25 WeKan ® release
 

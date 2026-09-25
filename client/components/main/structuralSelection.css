@@ -1,0 +1,57 @@
+/* Keep the shared checkbox shape; override only generic button styling. */
+button.js-structural-selection.materialCheckBox {
+  display: inline-block;
+  box-sizing: content-box;
+  flex: none;
+  min-width: 0;
+  min-height: 0;
+  margin-inline-end: 8px;
+  padding: 0;
+  background: none;
+  vertical-align: middle;
+  box-shadow: none;
+}
+button.js-structural-selection:focus-visible { outline: 2px solid currentColor; }
+.structural-drag-preview {
+  position: fixed;
+  z-index: 10000;
+  padding: 8px;
+  background: #fff;
+  color: #333;
+  border: 2px solid #216694;
+  pointer-events: none;
+  min-width: 160px;
+  max-width: 280px;
+  border-radius: 5px;
+  transform: rotate(-3deg);
+  transform-origin: top left;
+  box-shadow: 3px 4px 0 #ddd, 6px 8px 0 #bbb, 0 8px 18px #0004;
+}
+.structural-drag-count { font-weight: bold; margin-bottom: 4px; }
+.structural-drag-name { display: flex; gap: 8px; padding: 4px; }
+.structural-drag-name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.structural-drag-name .fa { flex: 0 0 16px; }
+.structural-drop-target { outline: 2px dashed #216694; }
+/* Header checkboxes occupy the left margin, without adding a header row. */
+.js-list-header > button.js-structural-selection {
+  position: absolute;
+  inset-inline-start: 2px;
+  top: 32px;
+  z-index: 32;
+}
+.js-swimlane-header > button.js-structural-selection {
+  position: absolute;
+  inset-inline-start: 4px;
+  top: 8px;
+  z-index: 21;
+}
+.swimlane .js-swimlane-header:has(> .js-structural-selection) .swimlane-header-menu {
+  inset-inline-start: 28px;
+}
+.list-collapsed .js-list-header > button.js-structural-selection {
+  top: 8px;
+}
+.list.list-collapsed .js-list-header:has(> .js-structural-selection) > .js-inlined-form-wrapper {
+  padding-top: 24px !important;
+  box-sizing: border-box;
+}

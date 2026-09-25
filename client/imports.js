@@ -111,3 +111,9 @@ import '/client/features/swimlanes';
 // 8. Startup (must load last — registers service worker, sets up subscriptions)
 // ----------------------------------------------------------------------------
 import '/client/00-startup';
+
+import '/client/components/main/structuralSelection';
+
+import '/client/components/main/boardDragSettings';
+
+import './components/main/boardSettingsColumnActions';
