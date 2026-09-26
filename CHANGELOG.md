@@ -63,7 +63,8 @@ destination. Keep nested list/card targets and header-only swimlane drag starts.
 
 Multi-Selection dragging shows a tilted stack with the selected objects' names
 and icons, alongside the count. Render titles as literal text, including mixed
-object selections, and limit large previews to eight names plus a remaining count.
+object selections, and limit large previews to eight names plus a remaining
+count.
 
 Six Chromium cases move two lists via swimlane bodies or headers, including
 collapsed sources/destinations, with handles on and off. Check the named tilted
@@ -244,26 +245,6 @@ under review with unchanged counts.
 </details>
 
 <details>
-<summary>Designed and written down, not built - one feature across several places, where half of it would be worse than none.</summary>
-
-**Requested By and Assigned By become people.** They are free TEXT today, and
-should keep that field AND gain member fields of the same kind Assignees has - a
-user picked from a popup, shown as an avatar or initials - on the card, in both
-exports and through every import. The shape is written down in
-[Requested-Assigned-By.md](docs/Features/Cards/Requested-Assigned-By.md):
-mirror `assignees` exactly (`requesters`, `assigners` as `[String]`, named after
-what WeKan already calls them internally), keep the two strings beside them, and
-give Members, Assignees, Requested By and Assigned By ONE template - they are
-the same control written four times. The avatar itself needs nothing new: it is
-`+userAvatar` in a `.member` box, which is what the board sidebar, the cards,
-Admin Panel / People and Admin Panel / Problems all already use. Not started
-because it is one feature across five places - schema, the card, the picker
-popups, both exports and the import round trip - and half of it landed is worse
-than none of it: a card would show a person that an export drops.
-
-</details>
-
-<details>
 <summary>Need specific infrastructure / a running server stack we cannot reproduce here (left for environment owners).</summary>
 
 [#3318](https://github.com/wekan/wekan/issues/3318) (outgoing webhooks from a
@@ -352,14 +333,7 @@ selectivity), verifiable only with live `EXPLAIN` on each engine.
 <details>
 <summary>Feature requests / behaviour-by-design rather than bugs.</summary>
 
-[#2204](https://github.com/wekan/wekan/issues/2204) (restrict permanent delete
-to the Admin role), [#5081](https://github.com/wekan/wekan/issues/5081)
-(redesign the owner/member/assignee avatar layout on mini cards — a UI proposal;
-@xet7 asked for a PR), [#1213](https://github.com/wekan/wekan/issues/1213)
-(copy-card resets comment authorship/date — the visible card items are
-activities recorded as the copying user at copy time; changing this is a design
-decision @xet7 raised, not a clear bug),
-[#5213](https://github.com/wekan/wekan/issues/5213) (notification/webhook
+[#5323](https://github.com/wekan/wekan/issues/5323) (notification/webhook
 reminder on a card's due date with a per-board offset — labelled Feature; the
 built-in due-date reminder already exists (`NOTIFY_DUE_DAYS_BEFORE_AND_AFTER`,
 improved in #3192), so the remaining ask is the per-board offset UI + a webhook
@@ -369,8 +343,8 @@ trigger the rule engine does not have today — every existing trigger fires on
 an immediate event, not a future point in time),
 [#4294](https://github.com/wekan/wekan/issues/4294) (rule actions should
 support a limited set of variables, e.g. assigning a card to its creator by
-default — every action field is a literal value today; resolving one from
-the triggering event needs a small templating layer in
+default — the acting-user member option and email variables already exist, but
+arbitrary variable-valued action fields still need a templating contract in
 `server/rulesHelper.js`'s action runner, a new kind of field),
 [#4294](https://github.com/wekan/wekan/issues/4294) (a rule should be able to
 combine multiple triggers/actions instead of one of each — `models/rules.js`
@@ -378,15 +352,13 @@ ties a rule to exactly one `triggerId`/`actionId`; supporting several is a
 schema change, not a UI fix, and needs a decision on how a multi-trigger rule
 matches: any trigger, or all of them; [#2953](https://github.com/wekan/wekan/issues/2953)
 asks for the same thing),
-[#4160](https://github.com/wekan/wekan/issues/4160) (rule "move card" action
-has Copy/Link siblings requested — the copy/link-card flow used by the manual
-card menu is a different code path from `server/rulesHelper.js`'s action
-runner; wiring it in as a new rule action is a real feature, not a small
-addition),
+[#4160](https://github.com/wekan/wekan/issues/4160) (a rule Copy Card action
+is still missing; Link Card already exists in `server/rulesHelper.js` and its
+rule-action UI, so only the copy portion remains deferred),
 [#3235](https://github.com/wekan/wekan/issues/3235) (rule action to copy a
 card to another board and list — same underlying gap as #4160, plus needs a
 board/list picker in the rule-action UI),
-[#3838](https://github.com/wekan/wekan/issues/3838) (rule email action should
+[#2713](https://github.com/wekan/wekan/issues/2713) (rule email action should
 support attachments — `client/components/rules/actions/mailActions.js` and
 its server-side sender only handle a plain templated body today; attaching a
 card's files means streaming them through the mailer, a scope change to the
@@ -410,12 +382,6 @@ whether it is one feature or several; it bundles per-org/team/board label
 expansion, granular board roles, LDAP-group-driven auto-labeling and
 permission inheritance, none of which is a filter change - needs it split
 into separate, concretely-scoped issues before any one part is buildable),
-[#2044](https://github.com/wekan/wekan/issues/2044) (an AND/OR toggle for
-the whole filter panel - today every active filter field is combined with
-implicit AND, and the fields within one SetFilter with OR; switching that
-per-panel, or per-field, is a real change to `Filter._getMongoSelector()`'s
-selector-building shape, not an additive filter, and needs a decision on
-what the toggle should scope: the whole panel, or one field at a time),
 [#1915](https://github.com/wekan/wekan/issues/1915) (hide cards by a date -
 largely already covered by the existing `Filter.dueAt` past/today/tomorrow/
 this-week/next-week/no-date states; the remaining gap is filtering by
@@ -437,11 +403,6 @@ tag - dated 2017; labels are already filterable and `Filter.dueAt` covers
 due-date ranges, but "moved on a specific date" would need a per-activity
 date filter, not a card-field one, since a card has no single "last moved"
 field today),
-[#3361](https://github.com/wekan/wekan/issues/3361) (a filter for the
-Calendar/Multi Board Calendar view - whether the sidebar `Filter` already
-scopes what those views draw needs checking against the LIVE calendar
-rendering, which is runtime UI state this sandbox cannot verify by reading
-source alone),
 [#572](https://github.com/wekan/wekan/issues/572) (label add/remove as its own
 controllable Notification Settings option - the activity feed entry it asks
 for already exists (`models/cards.js`'s `cardLabels()` hook logs
@@ -463,13 +424,11 @@ Researched against WeKan's actual current code (not assumed) to find what is
 genuinely still missing after this session's landed work, then scoped down
 to the smallest well-understood piece (card recurrence, added above) rather
 than a shallow pass across all five tools. What is investigated but deferred:
-**Jira Server/DC named issue-link types** (blocks/is blocked
-by/duplicates/relates to, as a typed relationship on
-`Cards.cardDependencies`, distinct from the existing untyped
-dependency/subtask/parent-child mechanism - needs a link-type enum, a
-reciprocal-link UI decision, and touches the Gantt/Roadmap views that already
-read `cardDependencies`, so it is a schema-and-three-views change, not an
-additive field). **Jira issue TYPES** (Bug/Task/Story/Epic as a first-class
+**Jira Server/DC duplicate issue links** remain deferred. Typed relationships
+already exist in `models/metadata/dependencies.js`: related-to, blocks,
+is-blocked-by, fixes and is-fixed-by, with reciprocal display and configurable
+line colors/icons. A dedicated duplicates/is-duplicated-by relationship is
+still missing. **Jira issue TYPES** (Bug/Task/Story/Epic as a first-class
 card attribute with its own icon set and swimlane-per-epic grouping - the
 existing custom-field mechanism can represent the VALUE but not the icon/
 swimlane-grouping behaviour Jira gives a type, so this needs a decision on
@@ -478,10 +437,7 @@ any UI is worth writing). **Kanboard color-coded categories** (a per-board
 tag distinct from labels, used for at-a-glance visual grouping rather than
 filtering - overlaps enough with labels that it needs a maintainer decision
 on whether it is a genuinely separate concept or a label-color affordance
-that already exists). **Trello-style card-aging visual indicator** (a
-minicard opacity/border fade the longer a card sits without activity -
-needs a decision on the staleness threshold and whether it is board-
-configurable, plus a minicard rendering change touching every board view).
+that already exists).
 **Nextcloud Deck auto-archival after N days of inactivity** (overlaps the
 card-recurrence scan job's shape closely enough to reuse
 `SyncedCron`/`models/lib/*Schedule.js` once built, but is a separate
@@ -493,20 +449,9 @@ not for a missing on-premise capability.
 </details>
 
 <details>
-<summary>Carried from a fix that went as far as it could without a new dependency.</summary>
+<summary>Attachment-board upgrade report needs affected data or runtime logs.</summary>
 
-[#6586](https://github.com/wekan/wekan/issues/6586) has two parts left. The PDF
-export now writes Windows-1252, which covers the Western European letters the
-report was about and transliterates the rest of the Latin script - but a
-Cyrillic, Greek, Hebrew, Arabic or CJK board still exports as `?`, because the
-base-14 PDF fonts have no glyphs for them. Fixing that means EMBEDDING a Unicode
-font: a TrueType binary in the repository (DejaVu Sans is about half a
-megabyte), plus glyph-id mapping, a widths array and a ToUnicode CMap in the
-writer. That is a dependency decision rather than a bug fix. The same issue also
-asks for the markdown-flavoured export to be offered as a `.md` file in its own
-right, which is a new export format, not a change to this one.
-
-An upgrade report by email has one more: after a 6.09 to 10.85 dump-and-restore,
+An upgrade report by email: after a 6.09 to 10.85 dump-and-restore,
 one board that has attachments loads forever - "it only loads and shows nothing:
 no cards, nothing but the loading animation" - while every other board on the
 same instance is fine. The attached `snap logs wekan.mongodb` is mongod startup
@@ -525,18 +470,6 @@ webhook — card title/description edits ALREADY reach the global webhook via
 from #3619/#5482; a single consolidated `act-editCard` action needs a decision
 on which fields count and whether it supplements or replaces the existing
 per-field events, to avoid duplicate webhook deliveries),
-[#6580](https://github.com/wekan/wekan/issues/6580) (CHANGELOG.md is 43,748
-lines and 2.02 MB, over the size at which GitHub refuses to render it — its
-Blame tab answers *"we can't show files that are this big"* and the file view
-truncates. Splitting it by year was tried and abandoned: git records no move,
-so a plain `git blame` on a per-year file credits every line to the commit that
-split it, and only `git blame -C` reaches the real history — which editors do
-not pass by default. That traded working local blame on eleven years of entries
-for a smaller file, and local blame is worth more. Reverting a split does not
-undo it either: the restored lines blame to the revert, so the only clean way
-back is to not land it. Any fix needs a way to shrink the file that keeps `git
-blame` working with no flag — or a decision that the trade is acceptable after
-all),
 [#2509](https://github.com/wekan/wekan/issues/2509) (a "customized card
 style" - the report is a single line plus a screenshot with areas marked in
 blue that is not accessible from here, and it names no concrete visual
@@ -699,6 +632,256 @@ the Markdown commit as the template.
 </details>
 </details>
 
+# v12.05 2026-09-27 WeKan ® release
+
+**In short:** Five new **flow analytics** pages add Aging WIP, blocker analysis,
+Monte Carlo forecasts, XmR and size-versus-cycle-time charts, with PDF and
+Excel exports. Dependency edits, undo/redo and optional move reasons now
+provide a timestamped history for reports. Time reports show hour adjustments
+by author, and deleting cards or checklists preserves their activity trail.
+Linked cards can mirror cards on the same board. List deletion undo now
+restores the cards deleted with the list. Board tiles gain confirmed actions,
+swimlanes gain placement choices, and filters gain label AND/OR selection.
+New-card titles survive closing the composer as private drafts.
+
+This release adds the following features:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0b411b547">Add five flow reports and reversible dependency history</a>. Thanks to sojournerc and xet7.</summary>
+
+Add five pages at the bottom of Board View. Reuse card dates, Activities,
+Planning Poker, numeric custom fields, card dependencies and universal History.
+Blocker episodes have stage-specific start/end timestamps; unknown older
+starts stay unknown. Monte Carlo supports both completion-date and capacity
+forecasts, with bounded inputs and reproducible sampling. XmR includes
+individuals and moving-range plots. Every page has accessible data tables and
+PDF/Excel exports using the same calculations and selected parameters.
+
+Reuse the existing MIT-licensed Chart.js through dynamic imports and existing
+server exporters. No new package or external analytics service is required.
+Record dependency additions, removals and property changes in History, with
+validated undo/redo. Localize the new labels using existing locale vocabulary,
+with full explanatory text in English and Finnish and compact glossary/formula
+labels elsewhere; those compact combinations need human language review.
+Existing translations are preserved. Document data sources and limitations in
+[Flow analytics](docs/Features/Reports/Charts/Flow-Analytics.md).
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6d99ad73c">Preserve time records and add reversible move reasons</a>. Thanks to ladistrupl, zombah and xet7.</summary>
+
+Keep card/checklist activity after deletion and retain card snapshots for
+historical reports. Add optional move reasons in the Move Card dialog and an
+opt-in Card Settings prompt. Record complete positions through the shared
+history hook and authenticated direct REST edits. Undo/redo appends reversal
+checkpoints for chart replay while keeping those checkpoints out of the undo
+stack. Time shows timestamped hour adjustments and corrections by their author,
+with matching PDF/Excel exports; shared totals are not treated as individual
+work sessions. REST accepts a zero-hour correction. Dependency cleanup on
+cross-board moves also uses the history hooks.
+
+Audit the open time-related requests against the existing implementation in
+[Time issue audit](docs/Features/Reports/Charts/Time-Issue-Audit.md). Exact inline
+activity timestamps and checklist completion events already exist; retain them
+and add browser regressions. The broader checklist/calendar request remains
+open. Previously purged history cannot be reconstructed, and removal snapshots
+do not restore permanently deleted child documents or attachment files.
+
+Upcoming regression audit: 43 focused Node suites pass, covering calculation
+and export parity, invalid/missing data, board boundaries, dependency restore,
+position history, correction attribution, retained blocker episodes, worker
+permissions, locale keys/placeholders and existing checklist/activity behavior.
+Fifteen Chromium scenarios pass across the chart, time-history and REST-move
+suites, including real PDF/Excel downloads, undo/redo, preserved card/checklist
+activity, exact timestamps and unauthorized requests. The local Meteor app
+compiled and ran. Full-platform and FerretDB integration suites were not run.
+The repository-wide translation-completeness check still reports pre-existing
+English placeholders outside these changes; the new-label checks pass.
+Changelog link/archive checks and the read-only release-note preflight pass;
+the format test also passes after the overlong prose was rewrapped.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5ed4268a6">Add swimlane placement and board tile actions</a>. Thanks to bentiss and xet7.</summary>
+
+Fix #2131 and #2644. Choose above or below the current swimlane in its Add
+Swimlane dialog. Board administrators can duplicate or archive an active board
+from its tile Actions menu, using confirmations and existing permission checks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6be31f5a2">Add label AND/OR filtering and retain filter text</a>. Thanks to Trunkslike, TheBigBloodyB, Roemer and xet7.</summary>
+
+Fix #2044 and #3361. Select AND or OR for included labels in the board Filter
+panel; excluded labels keep their existing meaning. Reopening the panel retains
+list, title and advanced text. Verify card filtering in Calendar grid and agenda
+views; the separate multi-board calendar remains outside this board filter.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c7e19a324">Preserve private new-card title drafts</a>. Thanks to TutloTutlo and xet7.</summary>
+
+Fix #810. Restore unsaved titles when reopening the same list/swimlane composer.
+Reuse owner-scoped unsaved edits, keep top and bottom composers separate, and
+clear successfully inserted titles. Local typing takes precedence over a late
+subscription result. Other users cannot read or overwrite these drafts.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3b3f7ebd7">Allow linked-card mirrors on the same board</a>. Thanks to RinTheCatato, mohamed-aziz-chamakh and xet7.</summary>
+
+Fix #5683: the Link picker and server method now accept a real source card on
+the destination board. Reuse the existing shared label data and setters.
+Retain permission checks, reject linked pointers and templates, and prevent
+whole-board self-links through both confirmation buttons. Browser tests verify
+live label updates in both directions and unchanged cross-board behavior.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/08a164661">Undo list deletion together with its cards</a>. Thanks to rawwerks and xet7.</summary>
+
+Fix #1023: History undo restored the list but left its cards marked deleted.
+Restore the same board/list deletion batch and preserve independently deleted
+cards. Redo marks live cards again. Keep the batch in lifecycle snapshots and
+refuse old lifecycle rows after a list moves to another board. Browser tests
+check persisted state through undo, redo and undo again, plus rejected writes
+from read-only members. Permanent purges remain irreversible.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/be6cc9d63">Align Add Swimlane placement choices</a>. Thanks to xet7.</summary>
+
+Move the above/below choices below the swimlane name input and align each radio
+button to the left of its label. Two Chromium scenarios verify the rendered
+layout, both insertion positions and read-only restrictions. Swimlane placement
+and RTL Node suites pass. Existing Upcoming coverage is recorded in the other
+entries; this layout adjustment adds no new mutation or permission rules.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d962b6047">Apply theme colors to flow chart action buttons</a>. Thanks to xet7.</summary>
+
+Use the shared primary-button styling for the Monte Carlo and size-versus-cycle
+option forms. Their action buttons inherit the current theme's background and
+white text, including custom colors, hover and keyboard focus states. Export
+controls retain the same shared styling as the existing chart pages.
+
+Four Chromium theme scenarios and five focused Node suites pass, covering both
+forms in blue, red, dark and custom themes. The additional forecast regression
+failed because its export link omitted the selected forecast parameters; that
+separate export issue remains outstanding. Existing Upcoming coverage is
+recorded in the other entries. No dependencies or permission rules changed.
+Other browser engines were not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b97090221">Open cards directly beside their minicards</a>. Thanks to xet7.</summary>
+
+Place desktop card windows before their first visible frame, eliminating the
+initial flash at the screen edge. Prefer right in LTR and left in RTL when that
+side fits; otherwise use the other side. If neither side fits, keep the window
+inside the viewport. Preserve user-dragged positions and separate mobile,
+maximized and popup geometry.
+
+Eight Chromium scenarios pass: first-frame placement on preferred and fallback
+sides in both directions, plus all four date save/delete position regressions.
+Four focused Node suites pass, including geometry, initial visibility, board
+refresh readiness and RTL checks. The opening regression fails before the fix.
+Existing Upcoming coverage is recorded in the other entries. Other browser
+engines were not run; this client layout change adds no permission rules.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f5878134a">Keep card windows still when saving dates</a>. Thanks to xet7.</summary>
+
+Saving or removing Received, Start, Due or End refreshed the board subscription,
+briefly destroyed its view, and rebuilt the open card at its default dock before
+anchoring it again. Keep the same board mounted during refresh; navigating to
+another board still resets readiness. Retain the date refresh and all existing
+publication permissions.
+
+Four Chromium regressions verify saved and removed dates, badge updates, window
+identity and position across rendered frames. The save regression fails before
+the fix. Six focused Node suites pass, covering initial loading, navigation,
+date validation and card placement. Existing Upcoming coverage is recorded in
+the other entries; this change adds no server mutation or permission rules.
+The live FerretDB matrix and other browser engines were not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/374e03e99">Audit completed issues and refresh TODO Later</a>. Thanks to Meeques, Somantiq, javen9881, matrixes, bastos77, therampagerado, sfahrenholz, Gobliins and xet7.</summary>
+
+Check the 159-open-issue snapshot and record source/test evidence for ten
+already implemented requests. Add their closing keywords, remove seven stale
+backlog entries, narrow partially implemented requests and correct two unrelated
+issue references. Retain deployment investigations and unverified wider scope.
+See the [completion audit](docs/DeveloperDocs/Open-Issue-Completion-Audit-2026-09.md)
+for the decisions and the remaining issue inventory.
+
+All 28 selected Node regression suites pass, including negative cases and UI
+source guards. No application code changes; browser and live identity-provider
+tests were not rerun for this documentation audit. The existing Upcoming feature
+coverage is recorded above; this entry adds no new runtime behavior.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4ce5cb992">Verify seven more completed issue requests</a>. Thanks to RowhamD, Usernameisalreadytaken99, rptl, czinkos, bhueck, Vida444, xefladrero and xet7.</summary>
+
+Record existing implementations for OIDC logout, case-insensitive mentions,
+remote mobile card closure, alphabetical member selection, bulk card colors,
+existing-card subtasks and minicard field visibility. Add executable logout-hook
+and browser regressions. Retain partial requests whose complete UI or behavior
+could not be verified; see the
+[follow-up audit](docs/DeveloperDocs/Open-Issue-Audit-2026-09-27.md).
+
+All 31 focused Node suites and 27 distinct Chromium scenarios pass. This
+includes deletion-batch boundaries, rejected writes, same- and cross-board
+links, and the existing flow/time-history reports with real PDF/Excel exports.
+The Meteor app compiled and ran with the documented API flag enabled. External
+identity providers and the FerretDB backend matrix were not tested. Existing
+Upcoming feature coverage remains recorded above; the shared History changes
+also passed the affected chart and time-report regressions.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5b07274c3">Audit all open issues and verify board view controls</a>. Thanks to sebastianha and xet7.</summary>
+
+Triage all 140 open issues and record each finding and outstanding
+verification in the [full issue
+inventory](docs/DeveloperDocs/All-Open-Issues-Audit-2026-09-27.md). Verify
+existing minicard swimlane names (#1748) and board-specific view visibility
+(#2107). Remove completed filter requests from TODO Later. The other 133
+requests remain outstanding; triage does not imply their implementation or
+reproduction.
+
+Upcoming regression coverage remains recorded in the entries above. For this
+batch, 15 focused Node suites and ten Chromium scenarios pass, including
+actual menu actions, calendar filtering, draft restoration and denied
+unauthorized writes. The Meteor app compiles and runs. No dependencies or
+server permission rules were added. The full Node run is not green: 136 of
+1,233 suites failed; the new tile RTL issue was fixed and its suite passes,
+and the socket-restricted API suite passes with socket access. The audit
+records the remaining failures, including baseline fixture failures and
+translation-completeness checks. Other browser engines and the live FerretDB
+matrix were not tested.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v12.04 2026-09-26 WeKan ® release
 
 **In short:** **InactiveBleed** is fixed: disabled accounts cannot obtain new
@@ -727,14 +910,15 @@ Creation is awaited and ordinary users cannot invoke the admin creation method.
 Attributable disabled-account authentication attempts are summarized as
 InactiveBleed in Admin Panel / Problems.
 
-Upcoming regression audit: positive and negative Node tests cover authentication,
-atomic issuance, revocation, logging failure, attachment contexts and a source
-sweep across server, models, imports, packages and client code. The affected
-HTTP, LDAP, export, team-membership and security-catalog suites pass. A Meteor
-build and three Chromium tests pass, covering inactive creation, REST and DDP
-login, old Bearer/cookie/legacy upload credentials, live-session disconnection,
-direct database deactivation, reactivation, People toggles and admin-only
-account creation. Live LDAP and the FerretDB matrix were not exercised.
+Upcoming regression audit: positive and negative Node tests cover
+authentication, atomic issuance, revocation, logging failure, attachment
+contexts and a source sweep across server, models, imports, packages and
+client code. The affected HTTP, LDAP, export, team-membership and
+security-catalog suites pass. A Meteor build and three Chromium tests pass,
+covering inactive creation, REST and DDP login, old Bearer/cookie/legacy
+upload credentials, live-session disconnection, direct database deactivation,
+reactivation, People toggles and admin-only account creation. Live LDAP and
+the FerretDB matrix were not exercised.
 
 </details>
 
@@ -768,21 +952,24 @@ the Meteor build also pass.
 <details>
 <summary><a href="https://github.com/wekan/wekan/commit/7950979cb">Choose which objects can be dragged on each board</a>. Thanks to xet7.</summary>
 
-Board Settings / Swimlane, List and Card settings have a shared Draggable column.
-Swimlanes, lists, cards, checklists, checklist items and subtasks default to checked,
-including existing boards. Board administrators can uncheck each independently;
-the settings persist for the whole board, separately from personal drag handles.
+Board Settings / Swimlane, List and Card settings have a shared Draggable
+column. Swimlanes, lists, cards, checklists, checklist items and subtasks
+default to checked, including existing boards. Board administrators can
+uncheck each independently; the settings persist for the whole board,
+separately from personal drag handles.
 
-Ordinary sorting responds immediately. Disabled checklist items cannot fall through
-to dragging their parent card, and mixed selections cannot drag a disabled selected
-object. Explicit menu moves remain available. Disabling swimlane reordering retains
-the container needed for cross-swimlane card transfers.
+Ordinary sorting responds immediately. Disabled checklist items cannot fall
+through to dragging their parent card, and mixed selections cannot drag a
+disabled selected object. Explicit menu moves remain available. Disabling
+swimlane reordering retains the container needed for cross-swimlane card
+transfers.
 
-Four new Chromium cases cover saved settings, independent switches, authorization,
-rejected mixed drags and disabling/re-enabling checklist-item dragging on minicards
-and opened cards with handles on and off. Together with existing mixed-selection,
-collapsed-container and checklist suites, 26 distinct Chromium cases pass. Thirteen
-focused Node suites and the Meteor build pass.
+Four new Chromium cases cover saved settings, independent switches,
+authorization, rejected mixed drags and disabling/re-enabling checklist-item
+dragging on minicards and opened cards with handles on and off. Together with
+existing mixed-selection, collapsed-container and checklist suites, 26
+distinct Chromium cases pass. Thirteen focused Node suites and the Meteor
+build pass.
 
 </details>
 
@@ -823,10 +1010,10 @@ checklist across lists and swimlanes. An internal checklist drop no longer looks
 like a drop on the enclosing board list, which would create an extra card.
 
 Six Chromium cases cover opened-card sorting, minicard progress and sorting,
-and cross-list/cross-swimlane transfers with handles both enabled and disabled.
-They verify persistence after reload, the destination card/checklist and no extra
-card creation. Focused reorder, drop-target, collapse, visibility and conversion
-checks and the Meteor build pass.
+and cross-list/cross-swimlane transfers with handles both enabled and
+disabled. They verify persistence after reload, the destination card/checklist
+and no extra card creation. Focused reorder, drop-target, collapse, visibility
+and conversion checks and the Meteor build pass.
 
 </details>
 
@@ -839,9 +1026,9 @@ original position. Preserve checklist-to-list card creation.
 Fixes [#6723](https://github.com/wekan/wekan/issues/6723).
 
 Regression tests cover first, middle, last and cross-checklist positions, plus
-card drops. Chromium verifies real dragging, database order and persistence after
-reload; all seven existing checklist browser tests also pass. The Meteor build
-and eleven checklist-to-card checks pass.
+card drops. Chromium verifies real dragging, database order and persistence
+after reload; all seven existing checklist browser tests also pass. The Meteor
+build and eleven checklist-to-card checks pass.
 
 </details>
 
@@ -866,11 +1053,13 @@ Thanks to above GitHub users for their contributions and translators for their t
 # v12.02 2026-09-25 WeKan ® release
 
 **In short:** **Admin Panel / People** opens Email and provides separate login
-settings, including SAML environment overrides, metadata and logout configuration.
-**SSO** stops automatically retrying failed OIDC callbacks. **Login buttons** share
-blue backgrounds and white text/icons. **Release notes** omit empty categories.
+settings, including SAML environment overrides, metadata and logout
+configuration. **SSO** stops automatically retrying failed OIDC callbacks.
+**Login buttons** share blue backgrounds and white text/icons. **Release
+notes** omit empty categories.
 
-This release adds SAML administration and improves login behavior and navigation:
+This release adds SAML administration and improves login behavior and
+navigation:
 
 <details>
 <summary><a href="https://github.com/wekan/wekan/commit/05f1f0a03">Configure SAML in Admin Panel / People</a>. Thanks to xet7.</summary>
@@ -884,8 +1073,8 @@ pending logins. Keep configuration out of ordinary settings publications.
 Expose service-provider metadata and callback URLs, and add service-provider
 initiated logout through the existing MIT-licensed node-saml library. Accept
 validated logout responses; IdP-initiated logout requests are not supported.
-Document account merging as an explicit opt-in and include its environment setting
-in platform configurations, including Snap, Docker and launch scripts.
+Document account merging as an explicit opt-in and include its environment
+setting in platform configurations, including Snap, Docker and launch scripts.
 
 Verified configuration precedence, rejected inputs, platform coverage, metadata
 and logout route delegation and rejection paths. Chromium verifies settings
@@ -900,10 +1089,12 @@ reported SAML popup completion problem or add other authentication providers.
 
 Admin Panel / People opens Email first. Move Login, LDAP, OAuth providers and
 Passwordless to separate left-menu entries below Shared templates, retaining
-shared settings templates and direct routes. SAML follows Login with this release.
+shared settings templates and direct routes. SAML follows Login with this
+release.
 
 Regression coverage verifies route resolution, site-admin restrictions and
-handlers. Chromium verifies menu order, separate panes and selection after reload.
+handlers. Chromium verifies menu order, separate panes and selection after
+reload.
 
 </details>
 
@@ -918,7 +1109,8 @@ Fixes [#6722](https://github.com/wekan/wekan/issues/6722).
 
 Verified with eight executable redirect regressions, the OAuth login-style and
 OIDC state-isolation suites, and a Chromium callback-reload regression. The
-reporter's Microsoft Entra configuration was not available for end-to-end testing.
+reporter's Microsoft Entra configuration was not available for end-to-end
+testing.
 
 </details>
 

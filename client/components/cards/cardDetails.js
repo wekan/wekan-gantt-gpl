@@ -472,7 +472,16 @@ Template.cardDetails.onRendered(function () {
   // out, so the width measured here is the one the stylesheet gave it.
   const $cardDetails = this.$('.card-details').first();
   if ($cardDetails.length) {
-    Tracker.afterFlush(() => anchorCardDetailsX($cardDetails.get(0)));
+    Tracker.afterFlush(() => {
+      const element = $cardDetails.get(0);
+      try {
+        anchorCardDetailsX(element);
+      } finally {
+        // The desktop window must never paint at the stylesheet's fallback
+        // dock before its minicard-relative geometry has been measured.
+        element.classList.remove('card-details-position-pending');
+      }
+    });
   }
   bindCardDetailsResize();
 
@@ -2283,7 +2292,8 @@ Template.moveCardPopup.onCreated(function () {
         sortIndex = (typeof maxSort === 'number' && !Number.isNaN(maxSort)) ? maxSort + 1 : 0;
       }
 
-      await card.move(options.boardId, options.swimlaneId, options.listId, sortIndex);
+      await card.move(options.boardId, options.swimlaneId, options.listId, sortIndex,
+        tpl.$('#move-card-reason').val() || '');
       if (title && title !== card.title) {
         await card.setTitle(title);
       }

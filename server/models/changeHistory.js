@@ -12,6 +12,7 @@ import Swimlanes from '/models/swimlanes';
 import Attachments from '/models/attachments';
 import ChangeHistory from '/models/changeHistory';
 import { attachmentContentAction } from '/models/lib/attachmentSoftDelete';
+import { listLifecyclePlan } from '/models/lib/listLifecycleRestore';
 import {
   softDeleteAttachment,
   restoreAttachment,
@@ -155,8 +156,20 @@ async function applyCardContent(row, content) {
       content.swimlaneId,
       content.listId,
       content.sort,
+      content.lastMoveReason || '',
     );
     return true;
+  }
+  if (content?.field === 'cardDependencies') {
+    // History can outlive a target or a move to another board. Undo must not
+    // resurrect a dangling/cross-board edge that the ordinary editor rejects.
+    const { validDependencyRestore } = require('/models/lib/flowHistory');
+    const current = await Cards.findOneAsync(row.entityId);
+    const ids = Array.isArray(content.value) ? content.value.map(dep => dep?.cardId).filter(Boolean) : [];
+    const targets = ids.length ? await Cards.find({ _id: { $in: ids }, boardId: current.boardId }).fetchAsync() : [];
+    if (!validDependencyRestore(current, content.value, targets)) {
+      throw new Meteor.Error('invalid-dependency', 'A dependency target is no longer on this board');
+    }
   }
   return applyFieldContent(Cards, row, content);
 }
@@ -174,16 +187,12 @@ async function applyListContent(row, content) {
     return true;
   }
   if (row.group === 'lifecycle' && content && content.deleted !== undefined) {
-    // A soft delete and its restore are the same row read in two directions.
-    if (content && content.deleted === true) {
-      await Lists.updateAsync(list._id, {
-        $set: { deletedAt: content.deletedAt || new Date(), deletedBy: row.userId },
-      });
-    } else {
-      await Lists.updateAsync(list._id, {
-        $set: { deletedAt: null, deletedBy: null },
-      });
+    const plan = listLifecyclePlan(list, row, content);
+    if (!plan) return false;
+    if (plan.cards) {
+      await Cards.updateAsync(plan.cards, structuredClone(plan.modifier), { multi: true });
     }
+    await Lists.updateAsync(list._id, plan.modifier);
     return true;
   }
   return applyFieldContent(Lists, row, content);
@@ -264,9 +273,18 @@ async function currentContentOf(row) {
   const doc = await collection.findOneAsync(row.entityId);
   if (!doc) return null;
 
+  if (row.entityType === 'list' && row.group === 'lifecycle') {
+    return {
+      deleted: Boolean(doc.deletedAt),
+      deletedAt: doc.deletedAt || null,
+      deleteBatchId: doc.deleteBatchId || row.newContent?.deleteBatchId ||
+        row.previousContent?.deleteBatchId || row.batchId || null,
+    };
+  }
+
   if (row.group === 'position') {
     const position = {};
-    for (const key of ['boardId', 'swimlaneId', 'listId', 'sort']) {
+    for (const key of ['boardId', 'swimlaneId', 'listId', 'sort', 'lastMoveReason']) {
       if (doc[key] !== undefined) position[key] = doc[key];
     }
     return Object.keys(position).length ? position : null;
@@ -320,6 +338,17 @@ async function applyRow(row, direction) {
 // ---- the read method ---------------------------------------------------------
 
 const MAX_PAGE_SIZE = 200;
+
+// Undo/redo are real timestamped transitions too. Checkpoints preserve the
+// report timeline while staying out of the undo stack and preserving redo.
+async function recordReversal(row, userId, before) {
+  await ChangeHistory.record({
+    boardId: row.boardId, swimlaneId: row.swimlaneId, listId: row.listId, cardId: row.cardId,
+    entityType: row.entityType, entityId: row.entityId, group: row.group,
+    changeType: 'restored', previousContent: before, newContent: await currentContentOf(row),
+    userId, restoredFromId: row._id, restoredByUserId: userId, isCheckpoint: true,
+  });
+}
 
 Meteor.methods({
   /*
@@ -480,18 +509,20 @@ Meteor.methods({
     await requireBoardWrite(this.userId, boardId);
 
     const candidates = await ChangeHistory.find(
-      { userId: this.userId, boardId, undone: false },
+      { userId: this.userId, boardId, undone: false, isCheckpoint: { $ne: true } },
       { sort: { createdAt: -1 }, limit: 50 },
     ).fetchAsync();
     const row = pickUndo(candidates);
     if (!row) return { undone: false };
     await requireHistoryIntegrity(row, this);
 
+    const before = await currentContentOf(row);
     const applied = await applyRow(row, 'undo');
     if (!applied) return { undone: false, reason: 'not-applicable' };
     await ChangeHistory.updateAsync(row._id, {
       $set: { undone: true, undoneAt: new Date() },
     });
+    await recordReversal(row, this.userId, before);
     return {
       undone: true,
       entityType: row.entityType,
@@ -508,18 +539,20 @@ Meteor.methods({
     await requireBoardWrite(this.userId, boardId);
 
     const candidates = await ChangeHistory.find(
-      { userId: this.userId, boardId, undone: true },
+      { userId: this.userId, boardId, undone: true, isCheckpoint: { $ne: true } },
       { sort: { undoneAt: -1 }, limit: 50 },
     ).fetchAsync();
     const row = pickRedo(candidates);
     if (!row) return { redone: false };
     await requireHistoryIntegrity(row, this);
 
+    const before = await currentContentOf(row);
     const applied = await applyRow(row, 'redo');
     if (!applied) return { redone: false, reason: 'not-applicable' };
     await ChangeHistory.updateAsync(row._id, {
       $set: { undone: false, undoneAt: null },
     });
+    await recordReversal(row, this.userId, before);
     return {
       redone: true,
       entityType: row.entityType,

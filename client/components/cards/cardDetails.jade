@@ -7,7 +7,7 @@ template(name="cardDetails")
     minicard carries for the same reason: with a handle, the title is all edit
     target; without one, half of it is what the window is dragged by.
     client/components/cards/cardDetails.css
-  section.card-details.js-card-details.nodragscroll(
+  section.card-details.js-card-details.nodragscroll.card-details-position-pending(
     class='{{#if cardMaximized}}card-details-maximized{{/if}}'
     class='{{#if isPopup}}card-details-popup{{/if}}'
     class='{{#unless isVerticalScrollbars}}no-scrollbars{{/unless}}'
@@ -1280,6 +1280,8 @@ template(name="cardDestinationPicker")
 template(name="moveCardPopup")
   label(for='move-card-title') {{_ 'title'}}:
   input#move-card-title.full-line(type="text" value="{{getTitle}}" autofocus)
+  label(for="move-card-reason") {{_ "move-reason"}}
+  textarea#move-card-reason.full-line(maxlength="1000")
   +cardDestinationPicker(dialog=dialog)
   div
     input#js-leave-link-at-origin(type="checkbox")

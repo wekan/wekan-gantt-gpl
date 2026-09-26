@@ -8,6 +8,12 @@
 const { translateGroupLabel, formatRemainingTime } = require('./chartCalculations');
 
 const CHART_TITLE_KEYS = {
+  agingWip: ['board-view-aging-wip', 'Aging WIP'],
+  blockerAnalysis: ['board-view-blocker-analysis', 'Blocker Analysis'],
+  monteCarlo: ['board-view-monte-carlo', 'Monte Carlo Forecasts'],
+  processBehavior: ['board-view-process-behavior', 'Process Behavior (XmR)'],
+  sizeCycleTime: ['board-view-size-cycle-time', 'Work Item Size vs. Cycle Time'],
+
   dashboard: ['board-view-dashboard', 'Dashboard'],
   burndown: ['board-view-burndown', 'Burndown'],
   burnup: ['board-view-burnup', 'Burnup'],
@@ -34,6 +40,9 @@ function round(value) {
 
 function chartExportRows(chartKey, data, translate = (key, fallback) => fallback) {
   const title = chartTitle(chartKey, translate);
+  if (['agingWip', 'blockerAnalysis', 'monteCarlo', 'processBehavior', 'sizeCycleTime'].includes(chartKey)) {
+    return { title, ...require('./flowAnalyticsRows').flowAnalyticsRows(chartKey, data, translate) };
+  }
 
   if (chartKey === 'cumulativeFlow') {
     const listTitles = data.lists.map(list => list.title);
@@ -168,6 +177,7 @@ function chartExportRows(chartKey, data, translate = (key, fallback) => fallback
         ...section(translate('board-status-remaining-time-total', 'Remaining time until due'),
           [[translate('board-status-remaining-time-total', 'Remaining time until due'),
             formatRemainingTime(data.remaining, translate)]]),
+        ...section(translate('time-adjustments', 'Time adjustments by author'), (data.adjustments?.groups || []).map(group => [group.label, group.hours])),
         ...section(translate('assignees', 'Assignees'), data.byAssignee.map(group =>
           [translateGroupLabel(group.label, translate), group.hours])),
         ...section(translate('card', 'Card'), data.byCard.map(card =>

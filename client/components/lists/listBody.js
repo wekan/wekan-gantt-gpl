@@ -12,6 +12,7 @@ import Swimlanes from '/models/swimlanes';
 import { Filter } from '/client/lib/filter';
 import { MultiSelection } from '/client/lib/multiSelection';
 import { Utils } from '/client/lib/utils';
+import { UnsavedEdits } from '/client/lib/unsavedEdits';
 import { isLinkableCardTarget } from '/models/lib/linkedCardTarget';
 import { listCardsSelector } from '/models/lib/swimlaneFilter';
 import { sortWithIdTiebreaker } from '/models/lib/cardSortTiebreaker';
@@ -311,6 +312,7 @@ Template.listBody.onCreated(function () {
           }
           const _id = await Cards.insertAsync(cardFields);
           titleIndex += 1;
+          formComponent.saveTitleDraft(titles.slice(titleIndex).join('\n'));
 
           // if the displayed card count is less than the total cards in the list,
           // we need to increment the displayed card count to prevent the spinner
@@ -826,6 +828,22 @@ function automaticCustomFieldsForCurrentBoard() {
 }
 
 Template.addCardForm.onCreated(function () {
+  this.subscribe('unsaved-edits');
+  const data = Template.currentData();
+  this.titleDraftKey = {
+    fieldName: `newCardTitle:${data.swimlaneId || ''}:${data.position || ''}`,
+    docId: data.listId,
+  };
+  this.titleDraftOwner = Meteor.userId();
+  this.titleDraftEdited = false;
+  this.saveTitleDraft = value => {
+    clearTimeout(this.titleDraftTimer);
+    this.titleDraftPending = undefined;
+    // A logout or impersonation must not save a previous user's draft.
+    if (!this.titleDraftOwner || Meteor.userId() !== this.titleDraftOwner) return;
+    if (value.trim()) UnsavedEdits.set(this.titleDraftKey, value);
+    else UnsavedEdits.reset(this.titleDraftKey);
+  };
   this.labels = new ReactiveVar([]);
   this.members = new ReactiveVar([]);
   this.customFields = new ReactiveVar([]);
@@ -926,6 +944,12 @@ Template.addCardForm.helpers({
 });
 
 Template.addCardForm.events({
+  'input .js-card-title'(event, tpl) {
+    tpl.titleDraftEdited = true;
+    tpl.titleDraftPending = event.currentTarget.value;
+    clearTimeout(tpl.titleDraftTimer);
+    tpl.titleDraftTimer = setTimeout(() => tpl.saveTitleDraft(tpl.titleDraftPending || ''), 300);
+  },
   keydown(evt, tpl) {
     tpl.pressKey(evt);
   },
@@ -950,6 +974,12 @@ Template.addCardForm.events({
 Template.addCardForm.onRendered(function () {
   const tpl = this;
   const $textarea = this.$('textarea');
+
+  this.autorun(() => {
+    if (!this.subscriptionsReady() || this.titleDraftEdited) return;
+    this.$('.js-card-title').val(UnsavedEdits.get(this.titleDraftKey));
+    autosize.update(this.$('.js-card-title'));
+  });
 
   autosize($textarea);
 
@@ -1037,6 +1067,11 @@ Template.addCardForm.onRendered(function () {
   );
 });
 
+Template.addCardForm.onDestroyed(function () {
+  clearTimeout(this.titleDraftTimer);
+  if (this.titleDraftPending !== undefined) this.saveTitleDraft(this.titleDraftPending);
+});
+
 Template.linkCardPopup.onCreated(function () {
   this.selectedBoardId = new ReactiveVar('');
   this.selectedSwimlaneId = new ReactiveVar('');
@@ -1089,7 +1124,6 @@ Template.linkCardPopup.helpers({
       {
         archived: false,
         'members.userId': Meteor.userId(),
-        _id: { $ne: Session.get('currentBoard') },
         type: 'board',
       },
       {
@@ -1142,11 +1176,14 @@ Template.linkCardPopup.helpers({
     if (!tpl.board) {
       return [];
     }
-    const ownCardsIds = tpl.board.cards().map(card => card.getRealId());
+    // A mirror is a new card, so pointing at a real card on this board cannot
+    // create a self-link. Only exclude sources we already mirror (#5683).
+    const mirroredCardIds = tpl.board.cards()
+      .filter(card => card.type === 'cardType-linkedCard')
+      .map(card => card.linkedId);
     const selector = {
       archived: false,
-      linkedId: { $nin: ownCardsIds },
-      _id: { $nin: ownCardsIds },
+      _id: { $nin: mirroredCardIds },
       // #5808: never offer an existing linked card/board as a link target —
       // linking to one builds a chain of linkedId pointers that renders the
       // card inaccessible. Only real cards may be linked.
@@ -1210,8 +1247,8 @@ Template.linkCardPopup.events({
     const linkedId = tpl.$('.js-select-cards').val();
     if (!linkedId) {
       const boardId = tpl.$('.js-select-boards').val();
-      // No board and no card selected: nothing to link.
-      if (!boardId) {
+      // No source selected, or a whole-board self-link: nothing to link.
+      if (!boardId || boardId === tpl.boardId) {
         Popup.back();
         return;
       }
@@ -1241,8 +1278,10 @@ Template.linkCardPopup.events({
     // the cards inaccessible. The <select> already filters these out, but its
     // options can be stale, so re-check the resolved target here.
     const targetCard = ReactiveCache.getCard(linkedId);
-    const ownCardsIds = tpl.board.cards().map(card => card.getRealId());
-    if (!isLinkableCardTarget(targetCard, ownCardsIds)) {
+    const mirroredCardIds = tpl.board.cards()
+      .filter(card => card.type === 'cardType-linkedCard')
+      .map(card => card.linkedId);
+    if (!isLinkableCardTarget(targetCard, mirroredCardIds)) {
       alert(TAPi18n.__('error-linked-card-not-allowed'));
       Popup.back();
       return;
@@ -1273,6 +1312,7 @@ Template.linkCardPopup.events({
     evt.preventDefault();
     const impBoardId = tpl.$('.js-select-boards').val();
     if (
+      impBoardId === tpl.boardId ||
       !impBoardId ||
       ReactiveCache.getCard({ linkedId: impBoardId, archived: false })
     ) {

@@ -22,6 +22,12 @@ view, Member settings, `Activities`, `userPositionHistory`, `docs/Features/Undo/
 >   hook it also catches the REST API, the importers and the rules engine, none
 >   of which go through the client setters. Moves and the list soft delete record
 >   themselves, as one change each, rather than as several field edits.
+> * **List deletion batches** — undo/restore clears the deletion markers from
+>   the list and the cards deleted with it. Redo reapplies the deletion to live
+>   cards in that list. Cards deleted independently retain their own batch and
+>   are not revived by list undo. Queries remain scoped to the same board/list;
+>   moving a list to another board makes its old lifecycle row inapplicable.
+>   Permanent purges cannot be undone.
 > * **The read side and restore** — `server/models/changeHistory.js`:
 >   `changeHistory.page`, `.restore` (dual re-logging, oldest-to-newest, one
 >   batch), `.undoLast` and `.redoLast`.
@@ -521,3 +527,45 @@ Decided (maintainer, 2026-09). These are rules, not proposals; the tests under
   popup/table state on the template instance / `ReactiveDict`.
 - **Pagination/search/selection as pure functions** (à la `models/lib/undoRedoSelection.js`) so the
   logic is unit-testable without the Meteor/Blaze runtime.
+
+## Dependency history for flow reports
+
+The card field map also records `cardDependencies`, including dependencies on
+newly inserted cards. This uses the existing timestamped before/after rows and
+restore mechanism. [Blocker Analysis](../Charts/Flow-Analytics.md) replays those
+rows together with date, lifecycle and position history to derive per-stage
+blocked intervals. No second history collection is introduced. Links created
+before recording began retain unknown starts instead of fabricated dates.
+
+
+### Move reasons and retained time records (#1598)
+
+Card moves now record one whole position in the central collection update hook,
+including `lastMoveReason`. Direct REST card updates call that same recorder
+with their authenticated before/after documents. Undo and redo restore the
+position and reason together. **Board Settings → Card Settings → Ask for a
+reason when moving cards** enables an optional prompt for interactive list
+moves. The Move Card dialog always offers the optional reason field. REST
+card updates accept `moveReason` alongside the destination; reasons are trimmed
+and limited to 1,000 characters. Automated moves do not display a prompt.
+
+Deleting a card, checklist or checklist item keeps its timestamped Activities
+in the board feed. A card deletion also stores its last document in a lifecycle
+History row, for historical chart inputs. This does not make permanent card
+removal reversible: child documents and attachment bytes are not restored by
+that snapshot. Previously purged activity cannot be recovered. Whole-board
+purging keeps its existing retention behavior.
+
+**Board View → Time** adds an adjustment audit: each recorded `spentTime`
+change, its exact timestamp, card, author, delta and resulting total, plus
+net adjustments grouped by author. PDF/Excel exports include the same rows.
+Negative deltas represent corrections; setting the total to zero is supported
+through REST as well as the existing editor. These are changes to a shared
+counter, not evidence of individual work sessions. The existing current-card
+and current-assignee totals keep their meaning. Older totals with no change
+history cannot be attributed retrospectively.
+
+Undo/redo also append timestamped reversal checkpoints to History. These rows
+remain outside the undo stack, but reports replay them so reversing a dependency
+or hour adjustment does not leave the chart showing the pre-undo state. Restore
+provenance rows are counted once in the time audit, under the restoring author.

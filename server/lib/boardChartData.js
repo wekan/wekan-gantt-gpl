@@ -28,19 +28,45 @@ const {
   computeRemainingTimeSum,
 } = require('/models/lib/chartCalculations');
 
-export async function loadBoardChartData(boardId, chartKey) {
+export async function loadBoardChartData(boardId, chartKey, options = {}) {
   const board = await ReactiveCache.getBoard(boardId);
   if (!board) return null;
 
   const lists = await ReactiveCache.getLists({ boardId, archived: false }, { sort: { sort: 1 } });
+  const { FLOW_CHART_KEYS, computeFlowAnalytics } = require('/models/lib/flowAnalytics');
+  const advanced = FLOW_CHART_KEYS.includes(chartKey);
   const cardFields = {
     fields: {
       title: 1, listId: 1, createdAt: 1, archivedAt: 1, archived: 1,
       startAt: 1, endAt: 1, dueAt: 1, spentTime: 1, isOvertime: 1,
       assignees: 1, members: 1, labelIds: 1,
+      ...(advanced ? { boardId: 1, poker: 1, customFields: 1, cardDependencies: 1, deletedAt: 1 } : {}),
     },
   };
   const allCards = await Cards.find({ boardId }, cardFields).fetchAsync();
+  if (advanced) {
+    const ChangeHistory = require('/models/changeHistory').default;
+    const [events, history, fields] = await Promise.all([
+      ['agingWip', 'blockerAnalysis'].includes(chartKey) ? Activities.find(
+        { boardId, activityType: { $in: ['createCard', 'moveCard', 'moveCardBoard', 'archivedCard', 'restoredCard'] } },
+        { fields: { cardId: 1, listId: 1, oldListId: 1, createdAt: 1, activityType: 1 } },
+      ).fetchAsync() : [],
+      ChangeHistory.find(
+        { boardId, entityType: 'card', group: { $in: ['position', 'dates', 'lifecycle', 'dependencies'] } },
+        { fields: { entityType: 1, entityId: 1, group: 1, previousContent: 1, newContent: 1, createdAt: 1 } },
+      ).fetchAsync(),
+      chartKey === 'sizeCycleTime' ? ReactiveCache.getCustomFields({ boardIds: boardId, type: 'number' }) : [],
+    ]);
+    // Universal position history also covers restores. Its newer position
+    // wins over an earlier activity; same-list records do not reset age.
+    for (const row of history.filter(row => row.group === 'position')) {
+      events.push({ cardId: row.entityId, listId: row.newContent?.listId,
+        oldListId: row.previousContent?.listId, createdAt: row.createdAt, activityType: 'moveCard' });
+    }
+    const { withRemovedCards } = require('/models/lib/timeHistory');
+    return computeFlowAnalytics(chartKey, withRemovedCards(allCards, history, boardId), lists, events, fields, options, new Date(), history);
+  }
+
   const firstCreatedAt = allCards.reduce(
     (min, card) => (!min || card.createdAt < min ? card.createdAt : min), null);
   const fromDate = firstCreatedAt || new Date();
@@ -109,7 +135,10 @@ export async function loadBoardChartData(boardId, chartKey) {
 
   if (chartKey === 'dashboard' || chartKey === 'time' || chartKey === 'groupByAssignee') {
     const usersById = {};
-    const userIds = new Set();
+    const adjustmentsHistory = chartKey === 'time'
+      ? await require('/models/changeHistory').default.find({ boardId, entityType: 'card',
+        $or: [{ 'newContent.field': 'spentTime' }, { 'previousContent.field': 'spentTime' }, { group: 'lifecycle' }] }).fetchAsync() : [];
+    const userIds = new Set(adjustmentsHistory.map(row => row.userId).filter(Boolean));
     allCards.forEach(card => (card.assignees || []).forEach(id => userIds.add(id)));
     await Promise.all([...userIds].map(async id => {
       usersById[id] = await ReactiveCache.getUser({ _id: id });
@@ -121,7 +150,10 @@ export async function loadBoardChartData(boardId, chartKey) {
       // how many hours, and which cards those hours went to. Matches the
       // Time view's own "archived: false" summary above it.
       const activeCards = allCards.filter(card => !card.archived);
+      const { timeAdjustments, withRemovedCards } = require('/models/lib/timeHistory');
+      const titles = new Map(withRemovedCards(allCards, adjustmentsHistory, boardId).map(card => [card._id, card.title]));
       return {
+        adjustments: timeAdjustments(adjustmentsHistory, nameOf, id => titles.get(id) || id),
         byAssignee: computeTimeByGroup(activeCards, card =>
           (card.assignees || []).map(id => ({ key: id, label: nameOf(id) })), NO_ASSIGNEE_GROUP),
         byCard: computeTimeByCard(activeCards),
