@@ -7,6 +7,7 @@ template(name="listHeader")
     class=colorClass
     style=colorStyle)
     +structuralSelectionCheckbox(kind="list" id=_id label=title)
+    +scrumMetadata(kind="list" record=this)
     //- #459: keyboard/screen-reader list reordering (visually hidden, focusable).
     .list-move-buttons.sr-only
       a.js-list-move-left(href="#" role="button" aria-label="{{_ 'move-list-left'}}") {{_ 'move-list-left'}}
@@ -442,6 +443,16 @@ template(name="listSyncPopup")
       label {{_ 'list-sync-project-key'}}
       p
         input.list-sync-project-key.js-list-sync-project-key(type="text" value="{{currentSyncProjectKey}}" placeholder="{{_ 'list-sync-project-key-placeholder'}}")
+      each syncTextFields
+        p
+          a.flex.js-toggle-sync-field(data-field=field)
+            .materialCheckBox(class="{{#if checked}}is-checked{{/if}}")
+            span {{_ label}}
+      each syncOperations
+        p
+          a.flex.js-toggle-sync-operation(data-operation=operation)
+            .materialCheckBox(class="{{#if checked}}is-checked{{/if}}")
+            span {{_ label}}
       label {{_ 'list-sync-credential'}}
       p.quiet.list-sync-credential-status {{ listSyncCredentialStatusText }}
       p

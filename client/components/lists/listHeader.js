@@ -876,6 +876,11 @@ Template.listSyncPopup.onCreated(function () {
   // as a boolean from the existing hasListSyncCredential method, the same
   // secret-safety discipline as the LDAP Admin Panel override's bind
   // password (client/components/settings/settingBody.js, models/lib/configResolver.js).
+  tpl.selectedSyncFields = new ReactiveVar(list?.syncSource?.fields || ['title', 'description']);
+  tpl.selectedSyncOperations = new ReactiveVar({
+    createCards: list?.syncSource?.createCards !== false,
+    archiveCards: list?.syncSource?.archiveCards !== false,
+  });
   tpl.hasCredential = new ReactiveVar(false);
   tpl.syncNowResult = new ReactiveVar('');
   tpl.syncNowSuccess = new ReactiveVar(true);
@@ -893,6 +898,18 @@ Template.listSyncPopup.onCreated(function () {
 });
 
 Template.listSyncPopup.helpers({
+  syncOperations() {
+    const selected = Template.instance().selectedSyncOperations.get();
+    return [
+      { operation: 'createCards', label: 'add-card', checked: selected.createCards },
+      { operation: 'archiveCards', label: 'archive-card', checked: selected.archiveCards },
+    ];
+  },
+  syncTextFields() {
+    const fields = Template.instance().selectedSyncFields.get();
+    const choices = Template.instance().selectedSyncType.get() === 'jira' ? ['title', 'description', 'spentTime'] : ['title', 'description'];
+    return choices.map(field => ({ field, label: field === 'spentTime' ? 'spent-time-hours' : field, checked: fields.includes(field) }));
+  },
   listSyncSourceTypes() {
     return SYNC_CAPABLE_SOURCES;
   },
@@ -955,6 +972,18 @@ Template.listSyncPopup.helpers({
 });
 
 Template.listSyncPopup.events({
+  'click .js-toggle-sync-operation'(event, tpl) {
+    event.preventDefault();
+    const operation = event.currentTarget.dataset.operation;
+    const selected = tpl.selectedSyncOperations.get();
+    tpl.selectedSyncOperations.set({ ...selected, [operation]: !selected[operation] });
+  },
+  'click .js-toggle-sync-field'(event, tpl) {
+    event.preventDefault();
+    const field = event.currentTarget.dataset.field;
+    const selected = tpl.selectedSyncFields.get();
+    tpl.selectedSyncFields.set(selected.includes(field) ? selected.filter(value => value !== field) : [...selected, field]);
+  },
   'change .js-list-sync-type'(event, tpl) {
     tpl.selectedSyncType.set(event.currentTarget.value);
   },
@@ -976,6 +1005,8 @@ Template.listSyncPopup.events({
       url,
       projectKey,
       enabled: tpl.selectedSyncEnabled.get(),
+      fields: tpl.selectedSyncFields.get(),
+      ...tpl.selectedSyncOperations.get(),
       // Leaving the credential field blank keeps whatever is already stored
       // - setListSyncSource only overwrites it when a non-empty token is
       // sent (server/methods/listSync.js).
@@ -998,11 +1029,11 @@ Template.listSyncPopup.events({
     if (!list || !list._id) return;
     tpl.syncNowResult.set(TAPi18n.__('list-sync-now-pending'));
     Meteor.call('syncListNow', list._id, (err, res) => {
-      if (err) {
+      if (err || res?.error) {
         tpl.syncNowSuccess.set(false);
         tpl.syncNowResult.set(
           TAPi18n.__('list-sync-now-error', {
-            sprintf: [err.reason || err.message || ''],
+            sprintf: [err?.reason || err?.message || res?.error || ''],
           }),
         );
       } else {

@@ -1,5 +1,8 @@
 import { ReactiveCache } from '/imports/reactiveCache';
 import { formatMarkdownKanban } from './markdownKanbanFormat';
+const { jiraTimeTrackingExport } = require('./jiraTimeTracking');
+const { jiraScrumMetadataExport } = require('./jiraScrumMetadata');
+const { jiraEstimateExportMapping, jiraEstimateExportValue } = require('./jiraEstimateMapping');
 
 // Generalized export: collect a WeKan board into a neutral intermediate, then a
 // per-format formatter emits the target platform's JSON shape. This mirrors the
@@ -8,8 +11,9 @@ import { formatMarkdownKanban } from './markdownKanbanFormat';
 // #1173: what the export selection can reach in these formats.
 //
 // A Trello, Jira or GitHub export is a card's title, description, due date and
-// labels - it has no comments, checklists or attachments to leave out. So the
-// selection gates the three parts that ARE here and nothing else, which is the
+// labels; Jira also carries time tracking, gated during collection by Dates
+// and Custom Fields. These formats have no comments, checklists or attachments.
+// Selection gates the parts that ARE here and nothing else, which is the
 // honest answer: a format drops what it has.
 function gateItem(item, wanted) {
   if (!wanted) return item;
@@ -20,18 +24,26 @@ function gateItem(item, wanted) {
   return out;
 }
 
-async function collect(boardId, fields) {
+async function collect(boardId, fields, format) {
   const board = await ReactiveCache.getBoard(boardId);
   const lists = await ReactiveCache.getLists({ boardId, archived: false }, { sort: { sort: 1 } });
   const swimlanes = await ReactiveCache.getSwimlanes({ boardId, archived: false }, { sort: { sort: 1 } });
   const cards = await ReactiveCache.getCards({ boardId, archived: false }, { sort: { sort: 1 } });
   const listById = {};
+  const listRecords = new Map(lists.map(list => [list._id, list]));
   lists.forEach(l => { listById[l._id] = l.title; });
   const swById = {};
   swimlanes.forEach(s => { swById[s._id] = s.title; });
   const labelById = {};
   (board.labels || []).forEach(l => { labelById[l._id] = l.name; });
+  const wanted = fields && fields.length ? new Set(fields) : null;
+  const timeFields = format === 'jira' && (!wanted || wanted.has('custom-fields'))
+    ? await ReactiveCache.getCustomFields({ boardIds: boardId, type: 'number' }) : [];
+  const estimateMapping = format === 'jira' ? jiraEstimateExportMapping(timeFields, wanted) : null;
   const items = cards.map(c => ({
+    ...(format === 'jira' ? { jiraEstimate: jiraEstimateExportValue(c, estimateMapping) } : {}),
+    ...(format === 'jira' ? { timetracking: jiraTimeTrackingExport(c, timeFields, wanted) } : {}),
+    ...(format === 'jira' ? { jiraScrum: jiraScrumMetadataExport(c, listRecords.get(c.listId), wanted) } : {}),
     cardId: c._id,
     listId: c.listId,
     title: c.title,
@@ -42,8 +54,8 @@ async function collect(boardId, fields) {
     labelIds: c.labelIds || [],
     labels: (c.labelIds || []).map(id => labelById[id]).filter(Boolean),
   }));
-  const wanted = fields && fields.length ? new Set(fields) : null;
-  return { board, lists, swimlanes, items: items.map(item => gateItem(item, wanted)) };
+  return { board, lists, swimlanes, jiraEstimateMapping: estimateMapping,
+    items: items.map(item => gateItem(item, wanted)) };
 }
 
 // A WeKan list maps to a "closed" issue state when its name looks terminal.
@@ -72,6 +84,7 @@ const formatters = {
           title: i.title,
           description: i.description,
           duedate: i.dueAt,
+        ...(Object.keys(i.timetracking || {}).length ? { timetracking: i.timetracking } : {}),
           labels: i.labels.map(name => ({ title: name })),
         })),
     })),
@@ -121,16 +134,23 @@ const formatters = {
     actions: [],
   }),
   // Jira issues collection (round-trips with WeKan's Jira import).
-  jira: ({ board, items }) => ({
+  jira: ({ board, items, jiraEstimateMapping }) => ({
     board: { name: board.title },
+    ...(jiraEstimateMapping ? {
+      wekanScrumMapping: { estimateFieldId: jiraEstimateMapping.estimateFieldId, estimateUnit: jiraEstimateMapping.estimateUnit },
+      schema: { [jiraEstimateMapping.estimateFieldId]: { type: 'number' } },
+    } : {}),
     issues: items.map((i, idx) => ({
       key: `WEKAN-${idx + 1}`,
       fields: {
         summary: i.title,
         description: i.description,
-        status: { name: i.listTitle },
+        status: { name: i.listTitle, ...(i.jiraScrum?.statusCategory ? { statusCategory: i.jiraScrum.statusCategory } : {}) },
+        ...(i.jiraScrum?.issuetype ? { issuetype: i.jiraScrum.issuetype } : {}),
+        ...(i.jiraEstimate || {}),
         labels: i.labels,
         duedate: i.dueAt,
+        ...(Object.keys(i.timetracking || {}).length ? { timetracking: i.timetracking } : {}),
       },
     })),
   }),
@@ -170,7 +190,7 @@ export const EXTERNAL_EXPORT_FORMATS = Object.keys(formatters);
 export async function buildExternalExport(boardId, format, fields) {
   const formatter = formatters[format];
   if (!formatter) return null;
-  const formatted = formatter(await collect(boardId, fields));
+  const formatted = formatter(await collect(boardId, fields, format));
   return require('/server/lib/secureTransfer').secureTransfer(formatted, {
     direction: 'export', source: `export:${format}`,
   });

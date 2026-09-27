@@ -408,9 +408,30 @@ controls have their own lists in [Search](../Page/Search.md) and
 
 ## Archive or duplicate a board
 
-In the right sidebar's Multi-selection actions, **Duplicate Board** copies
-selected boards with their cards. Directly below it, **Duplicate Board — Without
-cards** copies the selected boards' structure without cards. Both actions ask
-for confirmation and use the existing board-administrator permission checks.
+In the right sidebar's Multi-selection actions, **Duplicate Board** opens a
+selection popup for all selected boards. All choices start selected. **Select
+All** and **Select None** change the whole selection; **Cancel** leaves the
+boards unchanged. Press **Duplicate Board** in the popup to make the copies.
+
+Choose swimlanes, lists, labels, custom fields, rules, outgoing webhooks, cards,
+checklists (including their items), comments, attachments and Scrum. Selecting a child
+also selects its required parents: comments need cards, cards need lists, and
+lists need swimlanes. Clearing a parent clears its dependent choices. For a copy
+without cards, clear **Cards**. For just an empty board, use **Select None**.
+A default swimlane may be created later when the empty board is opened.
+
+Scrum includes custom fields needed by estimates. Clearing custom fields also
+clears Scrum. Planning records and copied item references receive destination
+IDs; reduced snapshots in copies without some cards are marked partial in
+reports and exports. Clearing Scrum omits its settings and item metadata.
+
+Board settings, visibility and membership retain the existing duplication
+behavior. The operation still requires board-administrator permission on each
+source board. No copied history is taken from the source; creation of the new
+board and its contents can produce fresh events. Source boards remain intact.
+Cards keep their relationships to other copied cards; excluded labels, custom
+field values and attachment covers are omitted. The old standalone **Duplicate
+Board — Without cards** action has been removed from Multi-selection.
+
 Board tiles have no Actions hamburger menu; use the multiselection sidebar to
 archive selected boards.

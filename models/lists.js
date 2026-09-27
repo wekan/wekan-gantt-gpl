@@ -89,6 +89,9 @@ export function normalizeListColor(color) {
  */
 Lists.attachSchema(
   new SimpleSchema({
+    // Scrum metadata is optional and hidden by default; only validated methods write it.
+    scrum: { type: Object, optional: true, blackbox: true },
+    scrumRevision: { type: Number, optional: true, min: 0 },
     title: {
       /**
        * the title of the list
@@ -318,6 +321,10 @@ Lists.attachSchema(
       type: String,
       optional: true,
     },
+    'syncSource.fields': { type: Array, optional: true },
+    'syncSource.createCards': { type: Boolean, optional: true },
+    'syncSource.archiveCards': { type: Boolean, optional: true },
+    'syncSource.fields.$': { type: String, allowedValues: ['title', 'description', 'spentTime'] },
     'syncSource.enabled': {
       type: Boolean,
       optional: true,
@@ -374,10 +381,13 @@ Lists.helpers({
 
     let _id = plan.listId;
     if (plan.action === 'create') {
-      this.boardId = boardId;
-      this.swimlaneId = plan.swimlaneId; // Set the target swimlane for the copied list
-      delete this._id;
-      _id = await Lists.insertAsync(this);
+      const { copiedScrumMetadata } = require('./lib/scrumCopy');
+      const copy = { ...this, boardId, swimlaneId: plan.swimlaneId };
+      delete copy._id;
+      delete copy.scrum;
+      delete copy.scrumRevision;
+      Object.assign(copy, copiedScrumMetadata(this, boardId));
+      _id = await Lists.insertAsync(copy);
     }
 
     // Copy all cards in list. Every card of the source list travels, whatever
@@ -436,7 +446,9 @@ Lists.helpers({
             'Give it a title first.',
         );
       }
+      const { copiedScrumMetadata } = require('./lib/scrumCopy');
       listId = await Lists.insertAsync({
+        ...copiedScrumMetadata(this, boardId),
         title: this.title,
         boardId,
         type: this.type,
@@ -805,3 +817,13 @@ Lists.helpers({
 });
 
 export default Lists;
+
+// Prevent direct DDP writes bypassing Scrum reference and lifecycle validation.
+if (Meteor.isServer) {
+  Lists.deny({
+    insert(userId, doc) { return doc.scrum !== undefined || doc.scrumRevision !== undefined; },
+    update(userId, doc, fields) {
+      return fields.some(field => field === 'scrum' || field.startsWith('scrum.') || field === 'scrumRevision');
+    },
+  });
+}

@@ -5,7 +5,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'models/cards.js'), 'utf8');
-const copyBody = source.slice(source.indexOf('  async copy(boardId, swimlaneId, listId, cardIdMap = null) {'), source.indexOf('\n  async link('));
+// Keep exercising the runtime body when optional copy-pipeline arguments grow.
+const copyBody = source.slice(source.indexOf('  async copy('), source.indexOf('\n  async link('));
 const linkStart = source.indexOf('  async link(');
 const linkBody = source.slice(linkStart, source.indexOf('\n  list()', linkStart));
 const { normalizeDependencies } = await import('../models/metadata/dependencies.js');
@@ -15,6 +16,7 @@ async function exercise({ sameBoard = false, cache = true, fail = false, withChi
   const original = {
     _id: 'original', boardId: 'source', swimlaneId: 'old-swimlane', listId: 'old-list',
     title: 'Template', labelIds: ['source-label'],
+    syncExternalId: 'KEY-1', syncSourceType: 'jira', syncLastSource: { title: 'Template' },
     customFields: [{ _id: 'source-field', value: 'kept' }],
     cardDependencies: [{ cardId: 'destination-card', type: 'related' }, { cardId: 'missing-card', type: 'related' }],
     ...(cache ? { __id: 'original' } : {}),
@@ -27,6 +29,7 @@ async function exercise({ sameBoard = false, cache = true, fail = false, withChi
   const Cards = { async insertAsync(document) {
     assert.equal(Object.hasOwn(document, '__id'), false, 'runtime cache must not reach schema validation');
     assert.equal(Object.hasOwn(document, '_id'), false, 'copies require a new document ID');
+    for (const key of ['syncExternalId','syncSourceType','syncLastSource']) assert.equal(Object.hasOwn(document,key),false, 'copies must not inherit Sync identity');
     if (fail) throw new Error('insert rejected');
     inserted.push(structuredClone(document)); return `new-${inserted.length}`;
   } };

@@ -59,12 +59,10 @@ test('rules.updateRule keeps the rule, trigger and action _ids stable (update, n
   // It must reuse rule.triggerId/rule.actionId when they already exist,
   // rather than always inserting new trigger/action documents (which is
   // what a "delete and recreate" implementation would do).
-  assert.match(block, /let triggerId = rule\.triggerId/);
-  assert.match(block, /let actionId = rule\.actionId/);
-  assert.match(block, /Triggers\.updateAsync\(triggerId, triggerDoc\)/);
-  assert.match(block, /Actions\.updateAsync\(actionId, actionDoc\)/);
+  assert.match(block, /writeRuleComponent\(rule, 'trigger', triggerDoc\)/);
+  assert.match(block, /writeRuleComponent\(rule, 'action', actionDoc\)/);
   // The rule document itself is updated by _id, never removed/reinserted.
-  assert.match(block, /Rules\.updateAsync\(ruleId, \{ \$set: ruleSet \}\)/);
+  assert.match(block, /Rules\.updateAsync\(ruleId, \{ \.\.\.buttonModifier, \$set: \{ \.\.\.ruleSet, \.\.\.buttonModifier\.\$set \} \}\)/);
 });
 
 test('negative: rules.updateRule never calls Rules.removeAsync or a fresh Rules.insertAsync', () => {

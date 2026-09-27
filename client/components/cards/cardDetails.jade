@@ -168,6 +168,7 @@ template(name="cardDetails")
           if $eq section "description"
             +cardFieldSectionDescription
 
+      +scrumMetadata(kind="card" record=this)
       .card-checklist-attachmentGalleries
         .card-checklist-attachmentGallery.card-checklists
           if currentBoard.allowsChecklists
@@ -1031,6 +1032,12 @@ template(name="cardDetailsActionsPopup")
           else
             i.fa.fa-eye
             |  {{_ 'watch'}}
+    hr
+    ul.pop-over-list
+      li
+        a.js-filter-subtasks
+          i.fa.fa-filter
+          | {{_ 'filter'}}: {{_ 'subtasks'}}
     hr
     //- #1172: star/unstar this card - same toggle pattern as the board star.
     ul.pop-over-list

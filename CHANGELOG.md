@@ -90,7 +90,137 @@ A cause specific to MongoDB or legacy data has not been established.
 </details>
 
 <details>
-<summary>Local translation repairs and validation in progress.</summary>
+<summary>Development paused for release: handoff of unfinished work.</summary>
+
+All implementation, translation and audit work is paused at the maintainer's
+request on 2026-09-27. Resume only when requested. No subagents are running.
+The working tree was clean before this documentation handoff; completed changes
+already have feature/fix-specific local commits and Upcoming entries. Nothing
+was pushed, and no release/version changes were made by this handoff.
+
+**Scrum:** Product Backlog, Sprints, release/event editors, optional hidden
+metadata, team/calendar settings, commitment/result snapshots, Sprint Report
+and Velocity charts and Excel/PDF exports are implemented with focused tests.
+History supports revision checks, compound recovery checkpoints and undo/redo.
+Native whole-board export/import and duplication remap planning records and
+snapshots, validate lifecycle/policy consistency, and report reduced data.
+Standalone copies preserve applicable metadata and drop foreign references;
+list categories survive new destination containers during moves. Remaining:
+daily scope history and burndown, atomic original writes/History, large-board
+limits, complete cross-board move/reference/undo coordination, standalone
+planning-record mapping, existing-board scoped import and History transport.
+Some earlier design paragraphs still describe now-implemented copy/estimate
+work as pending; reconcile them with the linked commits before resuming.
+See the [Scrum design](docs/Features/Right-Sidebar/Board-Settings/Board-View/Scrum-Design.md).
+
+**External Scrum data and Sync:** Jira time totals, issue types, explicit status
+categories and explicitly selected numeric estimate fields now import/export
+through existing fields. Native copies retain the estimate mappings. Sync
+offers title/description/spent-time selection and controls for creating and
+archiving cards, with existing authorization and local-change checks.
+Remaining: external sprint histories without invented snapshots, multiple
+release assignments, epic relationships, automatic field/schema mapping,
+Trello and other Scrum adapters, mapping previews/loss reporting, planning and
+estimate Sync, project-scoped source identity, credential/source-switch
+boundaries, atomic concurrent jobs and conflict-resolution UI.
+See [Jira](docs/Features/ImportExport/Jira/Jira.md) and
+[Sync](docs/Features/ImportExport/Sync.md).
+
+**IFTTT Rules, Blocks, Workflows and History:** editable lazy-loaded Blocks,
+board-admin checks, responsive themed layouts and compound History are in
+place. DDP/REST edits, shared trigger/action records, deletion/restore and
+manual-button metadata have regression coverage. Writes across documents are
+not transactional; concurrent-write recovery and failed-creation orphan cleanup
+still require work. The combined checkpoint passed 45 Node runner checks and
+18 Chromium scenarios; later Gujarati editing also passed. These are focused
+results, not certification of every language or concurrency scenario.
+See [Blocks](docs/Features/Automation/Rules/Blocks.md) and
+[History](docs/Features/Reports/History/History.md).
+
+**Charts, time tracking and requested UI changes:** the five flow-report pages
+and PDF/Excel exports reuse board data, dependencies and recorded History.
+Dependency changes, move reasons and author-attributed time adjustments have
+implementation/test records. The requested date/card popup positioning,
+swimlane option layout, Enter/multiline editors, themed buttons, responsive
+menus, language picker and board multiselection/duplication changes have local
+implementation and audit records. A complete requirement-by-requirement
+recheck across themes, RTL, widths and platforms remains unfinished; do not
+treat a focused pass as completion of every requested UI audit.
+See [flow analytics](docs/Features/Reports/Charts/Flow-Analytics.md),
+[time issues](docs/Features/Reports/Charts/Time-Issue-Audit.md),
+[editor audit](docs/DeveloperDocs/Editor-Enter-Audit.md),
+[popup audit](docs/DeveloperDocs/Popup-Layout-Audit.md) and
+[menu results](docs/Features/Menu-Audit-Results.md).
+
+**Issues and security:** the 2026-09-27 inventory triaged 140 open issues;
+triage is not implementation. Verified fixes and already-fixed closures have
+local commits, while unresolved requests retain their dispositions. Do not
+close umbrella requests or claim all open issues fixed. Authentication,
+assigned-only export and History authorization fixes and their verification
+are recorded in Upcoming; this is not a completed audit of every boundary.
+Further source review includes card-copy override inputs and legacy direct
+Rules writes, which are leads to validate, not confirmed vulnerabilities.
+Examples of unfinished inventory work include the
+[archived-card heatmap](https://github.com/wekan/wekan/issues/5444) and
+[additional database conformance runs](https://github.com/wekan/wekan/issues/6509).
+Live identity providers, affected deployment data, additional browser/backend
+matrices and remaining UI baseline failures still require verification.
+See the [issue inventory](docs/DeveloperDocs/All-Open-Issues-Audit-2026-09-27.md),
+[verified issue work](docs/DeveloperDocs/Open-Issue-Audit-2026-09-27.md) and
+[authentication audit](docs/Security/Authentication-Boundary-Audit-2026-09-27.md).
+
+**Release/mirroring and verification:** mirroring changes have local code,
+tests and [documentation](docs/DeveloperDocs/Forge-Mirroring.md). Actual remote
+mirroring, host-key acceptance, publishing and releases remain human operations.
+Latest focused application checks used local Meteor/MongoDB and Chromium;
+they do not establish full FerretDB, Firefox/WebKit, mobile or live-provider
+coverage. Earlier broad audit failures remain in their audit documents until
+reproduced and resolved. No complete release build/test matrix was run for
+this pause. Older TODO Later entries below remain applicable and are not
+implicitly completed by this handoff. Translation status follows separately.
+
+</details>
+
+<details>
+<summary>Blockly translations paused for release; remaining languages and review.</summary>
+
+Paused again at the maintainer's request on 2026-09-27 for the next release.
+Gujarati Blockly prose and Blocks-editor messages now have placeholder coverage;
+resume the remaining catalogs and terminology review only when requested.
+The editable Blocks view
+remains available. All 696 Blockly messages have WeKan message-key coverage,
+but translation into every WeKan language is unfinished.
+
+The latest completed batch covers hi, hi-IN, ta, kn, bn, ne and ur; the prior
+batch covers fur, lld, rm and rup. Earlier completed batches are recorded in
+Upcoming. Gujarati (gu-IN) has completed prose filling after resumption, with
+specialist terminology still pending native review. Marathi
+(mr), Malayalam (ml), Punjabi (pa), Sinhala (si) and Telugu (te-IN) were not
+started in the interrupted assignment.
+Additional language catalogs remain incomplete, including minority and
+constructed languages. Completed low-confidence terminology still needs
+native-speaker review; structural validation does not establish fluency.
+
+Pause checkpoint: 246 locale files pass Blockly message coverage, source key
+order and placeholder checks. The refreshed read-only report finds 62,562
+prose-like English-identical values, with 116 catalogs above 50. Gujarati has
+27 report matches; explicit regression exceptions cover retained notation,
+platform brands and printed key names. Seven catalog checks, 21 preservation
+checks and the Gujarati Chromium drag/edit/save/menu scenario last passed.
+These are triage counts, not exact missing-translation counts: keycap names,
+brands, mathematical terms, cognates and regional copies are included.
+Run `node releases/translations/import-blockly.cjs --report` to refresh them.
+Preserve correct human translations and all source placeholders on resumption.
+No external translation service or remote translation upload was used.
+
+</details>
+
+<details>
+<summary>Local translation repairs and validation paused; review remains.</summary>
+
+All work in this older audit queue is also paused for the 2026-09-27 release
+handoff. The dated findings below are retained as historical checkpoints;
+they do not supersede the pause or prove global translation completion.
 
 Resumed at the maintainer's request on 2026-09-13, beginning with Klingon.
 As of 2026-09-16, all 20,081 original findings are classified:
@@ -229,7 +359,7 @@ doubts and asks for a Windows/AD-experienced contributor).
 </details>
 
 <details>
-<summary>Need the running app to reproduce/verify (runtime UI or publication/mergebox state), not unit-testable here.</summary>
+<summary>Pending affected-data or database-backend verification.</summary>
 
 [#6692](https://github.com/wekan/wekan/issues/6692#issuecomment-5811473169)
 (the invitation account-block and anonymous metadata-subscription defects are
@@ -237,10 +367,6 @@ fixed; the separate HistoryIntegrity checksum mismatch needs the affected
 stored row and predecessor to reproduce. Do not regenerate hashes to hide it.
 See [investigation notes](docs/DeveloperDocs/LDAP-6692.md)).
 
-[#1942](https://github.com/wekan/wekan/issues/1942) (a card linked from board A
-into board B shows a blank view / freezes when the viewer has no rights on board
-A — the linked-card open resolves the real card the viewer cannot see; needs a
-runtime permission + reactive-close-on-no-access fix verified live),
 [#6509](https://github.com/wekan/wekan/issues/6509) — which is a request to TEST
 FerretDB v1 on MySQL, MariaDB and SAP HANA, and is mostly answered: the
 conformance harness (`./build.sh` → Tests → All databases) runs one catalogue of
@@ -295,9 +421,10 @@ reminder on a card's due date with a per-board offset — labelled Feature; the
 built-in due-date reminder already exists (`NOTIFY_DUE_DAYS_BEFORE_AND_AFTER`,
 improved in #3192), so the remaining ask is the per-board offset UI + a webhook
 reminder, a feature; [#4278](https://github.com/wekan/wekan/issues/4278) asks
-for the same reminder as a rule action, which needs a scheduled/deferred
-trigger the rule engine does not have today — every existing trigger fires on
-an immediate event, not a future point in time),
+for rule email reminders to assigned people when a card is due, overdue or
+starting. Scheduled due/overdue triggers already exist in
+`server/scheduledRules.js`; resolving assignee email recipients and scheduling
+start-date reminders remain missing),
 [#4294](https://github.com/wekan/wekan/issues/4294) (rule actions should
 support a limited set of variables, e.g. assigning a card to its creator by
 default — the acting-user member option and email variables already exist, but
@@ -345,11 +472,6 @@ this-week/next-week/no-date states; the remaining gap is filtering by
 `createdAt`/`receivedAt`/`endAt` rather than only `dueAt`, which needs a
 decision on whether to generalize `DateFilter` to a chosen date FIELD or add
 one `DateFilter` per date field, since today's UI hard-codes "due date"),
-[#1871](https://github.com/wekan/wekan/issues/1871) (filter subtasks by
-their parent card - subtasks are cards linked via `parentId`, and no
-existing `SetFilter` targets that relation; needs a decision on UI: a
-parent-card picker in the sidebar, versus a `parent:<title>` token in the
-existing advanced/text filter),
 [#1499](https://github.com/wekan/wekan/issues/1499) (hide old/done tasks -
 overlaps `Filter.dueAt.past()` and the existing Swimlane/List "Done"
 concept; the open part is a rolling "older than N days" cutoff, which
@@ -588,6 +710,1348 @@ the Markdown commit as the template.
 
 </details>
 </details>
+
+# v12.08 2026-09-27 WeKan ® release
+
+**In short:** Close the reported LDAP empty-password bypass and the directory
+group and SAML replay issues found during the authentication audit. Selected
+boards can also be duplicated with a choice of structure and data.
+
+This release fixes the following CRITICAL SECURITY ISSUES:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0c862047b">Enforce assigned-only permissions in exporter authorization</a>. Thanks to xet7.</summary>
+
+[ExportScopeBleed](https://wekan.fi/hall-of-fame/exportscopebleed/): board
+visibility alone allowed assigned-only members to export unassigned private
+board data. All nine exporter authorization methods now share an assignment
+check. Unfiltered exports refuse assigned-only members; the two Scrum report
+loaders retain access because they already filter cards and snapshots.
+Board Excel and card PDF/Excel refusals now return HTTP 403.
+
+Three Node checks cover the policy, all exporter call sites and Hall of Fame
+coverage. Eleven HTTP scenarios pass across native JSON, ZIP, CSV, calendar,
+PDF, Excel and charts, including permitted scoped Scrum reports. Existing
+Upcoming regression evidence remains recorded. Firefox, WebKit, FerretDB and
+Sandstorm were not exercised. CWE-863, high severity; no CVE assigned.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/285c1db24">Enforce current access on universal History reads and restores</a>. Thanks to xet7.</summary>
+
+[HistoryScopeBleed](https://wekan.fi/hall-of-fame/historyscopebleed/):
+assigned-only members could read hidden-card history, and historical authorship
+could preserve private-board history access after membership was removed.
+Filter current access before search, paging, totals and contributor counts.
+Restore, undo and redo also enforce current scope and card edit permission;
+an old writable board cannot authorize editing a card moved elsewhere.
+
+Ten focused Node runner entries and eight Chromium scenarios pass, including
+allowed restoration, denied hidden/moved-card writes, revoked board access,
+search/count isolation and existing rule undo/redo. Other browsers, FerretDB
+and Sandstorm were not tested. Existing Upcoming coverage remains recorded.
+
+Normal filtering and stale restore attempts can follow legitimate permission
+changes, so they are not automatically labelled as account-blocking attacks.
+See the [audit](docs/Security/History-Access-Boundary-2026-09-27.md)
+for detection limits and the verified scope. No CVE is assigned.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/679a8b349">Reject empty LDAP user credentials in every login path</a>. Thanks to kta1kri and xet7.</summary>
+
+[LdapBindBleed](https://wekan.fi/hall-of-fame/ldapbindbleed/), reported in
+[GHSA-m87f-f43w-hwmc](https://github.com/wekan/wekan/security/advisories/GHSA-m87f-f43w-hwmc):
+both LDAP user-authentication helpers and the DDP/REST login boundary reject
+empty or malformed credentials before binding or local fallback. Passwords
+are not trimmed; intentional anonymous service searches remain supported.
+Exploitation required a directory permitting unauthenticated binds and user
+searches. OpenLDAP documents unauthenticated binds as disabled by default.
+Blocked attempts appear as LdapBindBleed summaries in Admin Panel / Problems.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/679a8b349">Enforce LDAP and CAS login-group restrictions</a>. Thanks to xet7.</summary>
+
+[DirectoryGroupBleed](https://wekan.fi/hall-of-fame/directorygroupbleed/):
+both LDAP modes enforce group membership and require a unique user entry.
+Missing membership values cannot broaden a query, and group denial cannot
+fall back to a cached local password. Service-search mode retains service
+credentials for its group lookup. LDAP filter and DN values are escaped in
+their respective contexts. CAS compares complete literal group CN values,
+rejecting prefix and regular-expression matches and malformed allowlists.
+Group denials appear as DirectoryGroupBleed summaries in Problems.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/679a8b349">Require single-use SAML request correlation</a>. Thanks to xet7.</summary>
+
+[SamlReplayBleed](https://wekan.fi/hall-of-fame/samlreplaybleed/): require a
+live InResponseTo request ID through node-saml and consume verified response
+IDs before storing login credentials, including concurrent validation.
+Unsolicited IdP-initiated assertions are rejected. Process-local request state
+requires sticky routing in clustered deployments. Attributable concurrent
+replay denials appear as SamlReplayBleed summaries in Problems.
+
+Verification for all three entries: 46 focused Node suites and five Chromium
+scenarios pass; the local Meteor application rebuilds. Tests cover allowed
+and refused logins, malformed credentials, group restrictions, safe query
+values, logging failure and signed SAML responses. The protocol fixture
+reproduces the old replay behavior and rejects replay, unsolicited, unsigned
+and tampered responses after the fix. Live directories, external providers,
+Sandstorm and the FerretDB authentication matrix were not tested. See the
+[authentication audit](docs/Security/Authentication-Boundary-Audit-2026-09-27.md)
+for the reviewed providers and limits. Existing Upcoming entries retain their
+recorded positive, negative and UI regression coverage.
+
+</details>
+
+Also adds the following feature:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a76c97461">Map explicit Jira estimates into existing Scrum custom fields</a>. Thanks to xet7.</summary>
+
+The Jira import page accepts an optional numeric estimate field ID and unit.
+Import validates the mapping and values before writes, creates a hidden numeric
+custom field and selects it for Scrum estimates without enabling Scrum. Jira
+export retains the source field ID and unit; native transfer and whole-board
+duplication preserve the mapping and remap the local field. Existing import and
+export selections require both Scrum and Custom Fields for this mapping.
+
+Sixteen focused Node checks and six Chromium scenarios pass, covering zero,
+fractional and missing estimates, invalid inputs, section selection, UI import,
+Jira/native round trips, board duplication and existing Jira regressions.
+Document the mapping. Live Jira and other browsers were not exercised; existing
+Upcoming regression evidence remains recorded.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/59a13f40d">Retain Jira issue types and workflow categories in Scrum transfers</a>. Thanks to xet7.</summary>
+
+Jira import maps issue types and explicit status category keys into existing
+hidden Scrum card and list fields. Jira export retains these fields, and the
+Scrum selection controls both directions. Unknown categories remain unmapped;
+translated status titles never decide completion. Import leaves Scrum settings
+and visibility unchanged. Conflicting categories for the same named list and
+invalid issue types fail before board creation.
+
+Fourteen focused Node checks and four Chromium scenarios pass, including Jira
+and native round trips, excluded fields, invalid inputs, existing completion
+policies and time-tracking regression coverage. Document mappings and remaining
+external sprint, release, epic and story-point work. Live Jira and other
+browsers
+were not exercised. Existing Upcoming regression evidence remains recorded;
+Blockly translation work remains paused.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8e4cf5f76">Retain Scrum report context and original commitments in exports</a>. Thanks to xet7.</summary>
+
+Sprint Report and Velocity exports include snapshot estimate source, custom
+field and completion policy identifiers. Completed original commitments retain
+their start estimates and unknown counts separately from all completed work.
+Excel remains tabular; Scrum PDF prints wrapped labelled values for each sprint
+so the wide metric set does not disappear into clipped columns. Other chart
+PDFs keep their existing table layout.
+
+Sixteen Node checks and one Chromium export scenario pass, covering changed
+estimates, added work, unknown context, complete row widths, wrapped PDF labels,
+unchanged non-Scrum tables, actual Excel cell values and PDF generation. Update
+the report guide. Existing Upcoming regression evidence remains recorded;
+other browsers were not exercised. Blockly translations remain paused.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5e67a3bdd">Assign releases from Scrum planning card editors</a>. Thanks to xet7.</summary>
+
+Product Backlog and sprint card tables display release assignments and offer
+a selector to assign or clear a release from the current board. The controls
+reuse existing card write permissions, reference validation, revision checks
+and Scrum History. Card selections remain independent of the release-planning
+editor's selected record. No new metadata fields or translation keys are needed.
+
+Six Node checks and five Chromium scenarios pass. The new browser scenario
+covers saved selection, clearing, undo/redo and rejected foreign references;
+it caught and verified the fix for a selector helper-name collision. Existing
+Scrum planning, visibility, permission and export scenarios also pass. Update
+the Product Backlog guide. Existing Upcoming regression evidence remains
+recorded; other browsers were not exercised. Blockly translations remain paused.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/196faa9cd">Retain sprint calendars and report planned working days</a>. Thanks to xet7.</summary>
+
+Sprint snapshots retain the configured workweek. Sprint Report, Velocity and
+their Excel/PDF exports show inclusive planned working-day counts using the
+start snapshot's calendar. Later board settings do not rewrite the result.
+Legacy snapshots without calendars and missing planned dates remain unknown;
+zero working days is a real value. Native transfer validates and preserves
+recorded calendars without inventing one for old data.
+
+Twenty-three Node checks and five Chromium scenarios pass, including calendar
+isolation, leap dates, invalid/legacy transfers, unchanged counts after board
+calendar edits, Excel values, PDF output and existing full-board duplication.
+Update the report guide. This is planned duration, not measured daily progress;
+daily burndown history remains pending. Existing Upcoming regression evidence
+remains recorded; other browsers were not exercised. Blockly translations
+remain paused.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/65217313f">Configure Scrum team accountabilities and working days from settings</a>. Thanks to xet7.</summary>
+
+The shared Scrum settings form now exposes Product Owner, Scrum Master,
+Developers and working days using existing settings fields. Accountabilities
+select active board members without changing permissions. Administrators can
+clear assignments and select multiple developers and working days. Existing
+validation, revision checks and History undo/redo apply.
+
+Seven local Node checks and five Chromium scenarios pass, covering saved and
+cleared selections, invalid members/days, undo/redo, non-admin denial and the
+existing Scrum views, exports and visibility settings. One separately gated
+DDP Node suite skipped; the browser scenarios exercised the running server.
+Four new labels use English fallbacks in catalogs awaiting translations.
+Existing Upcoming regression evidence remains recorded; other browsers were
+not run. Blockly translations remain paused.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/21504d556">Select card creation and archival in the list Sync popup</a>. Thanks to xet7.</summary>
+
+Add Card and Move Card to Archive switches independently control new-source
+card creation and source-absence archival. Both default to enabled for existing
+configurations. Disabling either operation leaves matched-card updates and
+field selection available. Disabled archival skips child archive preflight;
+result counts include only enabled operations. Board write access is required.
+
+Twenty-six focused Node checks and five Chromium scenarios pass. Coverage
+includes every operation combination, retained cards, defaults, saved settings,
+invalid inputs, nonmember denial and existing conflict messages. Update the
+Sync guide and Scrum design checkpoint. Existing Upcoming regression evidence
+remains recorded; other browsers and live providers were not exercised.
+Project-scoped source identities, atomic jobs and Scrum planning Sync remain
+pending. Blockly translation work remains paused.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4aa61c6d5">Opt into Jira spent-time synchronization from the Sync popup</a>. Thanks to xet7.</summary>
+
+Jira Sync can include Spent time (hours), using the existing numeric seconds
+conversion. Existing configurations keep time synchronization disabled.
+Selected time values share the source baseline and conditional-write guards
+with text: local timer or manual edits are preserved or reported as conflicts.
+Zero hours remains a value; absent time is not replaced with zero.
+
+Thirty-nine focused Node checks and four Chromium scenarios pass, including
+conversion, invalid values, opt-out, zero, conflict detection, popup persistence
+and unsupported-field rejection. Updated the Sync guide. Existing Upcoming
+regression evidence remains recorded. Other browsers and live Jira accounts
+were not exercised. Estimate and Scrum planning Sync remain pending; Blockly
+translation work remains paused.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/31c9b1d6d">Select title and description synchronization in the existing Sync popup</a>. Thanks to xet7.</summary>
+
+Title and Description switches default to enabled for existing configurations.
+Excluded fields are not compared, overwritten or advanced in the source-text
+baseline. Selecting no text fields is supported; new cards use the existing
+fallback title and an empty description. Creation and archive selection are
+unchanged. The existing write-access check applies to saving these options.
+
+Twenty-nine focused Node checks and four Chromium scenarios pass, covering
+selection persistence, unsupported-field rejection, excluded text, new-card
+baselines and existing conflict messages. Updated the Sync guide. Existing
+Upcoming regression evidence remains recorded; other browsers and live
+provider accounts were not exercised. Scrum field mappings remain pending,
+and Blockly translations remain paused.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c72b9a4a0">Round-trip Jira time tracking through external JSON export</a>. Thanks to xet7.</summary>
+
+Imported estimate fields carry stable markers, so renaming them does not break
+Jira export. Convert hours back to integer seconds; Dates controls spent time
+and Custom Fields controls estimates. Never infer semantics from field names
+or export ambiguous mappings and invalid values. Native export keeps markers.
+
+Six focused Node checks and one Chromium scenario pass, including renamed
+fields, selection exclusions, zero values, native export and real Jira-format
+re-import. Existing Upcoming regression evidence remains recorded; other
+browsers were not run. Individual worklogs, sprint/release mappings and Sync
+remain pending. Blockly translation work remains paused.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ef5c7d00c">Preserve Jira time tracking using existing WeKan fields</a>. Thanks to xet7.</summary>
+
+Jira JSON import converts numeric time-tracking seconds to hours. Spent time
+uses the existing card field; original and remaining estimates use numeric
+custom fields hidden from minicards by default. Explicit zeroes are preserved,
+and invalid durations fail before board creation. Existing Scrum settings can
+select the original estimate field. Native export retains the imported values.
+Localized duration text and incomplete worklog pages are not guessed.
+
+Four focused Node checks and three Chromium scenarios pass, covering nested
+and flat source fields, fractional hours, zero/missing/invalid values, the
+import page, native export, Scrum estimate selection and existing Jira import
+compatibility. Existing Upcoming regression evidence remains recorded. Jira
+sprint/release mapping and external export/Sync integration remain pending;
+other browsers were not run. Blockly translation remains paused.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/676536bcd">Visualize sprint reports and velocity with count and estimate bars</a>. Thanks to xet7.</summary>
+
+Sprint Report and Velocity now show responsive horizontal bars above their
+existing tables. Switch between card counts and known estimates. Exact values,
+unknown-estimate counts and partial-snapshot warnings remain visible. Separate
+scales prevent comparisons across incompatible units, estimate sources,
+custom fields and completion policies. Native HTML/CSS adds no dependency.
+
+Twelve focused Node checks and four Chromium scenarios pass, covering metric
+switching, both chart views, mobile width, zero and unknown estimates, separate
+scales, partial warnings, existing permissions and Excel/PDF export. The
+expanded report-view scenario was rerun successfully. Existing Upcoming
+regression evidence remains recorded; other browsers were not run. Daily
+burndown history and the remaining transfer integrations are still pending.
+Blockly translation work remains paused.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4af54df66">Preserve Scrum data when duplicating boards</a>. Thanks to xet7.</summary>
+
+The existing duplication selector includes Scrum, selected by default with its
+custom-field dependency. Planning records receive new IDs; copied card, list,
+swimlane and snapshot references point to the destination. Clearing Scrum
+omits its settings and metadata. Copies without cards retain planning records
+with reduced snapshots visibly marked partial in reports and Excel/PDF rows.
+Source History is not copied, and source board data remains unchanged.
+
+Seventeen Node checks and seven Chromium scenarios pass, covering all copy
+selection modes, attachment inclusion/exclusion, reference remapping, omitted
+Scrum data, structure-only copies and partial-report labels. Existing Upcoming
+regression evidence remains recorded; other browsers were not exercised.
+Standalone card/list/swimlane copy and move, scoped import, History transport
+and Sync remain separate pending work. Blockly translation remains paused.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e0863b35c">Restore Scrum data when importing a native board export</a>. Thanks to xet7.</summary>
+
+Native new-board import validates the versioned Scrum section before creating
+users or boards, then remaps planning, card, list, swimlane, user and estimate
+field references. Snapshots retain their outcomes, source provenance is kept,
+and imported accountabilities grant no permissions. Deselecting Scrum omits
+its payload and metadata. Board administrators can inspect import losses.
+
+Nineteen focused Node checks and three native import/export Chromium scenarios
+pass. The import-page round trip covers release links, exact event timestamps,
+numeric estimate remapping, zero values, provenance and loss reporting.
+Invalid sprint and estimate-field references create no board. Existing
+Upcoming regression evidence remains recorded; other browsers were not run.
+
+Universal History transfer, existing-board scoped import, duplication and Sync
+remain pending. Imports are not multi-document transactions, so database
+failure after validation can still leave a partially created board.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d70358219">Include versioned Scrum data in native board exports</a>. Thanks to xet7.</summary>
+
+The export selector includes Scrum settings, planning records, optional item
+metadata and lifecycle snapshots. Scoped exports retain referenced planning
+records, reduce snapshots and follow-up links, mark partial snapshots and
+report omitted dependencies. Operational checkpoints and revision counters
+are excluded. Existing anonymization covers the added prose fields.
+
+Eleven focused Node checks and three Chromium-driven HTTP scenarios pass,
+covering complete/scoped exports, omitted sections and estimate fields,
+assigned-only denial and enabled/disabled anonymization. Existing Upcoming
+regression evidence remains recorded. History transfer, board
+duplication and Sync integration remain pending; this does not yet establish
+a complete Scrum backup/restore round trip including History. Other browsers
+were not exercised. Native new-board import is covered by its separate entry.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/89a06f1d5">Edit Scrum releases and events from Sprints</a>. Thanks to xet7.</summary>
+
+Board administrators select existing releases and events to edit them using
+the existing revision-checked methods. Release forms expose goals, planned
+dates, status, release timestamps and notes. Event forms include local time,
+timebox, notes and visible follow-up cards; summaries link those cards.
+Unchanged event and release timestamps keep their original precision.
+
+Four Chromium scenarios and twelve focused Node checks pass. Coverage includes
+updating rather than duplicating records, exact event timestamps, follow-up
+retention, History undo, administrator checks and hidden-by-default metadata.
+Three new source keys are registered in every catalog; this does not resume
+the paused Blockly translation work. Other browsers were not exercised.
+Existing Upcoming regression evidence remains recorded.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ceb19bc77">Integrate Scrum changes with reversible board History</a>. Thanks to xet7.</summary>
+
+Each Scrum view opens the existing board History filtered to Scrum changes.
+Settings, planning records and optional metadata record before/after values;
+a sprint close and its card moves undo and redo as one operation. Restoration
+checks current board and card permissions, preserves unrelated card content,
+and rejects newer conflicting edits or deletion of referenced planning data.
+
+Interrupted restores retain a private checkpoint until data, timeline and undo
+status are saved. Retrying resumes completed writes without duplicating the
+timeline or accidentally undoing an older change. This is not a transaction;
+original-edit/History atomicity and large-board limits remain documented work.
+
+Eighteen focused Node checks, one real Meteor/Mongo lifecycle test and fifteen
+Chromium scenarios pass. Coverage includes the History menu and restore,
+compound undo/redo, access denial, conflicts, planning record recreation,
+reference protection and interrupted recovery. Existing Upcoming regression
+evidence remains recorded. Firefox, WebKit and FerretDB were not exercised.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/83eac1021">Add Scrum planning, optional metadata and sprint snapshot reports</a>. Thanks to xet7.</summary>
+
+Board View adds Product Backlog, Sprints, Sprint Report and Velocity. Reuse
+existing estimates and card permissions with board-local sprint plans,
+revision checks, start/close snapshots and recoverable unfinished-work rollover.
+Board Settings controls independent hidden-by-default metadata on cards,
+minicards, lists and swimlanes. Release and event creation is included.
+
+Report tables keep unknown estimates distinct from zero and export through
+the existing Excel/PDF workflow. Assigned-only members receive explicitly
+labelled partial reports. Native checkbox controls remain visible in settings,
+and the public-board view selector recognizes the new views.
+
+Twelve focused Node checks, one real Meteor/Mongo lifecycle regression and
+three Chromium scenarios pass. Coverage includes stale/foreign writes,
+permission denial, lifecycle snapshots, rollover retries, actual Excel/PDF
+files and independent Card/Minicard visibility. Other browsers and FerretDB
+were not exercised. Existing Upcoming regression evidence remains recorded.
+
+The menu-aligned Scrum guides distinguish the implemented planning feature
+from pending complete import/export/sync mappings,
+interactive charts. These remain active
+implementation work; this entry does not claim complete Scrum support.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/539aef4aa">Save rule configuration changes in reversible board history</a>. Thanks to xet7.</summary>
+
+Rule creation, edits, enabled state and deletion record snapshots containing
+the rule, trigger and action. Compound edits produce one history entry.
+Existing History can undo, redo and restore these changes; restoration checks
+current board-admin access and action destination permissions. Stale undo
+requests cannot overwrite another administrator's newer configuration.
+
+Three Chromium scenarios cover lifecycle undo/redo, ordinary-member rejection
+and conflicting edits. Existing history, rule and undo suites also pass.
+This reuses board history rather than adding an independent audit store.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d273b86ed">Edit IFTTT rules with locally loaded Blockly blocks</a>. Thanks to xet7.</summary>
+
+Board administrators can drag, edit and save rule blocks using the existing
+rule engine. List, Workflow, Blocks and History have direct sidebar choices.
+Workflow writes use server methods. Blockly 13.3.0 and its local media load
+only when the editor is opened; no generated code or remote scripts execute.
+Unknown rule fields survive edits, and changed drafts retain conflict checks.
+
+All 696 Blockly messages map to WeKan translation keys. Existing upstream and
+local translations are preserved, with additional direct translations in
+completed language batches. Other locales still contain English fallbacks;
+translation of every language is not finished. Cornish, Manx, Gaelic, Breton,
+Kashubian, Upper Sorbian, Silesian and several regional Romance languages
+need native review of specialist terminology. No translation service is used.
+
+Five Blockly/catalog Node checks and four Chromium scenarios pass, including
+round trips, invalid workspaces, preserved parameters, permission rejection,
+Finnish and Arabic editing, drag operations and rule execution. Catalog checks
+verify key order and placeholders across all 246 locale files. The Blocks
+guide documents usage, supported editing and remaining translation work.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8bf47d1a9">Choose which structure and data to duplicate from selected boards</a>. Thanks to xet7.</summary>
+
+All Boards / Multi-selection now has one Duplicate Board action. It opens a
+checkbox popup with all choices selected, Select All, Select None and Cancel.
+Choose swimlanes, lists, labels, custom fields, rules, outgoing webhooks, cards,
+checklists with their items, comments and attachments. Selecting child data
+selects its required containers; clearing a container clears its children.
+The separate Duplicate Board — Without cards action is removed; clear Cards
+in the popup instead. Select None copies only the board itself and its settings
+and access roles, without source structure or content.
+
+Server validation and board-admin permission checks remain enforced. Scoped
+copies remap parent/subtask and dependency links, preserve custom-field values
+without sharing source definitions, and omit deselected labels and covers.
+Attachment copying now imports its dependencies explicitly, waits for flushed
+bytes and the installed Meteor-Files promise API, and propagates stream errors.
+
+Verification: ten focused Node suites (14 runner entries) and nine Chromium
+scenarios pass. Coverage includes full, cards-only, swimlane-only and empty
+copies, real attachment bytes and covers, unchanged source data, multi-board
+selection, cancellation, invalid options and non-admin rejection. Other browser
+engines, cloud attachment stores and live FerretDB backends were not tested.
+Existing Upcoming entries retain their recorded positive, negative and UI
+coverage. Updated the All Boards documentation.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/67c5df253">Show a single comment in the minicard badge tooltip</a>. Thanks to lonix1 and xet7.</summary>
+
+Hovering the minicard comment-count badge shows the comment text when exactly
+one visible, nonempty comment exists. Multiple or empty comments retain the
+localized count message. Reuses existing published data and renders the title
+as plain text; no new dependencies, subscriptions or permissions are needed.
+Fixes [#1933](https://github.com/wekan/wekan/issues/1933).
+
+Three focused Node suites and two Chromium scenarios pass, covering single,
+multiple, empty and malformed comment data, HTML-looking text, admin/read-only
+access and private-board comment isolation. Other browser engines and live
+FerretDB backends were not tested. Existing Upcoming changes retain their
+recorded positive, negative and UI regression coverage. Updated the comment
+feature documentation and open-issue audit.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8ad064346">Filter subtasks by their parent card</a>. Thanks to robinvd and xet7.</summary>
+
+Card actions now offer Filter: Subtasks. The Filter sidebar also offers parent
+cards from the current board. Both use the existing `parentId` relationship and
+filter engine, showing direct children without changing any cards. Multiple
+parents can be selected, and changing boards clears this selection. Read-only
+members can filter; private parent titles are not fetched or disclosed.
+Fixes [#1871](https://github.com/wekan/wekan/issues/1871).
+
+Verification: nine focused Node checks and three Chromium scenarios pass,
+covering parent selection, combined filters, reset, admin/read-only access,
+private-parent publication boundaries and unchanged card data. The Chromium
+run also rechecks the private-source linked-card regression from
+[#1942](https://github.com/wekan/wekan/issues/1942), already closed by
+[the private-source fix](https://github.com/wekan/wekan/commit/9cdbe1a53).
+Other browser engines and a live FerretDB backend were not tested.
+
+Removed the completed parent-filter and private-linked-card entries from TODO
+Later. Corrected the reminder entry: scheduled due/overdue rule triggers exist;
+assignee email recipients and start-date reminders remain pending under
+[#4278](https://github.com/wekan/wekan/issues/4278). Updated the filter, subtask
+and open-issue audit documentation.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/abf0a1934">Preserve valid MongoDB updates when editing rule documents</a>. Thanks to xet7.</summary>
+
+Trigger and action timestamp hooks now distinguish replacement documents
+from update modifiers. Replacement edits preserve creation timestamps without
+mixing top-level fields with $set, which MongoDB rejects. Modifier updates
+continue to set their modification timestamp.
+
+Two focused tests exercise both forms and ensure replacement documents never
+receive update operators. Browser rule-editing scenarios also pass.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0a8334ef1">Keep rules-page text and controls visible across layouts</a>. Thanks to xet7.</summary>
+
+Long titles, trigger descriptions and buttons wrap within their rows.
+Controls participate in layout instead of overlapping through absolute
+positioning. Small screens stack the trigger menu and form, while workflow
+cards and primary-button icons remain readable with the current theme.
+
+Four Chromium scenarios pass at desktop and mobile widths with English and
+Arabic, including blue, dark and light themes. They check every trigger and
+action category, long content and control boundaries.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/156dbf0ec">Apply import and export anonymization to Scrum prose</a>. Thanks to xet7.</summary>
+
+Known username mentions in Scrum goals, definitions, acceptance criteria,
+swimlane purpose and planning text use the existing anonymization map. Native
+streaming export now applies the same pass to board and swimlane fields.
+Identity references, estimate units, source provenance and snapshots retain
+their meaning. This rewrites mentions, not arbitrary personal information.
+
+Six focused Node checks and one Chromium-driven native export scenario pass.
+The export test covers enabled/disabled anonymization and unchanged stored
+data. Canonical transfer text is covered by unit tests; native Scrum planning
+record transfer remains pending. Existing Upcoming evidence remains recorded.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c35e84c1f">Keep read-only Scrum viewing out of write-denial logging</a>. Thanks to xet7.</summary>
+
+Rendering card capabilities no longer records an attempted write for ordinary
+read-only members. This prevents false account blocking while keeping the
+same permission decisions and denial logging for actual mutations.
+
+Ten focused Node checks and one Chromium scenario pass. Coverage verifies
+role permissions, default mutation logging and repeated read-only Scrum views
+without losing the session. Existing Upcoming regression evidence remains
+recorded; other browser engines were not run for this fix.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/72f846345">Resume interrupted sprint closes from the Sprints view</a>. Thanks to xet7.</summary>
+
+Board administrators can resume a closed sprint whose card rollover was
+interrupted, using its saved revision and destination. A pending History
+recovery blocks this action until it finishes. The recovery button disappears
+when all pending cards have been handled.
+
+Seven focused Node checks and the Chromium recovery scenario pass, including
+read-only denial, pending History exclusion and successful card rollover.
+The related Scrum and History browser suites also passed. Register the new
+source message in every catalog; Blockly translation work remains paused.
+Existing Upcoming coverage remains recorded. Other browsers were not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/89f7aa985">Separate partial Scrum reports from complete chart scales</a>. Thanks to xet7.</summary>
+
+Partial snapshots from scoped imports or restricted views no longer share a
+chart scale with complete sprint snapshots. Keep the existing visible warnings
+and exact totals. Assigned-only reports continue to exclude hidden cards and
+their estimates from both chart data and exported workbooks.
+
+Nine focused Node checks and one Chromium scenario pass. The browser scenario
+checks rendered counts, metric selection, partial warnings, server snapshot
+filtering and Excel values for an assigned-only member. Existing Upcoming
+regression evidence remains recorded; other browsers were not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5ac57edde">Avoid repeated full-snapshot scans in Scrum reports</a>. Thanks to xet7.</summary>
+
+Completed-commitment totals now use an index of completed card IDs instead of
+scanning the closing snapshot for each original card. This keeps matching work
+linear at the supported 10,000-card snapshot limit while retaining original
+commitment estimates and separate added/removed scope totals.
+
+The deterministic work-bound regression fails before the fix and passes after
+it. Fourteen focused Node checks and two Chromium scenarios pass, including
+report metric selection, assigned-only filtering and Excel/PDF output. Existing
+Upcoming regression evidence remains recorded; other browsers were not run.
+This does not resolve the remaining large-board History storage limits.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e685866c1">Preserve Jira estimate mappings through the custom-field editor</a>. Thanks to xet7.</summary>
+
+Saving the existing custom-field popup no longer erases valid Jira time markers
+from numeric fields when rebuilding their settings. Renaming an imported
+estimate through the UI retains its meaning for Jira export. Invalid markers
+and markers on non-numeric fields are not retained by the editor.
+
+Seven focused Node checks and one Chromium scenario pass. Tests execute the
+production save handler, cover valid/invalid markers, and rename through the
+actual popup before exporting and re-importing Jira time values. Existing
+Upcoming regression evidence remains recorded; other browsers were not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1ebc4e3b8">Honor import selections for Jira estimates and spent time</a>. Thanks to xet7.</summary>
+
+The existing import selector now removes Jira's nested time fields and their
+flat fallbacks before creation. Custom Fields controls original/remaining
+estimates; Dates controls spent time. Excluded estimates do not create numeric
+custom fields, and fallback values cannot silently restore excluded data.
+
+Seven focused Node checks and two Chromium scenarios pass. The browser tests
+exercise Dates-only and Custom-Fields-only imports and retain full native,
+Jira and board-copy round-trip coverage. Updated the Jira guide. Existing
+Upcoming regression evidence remains recorded; other browsers were not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/fe3d55ba7">Reject malformed Sync responses before changing cards</a>. Thanks to xet7.</summary>
+
+List Sync reuses the existing import source-shape validator before parsing and
+reconciliation. Malformed responses and parser failures set the existing error
+without creating, changing or archiving cards. A valid empty source retains
+existing archive behavior; an invalid response no longer masquerades as one.
+
+Five focused Node checks and one Chromium scenario pass. Server tests execute
+the sync function with malformed, valid-empty and parser-failing responses;
+the browser verifies error display separately without contacting a provider.
+Existing Upcoming regression evidence remains recorded. Complete pagination
+and local-edit conflict handling remain pending. Other browsers were not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/11b80633c">Fetch all advertised issue pages before synchronizing lists</a>. Thanks to xet7.</summary>
+
+Sync now follows Jira REST v2 search offsets and GitHub, Gitea/Forgejo and
+GitLab next-page headers before reconciling cards. Validate advertised totals;
+abort failed, incomplete, changing or looping pagination instead of returning
+partial results that could archive later-page cards. Limit runs to 1,000 pages
+or 100,000 items. Pagination stays on the configured origin; redirects fail.
+
+Eleven focused Node checks and the Chromium Sync error-display scenario pass.
+Mocked provider responses exercise multi-page success, short pages, failures,
+missing links, bounds and invalid origins. No live provider account was used.
+Existing Upcoming regression evidence remains recorded. Jira Cloud's newer
+search endpoint and local-edit conflict handling remain pending; other
+browsers were not run. Updated the Sync guide with provider references.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7977c68a3">Use enhanced Jira Cloud search for list synchronization</a>. Thanks to xet7.</summary>
+
+Standard `.atlassian.net` tenant URLs now use REST v3 enhanced JQL search with
+explicit parser fields and token pagination. Missing termination metadata or
+repeated tokens abort before reconciliation. Self-hosted Jira retains the
+existing offset-based search path. Shared page/item limits still apply.
+
+Thirteen focused Node checks pass using mocked provider responses, including
+opaque-token encoding, required fields, empty results, malformed responses
+and retained self-hosted pagination. Existing Sync popup browser coverage and
+Upcoming regression evidence remain recorded. No live Jira account was used.
+Custom Cloud domains and government-cloud endpoint selection remain pending;
+no new UI was added. Updated the Sync guide with the API reference.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6efec562e">Reject ambiguous source identities before list synchronization</a>. Thanks to xet7.</summary>
+
+Normalized Sync tasks must have unique valid external IDs and string text
+fields. Missing IDs no longer disappear silently from reconciliation, and a
+duplicate ID cannot silently replace an earlier source record. Invalid task
+collections use the existing error path before any card mutation. Valid empty
+sources and unchanged records retain their existing behavior.
+
+Fifteen focused Node checks and the Chromium Sync error-display scenario pass.
+Tests execute the sync function with malformed normalized tasks and confirm
+zero card writes. Existing pagination, parser and reconciliation checks pass.
+Updated the Sync guide. Existing Upcoming regression evidence remains recorded;
+other browsers and live provider accounts were not exercised.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b254b7d3a">Preserve local title and description edits during Sync</a>. Thanks to xet7.</summary>
+
+Store the last accepted source text on synced cards. Upstream-only changes
+merge, local-only changes remain, and differing edits on both sides stop the
+run before card writes. Legacy cards adopt a baseline only when local and
+source text agree. The existing Sync popup identifies conflicting source IDs
+and fields; aligning both texts permits a retry.
+
+Conditional updates reject intervening text, archive-state or location changes.
+Sync now displays structured failures as errors rather than success. Twenty-two
+focused Node checks and two Chromium scenarios pass, including merge decisions,
+legacy baselines, concurrent-write rejection and popup error handling. Provider
+responses are mocked; no live tracker account was used. Earlier successful
+writes can remain after a later race: this is not a transaction. Dedicated
+resolution controls, Scrum mappings and fully atomic Sync remain pending.
+Existing Upcoming regression evidence remains recorded; other browsers were
+not run. Blockly translations remain paused.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/85b5f28bc">Keep copied cards independent from external Sync identities</a>. Thanks to xet7.</summary>
+
+Card and subtask copies no longer inherit external Sync IDs, source types or
+last-source text. The original mapping remains intact. Sync refuses existing
+duplicate local mappings before updates or archives, instead of selecting an
+arbitrary matching card. The existing popup reports the duplicate identity.
+
+Seventeen focused Node checks and one Chromium board-copy scenario pass.
+Coverage exercises real copy bodies, source preservation, subtask fields and
+zero card writes when local identities are duplicated. The browser confirms
+Scrum references still remap while copied Sync identities are absent. Updated
+the Sync guide. Existing Upcoming regression evidence remains recorded;
+other browsers and live provider accounts were not exercised.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/18c660916">Guard Sync archives against moved cards and independent subtasks</a>. Thanks to xet7.</summary>
+
+Source-absence archives now verify the original card text, baseline, archive
+state and board/list location before writing. Concurrent changes stop the
+remaining run. Sync no longer recursively archives subtasks; an active subtask
+outside the source archive plan stops the run before card writes.
+
+Nineteen focused Node checks and three Chromium error-display scenarios pass.
+Server tests cover valid removal, concurrent change rejection and independent
+subtask protection. Browser tests check structured archive errors alongside
+text conflicts and malformed-source errors. Updated the Sync guide. This is
+not a transaction, and concurrent child creation remains outside the guard.
+Existing Upcoming regression evidence remains recorded; other browsers and
+live provider accounts were not exercised.
+
+</details>
+
+This release adds the following regression coverage and documentation:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0e7394cd8">Keep manual rule buttons consistent with trigger changes</a>. Thanks to xet7.</summary>
+
+Changing a manual button rule to an automatic trigger clears stale button
+type/label fields used by button menus. REST creation and trigger updates now
+synchronize those fields too. History restores trigger and button metadata
+together, so undo brings back the manual button and redo removes it again.
+
+Eight Node runner checks and two Chromium scenarios pass. Browser coverage
+checks editor and REST creation/changes, actual board-button visibility and
+undo/redo. Update the History guide. Existing Upcoming regression evidence
+remains recorded; other browsers were not exercised. Blockly translations
+remain paused.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/21cb6e8c8">Isolate shared trigger/action changes when editing rules</a>. Thanks to xet7.</summary>
+
+Editing a shared trigger or action creates a private component for the edited
+rule instead of changing sibling rules. Unshared IDs remain stable; REST keeps
+partial-update semantics and the editor retains full replacement. Unchanged
+shared patches do not clone records. History undo/redo restores references and
+removes superseded private components only when they are no longer referenced.
+
+Nine Node runner checks and eight Chromium History scenarios pass, including
+the actual component writer, both edit transports, unchanged sibling records,
+undo/redo and cleanup. Existing deletion, permission and REST attribution checks
+also pass. Update the History guide. Concurrent writes remain nontransactional.
+Existing Upcoming regression evidence remains recorded; other browsers were
+not exercised. Blockly translations remain paused.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7472456ad">Preserve shared triggers and actions when deleting rules</a>. Thanks to xet7.</summary>
+
+Editor, REST and History deletion share cleanup that retains trigger/action
+records referenced by another rule. Removing the final reference cleans them
+up. History can restore a deleted rule using unchanged shared components but
+refuses to overwrite shared content edited since the snapshot. Reference checks
+remain nontransactional across documents.
+
+Three Node suites and six Chromium History scenarios pass, including both
+deletion transports, shared-reference preservation, successful restoration,
+changed-component refusal and final-reference cleanup. Existing permissions,
+compound edits and REST History attribution remain covered. Update the History
+guide. Existing Upcoming regression evidence remains recorded; other browsers
+were not exercised. Blockly translations remain paused.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e0bcf7bde">Record compound Rules REST changes in reversible History</a>. Thanks to xet7.</summary>
+
+Rules REST creation, editing and deletion use the shared rule-history wrapper
+with the authenticated API user. Rule, trigger and action changes form one
+entry per request, and unchanged requests add none. Undo/redo restores compound
+edits and deleted rule documents through existing permission/conflict checks.
+This groups History recording; it does not make compound writes transactional.
+
+Four Node suites and four Chromium History scenarios pass. The REST scenario
+verifies attribution, entry counts, no-op suppression, unauthorized-write
+denial,
+compound undo/redo and deletion recovery. The final no-op extension also passes
+on rerun. Update the History guide. Existing Upcoming regression evidence
+remains recorded; other browsers were not exercised. Blockly translations
+remain paused.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d269c8c70">Reject incompatible Scrum snapshot policies in native transfers</a>. Thanks to xet7.</summary>
+
+Native Scrum transfer requires start and close snapshots to agree on estimate
+unit, source, custom-field identifier and completion policy. This matches the
+existing active-sprint configuration rule and prevents imported reports from
+combining unlike totals under a single context. Recorded workweek calendars
+may still differ; planned duration uses the start calendar.
+
+Twenty-two Node checks and one Chromium native-import scenario pass, including
+valid round trips and rejection of each policy mismatch before board creation.
+Update the report guide. Reporting external historical sprints with mixed
+policies remains pending and is not silently approximated. Existing Upcoming
+regression evidence remains recorded; other browsers were not exercised.
+Blockly translations remain paused.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/05e8bce70">Validate native Scrum snapshot lifecycle consistency</a>. Thanks to xet7.</summary>
+
+Native imports reject snapshot timestamps that disagree with sprint lifecycle
+dates, started history on planned sprints, completion data on unfinished
+sprints,
+and contradictory cancellation history. Cancellation before start remains valid
+without a commitment snapshot. Validation runs before board creation and keeps
+imported report timelines consistent with the server's sprint lifecycle methods.
+
+The new regression fails against the previous validator. Twenty-seven focused
+Node checks and two Chromium scenarios pass, covering valid active/cancelled
+states, malformed lifecycle data, native round trips and board duplication.
+Update the Scrum design. Other browsers were not exercised; existing Upcoming
+regression evidence remains recorded. Blockly translations remain paused.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9d60f7bf0">Import Jira status names without inherited-property collisions</a>. Thanks to xet7.</summary>
+
+Jira status names such as constructor, toString and __proto__ no longer resolve
+to JavaScript object properties instead of new list IDs. Issue-key lookups also
+exclude inherited properties, so missing dependency targets remain missing.
+Preserve imported list categories and real dependency links.
+
+The Chromium regression reproduced the original List ID validation failure.
+Fourteen focused Node checks and five Chromium scenarios pass after the fix;
+the expanded regression also verifies rendered lists/cards, preserved Scrum
+categories, real links and ignored missing targets. Live Jira and other browsers
+were not exercised. Existing Upcoming regression evidence remains recorded;
+Blockly translations remain paused.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9f3fbfd52">Keep Scrum planning order consistent for equal ranks</a>. Thanks to xet7.</summary>
+
+Product Backlog and sprint card tables break equal effective-rank ties with
+stable card IDs. Database fetch order no longer decides tied positions.
+Explicit zero ranks and negative normal list positions retain their existing
+meaning. Document this ordering in the Product Backlog guide.
+
+Twenty focused Node checks and three Chromium scenarios pass, covering
+different fetch orders, unchanged input data, rank precedence, metadata edits,
+refreshes, release assignment and rank History. Other browsers were not run.
+Existing Upcoming regression evidence remains recorded. Blockly translations
+remain paused under TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c6ac0014c">Separate unset Scrum ranks from normal board sort positions</a>. Thanks to xet7.</summary>
+
+The planning editor no longer puts a potentially negative board sort position
+into a nonnegative Scrum rank input. Unset ranks remain blank, display as a
+dash and use normal card order as their sorting fallback. Clearing a rank
+stores null; zero remains an explicit rank and negative ranks remain invalid.
+The optional card metadata editor uses the same clearing behavior.
+
+Fourteen Node checks and two Chromium scenarios pass, covering unrelated edits
+on a negative-sort card, explicit zero, clearing, History restoration, rejected
+negative ranks and native transfer of null. Update the Product Backlog guide.
+Existing Upcoming regression evidence remains recorded; other browsers were
+not exercised. Blockly translations remain paused.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/50a6e92e8">Preserve Scrum workflow categories in cross-board list moves</a>. Thanks to xet7.</summary>
+
+New destination lists retain their source workflow category when moving a list
+or swimlane across boards. A reused destination list retains its own category
+and revision; incoming cards do not silently change its workflow meaning.
+Newly created list metadata starts with revision 1.
+
+Six Node runner entries and four Chromium scenarios pass, covering both move
+paths with new and reused lists. Update the Scrum design checkpoint. This does
+not complete moved-card/swimlane sprint and release references, lifecycle
+coordination or History restoration. Existing Upcoming regression evidence
+remains recorded; other browsers were not exercised. Blockly translations
+remain paused.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2b6d71bdc">Preserve scoped Scrum metadata in list and swimlane copies</a>. Thanks to xet7.</summary>
+
+Standalone list copies retain their workflow category with a fresh metadata
+revision. Swimlane copies preserve purpose and copied-list categories;
+cross-board copies omit foreign sprint/release links, while same-board copies
+retain them. Shared copy paths no longer mutate source container objects.
+Full-board duplication continues to defer metadata to its transfer remapper.
+
+Seven Node runner entries and three Chromium scenarios pass, including
+same/cross-board containers, unchanged sources, standalone cards and full-board
+remapping. The new container browser test was corrected to use the existing
+method's boolean return contract, then passed on rerun. Update the Scrum design.
+Existing Upcoming regression evidence remains recorded. Move integration and
+standalone planning-record mapping remain pending; other browsers were not run.
+Blockly translations remain paused.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8be9b79de">Prevent foreign Scrum planning references in standalone card copies</a>. Thanks to xet7.</summary>
+
+Card and subtask copies now start a fresh Scrum metadata revision. Same-board
+copies retain planning associations. Cross-board standalone copies preserve
+issue type and acceptance criteria but omit source sprint, past-sprint, release
+IDs and board-relative rank. Source cards are unchanged. Full-board duplication
+still remaps planning records through its existing transfer implementation.
+
+Thirteen Node runner entries and two Chromium scenarios pass, covering copied
+subtasks, same/cross-board metadata, omitted metadata and full-board remapping.
+Update the Scrum design with the standalone-copy limits. Planning-record
+selection for standalone transfers and move integration remain pending.
+Existing Upcoming regression evidence remains recorded; other browsers were
+not exercised. Blockly translations remain paused.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/14a4d62fb">Verify Jira estimate mappings across native imports and board copies</a>. Thanks to xet7.</summary>
+
+Expand the Chromium transfer scenario to export a Jira-imported board as
+native WeKan JSON, import it, and duplicate the source board. Both destinations
+retain renamed estimate markers, allocate new custom-field IDs and remap the
+Scrum estimate-field reference. Subsequent Jira exports preserve numeric time
+values, including zero remaining work.
+
+The expanded browser scenario passes; its existing invalid-input, selection
+exclusion and popup-rename checks also pass. Update the Jira feature guide.
+Existing Upcoming regression evidence remains recorded. Other browsers and
+standalone card/list/swimlane transfers were not tested in this change.
+
+</details>
+
+
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2ff687756">Define shared Scrum transfer validation and ID remapping</a>. Thanks to xet7.</summary>
+
+The versioned data contract covers settings, planning records, snapshots and
+item metadata. Destination ID maps remap references; omitted cards and actors
+produce explicit losses, and reduced snapshots are marked partial. Validation
+rejects invalid dates, inconsistent totals, foreign planning references,
+permission fields, recovery checkpoints and ID collisions.
+
+Fifteen focused Node checks pass, including four executable transfer suites.
+This is shared implementation groundwork: native import/export, duplication,
+external adapters, Sync, History transfer and anonymization integration remain
+pending. There is no new transfer UI or end-to-end transfer claim. Existing
+Upcoming regression evidence remains recorded; Blockly translation is paused.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0e5b48c86">Record the release pause and unfinished development handoff</a>. Thanks to xet7.</summary>
+
+Pause implementation, translations and audits at the maintainer's request.
+TODO Later records implemented checkpoints, remaining Scrum/Sync and History
+work, translation coverage, open-issue/UI/security follow-ups and verification
+limits. Refresh the read-only Blockly report and mark the Blocks guide paused.
+Wrap overlong Upcoming prose without changing published release sections.
+
+Commit-link, release-placement and seven catalog checks pass. Existing feature,
+fix and security regression evidence remains in its corresponding entries;
+this documentation-only handoff adds no application behavior. The full format
+check still flags one pre-existing overlong line in published v12.07. A complete
+release build/test matrix was not run. No remote writes or version bumps occur.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0574cd4c0">Verify the combined Rules, Blocks and History integration</a>. Thanks to xet7.</summary>
+
+Update the Blocks guide with REST History behavior, shared-component handling
+and button restoration. Correct stale translation wording to reflect the
+maintainer's pause. No translation values changed.
+
+The combined Blocks, History and Rules visibility browser run passes all 18
+Chromium scenarios on local Meteor/MongoDB, including Finnish/Arabic editing,
+rule execution, permissions, REST writes, undo/redo, shared components and
+390px/1440px theme layouts. A broader 37-file rule/workflow Node run passes 45
+runner checks; three separate Blockly catalog checks also pass. Other browser
+engines and FerretDB were not exercised. Concurrent History writes and complete
+translation remain open work. Existing Upcoming regression evidence is retained.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c666a69b2">Document Scrum capabilities and the remaining implementation plan</a>. Thanks to xet7.</summary>
+
+Audit existing estimates, charts, history, permissions and data transfers
+before adding Scrum data. The menu-aligned design describes product backlogs,
+sprint lifecycle and reports, hidden metadata, import/export mappings and
+regression requirements. Existing Scrum and Board View guides link the plan.
+
+This entry records the design document. The subsequent Scrum planning entry
+above describes implemented behavior; complete Scrum data transfer and other
+remaining requirements stay explicit in the updated design.
+
+The Upcoming coverage audit retains existing positive, negative and browser
+regressions for authentication, duplication, comment tooltips, parent filters
+and mirroring. New rule changes pass 19 focused Node runner entries, five
+Blockly/catalog checks and 11 Chromium scenarios. External login providers,
+other browser engines and live FerretDB were not exercised in this batch.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8cbd8c5ed">Verify duplicated boards start a new activity history</a>. Thanks to sfahrenholz and xet7.</summary>
+
+Existing board duplication excludes old board/card activity records. Document
+that behavior and verify both Duplicate Board actions through the browser,
+with and without cards. Old source history remains intact; new creation events
+on the copy are allowed. Confirmation cancellation and non-admin rejection
+remain covered. Closes [#2321](https://github.com/wekan/wekan/issues/2321)
+without changing existing permissions or adding a redundant history option.
+
+Three Chromium scenarios and four focused Node suites pass. Verification used
+MongoDB; other browser engines and live FerretDB backends were not exercised.
+The existing Upcoming parent-filter entry retains its recorded positive,
+negative and browser coverage. Refreshed the open-issue inventory (132 open)
+and recorded that #1273 still needs a retain-autocomplete-text option.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e2713cd0d">Keep Codeberg mirroring commented out and create missing local mirror clones</a>. Thanks to xet7.</summary>
+
+The commented Codeberg destination in releases/mirror.sh now also prevents
+older saved settings from selecting it. GitLab and SourceForge remain enabled.
+Missing source and destination repositories are cloned below the checkout's
+.tools directory, including ~/Documents/repos/wekan/.tools/wekan-github on
+macOS. Source mirror refs are fetched into that clone instead of the primary
+WeKan checkout. Existing mirror worktrees retain their branch and dirty-tree
+checks, and destination updates are not forced.
+
+Verification: 49 mirror test entries pass with mocked external commands,
+including menu choices, stale settings, fresh clones, paths containing spaces,
+clone failures and existing checkout protections. Shell syntax and diff checks
+pass. No live mirror command or remote write was executed. Existing Upcoming
+regression coverage remains recorded in its entries. Updated mirroring docs.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/22d9124ee">Allow reviewed dependency funding links during release checks</a>. Thanks to xet7.</summary>
+
+The release risk audit rejected three funding URLs in CSSTools and parse5
+dependency metadata. Allow those exact URLs only in package-lock.json. Other
+URLs, changed query strings, lookalike hosts, application-code URLs and
+suspicious keywords remain checked; source hash changes stay informational.
+
+All ten risk-audit tests and three release-launcher runner checks pass. The
+local release audit passes with advisory fingerprint warnings. Existing
+Upcoming entries retain their regression coverage; this configuration fix
+has no UI behavior. No release build or publication was run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b929ffe8c">Complete Blockly translations in four more Romance languages</a>. Thanks to xet7.</summary>
+
+Fill remaining Blockly and Blocks editor prose in Friulian, Ladin, Romansh
+and Aromanian. Correct wrongly seeded shared labels while retaining existing
+correct-language translations. Ladin dialect choices and Aromanian technical
+neologisms have low confidence; native review is welcome for these and
+specialist Friulian terms. Other unfinished language catalogs remain pending.
+
+All three catalog regression checks pass: message coverage, key order, exact
+placeholder inventories and preservation of existing translations. The current
+Blockly browser coverage and other Upcoming regression results remain valid.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ad0ad0b2b">Complete Gujarati Blockly prose and editor placeholder filling</a>. Thanks to xet7.</summary>
+
+Fill 85 text-operation and remaining editor messages. All audited Gujarati
+Blockly prose and Blocks-editor messages now have translations. Explicit test
+exceptions retain printed key names, platform brands, OK, mathematical notation,
+URLs and nonlinguistic symbols. This establishes placeholder coverage, not
+native
+fluency; specialist terminology still needs review. Update TODO Later and the
+Blocks guide. Other languages remain in progress.
+
+Seven catalog checks, 21 human-translation preservation checks and one Chromium
+scenario pass. Browser coverage verifies Gujarati navigation to Blocks,
+dragging,
+field editing, saving and translated context menus. Other browsers and screen
+readers were not exercised. Existing Upcoming regression evidence remains
+recorded.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/25498de22">Translate Gujarati Blockly shortcuts and workspace messages</a>. Thanks to xet7.</summary>
+
+Fill 60 Gujarati English placeholders for keyboard shortcuts, screen-reader
+mode hints, workspace summaries, search and navigation. Preserve placeholders,
+key names inside shortcut instructions and existing translations. Extend checks
+for direction labels, mode distinctions and search shortcuts. Gujarati remains
+incomplete; accessibility terminology needs native review.
+
+Six catalog checks and 21 human-translation preservation checks pass. Update
+the Blocks guide. Existing Gujarati Chromium coverage remains recorded; this
+batch did not add a browser or screen-reader run. Existing Upcoming regression
+evidence remains recorded.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ba0ab5ce8">Translate Gujarati Blockly procedures and variable controls</a>. Thanks to xet7.</summary>
+
+Fill 38 Gujarati English placeholders for function definitions, parameters,
+return values, variable creation, renaming and conflict messages. Preserve
+existing translations and placeholders. Extend Gujarati vocabulary checks to
+these groups and distinguish variable reads/writes and return/no-return
+functions. The catalog remains incomplete; specialist terminology needs review.
+
+Five catalog checks and 21 human-translation preservation checks pass. Update
+the Blocks guide. Existing Gujarati Chromium coverage remains recorded; no
+new browser run was performed. Existing Upcoming regression evidence remains
+recorded.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9b7135f43">Translate Gujarati Blockly mathematical descriptions</a>. Thanks to xet7.</summary>
+
+Fill 86 Gujarati English placeholders for arithmetic, constants, numeric tests,
+statistics, rounding, logarithms and trigonometry. Keep function notation,
+mathematical symbols and placeholders intact. Specialist mathematical wording
+has low confidence and needs native review; the catalog remains incomplete.
+Update the Blocks guide with the additional translated groups.
+
+Five catalog regression checks and 21 human-translation preservation checks
+pass. New checks cover translated math prose, preserved notation and distinct
+even/odd, mean/median and rounding directions. Existing Gujarati Chromium
+coverage remains recorded; no new browser or screen-reader run was performed.
+Existing Upcoming regression evidence remains recorded.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/67d1e228e">Translate Gujarati Blockly list operations and tooltips</a>. Thanks to xet7.</summary>
+
+Fill 75 Gujarati English placeholders for creating lists, retrieving/removing
+items, insertion/replacement, sublists, sorting, splitting and joining. Preserve
+exact placeholders and existing translations. Extend Gujarati checks to list
+operations and distinct action/order terms. Update the Blocks guide; Gujarati
+remains incomplete and specialist terminology needs native review.
+
+All four catalog checks and 21 human-translation preservation checks pass.
+Existing Gujarati Chromium editor coverage remains recorded; this batch did
+not add a browser run. Existing Upcoming regression evidence remains recorded.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/be62f80fa">Translate Gujarati Blockly inputs, keyboard hints and logic</a>. Thanks to xet7.</summary>
+
+Fill 66 additional Gujarati English placeholders for input labels, keyboard
+navigation hints, comparisons, Boolean operations and conditional values.
+Retain exact placeholders and existing translations. Expand vocabulary/script
+checks to these groups, including distinct true/false, and/or and
+dividend/divisor
+terms. Gujarati remains incomplete and specialist terminology needs native
+review.
+
+All four catalog checks and 21 human-translation preservation checks pass.
+The existing Gujarati Chromium drag/edit/save/context-menu result remains
+recorded; this batch did not add a screen-reader or browser run. Update the
+Blocks guide. Existing Upcoming regression evidence remains recorded.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/58fa2ce46">Translate Gujarati Blockly conditions and editing controls</a>. Thanks to xet7.</summary>
+
+Fill 80 additional Gujarati English placeholders for conditions, loops,
+copy/delete actions, bitmap controls, icons and input labels, including short
+control-flow aliases. Preserve existing translations and placeholder
+inventories.
+The Gujarati catalog remains incomplete; specialist terminology needs native
+review. Update the Blocks guide with the current translation and browser status.
+
+All four catalog checks pass, including all-locale coverage, key order,
+placeholder preservation and expanded Gujarati vocabulary/script checks. One
+Chromium scenario verifies Gujarati block dragging, field editing, saved changes
+and translated context menus. Other browsers were not exercised. Existing
+Upcoming regression evidence remains recorded.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/cbc3fd1fb">Resume Blockly translations with Gujarati editor controls</a>. Thanks to xet7.</summary>
+
+Resume translation at the maintainer's request and fill 87 Gujarati English
+placeholders for navigation, accessibility, colors and basic block controls.
+Preserve existing translations and exact placeholder tokens. Update TODO Later
+and the Blocks guide to record resumption; the Gujarati catalog and other
+remaining languages are still incomplete. Specialist terminology needs native
+review and is not claimed as linguistically verified.
+
+Four catalog regression checks and 21 human-preference checks pass. Coverage
+includes all catalog keys and placeholders plus Gujarati vocabulary/script
+checks for the resumed groups. No external translation service was used.
+Existing Blockly browser coverage remains recorded; this batch did not add a
+Gujarati browser run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4ff6e78d9">Complete the current South Asian Blockly translation batch</a>. Thanks to xet7.</summary>
+
+Fill Blockly and Blocks editor prose in Hindi and its Indian locale, Tamil,
+Kannada, Bengali, Nepali and Urdu. Correct wrongly seeded Urdu shared labels;
+retain placeholders and existing correct-language translations. Specialist
+accessibility and mathematical terminology still merits native review.
+
+All three catalog checks pass. Translation work was paused after this batch
+and has since resumed; TODO Later retains the historical pause checkpoint.
+Other implementation work continues. Existing Upcoming regression coverage
+remains recorded in the corresponding feature and security entries.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
 
 # v12.07 2026-09-27 WeKan ® release
 

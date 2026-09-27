@@ -8,6 +8,8 @@
 const { translateGroupLabel, formatRemainingTime } = require('./chartCalculations');
 
 const CHART_TITLE_KEYS = {
+  scrumSprint: ['board-view-sprint-report', 'Sprint Report'],
+  scrumVelocity: ['board-view-velocity', 'Velocity'],
   agingWip: ['board-view-aging-wip', 'Aging WIP'],
   blockerAnalysis: ['board-view-blocker-analysis', 'Blocker Analysis'],
   monteCarlo: ['board-view-monte-carlo', 'Monte Carlo Forecasts'],
@@ -42,6 +44,28 @@ function chartExportRows(chartKey, data, translate = (key, fallback) => fallback
   const title = chartTitle(chartKey, translate);
   if (['agingWip', 'blockerAnalysis', 'monteCarlo', 'processBehavior', 'sizeCycleTime'].includes(chartKey)) {
     return { title, ...require('./flowAnalyticsRows').flowAnalyticsRows(chartKey, data, translate) };
+  }
+
+  if (['scrumSprint', 'scrumVelocity'].includes(chartKey)) {
+    const totals = ['committed', 'completed', 'added', 'removed', 'incomplete'];
+    const headers = [translate('scrum-sprint', 'Sprint'), translate('scrum-estimate-unit', 'Unit')];
+    for (const key of totals) {
+      const label = translate(`scrum-${key}`, key);
+      headers.push(`${label}: ${translate('cards', 'Cards')}`,
+        `${label}: ${translate('scrum-estimate', 'Estimate')}`,
+        `${label}: ${translate('scrum-unknown-estimate', 'Unknown estimate')}`);
+    }
+    headers.push(translate('scrum-working-days', 'Working days'));
+    headers.push(translate('scrum-estimate-source', 'Estimate source'),
+      translate('custom-field', 'Custom field'), translate('scrum-completion-policy', 'Completion policy'));
+    const commitment = `${translate('scrum-completed', 'Completed')} / ${translate('scrum-committed', 'Committed')}`;
+    headers.push(`${commitment}: ${translate('cards', 'Cards')}`,
+      `${commitment}: ${translate('scrum-estimate', 'Estimate')}`,
+      `${commitment}: ${translate('scrum-unknown-estimate', 'Unknown estimate')}`);
+    return { title: data.partial ? `${title} — ${translate('scrum-partial-report', 'Visible assigned cards only')}` : title, headers, rows: (data.reports || []).map(report =>
+      [report.partial ? `${report.name} — ${translate('scrum-partial-snapshot', 'Partial original snapshot')}` : report.name, report.unit, ...totals.flatMap(key => [report[key].count, report[key].estimate, report[key].unknown]), report.plannedWorkingDays ?? '',
+        report.estimateSource || '', report.estimateCustomFieldId || '', report.completionPolicy || '',
+        report.completedCommitment?.count ?? '', report.completedCommitment?.estimate ?? '', report.completedCommitment?.unknown ?? '']) };
   }
 
   if (chartKey === 'cumulativeFlow') {

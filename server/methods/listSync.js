@@ -38,6 +38,9 @@ Meteor.methods({
       url: Match.Optional(String),
       projectKey: String,
       enabled: Match.Optional(Boolean),
+      createCards: Match.Optional(Boolean),
+      archiveCards: Match.Optional(Boolean),
+      fields: Match.Optional([Match.OneOf('title', 'description', 'spentTime')]),
       token: Match.Optional(Match.OneOf(String, null)),
       username: Match.Optional(String),
     }));
@@ -59,6 +62,9 @@ Meteor.methods({
           url: config.url || '',
           projectKey: config.projectKey,
           enabled: config.enabled !== false,
+          createCards: config.createCards !== false,
+          archiveCards: config.archiveCards !== false,
+          fields: config.fields || ['title', 'description'],
         },
       },
     });

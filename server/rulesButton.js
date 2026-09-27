@@ -1,3 +1,4 @@
+import { withRuleHistory, removeRuleWithUnusedParts, writeRuleComponent } from '/server/lib/ruleHistory';
 import { Meteor } from 'meteor/meteor';
 import { check, Match } from 'meteor/check';
 import { ReactiveCache } from '/imports/reactiveCache';
@@ -116,7 +117,7 @@ Meteor.methods({
 
   // #2713: edit an existing rule's trigger/action in place instead of forcing
   // "delete the rule, recreate it from scratch". The rule document keeps its
-  // own _id (and, when it already has one, its trigger/action _ids too) —
+  // own _id (and its unshared trigger/action _ids too) —
   // only their CONTENT is replaced, so anything that already refers to this
   // rule by id keeps working after the edit.
   async 'rules.updateRule'(ruleId, title, trigger, action) {
@@ -155,34 +156,24 @@ Meteor.methods({
     }
     const triggerDoc = { ...clean(trigger), boardId };
 
-    // Full-document replace (not $set) so a trigger/action switched to a
-    // different type does not keep stale fields from the type it replaced -
-    // and keep the existing _id when there is one, so the rule's triggerId/
-    // actionId never have to change just because the configuration did.
-    let triggerId = rule.triggerId;
-    if (triggerId) {
-      await Triggers.updateAsync(triggerId, triggerDoc);
-    } else {
-      triggerId = await Triggers.insertAsync(triggerDoc);
-    }
-    let actionId = rule.actionId;
-    if (actionId) {
-      await Actions.updateAsync(actionId, actionDoc);
-    } else {
-      actionId = await Actions.insertAsync(actionDoc);
-    }
+    return withRuleHistory(ruleId, this.userId, async () => {
+      // Full-document replace (not $set) so a trigger/action switched to a
+      // different type does not keep stale fields from the type it replaced -
+      // and keep existing unshared IDs. Shared components get a private copy
+      // so editing this rule cannot change a sibling rule's configuration.
+      const triggerId = await writeRuleComponent(rule, 'trigger', triggerDoc);
+      const actionId = await writeRuleComponent(rule, 'action', actionDoc);
 
-    const ruleSet = {
-      title: title || rule.title || 'Rule',
-      triggerId,
-      actionId,
-    };
-    if (trigger && trigger.activityType === 'button') {
-      ruleSet.buttonType = trigger.buttonType || 'card';
-      ruleSet.buttonLabel = trigger.buttonLabel || ruleSet.title;
-    }
-    await Rules.updateAsync(ruleId, { $set: ruleSet });
-    return { _id: ruleId, triggerId, actionId };
+      const ruleSet = {
+        title: title || rule.title || 'Rule',
+        triggerId,
+        actionId,
+      };
+      const { ruleButtonMetadata } = require('/models/lib/ruleButtonMetadata');
+      const buttonModifier = ruleButtonMetadata(triggerDoc, ruleSet.title);
+      await Rules.updateAsync(ruleId, { ...buttonModifier, $set: { ...ruleSet, ...buttonModifier.$set } });
+      return { _id: ruleId, triggerId, actionId };
+    });
   },
 
   // Delete a rule (and its trigger + action) on the server in one call. The rule
@@ -208,9 +199,7 @@ Meteor.methods({
       throw new Meteor.Error('not-authorized', 'Must be a board admin');
     }
 
-    await Rules.removeAsync(rule._id);
-    if (rule.triggerId) await Triggers.removeAsync(rule.triggerId);
-    if (rule.actionId) await Actions.removeAsync(rule.actionId);
+    await withRuleHistory(rule._id, this.userId, () => removeRuleWithUnusedParts(rule));
     return { _id: rule._id };
   },
 

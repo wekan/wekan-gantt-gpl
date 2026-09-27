@@ -18,6 +18,9 @@ const Swimlanes = new Mongo.Collection('swimlanes');
  */
 Swimlanes.attachSchema(
   new SimpleSchema({
+    // Scrum metadata is optional and hidden by default; only validated methods write it.
+    scrum: { type: Object, optional: true, blackbox: true },
+    scrumRevision: { type: Number, optional: true, min: 0 },
     title: {
       /**
        * the title of the swimlane
@@ -145,13 +148,14 @@ Swimlanes.attachSchema(
 );
 
 Swimlanes.helpers({
-  async copy(boardId, targetSwimlaneId = null, position = 'below', title = '', cardIdMap = null, withoutCards = false) {
+  async copy(boardId, targetSwimlaneId = null, position = 'below', title = '', cardIdMap = null, withoutCards = false, copyOptions, copyMaps = null) {
     const oldId = this._id;
     const oldBoardId = this.boardId;
     const desiredTitle = typeof title === 'string' && title.trim().length > 0
       ? title.trim()
       : this.title;
-    this.boardId = boardId;
+    const { copiedScrumMetadata } = require('./lib/scrumCopy');
+    const copiedMetadata = copiedScrumMetadata(this, boardId, { omit: !!copyMaps || copyOptions?.scrum === false });
 
     if (process.env.DEBUG === 'true') {
       console.log('[copySwimlane] start', {
@@ -193,10 +197,15 @@ Swimlanes.helpers({
       }
     }
 
-    this.sort = targetSort;
-    this.title = desiredTitle;
-    delete this._id;
-    const newSwimlaneId = await Swimlanes.insertAsync(this);
+    const copy = { ...this, boardId, sort: targetSort, title: desiredTitle };
+    delete copy._id;
+    delete copy.scrum;
+    delete copy.scrumRevision;
+    Object.assign(copy, copiedMetadata);
+    const newSwimlaneId = await Swimlanes.insertAsync(copy);
+    if (copyMaps) copyMaps.swimlanes[oldId] = newSwimlaneId;
+
+    if (copyOptions && !copyOptions.lists) return newSwimlaneId;
 
     const sourceBoard = oldBoardId ? await ReactiveCache.getBoard(oldBoardId) : null;
     // Use the ASYNC default-swimlane getter here (this runs on the server): the
@@ -235,7 +244,7 @@ Swimlanes.helpers({
     // when a swimlane is copied to ANOTHER board those label assignments are
     // silently lost. Pre-create the missing labels here (by name + color) so the
     // per-card remap inside card.copy() finds a match for every label.
-    if (!withoutCards && oldBoardId && oldBoardId !== boardId) {
+    if (!withoutCards && oldBoardId && oldBoardId !== boardId && (!copyOptions || copyOptions.labels)) {
       const sourceBoardLabels =
         (sourceBoard && sourceBoard.labels) || [];
       const destBoard = await ReactiveCache.getBoard(boardId);
@@ -282,7 +291,9 @@ Swimlanes.helpers({
         swimlaneId: newSwimlaneId,
         color: sourceList.color,
         width: sourceList.width,
+        ...copiedScrumMetadata(sourceList, boardId, { omit: !!copyMaps || copyOptions?.scrum === false }),
       });
+      if (copyMaps) copyMaps.lists[sourceList._id] = newListId;
 
       // #4726 "Clone Board without cards": when withoutCards is set, the
       // board/swimlane/list/label/custom-field structure above is still
@@ -296,7 +307,7 @@ Swimlanes.helpers({
         const cards = await ReactiveCache.getCards(cardQuery, { sort: { sort: 1 } });
 
         for (const card of cards) {
-          await card.copy(boardId, newSwimlaneId, newListId, cardIdMap);
+          await card.copy(boardId, newSwimlaneId, newListId, cardIdMap, copyOptions, !!copyMaps);
         }
       }
     }
@@ -349,7 +360,9 @@ Swimlanes.helpers({
       if (toList) {
         toListId = toList._id;
       } else {
+        const { copiedScrumMetadata } = require('./lib/scrumCopy');
         toListId = await Lists.insertAsync({
+          ...copiedScrumMetadata(list, toBoardId),
           title: list.title,
           boardId: toBoardId,
           type: list.type,
@@ -704,3 +717,13 @@ Swimlanes.helpers({
 });
 
 export default Swimlanes;
+
+// Prevent direct DDP writes bypassing Scrum reference and lifecycle validation.
+if (Meteor.isServer) {
+  Swimlanes.deny({
+    insert(userId, doc) { return doc.scrum !== undefined || doc.scrumRevision !== undefined; },
+    update(userId, doc, fields) {
+      return fields.some(field => field === 'scrum' || field.startsWith('scrum.') || field === 'scrumRevision');
+    },
+  });
+}

@@ -1,10 +1,11 @@
 import { ReactiveCache } from '/imports/reactiveCache';
 import { TAPi18n } from '/imports/i18n';
 import { formatDateByUserPreference } from '/imports/lib/dateUtils';
-import { line, tableRow, buildPdfBuffer } from '/models/lib/pdfDocument';
+import { line, tableRow, wrapTextBlock, buildPdfBuffer } from '/models/lib/pdfDocument';
 import { buildUnicodePdf } from '/models/server/buildUnicodePdf';
 import { attachmentDisposition, exportFilename } from '/models/lib/exportFilename';
 import { loadBoardChartData } from '/server/lib/boardChartData';
+import { loadScrumChartData } from '/server/lib/scrumChartData';
 const { chartExportRows } = require('/models/lib/chartExportRows');
 
 async function unicodeFonts() {
@@ -45,8 +46,10 @@ class ExporterChartPDF {
   }
 
   async canExport(user) {
+    this.userId = user?._id || null;
     const board = await ReactiveCache.getBoard(this._boardId);
-    return board && board.isVisibleBy(user);
+    const { canExportBoardData } = require('/models/lib/exportAccess');
+    return canExportBoardData(board, user, this._chartKey);
   }
 
   async build(res) {
@@ -56,7 +59,9 @@ class ExporterChartPDF {
       res.end('Board not found');
       return;
     }
-    const data = await loadBoardChartData(this._boardId, this._chartKey, this.options);
+    const data = ['scrumVelocity', 'scrumSprint'].includes(this._chartKey)
+      ? await loadScrumChartData(this.userId, this._boardId, this._chartKey, this.options)
+      : await loadBoardChartData(this._boardId, this._chartKey, this.options);
     const { title, headers, rows } = chartExportRows(
       this._chartKey, data || {}, (key, fallback) => this.__(key, fallback));
     const details = require('/models/lib/flowAnalyticsRows').flowDetailRows(
@@ -66,9 +71,21 @@ class ExporterChartPDF {
     // One tableRow per header/data row: fixed column widths, one line each,
     // so a long card title clips instead of pushing its dates off the line.
     const lines = [line(`${board.title} - ${title}`, true), ''];
-    if (headers.length) lines.push(tableRow(headers, { header: true }));
-    rows.forEach(row => lines.push(tableRow(row.map(cell =>
-      cell instanceof Date ? this.date(cell) : String(cell ?? '')))));
+    if (['scrumVelocity', 'scrumSprint'].includes(this._chartKey)) {
+      // A sprint has many metrics. Full-width wrapped labels retain context
+      // that a narrow multi-column PDF table would clip away.
+      for (const row of rows) {
+        headers.forEach((header, index) => {
+          const value = row[index] instanceof Date ? this.date(row[index]) : String(row[index] ?? '');
+          lines.push(...wrapTextBlock(`${header}: ${value}`).map(text => line(text, index === 0)));
+        });
+        lines.push('');
+      }
+    } else {
+      if (headers.length) lines.push(tableRow(headers, { header: true }));
+      rows.forEach(row => lines.push(tableRow(row.map(cell =>
+        cell instanceof Date ? this.date(cell) : String(cell ?? '')))));
+    }
     if (!rows.length) lines.push(line(this.__('no-data', 'No data')));
 
     let pdf;

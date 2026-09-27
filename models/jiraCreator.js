@@ -4,6 +4,10 @@ import { ReactiveCache } from '/imports/reactiveCache';
 import Activities from '/models/activities';
 import Boards from './boards';
 import Cards from '/models/cards';
+import CustomFields from '/models/customFields';
+const { jiraTimeTracking, JIRA_ESTIMATE_FIELDS } = require('./lib/jiraTimeTracking');
+const { jiraScrumMetadata, jiraScrumListCategories } = require('./lib/jiraScrumMetadata');
+const { validateJiraEstimateMapping, jiraEstimateValue } = require('./lib/jiraEstimateMapping');
 import Lists from '/models/lists';
 import Swimlanes from '/models/swimlanes';
 import Rules from '/models/rules';
@@ -35,11 +39,13 @@ export class JiraCreator {
   constructor(data) {
     this._nowDate = new Date();
     this.members = data && data.membersMapping ? data.membersMapping : {};
-    this.lists = {};
+    // Imported names are data, including names such as "constructor".
+    this.lists = Object.create(null);
     this.swimlane = null;
     // #3392: Jira issue key -> new card id, for mapping issue links to
     // card-to-card dependencies ("Red Strings") after all cards are created.
-    this.cardsByKey = {};
+    this.cardsByKey = Object.create(null);
+    this.timeFields = {};
   }
 
   _now(dateString) {
@@ -123,6 +129,7 @@ export class JiraCreator {
   }
 
   async createLists(data, boardId) {
+    const categories = jiraScrumListCategories(this._issues(data));
     let sort = 0;
     for (const issue of this._issues(data)) {
       const statusName =
@@ -134,10 +141,33 @@ export class JiraCreator {
         boardId,
         createdAt: this._now(),
         title: statusName,
+        ...(categories.has(statusName) ? { scrum: { category: categories.get(statusName) }, scrumRevision: 1 } : {}),
         sort,
       });
       this.lists[statusName] = listId;
       sort += 1;
+    }
+  }
+
+  async createTimeFields(data, boardId) {
+    if (this.estimateMapping) {
+      const { estimateFieldId, estimateUnit } = this.estimateMapping;
+      this.estimateFieldId = await CustomFields.direct.insertAsync({
+        boardIds: [boardId], name: `Jira estimate (${estimateUnit})`, type: 'number',
+        settings: { jiraEstimateFieldId: estimateFieldId, jiraEstimateUnit: estimateUnit },
+        showOnCard: false, automaticallyOnCard: false, alwaysOnCard: false, showLabelOnMiniCard: false,
+      });
+      await Boards.direct.updateAsync(boardId, { $set: { scrum: { estimateSource: 'customField',
+        estimateCustomFieldId: this.estimateFieldId, estimateUnit }, scrumRevision: 1 } });
+    }
+    const values = this._issues(data).map(issue => jiraTimeTracking(issue.fields));
+    for (const field of JIRA_ESTIMATE_FIELDS) {
+      if (!values.some(value => value[field.key] !== undefined)) continue;
+      this.timeFields[field.key] = await CustomFields.direct.insertAsync({
+        boardIds: [boardId], name: field.name, type: 'number', settings: { jiraTimeField: field.key },
+        showOnCard: false, automaticallyOnCard: false, alwaysOnCard: false,
+        showLabelOnMiniCard: false,
+      });
     }
   }
 
@@ -162,6 +192,18 @@ export class JiraCreator {
         userId: this._user(),
         labelIds: [],
       };
+      const time = jiraTimeTracking(fields);
+      const { card: scrum } = jiraScrumMetadata(fields);
+      if (Object.keys(scrum).length) {
+        cardToCreate.scrum = scrum;
+        cardToCreate.scrumRevision = 1;
+      }
+      if (time.spent !== undefined) cardToCreate.spentTime = time.spent;
+      cardToCreate.customFields = JIRA_ESTIMATE_FIELDS
+        .filter(field => time[field.key] !== undefined && this.timeFields[field.key])
+        .map(field => ({ _id: this.timeFields[field.key], value: time[field.key] }));
+      const estimate = jiraEstimateValue(fields, this.estimateMapping);
+      if (estimate !== undefined) cardToCreate.customFields.push({ _id: this.estimateFieldId, value: estimate });
       // Jira's REPORTER is WeKan's "Requested By": the person who asked for the
       // work, as opposed to the assignee who does it. It is a free-text field
       // here, so it takes the display name rather than needing a mapped user -
@@ -250,6 +292,15 @@ export class JiraCreator {
   }
 
   async create(board, currentBoardId) {
+    // Validate before archiving a Sandstorm board or creating any documents.
+    try { this.estimateMapping = validateJiraEstimateMapping(board); }
+    catch (error) { throw new Meteor.Error('invalid-jira-estimate', error.message); }
+    try { jiraScrumListCategories(this._issues(board)); }
+    catch (error) { throw new Meteor.Error('invalid-jira-scrum', error.message); }
+    for (const issue of this._issues(board)) {
+      try { jiraTimeTracking(issue.fields); }
+      catch (error) { throw new Meteor.Error('invalid-jira-time', error.message); }
+    }
     const isSandstorm =
       Meteor.settings && Meteor.settings.public && Meteor.settings.public.sandstorm;
     if (isSandstorm && currentBoardId) {
@@ -259,6 +310,7 @@ export class JiraCreator {
     const boardId = await this.createBoard(board);
     await this.createSwimlanes(boardId);
     await this.createLists(board, boardId);
+    await this.createTimeFields(board, boardId);
     await this.createCards(board, boardId);
     await this.createDependencies(board);
     await this.createRules(board, boardId);

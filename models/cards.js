@@ -63,6 +63,9 @@ const Cards = new Mongo.Collection('cards');
 // of comments just to display the number of them in the board view.
 Cards.attachSchema(
   new SimpleSchema({
+    // Scrum metadata is optional and hidden by default; only validated methods write it.
+    scrum: { type: Object, optional: true, blackbox: true },
+    scrumRevision: { type: Number, optional: true, min: 0 },
     title: {
       /**
        * the title of the card
@@ -287,6 +290,10 @@ Cards.attachSchema(
     // - together they are how the reconcile step (models/lib/listSyncReconcile.js)
     // matches an already-imported card back to its external item on the next
     // run, instead of creating a duplicate.
+    syncLastSource: { type: Object, optional: true },
+    'syncLastSource.title': { type: String, optional: true },
+    'syncLastSource.description': { type: String, optional: true },
+    'syncLastSource.spentTime': { type: Number, optional: true, min: 0 },
     syncExternalId: {
       type: String,
       optional: true,
@@ -1042,15 +1049,23 @@ Cards.helpers({
 },
 
 
-  async copy(boardId, swimlaneId, listId, cardIdMap = null) {
+  async copy(boardId, swimlaneId, listId, cardIdMap = null, copyOptions, deferScrum = false) {
     const oldId = this._id;
     const oldCard = await ReactiveCache.getCard(oldId);
 
     // Work on a shallow copy to avoid mutating the source card in ReactiveCache
     const cardData = { ...this };
+    const { copiedCardScrum } = require('./lib/scrumCopy');
+    delete cardData.scrum;
+    delete cardData.scrumRevision;
+    Object.assign(cardData, copiedCardScrum(this, boardId, { omit: deferScrum || copyOptions?.scrum === false }));
     delete cardData._id;
     // getRealId() caches __id on rendered cards; it is not a schema field.
     delete cardData.__id;
+    // A copy is independent work, not a second target for the same source item.
+    delete cardData.syncExternalId;
+    delete cardData.syncSourceType;
+    delete cardData.syncLastSource;
 
     // Normalize customFields to ensure it's always an array
     if (!Array.isArray(cardData.customFields)) {
@@ -1076,9 +1091,13 @@ Cards.helpers({
       // skip unnamed labels, otherwise every unnamed destination label would be
       // wrongly selected (mirrors the guard used by Cards.move()).
       const newCardLabels = filterCopiedLabelIds((newBoard && newBoard.labels) || [], oldCardLabels);
-      cardData.labelIds = newCardLabels;
+      cardData.labelIds = copyOptions ? (copyOptions.labels ? [...(this.labelIds || [])] : []) : newCardLabels;
 
-      cardData.customFields = await this.mapCustomFieldsToBoard(newBoard._id);
+      // A scoped board copy clones definitions and remaps their IDs after the
+      // cards exist. Do not share/mutate the source definitions on this path.
+      cardData.customFields = copyOptions
+        ? (copyOptions.customFields ? (this.customFields || []).map(field => ({ ...field })) : [])
+        : await this.mapCustomFieldsToBoard(newBoard._id);
     }
 
     cardData.boardId = boardId;
@@ -1108,6 +1127,8 @@ Cards.helpers({
       cardData.cardDependencies = normalizeDependencies(this.cardDependencies);
     }
 
+    if (copyOptions && !copyOptions.labels) cardData.labelIds = [];
+    if (copyOptions && !copyOptions.attachments) delete cardData.coverId;
     const _id = await Cards.insertAsync(cardData);
 
     // #3392: record old->new id so a whole-board/swimlane copy can remap
@@ -1117,12 +1138,12 @@ Cards.helpers({
     }
 
     // Copy attachments (server-only — requires filesystem access)
-    if (Meteor.isServer) {
+    if (Meteor.isServer && (!copyOptions || copyOptions.attachments)) {
       const { copyFile } = require('./lib/fileStoreStrategy.js');
       const { fileStoreStrategyFactory } = require('./attachments.server');
       const attachmentList = await ReactiveCache.getAttachments(liveAttachments({ 'meta.cardId': oldId }));
       for (const att of attachmentList) {
-        copyFile(att, _id, fileStoreStrategyFactory);
+        await copyFile(att, _id, fileStoreStrategyFactory);
       }
 
       // #5364: "show as thumb" / cover is stored as coverId pointing at an
@@ -1132,8 +1153,7 @@ Cards.helpers({
       // old->new attachment id map and remap coverId to the new attachment id.
       const sourceCoverId = oldCard ? oldCard.coverId : this.coverId;
       if (sourceCoverId) {
-        // copyFile writes the new attachment asynchronously on stream 'end',
-        // so the new doc may not be queryable immediately; retry briefly.
+        // Attachments have finished copying; resolve their new cover ID.
         let newCoverId;
         for (let attempt = 0; attempt < 20 && !newCoverId; attempt += 1) {
           const copied = await ReactiveCache.getAttachments({
@@ -1159,7 +1179,7 @@ Cards.helpers({
     }
 
     // copy checklists
-    const checklists = await ReactiveCache.getChecklists({ cardId: oldId });
+    const checklists = !copyOptions || copyOptions.checklists ? await ReactiveCache.getChecklists({ cardId: oldId }) : [];
     for (const ch of checklists) {
       await ch.copy(_id);
     }
@@ -1170,7 +1190,7 @@ Cards.helpers({
     // new board — and it mutated the cached source docs). Re-home them onto the
     // destination board alongside the copied parent.
     const { buildCopiedSubtaskFields } = require('./lib/subtaskCopy');
-    const subtasks = await ReactiveCache.getCards({ parentId: oldId });
+    const subtasks = copyOptions ? [] : await ReactiveCache.getCards({ parentId: oldId });
     for (const subtask of subtasks) {
       const copySubtask = buildCopiedSubtaskFields(subtask, {
         newParentId: _id,
@@ -1188,7 +1208,7 @@ Cards.helpers({
     }
 
     // copy card comments (#5166: re-home them onto the destination board)
-    const comments = await ReactiveCache.getCardComments({ cardId: oldId });
+    const comments = !copyOptions || copyOptions.comments ? await ReactiveCache.getCardComments({ cardId: oldId }) : [];
     for (const cmt of comments) {
       await cmt.copy(_id, boardId);
     }
@@ -4121,3 +4141,13 @@ if (Meteor.isServer) {
 }
 
 export default Cards;
+
+// Prevent direct DDP writes bypassing Scrum reference and lifecycle validation.
+if (Meteor.isServer) {
+  Cards.deny({
+    insert(userId, doc) { return doc.scrum !== undefined || doc.scrumRevision !== undefined; },
+    update(userId, doc, fields) {
+      return fields.some(field => field === 'scrum' || field.startsWith('scrum.') || field === 'scrumRevision');
+    },
+  });
+}

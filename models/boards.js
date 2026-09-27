@@ -1,3 +1,4 @@
+import { normalizeBoardCopyOptions } from '/models/lib/boardCopyOptions';
 import { Meteor } from 'meteor/meteor';
 import { Mongo } from 'meteor/mongo';
 import { check, Match } from 'meteor/check';
@@ -71,6 +72,11 @@ const Boards = new Mongo.Collection('boards');
  */
 Boards.attachSchema(
   new SimpleSchema({
+    // Scrum metadata is optional and hidden by default; only validated methods write it.
+    scrum: { type: Object, optional: true, blackbox: true },
+    scrumRevision: { type: Number, optional: true, min: 0 },
+    scrumImportLosses: { type: Array, optional: true },
+    'scrumImportLosses.$': { type: Object, blackbox: true },
     title: {
       /**
        * The title of the board
@@ -1467,9 +1473,23 @@ Boards.attachSchema(
 );
 
 Boards.helpers({
-  async copy(withoutCards = false) {
+  async copy(withoutCards = false, copyOptions) {
+    const selection = normalizeBoardCopyOptions(copyOptions);
+    if (withoutCards) selection.cards = false;
     const oldId = this._id;
+    const sourceBoardId = oldId;
+    let scrumExport = null;
+    if (selection.scrum) {
+      const { exportScrumTransfer } = require('/server/lib/scrumTransferExport');
+      const [sourceCards, sourceLists, sourceLanes] = await Promise.all([
+        ReactiveCache.getCards({ boardId: oldId }), ReactiveCache.getLists({ boardId: oldId }), ReactiveCache.getSwimlanes({ boardId: oldId }),
+      ]);
+      scrumExport = await exportScrumTransfer(oldId, sourceCards.map(c => c._id), sourceLists.map(l => l._id), sourceLanes.map(s => s._id));
+    }
+    // Planning references are installed only after destination IDs exist.
+    delete this.scrum; delete this.scrumRevision; delete this.scrumImportLosses;
     const oldWatchers = this.watchers ? this.watchers.slice() : [];
+    if (!selection.labels) this.labels = [];
     delete this._id;
     delete this.slug;
     this.title = await this.copyTitle();
@@ -1495,13 +1515,18 @@ Boards.helpers({
     // id so card-to-card dependencies (#3392 "Red Strings") can be remapped to
     // the copies once every card has been created.
     const cardIdMap = {};
+    const copyMaps = { lists: {}, swimlanes: {} };
     const swimlanes = await ReactiveCache.getSwimlanes({
       boardId: oldId,
       archived: false,
     });
-    for (const swimlane of swimlanes) {
+    for (const swimlane of selection.swimlanes ? swimlanes : []) {
       swimlane.type = 'swimlane';
-      await swimlane.copy(_id, null, 'below', '', cardIdMap, withoutCards);
+      if (copyOptions === undefined) {
+        await swimlane.copy(_id, null, 'below', '', cardIdMap, withoutCards, selection, copyMaps);
+      } else {
+        await swimlane.copy(_id, null, 'below', '', cardIdMap, !selection.cards, selection, copyMaps);
+      }
     }
 
     // #3392: remap card-to-card dependencies (Red Strings) from the source
@@ -1527,9 +1552,17 @@ Boards.helpers({
       });
     }
 
+    if (copyOptions !== undefined) {
+      for (const copied of await ReactiveCache.getCards({ boardId: _id })) {
+        if (copied.parentId) await Cards.updateAsync(copied._id, {
+          $set: { parentId: cardIdMap[copied.parentId] || '' },
+        });
+      }
+    }
+
     // copy custom field definitions
     const cfMap = {};
-    const customFields = await ReactiveCache.getCustomFields({ boardIds: oldId });
+    const customFields = selection.customFields ? await ReactiveCache.getCustomFields({ boardIds: oldId }) : [];
     for (const cf of customFields) {
       const id = cf._id;
       delete cf._id;
@@ -1554,9 +1587,18 @@ Boards.helpers({
       });
     }
 
+    if (scrumExport) {
+      const { importScrumTransfer } = require('/server/lib/scrumTransferImport');
+      const { scrumTransferUserIds } = require('/server/lib/scrumTransferExport');
+      const users = await ReactiveCache.getUsers({ _id: { $in: scrumTransferUserIds(scrumExport.transfer) } });
+      await importScrumTransfer({ cards: cardIdMap, lists: copyMaps.lists, swimlanes: copyMaps.swimlanes,
+        customFields: cfMap, members: Object.fromEntries(users.map(user => [user._id, user._id])) },
+      { _id: sourceBoardId, scrumTransfer: scrumExport.transfer, scrumTransferLosses: scrumExport.losses }, _id);
+    }
+
     // copy rules, actions, and triggers
     const actionsMap = {};
-    const actions = await ReactiveCache.getActions({ boardId: oldId });
+    const actions = selection.rules ? await ReactiveCache.getActions({ boardId: oldId }) : [];
     for (const action of actions) {
       const id = action._id;
       delete action._id;
@@ -1564,14 +1606,14 @@ Boards.helpers({
       actionsMap[id] = await Actions.insertAsync(action);
     }
     const triggersMap = {};
-    const triggers = await ReactiveCache.getTriggers({ boardId: oldId });
+    const triggers = selection.rules ? await ReactiveCache.getTriggers({ boardId: oldId }) : [];
     for (const trigger of triggers) {
       const id = trigger._id;
       delete trigger._id;
       trigger.boardId = _id;
       triggersMap[id] = await Triggers.insertAsync(trigger);
     }
-    const rules = await ReactiveCache.getRules({ boardId: oldId });
+    const rules = selection.rules ? await ReactiveCache.getRules({ boardId: oldId }) : [];
     for (const rule of rules) {
       delete rule._id;
       rule.boardId = _id;
@@ -1585,7 +1627,7 @@ Boards.helpers({
     // copy, so a copied board lost all its outgoing webhooks. Re-home each onto
     // the new board; the URL/token/activities carry over (the copying user is a
     // board admin and already has access to them).
-    const integrations = await ReactiveCache.getIntegrations({ boardId: oldId });
+    const integrations = selection.integrations ? await ReactiveCache.getIntegrations({ boardId: oldId }) : [];
     for (const integration of integrations) {
       delete integration._id;
       integration.boardId = _id;
@@ -3267,3 +3309,13 @@ Boards.labelColors = () => {
 };
 
 export default Boards;
+
+// Prevent direct DDP writes bypassing Scrum reference and lifecycle validation.
+if (Meteor.isServer) {
+  Boards.deny({
+    insert(userId, doc) { return doc.scrum !== undefined || doc.scrumRevision !== undefined || doc.scrumImportLosses !== undefined; },
+    update(userId, doc, fields) {
+      return fields.some(field => field === 'scrum' || field.startsWith('scrum.') || field === 'scrumRevision' || field === 'scrumImportLosses' || field.startsWith('scrumImportLosses.'));
+    },
+  });
+}

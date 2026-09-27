@@ -44,9 +44,20 @@ test('#2131: read-only users cannot insert a swimlane', async ({ page, user2, bo
 });
 
 for (const withoutCards of [false, true]) {
-  test(`multiselection duplicates all selected boards, without cards: ${withoutCards}`, async ({ boardPage: page, board }) => {
+  test(`#2321: multiselection duplicates boards without source history, without cards: ${withoutCards}`, async ({ boardPage: page, board }) => {
     const second = db.seedBoard({ ownerId: board.owner.id, title: 'Second bulk source', cardTitlesPerList: [['Second card']] });
     const sourceIds = [board.boardId, second.boardId];
+    const historicalDate = new Date('2018-01-02T12:00:00Z');
+    const history = sourceIds.flatMap((boardId, index) => [
+      { _id: `history-board-${boardId}`, boardId, userId: board.owner.id,
+        activityType: 'createBoard', createdAt: historicalDate },
+      { _id: `history-card-${boardId}`, boardId, userId: board.owner.id,
+        cardId: db.find('cards', { boardId })[0]._id,
+        activityType: 'moveCard', createdAt: historicalDate,
+        oldListId: `old-list-${index}`, listId: `new-list-${index}` },
+    ]);
+    db.insertMany('activities', history);
+    const originalHistory = db.find('activities', { _id: { $in: history.map(a => a._id) } });
     const previousIds = db.find('boards', { 'members.userId': board.owner.id }).map(b => b._id);
     const copies = () => db.find('boards', { 'members.userId': board.owner.id }).filter(b => !previousIds.includes(b._id));
     try {
@@ -54,15 +65,17 @@ for (const withoutCards of [false, true]) {
       await expect(page.locator('.js-board-tile-menu')).toHaveCount(0);
       await page.locator('.js-all-boards-sidebar-multiselection').first().click();
       for (const id of sourceIds) await page.locator(`li.js-board.${id} .js-toggle-board-multi-selection`).click();
-      const regular = page.locator('.js-duplicate-selected-boards:not([data-without-cards])');
-      const empty = page.locator('.js-duplicate-selected-boards-without-cards');
-      expect(await regular.evaluate(el => el.nextElementSibling.classList.contains('js-duplicate-selected-boards-without-cards'))).toBe(true);
-      const action = withoutCards ? empty : regular;
-      page.once('dialog', dialog => dialog.dismiss());
+      const action = page.locator('.js-duplicate-selected-boards');
+      await expect(page.locator('.js-duplicate-selected-boards-without-cards')).toHaveCount(0);
       await action.click();
+      await page.locator('.js-copy-cancel').click();
       expect(copies()).toHaveLength(0);
-      page.once('dialog', dialog => dialog.accept());
       await action.click();
+      const popup = page.locator('.js-duplicate-boards-form');
+      await expect(popup.locator('[role="checkbox"][aria-checked="true"]')).toHaveCount(10);
+      if (withoutCards) await popup.locator('[data-field="cards"]').click();
+      await popup.locator('button[type="submit"]').click();
+      await expect(popup).toHaveCount(0);
       await expect.poll(() => copies().length).toBe(2);
       for (const copy of copies()) {
         await expect.poll(() => db.find('lists', { boardId: copy._id }).length).toBe(3);
@@ -70,6 +83,11 @@ for (const withoutCards of [false, true]) {
         if (withoutCards) expect(db.find('cards', { boardId: copy._id })).toHaveLength(0);
         else await expect.poll(() => db.find('cards', { boardId: copy._id }).length).toBeGreaterThan(0);
       }
+      const copiedHistory = db.find('activities', { boardId: { $in: copies().map(b => b._id) } });
+      // Fresh creation events are legitimate; historical source events are not.
+      expect(copiedHistory.some(a => new Date(a.createdAt).getTime() === historicalDate.getTime())).toBe(false);
+      expect(copiedHistory.some(a => history.some(old => old._id === a._id || old.cardId && old.cardId === a.cardId))).toBe(false);
+      expect(db.find('activities', { _id: { $in: history.map(a => a._id) } })).toEqual(originalHistory);
       for (const id of sourceIds) expect(db.find('cards', { boardId: id }).length).toBeGreaterThan(0);
     } finally { db.cleanup({ boardIds: [second.boardId, ...copies().map(b => b._id)] }); }
   });
@@ -88,7 +106,7 @@ test('board tiles have no action menu and normal members cannot archive or dupli
   expect(result).toBe('error-board-notAdmin');
   expect(db.getBoard(board.boardId).archived).toBe(false);
   const copyResult = await page.evaluate(async id => {
-    try { await Meteor.callAsync('copyBoard', id, { withoutCards: true }); return 'allowed'; }
+    try { await Meteor.callAsync('copyBoard', id, { copyOptions: { cards: false } }); return 'allowed'; }
     catch (e) { return e.error; }
   }, board.boardId);
   expect(copyResult).toBe('not-authorized');

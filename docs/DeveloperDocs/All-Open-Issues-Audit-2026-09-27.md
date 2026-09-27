@@ -30,7 +30,7 @@ still use the guarded collection insert; board archive/copy retain admin checks.
 | [#5474: Impersonate User for REST API](https://github.com/wekan/wekan/issues/5474) | REST API | REST impersonation adds delegation authority. No new impersonation header or permission bypass added. |
 | [#5444: Feature Request: Archived cards count shown like GitHub contributions count](https://github.com/wekan/wekan/issues/5444) | Board View → Charts | Archived contribution heatmap remains a feature gap; needs archived-date aggregation and board/assigned-only scope coverage. |
 | [#5339: Feature request: default organization for new accounts registered via the same OAUTH provider](https://github.com/wekan/wekan/issues/5339) | Admin Panel → Organizations | OAuth-provider-driven automatic organization membership requires explicit provisioning/revocation rules; no automatic privilege grants added. |
-| [#5323: Notification on card due date.](https://github.com/wekan/wekan/issues/5323) | Board Settings → Notifications / Rules | Due reminders exist; per-board webhook offsets and scheduled rule triggers remain unverified gaps. |
+| [#5323: Notification on card due date.](https://github.com/wekan/wekan/issues/5323) | Board Settings → Notifications / Rules | Due reminders and scheduled rule triggers exist. Per-board reminder/webhook configuration, assignee email recipients and start-date rule reminders remain separate gaps. |
 | [#5171: Feature Request: make mails more clearly arranged](https://github.com/wekan/wekan/issues/5171) | Admin Panel → Notifications | Notification delivery exists; requested customizable HTML layout/templates need escaping and actual MIME delivery tests. |
 | [#5148: SmartWatch ?](https://github.com/wekan/wekan/issues/5148) | Platform research | Smartwatch discussion, not a reproducible application bug or specified device implementation. |
 | [#5141: Feature Request: Feature/Bug: Board admin/owner should be able to set organizations/teams](https://github.com/wekan/wekan/issues/5141) | Board Settings → Organizations / Teams | Board-admin methods exist, but available organization/team publications require a permission-safe scoped picker. Do not publish all administration data. |
@@ -50,7 +50,7 @@ still use the guarded collection insert; board archive/copy retain admin checks.
 | [#4403: Restrict WeKan port access only on loopback](https://github.com/wekan/wekan/issues/4403) | Deployment settings | Loopback binding needs validation on the reported Snap/Apache installation. Local source-app behavior does not certify Snap wiring. |
 | [#4361: How to login to Linux desktop or website with AD (Active Directory) credentials?](https://github.com/wekan/wekan/issues/4361) | Admin Panel → People → Authentication | Windows/AD Kerberos/SSPI and desktop login need the actual domain/platform; do not bypass authentication with trusted arbitrary headers. |
 | [#4294: Make Rules less clunky](https://github.com/wekan/wekan/issues/4294) | Board Settings → Rules | Rule editing exists; multiple triggers/actions and variable-valued action fields need schema/execution semantics beyond the current single trigger/action pair. |
-| [#4278: Feature Request: Send a reminder to the assigned person if a task is due](https://github.com/wekan/wekan/issues/4278) | Board Settings → Notifications / Rules | Due reminders exist; per-board webhook offsets and scheduled rule triggers remain unverified gaps. |
+| [#4278: Feature Request: Send a reminder to the assigned person if a task is due](https://github.com/wekan/wekan/issues/4278) | Board Settings → Notifications / Rules | Due reminders and scheduled rule triggers exist. Per-board reminder/webhook configuration, assignee email recipients and start-date rule reminders remain separate gaps. |
 | [#4265: Feature Request: Hidden Boards list at All Boards page, and Reorganize Board OrgsTeamsPeople](https://github.com/wekan/wekan/issues/4265) | All Boards | Workspace organization exists; automatic alphabet/label grouping and per-user hidden-board/team opt-out semantics remain incomplete. |
 | [#4256: Feature Request: Visibility of label texts and other settings should be per board (currently per user)](https://github.com/wekan/wekan/issues/4256) | Board View / Member Settings | Board defaults and label flags exist; independently remembered per-board user view selection is still missing from the global profile preference. |
 | [#4250:  Can move one checklist from one card to another one  card's checklist?](https://github.com/wekan/wekan/issues/4250) | Checklist → Move | Move support exists; full cross-board checklist item/history/permission preservation is not yet browser-verified here. |
@@ -92,7 +92,7 @@ still use the guarded collection insert; board archive/copy retain admin checks.
 | [#2449: [Feature] Board Key](https://github.com/wekan/wekan/issues/2449) | Board Settings → Card numbering | Existing card numbers are not globally unique prefixed board keys; atomic allocation, imports and moves need coordinated tests. |
 | [#2435: Feature Request: New Rule - Send email (功能需求：新建规则-添加收件人)](https://github.com/wekan/wekan/issues/2435) | Rules → Send email | Recipient autocomplete/current-card people selection needs a scoped picker and mail delivery tests. |
 | [#6549: OAuth2 Partially Working - Rocket.Chat->G Suite SAML App](https://github.com/wekan/wekan/issues/6549) | Authentication | Provider redirect/session behavior needs the actual Rocket.Chat/G Suite/Auth0 chain; local URL tests are insufficient. |
-| [#2321: Feature Request: Remove Activity from Duplicated Board](https://github.com/wekan/wekan/issues/2321) | All Boards → Duplicate | Copying behavior and options need explicit history exclusion verification; not closed from a matching copy method alone. |
+| [#2321: Feature Request: Remove Activity from Duplicated Board](https://github.com/wekan/wekan/issues/2321) | All Boards → Duplicate | Verified existing behavior: board duplication excludes old board/card activity history with and without cards; source history survives, cancellation creates no copies, and ordinary members cannot duplicate. Chromium regression added for #2321. |
 | [#2290: Support for Login and register page webhook.](https://github.com/wekan/wekan/issues/2290) | Admin Panel → Integrations | Login/registration webhooks add an identity event transport; need minimization, delivery and failure-isolation tests. |
 | [#2217: Feature Request: Add admin panel option to show Rules option to non-admin users](https://github.com/wekan/wekan/issues/2217) | Admin Panel → Permissions | Showing Rules to more roles changes rule-management authority. Existing restrictions remain in place. |
 | [#2211: Feature Request: When using Auth0 login, redirect automatically to fullscreen Auth0 login page, instead of current login popup.](https://github.com/wekan/wekan/issues/2211) | Authentication | Provider redirect/session behavior needs the actual Rocket.Chat/G Suite/Auth0 chain; local URL tests are insufficient. |
@@ -117,12 +117,12 @@ still use the guarded collection insert; board archive/copy retain admin checks.
 | [#2009: Wekan on Uberspace 7?](https://github.com/wekan/wekan/issues/2009) | Deployment | Uberspace runtime/mail behavior requires that hosting environment. |
 | [#1990: Feature Request: Hide or collapse subtask boards on home/all boards view](https://github.com/wekan/wekan/issues/1990) | All Boards | Helper-board filtering exists; the requested per-user collapse/hide behavior needs a dedicated test against subtask boards. |
 | [#1953: Feature Request: Create UI setting for board's default behaviour for subtasks' swimlane](https://github.com/wekan/wekan/issues/1953) | Board Settings → Subtasks | Defaults/deposit behavior exists; requested per-board swimlane/landing-list picker behavior not fully verified here. |
-| [#1933: Feature request: if card has one comment then show it as tooltip](https://github.com/wekan/wekan/issues/1933) | Card → Comments badge | Single-comment tooltip must respect comment visibility, lazy data and plain-text escaping; existing count badge is not equivalent. |
+| [#1933: Feature request: if card has one comment then show it as tooltip](https://github.com/wekan/wekan/issues/1933) | Card → Comments badge | Implemented: one visible nonempty comment supplies the plain-text badge tooltip; multiple/empty comments retain the localized count. Unit and Chromium coverage verify escaping and private-comment isolation for admins/read-only members. |
 | [#1931: Feature Request: Linked Subtasks](https://github.com/wekan/wekan/issues/1931) | Card → Subtasks | Existing-card subtask attachment exists; cross-board linked-subtask interpretation needs precise permission/relationship tests. |
 | [#1921: Issue: Resend verification or change the flag?](https://github.com/wekan/wekan/issues/1921) | Admin Panel → People / Account verification | Resend controls exist; reported confirmation-link failure needs actual email/token/browser flow verification. |
 | [#1915: Feature request : Possibility to hide cards according to a date](https://github.com/wekan/wekan/issues/1915) | Board Filter / Search | Due-date and advanced filters exist; other date fields, move-history ranges, rolling cutoffs and saved combinations remain broader requests. |
 | [#1904: Feature Request: Add way to restrict OAuth from Google to a domain](https://github.com/wekan/wekan/issues/1904) | Admin Panel → Authentication | Domain restrictions require verification of the Google OAuth provisioning path, including unverified provider email claims. |
-| [#1871: Feature Request: Filter Subtasks by Parent](https://github.com/wekan/wekan/issues/1871) | Card → Subtasks / Filter | Parent relationship exists; a direct filter-by-parent UI is still missing. |
+| [#1871: Feature Request: Filter Subtasks by Parent](https://github.com/wekan/wekan/issues/1871) | Card → Subtasks / Filter | Implemented: Card Actions → Filter: Subtasks and Filter → Parent card reuse parentId. Node and Chromium coverage verifies direct children, read-only use, resets and private-parent boundaries. |
 | [#1844: Add Feature: Smart Search of Cards](https://github.com/wekan/wekan/issues/1844) | Global Search | Title/description/comment search code exists; archived content and private-board exclusion need combined end-to-end proof before closure. |
 | [#1781: Feature Request: Improve how intuitively subtasks work: Landing list for subtasks is not linked to the subboard](https://github.com/wekan/wekan/issues/1781) | Board Settings → Subtasks | Defaults/deposit behavior exists; requested per-board swimlane/landing-list picker behavior not fully verified here. |
 | [#1759: [New feature] Preserve cards' labels at moving/copying cards to another board](https://github.com/wekan/wekan/issues/1759) | Card → Move / Copy | Label remapping code exists; both cross-board move and copy require preservation/destination-permission browser coverage. |
@@ -199,3 +199,20 @@ third-party integrations, other browser engines and full database-backend
 conformance were not tested. Items marked remaining in the inventory have not
 been added or closed. Some are feasible future implementation work; lack of a
 verified implementation in this pass is not evidence that they are impossible.
+
+## Follow-up inventory refresh
+
+A fresh GitHub inventory on 2026-09-27 contains 132 open issues (excluding pull
+requests). The table above preserves the original 140-issue snapshot rather
+than silently dropping rows for issues closed since that audit.
+
+Read #2321 in full (no comments) and traced `Boards.copy`, `Swimlanes.copy`
+and `Cards.copy`: none copies Activities records. Live Chromium/MongoDB tests
+exercise the existing multiselection Duplicate actions with and without cards,
+seed old board and card activity events, and verify they remain only at the
+source. Fresh destination creation events are allowed. The permission rejection
+scenario still passes. No model or permission change is needed to close #2321.
+
+Read #1273 and its complete comment thread: Add Card autocomplete still consumes
+member/label tokens in `listBody.js`. A retain-text option is not implemented;
+this issue remains open. No claim is made that the remaining inventory is fixed.

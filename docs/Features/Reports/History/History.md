@@ -569,3 +569,32 @@ Undo/redo also append timestamped reversal checkpoints to History. These rows
 remain outside the undo stack, but reports replay them so reversing a dependency
 or hour adjustment does not leave the chart showing the pre-undo state. Restore
 provenance rows are counted once in the time audit, under the restoring author.
+
+Rules REST create, edit and delete operations use the same compound History
+wrapper as the Rules/Blocks editors. The entry is attributed to the API's
+authenticated user and contains the rule, trigger and action snapshots. Editing
+several fields in one request records one operation; a no-op records none.
+Deleting a rule can be undone with its trigger and action. Board administrator
+checks still apply before writes, and History restoration retains its existing
+permission and conflict checks. The wrapper records the resulting state if a
+compound write fails partway; it does not make those writes transactional.
+
+Rule deletion through the editor or REST removes a linked trigger/action only
+when no remaining rule references it. This also applies when History removes
+a rule. Restoring a deleted rule may reuse a shared trigger/action only if its
+current content still equals the recorded snapshot; it never overwrites a
+changed shared component. Deleting the last referencing rule removes the now
+unused components. These reference checks are not a multi-document transaction.
+
+Rule editors and REST updates isolate changed shared components by creating a
+private trigger/action for the edited rule. Unshared component IDs stay stable.
+REST keeps its partial-update behavior, while the Rules/Blocks editor replaces
+component content. History undo/redo restores the appropriate IDs and removes
+superseded components only when they are no longer referenced. Sibling rule
+content remains unchanged. Concurrent component updates are not transactional.
+
+Changing a manual button rule to an automatic trigger clears its rule-level
+button type and label, removing it from the board/card button menus. REST
+creation and trigger updates synchronize this metadata too. Undo/redo restores
+the matching trigger and button metadata together, so restored manual buttons
+reappear and redoing an automatic trigger removes them again.
