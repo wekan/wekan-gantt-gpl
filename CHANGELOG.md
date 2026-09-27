@@ -52,49 +52,6 @@ https://wekan.fi/status/
 
 </details>
 
-
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/f772663e5">Fix multi-list swimlane drops and show tilted named drag previews</a>. Thanks to xet7.</summary>
-
-Dragging selected lists onto the empty area of another swimlane now moves them
-and their cards there. Previously only the swimlane header was recognized as a
-destination. Keep nested list/card targets and header-only swimlane drag starts.
-
-Multi-Selection dragging shows a tilted stack with the selected objects' names
-and icons, alongside the count. Render titles as literal text, including mixed
-object selections, and limit large previews to eight names plus a remaining
-count.
-
-Six Chromium cases move two lists via swimlane bodies or headers, including
-collapsed sources/destinations, with handles on and off. Check the named tilted
-preview, list order, card parents and persistence after reload. Three existing
-mixed-selection browser cases, three focused Node suites and the Meteor build
-also pass. The empty-body case was reproduced failing before the fix.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/2016d15f2">Preview ZIP contents from cards and Files Report</a>. Thanks to xet7.</summary>
-
-Click a ZIP attachment preview to see the filenames and folder paths inside
-it. Cards and Files Report use the same viewer, including nested paths and
-Unicode filenames. Closing the viewer cancels its pending download.
-
-Reuse the installed fflate parser without extracting or inflating entries.
-Names are plain text, never executable markup or extraction paths. Preview
-sources are limited to 32 MiB and archives to 2,048 entries; larger archives
-remain downloadable. ZIP and Office previews share bounded stream reading.
-
-Eight focused Node suites pass, covering archive listing, empty and invalid
-archives, resource limits, inert names, denied reads and cancellation. A fresh
-Meteor build and eight Chromium/Firefox checks pass, including ZIP preview
-from both Files Report and an opened card. Existing Office, image, PDF and
-private attachment download checks also pass, retaining regression coverage
-for the other Upcoming changes.
-
-</details>
-
 <details>
 <summary>TODO Later</summary>
 
@@ -632,6 +589,81 @@ the Markdown commit as the template.
 </details>
 </details>
 
+# v12.07 2026-09-27 WeKan ® release
+
+**In short:** Change Language shows each language and its country together on
+one line: Flag Language (Flag Country), mirrored for RTL. Ordinary text editors
+are multiline and resizable, follow the Enter preference, and buttons retain
+their themed text colors.
+
+This release fixes the following bugs:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e0a53728b">Use available width for popup menus and Card settings</a>. Thanks to xet7.</summary>
+
+Board Settings / Card places Draggable to the left of Show on Minicard and Show
+on Card when the form is wide enough. Narrow popups stack all three in that
+order. The layout responds to the popup's width rather than only screen size.
+
+Board View and other long option menus use balanced columns on wide screens.
+The shared layout covers grouped board/member/card/list/swimlane menus and long
+label/custom-field/member pickers. Search spans the columns and keeps its width
+while filtering. Child forms retain their original layout; Back restores the
+menu columns. Phone layouts remain single-column, and scrolling remains
+available when all options cannot fit within the viewport.
+
+Audited 198 popup templates. Specialized forms, calendars, tables and existing
+picker grids retain their layouts. No options, actions or permission guards
+changed. Four focused Node suites and 15 distinct Chromium scenarios pass,
+including responsive layout, persistence, authorization, selection, search,
+form/back navigation, phone layout and RTL. Other browser engines were not run.
+See docs/DeveloperDocs/Popup-Layout-Audit.md for the audit scope and exceptions.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/88e234f05">Make text editors multiline and resizable, honor the Enter preference, and restore themed button text</a>. Thanks to xet7.</summary>
+
+Use multiline textareas for ordinary titles, names, descriptions, labels, rule
+text and other prose fields. Keep credentials, searches, URLs, dates, numbers
+and structured tokens single-line. Expose the native resize handle and preserve
+the chosen size while typing. Include the calendar's Add Card dialog.
+
+Apply Member Settings / Change Settings / Submit editors with Enter consistently:
+Enter saves when enabled and Shift+Enter adds a line; when disabled, Enter adds
+a line and Ctrl/Cmd+Enter saves. Preserve IME composition, mention selection,
+existing validation, single-submit protection and server permission checks.
+
+Fix the typography reset overriding white button labels with dark gray after
+button styles load. Board Settings / Swimlane, List and Card buttons now keep
+white text on blue, green and dark themes; Clean Light's pale buttons use dark
+text. Primary and destructive controls keep their existing theme rules.
+
+Forty focused Node test entries pass. Forty-seven distinct Chromium scenarios
+pass across focused runs, covering editor shortcuts, settings changes without
+reload, multiline persistence, resizing in LTR/RTL, mentions, rules, login,
+profile/board editing and button states/themes. Other browser engines were not
+run. The editor audit and theme documentation describe coverage and exceptions.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/86b9354ca">Keep language and country labels on one line</a>. Thanks to xet7.</summary>
+
+Place each language flag and name beside its parenthesized country flag and
+name. Preserve the direction marker beside the language name and isolate mixed
+writing directions. Long entries scroll within their row on narrow screens,
+keeping their full text available without wrapping.
+
+Two Chromium scenarios verify all language rows at desktop and phone widths in
+LTR and RTL, including flag order and the direction marker. Both focused Node
+suites pass. No translation values, language preferences or permission rules
+changed. Other browser engines were not run.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v12.06 2026-09-27 WeKan ® release
 
 **In short:** Board multiselection can duplicate selected boards without their
@@ -1046,6 +1078,26 @@ and conversion checks and the Meteor build pass.
 </details>
 
 <details>
+<summary><a href="https://github.com/wekan/wekan/commit/f772663e5">Fix multi-list swimlane drops and show tilted named drag previews</a>. Thanks to xet7.</summary>
+
+Dragging selected lists onto the empty area of another swimlane now moves them
+and their cards there. Previously only the swimlane header was recognized as a
+destination. Keep nested list/card targets and header-only swimlane drag starts.
+
+Multi-Selection dragging shows a tilted stack with the selected objects' names
+and icons, alongside the count. Render titles as literal text, including mixed
+object selections, and limit large previews to eight names plus a remaining
+count.
+
+Six Chromium cases move two lists via swimlane bodies or headers, including
+collapsed sources/destinations, with handles on and off. Check the named tilted
+preview, list order, card parents and persistence after reload. Three existing
+mixed-selection browser cases, three focused Node suites and the Meteor build
+also pass. The empty-body case was reproduced failing before the fix.
+
+</details>
+
+<details>
 <summary><a href="https://github.com/wekan/wekan/commit/cb4d29b01">Fix checklist item reordering</a>. Thanks to AmigaAbattoir and xet7.</summary>
 
 Read the destination checklist and neighboring items before restoring the DOM
@@ -1176,6 +1228,27 @@ board. Preview and download controls also fit within narrow table cells.
 **ZIP previews** list archive contents from Files Report and opened cards.
 
 This release adds ZIP previews and fixes attachment report issues:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2016d15f2">Preview ZIP contents from cards and Files Report</a>. Thanks to xet7.</summary>
+
+Click a ZIP attachment preview to see the filenames and folder paths inside
+it. Cards and Files Report use the same viewer, including nested paths and
+Unicode filenames. Closing the viewer cancels its pending download.
+
+Reuse the installed fflate parser without extracting or inflating entries.
+Names are plain text, never executable markup or extraction paths. Preview
+sources are limited to 32 MiB and archives to 2,048 entries; larger archives
+remain downloadable. ZIP and Office previews share bounded stream reading.
+
+Eight focused Node suites pass, covering archive listing, empty and invalid
+archives, resource limits, inert names, denied reads and cancellation. A fresh
+Meteor build and eight Chromium/Firefox checks pass, including ZIP preview
+from both Files Report and an opened card. Existing Office, image, PDF and
+private attachment download checks also pass, retaining regression coverage
+for the other Upcoming changes.
+
+</details>
 
 <details>
 <summary><a href="https://github.com/wekan/wekan/commit/f03463e7d">Fix Files Report attachment previews and downloads</a>. Thanks to xet7.</summary>
