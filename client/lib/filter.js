@@ -1,3 +1,6 @@
+import { FilterProviderRegistry } from '/client/lib/filterProviders';
+import { boardMovementSelector, startBoardMovementFilter } from '/client/lib/boardMovementFilter';
+import { boardTextSelector, startBoardTextFilter } from '/client/lib/boardTextFilter';
 import { dateDisplayPreferences } from '/client/lib/dateDisplay';
 import { Blaze } from 'meteor/blaze';
 import { Tracker } from 'meteor/tracker';
@@ -29,8 +32,12 @@ import {
   advancedFilterCommandsToSelector,
 } from '/imports/lib/advancedFilter';
 import { weekRange } from '/models/lib/weekStart';
+import { dueDateShortcut } from '/models/lib/dueDateShortcuts';
 import { Session } from 'meteor/session';
 import { boardScopedFilterSelector } from '/models/lib/boardScopedSelection';
+import { cardDateRangeSelector, cardRecencySelector } from '/models/lib/cardDateRange';
+import { columnAgeSelector } from '/models/lib/cardListEntry';
+import { subscribeDateNowTicker } from '/client/lib/dateNowTicker';
 // Sidebar is imported late to avoid circular dependency (sidebar.js needs its
 // jade template loaded first, but router.js → filter.js would load it too early)
 let _Sidebar;
@@ -50,16 +57,97 @@ function showFilterSidebar() {
   getSidebar().setView('filter');
 }
 
+class CardDateRangeFilter {
+  constructor() {
+    this._dep = new Tracker.Dependency();
+    this.reset();
+  }
+  value() { this._dep.depend(); return this._value; }
+  set(value) {
+    if (cardDateRangeSelector(value) === null) return false;
+    this._value = { ...value };
+    this._dep.changed();
+    return true;
+  }
+  reset() {
+    this._value = { field: 'createdAt', from: '', to: '', includeMissing: false };
+    this._dep.changed();
+  }
+  _isActive() { const value = this.value(); return !!(value.from || value.to); }
+  selector() { return cardDateRangeSelector(this.value()) || {}; }
+}
+
+class CardRecencyFilter {
+  constructor() {
+    this._dep = new Tracker.Dependency();
+    this._ticker = null;
+    this.reset();
+  }
+  value() { this._dep.depend(); return this._value; }
+  set(value) {
+    const selector = cardRecencySelector(value);
+    if (selector === null) return false;
+    this._value = { createdAt: value.createdAt || '', modifiedAt: value.modifiedAt || '' };
+    if (Object.keys(selector).length) {
+      if (!this._ticker) this._ticker = subscribeDateNowTicker();
+    } else {
+      this._ticker?.unsubscribe(); this._ticker = null;
+    }
+    this._dep.changed();
+    return true;
+  }
+  reset() {
+    this._value = { createdAt: '', modifiedAt: '' };
+    this._ticker?.unsubscribe(); this._ticker = null;
+    this._dep.changed();
+  }
+  _isActive() { const value = this.value(); return !!(value.createdAt || value.modifiedAt); }
+  selector() { return cardRecencySelector(this.value(), this._ticker?.now.get() || new Date()); }
+}
+
+class ColumnAgeFilter {
+  constructor() {
+    this._dep = new Tracker.Dependency();
+    this._value = { listId: '', days: 30 };
+    this._ticker = null;
+  }
+  value() { this._dep.depend(); return this._value; }
+  set(listId, days) {
+    if (!Object.keys(columnAgeSelector(listId, days)).length) return false;
+    this._value = { listId, days };
+    if (!this._ticker) this._ticker = subscribeDateNowTicker();
+    this._dep.changed();
+    return true;
+  }
+  reset() {
+    this._value = { listId: '', days: 30 };
+    this._ticker?.unsubscribe();
+    this._ticker = null;
+    this._dep.changed();
+  }
+  _isActive() { return !!this.value().listId; }
+  selector() {
+    const { listId, days } = this.value();
+    return columnAgeSelector(listId, days, this._ticker?.now.get() || new Date());
+  }
+}
+
 class DateFilter {
   constructor() {
     this._dep = new Tracker.Dependency();
     this.subField = ''; // Prevent name mangling in Filter
     this._filter = null;
     this._filterState = null;
+    this._ticker = null;
   }
 
   _updateState(state) {
     this._filterState = state;
+    if (state === 'previousweek' || state === 'nextmonth') {
+      if (!this._ticker) this._ticker = subscribeDateNowTicker();
+    } else {
+      this._ticker?.unsubscribe(); this._ticker = null;
+    }
     showFilterSidebar();
     this._dep.changed();
   }
@@ -102,6 +190,16 @@ class DateFilter {
   // nextWeek is a convenience method for calling relativeWeek with 1
   nextWeek() {
     this.relativeWeek(1, 'next')
+  }
+
+  previousWeek() {
+    if (this._filterState === 'previousweek') this.reset();
+    else this._updateState('previousweek');
+  }
+
+  nextMonth() {
+    if (this._filterState === 'nextmonth') this.reset();
+    else this._updateState('nextmonth');
   }
 
   // relativeDay builds a filter starting from now and including all
@@ -172,6 +270,7 @@ class DateFilter {
   reset() {
     this._filter = null;
     this._filterState = null;
+    this._ticker?.unsubscribe(); this._ticker = null;
     this._dep.changed();
   }
 
@@ -180,6 +279,8 @@ class DateFilter {
     return this._filterState == val;
   }
 
+  state() { this._dep.depend(); return this._filterState; }
+
   _isActive() {
     this._dep.depend();
     return this._filterState !== null;
@@ -187,6 +288,10 @@ class DateFilter {
 
   _getMongoSelector() {
     this._dep.depend();
+    if (this._ticker) {
+      const user = ReactiveCache.getCurrentUser();
+      return dueDateShortcut(this._filterState, this._ticker.now.get(), user ? user.getStartDayOfWeek() : 1);
+    }
     // #6483: cards with NO due/end/received date store the field as null — that
     // is exactly what the noDate filter matches ({dueAt: null}). A comparison
     // filter such as Overdue/"past" is `{$lte: now}`, and `$lte` MATCHES null
@@ -465,9 +570,20 @@ class AdvancedFilter {
   // rule trigger can reuse the exact same function server-side instead of a
   // parallel reimplementation. Only the three lookups that need live board
   // data stay here, bound to ReactiveCache.
+  validate(text) {
+    if (!text) return {};
+    return advancedFilterCommandsToSelector(tokenizeAdvancedFilter(text), {
+      dayFirst: /^D/.test(dateDisplayPreferences().dateFormat),
+      fieldNameToId: this._fieldNameToId.bind(this),
+      fieldValueToId: this._fieldValueToId.bind(this),
+      customFieldDateSelector: this._customFieldDateSelector.bind(this),
+    });
+  }
+
   _arrayToSelector(commands) {
     try {
       const selector = advancedFilterCommandsToSelector(commands, {
+        dayFirst: /^D/.test(dateDisplayPreferences().dateFormat),
         fieldNameToId: this._fieldNameToId.bind(this),
         fieldValueToId: this._fieldValueToId.bind(this),
         customFieldDateSelector: this._customFieldDateSelector.bind(this),
@@ -499,6 +615,7 @@ class AdvancedFilter {
 // the need to provide a list of `_fields`. We also should move methods into the
 // object prototype.
 export const Filter = {
+  providers: new FilterProviderRegistry(),
   // XXX I would like to rename this field into `labels` to be consistent with
   // the rest of the schema, but we need to set some migrations architecture
   // before changing the schema.
@@ -525,7 +642,12 @@ export const Filter = {
   archive: new SetFilter(),
   hideEmpty: new SetFilter(),
   dueAt: new DateFilter(),
+  columnAge: new ColumnAgeFilter(),
+  dateRange: new CardDateRangeFilter(),
+  movementDate: new CardDateRangeFilter(),
+  dateRecency: new CardRecencyFilter(),
   title: new StringFilter(),
+  text: new StringFilter(),
   customFields: new SetFilter('_id'),
   // #3392: filter cards by their dependency ("Red Strings") relation type.
   cardDependencies: new SetFilter('type'),
@@ -554,6 +676,7 @@ export const Filter = {
 
   isActive() {
     return (
+      this.movementDate._isActive() || this.text._isActive() || this.columnAge._isActive() || this.dateRange._isActive() || this.providers.isActive() ||
       this._fields.some(fieldName => {
         return this[fieldName]._isActive();
       }) ||
@@ -636,18 +759,15 @@ export const Filter = {
       selectors.push(this.advanced._getMongoSelector());
     }
 
-    if(isFilterActive) {
-      return {
-        $or: selectors,
-      };
-    }
-    else {
-      // we don't want there is only Filter.lists
-      // otherwise no card will be displayed ...
-      // selectors = [exceptionsSelector];
-      // will return [{"_id":{"$in":[]}}]
-      return {};
-    }
+    const combined = isFilterActive ? { $or: selectors } : {};
+    const constraints = [];
+    if (isFilterActive) constraints.push(combined);
+    if (this.columnAge._isActive()) constraints.push(this.columnAge.selector());
+    if (this.dateRange._isActive()) constraints.push(this.dateRange.selector());
+    constraints.push(...this.providers.selectors());
+    if (this.text._isActive()) constraints.push(boardTextSelector(this.text.value()));
+    if (this.movementDate._isActive()) constraints.push(boardMovementSelector(this.movementDate.value()));
+    return constraints.length > 1 ? { $and: constraints } : (constraints[0] || {});
   },
 
   mongoSelector(additionalSelector) {
@@ -677,6 +797,11 @@ export const Filter = {
       filter.reset();
     });
     this.excludedLabelIds.reset();
+    this.columnAge.reset();
+    this.text.reset();
+    this.dateRange.reset();
+    this.movementDate.reset();
+    this.providers.reset();
     this.lists.reset();
     this.advanced.reset();
     this.resetExceptions();
@@ -696,6 +821,8 @@ export const Filter = {
   // sidebar button, leaving to All Boards) exactly as it was everywhere
   // else - this only changes what happens on a board-to-board hop.
   resetBoardScoped() {
+    this.providers.reset(true);
+    this.columnAge.reset();
     const boardScopedFields = [
       'labelIds',
       'customFields',
@@ -726,3 +853,16 @@ export const Filter = {
 };
 
 Blaze.registerHelper('Filter', Filter);
+
+startBoardTextFilter(Filter.text);
+
+startBoardMovementFilter(Filter.movementDate);
+
+Filter.providers.register({
+  id: 'wekan.date-recency', version: 1, scope: 'global', template: 'cardRecencyFilter', section: 'dates', legacyPreset: true,
+  data: () => ({ filter: Filter.dateRecency }),
+  isActive: () => Filter.dateRecency._isActive(), selector: () => Filter.dateRecency.selector(),
+  reset: () => Filter.dateRecency.reset(), capture: () => Filter.dateRecency.value(),
+  validate: value => cardRecencySelector(value) !== null,
+  restore: value => Filter.dateRecency.set(value),
+});

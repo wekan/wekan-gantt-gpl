@@ -418,7 +418,7 @@ template(name="setListColorPopup")
     button.js-remove-color.negate.wide.right {{_ 'remove-btn'}}
 
 //- List sync settings (docs/Features/ImportExport/Sync.md). UI wiring only -
-  calls the EXISTING setListSyncSource/hasListSyncCredential/syncListNow
+  calls setListSyncSource/hasListSyncCredential/previewListSync/syncListNow
   Meteor methods (server/methods/listSync.js) exactly as they are defined;
   this popup does not touch the sync backend itself.
   The credential field (js-list-sync-token) is write-only, the same
@@ -448,11 +448,20 @@ template(name="listSyncPopup")
           a.flex.js-toggle-sync-field(data-field=field)
             .materialCheckBox(class="{{#if checked}}is-checked{{/if}}")
             span {{_ label}}
+      if syncTimeEnabled
+        p.quiet {{_ 'sync-time-estimate-hint'}}
       each syncOperations
         p
           a.flex.js-toggle-sync-operation(data-operation=operation)
             .materialCheckBox(class="{{#if checked}}is-checked{{/if}}")
             span {{_ label}}
+      if syncEstimateEnabled
+        label {{_ 'sync-estimate-field'}}
+        select.js-list-sync-estimate-field
+          option(value="") {{_ 'sync-estimate-field'}}
+          each syncEstimateFields
+            option(value=_id selected=selected) {{name}}
+        p.quiet {{_ 'sync-estimate-field-hint'}}
       label {{_ 'list-sync-credential'}}
       p.quiet.list-sync-credential-status {{ listSyncCredentialStatusText }}
       p
@@ -469,10 +478,93 @@ template(name="listSyncPopup")
         p.list-sync-error {{_ 'list-sync-last-error'}}: {{ listSyncLastError }}
       p
         button.js-list-sync-save.primary(type="submit") {{_ 'save'}}
+        button.js-list-sync-preview(type="button" disabled=syncBusy) {{_ 'sync-preview-button'}}
         button.js-list-sync-now.primary(type="button") {{_ 'list-sync-now'}}
         button.js-list-sync-clear.negate(type="button") {{_ 'list-sync-clear'}}
+      p
+        button.js-list-sync-reports(type="button" disabled=syncReportsBusy) {{_ 'sync-report-button'}}
+      if syncReportError
+        p.list-sync-error {{syncReportError}}
+      if syncReportsLoaded
+        .list-sync-run-reports
+          p.quiet {{_ 'sync-report-retention'}}
+          each syncRunReports
+            details
+              summary {{when}} — {{_ statusLabel}}
+              p.quiet {{_ 'sync-report-partial'}}
+              if hasCounts
+                p {{_ 'sync-preview-create'}}: {{created}}
+                p {{_ 'sync-preview-update'}}: {{updated}}
+                p {{_ 'sync-preview-archive'}}: {{archived}}
+              each sourceRows
+                p {{path}}: {{count}} — {{_ reasonLabel}}
+              if coverage.source.truncated
+                p.quiet {{_ 'sync-source-truncated'}}
+          else
+            p {{_ 'sync-report-empty'}}
       if listSyncNowResult
         p(class="{{listSyncNowResultClass}}")= listSyncNowResult
+      with syncPreview
+        .list-sync-preview
+          h3 {{_ 'sync-preview-heading'}}
+          p.quiet {{_ 'sync-preview-saved'}}
+          if blocked
+            p {{_ 'sync-preview-blocked'}}
+          else
+            p {{_ 'sync-preview-create'}}: {{created}}
+            p {{_ 'sync-preview-update'}}: {{updated}}
+            p {{_ 'sync-preview-archive'}}: {{archived}}
+            each syncPreviewItems
+              p
+                strong {{_ actionLabel}}: {{externalId}} — {{title}}
+                if fieldsText
+                  span — {{fieldsText}}
+            if truncated
+              p.quiet {{_ 'sync-preview-truncated'}}
+          h4 {{_ 'sync-preview-omissions'}}
+          p.quiet {{_ 'sync-preview-scope'}}
+          each syncPreviewOmissions
+            p {{fieldText}}: {{count}} — {{_ reasonLabel}}
+          p {{_ 'sync-preview-parser-warnings'}}: {{coverage.parserWarnings}}
+          p {{_ 'sync-preview-parser-unsupported'}}: {{coverage.parserUnsupported}}
+          if coverage.truncated
+            p.quiet {{_ 'sync-preview-truncated'}}
+          .list-sync-source-coverage
+            h4 {{_ 'sync-source-heading'}}
+            p.quiet {{_ 'sync-source-scope'}}
+            each syncSourceOmissions
+              p {{path}}: {{count}} — {{_ reasonLabel}}
+            p {{_ 'sync-source-occurrences'}}: {{coverage.source.occurrences}}
+            if coverage.source.truncated
+              p.quiet {{_ 'sync-source-truncated'}}
+              p {{_ 'sync-source-omitted'}}: {{coverage.source.omittedOccurrences}}
+      if syncConflicts
+        h3 {{_ 'sync-conflict-heading'}}
+        p.quiet {{_ 'sync-conflict-hint'}}
+        each syncConflicts
+          .list-sync-conflict
+            strong {{externalId}} — {{_ label}}
+            if creation
+              p {{_ 'event-source'}}
+            else
+              p {{_ 'sync-conflict-local'}}
+            pre= local
+            if creation
+              p.quiet {{_ 'sync-conflict-creation-hint'}}
+              button.js-resolve-sync-conflict(type="button" data-choice="replace" disabled=syncBusy) {{_ 'sync-conflict-create-replacement'}}
+            else if archive
+              p.quiet {{_ 'sync-conflict-archive-hint'}}
+              button.js-resolve-sync-conflict(type="button" data-choice="detach" disabled=syncBusy) {{_ 'sync-conflict-keep-card-local'}}
+            else if duplicate
+              p {{_ 'sync-conflict-keep-mapping'}}
+              pre= retained
+              p.quiet {{_ 'sync-conflict-detach-hint'}}
+              button.js-resolve-sync-conflict(type="button" data-choice="detach" disabled=syncBusy) {{_ 'sync-conflict-detach'}}
+            else
+              p {{_ 'event-source'}}
+              pre= incoming
+              button.js-resolve-sync-conflict(type="button" data-choice="local" disabled=syncBusy) {{_ 'sync-conflict-keep-local'}}
+              button.js-resolve-sync-conflict(type="button" data-choice="source" disabled=syncBusy) {{_ 'sync-conflict-use-source'}}
 
 //- WHERE a list goes: the board, the swimlane, which list to put it left or
   right of, and Done. Copy list and Move list asked the same question with the

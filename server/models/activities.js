@@ -1,4 +1,8 @@
 import { Meteor } from 'meteor/meteor';
+import { Random } from 'meteor/random';
+import { captureActivityNotificationIntent } from '/server/notifications/activityIntents';
+import { deliverStoredActivityNotifications } from '/server/notifications/activityPlans';
+const { deferSyncActivity } = require('/server/lib/syncActivityScope');
 import { ReactiveCache } from '/imports/reactiveCache';
 import { findWhere, where } from '/imports/lib/collectionHelpers';
 import Activities from '/models/activities';
@@ -30,7 +34,17 @@ function getActivityUserName(user, fallback = '') {
   );
 }
 
+// Registered after the model's timestamp hook. Collection-hooks awaits this
+// write before issuing the activity insert. Deferred Sync owns its own plans.
+Activities.before.insert(async (userId, doc) => {
+  if (deferSyncActivity('notificationIntent', doc)) return;
+  if (getFeatureFlags().disableActivities || getFeatureFlags().disableNotifications) return;
+  if (!doc._id) doc._id = Random.id();
+  await captureActivityNotificationIntent(doc, userId);
+});
+
 Activities.after.insert(async (userId, doc) => {
+  if (deferSyncActivity('rules', doc)) return;
   const activity = Activities._transform(doc);
   try {
     await RulesHelper.executeRules(activity);
@@ -59,13 +73,14 @@ Meteor.startup(async () => {
   );
 });
 
-Activities.after.insert(async (userId, doc) => {
+export async function prepareActivityNotification(userId, doc) {
   // Admin Panel / Features / Notifications (#5820): never send watch
   // notifications when disabled. Activity recording (if enabled) is unaffected.
   if (getFeatureFlags().disableNotifications) {
-    return;
+    return null;
   }
   const activity = Activities._transform(doc);
+  let notificationCard = null;
   let participants = [];
   let watchers = [];
   const scopedWatchers = new Set();
@@ -155,6 +170,7 @@ Activities.after.insert(async (userId, doc) => {
   if (activity.cardId) {
     const card = (await activity.card()) || (await Cards.findOneAsync(activity.cardId));
     if (card) {
+      notificationCard = card;
       // #3192: include the card's ASSIGNEES as participants too, not just its
       // creator and members — a user assigned a card (e.g. one with a due date)
       // must be notified about it. Participants are still gated downstream by the
@@ -322,7 +338,7 @@ Activities.after.insert(async (userId, doc) => {
       if (customField.name) {
         params.customField = normalizeActivityText(customField.name);
       }
-      if (activity.value) {
+      if (activity.value !== undefined) {
         params.customFieldValue = activity.value;
       }
     }
@@ -349,7 +365,7 @@ Activities.after.insert(async (userId, doc) => {
 
   ['timeValue', 'timeOldValue'].forEach((key) => {
     const value = activity[key];
-    if (value) params[key] = value;
+    if (value !== undefined) params[key] = value;
   });
 
   // #5143: forward the before/after text of a description change (activityType
@@ -357,7 +373,7 @@ Activities.after.insert(async (userId, doc) => {
   // outgoing webhook / notification carries the actual new (and previous) text.
   ['value', 'oldValue'].forEach((key) => {
     const value = activity[key];
-    if (value) params[key] = value;
+    if (value !== undefined) params[key] = value;
   });
 
   if (board) {
@@ -411,22 +427,37 @@ Activities.after.insert(async (userId, doc) => {
     );
   }
 
-  (await Notifications.getUsers(watchers)).forEach((user) => {
-    if (!user || !user._id) return;
+  const users = (await Notifications.getUsers(watchers)).filter((user) => {
+    if (!user || !user._id) return false;
     const isSelfMention = user._id === userId && title === 'act-atUserComment';
-    if (user._id !== userId || isSelfMention) {
-      Notifications.notify(user, title, description, params);
-    }
+    return user._id !== userId || isSelfMention;
   });
+  return { users, title, description, params, watchers, board, card: notificationCard };
+}
 
+export async function activityWebhookIntegrations(board, description, options = {}) {
   const integrationBoardIds = board
     ? [board._id, Integrations.Const.GLOBAL_WEBHOOK_ID]
     : [Integrations.Const.GLOBAL_WEBHOOK_ID];
-  const integrations = await ReactiveCache.getIntegrations({
+  return ReactiveCache.getIntegrations({
     boardId: { $in: integrationBoardIds },
     enabled: true,
     activities: { $in: [description, 'all'] },
-  });
+  }, options);
+}
+
+Activities.after.insert(async (userId, doc) => {
+  if (deferSyncActivity('notifications', doc)) return;
+  const prepared = await prepareActivityNotification(userId, doc);
+  if (!prepared) return;
+  const { description, params, watchers, board } = prepared;
+  // Freeze all recipient/service payloads before the first local delivery.
+  // The saved plan and pending intent survive a failure; SMTP/webhooks remain
+  // separate from this local acknowledgement boundary.
+  deliverStoredActivityNotifications(doc, userId, async () => prepared)
+    .catch(() => console.error('Activity notification delivery incomplete; pending intent retained'));
+
+  const integrations = await activityWebhookIntegrations(board, description);
   if (integrations.length > 0) {
     params.watchers = watchers;
     integrations.forEach((integration) => {

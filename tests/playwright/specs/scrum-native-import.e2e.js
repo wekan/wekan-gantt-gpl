@@ -2,7 +2,7 @@
 const {test,expect}=require('../fixtures');const db=require('../helpers/db');
 const {loginWithToken,navigateInApp}=require('../helpers/auth');
 const call=(page,method,...args)=>page.evaluate(async({method,args})=>{try{return await Meteor.callAsync(method,...args);}catch(error){throw new Error(`${error.error}: ${error.reason||error.message}`);}},{method,args});
-function clean(boardId){if(!boardId)return;for(const collection of ['scrumSprints','scrumReleases','scrumEvents'])db.deleteMany(collection,{boardId});db.cleanup({boardIds:[boardId]});}
+function clean(boardId){if(!boardId)return;for(const collection of ['scrumSprints','scrumReleases','scrumEvents','scrumDailySnapshots'])db.deleteMany(collection,{boardId});db.cleanup({boardIds:[boardId]});}
 test('native Scrum board export imports with new IDs and unchanged snapshot outcomes',async({page,request,user,board})=>{
  let imported;
  try{
@@ -16,6 +16,7 @@ test('native Scrum board export imports with new IDs and unchanged snapshot outc
   db.updateOne('cards',{_id:card._id},{$set:{customFields:[{_id:estimateField,value:0}]}});
   await call(page,'scrum.updateCard',board.boardId,card._id,{sprintId:sprint._id,releaseId:release._id,acceptanceCriteria:'Verified criterion'},0);
   const active=await call(page,'scrum.startSprint',board.boardId,sprint._id,sprint.revision);
+  await call(page,'scrum.getDailyHistory',board.boardId,sprint._id);
   await call(page,'scrum.closeSprint',board.boardId,sprint._id,active.revision,null);
   await call(page,'scrum.saveEvent',board.boardId,null,{sprintId:sprint._id,kind:'review',startsAt:'2026-09-30T09:00:12.123Z',followUpCardIds:[card._id]},null);
   const response=await request.get(`/api/boards/${board.boardId}/export?authToken=${encodeURIComponent(user.token)}`);
@@ -30,6 +31,9 @@ test('native Scrum board export imports with new IDs and unchanged snapshot outc
   const restored=db.findOne('scrumSprints',{boardId:imported});expect(restored._id).not.toBe(sprint._id);expect(restored.state).toBe('closed');
   expect(restored.provenance).toEqual({system:'wekan',projectId:board.boardId,recordId:sprint._id});
   const restoredCard=db.findOne('cards',{boardId:imported,title:card.title});
+  const importedLists=db.find('lists',{boardId:imported});
+  for(const list of importedLists)expect(list.syncCredentialIncarnation).toBeTruthy();
+  expect(new Set(importedLists.map(list=>list.syncCredentialIncarnation)).size).toBe(importedLists.length);
   expect(restoredCard.scrum.acceptanceCriteria).toBe('Verified criterion');
   expect(restoredCard.scrum.pastSprintIds).toEqual([restored._id]);
   expect(restoredCard.scrum.releaseId).toBe(db.findOne('scrumReleases',{boardId:imported})._id);
@@ -39,7 +43,16 @@ test('native Scrum board export imports with new IDs and unchanged snapshot outc
   const restoredField=db.findOne('customFields',{boardIds:imported,name:'Estimate'});
   expect(restoredField._id).not.toBe(estimateField);
   expect(restored.closeSnapshot.estimateCustomFieldId).toBe(restoredField._id);
+  const observation=db.findOne('scrumDailySnapshots',{boardId:imported});
+  expect(observation.sprintId).toBe(restored._id);
+  expect(observation.snapshot.cards[0].cardId).toBe(restoredCard._id);
+  expect(observation.snapshot.cards[0].listId).toBe(restoredCard.listId);
+  expect(observation.snapshot.estimateCustomFieldId).toBe(restoredField._id);
+  expect(new Date(observation.capturedAt).toISOString()).toBe(exported.scrumTransfer.dailyObservations[0].capturedAt);
+  expect((await call(page,'scrum.getDailyHistory',imported,restored._id)).rows[0].scope.estimate).toBe(0);
   expect(db.findOne('boards',{_id:imported}).scrum.estimateCustomFieldId).toBe(restoredField._id);
+  expect(db.find('scrumImportPending',{_id:imported})).toHaveLength(0);
+  expect(db.find('scrumImportSteps',{boardId:imported})).toHaveLength(0);
   expect(restoredCard.customFields).toContainEqual({_id:restoredField._id,value:0});
   const event=db.findOne('scrumEvents',{boardId:imported});expect(event.sprintId).toBe(restored._id);expect(event.followUpCardIds).toEqual([restoredCard._id]);
   expect(new Date(event.startsAt).toISOString()).toBe('2026-09-30T09:00:12.123Z');
@@ -51,6 +64,10 @@ test('native Scrum board export imports with new IDs and unchanged snapshot outc
   const invalid=structuredClone(exported);invalid.title='Invalid Scrum import';invalid.scrumTransfer.cards[0].scrum.sprintId='foreign-sprint';
   await expect(call(page,'importBoard',invalid,{membersMapping:{}},'wekan',null)).rejects.toThrow(/invalid-scrum-transfer/);
   expect(db.find('boards',{title:invalid.title})).toHaveLength(0);
+  const invalidDaily=structuredClone(exported);invalidDaily.title='Invalid daily observation';
+  invalidDaily.scrumTransfer.dailyObservations[0].sprintId='foreign-sprint';
+  await expect(call(page,'importBoard',invalidDaily,{membersMapping:{}},'wekan',null)).rejects.toThrow(/invalid-scrum-transfer/);
+  expect(db.find('boards',{title:invalidDaily.title})).toHaveLength(0);
   const missingField=structuredClone(exported);missingField.title='Missing Scrum field';
   missingField.scrumTransfer.settings={estimateSource:'customField',estimateCustomFieldId:'foreign-field'};
   await expect(call(page,'importBoard',missingField,{membersMapping:{}},'wekan',null)).rejects.toThrow(/invalid-scrum-transfer/);
@@ -69,5 +86,5 @@ test('native Scrum board export imports with new IDs and unchanged snapshot outc
    await expect(call(page,'importBoard',invalid,{membersMapping:{}},'wekan',null)).rejects.toThrow(/lifecycle|snapshot timestamp/);
    expect(db.find('boards',{title:invalid.title})).toHaveLength(0);
   }
- }finally{clean(imported);for(const collection of ['scrumSprints','scrumReleases','scrumEvents'])db.deleteMany(collection,{boardId:board.boardId});}
+ }finally{clean(imported);for(const collection of ['scrumSprints','scrumReleases','scrumEvents','scrumDailySnapshots'])db.deleteMany(collection,{boardId:board.boardId});}
 });

@@ -24,5 +24,11 @@ test('label AND/OR preserves exclusions and no-label alternatives', () => {
 });
 test('all text inputs read reactive filter state', () => {
   const jade = fs.readFileSync('client/components/sidebar/sidebarFilters.jade', 'utf8');
-  for (const field of ['title', 'lists', 'advanced']) assert.ok(jade.includes(`value=Filter.${field}.value`));
+  // The sidebar now searches all card text instead of only the title.
+  for (const field of ['text', 'lists', 'advanced']) assert.ok(jade.includes(`value=Filter.${field}.value`));
+});
+
+test('clear filters is the last action in the filter panel', () => {
+  const jade = fs.readFileSync('client/components/sidebar/sidebarFilters.jade', 'utf8').split('template(name="multiselectionSidebar")')[0];
+  assert.ok(jade.indexOf('a.sidebar-btn.js-clear-all') > jade.indexOf('a.sidebar-btn.js-filter-to-selection'));
 });

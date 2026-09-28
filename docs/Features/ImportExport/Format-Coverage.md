@@ -64,6 +64,29 @@ a WeKan field, the formatter emits a documented `x-wekan` extension block where
 JSON permits it and reports the field in `_wekan.losses`. Consumers may ignore
 extensions; a later WeKan import uses them to recover a lossless round trip.
 
+### Current Sync preview checkpoint
+
+The list Sync popup now previews the saved source using the actual merge and
+write plan. Counts exclude ignored status-only changes and include comparison
+baseline writes. It reports normalized fields excluded by selection or lacking
+a Sync mapping, plus counts of existing parser diagnostics. The preview reads
+under the usual per-list reservation and leaves cards and Sync status unchanged.
+
+The fetched issue data is also inspected for unmapped paths, unused fallbacks,
+excluded fields/items and representation conversions before normalization.
+Unknown subtrees are reported as a whole without values; occurrence counts and
+output limits keep the inventory bounded. Rules follow the current parsers;
+pagination envelopes discarded during fetching are not inventoried.
+The complete loss-accounting contract still requires a full provider schema,
+mapping choices beyond the current field switches, binary and history
+transport. These remain in TODO Later. Full-list Sync runs now persist bounded
+coverage and terminal status privately; the popup reads the latest 20 reports
+from the last 30 days. Unfinished records explicitly leave the outcome unknown.
+Problems → Recovery now exposes the same bounded diagnostics to instance
+administrators with status filters and pagination. These reports do not yet
+implement the replay/recovery checkpoints required by the full contract.
+See [Sync](./Sync.md#preview-saved-sync-changes) for access and output limits.
+
 ## Compatibility and limits
 
 Parsers accept documented additive fields and both current and known legacy

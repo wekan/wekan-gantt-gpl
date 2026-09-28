@@ -24,10 +24,12 @@
 //
 // Both are opt-in and neither weakens anything for anyone who does not set them.
 // smtpOptionsFromUrl is pure, so tests/mailTransportTls.test.cjs can check the
-// parsing without an SMTP server; the wiring below needs one and is not exercised
-// by the test suite.
+// parsing without an SMTP server. Local SMTP browser tests also exercise
+// connection closure and queued retry after greeting and idle timeouts.
 // ============================================================================
 import fs from 'fs';
+import { sendDeadlineSmtp, smtpTotalTimeout } from './smtpDeadline';
+import { installNativeSmtpDeadline } from './nativeSmtpDeadline';
 import { mailServiceStorageKey } from '/models/lib/mailServices';
 
 // A certificate from an env var: the PEM itself, or a path to a file holding it.
@@ -66,7 +68,7 @@ export function smtpOptionsFromUrl(mailUrl, { ca = null, servername = '' } = {})
     // The ports SMTP actually uses: 465 is implicit TLS, 587 is STARTTLS.
     port: url.port ? Number(url.port) : (secure ? 465 : 587),
     secure,
-    // Meteor defaults the connection pool on; keep the same behaviour.
+    // Preserve the parsed option; the deadline adapter isolates each send.
     pool: true,
     // Verification stays ON. Only the inputs to it can be adjusted below.
     tls: { rejectUnauthorized: true },
@@ -86,31 +88,90 @@ export function smtpOptionsFromUrl(mailUrl, { ca = null, servername = '' } = {})
   return options;
 }
 
+// Transport-owned timeouts close the connection instead of merely abandoning
+// a Promise while SMTP continues in the background. These are phase/idle
+// limits, not an absolute deadline against a peer that keeps sending bytes.
+export function smtpTimeouts(env = process.env) {
+  const defaults = { connectionTimeout: 30000, greetingTimeout: 30000,
+    socketTimeout: 120000, dnsTimeout: 30000 };
+  const names = { connectionTimeout: 'MAIL_CONNECTION_TIMEOUT_MS',
+    greetingTimeout: 'MAIL_GREETING_TIMEOUT_MS', socketTimeout: 'MAIL_SOCKET_TIMEOUT_MS',
+    dnsTimeout: 'MAIL_DNS_TIMEOUT_MS' };
+  for (const [key, name] of Object.entries(names)) {
+    if (env[name] === undefined || env[name] === '') continue;
+    const value = Number(env[name]);
+    if (!Number.isSafeInteger(value) || value < 1000 || value > 900000) {
+      throw new Error(`${name} must be an integer from 1000 to 900000`);
+    }
+    defaults[key] = value;
+  }
+  return defaults;
+}
+
+// Preserve URL authentication, service and transport options while ensuring
+// zero/negative URL values cannot disable the application's timeout policy.
+export function boundedSmtpUrl(mailUrl, timeouts) {
+  const url = new URL(mailUrl);
+  for (const [name, value] of Object.entries(timeouts)) url.searchParams.set(name, String(value));
+  if (!url.searchParams.has('pool')) url.searchParams.set('pool', 'true');
+  return url.toString();
+}
+
 // True when the operator told WeKan something about the mail certificate.
 export function hasTlsOverrides(env = process.env) {
   return Boolean((env.MAIL_TLS_CA_CERT || '').trim() || (env.MAIL_TLS_SERVERNAME || '').trim());
 }
 
-// Install the custom transport when there is something to say, and only then.
+// Install SMTP limits for both standard MAIL_URL and certificate overrides.
 // Returns what it did, so the caller can log it.
 export function installMailTransport({ Email, EmailInternals, env = process.env } = {}) {
-  if (!hasTlsOverrides(env)) return 'default';
-  if (!env.MAIL_URL) return 'no-mail-url';
+  if (!env.MAIL_URL) {
+    // Meteor.settings.packages.email can select a native SMTP service without
+    // MAIL_URL. Install its factory policy before the first send in that mode.
+    const nodemailer = EmailInternals?.NpmModules?.nodemailer?.module;
+    if (nodemailer) installNativeSmtpDeadline(nodemailer, {
+      timeoutMs: smtpTotalTimeout(env), timeouts: smtpTimeouts(env),
+    });
+    return 'no-mail-url';
+  }
+  const customTls = hasTlsOverrides(env);
+  if (!customTls && !/^smtps?:/i.test(env.MAIL_URL)) return 'default';
   if (!Email || !EmailInternals) return 'no-email-package';
 
   const nodemailer = EmailInternals?.NpmModules?.nodemailer?.module;
   if (!nodemailer) return 'no-nodemailer';
 
-  const transport = nodemailer.createTransport(
-    smtpOptionsFromUrl(env.MAIL_URL, {
+  const timeouts = smtpTimeouts(env);
+  if (!customTls) {
+    // Keep Meteor's native transport selection and stream plugins (including
+    // encrypted/signed mail). Its cache follows the normalized URL.
+    installNativeSmtpDeadline(nodemailer, { timeoutMs: smtpTotalTimeout(env), timeouts });
+    const url = new URL(boundedSmtpUrl(env.MAIL_URL, timeouts));
+    url.searchParams.set('wekanTotalTimeout', String(smtpTotalTimeout(env)));
+    env.MAIL_URL = url.toString();
+    return 'bounded-smtp';
+  }
+  const makeOptions = mailUrl => ({
+    ...smtpOptionsFromUrl(mailUrl, {
       ca: certificateFrom(env.MAIL_TLS_CA_CERT, { name: 'MAIL_TLS_CA_CERT' }),
       servername: (env.MAIL_TLS_SERVERNAME || '').trim(),
-    }),
-  );
+    }), ...timeouts,
+  });
+  let configuredUrl = env.MAIL_URL;
+  let options = makeOptions(configuredUrl);
+  const timeoutMs = smtpTotalTimeout(env);
 
   // Meteor hands the message plus its own packageSettings; nodemailer takes the
   // message fields as they are and would choke on the extra key.
-  Email.customTransport = ({ packageSettings, ...message }) => transport.sendMail(message);
+  Email.customTransport = ({ packageSettings, ...message }) => {
+    // Meteor normally refreshes its cached transport when MAIL_URL changes.
+    // Preserve that behavior for settings hooks such as Sandstorm's updater.
+    if (env.MAIL_URL !== configuredUrl) {
+      options = makeOptions(env.MAIL_URL);
+      configuredUrl = env.MAIL_URL;
+    }
+    return sendDeadlineSmtp({ nodemailer, options, message, timeoutMs });
+  };
 
   return 'custom-tls';
 }
@@ -118,7 +179,7 @@ export function installMailTransport({ Email, EmailInternals, env = process.env 
 // Admin Panel mail settings deliberately use Nodemailer's bundled well-known
 // SMTP profiles. They provide host/port/TLS defaults; authentication remains in
 // WeKan's database and is never published to a browser.
-export function installAdminMailTransport({ Email, EmailInternals, mailServer } = {}) {
+export function installAdminMailTransport({ Email, EmailInternals, mailServer, env = process.env } = {}) {
   if (!Email || !EmailInternals || !mailServer?.enabled) return 'disabled';
   const nodemailer = EmailInternals?.NpmModules?.nodemailer?.module;
   if (!nodemailer) return 'no-nodemailer';
@@ -142,7 +203,9 @@ export function installAdminMailTransport({ Email, EmailInternals, mailServer } 
   }
   if (config.username) options.auth = { user: config.username, pass: password };
 
-  const transport = nodemailer.createTransport(options);
-  Email.customTransport = ({ packageSettings, ...message }) => transport.sendMail(message);
+  options = { ...options, ...smtpTimeouts(env) };
+  const timeoutMs = smtpTotalTimeout(env);
+  Email.customTransport = ({ packageSettings, ...message }) =>
+    sendDeadlineSmtp({ nodemailer, options, message, timeoutMs });
   return 'admin-settings';
 }

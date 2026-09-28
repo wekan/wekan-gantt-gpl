@@ -37,6 +37,7 @@ import '/server/initializeDirs';
 // 0. API middleware & auth routes (must register before model routes)
 // ----------------------------------------------------------------------------
 import '/server/lib/requestReportContext';
+import '/server/00adminOnlyFieldBoundary';
 import '/server/apiMiddleware';
 import '/server/apiAuthRoutes';
 
@@ -57,6 +58,7 @@ import '/imports/lib/secureDOMPurify';
 // 2. Models — shared collections + server-only extensions
 // ----------------------------------------------------------------------------
 import '/imports/startup/shared-models';
+import '/server/adminOnlyFieldWrites';
 import '/models/attachments.server';
 import '/models/avatars.server';
 import '/server/boardBackgrounds';
@@ -293,6 +295,10 @@ import '/server/publications/backgrounds';
 import '/server/publications/boards';
 import '/server/publications/cards';
 import '/server/publications/cardsWindow';
+import '/server/publications/boardTextMatches';
+import '/server/publications/boardMovementMatches';
+import '/server/publications/boardTablePage';
+import '/server/filterPresets';
 import '/server/publications/customUI';
 import '/server/publications/impersonationReport';
 import '/server/publications/recoveryReport';
@@ -335,6 +341,8 @@ import '/server/scheduledRules';
 import '/server/checklistResetSchedule';
 import '/server/listSync';
 import '/server/methods/listSync';
+import '/server/methods/emailRecovery';
+import '/server/methods/activityNotificationRecovery';
 import '/server/methods/wipLimitGroups';
 import '/server/rulesButton';
 
@@ -401,3 +409,6 @@ import '/server/moveBoardObjects';
 
 import '/server/scrum';
 import '/server/publications/scrum';
+import '/server/methods/syncRuleEmailRecovery';
+
+import '/server/lib/storedHistoryChain';

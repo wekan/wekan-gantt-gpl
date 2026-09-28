@@ -4,6 +4,23 @@
   and #each x in y constructors to fix this.
 
 template(name="filterSidebar")
+  if currentUser
+    h3 {{_ 'filter-presets'}}
+    label(for="saved-filter-preset") {{_ 'filter-presets'}}
+    select.js-filter-preset-select(id="saved-filter-preset")
+      option(value="") {{_ 'filter-preset-choose'}}
+      each savedFilterPresets
+        option(value=_id)= name
+    button.js-apply-filter-preset(type="button" disabled=presetBusy) {{_ 'apply'}}
+    button.js-remove-filter-preset(type="button" disabled=presetBusy) {{_ 'delete'}}
+    form.js-save-filter-preset
+      label(for="saved-filter-name") {{_ 'filter-preset-name'}}
+      input.js-filter-preset-name(id="saved-filter-name" type="text" maxlength="80" required)
+      p.quiet {{_ 'filter-preset-replace-hint'}}
+      button.primary(type="submit" disabled=presetBusy) {{_ 'filter-preset-save'}}
+    if presetMessage
+      p.js-filter-preset-message(role="status") {{_ presetMessage}}
+    hr
   h3
     i.fa.fa-list
     | {{_ 'list-filter-label'}}
@@ -13,8 +30,8 @@ template(name="filterSidebar")
   hr
   h3
     i.fa.fa-list
-    | {{_ 'filter-card-title-label'}}
-  input.js-field-card-filter(type="text" value=Filter.title.value)
+    | {{_ 'filter-card-text-label'}}
+  input.js-field-card-filter(type="text" maxlength="512" value=Filter.text.value aria-label="{{_ 'filter-card-text-label'}}")
   hr
   h3
     i.fa.fa-sitemap
@@ -35,14 +52,16 @@ template(name="filterSidebar")
     option(value="and" selected="{{#if $eq Filter.labelIds.mode 'and'}}selected{{/if}}") AND
   ul.sidebar-list
     li(class="{{#if Filter.labelIds.isSelected undefined}}active{{/if}}")
-          a.name.js-toggle-label-filter(data-filter-id="__none__")
+          label.name.filter-native-choice.js-toggle-label-filter(data-filter-id="__none__")
+            input(type="checkbox" checked="{{Filter.labelIds.isSelected undefined}}")
             span.sidebar-list-item-description
               | {{_ 'filter-no-label'}}
             if Filter.labelIds.isSelected undefined
               i.fa.fa-check
     each currentBoard.labels
       li(class="{{#if Filter.labelIds.isSelected _id}}active{{/if}}{{#if Filter.excludedLabelIds.isSelected _id}} excluded{{/if}}")
-        a.name.js-toggle-label-filter(data-filter-id="{{_id}}")
+        label.name.filter-native-choice.js-toggle-label-filter(data-filter-id="{{_id}}")
+          input(type="checkbox" checked="{{Filter.labelIds.isSelected _id}}")
           span.card-label.square(class="{{labelColorClass color}}" style="{{labelColorStyle color}}")
           span.sidebar-list-item-description
             if name
@@ -59,7 +78,8 @@ template(name="filterSidebar")
     | {{_ 'filter-member-label'}}
   ul.sidebar-list
     li(class="{{#if Filter.members.isSelected undefined}}active{{/if}}")
-          a.name.js-toggle-member-filter(data-filter-id="__none__")
+          label.name.filter-native-choice.js-toggle-member-filter(data-filter-id="__none__")
+            input(type="checkbox" checked="{{Filter.members.isSelected undefined}}")
             span.sidebar-list-item-description
               | {{_ 'filter-no-member'}}
             if Filter.members.isSelected undefined
@@ -67,7 +87,8 @@ template(name="filterSidebar")
     each currentBoard.activeMembers
       with getUser userId
         li(class="{{#if Filter.members.isSelected _id}}active{{/if}}")
-          a.name.js-toggle-member-filter(data-filter-id="{{_id}}")
+          label.name.filter-native-choice.js-toggle-member-filter(data-filter-id="{{_id}}")
+            input(type="checkbox" checked="{{Filter.members.isSelected _id}}")
             +userAvatar(userId=this._id)
             span.sidebar-list-item-description
               = profile.fullname
@@ -80,7 +101,8 @@ template(name="filterSidebar")
     | {{_ 'filter-assignee-label'}}
   ul.sidebar-list
     li(class="{{#if Filter.assignees.isSelected undefined}}active{{/if}}")
-      a.name.js-toggle-assignee-filter(data-filter-id="__none__")
+      label.name.filter-native-choice.js-toggle-assignee-filter(data-filter-id="__none__")
+        input(type="checkbox" checked="{{Filter.assignees.isSelected undefined}}")
         span.sidebar-list-item-description
           | {{_ 'filter-no-assignee'}}
         if Filter.assignees.isSelected undefined
@@ -88,7 +110,8 @@ template(name="filterSidebar")
     each currentBoard.activeMembers
       with getUser userId
         li(class="{{#if Filter.assignees.isSelected _id}}active{{/if}}")
-          a.name.js-toggle-assignee-filter(data-filter-id="{{_id}}")
+          label.name.filter-native-choice.js-toggle-assignee-filter(data-filter-id="{{_id}}")
+            input(type="checkbox" checked="{{Filter.assignees.isSelected _id}}")
             +userAvatar(userId=this._id)
             span.sidebar-list-item-description
               = profile.fullname
@@ -103,7 +126,8 @@ template(name="filterSidebar")
     each currentBoard.activeMembers
       with getUser userId
         li(class="{{#if Filter.userId.isSelected _id}}active{{/if}}")
-          a.name.js-toggle-creator-filter(data-filter-id="{{_id}}")
+          label.name.filter-native-choice.js-toggle-creator-filter(data-filter-id="{{_id}}")
+            input(type="checkbox" checked="{{Filter.userId.isSelected _id}}")
             +userAvatar(userId=this._id)
             span.sidebar-list-item-description
               = profile.fullname
@@ -114,43 +138,105 @@ template(name="filterSidebar")
   h3
     i.fa.fa-calendar
     | {{_ 'filter-dates-label' }}
-  ul.sidebar-list
-    li(class="{{#if Filter.dueAt.isSelected 'noDate'}}active{{/if}}")
-      a.name.js-toggle-no-due-date-filter
-        span.sidebar-list-item-description
-          | {{_ 'filter-no-due-date' }}
-        if Filter.dueAt.isSelected 'noDate'
-          i.fa.fa-check
-    li(class="{{#if Filter.dueAt.isSelected 'past'}}active{{/if}}")
-      a.name.js-toggle-overdue-filter
-        span.sidebar-list-item-description
-          | {{_ 'filter-overdue' }}
-        if Filter.dueAt.isSelected 'past'
-          i.fa.fa-check
-    li(class="{{#if Filter.dueAt.isSelected 'today'}}active{{/if}}")
-      a.name.js-toggle-due-today-filter
-        span.sidebar-list-item-description
-          | {{_ 'filter-due-today' }}
-        if Filter.dueAt.isSelected 'today'
-          i.fa.fa-check
-    li(class="{{#if Filter.dueAt.isSelected 'tomorrow'}}active{{/if}}")
-      a.name.js-toggle-due-tomorrow-filter
-        span.sidebar-list-item-description
-          | {{_ 'filter-due-tomorrow' }}
-        if Filter.dueAt.isSelected 'tomorrow'
-          i.fa.fa-check
-    li(class="{{#if Filter.dueAt.isSelected 'thisweek'}}active{{/if}}")
-      a.name.js-toggle-due-this-week-filter
-        span.sidebar-list-item-description
-          | {{_ 'filter-due-this-week' }}
-        if Filter.dueAt.isSelected 'thisweek'
-          i.fa.fa-check
-    li(class="{{#if Filter.dueAt.isSelected 'nextweek'}}active{{/if}}")
-      a.name.js-toggle-due-next-week-filter
-        span.sidebar-list-item-description
-          | {{_ 'filter-due-next-week' }}
-        if Filter.dueAt.isSelected 'nextweek'
-          i.fa.fa-check
+  each dateFilterProviderViews
+    +Template.dynamic(template=template data=data)
+  form.js-card-movement-range
+    h4 {{_ 'filter-movement-range'}}
+    label(for="filter-card-movement-from") {{_ 'filter-date-range-from'}}
+    input.js-card-movement-from(id="filter-card-movement-from" type="date" value=movementFrom)
+    label(for="filter-card-movement-to") {{_ 'filter-date-range-to'}}
+    input.js-card-movement-to(id="filter-card-movement-to" type="date" value=movementTo)
+    button.primary(type="submit") {{_ 'apply'}}
+    button.js-clear-movement-range(type="button") {{_ 'filter-clear'}}
+  form.js-card-date-range
+    label(for="filter-card-date-field") {{_ 'filter-date-range-field'}}
+    select.js-card-date-field(id="filter-card-date-field")
+      each dateRangeFields
+        option(value=id selected="{{#if dateRangeSelected id}}selected{{/if}}") {{_ label}}
+    label(for="filter-card-date-from") {{_ 'filter-date-range-from'}}
+    input.js-card-date-from(id="filter-card-date-from" type="date" value=dateRangeFrom)
+    label(for="filter-card-date-to") {{_ 'filter-date-range-to'}}
+    input.js-card-date-to(id="filter-card-date-to" type="date" value=dateRangeTo)
+    label
+      input.js-card-date-missing(type="checkbox" checked=dateRangeMissing)
+      | {{_ 'filter-date-range-missing'}}
+    button.primary(type="submit") {{_ 'apply'}}
+    button.js-clear-date-range(type="button") {{_ 'filter-clear'}}
+  hr
+  fieldset.filter-native-group
+    legend {{_ 'dueAt'}}
+    label.filter-native-choice
+      input.js-due-unrestricted(type="radio" name="filter-due" value="" checked=dueUnrestricted)
+      span {{_ 'filter-due-any'}}
+    ul.sidebar-list
+      li(class="{{#if Filter.dueAt.isSelected 'noDate'}}active{{/if}}")
+        label.name.filter-native-choice.js-toggle-no-due-date-filter
+          input(type="radio" name="filter-due" value="noDate" checked="{{Filter.dueAt.isSelected 'noDate'}}")
+          span.sidebar-list-item-description
+            | {{_ 'filter-no-due-date' }}
+          if Filter.dueAt.isSelected 'noDate'
+            i.fa.fa-check
+      li(class="{{#if Filter.dueAt.isSelected 'past'}}active{{/if}}")
+        label.name.filter-native-choice.js-toggle-overdue-filter
+          input(type="radio" name="filter-due" value="past" checked="{{Filter.dueAt.isSelected 'past'}}")
+          span.sidebar-list-item-description
+            | {{_ 'filter-overdue' }}
+          if Filter.dueAt.isSelected 'past'
+            i.fa.fa-check
+      li(class="{{#if Filter.dueAt.isSelected 'today'}}active{{/if}}")
+        label.name.filter-native-choice.js-toggle-due-today-filter
+          input(type="radio" name="filter-due" value="today" checked="{{Filter.dueAt.isSelected 'today'}}")
+          span.sidebar-list-item-description
+            | {{_ 'filter-due-today' }}
+          if Filter.dueAt.isSelected 'today'
+            i.fa.fa-check
+      li(class="{{#if Filter.dueAt.isSelected 'tomorrow'}}active{{/if}}")
+        label.name.filter-native-choice.js-toggle-due-tomorrow-filter
+          input(type="radio" name="filter-due" value="tomorrow" checked="{{Filter.dueAt.isSelected 'tomorrow'}}")
+          span.sidebar-list-item-description
+            | {{_ 'filter-due-tomorrow' }}
+          if Filter.dueAt.isSelected 'tomorrow'
+            i.fa.fa-check
+      li(class="{{#if Filter.dueAt.isSelected 'previousweek'}}active{{/if}}")
+        label.name.filter-native-choice.js-toggle-due-previous-week-filter
+          input(type="radio" name="filter-due" value="previousweek" checked="{{Filter.dueAt.isSelected 'previousweek'}}")
+          span.sidebar-list-item-description {{_ 'filter-due-previous-week'}}
+          if Filter.dueAt.isSelected 'previousweek'
+            i.fa.fa-check
+      li(class="{{#if Filter.dueAt.isSelected 'thisweek'}}active{{/if}}")
+        label.name.filter-native-choice.js-toggle-due-this-week-filter
+          input(type="radio" name="filter-due" value="thisweek" checked="{{Filter.dueAt.isSelected 'thisweek'}}")
+          span.sidebar-list-item-description
+            | {{_ 'filter-due-this-week' }}
+          if Filter.dueAt.isSelected 'thisweek'
+            i.fa.fa-check
+      li(class="{{#if Filter.dueAt.isSelected 'nextweek'}}active{{/if}}")
+        label.name.filter-native-choice.js-toggle-due-next-week-filter
+          input(type="radio" name="filter-due" value="nextweek" checked="{{Filter.dueAt.isSelected 'nextweek'}}")
+          span.sidebar-list-item-description
+            | {{_ 'filter-due-next-week' }}
+          if Filter.dueAt.isSelected 'nextweek'
+            i.fa.fa-check
+      li(class="{{#if Filter.dueAt.isSelected 'nextmonth'}}active{{/if}}")
+        label.name.filter-native-choice.js-toggle-due-next-month-filter
+          input(type="radio" name="filter-due" value="nextmonth" checked="{{Filter.dueAt.isSelected 'nextmonth'}}")
+          span.sidebar-list-item-description {{_ 'filter-due-next-month'}}
+          if Filter.dueAt.isSelected 'nextmonth'
+            i.fa.fa-check
+  hr
+  h3
+    i.fa.fa-list
+    | {{_ 'filter-column-age'}}
+  form.js-column-age-filter
+    label {{_ 'list'}}
+    select.js-column-age-list
+      option(value="") {{_ 'filter-column-age-disabled'}}
+      each columnAgeLists
+        option(value=_id selected="{{#if columnAgeSelected _id}}selected{{/if}}") {{title}}
+    label {{_ 'filter-column-age-days'}}
+    input.js-column-age-days(type="number" min="1" max="365000" required value=columnAgeDays)
+    p.quiet {{_ 'filter-column-age-hint'}}
+    button.primary(type="submit") {{_ 'apply'}}
   hr
   h3
     i.fa.fa-list
@@ -199,17 +285,21 @@ template(name="filterSidebar")
         if Filter.hideEmpty.isSelected _id
           i.fa.fa-check
   hr
+  each filterProviderViews
+    .filter-provider(data-provider-id=id)
+      +Template.dynamic(template=template data=data)
   h3 {{_ 'advanced-filter-label'}}
   input.js-field-advanced-filter(type="text" value=Filter.advanced.value)
   span {{_ 'advanced-filter-description'}}
+  p.quiet {{_ 'advanced-filter-card-dates-hint'}}
   if Filter.isActive
     hr
-    a.sidebar-btn.js-clear-all
-      i.fa.fa-search
-      span {{_ 'filter-clear'}}
     a.sidebar-btn.js-filter-to-selection
       i.fa.fa-check
       span {{_ 'filter-to-selection'}}
+    a.sidebar-btn.js-clear-all
+      i.fa.fa-search
+      span {{_ 'filter-clear'}}
 
 template(name="multiselectionSidebar")
   if MultiSelection.hasObjects
@@ -334,3 +424,17 @@ template(name="setSelectionColorPopup")
             i.fa.fa-check
     button.primary.confirm.js-submit {{_ 'save'}}
     button.js-remove-color.negate.wide.right {{_ 'remove-btn'}}
+
+template(name="cardRecencyFilter")
+  each field in dateRecencyFields
+    fieldset.filter-native-group
+      legend {{_ field.label}}
+      each preset in dateRecencyPresets
+        label.filter-native-choice
+          input.js-card-date-recency(type="radio" name="filter-recency-{{field.id}}" data-field=field.id value=preset.id checked="{{dateRecencySelected field.id preset.id}}")
+          span {{_ preset.label}}
+
+template(name="textFilterProvider")
+  label
+    span {{_ labelKey}}
+    input.js-provider-text(type="text" value=providerTextValue maxlength="512")

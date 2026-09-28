@@ -9,6 +9,28 @@
 // is a no-op so the module can load without a running Meteor app.
 
 const STUBS = {
+  '/client/lib/boardMovementFilter': `
+    export const boardMovementSelector = value => ({ _id: { $in: [value.from] } });
+    export const startBoardMovementFilter = () => {};
+  `,
+  '/client/lib/boardTextFilter': `
+    export const boardTextSelector = term => ({ _id: { $in: [term] } });
+    export const startBoardTextFilter = () => {};
+  `,
+  'meteor/meteor': `
+    export const timers = new Map();
+    export const Meteor = {
+      setInterval(fn) { const id = timers.size + 1; timers.set(id, fn); return id; },
+      clearInterval(id) { timers.delete(id); },
+    };
+  `,
+  'meteor/reactive-var': `
+    export class ReactiveVar {
+      constructor(value) { this.value = value; }
+      get() { return this.value; }
+      set(value) { this.value = value; }
+    }
+  `,
   '/client/lib/dateDisplay': `
     export const dateDisplayPreferences = () => ({ dateFormat: 'YYYY-MM-DD', calendarSystem: 'gregorian' });
   `,
@@ -70,6 +92,9 @@ const STUBS = {
 };
 
 export async function resolve(specifier, context, nextResolve) {
+  if (['/client/lib/filterProviders', '/models/lib/filterPresetState', '/models/lib/dueDateShortcuts', '/models/lib/cardDateRange', '/models/lib/cardListEntry', '/client/lib/dateNowTicker'].includes(specifier)) {
+    return nextResolve(new URL(`../..${specifier}.js`, import.meta.url).href, context);
+  }
   if (specifier === '/models/lib/dateFormatPolicy') {
     return nextResolve(new URL('../../models/lib/dateFormatPolicy.js', import.meta.url).href, context);
   }

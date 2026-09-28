@@ -16,6 +16,9 @@ Template.mailActions.events({
       emailTo,
       emailSubject,
       emailMsg,
+      includeCardDetails: tpl.find('#email-card-details').checked,
+      includeChecklistsAndComments: tpl.find('#email-discussion').checked,
+      includeAttachments: tpl.find('#email-attachments').checked,
       boardId,
       desc,
     });

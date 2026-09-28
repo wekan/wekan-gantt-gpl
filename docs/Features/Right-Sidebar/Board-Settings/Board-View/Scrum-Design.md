@@ -11,7 +11,10 @@ permission-checked History restore/undo/redo with compound recovery checkpoints.
 See [Sprints](Sprints.md), [Product Backlog](Product-Backlog.md) and
 [Sprint Reports](Sprint-Reports.md) for the current behavior.
 
-Still pending: daily scope history and burndown visualization, original-edit/History atomicity and large-board limits,
+Daily observed snapshots and a scoped history reader are now implemented as a
+foundation for burndown, with measured daily bars in Sprint Report.
+Still pending: event-complete scope history and burndown,
+original-edit/History atomicity and large-board limits,
 standalone planning-record transfer/copy and remaining external
 import/export/sync mappings, and the remaining lifecycle/permission/browser
 matrix described below. Source-string registration is not translated coverage.
@@ -30,7 +33,8 @@ and export now retain issue types and explicit workflow categories through
 existing hidden metadata, alongside numeric time tracking. See the
 [Jira guide](../../../ImportExport/Jira/Jira.md) for mappings, selection controls
 and limitations. External sprint snapshots, multiple release assignments,
-epic relationships and configurable story-point mappings remain pending.
+epic relationships remain pending. Explicit numeric Jira estimate-field mapping
+is implemented; automatic field/schema discovery remains pending.
 
 ## Existing features to reuse
 
@@ -47,7 +51,7 @@ epic relationships and configurable story-point mappings remain pending.
 | History and undo | Existing activity/history facilities | Typed sprint lifecycle, assignment, goal, estimate and scope changes with before/after values and safe undo |
 | Visibility | Board Settings / Swimlane, List and Card, card/minicard field ordering | Opt-in Scrum fields in those same settings, independently selectable |
 | Native backup | `models/exporter.js` and `models/wekanCreator.js` | Sprint records and complete ID remapping for new references |
-| Jira import | `models/jiraCreator.js` creates status lists, cards, labels and issue dependencies | Sprint, epic, version, estimate, rank and schema-driven custom-field mapping are not implemented by this importer |
+| Jira import | `models/jiraCreator.js` creates status lists, cards, labels and issue dependencies; retains time totals, issue types, workflow categories and selected numeric estimate fields | Sprint, epic, version, rank and automatic schema-driven custom-field mapping remain pending |
 | External formats and sync | `models/lib/externalParsers.js`, `externalExporters.js`, list synchronization | Current common fields omit Scrum data; advertised format coverage is not evidence of actual support |
 | Trello import | `models/trelloCreator.js`, custom fields and board structures | No universal Trello sprint schema: explicit mappings for custom fields and Power-Up data are required |
 
@@ -136,6 +140,47 @@ replay scope and estimate history; never present current estimates as historical
 facts. Report missing history and unknown estimates separately from zero. Do not
 combine points and hours or use velocity to rank individual members.
 
+Daily observation collection now scans active sprints every 15 minutes and
+retains the first successful observation of each UTC day. Opening the history
+reader also attempts today's observation. Capture stores actual timestamps and
+uses the sprint's recorded estimate source, unit and completion policy. Retries
+and concurrent collectors cannot replace an existing observation; a restarted
+sprint with a different start timestamp has a separate series. Missing days are
+absent, never backfilled using current estimates. Captures are observed reads,
+not transactional snapshots or a complete log of intervening events.
+
+The private `scrumDailySnapshots` collection stores these observations.
+`scrum.getDailyHistory(boardId, sprintId)` returns measured scope, remaining and
+completed totals, with unknown estimates counted separately. It checks board
+visibility and restricts assigned-only readers to their currently visible cards,
+retaining partial-source warnings. The reader streams at most 366 observations
+and flags truncation. Capture limits each sprint to 10,000 cards and each board
+to 10,000 lists; exceeding a limit leaves a gap rather than saving partial data.
+
+Sprint start and close also bound their input queries to 10,001 cards/lists,
+using the extra row to reject oversized snapshots before changing sprint state
+or writing History. Projections omit card titles, bodies and attachments while
+retaining estimate, completion and rollover metadata. Start excludes archived
+cards; close includes them. Exactly 10,000 rows remain supported. Done-list
+membership is indexed once per snapshot instead of scanning every list for
+every card. Lifecycle updates also preflight the resulting sprint/rollover document,
+the compound History payload and two copies of the larger History side for
+restoration. Each must fit a 15 MiB BSON budget, reserving 1 MiB for envelope
+fields and recovery revisions. Oversized metadata fails before the first sprint
+write, with a request to reduce scope. This prevents a known size failure from
+leaving a closed sprint without its History. Board-view pagination, separate
+storage for larger plans and concurrent snapshot consistency still need work;
+these guards do not make the lifecycle transaction atomic.
+Board deletion removes the observations. Full-instance backups include the
+collection through the normal collection inventory; native board transfer and
+duplication now carry daily observations too. General History/undo transport
+remains pending. Sprint Report now displays the observed
+daily scope, remaining work and completed work as bars, with exact timestamps,
+metric selection and partial/empty/truncated states. Missing days are not
+connected or interpolated. The section's Excel/PDF exports use the same reader
+and preserve observation, partial-data and truncation notices. Event-level
+scope replay and cross-document consistency still require implementation.
+
 The shared Scrum settings form now exposes Product Owner, Scrum Master,
 Developers and working days. Accountabilities select active board members and
 do not grant permissions. Multiple developers and a nonempty set of weekdays
@@ -168,10 +213,74 @@ cards. Sprint/release references on moved cards and swimlanes, their lifecycle
 coordination and History restoration still need integration.
 
 Implementation checkpoint: `models/lib/scrumTransfer.js` now defines and tests
-the `wekan-scrum-1` data contract and destination-ID remapping. It covers board
+the `wekan-scrum-2` data contract and destination-ID remapping. Version 1 files
+remain importable and receive no invented daily observations. Version 2 files
+require a reader that understands version 2; older importers reject them.
+The contract covers board
 settings, sprint/release/event records, lifecycle snapshots and optional item
 metadata. Missing transferred cards or historical actors produce explicit
 loss entries; reduced snapshots are marked partial and their totals recalculated.
+Daily observations retain their real timestamps, UTC day, start epoch, policy
+and measured cards. Old restart epochs survive transfer without being merged
+into the currently selected sprint epoch. Sprint, card, list and estimate-field
+IDs are remapped; imported observation IDs use the same deterministic identity
+as the collector. Invalid timestamps, duplicate daily identities and mismatched
+policies within the current epoch are rejected. Native transfers are bounded
+to 10,000 observations and 100,000 observed card rows in total; larger histories
+fail explicitly instead of being truncated silently. The export scans stored
+observations with a one-document cursor batch before applying scope filters.
+Imported sprints remain marked pending until cards, observations and settings
+are saved. The collector skips them and export refuses unfinished imports.
+While any sprint on the board carries that marker, Scrum settings, planning,
+metadata and lifecycle methods reject changes, including retries of an already
+closed sprint. Scrum History restore/undo/redo also refuses to write or start a
+recovery checkpoint. The Scrum view shows an incomplete-import warning and
+removes editing capabilities; daily-history reads and all Scrum chart exports
+fail explicitly. Once the importer finishes and clears the marker, these
+operations become available again. This is an exclusion for marked Scrum
+imports, not a global lock on ordinary board/card edits or all import stages.
+Before writing Scrum targets, the importer now creates a private board-level
+checkpoint and stages each intended write in `scrumImportSteps`. Records retain
+the allocated destination IDs, exact before/after values and BSON dates. Each
+step is a separate document rather than placing a large board in one MongoDB
+document. A preparing checkpoint is not ready for recovery until every step is
+durable; acknowledged writes advance its `next` position. A stop between a
+target write and the position update leaves the complete intended step intact.
+
+Metadata updates compare their original values, field presence and destination
+board atomically. A changed or moved target stops the operation without being
+overwritten. Exact already-written results are accepted by the step writer;
+same-ID inserts with different content are rejected. Normal completion removes
+the checkpoint only after clearing all sprint markers and deleting its plan.
+It enters the same durable cleaning state as offline recovery before removing
+plan rows. A cleanup failure propagates with the checkpoint still present,
+allowing offline resume even after partial plan removal.
+Board deletion cleans both private collections. The checkpoint also excludes
+Scrum reads/writes/exports and daily capture before any sprint exists and after
+the last sprint marker clears. The UI exposes only the existing pending flag,
+not recovery contents or counters.
+
+An [offline maintenance command](../../../ImportExport/Scrum-Import-Recovery.md)
+can now inspect and continue a complete stored Scrum plan with all application
+and other database writers stopped. It validates every target before writing,
+uses a non-expiring per-board claim and recognizes writes whose acknowledgements
+were lost. Complete preparing plans can be sealed; incomplete plans are refused.
+An explicit cleaning phase resumes interrupted private-plan cleanup. Failed
+recoveries retain their claim until an operator confirms its process stopped
+and clears its exact token.
+
+The same command can inspect and apply rollback of an interrupted Scrum plan.
+It restores only original Scrum metadata and removes unchanged inserted records
+in reverse order. Durable reverse progress and cleanup states survive write
+acknowledgement gaps. Partially staged preparing plans can be discarded without
+destination writes. Forward resume is refused after rollback starts; completed
+imports whose plans are being removed can no longer be rolled back.
+
+Online coordinated replay, reconstruction of incomplete plans, changed-target
+resolution, reclamation of old orphan plans and recovery of earlier/later native
+import stages remain unfinished. Existing marker-only interrupted imports have
+no retroactive plan. Ordinary board/card edits are not locked by these
+checkpoints; this is why the maintenance command requires stopped writers.
 Unknown fields (including permission fields and recovery checkpoints), invalid
 dates, inconsistent totals, foreign planning references and ID collisions fail
 validation. Destination maps are supplied by the importer, never by file input.
@@ -217,11 +326,24 @@ estimates using existing spent-time and numeric custom fields. Native export
 retains them, and the original estimate can be selected in Scrum settings.
 Jira time export also restores numeric seconds using stable custom-field markers
 and respects Dates/Custom Fields selection. Jira Sync now offers opt-in spent
-hours, with source baselines and conflict checks. The existing Sync popup also
-selects title/description fields and card creation/source-absence archival;
-these settings retain board write authorization. Sprint, release and estimate
-Sync mappings remain pending, as do project-scoped source identity and atomic
-concurrent jobs. See [Sync](../../../ImportExport/Sync.md) for verified scope.
+hours and estimates in explicitly mapped numeric custom fields, with source
+baselines and conflict checks. Estimate mappings retain their field ID and unit,
+are revalidated before writes, preserve zero and handle explicit null clearing.
+A changed mapping requires saving settings and invalidates its old baseline.
+Successful estimate changes emit ordinary custom-field activities after saving;
+advanced-filter rules can act on the new values. Unchanged and rejected writes
+emit no success activity. Durable activity/History replay remains pending.
+The existing Sync popup also selects title/description fields and card
+creation/source-absence archival; these settings retain board write
+authorization. Original/remaining time estimates now sync through the unique
+imported numeric time fields on the board, in hours, with mapping identity
+checks, local-edit review and zero/null/missing handling. Sprint/release and
+other providers' estimate Sync mappings remain pending.
+Card mappings and credentials now carry a
+provider/server/project identity, preserving old cards when switching sources.
+Legacy configurations require saving once to bind their existing mappings.
+Atomic concurrent jobs and configuration writes remain pending.
+See [Sync](../../../ImportExport/Sync.md) for verified scope and limits.
 
 Jira mappings use the supplied field schema and explicit user choices, not
 hard-coded `customfield_*` numbers. Accept sprint IDs and expanded sprint

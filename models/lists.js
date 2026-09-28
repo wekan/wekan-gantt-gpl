@@ -1,4 +1,5 @@
 import { Meteor } from 'meteor/meteor';
+import { Random } from 'meteor/random';
 import { Mongo } from 'meteor/mongo';
 import { ReactiveCache } from '/imports/reactiveCache';
 import { LIST_COLORS } from '/models/metadata/colors';
@@ -295,6 +296,24 @@ Lists.attachSchema(
     // The credential itself is NEVER stored here - `syncSource` is published to
     // the client like the rest of the list - it lives server-only in
     // models/listSyncCredentials.js, a collection with no publication at all.
+    // Selects an immutable private credential version together with syncSource.
+    // Retained across clears so a delayed save cannot match a previous state.
+    syncRevision: { type: String, optional: true },
+    // Regenerated on every server insertion, including same-ID recreation.
+    syncCredentialIncarnation: {
+      type: String,
+      optional: true,
+      autoValue() {
+        // Schema insertion also covers importers using Lists.direct (no hooks).
+        if (!Meteor.isServer) return;
+        if (this.isInsert) return Random.id();
+        if (this.isUpsert) return { $setOnInsert: Random.id() };
+      },
+    },
+    // Server-maintained fence for retiring unselected credential versions.
+    syncCredentialGeneration: { type: Number, optional: true, min: 0, max: Number.MAX_SAFE_INTEGER },
+    // Changes on every cleanup, including a damaged numeric counter reset.
+    syncCredentialFence: { type: String, optional: true },
     syncSource: {
       type: Object,
       optional: true,
@@ -321,10 +340,13 @@ Lists.attachSchema(
       type: String,
       optional: true,
     },
+    'syncSource.timeMappingIdentities': { type: Object, optional: true, blackbox: true },
+    'syncSource.estimateCustomFieldId': { type: String, optional: true },
+    'syncSource.estimateMappingIdentity': { type: String, optional: true },
     'syncSource.fields': { type: Array, optional: true },
     'syncSource.createCards': { type: Boolean, optional: true },
     'syncSource.archiveCards': { type: Boolean, optional: true },
-    'syncSource.fields.$': { type: String, allowedValues: ['title', 'description', 'spentTime'] },
+    'syncSource.fields.$': { type: String, allowedValues: ['title', 'description', 'spentTime', 'estimate', 'originalEstimate', 'remainingEstimate'] },
     'syncSource.enabled': {
       type: Boolean,
       optional: true,
@@ -821,9 +843,12 @@ export default Lists;
 // Prevent direct DDP writes bypassing Scrum reference and lifecycle validation.
 if (Meteor.isServer) {
   Lists.deny({
-    insert(userId, doc) { return doc.scrum !== undefined || doc.scrumRevision !== undefined; },
+    insert(userId, doc) { return doc.scrum !== undefined || doc.scrumRevision !== undefined || doc.syncCredentialGeneration !== undefined || doc.syncCredentialFence !== undefined; },
     update(userId, doc, fields) {
-      return fields.some(field => field === 'scrum' || field.startsWith('scrum.') || field === 'scrumRevision');
+      return fields.some(field => field === 'scrum' || field.startsWith('scrum.') || field === 'scrumRevision' ||
+        field === 'syncCredentialGeneration' || field.startsWith('syncCredentialGeneration.') ||
+        field === 'syncCredentialIncarnation' || field.startsWith('syncCredentialIncarnation.') ||
+        field === 'syncCredentialFence' || field.startsWith('syncCredentialFence.'));
     },
   });
 }

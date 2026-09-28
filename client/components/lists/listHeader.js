@@ -859,9 +859,11 @@ Template.setListColorPopup.events({
 
 // List sync settings popup (docs/Features/ImportExport/Sync.md). UI wiring
 // only: reads the list's own (already published, credential-free) syncSource
-// fields and calls setListSyncSource/hasListSyncCredential/syncListNow
-// (server/methods/listSync.js) exactly as they are defined there - this file
-// does not add to or change the sync backend.
+// fields and calls the configuration, Sync and conflict-resolution methods in
+// server/methods/listSync.js. Authority and fresh comparison checks stay there.
+const syncFieldLabel = field => ({ spentTime: 'spent-time-hours', estimate: 'scrum-estimate',
+  originalEstimate: 'sync-original-time', remainingEstimate: 'sync-remaining-time' })[field] || field;
+
 Template.listSyncPopup.onCreated(function () {
   const tpl = this;
   const list = Template.currentData();
@@ -876,6 +878,7 @@ Template.listSyncPopup.onCreated(function () {
   // as a boolean from the existing hasListSyncCredential method, the same
   // secret-safety discipline as the LDAP Admin Panel override's bind
   // password (client/components/settings/settingBody.js, models/lib/configResolver.js).
+  tpl.selectedEstimateField = new ReactiveVar(list?.syncSource?.estimateCustomFieldId || '');
   tpl.selectedSyncFields = new ReactiveVar(list?.syncSource?.fields || ['title', 'description']);
   tpl.selectedSyncOperations = new ReactiveVar({
     createCards: list?.syncSource?.createCards !== false,
@@ -884,6 +887,14 @@ Template.listSyncPopup.onCreated(function () {
   tpl.hasCredential = new ReactiveVar(false);
   tpl.syncNowResult = new ReactiveVar('');
   tpl.syncNowSuccess = new ReactiveVar(true);
+  tpl.syncConflicts = new ReactiveVar([]);
+  tpl.syncBusy = new ReactiveVar(false);
+  tpl.syncPreview = new ReactiveVar(null);
+  tpl.runReports = new ReactiveVar(null);
+  tpl.reportError = new ReactiveVar('');
+  tpl.reportsBusy = new ReactiveVar(false);
+  tpl.previewRequest = 0;
+  tpl.clearSyncPreview = () => { tpl.syncPreview.set(null); tpl.previewRequest++; };
 
   const refreshCredentialStatus = () => {
     if (!list || !list._id) return;
@@ -898,6 +909,43 @@ Template.listSyncPopup.onCreated(function () {
 });
 
 Template.listSyncPopup.helpers({
+  syncReportsBusy() { return Template.instance().reportsBusy.get(); },
+  syncReportError() { return Template.instance().reportError.get(); },
+  syncReportsLoaded() { return Template.instance().runReports.get() !== null; },
+  syncRunReports() {
+    return (Template.instance().runReports.get() || []).map(report => ({ ...report,
+      when: new Date(report.startedAt).toLocaleString(),
+      hasCounts: report.created !== undefined,
+      statusLabel: `sync-report-${report.status}`,
+      sourceRows: (report.coverage?.source?.rows || []).map(row => ({ ...row,
+        reasonLabel: `sync-source-${row.reason}`,
+      })),
+    }));
+  },
+  syncPreview() { return Template.instance().syncPreview.get(); },
+  syncPreviewItems() {
+    return (Template.instance().syncPreview.get()?.items || []).map(row => ({ ...row,
+      actionLabel: `sync-preview-${row.action}`,
+      fieldsText: row.fields.map(field => TAPi18n.__(field === 'syncLastSource' ? 'sync-preview-baseline' :
+        syncFieldLabel(field))).join(', '),
+    }));
+  },
+  syncSourceOmissions() {
+    return (Template.instance().syncPreview.get()?.coverage.source?.rows || []).map(row => ({ ...row,
+      reasonLabel: `sync-source-${row.reason}`,
+    }));
+  },
+  syncPreviewOmissions() {
+    return (Template.instance().syncPreview.get()?.coverage.rows || []).map(row => ({ ...row,
+      fieldText: TAPi18n.__(({ column_name: 'status', swimlane_name: 'swimlane', date_due: 'due-date',
+        owner_username: 'owner', requested_by: 'requested-by', tags: 'labels', spentTime: 'spent-time-hours' })[row.field] || row.field),
+      reasonLabel: row.reason === 'excluded' ? 'sync-preview-excluded' : 'sync-preview-unmapped',
+    }));
+  },
+  syncConflicts() { return Template.instance().syncConflicts.get().filter(row => row.fingerprint).map(row => ({
+    ...row, label: row.creation ? 'sync-conflict-creation' : row.archive ? 'sync-conflict-archive' : row.duplicate ? 'sync-conflict-duplicate' : syncFieldLabel(row.field),
+  })); },
+  syncBusy() { return Template.instance().syncBusy.get(); },
   syncOperations() {
     const selected = Template.instance().selectedSyncOperations.get();
     return [
@@ -905,10 +953,24 @@ Template.listSyncPopup.helpers({
       { operation: 'archiveCards', label: 'archive-card', checked: selected.archiveCards },
     ];
   },
+  syncEstimateEnabled() {
+    return Template.instance().selectedSyncType.get() === 'jira' &&
+      Template.instance().selectedSyncFields.get().includes('estimate');
+  },
+  syncEstimateFields() {
+    const selected = Template.instance().selectedEstimateField.get();
+    return ReactiveCache.getCustomFields({ boardIds: Template.currentData().boardId, type: 'number' })
+      .filter(field => field.settings?.jiraEstimateFieldId && field.settings?.jiraEstimateUnit)
+      .map(field => ({ _id: field._id, selected: field._id === selected,
+        name: `${field.name} (${field.settings.jiraEstimateFieldId}, ${field.settings.jiraEstimateUnit})` }));
+  },
+  syncTimeEnabled() {
+    return Template.instance().selectedSyncFields.get().some(field => ['originalEstimate', 'remainingEstimate'].includes(field));
+  },
   syncTextFields() {
     const fields = Template.instance().selectedSyncFields.get();
-    const choices = Template.instance().selectedSyncType.get() === 'jira' ? ['title', 'description', 'spentTime'] : ['title', 'description'];
-    return choices.map(field => ({ field, label: field === 'spentTime' ? 'spent-time-hours' : field, checked: fields.includes(field) }));
+    const choices = Template.instance().selectedSyncType.get() === 'jira' ? ['title', 'description', 'spentTime', 'estimate', 'originalEstimate', 'remainingEstimate'] : ['title', 'description'];
+    return choices.map(field => ({ field, label: syncFieldLabel(field), checked: fields.includes(field) }));
   },
   listSyncSourceTypes() {
     return SYNC_CAPABLE_SOURCES;
@@ -972,27 +1034,98 @@ Template.listSyncPopup.helpers({
 });
 
 Template.listSyncPopup.events({
+  'click .js-list-sync-reports'(event, tpl) {
+    event.preventDefault();
+    if (tpl.reportsBusy.get()) return;
+    const list = tpl.data;
+    tpl.runReports.set(null);
+    tpl.reportError.set('');
+    tpl.reportsBusy.set(true);
+    Meteor.call('listSyncRunReports', list._id, (error, reports) => {
+      if (tpl.view.isDestroyed) return;
+      tpl.reportsBusy.set(false);
+      if (error) tpl.reportError.set(TAPi18n.__('sync-report-unavailable'));
+      else tpl.runReports.set(reports);
+    });
+  },
+  'input .js-list-sync-url, input .js-list-sync-project-key, input .js-list-sync-token, input .js-list-sync-username'(event, tpl) {
+    tpl.clearSyncPreview();
+  },
+  'click .js-list-sync-preview'(event, tpl) {
+    event.preventDefault();
+    if (tpl.syncBusy.get()) return;
+    const list = tpl.data;
+    if (!list?._id) return;
+    tpl.clearSyncPreview();
+    const request = tpl.previewRequest;
+    tpl.syncBusy.set(true);
+    tpl.syncConflicts.set([]);
+    tpl.syncNowResult.set('');
+    Meteor.call('previewListSync', list._id, (err, result) => {
+      if (tpl.view.isDestroyed) return;
+      tpl.syncBusy.set(false);
+      if (request !== tpl.previewRequest) return;
+      if (err || result?.error || !result?.preview) {
+        tpl.syncNowSuccess.set(false);
+        tpl.syncNowResult.set(err?.reason || err?.message || result?.error || TAPi18n.__('sync-preview-unavailable'));
+        return;
+      }
+      tpl.syncPreview.set(result.preview);
+      tpl.syncConflicts.set(result.conflicts || []);
+    });
+  },
+  'click .js-resolve-sync-conflict'(event, tpl) {
+    tpl.clearSyncPreview();
+    event.preventDefault();
+    if (tpl.syncBusy.get()) return;
+    const list = tpl.data;
+    const resolution = { cardId: this.cardId, field: this.field, fingerprint: this.fingerprint,
+      choice: event.currentTarget.dataset.choice };
+    tpl.syncBusy.set(true);
+    Meteor.call('resolveListSyncConflict', list._id, resolution, (err, result) => {
+      if (tpl.view.isDestroyed) return;
+      tpl.syncBusy.set(false);
+      tpl.syncConflicts.set([]);
+      if (err || result?.error || !result?.resolved) {
+        tpl.syncNowSuccess.set(false);
+        tpl.syncNowResult.set(err?.reason || err?.message || result?.error || TAPi18n.__('sync-conflict-refresh'));
+      } else tpl.$('.js-list-sync-now').trigger('click');
+    });
+  },
   'click .js-toggle-sync-operation'(event, tpl) {
+    tpl.clearSyncPreview();
     event.preventDefault();
     const operation = event.currentTarget.dataset.operation;
     const selected = tpl.selectedSyncOperations.get();
     tpl.selectedSyncOperations.set({ ...selected, [operation]: !selected[operation] });
   },
   'click .js-toggle-sync-field'(event, tpl) {
+    tpl.clearSyncPreview();
     event.preventDefault();
     const field = event.currentTarget.dataset.field;
     const selected = tpl.selectedSyncFields.get();
     tpl.selectedSyncFields.set(selected.includes(field) ? selected.filter(value => value !== field) : [...selected, field]);
   },
+  'change .js-list-sync-estimate-field'(event, tpl) {
+    tpl.clearSyncPreview();
+    tpl.selectedEstimateField.set(event.currentTarget.value);
+  },
   'change .js-list-sync-type'(event, tpl) {
+    tpl.clearSyncPreview();
     tpl.selectedSyncType.set(event.currentTarget.value);
+    if (event.currentTarget.value !== 'jira') tpl.selectedSyncFields.set(
+      tpl.selectedSyncFields.get().filter(field => ['title', 'description'].includes(field)));
   },
   'click a.js-toggle-list-sync-enabled'(event, tpl) {
+    tpl.clearSyncPreview();
     event.preventDefault();
     tpl.selectedSyncEnabled.set(!tpl.selectedSyncEnabled.get());
   },
   async 'click .js-list-sync-save'(event, tpl) {
+    tpl.clearSyncPreview();
     event.preventDefault();
+    if (tpl.syncBusy.get()) return;
+    tpl.syncConflicts.set([]);
     const list = Template.currentData();
     const type = tpl.selectedSyncType.get();
     if (!list || !list._id || !type) return;
@@ -1006,10 +1139,11 @@ Template.listSyncPopup.events({
       projectKey,
       enabled: tpl.selectedSyncEnabled.get(),
       fields: tpl.selectedSyncFields.get(),
+      ...(type === 'jira' && tpl.selectedSyncFields.get().includes('estimate')
+        ? { estimateCustomFieldId: tpl.selectedEstimateField.get() } : {}),
       ...tpl.selectedSyncOperations.get(),
-      // Leaving the credential field blank keeps whatever is already stored
-      // - setListSyncSource only overwrites it when a non-empty token is
-      // sent (server/methods/listSync.js).
+      // A blank credential is retained only for the same server/project.
+      // Switching source requires entering a credential for the new source.
       token: token || null,
       username,
     };
@@ -1024,11 +1158,18 @@ Template.listSyncPopup.events({
     });
   },
   'click .js-list-sync-now'(event, tpl) {
+    tpl.clearSyncPreview();
     event.preventDefault();
+    if (tpl.syncBusy.get()) return;
     const list = Template.currentData();
     if (!list || !list._id) return;
+    tpl.syncBusy.set(true);
+    tpl.syncConflicts.set([]);
     tpl.syncNowResult.set(TAPi18n.__('list-sync-now-pending'));
     Meteor.call('syncListNow', list._id, (err, res) => {
+      if (tpl.view.isDestroyed) return;
+      tpl.syncBusy.set(false);
+      tpl.syncConflicts.set(res?.conflicts || []);
       if (err || res?.error) {
         tpl.syncNowSuccess.set(false);
         tpl.syncNowResult.set(
@@ -1038,12 +1179,14 @@ Template.listSyncPopup.events({
         );
       } else {
         tpl.syncNowSuccess.set(true);
-        tpl.syncNowResult.set(TAPi18n.__('list-sync-now-success'));
+        tpl.syncNowResult.set(TAPi18n.__(res?.reviewOnly ? 'sync-conflict-review-complete' : 'list-sync-now-success'));
       }
     });
   },
   async 'click .js-list-sync-clear'(event, tpl) {
+    tpl.clearSyncPreview();
     event.preventDefault();
+    if (tpl.syncBusy.get()) return;
     const list = Template.currentData();
     if (!list || !list._id) return;
     Meteor.call('setListSyncSource', list._id, null, (err) => {

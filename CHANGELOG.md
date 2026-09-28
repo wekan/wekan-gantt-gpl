@@ -58,6 +58,17 @@ https://wekan.fi/status/
 <details>
 <summary>Carried to a future release.</summary>
 
+All implementation work in this section is paused at the maintainer's request
+on 2026-09-28. Scrum, Sync and the other non-translation requirements below are
+unfinished, not cancelled or marked complete. Completed increments are recorded
+in Upcoming with test evidence; remaining requirements and external verification
+blockers stay here. Resume only when requested.
+Do not add translation into all languages to the current work queue, including
+after the non-translation work. The maintainer is trying Transifex's translation
+features and intends to obtain most translations from Transifex. Existing
+translation checkpoints below are reference material, not active assignments.
+Local commits do not publish or release these changes.
+
 Investigated but not finished, with findings
 recorded for whoever picks them up next. Entries that have since been FIXED are
 removed from this list as they are handled (their fixes carry `Fixes #NNNN` and
@@ -76,6 +87,32 @@ held only issues \#4774 and \#4055, and both are closed now.
 </details>
 
 <details>
+<summary>Paused implementation checkpoint: Scrum, Sync and rule email recovery.</summary>
+
+The most recent completed increment confirms independently verified SMTP
+acceptance offline, retaining an immutable operator decision before reconciling
+the exact receipt. It does not send or reset email. Sixty-three focused Node
+suites pass without skips, including the real MongoDB command-line workflow.
+The card-content email audit, linked-board discussion, link-placement metadata
+and timer ownership work already have Upcoming entries and regression evidence.
+
+Still unfinished for [#2713](https://github.com/wekan/wekan/issues/2713): legacy
+unbound commands and obsolete Details snapshots, partial or unknown SMTP
+acceptance, and online operator resolution. The offline confirmation tool only
+handles independently verified acceptance by every recipient. Keep all writers
+stopped while using it; its flags do not detect running remote processes.
+
+Scrum/Sync still needs cross-document coordination of cards, History, activities
+and effects; compound archive reservations; interrupted/deleted-record replay;
+remaining action/provider adapters; and safe manual/cron activation. Existing
+implementation and test checkpoints below remain authoritative. Other open
+non-translation categories also remain paused; this checkpoint does not close
+those issues or treat external verification as complete. Translation into all
+languages remains outside the work queue.
+
+</details>
+
+<details>
 <summary>Snap login delay (#6701): confirmation pending.</summary>
 
 The report does not identify whether the snap uses MongoDB or FerretDB. The
@@ -90,47 +127,871 @@ A cause specific to MongoDB or legacy data has not been established.
 </details>
 
 <details>
-<summary>Development paused for release: handoff of unfinished work.</summary>
+<summary>Scrum and Sync resumed; remaining development handoff.</summary>
 
-All implementation, translation and audit work is paused at the maintainer's
-request on 2026-09-27. Resume only when requested. No subagents are running.
-The working tree was clean before this documentation handoff; completed changes
-already have feature/fix-specific local commits and Upcoming entries. Nothing
-was pushed, and no release/version changes were made by this handoff.
+Scrum and Sync development resumed at the maintainer's request on 2026-09-27
+after the release pause, followed by the remaining non-translation work.
+Other implementation, translation and audit queues retain their checkpoints
+below. The original pause handoff recorded
+a clean working tree and local feature/fix commits; it made no remote writes
+or release/version changes. Current progress is recorded in Upcoming.
 
 **Scrum:** Product Backlog, Sprints, release/event editors, optional hidden
 metadata, team/calendar settings, commitment/result snapshots, Sprint Report
 and Velocity charts and Excel/PDF exports are implemented with focused tests.
 History supports revision checks, compound recovery checkpoints and undo/redo.
+Restoration retries now use stable per-author event IDs and verify immutable
+contents and integrity before accepting existing History rows. Restoration
+inserts now participate in persistent writer admission and, after explicit
+board migration, use the same coordinated head as ordinary edits. Concurrent
+retries retain the first persisted event, timestamp and predecessor. Failed
+confirmation preserves recovery evidence; closed admission and missing heads
+never trigger legacy fallback. Three Scrum History Node suites (18 cases) and
+five full-app cases pass, including eight retries alongside five ordinary
+edits. Restored-entity writes and undo/redo flags still require shared
+operation-level coordination. Pending redo now refuses a superseded source
+even when recovery reloads that already-invalidated row. Source identity,
+hash and invalidation state are rechecked before entity writes, restoration
+events and finalization. Twenty Node cases and eight Chromium cases pass,
+including a newer ordinary card edit during pending redo. The checkpoint
+remains for recovery; atomic coordination and resolution of superseded
+partial restores are unfinished. Legacy checkpoint operation IDs now use a
+conditional upgrade of the exact stored plan; concurrent workers adopt its
+first persisted ID instead of overwriting each other. Ownership checks and
+cleanup match the captured before/after values and revisions, so a replaced
+plan cannot authorize an old worker. Twenty-six Node/MongoDB cases and eight
+Chromium cases pass, including separate-client upgrades and legacy browser
+recovery. Already-applied content now also requires the exact expected
+revision: unchanged steps retain the original revision, updates advance once
+and recreated records start at one. Newer revisions with identical values
+retain the checkpoint instead of acknowledging stale recovery. Thirty-four
+Node/MongoDB cases and nine Chromium cases pass across all Scrum record types.
+Same-operation worker serialization and deletion/recreation ambiguity remain
+unfinished. Failed or damaged records retain the recovery checkpoint.
+Successful insert replies now require the same persisted-event verification;
+missing rows and failed confirmation reads keep recovery pending. Restored
+entity writes now require exact persisted values and revisions after each
+write, before timeline insertion and before finalization. False success
+replies, missing targets and failed readback retain the checkpoint. Thirty-six
+Node/MongoDB cases and a full-app false-acknowledgement/retry case pass.
+Batch verification is not a snapshot; atomic cross-document coordination
+remains unfinished. Conditional restoration writes now also match captured
+Scrum values, placement and card assignments, preserving unrelated title
+edits. Planning-record writes match all captured fields. Thirty-nine
+Node/MongoDB cases and the full-app raced-move case pass: a card moved after
+validation receives no old-board restoration, and its checkpoint remains.
+Cross-document permissions and writers outside revision tracking still need
+shared coordination. Resumption now preflights every saved target before
+advancing the first pending entity write. Mixed pending/applied batches are
+accepted, but an existing later conflict prevents additional partial writes.
+Forty Node/MongoDB cases and the full-app two-card conflict/retry case pass.
+The preflight remains a sequence of reads; same-operation serialization and
+atomicity are still unfinished.
+Finalization now verifies the source
+History row and persisted undo/redo state before deleting the exact operation's
+checkpoint. Retries preserve the original undo timestamp. Ordinary writes and
+History remain non-atomic, and automatic startup replay is still pending.
 Native whole-board export/import and duplication remap planning records and
 snapshots, validate lifecycle/policy consistency, and report reduced data.
 Standalone copies preserve applicable metadata and drop foreign references;
-list categories survive new destination containers during moves. Remaining:
-daily scope history and burndown, atomic original writes/History, large-board
-limits, complete cross-board move/reference/undo coordination, standalone
+list categories survive new destination containers during moves.
+Daily observations now preserve the first measured state of each UTC day;
+the scoped reader reports unknown estimates, partial results and truncation.
+Sprint Report displays these observations as timestamped bars, with card-count
+and estimate metrics, gaps, unknown estimates and permission-scoped results.
+The daily section now exports the same scoped observations to Excel and PDF,
+including timestamps, estimate policies and partial/truncated-result notices.
+Native version 2 board transfer and duplication now preserve daily observations
+and remap their references; version 1 imports remain supported. Collectors skip
+unfinished imports. Recovery of interrupted multi-document imports remains
+unfinished, alongside broader History/undo transport.
+Imports now stage private per-document write plans with stable destination IDs
+and exact before/after values before applying Scrum changes. Conditional writes
+reject changed or moved targets. A board checkpoint covers preparation and
+marker cleanup, including imports with no sprint records. An offline maintenance
+command now validates and continues complete stored Scrum plans with all writers
+stopped. It uses non-expiring recovery claims and resumes interrupted cleanup.
+Normal imports now retain their checkpoint through private-plan removal too;
+cleanup failures remain guarded and can be continued with the same command.
+It can also undo interrupted Scrum plans in reverse order, with conditional
+target writes, durable progress and cleanup. Incomplete preparation can be
+discarded without destination writes. Online coordinated replay and partial
+plan reconstruction remain unfinished; the command does not recover the other
+native board-import stages or undo completed imports whose plans are gone.
+Marked incomplete imports also block Scrum edits, History writes and report
+exports, with a visible warning. This does not lock ordinary board/card edits
+or provide automatic import resume/rollback.
+Sprint start/close now use bounded projected queries and reject more than 10,000
+cards or lists before state/History writes. Done-list completion uses one lookup
+index per snapshot. Exact-limit inputs remain complete; overflows never become
+partial commitment/result snapshots. Lifecycle writes now preflight the BSON
+sizes of the sprint/rollover plan, compound History and recovery payload before
+mutating data, reserving room for journal/envelope fields. Large-board view
+pagination, separate storage for larger plans and concurrent snapshot
+consistency remain pending.
+Remaining: event-complete scope history and burndown,
+atomic original writes/History, the remaining large-board limits,
+complete cross-board move/reference/undo coordination, standalone
 planning-record mapping, existing-board scoped import and History transport.
-Some earlier design paragraphs still describe now-implemented copy/estimate
-work as pending; reconcile them with the linked commits before resuming.
+The design now records the implemented explicit Jira estimate-field mapping;
+automatic schema discovery remains pending.
 See the [Scrum design](docs/Features/Right-Sidebar/Board-Settings/Board-View/Scrum-Design.md).
 
 **External Scrum data and Sync:** Jira time totals, issue types, explicit status
 categories and explicitly selected numeric estimate fields now import/export
 through existing fields. Native copies retain the estimate mappings. Sync
 offers title/description/spent-time selection and controls for creating and
-archiving cards, with existing authorization and local-change checks.
+archiving cards, with existing authorization and local-change checks. Jira
+estimates now sync into an explicitly selected, already mapped numeric custom
+field. The popup shows the source field and unit; mapping changes invalidate
+the old baseline. Zero, absent values and explicit null remain distinct.
+Local estimate edits use the existing conflict review, and conditional array
+writes preserve other custom fields and their order.
+Original and remaining Jira time estimates now have opt-in Sync switches. Each
+uses the unique imported numeric time field on the board, converting seconds
+to hours. Saved mapping identities are rechecked before writes; missing,
+ambiguous, changed or overlapping mappings stop the run. Zero, explicit null
+and absent values remain distinct, and simultaneous estimate changes retain
+unrelated custom fields. The popup reviews local/source conflicts. Twenty-five
+focused Node suites and twenty-two Chromium scenarios pass.
+Card mappings and credentials include provider/server/project identity.
+Source switches preserve old cards, require the new credential and reject
+unidentifiable legacy mappings. Save existing settings once to bind their
+legacy mappings and credential before resuming Sync.
+New card creation now uses stable list/source/issue IDs, preventing duplicate
+cards from concurrent creation attempts and preserving moved cards on retries.
+Creation conflicts stop the run and appear in the existing Sync popup.
+Scheduled/manual Sync and settings saves now share renewable per-list database
+reservations. Competing requests report busy; expired reservations can be
+reclaimed, and the previous owner stops at its next ownership check.
+Settings and an immutable private credential version now activate through one
+conditional list update. Interrupted saves retain the old or new pair; stale
+saves and delayed cleanup cannot replace a newer configuration's credential.
+An hourly sweep now retires bounded snapshots of unselected credential IDs.
+An opaque server-owned fence prevents delayed saves from activating retired
+tokens, including after damaged numeric counters are reset. Selected tokens
+and newer staging remain intact. Deleted-list credentials
+are now swept by exact identity. Each new list has a fresh lifetime identifier,
+so a recreated list cannot activate an old token or lose its new one to delayed
+cleanup. Malformed or exhausted counters are repaired by the sweep or an
+ordinary settings save. Unselected malformed versions are retired by identity;
+all writers must upgrade together.
+Scheduled Sync now runs as the account that saved the selected private
+credential version. Fresh account and full-list permission checks run before
+fetching and at guarded writes, and normal hooks receive that author. Existing
+configurations require one settings save to authorize scheduling; missing,
+disabled or no-longer-authorized accounts stop with a visible Sync error.
+This supplies attribution and access checks, not durable event completion.
+The Sync popup now compares conflicting title, description and spent-time
+values. Board writers can retain the local value or select the source value;
+fresh comparisons and conditional writes reject stale choices. Assigned-only
+writers review their assigned existing cards without running full-list Sync;
+their resolution writes also require the assignment to remain present.
+Duplicate mapping previews now identify extra cards and one consistently
+retained mapping. Extras can become local cards while keeping their content;
+changed mapping groups require a new review.
+Parents whose archival is blocked by active subcards can now remain local by
+removing only the parent Sync mapping. Previews omit subcard details and fresh
+source/parent checks reject stale choices; subcards remain untouched.
+Moved or detached cards can now be preserved while an unrestricted writer
+chooses a replacement in the watched list. Private conditional decisions retain
+the replacement ID across retries and restarts; previews expose only incoming
+source text and stale choices are rejected.
+Full-list writers can now preview saved Sync changes without applying them.
+The preview shares the actual write plan, lists bounded card summaries and
+counts normalized fields excluded by settings or lacking mappings. Ignored
+status-only changes no longer count as updates. Empty source baselines survive
+storage, so unchanged runs do not repeatedly update them.
+The preview now inventories fetched source paths before normalization: unmapped
+fields, excluded selections/items, unused fallbacks and representation changes.
+Unknown subtrees are reported as a whole, with bounded counts and no values.
+Full-list manual and scheduled runs now retain private outcome/coverage reports.
+The popup reads the latest 20 reports from the last 30 days with fresh full-list
+permission checks. Unfinished outcomes remain explicitly unknown; these
+reports do not resume or roll back partially applied writes. Instance admins
+can now inspect them in Problems/Recovery with status filters, literal board or
+list ID search, ten-row pagination and an explicit refresh. Administrator access
+is checked before and after reading; no collection is published.
+The private write-plan/checkpoint engine now has real MongoDB interruption
+coverage, including lost acknowledgements and interrupted cleanup. It is not
+yet connected to manual or scheduled Sync. Application adapters, private
+collection lifecycle, pause/cancel controls and restart scheduling remain open.
+The engine now persists mapped-estimate baselines and typed custom-field
+snapshots, permitting only explicitly mapped fields to change. Original and
+remaining Jira time estimates now survive the same persisted replay together
+with the primary estimate; overlapping target IDs are refused. Real MongoDB
+tests cover
+lost acknowledgements on update/clear, create and null/missing arrays, damaged
+mapping checksums and local-edit conflicts. This still uses a test adapter;
+production application/effect adapters remain unfinished.
+A shared mutation planner now prepares conditional field patches from saved
+steps without replacing unrelated card metadata. It compares the union of
+before/after fields and isolates expected-result predicates from driver
+mutation. Production Sync uses the same literal-value selector helper.
+MongoDB replay tests and twenty production Sync browser scenarios pass; durable
+History/activity completion still needs the production adapter.
+Cleanup now reads back plan and marker deletion before reporting success.
+Partial/zero deletes and uncertain reads retain or report incomplete outcomes;
+lost acknowledgements require verified absence, and successor operations remain
+untouched. Real MongoDB fault-injection tests cover these boundaries. The engine
+now requires stable caller-persisted intents and immutable private completion
+records before cleanup. A retry returns its original completion without building
+or applying card units, even after marker deletion, while newer jobs remain
+untouched. Production intent/storage retention and job lifecycle are still open.
+An internal card application adapter now performs conditional field writes and
+verifies their persisted results. Even when a retry finds the expected card,
+it requires a separate stable event acknowledgement before the journal advances.
+MongoDB tests cover interruption between card persistence and event completion,
+local edits, lost write replies, creation, archive and null-to-missing fields.
+The callback currently has a test receipt implementation; real History,
+activities, rules and notification delivery still need durable integration.
+The adapter is not enabled in manual or scheduled Sync yet.
+The internal History component now prepares fixed update/archive event batches
+and snapshots the redo rows a new edit supersedes. MongoDB tests interrupt
+between timeline rows and resume without duplicate events or invalidating rows
+undone later. Stable planning identities, predecessor verification and bounded
+plans are implemented. Production collection/job lifecycle, duplicate-hook
+suppression, creation effects and independent integrity-chain writers still
+require integration; activities and notifications
+are not acknowledged by this History component.
+Legacy redo rows without integrity hashes now retain exact typed snapshots
+inside private plans. Conditional invalidation and readback preserve their
+original missing/null/empty hashes and refuse changed contents or undo cycles.
+Interrupted replay handles hashed and legacy rows together; later undo rows
+remain untouched. This removes the legacy-row limitation from the internal
+History adapter, while production integration remains unfinished.
+History/effect plans now persist inside the same journal units as their card
+plans. Both are covered by one checksum and whole-plan validation before writes,
+then share recovery retention and verified cleanup. Missing, changed or
+oversized effects and attempts to resume without their validator are refused.
+The History validator also binds its rows to the exact card step and
+operation effect ID.
+The operation History planner now chains successive card batches through
+baseline-only steps and consumes captured redo candidates only at the first
+actual History change. Interrupted preparation resets the planner at index
+zero; persisted replay reuses the saved chain without replanning. Real MongoDB
+coverage spans three card units and interruption between History rows.
+Independent production History writers still need shared chain coordination.
+A durable append primitive now reserves one checksummed pending row per board
+through conditional head replacement. Another writer can finish an interrupted
+insert before reserving its successor, avoiding timestamp ties and lease-expiry
+forks. Six Node/MongoDB cases pass, including four independent clients and
+seventeen rows forming one chain. Verified bootstrap and ordinary writer
+binding are now implemented below. Redo coordination and multi-row Sync
+ownership remain unfinished.
+Existing-chain bootstrap now scans bounded batches, validates row hashes and
+ancestry, and refuses forks or missing predecessors before head insertion.
+Legacy unhashed rows remain untouched; cursor order and timestamps do not
+choose the head. Twelve append/bootstrap Node/MongoDB cases pass, including a
+300-row reversed-time chain and fresh-connection continuation. Participating
+writers now drain through the gate below; deployment-wide exclusion is still
+a caller responsibility. No automatic migration is enabled.
+Private History head storage now uses the real History schema. The internal
+append entry point validates complete defaults before reservation, preserves
+captured timestamps/whitespace and refuses missing or deleted heads. Twelve
+Node/MongoDB cases, one full-app case and two Chromium cases pass, including
+six concurrent schema-backed writes and denied browser access across all 18
+private recovery collections at that checkpoint. Ordinary writer switching
+and participating-writer exclusion now use the binding below; redo
+coordination remains unfinished.
+A persistent admission gate now drains participating legacy History writers
+before granting migration ownership. New writers are refused during draining;
+existing writers finish, and a verified head enables only the coordinated path.
+Failed writes retain their tokens without expiry. Eighteen Node/MongoDB cases
+pass, including separate clients across drain/bootstrap/append. Ordinary
+ChangeHistory.record now participates through private History writer gates.
+An explicit board migration drains registered writers, bootstraps the actual
+head and permanently switches ordinary appends to the coordinated path. The
+caller must exclude older servers and writers outside this path. Four full-app
+cases pass, including ten concurrent ordinary appends and refusal without
+legacy fallback after head deletion. Chromium checks all 19 private recovery
+collections for members/admins. Offline recovery now inspects admission gates
+and retires one exact uncertain writer token with all database writers stopped.
+It preserves other tokens, migration ownership and History rows, reconciles
+lost acknowledgements and refuses concurrent gate changes. Twenty-two focused
+Node/MongoDB cases pass, including the actual command in separate processes.
+The offline command can now migrate one board or the global History scope,
+using the same routine as the server and retaining its UUID across restart.
+Before the permanent switch, actual chain verification rejects stale heads,
+pending appends and forks without repairing or resetting stored evidence.
+Twenty-four Node/MongoDB cases and four full-app cases pass, including the
+actual command across drain, retirement, interrupted verification and resume.
+Online token recovery, missing-record replay, mixed-version rollout, redo
+coordination and multi-row Sync reservations remain unfinished; automatic
+migration stays disabled.
+Creation units now preserve the ordinary createCard activity payload in a
+bounded private plan with a stable ID and captured names/timestamps. Readback
+confirms insertion, but the journal cannot advance until a separate durable
+delivery callback acknowledges the same effect. History planning accepts
+creation without inventing field-edit events or consuming redo candidates.
+MongoDB tests cover interrupted delivery, lost insertion acknowledgements,
+plan corruption, replay and cleanup; Chromium verifies ordinary creation and
+the visible activity. Production feature flags, hook coordination, rule and
+notification delivery adapters remain unfinished.
+Update/archive activity plans now capture title and description edits, mapped
+custom-field changes and archive/restore events, preserving zero and clearing.
+Each event has a stable receipt identity and requires its own downstream
+acknowledgement. A combined MongoDB test resumes create/edit/archive units
+with their saved History and activity plans; completed events are not inserted
+again. Production hook coordination and durable delivery remain open.
+The shared effects coordinator now replaces test-only History/activity glue.
+It captures display metadata, validates both complete plans and their actor/time
+agreement before writes, checks adapters up front, then requires History and
+activity delivery completion. Mixed creation/update/archive MongoDB replay
+uses this module. Production activation and lifecycle remain unfinished.
+A shared activity delivery coordinator now requires the durable rules receipt,
+then exact notification and webhook plan receipts before returning the effect
+ID. It validates required adapters and list scope before effects, isolates saved
+inputs from adapter mutation, and checks ownership and captured policy around
+every stage. Disabled notifications still require rules. Replay revisits durable
+stage reconciliation instead of assuming earlier in-memory success. An internal
+binding uses actual stored notification/webhook entry points, live flags and
+now the stored rules stage by default. That stage installs the durable email
+adapter, mapping frozen invocation IDs to command indices. Empty/missing-action
+plans complete without action dispatch; unsupported pending actions fail
+preflight before email. Twenty-four Node/MongoDB cases and two full-app cases
+pass, including real SMTP through saved activity/rule delivery with watcher
+notifications disabled, exact aggregate receipts and refusal of unsupported
+sibling actions.
+Archive/unarchive preparation now captures the complete descendant cascade,
+with bounded post-order snapshots, one timestamp and a saved-plan checksum.
+Already satisfied roots preserve ordinary no-op behavior. Seven Node/MongoDB
+cases pass, including concurrent capture, restart, lost replies, malformed
+hierarchies and denied descendants. This helper writes no cards; production
+registration, conditional application and durable effects remain unfinished.
+The internal archive executor now applies conditional descendant-first writes
+with exact before/after predicates and separate durable per-card effects.
+Already changed cards still require their effect receipt before advancing;
+lost write/receipt replies reconcile by readback. Sixteen Node/MongoDB cases
+cover capture and execution, including interrupted child effects, restart,
+no-op roots, stale later cards, denied access and incomplete receipt prefixes.
+The bound Cards adapter now accepts only saved archive selectors/modifiers,
+runs under the captured actor and defers only its own archive/History hooks.
+Twelve Node cases and two full-app Meteor cases pass, including real schema
+writes, interrupted child effects and normal restore recording afterward.
+Saved History/activity plans now bind the complete archive cascade to its
+command checksum, preserving captured names/times and a cross-card hash chain.
+The execution wrapper preflights plans/adapters and rechecks live feature
+policy while reconciling History, activities and exact delivery receipts.
+All 24 archive Node/MongoDB cases pass, including fresh-connection continuation
+after child event insertion without duplicate rows. Production collection and
+delivery binding, shared History coordination and rule-stage activation remain
+pending; delivery callbacks are still controlled in these persistence tests.
+The archive activity adapter now restricts real Activities insertion to saved
+payloads under the captured actor, deferring ordinary delivery hooks. A full-app
+Meteor case combines real Cards, ChangeHistory and Activities, interrupts child
+delivery and resumes without duplicate rows; ordinary restore still records.
+All 25 archive Node/MongoDB cases pass. Production downstream delivery and
+shared History-writer coordination remain pending.
+Private archive command/effect/receipt collections now have recovery indexes,
+no TTL and denied browser writes. The real rule capture entry point validates
+current configuration, actor access and every saved descendant's parent/list
+identity, including on replay. Six capture unit cases, one full-app case and
+two Chromium cases pass; members/admins cannot write or read the 17 private
+Sync collections. Archive mutation activation and effect/delivery binding
+remain unfinished.
+The internal stored archive runner now binds private commands/effects/receipts
+to real Cards, History and Activities plus default saved-activity delivery.
+It requires an explicit board History reservation around the complete run;
+there is no fallback reservation. Twenty-six Node/MongoDB cases and one full-app
+case pass, including interrupted child delivery, exact replay receipts and
+refusal without History ownership. Ordinary History writers still need shared
+coordination before this runner is installed in manual/cron rule execution.
+Other action adapters, shared History-chain coordination, uncertain-send
+operator handling and manual/cron activation remain unfinished; ordinary
+executeRules is not substituted for durable rule replay.
+An internal rule-plan primitive now freezes ordered rule and action snapshots
+for a saved activity/effect, including duplicate matches, absent actions and
+empty selections. It binds actor, board/card identity and the activity hash;
+checksums and exact shape checks reject changed stored content. First-writer
+readback reconciles lost replies and concurrent builders without reselecting
+current rules. Preparation is bounded to 1,000 invocations and 14 MiB with
+incremental size checks. Thirteen Node/MongoDB cases pass, including six new
+selection/persistence cases. Production capture now uses the actual matching
+helper and raw action documents in a private registered collection. It checks
+the saved activity, live policy, actor access, assigned-only restrictions and
+current board/list/card scope around preparation and readback. A full-app test
+confirms real matching, frozen empty/nonempty selections and unchanged cards
+and activity counts; two Chromium cases deny member/admin browser writes and
+exposure for all eleven private recovery collections. Target/variable/date
+resolution, live action permissions, durable action execution and its receipts
+remain unfinished. Storing a rule plan does not complete a rule.
+Ordinary rule execution now waits for date, label and linked-card writes before
+running the next matched rule, and initial-date write failures propagate too.
+Forty controlled delayed-write/rejection cases cover twenty action paths and
+fail against the previous implementation; all 27 rule Node suites pass. This
+fixes Promise ownership only, not durable command receipts or restart replay.
+Rule email failures now propagate to callers too, preventing a scheduled slot
+from being marked successful after failed delivery or recipient lookup. Six
+controlled-adapter tests cover localized/fallback mail, retained card context,
+ordered execution and scanner isolation; all 28 rule Node suites pass. Actual
+SMTP delivery and durable rule-email replay remain unverified/unfinished.
+An internal rule execution coordinator now requires exact invocation receipts,
+validates all saved checkpoints and required adapters before effects, and
+records aggregate completion only after the ordered actions. Checkpoints bind
+the complete plan checksum; missing-action/empty selections retain explicit
+no-op receipts. Lost replies reconcile by readback, and missing predecessors
+or corrupted receipts stop replay. Fifteen Node/MongoDB cases pass, including
+a fresh-connection resume after interruption. The server entry point now binds
+actual saved selection and private indexed receipt storage to the same live
+activity, policy and access guard, including completed receipt reads. One
+full-app case verifies adapter rejection, persisted acknowledgement and replay;
+two Chromium cases deny member/admin access to twelve private collections.
+Command preparation, durable mutation adapters and manual/cron wiring remain
+unfinished; ordinary performAction cannot satisfy this adapter contract.
+Moving the source card also needs explicit before/after scope handling before
+a movement adapter can use the current guard.
+Localized email preparation now returns final transport fields separately from
+sending; ordinary mail uses the same preparation. Six new controlled tests
+cover language resolution, unchanged prepared content and propagated failures.
+A rule-email command must persist these fields and its explicit recipient;
+the existing user-grouped notification outbox resolves addresses later and
+cannot substitute directly. An internal command storage primitive now freezes
+prepared transport fields against the complete rule-plan checksum, invocation,
+activity hash and actor/board/card identity. Exact readback reconciles lost
+replies and concurrent builders; changed plans, corrupt content, malformed
+headers and oversized payloads are refused. Twenty-two Node/MongoDB cases pass,
+including seven command cases and fresh-connection reuse. The server entry point
+now prepares actual rule variables, recipient language and card-context footer
+through shared ordinary-mail code before storing in a private indexed command
+collection. Plain-text preparation omits absent HTML for BSON compatibility.
+Twenty focused cases, 28 rule Node suites, one full-app case and two Chromium
+cases pass; the browser denies member/admin access to thirteen collections.
+Dispatch, send-time recipient/configuration checks and operator recovery remain
+TODO. Persisting this command does not acknowledge sending or rule completion.
+An internal acceptance helper now derives intended recipients with Meteor's
+native MailComposer and requires all intended addresses to be accepted with
+no rejected or unexpected recipients. Five tests pass, including the actual
+composer with display names, quoted commas, groups and international domains.
+An internal dispatcher now persists and reads back a unique sending attempt
+before invoking its sender, verifies all-recipient acceptance and conditionally
+stores exact completion. Confirmed sent receipts skip replay; existing sending
+attempts remain uncertain and refuse automatic resend. Lost database replies
+reconcile through readback. Twenty Node/MongoDB/native-composer cases pass,
+including fresh-connection recovery; SMTP responses remain scripted. Production
+storage and sender binding now use a private indexed attempt collection and
+shared cancellable SMTP slots. Live guards compare rule/action snapshots and
+resolved recipient/sender, refuse disabled matching local accounts regardless
+of email case, and retain actor/policy/activity/scope checks. Twenty focused
+cases, one full-app binding case and two Chromium cases pass; fourteen private
+collections deny member/admin browser access. SMTP responses are controlled in
+the original app test. A second full-app case now uses real Meteor SMTP over
+loopback: accepted delivery persists without replay, connection loss after DATA
+retains uncertainty, and partial multi-recipient acceptance remains unfinished
+without another network send. Both full-app cases pass. External-provider
+interoperability, ambiguous-send operator handling and worker activation remain
+unfinished.
+An administrator-only report backend now exposes ten-row pages of attempt IDs,
+timestamps and sent/unconfirmed/invalid status, with literal ID search and page
+clamping. It reads no command payload or recipient address, rechecks admin
+access after reads and limits request rate. Four Node/MongoDB cases and one
+Chromium DDP case pass, including member denial, revocation during reads,
+private-field exclusion and pagination. The Admin Panel Recovery view now
+shows this report with ID search, status filters, refresh and pagination.
+A stale-callback unit test and two Chromium cases pass, including the actual
+rendered controls. Operator mutation controls remain unfinished; unconfirmed
+may include an in-flight attempt.
+Private operation, step and completion collections are now registered with
+server-only adapters, denied browser writes, recovery indexes and no TTL.
+The stored-operation entry point holds the list lease and requires fresh access
+checks plus exact board/list/incarnation/revision/source identity. Deleted,
+recreated, moved or reconfigured lists cannot consume old plans or receipts.
+Recovery evidence remains retained; legacy unversioned identities are refused.
+Fifteen Node suites and two Chromium DDP-denial cases pass. Manual/cron job
+activation, operator handling of stale scopes and retention remain pending.
+Stored operations now retain immutable private intent records binding each
+caller UUID to its original actor and versioned scope. Readback verifies
+registration after lost replies; replay checks the same identity throughout
+and forwards its actor to authorization, planning and application callbacks.
+Missing intent evidence cannot be reconstructed from an existing journal or
+completion under a new actor. Sixteen Node suites and both Chromium private
+storage tests pass. Job creation/UI, scheduling and retention remain open.
+Effect plans now capture explicit activity/notification policy. Disabled
+activities omit their plan and delivery callbacks while retaining History.
+Live policy is checked around effect persistence; changed settings stop the
+attempt without rewriting the saved policy. Notification policy reaches the
+required downstream adapter independently of activity/rule handling. Old
+version-one plans require the original enabled defaults. Sixteen Node suites
+pass, including MongoDB interrupted History with disabled activities. Wiring
+live flags into production job creation and delivery remains unfinished.
+The combined card/effects executor now validates the saved actor, complete
+plans, live policy and required adapters before card access. Policy/lease
+checks surround card application as well as History/activity completion.
+A post-write policy change retains the completed card mutation for replay,
+which finishes effects without writing the card again. Registered-storage
+MongoDB coverage now exercises intent, journal, card, activity and delivery
+receipt together. A bound internal card adapter now applies saved conditional
+mutations through the real Cards schema and business hooks under their actor.
+Only the owning async write defers planned History/activity recording; unrelated
+and later edits retain normal recording. Full-app Meteor coverage verifies
+schema defaults, conditional retries, archive/estimate edits, invalid-value
+rejection and ordinary recording after failure. Production activation still
+needs durable delivery and shared History coordination; manual/cron Sync
+does not invoke these adapters yet.
+The internal activity adapter now preserves validated saved timestamps and
+payloads through ordinary collection insertion. Its scoped hooks defer rules
+and notification/webhook delivery, while disabled activity recording still
+cancels insertion. Lost delivery resumes from the same stored event and still
+requires a separate receipt. Twenty Node suites and two full-app Meteor tests
+pass; durable downstream delivery and job activation remain unfinished.
+Notification dispatch now has an internal awaited path that waits for every
+started subscriber and propagates failures. Email/profile subscribers no longer
+hide persistence errors; the profile subscriber awaits its actual user-helper
+write instead of submitting its Promise as another database modifier. Eleven
+Node suites, three full-app Meteor tests and three Chromium notification cases
+pass. This confirms subscriber completion, not durable service receipts or SMTP
+delivery. Tray insertion now compares activity identity independently of the
+read flag and confirms storage by readback. Concurrent retries preserve a read
+notification and its timestamp instead of appending an unread duplicate. Real
+Meteor tests cover concurrent existing/new events and deleted users; twelve
+Node suites and three Chromium cases pass.
+New profile deliveries now atomically retain one private pending receipt beside
+the tray insertion, then move that evidence into a private receipt collection.
+Dismissal and automatic tray cleanup cannot erase delivery evidence. Revision
+checks reject delayed writes after another delivery has finished, and startup
+recovery completes retained markers without restoring dismissed rows. Both
+ordinary and awaited profile dispatch use this path. Fourteen Node suites with
+real MongoDB, four full-app Meteor tests and five Chromium scenarios pass;
+additional browser checks cover rename attempts against private marker fields.
+Receipts have no TTL. Retention and legacy already-dismissed events remain
+unresolved; old evidence cannot be reconstructed. Sync still needs frozen
+recipients, complete service orchestration, rule/action recovery and durable
+outgoing webhooks.
+Email rendering now has a shared preparation entry point that returns the
+complete job without enqueuing it. It captures caller parameters, recipient
+identity/language and one settings/template snapshot before rendering, so
+asynchronous work cannot combine changed inputs. The ordinary subscriber uses
+that result unchanged. Thirteen Node suites, five full-app Meteor tests and
+three Chromium SMTP cases pass.
+An internal notification-plan component now captures bounded recipient/service
+snapshots, binds them to the full saved activity hash and persists them with a
+checksum. Concurrent builders retain the first stored plan; replay cannot
+re-render content or choose new recipients. The executor rechecks access and
+requires exact tray receipts and email-enqueue identities. Seven Node suites
+pass with real MongoDB, including dismissal between stages, interrupted email
+enqueue, changed activity, plan corruption and competing preparations. This
+uses the actual tray/outbox storage components with supplied access guards.
+Production preparation now shares the ordinary activity hook's watcher,
+mention, mute, scoped-subscription and actor filtering. A shared tray-preference
+reader and the email preparer capture each selected user's service choices
+without dispatch. Planning follows the confirmed card mutation, checks its
+board/list context and refuses missing or moved cards. Twenty Node suites,
+six full-app Meteor tests and six Chromium/SMTP cases pass.
+Private notification-plan storage is now registered with recovery indexes,
+denied client writes and no TTL. A stored-stage entry point connects shared
+preparation to real tray receipts and email enqueue. It verifies the persisted
+activity and card/list scope, calls the operation's ownership/access guard,
+and checks captured global policy. Initial capture excludes recipients outside
+their current card-read scope. Replay retains the same audience while disabled
+accounts, revoked membership/assignment, changed subscriptions or disabled
+service preferences stop delivery. Nineteen Node suites, seven full-app Meteor
+tests (with a final expanded access rerun) and two Chromium DDP-denial cases
+pass. Interruption after tray acknowledgement preserves the original email
+content and does not restore a dismissed tray entry. Manual/cron Sync still
+does not invoke this stage. Plan retention, operator controls, saved Sync effect
+integration and durable rule/webhook completion remain unfinished. Enqueue
+acknowledgement does not mean SMTP, rules or webhook completion.
+Activity notification and webhook payloads now preserve zero, false, empty
+text and explicit null, while absent values remain omitted. This fixes lost
+zero estimates and unchecked custom-field values. SMTP and HTTP-serialization
+tests cover the values. Outgoing webhook preparation now returns a detached
+wire payload without HTTP, comment writes or echo locks. The ordinary method
+uses the same preparer. Parameters, endpoint/token and rendering language stay
+fixed across asynchronous language loading. Seven focused Node suites pass,
+including actual method execution with stubbed network/cache dependencies.
+An internal webhook-plan component now persists bounded integration/request
+snapshots with activity and configuration hashes. First-writer snapshots survive
+restarts without rebuilding targets or content. Immutable per-target receipts
+are read back after writes; replay skips confirmed deliveries and refuses
+corrupt evidence. Stable delivery IDs survive ambiguous HTTP acceptance or a
+failed receipt write. This is at-least-once delivery, not exactly once.
+Actual preparation shares ordinary board/global activity selection and rendered
+payloads, including suppressed targets and both webhook modes. Eight Node suites
+pass with real MongoDB; an expanded six-case storage suite and two full-app
+Meteor preparation cases pass again after the final changes. Network delivery
+is injected in these tests; no external HTTP or browser run was performed.
+A guarded HTTP adapter now stores exact successful responses before processing
+bidirectional reply effects. Replay reuses the stored response without another
+network request. It binds evidence to the full request/target/activity, checks
+live guards around each stage, confirms uncertain writes by readback and
+refuses corrupt or mismatched evidence. Production transport is fixed to
+fetchSafe with DNS/IP checks, redirects disabled, a 30-second total deadline
+and a 2 MiB response limit. Bidirectional effects still require a separate
+durable acknowledgement callback. Eleven Node suites pass with actual MongoDB;
+two full-app Meteor cases pass, including actual private-IP denial and stored
+response replay. Successful transport is scripted in tests; no external endpoint
+or browser was exercised.
+An internal comment-response stage now persists immutable before/text/time
+plans, including explicit no-action decisions. A conditional raw Mongo write
+records text, modification time and a bounded pending receipt atomically.
+Permanent revision fencing rejects delayed writes after receipt cleanup.
+Recovery transfers pending evidence to a durable receipt without restoring
+reply text over a later user edit. Changed/moved/deleted comments stop safely;
+no comments are recreated. Thirteen Node suites pass with MongoDB; the expanded
+eight-case storage suite also covers lost plan replies and concurrent builders.
+A combined HTTP/comment test resumes after a receipt-storage failure without
+another HTTP request or loss of the user's later text. This raw-driver stage
+is not active on production comments yet. Private marker fields are now defined
+in the schema, excluded by ordinary server reads (including publication cursors
+and JSON export reads), and rejected in DDP insert/update/rename/replacement
+attempts. Copies never inherit another comment's delivery evidence. Ordinary
+text edits preserve the stored markers. Eleven focused Node suites with MongoDB,
+two full-app Meteor cases and two Chromium member/admin cases pass; an expanded
+projection guard also passes. Denied private writes use the existing comment
+security summary in Problems. Five private webhook recovery collections are now
+registered for plans, delivery receipts, HTTP responses, comment plans and
+comment receipts, with replay indexes and no TTL. A guarded capture entry point
+uses the real activity/context and shared preparation code; it reuses the first
+stored snapshot after title, token or target-selection changes and rejects
+changed activities, moved cards, policy changes, lost ownership and corruption.
+Eight Node suites with MongoDB, three full-app Meteor cases and four Chromium
+cases pass. The browser checks deny 30 writes per member/admin account across
+all ten Sync recovery collections and verify that evidence stays private.
+The internal delivery entry point now connects private plans, guarded HTTP
+response replay and atomic comment receipts. Capture and replay require an
+active enabled actor with current write/card access; each target must still
+match its captured integration identity and complete configuration. Reply
+changes recheck the actual card/comment scope, comment capability and author/
+admin editing restrictions. Nine Node suites pass with MongoDB. Four full-app
+Meteor cases pass, and the expanded delivery case passes again with actual
+private-IP rejection. Production replay applies an accepted stored reply once
+and preserves a later human edit; revoked accounts/membership/assignments,
+changed tokens and restricted comment edits stop. Successful external HTTP was
+not exercised, and no new browser test was run for this internal entry point.
+Both ordinary and stored webhooks now have a 30-second total HTTP deadline
+covering DNS, connection and the complete response body. Deadline expiry closes
+active request/response streams; late DNS completion cannot start a connection.
+Optional redirect users share one budget across hops. Thirteen focused Node
+suites pass, including real local sockets held before headers or fed continuous
+body chunks; two Meteor cases pass. The expanded deadline suites pass again
+with late-response cleanup after transport failure. Existing LDAP/CAS group and
+SAML replay tests now name their Hall of Fame entries, restoring the coverage
+inventory check. Recovery startup, scheduled retries and retention/operator
+controls, along with activation in saved manual/cron Sync remain unfinished.
+Email notifications now use a private event/recipient outbox with persisted
+content and due times, automatic retry backoff and renewable recipient leases.
+Startup discovers pending work; legacy profile buffers migrate before removal.
+SMTP acceptance is verified before payloads are replaced with replay receipts.
+Deleted users, revoked board members and disabled email settings cancel sends.
+Nineteen focused Node suites, a separate actual app-startup recovery test and
+ten Chromium cases pass, including SMTP rejection/retry and blocked DDP writes.
+Delivery is at least once: an SMTP acknowledgement lost across a crash or lease
+expiry can duplicate mail. Problems → Recovery now provides recipient summaries
+and pause/resume/cancel controls, with persisted holds and cancellation cutoffs.
+Stable request receipts prevent late retries from overriding newer actions or
+cancelling later messages. Active sends refuse controls until the reservation
+is released. Reservation loss now closes the live SMTP connection, but cannot
+retract remote acceptance.
+Thirteen focused Node suites and thirteen Chromium scenarios pass, covering
+queue controls, recipient grouping, permissions, lost replies and delivery.
+Permanent SMTP failures now stop with safe reason categories. Temporary errors
+use positive jitter and at most twelve attempts per cycle. Attempts are stored
+before sending, so crashes cannot reset the budget. Recovery includes stopped
+counts and explicit retry. Repeated control requests cannot reset another
+cycle, and existing pauses remain in force. Fourteen focused Node suites and
+fourteen Chromium scenarios pass, including SMTP rejection and manual recovery.
+Email scans now select up to 100 distinct due recipients and run four workers
+per application process. A large backlog cannot hide other recipients behind
+the former 100-message selection limit. Overlapping scans share one pass.
+Nine focused Node suites and fourteen Chromium cases pass, including a slow
+SMTP recipient while another recipient completes delivery.
+SMTP DNS, connection and greeting waits default to 30 seconds, idle
+connections to two minutes, and the total send budget to two minutes.
+Validated environment variables configure the limits. Native MAIL_URL,
+native service settings without MAIL_URL, Admin Panel providers and
+certificate overrides all use cancellable per-message connections. Keep
+original message plugins, defaults, authentication and TLS requirements.
+HTTP/HTTPS CONNECT handshakes and tunneled SMTP share the deadline; late DNS
+or preparation cannot open a connection after expiry.
+
+Notification queue workers now share four delivery reservations across all
+processes using the same database. Reserve before recording an attempt, so
+full capacity leaves pending messages and retry budgets unchanged. Renew
+every 15 seconds; reclaim a crashed owner's slot after its 60-second expiry.
+A failed renewal, ownership loss or independent local expiry cancels that
+sender's SMTP connection, including when a database renewal hangs. Former
+owners cannot delete replacement reservations. Slots are private, deny
+member/admin DDP writes and contain no message content.
+
+Nine executed Node suites pass; the separate full-app-startup suite was
+skipped. Coverage includes separate worker processes, crash reclaim, hung
+renewal, replacement-owner safety, retry accounting and actual socket
+cancellation. Five full-app Meteor cases and sixteen Chromium
+delivery/recovery scenarios pass. Two phase-timeout browser cases require
+different settings and were skipped. The test SMTP sink now accepts expected
+connection resets from active cancellation while retaining all queue and
+deadline assertions.
+
+This is a bound on live notification-queue reservations, not a hard fence on
+an SMTP connection from a paused host. Keep application clocks synchronized.
+Direct email calls outside the queue are not counted, and remote acceptance
+remains at least once.
+
+Terminal email job and control-request metadata now has a configurable
+30-day retention period. Bounded background sweeps atomically replace old
+terminal rows with minimal permanent replay identities in the same private
+collections. Preserve pending/failed work, control holds and cancellation
+cutoffs; old event and command retries cannot recreate deliveries or cancel
+newer messages. Invalid identities or missing completion dates remain intact.
+The number of minimal receipts is not capped. Six focused Node suites, one
+full-app Meteor scheduler test and one Chromium Recovery replay/authorization
+scenario pass. Local MongoDB tests cover uncertain writes, changed states,
+keyset batches, concurrent sweeps and independent collection failures.
+Ordinary activity-to-notification recovery is implemented below; broader
+card/History/activity coordination remains unfinished.
+An internal write-ahead intent primitive now confirms immutable storage before
+allowing an activity insertion, reconciles uncertain replies and requires an
+exact activity snapshot on recovery. Only the creating call may insert a
+missing activity; later orphan retries cannot resurrect deleted records.
+Ordinary activity hooks now await private intent persistence before activity
+insertion, after final timestamps. Failed storage prevents the activity write.
+Scoped deferred Sync and disabled notifications skip ordinary capture.
+Asynchronous dispatch waits internally for every recipient's subscribers;
+only successful local writes compact the intent to a permanent receipt.
+Failures leave the activity snapshot pending. Bind the original dispatch
+actor, keep webhooks independent and deny member/admin DDP writes.
+Six MongoDB cases, three Node suites, three full-app Meteor cases and ten
+Chromium notification scenarios pass.
+Ordinary activity notifications now save private recipient/channel plans and
+rendered email payloads before delivering anything. Replays reuse the original
+content and language, verify exact tray/email receipts, and recheck current
+account, membership, mute/watch scope, assigned-only scope and preferences.
+Initial preparation excludes already ineligible services; later revocation
+stops replay without rewriting the saved audience. Bind each plan to the exact
+activity and dispatch actor, with checksum, recipient count and size limits.
+Ten MongoDB cases, three Node suites, three full-app Meteor cases and ten
+Chromium scenarios pass, including interruption between tray and email writes.
+Automatic recovery now scans up to 100 pending intent IDs per pass, one
+private payload at a time, after startup and every second. Configure the
+interval from one to sixty seconds. Local overlapping scans coalesce and
+keyset pagination advances past failed, busy and orphaned rows. Immediate
+and recovered delivery share a per-intent database reservation, renewed every
+15 seconds with 60-second crash reclaim. Ownership checks protect preparation,
+service writes and completion; old owners cannot remove successor leases.
+Recovery reuses saved plans or prepares a first plan from an unchanged stored
+activity. It never recreates missing activities or reruns rule/webhook hooks.
+Fourteen Node/MongoDB cases, three additional Node suites, four full-app Meteor
+cases and twelve Chromium scenarios pass, including scheduled SMTP recovery
+with and without an existing plan.
+Completed notification plans now compact immediately after matching intent
+acknowledgement. Keep a permanent unique plan ID, activity hash, checksum and
+version; remove recipient/channel data and rendered content. A bounded
+background sweep handles interruption between completion and compaction,
+using the same intent reservation and exact conditional replacement. Its
+60-second interval is configurable. Pending, orphaned, mismatched or damaged
+plans retain their payloads. Completion remains sufficient for cleanup after
+the original activity is deleted; the SMTP outbox keeps unsent mail separately.
+Twenty Node/MongoDB cases, three additional Node suites, four Meteor cases and
+thirteen Chromium scenarios pass, covering uncertain writes, stale writers,
+changed payloads, immediate compaction and scheduled cleanup. Operator
+resolution and unresolved-payload retention remain open. This recovers local
+tray/email enqueue, not the whole Sync effects lifecycle.
+Problems → Recovery now lists pending activity notification summaries with
+literal ID search, ten-row pages and status-specific retry availability.
+Enabled administrators can retry through the same reservation and permanent
+receipts as automatic delivery. Current admin access is checked inside the
+reservation and during delivery; missing activities are never recreated.
+Report responses omit saved activity content, recipients and rendered emails.
+Seven focused report/method cases, sixteen related Node/MongoDB cases, one
+full-app Meteor case and two Chromium scenarios pass. Pending-payload cleanup
+and broader recovery coordination remain unfinished.
+An internal pause/resume storage primitive now persists one versioned control
+row per intent under its delivery reservation. Requests carry the observed
+revision and a stable identity; old requests cannot undo newer decisions.
+Exact readback reconciles lost write replies, while false acknowledgements,
+malformed state, revoked access and non-pending intents fail. Six tests pass
+with real MongoDB, including concurrent requests and delayed stale writers.
+The control row is permanent to prevent revision reuse. Production delivery
+now reads a private control collection before preparation and local effects.
+Immediate ordinary dispatch, manual retry and background recovery all honor
+holds; the background scan skips held work without hiding later runnable rows.
+Malformed control state stops delivery. Twenty-three Node/MongoDB cases, one
+full-app Meteor case and one Chromium case pass. Browser coverage denies direct
+member/admin writes across all nine private notification collections.
+Recovery now exposes Pause delivery and Resume delivery to enabled admins.
+The report shows the stored hold and disables manual retry while paused.
+Requests use the displayed revision; conflicting or uncertain actions refresh
+rather than silently overriding a newer administrator decision. The method
+checks admin access before and inside the reservation and limits request rate.
+Twenty Node/MongoDB cases and three Chromium scenarios pass. A two-phase browser
+case pauses through the actual method, restarts the app on the same database,
+verifies the hold survives automatic scans, then resumes through the UI and
+observes automatic completion.
+Recovery now offers confirmed cancellation of remaining activity delivery,
+including orphaned notifications. A permanent terminal control row prevents
+both old and new Resume requests from reopening cancelled work. Repeating the
+same cancellation request is safe. Both delivery entry points refuse it, the
+scanner skips it, and the report keeps its cancelled status visible with
+controls disabled. Existing tray notifications and queued SMTP mail are not
+recalled. Twenty-three Node/MongoDB cases, one full-app Meteor case and three
+Chromium scenarios pass, including confirmation dismissal, denied access,
+terminal replay and orphan cancellation without activity recreation. Intent
+snapshots and rendered plans are compacted after cancellation as described
+below; broader card/History/activity recovery coordination remains open.
+An internal cancellation compactor now replaces rendered plans and intent
+snapshots with permanent terminal receipts. It confirms the plan receipt first,
+including inserting a tombstone when no plan was ever built, so delayed first
+writers cannot recreate payloads. Exact conditional writes, unchanged terminal
+control checks and readback handle interruption and uncertain acknowledgements.
+Orphans need no recreated activity. Twenty-five Node/MongoDB cases pass,
+including five new compaction cases.
+Production cancellation now invokes compaction after confirming the terminal
+control. The existing bounded recovery scan retries interrupted cleanup and
+stops scanning an intent once it has its compact cancelled state. Shared
+receipt validation makes ordinary capture/completion reject cancelled replays.
+Report queries include compact cancelled metadata, preserving literal ID
+search and visibility without reading original payloads; actions stay
+disabled. Twenty-eight Node/MongoDB cases, one full-app Meteor case and three
+Chromium scenarios pass, including recovery-pass cleanup, immediate UI
+cancellation, retained report rows, orphan cleanup, missing controls and
+prevention of capture/completion replay. Invalid or mismatched payloads remain
+for investigation. Pending and paused work is not automatically expired.
+Broader card/History/activity coordination and saved Sync effect activation
+remain unfinished.
+History field snapshots now preserve nested dates, including date-valued
+custom fields alongside mapped estimates. JSON transport and restoration retain
+Date types without interpreting date-looking text. Existing rows whose dates
+were already flattened into strings cannot be reconstructed safely.
+Current Sync write selectors now distinguish explicit null from missing fields.
+Adapter investigation also moved title/description activities after successful
+writes and made archive/entity/rule History hooks reject zero-match updates.
+Custom-field activities now compare saved values by field identity after
+successful array/dotted writes, including mapped Jira estimate Sync. No-op and
+failed writes emit nothing; advanced-filter rules use board-scoped definitions
+and observe the saved values. Browser regressions cover source conflicts,
+clearing, checkbox false and field removal. Durable effect delivery is pending.
+Crash recovery must still coordinate card changes with separate activity and
+History effects before a durable unit can be safely acknowledged.
 Remaining: external sprint histories without invented snapshots, multiple
 release assignments, epic relationships, automatic field/schema mapping,
-Trello and other Scrum adapters, mapping previews/loss reporting, planning and
-estimate Sync, project-scoped source identity, credential/source-switch
-boundaries, atomic concurrent jobs and conflict-resolution UI.
+Trello and other Scrum adapters, complete provider schema/mapping coverage,
+binary/history transport, planning Sync, other providers' estimate Sync,
+durable custom-field activity/rule delivery,
+production mapped-field replay and restart checkpoints, fencing of in-flight
+writes after lease loss and atomic multi-card reconciliation.
+Changes during card writes remain nontransactional.
 See [Jira](docs/Features/ImportExport/Jira/Jira.md) and
 [Sync](docs/Features/ImportExport/Sync.md).
 
 **IFTTT Rules, Blocks, Workflows and History:** editable lazy-loaded Blocks,
 board-admin checks, responsive themed layouts and compound History are in
 place. DDP/REST edits, shared trigger/action records, deletion/restore and
-manual-button metadata have regression coverage. Writes across documents are
-not transactional; concurrent-write recovery and failed-creation orphan cleanup
+manual-button metadata have regression coverage. Advanced-filter comparisons
+now bind the field identity and value to the same array entry in both sidebar
+and rule queries; unknown field names cannot become value-only rule matches.
+Real MongoDB and Chromium cover multiple fields, missing fields and inequality.
+Grouped filters and whole-expression negation now use valid database selectors.
+Incomplete expressions are rejected before rule queries; sidebar fallback and
+left-to-right logical order are covered in Node, MongoDB and Chromium tests.
+Numeric conditions now retain decimal boundaries and reject partial numeric
+strings; currency-filter and rule regressions cover fractional values.
+History pagination now streams rows through bounded permission batches instead
+of fetching the complete scope into memory. Search, exact totals, contributors
+and final-page clamping retain their semantics; assigned-only checks fetch only
+card IDs in the batch. Scope scans and author counts still scale with history
+size, and concurrent writes/access changes do not form a consistent snapshot.
+Writes across documents are not transactional; concurrent-write recovery and
+failed-creation orphan cleanup
 still require work. The combined checkpoint passed 45 Node runner checks and
 18 Chromium scenarios; later Gujarati editing also passed. These are focused
 results, not certification of every language or concurrency scenario.
@@ -218,9 +1079,14 @@ No external translation service or remote translation upload was used.
 <details>
 <summary>Local translation repairs and validation paused; review remains.</summary>
 
-All work in this older audit queue is also paused for the 2026-09-27 release
-handoff. The dated findings below are retained as historical checkpoints;
-they do not supersede the pause or prove global translation completion.
+Wrong-language and wrong-meaning repairs resumed at the maintainer's request
+after the 2026-09-27 Transifex download. The first reviewed batch corrects 487
+locale/key pairs and retains valid downloaded translations. The broader
+semantic audit remains in progress; filling untranslated strings in every
+language is still excluded from the work queue.
+See the [download review](docs/Features/Translations/Transifex-2026-09-27.md).
+The dated findings below remain historical checkpoints, not proof of global
+translation completion.
 
 Resumed at the maintainer's request on 2026-09-13, beginning with Klingon.
 As of 2026-09-16, all 20,081 original findings are classified:
@@ -436,17 +1302,44 @@ ties a rule to exactly one `triggerId`/`actionId`; supporting several is a
 schema change, not a UI fix, and needs a decision on how a multi-trigger rule
 matches: any trigger, or all of them; [#2953](https://github.com/wekan/wekan/issues/2953)
 asks for the same thing),
-[#4160](https://github.com/wekan/wekan/issues/4160) (a rule Copy Card action
-is still missing; Link Card already exists in `server/rulesHelper.js` and its
-rule-action UI, so only the copy portion remains deferred),
-[#3235](https://github.com/wekan/wekan/issues/3235) (rule action to copy a
-card to another board and list — same underlying gap as #4160, plus needs a
-board/list picker in the rule-action UI),
-[#2713](https://github.com/wekan/wekan/issues/2713) (rule email action should
-support attachments — `client/components/rules/actions/mailActions.js` and
-its server-side sender only handle a plain templated body today; attaching a
-card's files means streaming them through the mailer, a scope change to the
-existing action, not a bug),
+[#2713](https://github.com/wekan/wekan/issues/2713) (email rules now offer
+optional live-card attachments, with source-access rechecks and verified
+filesystem/GridFS SMTP delivery. The original request also asks for all card
+content: live checklists and public comments now have an independent opt-in
+mail action choice with SMTP coverage. Details now includes dates, placement,
+labels/people, custom-field display values, notes and authorized relationships.
+Ordinary email rules now resolve live linked-card content across all selected
+sections and linked-board display fields with source-access rechecks. Stored
+Sync commands now persist and verify their source chain before dispatch;
+legacy unbound commands require future operator recovery. Details also
+includes persisted Flowtime/Pomodoro sessions and recurrence fields. Voting
+counts, public voter names and completed Poker results now follow disclosure
+settings, including persisted checks for stored commands. Linked-board voting
+now uses current target results and both boards' visibility settings. The six
+visible Scrum card fields are included with same-board name resolution and
+persisted visibility checks. The
+[content audit](docs/DeveloperDocs/Card-Email-Content-Audit.md) now tracks
+all 71 top-level card fields. Target-board discussion now checks each owner
+card and retains source evidence. Offline full-acceptance confirmation is now
+implemented; other stored-command recovery remains open.
+Target archive/time state and active
+member names are now included, along with local recurrence. Linked-board
+wrapper content now uses local field and related-source policies. Local
+archive state and lifecycle timestamps now complete the placement audit.
+Timer session reads and writes now agree;
+completed work uses the current source total. Local placement,
+timers and visible Scrum now have a separate linked-card section. Moved-card
+SMTP now
+passes with all three content choices for filesystem and GridFS. Canonical
+and legacy Gantt references now share readable target titles with distinct
+type labels.
+Attachment manifests now identify the cover, upload metadata and actual sizes.
+Creator,
+stickers, checklist schedules, public comment authors and scoped reaction
+summaries are now included. Stored Details now binds related-source chains,
+admin access and custom-field definition fingerprints; older Details snapshots
+require operator recovery. Converted checklist subtasks now use readable live
+titles and persisted reference evidence, including without Details),
 [#3195](https://github.com/wekan/wekan/issues/3195) (rule action/trigger
 values should be able to reference a custom field's value — today's action
 and trigger value inputs are plain literals; resolving a per-board custom
@@ -455,33 +1348,12 @@ ask above, plus a custom-field picker in the rule UI),
 [#2698](https://github.com/wekan/wekan/issues/2698) (sync rules with GitLab —
 a third-party integration needing a GitLab API credential and webhook
 endpoint, environment/infrastructure this sandbox cannot stand up or verify),
-[#3815](https://github.com/wekan/wekan/issues/3815) (more variables in rule
-email/string templates — `{username}` and a direct card link landed for
-\#3304/\#3301, but the request is open-ended about which further fields
-(board/list/swimlane name, custom fields) should be addressable; needs the
-same templating-layer decision as the #4294 variables ask above),
 [#4790](https://github.com/wekan/wekan/issues/4790) (a sprawling "User
 Filter" wishlist - the reporter's own words are "I'm kind of confused" about
 whether it is one feature or several; it bundles per-org/team/board label
 expansion, granular board roles, LDAP-group-driven auto-labeling and
 permission inheritance, none of which is a filter change - needs it split
 into separate, concretely-scoped issues before any one part is buildable),
-[#1915](https://github.com/wekan/wekan/issues/1915) (hide cards by a date -
-largely already covered by the existing `Filter.dueAt` past/today/tomorrow/
-this-week/next-week/no-date states; the remaining gap is filtering by
-`createdAt`/`receivedAt`/`endAt` rather than only `dueAt`, which needs a
-decision on whether to generalize `DateFilter` to a chosen date FIELD or add
-one `DateFilter` per date field, since today's UI hard-codes "due date"),
-[#1499](https://github.com/wekan/wekan/issues/1499) (hide old/done tasks -
-overlaps `Filter.dueAt.past()` and the existing Swimlane/List "Done"
-concept; the open part is a rolling "older than N days" cutoff, which
-`DateFilter` has no relative-N-days state for today, only fixed
-day/week/no-date buckets),
-[#935](https://github.com/wekan/wekan/issues/935) (filter cards by date or
-tag - dated 2017; labels are already filterable and `Filter.dueAt` covers
-due-date ranges, but "moved on a specific date" would need a per-activity
-date filter, not a card-field one, since a card has no single "last moved"
-field today),
 [#572](https://github.com/wekan/wekan/issues/572) (label add/remove as its own
 controllable Notification Settings option - the activity feed entry it asks
 for already exists (`models/cards.js`'s `cardLabels()` hook logs
@@ -503,11 +1375,7 @@ Researched against WeKan's actual current code (not assumed) to find what is
 genuinely still missing after this session's landed work, then scoped down
 to the smallest well-understood piece (card recurrence, added above) rather
 than a shallow pass across all five tools. What is investigated but deferred:
-**Jira Server/DC duplicate issue links** remain deferred. Typed relationships
-already exist in `models/metadata/dependencies.js`: related-to, blocks,
-is-blocked-by, fixes and is-fixed-by, with reciprocal display and configurable
-line colors/icons. A dedicated duplicates/is-duplicated-by relationship is
-still missing. **Jira issue TYPES** (Bug/Task/Story/Epic as a first-class
+**Jira issue TYPES** (Bug/Task/Story/Epic as a first-class
 card attribute with its own icon set and swimlane-per-epic grouping - the
 existing custom-field mechanism can represent the VALUE but not the icon/
 swimlane-grouping behaviour Jira gives a type, so this needs a decision on
@@ -630,19 +1498,34 @@ since this issue was filed; WebAuthn/FIDO2 passkeys are the passwordless
 standard that gained the adoption SQRL did not. Needs a maintainer decision
 on whether this remains worth pursuing before any implementation is
 attempted.),
-[#2713](https://github.com/wekan/wekan/issues/2713) (attaching a card's
-actual FILE attachments to the email a rule sends, not just its
-title/description/link - every WeKan email today goes through
-`server/rulesHelper.js`'s `Email.sendAsync`/`EmailLocalization.sendEmail`
-call sites, which take `{ to, from, subject, text }` with no `attachments`
-parameter anywhere in this codebase; no other WeKan email path attaches a
-file either. Wiring a real attachment through needs the mailer wrapper
-itself to grow attachment support and code to read the file back out of
-whichever of the four storage backends
-(`models/lib/fileStoreStrategy.js`/`attachmentStoreStrategy.js`:
-filesystem, GridFS, S3/Azure/GCS) holds it - mailer-level scope past what a
-single rule action should take on alone, and needs a maintainer decision on
-size limits/backend coverage before it is built.).
+[#2713](https://github.com/wekan/wekan/issues/2713) (the attachment send path
+now works: a native form checkbox enables authorized live-card file reads,
+immutable byte snapshots and mailer propagation. Filesystem and GridFS delivery
+pass local SMTP tests; live cloud-account validation remains unperformed.
+The bounded snapshot and durable-command checks remain in place. Checklists
+and public comments can now be included independently, with private webhook
+state excluded. Details now covers ordinary card metadata, custom fields,
+notes and authorized relationships. Ordinary rules now send authorized live
+linked-source content. Stored Sync commands now persist and revalidate their
+source chain; legacy unbound-command recovery remains pending. Specialized
+Timer and recurrence snapshots now have Details and SMTP coverage. Card voting
+and completed Poker results also have disclosure checks and SMTP coverage;
+Linked-board voting now follows target policy with stored checks. Visible
+Scrum card metadata now has same-board reference and SMTP coverage. Final
+[content audit](docs/DeveloperDocs/Card-Email-Content-Audit.md) records concrete
+the 71-field inventory. Target-board discussion now uses per-card access and
+stored source evidence. Target archive/time state, active member names and local
+recurrence are now included. Linked-board wrapper content now uses local
+field and related-source policies. Local archive/lifecycle fields complete
+the placement audit. Timer reads and writes
+now agree, and
+completed work uses the current source total. Local placement,
+timers and visible Scrum now have a separate section. Moved-card SMTP passes
+for filesystem and
+GridFS with all three choices. Offline full-acceptance confirmation is now
+implemented; legacy commands and partial/unknown acceptance still need recovery.
+Creator/stickers and checklist/comment metadata gaps are now fixed.
+Canonical and legacy Gantt targets now use grouped, authorized titles.).
 
 </details>
 
@@ -710,6 +1593,4295 @@ the Markdown commit as the template.
 
 </details>
 </details>
+
+# v12.09 2026-09-28 WeKan ® release
+
+
+**In short:** **Security** protects admin-only custom-field values across server
+reads, writes and exports. **SAML login** accepts valid responses and displays
+failures. **Sync** separates source projects and coordinates concurrent runs and
+settings changes. **Scrum** records daily observations, reports measured scope
+and remaining work, and preserves history in transfers and scoped exports.
+**API diagnostics** omit request secrets. **Rule emails** include authorized
+card content and support offline confirmation of independently verified
+acceptance.
+Reviewed **translations** regain their target-language meaning.
+
+This release fixes the following CRITICAL SECURITY ISSUE of
+[AdminFieldBleed](https://wekan.fi/hall-of-fame/adminfieldbleed/):
+
+**Admin-only fields** - enforce the value boundary on the server.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/89a65ee7c">Protect admin-only custom-field reads, writes and exports</a>. Thanks to Hama1cco and xet7.</summary>
+
+Fix GHSA-m8gh-2h78-f57x, CWE-863. Non-admin board members could read raw
+protected values and bypass the indexed-value guard through card creation,
+copying and whole-array updates. Apply shared server projection to publications,
+REST and method results, nested History and analytics. Keep IDs and array
+positions, redact values and guessing-prone History hashes, and constrain value
+queries. Live card subscriptions react to protection and admin-access changes;
+value-search subscriptions are retracted and must be requested again.
+
+Check complete before/after values for request-attributed writes, preserve
+public edits and omit unreadable values from ordinary copies. Protected shared
+definitions require administration of every affected board. Until binary and
+streaming exports support equivalent projection, boards with protected fields
+require board-admin export access; orphan values also fail closed. Summarize
+explicit mutation attempts under AdminFieldBleed in Admin Panel / Problems,
+without recording values or treating ordinary reads/export refusals as attacks.
+
+All 116 focused Node suites pass, including positive, negative and source-wide
+boundary tests. Chromium covers REST and eager/lazy DDP reads, live permission
+changes, eight forged-write shapes, public/admin edits, ordinary copying,
+History/value searches and the Problems summary. Existing comment-protection
+browser checks pass. The source audit passes with advisory fingerprints.
+Existing Upcoming regression evidence remains recorded. Production, FerretDB
+and other browsers were not tested. See the
+[boundary review and compatibility limits](docs/Security/Admin-Only-Custom-Fields-2026-09-28.md).
+
+</details>
+
+and improves security diagnostics:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/551325408">Include authorized target-board comments in linked-board rule emails</a>. Thanks to kabi178, bbyszio and xet7.</summary>
+
+The Discussion choice now includes target-board comments grouped by readable
+owner card. Discover owner IDs before reading prose; enforce assigned-only and
+linked-source access, omit missing/deleted/foreign owners, and recheck every
+included source plus the board link. Retain owner chains in stored-command
+evidence so later access loss blocks dispatch. Reuse public authors and reaction
+summaries without exporting account secrets or webhook state. Checklists and
+files remain local to the wrapper. More than 1,000 discovered comment rows or
+768 KiB of rendered board discussion rejects capture rather than truncating it.
+
+Sixty-one Node suites pass without skips, including MongoDB and native mail
+composition. Tests cover inaccessible owners, capture-time access loss,
+retargeting, oversized input and later assignment loss against saved evidence.
+Three Chromium SMTP scenarios pass; assigned-only card comments are included,
+unassigned comments/titles are excluded, and disabling Discussion omits them.
+The source audit passes with informational warnings. Existing Upcoming
+regression evidence is retained. Stored-command operator recovery remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8d51ac92e">Separate link placement lifecycle from source state in rule emails</a>. Thanks to kabi178, bbyszio and xet7.</summary>
+
+Include local archive state/date and creation, modification and last-activity
+timestamps in the linked-card local section. A link may be archived while its
+source remains active; the message preserves both states under their own
+sections. Card number and color continue to follow the existing display getters:
+source-owned for linked cards and local for linked-board wrappers.
+
+Sixty Node suites pass without skips, including MongoDB and native mail
+composition. Tests cover false archive state, local timestamps, malformed dates
+and exclusion of copied card numbers/colors. Three Chromium SMTP scenarios
+pass, including an archived link to an active source. The source audit passes
+with informational warnings. Existing Upcoming regression evidence is retained.
+The placement ownership audit is complete; target-board discussion and stored
+command operator recovery remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5bd348a4b">Include linked-board wrapper content with shared email policies</a>. Thanks to kabi178, bbyszio and xet7.</summary>
+
+Render explicitly local linked-board fields through the shared Details path:
+creator, requesters/assigners, labels, stickers, custom fields, notes, locations
+and relationships. Keep target dates, votes and member lists in their target
+section. Custom fields use local definitions and admin visibility; related
+cards require current access. Persist both definition fingerprints and related
+source evidence in the existing stored-command binding. String templates use
+the live target title, and retargeting during preparation rejects the result.
+
+Sixty Node suites pass without skips, including MongoDB and native mail
+composition. Tests cover excluded stale/target fields, private custom fields,
+policy changes, wrong wrapper types and retargeting. Three Chromium SMTP
+scenarios pass; the linked-board message includes local custom fields,
+stickers, locations and a readable parent. The source audit passes with
+informational warnings. Existing Upcoming regression evidence is retained.
+Target-board discussion and the remaining placement lifecycle audit stay open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f27f060fb">Include current linked-board state and active people in rule emails</a>. Thanks to kabi178, bbyszio and xet7.</summary>
+
+Linked-board Details now reads archive state/date, due completion and overtime
+from the current target board. Members and Assignees use its unique active
+members, matching the linked-board card getters. Resolve public display names
+only; skip inactive or missing accounts and never serialize membership roles,
+email addresses or account credentials. Recheck target access after name reads.
+
+Sixty Node suites pass without skips, including MongoDB and native mail
+composition. Unit tests cover false/zero values, stale wrapper fields,
+duplicate/inactive/missing members and loss of target-only read access.
+Three Chromium SMTP scenarios pass, including target state and member names.
+The source audit passes with informational warnings. Update the field inventory
+and retain existing Upcoming regression evidence. Local wrapper content and
+per-card-authorized target-board discussion remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1869a68c6">Audit card email fields and include local link recurrence</a>. Thanks to kabi178, bbyszio and xet7.</summary>
+
+Include local recurrence and last recurrence in linked-card and linked-board
+Details, matching the recurrence setter's displayed-card scope. Classify all
+71 top-level Cards schema fields in a checked inventory, including intentional
+exclusions and remaining behavior. An AST-based test requires new or removed
+schema fields to receive an explicit audit disposition.
+
+The audit identifies remaining linked-board archive/time/member display,
+wrapper-owned content and target-board comments. Board-wide discussion needs
+per-card access checks and durable evidence before it can be included safely;
+the inventory does not claim those implementations are complete.
+
+Sixty Node suites pass without skips, including MongoDB and native mail
+composition. Three Chromium SMTP scenarios pass, with local recurrence verified
+for both link types. The source audit passes with informational warnings.
+Existing Upcoming regression evidence is retained.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0bd4dc0a5">Keep linked timer sessions local and credit current source time</a>. Thanks to xet7.</summary>
+
+Flowtime and Pomodoro session writes now use the displayed card, matching their
+getters. Completed work adds to the current linked source total and awaits its
+save before clearing or advancing the session. Remove a duplicate Spent Time
+setter that silently replaced linked-board support. Keep automatic Pomodoro
+transitions outside reactive tracking and allow one pending transition per view.
+The source total and local session remain separate writes, not a transaction.
+
+Sixty-three Node suites pass without skips, with MongoDB and native
+MailComposer.
+Executable model tests cover local writes, current totals, failed credits,
+breaks and the linked-board setter; the client test checks pending transitions.
+Two Chromium timer scenarios pass for linked cards and boards, including
+interruptions, elapsed time, automatic work completion and stopping a break.
+Three SMTP scenarios also pass. The source audit passes with advisory warnings.
+The separate Pomodoro suite still fails on pre-existing locale key positions;
+translation files remain deferred. Existing Upcoming coverage is retained.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/032e0db79">Include scoped local linked-card details in rule emails</a>. Thanks to kabi178, bbyszio and xet7.</summary>
+
+With Details selected, add a separate local section for linked-card and
+linked-board placement, persisted timer values and visible local Scrum fields.
+Resolve public timer-owner names and same-board Scrum names. Recheck local
+access, assigned-only restrictions, link identity and Scrum visibility.
+Exclude copied wrapper titles, descriptions, stickers and custom fields.
+Authorized source content retains its existing separate scope and bindings.
+
+Fifty-nine Node suites pass without skips, including MongoDB and native
+MailComposer integration. Five wrapper tests cover both link types, ordinary
+cards, malformed values, foreign references, access loss and policy changes.
+Three Chromium SMTP scenarios pass, including wrapper fields in linked-card
+and linked-board messages, source-access loss and moved-card attachments.
+The source audit passes with informational fingerprint warnings. Existing
+Upcoming regression evidence is retained. The field audit records the timer
+model's getter/write mismatch for follow-up; full completion remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e96f0dfb2">Verify complete emails when a card moves into a selected list</a>. Thanks to kabi178, bbyszio and xet7.</summary>
+
+Extend the filesystem and GridFS SMTP scenarios with authenticated REST card
+moves and a destination-list rule. Verify the activity and placement, Details,
+checklists, public comments and actual attachment bytes in the received mail.
+Unauthorized moves and moves away from the selected list must not send mail.
+Keep the existing button tests for independent content choices and failures.
+
+Both extended Chromium SMTP scenarios pass; the linked-source SMTP scenario
+also passes. Correct the test's MIME assertion to compare base64 bytes before
+removing quoted-printable soft breaks. Existing Upcoming regression evidence
+is retained. The content audit now leaves linked-wrapper field ownership,
+final field review and stored-command operator recovery unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b5c15e95e">Include canonical and legacy Gantt relationships in rule emails</a>. Thanks to kabi178, bbyszio and xet7.</summary>
+
+Normalize canonical dependency records, including legacy bare card IDs, and
+include stored Gantt targets in Details. Group repeated targets under one
+readable title while preserving distinct relationship labels. Missing or
+misaligned legacy types use a generic label; internal link IDs stay private.
+Related targets retain live access checks and durable source bindings.
+
+Fifty-eight Node suites pass without skips, including MongoDB and native
+MailComposer integration. Three Chromium SMTP scenarios pass, covering grouped
+labels and omission when Details is disabled. Unit tests cover all four Gantt
+types, duplicates and malformed arrays. Twelve risk-audit tests and the release
+source audit pass; the exact documentation URL is allowed only in its source
+file. Existing Upcoming regression evidence is retained. Wrapper metadata,
+moved-card trigger coverage and operator recovery remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/027d399cb">Include attachment presentation metadata in rule emails</a>. Thanks to kabi178, bbyszio and xet7.</summary>
+
+Append an attachment manifest with captured filenames, actual byte counts,
+MIME types, cover marker, upload date and public uploader display name. Never
+include storage paths, download URLs or private account data. The manifest
+follows the Attachments choice independently of Details and is bounded to
+256 KiB. Reject deleted cards and foreign file rows; recheck access and cover
+identity after all file metadata reads. Remove this gap from the content audit.
+
+Fifty-seven Node suites pass without skips, including MongoDB and native
+MailComposer integration. Unit tests cover actual byte size, private-field
+exclusion, cover changes, deleted cards and access loss during final reads.
+Three Chromium SMTP scenarios pass; filesystem/GridFS messages verify the
+manifest and its omission when Attachments is disabled. Existing Upcoming
+regression evidence is retained. Legacy Gantt links, wrapper metadata,
+moved-card trigger coverage and operator recovery remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2a632445b">Include converted checklist subtask references in rule emails</a>. Thanks to kabi178, bbyszio and xet7.</summary>
+
+Append the current readable title of a checklist item's converted subtask.
+Share source-chain resolution with Details relations so linked targets use
+live titles instead of stale snapshots. Omit missing, deleted and unreadable
+targets; recheck included references after preparation. Stored commands retain
+those source chains even when Checklists / Comments is enabled without Details.
+Remove this gap from the full-card content audit.
+
+Fifty-seven Node suites pass without skips, including MongoDB and native
+MailComposer integration. Unit cases cover source-chain capture, private and
+deleted targets, assignment restrictions and retargeting during preparation.
+Three Chromium SMTP scenarios pass; filesystem/GridFS tests verify references
+with Details on and off. Existing Upcoming regression evidence is retained.
+Attachment presentation, legacy Gantt links, wrapper metadata, the moved-card
+scenario and operator recovery remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b1b126fb0">Bind stored email details to related sources and field policies</a>. Thanks to kabi178, bbyszio and xet7.</summary>
+
+Resolve related parent/dependency/subtask titles through readable current
+source chains, including linked cards and boards. Capture those chains with
+version-five source evidence and recheck them before stored dispatch, even
+when today's card no longer references them. Recheck board-admin access used
+during capture and custom-field definition fingerprints, including later
+public-to-admin-only changes. Reject older Details snapshots lacking this
+evidence without recapturing their mail. Limit reference evidence to 1,000
+chains and the complete command to 15 MiB.
+
+Fifty-seven Node suites pass without skips. MongoDB concurrency/reconnect
+coverage retains reference evidence and rejects checksum tampering. Unit tests
+cover access/assignment loss, deletion, movement, nested evidence, revoked
+admin access and changed custom-field policy. Three Chromium SMTP scenarios
+pass, including a linked parent whose live title replaces its stale copy.
+Existing Upcoming regression evidence remains recorded. Operator recovery,
+remaining content-audit items and broader Sync coordination remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4cca0b2c8">Include comment reactions in rule emails</a>. Thanks to kabi178, bbyszio and xet7.</summary>
+
+Append Unicode reaction emoji and distinct-reactor counts to included live
+comments. Batch reads are scoped by board, card and comment IDs; foreign or
+deleted-comment rows do not contribute. Reject malformed, control and
+surrogate codepoints. Never render reactor IDs, private account fields or
+arbitrary reaction markup. The existing content bound and final source-access
+check apply after reaction reads too.
+
+Fifty-seven Node suites pass without skips, including MongoDB and native
+MailComposer integration. Unit coverage checks duplicate reactors, invalid
+codes, foreign rows and revoked access. Three Chromium SMTP scenarios pass;
+filesystem/GridFS mail includes the emoji/count and omits reactor identifiers.
+The content audit now records related-card authorization on stored retries
+as a separate unfinished requirement. Existing Upcoming coverage is retained.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2e13fab98">Fill audited card email content gaps</a>. Thanks to kabi178, bbyszio and xet7.</summary>
+
+Include public creator names, sticker attributes, archive/activity dates,
+ordering and last move reason under Details. Include checklist/item deadlines,
+checklist completion/reset metadata and public comment authors/edit dates
+under Checklists / Comments. Serialize only selected scalar fields; preserve
+zero values, omit private account data and recheck access after author reads.
+
+Compare email preparation with card/checklist/comment models and the shared
+export layout in the new
+[content audit](docs/DeveloperDocs/Card-Email-Content-Audit.md). Track the
+remaining references, reactions, attachment presentation, legacy Gantt links,
+wrapper metadata and moved-card scenario explicitly instead of marking the
+full-content request complete.
+
+Fifty-seven Node suites pass without skips, including MongoDB and native
+MailComposer integration. Three Chromium SMTP scenarios pass; filesystem and
+GridFS messages verify the new content and its omission when deselected.
+Existing Upcoming regression evidence remains recorded.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d99641d8e">Include visible Scrum card fields in rule email details</a>. Thanks to kabi178, bbyszio and xet7.</summary>
+
+Include visible sprint, past sprints, release, issue type, acceptance criteria
+and backlog rank. Resolve names only from records on the source board; omit
+missing or foreign references and recheck included records after preparation.
+Preserve zero ranks and exclude hidden fields and unrelated record payloads.
+Version-four source bindings retain the six visibility flags so stored sends
+stop after disclosure settings change. Earlier bindings remain readable for
+snapshots captured before Scrum content was added.
+
+Fifty-seven Node suites pass without skips, including MongoDB persistence and
+native MailComposer integration. Positive and negative coverage exercises
+all six fields, hidden values, foreign references, changed record ownership
+and changed visibility. Three Chromium SMTP scenarios pass; filesystem and
+GridFS mail carry visible Scrum fields and omit hidden ones. Existing Upcoming
+regression evidence remains recorded. Final full-card content audit and
+legacy stored-command recovery remain in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0b86c92de">Include linked-board voting in rule email details</a>. Thanks to kabi178, bbyszio and xet7.</summary>
+
+Read voting and Poker results from the authorized linked board, retaining
+public-name and completed-Poker disclosure rules. Respect hidden sections on
+both the wrapper board and target board. Reject visibility changes during
+preparation. Version-three source bindings persist target voting policy
+separately from the card chain and recheck it before stored dispatch. Older
+bindings remain readable for snapshots captured before linked-board voting.
+
+Fifty-seven Node suites pass without skips, including MongoDB and native
+MailComposer checks. Additional source-binding schema tests pass. Three
+Chromium scenarios pass with local SMTP, including live linked-board results,
+private voter names being omitted and reopened Poker results being hidden.
+Existing Upcoming regression evidence remains recorded. Scrum content and
+legacy command recovery remain open; the overall TODO Later work continues.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/952cb16a7">Include voting and Poker results in rule email details</a>. Thanks to kabi178, bbyszio and xet7.</summary>
+
+Include voting questions, deadlines and counts; show voter names only for
+public votes. Include saved Poker estimation and reveal choice counts/names
+only after Poker ends. Omit hidden sections and private account data. Recheck
+visibility after asynchronous name lookups. New source bindings capture the
+voting/Poker visibility fields so changing disclosure settings, hiding a
+section or reopening Poker stops dispatch of a captured message.
+
+Fifty-seven Node suites pass without skips, including MongoDB persistence and
+native MailComposer integration. Additional binding tests reject malformed
+visibility evidence. Three Chromium scenarios pass with local SMTP; extended
+filesystem/GridFS cases also verify public voters and reopened Poker on rerun.
+Existing Upcoming regression evidence is retained. Scrum fields, linked-board
+voting and legacy command recovery remain in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/94f125ac0">Include timer and recurrence state in rule email details</a>. Thanks to kabi178, bbyszio and xet7.</summary>
+
+Details now includes Flowtime start and interruptions, Pomodoro start, phase,
+completed intervals and work duration, plus public session-owner names.
+Include recurrence interval and last recurrence. Preserve zero counts and
+ISO dates without serializing account records or malformed objects. Export
+persisted session state without adding unfinished time to completed hours.
+Existing source-access checks still apply, and disabling Details omits these
+fields. Scrum and voting content remain in the full-card email TODO.
+
+Fifty-seven Node suites pass without skips, including actual MongoDB and
+native MailComposer integration. New positive and negative tests cover timer
+fields, absent/malformed data, public names and revoked access. Filesystem and
+GridFS Chromium SMTP scenarios pass after accounting for quoted-printable
+soft line breaks in test assertions; the linked-source scenario also passes.
+Existing Upcoming regression evidence remains recorded.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6e4032b69">Bind stored rule email to its source chain</a>. Thanks to kabi178, bbyszio and xet7.</summary>
+
+Capture versioned source evidence alongside immutable mail, covered by the
+command checksum. Record each source card, board, type and link target; use
+the same resolution for content and binding. Before dispatch, recheck the
+saved chain and current read/assignment access. Reject moved, retargeted,
+deleted or unreadable sources even when the recipient is unchanged. Source
+metadata never reaches SMTP. Linked and ordinary stored commands use this
+binding; it supersedes the temporary linked-source refusal below.
+
+Legacy commands remain readable but cannot be sent or reconciled through the
+send entry point without source evidence. Never recapture or rewrite them
+silently; operator recovery remains pending. Specialized card fields and the
+wider Sync/History coordination work remain in TODO Later.
+
+Fifty-seven Node suites pass without skips, including MongoDB concurrency,
+reconnect and checksum checks. An additional dispatch test verifies source
+retarget refusal and transport-only fields. Three Chromium scenarios pass
+against local SMTP: filesystem, GridFS and linked-card/linked-board content.
+Existing Upcoming regression evidence is retained; no new UI is introduced.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/479f01d57">Use live linked sources in rule emails</a>. Thanks to kabi178, bbyszio and xet7.</summary>
+
+Resolve linked cards before building email variables, details, discussion and
+attachments. Every source must be readable, including assigned-only access;
+reject missing/deleted sources, cycles and changed links. Recheck the complete
+chain after preparation. Linked boards use current board title, description
+and dates while keeping wrapper-owned discussion and files. Never send stale
+cached source descriptions or unrelated cards from a linked board.
+
+Fifty-seven Node suites pass without skips, including real MongoDB and native
+MailComposer integration. Three Chromium scenarios pass with local SMTP
+capture: filesystem and GridFS messages, plus linked-card source content,
+source-access revocation and linked-board isolation. Source inventory remains
+advisory. Ordinary event, manual and scheduled rules use the new resolution.
+
+Stored Sync email commands do not yet bind the resolved source chain. Reject
+linked sources during capture and dispatch until that durable binding exists,
+so retargeting cannot authorize stale captured content. Keep this integration
+and specialized card fields open under
+[#2713](https://github.com/wekan/wekan/issues/2713) in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c06b42976">Include authorized card details in rule emails</a>. Thanks to kabi178, bbyszio and xet7.</summary>
+
+Add a Details checkbox for dates, placement, labels, public member names,
+requesters/assigners, time spent, locations, custom-field display values,
+text notes and readable parent/subtask/dependency titles. Preserve zero and
+false values. Match dropdown, multiselect, date, currency and string-template
+semantics. Require board-admin access for admin-only custom fields, recheck
+source/related access and custom-field definitions, and omit private account
+fields and inaccessible related-card titles. Linked cards/boards expose only
+an authorized source title, never their cached source snapshots.
+
+Thirty-six focused Node suites pass. Two Chromium cases with local SMTP
+capture verify saved Details selection, actual dates, custom-field names and
+notes, along with disabling the content while preserving attachment behavior.
+Source inventory warnings remain advisory. Keep
+[#2713](https://github.com/wekan/wekan/issues/2713) open for complete linked
+source content and specialized card fields.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/05080fc02">Include checklists and comments in rule emails</a>. Thanks to kabi178, bbyszio and xet7.</summary>
+
+Add an independent Checklists / Comments option to the mail action. Append
+live checklist titles and completion state, followed by chronological public
+comment text. Exclude deleted and foreign rows and never serialize private
+webhook response fields. Recheck source-card access after child reads and
+fail oversized content rather than silently truncating it. Existing rules
+keep their previous body until the new option is enabled.
+
+Thirty-five focused Node suites pass. Two Chromium cases with local SMTP
+capture verify saved configuration, checklist tasks and comments arriving
+alongside filesystem/GridFS attachments, private-field exclusion and removal
+of the extra text when the option is disabled. Source inventory is advisory.
+Keep [#2713](https://github.com/wekan/wekan/issues/2713) open for the remaining
+card metadata, custom fields, text notes and relationships.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/846f19069">Attach card files to rule emails</a>. Thanks to kabi178, bbyszio and xet7.</summary>
+
+Add an optional native Attachments checkbox to the mail action. Read only live
+files of the triggering card through the existing storage strategy. Recheck
+source access and assignment restrictions after reading, and discard results
+if attachment metadata changes. Preserve validated byte snapshots through
+localization and SMTP. Missing files fail before sending a partial message.
+Show selected checkbox labels in saved rule descriptions instead of "on".
+
+Thirty-four focused Node suites pass. Two Chromium cases verify keyboard
+selection, saved configuration, real MIME attachment bytes from filesystem
+and GridFS, deleted-file omission, unrelated-file exclusion and failed reads.
+SMTP is captured locally; no external message was sent. Live cloud accounts
+were not exercised. Document limits and keep the full-card-content portion of
+[#2713](https://github.com/wekan/wekan/issues/2713) open in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/cfb23b4f6">Prepare immutable attachments for stored rule emails</a>. Thanks to kabi178, bbyszio and xet7.</summary>
+
+Add a backend-neutral reader that captures attachment streams as bounded,
+canonical base64 data. Sanitize filenames and content types, reject oversized
+or unavailable reads, time out stalled streams and close them on failure.
+Validate attachment byte snapshots as part of stored Sync email commands;
+retries retain the original bytes and integrity checks detect tampering.
+File paths and URLs cannot become attachment transport options.
+
+Thirteen focused Node suites pass, covering binary and empty files, JSON
+round trips, changed source buffers, read failures, stalled streams, size and
+count limits, malformed metadata, immutable retries and command corruption.
+This is preparation for [#2713](https://github.com/wekan/wekan/issues/2713),
+not completed attachment sending. Authorized storage reads, form controls,
+mailer propagation and end-to-end delivery remain in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/998b96bf9">Copy cards automatically with a rule</a>. Thanks to javen9881, phaseshift3r, gugmt15 and xet7.</summary>
+
+Add Copy Card to the Board action form with board, list and swimlane selectors.
+Store destination IDs so renaming does not redirect the action. Reuse ordinary
+card copying, including its related-data handling, and append the independent
+copy without moving or mutating the source. Check current write access to both
+boards and reject missing, archived or foreign destination placements.
+
+Stop the same copy action from running repeatedly in one causal chain, so a
+create-card rule cannot copy its own copies forever. Independent events still
+make independent copies. Existing Link Card remains available.
+
+All 29 rule Node suites pass. Two Chromium scenarios cover form creation,
+automatic and manual copies, checklists, comments, source preservation,
+private targets, forged list IDs, revoked destination access and same-board
+recursion. Source inventory warnings remain advisory. Document the behavior
+and remove completed [#4160](https://github.com/wekan/wekan/issues/4160) and
+[#3235](https://github.com/wekan/wekan/issues/3235) from TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c273b12e2">Use authorized linked dates in Table sorting and badges</a>. Thanks to ghost, neooleg, Creanimo, GusevVictor, avatar1024 and xet7.</summary>
+
+Resolve received, start, due and end dates one link deep for lazy Table pages.
+Use the same dates for ordering and badges without changing local link cards.
+Observe source cards and boards, recheck data and permissions after the scan,
+and refresh on edits, moves and access changes. Missing, archived or
+inaccessible sources produce no card dates; assigned-only readers see dates
+only for assigned source cards. Publish only current-page date metadata,
+not source documents. Handle missing member metadata on linked
+boards without breaking Table rendering.
+
+Ten focused Node suites pass, including real MongoDB tests for all four dates,
+source moves, assigned-only scope and delayed-observer access rechecks. Two
+Chromium scenarios pass: ordinary paging/search/edit/revocation and linked
+source edits, date ordering, badges and access revocation/restoration. Source
+inventory warnings remain advisory.
+
+This completes the remaining Table date-parity work tracked with
+[#935](https://github.com/wekan/wekan/issues/935). Its sidebar text, label,
+creator/assignee, date/recency, historical-movement and saved-combination
+controls, native keyboard controls and provider API have regression coverage
+in the preceding filter changes. Remove the completed item from TODO Later.
+Other TODO Later work, including Scrum and Sync, remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1c1b78d47">Load Table pages when cards are loaded lazily</a>. Thanks to neooleg and xet7.</summary>
+
+Add an authorized Table-page publication instead of relying on cards that the
+lazy board publication does not send. Search projected table metadata, sort
+and group the whole authorized result, then load 25 full card documents.
+Scope every query to the board and assigned-only permissions. Recheck access
+after scans, discard invalidated results, observe card/list/swimlane changes
+and retract pages on board-access changes. Keep page identity separate from
+other card publications. Place table cells inside their row elements.
+
+Eleven related Node suites pass, including real MongoDB coverage with 5,003
+cards, foreign/archived placements, assigned-only scope and pagination
+beyond the old window cap. Snapshot tests cover replacement, removed fields,
+revocation and cleanup. Five Chromium scenarios pass: the formerly failing
+label filter, title wrapping, sorting, grouping and a 62-card paging/search/
+edit/revocation flow. Source inventory warnings remain advisory. Document
+server scan cost and the remaining linked-source date-ordering gap under
+[#935](https://github.com/wekan/wekan/issues/935) in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c5fc4ff61">Use native controls for board filter choices</a>. Thanks to neooleg and xet7.</summary>
+
+Replace label/member/assignee/creator links with native checkboxes, preserving
+the label include/exclude/clear cycle through checked/indeterminate/unchecked
+states. Use labelled radio groups for due dates and creation/modification
+recency. Add an explicit unrestricted due-date choice; an already selected
+radio stays selected. Keep controls visible and expose keyboard focus.
+
+Fourteen Node suites pass, including real MongoDB saved-filter storage.
+Seven Chromium scenarios pass across keyboard/Space/arrow selection, mixed
+label states, saved restoration, date boundaries, label URL state and private
+saved-filter access checks. Update usage documentation and add one English
+label. Source inventory warnings remain advisory. The additional Table-view
+regression fails under lazy loading because that view has no card-window
+subscription; retain that concrete gap under
+[#935](https://github.com/wekan/wekan/issues/935) in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0b5ac1c43">Correct overdue and label searches across boards</a>. Thanks to GusevVictor, neooleg and xet7.</summary>
+
+Match labels with their owning board instead of treating copied/imported label
+IDs as globally unique. A red label on one board must not match a blue label
+with the same ID on another. Missing labels return no cards; numeric terms
+retain their card-number alternative. Compare overdue dates with the exact
+search-time instant, including earlier-today deadlines previously lost through
+date-only conversion to UTC midnight. Document global query syntax and scope.
+
+Four Node suites and four Chromium cases pass. The new browser regression
+reproduced the cross-board label mismatch before the fix and now covers color
+and name queries, recent overdue cards, future/undated exclusions, missing
+labels and private-board exclusion. Existing localized overdue and board-access
+regressions also pass. Source inventory warnings remain advisory. Complete the
+cross-board query check from [#935](https://github.com/wekan/wekan/issues/935);
+retain its explicit checkbox/radio UI requirement in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5904f077a">Register extensible card filters with saved state</a>. Thanks to neooleg and xet7.</summary>
+
+Give bundled extensions one registration API for compiled sidebar templates,
+reactive query selectors, board/global reset scope and versioned saved state.
+Use it for the existing creation/modification recency controls. Unregistering
+a provider resets it and removes its controls and query constraint. Keep old
+saved combinations compatible; validate all extension states before changing
+current selections and refuse missing providers or incompatible versions.
+Retain owner/board authorization and bounded JSON validation for saved choices.
+
+Fourteen focused Node suites pass, including real MongoDB saved-filter storage.
+Five Chromium cases pass across provider registration, recency controls and
+saved combinations: rendering, lazy card queries, clear/apply, unregister,
+incompatible versions, private ownership, permission revocation and invalid
+state. Document the trusted bundled-code API and callback contract. Source
+inventory warnings remain advisory. Complete provider registration from
+[#935](https://github.com/wekan/wekan/issues/935); keep the later cross-board
+workflow audit in TODO Later rather than closing the entire issue prematurely.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/16508a8fa">Save private board filter combinations</a>. Thanks to Creanimo, avatar1024, neooleg and xet7.</summary>
+
+Add named saved filters per account and board, surviving browser reloads and
+other devices. Capture every current sidebar filter, preserve no-value set
+choices, and recalculate relative dates when applying. Validate saved state
+and advanced expressions before replacing live selections. Save the same name
+atomically to replace it; delete a saved choice without clearing active filters.
+Keep the clear action last in the panel. Enforce ownership and current board
+access for methods and subscriptions, reject direct client writes, and clean
+saved choices when their board or owning account is normally removed.
+
+Thirteen Node suites pass, including real MongoDB concurrent-write and cleanup
+coverage. Three saved-filter Chromium cases verify save/reload/apply/replace/
+delete, owner isolation, rejected direct and unauthorized writes, subscription
+revocation, malformed state and invalid-expression preservation. The existing
+date-range browser regression also passes. Source inventory warnings remain
+advisory. Add English labels and usage documentation. Complete the saved-filter
+portion of [#935](https://github.com/wekan/wekan/issues/935), keeping full
+provider registration in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e40532b9f">Filter due dates in the previous week or next month</a>. Thanks to neooleg, Creanimo and xet7.</summary>
+
+Add the remaining previous-week and next-month due-date shortcuts requested
+in [#935](https://github.com/wekan/wekan/issues/935). Use the configured first
+weekday and complete local calendar months, including February and year
+rollover. Require actual dates, switch between options, and clear a shortcut
+by clicking it again. Refresh these active bounds every minute and release
+the shared clock subscription when switching away or clearing filters.
+
+Twelve Node suites and two Chromium cases pass. Cover every week start,
+month-end and year rollover, reactive clock refresh/cleanup, null dates,
+exact interval endpoints, switching/toggling, and the existing date-range
+picker. Source inventory warnings remain advisory. Document calendar
+semantics and retain saved combinations and provider registration in
+TODO Later. Add only English source labels.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c17305c2e">Filter cards by recorded historical movement dates</a>. Thanks to neooleg and xet7.</summary>
+
+Add a separate movement-history date picker with inclusive local calendar
+bounds, open endpoints, invalid-range rejection and explicit clearing. Match
+any recorded list/swimlane or incoming board move during the interval, even
+when a card moved again later. Search current readable, non-archived cards and
+only this board's activities; missing history is not guessed and foreign
+private-board events do not become searchable through a card's new location.
+
+Extract the shared authorized, reactive ID-only publisher used by both text
+and movement filters. Keep batched joins, lazy-window coverage, permission
+rechecks and cancellation cleanup. Twenty Node suites and three Chromium
+cases pass, including a 501-card/1,001-repeat history test, exact date bounds,
+foreign/inaccessible history, invalid input, live event insertion/deletion,
+clearing and the existing text-filter permission-revocation regression.
+Source inventory warnings remain advisory. Document the scope and finish the
+historical-movement portion of [#935](https://github.com/wekan/wekan/issues/935).
+Keep remaining due-date shortcuts, saved combinations and full provider
+registration in TODO Later. Add only the English source label.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0bf2dc27b">Search all card text from the filter sidebar</a>. Thanks to neooleg and xet7.</summary>
+
+Replace the sidebar's title-only input with an immediate, case-insensitive
+literal substring filter over titles, descriptions, checklist names/items and
+comments. Scan authorized cards in batches so matches outside lazy windows
+are found too. Publish only matching card IDs, constrain children to the board
+and allowed cards, and refresh on text, placement, archival, assignment and
+membership changes. Recheck board access after asynchronous reads and clean
+observers on cancellation. Combine matches with existing filter constraints.
+
+Eighteen Node suites pass, including a real 501-card MongoDB join test and
+publication tests for revocation, in-flight permission changes, invalid input
+and stopped subscriptions. Chromium verifies every text source, lazy loading,
+literal punctuation, live edits/deletions, foreign child scope, assigned-only
+access and full membership revocation. The date-range browser regression also
+passes. The standalone database uses Meteor polling; the multi-edit browser
+test allows sufficient total time while retaining each assertion's timeout.
+Source inventory warnings remain advisory. Complete this text-search portion
+of [#935](https://github.com/wekan/wekan/issues/935) and retain its remaining
+historical movement, saved combination and provider-interface work in
+TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/34ed467a4">Filter cards by relative creation and modification dates</a>. Thanks to neooleg and xet7.</summary>
+
+Add independent sidebar selectors for the last 24 hours, 7 days, 30 days and
+more than 30 days ago. Apply immediately, combine both fields with other
+filters, preserve choices across boards and refresh their shared clock every
+minute. Recent windows include their endpoints and exclude future dates;
+older dates use a strict cutoff. Missing and malformed dates do not match.
+Reset releases the clock subscription. Document elapsed-time semantics and
+add English labels without filling translations into all languages.
+
+Sixteen Node suites and two Chromium cases pass. Cover all presets, rejected
+input, both fields together, shared timer refresh/cleanup, persistence,
+clearing, missing/malformed/future dates, and the existing date-range picker.
+Source inventory warnings remain advisory. Complete the created/updated
+relative-date portion of [#935](https://github.com/wekan/wekan/issues/935);
+retain its other unfinished filter requirements in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5527f8503">Choose card date ranges without filter expressions</a>. Thanks to neooleg and xet7.</summary>
+
+Add sidebar date pickers for creation, modification, received, start, due, end
+and current-list entry dates. Include both selected local calendar days, allow
+open bounds and optionally include cards without the selected date. Combine
+ranges with other filters, preserve them across board navigation, and retain
+the last valid filter when a reversed interval is rejected. Clear the range
+individually or with all filters. Keep the native checkbox visible and labelled.
+
+Fifteen Node suites and the new Chromium sidebar case pass, covering all seven
+fields, open and inclusive bounds, missing dates, reversed input, clearing and
+reopening. The existing column-age browser regression also passes. Source
+inventory warnings remain advisory. Update the remaining scope of
+[#935](https://github.com/wekan/wekan/issues/935) in TODO Later; historical
+moves, combined text search and the remaining RFC controls are still unfinished.
+Only English source labels are added; translation into all languages is
+deferred.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/930c5c67d">Filter native card dates in Advanced Filter and rules</a>. Thanks to TiibCD and xet7.</summary>
+
+Add `@createdAt`, `@receivedAt`, `@startAt`, `@dueAt`, `@endAt` and
+`@listEnteredAt` to the shared advanced-filter parser. Compare actual date
+values with the existing calendar-day/time interval operators, combine them
+with custom fields and logical groups, and use `= none` for missing dates.
+Quote custom-field names beginning with `@` to retain their literal meaning.
+Reject invalid dates, unknown properties and regex comparisons. Add an English
+sidebar hint and document regional date parsing and client/server timezones.
+
+Six Node suites and three Chromium cases pass. Coverage includes every native
+date field, comparison operators, missing and malformed values, quoted custom
+fields, invalid-input fallback, and actual rule execution. Existing field
+identity and decimal boundary browser regressions also pass. The source audit
+has advisory warnings. This completes
+[#1915](https://github.com/wekan/wekan/issues/1915); remove its native-date gap
+from TODO Later. No cards are archived or deleted by these filters.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/800ec4e95">Recover legacy card column ages from recorded movement history</a>. Thanks to grasshide and xet7.</summary>
+
+Complete the historical portion of
+[#1499](https://github.com/wekan/wekan/issues/1499). The versioned background
+startup repair scans missing/null entry dates in card batches and streams each
+history without an event-count cutoff. Recover the latest consistent stay in
+the current board/list, including repeated moves and known cross-board entries.
+Keep missing, contradictory, ambiguous or incomplete evidence unknown and
+visible. Do not substitute creation or last-edit timestamps for move history.
+
+Conditional writes preserve a concurrent move's date and reject changed
+placement or edit timestamps. Interrupted writes are idempotent; unresolved
+concurrent changes keep the migration pending for the next startup. Persist
+restored, unknown, raced and pending counts in the repair status. Include
+archived cards and boards, and document the startup-repair opt-out.
+
+Six focused Node suites pass, including eleven new inference, startup and real
+MongoDB cases. Coverage includes more than one card batch, long histories,
+independent-client write races, retry after a lost reply and startup markers.
+Both list-age Chromium cases pass; the recovery case also passes after the
+final streaming change. The source audit has advisory warnings. Remove the
+completed historical-backfill item from TODO Later. Dates absent from the
+recorded history remain unrecoverable and visible by design.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0542a239f">Track column entry time and hide old cards in a selected list</a>. Thanks to grasshide and xet7.</summary>
+
+Record `listEnteredAt` on card creation and real board/list changes, in the
+same write as the move. Keep it stable across text edits, sorting, swimlane
+changes and failed conditional writes. Add a Filter sidebar control to hide
+cards older than N days in one chosen list. Combine it with existing filters
+and refresh the cutoff each minute. Other lists and unknown legacy dates stay
+visible; clearing the filter restores the cards without archiving them.
+
+Eleven Node suites, one full-app timestamp test and one Chromium case pass.
+Coverage includes date validation, filter combination and reset, timer cleanup,
+real moves, unrelated edits, rejected writes and keeping unknown ages visible.
+Add English labels and user documentation. The source audit has advisory
+warnings only. Historical move-activity backfill for
+[#1499](https://github.com/wekan/wekan/issues/1499) is covered by the recovery
+entry above.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c8e89bd58">Add card context and URL encoding to custom field String Templates</a>. Thanks to solunix and xet7.</summary>
+
+Resolve card, board, list and swimlane titles in String Template custom fields.
+Add a URL-encoding modifier for values used as query parameters, retain the
+existing JSON regex format and leave unknown or malformed tokens visible.
+Refresh minicards and open details when titles, placement or formatting change.
+Publish only the linked source card's list/swimlane display metadata, scoped
+by its authorized board. Add an English editor hint and usage documentation.
+
+Eight new Node cases and nineteen existing custom-field cases pass, along with
+six linked-card Node suites and three Chromium cases. Browser coverage includes
+live updates, encoded URLs, regex formatting, linked source context and refusal
+to expose private-board placement metadata. The source audit reports advisory
+warnings only. This completes [#3815](https://github.com/wekan/wekan/issues/3815),
+which concerns custom-field String Templates, not Rules email variables as the
+old TODO Later entry claimed. Remove that entry; the separate Rules variable
+and custom-field-value requests remain in the queue. Translation into every
+language remains outside this work queue.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/eb527dd13">Add duplicate card relationships and preserve Jira link direction</a>. Thanks to xet7.</summary>
+
+Add Duplicates and Is duplicated by to the existing dependency picker, directed
+board overlay and REST API. Preserve both types in History undo/redo and native
+board export/import. Map standard Jira Duplicate links in both directions,
+skipping self-links and targets outside the imported board. Duplicate relations
+do not merge cards or count as blockers in flow analytics.
+
+Two new Node cases, the ten-case flow analytics suite and existing importer
+checks pass, alongside eight full-app Jira mapping cases and three Chromium
+cases. Browser checks cover type editing, History, directed lines, Jira import,
+native ID remapping and REST self/cross-board rejection. Add English labels
+only; translating every language remains outside this work queue. The source
+audit has advisory warnings. The existing Jira JSON exporter still omits issue
+links; native WeKan export preserves them. Remove the completed relationship
+gap from TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/46d2039b8">Preflight the complete Scrum recovery batch before more writes</a>. Thanks to xet7.</summary>
+
+Inspect every saved target before advancing the next pending entity write.
+Accept mixed pending/applied targets only when their captured values and
+revisions match. Refuse already-visible conflicts in later targets before
+applying an otherwise valid earlier write. Keep per-write predicates and
+post-write confirmation because preflight is not an atomic snapshot.
+
+Forty Node/MongoDB cases, one full-app Meteor case and nine Chromium cases
+pass. A conflicting second card leaves the first card untouched and retains
+the checkpoint without timeline insertion; valid retry completes both cards.
+Browser coverage verifies partial compound undo still resumes. The source
+audit has advisory warnings. Same-operation worker serialization and
+cross-document atomicity remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/bf75fafdd">Match captured placement and content in Scrum restoration writes</a>. Thanks to xet7.</summary>
+
+A card moved after validation could still match a revision-only restoration
+write. Match captured Scrum values, board placement, list, swimlane and
+assignees in the write predicate. Preserve unrelated ordinary metadata such
+as title edits. Planning-record updates and deletes match all captured fields;
+missing legacy fields remain distinct from explicit null or zero values.
+
+Thirty-nine Node/MongoDB cases, one full-app Meteor case and nine Chromium
+cases pass. Moving a real card between validation and write without changing
+its Scrum revision refuses the restoration, preserves the checkpoint and
+creates no History event. Browser coverage verifies normal and interrupted
+undo/redo. This concurrent-change conflict is not an attributed attack, so no
+security-attempt event is emitted. The source audit has advisory warnings.
+Cross-document permissions and atomic writer coordination remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/62f5a4874">Confirm persisted Scrum targets before acknowledging recovery</a>. Thanks to xet7.</summary>
+
+Read back restored values and revisions after each entity write. Verify the
+complete target set again before restoration events and before finalization,
+with checkpoint ownership and source checks around reads. Missing, unapplied
+or changed targets and failed confirmation reads retain recovery evidence
+instead of trusting a successful adapter reply.
+
+Thirty-six Node/MongoDB cases, one full-app Meteor case and nine Chromium
+cases pass. The full-app case simulates success without a card write: the
+checkpoint remains and no restoration event or undone flag is saved. Retrying
+with real storage completes the same operation once. Normal and interrupted
+undo/redo remain covered. The source audit has advisory warnings. Batch
+readback is not a database snapshot; shared writer fencing and cross-document
+atomicity remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a0f84ac11">Verify revisions before acknowledging already-restored Scrum values</a>. Thanks to xet7.</summary>
+
+Matching target values alone could acknowledge an old recovery checkpoint
+after another writer returned to the same content at a newer revision. Require
+the exact original or expected post-write revision for unchanged, pending and
+applied steps. Cover Scrum metadata and planning records, reject invalid
+revision values, and verify before/after record identities before writes.
+
+Thirty-four Node/MongoDB cases and nine Chromium cases pass. Browser retries
+with identical content at a newer revision preserve the checkpoint, revision
+and History count; normal and interrupted undo/redo remain covered. The source
+audit has advisory warnings. Shared operation-level coordination, atomicity
+and distinguishing deletion from later create/delete cycles remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/eb91a68a5">Bind Scrum recovery ownership to its persisted checkpoint plan</a>. Thanks to xet7.</summary>
+
+Assign missing legacy operation IDs with a conditional update of the stored
+plan, then adopt the winning ID after readback. Concurrent workers no longer
+overwrite each other's identities; lost acknowledgements retain or confirm
+the same plan. Check ownership at entity writes and before timeline events.
+Match before/after values and revisions during finalization and cleanup so
+reusing an operation ID cannot authorize deletion of a replaced checkpoint.
+
+Twenty-six Node/MongoDB cases and eight Chromium cases pass. Independent
+clients verify one legacy upgrade and refused cleanup of changed evidence.
+Browser cases cover normal undo/redo, interrupted legacy recovery and
+superseded redo. The source audit has advisory warnings. Same-operation
+worker serialization and cross-document atomicity remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2bbc13456">Refuse invalidated Scrum redo recovery before replaying changes</a>. Thanks to xet7.</summary>
+
+A pending Scrum redo checkpoint could bypass normal redo selection after a
+newer ordinary edit superseded its source. Reject that source even when the
+retry reloads the already-invalidated row. Recheck source identity, immutable
+hash and superseded state before entity writes, restoration events and final
+cleanup. Preserve the checkpoint when recovery conflicts.
+
+Twenty Node cases and eight Chromium cases pass. A real ordinary card edit
+invalidates pending redo; repeated retries preserve card metadata, revision,
+undone state and recovery evidence without adding History. Valid undo/redo,
+compound recovery and checkpoint cleanup remain covered. The source audit has
+advisory warnings. Cross-document atomicity and operator resolution of already
+partially applied, superseded restores remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0818e22ad">Share coordinated History appends with Scrum restoration events</a>. Thanks to xet7.</summary>
+
+Route strict Scrum restoration recording through persistent writer admission
+and preserve its deterministic event ID in the schema-backed append binding.
+On migrated boards, restoration retries and ordinary edits share the same
+head. Confirm persisted events inside legacy admission so a verified lost
+insert acknowledgement releases its token; failed confirmation retains it.
+Reject closed admission and missing migrated heads without legacy fallback.
+
+Three Scrum History Node suites (18 cases) and five full-app Meteor cases pass.
+Eight concurrent retries create one restoration event alongside five ordinary
+edits; all seven rows, including the initial legacy event, form one chain.
+Changed retry contents and missing heads are refused. The source audit has
+advisory warnings. No UI flow changes. Restored-entity mutations, source-row
+undo/redo flags and shared multi-row Sync ownership remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/98359d778">Resume explicit offline History migration with verified chain heads</a>. Thanks to xet7.</summary>
+
+Extend the History maintenance command with an explicit offline migration for
+one board or global scope. Share the server migration routine, drain registered
+writers and retain the same migration UUID through interruption and retry.
+Compare the actual validated chain with the stored head before permanently
+switching writers; refuse stale heads, pending appends and forked History.
+Never repair or reset existing rows or heads implicitly.
+
+Twenty-four Node/MongoDB cases and four full-app Meteor cases pass. Command
+subprocesses exercise offline confirmation, token retirement, stale-head
+refusal, resumption, coordinated append and empty global History. Invalid
+chains retain migration ownership and their original evidence. The source
+audit has advisory warnings. No browser flow changes. Automatic rollout,
+missing-row recovery, undo/redo coordination and multi-row Sync ownership
+remain unfinished; all database writers must stay stopped during maintenance.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/09b51d75a">Recover uncertain History writer tokens with an offline command</a>. Thanks to xet7.</summary>
+
+Inspect private History admission without creating or changing gates. Require
+all writers to be stopped before retiring one exact uncertain token. Match
+migration ownership, preserve other tokens, compare the entire stored gate
+and confirm exact readback. Refuse concurrent changes or incompatible modes;
+reconcile lost acknowledgements without replaying History writes.
+
+Twenty-two History Node/MongoDB cases pass. The command runs in separate
+processes against actual MongoDB after an insert with a lost reply; History
+stays unchanged and subsequent bootstrap uses the persisted row. Negative
+cases reject missing offline confirmation, wrong ownership and concurrent
+changes. The source audit has advisory warnings. No browser action is added.
+Online recovery, missing-row replay and automatic migration remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1442809b4">Coordinate ordinary History writers after explicit board migration</a>. Thanks to xet7.</summary>
+
+Register ordinary History writes with persistent per-board admission. Keep
+existing boards on their legacy path until explicit migration drains writers,
+validates the existing chain and switches permanently to coordinated appends.
+Require a caller-provided deployment guard to exclude older server versions
+and other writers. Validate input before admission; never fall back to legacy
+insertion when a migrated head disappears. Preserve best-effort error handling.
+
+Eighteen History Node/MongoDB cases, four existing History Node suites, four
+full-app Meteor cases and two Chromium cases pass. Ten concurrent ordinary
+writes form one chain. Members/admins cannot access any of the nineteen
+private recovery collections. The source audit reports advisory warnings.
+Automatic rollout, retained-token and failed-record recovery, shared redo
+coordination and multi-row Sync reservations remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/54a4ef069">Drain History writers before granting persistent migration ownership</a>. Thanks to xet7.</summary>
+
+Register participating legacy writers with exact tokens and close admission
+when migration begins. Let existing writers finish before granting exclusive
+bootstrap access; switch to coordinated writes only after head verification.
+Keep uncertain writer tokens and migration ownership without expiry, reconcile
+lost replies, and refuse takeover by a different migration ID.
+
+Eighteen History Node/MongoDB cases pass, including six new admission cases.
+Separate clients finish an old row, bootstrap its actual head and append via
+the coordinated path. The source audit has advisory warnings. No UI flow
+changes; server/ordinary-writer binding, retained-token recovery and
+mixed-version rollout handling remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e56dac26a">Bind coordinated History appends to private heads and schema validation</a>. Thanks to xet7.</summary>
+
+Register private board History heads with a unique index and denied browser
+writes. Validate complete History defaults before reserving a pending row,
+then use ordinary schema-backed insertion without changing timestamps or
+whitespace. Missing heads require explicit bootstrap; append cannot silently
+recreate a deleted head from stale state.
+
+Twelve Node/MongoDB cases, one full-app Meteor case and two Chromium cases pass.
+Six concurrent real History writes form one chain; invalid schema values leave
+no pending reservation. Members/admins cannot write or read any of the 18
+private recovery collections. The source audit has advisory warnings.
+Ordinary writer switching, bootstrap exclusion and redo coordination remain
+unfinished; no automatic migration is enabled.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5090e5783">Validate History ancestry before initializing a coordinated head</a>. Thanks to xet7.</summary>
+
+Scan existing History in bounded batches and validate hashes, unique successors
+and predecessor reachability. Select the actual chain head independently of
+timestamps and retain unhashed legacy rows unchanged. Refuse damaged or partial
+scans; close cursors on failure and confirm head insertion by exact readback.
+Existing heads are retained instead of reset.
+
+Twelve append/bootstrap Node/MongoDB cases pass, including a 300-row chain with
+reversed timestamps and a new-connection append. Forks, missing predecessors,
+limits, ownership loss and lost replies are covered. The source audit has
+advisory warnings. No UI flow changes; production writer exclusion, ordinary
+writer binding and multi-row Sync ownership remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/355fd742c">Serialize History appends through a durable recoverable head</a>. Thanks to xet7.</summary>
+
+Reserve an exact pending History row with conditional head replacement before
+insertion. Require readback before head advancement; other appenders can finish
+an interrupted reservation. Protect pending payloads with checksums and reject
+conflicting retries or damaged evidence without dropping the pending row.
+No expiring lease authorizes a second successor.
+
+Six Node/MongoDB cases pass. Four independent clients append sixteen equal-time
+rows after an interrupted predecessor; all seventeen form one chain and retry
+adds no duplicate. Lost acknowledgements and ownership loss are covered. The
+source audit has advisory warnings. No UI flow changes; existing-chain
+bootstrap, ordinary writer binding and multi-row Sync ownership remain pending.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/978beefe8">Bind stored archive execution to durable effects and History ownership</a>. Thanks to xet7.</summary>
+
+Add an internal runner using private command/effect/receipt storage, real Cards,
+History and Activities, and default saved-activity delivery. Preserve current
+configuration, access, feature-policy and lease checks around every stage.
+Require an explicit board History reservation with a captured head and redo
+rows; missing or lost ownership refuses execution before effect preparation.
+
+Twenty-six Node/MongoDB cases and one full-app Meteor case pass. The full-app
+case resumes interrupted child delivery through the default delivery stage,
+keeps later children outside the saved cascade and reuses exact receipts.
+Its History reservation is controlled: shared ordinary-writer coordination
+and manual/cron activation remain unfinished. The source audit has advisory
+warnings. No UI flow changes.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/840711a6e">Register private archive recovery storage and guarded capture</a>. Thanks to xet7.</summary>
+
+Register private archive commands, effect plans and receipts with recovery
+indexes and denied browser writes. Capture real matched archive rules under
+the caller's lease/scope guard. Recheck current rule/action configuration,
+actor access and every saved descendant's parent/list identity on replay.
+Later children do not replace the saved cascade; capture never mutates cards.
+
+Six capture unit cases, one full-app Meteor case and two Chromium cases pass.
+Browser tests deny member/admin writes and exposure for all 17 private Sync
+collections. The source audit completes with advisory warnings. Mutation and
+production effect/delivery binding remain unfinished; no automatic job uses
+this capture entry point yet.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/96b9bb689">Bind archive activities to real collection hooks and verify replay</a>. Thanks to xet7.</summary>
+
+Restrict cascade activity access to saved event IDs and exact payloads. Preserve
+captured actors/timestamps while deferring ordinary rules and notifications to
+the separately acknowledged delivery stage. Expose the shared archive History
+step conversion for this validated collection adapter.
+
+All 25 archive Node/MongoDB cases and one full-app Meteor case pass. The
+full-app case uses real Cards, ChangeHistory and Activities, resumes interrupted
+child
+delivery without duplicate events, and confirms ordinary restore recording.
+The source audit completes with advisory warnings. No UI flow changes;
+production delivery binding and shared History coordination remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/85edeb0ec">Persist archive History and activity plans before replay</a>. Thanks to xet7.</summary>
+
+Capture bounded cascade-wide History and activity plans with stable effect IDs,
+names, timestamps and a validated cross-card History chain. Bind the stored
+payload to its archive command and reconcile insertion by exact readback.
+Preflight every plan and required adapter before card access; recheck live
+feature policy and require exact delivery receipts before advancing parents.
+
+All 24 archive Node/MongoDB cases pass, including seven new effect-plan cases.
+Interrupted child delivery resumes on a fresh connection without repeated card
+writes, History rows or activity events. The source audit has advisory warnings.
+No UI flow changes; production collection/delivery binding, shared History
+coordination and job activation remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3e8650057">Bind saved archive cascades to validated Cards writes</a>. Thanks to xet7.</summary>
+
+Restrict card reads and writes to the saved archive command's exact predicates
+and modifiers. Use its original actor and ordinary schema/business hooks,
+deferring only the owning card's archive activity and History recording.
+Preserve unrelated hooks and subsequent ordinary recording after interruption.
+
+Twelve Node cases and two full-app Meteor cases pass. The new full-app case
+archives a real parent/child pair, resumes after interrupted child effects,
+then verifies ordinary restore activity and lifecycle History under its actor.
+The source audit completes with advisory warnings. No UI flow changes; saved
+History/activity plans and production rule-stage activation remain pending.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2684c6fdd">Reconcile stored archive cascades with conditional writes and effect receipts</a>. Thanks to xet7.</summary>
+
+Apply saved archive/restore descendants before their parent using exact state
+predicates. Preserve captured archive timestamps and restore's existing time.
+Preflight all pending cards and required effects before writes. Confirm each
+card's durable effects and receipt before proceeding; a matching card alone
+never proves activity delivery. Reject malformed or non-prefix receipts.
+
+Eight execution unit cases and one real MongoDB case pass, alongside the seven
+capture cases. Fresh-connection replay after interrupted child effects avoids
+repeated writes and finishes the child before the parent. The source audit
+completes with advisory warnings. This internal executor has no UI entry point;
+production card hooks and saved History/activity integration remain pending.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8a0475faa">Capture archive rule cascades before card mutations</a>. Thanks to xet7.</summary>
+
+Freeze archive/unarchive descendants before execution, preserving ordinary
+root no-ops and child-before-parent order. Bind bounded snapshots and a single
+timestamp to the saved rule invocation. Validate every captured card's scope,
+require per-card authorization and reject cycles, duplicate IDs and corruption.
+Unique insertion and readback reconcile competing builders and lost replies.
+
+Seven Node/MongoDB cases pass, including fresh-connection replay after live
+children change. The source audit completes with advisory warnings. This
+internal helper has no UI or card-writing entry point; production registration,
+conditional mutations and durable History/activity receipts remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/778e9ed95">Show rule email delivery reports in administrator Recovery</a>. Thanks to xet7.</summary>
+
+Add an administrator table with literal ID search, delivery-state filters,
+ten-row pages and refresh. Display attempt identifiers and timestamps without
+mail bodies or recipient addresses. Ignore stale callbacks and responses after
+navigation; show a generic error when the report cannot be loaded.
+
+Four Node cases and two Chromium cases pass, covering access control, private
+metadata, stale responses and rendered search/filter/page/refresh controls.
+The source audit completes with advisory warnings. Only English source labels
+are added. Unconfirmed attempts may still be running; operator resolution and
+manual/cron activation remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/cb8c68c54">Expose administrator metadata reports for stored rule email attempts</a>. Thanks to xet7.</summary>
+
+Add a rate-limited administrator report with ten-row pages, literal ID search,
+state filters and last-page clamping. Read only attempt metadata and return
+validated identifiers/timestamps, never message bodies or recipient addresses.
+Recheck administrator access after reads and hide backend exception details.
+Unconfirmed status does not distinguish active from interrupted attempts.
+
+Four Node/MongoDB cases and one Chromium DDP case pass, covering malformed rows,
+query limits, access revocation, member denial, private-field exclusion and
+pagination. The source audit completes with advisory warnings. The Admin Panel
+view, operator resolution and automatic job integration remain TODO; this
+backend exposes no retry, discard or acknowledgement mutation.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ab81fcede">Connect durable email receipts through stored rule and activity delivery</a>. Thanks to xet7.</summary>
+
+Install the stored email adapter in the rule coordinator and use stored rules
+by default in saved-activity delivery. Map frozen invocation IDs to their plan
+indices and acknowledge the rule stage only after exact durable receipts.
+Unsupported pending actions still fail preflight before the first email; no
+ordinary action runner is used as a fallback.
+
+Twenty-four Node/MongoDB cases and two full-app cases pass. Real loopback SMTP
+covers the full saved-activity/rule path with watcher notifications disabled,
+no resend on completed replay, no aggregate receipt for uncertain or partial
+SMTP acceptance, and no send when another action is unsupported. The source
+audit completes with advisory warnings. Other action adapters, shared History
+coordination, operator recovery and manual/cron activation remain TODO.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5c2b9c160">Verify stored rule email through real SMTP acceptance and interruption</a>. Thanks to xet7.</summary>
+
+Exercise the production stored-rule entry point, private database records,
+shared SMTP slots and Meteor Email transport against a loopback TCP server.
+Verify captured message content and persisted sent state without a second
+connection on replay. Close the socket after DATA to prove uncertain attempts
+remain retained; reject one of multiple recipients to prove partial acceptance
+cannot complete the command or cause an automatic resend.
+
+Both full-app cases pass, including existing preparation/access/receipt checks.
+The source audit completes with advisory warnings. This verifies the local
+network transport path, not external-provider interoperability. Operator
+resolution of uncertain sends and manual/cron worker integration remain TODO.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0dc51068a">Bind stored rule email dispatch to private attempts and shared SMTP slots</a>. Thanks to xet7.</summary>
+
+Add an explicit internal dispatch entry point using private indexed attempt
+storage and shared cancellable SMTP capacity. Recheck actor/policy/activity and
+scope, exact rule/action configuration, resolved recipient/sender and disabled
+matching local accounts before sending. Reuse sent receipts and refuse
+uncertain attempts without automatic resend. External addresses remain valid.
+
+Twenty focused Node/MongoDB/native-composer cases, one full-app case and two
+Chromium cases pass. App coverage exercises real storage and slot ownership
+with controlled Email.sendAsync responses, changed configuration, mixed-case
+disabled recipients, sent replay and uncertain replay. Browser checks deny
+member/admin access to fourteen private collections. The source audit completes
+with advisory warnings. Real network delivery, operator recovery, scheduled
+worker and manual/cron Sync integration remain TODO.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/43d73ed90">Persist rule email attempts and refuse ambiguous automatic replay</a>. Thanks to xet7.</summary>
+
+Add internal dispatch with a validated immutable command, native recipient
+envelope and unique sending attempt read back before transport. Require full
+acceptance and exact conditional completion readback before returning the
+invocation receipt. Reuse confirmed sent state and retain uncertain attempts
+without automatic resend. Never copy raw SMTP errors into attempt metadata.
+
+Twenty Node/MongoDB/native-composer cases pass, including lost replies, false
+write acknowledgements, partial acceptance, ownership loss, competing attempts
+and fresh-connection reuse of both sent and uncertain state. The source audit
+completes with advisory warnings. SMTP responses are scripted, not live network
+delivery. Production storage/sender binding, cancellation/capacity integration,
+operator recovery and manual/cron activation remain TODO.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2e32025c3">Verify rule email acceptance against the native transport envelope</a>. Thanks to xet7.</summary>
+
+Add internal helpers using Meteor Email's native MailComposer to derive the
+intended envelope recipients. Require acceptance of every intended address and
+reject missing results, partial acceptance, rejections or unexpected addresses.
+Preserve local-part case and reject empty or oversized recipient sets.
+
+Five tests pass, including the installed native composer with named addresses,
+quoted commas, groups, duplicates and internationalized domains. The source
+audit completes with advisory warnings. Transport results are controlled test
+inputs; no SMTP, browser or database flow runs here. Durable send-attempt state,
+ambiguous-send recovery, operator controls and worker integration remain TODO.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/319173291">Capture stored rule mail through shared variable and localization preparation</a>. Thanks to xet7.</summary>
+
+Use shared ordinary-rule preparation for token substitution, recipient language
+and the card title/description/link footer. Bind final localized transport
+fields to immutable commands in a private indexed collection without TTL.
+Capture and replay check the saved activity, live policy, actor permission and
+current card/list scope. Omit absent HTML to prevent BSON null conversion.
+
+Twenty focused Node/MongoDB cases, 28 rule Node suites, one full-app case and
+two Chromium cases pass. The app test uses actual variable/localization code,
+verifies unchanged stored mail after card/action edits and forbids SMTP calls.
+Browser checks deny member/admin access to thirteen private collections. The
+source audit completes with advisory warnings. Durable sending, send-time
+recipient/configuration checks and operator recovery remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/61969464b">Persist immutable prepared rule email commands with exact readback</a>. Thanks to xet7.</summary>
+
+Add an internal storage primitive for fully prepared email transport fields.
+Bind each command to its complete rule plan, invocation index, activity hash
+and actor/board/card scope. Reuse the first stored recipient and content on
+replay; verify exact shape and checksum, restrict transport options and bound
+header lengths and the mail payload. Reconcile lost replies and competing
+builders through stored readback under the caller's live ownership guard.
+
+Twenty-two Node/MongoDB cases pass, including seven command cases for identity,
+corruption, false/lost acknowledgements, ownership loss, invalid payloads,
+concurrent preparation and reuse through a fresh connection. The source audit
+completes with advisory warnings. Preparation callbacks are controlled test
+adapters; no SMTP or browser flow runs here. Actual rule-variable preparation,
+private production storage and durable dispatch remain TODO. Command storage
+alone is not a sending or rule-completion receipt.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a48524ecf">Separate localized email preparation from transport for saved rule commands</a>. Thanks to xet7.</summary>
+
+Expose preparation of final transport fields without sending mail. Ordinary
+sendEmail uses the same path, retaining recipient/site language resolution,
+catalog loading, literal bodies, HTML, sender and optional Reply-To. Prepared
+strings remain unchanged by subsequent language or sender configuration edits.
+
+Twelve focused cases pass, including six new preparation cases and existing
+rule failure coverage. The broader email run has thirteen suites with no
+failures, but 42 integration cases are skipped without database/service setup.
+The source audit completes with advisory warnings. No SMTP or browser run was
+performed. Durable rule-email command storage and dispatch remain TODO; the
+user-grouped notification outbox is not an explicit-address rule-mail adapter.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/230225952">Bind saved Sync rule execution to private receipts and live scope guards</a>. Thanks to xet7.</summary>
+
+Add an internal server entry point using actual saved rule selection and a
+private indexed receipt collection without TTL. Share exact activity, policy,
+actor and board/list/card access checks between capture and execution, including
+completed receipt reads. Require explicit adapters for pending actions and
+permit saved empty selections to complete without action dispatch.
+
+Fifteen Node/MongoDB cases, one full-app case and two Chromium cases pass.
+Coverage includes unsupported adapters, false acknowledgements, stored replay,
+revoked access and denied member/admin writes to twelve private collections.
+The source audit completes with advisory warnings. The full-app action adapter
+is scripted; durable card mutations, movement scope transitions and manual/cron
+activation remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d668d2b41">Coordinate saved rule execution with ordered durable checkpoints</a>. Thanks to xet7.</summary>
+
+Add an internal coordinator for immutable rule plans. Validate all checkpoints
+and required action adapters before dispatch. Require exact invocation receipts,
+bind checkpoints to the whole plan checksum and acknowledge the stage only
+after ordered completion. Preserve explicit empty/missing-action receipts,
+reconcile lost insert replies and reject corrupt or non-prefix evidence.
+
+Fifteen Node/MongoDB cases pass, including adapter failure, false receipts,
+lease loss, input isolation and resume through a fresh database connection.
+The source audit completes with advisory warnings. Action tests use scripted
+adapters, not actual card mutations or external delivery. Durable command and
+mutation adapters, production storage and manual/cron integration remain TODO;
+this coordinator must not wrap ordinary performAction as if it were durable.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b5d7910b7">Propagate rule email failures before acknowledging scheduled execution</a>. Thanks to xet7.</summary>
+
+Propagate recipient lookup and email delivery errors from the rule action
+runner. Subsequent matched actions stop on failure, and the scheduled scanner
+no longer marks a failed email slot successful. Other scheduled triggers still
+run through the scanner's existing per-trigger error boundary.
+
+Six controlled-adapter tests run the actual rule and scheduler code, covering
+localized and fallback mail, delayed completion, rejection, recipient lookup,
+card context and failed-slot acknowledgement. All 28 rule Node suites pass;
+the source audit completes with advisory warnings. No real SMTP, browser or
+database integration was exercised in this batch. This change does not provide
+exactly-once email delivery or durable rule replay after a process restart.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/569c2c61b">Wait for rule date, label and linked-card writes before later actions</a>. Thanks to xet7.</summary>
+
+Await initial, updated, removed and relative date writes, label changes and
+linked-card creation in the ordinary rule action runner. A later matched rule
+now waits for these writes to finish; rejection stops the remaining rules.
+Initial-date errors are logged and propagated instead of silently succeeding.
+
+Forty tests execute the actual action and rule-loop code with controlled
+Promises across twenty paths, covering delayed completion and write rejection.
+All forty fail against the previous implementation. All 27 rule Node suites
+pass after repairing a VM test loader for the existing write-result guard.
+The source audit completes with advisory warnings. These checks use controlled
+model adapters; no new browser or database integration run was performed.
+Durable command receipts and restart replay remain separate unfinished work.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d2c73b422">Capture saved Sync rule selections using actual matching and live scope checks</a>. Thanks to xet7.</summary>
+
+Bind internal rule-plan capture to the existing matching helper and raw action
+definitions. Register a private indexed collection without TTL or client write
+access. Check the exact saved activity, live policy, enabled actor, board write
+permission, assigned-only restrictions and current card/list scope before
+preparation and readback. Reuse stored selections when rules later change.
+
+Thirteen Node/MongoDB cases, one full-app matching case and two Chromium cases
+pass. Coverage includes frozen empty and nonempty selections, revoked actors,
+moved cards, changed activities, unchanged cards/activity counts and denied
+member/admin access to eleven private recovery collections. The source audit
+completes with advisory warnings. Capture performs no rule actions; durable
+command preparation/execution, shared History coordination and manual/cron
+activation remain TODO.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c7f30bfd4">Preserve immutable rule selections for saved Sync activities</a>. Thanks to xet7.</summary>
+
+Add an internal rule selection plan with frozen rule order, action definitions,
+duplicate invocation identities and explicit missing-action or empty results.
+Bind each plan to its activity hash, actor, scope and effect identity. Validate
+saved checksums and bound preparation to 1,000 invocations and 14 MiB using
+incremental size checks. Lost insertion replies and concurrent builders reuse
+the first valid persisted plan instead of choosing new rules on replay.
+
+Thirteen Node/MongoDB cases pass, including six new selection/persistence cases
+for immutable ordering, absent actions, malformed/oversized inputs, changed
+identity, corruption, false/lost acknowledgements and concurrent first writes.
+The source audit completes with advisory warnings. This module does not execute
+actions or acknowledge their effects. Production matching, target/variable/date
+resolution, live permission checks and durable action receipts remain TODO.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/cc9a568c7">Coordinate saved Sync delivery through exact stage receipts</a>. Thanks to xet7.</summary>
+
+Add an internal activity delivery coordinator requiring rules, notification and
+webhook receipts before acknowledging the saved effect. Validate all required
+adapters before effects, isolate captured activity/policy inputs and recheck
+ownership and live policy around every stage. Disabled notifications still
+require the rules receipt; replay delegates to durable stage reconciliation.
+
+Nineteen Node cases pass, including seven new coordinator/binding cases for
+missing adapters, invalid scope, incorrect receipts, policy/access changes,
+interrupted replay and production adapter selection. The source audit completes
+with advisory warnings. Tests use scripted adapters; no new browser, full-app
+rule execution or external webhook delivery was exercised. Durable rules,
+shared History-chain coordination and manual/cron activation remain TODO.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f1e572db5">Clean cancelled activity payloads and retain searchable recovery receipts</a>. Thanks to xet7.</summary>
+
+Production cancellation now compacts its snapshot and rendered plan after
+confirming the terminal control. Interrupted cleanup is retried by the existing
+bounded activity recovery scan under the same delivery reservation. Once the
+intent is compacted, it leaves the pending scan. Shared receipt validation
+rejects cancelled capture/completion replays without recreating their payloads.
+
+Recovery searches pending and compact cancelled metadata and keeps cancelled
+rows visible with disabled actions, without fetching old activity or plan
+content. Twenty-eight Node/MongoDB cases, one full-app Meteor case and three
+Chromium scenarios pass, covering immediate and recovery-pass cleanup, orphan
+receipts, payload removal, report visibility, missing controls and replay
+rejection. The source audit completes with advisory warnings. Invalid or
+mismatched evidence remains for investigation; pending and paused work is not
+automatically expired. Broader saved Sync effects remain in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8814dbf1f">Prepare cancellation payload compaction with permanent receipts</a>. Thanks to xet7.</summary>
+
+Add an internal compactor that requires a valid terminal cancellation and the
+delivery reservation. Replace the plan with a permanent unique receipt before
+removing the intent snapshot. An absent plan receives a tombstone too, blocking
+late first writers. Retain only identifying metadata and checksums; preserve the
+cancellation control and never recreate an orphan's original activity.
+
+Twenty-five Node/MongoDB cases pass, including five new compaction cases for
+payload removal, stale inserts, missing plans, corruption, false and lost write
+acknowledgements, interrupted cleanup and changed controls. The source audit
+completes with advisory warnings. Production invocation, bounded background
+scheduling and compact-receipt consumers still need integration and app/browser
+verification; cancellation currently retains payloads in production.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b590d3d76">Cancel remaining activity delivery without reopening old requests</a>. Thanks to xet7.</summary>
+
+Add a confirmed Cancel delivery action for enabled administrators, including
+notifications whose original activity is missing. Cancellation shares the
+delivery reservation, uses the displayed revision and retains a permanent
+terminal control record. Neither a delayed nor a new Resume request can reopen
+it. Repeating the identical cancellation is safe. Recovery skips cancelled
+work and keeps its status visible with disabled controls.
+
+Twenty-three Node/MongoDB cases, one full-app Meteor case and three Chromium
+scenarios pass. Coverage includes administrator revocation, stale/repeated
+requests, lost write replies, confirmation dismissal, terminal delivery denial
+and cancelling an orphan without recreating its activity. The source audit
+completes with advisory warnings. Existing tray notifications and queued SMTP
+mail are not recalled. Pending snapshots and rendered plans remain retained;
+cleanup must preserve cancellation and delivery receipts and remains TODO.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7fef4f4cd">Pause and resume activity notification delivery from Recovery</a>. Thanks to xet7.</summary>
+
+Enabled administrators can pause or resume pending activity notification work.
+The report displays the stored hold, disables retry while paused and exposes
+only the revision needed for conditional control requests. A newer decision
+causes a conflict and refresh instead of being silently overwritten. Methods
+recheck current administrator access inside the shared delivery reservation,
+rate-limit requests and return safe errors without private storage details.
+
+Twenty Node/MongoDB cases and three Chromium scenarios pass, including
+non-admin denial, held-state reload, stale-request rejection, manual delivery
+and completed replay. The restart scenario pauses through the actual method,
+stops and restarts WeKan against the same database, observes the persisted hold
+across automatic scans, and resumes through the UI to automatic completion.
+The source audit completes with advisory warnings. Cancellation, orphan
+resolution and unresolved-payload retention remain in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/61bca9bb4">Honor stored activity holds in immediate and recovered delivery</a>. Thanks to xet7.</summary>
+
+Register a private activity notification control collection and consult it
+before preparing and delivering local effects. Manual and automatic recovery
+respect the same stored hold. Background scanning counts held work as skipped
+and continues to later intents; malformed control state fails closed. Holds
+retain pending evidence and do not cancel mail already in the SMTP outbox.
+
+Twenty-three Node/MongoDB cases and one full-app Meteor case pass. The app test
+verifies that both delivery entry points refuse a stored hold, the scanner
+retains it, and resuming reuses the original plan. One Chromium case verifies
+member/admin DDP write denial across nine private notification collections.
+The source audit completes with advisory warnings. Admin pause/resume methods,
+report status, UI controls and restart verification remain in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/614ece539">Prepare versioned storage for activity notification holds</a>. Thanks to xet7.</summary>
+
+Add an internal pause/resume storage primitive using the activity delivery
+reservation and an expected revision. One permanent control row records the
+latest decision. An identical retry reuses its result; stale requests cannot
+undo later changes. Exact readback confirms uncertain writes. Missing or
+completed intents, malformed controls and revoked administrator access fail.
+
+Six Node/MongoDB tests pass, covering persistence, replay, false and lost write
+acknowledgements, revocation, concurrent requests and delayed stale writers.
+The source audit completes with advisory fingerprint warnings. This primitive
+is not active in production delivery or the UI yet; the remaining integration
+and browser verification are recorded in TODO Later and the Recovery guide.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/169a19817">Inspect pending activity notifications and retry delivery from Recovery</a>. Thanks to xet7.</summary>
+
+Show ten pending activity summaries per page with literal ID search. Distinguish
+missing or changed activities, active reservations and inconsistent plan
+metadata without returning activity snapshots, recipients or email payloads.
+Enabled administrators can retry pending delivery using the same reservations,
+current permission checks and permanent receipt IDs as automatic recovery.
+Repeated requests do not duplicate local queue writes or recreate activities.
+
+Seven focused report/method cases and sixteen related Node/MongoDB cases pass.
+One full-app Meteor case verifies reservation-time permission revocation and
+recovery; two Chromium cases verify pagination, privacy, non-admin denial,
+recipient rejection, successful manual retry and completed-request replay.
+The browser tests caught and verified a missing server-entry import. The
+source audit completes with advisory fingerprint warnings. Holds, cancellation,
+orphan resolution and unresolved-payload retention remain in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/694807fc4">Remove completed notification plan payloads while retaining replay keys</a>. Thanks to xet7.</summary>
+
+Compact a notification plan immediately after its matching intent acknowledges
+local delivery. Retain only the unique plan ID, activity hash, checksum and
+compaction version. In-place replacement prevents a delayed writer from
+recreating rendered content. Do not remove the SMTP outbox's unsent payload.
+
+A separate sweep examines at most 100 IDs, one plan at a time under its shared
+reservation, to finish cleanup interrupted after acknowledgement. The default
+interval is 60 seconds; ACTIVITY_NOTIFICATION_PLAN_CLEANUP_INTERVAL_MS accepts
+1000 to 86400000 milliseconds. Advance past failed/busy or malformed records.
+
+Require the exact completed intent, dispatch identity and valid plan checksum.
+Conditional replacement preserves concurrently changed payloads. Read back
+uncertain acknowledgements. Pending plans, orphans, mismatched completion
+records and damaged content remain intact. Completed activity deletion does
+not prevent cleanup. Permanent receipt counts are not capped and have no TTL.
+
+Twenty Node/MongoDB cases, three additional Node suites, four Meteor cases
+and thirteen Chromium scenarios pass. Tests cover permanent replay keys,
+uncertain/false acknowledgements, ownership loss, changed payloads, bounded
+scan progress and scheduled cleanup that retains unfinished work. Actual
+local SMTP delivery still passes. The source audit passes with advisory
+dependency fingerprint warnings. FerretDB was not exercised.
+
+Operator/orphan controls and unresolved-payload retention remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/34c6c31a4">Resume pending activity notifications under shared reservations</a>. Thanks to xet7.</summary>
+
+Start bounded recovery scans after application startup. Select at most 100
+pending IDs, load one private payload at a time, and advance past failed,
+busy or orphaned rows. Coalesce overlapping local scans. The default interval
+is one second; ACTIVITY_NOTIFICATION_RECOVERY_INTERVAL_MS accepts integer
+values from 1000 to 60000. Reschedule failed scans without discarding evidence.
+
+Immediate delivery and recovery use the same private per-intent reservation.
+Renew every 15 seconds, reclaim crashed owners after 60 seconds and check
+ownership through preparation, service writes and completion. Conditional
+cleanup cannot remove a successor's reservation. These leases coordinate
+workers; immutable service identities reconcile uncertain local writes.
+
+Use the saved plan unchanged, or prepare the first plan from the exact
+persisted activity when a crash preceded planning. Missing/changed activities
+and revoked access remain pending. Do not recreate activities or rerun their
+rule/webhook hooks. Completed intents do not cause another delivery.
+
+Fourteen Node/MongoDB cases, three additional Node suites, four full-app
+Meteor cases and twelve Chromium scenarios pass. Browser tests observe
+scheduled local SMTP delivery with and without a saved plan, retain an orphan,
+and deny private-lease writes. The source audit passes with advisory
+dependency fingerprint warnings. FerretDB was not exercised.
+
+Operator/orphan handling and payload retention remain open. This acknowledges
+local tray/email enqueue, not SMTP acceptance or the complete Sync lifecycle.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4c762f407">Persist activity notification recipients and rendered email plans</a>. Thanks to xet7.</summary>
+
+Save a checksummed private plan before the first local delivery. Bind the
+exact activity and dispatch actor, recipients, tray choices and rendered email
+jobs. Retry with the stored content and language instead of reading changed
+templates or selecting new watchers. Limit plans to 10,000 recipients and
+14 MiB; check size during preparation before delivering any prefix.
+
+Recheck current accounts, board membership, watch/mute and assigned-only
+scope, and channel preferences before each service write. Initial preparation
+excludes already ineligible channels; later revocation retains pending work.
+Use stable tray receipts and email job identities and require exact return
+values before acknowledging the intent. Private plan storage denies direct
+member/admin DDP writes and is not published.
+
+Ten real MongoDB cases, three Node suites, three full-app Meteor cases and
+ten Chromium scenarios pass. Tests cover lost writes, changed preparation,
+corrupted plans, invalid payloads, false receipts, revoked users and a crash
+between actual tray insertion and email enqueue. Browser tests inspect saved
+plans, deliver real local SMTP mail and reject private-collection writes.
+The source audit passes with advisory dependency fingerprint warnings.
+
+Automatic recovery, cross-process ownership, operator handling and retention
+remain unfinished. Plans currently keep rendered payloads after enqueue.
+These acknowledgements are local writes, not SMTP acceptance. FerretDB and
+external mail providers were not exercised.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/54c3130ce">Retain activity notification intents until subscriber acknowledgement</a>. Thanks to xet7.</summary>
+
+Capture an immutable private intent before ordinary activity insertion, with
+final IDs/timestamps and the original dispatch actor. Failed intent storage
+prevents the activity write. Disabled notifications skip capture; the scoped
+Sync adapter has its own one-use deferral slot and retains its delivery plans.
+
+Keep ordinary delivery asynchronous, but wait internally for all recipient
+subscribers. Successful local acknowledgements atomically compact the intent
+to a permanent receipt; failures retain pending snapshots. This confirms
+local notification writes, not SMTP acceptance or webhook completion.
+Webhooks remain independent and nonblocking. The private collection denies
+member/admin DDP writes and is not published.
+
+Six MongoDB cases, three Node suites, three full-app Meteor cases and ten
+Chromium scenarios pass. Coverage includes failed pre-insert storage, held
+and rejected subscribers, dispatch identity, uncertain completion replies,
+Sync suppression, real SMTP delivery and private-collection write denial.
+The source audit passes with advisory dependency fingerprint warnings.
+Automatic recovery, saved recipient plans, operator handling and pending
+payload retention remain unfinished. Raw writes bypassing hooks are outside
+this guarantee; FerretDB was not exercised.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/081c22010">Prepare durable activity notification intents before activity writes</a>. Thanks to xet7.</summary>
+
+Add an internal write-ahead storage component with immutable activity
+snapshots, hashed identities and per-call insertion ownership. Verify intent
+persistence before writing the activity and reconcile uncertain write replies
+from exact stored values. Reject conflicting IDs, damaged snapshots, lost
+guards and invalid or oversized input.
+
+Recovery requires the original activity to remain unchanged. Missing rows
+are unresolved orphans, not permission to recreate a cancelled or deleted
+activity. Returning an intent does not acknowledge any notification delivery.
+
+Four real MongoDB tests pass, covering write order, lost replies, concurrent
+writers, orphan retries and invalid state. This is not activated in Meteor
+activity hooks and has no UI change. Private collections, recipient plans,
+startup scanning, operator handling and retention remain to be integrated.
+The ordinary activity-to-notification crash gap therefore remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/765e2c305">Compact completed email metadata without reopening old deliveries</a>. Thanks to xet7.</summary>
+
+Retain terminal job and control-request metadata for 30 days by default,
+configurable with EMAIL_RECEIPT_METADATA_DAYS. Sweep at most 100 rows per
+collection every 60 seconds, with a configurable interval. Atomically replace
+old rows in place with minimal permanent replay identities. Keep unfinished
+work, pauses, cancellation cutoffs and current control audit summaries.
+
+Job receipts retain their event hash and terminal state. Command receipts
+retain the request ID, terminal state and actor/recipient/action identity
+hash. Do not delete replay keys or cap their total count. Missing completion
+dates and inconsistent identities remain untouched. Reconcile uncertain
+replacement acknowledgements and continue the other collection after a
+storage failure.
+
+Six Node suites pass, including real MongoDB replay, fault and batching
+coverage. A full-app Meteor test verifies the startup scheduler, and a
+Chromium Recovery test verifies that an old compacted cancellation preserves
+later queued mail and still rejects non-admin callers. The source audit
+passes with advisory dependency fingerprint warnings. External providers and
+FerretDB were not exercised. Atomic activity-to-queue insertion remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7efa8ca37">Share notification delivery capacity across server processes</a>. Thanks to xet7.</summary>
+
+Limit queued notification workers to four shared reservations in the private
+notificationEmailSendSlots collection. Claim a slot before recording an
+attempt; occupied slots leave messages pending without spending the retry
+budget. Renew every 15 seconds and reclaim crashed owners after 60 seconds.
+Preserve per-recipient exclusion and conditional old-owner cleanup.
+
+Propagate reservation loss through server-side cancellation context into
+both native and custom SMTP adapters. Expire local authority independently
+of a hanging database renewal. Abort only the affected sender, refuse late
+preparation and never delete a replacement owner's reservation. Keep slots
+unpublished and deny direct writes for members and administrators.
+
+Nine executed Node suites pass; the separate app-startup suite was skipped.
+Tests include separate Node processes, a killed worker, capacity contention,
+unchanged attempt counts, hung renewal and actual SMTP socket closure. Five
+full-app Meteor tests and sixteen Chromium delivery/recovery cases pass,
+including visible capacity waiting and blocked private-slot writes for both
+roles. Two phase-timeout browser cases require separate settings and were
+skipped. Fix the test SMTP peer's handling of expected resets from active
+cancellation. Source/dependency audit passes with advisory warnings.
+
+The limit applies to live queue reservations, not direct invitation/reset
+mail or a hard physical connection quota during host pauses. Host clocks
+must be synchronized; remote SMTP acceptance remains at least once. Receipt
+retention and atomic activity-to-queue insertion remain in TODO Later. These
+tests used local MongoDB and SMTP, not FerretDB or external mail providers.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7a450190a">Enforce native Meteor SMTP total deadlines without losing message plugins</a>. Thanks to xet7.</summary>
+
+Native SMTP MAIL_URL and Meteor email service settings now use the same
+MAIL_TOTAL_TIMEOUT_MS budget as Admin Panel providers and certificate
+overrides. Preserve the original Mailer, compile/stream plugins, defaults,
+authentication and TLS requirements. Run only the final SMTP send on an
+isolated connection. Pool settings no longer share sockets between messages,
+and a timed-out sender cannot close another recipient's connection.
+
+Budget message preparation as well as DNS, connection and replies; late
+plugin completion cannot open a connection. Preserve promise and callback
+callers. HTTP and HTTPS CONNECT proxies use cancellable requests through the
+handshake and the SMTP tunnel, retaining proxy authentication. A
+continuously responding peer cannot extend the send indefinitely. Queue
+delivery remains at least once when acceptance is ambiguous; deployment-wide
+concurrency and receipt retention remain in TODO Later.
+
+Five focused Node suites pass, including eight native SMTP/proxy cases and
+five direct SMTP/TLS cases. Verify plugins run once, defaults survive,
+callback completion, concurrent delivery, late preparation, service
+configuration, proxy success/cancellation, and refusal of plaintext when TLS
+is required. Four full-app Meteor cases pass through Email.sendAsync,
+including service configuration without MAIL_URL. Fifteen Chromium
+delivery/recovery scenarios pass on the native MAIL_URL path; the two
+separate greeting/idle-timeout cases require different settings and were
+skipped. Source/dependency audit passes with advisory warnings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b70d8e421">Verify SMTP deadline recovery through Meteor and the browser</a>. Thanks to xet7.</summary>
+
+Exercise the actual Email.sendAsync path with Admin Panel and TLS-override
+transport installation. A continuously responding local SMTP peer must lose
+its connection at the total deadline; a later send succeeds. Both full-app
+Meteor cases pass.
+
+Extend the SMTP browser fixture with streaming replies. Verify the timed-out
+payload stays pending, Recovery shows its retry count, and later acceptance
+replaces the payload with a receipt. Keep the fast recipient at one send
+while matching a slow recipient's captured bodies to its persisted attempts.
+An expired acknowledgement legitimately requires a retry, so the old one-
+body assumption no longer applies under the short total deadline.
+
+Fifteen Chromium scenarios pass across email delivery and recovery,
+including the corrected slow-recipient case and a repeated total-timeout
+case. Two greeting/idle-timeout scenarios were skipped because they require
+separate phase-limit settings. Document the exact test environment.
+Source/dependency audit passes with advisory warnings. The later entry above
+completes native Meteor MAIL_URL total deadlines.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e037b423d">Bound custom SMTP delivery with active socket cancellation</a>. Thanks to xet7.</summary>
+
+Admin Panel mail providers and TLS certificate overrides now enforce a total
+send deadline, including preparation, DNS, TCP, TLS and SMTP replies. The
+default
+is two minutes; MAIL_TOTAL_TIMEOUT_MS accepts 1000–300000 milliseconds. Each
+message owns a separate connection, so expiration closes its socket without
+interrupting another recipient. These paths no longer reuse pooled connections.
+Keep certificate verification and existing phase limits. Delayed preparation or
+DNS cannot start a connection after expiration; failures remain eligible for
+the notification queue's bounded retry policy.
+
+Four focused Node suites pass, including five actual local SMTP/TLS cases using
+Meteor's Nodemailer dependency. Verify stalled and continuously responding
+peers,
+late DNS, concurrent success, encrypted connection closure and rejection of a
+mismatched certificate. Source/dependency audit passes with advisory warnings.
+No UI behavior changes. The follow-up regression entry records full-app
+Meteor and Chromium validation.
+The later native SMTP entry above completes MAIL_URL total deadlines. Receipt
+retention and deployment-wide concurrency remain in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4ad72c970">Enforce total webhook deadlines with active cancellation</a>. Thanks to xet7.</summary>
+
+Limit both ordinary and stored outgoing webhooks to 30 seconds for DNS,
+connection and complete response-body consumption together. Keep the existing
+inactivity timeout as an additional bound. A continuously arriving response
+can no longer extend the request indefinitely. Close active request/response
+streams on expiry, ignore late DNS results before dialing and destroy late
+responses after a timeout or transport failure. Dispose timers after completion.
+
+Other fetchSafe callers can opt into the same total budget; redirects share it
+across all hops. DNS resolution may finish in the system resolver afterward,
+but cannot open a connection once the operation has timed out. Existing DNS/IP,
+certificate and redirect checks remain enforced.
+
+Thirteen focused Node suites pass with local HTTP/MongoDB fixtures. Real sockets
+close while waiting for headers and while response chunks arrive continuously.
+Coverage also checks late DNS/headers, shared redirect budgets, invalid limits,
+normal failure cleanup and successful timer disposal. Two full-app Meteor
+webhook cases pass. The expanded deadline suites pass again after the final
+late-response cleanup test. Source audit passes with informational fingerprint
+warnings. No new browser test was run for this server transport change.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/116f292be">Link existing authentication regressions to Hall of Fame names</a>. Thanks to xet7.</summary>
+
+Name DirectoryGroupBleed in the existing LDAP bind-mode and CAS literal-group
+boundary suites, and SamlReplayBleed in the signed-response replay suite.
+Their assertions and the published-vulnerability coverage check all pass.
+This repairs test discovery metadata; authentication behavior is unchanged.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9df7ac572">Connect stored webhook delivery to live replay permissions</a>. Thanks to xet7.</summary>
+
+Connect the private plan, HTTP-response and comment-effect stores through an
+internal delivery entry point. Recheck the original actor's enabled account,
+active board write access and assigned-only card scope around capture and
+replay. Require each current enabled integration to match the saved identity,
+board/global scope and complete configuration before using its target.
+
+Apply accepted stored replies through the durable comment-plan/receipt stage.
+Check the actual reply card and comment boundary, comment capability and
+current author/admin editing restrictions. Preserve later human edits when a
+completed delivery is replayed. HTTP acceptance, comment-effect completion and
+outer delivery receipts remain distinct; guarded transport still uses fetchSafe.
+
+Nine focused Node suites pass with MongoDB. Four full-app Meteor cases pass;
+the expanded delivery case passes again after adding a fresh private-IP denial
+check. The actual entry point resumes a stored accepted reply without external
+HTTP, writes the comment and both receipts, preserves a later edit, and refuses
+changed tokens, disabled users, revoked membership/assignment and restricted
+comment edits. A denied fresh HTTP attempt creates no success evidence. Source
+audit passes with informational fingerprint warnings. No successful external
+HTTP or new browser run was performed for this internal entry point.
+
+Manual/cron Sync does not call this stage yet. Startup recovery, absolute HTTP
+deadlines, scheduling, operator controls and full saved-effect activation remain
+in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/79d4024f1">Register private webhook storage and guarded plan capture</a>. Thanks to xet7.</summary>
+
+Register five private recovery collections for webhook plans, delivery
+receipts, accepted HTTP responses, comment-effect plans and comment receipts.
+Deny all browser writes, publish none of the stored content and retain evidence
+without TTL. Add indexes for board/card plans and receipt/comment recovery.
+
+Connect the real shared preparer to a stored capture entry point. Require the
+operation's ownership/access guard and captured enabled policy. Verify the
+persisted activity and current board/card/list context around capture or replay.
+Reuse the original plan when titles, tokens or target selection change; never
+rebuild corrupted evidence or use a changed/moved activity context.
+
+Eight focused Node suites pass with MongoDB. Three full-app Meteor cases pass,
+covering real capture/replay, changed evidence and policy, corruption, stored
+HTTP replay and comment privacy. Four Chromium cases pass: members and admins
+each receive 30 denied writes across ten recovery collections, and comment
+private-field denials and allowed edits remain verified. Source audit passes
+with informational fingerprint warnings.
+
+This entry point captures plans only. Live integration and reply-target access
+checks, delivery orchestration, startup recovery and manual/cron activation
+remain in TODO Later; no automatic webhook sender is enabled here.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/29872ab9f">Protect private webhook comment evidence across reads, writes and copies</a>. Thanks to xet7.</summary>
+
+Define private comment recovery fields and exclude them from shared server
+reads, including publication cursors and board JSON exports. Preserve existing
+public projections without letting private-only requests expand to full rows.
+Reject client inserts, nested updates, unsets, replacements and rename targets
+that could forge or erase evidence. Record attempted private writes in the
+existing comment security summary; ordinary text edits remain allowed.
+Comment copies discard the original's pending receipt and revision.
+
+Eleven focused Node suites pass with MongoDB. Two full-app Meteor cases verify
+actual projections, normal-edit preservation and stored HTTP replay. Two
+Chromium cases verify visible comment text, hidden evidence, five rejected
+writes per member/admin account and successful ordinary edits. Five focused
+Node suites pass again after the final mixed-projection regression was added.
+Source audit passes with informational fingerprint warnings.
+
+The comment-response executor is not enabled yet. Private storage registration,
+live replay access adapters, startup recovery and saved Sync activation remain
+in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/647b261e3">Record webhook comment effects atomically and preserve later edits</a>. Thanks to xet7.</summary>
+
+Add immutable comment-response plans bound to the captured activity, target
+and response. Freeze the original comment and replacement text/time; retain
+explicit no-action decisions so a later-created comment cannot become a target.
+Reject cross-board, malformed, mismatched and oversized changes.
+
+Use a conditional raw Mongo write for the text/time change and bounded pending
+receipt together. Transfer that evidence to a durable receipt before clearing
+the marker; retain a revision fence that rejects delayed original writes.
+Recovery acknowledges the prior change without replacing a user's later text.
+Changed, moved or deleted comments stop without being overwritten or recreated.
+Uncertain writes are verified by readback; corrupt evidence is not rebuilt.
+
+Thirteen focused Node suites pass with actual MongoDB. The expanded eight-case
+storage suite passes again, covering interrupted receipts, later user edits,
+lost mutation/receipt/cleanup replies, delayed writes, revoked guards, saved
+no-action decisions, lost plan replies and competing builders. A combined
+HTTP/comment test resumes without another request or replacing a later edit.
+Source audit passes with informational fingerprint warnings. Meteor/browser
+tests were not run for this unconnected raw-driver component.
+
+Production marker/schema protection, publication exclusions, private storage,
+fresh access adapters and startup recovery must be connected before enabling
+this stage. Ordinary webhook/comment behavior is unchanged; manual/cron Sync
+activation remains in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e08b22983">Persist guarded webhook responses before reply effects</a>. Thanks to xet7.</summary>
+
+Add a stored HTTP stage bound to the captured request, integration and activity.
+Persist successful status/body evidence before bidirectional reply processing.
+After interrupted processing, replay uses the stored body without another HTTP
+request. Require exact acknowledgement from the reply-effect adapter before
+returning delivery completion. Non-JSON replies retain ordinary no-action
+semantics. Check ownership/target access around work and confirm uncertain
+response inserts by readback; corrupted evidence stops without resending.
+
+The production wrapper binds transport to fetchSafe, preserving DNS pinning,
+private-IP denial and redirect refusal. Limit response bodies to 2 MiB and
+requests to a 30-second inactivity timeout. A caller cannot replace this
+wrapper's transport or substitute a request outside the saved target.
+
+Eleven focused Node suites pass with MongoDB, covering interrupted reply
+processing, lost storage replies, changed/corrupt responses, denied access,
+HTTP failure, partial/oversized bodies and one-way/no-action replies. Guard
+execution with scripted DNS/transport verifies pinning and redirect rejection.
+Two full-app Meteor cases pass, including actual private-IP denial and stored
+response replay. Source audit passes with informational fingerprint warnings.
+No successful external HTTP delivery or browser test was run.
+
+Production collection registration, live replay access adapters, durable
+comment-response effects, absolute HTTP deadlines and manual/cron activation
+remain in TODO Later. This internal stage does not enable automatic sending.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7747aa0a2">Persist captured Sync webhook plans and delivery receipts</a>. Thanks to xet7.</summary>
+
+Add an internal bounded plan store with activity/configuration hashes,
+first-writer snapshot selection and exact readback after uncertain writes.
+Share ordinary board/global activity matching and rendered webhook preparation.
+Retain suppressed targets and reject duplicate, foreign, disabled, oversized
+or malformed targets before dispatch. Bind prepared endpoints, tokens and
+webhook modes to the captured integrations.
+
+The executor checks ownership and target access through required adapters,
+requires an exact delivery acknowledgement and persists immutable receipts.
+Replay skips confirmed deliveries and checks all saved receipts for corruption
+before sending. Stable delivery IDs let receivers deduplicate retries when
+HTTP acceptance or receipt storage acknowledgement is lost. Delivery remains
+at least once; the HTTP adapter must enforce current SSRF checks and complete
+any bidirectional response effects before acknowledging.
+
+Eight focused Node suites pass with actual MongoDB. The expanded six-case
+storage suite additionally verifies accepted delivery followed by failed
+receipt persistence. Two full-app Meteor tests pass with the final code,
+covering actual webhook and notification preparation. Source audit passes with
+informational fingerprint warnings. HTTP delivery is injected in storage tests;
+no external HTTP or browser tests were run for this internal component.
+
+Production collections, live replay adapters, HTTP/response recovery,
+scheduling, operator controls and activation in manual/cron Sync remain in
+TODO Later. No new automatic webhook sender is enabled by this change.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/71488fa68">Separate captured webhook preparation from HTTP delivery</a>. Thanks to xet7.</summary>
+
+Share a server-side preparer between ordinary outgoing webhooks and future
+saved delivery plans. Return the endpoint, headers, serialized request body,
+webhook mode and captured rendering language without sending HTTP or changing
+comments or echo locks. Copy nested parameters and integration inputs before
+asynchronous reads, and use one language for loading and rendering.
+
+Seven focused Node suites pass. Tests execute the actual preparer and method
+with stubbed cache/network dependencies, covering changes while language loading
+is paused, identical prepared/sent bodies, ordinary and bidirectional payloads,
+falsy values, missing users, suppression, denied membership and loading errors.
+The source audit passes with informational fingerprint warnings. Live HTTP,
+full-app Meteor and browser tests were not run for this internal extraction.
+
+Durable webhook storage, retries, delivery receipts and Sync integration remain
+in TODO Later. This preparer does not acknowledge delivery or authorize replay.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1c59d5d07">Connect notification plans to private storage and replay permissions</a>. Thanks to xet7.</summary>
+
+Register private saved-plan storage with board/card indexes, denied browser
+writes and no TTL. Connect the shared audience/content preparer to actual tray
+receipts and email outbox enqueue through an internal stored-stage entry point.
+Require the caller's ownership/access guard and captured enabled policy.
+Verify the persisted activity and card/list scope before work can advance.
+
+The first snapshot excludes recipients without current card-read access,
+including unassigned restricted members. Replay never chooses new watchers or
+re-renders email. Recheck account status, active membership, assigned-only card
+scope, subscriptions and enabled service preferences around delivery. Changed
+permissions, settings or source evidence stop the attempt and retain its plan.
+
+Nineteen focused Node suites pass with MongoDB. Seven full-app Meteor cases
+pass; the expanded access case passes again after the final change. Injected
+email failure after tray acknowledgement resumes the original content even
+when the card title and recipient language change, without restoring a
+dismissed notification. Coverage includes disabled accounts/preferences,
+revoked membership, assignment changes, changed policy/activity, moved cards
+and corrupted plans. Two Chromium cases deny all five recovery collections'
+insert/update/remove requests for members and admins and confirm no published
+plan data. The source audit passes with informational fingerprint advisories.
+
+Manual/cron Sync does not invoke this internal stage yet. Retention, operator
+controls, saved effect integration and durable rule/webhook delivery remain in
+TODO Later. Enqueue completion is not SMTP acceptance or full event completion.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2ae279838">Share notification audience selection with saved-plan preparation</a>. Thanks to xet7.</summary>
+
+Extract ordinary activity notification preparation from dispatch. The normal
+hook keeps its existing notifications and nonblocking webhooks, while saved
+plan preparation calls the same watcher, mention, mute, scoped-subscription
+and actor filters without dispatching anything. Share tray preference lookup
+with the profile subscriber and reuse the rendered-email preparation function.
+
+The internal adapter plans after the card mutation is confirmed, because the
+ordinary helpers read that resulting card. Bind the complete activity identity,
+check ownership around preparation and refuse missing cards or mismatched
+board/list identities before returning a plan. Disabled notifications produce
+no recipients.
+
+Twenty focused Node suites pass with MongoDB plan tests enabled. Six full-app
+Meteor cases pass, covering actor exclusion, active watching, muted/inactive
+members, explicit list subscriptions, independent service preferences, disabled
+notifications, missing/moved cards and no preparation writes. Six Chromium/SMTP
+cases pass for normal alerts, mute/list scope, delivery, disabled email and
+zero/false custom-field content. The source audit passes with informational
+fingerprint advisories.
+
+Production plan storage lifecycle, replay permission adapters, saved Sync
+execution and durable rule/webhook handling remain in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/276675bc7">Persist frozen notification plans for interrupted delivery</a>. Thanks to xet7.</summary>
+
+Capture recipient IDs, tray decisions and fully rendered email jobs in a
+bounded internal plan tied to the exact saved activity, actor, board and card.
+Reject duplicate recipients, foreign job identities, unknown fields and plans
+above 15 MiB. Persist a checksum and read back uncertain writes; concurrent
+preparations use the first stored snapshot. Invalid saved evidence is refused
+instead of rebuilding recipients or content.
+
+Resume each recipient through the actual tray receipt and email outbox
+interfaces, requiring their exact stable identities. Recheck ownership and
+recipient access around each stage. A lost email-stage attempt can resume
+without restoring a dismissed tray entry or inserting duplicate email jobs.
+This acknowledges durable enqueue only, not SMTP acceptance or rule/webhook
+completion.
+
+Seven focused Node suites pass with real MongoDB. Coverage includes captured
+inputs, malformed and oversized plans, missing adapters, incorrect receipts,
+revoked access, interruption between services, lost plan insertion replies,
+changed activity, corrupted checksums and competing rendered snapshots. The
+source audit passes with informational fingerprint advisories.
+
+The component is internal; no production UI or dispatch path changes here.
+Ordinary recipient selection, production plan storage lifecycle, Sync effect
+integration and durable rule/webhook handling remain in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b42815691">Prepare captured email content before queue insertion</a>. Thanks to xet7.</summary>
+
+Expose shared activity-email preparation that returns a complete rendered job
+without writing to the outbox. Capture the recipient identity/language and
+caller parameters before asynchronous work. Use one settings/template snapshot
+instead of re-reading templates later during rendering. The ordinary subscriber
+queues the returned job unchanged; disabled preferences return no job.
+
+Thirteen focused Node suites pass. Tests mutate the caller's parameters, user
+language and templates while preparation waits, verifying the original text,
+identity and language survive and no queue insertion occurs. Five full-app
+Meteor tests pass, including equality between prepared metadata and the real
+subscriber's queued job. Three Chromium SMTP cases pass for board watching,
+disabled email and numeric-zero/checkbox-false content. The source audit passes
+with informational fingerprint advisories.
+
+This prepares reusable content for saved delivery plans. Durable recipient-plan
+storage, service orchestration, rules/webhook recovery and Sync job activation
+remain in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/65a4c892b">Retain tray delivery receipts across dismissal and restarts</a>. Thanks to xet7.</summary>
+
+New profile notification deliveries atomically store one pending marker with
+the tray change, then confirm a private durable receipt before clearing the
+marker. Read notifications keep their state; dismissed or cleaned-up entries
+do not return when the same event is retried. A persistent revision rejects
+stale writes even after another worker has completed and cleared its marker.
+Lost database replies require readback; damaged evidence remains refused.
+
+Ordinary and awaited profile subscribers use this path. A startup recovery
+scan resumes pending receipts in batches of 100, advances past damaged rows
+and reschedules after failures. A sparse marker index supports pending-user
+lookup; user documents retain one marker rather than an expanding history.
+Receipt documents have no TTL. Browser writes to the collection or private
+user fields are denied, including rename destinations; neither is published.
+
+Fourteen Node suites pass with real MongoDB. Fault injection covers dismissal
+before receipt insertion, restart recovery, concurrent events, delayed writes,
+lost user/receipt/cleanup replies and incomplete cleanup. Four full-app Meteor
+tests pass with real subscribers and the registered recovery scan. Five
+Chromium cases pass for normal notification behavior and member/admin write
+denial; both private-storage cases pass again with rename checks. The source
+audit passes with informational fingerprint advisories.
+
+Receipt retention still needs policy and tooling. Already-dismissed legacy
+notifications have no historical receipt to recover. Sync job activation,
+frozen recipient plans, rule/action recovery and durable webhooks remain in
+TODO Later; this change completes the tray receipt path only.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/15a9d61eb">Preserve read notifications during delivery retries</a>. Thanks to xet7.</summary>
+
+Insert a tray notification only when its activity identity is absent from the
+recipient's notification array. Previously the mutable read flag participated
+in whole-object deduplication, so retrying an already-read event could append
+another unread copy. Conditional insertion preserves existing rows and their
+read timestamps without replacing the array.
+
+Confirm the same recipient/activity pair by readback, including after a lost
+write reply. Missing recipients, unsuccessful writes and unavailable readback
+cannot report successful persistence. Twelve notification Node suites pass.
+Three full-app Meteor tests pass, including five concurrent deliveries of a
+read event and five concurrent insertions of a new event. Three Chromium cases
+pass for muted-member refusal, explicit list watching and the visible alert.
+The source audit passes with informational fingerprint advisories.
+
+This preserves notifications still present in the tray. Durable service
+receipts are still needed to prevent a dismissed notification from returning
+on later replay; that work remains in TODO Later with Sync delivery integration.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a76e828bf">Await notification persistence and fix the profile subscriber</a>. Thanks to xet7.</summary>
+
+Fix the profile notification subscriber treating an async user-helper Promise
+as a MongoDB modifier. Await the actual helper write and reject a missing
+recipient instead of issuing an invalid second update. Email and profile
+subscribers now propagate failures to their dispatcher.
+
+Add an internal awaited dispatcher requiring a recipient and stable activity
+identity. Capture the active subscribers and wait for all started calls, even
+when another throws or rejects, before returning success or grouped failures.
+Ordinary notifications remain nonblocking and isolate service errors.
+
+Eleven focused Node suites pass, covering delayed completion, synchronous and
+async failures, changing subscriptions, disabled preferences and storage errors.
+Three full-app Meteor tests pass against actual subscribers and Sync hooks,
+including profile persistence, repeated unread events and a deleted recipient.
+Three Chromium cases pass: muted-board refusal, explicit list watching and the
+recipient's visible notification indicator. The source audit passes with
+informational fingerprint advisories.
+
+Awaited completion is not a durable service receipt or SMTP acknowledgement.
+Sync job activation, frozen delivery plans, tray replay after read/dismissal,
+rule recovery and webhook delivery remain in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f2728947c">Preserve saved Sync activity timestamps and defer delivery</a>. Thanks to xet7.</summary>
+
+Bind the internal activity adapter to a validated saved effect plan and actor.
+Ordinary collection insertion retains its activity feature gate. Only an exact
+saved payload inside the owning async context preserves its original timestamps
+and defers the rule and notification/webhook hooks to separate durable delivery.
+Each hook consumes one slot; foreign payloads and callbacks outliving the write
+retain ordinary behavior. Reads return stored data without helper transforms.
+
+A delivery interruption leaves one exact event for retry and still requires a
+receipt before completion. Twenty Node suites pass, including MongoDB replay,
+actor/payload rejection, async isolation and ordinary webhook behavior. Two
+full-app Meteor tests pass against the real card and activity hooks, verifying
+saved timestamps, retry without duplication, disabled recording, and normal
+rule/notification invocation after scoped work. The source audit passes with
+informational fingerprint advisories. No production UI path changes here.
+
+Manual/cron activation, shared History-chain coordination and durable rules,
+notifications and webhook delivery remain in TODO Later. The test acknowledges
+delivery through a callback; it does not claim production delivery completion.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/dc9ce0537">Apply saved Sync writes through card hooks</a>. Thanks to xet7.</summary>
+
+Bind the internal storage adapter to one saved card mutation and actor. Use
+ordinary Cards APIs so schema validation, defaults and business hooks remain
+active. Preserve source whitespace and empty descriptions. Refuse planned
+activity timestamps owned by schema auto-values and foreign read/write shapes.
+
+Defer planned History and activity recording only within the owning async
+write, matching its card, board and list. Each recording hook consumes one
+slot; expired async callbacks and unrelated writes retain normal recording.
+Saved effects remain responsible for completing these deferred events before
+the operation advances.
+
+Twenty focused Node suites pass with real MongoDB. The full-app Meteor test
+passes against the actual card schema and hooks, covering create, conditional
+update/retry, archive, mapped estimates, schema rejection and normal recording
+after failure. Six affected Node suites also pass the final rerun. This adds
+an internal adapter; manual/cron activation, shared History-chain coordination
+and production activity/rule/notification delivery remain in TODO Later.
+No production UI path changes in this step.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/180aced2c">Exclude generated app-test bundles from source audits</a>. Thanks to xet7.</summary>
+
+Exclude the known public/private build-assets-app-test and
+build-chunks-app-test directories from risk and telemetry source inventories.
+Full-app Meteor tests generate bundled copies there; ordinary public source
+files remain audited and unapproved origins still fail. No URL or keyword
+allowlist is broadened. Twelve risk-audit tests and six telemetry tests pass;
+the repository source audit passes with informational fingerprint advisories.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/58e7efa8e">Validate Sync effects before card application</a>. Thanks to xet7.</summary>
+
+Add a combined saved-unit executor that validates the entire History/activity
+plan, original actor, live feature policy and required adapters before reading
+or writing the card. Copy saved inputs before asynchronous work. Recheck policy
+and lease ownership around card writes and effect completion.
+
+If policy changes after a confirmed card write, retain the interrupted unit.
+Resuming under its captured policy recognizes the existing result and completes
+only the outstanding History/activity work. Missing delivery adapters and
+foreign actors fail before card access.
+
+Sixteen focused Node suites pass with real MongoDB. Additional final tests
+exercise the registered private storage entry point through intent ownership,
+journal, actual card insertion, activity delivery receipt and cleanup. Fault
+injection verifies policy changes before and immediately after a card write.
+The source audit passes with advisories; the known published changelog
+line-length failure remains. No production UI path changed.
+
+Production collection-hook coordination, real rules/notification delivery,
+job activation and scheduling remain in TODO Later. Database tests use raw
+card writes and a persisted delivery receipt adapter.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/aa68ece6c">Retain activity and notification policy in Sync plans</a>. Thanks to xet7.</summary>
+
+Require explicit activity/notification policy when preparing combined effects.
+Version-two plans retain that policy; disabled activities produce no activity
+plan and need no activity/delivery adapter, while History still completes.
+Validate live policy and lease ownership around effect persistence. Changed
+settings stop the attempt without silently changing the saved plan.
+
+Pass notification policy to the downstream delivery callback independently
+of activities. Version-one plans retain their enabled defaults and cannot
+resume under disabled settings. The actual rule/notification delivery adapter
+and production job activation remain unfinished.
+
+Sixteen focused Node suites pass with real MongoDB. Tests cover immutable
+policy capture, malformed policies, old plans, changed settings during mixed
+replay and interrupted History-only completion. Final policy and integration
+checks also pass. The source audit passes with advisories; the known published
+changelog line-length failure remains. No production UI path changed.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5486c263a">Keep durable Sync intents bound to their original actor</a>. Thanks to xet7.</summary>
+
+Register an immutable private intent before building a stored Sync plan. Bind
+its caller UUID to the original actor and list scope, retain its creation time,
+and verify the stored row after an uncertain insertion. Reject reuse by another
+actor or scope before planning, applying or returning a completion receipt.
+
+Recheck intent identity during execution and pass its actor explicitly to
+access, build, application and effect callbacks. If intent evidence disappears
+while a journal or completion exists, refuse to reconstruct an owner. Retain
+intent rows without TTL, deny client writes and index scope/actor lookups.
+
+Sixteen focused Node suites pass with real MongoDB, covering lost replies,
+false insert acknowledgements, malformed records, revoked access, changed
+owners and missing intents before/after completion. Both Chromium member/admin
+cases pass with the new collection included. The source audit passes with
+advisories; the existing published changelog line-length failure remains.
+
+The stored-operation entry point still awaits production job activation,
+durable downstream delivery, hook coordination, controls and scheduling.
+No automatic replay or intent cleanup is enabled.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9f179eb7b">Bind private Sync recovery storage to list lifetimes</a>. Thanks to xet7.</summary>
+
+Register private operation, plan-step and completion collections with recovery
+indexes, denied client writes and no automatic expiration. Keep unfinished
+plans and completion receipts when their list disappears. The internal stored
+operation entry point acquires the existing list lease and checks a mandatory
+access callback plus current board/list, incarnation, revision and source
+identity before recovery work. Validate selectors before acquiring the lease.
+
+Refuse deleted, recreated, moved or reconfigured lists, including a scope
+change during an asynchronous access check. Legacy lists without stable
+incarnation/revision identities cannot start durable operations yet. Retain
+stale recovery evidence for future operator handling instead of deleting it.
+
+Fifteen focused Node suites pass with real MongoDB, covering storage indexes,
+unique steps, lost work/resume boundaries and retained completion receipts.
+Two Chromium scenarios verify denied insert/update/remove requests for members
+and administrators and absence of recovery rows from browser collections.
+The source audit passes with advisories; the known published changelog
+line-length failure remains.
+
+Manual and scheduled Sync do not yet call this entry point. Durable delivery,
+hook coordination, job activation, stale-scope controls, startup scheduling and
+retention remain in TODO Later. No automatic replay or cleanup is enabled.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4ceeb4760">Coordinate saved Sync History and activity effects</a>. Thanks to xet7.</summary>
+
+Provide one internal planner and persistence adapter for combined History and
+activity effects. Capture display metadata before application, preserve the
+History chain across mixed card operations, and validate both plans against
+the exact card step and effect ID. Reject mismatched actors or timestamps and
+missing storage/delivery adapters before the first effect write. Activity
+planning failures do not advance the History planner's index.
+
+Thirteen focused Node suites pass with real MongoDB enabled. The mixed
+create/edit/archive interruption test now calls the shared module instead of
+assembling the effect sequence in the test. Additional cases cover immutable
+metadata, unknown/duplicate swimlanes, retrying failed planning and
+independently
+valid but inconsistent component plans. The source audit passes with advisory
+warnings; the existing published changelog line-length failure remains.
+
+The adapter is not enabled in production Sync. Durable rule/notification
+delivery, feature-flag and hook coordination, private collection lifecycle,
+startup scheduling and user controls remain in TODO Later. No UI path changed.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/696bcb1c2">Resume Sync update activities with per-event receipts</a>. Thanks to xet7.</summary>
+
+Persist bounded activity plans for title, description, mapped custom-field
+and archive/restore changes. Preserve empty description clears and zero
+estimates; omit values for unset-field events. Capture actor and list display
+values once, validate the complete plan against its card mutation, and assign
+a distinct stable receipt identity to each event.
+
+Share insertion/readback and downstream acknowledgement logic with creation
+activities. Retry verifies existing event contents and still requires durable
+delivery receipts before the journal advances. No-op and spent-time-only steps
+emit no new activity, matching existing hooks.
+
+Twelve focused Sync/History Node suites pass with real MongoDB enabled. A
+combined test interrupts delivery while processing create/edit/archive units,
+rejects a damaged future activity before its card write, then verifies one
+History chain, exact event/receipt counts and cleanup. Hook parity tests compare
+the planned payloads with ordinary activity functions. The source audit passes
+with advisories; the known published changelog line-length failure remains.
+
+These internal adapters are not enabled in production Sync. Tests use durable
+receipt fixtures; real rule/notification delivery, feature flags, duplicate-hook
+suppression and job lifecycle remain unfinished. No production UI path changed.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0975d33d9">Persist creation activities in Sync recovery plans</a>. Thanks to xet7.</summary>
+
+Share the ordinary card-creation activity payload with a private durable Sync
+adapter. Capture list/swimlane names, timestamps and a stable event ID before
+application. Reject foreign references, changed card identities, unknown
+payload properties and oversized plans. Verify stored activity contents after
+insertions, including lost replies, and require a separate matching delivery
+receipt even when the activity already exists.
+
+Creation units no longer block the History planner: they produce no invented
+field-edit History rows and leave the chain and redo candidates intact,
+matching ordinary creation behavior.
+
+Twelve focused Node suites pass with real MongoDB enabled. Tests cover
+interrupted delivery, malformed plans, collisions, lease loss, repeated replay
+and verified cleanup. A Chromium scenario creates a card and verifies its
+single complete activity in the card history. The source audit passes with
+advisories; the existing published changelog line-length failure remains.
+
+The durable adapter is not enabled in production Sync. Feature-flag and hook
+coordination, durable rule/notification delivery and job lifecycle integration
+remain in TODO Later; tests use a persisted delivery receipt adapter.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6cebd5ec5">Chain durable Sync History plans across cards</a>. Thanks to xet7.</summary>
+
+Prepare each card's History batch from the preceding planned batch's final
+hash. Baseline-only steps preserve the chain, and only the first actual change
+consumes the captured redo candidates. Reject out-of-order preparation,
+changed operation IDs and foreign boards. Restarted preparation resets at
+index zero while keeping stable event identities and captured input values.
+
+Eight focused Sync/History Node suites pass with real MongoDB enabled. The
+journal integration test persists three card units, interrupts between History
+rows, then verifies replay, cleanup, one connected integrity chain and no
+duplicate events. Unit tests cover immutable inputs, no-op steps and invalid
+ordering/scope. The source audit passes with advisories. The known published
+changelog line-length failure remains.
+
+This internal planner does not yet enable production replay. Creation effects,
+shared coordination with other History writers, job lifecycle and durable
+activity/notification integration remain in TODO Later. No UI path changed.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/bb42397a2">Resume Sync History plans containing legacy redo rows</a>. Thanks to xet7.</summary>
+
+Retain exact typed snapshots of legacy undone History rows that have no
+integrity hash. Compare their original contents and undo timestamp before
+marking them superseded, then verify the stored result. Keep snapshot digests
+in the private plan; do not add retroactive integrity hashes to old History.
+Malformed existing hashes still fail validation.
+
+Eight focused Sync/History Node suites pass with real MongoDB enabled. Tests
+cover journal persistence, missing/null/empty hashes, literal object contents,
+changed undo cycles, lost write acknowledgements, interruption, repeated replay
+and protection of rows undone later. The source audit passes with advisories.
+The existing published-entry changelog line-length failure remains.
+
+This internal adapter still needs production job/collection integration,
+creation effects and coordination with other History writers. No production
+UI changed; activity and notification completion remain separate pending work.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a55703f02">Retain Jira time estimates in durable Sync plans</a>. Thanks to xet7.</summary>
+
+Persist original and remaining time baselines and canonical hour mappings
+alongside the primary estimate. Reject overlapping target fields, incorrect
+units, malformed values and changes to unrelated custom fields. Preserve
+zero, explicit clearing and unrelated typed values during replay.
+
+Nine focused Node suites pass with real MongoDB enabled, including interrupted
+creation/update/clear, lost acknowledgements, local-edit conflicts and damaged
+saved mappings or checksums. The source audit passes with advisory warnings.
+This private engine still needs production Sync integration, lifecycle controls
+and durable History/activity completion. No production UI path changed.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/03c95123f">Keep request secrets out of unhandled API failure diagnostics</a>. Thanks to xet7.</summary>
+
+The route error boundary previously logged the full request URL and exception,
+which could expose query authentication tokens and other request data.
+Record only a registered route pattern and fixed error category in folded API
+Problems entries. Repeated failures increase the count without retaining raw
+URLs, parameters, messages or stacks. A logging failure cannot break the
+generic HTTP 500 response. Ordinary server failures do not block accounts.
+
+Four focused Node suites pass. Chromium verifies authenticated failure
+responses, folded database rows, the Admin API Problems view and absence of
+the request token and private marker. The pending-import HTTP scenario also
+passes. This covers the route boundary; other loggers and historical log
+contents were not changed.
+
+</details>
+
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d828411bf">Persist email notifications and resume delivery after restart</a>. Thanks to xet7.</summary>
+
+Notification digests now use a private database outbox with stable event and
+recipient identities. Subject, body, language and card references survive a
+restart. Renewable recipient reservations coordinate workers; SMTP failures
+retry with persisted backoff from five seconds up to one hour. Legacy profile
+buffers migrate before removal, using a neutral subject where old metadata
+was never stored.
+
+SMTP must confirm the recipient was accepted before a digest is acknowledged.
+Console output and suppressed send hooks do not count. Completion removes the
+rendered payload and retains a small receipt to suppress replay. New events
+remain distinct even when their text matches. Deferred delivery rechecks active
+board membership and email settings; clients cannot alter private job records.
+
+Nineteen focused Node suites, an actual stopped-app startup recovery test and
+ten Chromium scenarios pass with local MongoDB and SMTP. Tests cover competing
+workers, lost/false write acknowledgements, bounded batches, legacy migration,
+automatic retries, revoked access and blocked client writes. Source audit passes
+with advisory fingerprint changes. Other browsers, FerretDB and external mail
+providers were not exercised.
+
+Delivery remains at least once: a crash after SMTP acceptance can duplicate
+mail. Receipt retention, transport policy and coordinating original activity
+writes with enqueue remain in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/20b47995b">Manage queued email from Problems → Recovery</a>. Thanks to xet7.</summary>
+
+Show one summary per recipient with pending/retrying counts, next attempt and
+last operator change. Literal user-ID search and ten-row pages omit message
+contents and mailbox fields. Empty paused recipients remain listed for resume.
+Current administrator checks protect reads and mutations; direct client writes
+to the private collections remain denied.
+
+Pause holds existing and new messages. Resume makes existing messages due now.
+Cancel asks for confirmation and removes payloads queued through its timestamp,
+while preserving later messages and replay receipts. Controls share the sender's
+reservation and report busy during active delivery. Persisted request identities
+and generation checks stop a late retry from undoing a newer operator action.
+
+Thirteen focused Node suites and thirteen Chromium scenarios pass with local
+MongoDB and SMTP. Coverage includes pagination, authorization, persisted holds,
+partial/false write acknowledgements, late enqueue, superseded controls,
+confirmation, automatic delivery and existing Sync diagnostics. Source audit
+passes with advisory fingerprint changes. The separate stopped-app startup test
+was not rerun for this control change. Other browsers and FerretDB remain
+unverified; delivery is still at least once when SMTP outlives a lost lease.
+
+</details>
+
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0457e0dfd">Stop permanent email failures and bound automatic retries</a>. Thanks to xet7.</summary>
+
+Reserve and read back each attempt before delivery. Temporary failures receive
+up to twelve attempts per cycle with persisted exponential backoff and positive
+jitter, capped at one hour. Numeric SMTP 5xx responses and configuration errors
+stop delivery; 4xx responses remain retryable. Unconfirmed transport results
+require review. Database acknowledgement failures retain their own category.
+Rendered messages remain available until accepted delivery or cancellation.
+
+Problems → Recovery shows stopped counts and fixed failure reasons without raw
+SMTP errors or message contents. Retry failed messages starts a fresh cycle,
+respects a pause and preserves lifetime failure counts. Repeating an interrupted
+request cannot reset the same cycle again. Resume does not restart stopped mail;
+cancellation removes both pending and stopped payloads through its cutoff.
+
+Fourteen focused Node suites and fourteen Chromium scenarios pass with local
+MongoDB and SMTP. Coverage includes permanent rejection, automatic backoff,
+exhausted/crash-reserved budgets, lost and false storage acknowledgements,
+operator recovery, permissions, request replay and report privacy. Source audit
+passes with advisory fingerprint changes. The separate stopped-app startup
+harness was not rerun. Other browsers, FerretDB and external SMTP remain
+unverified.
+Delivery remains at least once. Retention, absolute delivery deadlines,
+deployment-wide concurrency and atomic activity-to-queue integration remain
+in TODO Later.
+
+</details>
+
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/15368a157">Let independent email recipients progress concurrently</a>. Thanks to xet7.</summary>
+
+Select up to 100 distinct due recipients instead of the first 100 messages,
+so one large backlog cannot hide other recipients. Four workers per application
+process handle recipients concurrently, retaining the distributed recipient
+lease. Overlapping scans share a pass instead of multiplying its worker pool.
+A failed scheduling query releases the pass for the next poll.
+
+Nine focused Node suites and fourteen Chromium scenarios pass with local
+MongoDB and SMTP. Database tests cover the four-worker cap, overlapping scans,
+query recovery and another recipient beside a backlog exceeding 100 messages.
+The browser holds the first recipient's SMTP reply while verifying the second
+recipient completes and Recovery still shows the held message. Existing
+notification and recovery scenarios pass. Source audit passes with advisory
+fingerprint changes; the separate startup-only harness was not rerun.
+
+The limit is per application process. A pass still waits for active transports
+before polling again. An absolute delivery deadline and a deployment-wide
+connection limit remain pending, along with retention and durable activity
+integration.
+Other browsers, FerretDB and external SMTP providers remain unverified.
+
+</details>
+
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9758886cf">Close unresponsive SMTP connections with configurable timeouts</a>. Thanks to xet7.</summary>
+
+Apply finite DNS, TCP connection, greeting and idle limits to SMTP URLs,
+certificate overrides and Admin Panel providers. DNS, connection and greeting
+waits default to 30 seconds; idle connections default to two minutes. Each
+process environment setting accepts 1000–900000 milliseconds. Invalid values
+are rejected, and URL timeout parameters cannot disable the policy.
+
+Keep Meteor's native transport and mail plugins for standard SMTP URLs.
+TLS overrides refresh their transport after URL changes, and Sandstorm mail
+updates reapply the limits. The operator guide documents configuration and
+explains that other direct email callers retain their existing error handling.
+
+Eleven focused Node suites and fifteen Chromium cases pass with local MongoDB
+and SMTP. Tests cover settings, preserved URL options, TLS verification and
+actual connection closure after missing greetings or idle replies. Queued
+payloads survive the failure, appear as retrying in Recovery and are delivered
+when SMTP recovers. Source audit passes with advisory fingerprint changes.
+The separate startup-only harness, other browsers, FerretDB, external SMTP
+providers and live Sandstorm were not exercised.
+
+These are phase and inactivity limits. An absolute delivery deadline with
+cancellation against a continuously active peer remains pending, as do receipt
+retention, deployment-wide concurrency and durable activity integration. Legacy
+non-SMTP URL schemes and third-party custom transports retain their own policy.
+
+</details>
+
+
+and adds mapped Jira estimate synchronization:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/79fcd0061">Sync mapped Jira estimates with local conflict review</a>. Thanks to xet7.</summary>
+
+Add an opt-in Estimate switch and mapped numeric-field picker to the existing
+Sync popup. Reuse Jira import field IDs and units, store their identity and
+revalidate the definition before applying writes. Cloud search requests the
+selected field. Source-coverage reports recognize only this explicit mapping.
+
+Compare incoming estimates with local values and accepted source baselines.
+Local changes survive unchanged upstream values; competing changes use the
+existing Keep local/Use source controls. Preserve zero, ignore absent source
+fields, and clear only the mapped entry for explicit null. Conditional card
+writes preserve unrelated custom fields and their order. Changed mappings
+require saving settings and invalidate the old estimate baseline. Malformed
+source/local values and foreign or invalid field definitions are rejected.
+
+Seventeen focused Sync Node suites pass, including real MongoDB persistence
+checks. All nineteen Chromium Sync scenarios pass. The final estimate scenario
+also passes after verifying invalid local values, mapping-unit changes and
+custom-field order. It exercises the actual popup against a local Jira fixture;
+live Jira servers, other browsers and FerretDB were not tested. The offline
+source/dependency audit passes with advisory fingerprint warnings.
+
+Automatic schema discovery, other providers' estimates and durable mapped-field
+replay remain pending. Ordinary custom-field activity/rule integration is
+described below. Entity History uses its existing hook.
+Only English labels were added; translation into all languages remains excluded.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5e1ed32f5">Sync Jira original and remaining time estimates</a>. Thanks to xet7.</summary>
+
+Add opt-in Original time estimate and Remaining time estimate switches to the
+Sync popup. Resolve each to the unique imported numeric Jira time field on the
+board and save its mapping identity. Missing, foreign, ambiguous or changed
+mappings are rejected, as is sharing a target with another selected estimate.
+Jira Cloud requests the nested time totals and flat numeric fallback fields.
+
+Convert numeric seconds to hours. Preserve zero, leave absent values unchanged
+and clear only the selected entry for explicit null. Combine original,
+remaining and mapped custom estimates without replacing unrelated fields.
+Local edits participate in baseline comparison and Keep local/Use source
+review; conditional array writes reject concurrent changes. Mapping switches
+invalidate the old baseline. Preview and coverage recognize selected time data.
+
+Twenty-five focused Node suites and twenty-two Chromium scenarios pass using
+local MongoDB and Jira fixtures. Coverage includes zero/null/missing values,
+combined field updates, malformed seconds, mapping validation, stale conflicts,
+source changes and existing authorization/credential behavior. Source audit
+passes with advisory fingerprint changes. Live Jira, other browsers and
+FerretDB remain unverified. Only English source labels were added.
+
+These are aggregate issue estimates. Sprint/release Sync, provider schema
+discovery, other providers' estimates and durable History/activity completion
+remain in TODO Later.
+
+</details>
+
+and integrates saved custom-field changes with activities and rules:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ca7863722">Record custom-field activities after successful writes</a>. Thanks to xet7.</summary>
+
+Whole-array Sync writes previously emitted no custom-field activity; dotted
+editor writes emitted before storage and did not await insertion. Compare
+previous and saved field values by stable identity after a matched write.
+Preserve zero and false, report clearing as unset, and suppress unchanged,
+reordered, empty-assignment and failed updates. Include card/list/swimlane
+context for both set and unset events.
+
+Advanced-filter rules now see saved values. Fix their definition lookup to
+use the actual boardIds membership array instead of the absent boardId field.
+The Jira estimate browser scenario verifies an ordinary rule completing the
+card at its new estimate, source conflict resolution, clearing and no-op
+suppression. A second scenario covers dotted checkbox writes, rejected field
+IDs, removal and empty reassignment.
+
+Four focused activity/filter Node suites and seventeen Sync suites pass,
+including real MongoDB persistence checks. All twenty Chromium Sync scenarios
+pass. The offline source/dependency audit passes with advisory warnings.
+Four changelog suites pass; the existing released v12.07 entry still fails
+the line-length check. Other browsers and FerretDB were not exercised.
+
+Card storage, activity insertion, History and downstream delivery remain
+separate operations. Snapshot comparisons do not make concurrent or interrupted
+writes exactly once; durable replay and atomicity remain in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/17341c18c">Match advanced filters against the named field's own value</a>. Thanks to xet7.</summary>
+
+Independent dotted predicates could match one custom field's identity and
+another field's value. A Points = 2 rule could therefore act on Points = 1
+when an unrelated field contained 2. Bind both predicates in one elemMatch
+for equality, inequality, ranges, regular expressions, dropdowns and dates.
+Unknown field names now fail before querying instead of dropping the identity
+constraint. The sidebar and rule matcher continue sharing one builder.
+
+Three Node suites pass, including fourteen comparison scenarios in a real
+isolated MongoDB database and an explicit reproduction of the old false
+positive. Three Chromium scenarios pass: sidebar equality/ranges/inequality,
+combined fields, missing-field rules, and existing Jira estimate Sync and
+checkbox activity regressions. Correct the Jira rule fixture to use supported
+single quotes around its spaced field name.
+
+The offline source/dependency audit passes with advisory warnings. Four
+changelog suites pass; the existing released v12.07 line-length failure remains.
+This covers field identity matching; FerretDB and additional browsers were not
+exercised.
+Durable rule effects and transactional changes remain in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2d0dea912">Handle grouped and negated advanced filters consistently</a>. Thanks to xet7.</summary>
+
+Whole-expression NOT previously generated a field-only database operator, and
+parenthesis processing mixed separate groups. Parse nested groups recursively,
+use nor for whole-selector negation and accept parentheses next to their
+contents. Preserve existing left-to-right and/or evaluation; NOT applies to
+the next comparison or group. Quoted and regex parentheses remain literal.
+
+Reject incomplete comparisons, unmatched groups, unclosed tokens and trailing
+operands before database queries. Limit nesting and leave input tokens intact.
+Invalid rules execute no action; the sidebar retains its last valid filter.
+Document that NOT includes cards without the compared field, whereas a direct
+inequality requires the named field.
+
+Four Node suites pass, including real MongoDB comparisons, nested groups,
+negation, evaluation order and guards against invalid server queries. Three
+Chromium scenarios pass with sidebar groups/NOT/fallback, grouped and invalid
+rules, and the existing estimate Sync and checkbox activity flows. The offline
+source/dependency audit passes with advisory warnings. Four changelog suites
+pass; the existing released v12.07 line-length failure remains. Other browsers
+and FerretDB were not exercised. Durable rule delivery and transactions remain
+in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/43bf737e3">Preserve decimal boundaries in filters and rules</a>. Thanks to xet7.</summary>
+
+Integer-prefix conversion truncated decimal estimates and currency thresholds:
+a greater-than 2.5 rule compared against 2 instead. Parse complete finite
+decimal tokens, preserving fractional values, signs and exponent notation.
+Do not coerce literal text such as 2hours to 2 or add NaN to equality queries.
+Text and dropdown equality remain supported; invalid numeric ranges are
+rejected before queries and retain the sidebar's last valid filter.
+
+Four Node suites pass, including real MongoDB fractional, negative, exponent
+and text comparisons alongside existing date and grouped-filter checks. Four
+Chromium scenarios pass. The currency scenario updates real card values to
+2.25, 2.5 and 2.75, checks strict rule boundaries, rejects a malformed numeric
+rule and exercises equality, inequality, all ranges and exponent notation in
+the sidebar. Existing mapped-estimate Sync and checkbox activity tests pass.
+
+The offline source/dependency audit passes with advisory warnings. Four
+changelog suites pass; the existing released v12.07 line-length failure remains.
+Other browsers and FerretDB were not exercised. Durable rule delivery and
+transactional changes remain in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/281d7f574">Persist mapped estimate snapshots in private Sync plans</a>. Thanks to xet7.</summary>
+
+Extend the private checkpoint engine to retain estimate baselines, canonical
+local/provider field and unit identities, and typed custom-field arrays.
+Reject duplicate IDs, unknown properties, invalid values and malformed
+mappings. Only the mapped field may change; unrelated values and ordering must
+remain unchanged. Retain zero, null clearing, dates, booleans, strings, option
+arrays and empty assignments. Enforce 10,000 entries and the existing 1 MiB
+step budget before applying a plan.
+
+Seventeen focused Sync Node suites pass with real MongoDB enabled. The final
+two journal suites also pass after adding create/null/missing and exact-limit
+coverage. Persisted tests verify lost acknowledgements without repeated writes,
+update and clear replay, unchanged typed fields, damaged mapping checksums,
+local conflicts and retained recovery evidence. The offline source/dependency
+audit passes with advisory warnings. Four changelog suites pass; the existing
+released v12.07 line-length failure remains.
+
+This engine is still not connected to manual or scheduled Sync. Tests use a
+local application adapter; no production UI path changed or was browser-tested
+for this internal addition. Live field/mapping guards, application/effect
+adapters, private collection lifecycle, startup scheduling, pause/cancel and
+transactional History/activity coordination remain in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0d2dd1d36">Prepare conditional field patches for saved Sync steps</a>. Thanks to xet7.</summary>
+
+Build exact before/after predicates and set/unset modifiers from validated
+journal snapshots. Compare the union of fields so a planned addition still
+requires absence and a removal remains absent in the expected result. Preserve
+unplanned metadata instead of replacing the whole card. Keep insert plans
+separate, reject scope changes and explicit undefined values, retain BSON dates
+and isolate result predicates from input or driver-side mutation.
+
+Production Sync now shares the literal snapshot selector helper. Object/array
+values are equality operands, and null checks retain field presence. Reject
+sparse or decorated arrays which would change shape during BSON storage.
+
+Eighteen focused Sync Node suites pass with real MongoDB. The final three
+journal/mutation suites pass after the serialization-boundary checks. Tests
+cover conditional additions, field removal, unrelated metadata changed after
+a lost acknowledgement, literal objects versus query operators and existing
+mapped-estimate recovery. All twenty Chromium Sync scenarios pass. The offline
+source/dependency audit passes with advisory warnings. Four changelog suites
+pass; the existing released v12.07 line-length failure remains.
+
+The mutation planner prepares storage operations; it does not prove completion
+of History/activity effects or enable production recovery by itself. Live
+permission/mapping guards, durable effects, private collection lifecycle and
+startup/pause/cancel integration remain in TODO Later. Other browsers and
+FerretDB were not exercised.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0c9aa707d">Verify Sync plan cleanup before reporting completion</a>. Thanks to xet7.</summary>
+
+The private recovery engine previously trusted delete calls without checking
+whether plan rows or the operation marker remained. Read back the exact plan
+scope before removing its marker, recheck ownership between stages, and verify
+the operation slot is empty before returning success. Zero/partial deletions,
+undefined results and failed reads cannot acknowledge cleanup. Lost deletion
+replies are accepted only when absence can be verified. A successor operation
+is preserved and is not treated as this operation's successful cleanup.
+
+Eighteen focused Sync Node suites pass with real MongoDB enabled. The final
+three journal/mutation suites pass after additional ownership-loss and
+uncertain-read tests. Fault injection covers partial deletion, missing replies,
+failed reads, malformed responses, zero-match marker deletion and replacement
+operations. Retained cleaning markers resume without repeating card writes.
+The offline source/dependency audit passes with advisory warnings. Four
+changelog suites pass; the existing released v12.07 line-length failure remains.
+
+This internal engine remains outside manual/scheduled Sync; no production UI
+path changed. If the final read fails after marker deletion, the result remains
+unknown for that attempt. Stable-intent completion recovery is described below;
+production storage/retention and job lifecycle remain pending. These checks do
+not fence in-flight writes or provide a transaction across collections.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/617ba292f">Retain Sync completion across stable request retries</a>. Thanks to xet7.</summary>
+
+Require a caller-persisted UUID intent and private completion collection in the
+recovery engine. Record and verify the immutable operation, scope, total, plan
+checksum and application-completion time before removing recovery evidence.
+Failed or unreadable persistence keeps the applied plan. Lost insertion replies
+are accepted only when the exact saved record is readable. Reject malformed,
+conflicting and foreign-scope records and attempts to replace a pending intent.
+
+Retrying the same intent recognizes completion after marker removal, preserves
+later local edits, and never rebuilds or reapplies card units. It can finish
+its own cleanup without touching a newer operation on the list. Empty plans
+retain the same retry guarantee. Completion records contain no card values or
+credentials and are not automatically expired or deleted by the engine.
+
+Eighteen focused Sync Node suites pass with real MongoDB enabled. The final
+three journal/mutation suites also pass after failed-read, false insertion
+acknowledgement and empty-plan checks. Tests cover lost acknowledgements,
+conflicting proofs, changed scope, unknown cleanup outcomes and newer jobs.
+The offline source/dependency audit passes with advisory warnings. Four
+changelog suites pass; the existing released v12.07 line-length failure remains.
+
+The engine remains outside production manual/scheduled Sync; no production UI
+path changed. Callers must persist intent before invocation, reuse it on retry
+and retain completion records while retries remain possible. Production private
+storage, retention and job lifecycle still need wiring. Proofs acknowledge the
+adapter's units, not independently verified History/activity effects; durable
+effect adapters and in-flight fencing remain in TODO Later.
+
+</details>
+
+and improves daily Scrum reporting:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8a3a1d1b3">Keep interrupted normal-import cleanup recoverable</a>. Thanks to xet7.</summary>
+
+Normal Scrum imports previously removed their checkpoint before deleting the
+private write plan, then ignored plan deletion errors. Keep the checkpoint
+through plan removal and enter the same durable cleaning state used by offline
+recovery. Propagate failures while keeping the incomplete-import guard active.
+The maintenance command can finish partial cleanup without replaying data.
+
+Three Node suites pass. MongoDB failure injection covers marker removal,
+transition to cleaning, partial plan deletion and checkpoint removal, followed
+by offline resume. Two Chromium scenarios verify native file import and board
+duplication, including absence of leftover checkpoints and plan rows. The local
+release audit passes with advisory warnings. Existing orphan plans from older
+versions, FerretDB validation and online recovery remain pending.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/bde8c3010">Undo interrupted Scrum import plans during offline maintenance</a>. Thanks to xet7.</summary>
+
+The maintenance command now offers read-only rollback inspection and explicit
+`--rollback --apply --offline`. Validate the full plan before reversing its
+writes. Restore original Scrum metadata, including missing fields and nulls,
+while retaining unrelated card data. Remove only unchanged imported planning
+records and daily observations, with exact-document conditional deletion.
+
+Persist reverse progress and cleanup so lost acknowledgements and interrupted
+private-plan removal can be retried. Failed attempts retain their exclusive
+claim. Forward resume is refused after rollback starts. Incomplete preparation
+can be discarded without destination writes; completed imports whose plans are
+already being removed cannot be rolled back. All database writers must remain
+stopped. See the [maintenance guide](docs/Features/ImportExport/Scrum-Import-Recovery.md).
+
+Three Node suites pass, including MongoDB tests for every planned collection,
+changed/moved targets, concurrent changes at deletion/update, write gaps,
+invalid cursors, interrupted cleanup and the real CLI. The local release audit
+passes with advisory warnings. No UI behavior changed. FerretDB, online
+recovery and the other native board-import stages remain unverified or pending.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3b2bb2335">Continue complete stored import plans during offline maintenance</a>. Thanks to xet7.</summary>
+
+The new maintenance command defaults to read-only inspection. With all WeKan
+and other database writers stopped, it can continue the Scrum segment using
+the stored destination IDs. Validate the full plan and every target before
+writing; reject missing, foreign, duplicate or changed targets. Recognize a
+write whose acknowledgement was lost without creating duplicate records.
+
+Complete preparing plans can be sealed; partial plans remain refused.
+Non-expiring claims prevent competing recovery callers. Failures retain the
+claim until the operator verifies its owner has stopped and clears its exact
+token. A cleaning phase continues interrupted private-plan removal without
+replaying data writes. The result identifies its scope as Scrum, not the whole
+board import. See the [maintenance guide](docs/Features/ImportExport/Scrum-Import-Recovery.md).
+
+Three Node suites pass, including real MongoDB failure injection, competing
+callers, partial marker cleanup, interrupted plan cleanup, argument validation
+and the actual CLI. The final CLI rerun confirms its explicit Scrum scope.
+The release audit passes with advisory warnings. FerretDB was not tested.
+Online recovery, partial-staging reconstruction and the other board import
+stages remain pending. Offline rollback is implemented in the entry above.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/db5ecc802">Preserve interrupted import plans and reject changed destination data</a>. Thanks to xet7.</summary>
+
+Stage each intended Scrum write in a private recovery collection before
+changing destination records. A board checkpoint tracks preparation and
+acknowledged writes; stable IDs and exact before/after values survive a stop
+between the target write and its acknowledgement. Conditional metadata writes
+reject changed or moved targets. The step writer accepts exact repeated
+results and refuses same-ID inserts with different content.
+
+The checkpoint blocks Scrum writes, reports and daily capture before the first
+sprint exists and through the final marker cleanup. The UI shows the existing
+incomplete-import warning without exposing private plan data. Successful
+imports and board deletion clean their private checkpoints and plans.
+
+Four Node suites pass, including MongoDB tests for staging interruption,
+competing plans, target-write interruption, lost acknowledgement, BSON replay,
+changed/moved targets and missing-versus-null metadata. Four distinct Chromium
+scenarios pass for native import, board copy and both kinds of pending guard;
+the final native import rerun confirms checkpoint cleanup. The release audit
+passes with advisory warnings. FerretDB and other browsers were not tested.
+
+This is the durable-plan foundation, not a completed recovery interface.
+Coordinated replay, rollback, partial staging, orphan-plan cleanup after a
+cleanup failure and the other native import stages remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8cb463722">Keep marked incomplete imports out of Scrum edits and report downloads</a>. Thanks to xet7.</summary>
+
+While a board has a pending imported sprint, reject Scrum settings, planning,
+metadata and lifecycle changes, including the already-closed retry path.
+History restore/undo/redo cannot create checkpoints or apply changes during
+that state. Remove editing capabilities from the Scrum view and show why.
+Daily reads reject incomplete data; Excel/PDF Scrum downloads return HTTP 409
+with an incomplete-import message. Clearing the marker after a completed
+import restores normal access.
+
+Twelve focused Node suites pass, including the shared export authorization
+policy and MongoDB capture. The optional separate DDP lifecycle suite is
+skipped. Thirteen distinct Chromium scenarios pass across the initial run and
+focused rerun after correcting test error serialization. Coverage includes
+eleven refused mutation/History calls without side effects, blocked report
+downloads, the warning and unavailable forms, restored access, native import,
+copying and existing History recovery. Both download formats also pass the
+final pending-import scenario. The release audit passes with advisory warnings.
+Four changelog suites pass; the known released-entry line-length failure
+remains. FerretDB and other browsers were not tested.
+
+This guards marked Scrum imports. Automatic resume/rollback and conflict
+handling for concurrent ordinary board/card edits remain pending.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3fe578618">Preserve daily observations through native board transfer and duplication</a>. Thanks to xet7.</summary>
+
+Version 2 native Scrum payloads carry daily observations with their actual
+timestamps, start epochs, policies and measured card states. Remap sprint,
+card, list and custom-field references to destination IDs. Scoped exports and
+copies with omitted cards mark reduced snapshots partial and report losses.
+Version 1 files remain importable without invented observations; older readers
+cannot import version 2 files.
+
+Reject malformed or duplicate observations before import side effects. Bound
+native history to 10,000 observations and 100,000 observed card rows in total;
+larger transfers fail explicitly. Imported sprints remain pending until their
+cards, observations and settings are saved, so a collector cannot record a
+half-imported sprint. Pending imports cannot be exported as complete transfers.
+Interrupted-import recovery and multi-document atomicity remain unfinished.
+
+Ten focused Node suites pass with real MongoDB capture enabled; the optional
+separate DDP lifecycle suite is skipped. Eleven transfer checks also pass after
+adding the aggregate-size regression. Nine Chromium scenarios pass, including
+full/scoped export, UI import, board duplication, omitted Scrum, partial copies,
+invalid input, pending-import capture exclusion and existing report/export
+permissions. The release audit passes with advisory warnings. Four changelog
+suites pass; the known released-entry line-length failure remains. FerretDB,
+other browsers and full import crash recovery were not tested.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/15ff19d2a">Export daily observations with their measurement and visibility context</a>. Thanks to xet7.</summary>
+
+The daily observations section has its own Excel/PDF export action. Both
+formats use the same authorized, bounded history reader as the screen and
+preserve sprint names, exact UTC capture times, units, estimate policies and
+separate counts for cards, known estimates and unknown estimates. Missing days
+remain absent. Excel includes a Notes sheet; PDF wraps labelled metrics and
+notices about observed states, partial visibility and the 366-observation limit.
+The toolbar's existing export still produces sprint results.
+
+Eleven focused Node suites pass, including export authorization, observation
+row formatting and real MongoDB capture; the optional separate DDP lifecycle
+suite is skipped. Five Chromium scenarios pass. The daily export scenario
+opens the popup, checks the selected sprint, reads actual workbook cells and
+extracts text from the PDF. Exact timestamps and unknown counts survive, hidden
+estimates stay excluded, and an invalid sprint cannot produce a report.
+Existing charts, read-only access and stale-response tests still pass.
+The release audit passes with advisory warnings. Four changelog suites pass;
+the known released-entry line-length failure remains. FerretDB and additional
+browsers were not tested. Event-complete burndown and native history transport
+remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/634abca41">Display measured daily scope and remaining work in Sprint Report</a>. Thanks to xet7.</summary>
+
+Selecting a sprint shows its recorded daily observations below the sprint
+result. Switch between card counts and known estimates; each bar retains its
+exact UTC timestamp and unknown-estimate count. Missing days remain absent,
+and unlike units or partial results do not share a scale. Loading, errors,
+empty history, restricted visibility and truncation are explicit. A late
+response cannot replace the newly selected sprint's observations.
+
+Ten focused Node suites pass with the MongoDB capture test enabled; the
+optional separate DDP lifecycle suite is skipped. Five Chromium scenarios
+pass, including the rendered values, assigned-only access, missing-day gaps,
+unknown estimates, empty history, 390-pixel width and stale-response rejection.
+The existing scoped chart/Excel export and read-only view checks still pass.
+The release audit passes with advisory warnings. Four changelog suites pass;
+the known released-entry line-length failure remains. Other browsers, FerretDB
+and a complete theme/RTL matrix were not tested.
+
+The interface identifies these as observations rather than a complete event
+history. Its Export action still exports sprint results only. Daily-history
+exports and event-complete burndown remain pending. New English source strings
+are registered; other-language translation work remains outside this queue.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/be5842616">Record daily Scrum observations without inventing missing history</a>. Thanks to xet7.</summary>
+
+Collect active sprints every 15 minutes and retain the first observation of each
+UTC day. History reads can collect today's observation too. Retries and
+concurrent collectors cannot overwrite the recorded state. Restarted sprints
+use separate series. Missing days stay absent; unknown estimates stay distinct
+from zero. Observations use the recorded sprint policy and actual capture time.
+
+The private history reader enforces board and assigned-card access, reports
+partial data and streams at most 366 recent observations with a truncation flag.
+Capture rejects more than 10,000 cards or lists instead of saving partial data.
+Board deletion removes the observations.
+
+Nine focused Node suites pass, including real MongoDB retry/concurrency tests;
+the optional separate DDP lifecycle suite is skipped. Four Chromium scenarios
+pass on local Meteor/MongoDB, covering observation retention, authorization,
+bounded history, read-only access and the existing scoped chart/Excel export.
+The local release audit passes with advisory fingerprint warnings. Earlier
+Sync regression results remain recorded below. FerretDB, Firefox, WebKit and
+the scheduled collector's full 15-minute interval were not tested.
+
+These are observed reads, not transactional snapshots or an event-complete log.
+Burndown UI, exports, event-level replay and native history transport remain
+in TODO Later. The known released-entry changelog format failure remains.
+
+</details>
+
+and improves list synchronization:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7837f3d9c">Preflight Scrum lifecycle document sizes</a>. Thanks to xet7.</summary>
+
+Before a lifecycle write, check BSON byte sizes of the resulting sprint and
+rollover plan, compound History and paired recovery snapshots. A 15 MiB budget
+reserves room for envelope fields and recovery revisions. Oversized metadata
+returns an explicit scope-reduction error before changing sprint state or cards.
+
+Sixteen Scrum Node suites pass with database/lifecycle integration enabled and
+no skipped tests. All nine Chromium scenarios pass, including 800 cards with
+large acceptance criteria: close is rejected without changing state or History,
+and retry succeeds after reducing metadata. Unit coverage includes multibyte
+text, compound History overflow, recovery-size reserve and 10,000-card plans.
+The offline audit passes with advisory warnings; the pre-existing released
+v12.07 changelog line-length failure remains.
+
+Larger-plan storage, concurrent snapshot consistency and original-write/History
+atomicity remain unfinished. Size preflight does not provide a transaction.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/429c360ba">Bound Scrum sprint snapshot reads and completion work</a>. Thanks to xet7.</summary>
+
+Sprint start and close previously loaded full card/list collections before
+checking the card limit. Fetch only snapshot/rollover fields and at most 10,001
+rows, retaining an overflow sentinel. Reject more than 10,000 cards or lists
+before changing sprint state or History. Start still excludes archived cards;
+close includes them for rollover. Replace repeated list scans for each card
+with one done-list membership index per snapshot.
+
+All fifteen Scrum Node suites pass with MongoDB and Meteor integration enabled,
+without skipped tests. Eight Chromium scenarios pass, including oversized
+start/close rejection with unchanged sprint/History state and successful retry
+after removing excess inputs. Unit coverage verifies exact-limit completeness,
+projected queries, overflow detection and one completion scan of the lists.
+The offline audit passes with advisory fingerprint warnings. The known v12.07
+released-entry changelog line-length failure remains.
+
+Row-count bounds do not bound document byte sizes or make concurrent snapshots
+atomic. Large metadata/rollover plans, board-view pagination and coordinated
+snapshot consistency remain in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0d582c9c0">Verify Scrum undo finalization before clearing recovery</a>. Thanks to xet7.</summary>
+
+Keep the pending Scrum History checkpoint until the original row's integrity,
+author, superseded state and persisted undo/redo flag are verified. Conditional
+updates reject changed rows; readback rejects invalid final states. Retrying an
+already completed undo preserves its original timestamp. Checkpoint deletion
+also matches the operation ID, preventing an older worker from removing a
+replacement operation's recovery evidence.
+
+Seven focused Node suites and all seven Scrum History Chromium scenarios pass.
+Coverage includes lost update acknowledgements, zero-match writes, damaged or
+missing source rows, failed cleanup, replacement checkpoints, invalid persisted
+states and timestamp preservation after browser-driven retry. The offline audit
+passes with advisory fingerprint warnings. The changelog format suite retains
+the pre-existing overlong line in released v12.07.
+
+This verification and cleanup sequence is not a cross-document transaction.
+Coordinated fencing of in-flight writers, atomic original writes/History and
+automatic startup replay remain in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/68dcb02d1">Preserve zero and false in activity deliveries</a>. Thanks to xet7.</summary>
+
+Activity notification parameters and outgoing webhook attribute selection
+previously discarded numeric zero, boolean false and empty text. Preserve
+these values and explicit null, while leaving undefined/absent values omitted.
+Custom-field notifications can now report zero estimates and unchecked values;
+configured before/after text attributes retain an explicitly cleared string.
+Existing webhook attribute selection and nonblocking delivery stay in place.
+
+Thirteen notification/webhook Node suites pass. Tests execute the activity hook
+and outgoing method to inspect notification parameters and serialized HTTP
+bodies, including ordinary/configured/two-way attribute handling and omitted
+values. All eight Chromium scenarios pass with a local-only SMTP capture:
+delivered custom-field emails retain zero and false, board/list/card watching
+still works, muted/disabled recipients remain excluded, and Jira estimate Sync
+passes. No email was relayed externally. The offline audit passes with advisory
+fingerprints; other Upcoming regression evidence remains recorded.
+
+Persistent notification jobs, webhook acknowledgements and restart recovery
+remain unfinished. This fixes payload fidelity, not durable delivery.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2c9193535">Persist Sync effects with their card plans</a>. Thanks to xet7.</summary>
+
+The internal journal now stores each prepared effect plan with its card unit,
+covering both with the unit and complete-plan checksums. Every saved effect is
+validated before any card application, including after restart. The operation
+retains its effect mode and rejects missing validators, absent plans, changed
+contents and units larger than the 15 MiB BSON budget. Card and event plans
+share checkpoint retention and verified cleanup. History rows are also checked
+against the exact card step and stable effect identity before application.
+
+Twenty-four focused Sync Node suites pass with MongoDB; the final eight
+History/application/journal suites pass after additional malformed-mode checks.
+Persistence tests cover corruption in a later unit preventing earlier writes,
+missing effects, checksum damage, preparation failures, oversized units and
+interrupted History replay from the embedded plan. The History fixture no
+longer relies on a separate plan collection. The offline audit passes with
+advisory fingerprints. No browser behavior changes in this internal engine;
+existing Upcoming browser results remain recorded with their entries.
+
+Production job/collection lifecycle, application-hook integration, creation
+effects and durable activity/rule/notification delivery remain in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f5e2dd0f5">Persist retryable Sync field History batches</a>. Thanks to xet7.</summary>
+
+Add the internal History component for durable Sync updates and archives.
+Prepare fixed event IDs, timestamps, batch identity and integrity-chain links
+before mutation. Snapshot exact redo candidates and undo timestamps so retries
+never invalidate newly undone rows. Conditional writes and readbacks reject
+changed candidates, missing/damaged predecessors and unconfirmed event inserts.
+Existing timeline rows retain their timestamps and later undo flags. Baseline
+updates produce no History rows; mapped estimates retain typed date fields.
+Plan builders now receive stable operation/intent identities and a guard.
+
+Twenty-three focused Sync Node suites pass with MongoDB. The final seven
+History/application/journal suites also pass after scope and bounds checks.
+Real persistence tests interrupt after a card and one History row are saved,
+retain checkpoint zero, resume the saved plan, preserve a later redo candidate
+and verify the complete chain without duplicate events. Negative tests cover
+false/lost replies, malformed plans, foreign scopes and lost ownership. The
+offline audit passes with advisory fingerprints. This internal component adds
+no browser path; existing Upcoming browser regression evidence remains recorded.
+
+Production Sync integration, creation effects, legacy redo handling, independent
+chain-writer coordination and activity/rule/notification durability remain open.
+The History acknowledgement alone does not complete all effects of a Sync step.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a00c009ba">Attribute scheduled Sync to its authorizing account</a>. Thanks to xet7.</summary>
+
+Store the authenticated settings saver's ID in the immutable private credential
+version. Scheduled Sync enters that user's context so normal History and
+activity hooks have an author. Before fetching and at guarded writes, recheck
+that the account exists, login is enabled and current board permissions allow
+full-list writes. Assigned-only access cannot authorize a scheduled full-list
+run. Clients cannot supply another author through the settings method.
+
+After upgrading, save existing Sync settings once to authorize scheduling.
+Versions without an author stop and display a Sync error. Removed/disabled
+accounts and revoked permissions also stop; saving with an authorized account
+resumes scheduled work. Manual runs retain their current invoking-user checks.
+Stable version selection keeps the author and token together across saves.
+
+Twenty-one focused Sync Node suites pass with MongoDB. Production-path tests
+verify attributed writes, missing/disabled/revoked accounts and revocation
+during fetching; the real database checks the private saved author. All
+twenty-five Sync Chromium scenarios pass, including settings persistence and
+rejection of a client-selected author. The offline audit passes with advisory
+fingerprints. Existing Upcoming regression evidence remains with its entries.
+
+These checks do not fence in-flight writes or make History, card mutations,
+activities and notification delivery atomic. Durable integration remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6465fd28e">Stream History pagination in bounded batches</a>. Thanks to xet7.</summary>
+
+History page requests no longer materialize the full scope before filtering.
+Read database rows in batches of 100, check current visibility before search
+and counting, and retain only the requested/final pages and contributor counts.
+Assigned-only permission checks load just the card IDs in each batch. Cursors
+close on success and failure; empty results and out-of-range pages keep the
+shared paginator's behavior. Existing newest-first database indexes remain used.
+
+Six focused Node suites pass, including thousand-row paging, exact final pages,
+permission-before-search ordering and cursor closure after failures. The two
+affected scanner/access suites also pass after the final batch-bound change.
+All fourteen History/Scrum Chromium scenarios pass. A 215-row fixture spans
+several batches, excludes hidden cards from 54 search matches and contributor
+counts, and clamps a large page number to the last four rows. Existing restore,
+undo/redo, nested-date and permission regressions also pass. The offline audit
+passes with advisory fingerprints; other Upcoming coverage remains recorded.
+
+Exact totals still require a full scope scan, contributor storage grows with
+distinct authors, and concurrent changes are not a database snapshot. Broader
+History durability and large-board work remain in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0da7d2d41">Preserve nested dates in History snapshots</a>. Thanks to xet7.</summary>
+
+History previously converted dates inside custom-field arrays to strings.
+Restoring an unrelated change in the same array could therefore change a date
+field's type. Record nested dates as milliseconds with explicit paths, and
+restore only those marked values as dates. Literal date-looking text stays text;
+malformed metadata is rejected. Type-only changes are now detected too.
+Older rows without date metadata retain their existing interpretation because
+their original date and text values cannot be distinguished reliably.
+
+Five focused Node suites pass, covering JSON round trips, unchanged values,
+type changes, invalid dates, malformed paths and History integrity/wiring.
+All eight Chromium scenarios pass: a real custom-field write records the date
+metadata, restoration stores a BSON Date while retaining literal text, existing
+History permission checks still hold, and Jira estimate Sync remains covered.
+The offline audit passes with advisory fingerprint warnings. Existing Upcoming
+regression evidence remains recorded with its entries. Durable Sync History and
+activity integration remain unfinished in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7bf5c63d0">Separate Sync card writes from event completion</a>. Thanks to xet7.</summary>
+
+Add the internal application adapter for saved Sync steps. Conditional writes
+preserve unrelated card fields and require the expected stored result, including
+after lost replies. An occupied creation ID or changed local value stops replay.
+Every pending step separately requests durable effects using a stable operation
+and step identifier; matching card state alone cannot advance the journal.
+Missing acknowledgements, read failures and lost ownership retain recovery work.
+
+Twenty focused Sync Node suites pass with MongoDB. The final two adapter suites
+also pass after extending creation, field-removal and read-error coverage.
+Integration tests interrupt effects after card persistence, verify the pending
+checkpoint and resume without repeating card changes. The offline audit passes
+with advisory fingerprints. No browser behavior changes in this internal module;
+existing Upcoming browser results remain recorded with their entries.
+
+Manual/scheduled Sync integration, application hooks, real durable History and
+activity delivery, startup scheduling and job controls remain in TODO Later.
+The test effect receipt is not a production event-delivery implementation.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d3667f50b">Verify successful Scrum History inserts</a>. Thanks to xet7.</summary>
+
+Scrum restoration now reads back and validates the saved event even when the
+insert reports success. Refused inserts, mismatched identities, altered event
+contents and unavailable confirmation reads leave recovery pending. A retry
+reuses an intact saved event without changing its timestamp or integrity chain.
+
+Three focused History Node suites and all seven Scrum History Chromium tests
+pass. Fault injection covers false success replies, damaged records, failed
+confirmation reads and retention of the original write error. Existing browser
+coverage exercises restore, undo/redo, permission denial, damaged recovery
+evidence and interrupted compound operations. The offline source/dependency
+audit passes with advisory fingerprint warnings. Other Upcoming regression
+evidence remains recorded with its entries.
+Four of five changelog suites pass; the format suite still reports the existing
+overlong Member Settings line in the released v12.07 notes.
+
+Original mutation/History atomicity, independent chain-writer coordination and
+automatic startup replay remain incomplete in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/484bad1d9">Verify Scrum restoration History before acknowledging recovery</a>. Thanks to xet7.</summary>
+
+Scrum restore/undo/redo now records each author's restoration with a stable ID
+from the board and pending operation. Retries verify the exact event contents
+and integrity hash, including existing random-ID rows from older operations.
+Lost insert acknowledgements and concurrent attempts reuse the committed event
+without changing its timestamp or integrity-chain link. Failed writes and
+conflicting or damaged rows retain the pending recovery checkpoint and return
+an actionable History error.
+
+Six focused Node suites pass, including concurrent replay, lost
+acknowledgements, legacy rows, corruption, failed writes and independent author
+identities. All seven Scrum History Chromium scenarios pass. The recovery
+scenario now checks
+that a damaged event retains its checkpoint and that retry after repair produces
+no duplicate timeline row; it also passes after the final public-error change.
+The offline source/dependency audit passes with advisory fingerprint warnings.
+
+Ordinary History keeps its best-effort contract. Atomic original writes/History,
+serialization of independent integrity-chain writers and startup replay remain
+in TODO Later; this change does not complete those requirements.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/96dba3460">Avoid activities and History for unmatched card writes</a>. Thanks to xet7.</summary>
+
+During durable Sync adapter work, verify that collection-hooks calls update
+post-hooks even when MongoDB reports zero affected documents. Title and
+description activities also ran before the conditional card write, allowing
+rejected attempts to emit activities and trigger rules or webhooks.
+
+Move those text activities after successful writes and compare the previous
+snapshot with the requested text. Handle description clearing after schema
+cleaning turns it into an unset. Suppress archive activities for zero-match and
+unchanged-state writes. Apply the same successful-write guard to universal
+entity History and rule/trigger/action History before reading or recording
+changes. Preserve normal activity content and no-op suppression.
+
+Twenty-five focused Node suites and four additional History suites pass. The
+History template guard now distinguishes Scrum's daily observation chart by
+its specific data source and chart-only structure, while still rejecting a
+second changeHistory table. All twenty-nine Chromium activity, Sync and Rules
+History scenarios pass.
+Coverage includes successful edits, explicit clearing, repeated writes,
+zero-match/error hook contexts, missing previous snapshots and normal History
+undo/redo. The local release audit passes with advisory warnings. No new
+translations are needed. Other browsers and FerretDB were not tested. Existing
+Upcoming regression evidence remains recorded.
+
+Document the remaining crash gap between card writes and separate activity or
+History writes. Post-hooks alone do not make these effects atomic or replayable;
+aggregate multi-update counts also do not identify individual successful rows.
+The durable adapter, stable effect identities and startup replay remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/487fd5988">Prepare durable Sync checkpoints and protect nullable fields</a>. Thanks to xet7.</summary>
+
+Fix current conditional Sync writes so an explicit null snapshot no longer
+matches a field deleted locally afterward. MongoDB equality to null also
+matches missing fields; requiring presence prevents stale writes in that case.
+
+Add the private write-plan engine for the upcoming recovery adapter. Persist
+all bounded before/after units before application starts, retain the original
+plan after that point and verify its checksums before resuming. Require a
+caller-held renewable lease and a verified applied/already-applied result
+before conditionally advancing the current owner's checkpoint. Preserve the
+completed marker through plan cleanup. Keep interrupted or damaged plans for
+review; reject malformed identities before constructing mutation selectors.
+
+This engine is not yet wired into manual or scheduled Sync. It does not add
+production replay, pause/cancel controls or automatic restart recovery. The
+application adapter still needs normal card hooks/History, exact conditional
+writes, fresh source/permission checks and archive-dependency handling. Journal
+ownership fences checkpoint acknowledgements, not in-flight card writes.
+
+Twenty focused Node suites pass with MongoDB. The expanded journal suites also
+pass after adding malformed-identity and legacy-null-baseline cases. Tests
+cover preparation interruption, committed writes with lost acknowledgements,
+checkpoint resume, changed local state/scope, BSON dates, updates/archives,
+corrupt plans, lost ownership, interrupted cleanup and unverified results.
+All eighteen Chromium Sync scenarios pass for the current write-condition fix.
+The journal itself has no application UI yet. Document the engine contract and
+remaining integration. The local release audit passes with advisory warnings;
+FerretDB and other browsers were not tested. Existing Upcoming regression
+evidence remains recorded.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6a4e5e29a">Inspect retained Sync outcomes in Problems Recovery</a>. Thanks to xet7.</summary>
+
+Add a Sync diagnostic table alongside the existing Recovery event report.
+Read the same private run records rather than copying events or publishing the
+collection. Default to unfinished outcomes, without claiming they are stopped.
+Offer status filters, literal board/list ID search, ten-row server pagination
+and explicit refresh. Expand Details for confirmed successful counts, bounded
+field paths and parser diagnostic counts. Existing event controls stay separate.
+
+Require instance administrator access before and after reading. Reject invalid
+queries, escape search metacharacters, use an explicit field projection and
+exclude records older than 30 days. Rate-limit requests and index time/status
+queries. The list popup keeps its separate board/lifetime permission boundary;
+instance admins may inspect retained reports for deleted lists here.
+
+Twenty-two targeted Node suites pass, including MongoDB tests for stable pages,
+retention, literal search and private-field exclusion. Access tests cover
+anonymous and ordinary users and administrator rights revoked during reading.
+All twenty Chromium Sync, Recovery and instrumentation scenarios pass. The
+expanded Recovery scenario also passes with an explicit refresh after a stored
+outcome changes. Coverage includes status filters, escaped paths and the
+non-admin denial. Update Recovery, Sync and format-coverage documentation;
+add English source labels only. The local release audit passes with advisory
+warnings. Other browsers and FerretDB were not tested. Existing Upcoming
+regression evidence remains recorded.
+
+This completes the retained-report Recovery view. Replay checkpoints,
+in-flight write fencing, automatic restart recovery and atomic multi-card
+reconciliation remain unfinished; the view offers no resume or undo action.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/adf646177">Retain private Sync run outcomes and field coverage</a>. Thanks to xet7.</summary>
+
+Full-list manual and scheduled Sync runs now persist a starting record before
+fetching or applying changes. Store bounded source/normalized field coverage
+and a terminal status. Successful runs include created/updated/archived counts;
+omissions and conversions produce completed-with-warnings status. Failed or
+unfinished runs may have changed cards and never infer partial success counts.
+A failed starting write prevents the run; an uncertain final acknowledgement
+leaves a failed or unfinished diagnostic record.
+
+Add Recent Sync runs to the popup. Read the latest 20 reports from the last 30
+days with full-list access checked before and after querying. Bind records to
+the board and list lifetime, exclude older records and rate-limit requests.
+Deny all client collection writes and publish no records. Store no credentials,
+source URLs, card values or raw error bodies. MongoDB TTL expires old reports;
+other backends without TTL support need operator-managed diagnostic cleanup.
+Previews and individual conflict resolutions do not start full-run reports.
+
+Sixteen focused Node suites pass, including real MongoDB journal and lease
+checks. An expanded persistence test also passes after reconnecting its reader.
+All eighteen Chromium Sync scenarios pass, including report rendering, omitted
+value privacy and assigned-only denial. Negative tests cover changed access,
+recreated lists, unavailable starting/final writes and unknown outcomes. Update
+the Sync and format-coverage guides; add English source labels only. The local
+release audit passes with advisory warnings. Existing Upcoming regression
+evidence remains recorded. Other browsers and FerretDB were not tested.
+
+These are retained diagnostics, not replay plans. The Recovery view added above
+exposes them; restart checkpoints, in-flight write fencing and atomic changes
+remain in TODO Later alongside complete provider mapping and data transport.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e0f54fc93">Show source fields left out of Sync before normalization</a>. Thanks to xet7.</summary>
+
+Inspect fetched issue data for unmapped fields, saved-field exclusions,
+unused fallback values and representation conversions. Report attachments,
+comments, estimates and custom extensions that disappear before normalization.
+Count pull requests excluded by the GitHub/Gitea/Forgejo issue parser.
+Unknown subtrees are reported at their first unmapped path as a whole.
+
+Return paths and occurrence counts without field values. Bound output to 100
+path/reason rows, count overflow and shorten long field names. Render paths as
+escaped text. Preserve full-list authorization, saved-settings behavior and
+no-card-write preview semantics. The inventory also feeds the persisted
+full-run reports added above.
+
+Fourteen Sync Node suites pass, including local MongoDB checks, and all eighteen
+Chromium Sync scenarios pass. Coverage includes actual parser choices, numeric
+zero, unknown/prototype keys, bounded output, omitted-value privacy, escaped
+paths and access revoked before the preview returns. The local release audit
+passes with advisory warnings. Update Sync and format-coverage documentation;
+add English source labels only. FerretDB and other browsers were not tested.
+
+Rules follow the current parsers, not a complete provider schema. Pagination
+envelopes discarded while fetching are outside this inventory. Complete field
+mapping, binary/history transport and durable recovery remain in TODO Later.
+Existing Upcoming regression evidence remains recorded.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/80ccf100a">Preview saved Sync changes and fields left unsynchronized</a>. Thanks to xet7.</summary>
+
+Add Preview changes to the list Sync popup. Reuse the actual merge, operation
+switches and conflict checks without changing cards, settings or shared Sync
+status, including on errors. Show create/update/archive counts and bounded
+card summaries. Count normalized fields excluded by selection or lacking a
+mapping, plus parser diagnostic counts, without returning omitted values.
+Use saved settings and clear the displayed plan when the form changes.
+
+Require full-list write access before fetching and check access again before
+returning. Assigned-only users retain their existing scoped conflict review.
+Preview uses the usual per-list reservation; Sync now fetches and checks again.
+It is not an approval token for a frozen plan. Titles render as escaped text.
+
+Exclude ignored status-only differences from both preview and update counts.
+Preserve empty strings and surrounding whitespace in Sync text and baselines
+while retaining schema validation. The browser test exposed an empty source
+baseline being removed by cleaning; unchanged runs now stop rewriting it.
+
+Thirteen Node suites and eighteen Chromium Sync scenarios pass after the
+storage fix. Coverage includes no-write errors/conflicts, disabled sources,
+operation switches, bounded output, stale access, omitted-value privacy, saved
+settings, empty baseline persistence and conflict resolution. The release audit
+passes with advisory warnings. Add English source labels only. FerretDB and
+other browsers were not tested.
+
+This completes the normalized-field preview checkpoint. The source inventory
+added next covers fetched fields before normalization; full-run reports now
+retain it and Recovery exposes it. Complete schema/mapping coverage and durable
+recovery remain in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0210614a8">Repair damaged Sync counters without reviving old saves</a>. Thanks to xet7.</summary>
+
+The hourly sweep now snapshots at most 500 unselected credential IDs per list
+before changing an opaque activation fence. Delete only those immutable IDs;
+newer staging survives even when another sweep completes before a delayed
+cleanup resumes. Larger backlogs drain over later sweeps. Add a list/ID index
+for the bounded scan and keep token values out of it.
+
+Repair malformed, negative, fractional or exhausted numeric counters with a
+new fence. Ordinary settings saves can also repair them, including lists with
+no existing credentials; repair and activation share one conditional write.
+Stale saves cannot become valid when the counter resets. Unselected malformed
+versions are collected by identity. Active tokens and ambiguous legacy choices
+remain protected until a settings save replaces them. All writers must upgrade
+together before relying on these fences.
+
+Twelve Sync Node suites pass, with two focused suites rerun after extending
+coverage. Real MongoDB cases include malformed values, concurrent reset and
+cleanup, more than 500 abandoned versions, stale saves, lost acknowledgements
+and new staging preserved through delayed deletion. Seventeen Chromium Sync
+scenarios pass, including popup repairs and rejection of direct fence edits.
+The local release audit passes with advisory warnings. FerretDB and other
+browsers were not tested. Whole-run recovery and card-write fencing remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/210f1b59b">Retire deleted-list credentials without disrupting recreated lists</a>. Thanks to xet7.</summary>
+
+Give every new list a server-generated credential lifetime, including copies
+and imports that bypass collection hooks. Match that lifetime when reading a
+credential or activating settings. Existing legacy lists keep their tokens;
+recreating the same list ID cannot reactivate the old list's credential.
+
+The hourly sweep reads credential identity before checking list absence and
+removes only that exact version. A concurrent recreated list keeps its new
+token. Delayed old saves fail their lifetime comparison; interrupted cleanup
+can retry. The scan neither reads nor logs tokens. Soft-deleted lists retain
+their selected credential for undo. Malformed-generation repair is extended
+above.
+All writer processes must upgrade together. Stop writers for database restores,
+which bypass application lifecycle rules.
+
+Twelve Sync Node suites and four list/import suites pass. Real MongoDB tests
+cover recreation between absence checks and deletion, stale legacy and newer
+saves, preserved active tokens and failed cleanup retries. Sixteen Sync
+Chromium scenarios and native import/board copy scenarios pass. The local
+release audit passes with advisory warnings. FerretDB and other browsers were
+not tested. Whole-run recovery and card-write fencing remain pending.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/352dcbea8">Create stable replacements for moved or detached Sync cards</a>. Thanks to xet7.</summary>
+
+Stop before normal card writes when a creation ID is occupied. Unrestricted
+writers can choose a replacement in the Sync popup while preserving the old
+card unchanged. Show only incoming source text, since the old card may now be
+private. Refetch source data and reject changed previews or disabled creation.
+
+Store the chosen target before inserting the replacement. Conditional target
+changes reject stale decisions; retries and other workers reuse the chosen ID
+after lost acknowledgements. Keep these private records across reconnects and
+restarts. Direct client writes are denied. Assigned-only writers cannot choose
+replacements, and no provider write is made.
+
+Twelve Node suites pass, including real MongoDB concurrency and lost
+acknowledgement checks. Fourteen Chromium scenarios pass, followed by two
+focused scenarios covering moved and detached cards and denied direct writes
+(fifteen distinct scenarios total). The local release audit passes with
+advisory warnings. Add English source labels only. FerretDB, other browsers
+and live providers were not tested. Durable whole-run reconciliation,
+transactions and fencing of already-issued card writes remain pending.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ed1615369">Keep parents local when active subcards block Sync archival</a>. Thanks to xet7.</summary>
+
+Show an archive-conflict preview when an absent source item still has active
+subcards outside the archive plan. Keep the parent locally by removing only
+its Sync identity and baseline. Refetch source data, recheck the conflict and
+conditionally update the parent. Returned source items, changed parent values,
+removed blockers and disabled archival invalidate old previews. No subcard
+identifiers or content enter the preview, and subcards are never changed by
+this action. Assigned-only writers retain assignment checks and review mode.
+
+Ten Sync Node suites and thirteen Chromium scenarios pass, including both
+permission scopes, stale source absence, preserved parent/subcard data and
+existing Sync behavior. The local release audit passes with advisory warnings.
+Add English source labels only. If the source later returns, the stable-ID
+collision guard preserves a detached local card; explicit replacement is
+extended above. Durable reconciliation and write fencing remain pending.
+Other browsers, FerretDB and live providers were not tested.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4b05d4c51">Convert duplicate Sync mappings into local cards</a>. Thanks to xet7.</summary>
+
+The Sync popup now shows extra mappings beside the card that will stay synced.
+Keep an extra as a local card by removing only its Sync identity and source
+baseline. Preserve its content and assignments. All workers protect the same
+first mapping, independent of cursor order. Include the visible mapping group
+in the preview fingerprint and retain conditional card/assignment checks.
+Changed groups require a new review; Sync retries after successful repair.
+
+Ten Sync Node suites and eleven Chromium scenarios pass. Coverage includes
+reversed query order, protected retained mappings, stale groups, assignment
+conditions, unchanged card content and successful Sync after repair. The local
+release audit passes with advisory warnings. Add English source labels only.
+Groups spanning hidden cards require an unrestricted writer. Archive/subtask
+repair and explicit creation replacement are extended above. Transactional
+reconciliation and in-flight write fencing remain pending. Other browsers,
+FerretDB and live providers were not tested.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4aa67fedc">Review and resolve Sync conflicts within assigned-card access</a>. Thanks to xet7.</summary>
+
+For assigned-only writers, manual Sync reviews their assigned existing cards
+instead of running list-wide creation, updates or archival. Return only scoped
+conflicts and leave shared Sync status unchanged. Resolve an assigned card's
+field with the assignment included in its conditional write; removing access
+invalidates an earlier choice. Recheck permissions after fetching source data.
+The popup distinguishes completed review from a full-list Sync run.
+
+New shared conflict summaries omit card identifiers and values. This changes
+ordinary status content, not an attributable attack; no security event is
+recorded for normal review. Historical stored messages are not rewritten.
+Scheduled Sync and unrestricted manual runs keep their full-list behavior.
+
+Ten Sync Node suites and ten Chromium scenarios pass, including hidden-card
+preservation, unchanged shared status, assignment revocation, scoped writes
+and existing configuration/credential behavior. The local release audit passes
+with advisory warnings. Add one English source label without translation fill.
+Duplicate mapping, archive/subtask repair and creation replacement are
+extended above. Transactional reconciliation and in-flight card-write
+fencing remain pending. Other browsers, FerretDB
+and live providers were not tested.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/df376f788">Resolve conflicting Sync field values in the list popup</a>. Thanks to xet7.</summary>
+
+Show current WeKan and source values for title, description and spent-time
+conflicts. Choose one value per field. Keeping local work advances its source
+baseline so unchanged source data does not repeat the same conflict. Neither
+choice writes upstream. Refetch source data and verify the preview fingerprint
+before a conditional card update; changed comparisons must be reviewed again.
+Retry Sync after a successful choice, showing up to 50 remaining conflicts.
+
+Require unrestricted board write access and recheck it after fetching. Render
+values as escaped text and keep unrelated fields intact. Ten Sync Node suites,
+additional field-specific checks, catalog ordering and nine Chromium scenarios
+pass. Browser coverage includes both choices, stale previews, text escaping,
+assigned-only restrictions and existing settings/source behavior. The local
+release audit passes with advisory warnings. Add English source labels only;
+other languages use the existing fallback, without translation filling.
+
+Assigned-only resolution and duplicate mapping repair are extended above.
+Creation replacement is extended above. Transactional reconciliation and
+in-flight write fencing remain pending.
+FerretDB, other browsers and live providers were not tested.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b3c53c3ae">Retire abandoned Sync credentials without breaking delayed saves</a>. Thanks to xet7.</summary>
+
+An hourly sweep advances a server-owned credential generation before deleting
+unselected older versions. Settings activation checks the captured generation,
+so a delayed save cannot activate a retired token. Preserve the selected
+credential and newer staging; reclaim late old-generation inserts on a later
+sweep. Cleanup failures are retryable, and overlapping workers use conditional
+list updates. The scan streams IDs and keeps tokens out of results and logs.
+
+Eleven Node suites pass, including MongoDB races, delayed inserts, uncertain
+writes, disabled sources and failure isolation. Eight Chromium Sync scenarios
+pass across the initial run and corrected-test rerun, including retained token
+use, later settings saves and denial of browser changes to the generation.
+The local release audit passes with advisory warnings. All writer processes
+must upgrade together. Deleted-list cleanup and malformed-generation repair
+are extended above. FerretDB, other browsers and live providers remain
+unverified;
+card-write fencing and durable reconciliation checkpoints remain pending.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/81876bfa3">Keep Sync settings and credentials consistent across interrupted saves</a>. Thanks to xet7.</summary>
+
+Stage each credential as an immutable private version, then select that version
+and the public settings together in one conditional list update. A stop before
+activation retains the previous pair; a stop afterward leaves the new pair
+usable even when cleanup or acknowledgement fails. Clearing advances the
+revision too, so an older save cannot match a previous empty configuration.
+Cleanup targets the superseded version only. Readers never adopt an unfinished
+credential save as a fallback. Adopt legacy credentials on a same-source save.
+
+Thirteen focused Node suites pass with real MongoDB tests enabled, including
+injected interruptions before/after activation, lost acknowledgement, concurrent
+writers, delayed clear cleanup, stale saves and missing versions. Twelve
+Chromium scenarios pass, including source switching, legacy adoption, settings
+exclusion, moved-card recovery, permissions and ignoring an unfinished token.
+Existing Upcoming regression coverage and the local release audit pass.
+FerretDB, Firefox, WebKit and live providers were not tested. The pre-existing
+released-entry changelog format failure remains.
+
+Upgrade all processes that save Sync settings together; older code does not
+honor immutable credential revisions. Unselected-version cleanup is implemented
+in the entry above. Durable reconciliation checkpoints and atomic card writes
+remain in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4d8ce7754">Coordinate Sync runs and settings saves across server processes</a>. Thanks to xet7.</summary>
+
+Scheduled Sync, manual Sync and configuration saves share a private reservation
+for each list. Busy requests stop before fetching or changing credentials.
+Operations reread the list after claiming it, renew while waiting on external
+requests and verify ownership before application writes. Expired reservations
+can be reclaimed; old owners cannot release their replacements' reservations.
+The existing popup displays busy and lost-reservation errors.
+
+Twelve focused Node suites pass with real MongoDB lease and creation tests
+enabled; eleven Chromium scenarios pass. Coverage includes separate database
+connections, exclusion, independent lists, heartbeat renewal, callback failures,
+expired-owner recovery, settings exclusion, popup feedback and rejecting an old
+fetched response after a source change. The final busy-popup assertion also
+passes separately. Existing Upcoming behavior retains its regression coverage.
+The local release audit passes. FerretDB, Firefox, WebKit and live providers
+were not tested. The known released-entry changelog format failure remains.
+
+This is not a durable job queue or a multi-document transaction. Fencing
+already-issued card writes after lease loss and persisted reconciliation
+checkpoints remain in TODO Later. Credential activation recovery is covered by
+the later settings-version change above.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/38e8716e5">Prevent duplicate new Sync cards from concurrent runs</a>. Thanks to xet7.</summary>
+
+Give new Sync cards a stable database ID for their list, provider/server/project
+and external issue. Separate workers cannot insert two cards for the same item.
+A creation collision stops the run with a popup error, without overwriting the
+winning card or claiming success. A moved card remains intact; return it to the
+watched list before retrying. Existing card IDs remain unchanged. Unrelated
+database failures still propagate.
+
+Ten focused Node suites pass, plus a real MongoDB test using separate concurrent
+connections and ten Chromium scenarios on local Meteor/MongoDB. Positive and
+negative cases cover identity separation, creation collisions, unrelated write
+failures, moved-card preservation and recovery. The existing source-identity,
+copy, field-selection and permission checks still pass. Release-audit tests and
+the local release audit pass. Live providers, FerretDB, Firefox and WebKit were
+not tested. Further job/configuration recovery, durable restart
+checkpoints and multi-document atomicity remain in TODO Later.
+Four changelog suites pass; the format suite still fails on a pre-existing
+overlong line in a released editor-settings entry. Released text is unchanged.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/75a312809">Keep Sync mappings and credentials scoped to their source project</a>. Thanks to xet7.</summary>
+
+Bind card mappings and credentials to provider, normalized server URL and
+project. Overlapping issue IDs remain separate; source-absence archival affects
+only the current source. Copies omit Sync identity. Source switches and clears
+retain the old cards' identity, and stale fetched configurations cannot begin
+reconciliation or overwrite the new configuration's status.
+
+Save existing Sync settings once after upgrading to bind legacy cards and
+credentials. Unknown legacy sources require a new list. Changing source
+requires entering its credential; missing or mismatched credentials produce an
+actionable popup error without fetching. Concurrent jobs and configuration
+writes remain nontransactional and stay in TODO Later.
+
+Nine focused Node suites and nine Chromium scenarios pass on local
+Meteor/MongoDB, using an HTTP provider fixture. Positive and negative coverage
+includes overlapping IDs, scoped archival, credential replacement, legacy
+adoption, unknown sources, reconnects, malformed URLs and board permissions.
+The local release audit passes. Live providers, FerretDB and other browsers
+were not tested. Update the Sync guide, Scrum design and resumption checkpoint.
+
+</details>
+
+and fixes SAML sign-in:
+
+**SAML** - complete valid logins and make rejected responses understandable.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3578e3ef8">Accept node-saml response IDs and display popup failures</a>. Thanks to xet7.</summary>
+
+Read the validated string property `profile.inResponseTo` instead of calling
+an accessor node-saml does not provide. Retain request correlation, missing-ID
+rejection and single-use replay protection. Read ACS errors before closing the
+popup, skip the nonexistent credential exchange and display the error as text
+on the sign-in page. Clear it before a retry.
+
+Five SAML Node suites pass. Chromium tests verify a real signed popup response
+establishes a Meteor session, a bad signature returns the actual ACS error,
+and the sign-in form safely displays and clears failures. The wider 116-suite
+regression run passes. Document username mapping, conditional account linking
+and provider/certificate checks. The reported remote IdP and deployment settings
+were not changed or tested; local fixtures do not verify those settings.
+Existing Upcoming regression evidence remains recorded.
+
+</details>
+
+and adds the following operator recovery tool:
+
+**Stored rule email** - reconcile verified acceptance without sending again.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6bf4ac0f2">Confirm accepted rule email offline without resending</a>. Thanks to xet7.</summary>
+
+After all application and delivery workers are stopped, a maintainer can confirm
+an exact attempt using independent SMTP evidence for every recipient. Persist an
+immutable operator decision before changing the receipt, verify both readbacks,
+and resume interrupted confirmation with identical arguments. Never reset mail,
+rewrite its content or send again. Conflicting decisions and changed attempts
+fail closed. The confirmation timestamp is not an inferred SMTP acceptance time.
+
+Sixty-three focused Node suites pass without skips, including MongoDB, native
+mail composition and an actual CLI subprocess. Positive and negative cases cover
+idempotence, interruption, lost acknowledgements, damaged records, conflicting
+evidence, unchanged commands and retained source-access guards. Seven focused
+recovery/dispatch/report suites also pass. This increment adds no browser
+action; the existing report UI guard passes. The source audit passes with
+advisory fingerprint warnings. Existing Upcoming regression evidence is
+retained.
+
+Document the existing Admin Panel report and the offline recovery procedure.
+Legacy unbound commands, obsolete Details snapshots, partial/unknown acceptance
+and online resolution remain in TODO Later. Manual/cron Sync is not activated.
+
+</details>
+
+and repairs downloaded translations:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/81d4dc420">Allow incomplete target catalogs in Transifex uploads</a>. Thanks to xet7.</summary>
+
+New English-only Sync labels caused 239 target uploads to fail because the
+validator required identical source/target key sets. Allow missing target keys
+and upload only the entries already present locally, without generating English
+placeholders or changing locale files. Keep strict source validation and reject
+unknown target keys, empty catalogs, invalid values and broken placeholders.
+Log missing-key counts and use the same rules for offline dry runs. Existing
+human-owned locale upload exclusions remain protected.
+
+Ten focused Node suites pass, including all local catalogs, mocked upload
+payloads, malformed tokens/values, retry handling and human-translation guards.
+The actual offline command validates 241 targets and the English source without
+network requests. The offline source/dependency audit passes with advisory
+warnings. Remote upload was not performed. The known released v12.07 changelog
+line-length failure remains; all-language translation remains outside the queue.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8b418219b">Accept encoded translation help URLs and repair template tokens</a>. Thanks to xet7.</summary>
+
+Distinguish URL percent encoding from interpolation placeholders in Transifex
+upload validation and pull merging. Arabic Blockly help links now validate;
+missing, renamed and duplicated real placeholders still fail validation.
+Restore the literal `%{value}` token in 20 locales and correct foreign or
+malformed surrounding text where found. Extend the exact-value repair ledger.
+
+Eight Node suites pass, including all locale catalogs, the offline upload
+dry run and positive/negative placeholder cases. The actual pull merge also
+preserves the Arabic link and rejects a translated template token. No remote
+uploads were performed. Broader translation review remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ff12d9516">Restore target-language meanings and retain valid downloaded translations</a>. Thanks to xet7.</summary>
+
+Correct 487 locale/key pairs in 57 locales, including Persian in Arabic,
+Serbian in Slovenian, Malay in Vietnamese, Hindi fragments in Urdu and Odia,
+and Blockly noun/action and keyboard-label mistakes. Restore lost localized
+labels and help links. Exact-value correction records prevent these known bad
+values from returning while preserving newer translations. Missing source
+keys remain explicit English placeholders, not claimed translations.
+
+Three Node suites pass, including the full 22,790-record correction ledger.
+Six Chromium localization scenarios pass. Walloon wording remains lower
+confidence; the broader semantic audit is unfinished. See the
+[review and remaining scope](docs/Features/Translations/Transifex-2026-09-27.md).
+No translations were uploaded to Transifex.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/dd30cd052">List every People authentication pane in the documentation</a>. Thanks to xet7.</summary>
+
+Add SAML, LDAP, OAuth login providers and Passwordless login to the People index
+and implementation inventory in the live menu order. Explain their separation
+from general Login controls. The existing menu/documentation regression passes;
+this changes navigation documentation, not identity-provider behavior.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
 
 # v12.08 2026-09-27 WeKan ® release
 

@@ -1,3 +1,5 @@
+import { canReadBoard } from '/models/lib/boardVisibility';
+import { copyRuleCard } from '/server/lib/ruleCopyCard';
 import { requireButtonRuleContext } from '/models/lib/buttonRulePermission';
 import { DDP } from 'meteor/ddp';
 import { ReactiveCache } from '/imports/reactiveCache';
@@ -143,13 +145,9 @@ export const RulesHelper = {
     // #3092: "card matches advanced filter" triggers are not tied to one
     // activity field like the TriggersDef-driven ones above — they reuse the
     // Filter sidebar's whole Advanced Filter criteria language against the
-    // card's CURRENT state. They still only run on the same card-affecting
-    // activities everything else here reacts to (TriggersDef[activityType]
-    // above, or createCard which has its own matchingFields entry already
-    // checked); Activities are only inserted for meaningful card changes to
-    // begin with (not on every write), so this follows the same
-    // once-per-meaningful-change discipline as every other trigger rather
-    // than re-evaluating on every database write.
+    // card's CURRENT state. Any card activity can reach these rules, including
+    // custom-field changes which have no TriggersDef entry. Value-change hooks
+    // insert their activities after successful writes and suppress no-ops.
     if (activity.cardId && activity.boardId) {
       const advancedTriggers = await ReactiveCache.getTriggers({
         boardId: activity.boardId,
@@ -265,6 +263,97 @@ export const RulesHelper = {
     }
     return matchingMap;
   },
+  // Shared preparation for ordinary sends and immutable stored commands.
+  // This method performs reads only; it never sends or queues mail.
+  async prepareEmailAction(activity, action, ruleVars, sourceContext) {
+    if (action?.actionType !== 'sendEmail') throw new Error('rule-email-action-required');
+    const wrapperActivity = activity;
+    const card = await ReactiveCache.getCard(activity.cardId);
+    if (!card) throw new Error('rule-email-card-unavailable');
+    let emailSource = sourceContext;
+    if (emailSource || action.includeCardDetails === true || action.includeChecklistsAndComments === true || ['cardType-linkedCard', 'cardType-linkedBoard'].includes(card.type)) {
+      const { resolveRuleEmailSource } = require('/server/lib/ruleEmailSource');
+      emailSource = emailSource || await resolveRuleEmailSource({ activity, cache: ReactiveCache, canReadBoard });
+      activity = emailSource.activity;
+      ruleVars = await buildRuleVars(activity, emailSource.card);
+    } else if (!ruleVars) {
+      ruleVars = await buildRuleVars(activity, card);
+    }
+    const to = substituteVars(action.emailTo, ruleVars);
+    const body = substituteVars(action.emailMsg || '', ruleVars);
+    const subject = substituteVars(action.emailSubject || '', ruleVars);
+    // #3301: the email used to carry no reference to the card that
+    // triggered it at all - not even its title, let alone a link. Append
+    // the card's title and a direct link automatically, even when the
+    // user's configured body/subject uses none of the {card}/{cardLink}
+    // tokens, so the recipient always has enough context to find the card.
+    // #2713: also carry the card's description automatically - the title
+    // and link were already appended unconditionally (#3301); the
+    // description is the other piece of "full card content" the rule
+    // action was missing without the user typing {description} by hand.
+    const cardFooterLines = [];
+    if (ruleVars.cardname) cardFooterLines.push(`Card: ${ruleVars.cardname}`);
+    if (ruleVars.description) cardFooterLines.push(`Description: ${ruleVars.description}`);
+    if (ruleVars.cardlink) cardFooterLines.push(`Link: ${ruleVars.cardlink}`);
+    const text = cardFooterLines.length
+      ? `${body}${body ? '\n\n' : ''}-- \n${cardFooterLines.join('\n')}`
+      : body;
+    let recipientUser = null;
+    let recipientLang = TAPi18n.getLanguage() || 'en';
+    if (to && to.includes('@')) {
+      recipientUser = await ReactiveCache.getUser({ 'emails.address': to.toLowerCase() });
+      if (recipientUser && typeof recipientUser.getLanguage === 'function') {
+        recipientLang = recipientUser.getLanguage();
+      }
+    }
+    const options = { to, from: Accounts.emailTemplates.from, subject, text,
+      language: recipientLang, userId: recipientUser ? recipientUser._id : null };
+    if (action.includeCardDetails === true) {
+      const { prepareRuleCardDetails } = require('/server/lib/ruleCardDetails');
+      const readScrumRecord = (kind, id, boardId) => {
+        const collection = kind === 'sprint' ? require('/models/scrumSprints').default : require('/models/scrumReleases').default;
+        return collection.findOneAsync({ _id: id, boardId }, { fields: { _id: 1, boardId: 1, name: 1, deletedAt: 1 } });
+      };
+      const details = await prepareRuleCardDetails({ activity, cache: ReactiveCache, canReadBoard, readScrumRecord,
+        onRelatedSource: binding => emailSource.addRelatedSource(binding),
+        onCustomFieldPolicy: (boardId, definitions) => emailSource.addCustomFieldPolicy(boardId, definitions) });
+      if (details) options.text += `\n\n${details}`;
+      const { prepareRuleCardWrapper } = require('/server/lib/ruleCardWrapper');
+      const wrapper = await prepareRuleCardWrapper({ activity: wrapperActivity, cache: ReactiveCache, canReadBoard, readScrumRecord,
+        onRelatedSource: binding => emailSource.addRelatedSource(binding),
+        onCustomFieldPolicy: (boardId, definitions) => emailSource.addCustomFieldPolicy(boardId, definitions) });
+      if (wrapper) options.text += `\n\n${wrapper}`;
+    }
+    if (action.includeChecklistsAndComments === true) {
+      const { prepareRuleCardDiscussion } = require('/server/lib/ruleCardDiscussion');
+      const discussion = await prepareRuleCardDiscussion({ activity, cache: ReactiveCache, canReadBoard,
+        onRelatedSource: binding => emailSource.addRelatedSource(binding) });
+      if (discussion) options.text += `\n\n${discussion}`;
+      const { prepareRuleBoardDiscussion } = require('/server/lib/ruleBoardDiscussion');
+      const boardDiscussion = await prepareRuleBoardDiscussion({ activity, cache: ReactiveCache, canReadBoard,
+        onRelatedSource: binding => emailSource.addRelatedSource(binding) });
+      if (boardDiscussion) options.text += `\n\n${boardDiscussion}`;
+    }
+    if (action.includeAttachments === true) {
+      const { prepareRuleCardAttachments } = require('/server/lib/ruleCardAttachments');
+      const { fileStoreStrategyFactory } = require('/models/attachments.server');
+      const attachments = await prepareRuleCardAttachments({ activity, cache: ReactiveCache, canReadBoard,
+        onManifest: text => { if (text) options.text += `\n\n${text}`; },
+        openStream: file => fileStoreStrategyFactory.getFileStrategy(file, 'original').getReadStream() });
+      if (attachments.length) options.attachments = attachments;
+    }
+    if (emailSource) await emailSource.assertCurrent();
+    return options;
+  },
+
+  async prepareEmailCommand(activity, action) {
+    const { resolveRuleEmailSource } = require('/server/lib/ruleEmailSource');
+    const source = await resolveRuleEmailSource({ activity, cache: ReactiveCache, canReadBoard });
+    const mail = await EmailLocalization.prepareEmail(await this.prepareEmailAction(activity, action, undefined, source));
+    await source.assertCurrent();
+    return { mail, sourceBinding: source.binding };
+  },
+
   async performAction(activity, action) {
     const card = await ReactiveCache.getCard(activity.cardId);
     if (activity.activityType === 'button') {
@@ -286,6 +375,7 @@ export const RulesHelper = {
       'moveCardToTop',
       'moveCardToBottom',
       'linkCard',
+      'copyCard',
       'moveAllCardsInList',
     ];
     const actionBoardId = action.boardId || boardId;
@@ -388,62 +478,18 @@ export const RulesHelper = {
       }
     }
     if (action.actionType === 'sendEmail') {
-      const to = substituteVars(action.emailTo, ruleVars);
-      const body = substituteVars(action.emailMsg || '', ruleVars);
-      const subject = substituteVars(action.emailSubject || '', ruleVars);
-      // #3301: the email used to carry no reference to the card that
-      // triggered it at all - not even its title, let alone a link. Append
-      // the card's title and a direct link automatically, even when the
-      // user's configured body/subject uses none of the {card}/{cardLink}
-      // tokens, so the recipient always has enough context to find the card.
-      // #2713: also carry the card's description automatically - the title
-      // and link were already appended unconditionally (#3301); the
-      // description is the other piece of "full card content" the rule
-      // action was missing without the user typing {description} by hand.
-      const cardFooterLines = [];
-      if (ruleVars.cardname) cardFooterLines.push(`Card: ${ruleVars.cardname}`);
-      if (ruleVars.description) cardFooterLines.push(`Description: ${ruleVars.description}`);
-      if (ruleVars.cardlink) cardFooterLines.push(`Link: ${ruleVars.cardlink}`);
-      const text = cardFooterLines.length
-        ? `${body}${body ? '\n\n' : ''}-- \n${cardFooterLines.join('\n')}`
-        : body;
       try {
-        // Try to detect the recipient's language preference if it's a Wekan user
-        // Otherwise, use the default language for the rule-triggered emails
-        let recipientUser = null;
-        let recipientLang = TAPi18n.getLanguage() || 'en';
-
-        // Check if recipient is a Wekan user to get their language
-        if (to && to.includes('@')) {
-          recipientUser = await ReactiveCache.getUser({ 'emails.address': to.toLowerCase() });
-          if (recipientUser && typeof recipientUser.getLanguage === 'function') {
-            recipientLang = recipientUser.getLanguage();
-          }
-        }
-
-        // Use EmailLocalization if available
+        const options = await this.prepareEmailAction(activity, action, ruleVars);
         if (typeof EmailLocalization !== 'undefined') {
-          await EmailLocalization.sendEmail({
-            to,
-            from: Accounts.emailTemplates.from,
-            subject,
-            text,
-            language: recipientLang,
-            userId: recipientUser ? recipientUser._id : null
-          });
+          await EmailLocalization.sendEmail(options);
         } else {
-          // Fallback to standard Email.send
-          await Email.sendAsync({
-            to,
-            from: Accounts.emailTemplates.from,
-            subject,
-            text,
-          });
+          const { to, from, subject, text, attachments } = options;
+          await Email.sendAsync({ to, from, subject, text, ...(attachments ? { attachments } : {}) });
         }
       } catch (e) {
         // eslint-disable-next-line no-console
         console.error(e);
-        return;
+        throw e;
       }
     }
 
@@ -454,28 +500,28 @@ export const RulesHelper = {
           case 'startAt': {
             const resStart = card.getStart();
             if (typeof resStart === 'undefined') {
-              card.setStart(currentDateTime);
+              await card.setStart(currentDateTime);
             }
             break;
           }
           case 'endAt': {
             const resEnd = card.getEnd();
             if (typeof resEnd === 'undefined') {
-              card.setEnd(currentDateTime);
+              await card.setEnd(currentDateTime);
             }
             break;
           }
           case 'dueAt': {
             const resDue = card.getDue();
             if (typeof resDue === 'undefined') {
-              card.setDue(currentDateTime);
+              await card.setDue(currentDateTime);
             }
             break;
           }
           case 'receivedAt': {
             const resReceived = card.getReceived();
             if (typeof resReceived === 'undefined') {
-              card.setReceived(currentDateTime);
+              await card.setReceived(currentDateTime);
             }
             break;
           }
@@ -483,7 +529,7 @@ export const RulesHelper = {
       } catch (e) {
         // eslint-disable-next-line no-console
         console.error(e);
-        return;
+        throw e;
       }
     }
 
@@ -491,19 +537,19 @@ export const RulesHelper = {
       const currentDateTimeUpdate = new Date();
       switch (action.dateField) {
         case 'startAt': {
-          card.setStart(currentDateTimeUpdate);
+          await card.setStart(currentDateTimeUpdate);
           break;
         }
         case 'endAt': {
-          card.setEnd(currentDateTimeUpdate);
+          await card.setEnd(currentDateTimeUpdate);
           break;
         }
         case 'dueAt': {
-          card.setDue(currentDateTimeUpdate);
+          await card.setDue(currentDateTimeUpdate);
           break;
         }
         case 'receivedAt': {
-          card.setReceived(currentDateTimeUpdate);
+          await card.setReceived(currentDateTimeUpdate);
           break;
         }
       }
@@ -512,19 +558,19 @@ export const RulesHelper = {
     if (action.actionType === 'removeDate') {
       switch (action.dateField) {
         case 'startAt': {
-          card.unsetStart();
+          await card.unsetStart();
           break;
         }
         case 'endAt': {
-          card.unsetEnd();
+          await card.unsetEnd();
           break;
         }
         case 'dueAt': {
-          card.unsetDue();
+          await card.unsetDue();
           break;
         }
         case 'receivedAt': {
-          card.unsetReceived();
+          await card.unsetReceived();
           break;
         }
       }
@@ -543,13 +589,13 @@ export const RulesHelper = {
       await card.setColor(action.selectedColor);
     }
     if (action.actionType === 'addLabel') {
-      card.addLabel(action.labelId);
+      await card.addLabel(action.labelId);
     }
     if (action.actionType === 'removeLabel') {
-      card.removeLabel(action.labelId);
+      await card.removeLabel(action.labelId);
     }
     if (action.actionType === 'removeAllLabels') {
-      card.removeAllLabels();
+      await card.removeAllLabels();
     }
     // #2674: resolve the username defensively for the member actions. A rule
     // whose username no longer resolves (user renamed/deleted, or a typo in an
@@ -705,6 +751,9 @@ export const RulesHelper = {
         boardId
       });
     }
+    if (action.actionType === 'copyCard') {
+      return await copyRuleCard({ activity, action, cache: ReactiveCache, canWrite: allowIsBoardMemberWithWriteAccess });
+    }
     if (action.actionType === 'linkCard') {
       const list = await ReactiveCache.getList({ title: action.listName, boardId: action.boardId });
       const card = await ReactiveCache.getCard(activity.cardId);
@@ -719,7 +768,7 @@ export const RulesHelper = {
         swimlane,
         await getDestBoardDefaultSwimlane(action.boardId),
       );
-      card.link(action.boardId, swimlaneId, listId);
+      await card.link(action.boardId, swimlaneId, listId);
     }
     if (
       action.actionType === 'markCardComplete' ||
@@ -733,10 +782,10 @@ export const RulesHelper = {
       // `unit` is optional: when absent (old rules) it defaults to days.
       const target = relativeDateOffset(new Date(), action.days, action.unit);
       switch (action.dateField) {
-        case 'startAt': card.setStart(target); break;
-        case 'endAt': card.setEnd(target); break;
-        case 'dueAt': card.setDue(target); break;
-        case 'receivedAt': card.setReceived(target); break;
+        case 'startAt': await card.setStart(target); break;
+        case 'endAt': await card.setEnd(target); break;
+        case 'dueAt': await card.setDue(target); break;
+        case 'receivedAt': await card.setReceived(target); break;
       }
     }
     if (action.actionType === 'sortList') {

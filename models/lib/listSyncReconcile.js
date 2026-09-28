@@ -36,6 +36,10 @@ export function validateListSyncTasks(tasks) {
     if (ids.has(String(id))) throw new Error('Duplicate sync external ID');
     ids.add(String(id));
     if (task.spentTime !== undefined && (typeof task.spentTime !== 'number' || !Number.isFinite(task.spentTime) || task.spentTime < 0)) throw new Error('Invalid sync spent time');
+    for (const field of ['originalEstimate', 'remainingEstimate']) {
+      if (task[field] !== undefined && task[field] !== null && (typeof task[field] !== 'number' || !Number.isFinite(task[field]) || task[field] < 0 || task[field] > 1e12)) throw new Error(`Invalid sync ${field}`);
+    }
+    if (task.estimate !== undefined && task.estimate !== null && (typeof task.estimate !== 'number' || !Number.isFinite(task.estimate) || task.estimate < 0 || task.estimate > 1e12)) throw new Error('Invalid sync estimate');
     for (const field of ['title', 'description', 'column_name']) {
       if (task[field] !== undefined && typeof task[field] !== 'string') throw new Error(`Invalid sync task ${field}`);
     }
@@ -70,10 +74,12 @@ export function planListSyncReconcile({ externalTasks = [], existingCards = [] }
       changes.description = task.description;
     }
     if (task.spentTime !== undefined && task.spentTime !== card.spentTime) changes.spentTime = task.spentTime;
+    for (const field of ['originalEstimate', 'remainingEstimate']) if (task[field] !== undefined && task[field] !== card[field]) changes[field] = task[field];
+    if (task.estimate !== undefined && task.estimate !== card.estimate) changes.estimate = task.estimate;
     if (task.column_name !== undefined && task.column_name !== card.column_name) {
       // Signals a status change (e.g. Jira issue moved to a different
-      // workflow status) - the caller maps this to a list move when the
-      // target list can be resolved, otherwise it is dropped harmlessly.
+      // workflow status). Current Sync reports it as an unmapped field in
+      // preview and excludes it from writes; automatic list moves are pending.
       changes.column_name = task.column_name;
     }
     if (Object.keys(changes).length) {

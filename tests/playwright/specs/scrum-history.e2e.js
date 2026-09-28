@@ -104,13 +104,27 @@ test('retry after Scrum undo finalization does not undo an older row or duplicat
   await call(page,'changeHistory.undoLast',board.boardId);
   const checkpoint=db.findOne('changeHistory',{boardId:board.boardId,restoredFromId:row._id,isCheckpoint:true});
   const count=db.find('changeHistory',{boardId:board.boardId}).length;
+  const undoneAt=db.findOne('changeHistory',{_id:row._id}).undoneAt;
   const appliedRevision=db.findOne('cards',{_id:card._id}).scrumRevision;
   // Recreate the durable state immediately before checkpoint cleanup.
   db.insertOne('scrumHistoryPending',dates({_id:board.boardId,rowId:row._id,direction:'undo',userId:user.id,
     operationId:checkpoint.batchId,content:row.previousContent,before:row.newContent,revisions:[revision]}));
+  expect(checkpoint._id).toMatch(/^scrum-restore-[a-f0-9]{64}$/);
+  // A matching operation ID must not acknowledge damaged timeline evidence.
+  db.updateOne('changeHistory',{_id:checkpoint._id},{$set:{integrityHash:'damaged'}});
+  await expect(call(page,'changeHistory.undoLast',board.boardId)).rejects.toThrow(/scrum-history-pending/);
+  expect(db.findOne('scrumHistoryPending',{_id:board.boardId})).not.toBe(null);
+  expect(db.find('changeHistory',{boardId:board.boardId}).length).toBe(count);
+  db.updateOne('changeHistory',{_id:checkpoint._id},{$set:{integrityHash:checkpoint.integrityHash}});
+  // An acknowledged timeline is insufficient if undo finalization is damaged.
+  db.updateOne('changeHistory',{_id:row._id},{$set:{undoneAt:null}});
+  await expect(call(page,'changeHistory.undoLast',board.boardId)).rejects.toThrow(/scrum-history-pending/);
+  expect(db.findOne('scrumHistoryPending',{_id:board.boardId})).not.toBe(null);
+  db.updateOne('changeHistory',{_id:row._id},{$set:{undoneAt:new Date(undoneAt)}});
   expect((await call(page,'changeHistory.undoLast',board.boardId)).undone).toBe(true);
   expect(db.find('changeHistory',{boardId:board.boardId}).length).toBe(count);
   expect(db.findOne('cards',{_id:card._id}).scrumRevision).toBe(appliedRevision);
+  expect(db.findOne('changeHistory',{_id:row._id}).undoneAt).toBe(undoneAt);
   expect(db.findOne('scrumHistoryPending',{_id:board.boardId})).toBe(null);
  }finally{clean(board.boardId);}
 });
@@ -137,5 +151,57 @@ test('an interrupted compound Scrum undo resumes without repeating completed wri
   expect(db.findOne('scrumSprints',{_id:sprint._id}).state).toBe('active');
   for(const card of cards)expect(db.findOne('cards',{_id:card._id}).scrum.sprintId).toBe(sprint._id);
   expect(db.findOne('scrumHistoryPending',{_id:board.boardId})).toBe(null);
+ }finally{clean(board.boardId);}
+});
+test('pending Scrum redo cannot revive a source invalidated by a newer ordinary edit',async({page,user,board})=>{
+ try{
+  await loginWithToken(page,user.id,user.token);
+  const card=db.find('cards',{boardId:board.boardId})[0];
+  await call(page,'scrum.updateCard',board.boardId,card._id,{issueType:'Story'},0);
+  const row=db.findOne('changeHistory',{boardId:board.boardId,entityType:'scrum'});
+  await call(page,'changeHistory.undoLast',board.boardId);
+  const undone=db.findOne('cards',{_id:card._id});
+  const operationId='superseded-redo';
+  db.insertOne('scrumHistoryPending',dates({_id:board.boardId,rowId:row._id,direction:'redo',userId:user.id,
+    operationId,content:row.newContent,before:row.previousContent,revisions:[undone.scrumRevision]}));
+  // This ordinary edit runs real redo invalidation while recovery is pending.
+  await call(page,'/cards/update',{_id:card._id},{$set:{title:'Newer ordinary edit'}});
+  expect(db.findOne('changeHistory',{_id:row._id}).superseded).toBe(true);
+  const count=db.find('changeHistory',{boardId:board.boardId}).length;
+  for(let attempt=0;attempt<2;attempt++){
+   await expect(call(page,'changeHistory.redoLast',board.boardId)).rejects.toThrow(/scrum-conflict/);
+   const current=db.findOne('cards',{_id:card._id});
+   expect(current.scrum).toEqual(undone.scrum);
+   expect(current.scrumRevision).toBe(undone.scrumRevision);
+   expect(current.title).toBe('Newer ordinary edit');
+   expect(db.findOne('changeHistory',{_id:row._id}).undone).toBe(true);
+   expect(db.findOne('scrumHistoryPending',{_id:board.boardId}).operationId).toBe(operationId);
+   expect(db.find('changeHistory',{boardId:board.boardId}).length).toBe(count);
+  }
+ }finally{clean(board.boardId);}
+});
+test('matching restored Scrum values at a newer revision cannot complete an old checkpoint',async({page,user,board})=>{
+ try{
+  await loginWithToken(page,user.id,user.token);
+  const card=db.find('cards',{boardId:board.boardId})[0];
+  await call(page,'scrum.updateCard',board.boardId,card._id,{issueType:'Story'},0);
+  const row=db.findOne('changeHistory',{boardId:board.boardId,entityType:'scrum'});
+  const revision=db.findOne('cards',{_id:card._id}).scrumRevision;
+  await call(page,'changeHistory.undoLast',board.boardId);
+  const checkpoint=db.findOne('changeHistory',{boardId:board.boardId,restoredFromId:row._id,isCheckpoint:true});
+  db.insertOne('scrumHistoryPending',dates({_id:board.boardId,rowId:row._id,direction:'undo',userId:user.id,
+    operationId:checkpoint.batchId,content:row.previousContent,before:row.newContent,revisions:[revision]}));
+  // Model an intervening writer returning to the same values. Equality of
+  // projected Scrum content must not hide the newer revision from recovery.
+  db.updateOne('cards',{_id:card._id},{$inc:{scrumRevision:1}});
+  const current=db.findOne('cards',{_id:card._id});
+  const count=db.find('changeHistory',{boardId:board.boardId}).length;
+  for(let retry=0;retry<2;retry++){
+   await expect(call(page,'changeHistory.undoLast',board.boardId)).rejects.toThrow(/scrum-conflict/);
+   expect(db.findOne('cards',{_id:card._id}).scrum).toEqual(current.scrum);
+   expect(db.findOne('cards',{_id:card._id}).scrumRevision).toBe(current.scrumRevision);
+   expect(db.findOne('scrumHistoryPending',{_id:board.boardId}).operationId).toBe(checkpoint.batchId);
+   expect(db.find('changeHistory',{boardId:board.boardId}).length).toBe(count);
+  }
  }finally{clean(board.boardId);}
 });

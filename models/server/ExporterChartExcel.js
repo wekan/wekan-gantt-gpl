@@ -26,6 +26,8 @@ class ExporterChartExcel {
   }
 
   async canExport(user) {
+    this._customFieldViewerId = user?._id;
+    await require('/server/lib/adminOnlyCustomFields').assertFieldExport(this._boardId, this._customFieldViewerId);
     this.userId = user?._id || null;
     const board = await ReactiveCache.getBoard(this._boardId);
     const { canExportBoardData } = require('/models/lib/exportAccess');
@@ -33,16 +35,17 @@ class ExporterChartExcel {
   }
 
   async build(res) {
+    await require('/server/lib/adminOnlyCustomFields').assertFieldExport(this._boardId, this._customFieldViewerId);
     const board = await ReactiveCache.getBoard(this._boardId);
     if (!board) {
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
       res.end('Board not found');
       return;
     }
-    const data = ['scrumVelocity', 'scrumSprint'].includes(this._chartKey)
+    const data = ['scrumVelocity', 'scrumSprint', 'scrumDaily'].includes(this._chartKey)
       ? await loadScrumChartData(this.userId, this._boardId, this._chartKey, this.options)
       : await loadBoardChartData(this._boardId, this._chartKey, this.options);
-    const { title, headers, rows } = chartExportRows(
+    const { title, headers, rows, notices = [] } = chartExportRows(
       this._chartKey, data || {}, (key, fallback) => this.__(key, fallback));
     const details = require('/models/lib/flowAnalyticsRows').flowDetailRows(
       this._chartKey, data || {}, (key, fallback) => this.__(key, fallback));
@@ -95,6 +98,12 @@ class ExporterChartExcel {
       });
       sheetRow.commit();
     });
+
+    if (notices.length) {
+      const notes = workbook.addWorksheet('Notes');
+      notes.columns = [{ width: 100 }];
+      notices.forEach(notice => { const row = notes.addRow([notice]); row.alignment = { wrapText: true }; });
+    }
 
     if (typeof ws.commit === 'function') ws.commit();
 

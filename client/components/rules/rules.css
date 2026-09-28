@@ -459,3 +459,19 @@
 
 /* Icons on themed action buttons must share their readable foreground. */
 .rules-page button.primary i.fa { color: inherit; }
+
+/* Native, keyboard-accessible attachment choice in the mail action form. */
+.trigger-content-mail #email-attachments,
+.trigger-content-mail #email-discussion,
+.trigger-content-mail #email-card-details {
+  display: inline-block;
+  visibility: visible;
+  position: static;
+  inset-inline-start: auto;
+  width: 16px;
+  height: 16px;
+  min-height: 0;
+  padding: 0;
+  margin-inline-end: 6px;
+  appearance: auto;
+}

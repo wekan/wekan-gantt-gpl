@@ -13,8 +13,11 @@ import { allowIsBoardMember, allowIsBoardMemberWithWriteAccess, computeSortForIn
 import { computeTopSort, normalizeMoveParams, parseCardDate } from '/server/lib/restCardHelpers';
 const { coerceRestArrayParam } = require('/server/lib/restArrayParam');
 const { applyCardBoardConsistency } = require('/server/lib/cardBoardConsistency');
+const { stampCardListEntry } = require('/models/lib/cardListEntry');
 import { titleChanged } from '/server/lib/titleChangeActivity';
 import { descriptionChanged } from '/server/lib/descriptionChangeActivity';
+const { collectionWriteSucceeded } = require('/server/lib/collectionWriteOutcome');
+const { deferSyncRecording } = require('/server/lib/syncRecordingScope');
 import { buildDeleteCardActivity } from '/server/lib/deleteActivities';
 import { assertParentCardIsVisible } from '/server/lib/visibleBoardIds';
 import { computeSubtaskLabelIds } from '/models/lib/subtaskLabelInheritance';
@@ -288,7 +291,7 @@ Meteor.methods({
     // is checked the same as the deny rule that covers text/number/dropdown/
     // stringtemplate fields (server/permissions/cards.js).
     if (definition.adminOnly && !board.hasAdmin(this.userId)) {
-      throw new Meteor.Error('not-authorized');
+      require('/server/lib/adminOnlyCustomFields').fieldWriteDenied(this.userId, 'method:setCardCustomFieldCheckbox');
     }
 
     const index = (card.customFields || []).findIndex(field =>
@@ -323,7 +326,7 @@ Meteor.methods({
     if (!definition) throw new Meteor.Error('custom-field-not-found');
     // #3141: same server-side gate as setCardCustomFieldCheckbox above.
     if (definition.adminOnly && !board.hasAdmin(this.userId)) {
-      throw new Meteor.Error('not-authorized');
+      require('/server/lib/adminOnlyCustomFields').fieldWriteDenied(this.userId, 'method:setCardCustomFieldCurrency');
     }
 
     const index = (card.customFields || []).findIndex(field =>
@@ -801,6 +804,9 @@ Meteor.methods({
     const destBoard = await Boards.findOneAsync(boardId);
     if (!allowIsBoardMemberWithWriteAccess(this.userId, destBoard))
       throw new Meteor.Error('not-authorized');
+    // Reject a forged merge before copying children or emitting activities.
+    await require('/server/lib/adminOnlyCustomFields').assertFieldWrite(
+      this.userId, card, { ...card, ...mergeCardValues }, 'method:copyCard');
     Object.assign(card, mergeCardValues);
 
     const sort = await card.getSort(listId, swimlaneId, insertAtTop);
@@ -910,7 +916,7 @@ Meteor.startup(async () => {
 });
 
 Cards.after.insert(async (userId, doc) => {
-  await cardCreation(userId, doc);
+  if (!deferSyncRecording('create', doc)) await cardCreation(userId, doc);
 
   Meteor.setTimeout(async () => {
     const card = await Cards.findOneAsync(doc._id);
@@ -920,8 +926,9 @@ Cards.after.insert(async (userId, doc) => {
   }, 100);
 });
 
-Cards.after.update(async (userId, doc, fieldNames) => {
-  await cardState(userId, doc, fieldNames);
+Cards.after.update(async function(userId, doc, fieldNames) {
+  if (!collectionWriteSucceeded(this) || !!this.previous.archived === !!doc.archived) return;
+  if (!deferSyncRecording('archive', doc)) await cardState(userId, doc, fieldNames);
 });
 
 // When a card moves to another board, re-sync the denormalized boardId on its
@@ -1016,6 +1023,7 @@ async function enforceCardBoardConsistency(doc, fieldNames, modifier) {
 // hook (and the persisted update) sees.
 Cards.before.update(async (userId, doc, fieldNames, modifier) => {
   await enforceCardBoardConsistency(doc, fieldNames, modifier);
+  stampCardListEntry(doc, modifier);
 });
 
 Cards.before.update(async (userId, doc, fieldNames, modifier) => {
@@ -1032,8 +1040,11 @@ Cards.before.update((userId, doc, fieldNames, modifier) => {
   cardLabels(userId, doc, fieldNames, modifier);
 });
 
-Cards.before.update((userId, doc, fieldNames, modifier) => {
-  cardCustomFields(userId, doc, fieldNames, modifier);
+// Custom-field rules must observe the saved card, including whole-array Sync writes.
+Cards.after.update(async function(userId, doc, fieldNames) {
+  if (!collectionWriteSucceeded(this)) return;
+  if (fieldNames.includes('customFields') && deferSyncRecording('customFields', doc)) return;
+  await cardCustomFields(userId, doc, fieldNames, this.previous);
 });
 
 Cards.before.update(async (userId, doc, fieldNames, modifier) => {
@@ -1075,19 +1086,13 @@ Cards.before.update(async (userId, doc, fieldNames, modifier) => {
   }
 });
 
-// Issue #3619: changing a card's title must log an activity so the
-// Activities.after.insert outgoing-webhook hook fires (like description/dueAt do).
-Cards.before.update(async (userId, doc, fieldNames, modifier) => {
-  if (!titleChanged(doc, modifier)) {
-    return;
-  }
-  const oldValue = doc.title || '';
+// Issue #3619: emit title activity only after a successful card write, so
+// outgoing webhooks/rules cannot act on a rejected conditional update.
+Cards.after.update(async function(userId, doc, fieldNames, modifier) {
+  if (!collectionWriteSucceeded(this) || !titleChanged(this.previous, modifier)) return;
+  if (deferSyncRecording('title', doc)) return;
+  const oldValue = this.previous.title || '';
   const newValue = modifier.$set.title;
-  const card = await ReactiveCache.getCard(doc._id);
-  if (!card) {
-    console.warn('[Cards.before.update] Card not found for cardId:', doc._id, '— skipping title activity.');
-    return;
-  }
   const user = await ReactiveCache.getUser(userId);
   await Activities.insertAsync({
     userId,
@@ -1098,25 +1103,21 @@ Cards.before.update(async (userId, doc, fieldNames, modifier) => {
     cardTitle: newValue,
     oldValue,
     value: newValue,
-    listId: card.listId,
-    swimlaneId: card.swimlaneId,
+    listId: doc.listId,
+    swimlaneId: doc.swimlaneId,
   });
 });
 
-// Issue #5482: adding or editing a card's description must log an activity so the
-// Activities.after.insert outgoing-webhook hook fires (like title/dueAt do). Fires
-// for both first-time set and later edits, but not for no-op / empty->empty saves.
-Cards.before.update(async (userId, doc, fieldNames, modifier) => {
-  if (!descriptionChanged(doc, modifier)) {
-    return;
-  }
-  const oldValue = doc.description || '';
-  const newValue = modifier.$set.description || '';
-  const card = await ReactiveCache.getCard(doc._id);
-  if (!card) {
-    console.warn('[Cards.before.update] Card not found for cardId:', doc._id, '— skipping description activity.');
-    return;
-  }
+// Issue #5482: clearing prose may be cleaned into $unset by SimpleSchema.
+// Treat that as an empty description, while retaining no-op suppression.
+Cards.after.update(async function(userId, doc, fieldNames, modifier) {
+  if (!collectionWriteSucceeded(this)) return;
+  const change = modifier?.$unset && Object.hasOwn(modifier.$unset, 'description')
+    ? { $set: { description: '' } } : modifier;
+  if (!descriptionChanged(this.previous, change)) return;
+  if (deferSyncRecording('description', doc)) return;
+  const oldValue = this.previous.description || '';
+  const newValue = change.$set.description || '';
   const user = await ReactiveCache.getUser(userId);
   await Activities.insertAsync({
     userId,
@@ -1127,8 +1128,8 @@ Cards.before.update(async (userId, doc, fieldNames, modifier) => {
     cardTitle: doc.title,
     oldValue,
     value: newValue,
-    listId: card.listId,
-    swimlaneId: card.swimlaneId,
+    listId: doc.listId,
+    swimlaneId: doc.swimlaneId,
   });
 });
 
@@ -2140,6 +2141,13 @@ WebApp.handlers.get(
     const paramBoardId = req.params.boardId;
     const paramCustomFieldId = req.params.customFieldId;
     const paramCustomFieldValue = req.params.customFieldValue;
+    const { fieldPolicy } = require('/server/lib/adminOnlyCustomFields');
+    const { mayReadField } = require('/models/lib/adminOnlyCustomFields');
+    const policy = await fieldPolicy(req.userId);
+    if (!mayReadField(policy.definitions.get(paramCustomFieldId), paramBoardId, policy.adminBoards)) {
+      sendJsonResult(res, { code: 403, data: { error: 'Forbidden' } });
+      return;
+    }
     await Authentication.checkBoardAccess(req.userId, paramBoardId);
     sendJsonResult(res, {
       code: 200,

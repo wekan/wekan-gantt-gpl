@@ -15,12 +15,17 @@ import ScrumHistoryPending from './scrumHistoryPending';
 import { canUpdateCard } from '/server/permissions/cards';
 import { allowIsBoardMemberWithWriteAccess } from '/server/lib/utils';
 import { withoutRecording, isRecordingSuppressed } from './historyRecordingScope';
-import { setScrumHistoryRecorder, setScrumHistoryBatchRunner, withScrumBoardLock } from '/server/scrum';
+import { setScrumHistoryRecorder, setScrumHistoryBatchRunner, withScrumBoardLock, assertNoPendingScrumImport } from '/server/scrum';
 const { assignedOnlyCardScope } = require('/models/lib/boardCardScope');
 const { METADATA_TYPES, historyDocument, historyRecords, historySide } = require('/models/lib/scrumHistory');
-const { normalizeScrumMetadata, normalizeScrumSettings, DEFAULT_SCRUM_SETTINGS, scrumRevisionSelector } = require('/models/lib/scrum');
+const { normalizeScrumMetadata, normalizeScrumSettings, DEFAULT_SCRUM_SETTINGS } = require('/models/lib/scrum');
 const collections = { board: Boards, card: Cards, list: Lists, swimlane: Swimlanes,
   'scrum-sprint': ScrumSprints, 'scrum-release': ScrumReleases, 'scrum-event': ScrumEvents };
+const { recordScrumRestoreOnce } = require('./scrumHistoryRestoreWriter');
+const { finishScrumHistory, verifyScrumHistorySource } = require('./scrumHistoryFinalizer');
+const { ensureScrumHistoryOperation, assertScrumHistoryOperation } = require('./scrumHistoryOwnership');
+const { scrumHistoryWriteState, inspectScrumHistoryWrites, verifyScrumHistoryWrites } = require('./scrumHistoryWriteState');
+const { scrumHistoryWriteSelector } = require('./scrumHistoryWriteSelector');
 const batches = new AsyncLocalStorage();
 const conflict = () => { throw new Meteor.Error('scrum-conflict', 'Scrum data changed. Reload History before retrying.'); };
 
@@ -132,6 +137,11 @@ export async function applyScrumHistory(row, content, direction) {
     const userId = Meteor.userId();
     const board = await Boards.findOneAsync(row.boardId);
     if (!userId || !board) throw new Meteor.Error('not-authorized');
+    const assertSource = async () => {
+      const current = await ChangeHistory.findOneAsync(row._id);
+      try { verifyScrumHistorySource(current, row, direction); } catch (error) { conflict(); }
+    };
+    await assertSource();
     const targets = recordList(content);
     let journal = await ScrumHistoryPending.findOneAsync(row.boardId);
     if (journal && (journal.rowId !== row._id || journal.direction !== direction || journal.userId !== userId || !EJSON.equals(journal.content, content))) conflict();
@@ -139,6 +149,7 @@ export async function applyScrumHistory(row, content, direction) {
       if (await ScrumSprints.findOneAsync({ boardId: row.boardId, 'rolloverPending.0': { $exists: true } })) conflict();
       const current = await Promise.all(targets.map(entry => collections[entry.type].findOneAsync(entry.id)));
       await validateTargets(board, userId, targets, current);
+      await assertNoPendingScrumImport(row.boardId);
       const live = { records: targets.map((entry, index) => ({ type: entry.type, id: entry.id, document: historyDocument(entry.type, current[index]) })) };
       const expected = direction === 'undo' ? row.newContent : row.previousContent;
       if (direction !== 'restore' && !EJSON.equals(live, expected)) conflict();
@@ -148,23 +159,42 @@ export async function applyScrumHistory(row, content, direction) {
     } else {
       const current = await Promise.all(targets.map(entry => collections[entry.type].findOneAsync(entry.id)));
       await validateTargets(board, userId, targets, current);
+      await assertNoPendingScrumImport(row.boardId);
     }
-    if (!journal.operationId) {
-      journal.operationId = Random.id();
-      await ScrumHistoryPending.updateAsync(journal._id, { $set: { operationId: journal.operationId } });
-    }
+    await assertSource();
+    journal = await ensureScrumHistoryOperation(ScrumHistoryPending, journal);
+    const assertCurrent = async () => {
+      await assertScrumHistoryOperation(ScrumHistoryPending, journal);
+      await assertSource();
+    };
+    const verifyWrites = async (entries = targets, before = journal.before.records, revisions = journal.revisions) => {
+      try { await verifyScrumHistoryWrites({ targets: entries, before, revisions, assertCurrent,
+        read: entry => collections[entry.type].findOneAsync(entry.id) }); }
+      catch (error) { conflict(); }
+    };
+    // Refuse already-visible conflicts anywhere in the saved batch before
+    // advancing its first unfinished write. Per-write guards remain necessary
+    // because this read-only preflight is not an atomic database snapshot.
+    try { await inspectScrumHistoryWrites({ targets, before: journal.before.records,
+      revisions: journal.revisions, assertCurrent,
+      read: entry => collections[entry.type].findOneAsync(entry.id) }); }
+    catch (error) { conflict(); }
     await withoutRecording(async () => {
       for (let index = 0; index < targets.length; index += 1) {
+        await assertCurrent();
         const entry = targets[index]; const collection = collections[entry.type];
         const current = await collection.findOneAsync(entry.id);
-        const live = historyDocument(entry.type, current);
-        if (EJSON.equals(live, entry.document)) continue;
-        if (!EJSON.equals(live, journal.before.records[index].document)) conflict();
-        const metadata = METADATA_TYPES.has(entry.type);
-        const revisionField = metadata ? 'scrumRevision' : 'revision';
+        const before = journal.before.records[index];
+        if (before?.type !== entry.type || before?.id !== entry.id) conflict();
         const originalRevision = journal.revisions[index];
-        if (current && (current[revisionField] || 0) !== originalRevision) conflict();
-        const selector = { _id: entry.id, ...(metadata ? scrumRevisionSelector(current) : { revision: current?.revision }) };
+        let state;
+        try { state = scrumHistoryWriteState({ type: entry.type, current,
+          before: before.document, after: entry.document, revision: originalRevision }); }
+        catch (error) { conflict(); }
+        if (state === 'applied') continue;
+        const metadata = METADATA_TYPES.has(entry.type);
+        const selector = current ? scrumHistoryWriteSelector(entry.type, current) : null;
+        await assertCurrent();
         if (!entry.document) {
           if (!await collection.removeAsync(selector)) conflict();
         } else if (metadata) {
@@ -178,28 +208,31 @@ export async function applyScrumHistory(row, content, direction) {
           if (Object.keys(unset).length) modifier.$unset = unset;
           if (!await collection.updateAsync(selector, modifier)) conflict();
         }
+        await verifyWrites([entry], [before], [originalRevision]);
       }
     });
     // Keep recovery durable until BOTH the timeline and the undo-stack flag
     // are saved. A retry after either write uses the same operation ID.
     const authors = direction === 'restore' ? [...new Set([row.userId, userId])] : [userId];
     for (const author of authors) {
-      const existing = await ChangeHistory.findOneAsync({ boardId: row.boardId, batchId: journal.operationId, userId: author });
-      if (!existing) {
-        const id = await ChangeHistory.record({
-          boardId: row.boardId, swimlaneId: row.swimlaneId, listId: row.listId, cardId: row.cardId,
-          entityType: row.entityType, entityId: row.entityId, group: row.group,
-          changeType: 'restored', previousContent: journal.before, newContent: content,
-          userId: author, restoredFromId: row._id, restoredByUserId: userId,
-          isCheckpoint: direction !== 'restore', batchId: journal.operationId,
-        });
-        if (!id) throw new Meteor.Error('scrum-history-pending', 'Retry the interrupted Scrum History operation.');
-      }
+      await verifyWrites();
+      await recordScrumRestoreOnce(ChangeHistory, {
+        boardId: row.boardId, swimlaneId: row.swimlaneId, listId: row.listId, cardId: row.cardId,
+        entityType: row.entityType, entityId: row.entityId, group: row.group,
+        changeType: 'restored', previousContent: journal.before, newContent: content,
+        userId: author, restoredFromId: row._id, restoredByUserId: userId,
+        isCheckpoint: direction !== 'restore', batchId: journal.operationId,
+      }).catch(() => {
+        throw new Meteor.Error('scrum-history-pending',
+          'History could not be verified or saved. The recovery checkpoint was retained.');
+      });
     }
-    if (direction !== 'restore') await ChangeHistory.updateAsync(row._id, {
-      $set: { undone: direction === 'undo', undoneAt: direction === 'undo' ? new Date() : null },
+    await verifyWrites();
+    await finishScrumHistory({ history: ChangeHistory, pending: ScrumHistoryPending,
+      row, journal }).catch(() => {
+      throw new Meteor.Error('scrum-history-pending',
+        'History finalization could not be verified. Retry the pending operation.');
     });
-    await ScrumHistoryPending.removeAsync({ _id: row.boardId, rowId: row._id, direction, userId });
     return true;
   });
 }

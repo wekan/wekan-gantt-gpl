@@ -1,0 +1,62 @@
+[
+  {
+    "fields": ["title", "description"],
+    "handling": "Footer resolves the authorized source card or board; stale link copies are excluded."
+  },
+  {
+    "fields": ["boardId", "listId", "swimlaneId", "sort", "subtaskSort", "listEnteredAt", "lastMoveReason"],
+    "handling": "Readable placement in ordinary Details and the separate local wrapper section; foreign list/lane names are excluded."
+  },
+  {
+    "fields": ["recurrenceInterval", "lastRecurrenceAt"],
+    "handling": "Ordinary Details and local wrapper Details; recurrence setters use the displayed card ID."
+  },
+  {
+    "fields": ["flowStartAt", "flowInterruptions", "flowUserId", "pomodoroStartAt", "pomodoroPhase", "pomodoroCount", "pomodoroUserId", "pomodoroWorkMinutes"],
+    "handling": "Persisted snapshots and public owner names in ordinary and local wrapper Details."
+  },
+  {
+    "fields": ["scrum"],
+    "handling": "Six visible fields in ordinary/local wrapper Details; sprint and release names require the same board. Internal Scrum snapshots and revisions are excluded."
+  },
+  {
+    "fields": ["archived", "archivedAt", "createdAt", "modifiedAt", "dateLastActivity", "cardNumber", "color"],
+    "handling": "Ordinary/source Details. Both link types separately include local archive state/date and lifecycle timestamps. Card number/color follow getRealCard(): source-owned for linked cards, local for linked-board wrappers. Target-board archive state remains in target Details."
+  },
+  {
+    "fields": ["receivedAt", "startAt", "dueAt", "endAt", "spentTime", "isOvertime", "dueComplete"],
+    "handling": "Ordinary/source Details. Linked-board Details includes four dates, spent time, overtime and due-complete from the current target."
+  },
+  {
+    "fields": ["members", "assignees", "requesters", "assigners", "requestedBy", "assignedBy", "userId"],
+    "handling": "Ordinary/source Details resolves public names for account references; requestedBy/assignedBy are prose. Linked-board Members and Assignees use deduplicated active target members with public names, matching card getters. Linked-board local creator/requesters/assigners appear separately with the wrapper board scope."
+  },
+  {
+    "fields": ["labelIds", "customFields", "stickers", "locationName", "locationAddress", "locationLatitude", "locationLongitude", "locations"],
+    "handling": "Ordinary/source Details with custom-field visibility and definition checks. Linked-board local Details renders these wrapper-owned fields with local definitions, admin visibility and policy fingerprints."
+  },
+  {
+    "fields": ["parentId", "cardDependencies", "targetId_gantt", "linkType_gantt"],
+    "handling": "Ordinary/source Details resolves authorized targets and groups duplicate labels. Linked-board wrapper relationships use the same authorized resolver and durable related-source evidence. Dependency color/icon are presentation metadata, not separate targets."
+  },
+  {
+    "fields": ["vote", "poker"],
+    "handling": "Ordinary/source and linked-board Details use disclosure checks. Private voter identities and unfinished Poker choices are excluded; voting configuration is not serialized wholesale."
+  },
+  {
+    "fields": ["coverId"],
+    "handling": "Live selected attachment manifest identifies the cover without exporting an internal ID."
+  },
+  {
+    "fields": ["type", "linkedId"],
+    "handling": "Control source resolution and durable identity checks; not raw prose fields."
+  },
+  {
+    "fields": ["scrumRevision", "syncSourceKey", "syncLastSource", "syncExternalId", "syncSourceType", "deletedAt", "deletedBy", "deleteBatchId", "linkId_gantt"],
+    "handling": "Internal provenance, revision, deletion and renderer identifiers are excluded; deletion still governs eligibility."
+  },
+  {
+    "fields": ["showActivities", "showListOnMinicard", "showChecklistAtMinicard", "hideFinishedChecklistIfItemsAreHidden"],
+    "handling": "Display preferences do not become email content. Discussion selection is controlled by the mail action."
+  }
+]

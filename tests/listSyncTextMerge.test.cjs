@@ -24,7 +24,7 @@ test('same edits on both sides converge and missing source fields do not erase t
 test('write preconditions retain board, list, text and baseline identity',()=>{
  const selector=syncTextSelector(card,'board','list');assert.equal(selector.boardId,'board');assert.equal(selector.listId,'list');
  assert.equal(selector.title,'Original');assert.deepEqual(selector.syncSourceType,{$exists:false});
- assert.deepEqual(selector.syncLastSource,card.syncLastSource);
+ assert.deepEqual(selector.syncLastSource,{$eq:card.syncLastSource});
 });
 
 test('duplicate local identities stop matching even when the source is empty',()=>{
@@ -36,9 +36,9 @@ test('duplicate local identities stop matching even when the source is empty',()
 });
 test('copied subtasks lose Sync identity without mutating the source',async()=>{
  const {buildCopiedSubtaskFields}=await import('../models/lib/subtaskCopy.js');
- const original={...card,syncSourceType:'jira'};
+ const original={...card,syncSourceType:'jira',syncSourceKey:'original-project'};
  const copied=buildCopiedSubtaskFields(original,{newParentId:'parent',boardId:'board',listId:'list',swimlaneId:'lane'});
- for(const key of ['syncExternalId','syncSourceType','syncLastSource'])assert.equal(copied[key],undefined);
+ for(const key of ['syncExternalId','syncSourceType','syncSourceKey','syncLastSource'])assert.equal(copied[key],undefined);
  assert.equal(original.syncExternalId,'1');assert.equal(copied.title,original.title);
 });
 

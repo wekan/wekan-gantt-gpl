@@ -60,7 +60,7 @@ Evaluated by a server cron job every minute:
 ## Actions
 
 - **Board:** move card to top/bottom (of its list or a named list/board), archive /
-  unarchive, add swimlane, create card, link card, **sort a list** (by due date /
+  unarchive, add swimlane, create card, copy card, link card, **sort a list** (by due date /
   name / created / modified), **move all cards** from one list to another.
 - **Card:** set/update/remove a date, **set a date relative to now** ("+N days"),
   add/remove label, add/remove member, remove all members, set color,
@@ -68,6 +68,110 @@ Evaluated by a server cron job every minute:
 - **Checklist:** add/remove checklist, check/uncheck all, check/uncheck an item, add
   a checklist with items.
 - **Mail:** send an email.
+
+### Attach card files to an email
+
+Enable **Attachments** in the email action to include the triggering card's
+live files. The default remains a text-only message. Files are read through the
+configured storage strategy and sent as byte snapshots, not download links.
+A text manifest lists the attached filename, actual captured byte count, MIME
+type, cover marker, upload date and public uploader display name. It contains
+no storage paths, download URLs or private account fields. The manifest is
+included with Attachments regardless of Details and is capped at 256 KiB.
+A deleted attachment is omitted; an unreadable file fails the message before
+SMTP, rather than silently sending a partial set. Each message permits up to
+100 attachments and 8 MiB of raw file data in total.
+
+The actor must still be able to read the source board and card after the reads
+finish. Assigned-only access requires assignment to that card. Unrelated cards are not followed; linked-card sources use the authorized
+resolution described below. Stored Sync email commands retain
+the captured bytes for retries. Filesystem and GridFS delivery have local SMTP
+regression coverage; cloud adapters use their existing stream interface but
+were not tested against live cloud accounts for this change.
+
+Email bodies include the configured text and the card's title, description and
+link. Enable **Checklists / Comments** to append live checklist titles, tasks
+and their completion state, checklist/item due dates, checklist completion
+and reset dates/interval, followed by public comment text in chronological
+order with public author names and creation/edit dates. Reactions include
+Unicode emoji and distinct-reactor counts, scoped to each included comment;
+reactor IDs and account data are not included. Private webhook state is never included. Card access is rechecked after
+reading; oversized discussion text fails rather than being silently truncated.
+Converted checklist subtasks include their current readable title. Linked
+references use the same source-chain resolution as other relations; private,
+missing or deleted targets are omitted, and references are rechecked before
+sending. Stored commands retain their source chains even when Details is off.
+This option is independent of Attachments and is off for existing rules.
+
+Enable **Details** to append board/list/swimlane names, dates, labels, members,
+assignees, requesters/assigners, time spent, locations, custom-field display
+values, text notes and readable parent/subtask/dependency titles. Creator
+names, stickers, archive/activity dates, ordering and move reasons are included.
+Details also includes recurrence interval/last recurrence and persisted Flowtime/Pomodoro
+session start, interruptions, phase, completed intervals, work duration and
+public user display names. Timer snapshots do not add unfinished time to the
+completed spent-time total or calculate a continually changing elapsed value.
+Admin-only custom fields require board-admin access. Account emails, tokens
+and private related-card titles are never included. Zero and false values are retained.
+Access and custom-field policy are checked again before preparation finishes.
+Canonical dependencies and legacy Gantt targets share one row per target,
+retaining distinct relationship labels. Gantt types follow the
+[DHTMLX defaults](https://docs.dhtmlx.com/gantt/api/config/links/). Inconsistent
+legacy target/type arrays retain the target with a generic label rather than
+an inferred type. Internal Gantt link IDs are not included.
+
+Details includes voting questions, deadlines and counts. Voter names appear
+only for public votes. Planning Poker includes the saved estimation and
+reveals the choice counts and names only after its end time, matching the
+card UI. Hidden voting/Poker sections are omitted. Only public display names
+are resolved; emails, account data and raw user IDs are excluded. Visibility
+is rechecked after preparation and captured in new stored-command source
+bindings, so changing public voting, reopening Poker or hiding either section
+stops dispatch of an older snapshot.
+
+For linked cards, all selected sections use the current source card, including
+its board-scoped custom fields, comments and files. Every link in the chain
+must remain readable by the actor; changed targets, cycles, missing sources
+and revoked access stop preparation. Cached source snapshots are not sent.
+Linked boards use current board title, description and dates while retaining
+the wrapper card's own discussion and attachments; they do not email every
+card on the linked board. Linked-board voting uses the target board's current votes and Poker results,
+subject to the same disclosure rules and both boards' section visibility.
+Details includes the six visible Scrum card fields: sprint, past sprints,
+release, issue type, acceptance criteria and backlog rank. Only enabled card
+visibility flags permit output. Sprint/release names must belong to the source
+board; missing or foreign references are omitted. References are rechecked
+after reads and new stored source bindings retain the six visibility flags.
+These are card metadata, not entire sprint reports, events or other cards.
+The [full-card content audit](../../../DeveloperDocs/Card-Email-Content-Audit.md)
+records remaining work for #2713.
+Stored Sync commands capture the resolved source chain alongside the immutable
+mail and include it in their checksum. Related-card title sources are captured too, including their linked chains.
+Before dispatch, every saved card/board,
+link target and current read/assignment permission must still match. A moved or
+retargeted source stops delivery even if the recipient is unchanged. Legacy
+commands without source evidence, and older Details snapshots without related-source
+evidence, remain readable but cannot be dispatched or
+silently recaptured; operator recovery for those commands remains unfinished.
+Ordinary event, button and scheduled email rules also support linked sources.
+
+### Copy a card after a trigger
+
+In the form builder, choose **Copy Card** under Board actions and select the
+board, list and swimlane. The original card stays in place; an independent copy
+is appended to the selected list. This uses ordinary card copying, including
+its checklist, comment, attachment and subtask handling and cross-board label
+and custom-field mapping. It does not create a live link to the original.
+
+The saved action keeps destination IDs, so renaming a list or swimlane does not
+redirect the copy. The actor must have write access to both boards when the
+rule runs. Deleted or archived destinations, foreign lists/swimlanes and
+revoked access produce no copy. A trigger needs a card context: use an event,
+a card button or a card-based scheduled trigger, rather than a board button.
+
+Copies may trigger other rules. The same copy action runs only once in a
+causal chain, preventing a create-card rule from endlessly copying its own
+copies. Separate user events can each make a copy.
 
 ## Variables
 
@@ -205,6 +309,24 @@ python3 api.py addrule BOARDID 'On create -> top' \
   '{"activityType":"createCard","listName":"*","swimlaneName":"*","cardTitle":"*","userId":"*"}' \
   '{"actionType":"moveCardToTop","listName":"*","swimlaneName":"*"}'
 ```
+
+With Details enabled, a linked card or linked board also includes a separate
+`Linked card local details` section for its local board/list/swimlane placement,
+local recurrence, persisted timer fields and visible local Scrum metadata.
+Source Details keeps its own scope. Copied source-card titles, descriptions,
+stickers and custom fields are not
+exported from a linked-card wrapper. A linked-board wrapper owns its local
+labels, stickers, custom fields, notes, locations, creator and relationships;
+These use local field visibility and related-card access checks. Public timer
+owner names and same-board Scrum names use the same access rechecks.
+
+A linked-board card's Discussion choice also includes public comments from
+readable cards on the target board, grouped by current card title. Assigned-only
+membership still limits which cards can contribute. Missing/deleted cards and
+unreadable linked sources are omitted. Access is checked again after rendering
+and before a stored command is sent. Checklists and files remain local to the
+linked-board card. Board discussion rejects more than 1,000 discovered comment
+rows or 768 KiB of rendered text; it does not send an incomplete subset.
 
 ## Related
 

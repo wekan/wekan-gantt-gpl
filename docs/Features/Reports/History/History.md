@@ -171,6 +171,23 @@ Transifex; see the translation-pull auto-heal note in the changelog).
 One new append-only Mongo collection **`changeHistory`** (working name) covering **every** change,
 whatever the entity. One document per change:
 
+Field snapshots preserve nested Date values with millisecond values and explicit
+`datePaths` metadata inside the content. This keeps date-valued custom fields
+as dates after JSON transport and restore, while ISO-looking text remains text.
+Malformed paths or values are rejected instead of coercing data during restore.
+Older rows without this metadata keep their original interpretation: dates
+already flattened to strings cannot safely be distinguished from actual text.
+
+History page reads stream database rows in batches of 100. Permission filtering
+precedes search, counts and page selection; assigned-only checks load only card
+IDs present in the current batch. The reader retains the requested page and the
+last page so an out-of-range request still clamps to the final page. It closes
+the cursor on success and failure. Exact totals and contributor counts still
+require a full scan of the selected scope, and contributor memory scales with
+the number of distinct authors. This reduces retained row memory, not scan time,
+and does not provide a consistent snapshot across concurrent writes or access
+changes. Existing newest-first indexes and ordering remain in use.
+
 ```js
 {
   _id,
@@ -598,3 +615,131 @@ button type and label, removing it from the board/card button menus. REST
 creation and trigger updates synchronize this metadata too. Undo/redo restores
 the matching trigger and button metadata together, so restored manual buttons
 reappear and redoing an automatic trigger removes them again.
+
+### Interrupted Scrum redo after a newer edit
+
+A pending Scrum checkpoint identifies the interrupted operation; it does not
+make a superseded redo eligible again. If a newer ordinary change invalidates
+that user's redo branch, retry reports a Scrum conflict and retains the pending
+checkpoint. It does not reapply the old Scrum values, append another restoration
+event or clear the source row's undone flag. Repeating the request preserves
+the same recovery evidence.
+
+Source identity, immutable hash and superseded state are rechecked before
+preparing/resuming the operation, at entity writes, before restoration events
+and during finalization. A reloaded source already marked superseded is refused
+for redo even when the captured row has the same flag. A completed, valid redo
+can still finish checkpoint cleanup after an interrupted response.
+
+These checks detect stale recovery work; they do not make the source row,
+entity writes and checkpoint cleanup one transaction. A change arriving between
+checks can leave partial work requiring the retained checkpoint. Shared
+operation-level writer coordination and a resolution workflow for superseded
+partial restores remain unfinished. Do not discard the checkpoint merely to
+make the conflict disappear.
+
+### Checkpoint ownership during Scrum recovery
+
+Legacy checkpoints without an operation ID acquire one with a conditional
+update of the captured identity, before/after values and revisions. Concurrent
+workers adopt the first persisted ID; they cannot replace it with a second
+random ID. Lost acknowledgements are reconciled from the unchanged saved plan.
+An invalid or replaced plan fails before recovery can use its identity.
+
+Recovery rechecks ownership together with source validity at entity writes and
+before restoration events. Finalization checks the same plan before updating
+the source undo/redo flag, and checkpoint deletion matches its full captured
+before/after plan and revisions. Reusing the old operation ID on a changed
+checkpoint cannot make an old worker delete the replacement.
+
+Independent MongoDB clients verify concurrent legacy upgrades and replacement
+refusal. Ordinary undo/redo and interrupted legacy recovery remain covered by
+browser tests. These ownership checks retain exact recovery evidence; they do
+not serialize simultaneous workers on the same unchanged plan or make separate
+entity and checkpoint writes atomic. Shared operation-level coordination is
+still required for those guarantees.
+
+### Revision evidence for already-applied Scrum writes
+
+Recovery no longer treats matching target values alone as proof that a saved
+step is complete. It also requires the operation's expected revision: unchanged
+steps retain the captured revision, updates advance it by exactly one, and
+newly recreated planning records begin at revision one. A pending write must
+still match both its captured before-values and original revision.
+
+This applies to board/card/list/swimlane Scrum metadata and sprint, release
+and event records. A newer writer that returns to the same visible values
+still changes the revision, so the older recovery fails with a Scrum conflict
+and retains its checkpoint. It does not rewrite the newer revision, append
+another timeline event or acknowledge cleanup. Invalid numeric revisions and
+mismatched before/after record identities are also refused.
+
+A missing document after a planned deletion has no stored revision to check;
+absence alone cannot distinguish this operation's deletion from a later
+create/delete cycle. Same-revision external writes and the interval between
+validation and mutation still require stronger operation-level coordination.
+The existing conditional update guards remain in place, and this change does
+not claim cross-document atomicity.
+
+### Confirming persisted restoration results
+
+A successful collection update reply is not enough to acknowledge a Scrum
+restoration. Each applied write is read back and checked against its captured
+target values and expected revision. The whole target set is checked again
+before each restoration event and before source-flag finalization. Checkpoint
+ownership and source validity are checked around those reads.
+
+Missing or unapplied targets, unexpected revisions, failed confirmation reads
+and lost ownership stop completion and retain the checkpoint. A subsequent
+retry can finish using the same operation ID once the saved writes are actually
+confirmed. In full-app regression coverage, a card adapter falsely reports a
+successful write: no restoration event or undone flag is saved and the
+checkpoint survives. Restoring the actual adapter lets the retry complete once.
+
+The batch checks also revisit earlier targets after later writes. They are
+verification, not a database snapshot or transaction: another writer can still
+change a target after its readback. Multi-process operation fencing and atomic
+entity/History/checkpoint changes remain unfinished.
+
+### Conditional placement and content checks
+
+Scrum restoration updates now include the captured Scrum values and revision
+in their database predicate. Non-board metadata also matches its board ID;
+card updates additionally match the list, swimlane and assignees read during
+validation. Missing fields remain distinct from explicit null or zero. A card
+moved after validation therefore cannot receive the old board's restoration
+merely because its Scrum revision stayed the same.
+
+Planning-record updates and deletes match all captured fields, including an
+explicit absence check for a missing legacy revision. Metadata writes leave
+unrelated fields such as a card title outside their predicate, so ordinary
+unrelated edits are preserved. The existing persisted-result checks still
+verify the resulting values before acknowledging recovery.
+
+A full-app test moves a real card between read and write without advancing its
+Scrum revision. The conditional write refuses the change, retains the pending
+operation, and creates no restoration event. This is a concurrency conflict,
+not evidence of an attack; it does not create a security-attempt log entry.
+Permissions stored in other documents and fields added by writers outside the
+revision protocol still require shared operation-level coordination. These
+predicates do not provide a multi-document transaction.
+
+### Preflight before resuming a compound restoration
+
+Before writing another target, Scrum recovery inspects every target in the
+saved batch under checkpoint/source checks. Each must be either still at its
+captured before-values and revision or already at the exact expected result.
+Mixed pending/applied batches remain resumable. A later target with conflicting
+values, an unexpected revision, a missing read or mismatched identity prevents
+new entity writes even when the first target could have been restored.
+
+The full-app test retains a two-card checkpoint, changes only the second
+card's revision, and retries. The first card stays unchanged, no restoration
+event appears, and the same checkpoint survives. With the isolated fixture
+restored to its captured revisions, both writes complete normally. Existing
+false-acknowledgement and raced-placement cases remain covered.
+
+Preflight does not replace conditional writes or post-write confirmation:
+other workers may change data after the scan. Those checks still run at each
+write and before finalization. Full operation serialization and atomic
+cross-document changes remain unfinished.

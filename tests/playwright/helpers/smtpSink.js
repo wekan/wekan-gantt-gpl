@@ -2,14 +2,18 @@
 
 // Local-only SMTP capture for notification regressions. No mail is relayed.
 const net = require('node:net');
-async function smtpSink(port) {
+async function smtpSink(port, { accept = () => true, rejectionCode = 451, greet = () => true, onMessage = () => {} } = {}) {
   const messages = [];
   const sockets = new Set();
   const server = net.createServer(socket => {
     sockets.add(socket);
+    // Active cancellation may reset the peer while reply bytes are in flight.
+    socket.on('error', error => {
+      if (!['ECONNRESET', 'EPIPE'].includes(error.code)) throw error;
+    });
     socket.on('close', () => sockets.delete(socket));
     socket.setEncoding('utf8');
-    socket.write('220 localhost test SMTP\r\n');
+    if (greet()) socket.write('220 localhost test SMTP\r\n');
     let pending = '', data = null, recipients = [];
     socket.on('data', chunk => {
       pending += chunk;
@@ -19,9 +23,13 @@ async function smtpSink(port) {
         pending = pending.slice(end + 2);
         if (data !== null) {
           if (line === '.') {
-            messages.push({ recipients: [...recipients], data: data.join('\r\n') });
+            const message = { recipients: [...recipients], data: data.join('\r\n') };
+            messages.push(message);
+            onMessage(message, socket);
             data = null; recipients = [];
-            socket.write('250 captured\r\n');
+            Promise.resolve().then(() => accept(message)).then(accepted => {
+              if (!socket.destroyed) socket.write(accepted ? '250 captured\r\n' : `${rejectionCode} test rejection\r\n`);
+            }).catch(() => socket.destroy());
           } else data.push(line.replace(/^\.\./, '.'));
         } else if (/^(EHLO|HELO)/i.test(line)) socket.write('250 localhost\r\n');
         else if (/^RCPT TO:/i.test(line)) {
@@ -38,7 +46,7 @@ async function smtpSink(port) {
     server.once('error', reject);
     server.listen(port, '127.0.0.1', resolve);
   });
-  return { messages, close: async () => {
+  return { messages, connections: () => sockets.size, close: async () => {
     for (const socket of sockets) socket.destroy();
     await new Promise(resolve => server.close(resolve));
   } };

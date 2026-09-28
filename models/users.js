@@ -1114,6 +1114,11 @@ Users.attachSchema(
       type: Date,
       optional: true,
     },
+    // Server-only tray delivery fencing/evidence; receipt history lives in a
+    // private collection so user documents retain only one pending delivery.
+    notificationDeliveryRevision: { type: String, optional: true },
+    notificationDeliveryPending: { type: Object, optional: true, blackbox: true },
+
     isAdmin: {
       /**
        * is the user an admin of the board?
@@ -1202,6 +1207,8 @@ Users.attachSchema(
 export const USER_UPDATE_ALLOWED_EXACT = ['username', 'profile', 'modifiedAt'];
 export const USER_UPDATE_ALLOWED_PREFIXES = ['profile.'];
 export const USER_UPDATE_FORBIDDEN_PREFIXES = [
+  'notificationDeliveryRevision',
+  'notificationDeliveryPending',
   'profile.invitedBoards',
   'services',
   'emails',
@@ -2640,9 +2647,8 @@ Users.helpers({
   },
 
   async addNotification(activityId) {
-    return await Users.updateAsync(this._id, {
-      $addToSet: { 'profile.notifications': { activity: activityId, read: null } },
-    });
+    const { addNotificationOnce } = require('/models/lib/notificationInsertion');
+    return await addNotificationOnce(Users, this._id, activityId);
   },
 
   async removeNotification(activityId) {
@@ -2655,8 +2661,9 @@ Users.helpers({
     return await Users.updateAsync(this._id, { $addToSet: { 'profile.emailBuffer': text } });
   },
 
-  async clearEmailBuffer() {
-    return await Users.updateAsync(this._id, { $set: { 'profile.emailBuffer': [] } });
+  async clearEmailBuffer(texts) {
+    check(texts, [String]);
+    return await Users.updateAsync(this._id, { $pullAll: { 'profile.emailBuffer': texts } });
   },
 
   async setAvatarUrl(avatarUrl) {

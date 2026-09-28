@@ -1,3 +1,8 @@
+import { Meteor } from 'meteor/meteor';
+import { Tracker } from 'meteor/tracker';
+import { ReactiveVar } from 'meteor/reactive-var';
+import { SavedCardFilters } from '/client/lib/savedCardFilters';
+import { captureFilterPreset, applyFilterPreset } from '/client/lib/filterPresetState';
 import { ReactiveCache } from '/imports/reactiveCache';
 import { TAPi18n } from '/imports/i18n';
 import { Filter } from '/client/lib/filter';
@@ -5,9 +10,39 @@ import { EscapeActions } from '/client/lib/escapeActions';
 import { MultiSelection } from '/client/lib/multiSelection';
 import { Utils } from '/client/lib/utils';
 import { getSidebarInstance } from '/client/features/sidebar/service';
+import { CARD_DATE_RANGE_FIELDS, CARD_RECENCY_PRESETS } from '/models/lib/cardDateRange';
 import { DEPENDENCY_TYPES } from '/models/metadata/dependencies';
 
+Template.filterSidebar.onCreated(function () {
+  this.presetMessage = new ReactiveVar('');
+  this.presetBusy = new ReactiveVar(false);
+  this.autorun(() => {
+    const boardId = Session.get('currentBoard');
+    if (Meteor.userId() && boardId) this.subscribe('savedCardFilters', boardId);
+  });
+});
+
 Template.filterSidebar.helpers({
+  savedFilterPresets() {
+    return SavedCardFilters.find({ boardId: Session.get('currentBoard'), ownerId: Meteor.userId() }, { sort: { name: 1 } });
+  },
+  presetMessage() { return Template.instance().presetMessage.get(); },
+  presetBusy() { return Template.instance().presetBusy.get(); },
+  filterProviderViews() { return Filter.providers.views(); },
+  dateFilterProviderViews() { return Filter.providers.views('dates'); },
+  dueUnrestricted() { return Filter.dueAt.state() === null; },
+  movementFrom() { return Filter.movementDate.value().from; },
+  movementTo() { return Filter.movementDate.value().to; },
+  dateRangeFields() { return CARD_DATE_RANGE_FIELDS; },
+  dateRangeSelected(id) { return Filter.dateRange.value().field === id; },
+  dateRangeFrom() { return Filter.dateRange.value().from; },
+  dateRangeTo() { return Filter.dateRange.value().to; },
+  dateRangeMissing() { return Filter.dateRange.value().includeMissing; },
+  columnAgeLists() {
+    return ReactiveCache.getLists({ boardId: Session.get('currentBoard'), archived: false }, { sort: { sort: 1 } });
+  },
+  columnAgeDays() { return Filter.columnAge.value().days; },
+  columnAgeSelected(id) { return Filter.columnAge.value().listId === id; },
   parentFilterCards() {
     const boardId = Session.get('currentBoard');
     if (!boardId) return [];
@@ -29,6 +64,79 @@ Template.filterSidebar.helpers({
 });
 
 Template.filterSidebar.events({
+  async 'submit .js-save-filter-preset'(event, tpl) {
+    event.preventDefault();
+    if (tpl.presetBusy.get()) return;
+    tpl.presetBusy.set(true); tpl.presetMessage.set('');
+    try {
+      await Meteor.callAsync('filterPresets.save', Session.get('currentBoard'),
+        tpl.find('.js-filter-preset-name').value, captureFilterPreset(Filter));
+      tpl.presetMessage.set('filter-preset-saved');
+    } catch (error) { tpl.presetMessage.set('filter-preset-error'); }
+    finally { tpl.presetBusy.set(false); }
+  },
+  'click .js-apply-filter-preset'(event, tpl) {
+    event.preventDefault();
+    const preset = SavedCardFilters.findOne({ _id: tpl.find('.js-filter-preset-select').value,
+      ownerId: Meteor.userId(), boardId: Session.get('currentBoard') });
+    try {
+      if (!preset) throw new Error('Missing preset');
+      applyFilterPreset(Filter, preset.state);
+      for (const selector of ['.js-card-date-to', '.js-card-movement-to']) tpl.find(selector)?.setCustomValidity('');
+      tpl.find('.js-filter-preset-name').value = preset.name;
+      tpl.presetMessage.set('filter-preset-applied');
+    } catch (error) { tpl.presetMessage.set('filter-preset-error'); }
+  },
+  async 'click .js-remove-filter-preset'(event, tpl) {
+    event.preventDefault();
+    if (tpl.presetBusy.get()) return;
+    tpl.presetBusy.set(true); tpl.presetMessage.set('');
+    try {
+      await Meteor.callAsync('filterPresets.remove', Session.get('currentBoard'), tpl.find('.js-filter-preset-select').value);
+      tpl.presetMessage.set('filter-preset-deleted');
+    } catch (error) { tpl.presetMessage.set('filter-preset-error'); }
+    finally { tpl.presetBusy.set(false); }
+  },
+  'submit .js-card-movement-range'(event, tpl) {
+    event.preventDefault();
+    const end = tpl.find('.js-card-movement-to');
+    const valid = Filter.movementDate.set({ field: 'createdAt',
+      from: tpl.find('.js-card-movement-from').value, to: end.value, includeMissing: false });
+    end.setCustomValidity(valid ? '' : TAPi18n.__('filter-date-range-invalid'));
+    if (!valid) end.reportValidity();
+    else Filter.resetExceptions();
+  },
+  'input .js-card-movement-range input'(event, tpl) {
+    tpl.find('.js-card-movement-to').setCustomValidity('');
+  },
+  'click .js-clear-movement-range'(event, tpl) {
+    event.preventDefault(); tpl.find('.js-card-movement-to').setCustomValidity('');
+    Filter.movementDate.reset(); Filter.resetExceptions();
+  },
+  'submit .js-card-date-range'(event, tpl) {
+    event.preventDefault();
+    const end = tpl.find('.js-card-date-to');
+    const valid = Filter.dateRange.set({ field: tpl.find('.js-card-date-field').value,
+      from: tpl.find('.js-card-date-from').value, to: end.value,
+      includeMissing: tpl.find('.js-card-date-missing').checked });
+    end.setCustomValidity(valid ? '' : TAPi18n.__('filter-date-range-invalid'));
+    if (!valid) end.reportValidity();
+    else Filter.resetExceptions();
+  },
+  'input .js-card-date-range input'(event, tpl) {
+    tpl.find('.js-card-date-to').setCustomValidity('');
+  },
+  'click .js-clear-date-range'(event, tpl) {
+    event.preventDefault(); tpl.find('.js-card-date-to').setCustomValidity('');
+    Filter.dateRange.reset(); Filter.resetExceptions();
+  },
+  'submit .js-column-age-filter'(event, tpl) {
+    event.preventDefault();
+    const listId = tpl.find('.js-column-age-list').value;
+    if (!listId) Filter.columnAge.reset();
+    else Filter.columnAge.set(listId, Number(tpl.find('.js-column-age-days').value));
+    Filter.resetExceptions();
+  },
   'click .js-toggle-parent-filter'(event) {
     event.preventDefault();
     Filter.parentId.toggle(event.currentTarget.dataset.parentId);
@@ -69,6 +177,20 @@ const OUTSIDE_CLICK_KEEPS_OPEN = [
 
 Template.filterSidebar.onRendered(function () {
   const instance = this;
+  this.autorun(() => {
+    const excluded = new Set(Filter.excludedLabelIds.list());
+    const selected = new Set(Filter.labelIds.list());
+    ReactiveCache.getBoard(Session.get('currentBoard'));
+    Tracker.afterFlush(() => {
+      if (instance.view.isDestroyed) return;
+      instance.findAll('.js-toggle-label-filter').forEach(label => {
+        const id = label.dataset.filterId === '__none__' ? undefined : label.dataset.filterId;
+        const input = label.querySelector('input');
+        input.checked = selected.has(id);
+        input.indeterminate = excluded.has(id);
+      });
+    });
+  });
 
   instance._closeOnOutsideClick = evt => {
     if (evt.button !== 0) return;
@@ -111,17 +233,17 @@ function getFilterIdFromEvent(evt, fallbackId) {
 }
 
 Template.filterSidebar.events({
+  'change .js-due-unrestricted'() { Filter.dueAt.reset(); Filter.resetExceptions(); },
   'submit .js-list-filter'(evt, tpl) {
     evt.preventDefault();
     Filter.lists.set(tpl.find('.js-list-filter input').value.trim());
   },
-  'change .js-field-card-filter'(evt, tpl) {
+  'input .js-field-card-filter'(evt, tpl) {
     evt.preventDefault();
-    Filter.title.set(tpl.find('.js-field-card-filter').value.trim());
+    Filter.text.set(tpl.find('.js-field-card-filter').value.trim());
     Filter.resetExceptions();
   },
-  'click .js-toggle-label-filter'(evt) {
-    evt.preventDefault();
+  'change .js-toggle-label-filter'(evt) {
     const filterId = getFilterIdFromEvent(evt, this?._id);
     if (filterId === undefined) {
       // The "no label" pseudo-entry stays a simple two-state toggle; the
@@ -133,50 +255,47 @@ Template.filterSidebar.events({
     }
     Filter.resetExceptions();
   },
-  'click .js-toggle-member-filter'(evt) {
-    evt.preventDefault();
+  'change .js-toggle-member-filter'(evt) {
     Filter.members.toggle(getFilterIdFromEvent(evt, this?._id));
     Filter.resetExceptions();
   },
-  'click .js-toggle-assignee-filter'(evt) {
-    evt.preventDefault();
+  'change .js-toggle-assignee-filter'(evt) {
     Filter.assignees.toggle(getFilterIdFromEvent(evt, this?._id));
     Filter.resetExceptions();
   },
   // #3681: filter cards by whose card.userId (the creator/author field)
   // matches, the same toggle pattern as members/assignees above.
-  'click .js-toggle-creator-filter'(evt) {
-    evt.preventDefault();
+  'change .js-toggle-creator-filter'(evt) {
     Filter.userId.toggle(getFilterIdFromEvent(evt, this?._id));
     Filter.resetExceptions();
   },
-  'click .js-toggle-no-due-date-filter'(evt) {
-    evt.preventDefault();
+  'change .js-toggle-no-due-date-filter'() {
     Filter.dueAt.noDate();
     Filter.resetExceptions();
   },
-  'click .js-toggle-overdue-filter'(evt) {
-    evt.preventDefault();
+  'change .js-toggle-overdue-filter'() {
     Filter.dueAt.past();
     Filter.resetExceptions();
   },
-  'click .js-toggle-due-today-filter'(evt) {
-    evt.preventDefault();
+  'change .js-toggle-due-today-filter'() {
     Filter.dueAt.today();
     Filter.resetExceptions();
   },
-  'click .js-toggle-due-tomorrow-filter'(evt) {
-    evt.preventDefault();
+  'change .js-toggle-due-tomorrow-filter'() {
     Filter.dueAt.tomorrow();
     Filter.resetExceptions();
   },
-  'click .js-toggle-due-this-week-filter'(evt) {
-    evt.preventDefault();
+  'change .js-toggle-due-previous-week-filter'() {
+    Filter.dueAt.previousWeek(); Filter.resetExceptions();
+  },
+  'change .js-toggle-due-next-month-filter'() {
+    Filter.dueAt.nextMonth(); Filter.resetExceptions();
+  },
+  'change .js-toggle-due-this-week-filter'() {
     Filter.dueAt.thisWeek();
     Filter.resetExceptions();
   },
-  'click .js-toggle-due-next-week-filter'(evt) {
-    evt.preventDefault();
+  'change .js-toggle-due-next-week-filter'() {
     Filter.dueAt.nextWeek();
     Filter.resetExceptions();
   },
@@ -214,8 +333,10 @@ Template.filterSidebar.events({
     );
     Filter.resetExceptions();
   },
-  'click .js-clear-all'(evt) {
+  'click .js-clear-all'(evt, tpl) {
     evt.preventDefault();
+    tpl.find('.js-card-date-to')?.setCustomValidity('');
+    tpl.find('.js-card-movement-to')?.setCustomValidity('');
     Filter.reset();
   },
   'click .js-filter-to-selection'(evt) {
@@ -625,4 +746,26 @@ registerSelectionDialogTemplate('copySelectionPopup', async (card, to) => {
   const newCard = ReactiveCache.getCard(newCardId);
   if (!newCard) return;
   await newCard.move(to.boardId, to.swimlaneId, to.listId, to.sortIndex);
+});
+
+Template.cardRecencyFilter.helpers({
+  dateRecencyFields() { return [{ id: 'createdAt', label: 'createdAt' }, { id: 'modifiedAt', label: 'modifiedAt' }]; },
+  dateRecencyPresets() { return CARD_RECENCY_PRESETS; },
+  dateRecencySelected(field, preset) { return Template.instance().data.filter.value()[field] === preset; },
+});
+Template.cardRecencyFilter.events({
+  'change .js-card-date-recency'(event, tpl) {
+    const filter = tpl.data.filter;
+    if (filter.set({ ...filter.value(), [event.currentTarget.dataset.field]: event.currentTarget.value })) Filter.resetExceptions();
+  },
+});
+
+Template.textFilterProvider.helpers({
+  providerTextValue() { return Template.instance().data.get(); },
+});
+Template.textFilterProvider.events({
+  'input .js-provider-text'(event, tpl) {
+    tpl.data.set(event.currentTarget.value);
+    Filter.resetExceptions();
+  },
 });

@@ -1,6 +1,7 @@
 import { Meteor } from 'meteor/meteor';
 import { Mongo } from 'meteor/mongo';
 import { Random } from 'meteor/random';
+import { EJSON } from 'meteor/ejson';
 import { ReactiveCache, ReactiveMiniMongoIndex } from '/imports/reactiveCache';
 import { CARD_RECURRENCE_INTERVALS } from '/models/lib/cardRecurrenceSchedule';
 import {
@@ -164,6 +165,16 @@ Cards.attachSchema(
         return 'notAllowed';
       },
     },
+    listEnteredAt: {
+      /** When this card entered its current board/list. Unrelated edits do not reset it. */
+      type: Date,
+      optional: true,
+      autoValue() {
+        if (this.isInsert) return new Date();
+        if (this.isUpsert) return { $setOnInsert: new Date() };
+        this.unset();
+      },
+    },
     createdAt: {
       /**
        * creation date
@@ -290,9 +301,16 @@ Cards.attachSchema(
     // - together they are how the reconcile step (models/lib/listSyncReconcile.js)
     // matches an already-imported card back to its external item on the next
     // run, instead of creating a duplicate.
+    syncSourceKey: { type: String, optional: true },
     syncLastSource: { type: Object, optional: true },
     'syncLastSource.title': { type: String, optional: true },
     'syncLastSource.description': { type: String, optional: true },
+    'syncLastSource.estimate': { type: Number, optional: true, min: 0, max: 1e12 },
+    'syncLastSource.originalEstimate': { type: Number, optional: true, min: 0, max: 1e12 },
+    'syncLastSource.remainingEstimate': { type: Number, optional: true, min: 0, max: 1e12 },
+    'syncLastSource.originalEstimateMapping': { type: String, optional: true },
+    'syncLastSource.remainingEstimateMapping': { type: String, optional: true },
+    'syncLastSource.estimateMapping': { type: String, optional: true },
     'syncLastSource.spentTime': { type: Number, optional: true, min: 0 },
     syncExternalId: {
       type: String,
@@ -1055,6 +1073,17 @@ Cards.helpers({
 
     // Work on a shallow copy to avoid mutating the source card in ReactiveCache
     const cardData = { ...this };
+    if (Meteor.isServer) {
+      const { DDP } = require('meteor/ddp');
+      const { currentReportRequest } = require('/server/lib/requestReportContext');
+      const actor = DDP._CurrentMethodInvocation.get()?.userId || currentReportRequest()?.userId;
+      if (actor) {
+        const policy = await require('/server/lib/adminOnlyCustomFields').fieldPolicy(actor);
+        const { mayReadField } = require('/models/lib/adminOnlyCustomFields');
+        cardData.customFields = (cardData.customFields || []).filter(field =>
+          mayReadField(policy.definitions.get(field._id), this.boardId, policy.adminBoards));
+      }
+    }
     const { copiedCardScrum } = require('./lib/scrumCopy');
     delete cardData.scrum;
     delete cardData.scrumRevision;
@@ -1065,6 +1094,7 @@ Cards.helpers({
     // A copy is independent work, not a second target for the same source item.
     delete cardData.syncExternalId;
     delete cardData.syncSourceType;
+    delete cardData.syncSourceKey;
     delete cardData.syncLastSource;
 
     // Normalize customFields to ensure it's always an array
@@ -1096,8 +1126,8 @@ Cards.helpers({
       // A scoped board copy clones definitions and remaps their IDs after the
       // cards exist. Do not share/mutate the source definitions on this path.
       cardData.customFields = copyOptions
-        ? (copyOptions.customFields ? (this.customFields || []).map(field => ({ ...field })) : [])
-        : await this.mapCustomFieldsToBoard(newBoard._id);
+        ? (copyOptions.customFields ? (cardData.customFields || []).map(field => ({ ...field })) : [])
+        : await this.mapCustomFieldsToBoard.call({ customFields: cardData.customFields }, newBoard._id);
     }
 
     cardData.boardId = boardId;
@@ -2200,14 +2230,14 @@ Cards.helpers({
 
   startFlowSession(userId) {
     return Cards.updateAsync(
-      { _id: this.getRealId() },
+      { _id: this._id },
       { $set: { flowStartAt: new Date(), flowInterruptions: 0, flowUserId: userId } },
     );
   },
 
   addFlowInterruption() {
     return Cards.updateAsync(
-      { _id: this.getRealId() },
+      { _id: this._id },
       { $inc: { flowInterruptions: 1 } },
     );
   },
@@ -2215,14 +2245,14 @@ Cards.helpers({
   // Stops the active Flowtime session: adds its duration (in hours) into the
   // existing spentTime field via setSpentTime() - the same method the manual
   // time-entry popup uses - and clears the session fields.
-  stopFlowSession() {
+  async stopFlowSession() {
     if (!this.flowStartAt) return null;
     const elapsedHours =
       (Date.now() - new Date(this.flowStartAt).getTime()) / (1000 * 60 * 60);
-    const newSpentTime = (this.spentTime || 0) + elapsedHours;
-    this.setSpentTime(newSpentTime);
+    const newSpentTime = (this.getSpentTime() || 0) + elapsedHours;
+    await this.setSpentTime(newSpentTime);
     return Cards.updateAsync(
-      { _id: this.getRealId() },
+      { _id: this._id },
       { $set: { flowStartAt: null, flowInterruptions: 0, flowUserId: null } },
     );
   },
@@ -2268,7 +2298,7 @@ Cards.helpers({
 
   startPomodoro(userId, workMinutes) {
     return Cards.updateAsync(
-      { _id: this.getRealId() },
+      { _id: this._id },
       {
         $set: {
           pomodoroStartAt: new Date(),
@@ -2284,13 +2314,13 @@ Cards.helpers({
   // duration (in hours) into the existing spentTime field via setSpentTime()
   // - the same method the manual time-entry popup uses - increments the
   // completed-interval count, and switches to a break interval.
-  completePomodoroWorkInterval() {
+  async completePomodoroWorkInterval() {
     if (!this.pomodoroStartAt || this.pomodoroPhase !== 'work') return null;
     const workHours = this.getPomodoroWorkMinutes() / 60;
-    this.setSpentTime((this.spentTime || 0) + workHours);
+    await this.setSpentTime((this.getSpentTime() || 0) + workHours);
     const newCount = this.getPomodoroCount() + 1;
     return Cards.updateAsync(
-      { _id: this.getRealId() },
+      { _id: this._id },
       {
         $set: {
           pomodoroStartAt: new Date(),
@@ -2306,7 +2336,7 @@ Cards.helpers({
   completePomodoroBreakInterval() {
     if (!this.pomodoroStartAt || this.pomodoroPhase !== 'break') return null;
     return Cards.updateAsync(
-      { _id: this.getRealId() },
+      { _id: this._id },
       { $set: { pomodoroStartAt: null, pomodoroPhase: null } },
     );
   },
@@ -2315,16 +2345,16 @@ Cards.helpers({
   // defaults. If stopped mid-work-interval, credits the partial elapsed
   // time to spentTime (consistent with how Flowtime's stopFlowSession()
   // credits an interrupted session above); a break interval adds no time.
-  stopPomodoro() {
+  async stopPomodoro() {
     if (!this.pomodoroStartAt) return null;
     if (this.pomodoroPhase === 'work') {
       const elapsedHours =
         (Date.now() - new Date(this.pomodoroStartAt).getTime()) /
         (1000 * 60 * 60);
-      this.setSpentTime((this.spentTime || 0) + elapsedHours);
+      await this.setSpentTime((this.getSpentTime() || 0) + elapsedHours);
     }
     return Cards.updateAsync(
-      { _id: this.getRealId() },
+      { _id: this._id },
       {
         $set: {
           pomodoroStartAt: null,
@@ -3450,10 +3480,6 @@ Cards.helpers({
     return Cards.updateAsync(this.getRealId(), { $set: { isOvertime } });
   },
 
-  setSpentTime(spentTime) {
-    return Cards.updateAsync(this.getRealId(), { $set: { spentTime } });
-  },
-
   unsetSpentTime() {
     return Cards.updateAsync(this.getRealId(), { $unset: { spentTime: '', isOvertime: false } });
   },
@@ -3857,71 +3883,38 @@ async function cardLabels(userId, doc, fieldNames, modifier) {
   }
 }
 
-async function cardCustomFields(userId, doc, fieldNames, modifier) {
-  if (!fieldNames.includes('customFields')) return;
+async function cardCustomFields(userId, doc, fieldNames, previous) {
+  if (!fieldNames.includes('customFields') || !previous) return;
 
-  // Say hello to the new customField value
-  if (modifier.$set) {
-    for (const [key, value] of Object.entries(modifier.$set)) {
-      if (key.startsWith('customFields')) {
-        const dotNotation = key.split('.');
-
-        // only individual changes are registered
-        if (dotNotation.length > 1) {
-          const customFieldId = doc.customFields[dotNotation[1]]._id;
-          const act = {
-            userId,
-            customFieldId,
-            value,
-            activityType: 'setCustomField',
-            boardId: doc.boardId,
-            cardId: doc._id,
-            listId: doc.listId,
-            swimlaneId: doc.swimlaneId,
-          };
-          await Activities.insertAsync(act);
-        }
-      }
-    }
-  }
-
-  // Say goodbye to the former customField value
-  if (modifier.$unset) {
-    for (const [key, value] of Object.entries(modifier.$unset)) {
-      if (key.startsWith('customFields')) {
-        const dotNotation = key.split('.');
-
-        // only individual changes are registered
-        if (dotNotation.length > 1) {
-          const customFieldId = doc.customFields[dotNotation[1]]._id;
-          const act = {
-            userId,
-            customFieldId,
-            activityType: 'unsetCustomField',
-            boardId: doc.boardId,
-            cardId: doc._id,
-          };
-          await Activities.insertAsync(act);
-        }
-      }
-    }
+  // Compare field identities, not array positions: Sync replaces the array,
+  // while the editor uses dotted writes and assignment uses push/pull.
+  const values = card => new Map((card.customFields || [])
+    .filter(field => field && typeof field._id === 'string')
+    .map(field => [field._id, field.value ?? null]));
+  const before = values(previous);
+  const after = values(doc);
+  for (const customFieldId of new Set([...before.keys(), ...after.keys()])) {
+    const oldValue = before.get(customFieldId) ?? null;
+    const value = after.get(customFieldId) ?? null;
+    if (EJSON.equals(oldValue, value)) continue;
+    await Activities.insertAsync({
+      userId,
+      customFieldId,
+      ...(value === null ? {} : { value }),
+      activityType: value === null ? 'unsetCustomField' : 'setCustomField',
+      boardId: doc.boardId,
+      cardId: doc._id,
+      listId: doc.listId,
+      swimlaneId: doc.swimlaneId,
+    });
   }
 }
 
 async function cardCreation(userId, doc) {
   const list = await ReactiveCache.getList(doc.listId);
   const swimlane = await ReactiveCache.getSwimlane(doc.swimlaneId);
-  await Activities.insertAsync({
-    userId,
-    activityType: 'createCard',
-    boardId: doc.boardId,
-    listName: list.title,
-    listId: doc.listId,
-    cardId: doc._id,
-    cardTitle: doc.title,
-    swimlaneName: swimlane.title,
-    swimlaneId: doc.swimlaneId,
-  });
+  const { cardCreationActivity } = require('./lib/cardCreationActivity');
+  await Activities.insertAsync(cardCreationActivity(userId, doc, list, swimlane));
 }
 
 async function cardRemover(userId, doc) {

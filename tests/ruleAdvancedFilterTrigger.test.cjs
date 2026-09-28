@@ -94,10 +94,10 @@ test('label = value and custom-field comparisons combine with and/or/not', async
   const simple = advancedFilterStringToSelector("Priority == 'High'", resolvers);
   assert.deepEqual(simple, {
     $or: [
-      {
-        'customFields._id': 'cf-priority',
-        'customFields.value': { $in: ['opt-high', NaN] },
-      },
+      { customFields: { $elemMatch: {
+        _id: 'cf-priority',
+        value: { $in: ['opt-high'] },
+      } } },
     ],
   });
 
@@ -107,14 +107,14 @@ test('label = value and custom-field comparisons combine with and/or/not', async
     $or: [
       {
         $and: [
-          {
-            'customFields._id': 'cf-priority',
-            'customFields.value': { $in: ['opt-high', NaN] },
-          },
-          {
-            'customFields._id': 'Points',
-            'customFields.value': { $gt: 3 },
-          },
+          { customFields: { $elemMatch: {
+            _id: 'cf-priority',
+            value: { $in: ['opt-high'] },
+          } } },
+          { customFields: { $elemMatch: {
+            _id: 'Points',
+            value: { $gt: 3 },
+          } } },
         ],
       },
     ],
@@ -126,32 +126,28 @@ test('label = value and custom-field comparisons combine with and/or/not', async
     $or: [
       {
         $or: [
-          {
-            'customFields._id': 'cf-priority',
-            'customFields.value': { $in: ['opt-high', NaN] },
-          },
-          {
-            'customFields._id': 'cf-priority',
-            'customFields.value': { $in: ['Low', NaN] },
-          },
+          { customFields: { $elemMatch: {
+            _id: 'cf-priority',
+            value: { $in: ['opt-high'] },
+          } } },
+          { customFields: { $elemMatch: {
+            _id: 'cf-priority',
+            value: { $in: ['Low'] },
+          } } },
         ],
       },
     ],
   });
 
-  // ! Priority == High (the sidebar's 'not' applies to the single condition
-  // that follows it once that condition has already been reduced - the same
-  // left-to-right evaluation the sidebar's Advanced Filter description
-  // documents; a NOT wrapped in its own parentheses is a pre-existing corner
-  // case of the shared algorithm, not something this refactor changes).
+  // Negate the whole field comparison with a Mongo-compatible $nor.
   const negated = advancedFilterStringToSelector("! Priority == 'High'", resolvers);
   assert.deepEqual(negated, {
     $or: [
       {
-        $not: {
-          'customFields._id': 'cf-priority',
-          'customFields.value': { $in: ['opt-high', NaN] },
-        },
+        $nor: [{ customFields: { $elemMatch: {
+          _id: 'cf-priority',
+          value: { $in: ['opt-high'] },
+        } } }],
       },
     ],
   });
@@ -188,21 +184,19 @@ test('the server resolvers resolve custom field names and dropdown values like t
 
 // --- 4. Fire / no-fire behaviour for representative criteria ---------------
 //
-// cardMatchesAdvancedFilter() itself needs a live Mongo/FerretDB-backed Cards
-// collection (it queries `Cards.findOneAsync`) so it is not unit-testable
-// without Meteor; what IS unit-testable and pinned here is that the selector
-// it builds actually discriminates a matching card from a non-matching one,
-// using the same minimongo-style evaluator style as advancedFilterDate.test.cjs.
+// Check representative criteria with the small evaluator below. The following
+// adapter test exercises the actual server function with collection stubs;
+// list-sync-estimate.e2e.js verifies real database matching and rule execution.
 
 function matchesSelector(selector, doc) {
   if (selector.$or) return selector.$or.some(s => matchesSelector(s, doc));
   if (selector.$and) return selector.$and.every(s => matchesSelector(s, doc));
-  if (selector.$not) return !matchesSelector(selector.$not, doc);
-  // A flat {'customFields._id': x, 'customFields.value': y} clause matches a
+  if (selector.$nor) return !selector.$nor.some(s => matchesSelector(s, doc));
+  // An $elemMatch clause matches a
   // card that has SOME customFields entry with that _id whose value matches y.
-  if (selector['customFields._id'] !== undefined) {
-    const id = selector['customFields._id'];
-    const valueSel = selector['customFields.value'];
+  if (selector.customFields?.$elemMatch) {
+    const id = selector.customFields.$elemMatch._id;
+    const valueSel = selector.customFields.$elemMatch.value;
     return (doc.customFields || []).some(cf => {
       if (cf._id !== id) return false;
       if (valueSel && typeof valueSel === 'object' && !(valueSel instanceof RegExp)) {
@@ -232,6 +226,31 @@ test('fire/no-fire: a card only matches once its custom field crosses into the f
   const after = { customFields: [{ _id: 'cf-points', value: 5 }] };
   assert.equal(matchesSelector(selector, before), false, 'below the threshold does not match');
   assert.equal(matchesSelector(selector, after), true, 'at/above the threshold matches');
+});
+
+test('server matcher fetches definitions by board membership before building the filter', async () => {
+  const vm = require('node:vm');
+  const shared = await loadShared();
+  const src = fs.readFileSync(path.join(__dirname, '../server/lib/advancedFilterMatch.js'), 'utf8');
+  let selected, queried;
+  const context = {
+    ...shared,
+    CustomFields: { find: selector => {
+      selected = selector;
+      return { fetchAsync: async () => [{ _id: 'local', name: 'Points', type: 'number' }] };
+    } },
+    Cards: { findOneAsync: async selector => { queried = selector; return { _id: 'card' }; } },
+  };
+  vm.runInNewContext(src.slice(src.indexOf('export async function')).replace('export ', ''), context);
+  assert.equal(await context.cardMatchesAdvancedFilter({ _id: 'card', boardId: 'board' }, 'Points = 2'), true);
+  assert.deepEqual(selected, { boardIds: 'board' });
+  assert.equal(queried._id, 'card');
+  assert.equal(queried.$or[0].customFields.$elemMatch._id, 'local');
+  queried = null;
+  for (const filter of ['', 'Points = 2 or', '(Points = 2', 'Unknown = 2']) {
+    assert.equal(await context.cardMatchesAdvancedFilter({ _id: 'card', boardId: 'board' }, filter), false);
+    assert.equal(queried, null, 'Invalid rules must not reach the card query');
+  }
 });
 
 (async () => {

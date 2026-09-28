@@ -798,3 +798,35 @@ body.sidebar-resizing-active {
 }
 .card-field-order-column { min-width: 0; }
 .card-field-order-label { overflow-wrap: anywhere; }
+
+/* Keep native filter controls visible despite the application's custom inputs. */
+.filter-native-choice input[type="checkbox"],
+.filter-native-choice input[type="radio"],
+.js-card-date-range input[type="checkbox"] {
+  display: inline-block;
+  visibility: visible;
+  position: static;
+  inset-inline-start: auto;
+  width: 16px;
+  height: 16px;
+  min-height: 0;
+  padding: 0;
+  margin-inline-end: 6px;
+  appearance: auto;
+}
+.filter-native-group {
+  border: 0;
+  padding: 0;
+  margin: 12px 0;
+  min-width: 0;
+}
+.filter-native-group legend { font-weight: bold; }
+.filter-native-choice {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  margin: 6px 0;
+}
+.filter-native-choice input { flex-shrink: 0; }
+.filter-native-choice:focus-within { outline: 2px solid currentColor; outline-offset: 2px; }

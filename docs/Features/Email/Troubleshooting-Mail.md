@@ -8,6 +8,104 @@ Enter the provider credentials and From address, save, then use **Send SMTP test
 email**. Leave the option disabled when you want WeKan to use the installation's
 existing `MAIL_URL` and `MAIL_FROM` settings instead.
 
+Activity notification emails are queued in the database. Temporary SMTP failures retry with increasing delays and jitter, up to twelve
+attempts per cycle. Permanent failures stop for administrator review. Pending
+mail resumes after a restart. These are at-least-once deliveries: interruption
+after SMTP acceptance can cause a duplicate. A recipient who is no longer an
+active board member does not receive a queued board notification. The current
+mailbox address and mail configuration are used on each attempt.
+
+Without a working transport, console output alone does not clear the queue.
+Custom email transports must return the accepted recipient list, as Nodemailer
+SMTP transports do. **Admin Panel / Problems / Recovery** shows recipient
+summaries and lets an administrator pause, resume, retry failed messages or cancel queued messages.
+See [the recovery guide](../Admin-Panel/Problems/Recovery.md#email-delivery-queue).
+
+
+## Shared notification delivery capacity
+
+Queued notifications share four delivery reservations across all WeKan
+processes using the same database. A sender reserves a place before recording
+an attempt; a full queue of active senders leaves other messages pending with
+no retry-budget cost. The next scan can take a newly freed place.
+
+Reservations renew every 15 seconds and expire after 60 seconds. A crashed
+worker's reservation is reclaimable after expiry. Losing ownership, a failed
+renewal or a locally expired reservation cancels that sender's SMTP socket.
+An independent timer still expires authority if a database renewal hangs.
+The private reservation collection contains at most four slot records and has
+no TTL index, client publication or client writes. A former owner cannot
+release a replacement worker's reservation.
+
+This limit covers the notification outbox, not direct password-reset,
+invitation or test messages. Keep application-host clocks synchronized. The
+bound is on live reservations: SMTP servers cannot fence stale connections
+from paused hosts, and an already accepted message cannot be recalled. Delivery
+therefore remains at least once.
+
+## Completed notification receipts
+
+Completed and cancelled notification jobs, and completed or superseded control
+requests, retain detailed metadata for 30 days by default. Set
+`EMAIL_RECEIPT_METADATA_DAYS` to an integer from 1 to 3650 to change this age.
+The background sweep runs every 60 seconds; `EMAIL_RECEIPT_SWEEP_INTERVAL_MS`
+accepts 1000–86400000 milliseconds. Each pass examines at most 100 jobs and
+100 control requests. Large backlogs therefore take multiple passes.
+
+Old terminal rows are atomically replaced in the same private collections.
+Job receipts retain their hashed event identity and terminal state; command
+receipts retain their request ID, terminal state and a hash binding the actor,
+recipient and action. These minimal receipts remain indefinitely to prevent
+old events or control commands from running again. This reduces metadata per
+receipt; it does not cap the total number of receipts or erase request IDs.
+There is no TTL deletion.
+
+Pending and failed jobs, pending commands, recipient pauses, cancellation
+cutoffs and the latest control audit summary remain intact. Missing or invalid
+completion dates and inconsistent identities are retained for investigation.
+A storage failure leaves replay protection in place and is retried on a later
+sweep; it does not stop maintenance of the other receipt collection.
+
+## SMTP timeouts
+
+SMTP connections configured through `MAIL_URL`, TLS certificate overrides or
+Admin Panel provider settings use these process environment variables:
+
+| Variable | Default | Limits |
+| --- | --- | --- |
+| `MAIL_DNS_TIMEOUT_MS` | 30000 (30 seconds) | DNS lookup |
+| `MAIL_CONNECTION_TIMEOUT_MS` | 30000 (30 seconds) | TCP connection |
+| `MAIL_GREETING_TIMEOUT_MS` | 30000 (30 seconds) | Initial SMTP greeting |
+| `MAIL_SOCKET_TIMEOUT_MS` | 120000 (2 minutes) | Connection idle time |
+
+Each value must be an integer from 1000 to 900000 milliseconds. Restart WeKan
+after changing these variables. Invalid values are rejected; zero cannot disable
+a timeout. These settings override timeout query parameters in an SMTP
+`MAIL_URL`. The standard Meteor URL path preserves its other URL options,
+encoded credentials and native mail plugins. A provider that legitimately takes
+longer needs a larger value within these bounds.
+
+The transport closes an idle or unresponsive connection. A queued notification
+retains its content and retries under the queue's attempt policy. Invitation,
+password-reset and other direct mail callers retain their existing error handling;
+these timeouts do not put those messages into the notification outbox.
+
+For native SMTP `MAIL_URL`, Meteor email service settings, Admin Panel
+providers and TLS certificate overrides, `MAIL_TOTAL_TIMEOUT_MS` additionally limits the entire send, including
+message preparation, DNS, TCP, TLS and SMTP replies. Its default is 120000 ms;
+valid values are integers from 1000 to 300000 ms. Each message owns a separate
+connection, which is closed at the deadline even if the peer keeps sending
+bytes. Other recipients' connections are unaffected. SMTP connections are no longer
+pooled, including when an older MAIL_URL contains `pool=true`. Native message
+compile/stream plugins, defaults, authentication and TLS options remain in use.
+
+HTTP and HTTPS CONNECT proxies also share the total deadline, including the
+proxy handshake. Queued notifications additionally use the shared reservations
+described above; direct mail is outside that queue capacity limit.
+Legacy non-SMTP `MAIL_URL` schemes and third-party custom transports are outside
+this policy. SMTP acknowledgement loss can still cause duplicate delivery.
+
+
 [Azure Email Communication Service](https://github.com/wekan/wekan/issues/5453)
 
 [Uberspace Email](https://github.com/wekan/wekan/issues/2009#issuecomment-1017630758)

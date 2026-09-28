@@ -30,6 +30,71 @@ bloating, detects corruption, keeps a ready-to-use backup, restores or re-migrat
 when an operator requests it, and shows the remediation history in Admin Panel →
 Problems → **Recovery**.
 
+## Email delivery queue
+
+The email section groups pending and stopped notifications by recipient, with ten recipients
+per page. Search by a literal user ID and press Enter. It shows the queued and
+retrying/stopped counts, fixed failure categories, highest lifetime failure count, oldest queued time, next attempt and last
+operator change. Recipients are identified by username and user ID; mailbox
+fields and message contents are not returned.
+Refresh reads the current database state; this is not a live subscription.
+
+- **Pause delivery** holds both existing and subsequently queued messages for
+  that recipient. A paused recipient remains listed even with an empty queue.
+- **Resume delivery** removes the hold and makes existing queued messages due
+  now. Normal recipient permissions are rechecked before sending. Stopped
+  messages remain stopped.
+- **Retry failed messages** starts a new twelve-attempt cycle for stopped
+  messages, preserving lifetime failure counts and any pause. Fix the reported
+  cause first. Replaying the same control request cannot reset the budget again,
+  even if the restarted cycle has already failed.
+- **Cancel queued messages** asks for confirmation, removes rendered payloads
+  pending or stopped up to the request's timestamp, and retains cancellation receipts.
+  Messages created afterward are kept. Cancelling does not remove a pause.
+
+Only a currently enabled instance administrator can read or change the queue.
+Controls acquire the same recipient reservation as the sender. If a delivery is
+already running, the operation reports busy; refresh and retry. A request ID
+makes a retry safe after an uncertain reply, and older interrupted commands
+cannot override a newer operator action. Shared delivery reservations cap queued
+notification workers at four across the deployment. Waiting for capacity does
+not spend an attempt or mark a message as failed. Reservation loss closes the
+sender's live SMTP connection, but cannot retract remote acceptance; delivery
+remains at least once.
+
+Control records retain the latest actor/time/action and per-action counts;
+private request receipts retain completion or supersession. Queue payloads and
+control collections have no client publication or direct client writes.
+Detailed terminal receipt metadata is compacted after 30 days by default.
+Minimal replay identities remain indefinitely, so an old cancellation cannot
+affect later messages. Pending or failed work and recipient holds are retained.
+See [receipt retention](../../Email/Troubleshooting-Mail.md#completed-notification-receipts)
+for configuration and [durable operations](Durable-Operations.md) for remaining
+activity-to-delivery integration work.
+
+## Sync run diagnostics
+
+Recovery also reads the private Sync run reports, without copying them into
+recovery events or publishing the collection. The default filter shows
+unfinished outcomes; these may still be running or may have been interrupted.
+Other filters show failures, completed runs, completed-with-warnings outcomes,
+review-only results or all outcomes. Nothing here resumes or rolls back an
+operation. Failed and unfinished runs may have applied some card changes.
+
+Search by a literal board or list ID and press Enter. The shared table loads ten
+rows per page, sorted by start time and record ID. Expand Details for confirmed
+successful counts, normalized/source field paths and parser diagnostic counts.
+Values, raw errors, credentials and source URLs are absent. Reports older than
+30 days are excluded. Refresh checks the latest status; this is not a live
+subscription. The existing recovery-event table retains its separate controls.
+
+Only current instance administrators may read this cross-board view. The server
+checks that permission before and after reading. The list popup still requires
+full-list board write permission and the same list lifetime. Instance admins
+can inspect retained diagnostics for deleted lists here until retention expires.
+Replay checkpoints, write fencing and automatic restart recovery are separate
+unfinished work; a diagnostic report is not a recovery plan.
+
 ## What each layer does
 
 ### FerretDB (the database engine)
@@ -197,3 +262,139 @@ Recovery report.
   restore requests for automatic retry on restart).
 - FerretDB: `opendb_test.go` (corruption check + bloat `VACUUM`) and
   `msg_replset_test.go` (OpLog cap).
+
+## Pending activity notifications
+
+The pending activity table lists ten summaries per page, with literal searches
+across intent, activity, board and card IDs. It does not return stored activity
+content, recipients, email addresses or rendered messages. Missing or changed
+activities, inconsistent plan metadata and active delivery reservations are
+shown separately. Completed intents disappear from this table.
+
+An enabled administrator can select **Retry now** for a pending delivery or an
+activity waiting for its first recipient plan. The request uses the same
+renewable reservation and receipt identities as automatic recovery. It rechecks
+administrator access during delivery, together with current recipient access
+and notification preferences. A successful retry confirms local tray/email
+queue writes; SMTP delivery is tracked separately in the email queue.
+
+The table's status is a snapshot of recovery metadata. “Pending delivery” does
+not certify the complete stored payload or current recipient permissions;
+retry validates those before each effect and reports a safe failure message.
+Missing or changed activities are never recreated. An administrator can cancel
+remaining delivery, including orphaned work, as described below. Pending and
+cancelled payloads are compacted into permanent receipts as described below.
+
+### Pause and resume activity notifications
+
+`server/lib/activityNotificationControl.js` provides the storage primitive for
+activity pause/resume controls. Production delivery now reads the private
+`activityNotificationControls` collection before preparation and local effects.
+Both immediate ordinary delivery and manual/background recovery honor holds;
+automatic scanning skips held work and continues to later pending intents.
+Malformed control state stops delivery. An enabled administrator can select
+**Pause delivery** or **Resume delivery** in the pending activity table. The
+method uses the same delivery reservation and checks current administrator
+access before and during the operation. A busy reservation requires retrying
+later. Paused rows retain their underlying diagnostic status and disable
+**Retry now** until resumed.
+
+A request carries the intent ID, desired pause state, administrator ID, stable
+request ID and the revision displayed to the administrator. A conditional
+write advances that revision once. The last identical request can be retried;
+an older revision conflicts rather than undoing a later decision. Lost write
+responses are reconciled by reading the exact persisted row. Missing,
+completed or malformed recovery state cannot authorize a new hold change.
+A control row must never be deleted or expired, including after resume: its
+revision prevents delayed old requests from becoming valid again. There is one
+row per controlled intent, rather than one row per button click.
+
+A hold applies to future local notification effects only. Messages already
+in the SMTP outbox require the separate email queue controls. Control rows
+are not published and member/admin DDP writes are denied. If another operator
+changes the revision, the UI refreshes and asks you to review the current state;
+it never silently retries against the newer revision. A failed network response
+can leave the operation applied: refresh to inspect the actual persisted state.
+Resume releases the hold for the next automatic scan; it does not guarantee
+successful delivery if the original activity or recipient access has changed.
+
+The restart regression in `activity-hold-restart.e2e.js` has two explicit phases:
+run with `WEKAN_TEST_ACTIVITY_HOLD_RESTART=seed`, restart the app against the same
+test database with `ACTIVITY_NOTIFICATION_RECOVERY_INTERVAL_MS=1000`, then run
+with `WEKAN_TEST_ACTIVITY_HOLD_RESTART=verify`. The seed phase retains a held
+fixture deliberately; verify checks that automatic scanning has preserved it,
+resumes through the UI and removes the fixture afterward.
+
+### Cancel remaining activity delivery
+
+**Cancel delivery** asks for confirmation and permanently stops remaining local
+notification delivery for that activity. It uses the displayed revision and
+the same delivery reservation as pause/resume. Cancellation is terminal: neither
+a delayed old request nor a new Resume request can reopen it. An identical
+cancel request can be retried after a lost response. Already completed intents
+cannot be cancelled.
+
+The cancelled row remains visible with its diagnostic metadata and disabled
+controls. Automatic recovery skips it. An orphan whose original activity is
+missing can be cancelled without recreating that activity. This is an explicit
+operator decision to abandon remaining delivery, not proof of delivery.
+
+Cancellation does not recall existing tray notifications or email already in
+the SMTP outbox; use the separate email queue controls for unsent queued mail.
+It cannot undo a local effect already authorized by a former worker. Permanent
+control and delivery receipts remain to prevent replay. Cancellation removes
+intent snapshots and rendered plans through guarded compaction without deleting
+cancellation or deduplication evidence. Failed cleanup retains its evidence for
+retry.
+
+### Cancellation payload cleanup
+
+`server/lib/activityNotificationCancellationRetention.js` implements a two-stage
+compactor used by production cancellation. It requires the same delivery
+reservation and an unchanged valid terminal cancellation control. It validates the complete
+pending intent and any stored recipient plan before replacing payloads.
+
+First, it replaces the plan with a permanent cancellation receipt containing
+its unique ID, activity hash and checksum. If no plan exists, it inserts a
+receipt with a null checksum to prevent a delayed initial plan insertion.
+Only after confirming that receipt does it replace the intent snapshot with
+cancelled metadata: activity/board/card IDs, creation time, identity hash,
+original dispatch actor and writer ID. Neither unique row is deleted. The
+original activity is not required, so an orphan can be compacted too.
+
+Exact conditional replacement and readback handle lost replies, interrupted
+cleanup and stale writers. A mismatch retains the affected evidence and fails
+instead of claiming successful removal. Already compacted receipts can be
+checked repeatedly. Pending work without a terminal cancellation is untouched.
+
+The cancellation method attempts compaction after confirming the terminal
+control. If cleanup fails or the process stops, the existing bounded activity
+recovery scan retries cancelled pending intents under the delivery reservation.
+The scan processes at most 100 IDs per pass and advances past failures. It uses
+`ACTIVITY_NOTIFICATION_RECOVERY_INTERVAL_MS`; no separate cleanup timer is
+needed. Once the intent is compacted, its terminal state leaves the pending
+scan. The report searches both pending and compact cancelled metadata and
+keeps cancelled rows visible without fetching their old activity or plan.
+
+Capture and completion reject compact cancellation receipts instead of
+recreating a payload or declaring delivery successful. Missing or malformed
+cancellation evidence keeps report actions disabled. Corrupt/mismatched
+payloads are retained for investigation rather than erased. Ordinary pending
+or merely paused work is not expired or automatically cancelled.
+
+
+### Stored rule email attempts
+
+The **Rule email delivery** table shows ten attempts per page. Search matches
+literal command, invocation or attempt IDs. Filter by all attempts, unconfirmed
+attempts or messages accepted by the mail server. Refresh keeps the current
+page; changing the search or status starts at the first page.
+
+Only enabled administrators can read the report. It contains identifiers,
+start/confirmation timestamps and delivery status, without message bodies or
+recipient addresses. Invalid attempt metadata is marked explicitly.
+
+**Unconfirmed** can mean delivery is still running or was interrupted. It does
+not prove that the recipient received nothing. **Accepted by mail server**
+records transport acceptance, not inbox delivery. This table provides no retry,
+cancel or acknowledgement control; operator resolution remains unfinished.

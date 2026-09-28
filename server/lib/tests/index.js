@@ -72,3 +72,33 @@ import './filenameTruncation.tests';
 // mocha suite there is. A test that reads the repository belongs on the side
 // that has a filesystem.
 import './boardTriggersClass.tests';
+
+import './syncHookedCards.tests';
+import './syncRuleArchiveEffects.tests';
+
+import './syncHookedActivities.tests';
+
+import './notificationAwaitedDelivery.tests';
+
+import './notificationPreparation.tests';
+
+import './storedNotificationDelivery.tests';
+import './webhookPreparation.tests';
+import './storedWebhookHttp.tests';
+import './commentPrivateFields.tests';
+import './storedWebhooks.tests';
+import './smtpDeadline.tests';
+
+import './emailReceiptRetention.tests';
+
+import './activityNotificationIntent.tests';
+
+import './activityNotificationRecovery.tests';
+
+import './storedRulePlans.tests';
+
+import './storedHistoryChain.tests';
+
+import './scrumHistoryConfirmation.tests';
+
+import "./cardListEntry.tests";
