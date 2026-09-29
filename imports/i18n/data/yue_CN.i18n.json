@@ -1303,6 +1303,7 @@
   "r-schedule-on-date": "于日期",
   "r-of-cards-in-list": "针对列表中的卡片",
   "r-when-due": "当卡片的截止日期",
+  "r-when-card-date": "When this date of a card",
   "r-due-is-set": "被设置",
   "r-due-soon": "即将到来",
   "r-due-overdue": "已逾期",
@@ -1396,6 +1397,7 @@
   "r-of": "的",
   "r-subject": "主題",
   "r-email-vars-hint": "可用嘅標籤: {card}, {cardLink}, {list}, {board}, {member}",
+  "r-vars-people-hint": "Also: {creator}, {assignees}, {members} (usernames in text, email addresses in To) and {customField:Field name}. These also work in member, list and swimlane names of other actions.",
   "r-rule-details": "規則詳情",
   "r-d-move-to-top-gen": "將卡片移至清單頂部",
   "r-d-move-to-top-spec": "將卡片移至清單頂部",
@@ -1569,6 +1571,12 @@
   "newUserPopup-title": "新用戶",
   "notifications": "通知",
   "notification-settings-popup-description": "控制你接收边啲通知。优先顺序：管理面板设置、然后系看板覆盖、然后系你自己嘅成员设置覆盖。",
+  "due-reminder-heading": "Due date reminders",
+  "due-reminder-days-label": "Remind on these days, separated by commas: 0 is the due day, positive numbers are days before it and negative numbers days after it. Leave empty to use the server default.",
+  "due-reminder-off": "No due date reminders on this board",
+  "due-reminder-webhook": "Also send due date reminders to this board's outgoing webhooks",
+  "due-reminder-invalid": "Use up to ten whole days from -14 to 14.",
+  "due-reminder-saved": "Due date reminders saved.",
   "notification-settings-tray": "通知栏",
   "help": "幫助",
   "view-all": "看全部",
@@ -3516,5 +3524,6 @@
   "scrum-daily-empty": "No daily observations have been recorded for this sprint.",
   "scrum-observed-scope": "Observed scope",
   "scrum-daily-observations-export-help": "First recorded observation of each UTC day; missing days are omitted. Observations do not record every change or end-of-day totals. Unknown estimates are not zero.",
-  "scrum-import-pending": "The Scrum import is incomplete. Scrum edits and report exports are unavailable."
+  "scrum-import-pending": "The Scrum import is incomplete. Scrum edits and report exports are unavailable.",
+  "saml-login-not-started": "This SAML sign-in was not started in this browser tab. Please sign in again."
 }

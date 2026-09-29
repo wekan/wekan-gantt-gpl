@@ -22,10 +22,10 @@ const pkgdef :Spk.PackageDefinition = (
     appTitle = (defaultText = "Wekan"),
     # The name of the app as it is displayed to the user.
 
-    appVersion = 1209,
+    appVersion = 1210,
     # Increment this for every release.
 
-    appMarketingVersion = (defaultText = "12.09~2026-09-28"),
+    appMarketingVersion = (defaultText = "12.10~2026-09-29"),
     # Human-readable presentation of the app version.
 
     minUpgradableAppVersion = 0,
@@ -308,6 +308,10 @@ const myCommand :Spk.Manifest.Command = (
     (key = "SAML_LOCAL_PROFILE_MATCH_ATTRIBUTE", value=""),
     (key = "SAML_ATTRIBUTES", value=""),
     (key = "SAML_MERGE_EXISTING_USERS", value="false"),
+    (key = "SAML_IDP_PROFILE", value=""),
+    (key = "SAML_WANT_RESPONSE_SIGNED", value=""),
+    (key = "SAML_WANT_ASSERTIONS_SIGNED", value=""),
+    (key = "SAML_LOGIN_FLOW", value=""),
     (key = "PASSWORDLESS_ENABLED", value="false"),
     (key = "LDAP_ENABLE", value="false"),
     (key = "PASSWORD_LOGIN_ENABLED", value="true"),

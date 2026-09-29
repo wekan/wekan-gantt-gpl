@@ -1303,6 +1303,7 @@
   "r-schedule-on-date": "දිනයේදී",
   "r-of-cards-in-list": "ලැයිස්තුවේ කාඩ්පත් සඳහා",
   "r-when-due": "කාඩ්පතක නියමිත දිනය",
+  "r-when-card-date": "When this date of a card",
   "r-due-is-set": "සකසා ඇති විට",
   "r-due-soon": "ළඟා වෙමින් ඇති විට",
   "r-due-overdue": "කල් ඉකුත් වී ඇති විට",
@@ -1396,6 +1397,7 @@
   "r-of": "of",
   "r-subject": "විෂය",
   "r-email-vars-hint": "තිබෙන ටැග්: {card}, {cardLink}, {list}, {board}, {member}",
+  "r-vars-people-hint": "Also: {creator}, {assignees}, {members} (usernames in text, email addresses in To) and {customField:Field name}. These also work in member, list and swimlane names of other actions.",
   "r-rule-details": "නීති විස්තර",
   "r-d-move-to-top-gen": "කාඩ්පත එහි ලැයිස්තුවේ ඉහළට ගෙන යන්න",
   "r-d-move-to-top-spec": "කාඩ්පත ලැයිස්තුවේ ඉහළට ගෙන යන්න",
@@ -1569,6 +1571,12 @@
   "newUserPopup-title": "නව පරිශීලකයා",
   "notifications": "දැනුම්දීම්",
   "notification-settings-popup-description": "ඔබ ලබා ගන්නා දැනුම්දීම් පාලනය කරන්න. ප්‍රමුඛතා අනුපිළිවෙල: පරිපාලක පැනල සැකසුම, පසුව පුවරු අභිබවීම, පසුව ඔබගේම සාමාජික සැකසුම් අභිබවීම.",
+  "due-reminder-heading": "Due date reminders",
+  "due-reminder-days-label": "Remind on these days, separated by commas: 0 is the due day, positive numbers are days before it and negative numbers days after it. Leave empty to use the server default.",
+  "due-reminder-off": "No due date reminders on this board",
+  "due-reminder-webhook": "Also send due date reminders to this board's outgoing webhooks",
+  "due-reminder-invalid": "Use up to ten whole days from -14 to 14.",
+  "due-reminder-saved": "Due date reminders saved.",
   "notification-settings-tray": "දැනුම්දීම් තැටිය",
   "help": "උදව්",
   "view-all": "සියල්ල බලන්න",
@@ -3516,5 +3524,6 @@
   "scrum-daily-empty": "No daily observations have been recorded for this sprint.",
   "scrum-observed-scope": "Observed scope",
   "scrum-daily-observations-export-help": "First recorded observation of each UTC day; missing days are omitted. Observations do not record every change or end-of-day totals. Unknown estimates are not zero.",
-  "scrum-import-pending": "The Scrum import is incomplete. Scrum edits and report exports are unavailable."
+  "scrum-import-pending": "The Scrum import is incomplete. Scrum edits and report exports are unavailable.",
+  "saml-login-not-started": "This SAML sign-in was not started in this browser tab. Please sign in again."
 }

@@ -1303,6 +1303,7 @@
   "r-schedule-on-date": "తేదీన",
   "r-of-cards-in-list": "జాబితాలోని కార్డుల కోసం",
   "r-when-due": "కార్డ్ యొక్క గడువు తేదీ ఎప్పుడు",
+  "r-when-card-date": "When this date of a card",
   "r-due-is-set": "సెట్ చేయబడింది",
   "r-due-soon": "సమీపిస్తోంది",
   "r-due-overdue": "గడువు మించింది",
@@ -1396,6 +1397,7 @@
   "r-of": "యొక్క",
   "r-subject": "విషయం",
   "r-email-vars-hint": "అందుబాటులో ఉన్న ట్యాగ్‌లు: {card}, {cardLink}, {list}, {board}, {member}",
+  "r-vars-people-hint": "Also: {creator}, {assignees}, {members} (usernames in text, email addresses in To) and {customField:Field name}. These also work in member, list and swimlane names of other actions.",
   "r-rule-details": "నియమం వివరాలు",
   "r-d-move-to-top-gen": "కార్డ్‌ని దాని జాబితా ఎగువకు తరలించండి",
   "r-d-move-to-top-spec": "కార్డ్‌ని జాబితా ఎగువకు తరలించండి",
@@ -1569,6 +1571,12 @@
   "newUserPopup-title": "కొత్త వినియోగదారు",
   "notifications": "నోటిఫికేషన్‌లు",
   "notification-settings-popup-description": "మీరు అందుకునే నోటిఫికేషన్‌లను నియంత్రించండి. ప్రాధాన్యత క్రమం: అడ్మిన్ ప్యానెల్ సెట్టింగ్, తర్వాత బోర్డు ఓవర్‌రైడ్, తర్వాత మీ స్వంత సభ్యుని సెట్టింగ్ ఓవర్‌రైడ్.",
+  "due-reminder-heading": "Due date reminders",
+  "due-reminder-days-label": "Remind on these days, separated by commas: 0 is the due day, positive numbers are days before it and negative numbers days after it. Leave empty to use the server default.",
+  "due-reminder-off": "No due date reminders on this board",
+  "due-reminder-webhook": "Also send due date reminders to this board's outgoing webhooks",
+  "due-reminder-invalid": "Use up to ten whole days from -14 to 14.",
+  "due-reminder-saved": "Due date reminders saved.",
   "notification-settings-tray": "నోటిఫికేషన్ ట్రే",
   "help": "సహాయం",
   "view-all": "అన్నీ వీక్షించండి",
@@ -3516,5 +3524,6 @@
   "scrum-daily-empty": "No daily observations have been recorded for this sprint.",
   "scrum-observed-scope": "Observed scope",
   "scrum-daily-observations-export-help": "First recorded observation of each UTC day; missing days are omitted. Observations do not record every change or end-of-day totals. Unknown estimates are not zero.",
-  "scrum-import-pending": "The Scrum import is incomplete. Scrum edits and report exports are unavailable."
+  "scrum-import-pending": "The Scrum import is incomplete. Scrum edits and report exports are unavailable.",
+  "saml-login-not-started": "This SAML sign-in was not started in this browser tab. Please sign in again."
 }

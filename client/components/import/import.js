@@ -117,6 +117,7 @@ function wekanExportIsEmpty(board) {
 // available when the board is reopened from All Boards in the same session. A
 // timeout is the safety net in case the subscription never signals ready.
 function goToImportedBoard(boardId, slug) {
+  Session.set('importReport', null);
   let navigated = false;
   const go = () => {
     if (navigated) return;
@@ -125,6 +126,19 @@ function goToImportedBoard(boardId, slug) {
   };
   Meteor.subscribe('board', boardId, false, { onReady: go });
   Meteor.setTimeout(go, 5000);
+}
+
+// An import that completed with warnings stays on this page long enough to say
+// what it could not bring over (server/methods/importReport.js); a clean one
+// opens its board at once, as before.
+function openOrReportImportedBoard(boardId, slug) {
+  Meteor.call('importReportForBoard', boardId, (err, rows) => {
+    if (!err && Array.isArray(rows) && rows.length) {
+      Session.set('importReport', { boardId, slug, rows });
+      return;
+    }
+    goToImportedBoard(boardId, slug);
+  });
 }
 
 // Find a workspace node by name anywhere in the user's personal workspace tree.
@@ -158,6 +172,8 @@ function assignBoardToNamedWorkspace(boardId, wsName, parentId = null) {
 
 Template.import.onCreated(function () {
   this.error = new ReactiveVar('');
+  // A report belongs to the import that just finished, not to the next visit.
+  Session.set('importReport', null);
   // #6506: import shows the "map members" step so imported members can be mapped to
   // EXISTING WeKan users (auto-suggested by username). It is OPTIONAL — a Skip button
   // (and the textarea "import without mapping" button) bypasses it. Whatever is not
@@ -219,7 +235,8 @@ Template.import.onCreated(function () {
     // (Obsidian Kanban and similar) - `## List name` headings, `- [ ]`/`- [x]`
     // items underneath. It is plain text, not JSON, so it is sent as-is rather
     // than parsed - models/lib/externalParsers.js does the parsing server-side.
-    if (dataSource === 'markdown') {
+    // A Leo .leo outline is XML text and is handled the same way.
+    if (dataSource === 'markdown' || dataSource === 'leo') {
       const input = this.find('.js-import-json').value;
       if (!input || !input.trim()) {
         this.setError('error-json-malformed');
@@ -369,7 +386,7 @@ Template.import.onCreated(function () {
       if (this.workspaceName) {
         assignBoardToNamedWorkspace(boardId, this.workspaceName);
       }
-      goToImportedBoard(boardId, boardSlug(importedData));
+      openOrReportImportedBoard(boardId, boardSlug(importedData));
       return;
     }
 
@@ -403,7 +420,7 @@ Template.import.onCreated(function () {
           this.setError(err.error);
         } else {
           Session.set('fromBoard', null);
-            goToImportedBoard(res, boardSlug(importedData));
+            openOrReportImportedBoard(res, boardSlug(importedData));
         }
       },
     );
@@ -431,6 +448,7 @@ const IMPORT_SOURCES = [
   { key: 'asana', name: 'Asana' },
   { key: 'zenkit', name: 'Zenkit' },
   { key: 'markdown', name: 'Markdown' },
+  { key: 'leo', name: 'Leo' },
 ];
 
 Template.import.helpers({
@@ -467,9 +485,17 @@ Template.import.helpers({
   zipImporting() {
     return Template.instance().zipImporting.get();
   },
+  importReport() {
+    return Session.get('importReport');
+  },
 });
 
 Template.import.events({
+  'click .js-open-imported-board'(event) {
+    event.preventDefault();
+    const report = Session.get('importReport');
+    if (report) goToImportedBoard(report.boardId, report.slug);
+  },
   'click .js-select-import-source'(event) {
     event.preventDefault();
     const source = event.currentTarget.dataset.source;

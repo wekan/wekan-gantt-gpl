@@ -7,6 +7,8 @@ import Triggers from '/models/triggers';
 import Actions from '/models/actions';
 import Cards from '/models/cards';
 import Activities from '/models/activities';
+import { matchesScheduledDate } from '/models/lib/scheduledDueFilter';
+import { ruleActionIds, ruleForTriggerSelector } from '/models/lib/ruleParts';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BOARD_LEVEL_ACTIONS = ['createCard', 'addSwimlane', 'moveAllCardsInList'];
@@ -63,16 +65,9 @@ async function selectCards(trigger) {
   let cards = await ReactiveCache.getCards(selector);
 
   if (trigger.scheduleKind === 'due') {
+    // #4278: the trigger may watch the start date instead of the due date.
     const now = Date.now();
-    const window = (Number(trigger.days) || 0) * DAY_MS;
-    cards = cards.filter(c => {
-      if (!c.dueAt) return false;
-      const due = new Date(c.dueAt).getTime();
-      if (trigger.dueCondition === 'set') return true;
-      if (trigger.dueCondition === 'soon') return due >= now && due - now <= window;
-      if (trigger.dueCondition === 'overdue') return now - due >= window;
-      return false;
-    });
+    cards = cards.filter(c => matchesScheduledDate(c, trigger, now));
   } else if (trigger.scheduleKind === 'aging') {
     const filtered = [];
     for (const c of cards) {
@@ -87,32 +82,42 @@ async function selectCards(trigger) {
 }
 
 async function runDueTrigger(trigger, slotKey, now) {
-  const rule = await ReactiveCache.getRule({ triggerId: trigger._id });
+  // The trigger may be one of several the rule has; the rule runs each of its
+  // actions in order (models/lib/ruleParts.js).
+  const rule = await ReactiveCache.getRule(ruleForTriggerSelector(trigger._id));
   if (!rule) return;
-  const action = await ReactiveCache.getAction(rule.actionId);
-  if (!action) return;
+  const actions = [];
+  for (const actionId of ruleActionIds(rule)) {
+    // eslint-disable-next-line no-await-in-loop
+    const action = await ReactiveCache.getAction(actionId);
+    if (action) actions.push(action);
+  }
+  if (!actions.length) return;
 
   const board = await ReactiveCache.getBoard(trigger.boardId);
   const userId = board ? board.createdBy : undefined;
   const cards = await selectCards(trigger);
 
-  if (cards.length === 0 && BOARD_LEVEL_ACTIONS.includes(action.actionType)) {
-    await RulesHelper.performAction(
-      { activityType: 'scheduledTrigger', boardId: trigger.boardId, userId },
-      action,
-    );
-  } else {
-    for (const card of cards) {
+  for (const action of actions) {
+    if (cards.length === 0 && BOARD_LEVEL_ACTIONS.includes(action.actionType)) {
       // eslint-disable-next-line no-await-in-loop
       await RulesHelper.performAction(
-        {
-          activityType: 'scheduledTrigger',
-          cardId: card._id,
-          boardId: trigger.boardId,
-          userId,
-        },
+        { activityType: 'scheduledTrigger', boardId: trigger.boardId, userId },
         action,
       );
+    } else {
+      for (const card of cards) {
+        // eslint-disable-next-line no-await-in-loop
+        await RulesHelper.performAction(
+          {
+            activityType: 'scheduledTrigger',
+            cardId: card._id,
+            boardId: trigger.boardId,
+            userId,
+          },
+          action,
+        );
+      }
     }
   }
   await Triggers.updateAsync(trigger._id, {

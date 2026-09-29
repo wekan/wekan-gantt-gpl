@@ -3,6 +3,7 @@ import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
 import { TAPi18n } from '/imports/i18n';
 import { Utils } from '/client/lib/utils';
 import { closePageSidebar } from '/client/lib/pageSidebar';
+import { triggerValueHasVars } from '/models/lib/ruleTriggerVars';
 
 Template.rulesMain.onCreated(function () {
   this.rulesCurrentTab = new ReactiveVar('rulesList');
@@ -196,7 +197,12 @@ Template.rulesMain.events({
       .val();
     let trigger = tpl.triggerVar.get();
     trigger.userId = '*';
-    if (username !== undefined) {
+    if (triggerValueHasVars(username)) {
+      // #4294: "by {assignees}" - a person named by a variable, resolved for
+      // the card when the rule is checked (models/lib/ruleTriggerVars.js).
+      trigger.userId = username.trim();
+      tpl.triggerVar.set(trigger);
+    } else if (username !== undefined) {
       const userFound = ReactiveCache.getUser({ username });
       if (userFound !== undefined) {
         trigger.userId = userFound._id;
@@ -207,7 +213,36 @@ Template.rulesMain.events({
     trigger = tpl.triggerVar.get();
     sanitizeObject(trigger);
     tpl.triggerVar.set(trigger);
+    // #4294: "Add another trigger" adds this trigger to the rule and returns
+    // to its details; no action step.
+    const adding = Session.get('rulesAddingPart');
+    if (adding && adding.kind === 'trigger') {
+      Session.set('rulesAddingPart', null);
+      Meteor.call('rules.addPart', adding.ruleId, 'trigger', trigger);
+      tpl.ruleId.set(adding.ruleId);
+      tpl.rulesCurrentTab.set('ruleDetails');
+      return;
+    }
     tpl.rulesCurrentTab.set('action');
+  },
+  // #4294 / #2953: a rule with several triggers or actions.
+  'click .js-add-rule-part'(event, tpl) {
+    event.preventDefault();
+    const ruleId = event.currentTarget.getAttribute('data-rule-id');
+    const kind = event.currentTarget.getAttribute('data-kind');
+    if (!ruleId || !['trigger', 'action'].includes(kind)) return;
+    const rule = ReactiveCache.getRule(ruleId);
+    if (!rule) return;
+    Session.set('rulesAddingPart', { ruleId, kind });
+    tpl.ruleName.set(rule.title || '');
+    tpl.editingRuleId.set(null);
+    tpl.rulesCurrentTab.set(kind);
+  },
+  'click .js-remove-rule-part'(event) {
+    event.preventDefault();
+    const target = event.currentTarget;
+    Meteor.call('rules.removePart', target.getAttribute('data-rule-id'),
+      target.getAttribute('data-kind'), target.getAttribute('data-part-id'));
   },
   'click .js-show-user-field'(event) {
     event.preventDefault();
@@ -217,6 +252,7 @@ Template.rulesMain.events({
   },
   'click .js-goto-rules'(event, tpl) {
     event.preventDefault();
+    Session.set('rulesAddingPart', null);
     tpl.rulesCurrentTab.set('rulesList');
     // Whether this was "cancel" or "save", the wizard is done with whichever
     // rule it was editing.
@@ -224,6 +260,7 @@ Template.rulesMain.events({
   },
   'click .js-goback'(event, tpl) {
     event.preventDefault();
+    Session.set('rulesAddingPart', null);
     if (
       tpl.rulesCurrentTab.get() === 'trigger' ||
       tpl.rulesCurrentTab.get() === 'ruleDetails'

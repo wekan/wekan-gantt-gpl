@@ -45,7 +45,10 @@ import {
   filterCopiedLabelIds,
   remapCoverId,
 } from '/server/lib/cardCopyHelpers';
-import { wouldCreateCycle } from '/imports/lib/subtaskHelpers';
+const {
+  cardParentIds, parentFields, withParentAdded, withParentRemoved, childrenSelector,
+  onlyChildrenSelector, sharedChildrenSelector, collectAllAncestorIdsSync, wouldCreateParentCycle,
+} = require('/models/lib/cardParents');
 import Attachments from "./attachments";
 import PositionHistory from './positionHistory';
 import Activities from '/models/activities';
@@ -114,11 +117,23 @@ Cards.attachSchema(
     },
     parentId: {
       /**
-       * ID of the parent card
+       * ID of the parent card - the PRIMARY parent, always parentIds[0]
+       * (#3626, models/lib/cardParents.js).
        */
       type: String,
       optional: true,
       defaultValue: '',
+    },
+    parentIds: {
+      /**
+       * #3626: every parent of the card, primary first. A card written before
+       * this has only parentId, which is then its one parent.
+       */
+      type: Array,
+      optional: true,
+    },
+    'parentIds.$': {
+      type: String,
     },
     listId: {
       /**
@@ -144,6 +159,23 @@ Cards.attachSchema(
       type: String,
       optional: true,
       defaultValue: '',
+    },
+    mapX: {
+      /**
+       * #3256: the card's place on the board's Map view, as a percentage of
+       * the map image's width (models/lib/boardMap.js). Unset = not on the map.
+       */
+      type: Number,
+      optional: true,
+      min: 0,
+      max: 100,
+    },
+    mapY: {
+      /** #3256: the same, as a percentage of the map image's height. */
+      type: Number,
+      optional: true,
+      min: 0,
+      max: 100,
     },
     coverId: {
       /**
@@ -1068,6 +1100,9 @@ Cards.helpers({
 
 
   async copy(boardId, swimlaneId, listId, cardIdMap = null, copyOptions, deferScrum = false) {
+    if (Meteor.isServer) {
+      await require('/server/lib/cardCopyDestination').requireCardCopyDestination(boardId, swimlaneId, listId);
+    }
     const oldId = this._id;
     const oldCard = await ReactiveCache.getCard(oldId);
 
@@ -1125,8 +1160,15 @@ Cards.helpers({
 
       // A scoped board copy clones definitions and remaps their IDs after the
       // cards exist. Do not share/mutate the source definitions on this path.
+      // A whole-board copy clones the definitions first and passes their new
+      // ids; a value whose field was not cloned is dropped, never left
+      // pointing at the source board's field.
+      const fieldIds = copyOptions && copyOptions.customFieldIdMap;
       cardData.customFields = copyOptions
-        ? (copyOptions.customFields ? (cardData.customFields || []).map(field => ({ ...field })) : [])
+        ? (copyOptions.customFields
+          ? (cardData.customFields || []).map(field => ({ ...field, _id: fieldIds ? fieldIds[field._id] : field._id }))
+            .filter(field => field._id)
+          : [])
         : await this.mapCustomFieldsToBoard.call({ customFields: cardData.customFields }, newBoard._id);
     }
 
@@ -1220,7 +1262,8 @@ Cards.helpers({
     // new board — and it mutated the cached source docs). Re-home them onto the
     // destination board alongside the copied parent.
     const { buildCopiedSubtaskFields } = require('./lib/subtaskCopy');
-    const subtasks = copyOptions ? [] : await ReactiveCache.getCards({ parentId: oldId });
+    // #3626: a subtask shared with another parent is copied too, under the copy.
+    const subtasks = copyOptions ? [] : await ReactiveCache.getCards(childrenSelector(oldId));
     for (const subtask of subtasks) {
       const copySubtask = buildCopiedSubtaskFields(subtask, {
         newParentId: _id,
@@ -1653,6 +1696,11 @@ Cards.helpers({
       ret = ReactiveCache.getCard(this.parentId);
     }
     return ret;
+  },
+
+  // #3626: every parent card, primary first.
+  parentCards() {
+    return cardParentIds(this).map(id => ReactiveCache.getCard(id)).filter(Boolean);
   },
 
   parentCardName() {
@@ -2917,12 +2965,27 @@ Cards.helpers({
     return pokerWinnersListMap[0].pokerCard;
   },
 
+  // Archive/restore cascade: only the children this card is the one parent of
+  // (#3626 - a subtask shared with another parent stays where it is).
   async applyToChildren(funct) {
-    const cards = await ReactiveCache.getCards({ parentId: this._id });
+    const cards = await ReactiveCache.getCards(onlyChildrenSelector(this._id));
     if (!cards) return;
     for (const card of cards) {
       await funct(card);
     }
+  },
+
+  // #3256: place the card on the board's Map view, or take it off.
+  async setMapPosition(x, y) {
+    const { clampPercent } = require('/models/lib/boardMap');
+    const mapX = clampPercent(x);
+    const mapY = clampPercent(y);
+    if (mapX === null || mapY === null) return this.clearMapPosition();
+    return Cards.updateAsync(this._id, { $set: { mapX, mapY } });
+  },
+
+  async clearMapPosition() {
+    return Cards.updateAsync(this._id, { $unset: { mapX: '', mapY: '' } });
   },
 
   async archive() {
@@ -3484,35 +3547,52 @@ Cards.helpers({
     return Cards.updateAsync(this.getRealId(), { $unset: { spentTime: '', isOvertime: false } });
   },
 
-  setParentId(parentId) {
-    // #3328: never allow a card to become its own ancestor — that closes a
-    // parent/subtask loop and hangs every ancestor walk (parentList,
-    // parentString, the subtasks board, ...). Build the proposed parent's
-    // ancestor chain (its own id + the ids of all of its ancestors) and refuse
-    // the assignment if this card already appears in it. Comparison is by VALUE.
-    if (parentId) {
-      const ancestorIds = [parentId];
-      let crtParentId = parentId;
-      while (crtParentId) {
-        const crt = ReactiveCache.getCard(crtParentId);
-        if (!crt) {
-          break;
-        }
-        crtParentId = crt.parentId;
-        if (!crtParentId || ancestorIds.includes(crtParentId)) {
-          // unset or an already-broken loop in existing data: stop walking.
-          break;
-        }
-        ancestorIds.push(crtParentId);
-      }
-      if (wouldCreateCycle(this.getRealId(), parentId, ancestorIds)) {
-        throw new Meteor.Error(
-          'circular-subtask',
-          'A card cannot be made a subtask of itself or of one of its own subtasks.',
-        );
-      }
+  // #3328: never allow a card to become its own ancestor - that closes a
+  // parent/subtask loop and hangs every ancestor walk. #3626: the proposed
+  // parent's ancestors are followed through ALL of their parents.
+  // The card as it is NOW: a cached copy from before an earlier parent change
+  // would make the next change replace a parent instead of adding one.
+  liveParentSource() {
+    return (Meteor.isClient && Cards.findOne(this.getRealId())) || this;
+  },
+
+  assertNoParentCycle(parentId) {
+    if (!parentId) return;
+    const lookup = id => (Meteor.isClient && Cards.findOne(id)) || ReactiveCache.getCard(id);
+    const ancestors = collectAllAncestorIdsSync([parentId], lookup);
+    if (wouldCreateParentCycle(this.getRealId(), parentId, ancestors)) {
+      throw new Meteor.Error(
+        'circular-subtask',
+        'A card cannot be made a subtask of itself or of one of its own subtasks.',
+      );
     }
-    return Cards.updateAsync(this.getRealId(), { $set: { parentId } });
+  },
+
+  // Make `parentId` the card's ONE parent ('' for none), as before #3626.
+  setParentId(parentId) {
+    this.assertNoParentCycle(parentId);
+    return Cards.updateAsync(this.getRealId(), { $set: parentFields(parentId ? [parentId] : []) });
+  },
+
+  // #3626: make `parentId` the PRIMARY parent, keeping the others; '' drops
+  // the primary one and the next parent takes its place.
+  setPrimaryParent(parentId) {
+    const live = this.liveParentSource();
+    const current = cardParentIds(live);
+    if (!parentId) return Cards.updateAsync(this.getRealId(), { $set: withParentRemoved(live, current[0]) });
+    this.assertNoParentCycle(parentId);
+    return Cards.updateAsync(this.getRealId(), { $set: parentFields([parentId, ...current.filter(id => id !== parentId)]) });
+  },
+
+  // #3626: also a subtask of `parentId`, keeping the parents it has.
+  addParent(parentId) {
+    this.assertNoParentCycle(parentId);
+    return Cards.updateAsync(this.getRealId(), { $set: withParentAdded(this.liveParentSource(), parentId) });
+  },
+
+  // #3626: no longer a subtask of `parentId`; the next parent becomes primary.
+  removeParent(parentId) {
+    return Cards.updateAsync(this.getRealId(), { $set: withParentRemoved(this.liveParentSource(), parentId) });
   },
 
   setVoteQuestion(question, publicVote, allowNonBoardMembers) {
@@ -3936,20 +4016,35 @@ async function cardRemover(userId, doc) {
     });
   }
   // Subcards go through the hooked remove so each subcard's own children cascade
-  // and its delete activity / webhook fire.
-  await Cards.removeAsync({ parentId: doc._id });
+  // and its delete activity / webhook fire. #3626: only the subcards this card
+  // is the one parent of; one that has another parent too just loses this one.
+  for (const shared of await Cards.find(sharedChildrenSelector(doc._id), { fields: { parentId: 1, parentIds: 1 } }).fetchAsync()) {
+    await Cards.direct.updateAsync(shared._id, { $set: withParentRemoved(shared, doc._id) });
+  }
+  await Cards.removeAsync(onlyChildrenSelector(doc._id));
   // Attachments keep the normal remove so the underlying file is deleted from the
   // configured storage backend.
   await Attachments.removeAsync({ cardId: doc._id });
 }
 
-const findDueCards = async days => {
-  const seekDue = async ($from, $to, activityType) => {
+// #5323: `envDays` is the server default (NOTIFY_DUE_DAYS_BEFORE_AND_AFTER);
+// a board with its own offsets (Board Settings -> Notifications) uses those
+// instead, and an empty list there turns its reminders off.
+const findDueCards = async envDays => {
+  const { dueDaysToScan, effectiveDueDays } = require('/models/lib/dueNotificationConfig');
+  const overrides = await ReactiveCache.getBoards(
+    { dueReminderDays: { $exists: true } },
+    { fields: { dueReminderDays: 1 } },
+  );
+  const boardDays = new Map((overrides || []).map(board => [board._id, effectiveDueDays(board, envDays)]));
+  const daysFor = boardId => (boardDays.has(boardId) ? boardDays.get(boardId) : envDays || []);
+  const seekDue = async ($from, $to, activityType, day) => {
     const cards = await ReactiveCache.getCards({
       archived: false,
       dueAt: { $gte: $from, $lt: $to },
     });
     for (const card of cards) {
+      if (!daysFor(card.boardId).includes(day)) continue;
       const user = await ReactiveCache.getUser(card.userId);
       if (!user) {
         console.warn('Due date notification: user not found for card', card._id, 'userId', card.userId);
@@ -3975,9 +4070,7 @@ const findDueCards = async days => {
   startOfToday.setHours(0, 0, 0, 0);
   const aday = 3600 * 24 * 1e3;
   const then = day => new Date(startOfToday.getTime() + day * aday);
-  if (!days) return;
-  if (!days.map) days = [days];
-  for (const day of days) {
+  for (const day of dueDaysToScan(envDays, overrides)) {
     let args = [];
     if (day === 0) {
       args = [then(0), then(1), 'duenow'];
@@ -3987,18 +4080,16 @@ const findDueCards = async days => {
     } else {
       args = [then(day), then(0), 'pastdue'];
     }
-    await seekDue(...args);
+    await seekDue(...args, day);
   }
 };
 const addCronJob = debounce(
   function findDueCardsDebounced() {
     const { parseNotifyDueDays, parseNotifyDueHour } = require('/models/lib/dueNotificationConfig');
-    const envValue = process.env.NOTIFY_DUE_DAYS_BEFORE_AND_AFTER;
-    if (!envValue) {
-      return;
-    }
     // -14..14: positive = days before due, 0 = due today, negative = days past due.
-    const notifydays = parseNotifyDueDays(envValue);
+    // #5323: the scan runs even without the environment variable, because a
+    // board can set its own offsets; with neither, it finds nothing to scan.
+    const notifydays = parseNotifyDueDays(process.env.NOTIFY_DUE_DAYS_BEFORE_AND_AFTER);
     const defaultitvl = 8; // default every morning at 8am if the env var is missing/invalid
     // #3192: parseNotifyDueHour keeps a configured hour of 0 (midnight) instead of
     // the old `parseInt(..) || 8` that turned the falsy 0 into 8, and rejects
@@ -4034,6 +4125,7 @@ export {
   cardCreation,
   cardRemover,
   addCronJob,
+  findDueCards,
 };
 
 // Position history tracking methods

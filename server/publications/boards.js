@@ -16,7 +16,6 @@ import Attachments from '../../models/attachments';
 import Boards from '/models/boards';
 import Cards from '/models/cards';
 import { localizeBoardMemberAvatars } from '/server/lib/localizeAvatar';
-import { collectAncestorIds } from '/server/lib/subtaskAncestors';
 import { visibleBoardIds } from '/server/lib/visibleBoardIds';
 import {
   showsCardCounterList,
@@ -29,6 +28,7 @@ const {
 } = require('/models/lib/cardsLoading');
 const { boardCardScope, assignedOnlyCardScope } = require('/models/lib/boardCardScope');
 const { boardVisibilitySelectors, starredPublicBoardSelector } = require('/models/lib/boardVisibilitySelectors');
+const { cardParentIds, collectAllAncestorIds } = require('/models/lib/cardParents');
 
 // Card-loading mode (Admin Panel / Features): 'all' ships every card/checklist to
 // minimongo; 'lazy' ships none (each list loads its visible window via the
@@ -180,10 +180,12 @@ Meteor.publish('boardTemplates', async function() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // The boards /public may show: public, not archived, a real board rather than a
-// template container, and not one of WeKan's internal helper boards.
-function publicBoardsSelector(searchTerm) {
+// template container, and not one of WeKan's internal helper boards. A
+// signed-in visitor also sees the 'instance' boards (#3249); who is signed in
+// is the server's own `this.userId`, never something the client says.
+function publicBoardsSelector(searchTerm, signedIn = false) {
   const query = {
-    permission: 'public',
+    permission: signedIn ? { $in: ['public', 'instance'] } : 'public',
     archived: false,
     type: 'board',
     title: notHelperBoardTitle(),
@@ -225,7 +227,7 @@ Meteor.publish('publicBoards', async function(searchTerm = '', limit = 10, skip 
   // `members` in particular is deliberately absent: it is the largest field on a
   // busy board and this page shows no avatars.
   const boards = await ReactiveCache.getBoards(
-    publicBoardsSelector(searchTerm),
+    publicBoardsSelector(searchTerm, !!this.userId),
     {
       fields: {
         _id: 1,
@@ -252,9 +254,10 @@ Meteor.publish('publicBoards', async function(searchTerm = '', limit = 10, skip 
 Meteor.methods({
   async getPublicBoardsCount(searchTerm = '') {
     check(searchTerm, Match.OneOf(String, null, undefined));
-    // No authorization check, deliberately: this counts PUBLIC boards, which is
-    // the same set the publication above will send to the same caller.
-    const cursor = await ReactiveCache.getBoards(publicBoardsSelector(searchTerm), {}, true);
+    // No authorization check, deliberately: this counts the same set the
+    // publication above sends to the same caller - public boards, plus the
+    // 'instance' ones when that caller is signed in.
+    const cursor = await ReactiveCache.getBoards(publicBoardsSelector(searchTerm, !!this.userId), {}, true);
     return typeof cursor.countAsync === 'function'
       ? await cursor.countAsync()
       : cursor.count();
@@ -266,7 +269,7 @@ function boardsReportQuery(searchTerm = '', permission = 'all') {
   if (searchTerm) {
     query.title = new RegExp(searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
   }
-  if (permission === 'public' || permission === 'private') {
+  if (permission === 'public' || permission === 'private' || permission === 'instance') {
     query.permission = permission;
   }
   return query;
@@ -274,7 +277,7 @@ function boardsReportQuery(searchTerm = '', permission = 'all') {
 
 Meteor.publish('boardsReport', async function(searchTerm = '', permission = 'all', limit, skip = 0) {
   check(searchTerm, Match.OneOf(String, null, undefined));
-  check(permission, Match.OneOf('all', 'public', 'private'));
+  check(permission, Match.OneOf('all', 'public', 'private', 'instance'));
   check(limit, Number);
   check(skip, Match.OneOf(Number, null, undefined));
   // An ADMIN report, over the whole instance - like the Cards report beside it in
@@ -358,7 +361,7 @@ Meteor.publish('boardsReport', async function(searchTerm = '', permission = 'all
 Meteor.methods({
   async getBoardsReportCount(searchTerm = '', permission = 'all') {
     check(searchTerm, Match.OneOf(String, null, undefined));
-    check(permission, Match.OneOf('all', 'public', 'private'));
+    check(permission, Match.OneOf('all', 'public', 'private', 'instance'));
     const user = await ReactiveCache.getCurrentUser();
     if (!user || !user.isAdmin) {
       throw new Meteor.Error('not-authorized');
@@ -761,12 +764,13 @@ publishComposite('board', async function(boardId, isArchived, generation) {
       ),
       ReactiveCache.getCards(
         { ...cardScopeFor(board), parentId: { $exists: true, $ne: null } },
-        { fields: { _id: 1, parentId: 1 } },
+        { fields: { _id: 1, parentId: 1, parentIds: 1 } },
         false,
       ),
     ]).then(([links, children]) => ({
       linkedIds: [...new Set((links || []).map(card => card.linkedId).filter(Boolean))],
-      parentIds: [...new Set((children || []).map(card => card.parentId).filter(Boolean))],
+      // #3626: every parent of a subtask, not only the primary one.
+      parentIds: [...new Set((children || []).flatMap(card => cardParentIds(card)))],
     }));
     cardIndexByParent.set(board, compute);
     return compute;
@@ -1045,10 +1049,11 @@ publishComposite('board', async function(boardId, isArchived, generation) {
           // they are not covered by any other cursor of this publication.
           // Publishing only the direct parents truncated the path after a hard
           // refresh — walk every level so the full path survives F5.
-          const ancestorIds = await collectAncestorIds(parentIds, ids =>
+          // #3626: through every parent of every ancestor.
+          const ancestorIds = await collectAllAncestorIds(parentIds, ids =>
             ReactiveCache.getCards(
               { _id: { $in: ids } },
-              { fields: { _id: 1, parentId: 1 } },
+              { fields: { _id: 1, parentId: 1, parentIds: 1 } },
               false,
             ),
           );
@@ -1338,21 +1343,32 @@ Meteor.methods({
     // POST /api/boards/:boardId/copy (checkAdminOrCondition with adminAccess).
     if (!board.hasAdmin(this.userId)) throw new Meteor.Error('not-authorized');
 
-    // Strip fields the caller must not control on the copy, and pull out
-    // withoutCards (#4726 "Clone Board without cards") - it steers the copy
-    // itself rather than being a field assigned onto the board doc.
-    const { members, permission, withoutCards, copyOptions, ...safeProperties } = properties;
+    // CopyIdentityBleed: the caller may change only the copy's title, sort,
+    // type and card selection. These used to be assigned onto the source board
+    // object itself, so passing another board's _id made board.copy() read and
+    // duplicate that board - a private board the caller cannot see. Refuse any
+    // other field before reading anything, and apply the supported ones to a
+    // separate object.
+    const { boardCopyProperties, boardWithCopyProperties } = require('/models/lib/boardCopyProperties');
+    let values;
+    try { values = boardCopyProperties(properties); }
+    catch (error) {
+      try {
+        if (error.securityAttempt) require('/server/lib/securityLog').record({ key: 'authz.board-copy-overrides',
+          action: 'blocked', source: 'method:copyBoard', userId: this.userId,
+          detail: 'Unsupported board-copy properties refused' });
+      } catch (e) { /* logging must never break the guard */ }
+      throw new Meteor.Error('invalid-copy-properties', 'Invalid board copy properties');
+    }
     let selection;
-    if (copyOptions !== undefined) {
-      try { selection = normalizeBoardCopyOptions(copyOptions); }
+    if (values.copyOptions !== undefined) {
+      try { selection = normalizeBoardCopyOptions(values.copyOptions); }
       catch (error) { throw new Meteor.Error('invalid-copy-options', error.message); }
     }
-    for (const key of Object.keys(safeProperties)) {
-      board[key] = safeProperties[key];
-    }
+    const copy = boardWithCopyProperties(board, values);
 
-    if (selection) return board.copy(!selection.cards, selection);
-    return board.copy(!!withoutCards);
+    if (selection) return copy.copy(!selection.cards, selection);
+    return copy.copy(!!values.withoutCards);
   },
 
   // Board status for the sidebar Status popup: accurate counts computed on the
@@ -1403,6 +1419,19 @@ Meteor.methods({
       mode, lazy, swimlanes, lists, cards, archivedCards, labels, members, customFields,
       timeSpentTotal, cardsWithTimeSpent, overtimeCards,
     };
+  },
+
+  // Annual archive counts use an explicit per-member card scope.
+  async archivedCardContributions(boardId, year) {
+    check(boardId, String);
+    check(year, Number);
+    const { loadArchiveContributions } = require('/server/lib/archiveContributions');
+    try {
+      return await loadArchiveContributions(this.userId, boardId, year);
+    } catch (error) {
+      if (/^Invalid /.test(error.message)) throw new Meteor.Error('bad-request', error.message);
+      throw error;
+    }
   },
 
   // Data for the board report charts (chartPlaceholderViews.jade replacements -

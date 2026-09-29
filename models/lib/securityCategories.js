@@ -9,6 +9,8 @@
 // so both the server ESM code and the tests/*.test.cjs guards can load it.
 
 const CATALOG = {
+  'authz.card-copy-overrides': { category: 'authz', bleed: 'CopyIdentityBleed', severity: 'high', cwe: 'CWE-915' },
+  'authz.board-copy-overrides': { category: 'authz', bleed: 'CopyIdentityBleed', severity: 'high', cwe: 'CWE-915' },
   'authz.admin-only-field': { category: 'authz', bleed: 'AdminFieldBleed', severity: 'high', cwe: 'CWE-863' },
   'authn.saml-replay': { category: 'authn', bleed: 'SamlReplayBleed', severity: 'high', cwe: 'CWE-294' },
   'authn.ldap-empty': { category: 'authn', bleed: 'LdapBindBleed', severity: 'critical', cwe: 'CWE-287' },
@@ -39,6 +41,10 @@ const CATALOG = {
   'authz.position-history': { category: 'authz', bleed: 'PositionHistoryBleed', severity: 'high', cwe: 'CWE-639' },
   'auth-race.cas':   { category: 'auth-race', bleed: 'CasBleed', severity: 'high', cwe: 'CWE-362' },
   'authn.cas-link':  { category: 'authn', bleed: 'CasAccountMergeBleed', severity: 'medium', cwe: 'CWE-287' },
+  // A SAML login that would take over an existing non-SAML account of the same
+  // username while SAML_MERGE_EXISTING_USERS is off - the SAML counterpart of
+  // CasAccountMergeBleed (packages/wekan-accounts-saml/saml_server.js).
+  'authn.saml-link': { category: 'authn', bleed: 'SamlAccountMergeBleed', severity: 'medium', cwe: 'CWE-287' },
   // A Google/GitHub/Facebook/… login whose email matches an account made by
   // another method, while OAUTH_PROVIDERS_MERGE_EXISTING_USERS is off: the same
   // takeover shape as CasBleed and OIDC's GHSA-mp7g-hj5q-gxhq, refused and recorded.

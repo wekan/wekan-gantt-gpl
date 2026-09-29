@@ -12,13 +12,16 @@ import Checklists from '/models/checklists';
 import Swimlanes from '/models/swimlanes';
 import { relativeDateOffset } from '/models/lib/relativeDateOffset';
 import { resolveRuleSwimlaneId, resolveRuleListId } from '/models/lib/ruleActionResolve';
-import { cardTitleMatchList } from '/models/lib/ruleCardTitleFilter';
+import { cardTitleMatchList, cardTitleFilterMatches } from '/models/lib/ruleCardTitleFilter';
+import { triggerMatchesWithVars } from '/models/lib/ruleTriggerVars';
 import { allowIsBoardMemberWithWriteAccess } from '/server/lib/utils';
 import { tripCanary } from '/server/lib/canary';
-import { substituteVars } from '/models/lib/ruleVarsSubstitute';
+import { substituteVars, recipientVars } from '/models/lib/ruleVarsSubstitute';
+import { buildCustomFieldsWD, filterAdminOnlyDefinitions } from '/models/lib/customFieldsWD';
 import { cardMatchesAdvancedFilter } from '/server/lib/advancedFilterMatch';
 import { cardTextContainsMatch } from '/models/lib/ruleTextContainsMatch';
 import { RULE_ACTING_USER_SENTINEL, resolveActingUserId } from '/models/lib/ruleActingUser';
+import { ruleActionIds, uniqueRules } from '/models/lib/ruleParts';
 
 // #5536: robustly resolve a destination board's default swimlane, tolerating a
 // board that lacks a swimlane literally titled 'Default' (renamed/translated) or
@@ -113,16 +116,66 @@ async function buildRuleVars(activity, card) {
   if (vars.listname !== undefined) vars.list = vars.listname;
   if (vars.boardname !== undefined) vars.board = vars.boardname;
   if (vars.membername !== undefined) vars.member = vars.membername;
+  if (card) await addCardPeopleAndFields(vars, card);
   return vars;
+}
+
+// #4278 / #4294 / #3195 (maintainer decision 2026-09-29): {creator},
+// {assignees} and {members} name the card's people - by username in text, by
+// email address in the send-email recipient (see recipientVars) - and
+// {customField:Name} reads a custom field's displayed value. Admin-only custom
+// fields are left out: a rule must not copy them into mail or card text.
+// The usernames a member action names, after variable substitution. A literal
+// username is returned unchanged, so existing rules behave exactly as before.
+function ruleUsernames(value, vars) {
+  if (typeof value !== 'string' || !value.includes('{')) return value ? [value] : [];
+  return [...new Set(String(substituteVars(value, vars)).split(',')
+    .map(name => name.trim()).filter(name => name && !/[{}]/.test(name)))];
+}
+
+async function addCardPeopleAndFields(vars, card) {
+  const people = {};
+  const load = async ids => {
+    const list = [];
+    for (const id of [...new Set((ids || []).filter(Boolean))]) {
+      const user = await ReactiveCache.getUser(id);
+      if (user) list.push({ username: user.username || '', email: user.emails?.[0]?.address || '' });
+    }
+    return list;
+  };
+  people.creator = await load([card.userId]);
+  people.assignees = await load(card.assignees);
+  people.members = await load(card.members);
+  for (const [token, list] of Object.entries(people)) {
+    vars[token] = list.map(p => p.username).filter(Boolean).join(', ');
+  }
+  vars.people = people;
+  const definitions = await ReactiveCache.getCustomFields({ boardIds: { $in: [card.boardId] } });
+  const visible = filterAdminOnlyDefinitions(definitions || [], false);
+  const fields = {};
+  for (const field of buildCustomFieldsWD(card.customFields, visible)) {
+    const value = field.trueValue;
+    if (value === undefined || value === null || value === '') continue;
+    fields[String(field.definition.name).toLowerCase()] = Array.isArray(value) ? value.join(', ') : String(value);
+  }
+  vars.customfield = fields;
 }
 
 export const RulesHelper = {
   async executeRules(activity) {
     const matchingRules = await this.findMatchingRules(activity);
     for (let i = 0; i < matchingRules.length; i++) {
-      const action = await matchingRules[i].getAction();
+      const rule = matchingRules[i];
+      const action = await rule.getAction();
       if (action !== undefined) {
         await this.performAction(activity, action);
+      }
+      // #4294: further actions run in order after the rule's own action.
+      for (const extraId of ruleActionIds(rule).slice(1)) {
+        const extra = await ReactiveCache.getAction(extraId);
+        if (extra !== undefined) {
+          await this.performAction(activity, extra);
+        }
       }
     }
   },
@@ -139,6 +192,37 @@ export const RulesHelper = {
         // not connected to any rules
         if (rule !== undefined) {
           matchingRules.push(rule);
+        }
+      }
+      // #4294 / #3195: a trigger value may hold a {token} (models/lib/
+      // ruleTriggerVars.js). Such a value never equals what an activity
+      // carries, so the query above cannot find it; fetch this board's
+      // triggers of this kind that hold one, and resolve them for the card.
+      const tokenFields = matchingFields.filter(field => field !== 'boardId');
+      const tokenTriggers = tokenFields.length ? await ReactiveCache.getTriggers({
+        activityType,
+        boardId: { $in: [activity.boardId, '*', null] },
+        $or: tokenFields.map(field => ({ [field]: { $regex: '\\{\\w+(?::[^{}]+)?\\}' } })),
+      }) : [];
+      if (tokenTriggers.length) {
+        const actualValues = await this.resolveMatchingValues(activity, matchingFields);
+        const card = activity.cardId ? await ReactiveCache.getCard(activity.cardId) : null;
+        const vars = await buildRuleVars(activity, card);
+        // People tokens resolve to usernames, and the activity names the
+        // acting user by id: compare a "by {assignees}" trigger by username.
+        const tokenValues = { ...actualValues };
+        if (actualValues.userId) {
+          const actor = await ReactiveCache.getUser(actualValues.userId);
+          tokenValues.userId = actor ? actor.username : undefined;
+        }
+        const plainMatches = (field, expected) => (field === 'cardTitle'
+          ? cardTitleFilterMatches(expected, actualValues.cardTitle)
+          : expected === undefined || expected === null || expected === '*' || expected === actualValues[field]);
+        for (const trigger of tokenTriggers) {
+          if (!triggerMatchesWithVars(trigger, matchingFields, tokenValues, vars, plainMatches)) continue;
+          // eslint-disable-next-line no-await-in-loop
+          const rule = await trigger.getRule();
+          if (rule !== undefined) matchingRules.push(rule);
         }
       }
     }
@@ -208,8 +292,30 @@ export const RulesHelper = {
     // #2322: a disabled rule keeps its trigger/action documents and
     // configuration intact so it can be re-enabled later, but it must never
     // fire while disabled. `enabled` defaults to `true` in the schema, so
-    // only an explicit `false` is skipped here.
-    return matchingRules.filter(rule => rule.enabled !== false);
+    // only an explicit `false` is skipped here. A rule matched through more
+    // than one of its triggers runs once (#4294: any trigger fires it).
+    return uniqueRules(matchingRules.filter(rule => rule.enabled !== false));
+  },
+  // The value each matching field has for this activity, resolved the way
+  // buildMatchingFieldsMap compares it (list and swimlane names looked up,
+  // an archived card's title read from the card).
+  async resolveMatchingValues(activity, matchingFields) {
+    const values = {};
+    for (const field of matchingFields) {
+      let value = activity[field];
+      if (field === 'oldListName') {
+        const oldList = await ReactiveCache.getList(activity.oldListId);
+        if (oldList) value = oldList.title;
+      } else if (field === 'oldSwimlaneName') {
+        const oldSwimlane = await ReactiveCache.getSwimlane(activity.oldSwimlaneId);
+        if (oldSwimlane) value = oldSwimlane.title;
+      } else if (field === 'cardTitle' && value === undefined && activity.cardId) {
+        const card = await ReactiveCache.getCard(activity.cardId);
+        if (card) value = card.title;
+      }
+      values[field] = value;
+    }
+    return values;
   },
   async buildMatchingFieldsMap(activity, matchingFields) {
     const matchingMap = { activityType: activity.activityType };
@@ -279,7 +385,10 @@ export const RulesHelper = {
     } else if (!ruleVars) {
       ruleVars = await buildRuleVars(activity, card);
     }
-    const to = substituteVars(action.emailTo, ruleVars);
+    // People tokens in the recipient are email addresses; empty entries left
+    // by a token nobody matched are dropped.
+    const to = String(substituteVars(action.emailTo, recipientVars(ruleVars, ruleVars.people)) || '')
+      .split(',').map(address => address.trim()).filter(Boolean).join(', ');
     const body = substituteVars(action.emailMsg || '', ruleVars);
     const subject = substituteVars(action.emailSubject || '', ruleVars);
     // #3301: the email used to carry no reference to the card that
@@ -404,8 +513,10 @@ export const RulesHelper = {
           list = await ReactiveCache.getList({ title: list.title, boardId: action.boardId });
         }
       } else {
+        // #3195 / #4294: a list name may use {customField:Name} and the other
+        // rule variables, resolved against the triggering card.
         list = await ReactiveCache.getList({
-          title: action.listName,
+          title: substituteVars(action.listName, ruleVars),
           boardId: action.boardId,
         });
       }
@@ -440,7 +551,7 @@ export const RulesHelper = {
         }
       } else {
         swimlane = await ReactiveCache.getSwimlane({
-          title: action.swimlaneName,
+          title: substituteVars(action.swimlaneName, ruleVars),
           boardId: action.boardId,
         });
       }
@@ -618,13 +729,17 @@ export const RulesHelper = {
           );
         }
       } else {
-        const member = await ReactiveCache.getUser({ username: action.username });
-        if (member) {
-          await card.assignMember(member._id);
-        } else {
-          console.warn(
-            `WeKan rule action addMember: user "${action.username}" not found; skipping.`,
-          );
+        // #4294: {creator}, {assignees}, {members} and {customField:Name} name
+        // people by username; a token naming several acts on each of them.
+        for (const username of ruleUsernames(action.username, ruleVars)) {
+          const member = await ReactiveCache.getUser({ username });
+          if (member) {
+            await card.assignMember(member._id);
+          } else {
+            console.warn(
+              `WeKan rule action addMember: user "${username}" not found; skipping.`,
+            );
+          }
         }
       }
     }
@@ -641,13 +756,15 @@ export const RulesHelper = {
           await card.unassignMember(assignees[i]);
         }
       } else {
-        const member = await ReactiveCache.getUser({ username: action.username });
-        if (member) {
-          await card.unassignMember(member._id);
-        } else {
-          console.warn(
-            `WeKan rule action removeMember: user "${action.username}" not found; skipping.`,
-          );
+        for (const username of ruleUsernames(action.username, ruleVars)) {
+          const member = await ReactiveCache.getUser({ username });
+          if (member) {
+            await card.unassignMember(member._id);
+          } else {
+            console.warn(
+              `WeKan rule action removeMember: user "${username}" not found; skipping.`,
+            );
+          }
         }
       }
     }

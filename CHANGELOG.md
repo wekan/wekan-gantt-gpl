@@ -58,16 +58,108 @@ https://wekan.fi/status/
 <details>
 <summary>Carried to a future release.</summary>
 
-All implementation work in this section is paused at the maintainer's request
-on 2026-09-28. Scrum, Sync and the other non-translation requirements below are
-unfinished, not cancelled or marked complete. Completed increments are recorded
-in Upcoming with test evidence; remaining requirements and external verification
-blockers stay here. Resume only when requested.
+Non-translation implementation resumed at the maintainer's explicit request
+on 2026-09-28 after the security and SAML fixes. Scrum, Sync and the other
+requirements below remain unfinished. Completed increments are recorded in
+Upcoming with test evidence; remaining requirements and external verification
+blockers stay here.
 Do not add translation into all languages to the current work queue, including
 after the non-translation work. The maintainer is trying Transifex's translation
 features and intends to obtain most translations from Transifex. Existing
 translation checkpoints below are reference material, not active assignments.
 Local commits do not publish or release these changes.
+
+Pass of 2026-09-29: the six external import adapters were brought up to their
+format contracts, imports now parse only sanitized input and keep source
+creation dates, import losses are recorded in Problems → Recovery, and keyboard
+undo/redo persists request IDs (all in Upcoming). Later that day the items once
+blocked on new interface text or on a maintainer decision were built with
+English strings pending Transifex: start-date reminders and assignee
+recipients, per-activity notification options, the per-board reminder offset,
+auto-archival, the import-page loss report, the undo/redo recovery notice,
+rule variables in triggers with a picker, several triggers per rule, Jira issue
+types (Kanboard categories stay labels), semi-open boards, the Map view,
+several parents per card, export fidelity and the Leo outline format. What
+remains below is blocked for one of three stated reasons, not left unexamined:
+
+- **Needs a maintainer decision.** Everything under "Needs a maintainer
+  decision" (#4912, #2509, #2460), and filing the prepared #4790 split.
+- **Needs infrastructure or affected data.** The environment-owner, snap and
+  data-verification items. The MySQL/MariaDB/PostgreSQL verification was done
+  once Docker was approved (see Upcoming); only SAP HANA remains, and its image
+  is amd64-only and needs a licence and about 16 GB of memory. File contents
+  from import sources need live API connectors with credentials, and Zenkit's
+  native export has no published schema to verify against.
+- **Architectural Scrum/Sync work.** Atomic cross-document coordination,
+  compound archive reservations, interrupted-record replay, production
+  adapters and cron activation (checkpoint below), with operator recovery for
+  legacy unbound Sync commands and online SMTP resolution (#2713), were not
+  advanced; each needs its own design step, not a patch.
+
+**Paused for a release on 2026-09-29 - in progress, not in this release:**
+
+- **Failing suites not yet fixed:** `calendarDateDisplay`,
+  `multilineTitles` and `pomodoroTimer` all wait for the locale files to
+  follow `en.i18n.json`'s key order, which is the translation agent's work.
+- **Checked:** `SamlAccountMergeBleed` needs no Hall of Fame page: SAML
+  refused that merge from its first commit, so it is a detection category
+  like `CanaryBleed`, not a fixed vulnerability.
+- **Decisions not yet built:** the Scrum/Sync journal work. Of the recovery
+  controls, keyboard undo/redo now has its notice; operator recovery for legacy
+  unbound Sync commands and online SMTP resolution remain, and belong to the
+  journal work.
+- **Intermittent:** in a run of all seven import specs one case failed twice in
+  four runs (once seen as the `jira-time-import` case about section controls,
+  with a value mismatch); every case passes alone and in its own file.
+- **Waiting on the maintainer:** the split of issue #4790 is prepared in
+  [User-Filter-4790-Split.md](docs/Features/User-Filter-4790-Split.md) with
+  ready-to-run `gh issue create` commands; filing issues is a publishing step.
+
+Maintainer decisions of 2026-09-29, answering the blockers above:
+
+- **New interface text** is added to `en.i18n.json` and listed in
+  `releases/translations/pending-transifex.json`; the interface falls back to
+  English until the translating agent or Transifex fills each locale. Locale
+  files are that agent's work, not part of feature commits.
+- **Rule variables** ([#4294](https://github.com/wekan/wekan/issues/4294),
+  [#3195](https://github.com/wekan/wekan/issues/3195)): reuse the email
+  `{token}` syntax in action and trigger values, adding `{creator}`,
+  `{assignees}` and `{customField:Name}`; unknown tokens stay literal.
+- **Several triggers per rule** (#4294, [#2953](https://github.com/wekan/wekan/issues/2953)):
+  the rule fires when ANY of its triggers fires; actions run in order.
+- **Scrum/Sync** keeps the journal and reservation approach, finishing
+  ordinary-writer coordination before Sync is activated.
+- **Thumbnails** ([#3275](https://github.com/wekan/wekan/issues/3275)): a
+  separate `/cdn/storage/attachments/<id>/thumbnail` route.
+- **Semi-open boards** ([#3249](https://github.com/wekan/wekan/issues/3249)):
+  visible to every logged-in user of the instance, never in an unauthenticated
+  response.
+- **Several parents** ([#3626](https://github.com/wekan/wekan/issues/3626)): a
+  full parents-array model, migrating every ancestor walk.
+- **Code highlighting**: highlight.js, with only `hljs-*`/`language-*` classes
+  allowed on `span`/`code` inside `pre`.
+- **Custom URL schemes** ([#3218](https://github.com/wekan/wekan/issues/3218)):
+  off by default; an admin allowlist chooses which become links.
+- **Jira issue types** become a first-class card field with an icon; Kanboard
+  categories stay labels.
+- **Hot areas** ([#3256](https://github.com/wekan/wekan/issues/3256)): a new
+  Map board view with cards as markers on an uploaded image.
+- **User Filter** ([#4790](https://github.com/wekan/wekan/issues/4790)): split
+  into separate items and closed.
+- **Due reminders** ([#5323](https://github.com/wekan/wekan/issues/5323)): a
+  per-board offset and a webhook reminder, both in Board Settings →
+  Notifications.
+- **Not now**: a consolidated `act-editCard` webhook
+  ([#4912](https://github.com/wekan/wekan/issues/4912)); SQRL
+  ([#2460](https://github.com/wekan/wekan/issues/2460)) stays open for a future
+  maintained library; [#2509](https://github.com/wekan/wekan/issues/2509) waits
+  for the reporter.
+
+Node suite health at this pass: 163 of 1445 suites fail; 162 already failed at
+the pass's starting commit (mostly translation-completeness suites, plus source
+guards such as `changeHistoryWiring` and `historyRestoreAppliesWhatIsShown`).
+The other, `activeForgeMirror`, read the real `.tools/wekan-gitlab` directory
+and failed on any checkout that has one; it is fixed in Upcoming.
 
 Investigated but not finished, with findings
 recorded for whoever picks them up next. Entries that have since been FIXED are
@@ -87,9 +179,20 @@ held only issues \#4774 and \#4055, and both are closed now.
 </details>
 
 <details>
-<summary>Paused implementation checkpoint: Scrum, Sync and rule email recovery.</summary>
+<summary>Active implementation checkpoint: Scrum, Sync and rule email recovery.</summary>
 
-The most recent completed increment confirms independently verified SMTP
+Scrum History now persists private immutable completion receipts before
+checkpoint cleanup. The internal finalizer can reconcile an uncertain cleanup
+read from its original operation identity without repeating History writes,
+even after a restart or a successor checkpoint. Public Scrum undo/redo methods
+now accept optional caller-persisted request IDs, retaining the selected row
+and returning its original completion on retry. Empty and unsupported results
+remain stable too. Keyboard shortcuts now persist and retry request IDs; their
+visible recovery UI (which needs new translated text), non-Scrum replay and
+shared writer coordination remain unfinished.
+Validation for this increment is recorded in Upcoming.
+
+The preceding rule-email increment confirms independently verified SMTP
 acceptance offline, retaining an immutable operator decision before reconciling
 the exact receipt. It does not send or reset email. Sixty-three focused Node
 suites pass without skips, including the real MongoDB command-line workflow.
@@ -106,7 +209,7 @@ Scrum/Sync still needs cross-document coordination of cards, History, activities
 and effects; compound archive reservations; interrupted/deleted-record replay;
 remaining action/provider adapters; and safe manual/cron activation. Existing
 implementation and test checkpoints below remain authoritative. Other open
-non-translation categories also remain paused; this checkpoint does not close
+non-translation categories remain in the queue; this checkpoint does not close
 those issues or treat external verification as complete. Translation into all
 languages remains outside the work queue.
 
@@ -189,8 +292,20 @@ The preflight remains a sequence of reads; same-operation serialization and
 atomicity are still unfinished.
 Finalization now verifies the source
 History row and persisted undo/redo state before deleting the exact operation's
-checkpoint. Retries preserve the original undo timestamp. Ordinary writes and
-History remain non-atomic, and automatic startup replay is still pending.
+checkpoint. Retries preserve the original undo timestamp. Finalization now
+persists and verifies a private immutable receipt before deleting the exact
+checkpoint. False acknowledgements retain recovery evidence; a lost reply
+requires readback. The internal finalizer can use the original operation and
+receipt after an uncertain final read without touching a successor checkpoint
+or rewriting History. Public Scrum undo/redo now binds optional caller request
+IDs to the first stored selection before mutation. Retries use the original
+completion after uncertain cleanup and even after a later opposite operation.
+Changed/missing sources, lost original intent evidence and revoked access stop
+recovery. Empty stacks remain empty for that ID; non-Scrum selections are
+explicitly refused without mutation. Keyboard shortcuts now persist request
+IDs; recovery controls, non-Scrum replay, receipt retention and shared writer
+coordination remain unfinished. Ordinary writes
+and History remain non-atomic, and automatic startup replay is still pending.
 Native whole-board export/import and duplication remap planning records and
 snapshots, validate lifecycle/policy consistency, and report reduced data.
 Standalone copies preserve applicable metadata and drop foreign references;
@@ -1019,10 +1134,24 @@ local commits, while unresolved requests retain their dispositions. Do not
 close umbrella requests or claim all open issues fixed. Authentication,
 assigned-only export and History authorization fixes and their verification
 are recorded in Upcoming; this is not a completed audit of every boundary.
-Further source review includes card-copy override inputs and legacy direct
-Rules writes, which are leads to validate, not confirmed vulnerabilities.
-Examples of unfinished inventory work include the
-[archived-card heatmap](https://github.com/wekan/wekan/issues/5444) and
+Card-copy override review confirmed and fixed CopyIdentityBleed: caller fields
+could replace the authorized source ID before private children were copied.
+Text-only overrides now preserve source identity, with unit/DDP/Chromium and
+Problems-summary coverage. See the
+[copy boundary audit](docs/Security/Card-Copy-Boundary-2026-09-29.md).
+Server card copies now validate destination list/swimlane ownership before
+sort reads, number allocation or copying children. DDP/REST reject foreign,
+missing and soft-deleted containers; board-wide lists remain valid. See the
+copy boundary audit for the nontransactional limit.
+Assigned-only source/descendant handling, client-side template copy writes,
+legacy direct Rules writes and concurrent permission changes remain to be
+reviewed. Board-copy property merging was the same fault on boards and is fixed
+in Upcoming. The markdown viewer's form-field allowance was not exploitable: the
+second sanitizer stripped every input, including task-list checkboxes, which
+now render disabled.
+The [archived-card heatmap](https://github.com/wekan/wekan/issues/5444) is now
+implemented under Board View → Pulse, with unit and Chromium scope coverage.
+Unfinished inventory work still includes
 [additional database conformance runs](https://github.com/wekan/wekan/issues/6509).
 Live identity providers, affected deployment data, additional browser/backend
 matrices and remaining UI baseline failures still require verification.
@@ -1233,75 +1362,44 @@ fixed; the separate HistoryIntegrity checksum mismatch needs the affected
 stored row and predecessor to reproduce. Do not regenerate hashes to hide it.
 See [investigation notes](docs/DeveloperDocs/LDAP-6692.md)).
 
-[#6509](https://github.com/wekan/wekan/issues/6509) — which is a request to TEST
-FerretDB v1 on MySQL, MariaDB and SAP HANA, and is mostly answered: the
-conformance harness (`./build.sh` → Tests → All databases) runs one catalogue of
-100 queries against every backend with an image for the machine, and **MariaDB
-now answers identically to SQLite on 98 of them**, the two exceptions being the
-`$slice` / `$elemMatch` projections that NO backend implements. Getting there
-took a dozen fixes in wekan/FerretDB — MySQL answered `Error 1064` to every
-filtered query, deletes deleted nothing, `DROP INDEX` was PostgreSQL's spelling,
-`collStats` was not valid SQL, and MariaDB has neither the `->` operator nor a
-JSON type to cast to. **MySQL's confirming run is still pending** (its container
-lost a port race on the last run, since fixed) and **SAP HANA is untested**: its
-image needs a licence acceptance and a machine with the memory for it.
+[#6509](https://github.com/wekan/wekan/issues/6509) — a request to TEST FerretDB
+v1 on MySQL, MariaDB and SAP HANA. MySQL and MariaDB are now confirmed: on
+2026-09-29 the conformance harness (`./build.sh` → Tests → All databases) ran
+its 110-case catalogue on SQLite, PostgreSQL 18, MySQL 9.7 and MariaDB 12.3
+and every case agreed, after a MySQL range fix it found (see Upcoming). **Only
+SAP HANA is untested**: its image is amd64-only and needs a licence acceptance
+and about 16 GB of memory, so it cannot run on the arm64 machine used here.
 
 </details>
 
 <details>
-<summary>In-progress dev work carried forward (FerretDB v1 fork backend parity — not an issue, recorded so the next session can resume).</summary>
+<summary>FerretDB v1 fork backend parity: SAP HANA verification remains.</summary>
 
-declared-index usability across the PostgreSQL / MySQL / MariaDB / SAP HANA
-backends. DONE: range (`$gt/$gte/$lt/$lte`) and `$in` pushdown are implemented
-and unit-tested on sqlite/postgresql/mysql/hana; the external-DB snap launcher
-(`wekan-ferretdb-handler` / `wekan-ferretdb-url`) is in; `ROADMAP.md` +
-`docs/pushdown.md` are updated; the OpLog `ts` index is now created best-effort
-in each backend's `collectionCreate` (postgresql btree
-`(((_jsonb->>'ts')::numeric))`, mysql functional
-`((CAST(_ferretdb_sjson->>'$.ts' AS DECIMAL(65,10))))` with a **MariaDB
-fallback** to a `STORED` generated column on that CAST + a column index since
-MariaDB has no functional key parts, hana a DocStore index) with a descriptive
-WARN log on failure; and the **MariaDB-vs-mysql-backend assessment is done**
-(MariaDB speaks the MySQL wire protocol and the backend does not gate on
-vendor/version — the `json` column, `->`/`->>`/`JSON_CONTAINS`/`JSON_TYPE`, the
-generated-`STORED` index workaround, `EXPLAIN FORMAT=JSON` and
-`information_schema` all work on MariaDB 10.2+; the functional ts index was the
-one concrete break, now fixed; every pushdown is a superset with an in-Go
-re-filter so results stay correct regardless). VERIFICATION BOUNDARY / NEXT: the
-sandbox can only run/EXPLAIN the SQLite backend, so the maintainer must confirm
-on live PostgreSQL / MySQL / MariaDB / SAP HANA that the range pushdown
-expression MATCHES the indexed expression and the optimizer actually USES the
-index (today the mysql pushdown compares `col->'$.ts'` while the index is on
-`CAST(col->>'$.ts' AS DECIMAL)`, so the pushdown likely needs to emit the same
-CAST), plus whether MariaDB's `JSON_TYPE` returns the same
-`INTEGER`/`DOUBLE`/`DECIMAL` tokens — all correctness-neutral (only
-selectivity), verifiable only with live `EXPLAIN` on each engine.
+Range and `$in` pushdown, the external-database snap launcher and the OpLog
+`ts` index in each backend's `collectionCreate` are in wekan/FerretDB. The
+live check the previous entry asked for was done on 2026-09-29 against MySQL
+9.7, MariaDB 12.3 and PostgreSQL 18 (see Upcoming): the pushed range did not
+match the index on any of them, and the assumption that this was only a
+selectivity question was wrong for MySQL, whose `UNSIGNED INTEGER` JSON type
+made its range pushdown drop documents. Both are fixed and verified with
+EXPLAIN and the conformance catalogue. What remains is SAP HANA: its DocStore
+index and range pushdown need a live HANA, which needs an amd64 machine, a
+licence and about 16 GB of memory.
 
 </details>
 
 <details>
 <summary>Feature requests / behaviour-by-design rather than bugs.</summary>
 
-[#5323](https://github.com/wekan/wekan/issues/5323) (notification/webhook
-reminder on a card's due date with a per-board offset — labelled Feature; the
-built-in due-date reminder already exists (`NOTIFY_DUE_DAYS_BEFORE_AND_AFTER`,
-improved in #3192), so the remaining ask is the per-board offset UI + a webhook
-reminder, a feature; [#4278](https://github.com/wekan/wekan/issues/4278) asks
-for rule email reminders to assigned people when a card is due, overdue or
-starting. Scheduled due/overdue triggers already exist in
-`server/scheduledRules.js`; resolving assignee email recipients and scheduling
-start-date reminders remain missing),
-[#4294](https://github.com/wekan/wekan/issues/4294) (rule actions should
-support a limited set of variables, e.g. assigning a card to its creator by
-default — the acting-user member option and email variables already exist, but
-arbitrary variable-valued action fields still need a templating contract in
-`server/rulesHelper.js`'s action runner, a new kind of field),
-[#4294](https://github.com/wekan/wekan/issues/4294) (a rule should be able to
-combine multiple triggers/actions instead of one of each — `models/rules.js`
-ties a rule to exactly one `triggerId`/`actionId`; supporting several is a
-schema change, not a UI fix, and needs a decision on how a multi-trigger rule
-matches: any trigger, or all of them; [#2953](https://github.com/wekan/wekan/issues/2953)
-asks for the same thing),
+Fixed in Upcoming and removed from this list:
+[#5323](https://github.com/wekan/wekan/issues/5323),
+[#4278](https://github.com/wekan/wekan/issues/4278),
+[#4294](https://github.com/wekan/wekan/issues/4294),
+[#2953](https://github.com/wekan/wekan/issues/2953),
+[#572](https://github.com/wekan/wekan/issues/572) and
+[#3195](https://github.com/wekan/wekan/issues/3195). The #4790 split is prepared
+and waits for the maintainer to file it (see "Waiting on the maintainer" above).
+
 [#2713](https://github.com/wekan/wekan/issues/2713) (email rules now offer
 optional live-card attachments, with source-access rechecks and verified
 filesystem/GridFS SMTP delivery. The original request also asks for all card
@@ -1340,58 +1438,9 @@ summaries are now included. Stored Details now binds related-source chains,
 admin access and custom-field definition fingerprints; older Details snapshots
 require operator recovery. Converted checklist subtasks now use readable live
 titles and persisted reference evidence, including without Details),
-[#3195](https://github.com/wekan/wekan/issues/3195) (rule action/trigger
-values should be able to reference a custom field's value — today's action
-and trigger value inputs are plain literals; resolving a per-board custom
-field by id needs the same kind of templating layer as the #4294 variables
-ask above, plus a custom-field picker in the rule UI),
-[#2698](https://github.com/wekan/wekan/issues/2698) (sync rules with GitLab —
+[#2698](https://github.com/wekan/wekan/issues/2698) (sync rules with GitLab -
 a third-party integration needing a GitLab API credential and webhook
-endpoint, environment/infrastructure this sandbox cannot stand up or verify),
-[#4790](https://github.com/wekan/wekan/issues/4790) (a sprawling "User
-Filter" wishlist - the reporter's own words are "I'm kind of confused" about
-whether it is one feature or several; it bundles per-org/team/board label
-expansion, granular board roles, LDAP-group-driven auto-labeling and
-permission inheritance, none of which is a filter change - needs it split
-into separate, concretely-scoped issues before any one part is buildable),
-[#572](https://github.com/wekan/wekan/issues/572) (label add/remove as its own
-controllable Notification Settings option - the activity feed entry it asks
-for already exists (`models/cards.js`'s `cardLabels()` hook logs
-`addedLabel`/`removedLabel`, wired the same way `cardMembers`/`cardAssignees`
-are); what is genuinely missing is the option. The 3-tier Notification
-Settings system (`models/lib/notificationSettings.js`,
-`resolveNotificationSetting()`) resolves a member/board/admin override, but
-only for the two transport SERVICES (`tray`, `email`), not per activity
-type - there is no catalog to register "label added/removed" into yet, so
-adding it means building that per-type catalog first, a larger change than
-one more key).
-
-</details>
-
-<details>
-<summary>Trello/Jira/Kanboard/Nextcloud Deck/Gitea gaps investigated but not built this pass.</summary>
-
-Researched against WeKan's actual current code (not assumed) to find what is
-genuinely still missing after this session's landed work, then scoped down
-to the smallest well-understood piece (card recurrence, added above) rather
-than a shallow pass across all five tools. What is investigated but deferred:
-**Jira issue TYPES** (Bug/Task/Story/Epic as a first-class
-card attribute with its own icon set and swimlane-per-epic grouping - the
-existing custom-field mechanism can represent the VALUE but not the icon/
-swimlane-grouping behaviour Jira gives a type, so this needs a decision on
-whether to build it as a special custom field or a new schema concept before
-any UI is worth writing). **Kanboard color-coded categories** (a per-board
-tag distinct from labels, used for at-a-glance visual grouping rather than
-filtering - overlaps enough with labels that it needs a maintainer decision
-on whether it is a genuinely separate concept or a label-color affordance
-that already exists).
-**Nextcloud Deck auto-archival after N days of inactivity** (overlaps the
-card-recurrence scan job's shape closely enough to reuse
-`SyncedCron`/`models/lib/*Schedule.js` once built, but is a separate
-feature - archiving instead of cloning - and needs its own opt-in field and
-UI, not a variant of recurrence). None of these needs Internet access to
-run - all are genuinely on-premise-buildable - they are deferred for scope,
-not for a missing on-premise capability.
+endpoint, environment/infrastructure this sandbox cannot stand up or verify).
 
 </details>
 
@@ -1432,72 +1481,22 @@ minicard, a checkbox custom field's tick/cross icon, per-board default label
 text visibility, and custom-field sort order. Needs the maintainer either to
 describe the screenshot's blue markup or to pick which additional visual
 property should become the customizable one before this can be scoped),
-[#3275](https://github.com/wekan/wekan/issues/3275) (generate thumbnails for
-image attachments, referencing Meteor-Files' image-processing documentation, so
-minicard covers and the attachment list preview a smaller resized image instead
-of the full original. Confirmed NOT built: `models/attachments.js`,
-`models/attachments.server.js`, `client/components/cards/minicard.jade` and
-`client/components/cards/attachments.jade` still read `cover.link('original')` /
-`{{link}}` with no other version, and the client override of `Attachments.link`
-(`models/attachments.js`) ignores its `version` argument entirely, always
-resolving through `generateUniversalAttachmentUrl` to `/cdn/storage/attachments/
-<fileId>` with no version selector. `sharp` IS already a project dependency
-(used today for GIF handling in `server/lib/imageGif.js`), so the image-
-processing half is not the blocker. What is missing is the plumbing around it:
-`server/routes/universalFileServer.js` serves a single stored file per
-attachment ID with no version query parameter, and attachment storage spans
-four independently-implemented backends (filesystem, GridFS, S3/Azure/GCS, each
-its own `FileStoreStrategy` in `models/lib/fileStoreStrategy.js` /
-`attachmentStoreStrategy.js`) that would each need to persist and serve a second
-"thumbnail" version safely alongside the original. Building that end-to-end
-touches the same `Attachments.onAfterUpload` hook and upload/serving routes that
-concurrent MIME-validation work (#3274) was editing live in this same session,
-so it needs a maintainer decision on the URL/version contract (a `?v=thumbnail`
-query parameter vs. a distinct route, and whether older attachments get a
-backfill or only fall back to the original) before it is safe to build without
-colliding with that other in-flight change),
-[#3249](https://github.com/wekan/wekan/issues/3249) ("semi-open" boards -
-visible to every logged-in user but excluded from search-engine indexing.
-WeKan's `permission` field is only `public`/`private` today
-(`models/boards.js`); there is no `noindex`/robots concept anywhere in the
-codebase. A third tier is more than a flag: it changes what the Public
-Boards page, the board publication's visibility selector
-(`models/lib/boardVisibilitySelectors.js`) and the sitemap/robots routing
-all mean by "public", and needs a decision on the exact rule - e.g. any
-logged-in user vs. only this instance's users, and whether search engines
-are kept out via `robots.txt`/`noindex` meta or by the board simply never
-appearing in an unauthenticated response - before it is worth adding as a
-third `permission` value alongside `public`/`private`),
-[#3256](https://github.com/wekan/wekan/issues/3256) (requests an
-image-coordinate-based "hot area" marker visualization - upload a background
-image, overlay a grid, place clickable card markers on it - a new data model
-and rendering mode outside WeKan's existing list/swimlane structure; needs a
-scope decision before implementation),
-[#3626](https://github.com/wekan/wekan/issues/3626) (a card as a subtask of
-MULTIPLE parents - today `parentId` (`models/cards.js`) is a single field, and
-every ancestor walk (`setParentId`'s #3328 cycle guard, `parentList`,
-`parentString`, the subtask completion counter) assumes exactly one parent;
-turning that into an array or a separate join changes the shape all of them
-read, so it needs a deliberate design decision rather than a quick patch. The
-other two parts of #3626 are done: the completed/total subtask counter was
-already correct (pinned by the #4050 work), and picking an EXISTING card as a
-subtask from the parent card's own UI is now built.),
-[#2460](https://github.com/wekan/wekan/issues/2460) (SQRL login - the report
-is a single comment-free link to https://www.grc.com/sqrl from 2019. SQRL has
-no official Meteor/Node package, unlike accounts-2fa (#3058); confirmed no
-`sqrl` dependency exists in `package.json`. Supporting it would mean
-implementing SQRL's own custom Ed25519-based handshake protocol - not
+[#2460](https://github.com/wekan/wekan/issues/2460) (SQRL login - the
+report is a single comment-free link to https://www.grc.com/sqrl from 2019.
+SQRL has no official Meteor/Node package, unlike accounts-2fa (#3058);
+confirmed no `sqrl` dependency exists in `package.json`. Supporting it would
+mean implementing SQRL's own custom Ed25519-based handshake protocol - not
 OAuth2/OIDC, which WeKan already supports generically via
-`accounts-oidc`/similar - either from scratch or via a third-party library,
-and no well-maintained, actively-updated, MIT/copyfree-licensed Node.js SQRL
+`accounts-oidc`/similar - either from scratch or via a third-party library, and
+no well-maintained, actively-updated, MIT/copyfree-licensed Node.js SQRL
 library is known to exist that a Meteor server integration could trust.
 Hand-rolling an authentication protocol's cryptography is exactly the
 security-critical work that should not be freshly written without extensive
 review. SQRL's real-world adoption peaked around 2013-2016 and has not grown
 since this issue was filed; WebAuthn/FIDO2 passkeys are the passwordless
-standard that gained the adoption SQRL did not. Needs a maintainer decision
-on whether this remains worth pursuing before any implementation is
-attempted.),
+standard that gained the adoption SQRL did not. Needs a maintainer decision on
+whether this remains worth pursuing before any implementation is attempted.),
+
 [#2713](https://github.com/wekan/wekan/issues/2713) (the attachment send path
 now works: a native form checkbox enables authorized live-card file reads,
 immutable byte snapshots and mailer propagation. Filesystem and GridFS delivery
@@ -1532,33 +1531,11 @@ Canonical and legacy Gantt targets now use grouped, authorized titles.).
 <details>
 <summary>Deferred pending a security decision.</summary>
 
-Making WeKan's eight custom URL schemes (`file:`, `thunderlink:`,
-`cbthunderlink:`, `onenote:`, `aodroplink:`, `abasurl:`, `conisio:`,
-`mailspring:`) actually CLICKABLE — the ask in
-[#3218](https://github.com/wekan/wekan/issues/3218). They are registered with
-markdown-it so they are recognised, and two filters then remove the link:
-markdown-it's own `validateLink` refuses `file:` (with `javascript:`,
-`vbscript:` and `data:`), and the viewer's DOMPurify allows only
-http/https/ftp/ftps/mailto/tel/callto/cid/xmpp hrefs. So the schemes have never
-produced a link, and #6588 showed that their only observable effect was a crash.
-Enabling them means relaxing both filters for schemes whose whole purpose is to
-launch a local application from a link somebody else may have written into a
-card — a decision for xet7, not a side effect of a crash fix.
-
-
-Syntax/color highlighting for code blocks in the card viewer (`+viewer`; the
-copy-to-clipboard half of #5149, which asked for both, is done and that issue is
-closed). It IS
-possible — set MarkdownIt's `highlight` option with a highlighter (e.g.
-`highlight.js`) and ship a theme — BUT the viewer's DOMPurify
-(`packages/markdown/src/secureDOMPurify.js`) deliberately strips EVERY `class`
-and `id` attribute (in `FORBID_ATTR` plus a hook, "for CSS injection" safety),
-so a highlighter's `<span class="hljs-...">` output would have its classes
-removed and NO colour would survive. Enabling it therefore requires carefully
-relaxing the sanitizer to allow a TIGHT allowlist of `hljs-*` / `language-*`
-classes on `<span>` inside `pre>code` only, which is a security trade-off xet7
-has not decided on yet (adds a dependency + loosens the XSS sanitizer + needs a
-browser build to verify).
+Both items that waited here were decided on 2026-09-29 and are built in
+Upcoming: custom URL schemes ([#3218](https://github.com/wekan/wekan/issues/3218))
+link only when an administrator lists them, and fenced code blocks are coloured
+by highlight.js with a tight class allowlist inside `pre` only. Nothing is
+waiting on a security decision now.
 
 </details>
 
@@ -1568,21 +1545,22 @@ browser build to verify).
 docs/Features/ImportExport/Format-Coverage.md is the design contract for every
 import/export format. Trello, the canonical WeKan zip, CSV/TSV, XLSX and PDF/
 HTML/SVG already meet it, each with real code and tests. GitHub/Gitea/Forgejo
-was brought up to it this round (second assignee, milestone, state reason,
-comments, an `unsupported` loss report). Six formats in
-models/lib/externalParsers.js / externalExporters.js are still the thin,
-intentionally best-effort stub each got when the shared import/export
-plumbing (validation boundary, checkpoints, one import page) landed: Jira
-(no ADF description, no custom fields, no pagination), Kanboard (no
-subtasks/comments), NextCloud Deck (no ACL/attachments/comments), OpenProject
-(no hierarchy/relations/watchers/custom fields), Asana (no
-subtasks/dependencies/stories/custom-field values) and Zenkit (no hierarchy/
-members/item-level custom fields, no loss report). Each needs its own
-fixture/spec pass, the way GitHub just got one - not a shared shallow bump.
+was brought up to it earlier (second assignee, milestone, state reason,
+comments, an `unsupported` loss report). The Jira, Kanboard, Nextcloud Deck,
+OpenProject, Asana and Zenkit IMPORT adapters now have their own fixture/spec
+passes (see Upcoming): comments, subtasks/hierarchy, dependencies, custom
+fields, dates, members and a loss report recorded in Problems → Recovery.
+The import page now shows the loss report itself (see Upcoming). Still open
+for them: (2) file CONTENTS - these JSON sources carry
+attachment metadata only, so bytes need live API connectors with credentials;
+(3) Deck sharing rules, OpenProject watchers and Asana followers have no
+safe mapping (an import never grants access); (4) Zenkit's native
+single-file export is unverified because Zenkit publishes no schema. The
+EXPORT formatters now carry what each importer reads (see Upcoming).
 
-Additional formats named but not yet researched or built: the Leo literate
-editor's `.leo` outline format, and whatever else other kanban/outline tools
-use for import/export that WeKan does not read or write yet. Each new format
+Additional formats not yet researched or built: whatever other kanban/outline
+tools use for import/export that WeKan does not read or write yet (the Leo
+`.leo` outline is done, see Upcoming). Each new format
 costs roughly what Markdown (this round's new format) cost: a parser, a
 formatter, tests, UI wiring in the import picker and export menu, and - since
 every user-visible string needs one - a new translated string across all 234
@@ -1593,6 +1571,2246 @@ the Markdown commit as the template.
 
 </details>
 </details>
+
+# v12.10 2026-09-29 WeKan ® release
+
+**In short:** **Security** blocks private-data disclosure through card and board
+copying, and card copies reject invalid destinations. **Pulse** adds an annual
+archived-card grid. **Card text** colours code blocks and links the custom URL
+schemes an administrator allows. **Scrum History recovery** retains completion
+evidence, and API callers can retry undo/redo by request ID. **Imports** from
+Kanboard, Nextcloud Deck, OpenProject, Asana, Zenkit and Jira now bring
+comments, subtasks, custom fields, hierarchy and dates, keep source creation
+dates, parse only sanitized input and report what they could not import;
+**Leo** `.leo` outlines import and export.
+**FerretDB on MySQL** no longer drops large integers from range queries.
+**Rules** gain variables, several triggers and actions, and start-date
+reminders; **SAML** supports Assertion-only signatures with redirect login.
+
+This release fixes the following CRITICAL SECURITY ISSUE of [CopyIdentityBleed](https://wekan.fi/hall-of-fame/copyidentitybleed/):
+
+**Card copying** - keep the authorized source identity intact.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1e44a1ffc">Restrict card-copy overrides to text and preserve the source</a>. Thanks to xet7.</summary>
+
+A local regression reproduced copying another private board's checklist by
+replacing the source card ID after membership checks. Accept only title and
+description strings on a separate card object; reject other fields before
+sorting, insertion, child copying or activity writes. The source retains its
+identity, methods, text and sort. Existing admin-only field guards still apply.
+
+Record extra-field attempts as CopyIdentityBleed in Admin Panel → Problems,
+without supplied values or target identifiers. Existing high-severity policy
+blocks the attempting account. Malformed title/description text remains an
+input error without attack logging or account blocking. Logging failure cannot
+bypass rejection.
+
+Five focused Node suites and five Chromium cases pass, including the reproduced
+private-child boundary, actor-attributed summaries, malformed input, legitimate
+copies, the actual dialog, admin-only fields and Scrum copy semantics. The
+shared-form regression now checks the existing multiline title control.
+Register CopyIdentityBleed and six earlier fixes in the security-test inventory;
+the six existing security suites pass and recorded coverage gaps stay unchanged.
+The
+[boundary audit](docs/Security/Card-Copy-Boundary-2026-09-29.md) records the
+remaining assigned-only, destination-placement and concurrency review. Other
+browser/backend matrices and production data remain unverified. Existing
+Upcoming archive and Scrum entries retain their recorded regression coverage.
+
+</details>
+
+**Board copying** - copy only the board the caller was authorized for.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/94931c7ab">Refuse board-copy properties that could replace the source board's identity</a>. Thanks to xet7.</summary>
+
+The `copyBoard` method assigned every caller-supplied property onto the source
+board before copying it, `_id` included. The copy loads lists, cards and their
+children by that identifier, so a board admin could pass another board's ID and
+duplicate a private board they are not a member of. `boardCopyProperties`
+now accepts only `title`, `sort`, `type`, `withoutCards` and `copyOptions`, and
+the copy is made from a separate object, so the source keeps its identity. The
+REST copy route accepts only a string title, applied the same way.
+
+A property outside that list is refused and recorded as CopyIdentityBleed in
+Admin Panel → Problems, without the supplied values. A wrong type on a
+supported property is an input error, not an attack. Logging failure cannot
+bypass the refusal. A unit suite covers the accepted and refused properties.
+Its source scan fails if caller input is assigned onto the source board again,
+or if the source board object is the one copied. A Chromium case reproduces the
+`_id` override and checks the refusal, the Problems record and malformed input.
+All 24 board-copy Chromium cases pass.
+
+</details>
+
+and fixes the following SECURITY ISSUES found by GitHub CodeQL code scanning:
+
+- [Alert 545: the import boundary test drives the real sanitizer](https://github.com/wekan/wekan/commit/9dd1f20a8):
+  its stand-in stripped tags in one pass, which leaves `<script` from
+  `<<script>script>`. It now uses `server/lib/inputSanitizer.js`, and a
+  tree-wide suite requires every tag-stripping replace to loop to a fixed point
+  or to write non-HTML output. No shipped code had the one-pass form, so there
+  is no Hall of Fame row or Problems key. Thanks to GitHub CodeQL and xet7.
+- [Alert 546: the full-app test loader check escapes every regex metacharacter](https://github.com/wekan/wekan/commit/1a43b470a):
+  `tests/mochaFullApp.test.cjs` escaped only `.` in a file name before building
+  a RegExp. A complete escape now treats the name as data. Test-only code, so
+  there is no Hall of Fame row or Problems key. Thanks to GitHub CodeQL and
+  xet7.
+
+and adds semi-open boards, a Map view, auto-archive, archive reporting, code
+highlighting, custom URL schemes, attachment thumbnails and improves Scrum
+History recovery:
+
+**Subtasks** - one card under several parents.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a904ca880">Let a card be a subtask of several parent cards</a>. Thanks to ikomhoog and xet7.</summary>
+
+"A must be done before B and C can start, so A is a subtask of both"
+([#3626](https://github.com/wekan/wekan/issues/3626)). A card keeps every parent
+in `parentIds`, with `parentId` still the primary one, so everything that reads
+one parent keeps working. Picking an existing card as a subtask adds a parent
+instead of replacing it; Card → More lists and removes the other parents.
+Children are found under any parent - the subtask list and counter, the parent
+filter, rule email Details and the exports - and the loop guard and board
+publication walk every parent. Archiving or deleting a card takes only the
+subtasks it is the one parent of; a shared subtask just loses it. Every parent
+written must be on a board the writer can see (GHSA-jvv9-498p-hxrg), and board
+copy and WeKan import remap them all. Unit suites pin the rules and a tree-wide
+scan for children lookups by `parentId` alone; a server Mocha test runs archive
+and delete against real hooks; Chromium cases add a second parent, refuse a
+loop and remove a parent. 156 subtask-related Chromium cases pass.
+
+</details>
+
+**Board views** - a Map of the board's cards.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3d891ace0">Add a Map board view: cards as markers on an uploaded image</a>. Thanks to javen9881 and xet7.</summary>
+
+A board admin uploads an image - a floor plan, a site map, a drawing - and the
+cards become markers on it, coloured by their first label and numbered like
+the card ([#3256](https://github.com/wekan/wekan/issues/3256)). Members who can
+edit drag a card from "Not on the map", or choose it and click where it
+belongs, and drag a marker to move it; a click opens the card. A place is
+stored as percentages of the image (`mapX`, `mapY`), so a marker keeps its spot
+at any size, and the image is a board attachment served under the board's own
+access rules. Read-only members see the map but cannot change it. A unit suite
+covers the position maths, including a null coordinate that must not count as
+the top-left corner, and every registry the view needs; a Chromium case
+uploads an image, places cards both ways, moves a marker, opens a card and
+checks a read-only member. New strings are English, pending Transifex.
+
+</details>
+
+**Board visibility** - a board every signed-in user can see.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f122a8287">Add semi-open boards, visible to every signed-in user</a>. Thanks to relikd and xet7.</summary>
+
+A board's visibility can be "Signed-in users" (`permission: 'instance'`,
+[#3249](https://github.com/wekan/wekan/issues/3249)): every signed-in user of
+the instance reads it, nobody signed out does, and only its members edit it,
+as on a public board. One pure rule, `models/lib/boardPermission.js`, feeds
+`isVisibleBy` and the shared selector builder, so publications, All Boards,
+search, exports, attachments, backgrounds, watching, filter presets and rule
+destinations follow it. Link previews, public avatars, the no-token export
+branch and anonymous archived lists stay public-only; a source suite lists every
+remaining public-only check so a new one gets reviewed. The Public page and `GET
+/api/boards` include instance boards only for a signed-in caller, "private
+boards only" refuses them like public ones, and a WeKan export keeps the setting
+on import. New strings are English, pending Transifex. Chromium cases cover the
+visibility menu, a non-member reading but not writing, a signed-out visitor
+seeing nothing (with a public board as the control) and the private-only policy.
+
+</details>
+
+**Attachments** - small images where images are shown small.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2be3ded5b">Serve image attachments as thumbnails</a>. Thanks to blaggacao and xet7.</summary>
+
+The card's attachment gallery and the minicard cover downloaded every image at
+full size ([#3275](https://github.com/wekan/wekan/issues/3275)). A raster
+image now has `/cdn/storage/attachments/<id>/thumbnail`: a WebP of at most 512
+pixels, made with sharp under the GIF converter's input limits and kept in a
+bounded in-memory cache keyed by file version. It is the attachment route
+itself, after board access, the download block and limit and the storage read
+flag, so a thumbnail is readable exactly when the original is, and it is cached
+privately only. SVG and non-images have none; a damaged image redirects to its
+original. A unit suite covers eligibility, conversion, the cache and the order
+of checks; a Chromium case fetches a 2000-pixel PNG as a 512-pixel WebP, checks
+revalidation, SVG, a damaged file, the gallery tile and a signed-out request on
+a private board.
+
+</details>
+
+**Card text** - code blocks in colour, and links an administrator allows.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9486ea3d4">Highlight fenced code blocks in card text</a>. Thanks to xet7.</summary>
+
+A fenced block with a known language (```` ```js ````) is coloured by
+highlight.js 11.12.0, a new BSD-3-Clause dependency; a block with no or an
+unknown language stays plain. Both sanitizer passes keep only `hljs-*` and
+`language-*` classes, only on `code` and `span` inside `pre`, through a hook
+added for that call; every other class is still removed. A jsdom suite checks
+both passes against real highlight.js output, and a Chromium case checks the
+colour and that no class appears outside code.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b7a3b29a2">Link custom URL schemes only when an administrator lists them</a>. Thanks to chrisi51 and xet7.</summary>
+
+Admin Panel → Features → URL stored "Custom URL Schemes" but nothing read it:
+eight hardcoded schemes were recognised and then refused by markdown-it and
+both sanitizers, so none was clickable ([#3218](https://github.com/wekan/wekan/issues/3218)).
+The listed schemes now pass all three and nothing else does; the setting is
+empty by default. `javascript:`, `data:`, `vbscript:` and similar schemes are
+never linked, in the app's parser and again inside the markdown package. A
+listed scheme opens its application in place. The new hint under the field is
+English, pending Transifex. Unit suites cover parsing, the app/package rule
+agreement and both passes; a Chromium case checks bare, markdown and raw HTML
+links with the list empty and set.
+
+</details>
+
+
+**Archiving** - cards that nobody touches archive themselves.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/22c62b7b3">Archive cards automatically after a chosen number of days without activity</a>. Thanks to xet7.</summary>
+
+Board Settings gains Nextcloud Deck's auto-archive: a board admin sets a number
+of days from 1 to 3650, and an hourly job archives the cards whose last
+activity is older, with their subtasks and an `archivedCard` activity
+attributed to the board creator, as scheduled rules are. Empty means off,
+templates are never archived, and each run takes at most 200 cards per board.
+The same date drives the card-aging fade, so a card fades before it goes. A
+node suite covers the day rules and wiring, a server Mocha test runs the job
+against real collections, and a Chromium case sets and clears the field. New
+strings are English, pending Transifex.
+
+</details>
+
+**Reports** - show archived-card contributions by calendar date.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1c200407a">Show archived-card contributions in Pulse</a>. Thanks to xet7.</summary>
+
+Board View → Pulse now shows months across an annual grid and day numbers down
+it. Green cells darken as archived-card counts increase. Hover or keyboard focus
+shows the count and colored label names; Escape dismisses the tooltip and taps
+also show details below the grid. Year selection and Apply reload the report.
+
+Count currently archived cards by their UTC archive date. Restored cards and
+legacy archives without valid dates are excluded. All three assigned-only roles
+see only their assigned cards and labels; private-board access is checked before
+and after reading. Existing activity-chart exports remain separate.
+
+Four focused Node suites and six Chromium cases pass, including leap days,
+invalid years, restored/undated cards, escaped colored labels, foreign-board and
+hidden-label isolation. A further browser run verifies focus/hover color,
+compact rows and tooltip dismissal. The offline source audit passes. Other
+browsers and database backends were not run for this item.
+
+The [report documentation](docs/Features/Reports/Archived-Contributions.md)
+records the archive lifecycle and refresh behavior. Upcoming's existing Scrum
+recovery entries retain their recorded regression coverage. The remaining
+non-translation TODO work, including keyboard recovery, shared writer
+coordination, database conformance and deployment checks, stays open.
+
+Fixes [#5444](https://github.com/wekan/wekan/issues/5444).
+
+</details>
+
+**Copy destinations** - keep new cards on valid destination containers.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c35ba4b35">Validate server card-copy destinations before reads and writes</a>. Thanks to xet7.</summary>
+
+A local regression reproduced copying into another board's list while retaining
+the requested board ID. Shared server card copying now requires an existing
+board, list and swimlane belonging to that board, with none soft-deleted. The
+DDP method validates before reading sort order; the shared copy entry point
+validates before remapping fields, allocating card numbers or copying children.
+REST returns HTTP 400 for invalid destinations.
+
+Preserve board-wide lists and archived-container board copies. Invalid or stale
+picker selections are input errors, without attack records or account blocking.
+Caller permissions still apply; validation does not make concurrent moves or
+deletions transactional, or replace checks on client-side collection writes.
+
+Three focused Node suites and nine Chromium cases pass, including DDP/REST
+negative cases without writes or counter changes, valid cross-board placement,
+ordinary copy UI, the earlier identity boundary, and rule/Scrum/list/swimlane
+copy regressions. The offline source audit passes. The
+[copy boundary audit](docs/Security/Card-Copy-Boundary-2026-09-29.md) records
+remaining assigned-only, client-template, board-property and concurrency review.
+The existing Upcoming security, archive and Scrum entries retain their recorded
+regression coverage. Other browsers and backends were not run for this change.
+
+</details>
+
+**SAML login** - support identity providers that sign only the Assertion,
+and redirect login.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d6503b43f">Choose which SAML signatures are required, and log in by full-page redirect</a>. Thanks to xet7.</summary>
+
+SAML 2.0 lets an identity provider sign the Response, the Assertion or both.
+WeKan always required a signed Response - node-saml's default, never
+overridden - so an identity provider that signs only the Assertion failed with
+"Invalid document signature" before the Assertion was even checked. Admin
+Panel → People → SAML now has `SAML_IDP_PROFILE`: `standard` keeps the previous
+behaviour; `signed-assertion-redirect` requires the Assertion signature instead
+and logs in by full-page redirect. `SAML_WANT_RESPONSE_SIGNED`,
+`SAML_WANT_ASSERTIONS_SIGNED` and `SAML_LOGIN_FLOW` can each be chosen on their
+own, or left at Default to follow the profile. A configuration that requires
+neither signature is refused, and SAML validation errors now reach the
+administrator instead of "Internal server error".
+
+In redirect mode the browser leaves WeKan and returns to
+`/sign-in?samlToken=<random id>`, which the page exchanges for a login; the
+assertion never enters the address. Only a token started in the same browser
+tab is exchanged, so a link cannot sign somebody into another account.
+
+A test signs responses with a throwaway key and runs them through the shipped
+node-saml 5.1.0: an Assertion-only signature fails with the reported error under
+`standard` and succeeds under the new profile, while tampered assertions and
+wrong certificates are refused. Seven Chromium cases pass, including a full
+redirect login through the fixture identity provider and a token link opened
+in another browser. The new message is English, pending Transifex.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a5930f57d">Show blocked SAML account takeovers and foreign comment edits in Problems</a>. Thanks to xet7.</summary>
+
+A SAML login that would take over an existing non-SAML account with the same
+username (with `SAML_MERGE_EXISTING_USERS` off) was refused, but its canary
+`saml.account-conflict` was not in the canary catalog, and neither was the REST
+comment-edit refusal's `comment.foreign-edit`. Both attempts reached Admin
+Panel → Problems only as an "unknown" canary, without category, severity or
+description. They are now catalogued - the SAML one under a new
+`SamlAccountMergeBleed` category, the SAML counterpart of
+CasAccountMergeBleed. The canary coverage test now scans every canary call in
+the app and its packages and fails on any id missing from the catalog; with
+either entry removed it names the id and the file.
+
+</details>
+
+**Rules** - variables in action and trigger values, and start-date reminders.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b1dbea215">Accept rule variables in trigger values</a>. Thanks to xet7.</summary>
+
+A trigger's list, swimlane, title, checklist and user fields may use the
+variables actions resolve - `{creator}`, `{assignees}`, `{members}`,
+`{customField:Name}` and the rest - read from the card when the rule is
+checked: "when a card is moved to the list named in its `{customField:Stage}`".
+The rule engine also fetches this board's triggers that hold a token and
+resolves them; every other field keeps the exact-or-wildcard rule. People
+tokens match any one named user, "by `{assignees}`" is compared by username,
+and an unknown token stays literal. The editor shows a new hint (English,
+pending Transifex). A unit suite covers resolution and whole-trigger matching;
+a Chromium case moves two cards to the same list and only the one whose field
+names it fires the rule.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0bc06c801">Pick rule variables from a list instead of typing them</a>. Thanks to chessboards and xet7.</summary>
+
+The trigger and action editors have an "Insert variable" list: the card's
+people, its card, list and board names, and one `{customField:Name}` per custom
+field of the board. Picking one inserts it at the caret of the text field last
+focused. Admin-only fields are not offered, since rules do not read them, and
+neither is a name with a brace, which the token syntax cannot spell. A unit
+suite checks that every offered token resolves and that a missing selection
+appends; a Chromium case inserts into two fields in turn and finds the
+admin-only field absent. The label is English, pending Transifex.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a91855993">Resolve people and custom-field variables in rule action values</a>. Thanks to xet7.</summary>
+
+Rule actions reuse the email `{token}` syntax. `{creator}`, `{assignees}` and
+`{members}` name the triggering card's people - usernames in text, email
+addresses in the send-email recipient, where people without an address are
+left out - and `{customField:Name}` reads a custom field's displayed value,
+never an admin-only field. "Add/remove member" accepts a token that names
+several people; list and swimlane names of move actions are resolved too.
+Literal values behave exactly as before and unknown tokens stay literal.
+Node suites cover substitution and the recipient form; three Chromium cases run
+real rules (assign `{creator}`, move to the list named `{card}`, an unknown
+token assigning nobody), and the existing rule suites still pass.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0f8d35fe7">Let scheduled rule triggers watch a card's start date</a>. Thanks to xet7.</summary>
+
+A scheduled "due" trigger can now choose Due Date or Start, so a rule fires when
+a card starts within N days or should have started N days ago; with
+`{assignees}` as the recipient the reminder reaches the card's assignees. The
+date filter is a pure module with unit tests, and triggers saved before keep
+watching the due date. Fixes [#4278](https://github.com/wekan/wekan/issues/4278).
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/69eeb00c8">Let a rule have several triggers and several actions</a>. Thanks to xet7.</summary>
+
+A rule keeps its own trigger and action and may add up to ten more of each: it
+fires when any of its triggers fires - once per activity, even when several
+match - and runs its actions in order, its own first. Rule details lists the
+extra parts with Add another trigger / Add another action and Remove; the new
+methods keep the board-admin and cross-board destination checks, and a button
+cannot be an extra trigger. Ordinary, scheduled and button rules, the durable
+Sync rule plan, rule History, deletion, board copy, WeKan export/import, the
+rules JSON export/import, the REST representation and the admin rules report
+handle every part. Node suites cover ordering, deduplication and remapping;
+Chromium cases run a real rule through its added trigger and action, check
+Remove and refuse non-admins. With the variables above this completes
+[#4294](https://github.com/wekan/wekan/issues/4294). Fixes
+[#2953](https://github.com/wekan/wekan/issues/2953).
+
+</details>
+
+**Notifications** - due-date reminders per board, and which activity notifies.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2845fc9f9">Let members choose which kinds of card activity notify them</a>. Thanks to bhagyas and xet7.</summary>
+
+Notification Settings chose where a notification goes, not what about
+([#572](https://github.com/wekan/wekan/issues/572)). Member Settings →
+Notifications now lists the kinds of card activity - labels, members,
+assignees, comments, moves, dates, checklists, attachments, custom field
+values, archiving and creation - and an unticked kind reaches neither the bell
+nor email. It is checked where each recipient's channels are decided, when the
+plan is frozen and again before delivery. Due-date reminders and @mentions
+always arrive. A suite requires every named activity type to be in a group or
+deliberately unmutable; a Chromium case mutes labels through the member menu
+and sees a comment arrive while the label change does not, then unmutes and
+sees the next label change arrive. New strings are English, pending Transifex.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/58d166029">Set due-date reminder days and webhook delivery per board</a>. Thanks to xet7.</summary>
+
+Board Settings → Notifications now has due-date reminders. A board's own
+offsets override `NOTIFY_DUE_DAYS_BEFORE_AND_AFTER` (an empty list turns them
+off, an empty field restores the server default), and a switch sends the
+board's reminders to all its enabled outgoing webhooks, whatever activities
+those subscribe to. The reminder scan now runs when either the environment
+variable or a board sets offsets, and writes reminders only for the offsets
+each board uses. A validated method limited to board admins stores the setting.
+
+Unit tests cover parsing, per-board selection and webhook routing; two Chromium
+cases cover the popup, invalid input and non-admin refusal. The hourly scan
+itself was not run in the browser. The new strings are English, pending
+Transifex. Fixes [#5323](https://github.com/wekan/wekan/issues/5323).
+
+</details>
+
+**Databases** - FerretDB answers MySQL range queries correctly and uses its
+OpLog index.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ed73253da">MySQL range queries no longer drop large integers, and the OpLog tail uses its index</a>. Thanks to xet7.</summary>
+
+Run live once Docker was available, the conformance catalogue - extended with
+Date, Timestamp and large-integer ranges - found that FerretDB's MySQL backend
+dropped documents from range queries: MySQL 9.7 types some positive integers
+(1577934245000, not 2147483648) as `UNSIGNED INTEGER`, which its number guard
+did not list. The same cause had made a date range answer no rows, so Date and
+Timestamp ranges were never pushed down on MySQL. The previous FerretDB build
+fails the new case; with the fix in wekan/FerretDB `eb8c8834` all 110 cases
+agree on SQLite, PostgreSQL 18, MySQL 9.7 and MariaDB 12.3.
+
+EXPLAIN on those engines also showed the capped-collection `ts` index was never
+used by the pushed range, so an idle OpLog tail scanned the whole table on
+every poll. MySQL and MariaDB now also receive the indexed DECIMAL expression
+(non-strict, so rounding keeps a superset) and PostgreSQL the literal key; all
+three now show index range scans. SAP HANA was not run: its image is amd64-only
+and licensed. This confirms #6509 for MySQL and MariaDB but does not close it.
+
+</details>
+
+**History** - verify completed operations and preserve unfinished recovery.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9e3abe02a">Show an unanswered keyboard undo or redo, with Try again and Forget it</a>. Thanks to xet7.</summary>
+
+A Ctrl+Z whose reply was lost is kept and retried by the next keystroke with
+the same request ID, but nothing on screen said it was still waiting. The board
+now shows a notice while it has such a request, also after a reload: Try again
+resends that same request, so it can never take back a second change, and
+Forget it drops it. A node suite checks the wiring and parses the modules; a
+Chromium case plants a lost reply, forgets it, ignores other boards' and
+expired requests, and retries one until the server answers. New strings are
+English, pending Transifex.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c659b4bbc">Keyboard undo and redo retry a lost request instead of repeating it</a>. Thanks to xet7.</summary>
+
+Ctrl+Z and Ctrl+Y called the History methods without a request ID, so a reply
+lost to a disconnect or reload left the user pressing again and undoing a
+second Scrum change. Each keystroke now carries an ID kept in `sessionStorage`
+until the server answers; the next keystroke on that board retries it first,
+and in the same direction the retry is the keystroke. Unanswered IDs expire
+after ten minutes. Non-Scrum rows, which keyed requests do not cover, are
+refused unchanged and the keystroke falls back to the ordinary call - a
+deliberate exception now documented in the Scrum design for maintainer review.
+
+A Node suite covers planning, expiry, lost replies, fallback, definitive errors
+and blocked storage. In Chromium, a Ctrl+Z creates one keyed request, a stored
+request whose undo already ran is retried after a reload without undoing
+another change, and an ordinary title edit is still undone; all twelve Scrum
+History cases pass. Visible recovery controls need new translated text and
+remain in TODO Later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6b44f61b2">Retry keyed Scrum undo and redo without advancing the stack again</a>. Thanks to xet7.</summary>
+
+The public History undo/redo methods now accept an optional caller-persisted
+request ID for Scrum operations. Persist the first selected row and source hash
+before mutation; competing builders adopt the stored selection. Retries keep
+the same result after lost cleanup responses, browser reloads and subsequent
+opposite operations. New intentional actions use new IDs. Empty-stack results
+remain empty, and unsupported non-Scrum selections remain explicit refusals.
+
+Recheck board and History access before application and response. Reject IDs
+reused in another board/direction, corrupt requests, changed/missing sources
+and missing original intent records when recovery evidence remains. The new
+request collection is private, indexed and has no TTL. History undo/redo calls
+are limited per account. Existing one-argument callers remain compatible.
+
+Thirty focused Node suites pass, with the opt-in DDP lifecycle case run
+separately against the local app. MongoDB coverage uses independent request
+builders and lost insertion replies. Two full-app cases pass, including four
+concurrent calls to one new redo, uncertain cleanup, later opposite completion,
+revocation and missing intent evidence. All thirteen Chromium scenarios pass,
+including reload/retry, new operations and member/admin private-storage denial.
+The source audit passes. Both earlier Upcoming recovery entries retain their
+unit, database, full-app and browser regression coverage.
+
+Keyboard shortcuts still call the unkeyed path. Caller-side persistence and
+visible recovery controls, non-Scrum replay, retention and shared coordination
+across server processes remain unfinished. The API contract and retry rules are
+documented in the Scrum design. This does not make card/History writes atomic.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/16b17c494">Persist completion before removing Scrum recovery checkpoints</a>. Thanks to xet7.</summary>
+
+Store immutable private receipts binding the operation, actor, source History
+hash and exact saved plan before checkpoint cleanup. Verify storage rather
+than trusting insert replies. Preserve the first completion timestamp, reject
+changed or damaged receipts and keep unfinished evidence on failed reads.
+Checksums preserve data types and tolerate storage field ordering.
+
+The internal finalizer can retry from the original journal after deletion and
+an uncertain confirmation read, even on a fresh database connection. It does
+not rewrite History or undo timestamps and never removes a successor operation.
+A changed checkpoint reusing the old operation ID remains a conflict. Receipt
+storage has a recovery index, no TTL, no publication and denied browser writes.
+
+Twenty-seven focused Node suites pass without skips, including real MongoDB
+and the DDP lifecycle case. Fourteen affected suites pass again after the final
+checksum change. The full-app confirmation case passes with lost deletion and
+failed readback; all eleven Chromium History/private-storage scenarios pass.
+The pre-completion browser fixture now removes its completed receipt before
+simulating unfinished finalization, preserving its corruption assertions.
+The source audit passes, and both Upcoming entries have regression coverage.
+
+Public undo/redo requests still need caller-persisted identities and recovery
+controls; repeating a stack request is not an idempotent lookup. Receipt
+retention, atomic writes and shared writer coordination remain in TODO Later.
+Other non-translation requirements and external verification blockers remain
+open. No release or remote write was performed.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3b7eaedee">Verify Scrum History checkpoint removal before completing recovery</a>. Thanks to xet7.</summary>
+
+Read the board checkpoint after its exact conditional deletion. A positive
+write reply alone no longer completes restoration. Reconcile a lost reply only
+when storage confirms absence; reject failed reads and successor checkpoints
+without deleting again. Retain the original undo timestamp and stable timeline
+identity across retries.
+
+Thirty-one focused Node suites pass without skips, including MongoDB and DDP
+integration. The full-app confirmation case covers false deletion success,
+retry and a persisted deletion whose reply is lost. Nine Chromium History
+scenarios pass, including compound undo/redo, permissions, interrupted recovery,
+superseded redo and newer revisions. The source audit passes with advisory
+fingerprint warnings. Existing Upcoming regression evidence remains recorded.
+
+Record explicit resumption of non-translation work. Cross-document writer
+coordination, durable completion receipts and recovery after an uncertain final
+read remain in TODO Later. This readback does not make restoration atomic.
+
+</details>
+
+and brings the external imports up to their format contracts:
+
+**External imports** - Kanboard, Nextcloud Deck, OpenProject, Asana, Zenkit and
+Jira keep what each source has a WeKan place for, and report the rest; Leo
+outlines are a new format.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/286ed906a">Import and export the Leo literate editor's .leo outlines</a>. Thanks to xet7.</summary>
+
+A new import source and export format. Top-level nodes become lists, their
+children cards with the node body as the description and a marked node as
+done, and deeper nodes checklists; clones keep their headline and children,
+and a list's own body text is reported as a loss. The board title travels in a
+`wekan_board` header attribute that Leo ignores. The raw XML is parsed on the
+server only, in XML mode that reads no DTD or external entity; a node cloned
+inside itself cannot loop and a clone bomb is refused at 100,000 nodes, and the
+parsed tasks then pass the shared import sanitizer. A suite round-trips an
+export, imports a hand-written outline and refuses hostile XML; Chromium cases
+import through the page and refuse non-Leo text without creating a board, and
+the export menu link is checked with every other format.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7e784d4f9">Export comments, checklists, parents, people and custom fields to other tools</a>. Thanks to xet7.</summary>
+
+The Kanboard, Nextcloud Deck, OpenProject, Asana, Zenkit and Jira exports
+carried title, description, due date and labels, while WeKan's importers for
+those tools read far more, so a board sent out and brought back lost its
+comments, checklists, parent links, people, dates and custom fields. Each
+formatter now emits them, when selected, in the shape its importer reads; a
+suite runs every export back through that importer, and a Chromium case reads a
+real comment and checklist from the Kanboard and Asana routes and checks that
+the selection removes them. The formatters are a pure module, and Kanboard now
+uses the shared route with the export selection and the admin-only custom field
+check.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e0bf4cbb7">Show a card's Jira issue type on the minicard with an icon</a>. Thanks to xet7.</summary>
+
+Jira imports keep each issue's type, but it showed only as a Scrum text field on
+boards with Scrum turned on. The minicard now shows it first in its badge strip
+on every board, with an icon for the usual types - bug, story, task, sub-task,
+epic, improvement, feature, spike, test - matched loosely, and a neutral icon
+for a site's own types; Scrum's minicard text copy is gone. Kanboard categories
+stay labels. A unit suite covers the mapping and parses the minicard module; a
+Chromium case shows a bug icon, a custom type and no badge on a board without
+Scrum.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f8b9f26c5">Show the import loss report on the import page</a>. Thanks to xet7.</summary>
+
+An import that completed with warnings used to open its board at once, so the
+person importing never saw what was left behind; only an administrator could,
+in Problems → Recovery. The import page now stays and lists that report, then
+opens the board from a button; a complete import opens the board as before.
+The server hands back only reports the caller's own import recorded for that
+board in the last hour, with locations and counts but no source values. The
+Chromium import cases use one helper that follows either outcome, and the audit
+case checks the Deck report on the page, none for GitLab, and none for another
+user. New strings are English, pending Transifex. (This change landed inside
+the translation commit named in the link, which shared the staging area; its
+message describes only the Bulgarian part.)
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/bc153a99f">Every external import can bring checklists, comments, dates, archive state and colors</a>. Thanks to xet7.</summary>
+
+All non-Trello, non-WeKan imports go through KanboardCreator, which wrote a card
+and nothing else. A pure planner, `models/lib/importedTaskPlan.js`, now decides
+what a normalized task becomes; the creator inserts checklists, comments with
+their `addComment` activities, and start, end and creation dates, archive
+state, card color and time spent. A comment by an unmapped author is posted by
+the importing user, with the author's name leading the text. Dates that do not
+parse, and Kanboard's `0` for "no date", are no longer stored as Invalid Date
+or 1970. Later commits add several assignees, source order, custom fields,
+hierarchy and dependencies to the same planner.
+
+Seven new Node suites (`importedTaskPlan`, `kanboardImport`, `deckImport`,
+`openProjectImport`, `asanaImport`, `zenkitImport`, `jiraIssueExtras`) cover
+each format's mapping with positive and negative cases. In Chromium,
+`import-export-format-audit.e2e.js` imports every fixture through the real UI
+and reads comments, checklist items, custom fields, labels, dates, parents and
+dependencies back from the database and the opened card; all 38 cases pass.
+Firefox and WebKit were not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ba4157ec1">Kanboard imports subtasks, comments, categories, colors and dates</a>. Thanks to xet7.</summary>
+
+The assembled JSON-RPC document used to reach the creator unparsed, so only
+fields Kanboard spells like the shared task shape survived, and a task with
+only `column_id` landed in the first list. `parseKanboard` resolves column,
+swimlane and category ids, makes subtasks a checklist, keeps comments by
+author, archives closed tasks, maps Kanboard color ids onto the WeKan palette,
+and keeps start, completion and creation dates, time spent, priority and the
+task URL. Estimates, files and task links are reported.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5035b7aa2">Nextcloud Deck imports every assignee, comments, order and archive state</a>. Thanks to xet7.</summary>
+
+The Deck parser kept one assignee and label names. It now keeps every mapped
+assignee, comments from the OCS comments API, archive, done and creation
+times, and stack and card order; trashed stacks and cards are skipped.
+Sharing rules never become board members, because a file naming a user must
+not grant access. External imports now keep the source card order instead of
+sorting every card at 0.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/29785fcd2">OpenProject imports custom fields, comments, hierarchy and relations</a>. Thanks to xet7.</summary>
+
+The parser now reads start and creation dates, spent time from ISO 8601
+durations, priority, category, version, responsible and author, embedded
+comments, the parent hierarchy and embedded relations. Custom fields take their
+names from embedded schemas, and estimated time and progress become number
+fields. The creator makes one typed board custom field per source field and
+links parents and dependencies once every card exists. Links resolve only
+within one import; unknown targets, duplicate ids and parent cycles are
+reported, never guessed.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1d32801cf">Asana imports custom fields, comments, subtasks and dependencies</a>. Thanks to xet7.</summary>
+
+The parser now keeps start, completion and creation dates, custom-field values
+of every Asana kind (number, text, enum, multi-enum, date, people and formula
+display values), comment stories, dependencies as blocking links and the task
+permalink. Subtasks fetched as tasks become child cards; subtasks only embedded
+on their parent become a checklist. Followers and attachments are reported.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/13ea3e9c6">Zenkit imports API entries, hierarchy, members, fields and checklists</a>. Thanks to xet7.</summary>
+
+Zenkit publishes no single-file JSON export schema. Besides the adapter shape,
+the parser now reads Zenkit API entries and elements with the value keys the
+zenkit API client documents: stages, labels, description, dates, persons,
+hierarchy, dependencies, text/number/date fields, checklists, creation dates
+and order. Files, formulas, cross-list references, comments and element kinds
+with no documented value format are reported rather than guessed. The adapter
+shape gains parents, several assignees, fields, comments and checklists, and
+reports keys it does not know. Native single-file export compatibility remains
+unverified.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/be13dd663">Jira imports comments, sub-tasks, parents, custom fields and more labels</a>. Thanks to xet7.</summary>
+
+JiraCreator now imports comments with ADF bodies as text, shown by display name
+and posted by the mapped account; links sub-tasks and child issues imported
+together to their parent, listing the others as a Sub-tasks checklist; makes
+priority, components and fix versions labels; imports `customfield_` values
+named from the search response's `names` map, except the mapped estimate
+field; and keeps the search order instead of sorting every card at -1.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/50a24abce">Record what an external import could not bring over in Problems → Recovery</a>. Thanks to xet7.</summary>
+
+Parsers and the planner returned `unsupported` and `warnings` entries, but
+nothing stored them, so an import that dropped sharing rules or a parent
+outside the file looked complete. The external creators now record one bounded
+`import-completed-with-warnings` Recovery row with the board, the importing
+user and the first paths and reasons; a complete import records none, and a
+member cannot read the row while an administrator can (Node and Chromium
+tests). The import page does not show the report yet: that needs a new
+translated string.
+
+</details>
+
+and fixes the following bugs:
+
+**Board copying** - copies keep their custom fields.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0c0a79078">Copy boards with custom fields again by cloning definitions before cards</a>. Thanks to xet7.</summary>
+
+Duplicating a board with custom fields failed with "Protected custom field".
+The definitions were cloned only after every card had been copied, so each
+card still referenced the source board's fields. The admin-only field guard
+correctly refuses a field defined for a different board. Definitions are now
+cloned first, and cards receive the mapped IDs. A value whose field was not
+copied is dropped rather than left pointing at the source board. The
+"Selective board duplication: all" Chromium case, which failed before this
+fix, passes again.
+
+</details>
+
+**Notifications** - board invitations reach the bell.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/cecf92cf5">Deliver board invitations to the invitee's notification bell</a>. Thanks to CondensedTea and xet7.</summary>
+
+The [#3136](https://github.com/wekan/wekan/issues/3136) in-app notification for
+an existing invitee never ran: its params were declared inside the email block,
+so the call threw a `ReferenceError` that its own catch logged. With them in
+scope, the tray would still have refused an entry with no activity, and a
+second email would have been queued beside the invitation. The invite now
+delivers the membership's `addBoardMember` activity, which the bell already
+renders, to the invitee's tray only, honouring their tray setting. A
+re-activated membership records that activity; re-inviting an active member
+adds nobody. A Chromium case covers delivery, re-invites, re-activation and a
+disabled bell, and fails on the old code; a source guard also fails if any
+server code calls `notify()` again.
+
+</details>
+
+**Popups** - the resize grip at every font size.
+
+- [Centre the popup resize grip with flexbox](https://github.com/wekan/wekan/commit/37508be68):
+  its fixed line-height did not follow the font-scale preset, which the
+  `uiFonts` guard caught. Thanks to xet7.
+
+**Import boundary** - continue with what the boundary returns.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/94115454c">Parse and store only the sanitized import value</a>. Thanks to xet7.</summary>
+
+The shared import boundary returns a new value with prototype keys and active
+markup removed; it does not clean its argument. The Deck, OpenProject, GitHub,
+GitLab, Gitea/Forgejo, Asana, Zenkit and Markdown branches parsed the raw
+upload instead, so cards kept the markup that Admin Panel → Problems recorded
+as sanitized. The Trello API import named its workspace and job result from
+the raw board the same way. Rendering still passes through the viewer's
+sanitizer, so no script execution was reproduced; this restores the boundary's
+defence in depth. A source test flags any import-direction boundary whose raw
+input is used afterwards anywhere under `models/` or `server/`, and proves its
+detector finds the code as it was before.
+
+</details>
+
+**Import dates** - keep when things were created.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b6d695a62">Keep source creation dates on imported boards, cards, comments and lists</a>. Thanks to xet7.</summary>
+
+Every schema's `createdAt` autoValue replaces the value on insert, and
+collection2 cleans the inserted document in place. The WeKan, Trello, Jira and
+Kanboard importers passed each source creation date to such an insert, so the
+earlier #1992 restoration and Trello's board, card, list and comment dates were
+reset to the import time: a WeKan export of a card created in 2020 re-imported
+as created today. `writeImportedEntity` now reads `createdAt` before inserting
+and writes it back through the raw collection; a source audit requires every
+dated creator insert to use it, and a browser test re-imports a WeKan export
+and compares the card's creation date.
+
+</details>
+
+**Interface** - right-to-left layout, font scale, titles, pickers, task lists.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/831c7e65e">Keep every popup's resize grip in its bottom corner</a>. Thanks to xet7.</summary>
+
+The resize button could inherit full-width theme styling outside date and
+Board View Settings popups. Every popup now has a small transparent grip at
+bottom-right for LTR and bottom-left for RTL. Dragging or arrow keys resize
+from that corner while keeping the opposite edge fixed and staying inside
+the viewport. Shrinking scrolls the content instead of hiding the grip.
+
+The popup resize and calendar picker unit suites pass. Two isolated Chromium
+cases pass with the real popup styles and event handlers, covering LTR/RTL
+corners, full-width theme overrides, pointer growth and keyboard shrinking.
+The existing live RTL date-popup case now expects the left corner and passes
+syntax checking; it was not run because no application server was available.
+Existing Upcoming entries retain their recorded regression evidence.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4ff3a2c91">Fix RTL offsets, a fixed font size and unsanitized time-view titles</a>. Thanks to xet7.</summary>
+
+The archive-chart tooltip and the menu-column popup used physical left/right
+offsets that do not mirror in right-to-left languages; a board-settings column
+label ignored the interface font scale; the Time view's adjustments table
+printed card titles directly instead of through the sanitized viewer. Each is
+fixed, and the source guards that found them now pass, with a negative test
+that every Time-view title goes through the viewer.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/53fef3c12">Name the move-selection choices in words and give its popup a title</a>. Thanks to xet7.</summary>
+
+The mixed-selection move picker showed its before/after choices as arrow
+characters inside options, where no icon can render; they are now the words
+Before and After (English, pending translation). The Move selection popup had
+an empty header; both places that open it now pass its title. Tests include
+negative checks that neither returns.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/911e689d2">Show markdown task-list checkboxes in the card viewer</a>. Thanks to rodrigocipriani and xet7.</summary>
+
+"- [ ] Task" is rendered as a disabled checkbox, but the rule allowing only
+that input sat in a `HOOKS` config key, which DOMPurify does not have, so it
+never ran. The card viewer then sanitized the result again with a config that
+forbids every input, and `forms.css` hides bare checkboxes anyway. Both passes
+now install a real hook for that call only: it keeps a disabled checkbox and
+removes any other input, so card text still cannot show a password or text
+field. The dead `HOOKS` keys are gone from all three sanitizer configs. A jsdom
+suite drives both passes, and a Chromium case checks that checked and unchecked
+boxes are visible and other fields are absent; it fails without the viewer
+change. Checkboxes stay read-only ([#2419](https://github.com/wekan/wekan/issues/2419) asks for clickable ones).
+
+</details>
+
+and has the following developer-tooling fix:
+
+- [The OpenAPI generator survives declarations without an initializer](https://github.com/wekan/wekan/commit/9c79602b6):
+  the release bump job stopped with `'NoneType' object has no attribute
+  'type'` on a `let x;` in a REST handler. The generator also walks `?:`
+  branches, so the board copy title is documented again, and rewrites `||=`
+  and `&&=` so no model file is skipped. Thanks to xet7.
+
+- [The forge mirror CLI test no longer reads real mirror checkouts](https://github.com/wekan/wekan/commit/0172bc51e):
+  `WEKAN_MIRROR_TOOLS_DIR` relocates them and the test uses a temporary
+  directory, so it passes on machines that have `.tools/wekan-gitlab`.
+  Thanks to xet7.
+
+- [Stale source guards follow the behaviour their code deliberately changed](https://github.com/wekan/wekan/commit/a81b4d5d9):
+  eighteen suites pin the new notification delivery, export field guard,
+  selectable board copy, Scrum menu entry, canaries, method lookup, rule parts
+  and card dragging, each with a comment naming the change and several new
+  positive and negative cases; two list-sync browser specs no longer share a
+  session token. Thanks to xet7.
+- [Rule and popup test harnesses receive what the code now uses](https://github.com/wekan/wekan/commit/59b1b0d8a):
+  the rule-engine VM fixtures and the notification popup stub gained the new
+  helpers ([popup](https://github.com/wekan/wekan/commit/7611d7f7f)), and the
+  popup suite now covers the due-reminder form. Thanks to xet7.
+- [New interface strings go to en.i18n.json only](https://github.com/wekan/wekan/commit/f49799701):
+  `add-pending-keys.mjs` no longer writes locale files, which another agent
+  translates. Thanks to xet7.
+- [The server Mocha suite runs in --full-app mode](https://github.com/wekan/wekan/commit/d1bfeafca):
+  26 integration tests (notification delivery, stored history, Sync hooks,
+  rule plans, webhooks) skip without it and had never run; one was failing
+  unseen and is fixed. 559 pass, none pending, and a guard keeps the runners in
+  this mode. Thanks to xet7.
+- [build.sh finds the dev server's IP address on macOS](https://github.com/wekan/wekan/commit/786b8b017):
+  CUSTOM-IP no longer runs the Linux-only `ip address`, and CURRENT-IP reads
+  the default-route interface instead of trying only en0 and en1. A suite runs
+  both platforms with stub commands. Thanks to xet7.
+- [The release risk scan skips every generated Meteor build context](https://github.com/wekan/wekan/commit/45185a7b6):
+  the full-app Mocha run's `public/build-assets-local-test-app-test/` bundle
+  was not in the exclude list, so its dependencies' URLs read as new origins;
+  `public/` source is still scanned, which a new case checks. Thanks to xet7.
+- [The one-history-view guard allows the undo/redo recovery notice](https://github.com/wekan/wekan/commit/4633a3c48):
+  it is a status line for one pending request, and the guard pins that shape.
+  Thanks to xet7.
+
+and updates the following translations:
+
+**Languages updated:** Finnish, Arabic, Algerian Arabic, Egyptian Arabic, Turkish, Spanish, Argentine Spanish, Chilean Spanish, Colombian Spanish, Latin American Spanish, Mexican Spanish, Peruvian Spanish, Paraguayan Spanish, Italian, Portuguese, Brazilian Portuguese, European Portuguese, Galician, Korean, Japanese, Traditional Chinese, Chinese (Taiwan), Chinese (Hong Kong), Simplified Chinese, Mandarin Chinese, Chinese (Singapore), French, Belgian French, Canadian French, Swiss French, German, Austrian German, Swiss German, Swedish, Danish, Norwegian Bokmål, Dutch, Romanian, Indonesian, Polish, Czech, Slovak, Hungarian, Ukrainian, Russian, Bulgarian.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ef52698fe">Complete Finnish and Arabic planning and recovery translations</a>. Thanks to xet7.</summary>
+
+Fill 1,020 missing or English source values for filtering, Scrum, Sync,
+reminders and delivery recovery across four locales. Existing translations
+remain intact. Reviewed Blockly product names and mathematical symbols stay
+unchanged; ordinary prose is not exempted from translation.
+
+The Finnish and Arabic regression suites pass, checking source key order,
+interpolation tokens, localized prose and zero remaining placeholders in these
+four locales. The URL/token suite validates every locale, and all 21
+human-preference checks pass. Existing Upcoming implementation entries retain
+their recorded regression evidence; this batch changes text only. No browser
+layout or fluent-speaker review was run.
+
+At this checkpoint, 230 locales still have untranslated strings. The nine
+pending Transifex source keys are also included in this batch; other locales
+still need them. The all-language translation goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ee893ed79">Complete Turkish and Spanish planning and recovery translations</a>. Thanks to xet7.</summary>
+
+Fill 2,815 missing or English values in Turkish and nine Spanish locale files,
+including the source keys pending Transifex. The Colombian `es_CO` locale also
+receives reviewed Spanish Blockly accessibility wording. Existing translations
+are preserved; reviewed keyboard legends, product names, mathematical symbols
+and shared vocabulary remain unchanged.
+
+Turkish and Spanish regression suites pass with source key order, interpolation
+tokens and no remaining placeholders checked in every affected locale. The
+all-locale URL/token suite and 21 human-preference checks pass. Finnish and
+Arabic completion checks also pass against the latest English source. Existing
+Upcoming feature and security entries retain their recorded regression
+coverage. No browser layout or fluent-speaker review was run for this batch.
+
+The translation inventory now lists 220 unfinished locales. Newly added
+English keys remain part of the all-language goal, including keys absent from
+locale files and those pending Transifex; completion must be checked again as
+features land. This is a progress checkpoint, not completion of that goal.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0adb0fe14">Complete Italian planning and recovery translations</a>. Thanks to xet7.</summary>
+
+Translate 260 missing or English values for filters, Scrum, Sync, reminders
+and delivery recovery. Preserve existing translations, source key order and
+interpolation tokens. Reviewed product names, keyboard legends, mathematical
+symbols and the Italian Scrum term remain unchanged.
+
+All six translation suites pass, including the Italian completion checks,
+all-locale URL/token validation and rechecks of Finnish, Arabic, Turkish and
+Spanish against the current English source. All 21 human-preference checks
+pass. Existing Upcoming implementation entries retain their recorded
+regression coverage. Browser layout and fluent-speaker review were not run.
+
+The current inventory has 219 unfinished locales. New English keys, including
+missing locale keys and pending Transifex strings, remain in scope. This batch
+does not complete the all-language goal.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/12edb7c05">Complete Portuguese translations and localize new rule editor text</a>. Thanks to xet7.</summary>
+
+Fill 1,341 locale values, completing four Portuguese files with Brazilian and
+European terminology and reviewed Blockly accessibility text. Four new
+English rule-editor strings added during the work are also translated in all
+19 completed locale files. Existing translations and interpolation tokens
+remain intact. Reviewed shared terms and technical labels stay unchanged.
+
+Seven translation suites pass, checking completeness against current English
+keys, source key order, placeholder inventories and regional terminology.
+All-locale URL/token validation and all 21 human-preference checks pass.
+Existing Upcoming implementation entries retain their recorded regression
+evidence. Browser layout and fluent-speaker review were not run.
+
+There are 215 unfinished locales. Thirteen source keys are marked pending
+Transifex, but that marker does not exclude them from this translation goal.
+New English keys remain in scope for every locale as features are added.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/252d06e1d">Complete Galician planning and recovery translations</a>. Thanks to xet7.</summary>
+
+Fill 528 missing or English values across both Galician locale files for
+filters, Scrum, Sync, reminders and delivery recovery, including the new
+rule-editor keys. Existing translations remain intact. Reviewed keyboard
+labels, product names, shared terminology and mathematical symbols remain
+unchanged.
+
+Eight translation suites and 21 human-preference checks pass. Coverage checks
+current source key order, interpolation tokens, Galician wording and no
+remaining placeholders; previously completed locales also pass against the
+latest English source. Existing Upcoming implementation entries retain their
+recorded regression evidence. Browser layout and fluent-speaker review were
+not run for this batch.
+
+The translation inventory now lists 213 unfinished locales. All newly added
+English keys, including those pending Transifex, remain in scope for every
+locale. The all-language translation goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/996ab518c">Complete Korean translations and localize new positioning labels</a>. Thanks to xet7.</summary>
+
+Fill 575 locale values, completing both Korean files for filters, Scrum, Sync,
+reminders, rules and delivery recovery. New before/after positioning labels
+added to English during the work are translated in all 23 completed locale
+files. Existing translations remain intact; reviewed keyboard legends,
+product names and mathematical symbols stay unchanged.
+
+Nine translation suites and 21 human-preference checks pass. Coverage checks
+current English keys, source order, interpolation tokens, Korean script and
+no remaining placeholders. Previously completed locales also pass against
+the current source. Existing Upcoming implementation entries retain their
+recorded regression evidence. Browser layout and fluent-speaker review were
+not run for this batch.
+
+The inventory lists 211 unfinished locales. New English keys remain in scope
+for every locale, including keys absent from locale files and those marked
+pending Transifex. The all-language goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ee9175627">Complete Japanese planning and recovery translations</a>. Thanks to xet7.</summary>
+
+Fill 800 missing or English values across three Japanese locale files for
+filters, Scrum, Sync, reminders and delivery recovery, including the current
+rule-editor and positioning labels. Existing translations and interpolation
+tokens remain intact. Reviewed technical labels stay unchanged, while boolean
+display names use Japanese.
+
+Ten translation suites and 21 human-preference checks pass against the current
+English source. Coverage checks source key order, interpolation tokens,
+Japanese prose and no remaining placeholders; previously completed locales
+also pass. Existing Upcoming implementation entries retain their recorded
+regression evidence. Browser layout and fluent-speaker review were not run.
+
+The inventory lists 208 unfinished locales. Newly added English keys and keys
+pending Transifex remain in scope for every locale. The all-language goal is
+not complete.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d74e83a75">Complete Traditional Chinese planning and recovery translations</a>. Thanks to xet7.</summary>
+
+Fill 796 missing or English values in the Traditional Chinese, Taiwan and
+Hong Kong locale files for filters, Scrum, Sync, reminders, rules and delivery
+recovery. Existing translations remain intact. Reviewed keyboard legends and
+product names stay unchanged.
+
+Eleven translation suites and 21 human-preference checks pass against current
+English keys. Coverage checks source key order, interpolation tokens,
+Traditional Chinese prose and no remaining placeholders, and rechecks the
+previously completed locales. Existing Upcoming implementation entries retain
+their recorded regression evidence. Browser layout and fluent-speaker review
+were not run for this batch.
+
+The inventory lists 205 unfinished locales. Newly added English keys remain
+in scope for every locale, including missing keys and those pending Transifex.
+The all-language translation goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9f97b4416">Complete Simplified Chinese planning and recovery translations</a>. Thanks to xet7.</summary>
+
+Fill 1,685 missing or English values in six Simplified Chinese locale files
+for filters, Scrum, Sync, reminders, rules and delivery recovery. Singapore
+also receives reviewed Blockly and rule-editor wording from the existing
+Chinese locale. Existing translations remain intact; reviewed keyboard
+legends and product names stay unchanged.
+
+Twelve translation suites and 21 human-preference checks pass against current
+English keys. Coverage checks source key order, interpolation tokens,
+Simplified Chinese wording and no remaining placeholders, and rechecks the
+previously completed locales. Existing Upcoming implementation entries retain
+their recorded regression evidence. Browser layout and fluent-speaker review
+were not run for this batch.
+
+The inventory lists 199 unfinished locales. Newly added English keys remain
+in scope for every locale, including missing keys and those pending Transifex.
+The all-language goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/09668d61f">Complete French planning and recovery translations</a>. Thanks to xet7.</summary>
+
+Fill 1,287 missing or English values across five French locale files for
+filters, Scrum, Sync, reminders, rules and delivery recovery. Existing
+translations remain intact. Reviewed shared French terms, keyboard labels,
+product names and mathematical notation stay unchanged.
+
+Thirteen translation suites and 21 human-preference checks pass against
+current English keys. Coverage checks source order, interpolation tokens,
+French prose and no remaining placeholders, and rechecks previously completed
+locales. Existing Upcoming implementation entries retain their recorded
+regression evidence. Browser layout and fluent-speaker review were not run.
+
+The inventory lists 194 unfinished locales. Newly added English keys remain
+in scope for every locale, including missing keys and those pending Transifex.
+The all-language translation goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1a70e5bd2">Complete German planning and recovery translations</a>. Thanks to xet7.</summary>
+
+Fill 1,047 missing or English values across four German locale files for
+filters, Scrum, Sync, reminders, rules and delivery recovery. New Swiss locale
+text uses Swiss spelling. Existing translations remain intact; reviewed
+shared labels, product names and mathematical notation stay unchanged.
+
+Fourteen translation suites and 21 human-preference checks pass against
+current English keys. Coverage checks source order, interpolation tokens,
+regional spelling and no remaining placeholders, and rechecks previously
+completed locales. Existing Upcoming implementation entries retain their
+recorded regression evidence. Browser layout and fluent-speaker review were
+not run for this batch.
+
+The inventory lists 190 unfinished locales. Newly added English keys remain
+in scope for every locale, including missing keys and those pending Transifex.
+The all-language translation goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/169f8cb99">Complete Swedish planning and recovery translations</a>. Thanks to xet7.</summary>
+
+Translate 270 missing or English values for filters, Scrum, Sync, reminders,
+rules and delivery recovery. Preserve existing translations and review shared
+Swedish vocabulary, product names and mathematical notation individually.
+
+Fifteen translation suites and 21 human-preference checks pass against the
+current English source, including key order, interpolation tokens, recovery
+meaning and no remaining Swedish placeholders. Previously completed locales
+are rechecked. Existing Upcoming implementation entries retain their recorded
+regression evidence. Browser layout and fluent-speaker review were not run.
+
+The inventory lists 189 unfinished locales. New English keys, including
+missing locale keys and those pending Transifex, remain in scope for every
+locale. The all-language translation goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/00399026d">Complete Danish planning and recovery translations</a>. Thanks to xet7.</summary>
+
+Translate 268 missing or English values for filters, Scrum, Sync, reminders,
+rules and delivery recovery. Preserve existing translations and individually
+review shared Danish terms, product names and mathematical notation.
+
+The Danish regression test and fifteen previously completed translation
+suites pass, as do 21 human-preference checks. Coverage verifies current
+source keys, order, interpolation tokens, recovery meaning and no remaining
+Danish placeholders. Existing Upcoming implementation entries retain their
+recorded regression evidence. Browser layout and fluent-speaker review were
+not run for this batch.
+
+The inventory lists 188 unfinished locales. New English keys, including
+missing locale keys and those pending Transifex, remain in scope for every
+locale. The all-language translation goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ff5df5bd3">Complete Norwegian Bokmål planning and recovery translations</a>. Thanks to xet7.</summary>
+
+Translate 276 missing or English values for filters, Scrum, Sync, reminders,
+rules and delivery recovery. Preserve existing translations and individually
+review shared Bokmål terms, product names and mathematical notation.
+
+Seventeen translation suites and 21 human-preference checks pass against the
+current English source. Coverage verifies source keys, order, interpolation
+tokens, recovery meaning and no remaining Bokmål placeholders. Previously
+completed locales are rechecked. Existing Upcoming implementation entries
+retain their recorded regression evidence. Browser layout and fluent-speaker
+review were not run for this batch.
+
+The inventory lists 187 unfinished locales. New English keys, including
+missing locale keys and those pending Transifex, remain in scope for every
+locale. The all-language translation goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6f2b92c70">Complete Dutch planning and recovery translations</a>. Thanks to xet7.</summary>
+
+Translate 527 missing or English values across both Dutch locales for filters,
+Scrum, Sync, reminders, rules and delivery recovery. Preserve existing
+translations and review shared Dutch terms, mathematical notation and
+keyboard labels individually.
+
+Eighteen translation suites and 21 human-preference checks pass against the
+current English source. Coverage verifies source keys, order, interpolation
+tokens, recovery meaning and no remaining Dutch placeholders. Previously
+completed locales are rechecked. Existing Upcoming implementation entries
+retain their recorded regression evidence. Browser layout and fluent-speaker
+review were not run for this batch.
+
+The inventory lists 185 unfinished locales. New English keys, including
+missing locale keys and those pending Transifex, remain in scope for every
+locale. The all-language translation goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b1f80fcf0">Complete Romanian planning and recovery translations</a>. Thanks to xet7.</summary>
+
+Translate 530 missing or English values across both Romanian locales for
+filters, Scrum, Sync, reminders, rules and delivery recovery. Preserve
+existing translations and individually review shared Romanian terms,
+mathematical notation and keyboard labels.
+
+Nineteen translation suites and 21 human-preference checks pass against the
+current English source. Coverage verifies source keys, order, interpolation
+tokens, recovery meaning and no remaining Romanian placeholders, alongside
+earlier native-language and formatting regressions. Previously completed
+locales are rechecked. Existing Upcoming implementation entries retain their
+recorded regression evidence. Browser layout and fluent-speaker review were
+not run for this batch.
+
+The inventory lists 183 unfinished locales. New English keys, including
+missing locale keys and those pending Transifex, remain in scope for every
+locale. The all-language translation goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/03b4503de">Translate Indonesian planning and recovery strings</a>. Thanks to xet7.</summary>
+
+Translate 272 missing or English values for filters, Scrum, Sync, reminders,
+rules and delivery recovery. Correct nine Malay-seeded basic labels to
+Indonesian, including card, list and display name. Preserve other existing
+translations and review shared terms and keyboard labels individually.
+
+Twenty translation suites and 21 human-preference checks pass against the
+current English source. Coverage verifies source keys, order, interpolation
+tokens, recovery meaning, corrected native labels and no remaining Indonesian
+English placeholders. Previously completed locales are rechecked. Existing
+Upcoming implementation entries retain their recorded regression evidence.
+Browser layout and fluent-speaker review were not run for this batch.
+
+The placeholder inventory lists 182 unfinished locales. Indonesian still
+contains older Malay wording, including archive and permission descriptions;
+its vocabulary review remains unfinished despite an empty placeholder list.
+New English keys, including missing locale keys and those pending Transifex,
+remain in scope for every locale. The all-language goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f42035a7c">Correct Indonesian wording and translate new URL scheme help</a>. Thanks to xet7.</summary>
+
+Correct 231 Malay-seeded or incorrect Indonesian values across archive,
+permissions, cards, rules, settings and reports. Restore lost meaning in
+search case sensitivity, vertical scrolling, keyboard shortcut states and
+top-versus-bottom rule actions. Translate the newly added URL scheme help
+in the 52 locales covered by the completed translation batches.
+
+Twenty translation suites and 21 human-preference checks pass. Additional
+checks reject reviewed Malay vocabulary, distinguish opposite actions and
+preserve the literal scheme names in all 52 help translations. Source keys,
+order and interpolation tokens remain intact. Existing Upcoming
+implementation entries retain their recorded regression evidence. Browser
+layout and fluent-speaker review were not run.
+
+The broader Indonesian vocabulary review remains open; word-list checks
+do not establish full fluency. Other unfinished locales still need the new
+URL scheme help as well as their existing backlog. New source keys and keys
+pending Transifex remain in scope. The all-language goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/34f6f0ba8">Correct Indonesian labels, poker values and report meaning</a>. Thanks to xet7.</summary>
+
+Correct 139 older Indonesian strings after reviewing Malay vocabulary and
+source meaning. Restore poker values 8 and 100, balanced privacy markup,
+board-versus-card wording, assignment labels, due-date filters and complete
+time-adjustment help. Correct planning, invitation, WIP, template and system
+labels while preserving unrelated values.
+
+The Indonesian and URL translation suites pass, as do 21 human-preference
+checks. Regressions verify numeric values, markup, opposite actions, source
+keys, interpolation tokens and the distinction between time corrections and
+individual sessions. Existing Upcoming implementation entries retain their
+recorded regression evidence. Browser layout and fluent-speaker review were
+not run for this batch.
+
+The broader Indonesian vocabulary review and the remaining language backlog
+are still open. An empty placeholder inventory alone does not establish
+translation quality. New English source keys remain in scope for every
+locale, including keys pending Transifex.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0e1719ebd">Translate new rule-variable help in 52 audited locales</a>. Thanks to xet7.</summary>
+
+Translate the new rule-trigger field help into Finnish, Arabic, Turkish,
+Spanish, Italian, Portuguese, Galician, Korean, Japanese, Chinese, French,
+German, Swedish, Danish, Norwegian Bokmål, Dutch, Romanian and Indonesian,
+including their previously audited regional variants. Existing translations
+are preserved. The executable variable names remain unchanged in every value.
+
+The translation token and Indonesian suites pass, along with all 21
+human-preference checks. Regression coverage checks translated prose and the
+exact brace-delimited variable inventory in all 52 files. Existing Upcoming
+entries retain their recorded regression evidence. Browser layout and
+fluent-speaker review were not run. Other locales and future English additions
+remain in scope; the all-language translation goal is unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/71b56977a">Fill Polish planning, synchronization and recovery translations</a>. Thanks to xet7.</summary>
+
+Translate 267 missing or English values for filters, rules, reminders, Scrum,
+synchronization and delivery recovery, including the new signed-in-user board
+visibility text. Existing translations remain intact. Reviewed keyboard
+legends, product names, mathematical terms and shared Scrum terms stay
+unchanged.
+
+The Polish and translation-token suites pass, as do all 21 human-preference
+checks. Coverage checks source order, interpolation and rule-variable syntax,
+filter keywords, visibility restrictions and cancellation warnings. No prose
+placeholders remain in Polish against the current English source. Browser
+layout and fluent-speaker review were not run. Existing Upcoming entries
+retain their recorded regression evidence. Other locales and new English
+additions remain in scope; the all-language translation goal is unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/eb13c50c0">Translate signed-in-user board visibility in 52 more locales</a>. Thanks to xet7.</summary>
+
+Fill 156 missing values for the board visibility label, description and
+confirmation across the previously audited locales. The text distinguishes
+viewing by every signed-in user from editing by board members, and excludes
+anonymous visitors. Polish already received these strings in its own batch.
+Existing correct-language translations remain untouched.
+
+All 21 translation suites and 21 human-preference checks pass. Coverage
+checks translated prose, interpolation tokens and balanced emphasis markup
+in the visibility confirmation, alongside the existing locale regressions.
+Browser layout and fluent-speaker review were not run. Existing Upcoming
+entries retain their recorded regression evidence. Other locales and future
+English additions remain in scope; the all-language goal is unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7931444d6">Translate Czech planning, filters and board visibility</a>. Thanks to xet7.</summary>
+
+Fill 128 missing or English values for date filters, saved filters, rules,
+reminders, Scrum and signed-in-user board visibility. Two existing translations
+were preserved by the fill step. Rule variables, date-filter keywords and URL
+scheme names remain unchanged.
+
+Czech planning coverage and the translation-token suite pass, as do all 21
+human-preference checks. Tests cover translated planning prose, source order
+for present keys, interpolation tokens, unknown estimates and visibility
+restrictions. Czech synchronization and recovery translations remain pending.
+Browser layout and fluent-speaker review were not run. Existing Upcoming
+entries retain their recorded regression evidence. The all-language goal
+remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0a9a38c51">Complete Czech synchronization and recovery translations</a>. Thanks to xet7.</summary>
+
+Fill 138 remaining prose values for synchronization conflicts and reports,
+email and activity recovery, SAML login, move ordering and accessibility.
+Existing translations remain intact. Reviewed keyboard legends, product names,
+mathematical terms and shared Scrum terms stay unchanged.
+
+Czech and translation-token tests pass, together with all 21 human-preference
+checks. Coverage checks every source key and its order, interpolation tokens,
+recovery warnings and the absence of remaining prose placeholders against the
+current English source. Browser layout and fluent-speaker review were not run.
+Existing Upcoming entries retain their recorded regression evidence. Other
+locales and new English additions remain in scope; the all-language goal is
+unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/43e69b0fa">Translate Slovak planning, filters and board visibility</a>. Thanks to xet7.</summary>
+
+Fill 133 missing or English values for date filters, saved filters, rules,
+reminders, Scrum and signed-in-user board visibility. Existing translations
+remain intact. Rule variables, date-filter keywords and URL scheme names
+stay unchanged.
+
+Slovak planning coverage and the translation-token suite pass, as do all 21
+human-preference checks. Tests check planning prose, source order for present
+keys, interpolation tokens, unknown estimates and visibility restrictions.
+Slovak synchronization and recovery translations remain pending. Browser
+layout and fluent-speaker review were not run. Existing Upcoming entries
+retain their recorded regression evidence. The all-language goal remains
+unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/dc09c5ea7">Complete Slovak recovery and notification translations</a>. Thanks to xet7.</summary>
+
+Fill 150 missing or English values for synchronization, delivery recovery,
+SAML login, move ordering, accessibility and new notification preferences.
+Existing translations remain intact. Reviewed keyboard legends, product names,
+mathematical terms and shared words stay unchanged.
+
+Slovak and translation-token tests pass, together with all 21 human-preference
+checks. Coverage checks source keys and order, interpolation tokens, recovery
+warnings, notification exceptions and no remaining prose placeholders against
+the current English source. Browser layout and fluent-speaker review were not
+run. Existing Upcoming entries retain their recorded regression evidence.
+Other locales still need the new notification strings and their remaining
+translations; the all-language goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5dcd0cc48">Translate notification activity preferences in 54 more locales</a>. Thanks to xet7.</summary>
+
+Fill 702 values for notification categories and their explanation across the
+previously audited locales. The description distinguishes optional activity
+notifications from due-date reminders and mentions that always arrive.
+Slovak already received these strings in its own batch. Existing translations
+remain intact; Dutch uses the established checklist terminology.
+
+All 23 translation suites and 21 human-preference checks pass. New coverage
+checks all 13 notification keys in 55 locales, preserved source tokens, the
+mention marker and distinct member/assignee and archive/creation categories.
+Browser layout and fluent-speaker review were not run. Existing Upcoming
+entries retain their recorded regression evidence. Other locales and future
+English additions remain in scope; the all-language goal is unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a84b36262">Translate Hungarian filters, rules and notification preferences</a>. Thanks to xet7.</summary>
+
+Fill 66 missing or English values for filters, rules, reminders, notification
+preferences, board visibility and newly added automatic archiving settings.
+Existing translations remain intact. Rule variables, date-filter keywords,
+URL schemes and interpolation tokens stay unchanged.
+
+Hungarian coverage and the translation-token suite pass, as do all 21
+human-preference checks. Tests verify translated prose, source order for
+present keys, visibility restrictions, notification exceptions and the
+archive check interval, template exclusion and empty-value behavior.
+Hungarian Scrum and recovery text, other locales and new English additions
+remain pending. Browser layout and fluent-speaker review were not run.
+Existing Upcoming entries retain their recorded regression evidence. The
+all-language goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/dce560a3a">Translate Hungarian Scrum planning and reports</a>. Thanks to xet7.</summary>
+
+Fill 81 missing or English values for Scrum planning, sprint reports, daily
+observations and the draggable label. Existing translations remain intact.
+Report wording preserves the distinction between unknown and zero estimates,
+and explains that daily observations do not record every change.
+
+Hungarian coverage and the translation-token suite pass, as do all 21
+human-preference checks. Regression coverage checks Scrum prose, tokens,
+sprint cancellation, scope changes and distinct workflow categories.
+Hungarian synchronization and recovery text remains pending. Browser layout
+and fluent-speaker review were not run. Existing Upcoming entries retain their
+recorded regression evidence. The all-language goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/fbc531444">Complete Hungarian synchronization and recovery translations</a>. Thanks to xet7.</summary>
+
+Fill 135 missing or English values for synchronization conflicts and reports,
+email and activity recovery, SAML login and move ordering. Existing
+translations remain intact. Reviewed keyboard legends, product names and
+shared mathematical and Scrum terms stay unchanged.
+
+Hungarian and translation-token tests pass, together with all 21
+human-preference checks. Coverage checks every source key and its order,
+interpolation tokens, cancellation warnings, source-system isolation and
+explicit null handling. No Hungarian prose placeholders remain against the
+current English source. Browser layout and fluent-speaker review were not
+run. Existing Upcoming entries retain their recorded regression evidence.
+Other locales and future English additions remain in scope; the all-language
+goal is unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/958f842d4">Translate automatic archiving preferences in 55 more locales</a>. Thanks to xet7.</summary>
+
+Fill 165 values for automatic archiving settings across the previously audited
+locales. The help retains the hourly check, activity on every card change,
+template exclusion and empty-field disable behavior. Hungarian already
+received these strings in its own batch. Existing translations remain intact.
+
+All 24 translation suites and 21 human-preference checks pass. Coverage checks
+the three archiving strings in 56 locales for missing prose, preserved tokens
+and distinct labels, alongside the existing locale regressions. Browser layout
+and fluent-speaker review were not run. Existing Upcoming entries retain their
+recorded regression evidence. Other locales and future English additions remain
+in scope; the all-language goal is unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d29441c76">Translate Ukrainian filters, rules and notification preferences</a>. Thanks to xet7.</summary>
+
+Fill 66 missing or English values for filters, rules, reminders, notification
+preferences, board visibility and automatic archiving. Existing translations
+remain intact. Rule variables, date-filter keywords, URL schemes and
+interpolation tokens stay unchanged.
+
+Ukrainian coverage and the translation-token suite pass, as do all 21
+human-preference checks. Tests check translated prose, source order for present
+keys, script, visibility restrictions, notification exceptions and archiving
+behavior. Ukrainian Scrum and recovery text remains pending. Browser layout
+and fluent-speaker review were not run. Existing Upcoming entries retain their
+recorded regression evidence. The all-language goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/eeb8c204c">Translate Ukrainian Scrum reports and import warnings</a>. Thanks to xet7.</summary>
+
+Fill 88 missing or English values for Scrum planning, reports, sprint actions,
+the space-key label and newly added import-warning messages. Existing
+translations remain intact. Report wording distinguishes unknown estimates
+from zero and daily observations from complete change histories.
+
+Ukrainian coverage and the translation-token suite pass, as do all 21
+human-preference checks. Tests check Scrum prose, source tokens, script,
+sprint cancellation, distinct workflow states and partial-import wording.
+Ukrainian synchronization and recovery text remains pending. Browser layout
+and fluent-speaker review were not run. Existing Upcoming entries retain their
+recorded regression evidence. The all-language goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f1fec858b">Complete Ukrainian synchronization and recovery translations</a>. Thanks to xet7.</summary>
+
+Fill 136 missing or English values for synchronization, delivery recovery,
+SAML login, move ordering and the context-menu key label. Existing translations
+remain intact. Reviewed keyboard legends, product names and mathematical
+notation stay unchanged.
+
+Ukrainian and translation-token tests pass, together with all 21
+human-preference checks. Coverage checks every source key and its order,
+interpolation tokens, script, cancellation warnings, source-system isolation
+and explicit null handling. No Ukrainian prose placeholders remain against
+the current English source. Browser layout and fluent-speaker review were not
+run. Existing Upcoming entries retain their recorded regression evidence.
+Other locales and future English additions remain in scope; the all-language
+goal is unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/dd8c2b8bf">Translate import warnings in 56 more locales</a>. Thanks to xet7.</summary>
+
+Fill 168 values for the import-warning heading, explanation and open-board
+button across the previously audited locales. The explanation distinguishes
+successful board creation from omitted content and points to the retained
+report. Ukrainian already received these strings in its own batch. Existing
+translations remain intact.
+
+All 25 translation suites and 21 human-preference checks pass. Coverage checks
+all three warning strings in 57 locales for missing prose, preserved tokens,
+report-navigation separators and distinct heading/action labels. Browser
+layout and fluent-speaker review were not run. Existing Upcoming entries
+retain their recorded regression evidence. Other locales and future English
+additions remain in scope; the all-language goal is unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/43fb1691e">Translate Russian filters, rules and notification preferences</a>. Thanks to xet7.</summary>
+
+Fill 69 missing or English values for filters, rules, reminders, notification
+preferences, visibility, automatic archiving and import warnings. Existing
+translations remain intact. Rule variables, date-filter keywords, URL schemes
+and interpolation tokens stay unchanged.
+
+Russian coverage and the translation-token suite pass, as do all 21
+human-preference checks. Tests check translated prose, source order for present
+keys, script, visibility restrictions, notification exceptions, archiving and
+partial-import wording. Russian Scrum and recovery text remains pending.
+Browser layout and fluent-speaker review were not run. Existing Upcoming
+entries retain their recorded regression evidence. The all-language goal
+remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/195027f72">Translate Russian Scrum planning and reports</a>. Thanks to xet7.</summary>
+
+Fill 85 missing or English values for Scrum planning, reports, sprint actions
+and the context-menu key label. Existing translations remain intact. Report
+wording distinguishes unknown estimates from zero and daily observations from
+complete change histories.
+
+Russian coverage and the translation-token suite pass, as do all 21
+human-preference checks. Tests check Scrum prose, source tokens, script,
+sprint cancellation and distinct workflow states. Russian synchronization
+and recovery text remains pending. Browser layout and fluent-speaker review
+were not run. Existing Upcoming entries retain their recorded regression
+evidence. The all-language goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3e850e978">Translate Russian synchronization conflicts and reports</a>. Thanks to xet7.</summary>
+
+Fill 63 missing or English values for synchronization conflicts, previews,
+source-field reports, diagnostics and mapped Jira estimates. Existing
+translations remain intact. The warnings retain source-system isolation,
+partial-change limitations and explicit null handling.
+
+Russian coverage and the translation-token suite pass, as do all 21
+human-preference checks. Tests check synchronization prose, source tokens,
+script, retained duplicate content and reports that cannot undo runs.
+Russian delivery-recovery text remains pending. Browser layout and
+fluent-speaker review were not run. Existing Upcoming entries retain their
+recorded regression evidence. The all-language goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2d579db7b">Complete Russian delivery recovery translations</a>. Thanks to xet7.</summary>
+
+Fill 72 missing or English values for email and activity delivery recovery,
+rule-email diagnostics, SAML login and move ordering. Existing translations
+remain intact. Reviewed keyboard legends, product names and mathematical
+notation stay unchanged.
+
+Russian and translation-token tests pass, together with all 21
+human-preference checks. Coverage checks every source key and its order,
+interpolation tokens, script, irreversible cancellation and preservation of
+new messages after a cancellation request. No Russian prose placeholders
+remain against the current English source. Browser layout and fluent-speaker
+review were not run. Existing Upcoming entries retain their recorded
+regression evidence. Other locales and new English additions remain in scope;
+the all-language goal is unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/57e178bc0">Replace Serbian swimlane text with Bulgarian translations</a>. Thanks to xet7.</summary>
+
+Correct 26 wrong-language values in the Bulgarian file for swimlane actions,
+height controls, activity messages, search help and recovery steps. Use the
+existing Bulgarian term for swimlane and preserve source placeholders.
+Correct-language translations remain intact.
+
+The Bulgarian swimlane and translation-token suites pass, as do all 21
+human-preference checks. Coverage checks vocabulary as well as script, source
+tokens, positive integer height, irreversible deletion and distinct move/copy
+actions. The audit found extensive Serbian text elsewhere in the Bulgarian
+file; those corrections and missing translations remain pending. Browser
+layout and fluent-speaker review were not run. Existing Upcoming entries
+retain their recorded regression evidence. The all-language goal remains
+unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f8b9f26c5">Correct Bulgarian activity messages and common controls</a>. Thanks to xet7.</summary>
+
+Replace 55 Serbian values with Bulgarian for activity messages, workspace
+controls, card actions, keyboard shortcuts, display modes and voting. Preserve
+all source placeholders and the distinction between irreversible deletion
+and reversible archiving. Correct-language translations remain intact.
+
+The Bulgarian and translation-token suites pass, together with all 21
+human-preference checks. Tests check vocabulary and script, interpolation
+tokens, opposite shortcut actions, list positions and signed-in-user voting.
+The same local commit also contains separately staged import-warning feature
+work; these translation checks do not validate that feature. More Serbian
+values and missing translations remain in the Bulgarian file. Browser layout
+and fluent-speaker review were not run. Existing Upcoming entries retain their
+recorded regression evidence. The all-language goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/bbd99d3f1">Correct Bulgarian permissions, planning and account messages</a>. Thanks to xet7.</summary>
+
+Replace 45 Serbian values with Bulgarian for permission descriptions, planning
+poker, deletion dialogs, account emails, invitations and template copying.
+Correct-language translations remain intact. Preserve all placeholders and
+JSON property names while translating the example values.
+
+The Bulgarian and translation-token suites pass, together with all 21
+human-preference checks. Coverage checks vocabulary, script, interpolation
+tokens, assigned-card restrictions, irreversible deletion and valid template
+JSON. More wrong-language values and missing translations remain in Bulgarian.
+Browser layout and fluent-speaker review were not run. Existing Upcoming
+entries retain their recorded regression evidence. The all-language goal
+remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b017a64c1">Correct Bulgarian import, filter and access descriptions</a>. Thanks to xet7.</summary>
+
+Replace 50 Serbian values with Bulgarian for sorting, filters, import mapping,
+board permissions, notifications and shortcuts. Correct the import preparation
+instruction to export the source board. Restore shortcut number ranges and
+retain access restrictions, placeholders and link markup. Correct-language
+translations remain intact.
+
+The Bulgarian and translation-token suites pass, together with all 21
+human-preference checks. Coverage checks vocabulary, script, tokens, source
+export instructions, administrator and editing restrictions, user mapping,
+link markup and shortcut ranges. More wrong-language values and missing
+translations remain in Bulgarian. Browser layout and fluent-speaker review
+were not run. Existing Upcoming entries retain their recorded regression
+evidence. The all-language goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f1a0cab15">Correct Bulgarian notification, rule and deadline messages</a>. Thanks to xet7.</summary>
+
+Replace 90 Serbian or mixed-language values with Bulgarian for notifications,
+rule actions, branding, authentication, deadlines and account controls. Restore
+assignee terminology, the first reminder, shortcut ranges and the distinction
+between upcoming, past and current deadlines. Preserve placeholders, HTML tags,
+private-board restrictions and irreversible-deletion warnings.
+
+The Bulgarian and translation-token suites pass, together with all 21
+human-preference checks. Regression coverage checks language, tokens, reminder
+timing, check/uncheck actions, empty duplicate-list deletion, new/all-card field
+settings, HTML insertion positions and account deletion warnings. Existing
+Upcoming entries retain their recorded regression evidence. Browser layout and
+fluent-speaker review were not run. More wrong-language values and missing
+translations remain in Bulgarian, and the all-language goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/cdc5dd08d">Correct Bulgarian search and due-card translations</a>. Thanks to xet7.</summary>
+
+Replace 60 Serbian values with Bulgarian for search operators and help,
+due-card results, sorting, visibility controls and linked-card deletion.
+Restore card, list, board, team and assignee terminology while preserving
+search placeholders, example syntax and source meanings.
+
+The Bulgarian and translation-token suites pass, together with all 21
+human-preference checks. Coverage checks script and vocabulary, placeholders,
+positive-integer limits, quoted search values, member-or-assignee searches,
+comment matching and permission-limited unfinished due cards. Browser layout
+and fluent-speaker review were not run. Existing Upcoming entries retain their
+recorded regression evidence. More wrong-language values and missing
+translations remain; the all-language goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0c2d0f17a">Correct Bulgarian search help, team and diagnostic messages</a>. Thanks to xet7.</summary>
+
+Replace 75 Serbian values with Bulgarian for advanced search help, reports,
+loading indicators, teams, invitations and memory diagnostics. Preserve search
+variables, shell commands and HTML entities. Restore AND/OR semantics, missing
+field searches, descending sorting and team-membership deletion restrictions.
+Memory terminology was checked against
+[Node.js V8 documentation](https://github.com/nodejs/node/blob/main/doc/api/v8.md).
+
+The Bulgarian and translation-token suites pass, together with all 21
+human-preference checks. Coverage checks vocabulary, placeholders, search logic,
+case-insensitive matching, archive exclusion, sort order, shell commands,
+invitations and memory-label distinctions. Browser layout and fluent-speaker
+review were not run. Existing Upcoming entries retain their recorded regression
+evidence. More wrong-language values and missing translations remain, including
+new English strings being added by feature work. The all-language goal remains
+unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/841d2cca8">Translate history recovery messages in 59 locales</a>. Thanks to xet7.</summary>
+
+Translate five new pending undo/redo, retry, forget and recovery-hint strings
+in 59 locales, adding 295 translations. The messages distinguish undo from
+redo and explain that retrying sends the same request without undoing a second
+change. Existing translations are preserved by the placeholder-only fill.
+
+All 27 translation suites and 21 human-preference checks pass. New coverage
+checks the five messages in every updated locale, placeholder inventories,
+distinct undo/redo messages and distinct retry/forget controls. Existing
+locale suites also check source coverage, order and native terminology.
+Browser layout and fluent-speaker review were not run. Existing Upcoming
+entries retain their recorded regression evidence. Other locales still need
+these messages alongside their earlier untranslated text; older wrong-language
+Bulgarian values also remain. The all-language goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/24f3fab2f">Correct Bulgarian attachment and account-lockout translations</a>. Thanks to xet7.</summary>
+
+Replace 80 Serbian values with Bulgarian for checklist and attachment actions,
+file limits, support and accessibility pages, account lockouts and scheduled
+board operations. Restore active-user terminology instead of payroll language,
+known/unknown login distinctions and the difference between scheduling an
+archive and a backup. Preserve storage names, file extensions and placeholders.
+
+The Bulgarian and translation-token suites pass, together with all 21
+human-preference checks. Coverage checks vocabulary, tokens, storage targets,
+byte units, ZIP import structure, irreversible deletion, login restrictions,
+checked/all checklist items, activation direction and scheduling results.
+Browser layout and fluent-speaker review were not run. Existing Upcoming
+entries retain their recorded regression evidence. More wrong-language values
+and missing translations remain, including new English strings from ongoing
+feature work. The all-language goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/115cca73e">Translate map view instructions in 59 locales</a>. Thanks to xet7.</summary>
+
+Translate seven new map-view strings in 59 locales, adding 413 translations.
+The instructions retain the board-administrator upload requirement, example
+image types and both drag and select/click placement methods. Uploading and
+removing the image remain distinct from placing cards. Existing translations
+are preserved by the placeholder-only fill; Swiss German spelling is retained.
+
+All 27 translation suites and 21 human-preference checks pass. New regression
+coverage checks all seven messages in each updated locale, source tokens,
+distinct upload/remove and placed/unplaced states, and Finnish instruction
+semantics. Existing locale suites check source coverage, order and terminology.
+Browser layout and fluent-speaker review were not run. Existing Upcoming
+entries retain their recorded regression evidence. Other locales still need
+these strings and their earlier untranslated text; older wrong-language
+Bulgarian values also remain. The all-language goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e355a4a15">Correct Bulgarian migration, recovery and storage messages</a>. Thanks to xet7.</summary>
+
+Replace 80 Serbian values with Bulgarian for scheduled jobs, migration states,
+S3 settings, storage and board recovery. Restore pause/stop/resume distinctions,
+access/secret-key terminology, administrator restrictions and the scope and
+warnings of recovery operations. Preserve source placeholders and field names.
+
+The Bulgarian and translation-token suites pass, together with all 21
+human-preference checks. Coverage checks language, placeholders, backend names,
+state distinctions, duplicate-list conditions, migration ordering, non-archived
+recovery limits, all-archive warnings and administrator-only execution. Browser
+layout and fluent-speaker review were not run. Existing Upcoming entries retain
+their recorded regression evidence. More wrong-language values and untranslated
+strings remain in Bulgarian and other locales; removing distinctive Serbian
+letters alone will not complete the language audit. The all-language goal
+remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/858586cd8">Correct Bulgarian migration progress and analytics explanations</a>. Thanks to xet7.</summary>
+
+Replace 70 Serbian or mixed-language values with Bulgarian for migration
+progress, resource monitoring and analytics. Restore the full explanations of
+historical percentiles, overlapping blockers, forecast assumptions and limits,
+and recorded-time corrections. Preserve placeholders, numeric ranges and units.
+
+The Bulgarian and translation-token suites pass, together with all 21
+human-preference checks. Coverage checks migration continuity, pause thresholds,
+units, forecast bounds, absent history, non-guarantees and time attribution.
+A whole-file check now rejects distinctive Serbian letters. This does not prove
+that all remaining vocabulary is Bulgarian: shared-script words and English
+placeholders still require review. Browser layout and fluent-speaker review
+were not run. Existing Upcoming entries retain their recorded regression
+evidence. The all-language translation goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/321c7ef71">Correct Bulgarian activity and board-control vocabulary</a>. Thanks to xet7.</summary>
+
+Replace 55 Serbian values missed by the distinctive-letter check with Bulgarian
+for activity messages, workspaces, board controls, exports, members and rules.
+Restore the read-only editing prohibition, full card-search scope and
+directional move actions while retaining every source placeholder.
+Correct-language values remain intact.
+
+The Bulgarian and translation-token suites pass, together with all 21
+human-preference checks. Coverage checks vocabulary, placeholders, old/new list
+positions, read-only restrictions, search fields, sidebar toggling and above/
+below placement. Browser layout and fluent-speaker review were not run. Existing
+Upcoming entries retain their recorded regression evidence. More vocabulary
+corrections and untranslated strings remain in Bulgarian and other locales.
+The all-language goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1a967d339">Correct Bulgarian user, checklist and migration controls</a>. Thanks to xet7.</summary>
+
+Replace 43 Serbian or mixed-language values with Bulgarian for user controls,
+card views, search help, checklist copying and migration actions. Preserve the
+meaning of cards with due dates, end-date filtering, locked-user-only views,
+all-item recovery and template copying. Correct Bulgarian legal-notice text
+matched by the vocabulary search remains unchanged.
+
+The Bulgarian and translation-token suites pass, together with all 21
+human-preference checks. Coverage checks vocabulary, placeholders, filtering
+scope, all-migration actions, template origin and SSL/TLS terminology. Browser
+layout and fluent-speaker review were not run. Existing Upcoming entries retain
+their recorded regression evidence. Broader vocabulary review and untranslated
+strings remain, including three new parent-card messages from feature work.
+The all-language translation goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7d5d7bf6e">Translate multiple-parent card controls in 59 locales</a>. Thanks to xet7.</summary>
+
+Translate the three new additional-parent and relationship-removal controls
+in 59 locales, adding 177 translations. Removal describes ending the subtask
+relationship rather than deleting a card. The placeholder-only fill preserves
+existing translations; a per-key diff confirms only these three keys changed
+in each locale.
+
+All 27 translation suites and 21 human-preference checks pass. New coverage
+checks all three controls, source placeholders, distinct add/remove actions
+and Finnish relationship-removal wording. Existing locale suites check source
+coverage, key order and terminology. Browser layout and fluent-speaker review
+were not run. Existing Upcoming entries retain their recorded regression
+evidence. Other locales still need these strings and their earlier untranslated
+text, and the Bulgarian vocabulary audit remains ongoing. The all-language
+translation goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e1791d383">Translate Bulgarian filter and rule messages and correct workspace labels</a>. Thanks to xet7.</summary>
+
+Fill 45 Bulgarian placeholders for date filters, automatic archiving, board
+visibility, rule variables and notification preferences. Correct eight Serbian
+workspace, connection, template and background labels. Existing Bulgarian
+translations are preserved.
+
+The Bulgarian and translation-token suites pass, together with all 21
+human-preference checks. Coverage checks placeholders and brace variables,
+date-filter syntax, inclusive bounds, unknown entry dates, archive exclusions,
+visibility restrictions, URL schemes and mandatory notifications. Browser
+layout and fluent-speaker review were not run. Existing Upcoming entries retain
+their recorded regression evidence. More untranslated strings and vocabulary
+review remain in Bulgarian and other locales. The all-language goal remains
+unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/48c091962">Translate Bulgarian reminders, filters and Scrum planning controls</a>. Thanks to xet7.</summary>
+
+Fill 70 Bulgarian placeholders for due-date reminders, saved filters, import
+warnings, template context and Scrum planning controls. Preserve timing limits,
+private-filter behavior, dependency direction and template variable syntax.
+Existing translations remain intact.
+
+The Bulgarian and translation-token suites pass, together with all 21
+human-preference checks. Coverage checks source tokens, reminder sign and range,
+filter replacement, partial import warnings, template variables, completion
+policies and distinct close/cancel sprint actions. Browser layout and
+fluent-speaker review were not run. Existing Upcoming entries retain their
+recorded regression evidence. More untranslated strings and vocabulary review
+remain in Bulgarian and other locales. The all-language goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/cace14e39">Translate Bulgarian sprint reports and synchronization conflicts</a>. Thanks to xet7.</summary>
+
+Fill 55 Bulgarian placeholders for sprint events, results, daily observations
+and synchronization conflict controls. Preserve unknown-estimate warnings,
+partial-report scope, close/cancel behavior and local-only conflict
+resolution.
+Existing translations remain intact.
+
+The Bulgarian and translation-token suites pass, together with all 21
+human-preference checks. Coverage checks source tokens, UTC observations,
+missing-day omissions, the 366-observation limit, incomplete-import
+restrictions, retained duplicate content and unchanged subcards. Browser
+layout and
+fluent-speaker review were not run. Existing Upcoming entries retain their
+recorded regression evidence. More untranslated strings and vocabulary review
+remain in Bulgarian and other locales. The all-language goal remains
+unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/186672961">Translate Bulgarian synchronization previews and diagnostics</a>. Thanks to xet7.</summary>
+
+Fill 45 Bulgarian placeholders for synchronization replacement cards,
+previews, source omissions and retained diagnostic reports. Preserve retry
+behavior, hidden source values, partial-change warnings and access
+requirements. Existing translations remain intact.
+
+The Bulgarian and translation-token suites pass, together with all 21 human-
+preference checks. Coverage checks source tokens, repeated replacement reuse,
+refreshed source checks, 100-entry/path limits, 20-run and 30-day retention,
+full-list write access and non-resumable reports. Browser layout and fluent-
+speaker review were not run. Existing Upcoming entries retain their recorded
+regression evidence. More untranslated strings and vocabulary review remain in
+Bulgarian and other locales. The all-language goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d647b2099">Translate Bulgarian email recovery and estimate messages</a>. Thanks to xet7.</summary>
+
+Fill 35 Bulgarian placeholders for email queue recovery, failure categories
+and synchronized time estimates. Preserve cancellation scope, existing pauses,
+uncertain-delivery warnings and the difference between missing source values
+and explicit null. Existing translations remain intact.
+
+The Bulgarian and translation-token suites pass, together with all 21 human-
+preference checks. Coverage checks source tokens, hidden recipient fields,
+retry cycles, irreversible cancellation, retained new messages,
+temporary/permanent SMTP failures and hour units. Browser layout and fluent-
+speaker review were not run. Existing Upcoming entries retain their recorded
+regression evidence. More untranslated strings and vocabulary review remain in
+Bulgarian and other locales. The all-language goal remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ba5015c38">Translate Bulgarian activity recovery and login messages</a>. Thanks to xet7.</summary>
+
+Fill 41 Bulgarian placeholders for activity notification recovery, rule email
+reports, time-estimate mapping, SAML sign-in and move-selection controls.
+Preserve cancellation irreversibility, queued-email scope, retained pending
+work and the distinction between server acceptance and confirmed delivery.
+
+The Bulgarian and translation-token suites pass, together with all 21 human-
+preference checks. Coverage checks source tokens, exactly-one-field mapping,
+no recreated activities, current recipient permissions, non-resumable
+cancellation, report-only behavior and browser-tab login scope. Browser layout
+and fluent-speaker review were not run. Existing Upcoming entries retain their
+recorded regression evidence. The remaining English-equal Bulgarian entries in
+the current check are keyboard labels and platform names; vocabulary review is
+still incomplete. Other locales still need translation. The all-language goal
+remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d5060f014">Correct Bulgarian calendar, voting and comment vocabulary</a>. Thanks to xet7.</summary>
+
+Replace 27 remaining Serbian or mixed-language labels with Bulgarian for
+calendar navigation, voting, comments, date formats and email verification.
+Preserve date ordering, comment visibility restrictions and the site-name
+placeholder. Existing Bulgarian translations remain intact.
+
+The Bulgarian and translation-token suites pass, together with all 21 human-
+preference checks. Coverage checks wrong-language vocabulary, previous/next
+month, today/tomorrow, date ordering and comment visibility. Browser layout
+and fluent-speaker review were not run. Existing Upcoming entries retain their
+recorded regression evidence. The vocabulary audit continues through the
+interface labels; later entries
+and other locales still require work. The all-language goal remains
+unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/120edadb7">Correct Bulgarian shortcut and minicard vocabulary</a>. Thanks to xet7.</summary>
+
+Replaced nine Serbian labels in Bulgarian with Bulgarian text for CSV/TSV
+import, minicard covers and descriptions, keyboard shortcuts, modification
+dates, action prompts and notification deletion. Existing correct-language
+translations remain unchanged.
+
+Bulgarian vocabulary and placeholder regression tests, translation URL and
+token checks, and all 21 human-translation preference checks pass. Browser and
+fluent-speaker review were not run. The remaining locale vocabulary audit and
+translations are still in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1fe7cd048">Correct Bulgarian rules, search and diagnostic vocabulary</a>. Thanks to xet7.</summary>
+
+Corrected 47 Bulgarian locale entries containing Serbian text, including rule
+actions, notification controls, search operators and help, card creators, team
+controls and memory diagnostics. Restored Arial as the literal Excel font name
+used by exports. Correct-language Bulgarian translations are preserved.
+
+Bulgarian vocabulary, search-token and placeholder tests, translation URL
+checks and all 21 human-translation preference checks pass. Browser and
+fluent-speaker review were not run. Further locale vocabulary auditing and
+remaining translations are still in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/85df77155">Correct Bulgarian storage and administration vocabulary</a>. Thanks to xet7.</summary>
+
+Corrected 38 Bulgarian entries for upload progress, storage, support and
+accessibility pages, custom translations, account lockouts and scheduled jobs.
+Replaced Serbian text and translated the remaining English board and S3 file
+identifier labels while preserving existing Bulgarian translations.
+
+Bulgarian vocabulary and placeholder regression tests, translation URL checks
+and all 21 human-translation preference checks pass. Browser and fluent-
+speaker review were not run. The remaining vocabulary audit and translations
+across locales are still in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/568cd52c1">Correct Bulgarian migration and monitoring vocabulary</a>. Thanks to xet7.</summary>
+
+Corrected 58 Bulgarian entries for migration controls, monitoring, schedules
+and S3 storage. Replaced Serbian text and English labels while preserving
+existing Bulgarian translations, endpoint examples, region codes and numeric
+intervals.
+
+Bulgarian vocabulary and placeholder tests, translation URL checks and all 21
+human-translation preference checks pass. Browser and fluent-speaker review
+were not run. Vocabulary auditing continues; the repository-wide missing-
+string report still lists 176 locales with untranslated strings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/485762c0e">Translate Leo outline import instructions</a>. Thanks to xet7.</summary>
+
+Translated the new Leo import instruction in 59 reviewed locales, explaining
+how outline levels become lists, cards and checklists, how node text becomes
+card descriptions, and how marked nodes import as completed. Existing
+translations are preserved.
+
+All 27 locale regression suites and 21 human-translation preference checks
+pass. Tests check translated text, placeholders, the Leo name and .leo
+extension, with outline mapping coverage in Finnish. Browser and fluent-
+speaker review were not run. Other locales and the Bulgarian vocabulary audit
+remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/fde997661">Correct Bulgarian chart help and action labels</a>. Thanks to xet7.</summary>
+
+Replaced Serbian text in the confirmation and scheduled-task labels and the
+size-versus-cycle-time chart help. The chart help now explains missing
+estimates, invalid dates and the creation/archive date fallbacks. Reviewed the
+later Blockly and planning entries while preserving existing Bulgarian
+translations.
+
+Bulgarian vocabulary and placeholder tests, translation URL checks and all 21
+human-translation preference checks pass. Browser and fluent-speaker review
+were not run. Earlier vocabulary review gaps and translations in other locales
+remain to be completed.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
 
 # v12.09 2026-09-28 WeKan ® release
 
@@ -4751,7 +6969,7 @@ effect adapters and in-flight fencing remain in TODO Later.
 
 </details>
 
-and improves daily Scrum reporting:
+and improves Scrum reporting and History recovery:
 
 <details>
 <summary><a href="https://github.com/wekan/wekan/commit/8a3a1d1b3">Keep interrupted normal-import cleanup recoverable</a>. Thanks to xet7.</summary>
@@ -7265,7 +9483,8 @@ text and other prose fields. Keep credentials, searches, URLs, dates, numbers
 and structured tokens single-line. Expose the native resize handle and preserve
 the chosen size while typing. Include the calendar's Add Card dialog.
 
-Apply Member Settings / Change Settings / Submit editors with Enter consistently:
+Apply Member Settings / Change Settings / Submit editors with Enter
+consistently:
 Enter saves when enabled and Shift+Enter adds a line; when disabled, Enter adds
 a line and Ctrl/Cmd+Enter saves. Preserve IME composition, mention selection,
 existing validation, single-submit protection and server permission checks.

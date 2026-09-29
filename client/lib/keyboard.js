@@ -7,6 +7,8 @@ import Cards from '/models/cards';
 import { Filter } from '/client/lib/filter';
 import { MultiSelection } from '/client/lib/multiSelection';
 import { Utils } from '/client/lib/utils';
+import { newHistoryRequestId, runKeystroke } from '/client/lib/historyKeyRequest';
+import { historyRequestStorage, refreshPendingHistoryRequest } from '/client/lib/historyKeyRecovery';
 
 // Late-bind Sidebar to avoid circular dependency (sidebar.js needs its template first)
 let _Sidebar;
@@ -322,20 +324,32 @@ hotkeys('\xf7', archiveCard);
 // filter above disables shortcuts inside inputs/textareas/contentEditable, so
 // native text undo/redo keeps working while typing. Only enabled for members who
 // can modify the board.
-function undoRedoLast(method) {
+// Each keystroke carries a request ID kept in sessionStorage until the server
+// answers, so a reply lost to a disconnect or reload is retried rather than
+// repeated (client/lib/historyKeyRequest.js).
+export function undoRedoLast(direction) {
   const boardId = Session.get('currentBoard');
   if (!boardId || !Utils.canModifyBoard()) {
-    return;
+    return Promise.resolve();
   }
-  Meteor.call(method, boardId, () => {});
+  const storage = historyRequestStorage();
+  // Whatever happens, the recovery notice shows what is still unanswered
+  // (client/lib/historyKeyRecovery.js).
+  return runKeystroke({
+    storage,
+    call: (method, ...args) => Meteor.callAsync(method, ...args),
+    boardId,
+    direction,
+    newId: newHistoryRequestId(),
+  }).catch(() => {}).then(() => refreshPendingHistoryRequest(storage));
 }
 hotkeys('ctrl+z, command+z', event => {
   event.preventDefault();
-  undoRedoLast('changeHistory.undoLast');
+  undoRedoLast('undo');
 });
 hotkeys('ctrl+y, ctrl+shift+z, command+shift+z', event => {
   event.preventDefault();
-  undoRedoLast('changeHistory.redoLast');
+  undoRedoLast('redo');
 });
 
 hotkeys('n', (event) => {

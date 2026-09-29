@@ -331,6 +331,21 @@ test('every script in releases/ is reachable from BOTH menus', () => {
       + '      so it is not an operator-facing build menu command',
     'mac/package-app.sh': 'an internal GitHub workflow helper that wraps an\n'
       + '      existing macOS bundle; it is not an operator-facing build menu command',
+    // The next three were added after this guard was last updated (09b51d75a,
+    // 6bf4ac0f2, edefa8022). Each needs arguments only the operator has, and
+    // the two recovery tools must be run with EVERY writer stopped - a menu
+    // entry that runs them against a live server would be the fault, not the fix.
+    'recover-history-writer.cjs': 'an offline History recovery tool: it needs\n'
+      + '      MONGO_URL, --board/--null-board, the exact writer or migration UUID\n'
+      + '      and --offline, which asserts every writer is stopped. Run by hand\n'
+      + '      during recovery, never from a build menu',
+    'recover-rule-email.cjs': 'an offline rule-email reconciliation tool: it needs\n'
+      + '      the command hash, attempt UUID, operator, evidence reference,\n'
+      + '      --offline and --confirm-accepted after SMTP acceptance was verified\n'
+      + '      independently. Run by hand, never from a build menu',
+    'translations/add-pending-keys.mjs': 'adds NEW English interface strings from\n'
+      + '      a JSON file given as an argument (like add-language.mjs); run when a\n'
+      + '      feature introduces text, with arguments a menu cannot supply',
   };
 
   // These are explicit audit/internal helpers, not independent release-menu actions.
@@ -692,8 +707,11 @@ test('test runtimes cannot inherit the build tool half-of-RAM heap', () => {
     assert.match(flow, new RegExp(`NODE_OPTIONS="\\$TEST_NODE_OPTIONS"[^\\n]*${escaped}`),
       `${command} must use the bounded test-runtime heap`);
   }
+  // The Mocha line now also runs --full-app with WRITABLE_PATH and a test
+  // email-sweep interval (tests/mochaFullApp.test.cjs); what matters here is
+  // that it never takes the bounded test heap.
   assert.match(flow,
-    /mocha\)  METEOR_LOCAL_DIR=.*meteor test --once/,
+    /mocha\)  (?![^\n]*NODE_OPTIONS="\$TEST_NODE_OPTIONS")[^\n]*METEOR_LOCAL_DIR=[^\n]*meteor test --full-app --once/,
     'Meteor test keeps the larger build heap because it compiles a test application');
 });
 

@@ -815,7 +815,8 @@ Template.boardBody.helpers({
       allowPrivateVisibilityOnly !== undefined &&
       allowPrivateVisibilityOnly.booleanValue &&
       currentBoard &&
-      currentBoard.permission == 'public'
+      // #3249: an 'instance' board is not private either.
+      (currentBoard.permission === 'public' || currentBoard.permission === 'instance')
     );
   },
 
@@ -937,6 +938,10 @@ Template.boardBody.helpers({
 
   isViewSizeCycleTime() {
     return Utils.boardView() === 'board-view-size-cycle-time';
+  },
+
+  isViewMap() {
+    return Utils.boardView() === 'board-view-map';
   },
 
   isViewPulse() {

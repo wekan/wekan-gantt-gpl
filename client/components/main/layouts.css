@@ -608,6 +608,10 @@ kbd {
 .fa.fa-bell-slash.colorful {
   color: #f44336;
 }
+/* #3249: visible to every signed-in user - between public and private. */
+.fa.fa-users.colorful {
+  color: #e6a100;
+}
 .fa.fa-eye.colorful {
   color: #4336f4;
 }
@@ -683,6 +687,22 @@ a:not(.disabled).is-active i.fa {
 }
 .viewer em {
   font-style: italic;
+}
+/* wekan/wekan#2419: a GFM task-list item ("- [ ] Task") renders a disabled
+   native checkbox, which forms.css would otherwise hide like every bare
+   checkbox in the app. */
+.viewer input[type="checkbox"]:not(:checked),
+.viewer input[type="checkbox"]:checked {
+  display: inline-block;
+  visibility: visible;
+  position: static;
+  inset-inline-start: auto;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  margin-inline-end: 6px;
+  vertical-align: middle;
+  appearance: auto;
 }
 .viewer pre,
 .viewer code {
@@ -1301,4 +1321,25 @@ a:not(.disabled).is-active i.fa {
   100% {
     transform: rotate(360deg);
   }
+}
+
+/* Keyboard undo/redo still waiting for the server (historyRecoveryNotice). */
+.history-recovery-notice {
+  position: fixed;
+  inset-inline-start: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 1000;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 12px 16px;
+  border: 1px solid #e6a100;
+  border-radius: 4px;
+  background: #fff8e1;
+  color: #333;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.history-recovery-notice p {
+  margin: 0 0 8px;
+}
+.history-recovery-notice button {
+  margin-inline-end: 8px;
 }

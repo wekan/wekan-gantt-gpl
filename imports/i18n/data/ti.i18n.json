@@ -1303,6 +1303,7 @@
   "r-schedule-on-date": "ኣብ ዕለት",
   "r-of-cards-in-list": "ንካርድታት ኣብ ዝርዝር",
   "r-when-due": "ዕለት ገደብ ካርድ",
+  "r-when-card-date": "When this date of a card",
   "r-due-is-set": "ምስ ዝቕመጥ",
   "r-due-soon": "ምስ ዝቐርብ",
   "r-due-overdue": "ምስ ዝሓልፍ",
@@ -1396,6 +1397,7 @@
   "r-of": "of",
   "r-subject": "ኣርእስቲ",
   "r-email-vars-hint": "ዘለዉ ምልክታት: {card}, {cardLink}, {list}, {board}, {member}",
+  "r-vars-people-hint": "Also: {creator}, {assignees}, {members} (usernames in text, email addresses in To) and {customField:Field name}. These also work in member, list and swimlane names of other actions.",
   "r-rule-details": "ዝርዝር ሓበሬታ ሕጊ",
   "r-d-move-to-top-gen": "ካርድ ናብ ላዕሊ ዝርዝሩ ኣዛውር",
   "r-d-move-to-top-spec": "ካርድ ናብ ላዕሊ ዝርዝር ኣዛውር",
@@ -1569,6 +1571,12 @@
   "newUserPopup-title": "ሓድሽ ተጠቃሚ",
   "notifications": "መልእኽትታት",
   "notification-settings-popup-description": "እትቕበሎም መልእኽትታት ተቖጻጸር። ቅደም ስዓብ ቀዳምነት: ቅንብር ናይ ኣመሓዳሪ ፓነል፣ ደሓር ናይ ሰሌዳ ለውጢ፣ ደሓር ናይ ገዛእ ርእስኻ ናይ ኣባል ቅንብር።",
+  "due-reminder-heading": "Due date reminders",
+  "due-reminder-days-label": "Remind on these days, separated by commas: 0 is the due day, positive numbers are days before it and negative numbers days after it. Leave empty to use the server default.",
+  "due-reminder-off": "No due date reminders on this board",
+  "due-reminder-webhook": "Also send due date reminders to this board's outgoing webhooks",
+  "due-reminder-invalid": "Use up to ten whole days from -14 to 14.",
+  "due-reminder-saved": "Due date reminders saved.",
   "notification-settings-tray": "ናይ መልእኽቲ ማዕቀኒ",
   "help": "ሓገዝ",
   "view-all": "ኩሉ ርኣይ",
@@ -3516,5 +3524,6 @@
   "scrum-daily-empty": "No daily observations have been recorded for this sprint.",
   "scrum-observed-scope": "Observed scope",
   "scrum-daily-observations-export-help": "First recorded observation of each UTC day; missing days are omitted. Observations do not record every change or end-of-day totals. Unknown estimates are not zero.",
-  "scrum-import-pending": "The Scrum import is incomplete. Scrum edits and report exports are unavailable."
+  "scrum-import-pending": "The Scrum import is incomplete. Scrum edits and report exports are unavailable.",
+  "saml-login-not-started": "This SAML sign-in was not started in this browser tab. Please sign in again."
 }

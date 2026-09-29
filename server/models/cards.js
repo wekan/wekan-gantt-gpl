@@ -47,6 +47,8 @@ import { canEditCardOrLinkedCard } from '/server/lib/linkedCardPermission';
 import getSlug from 'limax';
 
 const getTAPi18n = () => require('/imports/i18n').TAPi18n;
+const { isOpenPermission } = require('/models/lib/boardPermission');
+const { parentFields } = require('/models/lib/cardParents');
 
 function getTranslatedString(key, fallback, options) {
   const i18n = getTAPi18n && getTAPi18n();
@@ -94,9 +96,9 @@ Meteor.methods({
     const privateOnly = await TableVisibilityModeSettings.findOneAsync(
       'tableVisibilityMode-allowPrivateOnly',
     );
-    const requestedPermission = sourceBoard.permission === 'public' ? 'public' : 'private';
+    const requestedPermission = isOpenPermission(sourceBoard.permission) ? sourceBoard.permission : 'private';
     const permission = privateOnly?.booleanValue ? 'private' : requestedPermission;
-    if (privateOnly?.booleanValue && requestedPermission === 'public') {
+    if (privateOnly?.booleanValue && isOpenPermission(requestedPermission)) {
       try {
         require('/server/lib/securityLog').record({
           key: 'authz.board-visibility', action: 'blocked',
@@ -807,16 +809,22 @@ Meteor.methods({
     // Reject a forged merge before copying children or emitting activities.
     await require('/server/lib/adminOnlyCustomFields').assertFieldWrite(
       this.userId, card, { ...card, ...mergeCardValues }, 'method:copyCard');
-    Object.assign(card, mergeCardValues);
-
-    const sort = await card.getSort(listId, swimlaneId, insertAtTop);
-    if (insertAtTop) {
-      card.sort = sort - 1;
-    } else {
-      card.sort = sort + 1;
+    const { cardWithCopyOverrides } = require('/models/lib/cardCopyOverrides');
+    let copy;
+    try { copy = cardWithCopyOverrides(card, mergeCardValues); }
+    catch (error) {
+      try {
+        if (error.securityAttempt) require('/server/lib/securityLog').record({ key: 'authz.card-copy-overrides',
+          action: 'blocked', source: 'method:copyCard', userId: this.userId,
+          detail: 'Unsupported card-copy overrides refused' });
+      } catch (e) { /* logging must never break the guard */ }
+      throw new Meteor.Error('bad-request', 'Invalid card copy overrides');
     }
 
-    return await card.copy(boardId, swimlaneId, listId);
+    await require('/server/lib/cardCopyDestination').requireCardCopyDestination(boardId, swimlaneId, listId);
+    const sort = await copy.getSort(listId, swimlaneId, insertAtTop);
+    copy.sort = insertAtTop ? sort - 1 : sort + 1;
+    return await copy.copy(boardId, swimlaneId, listId);
   },
 
   // #2209: "Create template from element" — save an EXISTING card as a card
@@ -1565,9 +1573,11 @@ WebApp.handlers.put(
       // board publication would then hand that private card to everyone
       // subscribed to this board.
       await assertParentCardIsVisible(req.userId, req.body.parentId);
+      // #3626: over REST, parentId makes that card the ONE parent, as it did
+      // before cards could have several - parentIds follows it.
       await Cards.direct.updateAsync(
         { _id: paramCardId, listId: paramListId, boardId: paramBoardId, archived: false },
-        { $set: { parentId: req.body.parentId } },
+        { $set: parentFields([req.body.parentId]) },
       );
       updated = true;
     }
@@ -2346,7 +2356,13 @@ WebApp.handlers.post(
       return;
     }
 
-    const newId = await card.copy(toBoardId, toSwimlaneId, toListId);
+    let newId;
+    try { newId = await card.copy(toBoardId, toSwimlaneId, toListId); }
+    catch (error) {
+      if (error.error !== 'invalid-copy-destination') throw error;
+      sendJsonResult(res, { code: 400, data: { error: error.reason } });
+      return;
+    }
 
     if (Object.prototype.hasOwnProperty.call(req.body, 'position')) {
       const siblings = await ReactiveCache.getCards(

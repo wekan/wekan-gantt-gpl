@@ -50,6 +50,7 @@ import {
 import getSlug from 'limax';
 import { fetchImportedAttachment } from './lib/importAttachmentDownload';
 import { runImportPipeline, writeImportedEntity } from './lib/importPipeline';
+const { cardParentIds, parentFields } = require('/models/lib/cardParents');
 
 const DateString = Match.Where(function(dateAsString) {
   check(dateAsString, String);
@@ -193,7 +194,7 @@ export class WekanCreator {
         // allowed values (is it worth the maintenance?)
         color: String,
         permission: Match.Where(value => {
-          return ['private', 'public'].indexOf(value) >= 0;
+          return ['private', 'instance', 'public'].indexOf(value) >= 0;
         }),
       }),
     );
@@ -398,7 +399,7 @@ export class WekanCreator {
       });
     }
 
-    const boardId = await Boards.direct.insertAsync(boardToCreate);
+    const boardId = await writeImportedEntity(Boards, boardToCreate);
     await Boards.direct.updateAsync(boardId, {
       $set: {
         modifiedAt: this._now(),
@@ -546,7 +547,7 @@ export class WekanCreator {
       }
 
       // insert card
-      const cardId = await Cards.direct.insertAsync(cardToCreate);
+      const cardId = await writeImportedEntity(Cards, cardToCreate);
       // keep track of Wekan id => Wekan id
       this.cards[card._id] = cardId;
       // // log activity
@@ -578,7 +579,7 @@ export class WekanCreator {
           };
           // dateLastActivity will be set from activity insert, no need to
           // update it ourselves
-          const commentId = await CardComments.direct.insertAsync(commentToCreate);
+          const commentId = await writeImportedEntity(CardComments, commentToCreate);
           this.commentIds[comment._id] = commentId;
           // Activities.direct.insert({
           //   activityType: 'addComment',
@@ -822,17 +823,21 @@ export class WekanCreator {
       //        When importing boards between instances the IDs are definitely
       //        lost if source and parent are two different boards
       //        This is not the place to fix it, the entire subtask system needs to be rethought there.
-      const parentIdInNewBoard = this.cards[card.parentId]
-        ? this.cards[card.parentId]
-        : card.parentId;
+      // #3626: every parent of the card, each mapped the same way; a parent
+      // that does not exist here is dropped, and the first one kept is primary.
+      const parentsInNewBoard = [];
+      for (const sourceParentId of cardParentIds(card)) {
+        const parentIdInNewBoard = this.cards[sourceParentId]
+          ? this.cards[sourceParentId]
+          : sourceParentId;
+        if (await ReactiveCache.getCard(parentIdInNewBoard)) parentsInNewBoard.push(parentIdInNewBoard);
+      }
 
-      //if the parent card exists, proceed
-      if (await ReactiveCache.getCard(parentIdInNewBoard)) {
-        //set parent id of the card in the new board to the new id of the parent
+      //if a parent card exists, proceed
+      if (parentsInNewBoard.length) {
+        //set the parents of the card in the new board to the new ids
         await Cards.direct.updateAsync(cardIdInNewBoard, {
-          $set: {
-            parentId: parentIdInNewBoard,
-          },
+          $set: parentFields(parentsInNewBoard),
         });
       }
     }
@@ -931,8 +936,7 @@ export class WekanCreator {
     for (const rule of wekanRules) {
       // Create the rule
       rule.boardId = boardId;
-      rule.triggerId = this.triggers[rule.triggerId];
-      rule.actionId = this.actions[rule.actionId];
+      require('/models/lib/ruleParts').remapRuleParts(rule, this.triggers, this.actions);
       delete rule._id;
       await Rules.direct.insertAsync(rule);
     }

@@ -1303,6 +1303,7 @@
   "r-schedule-on-date": "w dniu — pò kaszëbskù",
   "r-of-cards-in-list": "dla kôrtòw na liście",
   "r-when-due": "Gdy termin wykonania kôrtë",
+  "r-when-card-date": "When this date of a card",
   "r-due-is-set": "zostanié ustawiony",
   "r-due-soon": "się zbliża — pò kaszëbskù",
   "r-due-overdue": "jest przekroczony — pò kaszëbskù",
@@ -1396,6 +1397,7 @@
   "r-of": "z — pò kaszëbskù",
   "r-subject": "temat — pò kaszëbskù",
   "r-email-vars-hint": "Dostãpné etiketë: {card}, {cardLink}, {list}, {board}, {member}",
+  "r-vars-people-hint": "Also: {creator}, {assignees}, {members} (usernames in text, email addresses in To) and {customField:Field name}. These also work in member, list and swimlane names of other actions.",
   "r-rule-details": "Szczegòły reguł",
   "r-d-move-to-top-gen": "Przeniesë kôrtã na początek lëstë",
   "r-d-move-to-top-spec": "Przeniesë kôrtã na początek lëstë",
@@ -1569,6 +1571,12 @@
   "newUserPopup-title": "Nowi brëkòwnik",
   "notifications": "Wiadła",
   "notification-settings-popup-description": "Kòntrolëjë, jaczé wiadła dostôwôsz. Kòlejnosc pierszeństwa: ùstôwa Panelu Administratora, pòtemù zmiana Tôfli, pòtemù twòjô włôsnô ùstôwa Cztonka.",
+  "due-reminder-heading": "Due date reminders",
+  "due-reminder-days-label": "Remind on these days, separated by commas: 0 is the due day, positive numbers are days before it and negative numbers days after it. Leave empty to use the server default.",
+  "due-reminder-off": "No due date reminders on this board",
+  "due-reminder-webhook": "Also send due date reminders to this board's outgoing webhooks",
+  "due-reminder-invalid": "Use up to ten whole days from -14 to 14.",
+  "due-reminder-saved": "Due date reminders saved.",
   "notification-settings-tray": "Tacka wiadłów",
   "help": "Pòmòc",
   "view-all": "Wyświetl wszystko — pò kaszëbskù",
@@ -3516,5 +3524,6 @@
   "scrum-daily-empty": "No daily observations have been recorded for this sprint.",
   "scrum-observed-scope": "Observed scope",
   "scrum-daily-observations-export-help": "First recorded observation of each UTC day; missing days are omitted. Observations do not record every change or end-of-day totals. Unknown estimates are not zero.",
-  "scrum-import-pending": "The Scrum import is incomplete. Scrum edits and report exports are unavailable."
+  "scrum-import-pending": "The Scrum import is incomplete. Scrum edits and report exports are unavailable.",
+  "saml-login-not-started": "This SAML sign-in was not started in this browser tab. Please sign in again."
 }

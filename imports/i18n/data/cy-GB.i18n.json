@@ -1303,6 +1303,7 @@
   "r-schedule-on-date": "ar ddyddiad",
   "r-of-cards-in-list": "ar gyfer cardiau mewn rhestr",
   "r-when-due": "Pan fydd dyddiad cwblhau cerdyn",
+  "r-when-card-date": "When this date of a card",
   "r-due-is-set": "wedi'i osod",
   "r-due-soon": "yn agosáu",
   "r-due-overdue": "yn hwyr",
@@ -1396,6 +1397,7 @@
   "r-of": "o",
   "r-subject": "pwnc",
   "r-email-vars-hint": "Tagiau sydd ar gael: {card}, {cardLink}, {list}, {board}, {member}",
+  "r-vars-people-hint": "Also: {creator}, {assignees}, {members} (usernames in text, email addresses in To) and {customField:Field name}. These also work in member, list and swimlane names of other actions.",
   "r-rule-details": "Manylion y rheol",
   "r-d-move-to-top-gen": "Symud cerdyn i frig ei restr",
   "r-d-move-to-top-spec": "Symud cerdyn i frig y rhestr",
@@ -1569,6 +1571,12 @@
   "newUserPopup-title": "Defnyddiwr Newydd",
   "notifications": "Hysbysiadau",
   "notification-settings-popup-description": "Rheolwch pa hysbysiadau rydych yn eu derbyn. Trefn blaenoriaeth: gosodiad y Panel Gweinyddol, yna gwrthwneud y Bwrdd, yna eich gwrthwneud gosodiad Aelod eich hun.",
+  "due-reminder-heading": "Due date reminders",
+  "due-reminder-days-label": "Remind on these days, separated by commas: 0 is the due day, positive numbers are days before it and negative numbers days after it. Leave empty to use the server default.",
+  "due-reminder-off": "No due date reminders on this board",
+  "due-reminder-webhook": "Also send due date reminders to this board's outgoing webhooks",
+  "due-reminder-invalid": "Use up to ten whole days from -14 to 14.",
+  "due-reminder-saved": "Due date reminders saved.",
   "notification-settings-tray": "Hambwrdd Hysbysiadau",
   "help": "Cymorth",
   "view-all": "Gweld Pawb",
@@ -3516,5 +3524,6 @@
   "scrum-daily-empty": "No daily observations have been recorded for this sprint.",
   "scrum-observed-scope": "Observed scope",
   "scrum-daily-observations-export-help": "First recorded observation of each UTC day; missing days are omitted. Observations do not record every change or end-of-day totals. Unknown estimates are not zero.",
-  "scrum-import-pending": "The Scrum import is incomplete. Scrum edits and report exports are unavailable."
+  "scrum-import-pending": "The Scrum import is incomplete. Scrum edits and report exports are unavailable.",
+  "saml-login-not-started": "This SAML sign-in was not started in this browser tab. Please sign in again."
 }

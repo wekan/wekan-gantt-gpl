@@ -29,29 +29,174 @@ function uniq(arr) {
   return [...new Set(arr.filter(Boolean))];
 }
 
+// --- Kanboard ---------------------------------------------------------------
+// Kanboard has no single-file export; its JSON-RPC API is assembled into
+// { board, columns, swimlanes, categories, tasks }, each task carrying what
+// getAllSubtasks / getAllComments / getTaskTags / getAllTaskFiles /
+// getAllTaskLinks returned for it. Ids resolve through the sibling arrays so
+// a task with only column_id/swimlane_id/category_id still lands correctly.
+const KANBOARD_COLORS = {
+  yellow: 'yellow', blue: 'blue', green: 'green', purple: 'purple', red: 'red',
+  orange: 'orange', grey: 'gray', brown: 'saddlebrown', deep_orange: 'crimson',
+  dark_grey: 'black', pink: 'pink', teal: 'paleturquoise', cyan: 'sky',
+  lime: 'lime', light_green: 'darkgreen', amber: 'gold',
+};
+
+function byId(items, nameKeys) {
+  const map = {};
+  (Array.isArray(items) ? items : []).forEach(item => {
+    if (!item || item.id === undefined || item.id === null) return;
+    const name = nameKeys.map(k => item[k]).find(v => typeof v === 'string' && v);
+    if (name) map[String(item.id)] = name;
+  });
+  return map;
+}
+
+function kanboardTags(tags) {
+  if (Array.isArray(tags)) return tags.map(t => (typeof t === 'string' ? t : t && t.name)).filter(Boolean);
+  // getTaskTags returns { "<tag id>": "<name>" }.
+  if (tags && typeof tags === 'object') return Object.values(tags).filter(t => typeof t === 'string' && t);
+  return [];
+}
+
+export function parseKanboard(data) {
+  const columnNames = byId(data.columns, ['title', 'name']);
+  const swimlaneNames = byId(data.swimlanes, ['name', 'title']);
+  const categoryNames = byId(data.categories, ['name']);
+  const unsupported = [];
+  const rawTasks = Array.isArray(data) ? data : Array.isArray(data.tasks) ? data.tasks : [];
+  const tasks = rawTasks.map((task, index) => {
+    const at = `/tasks/${index}`;
+    const tags = kanboardTags(task.tags);
+    const category = task.category_name || categoryNames[String(task.category_id)];
+    if (category) tags.push(category);
+    const priority = Number(task.priority);
+    if (Number.isFinite(priority) && priority > 0) tags.push(`priority:${priority}`);
+    const subtasks = Array.isArray(task.subtasks) ? task.subtasks : [];
+    const estimated = Number(task.time_estimated);
+    if (Number.isFinite(estimated) && estimated > 0) {
+      unsupported.push({ path: `${at}/time_estimated`, reason: 'WeKan cards have no estimate field; map it to a custom field by hand' });
+    }
+    for (const key of ['files', 'links', 'external_links']) {
+      if (Array.isArray(task[key]) && task[key].length) {
+        unsupported.push({
+          path: `${at}/${key}`,
+          reason: key === 'files'
+            ? `${task[key].length} file(s): the API export carries metadata, not file contents`
+            : `${task[key].length} task link(s) are not imported`,
+        });
+      }
+    }
+    const footer = task.url ? `Source: ${task.url}` : '';
+    return {
+      title: task.title || 'Imported task',
+      description: [task.description || '', footer].filter(Boolean).join('\n\n'),
+      column_name: task.column_name || task.column_title || columnNames[String(task.column_id)],
+      swimlane_name: task.swimlane_name || swimlaneNames[String(task.swimlane_id)],
+      date_due: task.date_due,
+      date_started: task.date_started,
+      date_end: task.date_completed,
+      date_creation: task.date_creation,
+      archived: task.is_active === '0' || task.is_active === 0 || task.is_active === false,
+      color: KANBOARD_COLORS[task.color_id] || undefined,
+      spent_hours: task.time_spent,
+      owner_id: task.owner_id,
+      owner_username: task.owner_username || task.assignee_username,
+      owner_name: task.owner_name || task.assignee_name,
+      requested_by: task.creator_username || task.creator_name || undefined,
+      tags: uniq(tags),
+      checklists: subtasks.length ? [{
+        title: 'Subtasks',
+        items: subtasks.map(sub => ({ title: sub && sub.title, done: String(sub && sub.status) === '2' })),
+      }] : [],
+      comments: (Array.isArray(task.comments) ? task.comments : []).map(comment => ({
+        text: comment && comment.comment,
+        author: comment && (comment.username || comment.name),
+        date: comment && comment.date_creation,
+      })),
+    };
+  });
+  return {
+    board: { name: (data.board && (data.board.name || data.board.title)) || data.name || 'Imported Kanboard project' },
+    columns: Array.isArray(data.columns) && data.columns.length
+      ? data.columns.map(c => ({ title: c.title || c.name })).filter(c => c.title)
+      : uniq(tasks.map(t => t.column_name)).map(title => ({ title })),
+    swimlanes: Array.isArray(data.swimlanes) && data.swimlanes.length
+      ? data.swimlanes.map(s => ({ name: s.name || s.title })).filter(s => s.name)
+      : [{ name: 'Default' }],
+    tasks,
+    warnings: [],
+    unsupported,
+  };
+}
+
 // --- NextCloud Deck ---------------------------------------------------------
-// Accepts a Deck board with stacks (each stack carries its cards), e.g. the
-// shape returned by the Deck REST API (GET /boards/{id} + /stacks).
+// Accepts a Deck board with stacks (each stack carrying its cards), the shape
+// of GET /boards/{id} plus /stacks in the Deck REST API. Comments come from
+// the separate OCS comments API and are read from `card.comments` when the
+// export embedded them. Trashed stacks and cards (a non-zero `deletedAt`) are
+// skipped; sharing (acl) is never imported, because naming a user in a file
+// must not grant them access to the new board.
+function deckUser(user) {
+  if (!user) return undefined;
+  if (typeof user === 'string') return user;
+  const who = user.participant || user;
+  return who.uid || who.primaryKey || who.displayname || undefined;
+}
+
+function deckLive(item) {
+  return item && !(Number(item.deletedAt) > 0);
+}
+
+function byOrder(a, b) {
+  return (Number(a.order) || 0) - (Number(b.order) || 0);
+}
+
 export function parseNextcloudDeck(data) {
   const board = data.board || data;
-  const stacks = board.stacks || data.stacks || [];
+  const allStacks = Array.isArray(board.stacks) ? board.stacks : Array.isArray(data.stacks) ? data.stacks : [];
+  const stacks = allStacks.filter(deckLive).sort(byOrder);
+  const unsupported = [];
+  const warnings = [];
+  const trashed = allStacks.length - stacks.length;
+  if (trashed) warnings.push({ path: '/stacks', reason: `${trashed} deleted stack(s) skipped` });
+  if (Array.isArray(board.acl) && board.acl.length) {
+    unsupported.push({ path: '/acl', reason: `${board.acl.length} sharing rule(s): board access is granted in WeKan, not by an import` });
+  }
   const tasks = [];
   stacks.forEach(stack => {
-    (stack.cards || []).forEach(card => {
+    const stackIndex = allStacks.indexOf(stack);
+    const cards = (Array.isArray(stack.cards) ? stack.cards : []);
+    const live = cards.filter(deckLive).sort(byOrder);
+    if (cards.length !== live.length) {
+      warnings.push({ path: `/stacks/${stackIndex}/cards`, reason: `${cards.length - live.length} deleted card(s) skipped` });
+    }
+    live.forEach(card => {
+      const at = `/stacks/${stackIndex}/cards/${cards.indexOf(card)}`;
+      const people = (Array.isArray(card.assignedUsers) ? card.assignedUsers : []).map(deckUser).filter(Boolean);
+      const attachments = Array.isArray(card.attachments) ? card.attachments.length : Number(card.attachmentCount) || 0;
+      if (attachments) {
+        unsupported.push({ path: `${at}/attachments`, reason: `${attachments} attachment(s) are Nextcloud files, not part of the export` });
+      }
       tasks.push({
         title: card.title || 'Imported card',
         description: card.description || '',
         column_name: stack.title,
         swimlane_name: 'Default',
         date_due: card.duedate || card.dueDate,
-        owner_username:
-          (card.assignedUsers &&
-            card.assignedUsers[0] &&
-            (card.assignedUsers[0].participant
-              ? card.assignedUsers[0].participant.uid
-              : card.assignedUsers[0].uid)) ||
-          card.owner,
-        tags: (card.labels || []).map(l => (typeof l === 'string' ? l : l.title)),
+        date_creation: card.createdAt,
+        // Deck 1.13+ marks a card done with a timestamp.
+        date_end: card.done || undefined,
+        archived: card.archived === true,
+        owner_username: people[0] || deckUser(card.owner),
+        assignees: people.slice(1),
+        requested_by: deckUser(card.owner),
+        tags: (card.labels || []).map(l => (typeof l === 'string' ? l : l && l.title)).filter(Boolean),
+        comments: (Array.isArray(card.comments) ? card.comments : []).map(comment => ({
+          text: comment && comment.message,
+          author: comment && (comment.actorId || comment.actorDisplayName),
+          date: comment && comment.creationDateTime,
+        })),
       });
     });
   });
@@ -60,35 +205,133 @@ export function parseNextcloudDeck(data) {
     columns: stacks.map(s => ({ title: s.title })),
     swimlanes: [{ name: 'Default' }],
     tasks,
+    warnings,
+    unsupported,
   };
 }
 
 // --- OpenProject ------------------------------------------------------------
 // Accepts a work-packages collection (GET /api/v3/work_packages), i.e.
-// { _embedded: { elements: [ { subject, description:{raw}, dueDate,
-//   _links:{ status:{title}, assignee:{title}, type:{title} } } ] } }.
+// { _embedded: { elements: [ { id, subject, description:{raw}, startDate,
+//   dueDate, spentTime:"PT1H30M", _links:{ status, type, priority, assignee,
+//   responsible, author, parent, category, version, customFieldN } } ] } }.
+// Custom-field names come from embedded schemas when the export carries them
+// (_embedded.schemas, per the API's resource-schema concept); comments,
+// relations, watchers and attachments are read when embedded on a work
+// package, since the collection itself only links to them.
+// ISO 8601 duration as hours; OpenProject uses PT..H..M and P..D for days.
+export function isoDurationHours(value) {
+  if (typeof value !== 'string') return undefined;
+  const m = /^P(?:(\d+(?:\.\d+)?)D)?(?:T(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?)?$/.exec(value);
+  if (!m || value === 'P' || value === 'PT') return undefined;
+  const [, d = 0, h = 0, min = 0, sec = 0] = m;
+  return Math.round((Number(d) * 24 + Number(h) + Number(min) / 60 + Number(sec) / 3600) * 100) / 100;
+}
+
+function halTitle(link) {
+  if (Array.isArray(link)) return link.map(halTitle).filter(Boolean).join(', ') || undefined;
+  return (link && typeof link === 'object' && typeof link.title === 'string' && link.title) || undefined;
+}
+
+function halId(link) {
+  const href = link && typeof link === 'object' ? link.href : undefined;
+  const m = typeof href === 'string' && /\/(\d+)\/?$/.exec(href);
+  return m ? m[1] : undefined;
+}
+
+function embeddedElements(owner, key) {
+  const value = owner && owner._embedded && owner._embedded[key];
+  if (Array.isArray(value)) return value;
+  return (value && Array.isArray(value.elements) && value.elements) || [];
+}
+
+const OPENPROJECT_RELATIONS = {
+  blocks: 'blocks', blocked: 'is-blocked-by', duplicates: 'duplicates', duplicated: 'is-duplicated-by',
+};
+
 export function parseOpenProject(data) {
   const elements =
     (data._embedded && data._embedded.elements) ||
     data.elements ||
     (Array.isArray(data) ? data : []);
-  const tasks = elements.map(wp => {
+  // customFieldN -> its name, from any embedded schema.
+  const fieldNames = {};
+  const schemas = embeddedElements(data, 'schemas');
+  elements.forEach(wp => { if (wp && wp._embedded && wp._embedded.schema) schemas.push(wp._embedded.schema); });
+  schemas.forEach(schema => {
+    Object.keys(schema || {}).filter(k => /^customField\d+$/.test(k)).forEach(key => {
+      if (schema[key] && typeof schema[key].name === 'string') fieldNames[key] = schema[key].name;
+    });
+  });
+  const unsupported = [];
+  const tasks = elements.map((wp, index) => {
+    const at = `/_embedded/elements/${index}`;
     const links = wp._links || {};
+    const custom = {};
+    const addField = (key, value) => {
+      if (value === undefined || value === null || value === '') return;
+      custom[fieldNames[key] || key] = value;
+    };
+    Object.keys(wp).filter(k => /^customField\d+$/.test(k)).forEach(key => {
+      const value = wp[key];
+      addField(key, value && typeof value === 'object' && !Array.isArray(value) ? value.raw : value);
+    });
+    Object.keys(links).filter(k => /^customField\d+$/.test(k)).forEach(key => addField(key, halTitle(links[key])));
+    const estimated = isoDurationHours(wp.estimatedTime);
+    if (estimated !== undefined) custom['Estimated time (hours)'] = estimated;
+    if (typeof wp.percentageDone === 'number') custom['Progress (%)'] = wp.percentageDone;
+
+    const id = wp.id !== undefined && wp.id !== null ? String(wp.id) : undefined;
+    const dependencies = [];
+    embeddedElements(wp, 'relations').forEach(rel => {
+      const relLinks = (rel && rel._links) || {};
+      const from = halId(relLinks.from);
+      const to = halId(relLinks.to);
+      // Each relation is listed on both work packages; keep the "from" side.
+      if (!id || from !== id || !to) return;
+      dependencies.push({ ref: to, type: OPENPROJECT_RELATIONS[rel.type] || 'related-to' });
+    });
+    const watchers = embeddedElements(wp, 'watchers').length;
+    if (watchers) unsupported.push({ path: `${at}/watchers`, reason: `${watchers} watcher(s) are not imported` });
+    const attachments = embeddedElements(wp, 'attachments').length;
+    if (attachments) unsupported.push({ path: `${at}/attachments`, reason: `${attachments} attachment(s): the API export carries metadata, not file contents` });
+
+    const tags = [
+      halTitle(links.type),
+      links.priority && halTitle(links.priority) && `priority:${halTitle(links.priority)}`,
+      halTitle(links.category),
+      links.version && halTitle(links.version) && `version:${halTitle(links.version)}`,
+    ].filter(Boolean);
     return {
+      ref: id,
+      parent_ref: halId(links.parent),
+      dependencies,
       title: wp.subject || wp.name || 'Imported work package',
       description: (wp.description && (wp.description.raw || wp.description.html)) || '',
-      column_name: (links.status && links.status.title) || wp.status || 'Imported',
+      column_name: halTitle(links.status) || wp.status || 'Imported',
       swimlane_name: 'Default',
-      date_due: wp.dueDate || wp.due_date,
-      owner_username: links.assignee && links.assignee.title,
-      tags: [links.type && links.type.title].filter(Boolean),
+      date_due: wp.dueDate || wp.due_date || wp.date,
+      date_started: wp.startDate,
+      date_creation: wp.createdAt,
+      spent_hours: isoDurationHours(wp.spentTime),
+      owner_username: halTitle(links.assignee),
+      assignees: [halTitle(links.responsible)].filter(Boolean),
+      requested_by: halTitle(links.author),
+      tags,
+      custom_fields: custom,
+      comments: embeddedElements(wp, 'activities')
+        .filter(a => a && a._type === 'Activity::Comment' && a.comment && a.comment.raw)
+        .map(a => ({ text: a.comment.raw, author: halTitle(a._links && a._links.user), date: a.createdAt })),
     };
   });
+  const project = elements[0] && elements[0]._links && halTitle(elements[0]._links.project);
   return {
-    board: { name: (data._links && data._links.self && data._links.self.title) || 'Imported OpenProject' },
+    board: { name: (data._links && data._links.self && data._links.self.title) || project || 'Imported OpenProject' },
     columns: uniq(tasks.map(t => t.column_name)).map(title => ({ title })),
     swimlanes: [{ name: 'Default' }],
     tasks,
+    warnings: [],
+    unsupported,
   };
 }
 
@@ -216,54 +459,279 @@ export function parseGitlab(data) {
 }
 
 // --- Asana ----------------------------------------------------------------
-// Accepts an Asana tasks export { data: [ { name, notes, completed, due_on,
-//   memberships:[{section:{name}}], tags:[{name}], assignee:{name} } ] }.
+// Accepts an Asana tasks response { data: [ task ] } (GET /tasks with
+// opt_fields). A task: { gid, name, notes, completed, completed_at,
+// created_at, start_on|start_at, due_on|due_at, assignee, followers,
+// memberships:[{section:{name}}], tags, parent:{gid}, subtasks,
+// dependencies:[{gid}], custom_fields, stories, attachments, permalink_url }.
+// Subtasks fetched as tasks of their own link to their parent card; compact
+// subtasks embedded on a task (not listed separately) become a checklist.
+// Comments are the `comment_added` stories, when the export embedded them.
+function asanaCustomValue(field) {
+  if (!field || typeof field !== 'object') return undefined;
+  if (typeof field.number_value === 'number') return field.number_value;
+  if (typeof field.text_value === 'string' && field.text_value) return field.text_value;
+  if (field.enum_value && field.enum_value.name) return field.enum_value.name;
+  if (Array.isArray(field.multi_enum_values) && field.multi_enum_values.length) {
+    return field.multi_enum_values.map(v => v && v.name).filter(Boolean);
+  }
+  if (field.date_value && (field.date_value.date_time || field.date_value.date)) {
+    return field.date_value.date_time || field.date_value.date;
+  }
+  if (Array.isArray(field.people_value) && field.people_value.length) {
+    return field.people_value.map(p => p && (p.name || p.email)).filter(Boolean);
+  }
+  return typeof field.display_value === 'string' && field.display_value ? field.display_value : undefined;
+}
+
+function asanaUser(user) {
+  return user && (user.email || user.name || user.gid) || undefined;
+}
+
 export function parseAsana(data) {
-  const items = Array.isArray(data) ? data : (data.data || []);
-  const tasks = items.map(t => {
+  const items = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
+  const listed = new Set(items.map(t => t && t.gid).filter(Boolean).map(String));
+  const unsupported = [];
+  const tasks = items.map((t, index) => {
+    const at = `/data/${index}`;
     const section =
       (t.memberships && t.memberships[0] && t.memberships[0].section &&
         t.memberships[0].section.name) ||
       (t.completed ? 'Done' : 'In Progress');
+    const custom = {};
+    (Array.isArray(t.custom_fields) ? t.custom_fields : []).forEach(field => {
+      const value = asanaCustomValue(field);
+      if (field && field.name && value !== undefined) custom[field.name] = value;
+    });
+    const embedded = (Array.isArray(t.subtasks) ? t.subtasks : []).filter(sub => !(sub && sub.gid && listed.has(String(sub.gid))));
+    const followers = Array.isArray(t.followers) ? t.followers.length : 0;
+    if (followers) unsupported.push({ path: `${at}/followers`, reason: `${followers} follower(s) are not imported` });
+    const attachments = Array.isArray(t.attachments) ? t.attachments.length : 0;
+    if (attachments) unsupported.push({ path: `${at}/attachments`, reason: `${attachments} attachment(s): the API export carries metadata, not file contents` });
+    const footer = t.permalink_url ? `Source: ${t.permalink_url}` : '';
     return {
+      ref: t.gid !== undefined && t.gid !== null ? String(t.gid) : undefined,
+      parent_ref: t.parent && t.parent.gid !== undefined ? String(t.parent.gid) : undefined,
+      // Each dependency is also listed on the other task as a dependent; keep
+      // one side: this task is blocked by what it depends on.
+      dependencies: (Array.isArray(t.dependencies) ? t.dependencies : [])
+        .filter(d => d && d.gid !== undefined)
+        .map(d => ({ ref: String(d.gid), type: 'is-blocked-by' })),
       title: t.name || 'Imported task',
-      description: t.notes || '',
+      description: [t.notes || '', footer].filter(Boolean).join('\n\n'),
       column_name: section,
       swimlane_name: 'Default',
-      date_due: t.due_on || t.due_at,
-      owner_username: t.assignee && (t.assignee.email || t.assignee.name),
-      tags: (t.tags || []).map(tag => (typeof tag === 'string' ? tag : tag.name)),
+      date_due: t.due_at || t.due_on,
+      date_started: t.start_at || t.start_on,
+      date_end: t.completed ? t.completed_at : undefined,
+      date_creation: t.created_at,
+      owner_username: asanaUser(t.assignee),
+      tags: (t.tags || []).map(tag => (typeof tag === 'string' ? tag : tag && tag.name)).filter(Boolean),
+      custom_fields: custom,
+      checklists: embedded.length ? [{
+        title: 'Subtasks',
+        items: embedded.map(sub => ({ title: sub && sub.name, done: Boolean(sub && sub.completed) })),
+      }] : [],
+      comments: (Array.isArray(t.stories) ? t.stories : [])
+        .filter(story => story && story.resource_subtype === 'comment_added')
+        .map(story => ({ text: story.text, author: asanaUser(story.created_by), date: story.created_at })),
     };
   });
   return {
-    board: { name: (data.project && data.project.name) || 'Imported Asana project' },
+    board: { name: (data.project && data.project.name)
+      || (items[0] && items[0].memberships && items[0].memberships[0] && items[0].memberships[0].project
+        && items[0].memberships[0].project.name)
+      || 'Imported Asana project' },
     columns: uniq(tasks.map(t => t.column_name)).map(title => ({ title })),
     swimlanes: [{ name: 'Default' }],
     tasks,
+    warnings: [],
+    unsupported,
   };
 }
 
 // --- ZenKit ----------------------------------------------------------------
-// Accepts a ZenKit-style export { title, stages:[{name}],
-//   items:[{title, description, stage_name, due, tags:[string]}] }.
+// Two shapes are accepted.
+//
+// The Zenkit API: { list:{name}, elements:[{uuid, name, elementcategory,
+// isPrimary}], entries:[entry] } where an entry is { uuid, displayString,
+// sortOrder, created_at, deprecated_at, comment_count, checklists:[{name,
+// items:[{text, checked}]}] } plus one key per field value, named after the
+// element: `<uuid>_text`, `_number`, `_date`, `_categories_sort`,
+// `_persons_sort` or `_references_sort` (as the zenkit Rust client
+// deserializes them). Zenkit documents no single-file JSON export schema, so
+// element kinds whose value key is not documented are reported, not guessed.
+//
+// The adapter shape: { title, stages:[{name}], items:[{title, description,
+// stage_name, due, tags, id, parent_id, assignees, fields:{name: value},
+// comments, checklists}] }. Keys it does not know are reported too, because
+// Zenkit products differ.
+const ZENKIT = { text: 1, number: 2, url: 3, date: 4, checkbox: 5, categories: 6, formula: 7,
+  persons: 14, files: 15, references: 16, hierarchy: 17, subEntries: 18, dependencies: 19 };
+const ZENKIT_ADAPTER_KEYS = new Set(['title', 'name', 'description', 'notes', 'stage_name', 'stageName', 'list',
+  'due', 'dueDate', 'due_date', 'tags', 'assignee', 'assignees', 'id', 'uuid', 'parent_id', 'parentId',
+  'fields', 'comments', 'checklists', 'created_at', 'start']);
+
+function zenkitNames(list, key) {
+  return (Array.isArray(list) ? list : []).map(v => v && v[key]).filter(v => typeof v === 'string' && v);
+}
+
+function zenkitChecklists(checklists) {
+  return (Array.isArray(checklists) ? checklists : []).map(c => ({
+    title: c && c.name,
+    items: (Array.isArray(c && c.items) ? c.items : []).map(i => ({ title: i && (i.text || i.title), done: Boolean(i && (i.checked || i.done)) })),
+  }));
+}
+
+function parseZenkitApi(data) {
+  const elements = data.elements.filter(e => e && typeof e.uuid === 'string');
+  const kind = e => Number(e.elementcategory);
+  const named = (category, pattern) => elements.find(e => kind(e) === category && pattern.test(e.name || ''));
+  const categories = elements.filter(e => kind(e) === ZENKIT.categories);
+  const stage = named(ZENKIT.categories, /stage|status|state|column/i) || categories[0];
+  const descriptionField = elements.find(e => kind(e) === ZENKIT.text && !e.isPrimary && /description|notes?|details/i.test(e.name || ''));
+  const due = named(ZENKIT.date, /due|deadline|end/i);
+  const start = named(ZENKIT.date, /start|begin/i);
+  const people = elements.filter(e => kind(e) === ZENKIT.persons);
+  const hierarchy = elements.find(e => kind(e) === ZENKIT.hierarchy);
+  const dependencies = elements.filter(e => kind(e) === ZENKIT.dependencies);
+  const unsupported = [];
+  const warnings = [];
+  const entries = (data.entries || data.listEntries).filter(Boolean);
+  const live = entries.filter(e => !e.deprecated_at);
+  if (live.length !== entries.length) warnings.push({ path: '/entries', reason: `${entries.length - live.length} deleted entr(ies) skipped` });
+  live.sort((a, b) => (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0));
+  const reported = new Set();
+  const report = (element, reason) => {
+    if (reported.has(element.uuid)) return;
+    reported.add(element.uuid);
+    unsupported.push({ path: `/elements/${elements.indexOf(element)}`, reason: `${element.name || element.uuid}: ${reason}` });
+  };
+  const tasks = live.map((entry, index) => {
+    const value = (element, suffix) => entry[`${element.uuid}_${suffix}`];
+    const custom = {};
+    const tags = [];
+    elements.forEach(element => {
+      if (element.isPrimary || [stage, descriptionField, due, start, hierarchy].includes(element)) return;
+      switch (kind(element)) {
+        case ZENKIT.text: case ZENKIT.url: {
+          const v = value(element, 'text');
+          if (typeof v === 'string' && v) custom[element.name] = v;
+          break;
+        }
+        case ZENKIT.number: {
+          const v = value(element, 'number');
+          if (typeof v === 'number' && Number.isFinite(v)) custom[element.name] = v;
+          break;
+        }
+        case ZENKIT.date: {
+          const v = value(element, 'date');
+          if (typeof v === 'string' && v) custom[element.name] = v;
+          break;
+        }
+        case ZENKIT.categories:
+          tags.push(...zenkitNames(value(element, 'categories_sort'), 'name'));
+          break;
+        case ZENKIT.persons: case ZENKIT.dependencies: case ZENKIT.subEntries:
+          break;
+        case ZENKIT.files:
+          report(element, 'files are not part of the export');
+          break;
+        case ZENKIT.references:
+          report(element, 'references to other lists are not imported');
+          break;
+        case ZENKIT.formula:
+          report(element, 'formula results are computed by Zenkit and not imported');
+          break;
+        default:
+          if ([8, 9, 10, 11, 12, 13].includes(kind(element))) break; // entry metadata, read below
+          report(element, 'this field type has no documented value format');
+      }
+    });
+    const persons = people.flatMap(p => zenkitNames(value(p, 'persons_sort'), 'displayname'));
+    const parent = hierarchy && zenkitNames(value(hierarchy, 'references_sort'), 'uuid')[0];
+    const comments = Number(entry.comment_count) || 0;
+    if (comments) unsupported.push({ path: `/entries/${index}/comment_count`, reason: `${comments} comment(s) are fetched separately from Zenkit` });
+    return {
+      ref: entry.uuid,
+      parent_ref: parent,
+      dependencies: dependencies.flatMap(d => zenkitNames(value(d, 'references_sort'), 'uuid'))
+        .map(ref => ({ ref, type: 'related-to' })),
+      title: entry.displayString || 'Imported item',
+      description: (descriptionField && value(descriptionField, 'text')) || '',
+      column_name: (stage && zenkitNames(value(stage, 'categories_sort'), 'name')[0]) || 'Inbox',
+      swimlane_name: 'Default',
+      date_due: due && value(due, 'date'),
+      date_started: start && value(start, 'date'),
+      date_creation: entry.created_at,
+      owner_username: persons[0],
+      assignees: persons.slice(1),
+      requested_by: entry.created_by_displayname || undefined,
+      tags: uniq(tags),
+      custom_fields: custom,
+      checklists: zenkitChecklists(entry.checklists),
+    };
+  });
+  const stageNames = stage && stage.elementData && Array.isArray(stage.elementData.predefinedCategories)
+    ? zenkitNames(stage.elementData.predefinedCategories, 'name') : [];
+  const columns = uniq(stageNames.concat(tasks.map(t => t.column_name)));
+  return {
+    board: { name: (data.list && data.list.name) || data.title || data.name || 'Imported ZenKit list' },
+    columns: columns.map(title => ({ title })),
+    swimlanes: [{ name: 'Default' }],
+    tasks,
+    warnings,
+    unsupported,
+  };
+}
+
 export function parseZenkit(data) {
+  if (data && !Array.isArray(data) && Array.isArray(data.elements)
+    && (Array.isArray(data.entries) || Array.isArray(data.listEntries))) {
+    return parseZenkitApi(data);
+  }
   const items = Array.isArray(data) ? data : (data.items || []);
   const stages = data.stages || [];
-  const tasks = items.map(t => ({
-    title: t.title || t.name || 'Imported item',
-    description: t.description || t.notes || '',
-    column_name: t.stage_name || t.stageName || t.list || 'Inbox',
-    swimlane_name: 'Default',
-    date_due: t.due || t.dueDate || t.due_date,
-    owner_username: t.assignee && (t.assignee.email || t.assignee.name),
-    tags: Array.isArray(t.tags) ? t.tags.map(tag => (typeof tag === 'string' ? tag : tag.name)) : [],
-  }));
+  const unsupported = [];
+  const tasks = items.map((t, index) => {
+    const unknown = Object.keys(t || {}).filter(key => !ZENKIT_ADAPTER_KEYS.has(key));
+    if (unknown.length) {
+      unsupported.push({ path: `/items/${index}`, reason: `unrecognized field(s): ${unknown.slice(0, 10).join(', ')}` });
+    }
+    const people = (Array.isArray(t.assignees) ? t.assignees : [t.assignee])
+      .map(a => (typeof a === 'string' ? a : a && (a.email || a.name))).filter(Boolean);
+    const id = t.id !== undefined && t.id !== null ? t.id : t.uuid;
+    const parent = t.parent_id !== undefined && t.parent_id !== null ? t.parent_id : t.parentId;
+    return {
+      ref: id !== undefined && id !== null ? String(id) : undefined,
+      parent_ref: parent !== undefined && parent !== null ? String(parent) : undefined,
+      title: t.title || t.name || 'Imported item',
+      description: t.description || t.notes || '',
+      column_name: t.stage_name || t.stageName || t.list || 'Inbox',
+      swimlane_name: 'Default',
+      date_due: t.due || t.dueDate || t.due_date,
+      date_started: t.start,
+      date_creation: t.created_at,
+      owner_username: people[0],
+      assignees: people.slice(1),
+      tags: Array.isArray(t.tags) ? t.tags.map(tag => (typeof tag === 'string' ? tag : tag && tag.name)).filter(Boolean) : [],
+      custom_fields: t.fields && typeof t.fields === 'object' && !Array.isArray(t.fields) ? t.fields : {},
+      checklists: zenkitChecklists(t.checklists),
+      comments: (Array.isArray(t.comments) ? t.comments : []).map(c => ({
+        text: typeof c === 'string' ? c : c && (c.text || c.message),
+        author: c && typeof c === 'object' ? (c.author || c.user) : undefined,
+        date: c && typeof c === 'object' ? (c.date || c.created_at) : undefined,
+      })),
+    };
+  });
   const derivedColumns = uniq(tasks.map(t => t.column_name)).map(title => ({ title }));
   return {
     board: { name: data.title || data.name || 'Imported ZenKit list' },
     columns: stages.length ? stages.map(s => ({ title: s.name || s.title })) : derivedColumns,
     swimlanes: [{ name: 'Default' }],
     tasks,
+    warnings: [],
+    unsupported,
   };
 }
 
@@ -376,6 +844,7 @@ export function parseJira(data) {
 
 // Map an import source name to its parser (forgejo reuses the Gitea parser).
 export const EXTERNAL_PARSERS = {
+  kanboard: parseKanboard,
   deck: parseNextcloudDeck,
   openproject: parseOpenProject,
   github: parseGithub,

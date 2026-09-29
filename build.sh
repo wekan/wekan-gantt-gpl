@@ -1242,7 +1242,12 @@ function run_all_tests(){
 		echo
 		local rc=0
 		case "$k" in
-			mocha)  METEOR_LOCAL_DIR=.meteor/local-test meteor test --once --driver-package meteortesting:mocha --port 3100 || rc=$? ;;
+			# --full-app: 26 integration tests in server/lib/tests (notification
+			# delivery, stored history, Sync hooks) need the whole app's hooks and
+			# skip themselves otherwise - they had never run here before. The app
+			# refuses to start without WRITABLE_PATH. The one-second email receipt
+			# sweep is what emailReceiptRetention.tests.js waits for.
+			mocha)  EMAIL_RECEIPT_SWEEP_INTERVAL_MS=1000 WRITABLE_PATH="${WRITABLE_PATH:-..}" METEOR_LOCAL_DIR=.meteor/local-test meteor test --full-app --once --driver-package meteortesting:mocha --port 3100 || rc=$? ;;
 			# Every plain-node suite: the .cjs guards plus the stickers / Trello /
 			# OAuth2 .js tests. They need no server and no browser, and the whole-suite
 			# run did not run them at all once - a guard that was supposed to fail the
@@ -2195,6 +2200,37 @@ function ensure_inotify_watches(){
 	return 0
 }
 
+# The machine's LAN address, for a dev server other devices can open.
+# macOS has no `ip` command and no `hostname -I`: ask which interface carries
+# the default route and read that interface's address, then fall back to the
+# usual Wi-Fi/Ethernet names. Linux asks the kernel which source address it
+# would use. Prints localhost when nothing is found.
+function current_ip_address(){
+	local iface addr
+	if [[ "$OSTYPE" == "darwin"* ]]; then
+		iface=$(route -n get default 2>/dev/null | awk '/interface:/{print $2; exit}')
+		for iface in $iface en0 en1 en2 en3; do
+			addr=$(ipconfig getifaddr "$iface" 2>/dev/null) && [ -n "$addr" ] && { echo "$addr"; return; }
+		done
+	else
+		addr=$(ip route get 1.1.1.1 2>/dev/null | sed -n 's/.* src \([0-9.]*\).*/\1/p' | head -1)
+		[ -z "$addr" ] && addr=$(hostname -I 2>/dev/null | awk '{print $1}')
+		[ -n "$addr" ] && { echo "$addr"; return; }
+	fi
+	echo localhost
+}
+
+# Every IPv4 address of this machine, one "interface address" per line, for
+# the CUSTOM-IP prompt. `ip` exists only on Linux; macOS and the BSDs have
+# ifconfig.
+function list_ip_addresses(){
+	if command -v ip >/dev/null 2>&1; then
+		ip -4 -o address show 2>/dev/null | awk '{sub(/\/.*/, "", $4); print $2, $4}'
+	elif command -v ifconfig >/dev/null 2>&1; then
+		ifconfig 2>/dev/null | awk '/^[^ \t]/{iface=$1; sub(/:$/, "", iface)} $1=="inet"{print iface, $2}'
+	fi
+}
+
 # ── Dev server URL ───────────────────────────────────────────────────────────
 # Ask for the port Meteor LISTENS on and for ROOT_URL, so a dev server can run
 # somewhere other than http://localhost:3000 without editing this script. Sets
@@ -3049,11 +3085,7 @@ for _once in 1; do
     "Run Meteor for dev on http://CURRENT-IP-ADDRESS:3000")
 		ensure_rspack_public_dirs
 		kill_meteor_on_port 3000 || break
-		if [[ "$OSTYPE" == "darwin"* ]]; then
-		  IPADDRESS=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo localhost)
-		else
-		  IPADDRESS=$(ip route get 1.1.1.1 2>/dev/null | grep -oP 'src \K[0-9.]+' | head -1 | grep . || hostname -I 2>/dev/null | awk '{print $1}' | grep . || echo localhost)
-		fi
+		IPADDRESS=$(current_ip_address)
 		echo "Your IP address is $IPADDRESS"
 		#---------------------------------------------------------------------
 		#Not in use, could increase RAM usage: NODE_OPTIONS="--max_old_space_size=4096"
@@ -3068,11 +3100,7 @@ for _once in 1; do
     "Run Meteor for dev on http://CURRENT-IP-ADDRESS:3000 with MONGO_URL=mongodb://127.0.0.1:27019/wekan")
 		ensure_rspack_public_dirs
 		kill_meteor_on_port 3000 || break
-                if [[ "$OSTYPE" == "darwin"* ]]; then
-                  IPADDRESS=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo localhost)
-                else
-                  IPADDRESS=$(ip route get 1.1.1.1 2>/dev/null | grep -oP 'src \K[0-9.]+' | head -1 | grep . || hostname -I 2>/dev/null | awk '{print $1}' | grep . || echo localhost)
-                fi
+                IPADDRESS=$(current_ip_address)
                 echo "Your IP address is $IPADDRESS"
                 #---------------------------------------------------------------------
                 #Not in use, could increase RAM usage: NODE_OPTIONS="--max_old_space_size=4096"
@@ -3100,9 +3128,11 @@ for _once in 1; do
 
     "Run Meteor for dev on http://CUSTOM-IP-ADDRESS:PORT")
 		ensure_rspack_public_dirs
-		ip address
-		echo "From above list, what is your IP address?"
+		list_ip_addresses
+		DEFAULT_IPADDRESS=$(current_ip_address)
+		echo "From above list, what is your IP address? [$DEFAULT_IPADDRESS]"
 		read IPADDRESS
+		IPADDRESS="${IPADDRESS:-$DEFAULT_IPADDRESS}"
 		echo "On what port you would like to run Wekan?"
 		read PORT
 		echo "ROOT_URL=http://$IPADDRESS:$PORT"
@@ -3146,10 +3176,11 @@ for _once in 1; do
 
 	"Test Mocha unit + security + API-logic tests (server-side only, no browser)")
 		LOG="$(one_log mocha)"
-		echo "Running Mocha tests: meteor test --once --driver-package meteortesting:mocha --port 3100"
+		echo "Running Mocha tests: meteor test --full-app --once --driver-package meteortesting:mocha --port 3100"
 		echo "(server-side unit/security/API-logic tests; browser/client tests are covered by Playwright options)"
 		echo "Log: $LOG"
-		meteor test --once --driver-package meteortesting:mocha --port 3100 2>&1 | tee "$LOG"
+		# --full-app so the integration tests that need the app's hooks run too.
+		EMAIL_RECEIPT_SWEEP_INTERVAL_MS=1000 WRITABLE_PATH="${WRITABLE_PATH:-..}" METEOR_LOCAL_DIR=.meteor/local-test meteor test --full-app --once --driver-package meteortesting:mocha --port 3100 2>&1 | tee "$LOG"
 		break
 		;;
 

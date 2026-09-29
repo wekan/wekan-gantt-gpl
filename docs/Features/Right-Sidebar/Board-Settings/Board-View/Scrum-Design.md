@@ -129,6 +129,67 @@ Closing shows a preview of completed and incomplete work. Explicitly choose the
 backlog or a planned sprint for rollover; keep historical membership and the
 original commitment intact. Closing is idempotent and revision-checked. Undo
 must not overwrite intervening edits or move a card from an inaccessible board.
+Finalizing a History restoration first persists an immutable private completion
+receipt bound to the operation ID, actor, source hash and exact checkpoint plan.
+Only verified receipt readback permits conditional checkpoint deletion. A false
+delete acknowledgement retains recovery, while a lost reply requires a read
+confirming that the exact checkpoint is gone. A successor is never removed.
+The internal finalizer can retry with its original journal after an uncertain
+cleanup read, including from a fresh database connection, without rewriting
+History or its undo timestamp. Receipts have no TTL and do not assert that the
+board still has its historical values. Public undo/redo methods now accept an
+optional caller request ID for Scrum entries. Keyboard shortcuts now send one
+(see below); their visible recovery UI, non-Scrum replay, receipt retention
+and shared writer coordination remain open.
+
+### Retrying a Scrum undo or redo request
+
+An API caller may pass a second argument to `changeHistory.undoLast(boardId,
+requestId)` or `changeHistory.redoLast(boardId, requestId)`. Generate and persist
+the ID before invoking the method, then reuse it after a connection loss or an
+uncertain response. It must contain 16–128 ASCII letters, digits, underscores or
+hyphens; a random UUID is suitable. Use a new ID only for a new intentional
+operation. Reusing an ID for another board or direction is refused.
+
+The server persists the first selected row and source hash in a private request
+record before applying changes. Concurrent selectors adopt that first result.
+An empty-stack result remains empty for that request even after new edits.
+A non-Scrum selection returns `scrum-history-request-unsupported` without a
+mutation; the ID will keep that result. Do not automatically drop the ID and
+retry against the generic stack after this or another failure.
+
+Completed requests return their original result without reapplying card writes
+or moving the undo/redo stack again. This includes a retry after the opposite
+direction has subsequently completed. The response describes historical
+completion, not the current state of the card. Fresh board and History access
+checks still apply; removed or changed source rows, missing original request
+evidence and damaged receipts stop recovery. Request and completion records
+have no TTL. They must be retained while callers may retry.
+
+Existing one-argument calls keep their previous behavior and do not provide
+idempotent request replay. Independent processes still require shared writer
+coordination for atomic card/History changes.
+
+### Keyboard undo and redo
+
+Ctrl+Z and Ctrl+Y (`client/lib/historyKeyRequest.js`) generate a request ID per
+keystroke and keep it in `sessionStorage` until the server answers. A reply that
+never arrives (disconnect, reload, rate limit) leaves the ID stored; the next
+keystroke on that board sends the SAME ID first, and when it is the same
+direction that retry is the keystroke, so a Scrum change is never undone twice
+because the first reply was lost. An unanswered ID older than ten minutes is
+dropped rather than replayed.
+
+When the server answers `scrum-history-request-unsupported`, the keystroke
+forgets the ID and makes the ordinary one-argument call. This departs from the
+rule above for API callers, deliberately and only for this answer: the server
+guarantees that an unsupported request changed nothing, so the one-argument
+call is the same single operation the shortcut always made for non-Scrum rows,
+with the same behaviour as before. After any other failure the ID is kept or
+discarded as described and never replaced by a one-argument call. Non-Scrum
+keystrokes therefore still lack idempotent replay, and there is no visible
+recovery control yet; adding one needs new translated interface text.
+
 Cancelling records a reason and preserves the history. Scrum accountabilities
 are visible information and do not grant access: all mutations must also satisfy
 the existing board/card write permissions. Board configuration and lifecycle

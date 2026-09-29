@@ -17,7 +17,10 @@ function fixture(fallback = false) {
   const helper = vm.runInNewContext(`(${object})`, {
     ReactiveCache: cache, console: { error: error => errors.push(error) },
     buildRuleVars: async () => ({ cardname: 'Card', description: 'Description', cardlink: 'https://example.org/card' }),
-    substituteVars: value => value, TAPi18n: { getLanguage: () => 'en' },
+    // recipientVars turns people tokens into addresses; identity is enough here.
+    substituteVars: value => value, recipientVars: vars => vars, TAPi18n: { getLanguage: () => 'en' },
+    // Rules with several triggers/actions (models/lib/ruleParts.js).
+    ...require('../models/lib/ruleParts.js'),
     Accounts: { emailTemplates: { from: 'sender@example.org' } },
     EmailLocalization: fallback ? undefined : { sendEmail: send }, Email: { sendAsync: send },
   });
@@ -63,7 +66,9 @@ test('scheduled email failure retains an unfinished slot while other triggers ru
   f.cache.getBoard = async () => ({ createdBy: 'actor' });
   f.cache.getCards = async () => [{ _id: 'card' }];
   const triggers = ['failed', 'healthy'].map(_id => ({ _id, boardId: 'board', scheduleKind: 'calendar', scheduleType: 'daily' }));
-  const context = { Meteor: { startup() {} }, ReactiveCache: f.cache, RulesHelper: f.helper,
+  // scheduledRules.js's imports are stripped below; provide the pure helpers it uses.
+  const context = { ...require('../models/lib/ruleParts.js'), ...require('../models/lib/scheduledDueFilter.js'),
+    Meteor: { startup() {} }, ReactiveCache: f.cache, RulesHelper: f.helper,
     console: { error() {} }, Triggers: { find: () => ({ fetchAsync: async () => triggers }),
       updateAsync: async (id, update) => writes.push({ id, update }) } };
   const scheduled = fs.readFileSync(require.resolve('../server/scheduledRules.js'), 'utf8').replace(/^import .*;\n/gm, '').replace(/^export /gm, '');

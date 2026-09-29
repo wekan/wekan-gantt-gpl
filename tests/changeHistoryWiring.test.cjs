@@ -145,6 +145,9 @@ test('every recorded row carries the ids its scopes filter on', () => {
 // ---- undo / redo is now the whole history, not just positions ---------------
 
 test('the keyboard reads the unified store', () => {
+  // The keystroke's request handling lives in client/lib/historyKeyRequest.js.
+  const keyboard = code('client/lib/keyboard.js') + code('client/lib/historyKeyRequest.js');
+  assert.match(code('client/lib/keyboard.js'), /runKeystroke\(/);
   assert.match(keyboard, /changeHistory\.undoLast/,
     'History.md §7c: Ctrl+Z restores the last own change, of any kind');
   assert.match(keyboard, /changeHistory\.redoLast/);
@@ -267,10 +270,16 @@ test('a restore is itself recorded, for both people involved', () => {
 
 // A history view that skipped this would be a way to read the contents of
 // boards you cannot open - the changes carry the text of every edit.
+//
+// The method is located by its DEFINITION (`async 'name'(`), not the first
+// occurrence of its name: 6b44f61b2 added a DDPRateLimiter rule near the top of
+// the file that lists 'changeHistory.undoLast' and 'changeHistory.redoLast', so
+// a bare indexOf landed on the rate-limit rule and read the wrong 2600 chars.
+const methodAt = method => server.indexOf(`async '${method}'(`);
 test('every method gates on board access', () => {
   for (const method of ['changeHistory.page', 'changeHistory.undoLast',
     'changeHistory.redoLast', 'changeHistory.restore']) {
-    const at = server.indexOf(`'${method}'`);
+    const at = methodAt(method);
     assert.ok(at > 0, `${method} must exist`);
     const body = server.slice(at, at + 2600);
     assert.match(body, /requireBoardVisible|requireBoardWrite/,
@@ -289,7 +298,8 @@ test('reading someone else-s history is limited to boards the caller can see', (
 test('changing something requires write access, not just visibility', () => {
   for (const method of ['changeHistory.undoLast', 'changeHistory.redoLast',
     'changeHistory.restore']) {
-    const at = server.indexOf(`'${method}'`);
+    const at = methodAt(method);
+    assert.ok(at > 0, `${method} must exist`);
     const body = server.slice(at, at + 2600);
     assert.match(body, /requireBoardWrite/,
       `${method} writes to the board, so read access is not enough`);

@@ -1303,6 +1303,7 @@
   "r-schedule-on-date": "air ceann-là",
   "r-of-cards-in-list": "airson cairtean san liosta",
   "r-when-due": "Nuair a tha ceann-là ri phàigheadh cairte",
+  "r-when-card-date": "When this date of a card",
   "r-due-is-set": "air a shuidheachadh",
   "r-due-soon": "a' teannadh",
   "r-due-overdue": "thar an ama",
@@ -1396,6 +1397,7 @@
   "r-of": "of",
   "r-subject": "cuspair",
   "r-email-vars-hint": "Tagaichean a tha ri fhaighinn: {card}, {cardLink}, {list}, {board}, {member}",
+  "r-vars-people-hint": "Also: {creator}, {assignees}, {members} (usernames in text, email addresses in To) and {customField:Field name}. These also work in member, list and swimlane names of other actions.",
   "r-rule-details": "Fiosrachadh riaghailte",
   "r-d-move-to-top-gen": "Gluais a' chairt gu barr a liosta",
   "r-d-move-to-top-spec": "Gluais a' chairt gu barr na liosta",
@@ -1569,6 +1571,12 @@
   "newUserPopup-title": "Cleachdaiche Ùr",
   "notifications": "Brathan",
   "notification-settings-popup-description": "Stiùirich dè na brathan a gheibh thu. Òrdugh tùsachd: roghainn Panail an Rianaidh, an uair sin tar-àithne a' Bhùird, an uair sin do thar-àithne fhèin ann an roghainnean a' Bhuill.",
+  "due-reminder-heading": "Due date reminders",
+  "due-reminder-days-label": "Remind on these days, separated by commas: 0 is the due day, positive numbers are days before it and negative numbers days after it. Leave empty to use the server default.",
+  "due-reminder-off": "No due date reminders on this board",
+  "due-reminder-webhook": "Also send due date reminders to this board's outgoing webhooks",
+  "due-reminder-invalid": "Use up to ten whole days from -14 to 14.",
+  "due-reminder-saved": "Due date reminders saved.",
   "notification-settings-tray": "Treidhe bhrathan",
   "help": "Cobhair",
   "view-all": "Seall na h-Uile",
@@ -3516,5 +3524,6 @@
   "scrum-daily-empty": "No daily observations have been recorded for this sprint.",
   "scrum-observed-scope": "Observed scope",
   "scrum-daily-observations-export-help": "First recorded observation of each UTC day; missing days are omitted. Observations do not record every change or end-of-day totals. Unknown estimates are not zero.",
-  "scrum-import-pending": "The Scrum import is incomplete. Scrum edits and report exports are unavailable."
+  "scrum-import-pending": "The Scrum import is incomplete. Scrum edits and report exports are unavailable.",
+  "saml-login-not-started": "This SAML sign-in was not started in this browser tab. Please sign in again."
 }

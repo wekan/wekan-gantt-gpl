@@ -6,6 +6,9 @@ import { Random } from 'meteor/random';
 import { ReactiveCache } from '/imports/reactiveCache';
 const { notHelperBoardTitle } = require('/models/lib/helperBoards');
 const { boardVisibilitySelectors } = require('/models/lib/boardVisibilitySelectors');
+const { BOARD_PERMISSIONS, readableWithoutMembership, withoutMembershipSelectors } = require('/models/lib/boardPermission');
+const { normalizeAutoArchiveDays } = require('/models/lib/autoArchive');
+const { cardParentIds, parentFields } = require('/models/lib/cardParents');
 const boardViewSettings = require('/models/lib/boardViewSettings');
 import escapeForRegex from 'escape-string-regexp';
 import CustomFields from './customFields';
@@ -341,7 +344,8 @@ Boards.attachSchema(
        * visibility of the board
        */
       type: String,
-      allowedValues: ['public', 'private'],
+      // #3249: 'instance' = every signed-in user reads it (semi-open).
+      allowedValues: BOARD_PERMISSIONS,
     },
     orgs: {
       /**
@@ -564,6 +568,24 @@ Boards.attachSchema(
        */
       type: Boolean,
       defaultValue: false,
+    },
+    mapImageAttachmentId: {
+      /**
+       * #3256: the image the Map board view draws the cards on - a board-level
+       * attachment (meta.source 'board-map'). Unset = no map yet.
+       */
+      type: String,
+      optional: true,
+    },
+    autoArchiveInactiveDays: {
+      /**
+       * Nextcloud Deck-style auto-archive: archive cards with no activity for
+       * this many days (models/lib/autoArchive.js). Unset means off.
+       */
+      type: SimpleSchema.Integer,
+      optional: true,
+      min: 1,
+      max: 3650,
     },
     cardAgingDays1: {
       /** #3984: days of inactivity for the first (lightest) card-aging fade tier. */
@@ -875,6 +897,25 @@ Boards.attachSchema(
       optional: true,
     },
     notifyOverrideEmail: {
+      type: Boolean,
+      optional: true,
+    },
+    // #5323: this board's due-date reminder offsets (days before due, 0 = due
+    // today, negative = days past due), overriding NOTIFY_DUE_DAYS_BEFORE_AND_AFTER.
+    // Unset uses the server default; an empty list turns reminders off.
+    dueReminderDays: {
+      type: Array,
+      optional: true,
+      maxCount: 10,
+    },
+    'dueReminderDays.$': {
+      type: SimpleSchema.Integer,
+      min: -14,
+      max: 14,
+    },
+    // #5323: also send this board's due reminders to its enabled outgoing
+    // webhooks, whichever activities those webhooks subscribe to.
+    dueReminderWebhook: {
       type: Boolean,
       optional: true,
     },
@@ -1511,6 +1552,21 @@ Boards.helpers({
       await Boards.updateAsync(_id, { $set: defaultsPatch });
     }
 
+    // Clone custom field definitions BEFORE any card is copied, and give card
+    // copy the old -> new id map. Cards used to be inserted with the source
+    // board's field ids and re-keyed afterwards; the admin-only field guard
+    // (AdminFieldBleed) refuses a card whose field belongs to another board,
+    // so every board copy with custom fields failed.
+    const cfMap = {};
+    const customFields = selection.customFields ? await ReactiveCache.getCustomFields({ boardIds: oldId }) : [];
+    for (const cf of customFields) {
+      const id = cf._id;
+      delete cf._id;
+      cf.boardIds = [_id];
+      cfMap[id] = await CustomFields.insertAsync(cf);
+    }
+    selection.customFieldIdMap = cfMap;
+
     // Copy all swimlanes in board. cardIdMap collects old card id -> new card
     // id so card-to-card dependencies (#3392 "Red Strings") can be remapped to
     // the copies once every card has been created.
@@ -1554,38 +1610,15 @@ Boards.helpers({
 
     if (copyOptions !== undefined) {
       for (const copied of await ReactiveCache.getCards({ boardId: _id })) {
-        if (copied.parentId) await Cards.updateAsync(copied._id, {
-          $set: { parentId: cardIdMap[copied.parentId] || '' },
+        // #3626: every parent, remapped; one that was not copied is dropped.
+        const parents = cardParentIds(copied);
+        if (parents.length) await Cards.updateAsync(copied._id, {
+          $set: parentFields(parents.map(id => cardIdMap[id]).filter(Boolean)),
         });
       }
     }
 
-    // copy custom field definitions
-    const cfMap = {};
-    const customFields = selection.customFields ? await ReactiveCache.getCustomFields({ boardIds: oldId }) : [];
-    for (const cf of customFields) {
-      const id = cf._id;
-      delete cf._id;
-      cf.boardIds = [_id];
-      cfMap[id] = await CustomFields.insertAsync(cf);
-    }
-    const cards = await ReactiveCache.getCards({ boardId: _id });
-    for (const card of cards) {
-      // Guard against a card with no customFields (the schema defaults it to []
-      // but a card copied via `.direct` / seeded raw can lack it) — otherwise
-      // `.map` throws and the whole board copy fails. Skip cards that have none,
-      // matching the `!this.customFields || !Array.isArray(...)` guard used
-      // elsewhere in this model.
-      if (!Array.isArray(card.customFields) || card.customFields.length === 0) continue;
-      await Cards.updateAsync(card._id, {
-        $set: {
-          customFields: card.customFields.map(cf => {
-            cf._id = cfMap[cf._id];
-            return cf;
-          }),
-        },
-      });
-    }
+    // Custom field definitions were cloned before the cards (see above).
 
     if (scrumExport) {
       const { importScrumTransfer } = require('/server/lib/scrumTransferImport');
@@ -1617,8 +1650,8 @@ Boards.helpers({
     for (const rule of rules) {
       delete rule._id;
       rule.boardId = _id;
-      rule.actionId = actionsMap[rule.actionId];
-      rule.triggerId = triggersMap[rule.triggerId];
+      // #4294: all of a rule's triggers and actions, not only the first ones.
+      require('/models/lib/ruleParts').remapRuleParts(rule, triggersMap, actionsMap);
       await Rules.insertAsync(rule);
     }
 
@@ -1654,13 +1687,12 @@ Boards.helpers({
    * Is supplied user authorized to view this board?
    */
   isVisibleBy(user) {
-    if (this.isPublic()) {
-      // public boards are visible to everyone
+    // Public boards are visible to everyone, 'instance' boards (#3249) to
+    // every signed-in user; otherwise you have to be an active member.
+    if (readableWithoutMembership(this.permission, !!(user && user._id))) {
       return true;
-    } else {
-      // otherwise you have to be logged-in and active member
-      return user && this.isActiveMember(user._id);
     }
+    return user && this.isActiveMember(user._id);
   },
 
   /**
@@ -1679,8 +1711,22 @@ Boards.helpers({
     }
   },
 
+  // Anybody, signed in or not. An 'instance' board is NOT public: code that
+  // serves anonymous callers keeps asking this; code that knows its caller
+  // asks isVisibleBy() or readableWithoutMembership().
   isPublic() {
     return this.permission === 'public';
+  },
+
+  isInstanceBoard() {
+    return this.permission === 'instance';
+  },
+
+  // The icon shown beside the board's visibility (#3249).
+  visibilityIcon() {
+    if (this.permission === 'public') return 'fa-globe';
+    if (this.permission === 'instance') return 'fa-users';
+    return 'fa-lock';
   },
 
   hasSharedListsConverted() {
@@ -3129,6 +3175,21 @@ Boards.helpers({
     });
   },
 
+  // #3256: the Map view's image, or null to remove it.
+  async setMapImage(attachmentId) {
+    return await Boards.updateAsync(this._id, typeof attachmentId === 'string' && attachmentId
+      ? { $set: { mapImageAttachmentId: attachmentId } }
+      : { $unset: { mapImageAttachmentId: '' } });
+  },
+
+  // Deck-style auto-archive: a whole number of days, or null/'' for off.
+  async setAutoArchiveInactiveDays(value) {
+    const days = normalizeAutoArchiveDays(value);
+    return await Boards.updateAsync(this._id, days
+      ? { $set: { autoArchiveInactiveDays: days } }
+      : { $unset: { autoArchiveInactiveDays: '' } });
+  },
+
   async setAllowsBoardMemberList(allowsBoardMemberList) {
     return await Boards.updateAsync(this._id, { $set: { allowsBoardMemberList } });
   },
@@ -3210,7 +3271,7 @@ Boards.userSearch = (
   projection = {},
   options = {},
 ) => {
-  selector.$or = options.includePublic === false ? [] : [{ permission: 'public' }];
+  selector.$or = options.includePublic === false ? [] : withoutMembershipSelectors(!!userId);
 
   if (userId) {
     selector.$or.push({ members: { $elemMatch: { userId, isActive: true } } });
