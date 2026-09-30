@@ -82,35 +82,40 @@ types (Kanboard categories stay labels), semi-open boards, the Map view,
 several parents per card, export fidelity and the Leo outline format. What
 remains below is blocked for one of three stated reasons, not left unexamined:
 
-- **Needs a maintainer decision.** Everything under "Needs a maintainer
-  decision" (#4912, #2509, #2460), and filing the prepared #4790 split.
+- **Decided "not now", kept open.** #4912, #2509 and #2460 (see "Needs a
+  maintainer decision"), and filing the prepared #4790 split, which is a
+  publishing step for the maintainer.
 - **Needs infrastructure or affected data.** The environment-owner, snap and
   data-verification items. The MySQL/MariaDB/PostgreSQL verification was done
   once Docker was approved (see Upcoming); only SAP HANA remains, and its image
   is amd64-only and needs a licence and about 16 GB of memory. File contents
   from import sources need live API connectors with credentials, and Zenkit's
   native export has no published schema to verify against.
-- **Architectural Scrum/Sync work.** Atomic cross-document coordination,
-  compound archive reservations, interrupted-record replay, production
-  adapters and cron activation (checkpoint below), with operator recovery for
-  legacy unbound Sync commands and online SMTP resolution (#2713), were not
-  advanced; each needs its own design step, not a patch.
+- **Architectural Scrum/Sync work.** Operator recovery for legacy rule emails
+  and online SMTP resolution (#2713), the Sync activation switches, Sync
+  History admission through the History gate and Scrum worker serialization
+  are built (see "Pass of 2026-09-30" below). What remains all waits on one
+  missing piece, a board History reservation that spans many rows and that
+  ordinary writers respect, and on the design question recorded there.
 
 **Paused for a release on 2026-09-29 - in progress, not in this release:**
 
 - **Failing suites not yet fixed:** `calendarDateDisplay`,
-  `multilineTitles` and `pomodoroTimer` all wait for the locale files to
-  follow `en.i18n.json`'s key order, which is the translation agent's work.
+  `multilineTitles` and `pomodoroTimer` wait for the locale files to follow
+  `en.i18n.json`'s key order, which is the translation agent's work; they pass
+  or fail with the locale files as that work moves.
 - **Checked:** `SamlAccountMergeBleed` needs no Hall of Fame page: SAML
   refused that merge from its first commit, so it is a detection category
   like `CanaryBleed`, not a fixed vulnerability.
-- **Decisions not yet built:** the Scrum/Sync journal work. Of the recovery
-  controls, keyboard undo/redo now has its notice; operator recovery for legacy
-  unbound Sync commands and online SMTP resolution remain, and belong to the
-  journal work.
-- **Intermittent:** in a run of all seven import specs one case failed twice in
-  four runs (once seen as the `jira-time-import` case about section controls,
-  with a value mismatch); every case passes alone and in its own file.
+- **Decisions not yet built:** the multi-row History reservation that the
+  Scrum/Sync journal work waits on (see "Pass of 2026-09-30").
+- **Intermittent import spec - not reproduced.** On 2026-09-30 all seven
+  import specs ran four times against a production bundle with no failures
+  (204 case runs). Every failure seen that day came from a `meteor run`
+  development server restarting while other work edited watched files, which
+  aborts a login in flight. The one real failure found, the GitLab fixture's
+  missing comment, is fixed in Upcoming. If the `jira-time-import` value
+  mismatch returns, record the run's server log with it.
 - **Waiting on the maintainer:** the split of issue #4790 is prepared in
   [User-Filter-4790-Split.md](docs/Features/User-Filter-4790-Split.md) with
   ready-to-run `gh issue create` commands; filing issues is a publishing step.
@@ -154,6 +159,58 @@ Maintainer decisions of 2026-09-29, answering the blockers above:
   ([#2460](https://github.com/wekan/wekan/issues/2460)) stays open for a future
   maintained library; [#2509](https://github.com/wekan/wekan/issues/2509) waits
   for the reporter.
+
+Maintainer decisions of 2026-09-30, for the design steps that remained:
+
+- **Partial or unknown SMTP acceptance**
+  ([#2713](https://github.com/wekan/wekan/issues/2713)): the send stays pending
+  in Admin Panel → Problems → Recovery with each recipient's status. An
+  administrator resends to unconfirmed recipients only, marks it sent, or drops
+  it; WeKan never resends by itself, so nobody receives a duplicate.
+- **Legacy unbound Sync commands**: nothing runs automatically. Admin Panel
+  lists each command with what it would do; an administrator re-binds it to the
+  current source, with a fresh access check, or discards it.
+- **Sync activation**: off by default. A board administrator enables Sync per
+  board and an instance administrator enables cron separately, so an upgrade
+  changes nothing on its own.
+- **The "Not now" issues** (#4912, #2460, #2509) stay open and stay listed
+  here with their reasons.
+
+Pass of 2026-09-30 - built and tested (all in Upcoming): the three decisions
+above - operator resolution of partially accepted rule emails, review of
+legacy rule emails and the Sync activation switches - plus GitLab import and
+export fidelity, todo.txt as a new format, OpenProject watchers and Asana
+followers as card watchers, a raced undo or redo applied once, Sync History
+admitted through the board's History writer gate, and one worker per Scrum
+History operation. 561 server tests pass; the new and affected browser specs
+pass in Chromium and WebKit against a production bundle (Firefox cannot launch
+on the macOS machine used). The only non-translation node suites still failing
+are `calendarDateDisplay`, `multilineTitles` and `pomodoroTimer`, which wait
+on locale key order.
+
+**Needs a maintainer decision - the multi-row History reservation.** Sync and
+the rule archive runner hash their History rows when they PLAN them, so the
+board's History head must stay reserved from planning until the last row is
+written, across restarts, with no expiry, or the chain forks. Choose one:
+block (or queue) ordinary History on a board while a Sync batch holds it, or
+leave Sync rows unhashed until they are appended, which means redesigning
+the plan format (`validateSyncFieldHistory`, the archive plan's cross-card
+hash chain). Everything else in the Scrum/Sync handoff waits on this: the
+production `withHistoryReservation` for `runStoredSyncRuleArchive`, atomic
+coordination of cards, History, activities and effects, startup replay and
+calling the stored stages from manual and scheduled Sync. Two smaller steps
+were considered and deliberately not taken: re-sweeping redo supersedes after
+an append would, with clock skew between servers, irreversibly supersede a
+legitimate later undo; and a reservation field on the History head changes
+the head format every reader and the offline recovery tool validate, so it
+belongs with the decision above.
+
+Other remaining items and why: online writer-token recovery needs writer
+liveness and fencing tokens on History inserts (a protocol change; recovery is
+offline today); telling "this operation deleted it" from "someone deleted and
+recreated it" needs tombstones or incarnation ids on Scrum records and
+activities; retention of receipts and request IDs needs a per-collection
+compaction policy, because deleting them breaks retry idempotence.
 
 Node suite health at this pass: 163 of 1445 suites fail; 162 already failed at
 the pass's starting commit (mostly translation-completeness suites, plus source
@@ -199,11 +256,13 @@ suites pass without skips, including the real MongoDB command-line workflow.
 The card-content email audit, linked-board discussion, link-placement metadata
 and timer ownership work already have Upcoming entries and regression evidence.
 
-Still unfinished for [#2713](https://github.com/wekan/wekan/issues/2713): legacy
-unbound commands and obsolete Details snapshots, partial or unknown SMTP
-acceptance, and online operator resolution. The offline confirmation tool only
-handles independently verified acceptance by every recipient. Keep all writers
-stopped while using it; its flags do not detect running remote processes.
+Built on 2026-09-30 for [#2713](https://github.com/wekan/wekan/issues/2713)
+(see Upcoming): online operator resolution of partial or unknown SMTP
+acceptance, and review of legacy unbound commands and obsolete Details
+snapshots. The offline confirmation tool remains for independently verified
+acceptance by every recipient; keep all writers stopped while using it. What
+remains for #2713 is live SMTP interoperability with external providers,
+which needs real mail accounts.
 
 Scrum/Sync still needs cross-document coordination of cards, History, activities
 and effects; compound archive reservations; interrupted/deleted-record replay;
@@ -1409,7 +1468,7 @@ labels/people, custom-field display values, notes and authorized relationships.
 Ordinary email rules now resolve live linked-card content across all selected
 sections and linked-board display fields with source-access rechecks. Stored
 Sync commands now persist and verify their source chain before dispatch;
-legacy unbound commands require future operator recovery. Details also
+legacy unbound commands are reviewed in Recovery (2026-09-30). Details also
 includes persisted Flowtime/Pomodoro sessions and recurrence fields. Voting
 counts, public voter names and completed Poker results now follow disclosure
 settings, including persisted checks for stored commands. Linked-board voting
@@ -1419,7 +1478,7 @@ persisted visibility checks. The
 [content audit](docs/DeveloperDocs/Card-Email-Content-Audit.md) now tracks
 all 71 top-level card fields. Target-board discussion now checks each owner
 card and retains source evidence. Offline full-acceptance confirmation is now
-implemented; other stored-command recovery remains open.
+implemented, and online resolution is built (2026-09-30).
 Target archive/time state and active
 member names are now included, along with local recurrence. Linked-board
 wrapper content now uses local field and related-source policies. Local
@@ -1436,11 +1495,16 @@ Creator,
 stickers, checklist schedules, public comment authors and scoped reaction
 summaries are now included. Stored Details now binds related-source chains,
 admin access and custom-field definition fingerprints; older Details snapshots
-require operator recovery. Converted checklist subtasks now use readable live
-titles and persisted reference evidence, including without Details),
-[#2698](https://github.com/wekan/wekan/issues/2698) (sync rules with GitLab -
-a third-party integration needing a GitLab API credential and webhook
-endpoint, environment/infrastructure this sandbox cannot stand up or verify).
+are reviewed in Recovery (2026-09-30). Converted checklist subtasks now use
+readable live titles and persisted reference evidence, including without
+Details),
+[#2698](https://github.com/wekan/wekan/issues/2698) (GitLab integration: one-way
+List Sync from GitLab issues existed, and on 2026-09-30 the GitLab importer and
+Sync source reached the format contract - assignees, dates, milestone,
+iteration, weight, time, comments, links and the issue link (see Upcoming).
+Writing changes back to GitLab, `#number` linking and embedding need a GitLab
+server and API credentials to build and verify, which this environment does
+not have).
 
 </details>
 
@@ -1553,24 +1617,1679 @@ fields, dates, members and a loss report recorded in Problems → Recovery.
 The import page now shows the loss report itself (see Upcoming). Still open
 for them: (2) file CONTENTS - these JSON sources carry
 attachment metadata only, so bytes need live API connectors with credentials;
-(3) Deck sharing rules, OpenProject watchers and Asana followers have no
+(3) OpenProject watchers and Asana followers now become card watchers for
+board members (2026-09-30); Deck sharing rules have no
 safe mapping (an import never grants access); (4) Zenkit's native
 single-file export is unverified because Zenkit publishes no schema. The
 EXPORT formatters now carry what each importer reads (see Upcoming).
 
 Additional formats not yet researched or built: whatever other kanban/outline
 tools use for import/export that WeKan does not read or write yet (the Leo
-`.leo` outline is done, see Upcoming). Each new format
-costs roughly what Markdown (this round's new format) cost: a parser, a
-formatter, tests, UI wiring in the import picker and export menu, and - since
-every user-visible string needs one - a new translated string across all 234
-locale files, not just an English placeholder
-(tests/allTranslationCompleteness.test.cjs
-enforces that). Not attempted as a batch; take them one at a time, following
-the Markdown commit as the template.
+`.leo` outline is done, and todo.txt was added on 2026-09-30, see Upcoming).
+Each new format costs roughly what todo.txt cost: a parser, a formatter,
+tests, the import picker and export menu wiring, and one instruction string,
+added in English and marked pending Transifex (the maintainer's 2026-09-29
+decision). Take them one at a time, following the todo.txt commit as the
+template.
 
 </details>
 </details>
+
+# v12.12 2026-09-30 WeKan ® release
+
+**In short:** Administrators can now resolve rule emails WeKan could not
+confirm - **resend to unconfirmed recipients only, mark sent or drop** - and
+review **legacy rule emails** instead of leaving them stuck. Boards import
+and export as **todo.txt**, **GitLab** import and export reach the format
+contract, and OpenProject watchers and Asana followers become card watchers.
+**Undo and redo** apply a raced request once, and Sync and Scrum History
+writes gain the coordination the maintainer's 2026-09-30 decisions call for.
+
+This release adds the following new features:
+
+**Rule email recovery** - Admin Panel → Problems → Recovery resolves rule
+emails that WeKan could not confirm or could not attribute to a source.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/252f27986">Resolve partially accepted rule emails: resend to the unconfirmed only, mark sent or drop</a>. Thanks to xet7.</summary>
+
+When SMTP accepts a rule email for only some recipients, or its answer is lost,
+the attempt stays unconfirmed and WeKan never sends it again by itself
+([#2713](https://github.com/wekan/wekan/issues/2713), maintainer decision of
+2026-09-30). Recovery now shows each recipient as accepted or not confirmed.
+An administrator resends to the unconfirmed recipients only - same headers,
+narrowed SMTP envelope - marks the attempt sent, or drops it, which completes
+the rule stage without mail. A decision waits ten minutes after the attempt
+started, longer than any SMTP send can last, is one immutable record per
+attempt and is serialized per command across server processes. A resend
+records its intent before SMTP, so an interrupted one shows as in progress
+instead of repeating silently. Unit, MongoDB integration and source tests
+cover every decision and refusal; Chromium and WebKit cover review and drop.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f5d20a18d">Review legacy rule emails: re-bind from the current card or discard</a>. Thanks to xet7.</summary>
+
+A rule email prepared before commands recorded their source, or one with card
+Details from an older binding, is refused by dispatch and was waiting for a
+recovery that did not exist. Recovery now lists them with board, card,
+recipients, subject and reason. Nothing runs them automatically. Re-bind
+prepares the email again from the card as it is now, after re-checking that
+the rule's author still has write access and that the rule is unchanged;
+discard records a dropped attempt so the stage completes without mail. Each
+decision writes one audit record and is final once an attempt exists. Unit,
+MongoDB integration and source tests cover both actions and every refusal;
+Chromium and WebKit cover review and discard.
+
+</details>
+
+**Board Settings** - the Rules page's views are reached from the board menu.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/40a4d9b17">The Rules page uses the board's right sidebar instead of its own</a>. Thanks to xet7.</summary>
+
+Its separate sidebar held only Back and its views; the board sidebar has the
+same views in Board Settings under Rules, and closes after one is chosen on the
+Rules page. Picking a Board View menu view there goes back to the board, asking
+before unsaved Blocks work is lost. Source tests and the Rules browser specs
+cover it in Chromium and WebKit.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b4217f962">List view, Workflow, Blocks, History and Import / Export rules sit under Rules</a>. Thanks to xet7.</summary>
+
+Each opens the Rules page in that view, asking before unsaved Blocks work is
+lost; Import / Export rules opens its popup from the menu. They share Rules'
+board-admin guard, and a divider now separates them from Change Color. The
+entry is labelled "Import / Export rules" in both menus, using the popup's
+existing, already translated title. A source test pins the order and guards;
+a Playwright case checks the order and the views in Chromium and WebKit.
+
+</details>
+
+**External imports** - GitLab reaches the format contract in both directions,
+watchers and followers survive an import, and todo.txt is a new format.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d71bab65b">Bring the GitLab importer and Sync source up to the format contract</a>. Thanks to gotjoshua and xet7.</summary>
+
+The GitLab adapter kept title, description, state, due date, one assignee,
+author and labels, and silently dropped the rest of an Issues API v4 issue
+([#2698](https://github.com/wekan/wekan/issues/2698)). It now carries every
+assignee, creation and close dates, time spent, labels with details,
+milestone, iteration, type and confidentiality, weight, time estimate and task
+completion, embedded notes as comments and links as dependencies, plus the
+`group/project#iid` reference and URL. A confidential issue is warned about;
+epics and comments not embedded in the export are reported as losses. List
+Sync reads the same parser, so each existing GitLab card's description gains
+the source link once on the next Sync, as GitHub cards already carry it.
+`tests/gitlabImport.test.cjs` pins every mapping.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d893d1791">Import OpenProject watchers and Asana followers as card watchers</a>. Thanks to xet7.</summary>
+
+Both were reported as losses because an import never grants access. Watching
+grants none, so a source watcher now becomes a card watcher when the members
+mapping maps them to a member of the new board. Anyone else - unmapped, or not
+a board member and so not allowed a private board's notifications - is
+counted in the import's loss report. Nextcloud Deck sharing rules stay a
+reported loss by design. Planner, Asana and OpenProject tests pin it.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/65f5cb45b">Export to GitLab with the people, dates and comments its importer reads</a>. Thanks to xet7.</summary>
+
+The GitLab export wrote title, description, state, labels and due date while
+the importer reads every assignee, the author, creation and close dates and
+notes, so an exported board imported back kept none of them. The formatter
+now writes them, and no iid, so a re-import adds no second "Source:" line.
+The round-trip test pins it.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/dd7baeec5">Import and export boards as todo.txt</a>. Thanks to xet7.</summary>
+
+[todo.txt](https://github.com/todotxt/todo.txt) is the one-task-per-line
+format the todo.txt app and many compatible apps share. Completed tasks go to
+Done; priority, `+project` and `@context` become labels; creation, completion,
+`due:` and `t:` dates become the card's dates; a `list:` extension keeps list
+names across a round trip. Other `key:value` pairs stay in the title and a
+malformed date is reported. The format has no descriptions, comments or
+members, so an export leaves them out. Unit tests run the specification's
+examples and the round trip; a Playwright case imports through the page.
+
+</details>
+
+and fixes the following bugs:
+
+**History** - undo and redo apply a raced request once.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f2af24351">Apply a raced undo or redo once instead of once per caller</a>. Thanks to xet7.</summary>
+
+Two undos that picked the same History row - two tabs, or a repeating key -
+both applied it, both flipped its flag and both recorded a reversal. Undo and
+redo now claim the row with a conditional flag write before applying it, and
+only the winning caller applies; an apply that does nothing or throws gives
+the claim back. A full-app test fires four concurrent undos and redos at one
+card edit and fails against the previous code.
+
+</details>
+
+**Imports** - the browser audit's complete import is complete again.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/67eef67da">Embed the GitLab fixture's comment so it stays a complete import</a>. Thanks to xet7.</summary>
+
+The shared GitLab fixture declared one comment but carried none, which the
+GitLab adapter now reports as a loss, so the browser audit's example of a
+complete import failed every run. The comment is now embedded as GitLab's
+notes endpoint returns it. Four runs of all seven import specs against a
+production bundle then passed with no failures; the intermittent failure
+recorded earlier did not reproduce.
+
+</details>
+
+and has the following developer-facing changes:
+
+**Tests and the release audit** - guards that follow deliberate changes, a
+flaky browser check and a URL the release audit would have refused.
+
+- [The Monte Carlo export test waits for the forecast answer before reading the export link](https://github.com/wekan/wekan/commit/c46730a22):
+  it failed two runs in three, and passed four in four after. Thanks to xet7.
+- [Three source guards read the undo claim and the legacy review code](https://github.com/wekan/wekan/commit/4790ffb17):
+  the rules they pin - History rows change only in their undo flags, undo
+  and redo apply their own direction - are unchanged. Thanks to xet7.
+- [The todo.txt module names its specification without a URL](https://github.com/wekan/wekan/commit/c8d16d1c4):
+  the release telemetry audit, which the bump job runs, flags every new URL
+  origin in shipped source. Thanks to xet7.
+- [The filter preset storage test's sandbox gets the module its server file requires](https://github.com/wekan/wekan/commit/558fd7a45):
+  it had failed with "require is not defined" since semi-open boards. Thanks
+  to xet7.
+
+**Sync and Scrum History coordination** - Sync effects stay off until enabled,
+Sync History respects the board's History gate, and one Scrum History worker
+runs an operation at a time.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/24536f6cb">Keep Sync's rule, notification and webhook effects off unless enabled</a>. Thanks to xet7.</summary>
+
+Maintainer decision of 2026-09-30: effects of changes Sync makes are off by
+default. A board opts in with `syncEffectsEnabled`, scheduled runs also need
+the instance flag `enableSyncCronEffects`, and every stored-effect stage makes
+its caller name the trigger and checks both inside its guard, so later wiring
+cannot skip them. There is no interface yet, because Sync does not call these
+stages until History coordination is finished. Unit and full-app tests pin
+the defaults and every refusal.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/281f29474">Admit Sync History through the board's History writer gate</a>. Thanks to xet7.</summary>
+
+Sync wrote History rows it hashed when planning them straight into the
+collection, which would fork a board whose chain is coordinated, and a
+migration could start mid-batch. It now holds a legacy writer token for the
+whole batch, so migration drains it, and a coordinated board refuses with
+`sync-history-coordination-required`. A MongoDB test with the real gate shows
+the drain, the refusal of a new batch while draining and no writes on a
+coordinated board.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/bfe4cc73b">Serialize workers resuming the same Scrum History operation</a>. Thanks to xet7.</summary>
+
+The Scrum board lock is per process, so two server processes could resume one
+operation and interleave its writes. Each resume now claims the checkpoint;
+the newest claim wins and a displaced worker stops at its next guard. The
+claim is not part of the plan, so completion hashes are unchanged. Unit and
+two-client MongoDB tests pin it; 561 server tests pass.
+
+</details>
+
+and updates the following translations:
+
+**Languages updated:** Vietnamese, Bulgarian, Greek, Catalan, Russian, Ukrainian, Polish, Czech, German, French, Spanish, Italian, Portuguese, Dutch, Swedish, Finnish, Danish, Norwegian, Turkish, Indonesian, Romanian, Hungarian, Slovak, Japanese, Korean, Chinese, Estonian.
+
+**Language coverage** - complete missing prose and preserve regional wording.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/fbf3fbe96">Complete Vietnamese and Bulgarian translation placeholders</a>. Thanks to xet7.</summary>
+
+Fill 645 values across Vietnamese, its Vietnam locale and Bulgarian, including
+strings previously pending Transifex. Translate filters, reminders, maps,
+Scrum, synchronization and notification recovery. Preserve existing regional
+translations, executable variables, product names and mathematical symbols.
+
+Regression checks cover every key and placeholder in these three locales,
+remaining English prose including pending keys, native vocabulary and filter
+syntax. Four focused suites and all 21 human-preference checks pass. The
+remaining languages are still being translated, including new English keys
+added during feature development.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/224ea9b37">Complete Greek translations and new email recovery actions</a>. Thanks to xet7.</summary>
+
+Fill 753 values across the two Greek locales and the previously completed
+Vietnamese and Bulgarian locales. Include the 23 new email recovery strings
+added during this translation batch. Preserve existing translations, variable
+syntax, product names and mathematical symbols.
+
+Completeness, placeholder, key-order and native-vocabulary checks pass for all
+five locale files against the latest English source. Human-preference checks
+also pass. Translation work continues for the other languages.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1f2c91456">Complete Catalan locales and legacy email review text</a>. Thanks to xet7.</summary>
+
+Fill 1,635 values across Catalan and its regional locales, Vietnamese,
+Bulgarian and Greek. Complete the three Catalan files, reuse reviewed Catalan
+Blockly text only for matching untranslated regional keys, and translate the
+20 new legacy-email review strings in the earlier completed languages.
+
+All eight locale files pass completeness, placeholder and key-order checks
+against the current English source, including keys pending Transifex. Existing
+translations remain unchanged. Human-preference checks also pass; the wider
+translation backlog remains active.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9dbec04c4">Complete Russian and Ukrainian regional coverage</a>. Thanks to xet7.</summary>
+
+Fill 1,139 values in the Russian and Ukrainian locale files. Translate new
+recovery and legacy-email messages, then fill regional gaps from reviewed
+same-language translations for identical keys. Preserve existing translations
+and the Russian locale alias. Printed keyboard legends remain unchanged.
+
+Completeness, key-order and placeholder checks pass against the current
+English source. Vocabulary checks distinguish Russian from Ukrainian, and
+human-preference checks pass. The remaining locale backlog is still active.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/55abfe26c">Complete Polish and Czech locale coverage</a>. Thanks to xet7.</summary>
+
+Fill 780 values in Polish, Czech and their regional locale files. Translate
+the new email recovery and legacy review messages, and fill regional gaps
+using reviewed same-language text for identical keys. Existing translations
+and executable placeholders are preserved.
+
+All four files pass completeness, placeholder, key-order and native-vocabulary
+checks against the current English source. Human-preference checks pass;
+translation work continues for the remaining languages.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ca3250ddb">Translate recovery actions across German, French, Spanish and Italian</a>. Thanks to xet7.</summary>
+
+Fill 836 values across 19 locale files, including regional variants. Translate
+rule-email recovery decisions, legacy email review and the variable insertion
+prompt. Preserve existing translations and every executable placeholder.
+
+All 19 files pass completeness checks including pending Transifex keys,
+key-order checks and placeholder checks against the current English source.
+Native-language checks retain the duplicate-delivery warning and permanent
+discard meaning. Human-preference checks pass; other locales remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/09919e54e">Translate Portuguese and Dutch recovery messages</a>. Thanks to xet7.</summary>
+
+Fill 264 values across six locale files, using separate Brazilian and European
+Portuguese wording. Include rule-email recovery, legacy review and variable
+insertion. Completeness, placeholders, key order, regional wording and
+human-preference checks pass. Existing translations remain unchanged; work
+continues on the remaining languages.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5d008c9ec">Translate Swedish and Finnish recovery messages</a>. Thanks to xet7.</summary>
+
+Fill 88 missing values for rule-email recovery, legacy review and variable
+insertion. Both locales pass completeness, placeholder and key-order checks
+against the current English source. Regression checks cover duplicate-delivery
+and permanent-discard warnings. Existing translations remain unchanged and
+human-preference checks pass. Other languages remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b66799cd2">Translate Danish and Norwegian recovery messages</a>. Thanks to xet7.</summary>
+
+Fill 88 values in Danish and Norwegian Bokmål for rule-email recovery,
+legacy review and variable insertion. Completeness, key-order, placeholder
+and warning-vocabulary checks pass against the current English source.
+Existing translations remain unchanged and human-preference checks pass.
+Translation work continues for the remaining languages.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e28744f59">Translate Turkish recovery messages</a>. Thanks to xet7.</summary>
+
+Fill 44 recovery, legacy-review and variable-insertion strings. Turkish passes
+completeness, placeholder, key-order and warning-vocabulary checks against the
+current English source. Existing translations are preserved; human-preference
+checks pass. Other languages remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5e6f72efa">Translate Indonesian recovery messages</a>. Thanks to xet7.</summary>
+
+Fill 44 recovery, legacy-review and variable-insertion strings. Indonesian
+passes completeness, placeholder, key-order and warning-vocabulary checks
+against the current English source. Existing translations are preserved and
+human-preference checks pass. Other languages remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f0265a110">Translate Romanian recovery messages</a>. Thanks to xet7.</summary>
+
+Fill 44 recovery, legacy-review and variable-insertion strings. Romanian
+passes completeness, placeholder, key-order and warning-vocabulary checks
+against the current English source. Existing translations are preserved and
+human-preference checks pass. Other languages remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a0889dc7e">Translate Hungarian recovery messages</a>. Thanks to xet7.</summary>
+
+Fill 44 recovery, legacy-review and variable-insertion strings. Hungarian
+passes completeness, placeholder, key-order and warning-vocabulary checks
+against the current English source. Existing translations are preserved and
+human-preference checks pass. Other languages remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2ec92f8c4">Translate Slovak recovery messages</a>. Thanks to xet7.</summary>
+
+Fill 44 recovery, legacy-review and variable-insertion strings. Slovak passes
+completeness, placeholder, key-order and warning-vocabulary checks against the
+current English source. Existing translations are preserved and
+human-preference checks pass. Other languages remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0183d56db">Translate Japanese recovery messages</a>. Thanks to xet7.</summary>
+
+Fill 44 recovery, legacy-review and variable-insertion strings. Japanese passes
+completeness, placeholder, key-order and warning-vocabulary checks against the
+current English source. Existing translations are preserved and
+human-preference checks pass. Other languages remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c9c693991">Translate Korean recovery messages</a>. Thanks to xet7.</summary>
+
+Fill 44 recovery, legacy-review and variable-insertion strings. Korean passes
+completeness, placeholder, key-order and warning-vocabulary checks against the
+current English source. Existing translations are preserved and
+human-preference checks pass. Other languages remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/04f134cb1">Translate Chinese recovery messages across regional locales</a>. Thanks to xet7.</summary>
+
+Fill 396 recovery, legacy-review and variable-insertion strings across nine
+Chinese locale files, using Simplified and Traditional Chinese wording.
+Completeness, placeholder, key-order and warning-vocabulary checks pass against
+the current English source. Existing translations are preserved and
+human-preference checks pass. Other languages remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/753c55df7">Translate Estonian email recovery and review messages</a>. Thanks to xet7.</summary>
+
+Fill 55 email recovery, legacy-review and variable-insertion strings in
+Estonian. Focused coverage checks the translated email messages, preserved
+placeholders, duplicate-delivery warnings and permanent-discard wording.
+Existing translations are preserved and human-preference checks pass.
+Estonian still has 321 placeholders; other languages also remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6eb843dd3">Translate Estonian filters, notifications and board controls</a>. Thanks to xet7.</summary>
+
+Fill 81 strings covering filters, notifications, rule variables, board
+visibility, imports and map placement. Regression checks preserve executable
+variables and filter syntax as well as placeholders. Existing translations
+are preserved and human-preference checks pass. Estonian has 240 placeholders
+remaining; other languages also remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/67bd1b357">Translate Estonian Scrum planning and reports</a>. Thanks to xet7.</summary>
+
+Fill 83 Scrum planning and reporting strings. Regression checks preserve
+placeholders and distinguish unknown estimates from zero, partial reports
+from full reports, and daily observations from complete change histories.
+Existing translations are preserved; human-preference and language wiring
+checks pass. Update the README coverage count to 73. Estonian still has 157
+reported placeholders, including shared technical terms, and remains in
+progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/207416ac8">Translate Estonian synchronization conflicts and reports</a>. Thanks to xet7.</summary>
+
+Fill 60 synchronization strings covering conflict resolution, previews, source
+fields, reports and diagnostics. Tests preserve placeholders and distinctions
+between missing and null values, local changes and source writes, and reports
+and recovery actions. Existing translations are preserved and human-preference
+checks pass. Estonian has 97 reported placeholders remaining.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/62f8337bc">Translate Estonian notifications and todo.txt import guidance</a>. Thanks to xet7.</summary>
+
+Fill 70 notification recovery, history, sign-in and import strings, including
+the newly added todo.txt guidance. Tests preserve import syntax, placeholders
+and irreversible cancellation warnings. Existing translations are preserved;
+focused translation and human-preference checks pass. The 28 remaining reported
+values need a terminology review; other languages remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e5539d0b8">Translate todo.txt import guidance across 62 locales</a>. Thanks to xet7.</summary>
+
+Translate the new import guidance across recently completed locales.
+Regression checks preserve task markers, project and context syntax, priority
+markers and date prefixes. Completeness, placeholder and human-preference
+checks pass; existing translations are preserved. Other languages remain in
+progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6370ef260">Translate Arabic recovery messages and todo.txt guidance</a>. Thanks to xet7.</summary>
+
+Fill 45 recovery, legacy-review, variable-insertion and import strings.
+Arabic passes completeness, placeholder, import-syntax and delivery-warning
+checks against the current English source. Existing translations are preserved
+and human-preference checks pass. Other languages remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b6ecc1309">Complete regional Arabic recovery and import translations</a>. Thanks to xet7.</summary>
+
+Fill 90 strings in the Algerian and Egyptian Arabic locale files, using the
+reviewed Modern Standard Arabic wording for matching source keys. Existing
+regional translations are preserved. Completeness, placeholder, import-syntax,
+delivery-warning and human-preference checks pass. Other languages remain in
+progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2913e6263">Translate Galician recovery messages and import guidance</a>. Thanks to xet7.</summary>
+
+Fill 90 strings across both Galician locale files. Completeness, placeholder,
+import-syntax and delivery-warning checks pass against the current English
+source. Existing translations are preserved and human-preference checks pass.
+Other languages remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c24edc32a">Complete Japanese and Korean regional recovery translations</a>. Thanks to xet7.</summary>
+
+Fill 90 strings in the Japan and South Korea locale files from reviewed
+translations of the same source keys. Existing regional translations are
+preserved. Completeness, placeholder, import-syntax, delivery-warning and
+human-preference checks pass. The separate Japanese Hiragana locale still
+needs review, and other languages remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/bd82fd24c">Translate recovery and import guidance into Japanese Hiragana</a>. Thanks to xet7.</summary>
+
+Fill 45 missing strings with hiragana prose and reading spaces. Tests reject
+kanji and katakana in this batch while preserving placeholders, import syntax
+and delivery warnings. Translation and human-preference checks pass. Older
+strings in this locale still need a script review; other languages remain in
+progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/164269c4a">Translate Hebrew recovery messages and import guidance</a>. Thanks to xet7.</summary>
+
+Fill 90 strings across both Hebrew locale files. Focused checks cover Hebrew
+text, placeholders, import syntax and delivery warnings. Existing translations
+are preserved and human-preference checks pass. Each Hebrew locale still has
+332 placeholders; other languages also remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a9ab2378e">Translate Hebrew filters, notifications and board controls</a>. Thanks to xet7.</summary>
+
+Fill 162 strings across both Hebrew locale files. Tests preserve filter and
+rule syntax, placeholders and visibility warnings. Existing translations are
+preserved; translation, language wiring and human-preference checks pass.
+Update the README coverage count to 75. Each Hebrew locale still has 251
+reported placeholders; other languages also remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ff8ee5447">Translate Hebrew Scrum planning and reports</a>. Thanks to xet7.</summary>
+
+Fill 168 Scrum strings across both Hebrew locale files. Tests preserve
+placeholders and the distinctions between unknown and zero estimates, partial
+reports and full reports, and daily observations and complete change histories.
+Existing translations are preserved; translation and human-preference checks
+pass. Each Hebrew locale still has 167 reported placeholders remaining.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/302c689d9">Translate Hebrew synchronization conflicts and reports</a>. Thanks to xet7.</summary>
+
+Fill 120 strings across both Hebrew locale files. Tests preserve placeholders
+and distinctions between local and source changes, missing and null values,
+and reports and recovery actions. Existing translations are preserved;
+translation and human-preference checks pass. Each Hebrew locale still has
+107 reported placeholders remaining.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/75b68d57c">Translate Hebrew notification recovery and history messages</a>. Thanks to xet7.</summary>
+
+Fill 160 strings across both Hebrew locale files. Tests preserve placeholders,
+irreversible cancellation warnings and retry semantics. Existing translations
+are preserved; translation and human-preference checks pass. Each Hebrew
+locale still has 27 reported technical terms requiring review. Other languages
+remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/fc8859fe3">Complete Hebrew keyboard labels and review technical terms</a>. Thanks to xet7.</summary>
+
+Translate 22 keyboard labels across both Hebrew locale files and explicitly
+retain 16 reviewed keyboard legends, product names, null and mathematical
+symbols per locale. Both files pass current-source completeness checks,
+including pending strings, as well as placeholder and human-preference checks.
+Existing translations are preserved. Other languages remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e043c8a0f">Complete Estonian keyboard labels and review technical terms</a>. Thanks to xet7.</summary>
+
+Translate 12 keyboard labels and retain 16 reviewed technical terms, including
+product names, mathematical symbols and Sprint. Estonian now passes
+current-source completeness checks, including pending strings, together with
+placeholder and human-preference checks. Existing translations are preserved.
+Other languages remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2b493d541">Translate Persian recovery messages and import guidance</a>. Thanks to xet7.</summary>
+
+Fill 90 strings across both Persian locale files. Focused tests preserve
+placeholders, import syntax and duplicate-delivery and permanent-discard
+warnings. Existing translations are preserved and human-preference checks
+pass. Persian still has 328 reported placeholders, and Persian (Iran) has 325.
+Other languages remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5df1041ad">Translate Persian filters and board controls</a>. Thanks to xet7.</summary>
+
+Fill 76 strings across both Persian locale files. Tests preserve filter syntax,
+rule variables, placeholders and board visibility warnings. Existing
+translations are preserved and human-preference checks pass. Persian still
+has 290 reported placeholders, and Persian (Iran) has 287. Other languages
+remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/351b592ab">Translate Persian notification settings and map controls</a>. Thanks to xet7.</summary>
+
+Fill 86 strings across both Persian locale files, covering notifications,
+reminders, saved filters, import reports and map controls. Tests preserve
+placeholders and reminder timing. Existing translations are preserved and
+human-preference checks pass. Persian has 247 reported placeholders remaining,
+and Persian (Iran) has 244. Other languages remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3724383d4">Translate Persian Scrum planning and reports</a>. Thanks to xet7.</summary>
+
+Fill 159 Scrum strings across both Persian locale files while preserving
+existing translations. Tests preserve placeholders and warnings about unknown
+estimates, partial reports and daily observations. Translation, language wiring
+and human-preference checks pass. Update the README coverage count to 77.
+Persian has 167 reported placeholders remaining, and Persian (Iran) has 165.
+Other languages remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ad5dde9e4">Translate Persian synchronization conflicts and reports</a>. Thanks to xet7.</summary>
+
+Fill 126 strings across both Persian locale files. Tests preserve placeholders
+and distinctions between missing and null values, local and source changes,
+and reports and recovery actions. Existing translations are preserved and
+human-preference checks pass. Persian has 104 reported placeholders remaining,
+and Persian (Iran) has 102. Other languages remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/fb9887211">Translate Persian notification recovery and history messages</a>. Thanks to xet7.</summary>
+
+Fill 154 strings across both Persian locale files. Tests preserve placeholders,
+irreversible cancellation warnings and retry semantics. Existing translations
+are preserved and human-preference checks pass. Persian has 27 reported terms
+remaining, and Persian (Iran) has 25, requiring a technical terminology review.
+Other languages remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/eeb42566e">Complete Persian keyboard labels and review technical terms</a>. Thanks to xet7.</summary>
+
+Translate 22 keyboard labels while preserving existing regional wording.
+Retain 15 reviewed keyboard legends, product names and mathematical symbols
+per locale. Both Persian files pass current-source completeness checks,
+including pending strings, plus placeholder and human-preference checks.
+Other languages remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0be3130fd">Complete Romanian regional recovery and import translations</a>. Thanks to xet7.</summary>
+
+Fill 45 missing strings in Romanian (Romania) using reviewed translations for
+the same source keys. Existing regional wording is preserved. Current-source
+completeness, placeholder, import-syntax, delivery-warning and human-preference
+checks pass. Other languages remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1e6b7e916">Translate Malay recovery messages and import guidance</a>. Thanks to xet7.</summary>
+
+Fill 90 strings across both Malay locale files. Focused tests preserve
+placeholders, import syntax, delivery warnings and access-check wording.
+Existing translations are preserved and human-preference checks pass.
+Each Malay locale still has 643 reported placeholders. Other languages remain
+in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b0c833e8c">Translate Malay filters and board controls</a>. Thanks to xet7.</summary>
+
+Fill 76 strings across both Malay locale files. Tests preserve filter syntax,
+rule variables, placeholders and board visibility warnings. Existing
+translations are preserved and human-preference checks pass. Each Malay locale
+still has 605 reported placeholders. Other languages remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3104f3845">Translate Malay notification settings and map controls</a>. Thanks to xet7.</summary>
+
+Fill 86 strings across both Malay locale files, covering notifications,
+reminders, saved filters, import reports and map controls. Tests preserve
+placeholders and reminder timing. Existing translations are preserved and
+human-preference checks pass. Each Malay locale still has 562 reported
+placeholders. Other languages remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4d5e5fa19">Translate Malay Scrum planning and reports</a>. Thanks to xet7.</summary>
+
+Fill 168 Scrum strings across both Malay locale files. Tests preserve
+placeholders and warnings about unknown estimates, partial reports and daily
+observations. Existing translations are preserved and human-preference checks
+pass. Each Malay locale still has 478 reported placeholders. Other languages
+remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/05118c5e9">Translate Malay synchronization conflicts and reports</a>. Thanks to xet7.</summary>
+
+Fill 126 strings across both Malay locale files. Tests preserve placeholders
+and distinctions between local and source changes, missing and null values,
+and reports and recovery actions. Existing translations are preserved and
+human-preference checks pass. Each Malay locale still has 415 reported
+placeholders. Other languages remain in progress.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ac6b42ec8">Translate Malay notification recovery and delivery controls</a>. Thanks to xet7.</summary>
+
+- Fill 77 English placeholders in each Malay locale for email queues,
+  activity recovery, rule delivery reports, sign-in and history requests.
+- Preserve existing translations and test placeholder inventories, permanent
+  cancellation warnings and safe retry wording.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8eaa8f67c">Translate Malay block editor accessibility controls</a>. Thanks to xet7.</summary>
+
+- Translate 97 strings in each Malay locale for screen-reader announcements,
+  block controls, keyboard navigation, pixel editing and variable warnings.
+- Check editor translation coverage, placeholder preservation and warnings
+  while preserving existing translations.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d70442ba0">Translate Malay editor inputs and logic controls</a>. Thanks to xet7.</summary>
+
+- Fill 91 English placeholders in each Malay locale for editor inputs,
+  keyboard navigation, list sorting, logic and mathematical operations.
+- Verify placeholders, inclusive limits and logical conditions; update the
+  README count to 79 locales meeting the existing completeness threshold.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/da06922a6">Complete remaining Malay editor translations</a>. Thanks to xet7.</summary>
+
+- Fill 133 remaining prose placeholders in each Malay locale for editor
+  help, accessibility, text operations and rule editing warnings.
+- Review 19 unchanged technical terms per locale and verify complete source
+  key coverage, placeholders, permissions and disabled-function warnings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5719fe0cc">Translate Slovenian email recovery controls</a>. Thanks to xet7.</summary>
+
+- Fill 45 missing translations in each Slovenian locale for email recovery,
+  legacy message review, variable insertion and todo.txt import.
+- Preserve existing translations and verify placeholders, duplicate-delivery
+  warnings, permanent discard wording and source-access restrictions.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f6c220e93">Translate Slovenian filters and notification controls</a>. Thanks to xet7.</summary>
+
+- Fill 81 English placeholders in each Slovenian locale for filters,
+  automatic archiving, notifications, reminders, imports and map views.
+- Check executable syntax, placeholders and visibility warnings; update the
+  README to 81 locales meeting the existing completeness threshold.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/84740b620">Translate Slovenian Scrum planning and reports</a>. Thanks to xet7.</summary>
+
+- Fill 78 English placeholders in each Slovenian locale for Scrum planning,
+  sprint lifecycle controls, reports and daily observations.
+- Preserve existing translations and verify placeholders, partial-report
+  scope and warnings about unknown estimates and incomplete observations.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a50d2e75f">Translate Slovenian synchronization controls and reports</a>. Thanks to xet7.</summary>
+
+- Fill 63 English placeholders in each Slovenian locale for synchronization
+  conflicts, previews, source omissions, reports and estimate mappings.
+- Preserve existing translations and verify placeholders, local-content
+  retention, report limitations and missing-value versus null behavior.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b8a22fa97">Complete Slovenian notification recovery translations</a>. Thanks to xet7.</summary>
+
+- Fill 87 remaining placeholders in each Slovenian locale for notification
+  recovery, email delivery, history requests and keyboard labels.
+- Review 17 unchanged technical terms and verify complete source coverage,
+  placeholders, irreversible cancellation warnings and safe retry wording.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/777a434d6">Translate Croatian email recovery controls</a>. Thanks to xet7.</summary>
+
+- Fill 45 missing Croatian translations for email recovery, legacy message
+  review, variable insertion and todo.txt import.
+- Preserve existing translations and verify placeholders, duplicate-delivery
+  warnings, permanent discard wording and source-access restrictions.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e4c6e9e56">Translate Croatian filters and notification controls</a>. Thanks to xet7.</summary>
+
+- Fill 81 Croatian placeholders for filters, automatic archiving,
+  notifications, reminders, imports, map views and rule controls.
+- Preserve existing translations and verify executable syntax, placeholders,
+  visibility restrictions and reminder timing.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9c5e4880a">Translate Croatian Scrum planning and reports</a>. Thanks to xet7.</summary>
+
+- Fill 83 Croatian placeholders for Scrum planning, sprint lifecycle
+  controls, reports and daily observations.
+- Verify placeholders and report warnings; update the README count to 82
+  locales meeting the existing completeness threshold.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e8afcbeef">Translate Croatian synchronization controls and reports</a>. Thanks to xet7.</summary>
+
+- Fill 63 Croatian placeholders for synchronization conflicts, previews,
+  source omissions, reports, recovery diagnostics and estimate mappings.
+- Preserve existing translations and verify placeholders, local-content
+  retention, partial-change warnings and missing-value versus null behavior.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b1d43546f">Complete Croatian notification recovery translations</a>. Thanks to xet7.</summary>
+
+- Fill 90 Croatian placeholders for notification recovery, email delivery,
+  history requests and keyboard labels.
+- Review 19 unchanged technical terms and verify complete source coverage,
+  placeholders, irreversible cancellation warnings and safe retry wording.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/35ac2229d">Translate Serbian email recovery controls</a>. Thanks to xet7.</summary>
+
+- Fill 45 missing Serbian translations in Cyrillic for email recovery,
+  legacy message review, variable insertion and todo.txt import.
+- Preserve existing translations and verify placeholders, duplicate-delivery
+  warnings, permanent discard wording and source-access restrictions.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f94b149d8">Translate Serbian filters and notification controls</a>. Thanks to xet7.</summary>
+
+- Fill 81 Serbian placeholders for filters, automatic archiving,
+  notifications, reminders, imports, map views and rule controls.
+- Verify placeholders, executable syntax and visibility warnings; update the
+  README to 83 locales meeting the existing completeness threshold.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7cbe71472">Translate Serbian Scrum planning and reports</a>. Thanks to xet7.</summary>
+
+- Fill 84 Serbian placeholders for Scrum planning, sprint lifecycle
+  controls, reports and daily observations.
+- Preserve existing translations and verify placeholders, partial-report
+  scope and warnings about unknown estimates and incomplete observations.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/dcbcd779c">Translate Serbian synchronization controls and reports</a>. Thanks to xet7.</summary>
+
+- Fill 63 Serbian placeholders for synchronization conflicts, previews,
+  source omissions, reports, recovery diagnostics and estimate mappings.
+- Preserve existing translations and verify placeholders, local-content
+  retention, partial-change warnings and missing-value versus null behavior.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d76497e75">Complete Serbian notification recovery translations</a>. Thanks to xet7.</summary>
+
+- Fill 90 Serbian placeholders for notification recovery, email delivery,
+  history requests and keyboard labels.
+- Review nine unchanged technical terms and verify complete source coverage,
+  placeholders, irreversible cancellation warnings and safe retry wording.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a78102dd5">Translate Bosnian email recovery controls</a>. Thanks to xet7.</summary>
+
+- Fill 45 missing Bosnian translations for email recovery, legacy message
+  review, variable insertion and todo.txt import.
+- Preserve existing translations and verify placeholders, duplicate-delivery
+  warnings, permanent discard wording and source-access restrictions.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8699d202e">Translate Bosnian filters and notification controls</a>. Thanks to xet7.</summary>
+
+- Fill 81 Bosnian placeholders for filters, automatic archiving,
+  notifications, reminders, imports, map views and rule controls.
+- Preserve existing translations and verify executable syntax, placeholders,
+  visibility restrictions and reminder timing.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/151af11ed">Translate Bosnian Scrum planning and reports</a>. Thanks to xet7.</summary>
+
+- Fill 83 Bosnian placeholders for Scrum planning, sprint lifecycle
+  controls, reports and daily observations.
+- Verify placeholders and report warnings; update the README count to 84
+  locales meeting the existing completeness threshold.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2ae1ac3ae">Translate Bosnian synchronization controls and reports</a>. Thanks to xet7.</summary>
+
+- Fill 63 Bosnian placeholders for synchronization conflicts, previews,
+  source omissions, reports, recovery diagnostics and estimate mappings.
+- Preserve existing translations and verify placeholders, local-content
+  retention, partial-change warnings and missing-value versus null behavior.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3905e8dfe">Complete Bosnian notification recovery translations</a>. Thanks to xet7.</summary>
+
+- Fill 90 Bosnian placeholders for notification recovery, email delivery,
+  history requests and keyboard labels.
+- Review 18 unchanged technical terms and verify complete source coverage,
+  placeholders, irreversible cancellation warnings and safe retry wording.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ba44f6d1b">Translate Macedonian email recovery controls</a>. Thanks to xet7.</summary>
+
+- Fill 45 missing Macedonian translations for email recovery, legacy message
+  review, variable insertion and todo.txt import.
+- Preserve existing translations and verify placeholders, duplicate-delivery
+  warnings, permanent discard wording and source-access restrictions.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/44386cc65">Translate Macedonian filters and notification controls</a>. Thanks to xet7.</summary>
+
+- Fill 81 Macedonian placeholders for filters, automatic archiving,
+  notifications, reminders, imports, map views and rule controls.
+- Verify placeholders, executable syntax and visibility warnings; update the
+  README to 85 locales meeting the existing completeness threshold.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7362121e9">Translate Macedonian Scrum planning and reports</a>. Thanks to xet7.</summary>
+
+- Fill 84 Macedonian placeholders for Scrum planning, sprint lifecycle
+  controls, reports and daily observations.
+- Preserve existing translations and verify placeholders, partial-report
+  scope and warnings about unknown estimates and incomplete observations.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9bc96d975">Translate Macedonian synchronization controls and reports</a>. Thanks to xet7.</summary>
+
+- Fill 63 Macedonian placeholders for synchronization conflicts, previews,
+  source omissions, reports, recovery diagnostics and estimate mappings.
+- Preserve existing translations and verify placeholders, local-content
+  retention, partial-change warnings and missing-value versus null behavior.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/42a079d4f">Complete Macedonian notification recovery translations</a>. Thanks to xet7.</summary>
+
+- Fill 90 Macedonian placeholders for notification recovery, email delivery,
+  history requests and keyboard labels.
+- Review 15 unchanged technical terms and verify complete source coverage,
+  placeholders, irreversible cancellation warnings and safe retry wording.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/619dd1775">Translate Belarusian email recovery controls</a>. Thanks to xet7.</summary>
+
+- Fill 45 missing Belarusian translations for email recovery, legacy message
+  review, variable insertion and todo.txt import.
+- Preserve existing translations and verify placeholders, duplicate-delivery
+  warnings, permanent discard wording and source-access restrictions.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c066f05fe">Translate Belarusian filters and notification controls</a>. Thanks to xet7.</summary>
+
+- Fill 81 Belarusian placeholders for filters, automatic archiving,
+  notifications, reminders, imports, map views and rule controls.
+- Preserve existing translations and verify executable syntax, placeholders,
+  visibility restrictions and reminder timing.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f63480890">Translate Belarusian Scrum planning and reports</a>. Thanks to xet7.</summary>
+
+- Fill 84 Belarusian Scrum labels, planning controls and report explanations.
+- Preserve placeholders and existing translations; check partial-report and
+  observation warnings. Update the documented translation coverage count.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/bfc67b27d">Translate Belarusian synchronization messages</a>. Thanks to xet7.</summary>
+
+- Fill 63 Belarusian Sync conflict, preview, report and estimate messages.
+- Preserve existing translations and placeholders; check warnings about source
+  writes, partial runs and explicit null values.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f7ad3b102">Complete remaining Belarusian notification and keyboard translations</a>. Thanks to xet7.</summary>
+
+- Translate 90 notification, recovery, history and keyboard messages; retain
+  product names, printed modifier legends and mathematical function names.
+- Check Belarusian completeness against English, including pending keys, token
+  preservation and irreversible-action warnings. Preserve existing translations.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/020d3fb55">Translate Lithuanian email recovery and todo import messages</a>. Thanks to xet7.</summary>
+
+- Fill 45 Lithuanian recovery, variable insertion and todo.txt import messages.
+- Preserve existing translations, placeholders and import syntax; check
+  duplicate delivery, permanent removal and lost-access warnings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0eea05792">Translate Lithuanian filters, reminders and automation controls</a>. Thanks to xet7.</summary>
+
+- Fill 81 Lithuanian filter, reminder, automation, map and import messages.
+- Preserve existing translations and executable tokens; check board access,
+  reminder timing and list-age warnings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/493bdcc51">Translate Lithuanian Scrum planning and reports</a>. Thanks to xet7.</summary>
+
+- Fill 84 Lithuanian Scrum planning, sprint and report messages.
+- Preserve existing translations and placeholders; check unknown estimates,
+  partial reports and observation limits. Update the translation coverage count.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2792c0b0b">Translate Lithuanian synchronization messages</a>. Thanks to xet7.</summary>
+
+- Fill 63 Lithuanian Sync conflict, preview, report and estimate messages.
+- Preserve existing translations and placeholders; check source-write warnings,
+  partial-run limitations and explicit null handling.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ea1ca0629">Complete remaining Lithuanian notification and keyboard translations</a>. Thanks to xet7.</summary>
+
+- Fill 88 Lithuanian notification, recovery, history and keyboard messages.
+- Preserve existing translations and technical terms; check completeness,
+  placeholders and irreversible-action warnings against the English source.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7a1e48068">Translate Latvian recovery messages and correct board labels</a>. Thanks to xet7.</summary>
+
+- Fill 45 Latvian recovery and todo.txt import messages; replace Lithuanian
+  board and list labels with Latvian wording.
+- Check placeholders, import syntax, native labels and recovery warnings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3fd55ec26">Translate Latvian filters, reminders and automation controls</a>. Thanks to xet7.</summary>
+
+- Fill 81 Latvian filter, reminder, automation, map and import messages.
+- Preserve existing translations and executable tokens; check board access,
+  reminder timing and list-age warnings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/37a3c4682">Translate Latvian Scrum planning and reports</a>. Thanks to xet7.</summary>
+
+- Fill 84 Latvian Scrum planning, sprint and report messages.
+- Preserve existing translations and placeholders; check unknown estimates,
+  partial reports and observation limits. Update the translation coverage count.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a29104809">Translate Latvian synchronization messages</a>. Thanks to xet7.</summary>
+
+- Fill 63 Latvian Sync conflict, preview, report and estimate messages.
+- Preserve existing translations and placeholders; check source-write warnings,
+  partial-run limitations and explicit null handling.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d55e5a585">Complete remaining Latvian notification and keyboard translations</a>. Thanks to xet7.</summary>
+
+- Fill 88 Latvian notification, recovery, history and keyboard messages.
+- Preserve existing translations and technical terms; check completeness,
+  placeholders and irreversible-action warnings against the English source.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5e42e2dea">Translate Icelandic email recovery and todo import messages</a>. Thanks to xet7.</summary>
+
+- Fill 45 Icelandic recovery, variable insertion and todo.txt import messages.
+- Preserve existing translations, placeholders and import syntax; check
+  duplicate delivery, permanent removal and lost-access warnings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2aa190334">Translate Icelandic filters, reminders and automation controls</a>. Thanks to xet7.</summary>
+
+- Fill 81 Icelandic filter, reminder, automation, map and import messages.
+- Preserve existing translations and executable tokens; check board access,
+  reminder timing and list-age warnings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4b2c9196a">Translate Icelandic Scrum planning and reports</a>. Thanks to xet7.</summary>
+
+- Fill 84 Icelandic Scrum planning, sprint and report messages.
+- Preserve existing translations and placeholders; check unknown estimates,
+  partial reports and observation limits. Update the translation coverage count.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5975fb16c">Translate Icelandic synchronization messages</a>. Thanks to xet7.</summary>
+
+- Fill 63 Icelandic Sync conflict, preview, report and estimate messages.
+- Preserve existing translations and placeholders; check source-write warnings,
+  partial-run limitations and explicit null handling.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/18c423e17">Complete remaining Icelandic notification and keyboard translations</a>. Thanks to xet7.</summary>
+
+- Fill 88 Icelandic notification, recovery, history and keyboard messages.
+- Preserve existing translations and technical terms; check completeness,
+  placeholders and irreversible-action warnings against the English source.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/591d91056">Translate Afrikaans email recovery and todo import messages</a>. Thanks to xet7.</summary>
+
+- Fill 45 recovery, variable insertion and todo.txt import messages in each
+  Afrikaans locale, af and af_ZA.
+- Preserve existing translations, placeholders and import syntax; check
+  duplicate delivery, permanent removal and lost-access warnings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4042b71f6">Translate Afrikaans filters, reminders and automation controls</a>. Thanks to xet7.</summary>
+
+- Fill 81 filter, reminder, automation, map and import messages in each
+  Afrikaans locale, af and af_ZA.
+- Preserve existing translations and executable tokens; check board access,
+  reminder timing and list-age warnings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/47bf59e4f">Translate Afrikaans Scrum planning and reports</a>. Thanks to xet7.</summary>
+
+- Fill 84 Scrum planning, sprint and report messages in each Afrikaans locale.
+- Preserve existing translations and placeholders; check unknown estimates,
+  partial reports and observation limits. Update the translation coverage count.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/031c46174">Translate Afrikaans synchronization messages</a>. Thanks to xet7.</summary>
+
+- Fill 63 Sync conflict, preview, report and estimate messages in each
+  Afrikaans locale, af and af_ZA.
+- Preserve existing translations and placeholders; check source-write warnings,
+  partial-run limitations and explicit null handling.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/18790806f">Complete remaining Afrikaans notification and keyboard translations</a>. Thanks to xet7.</summary>
+
+- Fill 88 notification, recovery, history and keyboard messages in each
+  Afrikaans locale, af and af_ZA.
+- Preserve existing translations and shared terms; check completeness,
+  placeholders and irreversible-action warnings against the English source.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9a49f62ad">Translate Hindi email recovery and todo import messages</a>. Thanks to xet7.</summary>
+
+- Fill 45 recovery, variable insertion and todo.txt import messages in each
+  Hindi locale, hi and hi-IN.
+- Preserve existing translations, placeholders and import syntax; check
+  duplicate delivery, permanent removal and lost-access warnings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/dac4cff6b">Translate Hindi filters, reminders and automation controls</a>. Thanks to xet7.</summary>
+
+- Fill 81 filter, reminder, automation, map and import messages in each
+  Hindi locale, hi and hi-IN.
+- Preserve existing translations and executable tokens; check board access,
+  reminder timing and list-age warnings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3facdc48a">Translate Hindi Scrum planning and reports</a>. Thanks to xet7.</summary>
+
+- Fill 84 Scrum planning, sprint and report messages in each Hindi locale.
+- Preserve existing translations and placeholders; check unknown estimates,
+  partial reports and observation limits. Update the translation coverage count.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2bc853431">Translate Hindi synchronization messages</a>. Thanks to xet7.</summary>
+
+- Fill 63 Sync conflict, preview, report and estimate messages in each
+  Hindi locale, hi and hi-IN.
+- Preserve existing translations and placeholders; check source-write warnings,
+  partial-run limitations and explicit null handling.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2f8531d0a">Complete remaining Hindi notification and keyboard translations</a>. Thanks to xet7.</summary>
+
+- Fill 90 notification, recovery, history and keyboard messages in each
+  Hindi locale, hi and hi-IN.
+- Preserve existing translations and technical terms; check completeness,
+  placeholders and irreversible-action warnings against the English source.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1d5e7c123">Translate Bengali email recovery and todo import messages</a>. Thanks to xet7.</summary>
+
+- Fill 45 Bengali recovery, variable insertion and todo.txt import messages.
+- Preserve existing translations, placeholders and import syntax; check
+  duplicate delivery, permanent removal and lost-access warnings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/70f091384">Translate Bengali filters, reminders and automation controls</a>. Thanks to xet7.</summary>
+
+- Fill 81 Bengali filter, reminder, automation, map and import messages.
+- Preserve existing translations and executable tokens; check board access,
+  reminder timing and list-age warnings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3eed45fc8">Translate Bengali Scrum planning and reports</a>. Thanks to xet7.</summary>
+
+- Fill 84 Bengali Scrum messages and update the language completion count.
+- Verify preserved translations, placeholders, partial-report warnings and
+  unknown-estimate semantics with the translation and language registry tests.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e56e969f3">Translate Bengali synchronization messages</a>. Thanks to xet7.</summary>
+
+- Fill 63 Bengali synchronization, conflict and diagnostic messages.
+- Verify existing translations, placeholders, partial-change warnings and null
+  handling with translation, human-preference and language registry checks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c5b28a4bd">Complete Bengali notification and keyboard translations</a>. Thanks to xet7.</summary>
+
+- Fill 90 Bengali messages and labels; record 15 unchanged technical terms.
+- Bengali has no flagged placeholders. Verify tokens, preserved translations,
+  cancellation warnings and language registration with the translation suites.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e0c1121f0">Translate Tamil email recovery and todo import messages</a>. Thanks to xet7.</summary>
+
+- Fill 45 Tamil recovery, variable and todo.txt import messages.
+- Verify preserved translations, placeholders, import syntax, duplicate-delivery
+  warnings and access restrictions with the translation regression checks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c16565b54">Translate Tamil filters, reminders and automation controls</a>. Thanks to xet7.</summary>
+
+- Fill 81 Tamil filter, reminder, automation, map and import messages.
+- Preserve existing translations and executable tokens; verify board access,
+  reminder timing and list-age warnings with translation regression checks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7d3af57c7">Translate Tamil Scrum planning and reports</a>. Thanks to xet7.</summary>
+
+- Fill 84 Tamil Scrum messages and update the language completion count.
+- Verify preserved translations, placeholders, partial-report warnings and
+  unknown-estimate semantics with translation and language registry checks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/28543152d">Translate Tamil synchronization messages</a>. Thanks to xet7.</summary>
+
+- Fill 63 Tamil synchronization, conflict and diagnostic messages.
+- Verify preserved translations, placeholders, partial-change warnings and null
+  handling with translation, human-preference and language registry checks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0ff02bd70">Complete Tamil notification and keyboard translations</a>. Thanks to xet7.</summary>
+
+- Fill 89 Tamil messages and labels; record 15 unchanged technical terms.
+- Tamil has no flagged placeholders. Verify tokens, preserved translations,
+  cancellation warnings and language registration with translation checks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/bca112b27">Translate Nepali email recovery and todo import messages</a>. Thanks to xet7.</summary>
+
+- Fill 45 Nepali recovery, variable and todo.txt import messages.
+- Verify preserved translations, placeholders, import syntax, duplicate-delivery
+  warnings and access restrictions with translation regression checks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c2d78321b">Translate Nepali filters, reminders and automation controls</a>. Thanks to xet7.</summary>
+
+- Fill 81 Nepali filter, reminder, automation, map and import messages.
+- Preserve existing translations and executable tokens; verify board access,
+  reminder timing and list-age warnings with translation regression checks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f77f64592">Translate Nepali Scrum planning and reports</a>. Thanks to xet7.</summary>
+
+- Fill 84 Nepali Scrum messages and update the language completion count.
+- Verify preserved translations, placeholders, partial-report warnings and
+  unknown-estimate semantics with translation and language registry checks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3c2b61c97">Translate Nepali synchronization messages</a>. Thanks to xet7.</summary>
+
+- Fill 63 Nepali synchronization, conflict and diagnostic messages.
+- Verify preserved translations, placeholders, partial-change warnings and null
+  handling with translation, human-preference and language registry checks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c4dc4fdd4">Complete Nepali notification and keyboard translations</a>. Thanks to xet7.</summary>
+
+- Fill 91 Nepali messages and labels; record 15 unchanged technical terms.
+- Nepali has no flagged placeholders. Verify tokens, preserved translations,
+  cancellation warnings and language registration with translation checks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7fcfec417">Translate Urdu email recovery and todo import messages</a>. Thanks to xet7.</summary>
+
+- Fill 45 Urdu recovery, variable and todo.txt import messages.
+- Verify preserved translations, placeholders, import syntax, duplicate-delivery
+  warnings and access restrictions with translation regression checks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a8930106e">Translate Urdu filters, reminders and automation controls</a>. Thanks to xet7.</summary>
+
+- Fill 81 Urdu messages and update the language completion count.
+- Preserve existing translations and executable tokens; verify board access,
+  reminder timing and list-age warnings with translation regression checks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ec7ecfcae">Translate Urdu Scrum planning and reports</a>. Thanks to xet7.</summary>
+
+- Fill 84 Urdu Scrum planning and report messages.
+- Verify preserved translations, placeholders, partial-report warnings and
+  unknown-estimate semantics with translation and language registry checks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6639f832b">Translate Urdu synchronization messages</a>. Thanks to xet7.</summary>
+
+- Fill 63 Urdu synchronization, conflict and diagnostic messages.
+- Verify preserved translations, placeholders, partial-change warnings and null
+  handling with translation, human-preference and language registry checks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9195a7b67">Complete Urdu notification and keyboard translations</a>. Thanks to xet7.</summary>
+
+- Fill 91 Urdu messages and labels; record 15 unchanged technical terms.
+- Urdu has no flagged placeholders. Verify tokens, preserved translations,
+  cancellation warnings and language registration with translation checks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ef202b0ce">Translate Thai email recovery and todo import messages</a>. Thanks to xet7.</summary>
+
+- Fill 45 Thai recovery, variable and todo.txt import messages.
+- Verify preserved translations, placeholders, import syntax, duplicate-delivery
+  warnings and access restrictions with translation regression checks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0ef5455a6">Translate Thai filters, reminders and automation controls</a>. Thanks to xet7.</summary>
+
+- Fill 81 Thai filter, reminder, automation, map and import messages.
+- Preserve existing translations and executable tokens; verify board access,
+  reminder timing and list-age warnings with translation regression checks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d3f7a8545">Translate Thai Scrum planning and reports</a>. Thanks to xet7.</summary>
+
+- Fill 84 Thai Scrum messages and update the language completion count.
+- Verify preserved translations, placeholders, partial-report warnings and
+  unknown-estimate semantics with translation and language registry checks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ae91e6782">Translate Thai synchronization messages</a>. Thanks to xet7.</summary>
+
+- Fill 63 Thai synchronization, conflict and diagnostic messages.
+- Verify preserved translations, placeholders, partial-change warnings and null
+  handling with translation, human-preference and language registry checks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/08b0c8cbf">Complete Thai notification and keyboard translations</a>. Thanks to xet7.</summary>
+
+- Fill 90 Thai messages and labels; record 15 unchanged technical terms.
+- Thai has no flagged placeholders. Verify tokens, preserved translations,
+  cancellation warnings and language registration with translation checks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/66e0ed264">Translate Gujarati email recovery and todo import messages</a>. Thanks to xet7.</summary>
+
+- Fill 45 Gujarati recovery, variable and todo.txt import messages.
+- Verify preserved translations, placeholders, import syntax, duplicate-delivery
+  warnings and access restrictions with translation regression checks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3d887d074">Translate Gujarati filters, reminders and automation controls</a>. Thanks to xet7.</summary>
+
+- Fill 81 Gujarati filter, reminder, automation, map and import messages.
+- Preserve existing translations and executable tokens; verify board access,
+  reminder timing and list-age warnings with translation regression checks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ddd3bfc4d">Translate Gujarati Scrum planning and reports</a>. Thanks to xet7.</summary>
+
+- Fill 84 Gujarati Scrum messages and update the language completion count.
+- Verify preserved translations, placeholders, partial-report warnings and
+  unknown-estimate semantics with translation and language registry checks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b5bbe61dc">Translate Gujarati synchronization messages</a>. Thanks to xet7.</summary>
+
+- Fill 63 Gujarati synchronization, conflict and diagnostic messages.
+- Verify preserved translations, placeholders, partial-change warnings and null
+  handling with translation, human-preference and language registry checks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ab7f3b9fa">Complete Gujarati notification and keyboard translations</a>. Thanks to xet7.</summary>
+
+- Fill 89 Gujarati messages and labels; record 15 unchanged technical terms.
+- Gujarati has no flagged placeholders. Verify tokens, preserved translations,
+  cancellation warnings and language registration with translation checks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d39580403">Translate Kannada email recovery and todo import messages</a>. Thanks to xet7.</summary>
+
+- Fill 45 Kannada recovery, variable and todo.txt import messages.
+- Verify preserved translations, placeholders, import syntax, duplicate-delivery
+  warnings and access restrictions with translation regression checks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/47dbd3346">Translate Kannada filters, reminders and automation controls</a>. Thanks to xet7.</summary>
+
+- Fill 81 Kannada filter, reminder, automation, map and import messages.
+- Preserve existing translations and executable tokens; verify board access,
+  reminder timing and list-age warnings with translation regression checks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6a104c53b">Translate Kannada Scrum planning and reports</a>. Thanks to xet7.</summary>
+
+- Fill 84 Kannada Scrum messages and update the language completion count.
+- Verify preserved translations, placeholders, partial-report warnings and
+  unknown-estimate semantics with translation and language registry checks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/50499a68d">Translate Kannada Sync conflicts and recovery reports</a>. Thanks to xet7.</summary>
+
+- Fill 63 Kannada Sync conflict, preview, report and recovery messages.
+- Translation and registry checks verify placeholders, preserved translations,
+  partial-change warnings and explicit-null estimate handling.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/660bb6950">Complete Kannada notification and keyboard translations</a>. Thanks to xet7.</summary>
+
+- Fill 90 Kannada notification, recovery, history and keyboard strings.
+- No flagged placeholders remain, including pending translation keys. Keep
+  printed modifier legends, product names and mathematical symbols unchanged.
+- Translation, language registry and human-preference checks pass, including
+  cancellation warnings and preservation of existing translations and tokens.
+  Browser layout and fluent-speaker review were not run.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
 
 # v12.11 2026-09-30 WeKan ® release
 

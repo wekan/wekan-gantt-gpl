@@ -50,6 +50,7 @@ code/API schema rather than old sample files:
 | XLSX | ECMA-376 workbook data consumed through the maintained ExcelJS fork | Multiple worksheets when documented, typed cells/dates, formulas as displayed values, custom-field columns and size/row/column bounds |
 | PDF / HTML / SVG | Export-only rendered views | Every selected visible section, Unicode, safe links/images, pagination and deterministic filenames; these are presentations, not lossless re-import formats |
 | Markdown task list | The convention markdown-kanban tools (e.g. Obsidian Kanban) use: `## List` headings, `- [ ]`/`- [x]` items | Headings as lists, checkbox state as a `done` tag, indented lines as description; a plain bulleted list with no checkboxes still imports as open cards |
+| todo.txt | The [todo.txt format](https://github.com/todotxt/todo.txt): one task per line | Completion (`x`), priority, creation and completion dates, `+project` and `@context` as labels, `due:` and `t:` as due and start dates; WeKan's `list:` extension keeps list names across a round trip, other `key:value` pairs stay in the title, and a malformed date is reported; descriptions, comments and members have no place in the format |
 | Leo outline (`.leo`) | The [Leo](https://leo-editor.github.io/leo-editor/) literate editor's XML outline: nested `<v>` nodes with `<vh>` headlines, bodies in `<t>` joined by the node id | Top-level nodes as lists, their children as cards (body as description, a marked node as `done`), deeper nodes as checklists with their descendants as items; clones keep their headline and children; list bodies are reported as a loss; the board title travels in a `wekan_board` attribute Leo ignores |
 
 ## Current external adapter checkpoint
@@ -64,10 +65,26 @@ and creation dates, archive state, colors, several assignees and source
 order. Creation dates survive the schema's `createdAt` autoValue through
 `writeImportedEntity`. What has no equivalent is listed per parser in
 `unsupported`: file contents (these JSON sources carry attachment metadata
-only), sharing rules (an import never grants board access), watchers and
-followers, cross-list references and formula results. Zenkit's API entries
+only), sharing rules (an import never grants board access), cross-list
+references and formula results. OpenProject watchers and Asana followers
+become card watchers when they are mapped to a member of the new board;
+watching grants no access, but a non-member watching a private board would
+receive its notifications, so any other watcher is counted in the loss
+report instead. Nextcloud Deck sharing rules stay a reported loss by design. Zenkit's API entries
 are read with the value keys its API client documents; its single-file export
 remains unverified because no schema is published.
+
+GitLab ([#2698](https://github.com/wekan/wekan/issues/2698)) now meets the
+same contract as GitHub: every assignee, the author, creation and close dates,
+time spent, labels with details, milestone, iteration, issue type and
+confidentiality as tags, weight, time estimate and task completion as custom
+fields, embedded `notes` as comments (system notes skipped), embedded `links`
+as dependencies, and the `group/project#iid` reference and web URL at the end
+of the description. A confidential issue is warned about, because on the board
+the board's visibility decides who reads it. Epics, which are group-level, and
+comments that exist upstream but were not embedded are reported in
+`unsupported`. List Sync still writes only title, description and time fields
+on existing cards; the others apply when a card is created.
 
 An import with losses records one `import-completed-with-warnings` row in
 Admin Panel → Problems → Recovery, with the board, the importing user and a

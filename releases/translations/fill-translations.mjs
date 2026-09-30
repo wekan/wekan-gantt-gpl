@@ -82,8 +82,344 @@ const isEnglishVariant = code => /^en([_-].*)?$/.test(code) || code === 'en';
 // needs a different word. Keep those exceptions per locale; putting them in the
 // source-wide list would hide real work in every language.
 const LOCALE_INVARIANTS = {
+  // Kannada retains printed modifier legends, product names and math symbols.
+  'kn': new Set([
+    'blockly-ALT_KEY',
+    'blockly-COMMAND_KEY',
+    'blockly-OPTION_KEY',
+    'blockly-SHIFT_KEY',
+    'blockly-TAB_KEY',
+    'blockly-CHROME_OS',
+    'blockly-LINUX',
+    'blockly-MAC_OS',
+    'blockly-WINDOWS',
+    'blockly-MATH_TRIG_ACOS',
+    'blockly-MATH_TRIG_ASIN',
+    'blockly-MATH_TRIG_ATAN',
+    'blockly-MATH_TRIG_COS',
+    'blockly-MATH_TRIG_SIN',
+    'blockly-MATH_TRIG_TAN',
+  ]),
+
+  // Gujarati retains printed modifier legends, product names and math symbols.
+  'gu-IN': new Set([
+    'blockly-ALT_KEY',
+    'blockly-COMMAND_KEY',
+    'blockly-OPTION_KEY',
+    'blockly-SHIFT_KEY',
+    'blockly-TAB_KEY',
+    'blockly-CHROME_OS',
+    'blockly-LINUX',
+    'blockly-MAC_OS',
+    'blockly-WINDOWS',
+    'blockly-MATH_TRIG_ACOS',
+    'blockly-MATH_TRIG_ASIN',
+    'blockly-MATH_TRIG_ATAN',
+    'blockly-MATH_TRIG_COS',
+    'blockly-MATH_TRIG_SIN',
+    'blockly-MATH_TRIG_TAN',
+  ]),
+  // Thai retains printed modifier legends, product names and math symbols.
+  'th': new Set([
+    'blockly-ALT_KEY',
+    'blockly-COMMAND_KEY',
+    'blockly-OPTION_KEY',
+    'blockly-SHIFT_KEY',
+    'blockly-TAB_KEY',
+    'blockly-CHROME_OS',
+    'blockly-LINUX',
+    'blockly-MAC_OS',
+    'blockly-WINDOWS',
+    'blockly-MATH_TRIG_ACOS',
+    'blockly-MATH_TRIG_ASIN',
+    'blockly-MATH_TRIG_ATAN',
+    'blockly-MATH_TRIG_COS',
+    'blockly-MATH_TRIG_SIN',
+    'blockly-MATH_TRIG_TAN',
+  ]),
+  // Urdu retains printed modifier legends, product names and math symbols.
+  'ur': new Set([
+    'blockly-ALT_KEY',
+    'blockly-COMMAND_KEY',
+    'blockly-OPTION_KEY',
+    'blockly-SHIFT_KEY',
+    'blockly-TAB_KEY',
+    'blockly-CHROME_OS',
+    'blockly-LINUX',
+    'blockly-MAC_OS',
+    'blockly-WINDOWS',
+    'blockly-MATH_TRIG_ACOS',
+    'blockly-MATH_TRIG_ASIN',
+    'blockly-MATH_TRIG_ATAN',
+    'blockly-MATH_TRIG_COS',
+    'blockly-MATH_TRIG_SIN',
+    'blockly-MATH_TRIG_TAN',
+  ]),
+  // Nepali retains printed modifier legends, product names and math symbols.
+  'ne': new Set([
+    'blockly-ALT_KEY',
+    'blockly-COMMAND_KEY',
+    'blockly-OPTION_KEY',
+    'blockly-SHIFT_KEY',
+    'blockly-TAB_KEY',
+    'blockly-CHROME_OS',
+    'blockly-LINUX',
+    'blockly-MAC_OS',
+    'blockly-WINDOWS',
+    'blockly-MATH_TRIG_ACOS',
+    'blockly-MATH_TRIG_ASIN',
+    'blockly-MATH_TRIG_ATAN',
+    'blockly-MATH_TRIG_COS',
+    'blockly-MATH_TRIG_SIN',
+    'blockly-MATH_TRIG_TAN',
+  ]),
+  // Tamil retains printed modifier legends, product names and math symbols.
+  'ta': new Set([
+    'blockly-ALT_KEY',
+    'blockly-COMMAND_KEY',
+    'blockly-OPTION_KEY',
+    'blockly-SHIFT_KEY',
+    'blockly-TAB_KEY',
+    'blockly-CHROME_OS',
+    'blockly-LINUX',
+    'blockly-MAC_OS',
+    'blockly-WINDOWS',
+    'blockly-MATH_TRIG_ACOS',
+    'blockly-MATH_TRIG_ASIN',
+    'blockly-MATH_TRIG_ATAN',
+    'blockly-MATH_TRIG_COS',
+    'blockly-MATH_TRIG_SIN',
+    'blockly-MATH_TRIG_TAN',
+  ]),
+  // Bengali retains printed modifier legends, product names and math symbols.
+  'bn': new Set([
+    'blockly-ALT_KEY',
+    'blockly-COMMAND_KEY',
+    'blockly-OPTION_KEY',
+    'blockly-SHIFT_KEY',
+    'blockly-TAB_KEY',
+    'blockly-CHROME_OS',
+    'blockly-LINUX',
+    'blockly-MAC_OS',
+    'blockly-WINDOWS',
+    'blockly-MATH_TRIG_ACOS',
+    'blockly-MATH_TRIG_ASIN',
+    'blockly-MATH_TRIG_ATAN',
+    'blockly-MATH_TRIG_COS',
+    'blockly-MATH_TRIG_SIN',
+    'blockly-MATH_TRIG_TAN',
+  ]),
+  // Hindi retains printed modifier legends, product names and math symbols.
+  'hi': new Set([
+    'blockly-ALT_KEY',
+    'blockly-COMMAND_KEY',
+    'blockly-OPTION_KEY',
+    'blockly-SHIFT_KEY',
+    'blockly-TAB_KEY',
+    'blockly-CHROME_OS',
+    'blockly-LINUX',
+    'blockly-MAC_OS',
+    'blockly-WINDOWS',
+    'blockly-MATH_TRIG_ACOS',
+    'blockly-MATH_TRIG_ASIN',
+    'blockly-MATH_TRIG_ATAN',
+    'blockly-MATH_TRIG_COS',
+    'blockly-MATH_TRIG_SIN',
+    'blockly-MATH_TRIG_TAN',
+  ]),
+  'hi-IN': new Set([
+    'blockly-ALT_KEY',
+    'blockly-COMMAND_KEY',
+    'blockly-OPTION_KEY',
+    'blockly-SHIFT_KEY',
+    'blockly-TAB_KEY',
+    'blockly-CHROME_OS',
+    'blockly-LINUX',
+    'blockly-MAC_OS',
+    'blockly-WINDOWS',
+    'blockly-MATH_TRIG_ACOS',
+    'blockly-MATH_TRIG_ASIN',
+    'blockly-MATH_TRIG_ATAN',
+    'blockly-MATH_TRIG_COS',
+    'blockly-MATH_TRIG_SIN',
+    'blockly-MATH_TRIG_TAN',
+  ]),
+
+  // Afrikaans shares begin, item and mathematical terms with English.
+  af: new Set([
+    'blockly-ALT_KEY',
+    'blockly-COMMAND_KEY',
+    'blockly-OPTION_KEY',
+    'blockly-SHIFT_KEY',
+    'blockly-TAB_KEY',
+    'blockly-CHROME_OS',
+    'blockly-LINUX',
+    'blockly-MAC_OS',
+    'blockly-WINDOWS',
+    'blockly-MATH_TRIG_ACOS',
+    'blockly-MATH_TRIG_ASIN',
+    'blockly-MATH_TRIG_ATAN',
+    'blockly-MATH_TRIG_COS',
+    'blockly-MATH_TRIG_SIN',
+    'blockly-MATH_TRIG_TAN',
+    'blockly-BLOCK_LABEL_BEGIN_PREFIX',
+    'blockly-INPUT_LABEL_NUMBER_MIN',
+    'blockly-MATH_ONLIST_OPERATOR_MIN_ARIA',
+    'blockly-MATH_ADDITION_SYMBOL_ARIA',
+    'blockly-MATH_SUBTRACTION_SYMBOL_ARIA',
+    'blockly-VARIABLES_DEFAULT_NAME',
+    'blockly-LISTS_CREATE_WITH_ITEM_TITLE',
+    'blockly-MATH_CHANGE_TITLE_ITEM',
+    'blockly-TEXT_APPEND_VARIABLE',
+    'blockly-TEXT_CREATE_JOIN_ITEM_TITLE_ITEM',
+  ]),
+  af_ZA: new Set([
+    'blockly-ALT_KEY',
+    'blockly-COMMAND_KEY',
+    'blockly-OPTION_KEY',
+    'blockly-SHIFT_KEY',
+    'blockly-TAB_KEY',
+    'blockly-CHROME_OS',
+    'blockly-LINUX',
+    'blockly-MAC_OS',
+    'blockly-WINDOWS',
+    'blockly-MATH_TRIG_ACOS',
+    'blockly-MATH_TRIG_ASIN',
+    'blockly-MATH_TRIG_ATAN',
+    'blockly-MATH_TRIG_COS',
+    'blockly-MATH_TRIG_SIN',
+    'blockly-MATH_TRIG_TAN',
+    'blockly-BLOCK_LABEL_BEGIN_PREFIX',
+    'blockly-INPUT_LABEL_NUMBER_MIN',
+    'blockly-MATH_ONLIST_OPERATOR_MIN_ARIA',
+    'blockly-MATH_ADDITION_SYMBOL_ARIA',
+    'blockly-MATH_SUBTRACTION_SYMBOL_ARIA',
+    'blockly-VARIABLES_DEFAULT_NAME',
+    'blockly-LISTS_CREATE_WITH_ITEM_TITLE',
+    'blockly-MATH_CHANGE_TITLE_ITEM',
+    'blockly-TEXT_APPEND_VARIABLE',
+    'blockly-TEXT_CREATE_JOIN_ITEM_TITLE_ITEM',
+  ]),
+
+  // Icelandic retains printed modifier legends, product names and math symbols.
+  is: new Set([
+    'blockly-ALT_KEY', 'blockly-COMMAND_KEY', 'blockly-OPTION_KEY',
+    'blockly-SHIFT_KEY', 'blockly-TAB_KEY', 'blockly-CHROME_OS', 'blockly-LINUX',
+    'blockly-MAC_OS', 'blockly-WINDOWS', 'blockly-MATH_TRIG_ACOS',
+    'blockly-MATH_TRIG_ASIN', 'blockly-MATH_TRIG_ATAN', 'blockly-MATH_TRIG_COS',
+    'blockly-MATH_TRIG_SIN', 'blockly-MATH_TRIG_TAN',
+  ]),
+  // Latvian retains printed modifier legends, product names and math terms.
+  lv: new Set([
+    'blockly-ALT_KEY', 'blockly-COMMAND_KEY', 'blockly-OPTION_KEY',
+    'blockly-SHIFT_KEY', 'blockly-TAB_KEY', 'blockly-CHROME_OS', 'blockly-LINUX',
+    'blockly-MAC_OS', 'blockly-WINDOWS', 'blockly-MATH_ADDITION_SYMBOL_ARIA',
+    'blockly-MATH_TRIG_ACOS', 'blockly-MATH_TRIG_ASIN', 'blockly-MATH_TRIG_ATAN',
+    'blockly-MATH_TRIG_COS', 'blockly-MATH_TRIG_SIN', 'blockly-MATH_TRIG_TAN',
+  ]),
+  // Lithuanian retains printed modifier legends, product names and math terms.
+  lt: new Set([
+    'blockly-ALT_KEY', 'blockly-COMMAND_KEY', 'blockly-OPTION_KEY',
+    'blockly-SHIFT_KEY', 'blockly-TAB_KEY', 'blockly-CHROME_OS', 'blockly-LINUX',
+    'blockly-MAC_OS', 'blockly-WINDOWS', 'blockly-MATH_SUBTRACTION_SYMBOL_ARIA',
+    'blockly-MATH_TRIG_ACOS', 'blockly-MATH_TRIG_ASIN', 'blockly-MATH_TRIG_ATAN',
+    'blockly-MATH_TRIG_COS', 'blockly-MATH_TRIG_SIN', 'blockly-MATH_TRIG_TAN',
+  ]),
+  // Belarusian retains printed modifier legends, product names and math symbols.
+  be: new Set([
+    'blockly-ALT_KEY', 'blockly-COMMAND_KEY', 'blockly-OPTION_KEY',
+    'blockly-SHIFT_KEY', 'blockly-TAB_KEY', 'blockly-CHROME_OS', 'blockly-LINUX',
+    'blockly-MAC_OS', 'blockly-WINDOWS', 'blockly-MATH_TRIG_ACOS',
+    'blockly-MATH_TRIG_ASIN', 'blockly-MATH_TRIG_ATAN', 'blockly-MATH_TRIG_COS',
+    'blockly-MATH_TRIG_SIN', 'blockly-MATH_TRIG_TAN',
+  ]),
+  // Macedonian retains printed modifier legends, product names and math symbols.
+  mk: new Set([
+    'blockly-ALT_KEY', 'blockly-COMMAND_KEY', 'blockly-OPTION_KEY',
+    'blockly-SHIFT_KEY', 'blockly-TAB_KEY', 'blockly-CHROME_OS', 'blockly-LINUX',
+    'blockly-MAC_OS', 'blockly-WINDOWS', 'blockly-MATH_TRIG_ACOS',
+    'blockly-MATH_TRIG_ASIN', 'blockly-MATH_TRIG_ATAN', 'blockly-MATH_TRIG_COS',
+    'blockly-MATH_TRIG_SIN', 'blockly-MATH_TRIG_TAN',
+  ]),
+  // Bosnian retains product names, printed key legends and mathematical terms.
+  bs: new Set([
+    'server',
+    'blockly-ALT_KEY', 'blockly-COMMAND_KEY', 'blockly-OPTION_KEY',
+    'blockly-SHIFT_KEY', 'blockly-TAB_KEY', 'blockly-CHROME_OS', 'blockly-LINUX',
+    'blockly-MAC_OS', 'blockly-WINDOWS', 'blockly-MATH_ADDITION_SYMBOL_ARIA',
+    'blockly-MATH_SUBTRACTION_SYMBOL_ARIA', 'blockly-MATH_TRIG_ACOS',
+    'blockly-MATH_TRIG_ASIN', 'blockly-MATH_TRIG_ATAN', 'blockly-MATH_TRIG_COS',
+    'blockly-MATH_TRIG_SIN', 'blockly-MATH_TRIG_TAN', 'scrum-sprint',
+  ]),
+  // Serbian retains these printed modifier legends and product names.
+  sr: new Set([
+    'blockly-ALT_KEY', 'blockly-COMMAND_KEY', 'blockly-OPTION_KEY',
+    'blockly-SHIFT_KEY', 'blockly-TAB_KEY', 'blockly-CHROME_OS',
+    'blockly-LINUX', 'blockly-MAC_OS', 'blockly-WINDOWS',
+  ]),
+  // Croatian retains product names, printed key legends and mathematical terms.
+  hr: new Set([
+    'blockly-ALT_KEY', 'blockly-COMMAND_KEY', 'blockly-OPTION_KEY',
+    'blockly-SHIFT_KEY', 'blockly-TAB_KEY', 'blockly-CHROME_OS', 'blockly-LINUX',
+    'blockly-MAC_OS', 'blockly-WINDOWS', 'blockly-LOGIC_NULL',
+    'blockly-MATH_ADDITION_SYMBOL_ARIA', 'blockly-MATH_SUBTRACTION_SYMBOL_ARIA',
+    'blockly-MATH_TRIG_ACOS', 'blockly-MATH_TRIG_ASIN', 'blockly-MATH_TRIG_ATAN',
+    'blockly-MATH_TRIG_COS', 'blockly-MATH_TRIG_SIN', 'blockly-MATH_TRIG_TAN',
+    'scrum-sprint',
+  ]),
+  // Slovenian retains product names, key legends, math symbols and native loanwords.
+  ...Object.fromEntries(['sl', 'sl_SI'].map(code => [code, new Set([
+    'blockly-ALT_KEY', 'blockly-SHIFT_KEY', 'blockly-TAB_KEY',
+    'blockly-CHROME_OS', 'blockly-LINUX', 'blockly-MAC_OS', 'blockly-WINDOWS',
+    'blockly-MATH_TRIG_ACOS', 'blockly-MATH_TRIG_ASIN', 'blockly-MATH_TRIG_ATAN',
+    'blockly-MATH_TRIG_COS', 'blockly-MATH_TRIG_SIN', 'blockly-MATH_TRIG_TAN',
+    'blockly-LOGIC_TERNARY_CONDITION', 'blockly-MATH_ADDITION_SYMBOL_ARIA',
+    'blockly-MATH_SUBTRACTION_SYMBOL_ARIA', 'scrum-sprint',
+  ])])),
+  // Malay keeps printed key legends, product/code/math names and these loanwords.
+  ...Object.fromEntries(['ms', 'ms-MY'].map(code => [code, new Set([
+    'blockly-ALT_KEY', 'blockly-COMMAND_KEY', 'blockly-CONTEXT_MENU_KEY',
+    'blockly-OPTION_KEY', 'blockly-SHIFT_KEY', 'blockly-TAB_KEY',
+    'blockly-CHROME_OS', 'blockly-LINUX', 'blockly-MAC_OS', 'blockly-WINDOWS',
+    'blockly-LOGIC_NULL', 'blockly-MATH_TRIG_ACOS', 'blockly-MATH_TRIG_ASIN',
+    'blockly-MATH_TRIG_ATAN', 'blockly-MATH_TRIG_COS', 'blockly-MATH_TRIG_SIN',
+    'blockly-MATH_TRIG_TAN', 'blockly-INPUT_LABEL_NUMBER_MIN',
+    'blockly-MATH_ONLIST_OPERATOR_MIN_ARIA',
+  ])])),
+  // Persian retains these printed keyboard legends, products and math symbols.
+  ...Object.fromEntries(['fa', 'fa-IR'].map(code => [code, new Set([
+    'blockly-ALT_KEY', 'blockly-COMMAND_KEY', 'blockly-OPTION_KEY',
+    'blockly-SHIFT_KEY', 'blockly-TAB_KEY', 'blockly-CHROME_OS', 'blockly-LINUX',
+    'blockly-MAC_OS', 'blockly-WINDOWS', 'blockly-MATH_TRIG_ACOS',
+    'blockly-MATH_TRIG_ASIN', 'blockly-MATH_TRIG_ATAN', 'blockly-MATH_TRIG_COS',
+    'blockly-MATH_TRIG_SIN', 'blockly-MATH_TRIG_TAN',
+  ])])),
+  // Estonian product names, printed modifier legends, code/math symbols and loanword.
+  'et-EE': new Set([
+    'blockly-ALT_KEY', 'blockly-COMMAND_KEY', 'blockly-CONTROL_KEY', 'blockly-OPTION_KEY',
+    'blockly-CHROME_OS', 'blockly-LINUX', 'blockly-MAC_OS', 'blockly-WINDOWS',
+    'blockly-LOGIC_NULL', 'blockly-MATH_TRIG_ACOS', 'blockly-MATH_TRIG_ASIN',
+    'blockly-MATH_TRIG_ATAN', 'blockly-MATH_TRIG_COS', 'blockly-MATH_TRIG_SIN',
+    'blockly-MATH_TRIG_TAN', 'scrum-sprint',
+  ]),
+  // Hebrew retains these keyboard legends, product names, null and math symbols.
+  ...Object.fromEntries(['he', 'he-IL'].map(code => [code, new Set([
+    'blockly-ALT_KEY', 'blockly-COMMAND_KEY', 'blockly-CONTROL_KEY',
+    'blockly-OPTION_KEY', 'blockly-SHIFT_KEY', 'blockly-TAB_KEY',
+    'blockly-CHROME_OS', 'blockly-MAC_OS', 'blockly-WINDOWS',
+    'blockly-LOGIC_NULL', 'blockly-MATH_TRIG_ACOS', 'blockly-MATH_TRIG_ASIN',
+    'blockly-MATH_TRIG_ATAN', 'blockly-MATH_TRIG_COS', 'blockly-MATH_TRIG_SIN',
+    'blockly-MATH_TRIG_TAN',
+  ])])),
+  // Product names and mathematical function symbols are not English prose.
+  ...Object.fromEntries(['vi', 'vi-VN', 'el', 'el-GR'].map(code => [code, new Set([
+    'blockly-CHROME_OS', 'blockly-LINUX', 'blockly-MAC_OS', 'blockly-WINDOWS',
+    'blockly-MATH_TRIG_ACOS', 'blockly-MATH_TRIG_ASIN', 'blockly-MATH_TRIG_ATAN',
+    'blockly-MATH_TRIG_COS', 'blockly-MATH_TRIG_SIN', 'blockly-MATH_TRIG_TAN',
+  ])])),
+  bg: new Set(['blockly-CHROME_OS', 'blockly-MAC_OS']),
   // Russian retains printed keyboard legends, product names and math notation.
-  ru: new Set([
+  ...Object.fromEntries(['ru', 'ru-RU', 'ru-UA', 'ru_RU'].map(code => [code, new Set([
     'blockly-ALT_KEY', 'blockly-BACKSPACE_KEY', 'blockly-CAPS_LOCK_KEY',
     'blockly-CHROME_OS', 'blockly-COMMAND_KEY', 'blockly-CONTROL_KEY',
     'blockly-END_KEY', 'blockly-ENTER_KEY', 'blockly-ESCAPE', 'blockly-HOME_KEY',
@@ -91,9 +427,9 @@ const LOCALE_INVARIANTS = {
     'blockly-MATH_TRIG_COS', 'blockly-MATH_TRIG_SIN', 'blockly-MATH_TRIG_TAN',
     'blockly-OPTION_KEY', 'blockly-PAGE_DOWN_KEY', 'blockly-PAGE_UP_KEY',
     'blockly-PAUSE_KEY', 'blockly-SHIFT_KEY', 'blockly-TAB_KEY', 'blockly-WINDOWS',
-  ]),
+  ])])),
   // Ukrainian keeps printed keyboard legends, product names and math notation.
-  uk: new Set([
+  ...Object.fromEntries(['uk', 'uk-UA'].map(code => [code, new Set([
     'blockly-ALT_KEY', 'blockly-BACKSPACE_KEY', 'blockly-CAPS_LOCK_KEY',
     'blockly-CHROME_OS', 'blockly-COMMAND_KEY', 'blockly-END_KEY',
     'blockly-ENTER_KEY', 'blockly-ESCAPE', 'blockly-HOME_KEY',
@@ -101,7 +437,7 @@ const LOCALE_INVARIANTS = {
     'blockly-MATH_TRIG_COS', 'blockly-MATH_TRIG_SIN', 'blockly-MATH_TRIG_TAN',
     'blockly-OPTION_KEY', 'blockly-PAGE_DOWN_KEY', 'blockly-PAGE_UP_KEY',
     'blockly-PAUSE_KEY', 'blockly-SHIFT_KEY', 'blockly-TAB_KEY', 'blockly-WINDOWS',
-  ]),
+  ])])),
   // Hungarian shared mathematical/Scrum terms and keyboard/product names.
   hu: new Set([
     'blockly-ALT_KEY', 'blockly-BACKSPACE_KEY', 'blockly-CAPS_LOCK_KEY',
@@ -128,7 +464,7 @@ const LOCALE_INVARIANTS = {
     'blockly-TAB_KEY', 'blockly-WINDOWS', 'scrum-master',
   ]),
   // Czech shared mathematical terms, Scrum role and printed keyboard legends.
-  cs: new Set([
+  ...Object.fromEntries(['cs', 'cs-CZ'].map(code => [code, new Set([
     'blockly-ALT_KEY', 'blockly-BACKSPACE_KEY', 'blockly-CAPS_LOCK_KEY',
     'blockly-CHROME_OS', 'blockly-CONTEXT_MENU_KEY', 'blockly-END_KEY',
     'blockly-ENTER_KEY', 'blockly-ESCAPE', 'blockly-HOME_KEY',
@@ -140,9 +476,9 @@ const LOCALE_INVARIANTS = {
     'blockly-MATH_TRIG_TAN', 'blockly-PAGE_DOWN_KEY', 'blockly-PAGE_UP_KEY',
     'blockly-PAUSE_KEY', 'blockly-SHIFT_KEY', 'blockly-TAB_KEY', 'blockly-WINDOWS',
     'scrum-master', 'scrum-sprint',
-  ]),
+  ])])),
   // Polish mathematical terms, Scrum role and keyboard/product names.
-  pl: new Set([
+  ...Object.fromEntries(['pl', 'pl-PL'].map(code => [code, new Set([
     'blockly-ALT_KEY', 'blockly-BACKSPACE_KEY', 'blockly-CAPS_LOCK_KEY',
     'blockly-CHROME_OS', 'blockly-CONTEXT_MENU_KEY', 'blockly-END_KEY',
     'blockly-ENTER_KEY', 'blockly-ESCAPE', 'blockly-HOME_KEY',
@@ -152,7 +488,7 @@ const LOCALE_INVARIANTS = {
     'blockly-MATH_TRIG_COS', 'blockly-MATH_TRIG_SIN', 'blockly-PAGE_DOWN_KEY',
     'blockly-PAGE_UP_KEY', 'blockly-PAUSE_KEY', 'blockly-SHIFT_KEY',
     'blockly-TAB_KEY', 'blockly-WINDOWS', 'scrum-master', 'scrum-sprint',
-  ]),
+  ])])),
   // Indonesian shared mathematical vocabulary and unchanged keyboard/product names.
   id: new Set([
     'blockly-ALT_KEY', 'blockly-BACKSPACE_KEY', 'blockly-CAPS_LOCK_KEY',
@@ -341,13 +677,25 @@ const LOCALE_INVARIANTS = {
     'blockly-MATH_TRIG_ACOS', 'blockly-MATH_TRIG_ATAN',
     'blockly-MATH_TRIG_COS', 'blockly-MATH_TRIG_TAN', 'blockly-WINDOWS',
   ])])),
-  bs: new Set(['server']),
   // Native MediaWiki vep.json: view-pool-error and api-clientside-error-http
   // use the nominative server. This is Veps, not the legacy Venda ve locale.
   've-PP': new Set(['server']),
   // Generalitat Valenciana's Valencian technical help uses errors.
   // Same spelling as English does not make a native plural untranslated.
-  'ca@valencia': new Set(['errors']),
+  // Catalan shared words (angle, color, increment, dividend, divisor, tangent,
+  // general) are native, alongside unchanged product names and math symbols.
+  // IEC mathematical usage: https://scm.iec.cat/wp-content/uploads/2018/01/sessions_olimpiada.pdf
+  // XTEC division terminology: https://ioc.xtec.cat/materials/FP/Recursos/fp_asx_m03_/web/fp_asx_m03_htmlindex/WebContent/u1/a1/continguts.html
+  ...Object.fromEntries(['ca', 'ca_ES', 'ca@valencia'].map(code => [code, new Set([
+    'blockly-ARIA_TYPE_FIELD_ANGLE', 'blockly-ARIA_TYPE_FIELD_COLOUR',
+    'blockly-INPUT_LABEL_LOOP_BY', 'blockly-INPUT_LABEL_MATH_DIVIDEND',
+    'blockly-INPUT_LABEL_MATH_DIVISOR', 'blockly-MATH_TRIG_TAN_ARIA',
+    'blockly-SHORTCUTS_GENERAL', 'blockly-CHROME_OS', 'blockly-LINUX',
+    'blockly-MAC_OS', 'blockly-WINDOWS', 'blockly-MATH_TRIG_ACOS',
+    'blockly-MATH_TRIG_ASIN', 'blockly-MATH_TRIG_ATAN', 'blockly-MATH_TRIG_COS',
+    'blockly-MATH_TRIG_SIN', 'blockly-MATH_TRIG_TAN',
+    ...(code === 'ca@valencia' ? ['errors'] : []),
+  ])])),
   sq: new Set(['color-indigo', 'color-magenta', 'email', 'normal', 'private']),
   // These are reviewed search-parser keywords, not untranslated display prose.
   // Keep the exception per zgh key so English sentences remain fillable.

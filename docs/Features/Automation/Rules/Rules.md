@@ -3,8 +3,12 @@
 WeKan **Rules** automate your board: when something happens (a **trigger**), WeKan
 runs a **action**. This is WeKan's equivalent of Trello's Butler.
 
-Open Rules from the board sidebar → **Rules**. The Rules page is a **fullscreen
-page** below the top bar (it used to be a small popup).
+Open Rules from the board sidebar → **Board Settings** → **Rules**, or straight
+into one of its views listed under it: **List view**, **Workflow view**,
+**Blocks**, **History** or **Import / Export rules**. The Rules page is a
+**fullscreen page** below the top bar (it used to be a small popup), and its
+right sidebar is the board's own sidebar, so the same entries are there. Pick a
+view in the **Board View** menu to go back to the board.
 
 ## How a rule works
 
@@ -207,7 +211,8 @@ the [REST API](#rest-api).
 
 ## Import / Export
 
-Click **Import / Export** on the Rules page.
+Click **Import / Export rules** on the Rules page, or in Board Settings under
+**Rules**.
 
 - **Export to JSON** — lossless; each rule embeds its full trigger and action.
 - **Export to CSV** — round-trippable (common fields as columns, the rest as a JSON

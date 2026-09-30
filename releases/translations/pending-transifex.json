@@ -223,6 +223,182 @@
     {
       "key": "r-insert-variable",
       "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-recovery-dropped",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-recovery-review",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-recovery-recipients",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-recovery-recipient-accepted",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-recovery-recipient-unconfirmed",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-recovery-actions-hint",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-recovery-wait",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-recovery-resends",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-recovery-resend",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-recovery-mark-sent",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-recovery-drop",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-recovery-resend-confirm",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-recovery-mark-sent-confirm",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-recovery-drop-confirm",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-resolution-too-early",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-resolution-already-resolved",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-resolution-resend-in-flight",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-resolution-nothing-to-resend",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-resolution-resend-uncertain",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-resolution-busy",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-resolution-command-changed",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-resolution-attempt-invalid",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-resolution-failed",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-legacy-heading",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-legacy-description",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-legacy-source",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-legacy-mail",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-legacy-reason",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-legacy-reason-unbound",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-legacy-reason-details-snapshot",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-legacy-rebind",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-legacy-discard",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-legacy-rebind-confirm",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-legacy-discard-confirm",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-legacy-empty",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-legacy-unavailable",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-legacy-access-denied",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-legacy-source-changed",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-legacy-source-unavailable",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-legacy-plan-unavailable",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-legacy-attempt-exists",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-legacy-not-legacy",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "rule-email-legacy-failed",
+      "since": "2026-09-29"
+    },
+    {
+      "key": "import-board-instruction-todotxt",
+      "since": "2026-09-29"
     }
   ]
 }

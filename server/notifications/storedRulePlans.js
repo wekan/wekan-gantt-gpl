@@ -34,6 +34,7 @@ const { ensureRuleArchiveEffects, prepareRuleArchiveEffects, applyRuleArchiveEff
 const { createRuleArchiveCards } = require('/server/lib/syncRuleArchiveCards');
 const { createRuleArchiveActivities } = require('/server/lib/syncRuleArchiveActivities');
 const { exactFieldSelector } = require('/models/lib/exactFieldSelector');
+const { validateSyncTrigger, assertSyncActivation } = require('/server/lib/syncActivation');
 const { onlyChildrenSelector } = require('/models/lib/cardParents');
 
 export const SyncRuleArchiveCommands = new Mongo.Collection('listSyncRuleArchiveCommands');
@@ -47,6 +48,9 @@ export const SyncRuleEmailAttempts = new Mongo.Collection('listSyncRuleEmailAtte
 SyncRuleEmailAttempts.deny({ insert: () => true, update: () => true, remove: () => true });
 export const SyncRuleEmailResolutions = new Mongo.Collection('listSyncRuleEmailResolutions');
 SyncRuleEmailResolutions.deny({ insert: () => true, update: () => true, remove: () => true });
+// Who accepted a partially accepted attempt (#2713); addresses only, no SMTP text.
+export const SyncRuleEmailOutcomes = new Mongo.Collection('listSyncRuleEmailOutcomes');
+SyncRuleEmailOutcomes.deny({ insert: () => true, update: () => true, remove: () => true });
 export const SyncRuleEmailCommands = new Mongo.Collection('listSyncRuleEmailCommands');
 SyncRuleEmailCommands.deny({ insert: () => true, update: () => true, remove: () => true });
 export const SyncRuleReceipts = new Mongo.Collection('listSyncRuleReceipts');
@@ -60,17 +64,19 @@ Meteor.startup(async () => {
   await ensureIndex(SyncRuleReceipts, { effectId: 1 });
   await ensureIndex(SyncRuleEmailCommands, { boardId: 1, cardId: 1 });
   await ensureIndex(SyncRuleEmailAttempts, { state: 1, startedAt: 1 });
+  await ensureIndex(SyncRuleEmailResolutions, { commandId: 1, attemptId: 1, decision: 1 });
 });
 
 // Both capture and execution require the journal's list-incarnation,
 // source-configuration, lease and actor-access guard in addition to these
 // checks. This module is internal and does not activate manual/cron Sync.
-function executionContext({ effectId, activity, policy, assertCurrent }) {
+function executionContext({ effectId, activity, policy, assertCurrent, trigger }) {
   const saved = EJSON.parse(EJSON.stringify(activity), { relaxed: true });
   policy = validateSyncEffectPolicy(policy);
   if (!policy.activities || typeof assertCurrent !== 'function' || typeof saved?.listId !== 'string' || !saved.listId) {
     throw new Error('sync-rule-stage-invalid');
   }
+  validateSyncTrigger(trigger);
   const guard = async () => {
     await assertCurrent();
     await assertSyncEffectPolicy(policy, async () => syncEffectPolicy(getFeatureFlags()));
@@ -81,6 +87,7 @@ function executionContext({ effectId, activity, policy, assertCurrent }) {
       Lists.findOneAsync({ _id: saved.listId, boardId: saved.boardId }),
     ]);
     if (!stored || canonical(stored) !== canonical(saved)) throw new Error('sync-rule-activity-changed');
+    assertSyncActivation({ board, trigger, flags: getFeatureFlags() });
     if (!user || user.loginDisabled || !board || !card || !list || !memberCan(board.members, user._id, 'write') ||
         (isAssignedOnlyMember(board, user._id) && !card.assignees?.includes(user._id))) {
       throw new Error('sync-rule-context-denied');
@@ -133,6 +140,12 @@ export async function runStoredSyncRuleEmail({ index, ...options }) {
   const command = await ensureRuleEmailCommand({ commands: SyncRuleEmailCommands.rawCollection(), plan,
     activity: context.saved, effectId: context.effectId, index, assertCurrent: context.guard,
     prepare: ({ activity, invocation }) => RulesHelper.prepareEmailCommand(activity, invocation.action) });
+  // A dropped attempt (an administrator's drop or legacy discard, #2713) sends
+  // nothing, so it needs no source access: complete before the binding guard,
+  // which refuses the legacy command it was recorded for.
+  const dropped = await SyncRuleEmailAttempts.rawCollection().findOne({ _id: command._id });
+  if (dropped?.state === 'dropped' && dropped.commandHash === command.checksum &&
+      dropped.invocationId === command.invocationId) return command.invocationId;
   const invocation = plan.actions[index], MailComposer = EmailInternals.NpmModules.mailcomposer.module;
   const recipients = ruleEmailRecipients(command.mail, MailComposer);
   const guard = async () => {
@@ -157,7 +170,7 @@ export async function runStoredSyncRuleEmail({ index, ...options }) {
   };
   return withEmailSlot(({ assertCurrent }) => dispatchRuleEmail({ command, plan,
     activity: context.saved, effectId: context.effectId, index, MailComposer,
-    attempts: SyncRuleEmailAttempts.rawCollection(), assertCurrent,
+    attempts: SyncRuleEmailAttempts.rawCollection(), outcomes: SyncRuleEmailOutcomes.rawCollection(), assertCurrent,
     send: async (mail, { assertCurrent: beforeSend }) => { await beforeSend(); return Email.sendAsync(mail); },
   }), { assertOwner: guard });
 }
@@ -255,7 +268,7 @@ export async function runStoredSyncRuleArchive({ withHistoryReservation,
       activities: createRuleArchiveActivities({ ...input, effects, activities: Activities, withActor }),
       receipts: SyncRuleArchiveReceipts.rawCollection(), assertCard: captured.assertCard,
       readPolicy: async () => syncEffectPolicy(getFeatureFlags()),
-      completeDelivery: context => completeDelivery({ ...context, assertCurrent: async () => {
+      completeDelivery: context => completeDelivery({ ...context, trigger: options.trigger, assertCurrent: async () => {
         await guard(); await context.assertCurrent(); await guard();
       } }) });
     await guard(); return result;
