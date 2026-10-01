@@ -101,7 +101,13 @@ import './storedHistoryChain.tests';
 import './undoRedoClaim.tests';
 
 import './scrumHistoryConfirmation.tests';
+import './scrumIncarnation.tests';
 
 import "./cardListEntry.tests";
 import './autoArchiveCards.tests';
 import './cardParents.tests';
+import './inboundEmailRoute.tests';
+import './activityIncarnation.tests';
+import './listSyncDurable.tests';
+import './storedRuleChecklist.tests';
+import './dependencyLayers.tests';

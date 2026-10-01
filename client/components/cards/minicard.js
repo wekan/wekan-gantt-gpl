@@ -1,4 +1,5 @@
 import { commentBadgeTitle } from '/models/lib/commentBadgeTitle';
+import { newLineLayer } from '/client/lib/dependencyLayers';
 import { isSubmitKey } from '/models/lib/editorSubmitKey';
 import { relativeCardSort } from '/client/lib/relativeCardPosition';
 import { ReactiveCache } from '/imports/reactiveCache';
@@ -99,12 +100,12 @@ Template.minicard.helpers({
   showMinicardHandle() {
     return Utils.canMoveCard() && Utils.showDragHandles();
   },
-  // #3392: show a drag-to-connect handle on the minicard when the board's
-  // dependency overlay is on and the user can edit the board. Dragging it onto
-  // another card creates a dependency (handled in dependencyOverlay.js).
+  // #3392 / #6732: a drag-to-connect handle when a line drawn now has a layer
+  // to go to (client/lib/dependencyLayers.js): the Board Dependencies when
+  // shown and editable by this user, else My Dependencies when shown.
   showDependencyConnectHandle() {
     const board = ReactiveCache.getBoard(this.boardId);
-    return !!(board && board.showDependencies && Utils.canModifyBoard());
+    return !!(board && newLineLayer(board));
   },
   // #3392: PI Program Board "Red Strings". Show a small badge on the minicard
   // when a card has dependencies: the first dependency's icon and color plus the
@@ -329,13 +330,11 @@ Template.minicard.helpers({
     const attachment = ReactiveCache.getAttachment(coverId);
     // A soft-deleted attachment is never a cover (History.md §12.1).
     if (!isLiveAttachment(attachment)) return null;
-    const coverLink = typeof attachment.link === 'function' ? attachment.link() : '';
-    if (!coverLink) return null;
-    return {
-      link() {
-        return coverLink;
-      },
-    };
+    // The attachment itself, as models/cards.js cover() returns it: the
+    // template's attachmentPreviewUrl needs its _id, type and name. A wrapper
+    // with only link() gave it no _id, so the cover URL was empty and the
+    // board showed a flat band instead of the picture (v12.12 email report).
+    return attachment;
   },
   // XXX resolve this nasty hack for https://github.com/veliovgroup/Meteor-Files/issues/763
   sess() {

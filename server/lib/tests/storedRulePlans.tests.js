@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { sweepUntil } from './sweepUntil';
 import { Meteor } from 'meteor/meteor';
 import { Random } from 'meteor/random';
 import { Accounts } from 'meteor/accounts-base';
@@ -13,7 +14,8 @@ import ChangeHistory from '/models/changeHistory';
 import Rules from '/models/rules';
 import Triggers from '/models/triggers';
 import Actions from '/models/actions';
-import { runStoredSyncRuleArchive, captureStoredSyncRuleArchiveCommand, SyncRuleArchiveCommands, SyncRuleArchiveEffects, SyncRuleArchiveReceipts, captureStoredSyncRulePlan, captureStoredSyncRuleEmailCommand, runStoredSyncRuleEmail, SyncRuleEmailAttempts, runStoredSyncRules, SyncRulePlans, SyncRuleReceipts, SyncRuleEmailCommands } from '/server/notifications/storedRulePlans';
+import { runStoredSyncRuleArchive, captureStoredSyncRuleArchiveCommand, SyncRuleArchiveCommands, SyncRuleArchiveEffects, SyncRuleArchiveReceipts, captureStoredSyncRulePlan, captureStoredSyncRuleEmailCommand, runStoredSyncRuleEmail, SyncRuleEmailAttempts, runStoredSyncRules, SyncRulePlans, SyncRuleReceipts, SyncRuleEmailCommands, SyncRuleCompletions } from '/server/notifications/storedRulePlans';
+const { createSyncRuleRetention } = require('/server/lib/syncRuleRetention');
 
 const { planId, actionId: invocationId } = require('/server/lib/syncRulePlan');
 
@@ -38,7 +40,10 @@ describe('Stored Sync rule selection', function () {
       await Activities.rawCollection().insertOne(activity);
       await Triggers.rawCollection().insertOne({ _id: triggerId, boardId, activityType: 'createCard', listName: '*', userId: '*', swimlaneName: '*', cardTitle: '*' });
       await Rules.rawCollection().insertOne({ _id: ruleId, boardId, triggerId, actionId, enabled: true, title: 'Rule' });
-      await Actions.rawCollection().insertOne({ _id: actionId, actionType: 'addLabel', boardId, labelId: 'original' });
+      // An action with no durable adapter of its own (addLabel has one since
+      // 2026-09-30, server/lib/syncRuleCardCommand.js), so the adapter-required
+      // and caller-supplied adapter cases below still apply.
+      await Actions.rawCollection().insertOne({ _id: actionId, actionType: 'moveCardToTop', boardId, labelId: 'original' });
       // Sync activation (maintainer decision of 2026-09-30): off unless the
       // board opted in; scheduled runs also need the instance switch; the
       // caller must name its trigger. Refusals write nothing.
@@ -59,10 +64,10 @@ describe('Stored Sync rule selection', function () {
       assert.equal(first.actions[0].rule._id, ruleId);
       assert.equal(first.actions[0].action.labelId, 'original');
       await assert.rejects(runStoredSyncRules({ ...input, adapters: {} }), /adapter-required/);
-      await assert.rejects(runStoredSyncRules({ ...input, adapters: { addLabel: async () => true } }), /action-unconfirmed/);
+      await assert.rejects(runStoredSyncRules({ ...input, adapters: { moveCardToTop: async () => true } }), /action-unconfirmed/);
       assert.equal(await SyncRuleReceipts.find({ effectId: input.effectId }).countAsync(), 0);
       let calls = 0;
-      assert.equal(await runStoredSyncRules({ ...input, adapters: { addLabel: async ({ invocation, assertCurrent }) => {
+      assert.equal(await runStoredSyncRules({ ...input, adapters: { moveCardToTop: async ({ invocation, assertCurrent }) => {
         await assertCurrent(); calls++;
         assert.equal(invocation.action.labelId, 'original');
         return invocation.id;
@@ -100,15 +105,11 @@ describe('Stored Sync rule selection', function () {
       await assert.rejects(captureStoredSyncRuleArchiveCommand(archiveInput), /configuration-changed/);
       await Actions.rawCollection().updateOne({ _id: actionId }, { $set: { actionType: 'archive' } });
       assert.deepEqual(await captureStoredSyncRuleArchiveCommand(archiveInput), archive);
-      await assert.rejects(runStoredSyncRuleArchive(archiveInput), /history-reservation-required/);
       const flags = getFeatureFlags(), oldFlags = { ...flags };
       try {
         flags.disableNotifications = true;
-        const run = { ...archiveInput, policy: { activities: true, notifications: false }, trigger: 'manual',
-          withHistoryReservation: async (id, work) => {
-            assert.equal(id, boardId);
-            return work({ previousHash: null, redoRows: [], assertCurrent: async () => {} });
-          } };
+        // No History reservation: rows are linked when appended (2026-09-30).
+        const run = { ...archiveInput, policy: { activities: true, notifications: false }, trigger: 'manual' };
         await assert.rejects(runStoredSyncRuleArchive({ ...run,
           completeDelivery: async () => { throw Error('delivery interrupted'); } }), /delivery interrupted/);
         assert.equal((await Cards.findOneAsync(childId)).archived, true);
@@ -120,6 +121,9 @@ describe('Stored Sync rule selection', function () {
         assert.equal((await Cards.findOneAsync(cardId)).archived, true);
         assert.equal((await Cards.findOneAsync(laterChildId)).archived, false);
         assert.equal(await ChangeHistory.find({ boardId }).countAsync(), 2);
+        const { verifyHistoryRows } = require('/models/lib/changeHistoryIntegrity');
+        assert.deepEqual(verifyHistoryRows(await ChangeHistory.find({ boardId }, { transform: null }).fetchAsync()), [],
+          'both rows were linked into one valid chain when written');
         assert.equal(await Activities.find({ boardId }).countAsync(), 3);
         assert.equal(await SyncRuleArchiveEffects.find({ _id: archive._id }).countAsync(), 1);
         assert.equal(await SyncRuleArchiveReceipts.find({ commandId: archive._id }).countAsync(), 3);
@@ -166,7 +170,21 @@ describe('Stored Sync rule selection', function () {
       await Activities.rawCollection().updateOne({ _id: activityId }, { $set: { cardTitle: 'changed' } });
       await assert.rejects(captureStoredSyncRulePlan(input), /activity-changed/);
       assert.equal(await SyncRulePlans.find({ 'plan.activityId': activityId }).countAsync(), 5);
+      // Retention (2026-09-30): a finished plan leaves a completion receipt;
+      // 90 days later its rule and action documents are compacted away, and
+      // a replay returns as done while every other stage refuses the stub.
+      await Activities.rawCollection().updateOne({ _id: activityId }, { $set: { cardTitle: 'Original card' } });
+      const doneId = planId('b'.repeat(64), activityId);
+      const completion = await SyncRuleCompletions.rawCollection().findOne({ _id: doneId });
+      assert.ok(completion.completedAt instanceof Date);
+      assert.ok(await sweepUntil(createSyncRuleRetention({ plans: SyncRulePlans.rawCollection(), receipts: SyncRuleCompletions.rawCollection(),
+        now: () => new Date(completion.completedAt.getTime() + 91 * 86400000) }), async () => (await SyncRulePlans.rawCollection().findOne({ _id: doneId }))?.compactReceiptVersion === 1));
+      const compact = await SyncRulePlans.rawCollection().findOne({ _id: doneId });
+      assert.deepEqual(Object.keys(compact).sort(), ['_id', 'activityHash', 'checksum', 'compactReceiptVersion']);
+      assert.equal(await runStoredSyncRules({ ...input, effectId: 'b'.repeat(64), adapters: {} }), 'b'.repeat(64));
+      await assert.rejects(captureStoredSyncRulePlan({ ...input, effectId: 'b'.repeat(64) }), /plan-compacted/);
     } finally {
+      await SyncRuleCompletions.rawCollection().deleteMany({ _id: { $in: ['a', 'b', 'c', 'd', 'e'].map(c => planId(c.repeat(64), activityId)) } });
       const archiveCommands = await SyncRuleArchiveCommands.find({ boardId }, { fields: { _id: 1 } }).fetchAsync();
       const archiveIds = archiveCommands.map(row => row._id);
       await SyncRuleArchiveEffects.rawCollection().deleteMany({ _id: { $in: archiveIds } });
@@ -275,7 +293,9 @@ describe('Stored Sync rule email network delivery', function () {
       assert.equal(connections, 3); assert.equal(bodies.length, 3);
       assert.ok(recipients.some(line => line.includes('rejected@example.org')));
       assert.equal((await SyncRuleEmailAttempts.findOneAsync(partial._id)).state, 'sending');
-      await Actions.rawCollection().insertOne({ _id: extraAction, boardId, actionType: 'archive' });
+      // An action with no durable adapter (archive has one since 2026-09-30,
+      // server/lib/listSyncSteps.js) is refused before anything is sent.
+      await Actions.rawCollection().insertOne({ _id: extraAction, boardId, actionType: 'moveCardToTop' });
       await Triggers.rawCollection().insertOne({ _id: extraTrigger, boardId, activityType: 'createCard', listName: '*', userId: '*', swimlaneName: '*', cardTitle: '*' });
       await Rules.rawCollection().insertOne({ _id: extraRule, boardId, triggerId: extraTrigger, actionId: extraAction, enabled: true });
       const blockedInput = { ...input, effectId: '2'.repeat(64) };

@@ -18,7 +18,7 @@ test('registered private storage retains recovery evidence and refuses recreated
  withListSyncLease:(id,work)=>withSyncLease(db.collection('leases'),id,work),
  require:p=>require(path.resolve(__dirname,'../..',p.slice(1)))};
  const sourceFile=fs.readFileSync(path.resolve(__dirname,'../../server/lib/listSyncOperations.js'),'utf8');
- vm.runInNewContext(sourceFile.replace(/^import .*;\n/gm,'').replace('export async function','async function'),context);
+ vm.runInNewContext(sourceFile.replace(/^import .*;\n/gm,'').replace(/export async function/g,'async function'),context);
  for(const fn of startup)await fn();
  for(const c of collections.values()){
   assert.ok(c.rules.insert());assert.ok(c.rules.update());assert.ok(c.rules.remove());
@@ -41,7 +41,7 @@ test('registered private storage retains recovery evidence and refuses recreated
   apply:async(step,context)=>{
    assert.equal(context.userId,'author');if(interrupted)throw new Error('interrupted');applied++;
    return applySyncEffectsStep({cards:db.collection('cards'),step,...context,readPolicy:async()=>policy,
-    history:{admitHistoryWriter:({work})=>work({assertCurrent:async()=>{}}),findOneAsync:q=>events.findOne(typeof q==='string'?{_id:q}:q),insertAsync:r=>events.insertOne(r),updateAsync:(...a)=>events.updateOne(...a)},
+    history:{admitHistoryWriter:({work})=>work({mode:'legacy',assertCurrent:async()=>{}}),appendSyncHistoryRow:async function({row}){if(await this.findOneAsync(row._id))return row._id;const saved={...row,previousHash:null};saved.integrityHash=require('../../models/lib/changeHistoryIntegrity').hashHistoryRow(saved);await this.insertAsync(saved);return row._id;},findOneAsync:q=>events.findOne(typeof q==='string'?{_id:q}:q),insertAsync:r=>events.insertOne(r),updateAsync:(...a)=>events.updateOne(...a)},
     activities:{findOneAsync:id=>activities.findOne({_id:id}),insertAsync:r=>activities.insertOne(r)},
     completeDelivery:async({effectId})=>{
      await deliveries.updateOne({_id:effectId},{$setOnInsert:{done:true}},{upsert:true});
