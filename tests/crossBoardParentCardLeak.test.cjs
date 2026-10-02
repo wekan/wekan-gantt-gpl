@@ -140,10 +140,13 @@ test('both REST paths that set a parent check it first', () => {
     'the parent is validated before the update runs');
 });
 
-test('the linked-card read check it was modelled on is still there', () => {
+test('the linked-card check it was modelled on is still there, and stricter', () => {
   // The advisory pointed at this as the precedent: linking across boards
-  // already required read access to the source card's board.
-  assert.ok(/checkBoardAccess\(req\.userId, sourceCard\.boardId\)/.test(restCards));
+  // required read access to the source card's board. LinkedWriteBleed
+  // (2026-10-02) made that WRITE access, the rule the in-app Link popup uses,
+  // through one shared createLinkedCardFor for the method and the REST route.
+  assert.ok(/await createLinkedCardFor\(req\.userId, String\(req\.body\.linkedId\)/.test(restCards));
+  assert.ok(/allowIsBoardMemberWithWriteAccess\(userId, sourceBoard\)/.test(restCards));
 });
 
 // ------------------------------------------------ the same hole, linked cursors
@@ -234,6 +237,34 @@ test('every board-visibility selector in the publication comes from the builder'
   assert.strictEqual(copies.length, 0, 'no hand-written visibility array remains');
   const builders = publication.match(/boardVisibilitySelectors\(\{/g) || [];
   assert.ok(builders.length >= 4, `every selector uses the builder, found ${builders.length}`);
+});
+
+
+// ParentBleed, bulk sibling (2026-10-02): POST .../cards/bulk wrote each
+// entry's parentId with Cards.direct, which skips the DDP deny rule, and never
+// asked whether the parent's board was visible.
+test('every REST handler that writes a parentId checks the parent first (negative)', () => {
+  const handlers = restCards.split(/\nWebApp\.handlers\./).slice(1);
+  let writers = 0;
+  for (const handler of handlers) {
+    const writes = [...handler.matchAll(/parentId: (?!undefined)[^,\n]+/g)]
+      .filter(m => !/parentId: (card|sourceCard|existing)\./.test(m[0]));
+    if (!writes.length) continue;
+    writers += 1;
+    const check = handler.indexOf('assertParentCardIsVisible(req.userId,');
+    assert.ok(check > -1, `${handler.slice(0, 80)} writes a parentId without the visibility check`);
+    for (const write of writes) assert.ok(check < write.index, 'the check runs before the write');
+  }
+  assert.ok(writers >= 2, 'the single and bulk create handlers were found');
+  assert.match(restCards, /await assertParentCardIsVisible\(req\.userId, input\.parentId\);/);
+});
+
+test('a refused parent is recorded in Admin Panel -> Problems as ParentBleed', () => {
+  const guard = visibleBoards;
+  const at = guard.indexOf('if (!(await canUserSeeBoard(userId, parent.boardId))) {');
+  assert.ok(at > 0);
+  assert.match(guard.slice(at, at + 600), /try \{\s*require\('\/server\/lib\/securityLog'\)\.record\(\{\s*key: 'authz\.parent', action: 'blocked'/);
+  assert.match(read('models/lib/securityCategories.js'), /'authz\.parent':\s*\{[^}]*bleed: 'ParentBleed'/);
 });
 
 console.log(`\n${passed} tests passed`);

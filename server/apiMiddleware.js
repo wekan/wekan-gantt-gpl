@@ -16,8 +16,22 @@ WebApp.handlers.use(WebApp.express.json({ limit: '50mb' }));
 // ---------------------------------------------------------------------------
 // 2. API gate — check WITH_API env var (previously in models/users.js)
 // ---------------------------------------------------------------------------
+// Express matches routes case-insensitively and on the decoded path, so the
+// gate must too: with WITH_API off, /API/... and /%61pi/... reached the API
+// (2026-10-02).
+function isApiPath(url) {
+  let pathname = String(url || '').split('?')[0];
+  try { pathname = decodeURIComponent(pathname); } catch (e) { /* keep it raw */ }
+  return /^\/api(\/|$)/i.test(pathname);
+}
+
 WebApp.handlers.use(function apiGate(req, res, next) {
-  const api = req.url.startsWith('/api');
+  const api = isApiPath(req.url);
+  // CacheBleed, API sibling (2026-10-02): every API answer is the caller's -
+  // exports, attachment downloads as base64, board data - and none said so, so
+  // a shared cache was free to keep one by heuristics. A route may still set
+  // its own policy.
+  if (api) res.setHeader('Cache-Control', 'no-store');
   if ((api && process.env.WITH_API === 'true') || !api) {
     return next();
   }

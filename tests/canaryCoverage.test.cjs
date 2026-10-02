@@ -57,6 +57,7 @@ const WIRED = [
   ['comment.foreign-edit',             'server/models/cardComments.js',               'CommentBleed'],
   ['calendar.import-without-write',    'server/methods/icsImport.js',                  'CalendarBleed'],
   ['board.write-without-capability',   'server/authentication.js',                     'AssignedBleed'],
+  ['board.readonly-write',             'server/authentication.js',                     'ReadOnlyBleed'],
   ['rule.cross-board-write',           'server/rulesHelper.js',                       'RuleBleed'],
   ['tenant.mutate-without-admin',      'server/lib/adminCollectionPermission.js',      'TenantBleed'],
   ['export.path-outside-storage',      'models/exporter.js',                          'PathBleed'],
@@ -85,6 +86,7 @@ const WIRED = [
   ['ldap.invalid-credentials',         'packages/wekan-ldap/server/userCredentials.js', 'LdapBindBleed'],
   ['ldap.group-denied',                'packages/wekan-ldap/server/loginHandler.js',  'DirectoryGroupBleed'],
   ['cas.group-denied',                 'packages/wekan-accounts-cas/cas_server.js',    'DirectoryGroupBleed'],
+  ['cas.state-mismatch',               'packages/wekan-accounts-cas/cas_server.js',    'CasTokenBleed'],
 ];
 
 // One canary above is declared where its DETECTOR lives rather than at a call

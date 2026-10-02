@@ -20,7 +20,7 @@ LABEL org.opencontainers.image.source="https://github.com/wekan/wekan-gantt-gpl"
 # TARGETARCH and TARGETVARIANT are automatically provided by Docker Buildx
 ARG TARGETARCH
 ARG TARGETVARIANT
-ARG VERSION=12.14
+ARG VERSION=12.15
 ARG DEBIAN_FRONTEND=noninteractive
 
 ENV BUILD_DEPS="apt-utils gnupg wget bzip2 g++ curl libarchive-tools build-essential git ca-certificates python3 unzip"
@@ -113,7 +113,7 @@ ENV \
     LDAP_BACKGROUND_SYNC_DISABLE_NONEXISTANT_USERS=false \
     LDAP_ENCRYPTION=false \
     LDAP_CA_CERT="" \
-    LDAP_REJECT_UNAUTHORIZED=false \
+    LDAP_REJECT_UNAUTHORIZED=true \
     LDAP_USER_SEARCH_FILTER="" \
     LDAP_USER_SEARCH_SCOPE="" \
     LDAP_USER_SEARCH_FIELD="" \

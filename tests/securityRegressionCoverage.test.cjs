@@ -166,6 +166,32 @@ const GUARDED = {
   portraitbleed: ['tests/attachmentAvatarSecurityAdvisories.test.cjs'],
   relicavatarbleed: ['tests/attachmentAvatarSecurityAdvisories.test.cjs'],
   replybleed: ['tests/inboundEmailUserMatch.test.cjs', 'tests/inboundEmailReplyToken.test.cjs'],
+  cachebleed: ['tests/fileCacheHeaders.test.cjs', 'tests/playwright/specs/attachment-thumbnail.e2e.js'],
+  syncbleed: ['tests/syncBleed.test.cjs', 'tests/playwright/specs/list-sync-source.e2e.js'],
+  relaybleed: ['tests/relayBleed.test.cjs'],
+  readonlybleed: ['tests/readOnlyBleed.test.cjs', 'tests/assignedbleed.test.cjs'],
+  ldapbleed: ['tests/ldapRejectUnauthorizedDefault.test.cjs'],
+  brutebleed: ['tests/accountLoginDelay.test.cjs'],
+  repointbleed: ['tests/repointBleed.test.cjs', 'tests/playwright/specs/repoint-bleed.e2e.js'],
+  prototypebleed: ['tests/prototypeBleed.test.cjs', 'tests/playwright/specs/prototype-bleed.e2e.js'],
+  backgroundbleed: ['tests/backgroundBleed.test.cjs', 'tests/playwright/specs/background-bleed.e2e.js'],
+  codebleed: ['tests/codeBleed.test.cjs'],
+  hookbleed: ['tests/webhookPreparation.test.cjs', 'tests/playwright/specs/hook-bleed.e2e.js'],
+  zipbombbleed: ['tests/zipBombBleed.test.cjs'],
+  castokenbleed: ['tests/casStateBinding.test.cjs'],
+  traybleed: ['tests/notificationTrayWrite.test.cjs', 'tests/playwright/specs/tray-bleed.e2e.js'],
+  hookurlbleed: ['tests/webhookUrlPublication.test.cjs', 'tests/playwright/specs/hook-url-bleed.e2e.js'],
+  directoryinfobleed: ['tests/settingLdapPublication.test.cjs', 'tests/playwright/specs/directory-info-bleed.e2e.js'],
+  migrationbleed: ['tests/attachmentMigrationLeak.test.cjs', 'tests/playwright/specs/migration-bleed.e2e.js'],
+  authmethodbleed: ['tests/userAuthMethodPublication.test.cjs', 'tests/playwright/specs/auth-method-bleed.e2e.js'],
+  archivebleed: ['tests/sandstormReplaceBoard.test.cjs'],
+  emailbleed: ['tests/adminMailSettings.test.cjs'],
+  bflableed: ['tests/unawaitedAccessCheck.test.cjs'],
+  megableed: ['tests/tenantbleed.test.cjs'],
+  framebleed: ['tests/frameBleed.test.cjs', 'tests/playwright/specs/frame-bleed.e2e.js'],
+  invisiblebleed: ['tests/invisibleBleed.test.cjs'],
+  bypassbleed: ['tests/ruleLoopDepth.test.cjs'],
+  excelbleed: ['tests/unawaitedAccessCheck.test.cjs'],
 
   // Guarded by ATTEMPT DETECTION rather than by a fix-regression test: a canary
   // sits where the attack is tried, and tests/canaryCoverage.test.cjs pins that
@@ -175,7 +201,7 @@ const GUARDED = {
   // these stay candidates for a real regression test. It is stronger than
   // nothing, which is what they had.
   escapebleed: ['tests/canaryCoverage.test.cjs'],
-  filenamebleed: ['tests/canaryCoverage.test.cjs'],
+  filenamebleed: ['tests/canaryCoverage.test.cjs', 'tests/fileNameBleedRename.test.cjs'],
   inputbleed: ['tests/canaryCoverage.test.cjs'],
   spacebleed: ['tests/canaryCoverage.test.cjs'],
 };
@@ -193,19 +219,10 @@ const RECORDED = {
   anchorbleed: 'GHSL-2026-035 CursorBleed; reported before the *bleed suites existed',
   authbleed: 'unauthenticated getServiceConfiguration leaked the OIDC client secret; needs a DDP test',
   avatarbleed: 'predates the test suites; superseded in part by tests/avatarUrlSafety.test.cjs, which does not name it',
-  bflableed: '48 REST endpoints missing await on the access check - wants a source sweep over every route, not one test',
-  brutebleed: 'user data published unconditionally; overlaps userbleed, both need a publication test',
-  bypassbleed: 'authentication bypass; predates the *bleed test suites, no source guard was written',
   duebleed: 'Due Cards showed other users\' private board cards to an Admin; needs a publication test',
-  excelbleed: 'un-awaited access-control guard in the Excel export route; same class as bflableed',
   fieldbleed: 'JavaScript stored in a field ran when the page was reloaded; predates the *bleed test suites',
   floppybleed: 'FileBleed variant; predates the *bleed test suites, no source guard was written',
-  framebleed: 'cross-frame scripting; a header fix with no test',
-  invisiblebleed: 'HTML comments were not visible in rendered content; predates the *bleed test suites',
-  ldapbleed: 'LDAP TLS certificate validation off by default; needs an LDAP stack to test',
-  megableed: 'IDOR in setCreateTranslation; needs a DDP method test',
   reactionbleed: 'XSS in comment reactions; predates the *bleed test suites - note the reaction OWNERSHIP hole found in this round is a different bug and is guarded by tests/reactionOwnership.test.cjs',
-  readonlybleed: 'read-only members could write Custom Fields; needs a permissions test',
   snowbleed: 'MigrationsBleed - a database migration fix; predates the *bleed test suites',
   socialbleed: 'social media links on wekan.fi - a website fix, not a WeKan one',
   splicebleed: 'incomplete multi-character sanitization stripping markup from a shown filename; tests/fileNameDisplay.test.cjs is the likely guard but does not name it',
@@ -293,9 +310,23 @@ test('the gap list may not grow', () => {
   // sampling that CWE-1204 was about, everywhere rather than in one file.
   // 24 -> 23: ScannerBleed now exercises shell quoting and requires the
   // attributable refusal to reach Problems -> Security.
-  // 23 -> 22: EmailBleed was a stale alias that is not a published Hall of Fame
-  // name; the relevant mail advisory is MailTitleBleed and is guarded above.
-  assert.strictEqual(Object.keys(RECORDED).length, 22,
+  // 23 -> 22: EmailBleed was taken for a stale alias. It IS published - the
+  // index spelled it "Emailbleed", which this case-sensitive match skipped - and
+  // it is guarded above by tests/adminMailSettings.test.cjs (2026-10-02).
+  // 22 -> 20: BFLABleed and ExcelBleed, both un-awaited async access checks,
+  // are held tree-wide by tests/unawaitedAccessCheck.test.cjs (2026-10-02).
+  // 20 -> 19: MegaBleed - its Translation collection sibling is held by
+  // tests/tenantbleed.test.cjs (2026-10-02).
+  // 19 -> 18: FrameBleed - restored after its 2022 regression, and tested.
+  // 18 -> 17: InvisibleBleed - only its first comment was made visible; fixed and tested.
+  // 17 -> 16: BypassBleed - its rule-loop DoS part was still open; fixed and tested.
+  // 16 -> 15: ReadOnlyBleed - tests/readOnlyBleed.test.cjs pins the six
+  // handlers and every mutating REST route tree-wide (2026-10-02).
+  // 15 -> 13: LDAPBleed - the Docker image and snap had set certificate
+  // validation off again; restored and held by
+  // tests/ldapRejectUnauthorizedDefault.test.cjs. BruteBleed - its brute-force
+  // login protection is held by tests/accountLoginDelay.test.cjs (2026-10-02).
+  assert.strictEqual(Object.keys(RECORDED).length, 13,
     'the number of published vulnerabilities with no regression test changed');
 });
 
@@ -305,14 +336,19 @@ test('the whole published list is accounted for', () => {
   // when a new one is published, and put it in GUARDED or RECORDED at the same
   // time; the two assertions together are what make "every published
   // vulnerability is accounted for" a fact rather than a hope.
-  assert.strictEqual(total, 120, 'the Hall of Fame and this list disagree on how many there are');
+  // 120 -> 122: CacheBleed and SyncBleed (2026-10-02), both guarded.
+  // 122 -> 123: RelayBleed (2026-10-02), guarded.
+  // 123 -> 124: EmailBleed, published since 2021 but missed by a case-sensitive
+  // match of its "Emailbleed" spelling; guarded.
+  // 124 -> 137: thirteen newly published 2026-10-02 names, all guarded.
+  assert.strictEqual(total, 137, 'the Hall of Fame and this list disagree on how many there are');
 });
 
 test('the companion Hall of Fame names match the inventory when available', () => {
   if (!fs.existsSync(HOF)) return;
   const html = fs.readFileSync(HOF, 'utf8');
   const published = [...new Set(
-    [...html.matchAll(/<td valign="top"><b>(\w*Bleed)<\/b><\/td>/g)]
+    [...html.matchAll(/<td valign="top"><b>(\w*Bleed)<\/b><\/td>/gi)]
       .map(match => match[1].toLowerCase()),
   )].sort();
   const inventoried = [...Object.keys(GUARDED), ...Object.keys(RECORDED)].sort();

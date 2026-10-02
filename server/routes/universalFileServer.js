@@ -28,6 +28,10 @@ import { DocumentPreviews, indexDocumentText } from '/server/lib/documentGif';
 import { boundedStreamBuffer, gifCacheKey } from '/server/lib/imageGif';
 import { convertImageBufferToThumbnail, cachedThumbnail, rememberThumbnail } from '/server/lib/imageThumbnail';
 const { isThumbnailPath, canThumbnail, THUMBNAIL_TYPE } = require('/models/lib/attachmentThumbnail');
+// CacheBleed (GHSA-w3qg-pf27-g68r): files are served after an access check, so never shared-cacheable.
+const { setPrivateFileCacheHeaders, privateFileCacheHeaders } = require('/models/lib/fileCacheHeaders');
+// The avatar types served inline; anything else is a download (AvatarMimeBleed).
+const INLINE_AVATAR_TYPES = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp', 'image/avif', 'image/bmp']);
 const { readableWithoutMembership } = require('/models/lib/boardPermission');
 
 async function normalizeStoredNameOnRead(collection, fileObj, factory) {
@@ -196,8 +200,8 @@ if (Meteor.isServer) {
   // Consider PDF safe inline by extension if type is missing/mis-set
   const isSafeInline = safeInlineTypes.has(typeLower) || (isAttachment && isPdfByExt);
 
-    // Always send strong caching and integrity headers
-    res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+    // Private, revalidated caching (CacheBleed) and integrity headers
+    setPrivateFileCacheHeaders(res);
     res.setHeader('ETag', `"${fileObj._id}"`);
     res.setHeader('X-Content-Type-Options', 'nosniff');
 
@@ -236,10 +240,19 @@ if (Meteor.isServer) {
         res.setHeader('Content-Disposition', buildContentDispositionHeader('attachment', sanitizeFilenameForHeader(fileObj.name)));
         res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox;");
         res.setHeader('X-Frame-Options', 'DENY');
-      } else {
-        // For typical image avatars, use provided type if present, otherwise fall back to a safe generic image type
-        res.setHeader('Content-Type', typeLower || 'image/jpeg');
+      } else if (INLINE_AVATAR_TYPES.has(typeLower.split(';')[0].trim())) {
+        // AvatarMimeBleed, prefix-route sibling (2026-10-02): only a known
+        // raster image type is served inline, under its exact canonical
+        // name and a restrictive CSP. This branch used to echo whatever type
+        // was stored - 'text/html; charset=utf-8' passed the exact-match
+        // dangerous list - and serve it inline with no CSP.
+        res.setHeader('Content-Type', typeLower.split(';')[0].trim());
         res.setHeader('Content-Disposition', buildContentDispositionHeader('inline', sanitizeFilenameForHeader(fileObj.name)));
+        res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self'; style-src 'unsafe-inline';");
+      } else {
+        res.setHeader('Content-Type', 'application/octet-stream');
+        res.setHeader('Content-Disposition', buildContentDispositionHeader('attachment', sanitizeFilenameForHeader(fileObj.name)));
+        res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox;");
       }
     }
   }
@@ -250,6 +263,9 @@ if (Meteor.isServer) {
   function handleConditionalRequest(req, res, fileObj) {
     const ifNoneMatch = req.headers['if-none-match'];
     if (ifNoneMatch && ifNoneMatch === `"${fileObj._id}"`) {
+      // A 304 repeats the caching rules of the 200 it stands for.
+      setPrivateFileCacheHeaders(res);
+      res.setHeader('ETag', `"${fileObj._id}"`);
       res.writeHead(304);
       res.end();
       return true;
@@ -547,20 +563,20 @@ if (Meteor.isServer) {
     readStream.pipe(res);
   }
 
-  // #3275: a thumbnail is a WebP of at most THUMBNAIL_EDGE pixels. Private
-  // caching only: it is readable by the same people as the original, which is
-  // not everybody.
+  // #3275: a thumbnail is a WebP of at most THUMBNAIL_EDGE pixels. Cached as
+  // the original is (CacheBleed): it is readable by the same people as the
+  // original, which is not everybody, and revalidated so a revocation holds.
   function sendThumbnail(req, res, attachment, key, buffer) {
     const etag = `"${attachment._id}-thumbnail-${key.slice(0, 16)}"`;
     if (req.headers['if-none-match'] === etag) {
-      res.writeHead(304, { ETag: etag });
+      res.writeHead(304, { ETag: etag, ...privateFileCacheHeaders() });
       res.end();
       return;
     }
     res.writeHead(200, {
       'Content-Type': THUMBNAIL_TYPE,
       'Content-Length': buffer.length,
-      'Cache-Control': 'private, max-age=86400',
+      ...privateFileCacheHeaders(),
       ETag: etag,
       'X-Content-Type-Options': 'nosniff',
       'Content-Security-Policy': "default-src 'none'; sandbox;",
@@ -726,7 +742,7 @@ if (Meteor.isServer) {
       // Set headers and stream file
       if (isDownloadRequested(req)) {
         // Force download if requested via query param
-        res.setHeader('Cache-Control', 'public, max-age=31536000');
+        setPrivateFileCacheHeaders(res);
         res.setHeader('ETag', `"${attachment._id}"`);
         if (attachment.size) res.setHeader('Content-Length', attachment.size);
         res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -878,7 +894,7 @@ if (Meteor.isServer) {
       if (fileStream) {
         if (isDownloadRequested(req)) {
           // Force download if requested
-          res.setHeader('Cache-Control', 'public, max-age=31536000');
+          setPrivateFileCacheHeaders(res);
           res.setHeader('ETag', `"${attachment._id}"`);
           if (attachment.size) res.setHeader('Content-Length', attachment.size);
           res.setHeader('X-Content-Type-Options', 'nosniff');

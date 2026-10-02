@@ -8,17 +8,26 @@ const {
   LDAP_PASSWORD_LOGIN_DISABLED_REASON,
 } = require('/server/lib/ldapPasswordLoginGuard');
 
+// Which canary a refused board write trips. A read-only member writing is
+// ReadOnlyBleed's shape; anything else without the write capability stays
+// under the generic one (AssignedBleed). Kept outside checkBoardWriteAccess,
+// which decides from the shared capability table alone.
+function writeRefusalCanary(board, userId) {
+  const member = (board && board.members || []).find(m => m && m.userId === userId && m.isActive);
+  return member && member.isReadOnly ? 'board.readonly-write' : 'board.write-without-capability';
+}
+
 // Authentication helpers — exported for use by API routes and model files
 export const Authentication = {
   async checkUserId(userId) {
-    if (userId === undefined) {
+    if (!userId) {
       const error = new Meteor.Error('Unauthorized', 'Unauthorized');
       error.statusCode = 401;
       throw error;
     }
     const admin = await ReactiveCache.getUser({ _id: userId, isAdmin: true });
 
-    if (admin === undefined) {
+    if (!admin) { // not `=== undefined`: a null from the cache must refuse too
       const error = new Meteor.Error('Forbidden', 'Forbidden');
       error.statusCode = 403;
       throw error;
@@ -28,7 +37,7 @@ export const Authentication = {
   // This will only check if the user is logged in.
   // The authorization checks for the user will have to be done inside each API endpoint
   checkLoggedIn(userId) {
-    if (userId === undefined) {
+    if (!userId) {
       const error = new Meteor.Error('Unauthorized', 'Unauthorized');
       error.statusCode = 401;
       throw error;
@@ -40,7 +49,7 @@ export const Authentication = {
   async checkAdminOrCondition(userId, otherReq) {
     if (otherReq) return;
     const admin = await ReactiveCache.getUser({ _id: userId, isAdmin: true });
-    if (admin === undefined) {
+    if (!admin) { // not `=== undefined`: a null from the cache must refuse too
       const error = new Meteor.Error('Forbidden', 'Forbidden');
       error.statusCode = 403;
       throw error;
@@ -52,7 +61,15 @@ export const Authentication = {
     Authentication.checkLoggedIn(userId);
     const board = await ReactiveCache.getBoard(boardId);
     Authentication.checkBoardExists(board);
-    const normalAccess = board.members.some(e => e.userId === userId && e.isActive && !e.isNoComments && !e.isCommentOnly && !e.isWorker);
+    // AssignedBleed sibling (2026-10-02): the routes behind this check read
+    // the WHOLE board - every list, card, checklist, comment - and an
+    // assigned-only member may see only the cards assigned to them. They were
+    // let through, so REST handed them the cards the UI hides. They are
+    // refused here until those routes scope to assigned cards (TODO Later);
+    // not recorded, since an API client of such a member reaches it in
+    // ordinary use.
+    const normalAccess = board.members.some(e => e.userId === userId && e.isActive && !e.isNoComments && !e.isCommentOnly && !e.isWorker &&
+      !e.isNormalAssignedOnly && !e.isCommentAssignedOnly && !e.isReadAssignedOnly);
     await Authentication.checkAdminOrCondition(userId, normalAccess);
   },
 
@@ -69,8 +86,8 @@ export const Authentication = {
     const writeAccess = allowIsBoardMemberWithWriteAccess(userId, board);
     if (!writeAccess) {
       const admin = await ReactiveCache.getUser({ _id: userId, isAdmin: true });
-      if (admin === undefined) {
-        tripCanary('board.write-without-capability', { userId });
+      if (!admin) { // not `=== undefined`: a null from the cache must refuse too
+        tripCanary(writeRefusalCanary(board, userId), { userId });
       }
     }
     await Authentication.checkAdminOrCondition(userId, writeAccess);
@@ -109,6 +126,30 @@ export const Authentication = {
 };
 
 Meteor.startup(() => {
+  // The per-account brake (server/lib/accountLoginDelay.js) for DDP password
+  // logins. Meteor has checked the password by now, but an attempt outside the
+  // account's slot is refused whatever the outcome, so the answer reveals
+  // nothing and parallel connections gain nothing.
+  Accounts.validateLoginAttempt(function(options) {
+    if (options.type !== 'password' || !options.user) return true;
+    const { accountLoginDelay, recordAccountDelay } = require('/server/lib/accountLoginDelay');
+    const connection = options.connection || {};
+    const address = require('/server/lib/loginAttemptThrottle').resolveClientKey({
+      headers: connection.httpHeaders || {},
+      socketAddress: connection.clientAddress,
+      forwardedCount: process.env.HTTP_FORWARDED_COUNT,
+    });
+    const now = Date.now();
+    const gate = accountLoginDelay.decide(options.user._id, address, now);
+    if (!gate.allowed) {
+      recordAccountDelay(options.user._id, address, gate.retryAfterMs, 'ddp-login:account-delay');
+      throw new Meteor.Error('too-many-requests', 'Too many failed login attempts. Try again later.');
+    }
+    if (options.allowed) accountLoginDelay.recordSuccess(options.user._id, address, now);
+    else accountLoginDelay.recordFailure(options.user._id, address, now);
+    return true;
+  });
+
   Accounts.validateLoginAttempt(function(options) {
     const user = options.user || {};
     return !options.user || require('/server/lib/activeUser').allowActiveUser(user, 'ddp-login');

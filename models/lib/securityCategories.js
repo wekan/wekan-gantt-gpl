@@ -26,10 +26,35 @@ const CATALOG = {
   'authz.comment-card': { category: 'authz', bleed: 'CommentBoundaryBleed', severity: 'high', cwe: 'CWE-639' },
   'authz.mutation': { category: 'authz', bleed: 'MutationBleed', severity: 'high', cwe: 'CWE-863' },
   'authz.board-visibility': { category: 'authz', bleed: 'VisibilityBleed', severity: 'medium', cwe: 'CWE-863' },
-  'ssrf.redirect':   { category: 'ssrf', bleed: 'RedirectBleed', severity: 'high', cwe: 'CWE-918' },
-  'ssrf.attachment': { category: 'ssrf', bleed: 'LiveBleed', severity: 'high', cwe: 'CWE-918' },
+  // blocksAccount: false on the next two - the URL comes from data the user did
+  // not write (an identity provider's avatar, an imported Trello board's link
+  // attachment), so the user who triggered the fetch is not the attacker.
+  'ssrf.redirect':   { category: 'ssrf', bleed: 'RedirectBleed', severity: 'high', cwe: 'CWE-918', blocksAccount: false },
+  'ssrf.attachment': { category: 'ssrf', bleed: 'LiveBleed', severity: 'high', cwe: 'CWE-918', blocksAccount: false },
   'ssrf.fetch':      { category: 'ssrf', bleed: 'DnsBleed', severity: 'high', cwe: 'CWE-918' },
   'ssrf.webhook':    { category: 'ssrf', bleed: 'IntegrationBleed', severity: 'high', cwe: 'CWE-918' },
+  // RepointBleed: a rule trigger, action, rule or webhook integration moved to
+  // another board (or '*') by an update; see server/lib/boardRepointGuard.js.
+  'authz.repoint':   { category: 'authz', bleed: 'RepointBleed', severity: 'high', cwe: 'CWE-863' },
+  // PrototypeBleed: a '__proto__' (or '.', '$') map key sent to the per-user
+  // layout methods; see models/lib/safeMapKey.js. No client sends one.
+  // BackgroundBleed: a board background pointed at another board's attachment
+  // (models/lib/boardBackgroundOwnership.js). The UI only offers the board's own.
+  // OwnerBleed: a client board insert naming members other than its creator.
+  // BypassBleed's DoS part: a rule chain deeper than MAX_RULE_DEPTH, usually two
+  // rules undoing each other. Often an honest mistake, so only detected.
+  'dos.rule-loop': { category: 'dos', bleed: 'BypassBleed', severity: 'medium', cwe: 'CWE-674' },
+  // HookBleed: a client asking the server to send something other than the
+  // card-opened notification through a board's webhook (the UI never does).
+  'ssrf.webhook-forge': { category: 'ssrf', bleed: 'HookBleed', severity: 'high', cwe: 'CWE-345' },
+  'authz.board-owner': { category: 'authz', bleed: 'OwnerBleed', severity: 'high', cwe: 'CWE-639' },
+  'authz.background': { category: 'authz', bleed: 'BackgroundBleed', severity: 'high', cwe: 'CWE-639' },
+  'injection.prototype': { category: 'injection', bleed: 'PrototypeBleed', severity: 'high', cwe: 'CWE-1321' },
+  'authz.notification-tray': { category: 'authz', bleed: 'TrayBleed', severity: 'high', cwe: 'CWE-639' },
+  'authn.cas-state': { category: 'authn', bleed: 'CasTokenBleed', severity: 'high', cwe: 'CWE-352' },
+  // SyncBleed (GHSA-5q84-p3vr-f3xv): a List Sync server address on a private,
+  // loopback or link-local network, refused when saved and on every fetch.
+  'ssrf.list-sync':  { category: 'ssrf', bleed: 'SyncBleed', severity: 'medium', cwe: 'CWE-918' },
   'xss.source':      { category: 'xss', bleed: 'SourceBleed', severity: 'high', cwe: 'CWE-79' },
   'xss.mime':        { category: 'xss', bleed: 'MimeBleed', severity: 'high', cwe: 'CWE-79' },
   'xss.input':       { category: 'xss', bleed: 'InputBleed', severity: 'medium', cwe: 'CWE-79' },
@@ -62,7 +87,10 @@ const CATALOG = {
   // counter is per (user, source address) now. What is worth recording is a
   // lockout FIRING: on a per-address counter that means somebody guessed three
   // passwords wrong from one place, which is the attempt this is meant to see.
-  'brute.lockout':   { category: 'brute-force', bleed: 'JamBleed', severity: 'high', cwe: 'CWE-307' },
+  // The account a lockout names is the one being guessed - the victim - so this
+  // key never disables an account (blocksAccount: false); see
+  // server/lib/lockoutReporter.js.
+  'brute.lockout':   { category: 'brute-force', bleed: 'JamBleed', severity: 'high', cwe: 'CWE-307', blocksAccount: false },
   'injection.shell': { category: 'injection', bleed: 'ScannerBleed', severity: 'high', cwe: 'CWE-78' },
   'file.mime':       { category: 'file', bleed: 'MimeStorageBleed', severity: 'high', cwe: 'CWE-434' },
   'file.name':       { category: 'file', bleed: 'FileNameBleed', severity: 'medium', cwe: 'CWE-79' },
@@ -95,7 +123,9 @@ const CATALOG = {
   // and sanitize() was neutered to an identity function. A distinct name
   // from PathBleed (GHSA-4mxf-m8pq-xc9p, avatar versions.path/board export) -
   // same CWE, different bug, different fix.
-  'authz.upload-path': { category: 'authz', bleed: 'UploadPathBleed', severity: 'critical', cwe: 'CWE-22' },
+  // blocksAccount: false - the upload proceeds with a fresh id, and an older
+  // cached client that sends an unexpected file id is not an attacker.
+  'authz.upload-path': { category: 'authz', bleed: 'UploadPathBleed', severity: 'critical', cwe: 'CWE-22', blocksAccount: false },
   // Avatars Collection Lacks a protected Callback: ostrio:files' own
   // library-native download route served every avatar to anyone because
   // Avatars never set `protected` (unlike Attachments).

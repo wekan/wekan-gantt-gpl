@@ -4,6 +4,7 @@ import { TAPi18n } from '/imports/i18n';
 import Activities from '/models/activities';
 import Attachments from '/models/attachments';
 import Boards from '/models/boards';
+import { boardPermissionUnderPolicy } from '/server/lib/boardVisibilityPolicy';
 import Users from '/models/users';
 import { generateUniversalAttachmentUrl } from '/models/lib/universalUrlGenerator';
 import { BOARD_COLORS, CARD_COLORS } from '/models/metadata/colors';
@@ -282,9 +283,20 @@ export class TrelloCreator {
         boardToCreate.labels.push(labelToCreate);
       });
     }
+    boardToCreate.permission = await boardPermissionUnderPolicy(boardToCreate.permission);
     const boardId = await writeImportedEntity(Boards, boardToCreate);
     await Boards.direct.updateAsync(boardId, { $set: { modifiedAt: this._now() } });
     // log activity
+    if (trelloBoard.url && !/^https?:\/\//i.test(String(trelloBoard.url))) {
+      // SourceBleed: an export whose board URL is not http(s) - javascript:
+      // and the like - is what that attack imports. Dropped below; noted here.
+      try {
+        require('/server/lib/securityLog').record({
+          key: 'xss.source', action: 'detected', source: 'import:trello-source-url',
+          detail: `Imported Trello board URL with scheme ${String(trelloBoard.url).slice(0, 12)}... dropped.`,
+        });
+      } catch (e) { /* logging must never break the guard */ }
+    }
     await Activities.direct.insertAsync({
       activityType: 'importBoard',
       boardId,

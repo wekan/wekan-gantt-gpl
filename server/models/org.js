@@ -9,6 +9,8 @@ import { sendJsonResult } from '/server/apiMiddleware';
 // Multitenancy option D: per-tenant Global Admin rules (shared with the client and
 // the publications) - docs/Design/Multitenancy/Multitenancy.md.
 import * as tenantAdmin from '/models/lib/tenantAdmin';
+// ErrorBleed: refusals answer with their real status and a safe message.
+const { publicErrorData } = require('/server/lib/apiResponseHelpers');
 
 // #5850: reliable admin check from a method's this.userId. Meteor.user()/
 // getCurrentUser() can return null inside an async method after an await
@@ -71,6 +73,14 @@ Meteor.methods({
     // this.connection === null; a direct client call has a non-null
     // connection. Reject the latter.
     if (this.connection !== null) {
+      // Only the OIDC login flow calls this, server-side: a client call is an
+      // attempt (OIDCBleed).
+      try {
+        require('/server/lib/securityLog').record({
+          key: 'auth-race.oidc', action: 'blocked', source: 'ddp:oidc-internal-method', userId: this.userId || undefined,
+          detail: 'Client called an OIDC-login-only organization/team method.',
+        });
+      } catch (e) { /* logging must never break the guard */ }
       throw new Meteor.Error('not-authorized');
     }
     check(orgDisplayName, String);
@@ -229,6 +239,14 @@ Meteor.methods({
     // authorization, so reject direct client/DDP calls (this.connection
     // non-null) to keep the admin-only restriction of setOrgAllFields intact.
     if (this.connection !== null) {
+      // Only the OIDC login flow calls this, server-side: a client call is an
+      // attempt (OIDCBleed).
+      try {
+        require('/server/lib/securityLog').record({
+          key: 'auth-race.oidc', action: 'blocked', source: 'ddp:oidc-internal-method', userId: this.userId || undefined,
+          detail: 'Client called an OIDC-login-only organization/team method.',
+        });
+      } catch (e) { /* logging must never break the guard */ }
       throw new Meteor.Error('not-authorized');
     }
     check(org, Object);
@@ -345,7 +363,7 @@ WebApp.handlers.get('/api/admin/orgs', async function(req, res) {
     }));
     sendJsonResult(res, { code: 200, data });
   } catch (error) {
-    sendJsonResult(res, { code: 200, data: error });
+    sendJsonResult(res, publicErrorData(error));
   }
 });
 
@@ -381,7 +399,7 @@ WebApp.handlers.put('/api/admin/orgs/:orgId/features', async function(req, res) 
     const updated = await Org.findOneAsync(orgId);
     sendJsonResult(res, { code: 200, data: updated });
   } catch (error) {
-    sendJsonResult(res, { code: 200, data: error });
+    sendJsonResult(res, publicErrorData(error));
   }
 });
 
@@ -418,6 +436,6 @@ WebApp.handlers.put('/api/admin/orgs/features', async function(req, res) {
     );
     sendJsonResult(res, { code: 200, data: { updated } });
   } catch (error) {
-    sendJsonResult(res, { code: 200, data: error });
+    sendJsonResult(res, publicErrorData(error));
   }
 });

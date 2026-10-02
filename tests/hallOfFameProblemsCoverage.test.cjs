@@ -46,6 +46,14 @@ function test(name, fn) { fn(); passed += 1; console.log('  ok -', name); }
 // response CARRIED, or only takes effect at build time, so there is no attempt to
 // attribute - not merely when nobody has written the key yet.
 const DELIBERATE = {
+  // 2026-10-02 additions.
+  ArchiveBleed: 'a member who is not a board admin reaches the refusal by importing from a board page, which is ordinary use',
+  AuthMethodBleed: 'the fix changed what the publication carries; unauthenticated subscriptions were already recorded',
+  CodeBleed: 'a wrong one-time code is indistinguishable from a mistyped one; the fix is the code\'s entropy and lifetime',
+  DirectoryInfoBleed: 'the fix changed what the settings publication carries to non-admins',
+  HookUrlBleed: 'the fix changed what the board publication carries to non-admins',
+  MigrationBleed: 'the fix changed what the migration progress methods return',
+  ZipBombBleed: 'an oversized entry can be an honest large export, so a refusal does not identify an attack',
   ExportScopeBleed: 'assigned-only members can reach ordinary export menus; rejecting an unscoped '
     + 'export cannot distinguish malicious access from normal use, and existing generic export denial logging remains in place',
   HistoryScopeBleed: 'history filtering changes what normal responses carry; restoration denials can follow '
@@ -88,18 +96,25 @@ const DELIBERATE = {
     + 'from a damaged workbook without misattributing the viewer as the attacker',
   CasRaceBleed: 'the fix binds validated CAS data to each credential token during every legitimate CAS login; '
     + 'no operation is refused and logging these logins would report normal authentication as an attack',
+  CacheBleed: 'the fix changes the Cache-Control and Vary headers every authorized file response '
+    + 'carries; nothing is refused, and the attack happens in a shared cache WeKan never sees, so '
+    + 'there is no attempt to attribute (GHSA-w3qg-pf27-g68r)',
+  EmailBleed: 'the fix stopped publishing the SMTP password to administrators, who are the only '
+    + 'readers of the mail settings; nothing is refused, so there is no attempt to record',
+  RelayBleed: 'the fix withholds the Trello credential from non-Trello download hosts; a link attachment '
+    + 'on another host is ordinary board content, so withholding it on every import is not an attempt to record',
 };
 
 // Predates the rule and has not been judged yet. May shrink; must never grow.
 const PENDING = [
   'AdminBleed', 'AnchorBleed', 'AuthBleed', 'AvatarBleed', 'BFLABleed',
-  'BypassBleed', 'CloneBleed', 'CrashBleed', 'DUEBleed', 'ExcelBleed',
+  'CloneBleed', 'CrashBleed', 'DUEBleed', 'ExcelBleed',
   'ExportBleed', 'FieldBleed', 'FollowBleed', 'FrameBleed', 'IdentityBleed',
   'InvisibleBleed', 'LDAPBleed', 'LockoutBleed', 'MegaBleed',
   'PassBleed', 'PatternBleed', 'ProxyBleed', 'RandomBleed', 'ReactionBleed',
   'SnowBleed', 'SocialBleed', 'SortBleed', 'SpliceBleed', 'TokenBleed',
   'TransitBleed', 'UserBleed', 'WebhookBleed', 'WhereBleed', 'ZipBleed',
-  'ChecklistWriteBleed', 'CommentWriteBleed', 'OwnerBleed', 'RoleBleed',
+  'ChecklistWriteBleed', 'CommentWriteBleed', 'RoleBleed',
   'SearchBleed', 'TokenAuditBleed',
 ];
 
@@ -109,7 +124,7 @@ const keyed = new Set([...catalog.matchAll(/bleed: '(\w+)'/g)].map(m => m[1]));
 const hallOfFameNames = () => {
   if (!HOF) return null;
   const html = fs.readFileSync(HOF, 'utf8');
-  return [...new Set([...html.matchAll(/<td valign="top"><b>(\w*Bleed)<\/b><\/td>/g)]
+  return [...new Set([...html.matchAll(/<td valign="top"><b>(\w*Bleed)<\/b><\/td>/gi)]
     .map(m => m[1]))].sort();
 };
 

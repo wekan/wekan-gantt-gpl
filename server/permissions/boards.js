@@ -7,6 +7,20 @@ const { isOpenPermission } = require('/models/lib/boardPermission');
 
 Boards.deny({
   async insert(userId, doc) {
+    // OwnerBleed, DDP sibling (2026-10-02): the REST fix ignores owner fields,
+    // but a client insert could still carry its own members list - naming
+    // somebody else as the board's admin, or adding people who never agreed
+    // to be members. The UI sends no members (the schema makes the creator
+    // the only admin), so any member but the creator is an attempt.
+    if (Array.isArray(doc.members) && doc.members.some(member => !member || member.userId !== userId)) {
+      try {
+        require('/server/lib/securityLog').record({
+          key: 'authz.board-owner', action: 'blocked', source: 'ddp:boards.insert', userId,
+          detail: 'A client board insert named members other than its creator.',
+        });
+      } catch (e) { /* logging must never break the guard */ }
+      return true;
+    }
     if (!doc.subtasksDefaultBoardId) return false;
     if (await canWriteSubtaskDeposit(userId, doc.subtasksDefaultBoardId)) return false;
     recordSubtaskDepositDenial('ddp:board-insert');
@@ -21,6 +35,30 @@ Boards.deny({
     if (!id) return false;
     if (await canWriteSubtaskDeposit(userId, id)) return false;
     recordSubtaskDepositDenial('ddp:board-deposit');
+    return true;
+  },
+});
+
+// BackgroundBleed: backgroundImageId may name only an attachment of this same
+// board. The UI sets it from the board's own background picker, so pointing it
+// anywhere else is an attempt to read another board's file through the
+// background download API.
+Boards.deny({
+  async update(userId, doc, fields, modifier) {
+    const renamed = modifier.$rename && Object.values(modifier.$rename).includes('backgroundImageId');
+    const id = modifier.$set && modifier.$set.backgroundImageId;
+    if (!renamed && !id) return false;
+    if (!renamed) {
+      const Attachments = require('/models/attachments').default;
+      const attachment = await Attachments.findOneAsync({ _id: id });
+      if (require('/models/lib/boardBackgroundOwnership').isOwnBoardBackground(doc, attachment)) return false;
+    }
+    try {
+      require('/server/lib/securityLog').record({
+        key: 'authz.background', action: 'blocked', source: 'ddp:boards.update', userId,
+        detail: 'Tried to set a board background to an attachment of another board.',
+      });
+    } catch (e) { /* logging must never break the guard */ }
     return true;
   },
 });

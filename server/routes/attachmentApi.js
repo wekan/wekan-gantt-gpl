@@ -19,6 +19,7 @@ import { allowIsBoardMemberWithWriteAccess } from '/server/lib/utils';
 import { tripCanary } from '/server/lib/canary';
 import { liveAttachments } from '/models/lib/attachmentSoftDelete';
 import { softDeleteAttachment } from '/server/attachmentSoftDelete';
+import { assignedOnlyAttachmentScope, mayReadBoardAttachment } from '/server/lib/assignedOnlyAttachments';
 
 const HARD_MAX_API_FILE_BYTES = 64 * 1024 * 1024;
 const HARD_MAX_API_UPLOAD_BODY_BYTES = 96 * 1024 * 1024;
@@ -508,6 +509,16 @@ WebApp.handlers.use('/api/attachment/upload', async (req, res, next) => {
       if (!attachment) {
         return sendErrorResponse(res, 404, 'Background attachment not found');
       }
+      // BackgroundBleed: only this board's own attachment is its background.
+      if (!require('/models/lib/boardBackgroundOwnership').isOwnBoardBackground(board, attachment)) {
+        try {
+          require('/server/lib/securityLog').record({
+            key: 'authz.background', action: 'blocked', source: 'rest:download-background', userId: userId,
+            detail: 'A board background pointed at an attachment of another board.',
+          });
+        } catch (e) { /* logging must never break the guard */ }
+        return sendErrorResponse(res, 404, 'Background attachment not found');
+      }
       const strategy = fileStoreStrategyFactory.getFileStrategy(attachment, 'original');
       const readStream = strategy.getReadStream();
       if (!readStream) {
@@ -583,7 +594,7 @@ WebApp.handlers.use('/api/attachment/upload', async (req, res, next) => {
 
       // Check permissions
       const board = await ReactiveCache.getBoard(attachment.meta.boardId);
-      if (!board || !board.hasMember(userId)) {
+      if (!board || !board.hasMember(userId) || !(await mayReadBoardAttachment(board, userId, attachment))) {
         return sendErrorResponse(res, 403, 'You do not have permission to access this attachment');
       }
 
@@ -695,6 +706,8 @@ WebApp.handlers.use('/api/attachment/upload', async (req, res, next) => {
         query['meta.cardId'] = cardId;
       }
 
+      const scope = await assignedOnlyAttachmentScope(board, userId);
+      if (scope) query = { $and: [query, scope] };
       const attachments = await ReactiveCache.getAttachments(liveAttachments(query));
 
       const attachmentList = attachments.map(attachment => {
@@ -740,7 +753,8 @@ WebApp.handlers.use('/api/boards/:boardId/attachments', async (req, res, next) =
     if (!board || !board.hasMember(userId)) {
       return sendErrorResponse(res, 403, 'You do not have permission to access this board');
     }
-    const query = liveAttachments({ 'meta.boardId': boardId });
+    const scope = await assignedOnlyAttachmentScope(board, userId);
+    const query = scope ? liveAttachments({ $and: [{ 'meta.boardId': boardId }, scope] }) : liveAttachments({ 'meta.boardId': boardId });
     const attachments = await ReactiveCache.getAttachments(query);
     const attachmentList = attachments.map(attachment => {
       const strategy = fileStoreStrategyFactory.getFileStrategy(attachment, 'original');
@@ -819,6 +833,12 @@ WebApp.handlers.use('/api/boards/:boardId/attachments', async (req, res, next) =
           // Check source permissions (reading the source needs membership)
           const sourceBoard = await ReactiveCache.getBoard(sourceAttachment.meta.boardId);
           if (!sourceBoard || !sourceBoard.hasMember(userId)) {
+            return sendErrorResponse(res, 403, 'You do not have permission to access the source attachment');
+          }
+          // AssignedBleed copy sibling: an assigned-only member copies only
+          // from cards assigned to them (2026-10-02).
+          const sourceCard = sourceAttachment.meta.cardId ? await ReactiveCache.getCard(sourceAttachment.meta.cardId) : null;
+          if (!require('/models/lib/boardCardScope').mayCopyFromBoard(sourceBoard, userId, sourceCard)) {
             return sendErrorResponse(res, 403, 'You do not have permission to access the source attachment');
           }
 
@@ -1108,7 +1128,7 @@ WebApp.handlers.use('/api/boards/:boardId/attachments', async (req, res, next) =
 
       // Check permissions
       const board = await ReactiveCache.getBoard(attachment.meta.boardId);
-      if (!board || !board.hasMember(userId)) {
+      if (!board || !board.hasMember(userId) || !(await mayReadBoardAttachment(board, userId, attachment))) {
         return sendErrorResponse(res, 403, 'You do not have permission to access this attachment');
       }
 

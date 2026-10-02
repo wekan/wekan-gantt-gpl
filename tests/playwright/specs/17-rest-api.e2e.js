@@ -744,3 +744,73 @@ test.describe('REST API: data + permissions', () => {
     expect(res.status()).toBe(401);
   });
 });
+
+// ParentBleed, bulk sibling: cards/bulk wrote each entry's parentId with
+// Cards.direct (no DDP deny rule) and never checked the parent's board.
+test('bulk create refuses a parent card on a board the caller cannot see (ParentBleed)', async ({ request, user, user2, board }) => {
+  const hidden = db.seedBoard({ ownerId: user2.id, cardTitlesPerList: [['Hidden parent']] });
+  const hiddenCard = db.find('cards', { boardId: hidden.boardId })[0];
+  const visibleCard = db.find('cards', { boardId: board.boardId })[0];
+  const listId = board.listIds[0];
+  try {
+    const res = await request.post(`/api/boards/${board.boardId}/lists/${listId}/cards/bulk`, {
+      headers: authHeaders(user.token, true),
+      data: { swimlaneId: board.swimlaneId, cards: [
+        { title: 'ParentBleed child', parentId: hiddenCard._id },
+        { title: 'Visible child', parentId: visibleCard._id },
+      ] },
+    });
+    expect(res.status()).toBe(200);
+    const results = await res.json();
+    expect(results[0]).toMatchObject({ index: 0, error: 'Forbidden' });
+    expect(results[1]._id).toBeTruthy();
+    expect(db.find('cards', { parentId: hiddenCard._id })).toHaveLength(0);
+    expect(db.getCard(results[1]._id).parentId).toBe(visibleCard._id);
+    await expect.poll(() => db.findOne('eventlog', { bleed: 'ParentBleed', source: 'parentId' })?.count).toBeGreaterThan(0);
+  } finally {
+    db.cleanup({ boardIds: [hidden.boardId] });
+  }
+});
+
+// HashBleed siblings: any action other than add/remove answered with the
+// whole user document, password hash and token hashes included.
+test('member add/remove with an unknown action never returns the user document (HashBleed)', async ({ request, user, user2, board }) => {
+  for (const verb of ['add', 'remove']) {
+    const res = await request.post(`/api/boards/${board.boardId}/members/${user2.id}/${verb}`, {
+      headers: authHeaders(user.token, true), data: { action: 'show' },
+    });
+    expect(res.status()).toBe(400);
+    const text = await res.text();
+    expect(text).not.toContain('services');
+    expect(text).not.toContain('bcrypt');
+    expect(text).not.toContain(user2.id);
+  }
+});
+
+// ErrorBleed siblings: refused REST reads answered HTTP 200 with the raw
+// error object. A non-member now gets a real 403.
+test('a refused REST read answers 403, not 200 with an error object (ErrorBleed)', async ({ request, user2, board }) => {
+  for (const url of [`/api/boards/${board.boardId}/lists`, `/api/boards/${board.boardId}/swimlanes`, `/api/boards/${board.boardId}/cards_count`]) {
+    const res = await request.get(url, { headers: authHeaders(user2.token) });
+    expect(res.status(), url).toBe(403);
+    expect(await res.text(), url).not.toMatch(/"stack"|at [A-Za-z]+ \(/);
+  }
+});
+
+// AssignedBleed sibling: REST board-wide reads let an assigned-only member
+// read every card, which the UI hides from them.
+test('an assigned-only member cannot read the whole board over REST (AssignedBleed)', async ({ request, user2, board }) => {
+  const original = db.getBoard(board.boardId).members;
+  db.updateOne('boards', { _id: board.boardId }, { $set: { members: [...original, { userId: user2.id, isActive: true, isAdmin: false, isReadAssignedOnly: true }] } });
+  try {
+    for (const url of [`/api/boards/${board.boardId}/lists`, `/api/boards/${board.boardId}/lists/${board.listIds[0]}/cards`]) {
+      const res = await request.get(url, { headers: authHeaders(user2.token) });
+      expect(res.status(), url).toBe(403);
+    }
+    // A normal member still reads (negative).
+    db.updateOne('boards', { _id: board.boardId }, { $set: { members: [...original, { userId: user2.id, isActive: true, isAdmin: false }] } });
+    expect((await request.get(`/api/boards/${board.boardId}/lists`, { headers: authHeaders(user2.token) })).status()).toBe(200);
+  } finally {
+    db.updateOne('boards', { _id: board.boardId }, { $set: { members: original } });
+  }
+});

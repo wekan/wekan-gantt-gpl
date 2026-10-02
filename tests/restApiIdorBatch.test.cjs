@@ -248,8 +248,11 @@ test('ordinary use is NOT logged (negative)', () => {
     'a card id that names nothing at all is an ordinary 404, not an attempt');
 
   const fn = cards.slice(cards.indexOf('async function assignableOnBoard'));
-  assert.ok(/if \(refused\.length\) \{/.test(fn.slice(0, 1200)),
-    'a members array whose ids are all fine records nothing');
+  // Only ids that were NEVER on the board are recorded: a former member left
+  // in an old card's assignees is written back innocently (2026-10-02).
+  assert.ok(/if \(strangers\.length\) \{/.test(fn.slice(0, 1600)),
+    'a members array whose ids are all fine, or only former members, records nothing');
+  assert.ok(/board\.members\.some\(member => member && member\.userId === id\)/.test(fn.slice(0, 1600)));
 
   const list = handler(boards, 'get', '/api/users/:userId/boards');
   assert.ok(/if \(revoked && revoked\.length\) \{/.test(list),
@@ -276,6 +279,60 @@ test('HashBleed deliberately has no catalog key (negative)', () => {
   const put = handler(users, 'put', '/api/users/:userId');
   assert.ok(!/securityLog/.test(get) && !/securityLog/.test(put),
     'and neither endpoint logs (negative)');
+});
+
+
+// HashBleed siblings (2026-10-02): POST /api/boards/:boardId/members/:userId/add
+// and /remove read the user document into the variable they answered with,
+// so any action other than add/remove sent it back whole - password hash and
+// login-token hashes included - to any board admin, which anyone can become
+// by creating a board. They now refuse an unknown action before reading.
+test('HashBleed siblings: the member routes never answer with the user document', () => {
+  for (const action of ['add', 'remove']) {
+    const at = users.indexOf(`/api/boards/:boardId/members/:userId/${action}'`);
+    const route = users.slice(at, users.indexOf('\nWebApp.handlers.', at + 10));
+    const refuse = route.indexOf(`if (action !== '${action}') {`);
+    assert.ok(refuse > 0 && refuse < route.indexOf('ReactiveCache.getUser(userId)'), `${action}: unknown actions are refused first`);
+    assert.match(route, /const target = await ReactiveCache\.getUser\(userId\);\s*let data;/);
+  }
+});
+
+test('negative: no REST handler answers with an unstripped user document', () => {
+  // Any variable read from the users collection must reach sendJsonResult only
+  // through withoutSecrets(). Scans every REST handler in the server.
+  const walk = dir => fs.readdirSync(dir, { withFileTypes: true }).flatMap(e => e.isDirectory()
+    ? (e.name === 'tests' || e.name.startsWith('_build') ? [] : walk(path.join(dir, e.name)))
+    : (e.name.endsWith('.js') ? [path.join(dir, e.name)] : []));
+  const offenders = [];
+  for (const file of [...walk(path.join(ROOT, 'server')), ...walk(path.join(ROOT, 'models'))]) {
+    const src = fs.readFileSync(file, 'utf8');
+    for (const route of src.split(/\nWebApp\.handlers\./).slice(1)) {
+      for (const m of route.matchAll(/(?:let|const)\s+(\w+)\s*=\s*await\s+(?:ReactiveCache\.getUser|Users\.findOneAsync|Meteor\.users\.findOneAsync)\(/g)) {
+        const name = m[1];
+        if (new RegExp(`data:\\s*${name}\\b`).test(route)) offenders.push(`${path.relative(ROOT, file)}: ${route.slice(0, 60)} sends ${name}`);
+      }
+    }
+  }
+  assert.deepEqual(offenders, []);
+});
+
+// StaleBleed siblings (2026-10-02): GET /api/user and the
+// attachmentMigrationStatuses publication matched a dotted 'members.userId',
+// which also finds boards the caller was removed from.
+test('negative: no REST handler or publication finds the caller\'s boards by a dotted members.userId', () => {
+  const walk = dir => fs.readdirSync(dir, { withFileTypes: true }).flatMap(e => e.isDirectory()
+    ? (e.name === 'tests' || e.name.startsWith('_build') ? [] : walk(path.join(dir, e.name)))
+    : (e.name.endsWith('.js') ? [path.join(dir, e.name)] : []));
+  const offenders = [];
+  for (const file of [...walk(path.join(ROOT, 'server')), ...walk(path.join(ROOT, 'models'))]) {
+    const src = fs.readFileSync(file, 'utf8');
+    const bodies = [...src.split(/\nWebApp\.handlers\./).slice(1), ...src.split(/Meteor\.publish\(/).slice(1)];
+    for (const body of bodies) {
+      if (/'members\.userId':\s*(req|this)\.userId/.test(body.slice(0, 4000))) offenders.push(path.relative(ROOT, file));
+    }
+  }
+  assert.deepEqual([...new Set(offenders)], []);
+  assert.match(users, /members: \{ \$elemMatch: \{ userId: req\.userId, isActive: true \} \}/);
 });
 
 console.log(`\nrestApiIdorBatch: ${passed} tests passed`);

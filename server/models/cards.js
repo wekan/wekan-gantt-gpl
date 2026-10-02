@@ -1,6 +1,7 @@
 import { cardWithChecklists } from '/server/lib/checklistDeadlines';
 import { canWriteSubtaskDeposit, recordSubtaskDepositDenial } from '/server/lib/subtaskDepositAccess';
 import { recordLinkedWriteDenial } from '/models/lib/linkedWritePolicy';
+const { isAssignedOnlyMember } = require('/models/lib/boardCardScope');
 import { Meteor } from 'meteor/meteor';
 import { WebApp } from 'meteor/webapp';
 import { check, Match } from 'meteor/check';
@@ -45,6 +46,8 @@ import { subtaskCustomFields } from '/imports/lib/subtaskHelpers';
 import { ensureIndex } from '/server/lib/mongoStartup';
 import { canEditCardOrLinkedCard } from '/server/lib/linkedCardPermission';
 import getSlug from 'limax';
+// ErrorBleed: refusals answer with their real status and a safe message.
+const { publicErrorData } = require('/server/lib/apiResponseHelpers');
 
 const getTAPi18n = () => require('/imports/i18n').TAPi18n;
 const { isOpenPermission } = require('/models/lib/boardPermission');
@@ -57,6 +60,71 @@ function getTranslatedString(key, fallback, options) {
   }
   const translated = i18n.__(key, options);
   return typeof translated === 'string' ? translated : fallback;
+}
+
+// #6613 / LinkedWriteBleed: the one rule for creating a linked card, used by
+// the createLinkedCard method and the REST route (linkedId) alike. The REST
+// route used to check only READ access on the source board and clone the whole
+// source card, so a read-only or assigned-only member could link - and copy -
+// cards the method refuses them.
+async function createLinkedCardFor(userId, sourceCardId, boardId, swimlaneId, listId, sort, source) {
+  check(sourceCardId, String);
+  check(boardId, String);
+  check(swimlaneId, String);
+  check(listId, String);
+  check(sort, Number);
+  if (!userId) throw new Meteor.Error('not-authorized');
+  if (!Number.isFinite(sort)) throw new Meteor.Error('invalid-sort');
+
+  const [sourceCard, destinationBoard, destinationList, destinationSwimlane] =
+    await Promise.all([
+      Cards.findOneAsync(sourceCardId),
+      Boards.findOneAsync(boardId),
+      Lists.findOneAsync(listId),
+      Swimlanes.findOneAsync(swimlaneId),
+    ]);
+  if (!sourceCard || !destinationBoard || !destinationList || !destinationSwimlane) {
+    throw new Meteor.Error('not-found');
+  }
+  const sourceBoard = await Boards.findOneAsync(sourceCard.boardId);
+  if (!sourceBoard || !allowIsBoardMemberWithWriteAccess(userId, sourceBoard)) {
+    recordLinkedWriteDenial(source);
+    throw new Meteor.Error('not-authorized');
+  }
+  // An assigned-only member links only cards assigned to them: the link shows
+  // the source card's content in a board they control.
+  if (isAssignedOnlyMember(sourceBoard, userId) && !(sourceCard.assignees || []).includes(userId)) {
+    recordLinkedWriteDenial(source);
+    throw new Meteor.Error('not-authorized');
+  }
+  if (!allowIsBoardMemberWithWriteAccess(userId, destinationBoard)) {
+    throw new Meteor.Error('not-authorized');
+  }
+  if (
+    sourceCard.linkedId ||
+    sourceCard.archived === true ||
+    destinationList.archived === true ||
+    destinationSwimlane.archived === true ||
+    destinationList.boardId !== boardId ||
+    destinationSwimlane.boardId !== boardId ||
+    sourceCard.type === 'template-card' ||
+    sourceCard.type === 'cardType-linkedCard' ||
+    sourceCard.type === 'cardType-linkedBoard'
+  ) {
+    throw new Meteor.Error('invalid-linked-card');
+  }
+
+  return await Cards.insertAsync({
+    title: sourceCard.title || '',
+    listId,
+    swimlaneId,
+    boardId,
+    sort,
+    type: 'cardType-linkedCard',
+    linkedId: sourceCardId,
+    cardNumber: await destinationBoard.getNextCardNumber(),
+    userId: userId,
+  });
 }
 
 Meteor.methods({
@@ -145,57 +213,7 @@ Meteor.methods({
   // operation. A direct client insert could be rejected after the optimistic
   // write, leaving the Link popup open without creating anything.
   async createLinkedCard(sourceCardId, boardId, swimlaneId, listId, sort) {
-    check(sourceCardId, String);
-    check(boardId, String);
-    check(swimlaneId, String);
-    check(listId, String);
-    check(sort, Number);
-    if (!this.userId) throw new Meteor.Error('not-authorized');
-    if (!Number.isFinite(sort)) throw new Meteor.Error('invalid-sort');
-
-    const [sourceCard, destinationBoard, destinationList, destinationSwimlane] =
-      await Promise.all([
-        Cards.findOneAsync(sourceCardId),
-        Boards.findOneAsync(boardId),
-        Lists.findOneAsync(listId),
-        Swimlanes.findOneAsync(swimlaneId),
-      ]);
-    if (!sourceCard || !destinationBoard || !destinationList || !destinationSwimlane) {
-      throw new Meteor.Error('not-found');
-    }
-    const sourceBoard = await Boards.findOneAsync(sourceCard.boardId);
-    if (!sourceBoard || !allowIsBoardMemberWithWriteAccess(this.userId, sourceBoard)) {
-      recordLinkedWriteDenial('createLinkedCard');
-      throw new Meteor.Error('not-authorized');
-    }
-    if (!allowIsBoardMemberWithWriteAccess(this.userId, destinationBoard)) {
-      throw new Meteor.Error('not-authorized');
-    }
-    if (
-      sourceCard.linkedId ||
-      sourceCard.archived === true ||
-      destinationList.archived === true ||
-      destinationSwimlane.archived === true ||
-      destinationList.boardId !== boardId ||
-      destinationSwimlane.boardId !== boardId ||
-      sourceCard.type === 'template-card' ||
-      sourceCard.type === 'cardType-linkedCard' ||
-      sourceCard.type === 'cardType-linkedBoard'
-    ) {
-      throw new Meteor.Error('invalid-linked-card');
-    }
-
-    return await Cards.insertAsync({
-      title: sourceCard.title || '',
-      listId,
-      swimlaneId,
-      boardId,
-      sort,
-      type: 'cardType-linkedCard',
-      linkedId: sourceCardId,
-      cardNumber: await destinationBoard.getNextCardNumber(),
-      userId: this.userId,
-    });
+    return createLinkedCardFor(this.userId, sourceCardId, boardId, swimlaneId, listId, sort, 'createLinkedCard');
   },
 
   // #6608: archive one card selection as one acknowledged server operation.
@@ -803,6 +821,10 @@ Meteor.methods({
     const sourceBoard = await Boards.findOneAsync(card.boardId);
     if (!allowIsBoardMember(this.userId, sourceBoard))
       throw new Meteor.Error('not-authorized');
+    // AssignedBleed copy sibling (2026-10-02): an assigned-only member copies
+    // only a card assigned to them; a copy of any other showed them its content.
+    if (!require('/models/lib/boardCardScope').mayCopyFromBoard(sourceBoard, this.userId, card))
+      throw new Meteor.Error('not-authorized');
     const destBoard = await Boards.findOneAsync(boardId);
     if (!allowIsBoardMemberWithWriteAccess(this.userId, destBoard))
       throw new Meteor.Error('not-authorized');
@@ -848,6 +870,10 @@ Meteor.methods({
     if (!card) throw new Meteor.Error('not-found');
     const sourceBoard = await Boards.findOneAsync(card.boardId);
     if (!allowIsBoardMember(this.userId, sourceBoard))
+      throw new Meteor.Error('not-authorized');
+    // AssignedBleed copy sibling (2026-10-02): an assigned-only member copies
+    // only a card assigned to them; a copy of any other showed them its content.
+    if (!require('/models/lib/boardCardScope').mayCopyFromBoard(sourceBoard, this.userId, card))
       throw new Meteor.Error('not-authorized');
 
     const { ensureTemplatesBoardForUserId } = require('/server/models/users');
@@ -1296,27 +1322,25 @@ WebApp.handlers.post('/api/boards/:boardId/lists/:listId/cards', async function(
   const paramParentId = req.params.parentId;
 
   // Issue #5897: create a Linked Card. When linkedId is provided, the new card
-  // references an existing card (via Card.link, type cardType-linkedCard)
-  // instead of holding its own content. Linking across boards is allowed: the
-  // caller must have read access to the linked card's board.
+  // references an existing card (type cardType-linkedCard) instead of holding
+  // its own content. Linking across boards is allowed under the same rule as
+  // the in-app Link popup (createLinkedCardFor - LinkedWriteBleed): write
+  // access to the source board, the source card visible to an assigned-only
+  // member, and a list and swimlane that belong to the destination board.
   if (req.body.linkedId) {
-    const sourceCard = await ReactiveCache.getCard(req.body.linkedId);
-    if (!sourceCard) {
-      sendJsonResult(res, { code: 404, data: { error: 'linkedId card not found' } });
-      return;
-    }
-    await Authentication.checkBoardAccess(req.userId, sourceCard.boardId);
     const siblingCards = await ReactiveCache.getCards(
       { listId: paramListId, archived: false },
       { sort: ['sort'] },
     );
-    const linkedSort = siblingCards.length;
-    const linkedNewId = await sourceCard.link(paramBoardId, req.body.swimlaneId, paramListId);
-    const linkedNextCardNumber = await board.getNextCardNumber();
-    await Cards.direct.updateAsync(
-      { _id: linkedNewId },
-      { $set: { cardNumber: linkedNextCardNumber, sort: linkedSort } },
-    );
+    let linkedNewId;
+    try {
+      linkedNewId = await createLinkedCardFor(req.userId, String(req.body.linkedId), paramBoardId,
+        String(req.body.swimlaneId || ''), paramListId, siblingCards.length, 'rest:card-link');
+    } catch (error) {
+      const code = { 'not-found': 404, 'not-authorized': 403 }[error && error.error] || 400;
+      sendJsonResult(res, { code, data: { error: (error && error.error) || 'invalid-linked-card' } });
+      return;
+    }
     sendJsonResult(res, { code: 200, data: { _id: linkedNewId } });
     const linkedCard = await ReactiveCache.getCard(linkedNewId);
     // GHSA-6jr3-42jf-vhm5: attribution comes from the session, not the body.
@@ -1464,6 +1488,14 @@ WebApp.handlers.post(
         results.push({ index: i, error: 'authorId not found' });
         continue;
       }
+      // ParentBleed, bulk sibling: the parent check the single create makes.
+      // Cards.direct skips the DDP deny rule, so this is the only guard here.
+      try {
+        await assertParentCardIsVisible(req.userId, input.parentId);
+      } catch (error) {
+        results.push({ index: i, error: (error && error.error) || 'Forbidden' });
+        continue;
+      }
       // getNextCardNumber() is an atomic per-board counter, so calling it once
       // per card in this loop still yields unique, sequential numbers.
       const nextCardNumber = await board.getNextCardNumber();
@@ -1509,7 +1541,7 @@ WebApp.handlers.get('/api/boards/:boardId/cards_count', async function(req, res)
       data: { board_cards_count: cards.length },
     });
   } catch (error) {
-    sendJsonResult(res, { code: 200, data: error });
+    sendJsonResult(res, publicErrorData(error));
   }
 });
 
@@ -1528,7 +1560,7 @@ WebApp.handlers.get('/api/boards/:boardId/lists/:listId/cards_count', async func
       data: { list_cards_count: cards.length },
     });
   } catch (error) {
-    sendJsonResult(res, { code: 200, data: error });
+    sendJsonResult(res, publicErrorData(error));
   }
 });
 
@@ -1548,6 +1580,12 @@ WebApp.handlers.put(
     let updated = false;
     await Authentication.checkBoardWriteAccess(req.userId, paramBoardId);
     const beforeEdit = await Cards.findOneAsync({ _id: paramCardId, boardId: paramBoardId, listId: paramListId });
+    // A card that is not on this board and list is not edited here: the move
+    // branches below would otherwise act on the card id alone, on any board.
+    if (!beforeEdit) {
+      sendJsonResult(res, { code: 404, data: { error: 'Card not found' } });
+      return;
+    }
 
     if (req.body.title) {
       const newTitle =
@@ -1574,7 +1612,11 @@ WebApp.handlers.put(
       // board member could name a card on a private board as the parent and the
       // board publication would then hand that private card to everyone
       // subscribed to this board.
-      await assertParentCardIsVisible(req.userId, req.body.parentId);
+      // Only a CHANGED parent is checked: a client that writes a card back
+      // unchanged must not be refused (or recorded) for a parent it already had.
+      if (req.body.parentId !== beforeEdit.parentId) {
+        await assertParentCardIsVisible(req.userId, req.body.parentId);
+      }
       // #3626: over REST, parentId makes that card the ONE parent, as it did
       // before cards could have several - parentIds follows it.
       await Cards.direct.updateAsync(
@@ -2416,13 +2458,18 @@ async function assignableOnBoard(board, ids, source) {
     if (canAssignCardMember(board, id)) out.push(id);
     else if (id) refused.push(id);
   }
-  // Naming somebody who is not on this board is the attempt, so it is recorded
-  // and shows in Admin Panel / Problems rather than being dropped in silence.
-  if (refused.length) {
+  // Naming somebody who was NEVER on this board is the attempt, so it is
+  // recorded and shows in Admin Panel / Problems. A FORMER member is not: a
+  // removed member stays in old cards' assignees, and a client that reads a
+  // card and writes its assignees back sends them innocently - recording that
+  // (high, blocked) disabled the client's own account.
+  const strangers = refused.filter(id => !(board && Array.isArray(board.members) &&
+    board.members.some(member => member && member.userId === id)));
+  if (strangers.length) {
     try {
       require('/server/lib/securityLog').record({
         key: 'authz.card-member', action: 'blocked', source: source || 'card members/assignees',
-        detail: `refused ${refused.length} id(s) not active on board ${board && board._id}: ${refused.join(' ')}`,
+        detail: `refused ${strangers.length} id(s) never on board ${board && board._id}: ${strangers.join(' ')}`,
       });
     } catch (e) { /* logging must never break the guard */ }
   }

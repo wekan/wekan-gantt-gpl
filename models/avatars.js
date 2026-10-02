@@ -1,5 +1,7 @@
 import { Meteor } from 'meteor/meteor';
 import { FilesCollection } from 'meteor/ostrio:files';
+import { Random } from 'meteor/random';
+const { safeUploadFileId } = require('/models/lib/uploadFileId');
 import { generateUniversalAvatarUrl } from '/models/lib/universalUrlGenerator';
 const { cleanFileName } = require('/imports/lib/fileNameDisplay');
 
@@ -28,6 +30,9 @@ const storagePath = Meteor.isServer ? computeAvatarStoragePath() : 'assets/app/u
 const Avatars = new FilesCollection({
   debug: false, // Change to `true` for debugging
   collectionName: 'avatars',
+  // CacheBleed (GHSA-w3qg-pf27-g68r): Meteor-Files' default is a public, one-year
+  // cache; this file is served only after an access check.
+  cacheControl: require('/models/lib/fileCacheHeaders').PRIVATE_FILE_CACHE_CONTROL,
   // WeKan serves current and legacy avatars through its guarded canonical
   // /cdn/storage/avatars route. Meteor-Files' broad middleware must not
   // intercept that URL first and reject an authenticated legacy file.
@@ -57,6 +62,9 @@ const Avatars = new FilesCollection({
       filenameWithoutExtension = Math.random().toString(36).slice(2);
       fileId = Math.random().toString(36).slice(2);
     }
+    // UploadPathBleed, avatar sibling (2026-10-02): the id is client-supplied
+    // and starts the on-disk name, so "../../x" wrote outside the store.
+    fileId = safeUploadFileId(fileId, { source: 'Avatars.namingFunction', fresh: () => Random.id(), isServer: Meteor.isServer });
     // Strip shell metacharacters and path-traversal sequences from the
     // user-supplied portion of the filename.  The result is used as part of
     // the on-disk path passed to external commands, so only safe characters
@@ -70,6 +78,8 @@ const Avatars = new FilesCollection({
     return str.replace(/[^a-zA-Z0-9_.\-]/g, '_');
   },
   onBeforeUpload(file) {
+    // An avatar belongs to a signed-in user; nobody else uploads one.
+    if (!this.userId) return 'Please sign in to upload an avatar.';
     file.name = cleanFileName(file && file.name) || 'image';
     // Block SVG files for avatars to prevent XSS attacks
     if (file.name && file.name.toLowerCase().endsWith('.svg')) {

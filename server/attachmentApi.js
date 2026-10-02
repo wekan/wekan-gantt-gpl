@@ -16,6 +16,7 @@ import RecoveryEvents from '/models/recoveryEvents';
 import { recordRecoveryAudit } from '/server/lib/recoveryAudit';
 import { liveAttachments } from '/models/lib/attachmentSoftDelete';
 import { softDeleteAttachment } from '/server/attachmentSoftDelete';
+import { assignedOnlyAttachmentScope, mayReadBoardAttachment } from '/server/lib/assignedOnlyAttachments';
 const { cleanFileName } = require('/imports/lib/fileNameDisplay');
 
 const HARD_MAX_API_FILE_BYTES = 64 * 1024 * 1024;
@@ -110,6 +111,21 @@ async function getApiTransferLimits() {
 }
 
 // Attachment API methods
+// A card, list and swimlane named as an attachment's destination belong to the
+// destination board.
+async function assertAttachmentTarget(boardId, swimlaneId, listId, cardId) {
+  const [card, list, swimlane] = await Promise.all([
+    cardId ? ReactiveCache.getCard(cardId) : null,
+    listId ? ReactiveCache.getList(listId) : null,
+    swimlaneId ? ReactiveCache.getSwimlane(swimlaneId) : null,
+  ]);
+  if (!card || card.boardId !== boardId ||
+      (listId && (!list || list.boardId !== boardId)) ||
+      (swimlaneId && (!swimlane || swimlane.boardId !== boardId))) {
+    throw new Meteor.Error('invalid-target', 'The target card, list or swimlane is not on the target board');
+  }
+}
+
 Meteor.methods({
     // There is no permanentlyDeleteAttachmentFromFilesReport any more
     // (History.md §12.3): the Files report offers no per-attachment delete.
@@ -258,7 +274,7 @@ Meteor.methods({
 
       // Check permissions
       const board = await ReactiveCache.getBoard(attachment.meta.boardId);
-      if (!board || !board.hasMember(this.userId)) {
+      if (!board || !board.hasMember(this.userId) || !(await mayReadBoardAttachment(board, this.userId, attachment))) {
         throw new Meteor.Error('not-authorized', 'You do not have permission to access this attachment');
       }
 
@@ -461,6 +477,16 @@ Meteor.methods({
       if (!attachment) {
         throw new Meteor.Error('attachment-not-found', 'Background attachment not found');
       }
+      // BackgroundBleed: only this board's own attachment is its background.
+      if (!require('/models/lib/boardBackgroundOwnership').isOwnBoardBackground(board, attachment)) {
+        try {
+          require('/server/lib/securityLog').record({
+            key: 'authz.background', action: 'blocked', source: 'api.board.downloadBackground', userId: this.userId,
+            detail: 'A board background pointed at an attachment of another board.',
+          });
+        } catch (e) { /* logging must never break the guard */ }
+        throw new Meteor.Error('attachment-not-found', 'Background attachment not found');
+      }
 
       try {
         const { apiDownloadBlocked, effectiveApiDownloadMaxBytes } = await getApiTransferLimits();
@@ -547,6 +573,8 @@ Meteor.methods({
           query['meta.cardId'] = cardId;
         }
 
+        const scope = await assignedOnlyAttachmentScope(board, this.userId);
+        if (scope) query = { $and: [query, scope] };
         const attachments = await ReactiveCache.getAttachments(liveAttachments(query));
 
         const attachmentList = attachments.map(attachment => {
@@ -594,6 +622,12 @@ Meteor.methods({
       if (!sourceBoard || !sourceBoard.hasMember(this.userId)) {
         throw new Meteor.Error('not-authorized', 'You do not have permission to access the source attachment');
       }
+      // AssignedBleed copy sibling: a copy shows the file in a board the caller
+      // controls, so an assigned-only member copies only from their own cards.
+      const sourceCard = sourceAttachment.meta.cardId ? await ReactiveCache.getCard(sourceAttachment.meta.cardId) : null;
+      if (!require('/models/lib/boardCardScope').mayCopyFromBoard(sourceBoard, this.userId, sourceCard)) {
+        throw new Meteor.Error('not-authorized', 'You do not have permission to access the source attachment');
+      }
 
       // Check target permissions: writing the copy needs write access.
       const targetBoard = await ReactiveCache.getBoard(targetBoardId);
@@ -605,6 +639,11 @@ Meteor.methods({
       if (!targetBoard.allowsAttachments) {
         throw new Meteor.Error('attachments-not-allowed', 'Attachments are not allowed on the target board');
       }
+
+      // The target card, list and swimlane must be on the target board: they
+      // were written unchecked, so a file could be planted on a card of a
+      // board the caller cannot write (2026-10-02).
+      await assertAttachmentTarget(targetBoardId, targetSwimlaneId, targetListId, targetCardId);
 
       // A copy creates a new attachment, so honour the admin API upload limits.
       const {
@@ -719,6 +758,11 @@ Meteor.methods({
         throw new Meteor.Error('attachments-not-allowed', 'Attachments are not allowed on the target board');
       }
 
+      // The target card, list and swimlane must be on the target board: they
+      // were written unchecked, so a file could be planted on a card of a
+      // board the caller cannot write (2026-10-02).
+      await assertAttachmentTarget(targetBoardId, targetSwimlaneId, targetListId, targetCardId);
+
       try {
         // Update attachment metadata
         await Attachments.updateAsync(attachmentId, {
@@ -796,7 +840,7 @@ Meteor.methods({
 
       // Check permissions
       const board = await ReactiveCache.getBoard(attachment.meta.boardId);
-      if (!board || !board.hasMember(this.userId)) {
+      if (!board || !board.hasMember(this.userId) || !(await mayReadBoardAttachment(board, this.userId, attachment))) {
         throw new Meteor.Error('not-authorized', 'You do not have permission to access this attachment');
       }
 

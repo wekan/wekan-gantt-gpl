@@ -181,22 +181,50 @@ Meteor.methods({
 
         integration = structuredClone(integration);
         params = structuredClone(params);
-        const prepared = await prepareOutgoingWebhook({ integration, description, params, actorId: this.userId });
-        if (!prepared) return;
-        const { is2way } = prepared;
 
         // The `integration` object is supplied by the caller and must not be
         // trusted: verify a matching integration actually exists on its board
         // AND that the caller is a member of that board. Otherwise any
         // authenticated user could drive webhooks (and, via the two-way
         // response path below, overwrite comments) on boards they cannot access.
-        const storedIntegration = await ReactiveCache.getIntegration({
-          url: integration.url,
-          boardId: integration.boardId,
-        });
+        // A board member who is not its admin is published the integration
+        // without its URL (a chat webhook URL is itself a credential), so it
+        // names the integration by _id.
+        const storedIntegration = await ReactiveCache.getIntegration(
+          typeof integration._id === 'string'
+            ? { _id: integration._id, boardId: integration.boardId }
+            : { url: integration.url, boardId: integration.boardId },
+        );
         if (!storedIntegration) return;
         const integrationBoard = await ReactiveCache.getBoard(storedIntegration.boardId);
         if (!integrationBoard || !integrationBoard.hasMember(this.userId)) return;
+
+        // HookBleed (2026-10-02): the request was built from the CALLER's
+        // integration object (its type decided two-way, its token was sent)
+        // and the caller's own description and params - so any member, read-only
+        // included, could post arbitrary text to the board's chat webhook as
+        // WeKan, or turn a one-way hook two-way. Everything comes from the stored
+        // integration now; and from a client, the only legitimate call is the
+        // card-opened notification, whose params are rebuilt here from the card.
+        if (this.connection) {
+          const card = description === 'CardSelected' && typeof params.cardId === 'string'
+            ? await ReactiveCache.getCard(params.cardId) : null;
+          if (!card || card.boardId !== storedIntegration.boardId) {
+            try {
+              require('/server/lib/securityLog').record({
+                key: 'ssrf.webhook-forge', action: 'blocked', source: 'outgoingWebhooks', userId: this.userId,
+                detail: `client tried to send '${String(description).slice(0, 40)}' through webhook ${storedIntegration._id}`,
+              });
+            } catch (e) { /* logging must never break the guard */ }
+            return;
+          }
+          const caller = await ReactiveCache.getUser(this.userId);
+          params = { userId: this.userId, cardId: card._id, boardId: card.boardId, listId: card.listId,
+            user: caller && caller.username, url: '' };
+        }
+        const prepared = await prepareOutgoingWebhook({ integration: storedIntegration, description, params, actorId: this.userId });
+        if (!prepared) return;
+        const { is2way } = prepared;
 
         if (is2way) {
           const cid = params.commentId;
@@ -221,6 +249,15 @@ Meteor.methods({
             body: prepared.body,
           });
         } catch (err) {
+          if (/^SSRF_GUARD:/.test(err && err.message)) {
+            // IntegrationBleed: a webhook pointed at an internal address.
+            try {
+              require('/server/lib/securityLog').record({
+                key: 'ssrf.webhook', action: 'blocked', source: 'outgoingWebhooks',
+                detail: `webhook ${storedIntegration._id}: ${String(err.message).slice(0, 160)}`,
+              });
+            } catch (e) { /* logging must never break the guard */ }
+          }
           throw new Meteor.Error(
             'invalid-webhook-url',
             `Webhook request failed: ${err.message}`,
@@ -238,7 +275,7 @@ Meteor.methods({
             }
             if (data) {
               try {
-                await responseFunc(data, integration);
+                await responseFunc(data, storedIntegration);
               } catch (e) {
                 throw new Meteor.Error('error-process-data');
               }

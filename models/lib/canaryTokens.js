@@ -103,6 +103,10 @@ const CANARIES = {
     key: 'authz.assigned',
     what: 'tried to mutate board content without the board write capability',
   },
+  'board.readonly-write': {
+    key: 'authz.readonly',
+    what: 'tried to mutate board content as a read-only member',
+  },
   'rule.cross-board-write': {
     key: 'authz.rule-destination',
     what: 'tried to run an automation action on a board they cannot write to',
@@ -154,6 +158,10 @@ const CANARIES = {
   'cas.group-denied': {
     key: 'authn.cas-group',
     what: 'tried CAS login outside the configured group restriction',
+  },
+  'cas.state-mismatch': {
+    key: 'authn.cas-state',
+    what: 'completed a CAS login with a token another browser chose',
   },
   'cas.account-conflict': {
     key: 'authn.cas-link',

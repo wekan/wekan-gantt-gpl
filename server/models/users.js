@@ -1,4 +1,6 @@
 const { CALENDAR_SYSTEM_IDS } = require('/imports/lib/calendarSystems');
+const { assertSafeMapKey } = require('/models/lib/safeMapKey');
+const { memberCan } = require('/models/lib/boardRoleCapabilities');
 import { Meteor } from 'meteor/meteor';
 // Only the authorized server method can populate this creation context.
 const adminCreation = new Meteor.EnvironmentVariable();
@@ -106,6 +108,7 @@ const {
 } = require('/models/lib/starredPages');
 import InvitationCodes from '/models/invitationCodes';
 import InviteToBoardRolesSettings from '/models/inviteToBoardRolesSettings';
+const { canInviteToBoard } = require('/models/lib/invitationBoardPermission');
 import AccountSettings from '/models/accountSettings';
 import Lists from '/models/lists';
 import Swimlanes from '/models/swimlanes';
@@ -993,6 +996,7 @@ Meteor.methods({
   },
 
   async assignBoardToWorkspace(boardId, spaceId) {
+    assertSafeMapKey(boardId);
     check(boardId, String);
     check(spaceId, String);
     if (!this.userId) throw new Meteor.Error('not-logged-in');
@@ -1149,7 +1153,10 @@ Meteor.methods({
     // list.width/constraint are per-board fields shared with all users, so
     // only board members may change them, and only on the list's own board.
     const board = await ReactiveCache.getBoard(boardId);
-    if (!board || !board.hasMember(this.userId)) {
+    // MutationBleed sibling (2026-10-02): a shared board setting needs write
+    // access, not just membership. Not recorded as an attempt: the menus may
+    // still offer it to a read-only member.
+    if (!board || !memberCan(board.members, this.userId, 'write')) {
       throw new Meteor.Error('error-notAuthorized');
     }
     const list = await ReactiveCache.getList(listId);
@@ -1160,7 +1167,7 @@ Meteor.methods({
       // #6409: only the shared per-board width is stored on the list. The old
       // `constraint` (max-width) is no longer used; the param is kept for
       // backwards compatibility with existing callers but ignored.
-      Lists.updateAsync(listId, { $set: { width: width } });
+      await Lists.updateAsync(listId, { $set: { width: width } });
       return true;
     } catch (error) {
       console.error('Error updating list width:', error);
@@ -1177,7 +1184,10 @@ Meteor.methods({
     // Shared (per-board) auto-width affects everyone, so only board members may
     // change it (parity with applyListWidth). See #6409.
     const board = await ReactiveCache.getBoard(boardId);
-    if (!board || !board.hasMember(this.userId)) {
+    // MutationBleed sibling (2026-10-02): a shared board setting needs write
+    // access, not just membership. Not recorded as an attempt: the menus may
+    // still offer it to a read-only member.
+    if (!board || !memberCan(board.members, this.userId, 'write')) {
       throw new Meteor.Error('error-notAuthorized');
     }
     await Boards.updateAsync(boardId, { $set: { autoWidth: !!autoWidth } });
@@ -1194,7 +1204,10 @@ Meteor.methods({
       throw new Meteor.Error('not-logged-in', 'User must be logged in');
     }
     const board = await ReactiveCache.getBoard(boardId);
-    if (!board || !board.hasMember(this.userId)) {
+    // MutationBleed sibling (2026-10-02): a shared board setting needs write
+    // access, not just membership. Not recorded as an attempt: the menus may
+    // still offer it to a read-only member.
+    if (!board || !memberCan(board.members, this.userId, 'write')) {
       throw new Meteor.Error('error-notAuthorized');
     }
     await Boards.updateAsync(boardId, {
@@ -1204,6 +1217,7 @@ Meteor.methods({
   },
 
   async setListCollapsedState(boardId, listId, collapsed) {
+    assertSafeMapKey(boardId, listId);
     check(boardId, String);
     check(listId, String);
     check(collapsed, Boolean);
@@ -1220,6 +1234,7 @@ Meteor.methods({
   // minicard fold. See client/lib/utils.js's Utils.setCardCollapseState for
   // why there is no anonymous/public fallback here.
   async setCardCollapsedState(boardId, cardId, collapsed) {
+    assertSafeMapKey(boardId, cardId);
     check(boardId, String);
     check(cardId, String);
     check(collapsed, Boolean);
@@ -1241,6 +1256,7 @@ Meteor.methods({
   },
 
   async setSwimlaneCollapsedState(boardId, swimlaneId, collapsed) {
+    assertSafeMapKey(boardId, swimlaneId);
     check(boardId, String);
     check(swimlaneId, String);
     check(collapsed, Boolean);
@@ -1626,7 +1642,15 @@ Meteor.methods({
 
     if (board.subtasksDefaultBoardId) {
       const subBoard = await ReactiveCache.getBoard(board.subtasksDefaultBoardId);
-      if (subBoard) {
+      // SubtaskDepositBleed: the deposit board is another board. The invitee is
+      // added to it - or reactivated there - only when the inviter may invite
+      // to THAT board too; otherwise a writer could point their own board's
+      // deposit at any board and invite anyone into it.
+      const depositInvite = subBoard && subBoard._id !== board._id &&
+        canInviteToBoard(inviter, subBoard, await InviteToBoardRolesSettings.allowedRoles());
+      // Not recorded: an inviter without invite rights on the deposit board is
+      // also an ordinary configuration, so skipping it is not an attempt.
+      if (depositInvite) {
         const subMemberIndex = subBoard.members.findIndex(m => m.userId === user._id);
         if (subMemberIndex >= 0) {
           await Boards.updateAsync(board.subtasksDefaultBoardId, {
@@ -1756,6 +1780,10 @@ Meteor.methods({
     check(userId, Match.Any);
 
     if (!Match.test(userId, String) || !userId) return false;
+    // Whether an account is being impersonated is the account's own business,
+    // or an admin's - it answered anybody, signed in or not (2026-10-02).
+    if (!this.userId) return false;
+    if (userId !== this.userId && !(await ReactiveCache.getUser({ _id: this.userId, isAdmin: true }))) return false;
 
     return await ReactiveCache.getImpersonatedUser({ userId });
   },
@@ -2051,6 +2079,14 @@ Accounts.onCreateUser(async (options, user) => {
     valid: true,
   });
   if (!invitationCode) {
+    // A wrong code is what guessing looks like (InviteBleed); a typo looks the
+    // same, so it is 'detected', and the fold shows a count, not a row each.
+    try {
+      require('/server/lib/securityLog').record({
+        key: 'brute.invite', action: 'detected', source: 'register:invitation-code',
+        detail: 'Sign-up with an invitation code that does not exist for that email.',
+      });
+    } catch (e) { /* logging must never break the guard */ }
     throw new Meteor.Error('error-invitation-code-not-exist', "The invitation code doesn't exist");
   }
 
@@ -2344,8 +2380,11 @@ WebApp.handlers.get('/api/user', async function(req, res) {
     const data = await ReactiveCache.getUser({ _id: req.userId });
     delete data.services;
 
+    // StaleBleed sibling (2026-10-02): a dotted 'members.userId' match also
+    // finds boards the caller was REMOVED from (an inactive member entry), so
+    // a removed member's /api/user kept listing those board ids.
     let boards = await ReactiveCache.getBoards(
-      { type: 'board', 'members.userId': req.userId },
+      { type: 'board', members: { $elemMatch: { userId: req.userId, isActive: true } } },
       { fields: { _id: 1, members: 1 } },
     );
     boards = boards.map(b => {
@@ -2502,13 +2541,22 @@ WebApp.handlers.post('/api/boards/:boardId/members/:userId/add', async function(
       isReadOnly,
       isReadAssignedOnly,
     } = roleFlags === null ? req.body : roleFlags;
-    let data = await ReactiveCache.getUser(userId);
+    // HashBleed sibling: with any other action, the user document read below
+    // was sent back whole - password hash and login-token hashes included - to
+    // anyone who is admin of some board, which is anyone who can create one.
+    // The user is read to decide, never to answer.
+    if (action !== 'add') {
+      sendJsonResult(res, { code: 400, data: { error: 'action must be "add"' } });
+      return;
+    }
+    const target = await ReactiveCache.getUser(userId);
+    let data;
     // #1894: do not add a deactivated account to a board.
-    if (data !== undefined && action === 'add' && data.loginDisabled) {
+    if (target !== undefined && action === 'add' && target.loginDisabled) {
       sendJsonResult(res, { code: 400, data: { error: 'User is disabled' } });
       return;
     }
-    if (data !== undefined && action === 'add') {
+    if (target !== undefined && action === 'add') {
       const boards = await ReactiveCache.getBoards({ _id: boardId });
       data = [];
       for (const board of boards) {
@@ -2572,8 +2620,17 @@ WebApp.handlers.post('/api/boards/:boardId/members/:userId/remove', async functi
       sendJsonResult(res, { code: 403, data: { error: 'Only a board admin can remove board members' } });
       return;
     }
-    let data = await ReactiveCache.getUser(userId);
-    if (data !== undefined && action === 'remove') {
+    // HashBleed sibling: with any other action, the user document read below
+    // was sent back whole - password hash and login-token hashes included - to
+    // anyone who is admin of some board, which is anyone who can create one.
+    // The user is read to decide, never to answer.
+    if (action !== 'remove') {
+      sendJsonResult(res, { code: 400, data: { error: 'action must be "remove"' } });
+      return;
+    }
+    const target = await ReactiveCache.getUser(userId);
+    let data;
+    if (target !== undefined && action === 'remove') {
       const boards = await ReactiveCache.getBoards({ _id: boardId });
       data = [];
       for (const board of boards) {

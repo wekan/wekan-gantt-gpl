@@ -6,6 +6,8 @@ import Team from '/models/team';
 import { ensureIndex } from '/server/lib/mongoStartup';
 import { Authentication } from '/server/authentication';
 import { sendJsonResult } from '/server/apiMiddleware';
+// ErrorBleed: refusals answer with their real status and a safe message.
+const { publicErrorData } = require('/server/lib/apiResponseHelpers');
 
 // #5850: reliable admin check from a method's this.userId (Meteor.user() can
 // return null inside an async method after an await).
@@ -62,6 +64,14 @@ Meteor.methods({
     // this.connection === null; a direct client call has a non-null
     // connection. Reject the latter.
     if (this.connection !== null) {
+      // Only the OIDC login flow calls this, server-side: a client call is an
+      // attempt (OIDCBleed).
+      try {
+        require('/server/lib/securityLog').record({
+          key: 'auth-race.oidc', action: 'blocked', source: 'ddp:oidc-internal-method', userId: this.userId || undefined,
+          detail: 'Client called an OIDC-login-only organization/team method.',
+        });
+      } catch (e) { /* logging must never break the guard */ }
       throw new Meteor.Error('not-authorized');
     }
     check(teamDisplayName, String);
@@ -202,6 +212,14 @@ Meteor.methods({
     // authorization, so reject direct client/DDP calls (this.connection
     // non-null) to keep the admin-only restriction of setTeamAllFields intact.
     if (this.connection !== null) {
+      // Only the OIDC login flow calls this, server-side: a client call is an
+      // attempt (OIDCBleed).
+      try {
+        require('/server/lib/securityLog').record({
+          key: 'auth-race.oidc', action: 'blocked', source: 'ddp:oidc-internal-method', userId: this.userId || undefined,
+          detail: 'Client called an OIDC-login-only organization/team method.',
+        });
+      } catch (e) { /* logging must never break the guard */ }
       throw new Meteor.Error('not-authorized');
     }
     check(team, Object);
@@ -308,7 +326,7 @@ WebApp.handlers.get('/api/admin/teams', async function(req, res) {
     }));
     sendJsonResult(res, { code: 200, data });
   } catch (error) {
-    sendJsonResult(res, { code: 200, data: error });
+    sendJsonResult(res, publicErrorData(error));
   }
 });
 
@@ -344,7 +362,7 @@ WebApp.handlers.put('/api/admin/teams/:teamId/features', async function(req, res
     const updated = await Team.findOneAsync(teamId);
     sendJsonResult(res, { code: 200, data: updated });
   } catch (error) {
-    sendJsonResult(res, { code: 200, data: error });
+    sendJsonResult(res, publicErrorData(error));
   }
 });
 
@@ -381,6 +399,6 @@ WebApp.handlers.put('/api/admin/teams/features', async function(req, res) {
     );
     sendJsonResult(res, { code: 200, data: { updated } });
   } catch (error) {
-    sendJsonResult(res, { code: 200, data: error });
+    sendJsonResult(res, publicErrorData(error));
   }
 });

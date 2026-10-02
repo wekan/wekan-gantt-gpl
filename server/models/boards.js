@@ -1411,9 +1411,11 @@ WebApp.handlers.put('/api/boards/:boardId/cardSettings', async function(req, res
 WebApp.handlers.post('/api/boards/:boardId/copy', async function(req, res) {
   try {
     const id = req.params.boardId;
+    // ManageBoardBleed sibling (2026-10-02): the shared board-admin check -
+    // the hand-written one here had no isActive, so a REMOVED former admin
+    // could still copy the board, and an unknown id answered 500.
+    await Authentication.checkBoardAdmin(req.userId, id);
     const board = await ReactiveCache.getBoard(id);
-    const adminAccess = board.members.some(e => e.userId === req.userId && e.isAdmin);
-    await Authentication.checkAdminOrCondition(req.userId, adminAccess);
     // Only a string title is taken from the request, and it is applied to a
     // separate object so the cached source board is not changed.
     const title = typeof req.body?.title === 'string' && req.body.title ? req.body.title : await Boards.uniqueTitle(board.title);
@@ -1650,31 +1652,37 @@ WebApp.handlers.delete('/api/boards/:boardId/domains/:domain', async function(re
 });
 
 WebApp.handlers.get('/api/boards/:boardId/attachments', async function(req, res) {
-  const paramBoardId = req.params.boardId;
-  await Authentication.checkBoardAccess(req.userId, paramBoardId);
-  const attachments = await ReactiveCache.getAttachments(
-    liveAttachments({ 'meta.boardId': paramBoardId }),
-  );
-  sendJsonResult(res, {
-    code: 200,
-    data: attachments.map(attachment => ({
-      attachmentId: attachment._id,
-      attachmentName: attachment.name,
-      attachmentType: attachment.type,
-      url: (() => {
-        const attachmentUrl = attachment && typeof attachment.link === 'function' ? attachment.link() : '';
-        return attachmentUrl;
-      })(),
-      urlDownload: (() => {
-        const attachmentUrl = attachment && typeof attachment.link === 'function' ? attachment.link() : '';
-        return attachmentUrl ? `${attachmentUrl}?download=true&token=` : '';
-      })(),
-      boardId: attachment.meta.boardId,
-      swimlaneId: attachment.meta.swimlaneId,
-      listId: attachment.meta.listId,
-      cardId: attachment.meta.cardId,
-    })),
-  });
+  // A refusal (assigned-only members are refused board-wide reads) answers
+  // with its status, not the app page an unhandled rejection fell through to.
+  try {
+    const paramBoardId = req.params.boardId;
+    await Authentication.checkBoardAccess(req.userId, paramBoardId);
+    const attachments = await ReactiveCache.getAttachments(
+      liveAttachments({ 'meta.boardId': paramBoardId }),
+    );
+    sendJsonResult(res, {
+      code: 200,
+      data: attachments.map(attachment => ({
+        attachmentId: attachment._id,
+        attachmentName: attachment.name,
+        attachmentType: attachment.type,
+        url: (() => {
+          const attachmentUrl = attachment && typeof attachment.link === 'function' ? attachment.link() : '';
+          return attachmentUrl;
+        })(),
+        urlDownload: (() => {
+          const attachmentUrl = attachment && typeof attachment.link === 'function' ? attachment.link() : '';
+          return attachmentUrl ? `${attachmentUrl}?download=true&token=` : '';
+        })(),
+        boardId: attachment.meta.boardId,
+        swimlaneId: attachment.meta.swimlaneId,
+        listId: attachment.meta.listId,
+        cardId: attachment.meta.cardId,
+      })),
+    });
+  } catch (error) {
+    sendJsonResult(res, publicErrorData(error));
+  }
 });
 
 /**

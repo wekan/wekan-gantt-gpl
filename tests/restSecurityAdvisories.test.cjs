@@ -124,3 +124,41 @@ for (const source of [boards, users]) {
 }
 
 console.log('  ok - REST security advisory authorization and response guards');
+
+// OwnerBleed, DDP sibling (2026-10-02): a client board insert could carry its
+// own members list, naming somebody else as admin. Refused, and recorded.
+{
+  const perms = read('server/permissions/boards.js');
+  const deny = perms.slice(perms.indexOf('Boards.deny({'), perms.indexOf('Boards.allow({'));
+  assert.match(deny, /async insert\(userId, doc\) \{[\s\S]*?doc\.members\.some\(member => !member \|\| member\.userId !== userId\)[\s\S]*?key: 'authz\.board-owner'[\s\S]*?return true;/);
+  assert.match(read('models/lib/securityCategories.js'), /'authz\.board-owner':\s*\{[^}]*bleed: 'OwnerBleed'/);
+  console.log('  ok - OwnerBleed DDP sibling: client board inserts name only their creator');
+}
+
+// ErrorBleed, siblings (2026-10-02): lists, cards counts, org, team, settings,
+// attachment storage settings, rules and dependencies answered a refused
+// request with HTTP 200 - or the raw error object - instead of the shared
+// publicErrorData(). Now nowhere in the server does.
+{
+  const walk = dir => fs.readdirSync(path.join(__dirname, '..', dir), { withFileTypes: true }).flatMap(e => {
+    if (e.name === 'tests' || e.name.startsWith('_build') || e.name === 'node_modules') return [];
+    const rel = `${dir}/${e.name}`;
+    return e.isDirectory() ? walk(rel) : (rel.endsWith('.js') ? [rel] : []);
+  });
+  const offenders = ['server', 'models'].flatMap(walk)
+    .filter(file => /sendJsonResult\(res, \{[^}]*?\bdata:\s*(error|err|e)\b/.test(read(file)));
+  assert.deepStrictEqual(offenders, [], 'a REST error answers through publicErrorData()');
+  console.log('  ok - ErrorBleed siblings: no REST handler answers with a raw error');
+}
+
+// Authentication helpers fail closed (2026-10-02): `admin === undefined` let a
+// null from the cache pass as an admin, and `userId === undefined` let a null
+// user id through checkUserId.
+{
+  const auth = read('server/authentication.js');
+  assert.doesNotMatch(auth, /admin === undefined/);
+  assert.match(auth, /async checkUserId\(userId\) \{\s*if \(!userId\) \{/);
+  assert.match(auth, /checkLoggedIn\(userId\) \{\s*if \(!userId\) \{/);
+  assert.doesNotMatch(auth, /userId === undefined/);
+  console.log('  ok - authentication helpers refuse a null admin or user id');
+}
