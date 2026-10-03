@@ -21,10 +21,84 @@ const { syncValueChanges } = require('../../models/lib/listSyncTimeEstimates');
 // while one rule-archived card took 36 s through nested guards; guard results
 // are now shared within one evaluation (server/lib/syncGuardWindow.js).
 // Card-field actions (colour, labels, completion) through saved commands:
-// server/lib/syncRuleCardCommand.js.
+// server/lib/syncRuleCardCommand.js. Moves to the top or bottom of the card's
+// own list and swimlane: server/lib/syncRuleMoveCommand.js, whose
+// durableRuleActionType reports any other move as '<type>:elsewhere', which
+// is not in this set. Checklist creation and removal:
+// server/lib/syncRuleChecklistLifecycleCommand.js.
 const DURABLE_RULE_ACTIONS = new Set(['sendEmail', 'archive', 'unarchive', 'setColor', 'addLabel', 'removeLabel',
   'removeAllLabels', 'markCardComplete', 'markCardIncomplete', 'setDate', 'updateDate', 'setDateRelative', 'removeDate',
-  'addMember', 'removeMember', 'checkAll', 'uncheckAll', 'checkItem', 'uncheckItem']);
+  'addMember', 'removeMember', 'checkAll', 'uncheckAll', 'checkItem', 'uncheckItem', 'moveCardToTop', 'moveCardToBottom',
+  'addChecklist', 'addChecklistWithItems', 'removeChecklist', 'sortList', 'createCard',
+  'copyCard', 'linkCard', 'addSwimlane', 'moveAllCardsInList']);
+// Rule actions whose variant on ANOTHER board has a durable adapter too.
+// Maintainer decision of 2026-10-02: such an action is durable only when its
+// destination board has opted into Sync effects as well. The card it puts
+// there runs THAT board's rules through the same stored stages, which refuse
+// an action without an adapter, so the destination's own rule actions must
+// all be durable too - and so on, for every board reached that way.
+const CROSS_BOARD_DURABLE_ACTIONS = new Set(['linkCard', 'copyCard']);
+// ...and moves to another board, which take the card off the plan's board.
+// The ordinary engine's later actions then act on the card on its new board
+// (it reads the card by id); the durable commands that follow the card there
+// (2026-10-03, storedRulePlans.js ruleCardNow) are FOLLOWER_SAFE. A move to
+// another board counts only when every action that can follow it in a plan -
+// the later actions of its rule, and every action of a rule whose trigger's
+// activity type it shares - is one of them (`crossBoardMovable`, set by the
+// caller from followableActionIds). Since the maintainer decision of
+// 2026-10-03, a move, a sort or a move-all on the rule's own board, and an
+// archive or restore, resolve on the board the card went to - in the ordinary
+// engine (RulesHelper.ruleBoards) and in their durable commands (`onBoard`) -
+// so they may follow too, and so may a further move to yet another board
+// that opted in (its command saves the board the card leaves, `fromBoard`);
+// each board a chain reaches is checked like the first - a move-all onto
+// another board too, which takes its list from the board the card is on. An
+// email may follow as well (maintainer decision of 2026-10-03): it reads the
+// card where this plan's own move put it (storedRulePlans.js
+// ruleEmailActivity, binding version 6 in server/lib/ruleEmailSource.js).
+const CROSS_BOARD_FINAL_ACTIONS = new Set(['moveCardToTop', 'moveCardToBottom', 'moveAllCardsInList']);
+const FOLLOWER_SAFE = new Set([...Object.keys(require('./syncRuleCardCommand').RULE_CARD_ACTIONS),
+  ...Object.keys(require('./syncRuleChecklistCommand').RULE_CHECKLIST_ACTIONS),
+  'addChecklist', 'addChecklistWithItems', 'removeChecklist', 'linkCard', 'copyCard', 'createCard', 'addSwimlane',
+  'moveCardToTop', 'moveCardToBottom', 'sortList', 'moveAllCardsInList', 'archive', 'unarchive', 'sendEmail',
+  'moveCardToTop:elsewhere', 'moveCardToBottom:elsewhere', 'moveAllCardsInList:elsewhere']);
+const MAX_RULE_BOARDS = 50;
+
+// The rule action types eligibility checks, across the source board and every
+// board its durable cross-board actions reach. `readActions(boardId)` returns
+// that board's rule actions, or null when one is missing; `readBoard(boardId)`
+// the destination board when the actor may write there, or null; `typeOf` is
+// syncRuleMoveCommand.js durableRuleActionType, which names an action on
+// another board '<type>:elsewhere'. Such an action counts as its plain type
+// only when CROSS_BOARD_DURABLE_ACTIONS has it and its destination opted in.
+async function durableRuleActionTypes({ boardId, readActions, readBoard, typeOf }) {
+  const types = [];
+  const reached = new Set([boardId]);
+  const queue = [boardId];
+  while (queue.length) {
+    const current = queue.shift();
+    const actions = await readActions(current);
+    if (!Array.isArray(actions)) return [null];
+    for (const action of actions) {
+      const type = typeOf(action, current);
+      const [base, where] = typeof type === 'string' ? type.split(':') : [];
+      const liftable = CROSS_BOARD_DURABLE_ACTIONS.has(base) ||
+        (CROSS_BOARD_FINAL_ACTIONS.has(base) && (action.finalInPlan === true || action.crossBoardMovable === true));
+      if (where !== 'elsewhere' || !liftable) { types.push(type); continue; }
+      if (!reached.has(action.boardId)) {
+        const destination = await readBoard(action.boardId);
+        if (!destination || destination.syncEffectsEnabled !== true) { types.push(type); continue; }
+        // A chain this long is not a configuration anyone reviews: direct Sync.
+        if (reached.size >= MAX_RULE_BOARDS) return [null];
+        reached.add(action.boardId);
+        queue.push(action.boardId);
+      }
+      types.push(base);
+    }
+  }
+  return types;
+}
+
 // Sync-owned card fields a saved step carries: the ones the direct path's
 // conditional update compares, plus placement. SimpleSchema owns
 // dateLastActivity, so it is never part of a step.
@@ -103,4 +177,44 @@ function snapshotCreate(document) {
   return after;
 }
 
-module.exports = { DURABLE_RULE_ACTIONS, durableSyncEligibility, buildListSyncSteps };
+// Which of a board's rule actions end every plan they are in: the last action
+// of a rule whose trigger's activity type no other rule shares. `rules` are
+// { actionIds, activityType } (activityType null when unknown).
+function finalActionIds(rules) {
+  const byType = new Map();
+  for (const rule of rules) byType.set(rule.activityType, (byType.get(rule.activityType) || 0) + 1);
+  const final = new Set(), notFinal = new Set();
+  for (const rule of rules) {
+    const unique = typeof rule.activityType === 'string' && byType.get(rule.activityType) === 1;
+    rule.actionIds.forEach((id, i) => {
+      if (unique && i === rule.actionIds.length - 1) final.add(id); else notFinal.add(id);
+    });
+  }
+  for (const id of notFinal) final.delete(id);
+  return final;
+}
+
+// Which of a board's rule actions can only be followed, in any plan, by
+// FOLLOWER_SAFE actions: the later actions of its own rule, and every action
+// of the other rules with the same trigger activity type (a rule whose
+// trigger type is unknown may share any plan). `typeOf` gives an action id's
+// type. An action nothing can follow qualifies trivially.
+function followableActionIds(rules, typeOf) {
+  const safe = id => FOLLOWER_SAFE.has(typeOf(id));
+  const result = new Set(), refused = new Set();
+  rules.forEach((rule, r) => {
+    const others = rules.filter((other, o) => o !== r && (other.activityType === rule.activityType ||
+      typeof other.activityType !== 'string' || typeof rule.activityType !== 'string'));
+    const shared = others.every(other => other.actionIds.every(safe));
+    rule.actionIds.forEach((id, i) => {
+      if (shared && rule.actionIds.slice(i + 1).every(safe)) result.add(id); else refused.add(id);
+    });
+  });
+  for (const id of refused) result.delete(id);
+  return result;
+}
+
+module.exports = { DURABLE_RULE_ACTIONS, CROSS_BOARD_DURABLE_ACTIONS, CROSS_BOARD_FINAL_ACTIONS, FOLLOWER_SAFE,
+  finalActionIds, followableActionIds,
+  durableRuleActionTypes, durableSyncEligibility,
+  buildListSyncSteps };

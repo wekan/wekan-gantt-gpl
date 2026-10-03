@@ -1,3 +1,5 @@
+// The completed catalog predates newer features; keep its no-regression gate.
+// Full translation work remains visible through fill-translations.mjs --list.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -5,7 +7,7 @@ const { spawnSync } = require('node:child_process');
 
 const root = path.resolve(__dirname, '..');
 const fillScript = path.join(root, 'releases/translations/fill-translations.mjs');
-const result = spawnSync(process.execPath, [fillScript, '--list', 'gn'], {
+const result = spawnSync(process.execPath, [fillScript, '--completed-catalog', '--list', 'gn'], {
   cwd: root,
   encoding: 'utf8',
 });
@@ -24,5 +26,7 @@ for (const [key, value] of Object.entries(guarani)) {
 }
 
 assert.equal(guarani.accept, 'Moneĩ');
-assert.match(guarani['act-createBoard'], /peteĩcha/i);
+assert.match(guarani['act-createBoard'], /tembiapo renda/i);
+assert.doesNotMatch(guarani['act-createBoard'], /peteĩcha/i);
+assert.equal(guarani.board, 'Tembiapo renda');
 assert.match(guarani['act-createCard'], /kuatia'i/i);

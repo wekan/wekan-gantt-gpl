@@ -18,7 +18,10 @@ const { stampCardListEntry } = require('/models/lib/cardListEntry');
 import { titleChanged } from '/server/lib/titleChangeActivity';
 import { descriptionChanged } from '/server/lib/descriptionChangeActivity';
 const { collectionWriteSucceeded } = require('/server/lib/collectionWriteOutcome');
-const { deferSyncRecording } = require('/server/lib/syncRecordingScope');
+const { deferSyncRecording, deferSyncLabelActivities } = require('/server/lib/syncRecordingScope');
+const { movedScrumMetadata } = require('/models/lib/scrumCopy');
+import { scrumPlanningPair } from '/server/lib/scrumPlanningPair';
+const { scrumRevisionSelector } = require('/models/lib/scrum');
 import { buildDeleteCardActivity } from '/server/lib/deleteActivities';
 import { assertParentCardIsVisible } from '/server/lib/visibleBoardIds';
 import { computeSubtaskLabelIds } from '/models/lib/subtaskLabelInheritance';
@@ -1013,11 +1016,30 @@ Cards.after.update(async function(userId, doc, fieldNames) {
   );
 });
 
+// A card that moved to another board takes the destination's sprint and
+// release of the same name, when exactly one matches, and loses the rest of
+// the board it left (models/lib/scrumCopy.js movedScrumMetadata), whoever moved
+// it - the client, REST or a rule. Server-side, since Scrum fields are not the
+// client's to write; compare-and-set on the Scrum revision. A writer that set
+// the Scrum revision with the move (a durable rule move) has done it already.
+Cards.after.update(async function(userId, doc, fieldNames) {
+  if (!fieldNames.includes('boardId') || fieldNames.includes('scrumRevision')) return;
+  const oldBoardId = (this.previous || {}).boardId;
+  if (!oldBoardId || oldBoardId === doc.boardId) return;
+  const planning = doc.scrum && (doc.scrum.sprintId || doc.scrum.releaseId)
+    ? await scrumPlanningPair(oldBoardId, doc.boardId) : null;
+  const moved = movedScrumMetadata({ ...doc, boardId: oldBoardId }, doc.boardId, planning);
+  if (!moved.scrum) return;
+  await Cards.direct.updateAsync({ _id: doc._id, boardId: doc.boardId, ...scrumRevisionSelector(doc) }, { $set: moved });
+});
+
 Cards.after.update(async function(userId, doc, fieldNames) {
   const previous = this.previous || {};
   const oldListId = previous.listId || doc.listId;
   const oldSwimlaneId = previous.swimlaneId || doc.swimlaneId;
   const oldBoardId = previous.boardId || doc.boardId;
+  // A durable rule move writes its moveCard activity from its saved command.
+  if (deferSyncRecording('move', doc)) return;
   await cardMove(userId, doc, fieldNames, oldListId, oldSwimlaneId, oldBoardId);
 });
 
@@ -1062,12 +1084,16 @@ Cards.before.update(async (userId, doc, fieldNames, modifier) => {
 
 Cards.before.update(async (userId, doc, fieldNames, modifier) => {
   await cardMembers(userId, doc, fieldNames, modifier);
-  await updateActivities(doc, fieldNames, modifier);
+  // Once per update. It used to run here AND in the assignees hook below: on a
+  // move to another board the first run re-pointed the card's addedLabel
+  // activities at the new board's labels, and the second, seeing label ids the
+  // card did not have before the move, deleted every one of them.
+  // A durable rule move to another board writes the same changes itself.
+  if (!deferSyncLabelActivities(doc)) await updateActivities(doc, fieldNames, modifier);
 });
 
 Cards.before.update(async (userId, doc, fieldNames, modifier) => {
   await cardAssignees(userId, doc, fieldNames, modifier);
-  await updateActivities(doc, fieldNames, modifier);
 });
 
 Cards.before.update((userId, doc, fieldNames, modifier) => {

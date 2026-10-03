@@ -1222,6 +1222,45 @@ Boards.attachSchema(
       type: Boolean,
       defaultValue: true,
     },
+    // Board Settings / Card: the sides each row gained on 2026-10-02, so that
+    // every row can be shown on the card and on the minicard
+    // (models/lib/cardSettingsRows.js). A side that already drew something
+    // defaults to true; a new element defaults to off.
+    allowsCardCollapse: { type: Boolean, defaultValue: true },
+    allowsChecklistTitleOnMinicard: { type: Boolean, defaultValue: true },
+    allowsLabelTextOnCard: { type: Boolean, defaultValue: true },
+    labelsAboveTitleOnCard: { type: Boolean, optional: true },
+    allowsChecklistDueDateOnMinicard: { type: Boolean, optional: true },
+    allowsLocationOnMinicard: { type: Boolean, optional: true },
+    allowsSwimlaneNameOnCard: { type: Boolean, optional: true },
+    allowsFlowtimeOnMinicard: { type: Boolean, optional: true },
+    allowsPomodoroOnMinicard: { type: Boolean, optional: true },
+    allowsAttachmentListOnMinicard: { type: Boolean, optional: true },
+    allowsTextNotesOnMinicard: { type: Boolean, optional: true },
+    allowsCommentCountOnCard: { type: Boolean, optional: true },
+    allowsActivitiesOnMinicard: { type: Boolean, optional: true },
+    // ...and the rows for what both surfaces drew with no row of their own.
+    allowsCardColorOnCard: { type: Boolean, defaultValue: true },
+    allowsCardColorOnMinicard: { type: Boolean, defaultValue: true },
+    allowsParentCardOnCard: { type: Boolean, defaultValue: true },
+    allowsParentCardOnMinicard: { type: Boolean, defaultValue: true },
+    allowsLinkedCardOnCard: { type: Boolean, defaultValue: true },
+    allowsLinkedCardOnMinicard: { type: Boolean, defaultValue: true },
+    allowsCardButtonsOnCard: { type: Boolean, defaultValue: true },
+    allowsDescriptionBadgeOnMinicard: { type: Boolean, defaultValue: true },
+    allowsUnreadCommentsOnMinicard: { type: Boolean, defaultValue: true },
+    allowsCardButtonsOnMinicard: { type: Boolean, optional: true },
+    allowsDescriptionBadgeOnCard: { type: Boolean, optional: true },
+    allowsUnreadCommentsOnCard: { type: Boolean, optional: true },
+    allowsIssueTypeOnMinicard: {
+      /**
+       * Does the board show the work item type badge on the minicard? It was
+       * shown on every board before it had a Board Settings / Card row, so a
+       * missing value means shown.
+       */
+      type: Boolean,
+      defaultValue: true,
+    },
     restrictCommentEditing: {
       /**
        * When true, board admins can NOT edit or delete comments authored by
@@ -3091,8 +3130,19 @@ Boards.helpers({
   // board's current order, so two quick clicks each move from where the
   // previous one left it; a no-op (first row up, last row down) writes
   // nothing.
-  async moveBoardView(view, direction) {
-    const order = boardViewSettings.moveBoardView(this.boardViewOrder, view, direction);
+  // Drag and drop: the shown rows in their dropped order (boardViewSettings.js
+  // reorderVisibleBoardViews); a drop that changes nothing writes nothing.
+  async setVisibleBoardViewOrder(visibleOrder, allowView) {
+    const order = boardViewSettings.reorderVisibleBoardViews(this.boardViewOrder, visibleOrder, allowView);
+    const before = boardViewSettings.normalizeBoardViewOrder(this.boardViewOrder);
+    if (order.every((v, i) => v === before[i])) return false;
+    return await Boards.updateAsync(this._id, { $set: { boardViewOrder: order } });
+  },
+
+  // `allowView` (#6736): the instance's disabled views are not rows, so the
+  // move steps over them.
+  async moveBoardView(view, direction, allowView) {
+    const order = boardViewSettings.moveBoardView(this.boardViewOrder, view, direction, allowView);
     const before = boardViewSettings.normalizeBoardViewOrder(this.boardViewOrder);
     if (order.every((v, i) => v === before[i])) return false;
     return await Boards.updateAsync(this._id, { $set: { boardViewOrder: order } });

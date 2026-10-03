@@ -974,6 +974,13 @@ Cards.attachSchema(
       optional: true,
       defaultValue: false,
     },
+    showListOnCard: {
+      /**
+       * show list name on the opened card? (Board Settings / Card, List title)
+       */
+      type: Boolean,
+      optional: true,
+    },
     showChecklistAtMinicard: {
       /**
        * show checklist on minicard?
@@ -1121,7 +1128,10 @@ Cards.helpers({
     const { copiedCardScrum } = require('./lib/scrumCopy');
     delete cardData.scrum;
     delete cardData.scrumRevision;
-    Object.assign(cardData, copiedCardScrum(this, boardId, { omit: deferScrum || copyOptions?.scrum === false }));
+    // On another board: its sprint and release linked by name (scrumCopy.js).
+    const planning = Meteor.isServer && this.boardId !== boardId
+      ? await require('/server/lib/scrumPlanningPair').scrumPlanningPair(this.boardId, boardId) : null;
+    Object.assign(cardData, copiedCardScrum(this, boardId, { omit: deferScrum || copyOptions?.scrum === false, planning }));
     delete cardData._id;
     // getRealId() caches __id on rendered cards; it is not a schema field.
     delete cardData.__id;
@@ -1262,13 +1272,29 @@ Cards.helpers({
     // destination board alongside the copied parent.
     const { buildCopiedSubtaskFields } = require('./lib/subtaskCopy');
     // #3626: a subtask shared with another parent is copied too, under the copy.
-    const subtasks = copyOptions ? [] : await ReactiveCache.getCards(childrenSelector(oldId));
+    let subtasks = copyOptions ? [] : await ReactiveCache.getCards(childrenSelector(oldId));
+    if (Meteor.isServer && subtasks.length) {
+      // Only the subtasks the copier could read and copy themselves
+      // (models/lib/boardCardScope.js copyableSubtasks). A copy with no
+      // acting user (a server-internal copy) keeps them all, as before.
+      const { DDP } = require('meteor/ddp');
+      const { currentReportRequest } = require('/server/lib/requestReportContext');
+      const actor = DDP._CurrentMethodInvocation.get()?.userId || currentReportRequest()?.userId;
+      if (actor) {
+        const { copyableSubtasks } = require('./lib/boardCardScope');
+        const { canReadBoard } = require('./lib/boardVisibility');
+        const boards = new Map();
+        for (const id of new Set(subtasks.map(subtask => subtask.boardId))) boards.set(id, await ReactiveCache.getBoard(id));
+        subtasks = copyableSubtasks(subtasks, actor, id => boards.get(id), canReadBoard);
+      }
+    }
     for (const subtask of subtasks) {
       const copySubtask = buildCopiedSubtaskFields(subtask, {
         newParentId: _id,
         boardId,
         swimlaneId,
         listId,
+        planning: subtask.boardId === this.boardId ? planning : null,
       });
       const newSubtaskId = await Cards.insertAsync(copySubtask);
       // #3185: copy the subtask's checklists (and their items) too — previously
@@ -3061,6 +3087,8 @@ Cards.helpers({
       });
 
       mutatedFields.customFields = await this.mapCustomFieldsToBoard(newBoard._id);
+      // Its sprint and release are dropped by a server hook
+      // (server/models/cards.js): Scrum fields are not the client's to write.
 
       // Ensure customFields is always an array (guards against legacy {} data)
       if (!Array.isArray(mutatedFields.customFields)) {

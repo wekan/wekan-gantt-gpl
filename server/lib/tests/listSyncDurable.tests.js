@@ -171,8 +171,125 @@ describe('Durable list Sync', function () {
       assert.equal(await ChangeHistory.find({ cardId: sixth._id, group: 'members' }).countAsync(), 1, 'one members History row');
       await Rules.rawCollection().deleteMany({ boardId }); await Triggers.rawCollection().deleteMany({ boardId });
 
-      // A rule action without a durable adapter keeps the direct path.
-      const actionId = await Actions.insertAsync({ actionType: 'moveCardToTop', boardId, desc: 'top' });
+      // A rule that moves the new card out of the synced list, interrupted
+      // after the move (2026-10-02): the card is then at neither of the Sync
+      // step's states, so the replay must finish the step's effects rather than
+      // retry its write, which could never be confirmed.
+      const doneId = Random.id(), moveActionId = Random.id(), moveTriggerId = Random.id();
+      await Lists.rawCollection().insertOne({ _id: doneId, boardId, title: 'Done', archived: false, sort: 1, swimlaneId: laneId });
+      await Actions.rawCollection().insertOne({ _id: moveActionId, actionType: 'moveCardToBottom', listName: 'Done',
+        swimlaneName: '*', boardId, desc: 'done' });
+      await Triggers.rawCollection().insertOne({ _id: moveTriggerId, activityType: 'createCard', boardId,
+        listName: 'Watched', userId: '*', swimlaneName: '*', cardTitle: '*', desc: 'created' });
+      await Rules.rawCollection().insertOne({ _id: Random.id(), title: 'done', triggerId: moveTriggerId, actionId: moveActionId, boardId });
+      const originalActivityInsert = Activities.insertAsync;
+      let crashed = false;
+      Activities.insertAsync = async function (doc, ...rest) {
+        if (!crashed && doc && doc.activityType === 'moveCard') { crashed = true; throw new Error('injected crash'); }
+        return originalActivityInsert.call(this, doc, ...rest);
+      };
+      issues = [issue('P-1', 'First renamed'), issue('P-7', 'Moved by rule')];
+      let movedRun;
+      try { movedRun = await run(); } finally { Activities.insertAsync = originalActivityInsert; }
+      assert.ok(crashed, 'the crash came after the move');
+      assert.match(movedRun.error, /resumes automatically/);
+      const movedReplay = await replayStoredListSync();
+      assert.ok(movedReplay.resumed >= 1, JSON.stringify(movedReplay));
+      const seventh = await Cards.rawCollection().findOne({ boardId, syncExternalId: 'P-7' });
+      assert.equal(seventh.listId, doneId, 'moved once by the rule');
+      assert.equal(await Cards.rawCollection().countDocuments({ boardId, syncExternalId: 'P-7' }), 1, 'no duplicate');
+      assert.equal(await Activities.find({ cardId: seventh._id, activityType: 'moveCard' }).countAsync(), 1);
+      assert.equal(await collection('listSyncOperations').countDocuments({ _id: listId }), 0, 'the run completed');
+      await Rules.rawCollection().deleteMany({ boardId }); await Triggers.rawCollection().deleteMany({ boardId });
+      await collection('listSyncRuleMoveCommands').deleteMany({ boardId });
+
+      // A rule that links each new card onto another board that opted in too
+      // (2026-10-02), through a whole Sync run: the link's creation activity
+      // is delivered on that board, its rules, notifications and webhooks.
+      const otherId = Random.id(), otherListId = Random.id(), otherLaneId = Random.id();
+      await Boards.rawCollection().insertOne({ _id: otherId, title: 'Other', permission: 'private', archived: false,
+        syncEffectsEnabled: true, members: [{ userId: actor, isAdmin: true, isActive: true }] });
+      await Swimlanes.rawCollection().insertOne({ _id: otherLaneId, boardId: otherId, title: 'Lane', archived: false, sort: 0 });
+      await Lists.rawCollection().insertOne({ _id: otherListId, boardId: otherId, title: 'Inbox', archived: false, sort: 0 });
+      const linkActionId = Random.id(), linkTriggerId = Random.id();
+      await Actions.rawCollection().insertOne({ _id: linkActionId, actionType: 'linkCard', listName: 'Inbox',
+        swimlaneName: 'Lane', boardId: otherId, desc: 'link' });
+      await Triggers.rawCollection().insertOne({ _id: linkTriggerId, activityType: 'createCard', boardId,
+        listName: 'Watched', userId: '*', swimlaneName: '*', cardTitle: '*', desc: 'created' });
+      await Rules.rawCollection().insertOne({ _id: Random.id(), title: 'link', triggerId: linkTriggerId, actionId: linkActionId, boardId });
+      try {
+        assert.equal((await durableSyncDecision({ list, board: await Boards.findOneAsync(boardId), trigger: 'manual',
+          actorId: actor })).eligible, true, 'both boards opted in');
+        issues = [issue('P-1', 'First renamed'), issue('P-8', 'Linked elsewhere')];
+        const linkedRun = await run();
+        assert.deepEqual([linkedRun.durable, linkedRun.created], [true, 1], JSON.stringify(linkedRun));
+        const eighth = await Cards.rawCollection().findOne({ boardId, syncExternalId: 'P-8' });
+        const links = await Cards.rawCollection().find({ boardId: otherId, linkedId: eighth._id }).toArray();
+        assert.deepEqual(links.map(card => [card.type, card.listId]), [['cardType-linkedCard', otherListId]]);
+        assert.equal(await Activities.find({ cardId: links[0]._id, boardId: otherId, activityType: 'createCard' }).countAsync(), 1);
+        // Negative: once the other board opts out, the source board keeps direct Sync.
+        await Boards.rawCollection().updateOne({ _id: otherId }, { $set: { syncEffectsEnabled: false } });
+        assert.deepEqual(await durableSyncDecision({ list, board: await Boards.findOneAsync(boardId), trigger: 'manual',
+          actorId: actor }), { eligible: false, reason: 'rule-actions' });
+      } finally {
+        await Rules.rawCollection().deleteMany({ boardId }); await Triggers.rawCollection().deleteMany({ boardId });
+        for (const name of ['listSyncRuleLinkCardCommands']) await collection(name).deleteMany({ boardId });
+        for (const model of [Cards, Activities, Lists, Swimlanes, ChangeHistory]) {
+          await model.rawCollection().deleteMany({ boardId: otherId });
+        }
+        await Boards.rawCollection().deleteMany({ _id: otherId });
+      }
+
+      // A rule that moves each new card onto another board that opted in, as
+      // its plan's last action, through a whole Sync run (2026-10-02): the
+      // creation activity's notifications and webhooks still find the card.
+      const awayId = Random.id(), awayListId = Random.id(), awayLaneId = Random.id();
+      await Boards.rawCollection().insertOne({ _id: awayId, title: 'Away', permission: 'private', archived: false,
+        syncEffectsEnabled: true, members: [{ userId: actor, isAdmin: true, isActive: true }] });
+      await Swimlanes.rawCollection().insertOne({ _id: awayLaneId, boardId: awayId, title: 'Lane', archived: false, sort: 0 });
+      await Lists.rawCollection().insertOne({ _id: awayListId, boardId: awayId, title: 'Inbox', archived: false, sort: 0 });
+      const awayActionId = Random.id(), awayTriggerId = Random.id();
+      await Actions.rawCollection().insertOne({ _id: awayActionId, actionType: 'moveCardToBottom', listName: 'Inbox',
+        swimlaneName: 'Lane', boardId: awayId, desc: 'away' });
+      await Triggers.rawCollection().insertOne({ _id: awayTriggerId, activityType: 'createCard', boardId,
+        listName: 'Watched', userId: '*', swimlaneName: '*', cardTitle: '*', desc: 'created' });
+      await Rules.rawCollection().insertOne({ _id: Random.id(), title: 'away', triggerId: awayTriggerId, actionId: awayActionId, boardId });
+      // A watcher of the synced list receives the creation's notification: the
+      // stage checks that recipient against the card as placed for the activity.
+      const watcher = Random.id();
+      await Meteor.users.rawCollection().insertOne({ _id: watcher, username: `watcher-${watcher}`, profile: {} });
+      await Boards.rawCollection().updateOne({ _id: boardId }, { $push: { members: { userId: watcher, isAdmin: false,
+        isActive: true } } });
+      await Lists.rawCollection().updateOne({ _id: listId }, { $set: { watchers: [watcher] } });
+      try {
+        assert.equal((await durableSyncDecision({ list, board: await Boards.findOneAsync(boardId), trigger: 'manual',
+          actorId: actor })).eligible, true, 'the move ends its plan, and both boards opted in');
+        issues = [issue('P-1', 'First renamed'), issue('P-9', 'Moved away')];
+        const awayRun = await run();
+        assert.deepEqual([awayRun.durable, awayRun.created], [true, 1], JSON.stringify(awayRun));
+        const ninth = await Cards.rawCollection().findOne({ syncExternalId: 'P-9' });
+        assert.deepEqual([ninth.boardId, ninth.listId], [awayId, awayListId], 'moved by the rule');
+        assert.equal(await Activities.find({ cardId: ninth._id, activityType: 'moveCardBoard' }).countAsync(), 1);
+        assert.equal(await collection('listSyncOperations').countDocuments({ _id: listId }), 0, 'the run completed');
+        const plan = await collection('listSyncNotificationPlans').findOne({ 'plan.cardId': ninth._id, 'plan.boardId': boardId });
+        assert.deepEqual(plan.plan.recipients.map(recipient => recipient.userId), [watcher],
+          'the list watcher was planned a notification, and received it');
+      } finally {
+        await Boards.rawCollection().updateOne({ _id: boardId }, { $pull: { members: { userId: watcher } } });
+        await Lists.rawCollection().updateOne({ _id: listId }, { $unset: { watchers: '' } });
+        await Meteor.users.rawCollection().deleteMany({ _id: watcher });
+        await Rules.rawCollection().deleteMany({ boardId }); await Triggers.rawCollection().deleteMany({ boardId });
+        await collection('listSyncRuleMoveBoardCommands').deleteMany({ boardId });
+        for (const model of [Cards, Activities, Lists, Swimlanes, ChangeHistory]) {
+          await model.rawCollection().deleteMany({ boardId: awayId });
+        }
+        await Boards.rawCollection().deleteMany({ _id: awayId });
+      }
+
+      // A rule action without a durable adapter keeps the direct path: since
+      // 2026-10-02 every action on the card's own board has one, so a move to
+      // ANOTHER board stands for it.
+      const actionId = await Actions.insertAsync({ actionType: 'moveCardToTop', boardId: Random.id(), desc: 'top' });
       await Rules.rawCollection().insertOne({ _id: Random.id(), title: 'r', triggerId: Random.id(), actionId, boardId });
       assert.deepEqual(await durableSyncDecision({ list, board: await Boards.findOneAsync(boardId), trigger: 'manual', actorId: actor }),
         { eligible: false, reason: 'rule-actions' });
@@ -208,6 +325,41 @@ describe('Durable list Sync', function () {
       }
       await Lists.rawCollection().deleteMany({ _id: listId });
       await Swimlanes.rawCollection().deleteMany({ boardId });
+      await Boards.rawCollection().deleteMany({ _id: boardId });
+      await Meteor.users.rawCollection().deleteMany({ _id: actor });
+    }
+  });
+  // Maintainer decision of 2026-10-02: a list from before list lifetimes keeps
+  // direct Sync until its settings are saved, and that save gives it one.
+  it('gives a legacy list its lifetime when its Sync settings are saved', async function () {
+    if (!Meteor.isAppTest) this.skip();
+    const actor = Random.id(), boardId = Random.id(), listId = Random.id();
+    const context = { userId: actor, isSimulation: false, connection: null, setUserId() {}, unblock() {} };
+    const as = work => DDP._CurrentMethodInvocation.withValue(context, work);
+    try {
+      await Meteor.users.rawCollection().insertOne({ _id: actor, username: `legacy-${actor}`, profile: {} });
+      await Boards.rawCollection().insertOne({ _id: boardId, title: 'Legacy Sync', permission: 'private', archived: false,
+        syncEffectsEnabled: true, members: [{ userId: actor, isAdmin: true, isActive: true }] });
+      // Raw insert, as an old database has it: no syncCredentialIncarnation.
+      await Lists.rawCollection().insertOne({ _id: listId, boardId, title: 'Old list', archived: false, sort: 0,
+        syncSource: { type: 'jira', url: 'https://jira.example.org', projectKey: 'OLD' } });
+      const board = await Boards.findOneAsync(boardId);
+      const before = await Lists.findOneAsync(listId);
+      assert.equal(before.syncCredentialIncarnation, undefined);
+      assert.deepEqual(await durableSyncDecision({ list: before, board, trigger: 'manual', actorId: actor }),
+        { eligible: false, reason: 'legacy-scope' }, 'unsaved legacy lists keep direct Sync');
+      await as(() => Meteor.server.method_handlers.setListSyncSource.apply(context,
+        [listId, { type: 'jira', url: 'https://jira.example.org', projectKey: 'P', token: 'token' }]));
+      const after = await Lists.findOneAsync(listId);
+      assert.ok(after.syncCredentialIncarnation, 'the save assigned a lifetime');
+      const credential = await MongoInternals.defaultRemoteCollectionDriver().mongo.db
+        .collection('listSyncCredentials').findOne({ _id: after.syncRevision });
+      assert.equal(credential.incarnation, after.syncCredentialIncarnation, 'the credential is bound to it');
+      assert.deepEqual(await durableSyncDecision({ list: after, board, trigger: 'manual', actorId: actor }),
+        { eligible: true, reason: null });
+    } finally {
+      await MongoInternals.defaultRemoteCollectionDriver().mongo.db.collection('listSyncCredentials').deleteMany({ listId });
+      await Lists.rawCollection().deleteMany({ _id: listId });
       await Boards.rawCollection().deleteMany({ _id: boardId });
       await Meteor.users.rawCollection().deleteMany({ _id: actor });
     }

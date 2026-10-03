@@ -165,6 +165,21 @@ const BOARD_ALLOWS_TRUE_DEFAULTS = [
   'allowsPoker', 'allowsPokerOnMinicard',
   'allowsTextNotes',
   'allowsCommentCountOnMinicard',
+  // The work item type badge was on every minicard before it had a row.
+  'allowsIssueTypeOnMinicard',
+  // Sides added on 2026-10-02 for what the card or minicard already drew.
+  'allowsCardColorOnCard',
+  'allowsCardColorOnMinicard',
+  'allowsParentCardOnCard',
+  'allowsParentCardOnMinicard',
+  'allowsLinkedCardOnCard',
+  'allowsLinkedCardOnMinicard',
+  'allowsCardButtonsOnCard',
+  'allowsDescriptionBadgeOnMinicard',
+  'allowsUnreadCommentsOnMinicard',
+  'allowsCardCollapse',
+  'allowsChecklistTitleOnMinicard',
+  'allowsLabelTextOnCard',
 ];
 
 const MISSING_OR_EMPTY = { $in: [null, ''] };   // matches missing, null and ''

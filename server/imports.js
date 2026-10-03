@@ -231,6 +231,8 @@ import '/server/lib/utils';
 // 10. Server — methods
 // ----------------------------------------------------------------------------
 import '/server/methods/backup';
+// Admin Panel / Attachments / Continuous backup (docs/Backup/Continuous-Backup.md).
+import '/server/continuousBackup';
 import '/server/methods/fixDuplicateLists';
 import '/server/methods/icsImport';
 import '/server/methods/lockedUsers';
@@ -347,6 +349,7 @@ import '/server/checklistResetSchedule';
 import '/server/autoArchiveCards';
 import '/server/listSync';
 import '/server/methods/listSync';
+import '/server/methods/instanceFeatures';
 import '/server/methods/emailRecovery';
 import '/server/methods/importReport';
 import '/server/methods/activityNotificationRecovery';

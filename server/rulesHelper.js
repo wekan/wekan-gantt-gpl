@@ -27,6 +27,7 @@ import { triggerMatchesWithVars } from '/models/lib/ruleTriggerVars';
 import { allowIsBoardMemberWithWriteAccess } from '/server/lib/utils';
 import { tripCanary } from '/server/lib/canary';
 import { substituteVars, recipientVars } from '/models/lib/ruleVarsSubstitute';
+const { sortListOrder } = require('/models/lib/ruleSortList');
 import { buildCustomFieldsWD, filterAdminOnlyDefinitions } from '/models/lib/customFieldsWD';
 import { cardMatchesAdvancedFilter } from '/server/lib/advancedFilterMatch';
 import { cardTextContainsMatch } from '/models/lib/ruleTextContainsMatch';
@@ -171,7 +172,165 @@ async function addCardPeopleAndFields(vars, card) {
   vars.customfield = fields;
 }
 
+// The rule a matching trigger belongs to, on the activity's own board
+// (2026-10-03). Trigger.getRule() returned whichever rule named the trigger
+// first, and a board admin elsewhere could save a rule naming another board's
+// trigger (refused since, server/permissions/rules.js), so that board's own
+// rule might never be found; only this board's rules may run here anyway.
+async function ruleOnBoard(trigger, boardId) {
+  const { ruleForTriggerSelector } = require('/models/lib/ruleParts');
+  return (await ReactiveCache.getRule({ ...ruleForTriggerSelector(trigger._id), boardId })) || undefined;
+}
+
 export const RulesHelper = {
+  // The checklist title an addChecklist action names, resolved exactly as
+  // performAction does below: for the durable rule checklist lifecycle
+  // command (server/lib/syncRuleChecklistLifecycleCommand.js).
+  async ruleChecklistTitle(activity, card, action) {
+    return substituteVars(action.checklistName, await buildRuleVars(activity, card));
+  },
+  // Where a createCard action puts its card, and its title: the list and
+  // swimlane named on the rule's board (#5536: the board's default swimlane
+  // when the named one is gone), the card name with the rule variables
+  // substituted. For the durable rule card creation command too
+  // (server/lib/syncRuleCreateCardCommand.js).
+  async createCardTarget(activity, card, action) {
+    const boardId = activity.boardId;
+    const list = await ReactiveCache.getList({ title: action.listName, boardId });
+    const swimlane = await ReactiveCache.getSwimlane({ title: action.swimlaneName, boardId });
+    return {
+      boardId,
+      listId: resolveRuleListId(list),
+      swimlaneId: resolveRuleSwimlaneId(swimlane, await getDestBoardDefaultSwimlane(boardId)),
+      title: substituteVars(action.cardName, await buildRuleVars(activity, card)),
+    };
+  },
+  // Where a linkCard action puts the linked card: the list and swimlane named
+  // on the action's board (#5536: its default swimlane when the named one is
+  // gone, so a link-to-another-board rule cannot crash). For the durable rule
+  // link command too (server/lib/syncRuleLinkCardCommand.js).
+  async linkCardTarget(action) {
+    const list = await ReactiveCache.getList({ title: action.listName, boardId: action.boardId });
+    const swimlane = await ReactiveCache.getSwimlane({ title: action.swimlaneName, boardId: action.boardId });
+    return {
+      listId: resolveRuleListId(list),
+      swimlaneId: resolveRuleSwimlaneId(swimlane, await getDestBoardDefaultSwimlane(action.boardId)),
+    };
+  },
+  // The title an addSwimlane action gives its swimlane, for the durable rule
+  // command (server/lib/syncRuleAddSwimlaneCommand.js).
+  async ruleSwimlaneTitle(activity, card, action) {
+    return substituteVars(action.swimlaneName, await buildRuleVars(activity, card));
+  },
+  // Where a moveCardToTop/Bottom action puts the card, as { boardId,
+  // swimlaneId, listId, sort }, or null when the card has no list to fall back
+  // to. For the ordinary action below and the durable rule move command
+  // (server/lib/syncRuleMoveCommand.js), so the two cannot pick different places.
+  // Which board a rule action resolves on (maintainer decision of
+  // 2026-10-03): `here` is the board the card is on now - the activity's,
+  // unless an earlier action of the rule moved it to another board - and
+  // `target` is where the action works: `here` when the action names the
+  // rule's own board (or none), the named board otherwise. So a move, a sort
+  // or a move-all after a move to another board resolves its list and
+  // swimlane names on the board the card went to, in this engine and in
+  // durable Sync alike.
+  ruleBoards(activity, card, action) {
+    const here = card && typeof card.boardId === 'string' && card.boardId ? card.boardId : activity.boardId;
+    const named = (action && action.boardId) || activity.boardId;
+    return { here, target: named === activity.boardId ? here : named };
+  },
+  async moveCardTarget(activity, card, action) {
+    const { here: boardId, target: targetBoardId } = this.ruleBoards(activity, card, action);
+    action = Object.assign(Object.create(Object.getPrototypeOf(action)), action, { boardId: targetBoardId });
+    const ruleVars = await buildRuleVars(activity, card);
+    let list;
+    let listId;
+    if (action.listName === '*' || !action.listName) {
+      // #6472: rules created by the classic wizard's generic "move to
+      // top/bottom" action stored the field as listTitle (never read here),
+      // so action.listName was undefined and the exact-title lookup below
+      // always failed. An unset listName means "the card's current list".
+      list = await card.list();
+      if (boardId !== action.boardId) {
+        list = await ReactiveCache.getList({ title: list.title, boardId: action.boardId });
+      }
+    } else {
+      // #3195 / #4294: a list name may use {customField:Name} and the other
+      // rule variables, resolved against the triggering card.
+      list = await ReactiveCache.getList({
+        title: substituteVars(action.listName, ruleVars),
+        boardId: action.boardId,
+      });
+    }
+    // #6472: an unresolved list (typo'd/renamed/case-mismatched listName, or
+    // the list only exists on another board) crashed below on
+    // list.cardsUnfiltered — the error was swallowed by the activity hook, so
+    // the rule silently "did nothing". Fall back to the card's own list so
+    // moveCardToTop/Bottom still does the sensible thing within the card's
+    // current list.
+    let fellBackToCardList = false;
+    if (!list) {
+      console.warn(
+        `WeKan rule action ${action.actionType}: list "${action.listName}" not found on board ${action.boardId}; using the card's current list instead.`,
+      );
+      list = await card.list();
+      if (!list) return null;
+      fellBackToCardList = true;
+    }
+    listId = list._id;
+
+    let swimlane;
+    let swimlaneId;
+    if (action.swimlaneName === '*') {
+      swimlane = await ReactiveCache.getSwimlane(card.swimlaneId);
+      // #5536: only re-resolve by title across boards when we actually have a
+      // source swimlane — dereferencing `swimlane.title` on undefined crashed.
+      if (boardId !== action.boardId && swimlane) {
+        swimlane = await ReactiveCache.getSwimlane({
+          title: swimlane.title,
+          boardId: action.boardId,
+        });
+      }
+    } else {
+      swimlane = await ReactiveCache.getSwimlane({
+        title: substituteVars(action.swimlaneName, ruleVars),
+        boardId: action.boardId,
+      });
+    }
+    // #5536: never dereference `._id` on a possibly-undefined 'Default'
+    // swimlane (destination boards can have a renamed/translated default, or
+    // none). Fall back to the board's real default swimlane; resolveRuleSwimlaneId
+    // returns '' rather than throwing an "Internal Server Error".
+    swimlaneId = resolveRuleSwimlaneId(
+      swimlane,
+      await getDestBoardDefaultSwimlane(action.boardId),
+    );
+
+    // #6472: the fallback list is on the CARD's board, so the move must stay
+    // there too — an action.boardId/swimlaneId from a different board would
+    // produce an inconsistent card. Also move within the card's own swimlane.
+    let destBoardId = action.boardId;
+    if (fellBackToCardList) {
+      destBoardId = list.boardId;
+      swimlaneId = card.swimlaneId;
+    }
+
+    // #6472: an empty destination (no cards in that list+swimlane yet) made
+    // Math.min()/Math.max() of no arguments return ±Infinity, writing a
+    // corrupt sort value; a non-finite stored sort would poison it again.
+    const destSorts = (await list.cardsUnfiltered(swimlaneId))
+      .map(c => c.sort)
+      .filter(Number.isFinite);
+
+    const minOrder = destSorts.length ? Math.min(...destSorts) : 0;
+    const maxOrder = destSorts.length ? Math.max(...destSorts) : 0;
+    return { boardId: destBoardId, swimlaneId, listId,
+      sort: action.actionType === 'moveCardToTop' ? minOrder - 1 : maxOrder + 1 };
+  },
+  // ...and the item titles an addChecklistWithItems action names.
+  async ruleChecklistItemTitles(activity, card, action) {
+    return String(substituteVars(action.checklistItems, await buildRuleVars(activity, card))).split(',');
+  },
   // The people a member action names, resolved exactly as performAction does
   // below (#2522 acting user, #4294 tokens, #2674 "remove every member" reads
   // the card's assignees): for the durable rule card command
@@ -222,18 +381,35 @@ export const RulesHelper = {
     const matchingRules = await this.findMatchingRules(activity);
     for (let i = 0; i < matchingRules.length; i++) {
       const rule = matchingRules[i];
+      // One run of one rule: where its own moves took the card (emailActivity).
+      const ruleRun = {};
       const action = await rule.getAction();
       if (action !== undefined) {
-        await this.performAction(activity, action);
+        await this.performAction(activity, action, ruleRun);
       }
       // #4294: further actions run in order after the rule's own action.
       for (const extraId of ruleActionIds(rule).slice(1)) {
         const extra = await ReactiveCache.getAction(extraId);
         if (extra !== undefined) {
-          await this.performAction(activity, extra);
+          await this.performAction(activity, extra, ruleRun);
         }
       }
     }
+  },
+  // The activity a rule's email reads its card through (maintainer decision
+  // of 2026-10-03). The source check (server/lib/ruleEmailSource.js) refuses
+  // a card that left the activity's board; when THIS run of the rule moved it
+  // to another board that opted into Sync effects, and it is still there, the
+  // email follows it: the activity placed on that board, and the board it
+  // left. Any other card off the board - moved by someone else, or by this
+  // rule to a board that did not opt in - is refused as before.
+  async emailActivity(activity, card, ruleRun) {
+    if (!card || !card.boardId || card.boardId === activity.boardId || !ruleRun?.movedTo || ruleRun.movedTo !== card.boardId) {
+      return { activity, followedFrom: null };
+    }
+    const destination = await ReactiveCache.getBoard(card.boardId);
+    if (!destination || destination.syncEffectsEnabled !== true) return { activity, followedFrom: null };
+    return { activity: { ...activity, boardId: card.boardId }, followedFrom: activity.boardId };
   },
   async findMatchingRules(activity) {
     const activityType = activity.activityType;
@@ -243,7 +419,7 @@ export const RulesHelper = {
       const matchingMap = await this.buildMatchingFieldsMap(activity, matchingFields);
       const matchingTriggers = await ReactiveCache.getTriggers(matchingMap);
       for (const trigger of matchingTriggers) {
-        const rule = await trigger.getRule();
+        const rule = await ruleOnBoard(trigger, activity.boardId);
         // Check that for some unknown reason there are some leftover triggers
         // not connected to any rules
         if (rule !== undefined) {
@@ -277,7 +453,7 @@ export const RulesHelper = {
         for (const trigger of tokenTriggers) {
           if (!triggerMatchesWithVars(trigger, matchingFields, tokenValues, vars, plainMatches)) continue;
           // eslint-disable-next-line no-await-in-loop
-          const rule = await trigger.getRule();
+          const rule = await ruleOnBoard(trigger, activity.boardId);
           if (rule !== undefined) matchingRules.push(rule);
         }
       }
@@ -301,7 +477,7 @@ export const RulesHelper = {
             const matches = await cardMatchesAdvancedFilter(card, trigger.advancedFilter);
             if (matches) {
               // eslint-disable-next-line no-await-in-loop
-              const rule = await trigger.getRule();
+              const rule = await ruleOnBoard(trigger, activity.boardId);
               if (rule !== undefined) {
                 matchingRules.push(rule);
               }
@@ -336,7 +512,7 @@ export const RulesHelper = {
           for (const trigger of textContainsTriggers) {
             if (cardTextContainsMatch(card, trigger.textContains)) {
               // eslint-disable-next-line no-await-in-loop
-              const rule = await trigger.getRule();
+              const rule = await ruleOnBoard(trigger, activity.boardId);
               if (rule !== undefined) {
                 matchingRules.push(rule);
               }
@@ -516,15 +692,17 @@ export const RulesHelper = {
     return options;
   },
 
-  async prepareEmailCommand(activity, action) {
+  // `followedFrom`: the board the plan's own move took the card from, when
+  // the caller proved that move (storedRulePlans.js ruleEmailActivity).
+  async prepareEmailCommand(activity, action, { followedFrom = null } = {}) {
     const { resolveRuleEmailSource } = require('/server/lib/ruleEmailSource');
-    const source = await resolveRuleEmailSource({ activity, cache: ReactiveCache, canReadBoard });
+    const source = await resolveRuleEmailSource({ activity, cache: ReactiveCache, canReadBoard, followedFrom });
     const mail = await EmailLocalization.prepareEmail(await this.prepareEmailAction(activity, action, undefined, source));
     await source.assertCurrent();
     return { mail, sourceBinding: source.binding };
   },
 
-  async performAction(activity, action) {
+  async performAction(activity, action, ruleRun) {
     const card = await ReactiveCache.getCard(activity.cardId);
     if (activity.activityType === 'button') {
       const sourceBoard = await ReactiveCache.getBoard(activity.boardId);
@@ -555,8 +733,11 @@ export const RulesHelper = {
       'linkCard',
       'copyCard',
       'moveAllCardsInList',
+      'sortList',
     ];
-    const actionBoardId = action.boardId || boardId;
+    // Where it works: the board the card is on now when the action names
+    // this board and an earlier action moved the card (ruleBoards).
+    const { here, target: actionBoardId } = this.ruleBoards(activity, card, action);
     if (crossBoardActions.includes(action.actionType) && actionBoardId !== boardId) {
       const destination = await ReactiveCache.getBoard(actionBoardId);
       if (!allowIsBoardMemberWithWriteAccess(activity.userId, destination)) {
@@ -570,96 +751,24 @@ export const RulesHelper = {
       action.actionType === 'moveCardToTop' ||
       action.actionType === 'moveCardToBottom'
     ) {
-      let list;
-      let listId;
-      if (action.listName === '*' || !action.listName) {
-        // #6472: rules created by the classic wizard's generic "move to
-        // top/bottom" action stored the field as listTitle (never read here),
-        // so action.listName was undefined and the exact-title lookup below
-        // always failed. An unset listName means "the card's current list".
-        list = await card.list();
-        if (boardId !== action.boardId) {
-          list = await ReactiveCache.getList({ title: list.title, boardId: action.boardId });
-        }
-      } else {
-        // #3195 / #4294: a list name may use {customField:Name} and the other
-        // rule variables, resolved against the triggering card.
-        list = await ReactiveCache.getList({
-          title: substituteVars(action.listName, ruleVars),
-          boardId: action.boardId,
-        });
-      }
-      // #6472: an unresolved list (typo'd/renamed/case-mismatched listName, or
-      // the list only exists on another board) crashed below on
-      // list.cardsUnfiltered — the error was swallowed by the activity hook, so
-      // the rule silently "did nothing". Fall back to the card's own list so
-      // moveCardToTop/Bottom still does the sensible thing within the card's
-      // current list.
-      let fellBackToCardList = false;
-      if (!list) {
-        console.warn(
-          `WeKan rule action ${action.actionType}: list "${action.listName}" not found on board ${action.boardId}; using the card's current list instead.`,
-        );
-        list = await card.list();
-        if (!list) return;
-        fellBackToCardList = true;
-      }
-      listId = list._id;
-
-      let swimlane;
-      let swimlaneId;
-      if (action.swimlaneName === '*') {
-        swimlane = await ReactiveCache.getSwimlane(card.swimlaneId);
-        // #5536: only re-resolve by title across boards when we actually have a
-        // source swimlane — dereferencing `swimlane.title` on undefined crashed.
-        if (boardId !== action.boardId && swimlane) {
-          swimlane = await ReactiveCache.getSwimlane({
-            title: swimlane.title,
-            boardId: action.boardId,
-          });
-        }
-      } else {
-        swimlane = await ReactiveCache.getSwimlane({
-          title: substituteVars(action.swimlaneName, ruleVars),
-          boardId: action.boardId,
-        });
-      }
-      // #5536: never dereference `._id` on a possibly-undefined 'Default'
-      // swimlane (destination boards can have a renamed/translated default, or
-      // none). Fall back to the board's real default swimlane; resolveRuleSwimlaneId
-      // returns '' rather than throwing an "Internal Server Error".
-      swimlaneId = resolveRuleSwimlaneId(
-        swimlane,
-        await getDestBoardDefaultSwimlane(action.boardId),
-      );
-
-      // #6472: the fallback list is on the CARD's board, so the move must stay
-      // there too — an action.boardId/swimlaneId from a different board would
-      // produce an inconsistent card. Also move within the card's own swimlane.
-      let destBoardId = action.boardId;
-      if (fellBackToCardList) {
-        destBoardId = list.boardId;
-        swimlaneId = card.swimlaneId;
-      }
-
-      // #6472: an empty destination (no cards in that list+swimlane yet) made
-      // Math.min()/Math.max() of no arguments return ±Infinity, writing a
-      // corrupt sort value; a non-finite stored sort would poison it again.
-      const destSorts = (await list.cardsUnfiltered(swimlaneId))
-        .map(c => c.sort)
-        .filter(Number.isFinite);
-
-      if (action.actionType === 'moveCardToTop') {
-        const minOrder = destSorts.length ? Math.min(...destSorts) : 0;
-        await withUserId(activity.userId, () => card.move(destBoardId, swimlaneId, listId, minOrder - 1));
-      } else {
-        const maxOrder = destSorts.length ? Math.max(...destSorts) : 0;
-        await withUserId(activity.userId, () => card.move(destBoardId, swimlaneId, listId, maxOrder + 1));
+      const target = await this.moveCardTarget(activity, card, action);
+      if (target) {
+        await withUserId(activity.userId, () => card.move(target.boardId, target.swimlaneId, target.listId, target.sort));
+        if (ruleRun && target.boardId !== here) ruleRun.movedTo = target.boardId;
       }
     }
     if (action.actionType === 'sendEmail') {
       try {
-        const options = await this.prepareEmailAction(activity, action, ruleVars);
+        const placed = await this.emailActivity(activity, card, ruleRun);
+        let options;
+        if (placed.followedFrom) {
+          const { resolveRuleEmailSource } = require('/server/lib/ruleEmailSource');
+          const source = await resolveRuleEmailSource({ activity: placed.activity, cache: ReactiveCache, canReadBoard,
+            followedFrom: placed.followedFrom });
+          options = await this.prepareEmailAction(placed.activity, action, undefined, source);
+        } else {
+          options = await this.prepareEmailAction(activity, action, ruleVars);
+        }
         if (typeof EmailLocalization !== 'undefined') {
           await EmailLocalization.sendEmail(options);
         } else {
@@ -877,6 +986,7 @@ export const RulesHelper = {
       if (checkItem) await checkItem.uncheck();
     }
     if (action.actionType === 'addChecklist') {
+      // The same title the durable command captures (ruleChecklistTitle).
       await Checklists.insertAsync({
         title: substituteVars(action.checklistName, ruleVars),
         cardId: card._id,
@@ -891,6 +1001,7 @@ export const RulesHelper = {
       });
     }
     if (action.actionType === 'addSwimlane') {
+      // The same title the durable command captures (ruleSwimlaneTitle).
       await Swimlanes.insertAsync({
         title: substituteVars(action.swimlaneName, ruleVars),
         boardId,
@@ -898,6 +1009,8 @@ export const RulesHelper = {
       });
     }
     if (action.actionType === 'addChecklistWithItems') {
+      // The same titles the durable command captures (ruleChecklistTitle,
+      // ruleChecklistItemTitles).
       const checkListId = await Checklists.insertAsync({
         title: substituteVars(action.checklistName, ruleVars),
         cardId: card._id,
@@ -916,44 +1029,23 @@ export const RulesHelper = {
       }
     }
     if (action.actionType === 'createCard') {
-      const list = await ReactiveCache.getList({ title: action.listName, boardId });
-      let listId = '';
-      let swimlaneId = '';
-      const swimlane = await ReactiveCache.getSwimlane({
-        title: action.swimlaneName,
-        boardId,
-      });
-      listId = resolveRuleListId(list);
-      // #5536: guard the 'Default'-swimlane fallback against undefined ._id.
-      swimlaneId = resolveRuleSwimlaneId(
-        swimlane,
-        await getDestBoardDefaultSwimlane(boardId),
-      );
+      // The same target the durable command captures (createCardTarget).
+      const target = await this.createCardTarget(activity, card, action);
       await Cards.insertAsync({
-        title: substituteVars(action.cardName, ruleVars),
-        listId,
-        swimlaneId,
+        title: target.title,
+        listId: target.listId,
+        swimlaneId: target.swimlaneId,
         sort: 0,
-        boardId
+        boardId: target.boardId,
       });
     }
     if (action.actionType === 'copyCard') {
       return await copyRuleCard({ activity, action, cache: ReactiveCache, canWrite: allowIsBoardMemberWithWriteAccess });
     }
     if (action.actionType === 'linkCard') {
-      const list = await ReactiveCache.getList({ title: action.listName, boardId: action.boardId });
       const card = await ReactiveCache.getCard(activity.cardId);
-      const swimlane = await ReactiveCache.getSwimlane({
-        title: action.swimlaneName,
-        boardId: action.boardId,
-      });
-      const listId = resolveRuleListId(list);
-      // #5536: guard the 'Default'-swimlane fallback against undefined ._id so a
-      // link-to-another-board rule cannot crash with an "Internal Server Error".
-      const swimlaneId = resolveRuleSwimlaneId(
-        swimlane,
-        await getDestBoardDefaultSwimlane(action.boardId),
-      );
+      // The same target the durable command captures (linkCardTarget).
+      const { listId, swimlaneId } = await this.linkCardTarget(action);
       await card.link(action.boardId, swimlaneId, listId);
     }
     if (
@@ -979,34 +1071,27 @@ export const RulesHelper = {
       // chosen field, rewriting their `sort` index.
       let list = await card.list();
       if (action.listName && action.listName !== '*') {
-        list = await ReactiveCache.getList({ title: action.listName, boardId });
+        list = await ReactiveCache.getList({ title: action.listName, boardId: here });
       }
       if (list) {
         const cards = await list.cardsUnfiltered(card.swimlaneId);
-        const keyOf = c => {
-          switch (action.sortField) {
-            case 'name': return (c.title || '').toLowerCase();
-            case 'created': return c.createdAt ? new Date(c.createdAt).getTime() : 0;
-            case 'modified': return c.modifiedAt ? new Date(c.modifiedAt).getTime() : 0;
-            case 'due':
-            default: return c.dueAt ? new Date(c.dueAt).getTime() : Number.MAX_SAFE_INTEGER;
-          }
-        };
-        const sorted = [...cards].sort((a, b) => (keyOf(a) > keyOf(b) ? 1 : keyOf(a) < keyOf(b) ? -1 : 0));
+        // The same order the durable command captures (models/lib/ruleSortList.js).
+        const sorted = sortListOrder(cards, action.sortField);
         for (let i = 0; i < sorted.length; i++) {
           await Cards.updateAsync(sorted[i]._id, { $set: { sort: i } });
         }
       }
     }
     if (action.actionType === 'moveAllCardsInList') {
-      const fromList = await ReactiveCache.getList({ title: action.fromListName, boardId });
-      const toList = await ReactiveCache.getList({ title: action.listName, boardId: action.boardId || boardId });
+      const fromList = await ReactiveCache.getList({ title: action.fromListName, boardId: here });
+      const toList = await ReactiveCache.getList({ title: action.listName, boardId: actionBoardId });
       if (fromList && toList) {
         const cards = await fromList.cardsUnfiltered();
         for (const c of cards) {
           await withUserId(activity.userId, () =>
-            c.move(action.boardId || boardId, c.swimlaneId, toList._id),
+            c.move(actionBoardId, c.swimlaneId, toList._id),
           );
+          if (ruleRun && card && c._id === card._id && actionBoardId !== here) ruleRun.movedTo = actionBoardId;
         }
       }
     }

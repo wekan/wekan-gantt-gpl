@@ -9,7 +9,10 @@ function historyDocument(type, doc) {
   // `incarnation` identifies one lifetime of the record (maintainer decision
   // of 2026-09-30), not its content: History must never carry an old one back
   // into a restored record, which gets a fresh one.
-  const { revision, updatedAt, updatedBy, rolloverPending, incarnation, ...content } = doc;
+  // The rollover's progress is the background job's, not the sprint's
+  // content: an undo never restores it.
+  const { revision, updatedAt, updatedBy, rolloverPending, rolloverTotal, rolloverDone, rolloverError, rolloverLease, incarnation,
+    ...content } = doc;
   return structuredClone(content);
 }
 function historyRecords(changes) {
@@ -26,4 +29,26 @@ function historyRecords(changes) {
 function historySide(records, side) {
   return { records: records.map(row => ({ type: row.type, id: row.id, document: row[side] })) };
 }
-module.exports = { METADATA_TYPES, RECORD_TYPES, historyDocument, historyRecords, historySide };
+// A batch too large for one History row (a sprint closed over many thousands
+// of cards, maintainer decision of 2026-10-03: sprints with no card cap) is
+// recorded as several rows sharing a batchId, each at most PART_RECORDS
+// records and PART_BYTES per side, so a row, its restore journal and its
+// restored copy stay far below MongoDB's document limit. A record is in exactly
+// one part, so the parts apply independently; undo and redo walk the whole
+// batch (server/models/changeHistory.js). `size` measures one side's BSON.
+const PART_RECORDS = 1000;
+const PART_BYTES = 3 * 1024 * 1024;
+function historyParts(records, size, limits = {}) {
+  const maxRecords = limits.records || PART_RECORDS, maxBytes = limits.bytes || PART_BYTES;
+  const parts = [];
+  let part = [], bytes = 0;
+  for (const row of records) {
+    const cost = Math.max(size(row.before), size(row.after));
+    if (part.length && (part.length >= maxRecords || bytes + cost > maxBytes)) { parts.push(part); part = []; bytes = 0; }
+    part.push(row); bytes += cost;
+  }
+  if (part.length) parts.push(part);
+  return parts;
+}
+module.exports = { METADATA_TYPES, RECORD_TYPES, historyDocument, historyRecords, historySide, historyParts,
+  PART_RECORDS, PART_BYTES };

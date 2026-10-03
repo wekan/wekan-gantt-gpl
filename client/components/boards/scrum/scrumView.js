@@ -1,6 +1,7 @@
 import './scrumView.jade';
 import './scrumView.css';
 import './scrumDailyHistory';
+import './scrumScopeHistory';
 import { invalidateScrumNames } from './scrumFields';
 import { Template } from 'meteor/templating';
 import { Meteor } from 'meteor/meteor';
@@ -11,7 +12,7 @@ import { Utils } from '/client/lib/utils';
 import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
 import { ReactiveCache } from '/imports/reactiveCache';
 const { DEFAULT_SCRUM_SETTINGS, getCardEstimate } = require('/models/lib/scrum');
-const { sprintReport, velocityRows, reportChartGroups } = require('/models/lib/scrumReports');
+const { velocityReports, reportChartGroups } = require('/models/lib/scrumReports');
 const { compareScrumCards } = require('/models/lib/scrumCardOrder');
 const current = () => Template.instance();
 const data = () => current().dataState.get();
@@ -32,14 +33,42 @@ const stateLabel = state => t(`scrum-state-${state}`);
 const nullable = value => value || null;
 const fields = form => Object.fromEntries(new FormData(form));
 
-async function refresh(tpl) {
+const CARD_PAGE = 100;
+// The cards of the current view, in Scrum order: the selected sprint's, or the
+// Product Backlog's.
+function viewCards() {
+  const result = data();
+  if (!result) return [];
+  const sprintId = current().sprintId.get();
+  const isSprints = Utils.boardView() === 'board-view-sprints';
+  return result.cards.filter(card => !card.archived && (isSprints && sprintId ? card.scrum?.sprintId === sprintId : !card.scrum?.sprintId))
+    .sort(compareScrumCards);
+}
+
+function progress(done, total) {
+  const percent = total ? Math.min(100, Math.round(100 * done / total)) : 0;
+  return { done, total, percent, style: `width: ${percent}%` };
+}
+// While a rollover or a large undo runs in the background, look again every
+// few seconds; nothing is polled otherwise.
+function backgroundRunning(result) {
+  return !!(result?.historyJob && result.historyJob.state === 'running') ||
+    !!result?.sprints?.some(sprint => sprint.rolloverPending && sprint.rolloverTotal && !sprint.rolloverError);
+}
+function schedulePoll(tpl) {
+  Meteor.clearTimeout(tpl.poll);
+  if (!tpl.stopped && backgroundRunning(tpl.dataState.get())) tpl.poll = Meteor.setTimeout(() => refresh(tpl, { quiet: true }), 3000);
+}
+// A quiet refresh (the progress poll) keeps the view on screen meanwhile.
+async function refresh(tpl, { quiet = false } = {}) {
   const boardId = Session.get('currentBoard');
   const request = ++tpl.request;
-  tpl.loading.set(true);
+  if (!quiet) tpl.loading.set(true);
   try {
     const result = await Meteor.callAsync('scrum.getBoardData', boardId);
     if (tpl.stopped || request !== tpl.request || boardId !== Session.get('currentBoard')) return;
     tpl.dataState.set(result); tpl.error.set('');
+    schedulePoll(tpl);
   } catch (error) {
     if (!tpl.stopped && request === tpl.request) tpl.error.set(error.reason || error.message);
   } finally { if (!tpl.stopped && request === tpl.request) tpl.loading.set(false); }
@@ -62,6 +91,9 @@ Template.scrumView.onCreated(function () {
   this.error = new ReactiveVar(''); this.busy = new ReactiveVar(false);
   this.sprintId = new ReactiveVar(''); this.request = 0; this.stopped = false;
   this.releaseId = new ReactiveVar(''); this.eventId = new ReactiveVar('');
+  // Rows shown: each carries its own form, so a large board renders a page at
+  // a time.
+  this.cardLimit = new ReactiveVar(CARD_PAGE);
   this.autorun(() => {
     Session.get('currentBoard'); Meteor.userId();
     this.dataState.set(null); this.sprintId.set('');
@@ -69,7 +101,7 @@ Template.scrumView.onCreated(function () {
     void refresh(this);
   });
 });
-Template.scrumView.onDestroyed(function () { this.stopped = true; this.request += 1; });
+Template.scrumView.onDestroyed(function () { this.stopped = true; this.request += 1; Meteor.clearTimeout(this.poll); });
 Template.scrumView.helpers({
   accountabilityFields() {
     const settings = data()?.settings || DEFAULT_SCRUM_SETTINGS;
@@ -110,7 +142,22 @@ Template.scrumView.helpers({
   sprintOptions: () => (data()?.sprints || []).map(s => ({ ...s, selected: current().sprintId.get() === s._id, stateLabel: stateLabel(s.state) })),
   rolloverOptions: () => (data()?.sprints || []).filter(s => s.state === 'planned' && s._id !== current().sprintId.get()),
   sprintPlanned: () => selectedSprint(current())?.state === 'planned',
-  sprintNeedsCloseRecovery: () => selectedSprint(current())?.state === 'closed' && selectedSprint(current())?.rolloverPending,
+  // A rollover that stopped (it failed, or its server went away): closing
+  // again resumes it. One running in the background shows its progress.
+  sprintNeedsCloseRecovery: () => {
+    const sprint = selectedSprint(current());
+    return sprint?.state === 'closed' && sprint.rolloverPending && (!sprint.rolloverTotal || !!sprint.rolloverError);
+  },
+  rolloverProgress: () => {
+    const sprint = selectedSprint(current());
+    if (!sprint?.rolloverPending || !sprint.rolloverTotal || sprint.rolloverError) return null;
+    return progress(sprint.rolloverDone || 0, sprint.rolloverTotal);
+  },
+  rolloverError: () => selectedSprint(current())?.rolloverError || '',
+  historyJob: () => {
+    const job = data()?.historyJob;
+    return job ? { ...progress(job.done, job.total), direction: job.direction, failed: job.state === 'failed', error: job.error } : null;
+  },
   sprintActive: () => selectedSprint(current())?.state === 'active',
   sprintOpen: () => ['planned', 'active'].includes(selectedSprint(current())?.state),
   sprintStart: () => dateValue(selectedSprint(current())?.plannedStart),
@@ -127,18 +174,18 @@ Template.scrumView.helpers({
   eventStart: () => localDateTime(selectedEvent(current())?.startsAt),
   eventTimebox: () => selectedEvent(current())?.timeboxMinutes ?? 15,
   followUpCards: () => (data()?.cards || []).map(c => ({ ...c, selected: (selectedEvent(current())?.followUpCardIds || []).includes(c._id) })),
-  velocity: () => velocityRows(data()?.sprints || []),
+  // The server computes reports (server/scrum.js): snapshot rows stay there.
+  velocity: () => velocityReports(data()?.sprints || []),
   sprintReportRows() {
     const sprint = selectedSprint(current());
-    return sprint?.closeSnapshot ? [sprintReport(sprint)] : [];
+    return sprint?.closeSnapshot && sprint.report ? [sprint.report] : [];
   },
+  hiddenCards() { return Math.max(0, viewCards().length - current().cardLimit.get()); },
+  showMoreLabel() { return t('scrum-show-more', { count: Math.min(CARD_PAGE, Math.max(0, viewCards().length - current().cardLimit.get())) }); },
   cards() {
     const board = Utils.getCurrentBoard(); const result = data();
     if (!result || !board) return [];
-    const sprintId = current().sprintId.get();
-    const isSprints = Utils.boardView() === 'board-view-sprints';
-    return result.cards.filter(card => !card.archived && (isSprints && sprintId ? card.scrum?.sprintId === sprintId : !card.scrum?.sprintId))
-      .sort(compareScrumCards)
+    return viewCards().slice(0, current().cardLimit.get())
       .map(card => {
         const estimate = getCardEstimate(card, result.settings);
         return { ...card, estimateLabel: estimate === null ? t('scrum-unknown-estimate') : String(estimate),
@@ -182,7 +229,12 @@ Template.scrumView.events({
     });
   },
   'click .js-scrum-refresh'(event, tpl) { event.preventDefault(); void refresh(tpl); },
-  'change .js-scrum-sprint'(event, tpl) { tpl.sprintId.set(event.currentTarget.value); tpl.eventId.set(''); },
+  'change .js-scrum-sprint'(event, tpl) {
+    tpl.sprintId.set(event.currentTarget.value); tpl.eventId.set(''); tpl.cardLimit.set(CARD_PAGE);
+  },
+  async 'click .js-scrum-resume-import'(event, tpl) { event.preventDefault(); await mutate(tpl, 'scrum.resumeImport'); },
+  async 'click .js-scrum-discard-import'(event, tpl) { event.preventDefault(); await mutate(tpl, 'scrum.discardImport'); },
+  'click .js-scrum-show-more'(event, tpl) { event.preventDefault(); tpl.cardLimit.set(tpl.cardLimit.get() + CARD_PAGE); },
   'change .js-scrum-release-select'(event, tpl) { tpl.releaseId.set(event.currentTarget.value); },
   'change .js-scrum-event-select'(event, tpl) { tpl.eventId.set(event.currentTarget.value); },
   'click .js-scrum-new'(event, tpl) { event.preventDefault(); tpl.sprintId.set(''); event.currentTarget.form.reset(); },

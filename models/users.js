@@ -573,6 +573,14 @@ Users.attachSchema(
       type: Boolean,
       optional: true,
     },
+    'profile.cardLabelTextOverride': {
+      /**
+       * The same per-user override as showLabelTextOverride below, for the
+       * labels of the OPENED card (Boards.allowsLabelTextOnCard).
+       */
+      type: Boolean,
+      optional: true,
+    },
     'profile.showLabelTextOverride': {
       /**
        * #4256: optional per-user override of a board's "show label text on
@@ -1170,6 +1178,15 @@ Users.attachSchema(
     isAdmin: {
       /**
        * is the user an admin of the board?
+       */
+      type: Boolean,
+      optional: true,
+    },
+    featurePreview: {
+      /**
+       * #6736: a pilot user who sees the features the instance disabled
+       * (Admin Panel / Settings / Visibility / Features). Set only by the
+       * site admin's saveInstanceFeatures method.
        */
       type: Boolean,
       optional: true,

@@ -445,16 +445,376 @@
       "since": "2026-10-01"
     },
     {
-      "key": "org-domains-requested",
+      "key": "features-desc",
       "since": "2026-10-02"
     },
     {
-      "key": "org-domains-request-saved",
+      "key": "feature-views-table",
       "since": "2026-10-02"
     },
     {
-      "key": "error-org-domain-reserved",
+      "key": "feature-views-table-desc",
       "since": "2026-10-02"
+    },
+    {
+      "key": "feature-views-calendar",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "feature-views-calendar-desc",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "feature-views-time",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "feature-views-time-desc",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "feature-views-overview",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "feature-views-overview-desc",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "feature-views-gantt",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "feature-views-gantt-desc",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "feature-views-scrum",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "feature-views-scrum-desc",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "feature-views-flow-charts",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "feature-views-flow-charts-desc",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "feature-views-map",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "feature-views-map-desc",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "feature-awaiting-approval",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "feature-approval-required",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "feature-preview-admins",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "feature-pilot-users",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "feature-pilot-users-placeholder",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "feature-pilot-users-unknown",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "feature-saved",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "import-board-instruction-taskwarrior",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "drag-to-reorder",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "sync-estimate-source",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "sync-estimate-source-weight",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "sync-estimate-source-time",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "sync-estimate-field-gitlab",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "sync-estimate-field-gitlab-hint",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "scrum-scope-history",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "scrum-scope-history-help",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "scrum-scope-history-inconsistent",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "scrum-scope-history-truncated",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "scrum-scope-history-empty",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "scrum-scope-cause-start",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "scrum-scope-cause-scrum",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "scrum-scope-cause-customFields",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "scrum-scope-cause-dates",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "scrum-scope-cause-position",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "scrum-scope-cause-lifecycle",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "scrum-show-more",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "scrum-import-resume",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "scrum-import-discard",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "scrum-import-recovery-hint",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "import-board-instruction-focalboard",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-description",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-enabled",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-target",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-include",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-database",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-logs",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-engine",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-engine-auto",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-engine-oplog",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-engine-sqlite",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-engine-litestream",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-engine-chosen",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-engine-none",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-sqlite-interval",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-file-scan",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-base-every",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-keep-days",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-litestream-binary",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-litestream-url",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-status",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-running",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-stopped",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-generation",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-last-change",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-errors",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-restore-points",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-from",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-until",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-restore-to",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-restore-what",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-restore-sqlite",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-restore-confirm",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-restore-done",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-saved",
+      "since": "2026-10-02"
+    },
+    {
+      "key": "continuous-backup-apply-on-restart",
+      "since": "2026-10-03"
+    },
+    {
+      "key": "continuous-backup-encrypt",
+      "since": "2026-10-03"
+    },
+    {
+      "key": "continuous-backup-key-file",
+      "since": "2026-10-03"
+    },
+    {
+      "key": "continuous-backup-upload",
+      "since": "2026-10-03"
+    },
+    {
+      "key": "continuous-backup-upload-none",
+      "since": "2026-10-03"
+    },
+    {
+      "key": "continuous-backup-upload-prefix",
+      "since": "2026-10-03"
+    },
+    {
+      "key": "continuous-backup-fetch",
+      "since": "2026-10-03"
+    },
+    {
+      "key": "continuous-backup-fetched",
+      "since": "2026-10-03"
+    },
+    {
+      "key": "scrum-rollover-progress",
+      "since": "2026-10-03"
+    },
+    {
+      "key": "scrum-history-job-running",
+      "since": "2026-10-03"
+    },
+    {
+      "key": "scrum-history-job-failed",
+      "since": "2026-10-03"
     }
   ]
 }

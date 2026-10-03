@@ -54,6 +54,13 @@ and mapping. Native export and board duplication retain the custom-field markers
 and remap the local estimate field. Duplicate export mappings are omitted.
 This mapping does not reconstruct historical sprint estimates or enable Sync.
 
+When the export includes its field schema (search with `expand=names,schema`),
+the field box offers the numeric fields it declares, story points first. If
+exactly one field has Jira Software's story points type
+(`com.pyxis.greenhopper.jira:jsw-story-points`) and no field is entered, that
+field is used, in points - it is identified by its type, not by its name. With
+two such fields, or none, nothing is chosen for you.
+
 ## Scrum issue types and workflow categories
 
 The Jira importer maps `fields.issuetype.name` to the existing hidden Scrum
@@ -80,6 +87,27 @@ automatic schema mapping remain separate implementation work. In particular,
 an external sprint's current membership cannot reconstruct its original
 commitment snapshot. Native WeKan export retains imported issue types and list
 categories through the existing Scrum transfer format.
+
+## Sprints, fix versions, rank and epics
+
+Search with `expand=names,schema` so the export says which custom fields are
+the Sprint, Rank and Epic Link fields. WeKan finds them by their schema type
+(`gh-sprint`, `gh-lexo-rank`, `gh-epic-link`) or, without a schema, by those
+names; it never guesses a `customfield_*` number. Then:
+
+| Jira | WeKan |
+| --- | --- |
+| Future sprint | Planned sprint with its goal and dates; the card's sprint |
+| Active sprint | Planned sprint, reported in Admin Panel → Problems → Recovery: issue search has no commitment snapshot, so start it in WeKan to begin measuring |
+| Closed sprint | Not imported, reported: WeKan does not invent a commitment or close snapshot |
+| Fix version | Release, released with its date or planned; the card's release is its first version, the others are reported (a card has one release). Versions still also become `version:` labels |
+| Rank | Backlog order: backlog rank 1, 2, ... in Jira's rank order |
+| Epic Link | The card's parent when the epic is imported too; otherwise reported. Newer Jira's `parent` was already followed |
+
+Both of Jira's sprint forms are read: sprint objects, and the older
+`com.atlassian.greenhopper.service.sprint.Sprint@...[id=...,state=...]`
+strings. The board's Scrum settings are turned on when sprints or releases are
+imported. These fields are not also imported as text custom fields.
 
 ## Migrate from Jira Server (Atlassian) to Wekan
 

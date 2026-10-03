@@ -8,6 +8,8 @@ import ScrumEvents from '/models/scrumEvents';
 import ScrumDailySnapshots from '/models/scrumDailySnapshots';
 import ScrumHistoryPending from './scrumHistoryPending';
 import { ScrumImportPending } from './scrumImportJournal';
+import { withSnapshotRows, withDailyRows } from './scrumSnapshotStore';
+import { hasRolloverPending } from './scrumRolloverStore';
 const { normalizeScrumTransfer, SCRUM_TRANSFER_FORMAT } = require('/models/lib/scrumTransfer');
 
 // Call only after the existing export route has authorized the board and scope.
@@ -20,12 +22,15 @@ export async function exportScrumTransfer(boardId, cardIds, listIds, swimlaneIds
     Swimlanes.find({ boardId, _id: { $in: swimlaneIds }, scrum: { $exists: true } }, { fields: { scrum: 1 } }).fetchAsync(),
     ScrumSprints.find({ boardId }).fetchAsync(), ScrumReleases.find({ boardId }).fetchAsync(), ScrumEvents.find({ boardId }).fetchAsync(),
   ]);
+  // The transfer carries snapshots whole, their rows included, wherever they
+  // are kept (scrumSnapshotStore.js).
+  for (let index = 0; index < sprints.length; index += 1) sprints[index] = await withSnapshotRows(sprints[index]);
   if (!board) throw new Error('Board no longer exists');
   if (await ScrumImportPending.findOneAsync(boardId, { fields: { _id: 1 } })) {
     throw new Error('Finish the pending Scrum operation before exporting');
   }
   if (!board.scrum && !cards.length && !lists.length && !swimlanes.length && !sprints.length && !releases.length && !events.length) return null;
-  if (await ScrumHistoryPending.findOneAsync(boardId) || sprints.some(s => s.scrumImportPending || s.rolloverPending?.length)) {
+  if (await ScrumHistoryPending.findOneAsync(boardId) || sprints.some(s => s.scrumImportPending || hasRolloverPending(s))) {
     throw new Error('Finish the pending Scrum operation before exporting');
   }
   const sprintIds = new Set(); const releaseIds = new Set();
@@ -45,7 +50,8 @@ export async function exportScrumTransfer(boardId, cardIds, listIds, swimlaneIds
   const visibleCards = new Set(cardIds); const visibleLists = new Set(listIds);
   const losses = [];
   const clean = record => {
-    const { boardId: ignoredBoard, revision, rolloverPending, closedFromRevision, scrumImportPending, ...data } = record;
+    const { boardId: ignoredBoard, revision, rolloverPending, closedFromRevision, scrumImportPending, reportTotals,
+      ...data } = record;
     return data;
   };
   const metadata = rows => rows.map(row => ({ _id: row._id, scrum: row.scrum }));
@@ -66,16 +72,17 @@ export async function exportScrumTransfer(boardId, cardIds, listIds, swimlaneIds
     if (sprint[key]) filterSnapshot(sprint[key], `sprints.${sprint._id}.${key}`);
   }
   transfer.dailyObservations = [];
-  let observedCards = 0;
   const cursor = ScrumDailySnapshots.rawCollection().find({ boardId,
     sprintId: { $in: transfer.sprints.map(sprint => sprint._id) } },
   { sort: { capturedAt: 1, _id: 1 }, limit: 10001, batchSize: 1 });
   try {
-    for await (const row of cursor) {
-      observedCards += row.snapshot.cards.length;
-      if (transfer.dailyObservations.length >= 10000 || observedCards > 100000) {
+    // No cap on the cards a day observed (maintainer decision of 2026-10-03);
+    // the number of observed days keeps its limit.
+    for await (const stored of cursor) {
+      if (transfer.dailyObservations.length >= 10000) {
         throw new Error('Daily Scrum history exceeds the native transfer limit');
       }
+      const row = await withDailyRows(stored);
       filterSnapshot(row.snapshot, `dailyObservations.${row.sprintId}.${row.day}`);
       const { sprintId, startedAt, day, capturedAt, snapshot, consistency } = row;
       transfer.dailyObservations.push({ sprintId, startedAt, day, capturedAt, snapshot, consistency });

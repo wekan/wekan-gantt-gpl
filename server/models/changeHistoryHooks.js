@@ -9,7 +9,8 @@ import Swimlanes from '/models/swimlanes';
 import Attachments from '/models/attachments';
 import ChangeHistory from '/models/changeHistory';
 import { isRecordingSuppressed } from '/server/lib/historyRecordingScope';
-const { deferSyncRecording, deferSyncItemRecording } = require('/server/lib/syncRecordingScope');
+const { deferSyncRecording, deferSyncItemRecording, deferSyncChecklistRecording, deferSyncAttachmentRecording } =
+  require('/server/lib/syncRecordingScope');
 import { diffFields } from '/models/lib/changeHistoryGroups';
 
 // Phase 5 of docs/Features/Reports/History/History.md: record EVERY remaining
@@ -105,7 +106,8 @@ async function recordUpdate(entityType, userId, doc, fieldNames, previous) {
       if (position) changes.push(position);
     }
     if (changes.length === 0) return;
-    if (entityType === 'card' && deferSyncRecording('history', doc, changes.map(change => change.field))) return;
+    // A position row has no field; it is named by its group.
+    if (entityType === 'card' && deferSyncRecording('history', doc, changes.map(change => change.field || change.group))) return;
     if (entityType === 'checklistItem' && deferSyncItemRecording('itemHistory', doc)) return;
     const where = await locate(entityType, doc);
     if (!where || !where.boardId) return;
@@ -145,6 +147,9 @@ async function recordUpdate(entityType, userId, doc, fieldNames, previous) {
 async function recordLifecycle(entityType, userId, doc, changeType) {
   if (!userId) return;
   if (isRecordingSuppressed()) return;   // see recordUpdate above
+  // A durable rule checklist action writes this row from its saved plan.
+  if (entityType === 'checklist' && deferSyncChecklistRecording('checklistHistory', doc)) return;
+  if (entityType === 'checklistItem' && deferSyncChecklistRecording('checklistItemHistory', doc)) return;
   try {
     const where = await locate(entityType, doc);
     if (!where || !where.boardId) return;
@@ -221,6 +226,8 @@ Meteor.startup(() => {
   Attachments.collection.after.insert(async (userId, doc) => {
     const uploader = userId || (doc && doc.userId);
     if (doc && doc.meta && doc.meta.source === 'import') return;
+    // A durable rule copy writes this row from its saved plan.
+    if (deferSyncAttachmentRecording('attachmentHistory', doc)) return;
     await recordLifecycle('attachment', uploader, doc, 'added');
   });
 });

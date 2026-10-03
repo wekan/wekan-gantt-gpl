@@ -21,16 +21,18 @@ template(name="cardDetails")
       The handler steps aside for the buttons (they are links), for the drag
       handle when there is one, and for the half of the title that edits.
       client/components/cards/cardDetails.js
-    .card-details-header.js-card-title-drag-handle(class='{{#if colorClass}}card-details-{{colorClass}}{{/if}}' style='{{colorStyle}}')
+    //- Card color, Show on Card (Board Settings / Card): the header's color.
+    .card-details-header.js-card-title-drag-handle(class='{{#if showCardColorOnCard}}{{#if colorClass}}card-details-{{colorClass}}{{/if}}{{/if}}' style='{{#if showCardColorOnCard}}{{colorStyle}}{{/if}}')
       +inlinedForm(classNames="js-card-details-title")
         +editCardTitleForm
       else
         unless isMiniScreen
-          a.card-collapse-toggle.js-card-collapse-toggle(title="{{_ 'collapse'}}")
-            if cardCollapsed
-              i.fa.fa-caret-right
-            else
-              i.fa.fa-caret-down
+          if allowsCardCollapse
+            a.card-collapse-toggle.js-card-collapse-toggle(title="{{_ 'collapse'}}")
+              if cardCollapsed
+                i.fa.fa-caret-right
+              else
+                i.fa.fa-caret-down
           a.close-card-details.js-close-card-details(title="{{_ 'close-card'}}")
             i.fa.fa-times-thin
           if cardMaximized
@@ -77,6 +79,9 @@ template(name="cardDetails")
           stays on the whole heading - the drag handler is what steps aside for
           the edit zone - so a reader who may not write can still drag the
           window by any part of it, which is what that class was for.
+        if showLabelsAboveTitleOnCard
+          .card-details-labels-above-title
+            +minicardLabels(show=labelsShownAboveTitle labels=labels hideText=hiddenCardLabelText)
         h2.card-details-title.js-card-title(
           class="{{#if canModifyCard}}is-editable{{/if}}")
             if canModifyCard
@@ -89,16 +94,29 @@ template(name="cardDetails")
             if isWatching
               i.card-details-watch
                 i.fa.fa-eye
+            //- Description badge, Show on Card: that the card has a description.
+            if currentBoard.allowsDescriptionBadgeOnCard
+              if getDescription
+                i.fa.fa-file-text-o.card-details-description-badge(title="{{_ 'description'}}")
+        //- List title, Show on Card: this card's own choice, like the minicard's.
+        if showListOnCard
+          if cardListTitle
+            .card-details-list-title
+              i.fa.fa-list
+              | {{ cardListTitle }}
+        //- Parent card and Linked card, Show on Card.
         .card-details-path
-          each parentList
-            | &nbsp; &gt; &nbsp;
-            a.js-parent-card(href=linkForCard) {{title}}
+          unless $eq currentBoard.allowsParentCardOnCard false
+            each parentList
+              | &nbsp; &gt; &nbsp;
+              a.js-parent-card(href=linkForCard) {{title}}
           // else
             {{_ 'card'}}
         if isLinkedCard
-          a.linked-card-location.js-go-to-linked-card
-            +viewer
-              | {{getBoardTitle}} > {{getTitle}}
+          unless $eq currentBoard.allowsLinkedCardOnCard false
+            a.linked-card-location.js-go-to-linked-card
+              +viewer
+                | {{getBoardTitle}} > {{getTitle}}
 
     if getArchived
       if isLinkedBoard
@@ -170,8 +188,21 @@ template(name="cardDetails")
             +cardFieldSectionVoteAndPoker
           if $eq section "description"
             +cardFieldSectionDescription
+          //- Each Scrum field where the board's order puts it ("Scrum settings:
+            Sprint" ... in Board Settings / Card).
+          if $eq section "scrumSprint"
+            +cardFieldSectionScrumSprint
+          if $eq section "scrumPastSprints"
+            +cardFieldSectionScrumPastSprints
+          if $eq section "scrumRelease"
+            +cardFieldSectionScrumRelease
+          if $eq section "scrumIssueType"
+            +cardFieldSectionScrumIssueType
+          if $eq section "scrumAcceptanceCriteria"
+            +cardFieldSectionScrumAcceptanceCriteria
+          if $eq section "scrumBacklogRank"
+            +cardFieldSectionScrumBacklogRank
 
-      +scrumMetadata(kind="card" record=this)
       .card-checklist-attachmentGalleries
         .card-checklist-attachmentGallery.card-checklists
           if currentBoard.allowsChecklists
@@ -217,7 +248,12 @@ template(name="cardDetails")
 
       if currentBoard.allowsComments
         .comment-title
-          +cardSectionHeader(section="comments" icon="fa-comment-o" label="comments")
+          +cardSectionHeader(section="comments" icon="fa-comment-o" label="comments" count=cardCommentCountShown)
+          //- Unread comments, Show on Card: the same marker as a minicard's.
+          if currentBoard.allowsUnreadCommentsOnCard
+            if cardHasUnreadComments
+              span.card-details-unread-comments(title="{{_ 'card-has-unread-comments'}}")
+                i.fa.fa-comment
         if isSectionOpen "comments"
           if currentUser.isBoardMember
             unless currentUser.isNoComments
@@ -262,9 +298,11 @@ template(name="cardFieldSectionLabels")
             if isSectionOpen "labels"
               a(class="{{#if canModifyCard}}js-add-labels{{else}}is-disabled{{/if}}" title="{{_ 'card-labels-title'}}")
                 each labels
-                  span.card-label(class="{{labelColorClass color}}" style="{{labelColorStyle color}}" title=name)
-                    +viewer
-                      = name
+                  //- Labels text, Show on Card: the words, or coloured chips without them.
+                  span.card-label(class="{{labelColorClass color}}" class="{{#if hiddenCardLabelText}}card-label-no-text{{/if}}" style="{{labelColorStyle color}}" title=name)
+                    unless hiddenCardLabelText
+                      +viewer
+                        = name
               if canModifyCard
                 unless currentUser.isWorker
                   a.card-label.add-label.js-add-labels(title="{{_ 'card-labels-title'}}")
@@ -324,7 +362,9 @@ template(name="cardFieldSectionLabels")
     //- The card's button row - it sat here before the fields were grouped,
       between the Labels group and the dates, and belongs to the card rather
       than to any group.
-    +cardButtons(_id=_id boardId=boardId)
+    //- Card buttons, Show on Card.
+    unless $eq currentBoard.allowsCardButtonsOnCard false
+      +cardButtons(_id=_id boardId=boardId)
 
 template(name="cardFieldSectionDates")
   if currentBoard.hasAnyAllowsDate
@@ -589,6 +629,15 @@ template(name="cardFieldSectionSort")
                         if isCurrentListId _id
                           +viewer
                             = title
+                //- Swimlane, Show on Card: the swimlane this card is in.
+                if currentBoard.allowsSwimlaneNameOnCard
+                  if cardSwimlaneTitle
+                    .card-details-item.card-details-swimlane-name
+                      h3.card-details-item-title
+                        i.fa.fa-list-alt
+                        | {{_ 'swimlane'}}
+                      +viewer
+                        = cardSwimlaneTitle
 
                 //.card-details-items
               if $eq field "spentTime"
@@ -887,6 +936,26 @@ template(name="cardFieldSectionVoteAndPoker")
                       i.fa.fa-plus
                       | {{_ 'set-estimation'}}
                     input(type=text,autofocus value=getPokerEstimation,id="pokerEstimation")
+
+//- The Scrum fields, one template each like every other section of the
+  card's order: "Scrum settings: Sprint" ... in Board Settings / Card.
+template(name="cardFieldSectionScrumSprint")
+  +scrumMetadata(kind="card" record=this field="Sprint")
+
+template(name="cardFieldSectionScrumPastSprints")
+  +scrumMetadata(kind="card" record=this field="PastSprints")
+
+template(name="cardFieldSectionScrumRelease")
+  +scrumMetadata(kind="card" record=this field="Release")
+
+template(name="cardFieldSectionScrumIssueType")
+  +scrumMetadata(kind="card" record=this field="IssueType")
+
+template(name="cardFieldSectionScrumAcceptanceCriteria")
+  +scrumMetadata(kind="card" record=this field="AcceptanceCriteria")
+
+template(name="cardFieldSectionScrumBacklogRank")
+  +scrumMetadata(kind="card" record=this field="BacklogRank")
 
 template(name="cardFieldSectionDescription")
   .card-details-group.card-details-group-description

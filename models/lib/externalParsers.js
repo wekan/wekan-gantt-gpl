@@ -1,5 +1,7 @@
 import { jiraTimeTracking } from './jiraTimeTracking.js';
 import { parseTodoTxt } from './todoTxtFormat.js';
+import { parseTaskwarrior } from './taskwarriorFormat.js';
+import { parseFocalboard } from './focalboardFormat.js';
 // Jira Cloud v3 descriptions use Atlassian Document Format, not strings.
 // Preserve readable text and block boundaries; rich source formatting is not
 // treated as trusted HTML. Input has already passed the import security boundary.
@@ -922,6 +924,8 @@ export const EXTERNAL_PARSERS = {
   zenkit: parseZenkit,
   markdown: parseMarkdownKanban,
   todotxt: parseTodoTxt,
+  taskwarrior: parseTaskwarrior,
+  focalboard: parseFocalboard,
   jira: parseJira,
 };
 

@@ -44,6 +44,14 @@
 // last on the minicard). tests/cardFieldOrderDefaultIsPreFeatureOrder.test.cjs
 // pins both sequences literally.
 
+// ── the Scrum fields ─────────────────────────────────────────────────────────
+
+// One section per Scrum field, keyed by the row of Board Settings / Card that
+// shows it ("Scrum settings: Sprint" ...; models/lib/cardSettingsRows.js).
+const SCRUM_FIELD_KEYS = ['scrumSprint', 'scrumPastSprints', 'scrumRelease', 'scrumIssueType',
+  'scrumAcceptanceCriteria', 'scrumBacklogRank'];
+const SCRUM_SECTIONS = SCRUM_FIELD_KEYS.map(key => ({ key, fields: [key] }));
+
 // ── the opened card ──────────────────────────────────────────────────────────
 
 const CARD_LAYOUT = {
@@ -57,6 +65,10 @@ const CARD_LAYOUT = {
     { key: 'customFields', fields: ['customFields'] },
     { key: 'voteAndPoker', fields: ['vote', 'poker'] },
     { key: 'description', fields: ['descriptionTitle', 'descriptionText'], pinnedFirst: true },
+    // The Scrum fields, each a section of its own so the board can put each
+    // where it wants. By default they sit where the one Scrum block was drawn,
+    // after the description (client/components/boards/scrum/scrumFields.js).
+    ...SCRUM_SECTIONS,
   ],
   tail: ['checklists', 'checklistCount', 'subtasks', 'attachments', 'attachmentCount',
     'textNotes', 'comments', 'activities'],
@@ -85,6 +97,9 @@ const CARD_LAYOUT = {
 const MINICARD_LAYOUT = {
   head: ['dueComplete', 'cardNumber'],
   sections: [
+    // The Scrum fields first, where the one Scrum block was drawn - except the
+    // work item type, which is the first badge of the strip below.
+    ...SCRUM_SECTIONS.filter(s => s.key !== 'scrumIssueType'),
     { key: 'dates', fields: ['receivedDate', 'startDate', 'dueDate', 'endDate', 'spentTime'] },
     { key: 'cover', fields: ['cover'] },
     { key: 'labels', fields: ['labels'] },
@@ -93,12 +108,16 @@ const MINICARD_LAYOUT = {
     { key: 'members', fields: ['members'] },
     { key: 'creator', fields: ['creator'] },
     { key: 'checklists', fields: ['checklists'] },
-    { key: 'badges', fields: ['dependencies', 'stickers', 'commentCount', 'vote', 'poker',
+    { key: 'badges', fields: ['scrumIssueType', 'dependencies', 'stickers', 'commentCount', 'vote', 'poker',
       'attachmentCount', 'subtasks', 'checklistCount', 'cardSortingByNumber'] },
     { key: 'descriptionText', fields: ['descriptionText'] },
     { key: 'comments', fields: ['comments'] },
     { key: 'showLists', fields: ['showLists'] },
     { key: 'swimlaneName', fields: ['swimlaneName'] },
+    // What the minicard gained on 2026-10-02 so every row has both sides;
+    // last by default, after everything it drew before.
+    ...['location', 'requestedBy', 'assignedBy', 'flowtime', 'pomodoro', 'attachments', 'textNotes', 'activities']
+      .map(key => ({ key, fields: [key] })),
   ],
   tail: [],
   legacy: {},
@@ -201,6 +220,37 @@ function fieldsOfSection(stored, layout, sectionKey) {
 function canMove(stored, layout, field, direction) {
   return moveKey(stored, field, direction, layout).join(' ')
     !== applyLayoutOrder(stored, layout).join(' ');
+}
+
+// Whether `field` can be reordered at all: it is in a section (head and tail
+// fields are drawn at a fixed place).
+function isMovableKey(layout, field) {
+  return Boolean(sectionOfField(layout, field));
+}
+
+// Drag and drop in Board Settings / Card: put `field` at `targetIndex` among
+// the fields that HAVE a position (the sections' fields, head and tail left
+// out), as near as the layout allows. It walks one moveKey() step at a time,
+// so every rule of the arrows holds - a pinned header stays first, a field
+// leaving its section takes the section with it - and keeps the order that
+// came closest. Returns the new canonical flat order.
+function placeKey(stored, field, targetIndex, layout) {
+  const movable = flat => flat.filter(key => sectionOfField(layout, key));
+  let best = applyLayoutOrder(stored, layout);
+  if (!sectionOfField(layout, field) || !Number.isInteger(targetIndex)) return best;
+  const distance = flat => Math.abs(movable(flat).indexOf(field) - targetIndex);
+  const direction = movable(best).indexOf(field) > targetIndex ? 'up' : 'down';
+  let current = best;
+  for (let step = 0; step < 200 && distance(best) > 0; step += 1) {
+    const next = moveKey(current, field, direction, layout);
+    if (next.join(' ') === current.join(' ')) break;
+    current = next;
+    if (distance(current) < distance(best)) best = current;
+    // Past the target in the direction of travel: further steps only go away.
+    const at = movable(current).indexOf(field);
+    if (direction === 'up' ? at < targetIndex : at > targetIndex) break;
+  }
+  return best;
 }
 
 // Move `field` one step up/down. Within its section when it can; the whole
@@ -320,6 +370,7 @@ function moveMinicardKey(stored, field, direction) {
 }
 
 module.exports = {
+  SCRUM_FIELD_KEYS,
   CARD_LAYOUT,
   MINICARD_LAYOUT,
   applyLayoutOrder,
@@ -327,6 +378,8 @@ module.exports = {
   fieldsOfSection,
   canMove,
   moveKey,
+  placeKey,
+  isMovableKey,
 
   DEFAULT_CARD_ORDER,
   CARD_ORDER_KEYS,

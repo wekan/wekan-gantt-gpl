@@ -63,6 +63,9 @@ const PRE_FEATURE_CARD_ORDER = [
   'customFields',
   'vote', 'poker',
   'descriptionTitle', 'descriptionText',
+  // Newer than 59f7d61df: the Scrum block, drawn after the description, made
+  // one row per field ("Scrum settings: Sprint" ...) on 2026-10-02.
+  'scrumSprint', 'scrumPastSprints', 'scrumRelease', 'scrumIssueType', 'scrumAcceptanceCriteria', 'scrumBacklogRank',
   'checklists', 'checklistCount', 'subtasks', 'attachments', 'attachmentCount',
   'textNotes', // newer than 59f7d61df: beside the attachment count, above comments
   'comments', 'activities',
@@ -76,12 +79,19 @@ const PRE_FEATURE_CARD_ORDER = [
 // preview, the list name.
 const PRE_FEATURE_MINICARD_ORDER = [
   'dueComplete', 'cardNumber',
+  // Newer than 59f7d61df: the Scrum block, drawn first under the title, made
+  // one row per field on 2026-10-02; the work item type is a badge below.
+  'scrumSprint', 'scrumPastSprints', 'scrumRelease', 'scrumAcceptanceCriteria', 'scrumBacklogRank',
   'receivedDate', 'startDate', 'dueDate', 'endDate', 'spentTime',
   'cover', 'labels', 'customFields', 'assignee', 'members', 'creator', 'checklists',
+  'scrumIssueType', // newer than 59f7d61df: the work item type badge, first in the strip
   'dependencies', 'stickers', 'commentCount', 'vote', 'poker', 'attachmentCount',
   'subtasks', 'checklistCount', 'cardSortingByNumber',
   'descriptionText', 'comments', 'showLists',
   'swimlaneName', // newer than 59f7d61df: last, under the list name
+  // Newer than 59f7d61df: what the opened card showed and the minicard did not,
+  // given a minicard side on 2026-10-02 - last, after everything drawn before.
+  'location', 'requestedBy', 'assignedBy', 'flowtime', 'pomodoro', 'attachments', 'textNotes', 'activities',
 ];
 
 test('the default card order is the pre-feature render order of cardDetails.jade (59f7d61df)', () => {
@@ -92,7 +102,8 @@ test('the default card order is the pre-feature render order of cardDetails.jade
   // And the section sequence the card's `each section in
   // orderedCardFieldSections` walks is the groups of that template in order.
   assert.deepStrictEqual(DEFAULT_CARD_FIELD_ORDER,
-    ['labels', 'dates', 'members', 'dependencies', 'sort', 'customFields', 'voteAndPoker', 'description']);
+    ['labels', 'dates', 'members', 'dependencies', 'sort', 'customFields', 'voteAndPoker', 'description',
+      'scrumSprint', 'scrumPastSprints', 'scrumRelease', 'scrumIssueType', 'scrumAcceptanceCriteria', 'scrumBacklogRank']);
   assert.deepStrictEqual(applyCardFieldOrder(undefined), DEFAULT_CARD_FIELD_ORDER);
 });
 
@@ -102,16 +113,20 @@ test('the default minicard order is the pre-feature render order of minicard.jad
   assert.deepStrictEqual(applyMinicardOrder([]), PRE_FEATURE_MINICARD_ORDER);
   assert.deepStrictEqual(applyLayoutOrder(null, MINICARD_LAYOUT), PRE_FEATURE_MINICARD_ORDER);
   assert.deepStrictEqual(orderedMinicardSections(undefined),
-    ['dates', 'cover', 'labels', 'customFields', 'assignee', 'members', 'creator', 'checklists',
-      'badges', 'descriptionText', 'comments', 'showLists', 'swimlaneName']);
+    ['scrumSprint', 'scrumPastSprints', 'scrumRelease', 'scrumAcceptanceCriteria', 'scrumBacklogRank',
+      'dates', 'cover', 'labels', 'customFields', 'assignee', 'members', 'creator', 'checklists',
+      'badges', 'descriptionText', 'comments', 'showLists', 'swimlaneName',
+      'location', 'requestedBy', 'assignedBy', 'flowtime', 'pomodoro', 'attachments', 'textNotes', 'activities']);
 });
 
 test('the fields newer than 59f7d61df sit beside their closest older neighbour', () => {
   assert.strictEqual(PRE_FEATURE_CARD_ORDER.indexOf('textNotes'), PRE_FEATURE_CARD_ORDER.indexOf('attachmentCount') + 1);
   assert.strictEqual(PRE_FEATURE_CARD_ORDER.indexOf('comments'), PRE_FEATURE_CARD_ORDER.indexOf('textNotes') + 1);
   assert.ok(CARD_LAYOUT.tail.includes('textNotes'), 'text notes is in the fixed tail, like the galleries around it');
-  assert.strictEqual(PRE_FEATURE_MINICARD_ORDER.indexOf('swimlaneName'), PRE_FEATURE_MINICARD_ORDER.length - 1);
-  assert.strictEqual(PRE_FEATURE_MINICARD_ORDER.indexOf('showLists'), PRE_FEATURE_MINICARD_ORDER.length - 2);
+  // Swimlane name sits right under the list name; the eight sides added on
+  // 2026-10-02 follow it.
+  assert.strictEqual(PRE_FEATURE_MINICARD_ORDER.indexOf('swimlaneName'), PRE_FEATURE_MINICARD_ORDER.length - 9);
+  assert.strictEqual(PRE_FEATURE_MINICARD_ORDER.indexOf('showLists'), PRE_FEATURE_MINICARD_ORDER.length - 10);
 });
 
 test('a stored order that names only some fields keeps the pre-feature order for the rest', () => {

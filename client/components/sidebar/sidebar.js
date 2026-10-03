@@ -15,16 +15,19 @@ const {
   CARD_LAYOUT,
   MINICARD_LAYOUT,
   applyLayoutOrder,
-  canMove,
   moveKey,
+  placeKey,
+  isMovableKey,
 } = require('/models/lib/cardFieldOrder');
-const { rowsForSide } = require('/models/lib/cardSettingsRows');
+const { rowsForSide, CARD_SETTINGS_ROWS } = require('/models/lib/cardSettingsRows');
+import { invalidateScrumNames } from '/client/components/boards/scrum/scrumFields';
 import { InfiniteScrolling } from '/client/lib/infiniteScrolling';
 import '/client/components/boards/exportScope';
 import AccessibilitySettings from '/models/accessibilitySettings';
 import Boards from '/models/boards';
 import TableVisibilityModeSettings from '/models/tableVisibilityModeSettings';
 const boardViewSettings = require('/models/lib/boardViewSettings');
+import { allowBoardView } from '/client/lib/instanceFeatures';
 import Cards from '/models/cards';
 import Attachments from '/models/attachments';
 import { generateUniversalAttachmentUrl } from '/models/lib/universalUrlGenerator';
@@ -45,6 +48,10 @@ import { toggleFold } from '/client/lib/foldState';
 import {
   resolveShowLabelText,
   toggleMinicardLabelText,
+  resolveShowCardLabelText,
+  hasCardLabelTextOverride,
+  toggleCardLabelText,
+  resetCardLabelTextOverride,
 } from '/client/lib/minicardLabelText';
 import {
   clearSidebarInstance,
@@ -655,7 +662,39 @@ Template.boardMenuPopup.onCreated(function() {
 // applied through the Board instance setters, so the popup, the Board View
 // menu and Utils.boardView() can not disagree. Boards.allow's board-admin
 // rule enforces who may persist a click.
+// Rows reorder by drag and drop (jQuery UI sortable, as the custom fields
+// sidebar does). The DOM change is cancelled at the drop and the new order is
+// written to the board, so Blaze redraws the rows from the data rather than
+// keeping a DOM order the data does not have.
+// `handle` is the drag handle when drag handles are on, else the icon and
+// label (the templates put the class on whichever it is).
+function reorderOnDrop($list, { items, handle, keyOf, drop }) {
+  if (!$list.length || typeof $list.sortable !== 'function') return;
+  $list.sortable({
+    items, handle, axis: 'y', tolerance: 'pointer', distance: 5,
+    stop(evt, ui) {
+      const key = keyOf(ui.item[0]);
+      const keys = $list.find(items).toArray().map(keyOf);
+      $list.sortable('cancel');
+      if (key) drop(key, keys);
+    },
+  });
+}
+// The keyboard way to do the same: Up and Down move a focused row one step.
+const ARROW_KEYS = { ArrowUp: 'up', ArrowDown: 'down' };
+
+Template.boardViewSettingsPopup.onRendered(function () {
+  reorderOnDrop(this.$('.js-board-view-sortable'), {
+    items: '> .js-board-view-row', handle: '.js-board-view-order-handle',
+    keyOf: el => el.dataset.view,
+    drop: (view, views) => Utils.getCurrentBoard()?.setVisibleBoardViewOrder(views, allowBoardView),
+  });
+});
+
 Template.boardViewSettingsPopup.helpers({
+  showDragHandles() {
+    return Utils.showDragHandles();
+  },
   publicBoardsHidden() {
     return Boolean(
       TableVisibilityModeSettings.findOne('tableVisibilityMode-allowPrivateOnly')?.booleanValue,
@@ -663,8 +702,9 @@ Template.boardViewSettingsPopup.helpers({
   },
   boardViewRows() {
     const board = Utils.getCurrentBoard();
-    const ordered = boardViewSettings.orderedBoardViews(board);
-    return ordered.map((v, i) => ({
+    // #6736: views the instance disabled are not rows; their board settings stay.
+    const ordered = boardViewSettings.orderedBoardViews(board).filter(v => allowBoardView(v.view));
+    return ordered.map(v => ({
       view: v.view,
       labelKey: v.labelKey,
       icon: `fa ${v.icon}`,
@@ -672,8 +712,6 @@ Template.boardViewSettingsPopup.helpers({
       showOnPrivate: boardViewSettings.isBoardViewShown(board, v.view, 'private'),
       isDefaultPublic: boardViewSettings.defaultBoardView(board, 'public') === v.view,
       isDefaultPrivate: boardViewSettings.defaultBoardView(board, 'private') === v.view,
-      isFirst: i === 0,
-      isLast: i === ordered.length - 1,
     }));
   },
 });
@@ -695,17 +733,15 @@ Template.boardViewSettingsPopup.events({
     const view = evt.currentTarget.closest('[data-view]').dataset.view;
     board.setDefaultBoardView(view, visibility);
   },
-  'click .js-board-view-order-up'(evt) {
+  'click .js-board-view-order-handle'(evt) {
     evt.preventDefault();
-    const board = Utils.getCurrentBoard();
-    if (!board) return;
-    board.moveBoardView(evt.currentTarget.closest('[data-view]').dataset.view, 'up');
   },
-  'click .js-board-view-order-down'(evt) {
-    evt.preventDefault();
+  'keydown .js-board-view-order-handle'(evt) {
+    const direction = ARROW_KEYS[evt.key];
     const board = Utils.getCurrentBoard();
-    if (!board) return;
-    board.moveBoardView(evt.currentTarget.closest('[data-view]').dataset.view, 'down');
+    if (!direction || !board) return;
+    evt.preventDefault();
+    board.moveBoardView(evt.currentTarget.closest('[data-view]').dataset.view, direction, allowBoardView);
   },
 });
 
@@ -1855,21 +1891,33 @@ function buildCardSettingsRows(side, data) {
   return rowsForSide(side, order)
     // "List title" is a CARD's setting: only for somebody who may change the
     // card, the same gate the hand-written row had (`if canModifyCard`).
-    .filter(row => !row[side].needsCard || Utils.canModifyCard(data))
+    // Only when the popup was opened for a card (its own menu passes it in):
+    // from Board Settings there is no card for the row to change.
+    .filter(row => !row[side].needsCard || (Boolean(data?.card?._id) && Utils.canModifyCard(data)))
     .map(row => {
       const spec = row[side];
       const helper = boardCardSettingsHelpers[spec.field];
-      const positioned = !spec.after;
+      // Head and tail rows are drawn at a fixed place: not dragged either.
+      const positioned = !spec.after && isMovableKey(layout, row.key);
       return {
         key: row.key,
+        // A row with a place of its own is dragged; a modifier follows its row.
+        positioned,
         toggle: spec.toggle,
-        checked: typeof helper === 'function' ? Boolean(helper.call(data)) : false,
+        // A Scrum row's checkbox is that field's Scrum visibility flag; a
+        // plain flag row's is the board field, or its default when unset.
+        checked: spec.scrum ? currentBoard?.scrum?.visibility?.[spec.scrum] === true
+          : spec.flag ? (typeof currentBoard?.[spec.field] === 'boolean' ? currentBoard[spec.field] : spec.default) === true
+          : typeof helper === 'function' ? Boolean(helper.call(data)) : false,
+        // The personal "Labels text" row of each side: whether the user overrides
+        // the board, and the link back to following it.
+        labelTextOverridden: Boolean(spec.labelTextOverride) && (side === 'card'
+          ? hasCardLabelTextOverride() : boardCardSettingsHelpers.hasLabelTextOverride()),
+        labelTextResetClass: side === 'card' ? 'js-reset-card-label-text-override' : 'js-reset-minicard-label-text-override',
         icons: row.icons,
         title: row.label.map(k => TAPi18n.__(k)).join(row.labelSeparator || ' '),
         personal: Boolean(spec.personal),
         labelTextOverride: Boolean(spec.labelTextOverride),
-        canMoveUp: positioned && canMove(stored, layout, row.key, 'up'),
-        canMoveDown: positioned && canMove(stored, layout, row.key, 'down'),
       };
     });
 }
@@ -1887,6 +1935,8 @@ const boardCardSettingsHelpers = {
   labelsAboveTitleOnMinicard() { return ReactiveCache.getBoard(Session.get('currentBoard'))?.labelsAboveTitleOnMinicard === true; },
   allowsChecklistDueDate() { return ReactiveCache.getBoard(Session.get('currentBoard'))?.allowsChecklistDueDate !== false; },
   allowsChecklistTitle() { return ReactiveCache.getBoard(Session.get('currentBoard'))?.allowsChecklistTitle !== false; },
+  // The work item type badge was on every minicard before it had a row: on unless turned off.
+  allowsIssueTypeOnMinicard() { return ReactiveCache.getBoard(Session.get('currentBoard'))?.allowsIssueTypeOnMinicard !== false; },
   // Board Settings / Card Settings shows both columns - "Show on Card" and
   // "Show on Minicard" beside each other. The card's own menu and the
   // minicard's menu open the SAME popup asking for one of them, and the other
@@ -1952,6 +2002,15 @@ const boardCardSettingsHelpers = {
   showsListOnMinicard() {
     const card = settingsCard();
     return Boolean(card && card.showListOnMinicard);
+  },
+  // ...and on the opened card.
+  showsListOnCard() {
+    const card = settingsCard();
+    return Boolean(card && card.showListOnCard);
+  },
+  // The labels text of the OPENED card, the user's override included.
+  showsCardLabelText() {
+    return resolveShowCardLabelText(ReactiveCache.getBoard(Session.get('currentBoard')));
   },
   allowsReceivedDate() {
     const boardId = Session.get('currentBoard');
@@ -2336,7 +2395,33 @@ const boardCardSettingsHelpers = {
     );
   },
 };
+boardCardSettingsHelpers.showDragHandles = () => Utils.showDragHandles();
 Template.boardCardSettingsPopup.helpers(boardCardSettingsHelpers);
+
+// Each column reorders by drag and drop. The drop says where the row should
+// be among the rows that have a place; placeKey walks the same steps the
+// arrows took there, so the layout's rules - a pinned header first, a section
+// moving as one - still hold (models/lib/cardFieldOrder.js).
+Template.boardCardSettingsPopup.onRendered(function () {
+  this.$('.js-card-field-order-sortable').each((i, column) => {
+    const side = column.dataset.side;
+    reorderOnDrop(this.$(column), {
+      items: '> .js-card-field-order-row.is-positioned', handle: '.js-card-field-order-handle',
+      keyOf: el => el.dataset.key,
+      drop: (key, keys) => {
+        const board = ReactiveCache.getBoard(Session.get('currentBoard'));
+        if (!board) return;
+        const layout = side === 'minicard' ? MINICARD_LAYOUT : CARD_LAYOUT;
+        const stored = side === 'minicard' ? board.minicardFieldOrder : board.cardFieldOrder;
+        const movable = keys.filter(k => isMovableKey(layout, k));
+        const order = placeKey(stored, key, movable.indexOf(key), layout);
+        if (order.join(' ') === applyLayoutOrder(stored, layout).join(' ')) return;
+        if (side === 'minicard') board.setMinicardFieldOrder(order);
+        else board.setCardFieldOrder(order);
+      },
+    });
+  });
+});
 
 // #4448: an up/down arrow of Board Settings / Card. The row says which field
 // and which side (data-key / data-side, because `each row in` keeps the
@@ -2370,11 +2455,34 @@ Template.boardCardSettingsPopup.events({
     tpl.$('.js-ask-move-reason i').toggleClass('fa-check', value).toggleClass('fa-square-o', !value);
   },
 
-  'click .js-card-field-order-up'(evt) {
-    moveCardSettingsRow(evt, 'up');
+  'click .js-card-field-order-handle'(evt) {
+    evt.preventDefault();
   },
-  'click .js-card-field-order-down'(evt) {
-    moveCardSettingsRow(evt, 'down');
+  'keydown .js-card-field-order-handle'(evt) {
+    const direction = ARROW_KEYS[evt.key];
+    if (direction) moveCardSettingsRow(evt, direction);
+  },
+  // "Scrum settings: Sprint" and the other Scrum rows: the field's Scrum
+  // visibility flag for this side, through the same method the Scrum settings
+  // checkboxes used (server-side board-admin check).
+  async 'click .js-scrum-field-toggle'(evt, tpl) {
+    evt.preventDefault();
+    const row = evt.currentTarget.closest('.js-card-field-order-row');
+    const board = ReactiveCache.getBoard(Session.get('currentBoard'));
+    const spec = CARD_SETTINGS_ROWS.find(r => r.key === row?.dataset.key)?.[row?.dataset.side];
+    if (!board || !spec?.scrum) return;
+    const visible = board.scrum?.visibility?.[spec.scrum] === true;
+    try {
+      await Meteor.callAsync('scrum.configure', board._id, { visibility: { [spec.scrum]: !visible } }, board.scrumRevision || 0);
+      invalidateScrumNames();
+    } catch (error) {
+      alert(error.reason || error.message);
+    }
+  },
+  'click .js-field-has-issue-type-on-minicard'(evt, tpl) {
+    evt.preventDefault();
+    const newValue = tpl.currentBoard.allowsIssueTypeOnMinicard === false;
+    Boards.update(tpl.currentBoard._id, { $set: { allowsIssueTypeOnMinicard: newValue } });
   },
   // Board-level default for #4256: whether labels show their TEXT on this
   // board's minicards, unless a user's own override (below) says otherwise.
@@ -2397,6 +2505,31 @@ Template.boardCardSettingsPopup.events({
   },
   // ...and the one that is this CARD's. The board-wide "Show lists" row further
   // down turns the list name on for every card; this turns it on for one.
+  // Every plain board flag of the table (`flag: true` in cardSettingsRows.js):
+  // the field the row names, from its default when the board never set it.
+  'click .js-board-card-flag'(evt, tpl) {
+    evt.preventDefault();
+    const row = evt.currentTarget.closest('.js-card-field-order-row');
+    const spec = CARD_SETTINGS_ROWS.find(r => r.key === row?.dataset.key)?.[row?.dataset.side];
+    if (!spec?.flag || !tpl.currentBoard) return;
+    const current = typeof tpl.currentBoard[spec.field] === 'boolean' ? tpl.currentBoard[spec.field] : spec.default;
+    Boards.update(tpl.currentBoard._id, { $set: { [spec.field]: !current } });
+  },
+  'click .js-toggle-card-label-text'(evt) {
+    evt.preventDefault();
+    toggleCardLabelText();
+  },
+  'click .js-reset-card-label-text-override'(evt) {
+    evt.preventDefault();
+    evt.stopPropagation();
+    resetCardLabelTextOverride();
+  },
+  'click .js-toggle-show-list-on-card'(evt) {
+    evt.preventDefault();
+    const card = settingsCard();
+    if (!card) return;
+    Cards.update(card._id, { $set: { showListOnCard: !card.showListOnCard } });
+  },
   'click .js-toggle-show-list-on-minicard'(evt) {
     evt.preventDefault();
     const card = settingsCard();

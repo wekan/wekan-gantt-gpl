@@ -20,6 +20,7 @@ import { TAPi18n } from '/imports/i18n';
 import TrelloImportJobs from '/models/trelloImportJobs';
 
 const Papa = require('papaparse');
+const { jiraEstimateCandidates, discoveredJiraEstimateMapping } = require('/models/lib/jiraEstimateMapping');
 
 // Helper to find the closest ancestor template instance by name
 function findParentTemplateInstance(childTemplateInstance, parentTemplateName) {
@@ -236,8 +237,11 @@ Template.import.onCreated(function () {
     // items underneath. It is plain text, not JSON, so it is sent as-is rather
     // than parsed - models/lib/externalParsers.js does the parsing server-side.
     // A Leo .leo outline is XML text and todo.txt is plain text; both are
-    // handled the same way.
-    if (dataSource === 'markdown' || dataSource === 'leo' || dataSource === 'todotxt') {
+    // handled the same way. So is Taskwarrior's export: older versions write
+    // one JSON object per line, which is not one JSON document.
+    // Focalboard's board.jsonl is one JSON object per line too.
+    if (dataSource === 'markdown' || dataSource === 'leo' || dataSource === 'todotxt' || dataSource === 'taskwarrior' ||
+        dataSource === 'focalboard') {
       const input = this.find('.js-import-json').value;
       if (!input || !input.trim()) {
         this.setError('error-json-malformed');
@@ -451,6 +455,8 @@ const IMPORT_SOURCES = [
   { key: 'markdown', name: 'Markdown' },
   { key: 'leo', name: 'Leo' },
   { key: 'todotxt', name: 'todo.txt' },
+  { key: 'taskwarrior', name: 'Taskwarrior' },
+  { key: 'focalboard', name: 'Focalboard' },
 ];
 
 Template.import.helpers({
@@ -563,9 +569,29 @@ Template.importTextarea.helpers({
     return Session.get('importSource') === 'excel';
   },
   isJiraImport() { return Session.get('importSource') === 'jira'; },
+  // The numeric fields the pasted Jira export declares, to pick the estimate.
+  jiraEstimateCandidates() { return Template.instance().jiraCandidates.get(); },
+});
+
+Template.importTextarea.onCreated(function () {
+  this.jiraCandidates = new ReactiveVar([]);
 });
 
 Template.importTextarea.events({
+  'input .js-import-json'(evt, tpl) {
+    if (Session.get('importSource') !== 'jira') return;
+    let data = null;
+    try { data = JSON.parse(evt.currentTarget.value); } catch (e) { /* not complete yet */ }
+    tpl.jiraCandidates.set(data ? jiraEstimateCandidates(data) : []);
+    // The one story points field is what the import would choose anyway.
+    const field = tpl.find('.js-jira-estimate-field');
+    const discovered = data && discoveredJiraEstimateMapping(data);
+    if (field && discovered && !field.value) {
+      field.value = discovered.estimateFieldId;
+      const unit = tpl.find('.js-jira-estimate-unit');
+      if (unit && !unit.value) unit.value = discovered.estimateUnit;
+    }
+  },
   submit(evt, tpl) {
     const importTpl = findParentTemplateInstance(tpl, 'import');
     if (importTpl) {

@@ -30,7 +30,10 @@ native commitment or completion snapshots.
 
 Native whole-board Scrum transfer and duplication are implemented. Jira import
 and export now retain issue types and explicit workflow categories through
-existing hidden metadata, alongside numeric time tracking. See the
+existing hidden metadata, alongside numeric time tracking. Jira import also maps
+open sprints, fix versions, rank and epic links to sprints, releases, backlog
+rank and parents, reporting closed and active sprints' missing snapshots
+(2026-10-02, models/lib/jiraScrumPlanning.js). See the
 [Jira guide](../../../ImportExport/Jira/Jira.md) for mappings, selection controls
 and limitations. External sprint snapshots, multiple release assignments,
 epic relationships remain pending. Explicit numeric Jira estimate-field mapping
@@ -258,7 +261,11 @@ backlog rank. Across boards they retain issue type and acceptance criteria but
 omit sprint, past-sprint and release references and board-relative rank: these
 operations do not copy planning records. The source cards remain unchanged.
 Use full-board duplication to copy planning records with remapped references.
-Standalone planning-record mapping and move support remain pending.
+Moves to another board follow the same rule (2026-10-02), by a server hook that
+covers client, REST and rule moves alike. Maintainer decision of 2026-10-02:
+copies and moves link the sprint and release to the destination's own record of
+the same name when exactly one matches, and drop them otherwise; past sprints
+and rank always go (models/lib/scrumCopy.js).
 
 Standalone list copies retain their Scrum workflow category with a fresh
 revision. Swimlane copies retain their purpose and copy list categories;
