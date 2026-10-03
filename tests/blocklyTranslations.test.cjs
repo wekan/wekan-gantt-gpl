@@ -118,3 +118,62 @@ test('Gujarati Blockly prose and editor messages have no remaining English place
  }
  assert.notEqual(gu['blockly-TEXT_TRIM_OPERATOR_LEFT'],gu['blockly-TEXT_TRIM_OPERATOR_RIGHT']);
 });
+
+test('Ladin keyboard and math labels preserve operations and recognizable key names',()=>{
+ const lld=require('../imports/i18n/data/lld.i18n.json');
+ const names='ALT_KEY BACKSPACE_KEY CAPS_LOCK_KEY COMMAND_KEY CONTEXT_MENU_KEY CONTROL_KEY END_KEY ENTER_KEY ESCAPE HOME_KEY INPUT_LABEL_MATH_DIVIDEND INPUT_LABEL_MATH_DIVISOR INSERT_KEY MATH_TRIG_ACOS MATH_TRIG_ASIN MATH_TRIG_ATAN MATH_TRIG_COS MATH_TRIG_SIN MATH_TRIG_TAN OPTION_KEY PAGE_DOWN_KEY PAGE_UP_KEY PAUSE_KEY SHIFT_KEY TAB_KEY UNNAMED_KEY'.split(' ');
+ for(const name of names){
+  const key=`blockly-${name}`;
+  assert.notEqual(lld[key],english[key],key);
+  assert.deepEqual(tokens(lld[key]),tokens(english[key]),`${key}: exact tokens`);
+ }
+ for(const name of ['ACOS','ASIN','ATAN','COS','SIN','TAN'])
+  assert.equal(lld[`blockly-MATH_TRIG_${name}`],lld[`blockly-MATH_TRIG_${name}_ARIA`]);
+ assert.match(lld['blockly-PAGE_DOWN_KEY'],/ju$/);
+ assert.match(lld['blockly-PAGE_UP_KEY'],/su$/);
+ assert.notEqual(lld['blockly-INPUT_LABEL_MATH_DIVIDEND'],lld['blockly-INPUT_LABEL_MATH_DIVISOR']);
+ assert.notEqual(lld['blockly-HOME_KEY'],lld['blockly-END_KEY']);
+ for(const name of ['Alt','Backspace','Command','Control','Option'])
+  assert.ok(lld[`blockly-${name.toUpperCase()}_KEY`].includes(name));
+ // Product names remain recognizable; they are not prose needing translation.
+ for(const name of ['CHROME_OS','LINUX','MAC_OS','WINDOWS'])
+  assert.equal(lld[`blockly-${name}`],english[`blockly-${name}`]);
+});
+
+test('Upper Sorbian keyboard labels preserve navigation direction and key identity',()=>{
+ const hsb=require('../imports/i18n/data/hsb.i18n.json');
+ const names='ALT_KEY BACKSPACE_KEY CAPS_LOCK_KEY COMMAND_KEY CONTEXT_MENU_KEY CONTROL_KEY END_KEY ENTER_KEY ESCAPE HOME_KEY INSERT_KEY OPTION_KEY PAGE_DOWN_KEY PAGE_UP_KEY PAUSE_KEY SHIFT_KEY SPACE_KEY TAB_KEY'.split(' ');
+ for(const name of names){
+  const key=`blockly-${name}`;
+  assert.notEqual(hsb[key],english[key],key);
+  assert.deepEqual(tokens(hsb[key]),tokens(english[key]),`${key}: exact tokens`);
+ }
+ assert.match(hsb['blockly-PAGE_DOWN_KEY'],/dele$/);
+ assert.match(hsb['blockly-PAGE_UP_KEY'],/horje$/);
+ assert.notEqual(hsb['blockly-HOME_KEY'],hsb['blockly-END_KEY']);
+ assert.notEqual(hsb['blockly-SHIFT_KEY'],hsb['blockly-CAPS_LOCK_KEY']);
+ for(const name of ['Alt','Backspace','Command','Control','Option'])
+  assert.ok(hsb[`blockly-${name.toUpperCase()}_KEY`].includes(name));
+ // Standard math notation, shared mathematical words and product names are valid unchanged.
+ for(const name of ['CHROME_OS','LINUX','MAC_OS','WINDOWS','INPUT_LABEL_NUMBER_MIN','MATH_ADDITION_SYMBOL_ARIA','MATH_ONLIST_OPERATOR_MIN_ARIA','MATH_SUBTRACTION_SYMBOL_ARIA','MATH_TRIG_ACOS','MATH_TRIG_ASIN','MATH_TRIG_ATAN','MATH_TRIG_COS','MATH_TRIG_SIN','MATH_TRIG_TAN'])
+  assert.equal(hsb[`blockly-${name}`],english[`blockly-${name}`]);
+});
+
+test('Silesian keyboard labels preserve navigation direction and key identity',()=>{
+ const szl=require('../imports/i18n/data/szl.i18n.json');
+ const names='ALT_KEY BACKSPACE_KEY CAPS_LOCK_KEY COMMAND_KEY CONTEXT_MENU_KEY CONTROL_KEY END_KEY ENTER_KEY ESCAPE HOME_KEY INSERT_KEY OPTION_KEY PAGE_DOWN_KEY PAGE_UP_KEY PAUSE_KEY SHIFT_KEY SPACE_KEY TAB_KEY UNNAMED_KEY'.split(' ');
+ for(const name of names){
+  const key=`blockly-${name}`;
+  assert.notEqual(szl[key],english[key],key);
+  assert.deepEqual(tokens(szl[key]),tokens(english[key]),`${key}: exact tokens`);
+ }
+ assert.match(szl['blockly-PAGE_DOWN_KEY'],/w dōł$/);
+ assert.match(szl['blockly-PAGE_UP_KEY'],/w gōra$/);
+ assert.notEqual(szl['blockly-HOME_KEY'],szl['blockly-END_KEY']);
+ assert.notEqual(szl['blockly-SHIFT_KEY'],szl['blockly-CAPS_LOCK_KEY']);
+ for(const name of ['Alt','Backspace','Command','Control','Option','Enter','Shift'])
+  assert.ok(szl[`blockly-${name.toUpperCase()}_KEY`].includes(name));
+ // Product names and standard mathematical notation remain unchanged.
+ for(const name of ['CHROME_OS','LINUX','MAC_OS','WINDOWS','MATH_ADDITION_SYMBOL_ARIA','MATH_SUBTRACTION_SYMBOL_ARIA','MATH_TRIG_ACOS','MATH_TRIG_ASIN','MATH_TRIG_ATAN','MATH_TRIG_COS','MATH_TRIG_SIN','MATH_TRIG_TAN'])
+  assert.equal(szl[`blockly-${name}`],english[`blockly-${name}`]);
+});
