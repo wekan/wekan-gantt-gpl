@@ -17,22 +17,49 @@ checkbox shows the opposite of what is stored. Only the display is inverted.
 
 Below the group:
 
-- **Default Authentication Method** — what the sign-in page starts with. The
-  `DEFAULT_AUTHENTICATION_METHOD` environment variable, when set, wins on every
-  startup.
+- **Default Authentication Method** — what the sign-in page starts with:
+  `DEFAULT_AUTHENTICATION_METHOD` in the login settings form under the pane.
+  Choosing a method there overrides the environment variable; **Default**
+  leaves the variable in charge, as it was before.
 - **OIDC button text** — what the OIDC / OAuth2 sign-in button says.
+
+Under them, the Login pane's own environment variables, each overridable:
+`PASSWORD_LOGIN_ENABLED`, `DEFAULT_AUTHENTICATION_METHOD` and
+`ACCOUNTS_COMMON_LOGIN_EXPIRATION_IN_DAYS` (applied when WeKan starts).
 
 ## Provider settings
 
-Provider configuration has separate People menu pages: **SAML**, **LDAP**,
-**OAuth login providers**, and **Passwordless login**. Their URLs are `/admin/people/saml`,
-`/admin/people/ldap`, `/admin/people/oauth`, and `/admin/people/passwordless`.
-The Login page retains the general sign-in and registration controls.
+Every login environment variable can be overridden in the Admin Panel, in the
+section of its login method: **SAML**, **LDAP**, **OAuth2** (OpenID Connect,
+Oracle OIM), **CAS**, **Header login**, **OAuth login providers** and
+**Passwordless login** - `/admin/people/saml`, `/admin/people/ldap`,
+`/admin/people/oidc`, `/admin/people/cas`, `/admin/people/header-login`,
+`/admin/people/oauth` and `/admin/people/passwordless`.
 
-SAML uses an override form showing each field's effective configuration source
-and the service URLs. LDAP, OAuth and Passwordless select their corresponding
-sections of the authentication settings interface. Configuring these pages is
-separate from verifying an actual sign-in against an external identity provider.
+Each field is labelled with its environment variable and says which value is in
+effect: the Admin Panel's, the environment variable's, or the default. Leaving
+a field empty, or choosing **Default**, removes the override, and the
+environment variable applies again. A change applies to the next login without
+a restart, except where the field says it takes effect after WeKan restarts.
+
+Passwords and client secrets (`LDAP_AUTHENTIFICATION_PASSWORD`,
+`OAUTH2_SECRET`) can also come from a file: `LDAP_AUTHENTIFICATION_PASSWORD_FILE`
+and `OAUTH2_SECRET_FILE` name it (Docker / Kubernetes secrets), and WeKan reads
+it at each login, so the password is never an environment variable. The order
+is the Admin Panel, then the variable, then its file. The file path is an
+environment variable only: settable in the Admin Panel beside the LDAP host or
+the OAuth2 token endpoint, it would let the server read any file and send it
+there. The page shows when the password comes from the file, and when that
+file cannot be read. Secrets are never sent to the browser. The page shows only whether
+one is set and where it comes from; typing a new one replaces it, and the
+check box under it removes the one stored in the Admin Panel. Other values
+are shown with any password written inside a URL masked by the server, and a
+URL field refuses a user name or password in it.
+
+The LDAP section has **Test connection**, which tries the LDAP settings in
+effect. The list of variables per section is
+`models/lib/authConfigCatalog.js`; SAML's is `models/lib/samlConfig.js` and the
+OAuth login providers' is `models/lib/oauthProviders.js`.
 
 ## Related
 

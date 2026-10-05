@@ -471,6 +471,14 @@ services:
       # LDAP_GROUP_FILTER_GROUP_MEMBER_FORMAT : 
       # example : 
       - LDAP_GROUP_FILTER_GROUP_MEMBER_FORMAT=
+      # LDAP_GROUP_FILTER_NESTED : Active Directory nested groups (#6744). When true, a user who is a member of
+      # LDAP_GROUP_FILTER_GROUP_NAME through another group (team group -> access
+      # group) is a member too: the group searches use AD's
+      # LDAP_MATCHING_RULE_IN_CHAIN (1.2.840.113556.1.4.1941). Needs a DN-valued
+      # member attribute (member, with LDAP_GROUP_FILTER_GROUP_MEMBER_FORMAT=dn).
+      # Also applies to admin status, group->role and org/team sync. Default: false.
+      # example : LDAP_GROUP_FILTER_NESTED=true
+      - LDAP_GROUP_FILTER_NESTED=false
       # LDAP_GROUP_FILTER_GROUP_NAME : 
       # example : 
       - LDAP_GROUP_FILTER_GROUP_NAME=
@@ -564,3 +572,65 @@ Service-search mode checks membership before rebinding as the user.
 Blocked credential and group-policy attempts are summarized in Admin Panel /
 Problems. See the [authentication boundary audit](../../Security/Authentication-Boundary-Audit-2026-09-27.md)
 for validation coverage and deployment limitations.
+
+### Admin Panel overrides
+
+Every `LDAP_*` setting above can also be set in **Admin Panel / People / LDAP**
+(`/admin/people/ldap`). A value saved there wins over the environment variable;
+an empty field, or **Default**, gives the environment variable back. The page
+says for each setting which one is in effect, and **Test connection** tries the
+settings in effect. The bind password is never sent to the browser - the page
+shows only whether one is set and where it comes from. Changes apply to the
+next login; background sync is rescheduled at once.
+
+Before this, the LDAP page offered only eight settings, and none of them
+applied: the server read them with a call Meteor 3 refuses, and fell back to
+the environment variables without saying so.
+
+### Bind password from a file
+
+`LDAP_AUTHENTIFICATION_PASSWORD_FILE` names a file that holds the search user's
+password - a Docker or Kubernetes secret mounted as a file, for example
+`/run/secrets/ldap_auth_password`. WeKan reads it at each login, so the password
+is never an environment variable, and a rotated file applies to the next
+login. One trailing line break is ignored. `LDAP_AUTHENTIFICATION_PASSWORD`, when
+set, wins over the file, and a password saved in Admin Panel / People / LDAP
+wins over both; the page shows which one is used, and when the file cannot be
+read. On the snap: `snap set wekan
+ldap-authentication-password-file='/var/snap/wekan/common/secrets/ldap_auth_password'`.
+
+### Active Directory nested groups
+
+`LDAP_GROUP_FILTER_GROUP_MEMBER_ATTRIBUTE=member` matches only DIRECT members of
+`LDAP_GROUP_FILTER_GROUP_NAME`. In Active Directory, access is usually granted
+through nested groups: a user is in a team group, and the team group is a member
+of the application access group. To accept those users, set:
+
+```
+LDAP_GROUP_FILTER_NESTED=true
+LDAP_GROUP_FILTER_GROUP_MEMBER_ATTRIBUTE=member
+LDAP_GROUP_FILTER_GROUP_MEMBER_FORMAT=dn
+```
+
+The group searches then use Active Directory's `LDAP_MATCHING_RULE_IN_CHAIN`,
+`(member:1.2.840.113556.1.4.1941:=<user DN>)`, which follows group-in-group
+membership to any depth. The same searches feed admin status sync, group->role
+sync and Organizations/Teams sync, so those see nested groups too: a user who
+is in an `LDAP_SYNC_ADMIN_GROUPS` group through another group becomes an admin.
+
+This matching rule is an Active Directory feature. OpenLDAP, FreeIPA and Samba
+directories without it keep `LDAP_GROUP_FILTER_NESTED=false`, the default.
+
+Writing the rule into the attribute itself,
+`LDAP_GROUP_FILTER_GROUP_MEMBER_ATTRIBUTE=member:1.2.840.113556.1.4.1941:`,
+also works and is used as written; `LDAP_GROUP_FILTER_NESTED=true` is the
+documented way.
+
+**Upgrading from before v12.08:** with `LDAP_USER_AUTHENTICATION=true`, versions
+before v12.08 did not check `LDAP_GROUP_FILTER_ENABLE` at all, so every directory
+user could log in - including members of nested groups, and also users in no
+allowed group. v12.08 enforces the group filter (DirectoryGroupBleed). An Active
+Directory deployment that grants access through nested groups needs
+`LDAP_GROUP_FILTER_NESTED=true` after upgrading, or those users are refused and
+appear in Admin Panel / Problems as `ldap.group-denied`
+([#6744](https://github.com/wekan/wekan/issues/6744)).

@@ -389,6 +389,7 @@ the earlier pause above remains historical. Completed work is recorded in Upcomi
 - Continue automatic-archiving and date-filter translations beyond the thirty-nine locales recorded in completed changelog entries, then the remaining feature families.
 - Fill English placeholders in every language, including minority and constructed languages. Audit mixed-language and wrong-language seed text, and review provisional wording with speakers when available. Preserve correct-language human translations, source key order, exact placeholders, technical identifiers and query examples. Use direct translation and dictionary research, not an external translation service.
 - Keep regression and human-preference checks passing. Passing tests does not establish translation completeness or fluency; rerun relevant checks for each batch and the broad suite before declaring all-language work complete.
+- Added 2026-10-05 for the Admin Panel login settings, English only and pending Transifex: `header-login`, `login-setting-clear-secret` and `login-setting-after-restart`. Until every locale file has them, the 76 key-order suites fail on exactly these three keys (`allTranslationCompleteness`, `danishTranslations` and the rest); nothing else in those suites fails. `node releases/translations/add-pending-keys.mjs --all-locales` would put the English text in every locale meanwhile, if the maintainer prefers that to waiting.
 
 </details>
 
@@ -1581,7 +1582,17 @@ Directory domain, and a real SSPI handshake to build or verify at all; it also
 sits directly in the authentication path, where a wrong implementation done
 without that environment is a security risk rather than a convenience. The
 maintainer's own comment on the issue already flags Node 20 compatibility
-doubts and asks for a Windows/AD-experienced contributor).
+doubts and asks for a Windows/AD-experienced contributor),
+[#6744](https://github.com/wekan/wekan/issues/6744) (fixed with
+`LDAP_GROUP_FILTER_NESTED`, see Upcoming; the in-chain filter was checked to
+parse and encode correctly with ldapts 4.2.6, but a login through a nested group
+against a real Active Directory - the only directory with that matching rule -
+has not been run, as no AD server is available here). UCS (Univention App
+Center) and the Nextcloud ExApp take their settings from their own repositories,
+not this one: whether the login variables added on 2026-10-05 (the 14 missing
+ones, `LDAP_GROUP_FILTER_NESTED` and the `*_FILE` secrets) are offered there is
+not checked; with the Admin Panel overrides, those installs can set them in
+People either way.
 
 </details>
 
@@ -1806,7 +1817,240 @@ tests ran in Chromium and WebKit; Firefox cannot launch on the macOS machine
 used.
 
 </details>
+
+<details>
+<summary>Login settings and secrets: what the 2026-10-05 Admin Panel work left open.</summary>
+
+Every login environment variable is overridable in Admin Panel / People, and
+the LDAP and OAuth2 passwords can come from files (see Upcoming). Left open,
+each for the reason given:
+
+- [#5724](https://github.com/wekan/wekan/issues/5724) (closed, but only partly
+  done): `MAIL_SERVICE_PASSWORD_FILE`, `MONGO_PASSWORD_FILE` and
+  `S3_SECRET_FILE` are listed on every platform and still read by nothing;
+  `secrets/README.md` says so. Not login settings, and each needs a design
+  choice: Meteor connects with `MONGO_URL` before any application code runs, so
+  a Mongo password from a file could only be put into `MONGO_URL` by the
+  launcher - into the environment, which is what the file was meant to avoid;
+  `MAIL_SERVICE_PASSWORD` itself is read by nothing either (mail is configured
+  by `MAIL_URL` or the Admin Panel mail settings), and S3 reads
+  `S3_SECRET_KEY`, not `S3_SECRET`.
+- LDAP **Test connection** answers success without having connected when no
+  service account (`LDAP_AUTHENTIFICATION`) is set: it binds only with that
+  account, and ldapts opens the socket lazily. Checked on 2026-10-05 with an
+  unresolvable host. Needs a decision on what a test without credentials does -
+  an anonymous base search of `LDAP_BASEDN`, or saying that nothing was tested -
+  and a directory to verify it against.
+- `LOGOUT_WITH_TIMER`, `LOGOUT_IN`, `LOGOUT_ON_HOURS` and `LOGOUT_ON_MINUTES`
+  are offered by the snap and the start scripts, but no code reads them, so
+  they do nothing. Implement them or remove them from the platforms - a
+  maintainer decision.
+- Header login can now be switched on from Admin Panel / People by a site
+  administrator. It still fails closed without `HEADER_LOGIN_TRUSTED_IPS`, but
+  an administrator who sets both can let a proxy sign in as anyone. Whether
+  header login should stay environment-only is a maintainer decision.
+- `ldap_sync_now` (`packages/wekan-ldap/server/syncUser.js`) is never loaded and
+  nothing calls it. Its synchronous `Meteor.user()` was made async on
+  2026-10-05 so the whole-tree test holds; wire it to a "Sync now" button or
+  remove it.
+- `tests/changelogFormat.test.cjs` fails on a released section: two Kurdish /
+  Turkmen translation entries show the hashes `b76be84186` and `c9e622f1b5` as
+  link text. A released section is a record and was left unedited; whether to
+  correct only the link text there is the maintainer's call.
+- Browser tests: Meteor allows 30 refreshes of the HttpOnly login cookie per 10
+  seconds per address (`/_accounts/cookie/refresh`, then `429`). Every test runs
+  from localhost, so a fast Chromium run that switches users often can exceed it
+  and the next `loginWithToken` lands on the sign-in page. Seen on 2026-10-05
+  with the login settings specs; their full-page loads were reduced so they
+  pass. A retry after a `429` in `tests/playwright/helpers/auth.js`, or a higher
+  `httpOnlyCookieRateLimit` for the test server only, would remove it for every
+  spec.
+
 </details>
+</details>
+
+# v12.19 2026-10-05 WeKan ® release
+
+**In short:** Every **login environment variable** can now be overridden in
+**Admin Panel / People**, in a section per login method, with passwords never
+sent to the browser - and the **LDAP** overrides, which never applied before,
+now do. **LDAP and OAuth2 passwords** can come from **Docker / Kubernetes
+secret files**. **LDAP** logins accept members of **nested Active Directory
+groups**.
+Every **release file** now appears on the GitHub Release as soon as its job has
+built and checked it, also when the run is cancelled.
+
+This release adds the following new features:
+
+**Login settings in the Admin Panel** - every login environment variable,
+overridable per login method, with the default sign-in method among them.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/eb49a4b1b6">Override every login environment variable in Admin Panel / People, one section per login method</a>. Thanks to xet7.</summary>
+
+People now has a section for **LDAP**, **OAuth2** (OpenID Connect, Oracle
+OIM), **CAS** and **Header login**, beside SAML, OAuth login providers and
+Passwordless, and the **Login** pane has `PASSWORD_LOGIN_ENABLED` and
+`ACCOUNTS_COMMON_LOGIN_EXPIRATION_IN_DAYS`. Each field is labelled with its
+environment variable and says whether the Admin Panel's value, the
+variable's or the default is in effect; an empty field gives the variable
+back. `models/lib/authConfigCatalog.js` lists all 103 variables, and
+`server/lib/authConfig.js` resolves each at run time for the app and the
+wekan-ldap, wekan-oidc and wekan-accounts-cas packages, so a change applies to
+the next login. OAuth2 and CAS service configurations and LDAP background sync
+are reapplied on save; the login expiry applies from the next start.
+
+`LDAP_AUTHENTIFICATION_PASSWORD` and `OAUTH2_SECRET` never reach the browser:
+the page learns only whether one is set and where it comes from, and a typed
+one is cleared from the form after saving. Other values have a password
+written inside a URL masked on the server, and URL fields refuse credentials.
+
+Every variable is now listed in the Dockerfile, docker-compose files, snap
+config and help, and `start-wekan.sh` / `.bat`; 14 were missing.
+`tests/authConfigCatalog.test.cjs` pins resolution, secrets, input and platform
+coverage, and across the whole tree that no code reads a login variable outside
+the catalog or straight from `process.env`.
+`tests/playwright/specs/admin-login-env-overrides.e2e.js` saves an override and
+a secret through the pages and refuses an ordinary user; it passes in Chromium,
+WebKit and Firefox.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0314406656">The Admin Panel can override DEFAULT_AUTHENTICATION_METHOD, and Default gives the variable back</a>. Thanks to xet7.</summary>
+
+The default sign-in method is a field of the Login pane's settings form.
+Choosing one there overrides `DEFAULT_AUTHENTICATION_METHOD`; **Default** leaves
+the variable in charge. Before, the variable rewrote the stored method at every
+start, so an administrator's choice was lost on restart whenever it was set.
+The method the sign-in page uses is now the override, else the variable, else
+`password`. On upgrade, a method chosen with the old dropdown while no variable
+was set becomes the override, once, so nobody's choice is lost; the old dropdown
+is gone, as it was a second control for the same setting.
+`tests/authConfigCatalog.test.cjs` covers the order and the one-time upgrade,
+with negative tests that it never invents an override, and the browser test
+chooses a method, checks the sign-in page's value, and gives it back.
+
+</details>
+
+**Login secrets from files** - Docker and Kubernetes secrets, without the
+password in an environment variable.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0314406656">Read LDAP_AUTHENTIFICATION_PASSWORD_FILE and OAUTH2_SECRET_FILE at login</a>. Thanks to Roemer, CrashOverride-lab, ww-daniel-mora and xet7.</summary>
+
+Since [#5724](https://github.com/wekan/wekan/issues/5724) the Dockerfile, snap,
+docker-compose files and `start-wekan` listed these, but no code read them, so
+the password could only be an environment variable. WeKan now reads the file
+itself at each login, so the password never enters the environment and a
+rotated secret applies at once. The order is the Admin Panel, the variable,
+then its file; one trailing line break is dropped. It is the same application
+code on every platform: Docker, the snap (files under `/var/snap/wekan/common`),
+bundles, AppImage, Flatpak, Mac and Windows. Admin Panel / People says when the
+password comes from the file and when the file cannot be read - never its path
+or content. The path is an environment variable only, on purpose: settable in
+the Admin Panel beside the LDAP host or the OAuth2 token endpoint, it would make
+the server read any file and send it there as the password. The snap key is now
+`ldap-authentication-password-file`, like its siblings.
+`MAIL_SERVICE_PASSWORD_FILE`, `MONGO_PASSWORD_FILE` and `S3_SECRET_FILE` are
+still not read; `secrets/README.md` says so. Tests read a real file and a
+rotated one, drive `ldap.js` to bind with it, and check that nothing reaches the
+browser and that the Admin Panel cannot set a path.
+
+</details>
+
+and fixes the following bugs:
+
+**LDAP login** - who gets in through a directory group, and whether the Admin
+Panel's LDAP settings are used at all.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/dc2e7592a3">Accept members of nested Active Directory groups with LDAP_GROUP_FILTER_NESTED</a>. Thanks to rmb82 and xet7.</summary>
+
+Since v12.08 (DirectoryGroupBleed) `LDAP_USER_AUTHENTICATION=true` logins check
+`LDAP_GROUP_FILTER_ENABLE`; before it, every directory user got in. The check
+matched `(member=<user DN>)`, which is direct membership only, so an Active
+Directory that grants access through a team group nested in the access group
+refused those users: web login failed when the session ended, `POST
+/users/login` answered 401, and Admin Panel / Problems listed them as
+`ldap.group-denied` ([#6744](https://github.com/wekan/wekan/issues/6744)).
+
+`LDAP_GROUP_FILTER_NESTED=true` makes both group searches use AD's
+`LDAP_MATCHING_RULE_IN_CHAIN`, `(member:1.2.840.113556.1.4.1941:=<user DN>)`,
+so the login filter and admin status, group->role and org/team sync all see
+nested groups. It is off by default, so other directories keep direct
+membership, and the workaround of writing the rule into
+`LDAP_GROUP_FILTER_GROUP_MEMBER_ATTRIBUTE` is used as written. The user DN stays
+escaped, and a user entry with no DN is still refused without a search.
+`docs/Features/Login/LDAP.md` documents it with an upgrade note, and the
+Dockerfiles, docker-compose files, snap and start-wekan scripts list it.
+
+`tests/ldapNestedGroups.test.cjs` drives `isUserInGroup` and `getUserGroups`:
+a nested member is admitted with the in-chain filter, and the negative tests
+check direct membership without the setting, refusal when no allowed group is
+found, no search for an unnamed user, an escaped hostile DN, and that every
+member clause in `ldap.js` goes through `groupMemberClause`. There is no browser
+test, because the browser suite has no Active Directory server to log in to.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/eb49a4b1b6">Admin Panel LDAP settings are used, and Test connection exists</a>. Thanks to xet7.</summary>
+
+The eight LDAP settings the Admin Panel offered never applied: the server read
+them with a `Settings.findOne()`, which Meteor 3 refuses on the server, and the
+error was swallowed, so LDAP silently used the environment variables. The
+settings are now held in an observed cache. **Test connection** answered only
+"Method not found", because `testConnection.js` was never loaded, and it used
+the synchronous `Meteor.user()` Meteor 3 refuses. Whole-tree tests now fail on
+either call in server code. Test connection still reports success without a
+real connection when no service account (`LDAP_AUTHENTIFICATION`) is set.
+
+</details>
+
+**Other login methods** - settings that did not do what they said.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/eb49a4b1b6">CAS_VALIDATE_URL, PROPAGATE_OIDC_DATA=false and three snap help keys work as documented</a>. Thanks to xet7.</summary>
+
+CAS read only the misspelling `CASE_VALIDATE_URL`; `CAS_VALIDATE_URL` now
+works, and the old name still does. `PROPAGATE_OIDC_DATA=false` turned the
+feature on, because any non-empty value did. `snap help` showed
+`ldap-group-filter-group-id-attribute`, `-group-member-attribute` and
+`-group-member-format`, which `snap set` does not know; it shows the real keys.
+
+</details>
+
+and has the following developer-tooling fix:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/37bc66403f">Attach each release file from the job that built it, also when cancelled</a>. Thanks to xet7.</summary>
+
+The amd64 and arm64 bundles used to be uploaded together by the `release` job,
+after both were built, and the AppImages, Mac apps, Flatpaks and the Windows
+single EXE by a final `publish` job that waited for every architecture. A
+cancelled run attached nothing at all, because those collecting jobs never
+started.
+
+Now every job that builds a release file attaches it, with its `.sha256sum`, as
+its own last step through `releases/github-release-upload.sh` (retried, bounded,
+verified by name and size; it no longer needs GNU `timeout`, so it also runs on
+the macOS runners and in Windows Git Bash). `build-amd64` creates the release
+with `releases/ensure-github-release.sh` right before attaching the first file,
+so a run whose amd64 build fails still publishes no release. The `release` job
+writes the notes and checks both base bundles are there; it uploads nothing.
+
+The attach steps run on `always()` plus their build step's success, so a cancel
+that arrives after a build still attaches its file. The final jobs - release
+notes, what is still missing, and the AppImage, Mac and Flatpak summaries and
+Flatpak repository - run on `always()` while still requiring the release to
+exist. `tests/releaseAttachOwnFiles.test.cjs` pins both, with negative tests
+that no job collects other jobs' files and uploads them at the end, and that no
+attach step or final job is skipped by cancellation.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
 
 # v12.18 2026-10-04 WeKan ® release
 

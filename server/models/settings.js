@@ -17,6 +17,7 @@ import { Authentication } from '/server/authentication';
 import { sendJsonResult } from '/server/apiMiddleware';
 import RecoveryEvents from '/models/recoveryEvents';
 import { recordRecoveryAudit } from '/server/lib/recoveryAudit';
+import { authEnv, onAuthConfigChange, reloadAuthConfig } from '/server/lib/authConfig';
 // ErrorBleed: refusals answer with their real status and a safe message.
 const { publicErrorData } = require('/server/lib/apiResponseHelpers');
 const { buildOauthLogoutUrl } = require('/server/lib/oauthLogoutUrl');
@@ -74,6 +75,7 @@ const { isSupportedMailService, mailServiceStorageKey } = require('/models/lib/m
 const {
   normalizeAuthenticationMethod,
   resolveDefaultAuthenticationMethod,
+  migratedDefaultAuthenticationMethod,
 } = require('/models/lib/authenticationMethod');
 
 const isSandstorm =
@@ -200,19 +202,17 @@ async function isNonAdminAllowedToSendMail(currentUser) {
   return isAllowed;
 }
 
+// Admin Panel / People override first, then the environment (authConfig.js).
 function isLdapEnabled() {
-  return process.env.LDAP_ENABLE === 'true' || process.env.LDAP_ENABLE === true;
+  return authEnv('LDAP_ENABLE') === 'true';
 }
 
 function isOauth2Enabled() {
-  return (
-    process.env.OAUTH2_ENABLED === 'true' ||
-    process.env.OAUTH2_ENABLED === true
-  );
+  return authEnv('OAUTH2_ENABLED') === 'true';
 }
 
 function isCasEnabled() {
-  return process.env.CAS_ENABLED === 'true' || process.env.CAS_ENABLED === true;
+  return authEnv('CAS_ENABLED') === 'true';
 }
 
 async function isSamlEnabled() {
@@ -224,15 +224,48 @@ function isApiEnabled() {
   return process.env.WITH_API === 'true' || process.env.WITH_API === true;
 }
 
+// The login page reads the published `defaultAuthenticationMethod`. It is the
+// Admin Panel / People / Login choice when one is made there, otherwise
+// DEFAULT_AUTHENTICATION_METHOD, otherwise 'password' - so choosing Default
+// again really gives the variable back. Before, the variable rewrote the
+// stored value on every start, so an administrator's choice did not survive a
+// restart whenever it was set. Applied once the login settings are read at
+// start, and after each save.
+//
+// Once, on upgrade: a method chosen with the old Login dropdown, with no
+// variable set, was the administrator's choice (with the variable set, the
+// start overwrote it), so it becomes the override instead of being lost.
+export async function applyDefaultAuthenticationMethod() {
+  const setting = await Settings.findOneAsync({}, { fields: { defaultAuthenticationMethod: 1, loginOptions: 1 } });
+  if (!setting) return;
+  const options = setting.loginOptions || {};
+  if (options.defaultAuthenticationMethodMigrated !== true) {
+    const set = { 'loginOptions.defaultAuthenticationMethodMigrated': true };
+    const keep = migratedDefaultAuthenticationMethod({
+      stored: setting.defaultAuthenticationMethod,
+      override: options.defaultAuthenticationMethod,
+      // With no override stored, authEnv answers with the variable.
+      environment: options.defaultAuthenticationMethod ? undefined : authEnv('DEFAULT_AUTHENTICATION_METHOD'),
+    });
+    if (keep) set['loginOptions.defaultAuthenticationMethod'] = keep;
+    await Settings.updateAsync(setting._id, { $set: set });
+    await reloadAuthConfig();
+  }
+  const effective = resolveDefaultAuthenticationMethod(authEnv('DEFAULT_AUTHENTICATION_METHOD'), undefined);
+  if (effective !== setting.defaultAuthenticationMethod) {
+    await Settings.updateAsync(setting._id, { $set: { defaultAuthenticationMethod: effective } });
+  }
+}
+onAuthConfigChange('login', applyDefaultAuthenticationMethod);
+
 Meteor.startup(async () => {
   await ensureIndex(Settings, { modifiedAt: -1 });
   const setting = await getReactiveCache().getCurrentSetting();
-  // #5879: honour the DEFAULT_AUTHENTICATION_METHOD env var. It used to be
-  // ignored (settings only ever seeded 'password'), so operators configuring it
-  // via Kubernetes/Helm saw no effect. When set it is authoritative, so the
-  // default login method can be configured by env without the Admin Panel.
+  // #5879: honour DEFAULT_AUTHENTICATION_METHOD (it used to be ignored). The
+  // stored setting is kept in sync by applyDefaultAuthenticationMethod() below;
+  // a new install is seeded with it here.
   const envDefaultAuthenticationMethod = normalizeAuthenticationMethod(
-    process.env.DEFAULT_AUTHENTICATION_METHOD,
+    authEnv('DEFAULT_AUTHENTICATION_METHOD'),
   );
   // CARDS_LOADING env: 'lazy' or 'all' (anything else / unset → undefined = leave
   // to the stored setting, defaulting to 'all'). Like DEFAULT_AUTHENTICATION_METHOD,
@@ -264,15 +297,6 @@ Meteor.startup(async () => {
         resolveDefaultAuthenticationMethod(envDefaultAuthenticationMethod, undefined),
     };
     await Settings.insertAsync(defaultSetting);
-  } else if (
-    envDefaultAuthenticationMethod &&
-    setting.defaultAuthenticationMethod !== envDefaultAuthenticationMethod
-  ) {
-    // Existing install: keep the stored setting in sync with the env var so it
-    // wins on every startup (the operator's env is the source of truth).
-    await Settings.updateAsync(setting._id, {
-      $set: { defaultAuthenticationMethod: envDefaultAuthenticationMethod },
-    });
   }
   // #6116 split: the single "same Organization OR Team" restriction became one
   // setting per kind, shown in Admin Panel / People / Organizations and / Teams. An
@@ -407,89 +431,12 @@ Meteor.methods({
     }
     return true;
   },
-  // Admin Panel -> LDAP override (models/lib/configResolver.js). Saves the
-  // non-secret LDAP_* overrides plainly, and the bind password ONLY when a new
-  // one was actually typed (an empty submission leaves the currently-active
-  // value/source - admin or env var - untouched, matching saveAdminMailSettings
-  // above and the maintainer's "empty submission = no change" requirement).
-  // The password is never returned to the caller; only 'ldap.bindPasswordSet'
-  // is published (server/publications/settings.js), so the client can show
-  // "a password is configured" without ever holding the password itself.
-  async saveLdapSettings(input) {
-    check(input, Object);
-    const user = await Meteor.userAsync();
-    if (!user?.isAdmin) throw new Meteor.Error('error-notAuthorized');
-
-    const clean = {
-      'ldap.enabled': input.enabled === true,
-      'ldap.host': String(input.host || '').trim(),
-      'ldap.port': String(input.port || '').trim(),
-      'ldap.baseDN': String(input.baseDN || '').trim(),
-      'ldap.authentificationUserDN': String(input.authentificationUserDN || '').trim(),
-      'ldap.userSearchFilter': String(input.userSearchFilter || '').trim(),
-      'ldap.userSearchField': String(input.userSearchField || '').trim(),
-      'ldap.encryption': String(input.encryption || '').trim(),
-    };
-
-    const setting = await Settings.findOneAsync({});
-    if (!setting) throw new Meteor.Error('settings-not-found');
-
-    const set = { ...clean };
-    const bindPassword = String(input.bindPassword || '');
-    if (bindPassword) {
-      set['ldap.bindPassword'] = bindPassword;
-      set['ldap.bindPasswordSet'] = true;
-    }
-    await Settings.updateAsync(setting._id, { $set: set });
-    return true;
-  },
-  // Admin-only. Tells the Admin Panel LDAP section WHICH source (env var /
-  // admin panel / not configured) is currently active for each field - the
-  // maintainer's "clearly visible, is in use environment variable or admin
-  // panel setting" requirement - WITHOUT ever sending a secret's value. The
-  // non-secret fields' resolved value is included too (host/port/DN/filter are
-  // not secrets and are useful for debugging); the bind password is reported
-  // ONLY as hasValue/source, from hasConfigValue(), never its actual value.
-  // Nothing here reads a composite/connection-string-shaped env var (LDAP's
-  // host and credentials are already separate fields, not a combined URL), so
-  // there is no embedded-credential string to redact for this module - see
-  // models/lib/configResolver.js's redactCredentialsInUrl() for the helper
-  // that exists for the general case.
-  async getLdapConfigSources() {
-    const user = await Meteor.userAsync();
-    if (!user?.isAdmin) throw new Meteor.Error('error-notAuthorized');
-
-    const setting = await Settings.findOneAsync({});
-    const ldap = setting?.ldap || {};
-
-    const fieldMap = {
-      enabled: 'LDAP_ENABLE',
-      host: 'LDAP_HOST',
-      port: 'LDAP_PORT',
-      baseDN: 'LDAP_BASEDN',
-      authentificationUserDN: 'LDAP_AUTHENTIFICATION_USERDN',
-      userSearchFilter: 'LDAP_USER_SEARCH_FILTER',
-      userSearchField: 'LDAP_USER_SEARCH_FIELD',
-      encryption: 'LDAP_ENCRYPTION',
-    };
-    const result = {};
-    Object.keys(fieldMap).forEach(field => {
-      const resolved = resolveConfigValue(fieldMap[field], ldap[field]);
-      result[field] = { source: resolved.source, value: resolved.value };
-    });
-    const passwordStatus = hasConfigValue(
-      'LDAP_AUTHENTIFICATION_PASSWORD',
-      ldap.bindPassword,
-    );
-    result.bindPassword = {
-      source: passwordStatus.source,
-      hasValue: passwordStatus.hasValue,
-    };
-    return result;
-  },
+  // Admin Panel / People / LDAP, OAuth2, CAS, Header login and the Login
+  // pane's own login settings are saved and reported by
+  // saveAuthConfigSettings / getAuthConfigSources (server/lib/authConfig.js).
   // Admin Panel -> OAuth login providers (Meteor's accounts-google/-github/
   // -facebook/-twitter/-meteor-developer/-weibo/-meetup; the catalog is
-  // models/lib/oauthProviders.js). Same contract as saveLdapSettings above:
+  // models/lib/oauthProviders.js). Same contract as saveAuthConfigSettings:
   // isAdmin only, the non-secret fields (`enabled`, `id`, `loginStyle`) are
   // saved plainly, the secret ONLY when a new one was actually typed - an
   // empty submission leaves the stored secret and its source untouched - and
@@ -554,7 +501,7 @@ Meteor.methods({
   },
   // Admin-only. Which source (env var / Admin Panel / unset) is active for
   // every OAuth provider field, the shared login style / merge setting and
-  // passwordless - the LDAP getLdapConfigSources contract. The secret is
+  // passwordless - the getAuthConfigSources contract. The secret is
   // reported ONLY as hasValue/source from hasConfigValue(), never its value.
   async getOauthProviderConfigSources() {
     const user = await Meteor.userAsync();
@@ -851,7 +798,7 @@ Meteor.methods({
   },
 
   getOauthServerUrl() {
-    return process.env.OAUTH2_SERVER_URL;
+    return authEnv('OAUTH2_SERVER_URL');
   },
 
   getOauthDashboardUrl() {
@@ -866,19 +813,19 @@ Meteor.methods({
   // page (which errors for non-admin users). See issue #6158.
   getOauthLogoutUrl() {
     return buildOauthLogoutUrl({
-      endpoint: process.env.OAUTH2_LOGOUT_ENDPOINT,
-      serverUrl: process.env.OAUTH2_SERVER_URL,
-      clientId: process.env.OAUTH2_CLIENT_ID,
+      endpoint: authEnv('OAUTH2_LOGOUT_ENDPOINT'),
+      serverUrl: authEnv('OAUTH2_SERVER_URL'),
+      clientId: authEnv('OAUTH2_CLIENT_ID'),
       redirectUri: Meteor.absoluteUrl(),
     });
   },
 
   getDefaultAuthenticationMethod() {
-    return process.env.DEFAULT_AUTHENTICATION_METHOD;
+    return authEnv('DEFAULT_AUTHENTICATION_METHOD');
   },
 
   isPasswordLoginEnabled() {
-    return !(process.env.PASSWORD_LOGIN_ENABLED === 'false');
+    return !(authEnv('PASSWORD_LOGIN_ENABLED') === 'false');
   },
 
   // #5695: loadOidcConfig() returns a Promise since the Meteor 3 async
@@ -887,7 +834,7 @@ Meteor.methods({
   // configured oidc service, silently disabling the auto-redirect login.
   // Await the config before inspecting it.
   async isOidcRedirectionEnabled() {
-    if (process.env.OIDC_REDIRECTION_ENABLED !== 'true') return false;
+    if (authEnv('OIDC_REDIRECTION_ENABLED') !== 'true') return false;
     const config = await loadOidcConfig('oidc');
     return !!config && Object.keys(config).length > 0;
   },

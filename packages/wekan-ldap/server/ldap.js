@@ -10,47 +10,40 @@ import {
   missingGroupLookupSettings,
   missingLoginGroupFilterSettings,
   loginGroupNames,
+  groupMemberClause,
 } from './groupFilterConfig';
-import { resolveConfigValue } from './configResolver';
 import { requireUserCredentials, escapeUserDnValue } from './userCredentials';
 
-// Admin Panel -> LDAP override (models/settings.js's `ldap` sub-document): maps
-// each env var this module reads to the admin-editable field that may override
-// it (models/lib/configResolver.js's resolveConfigValue() - admin value wins
-// when set and non-empty, otherwise the env var, otherwise undefined). Every
-// field here is a NON-secret value; the bind password has its own resolver
-// call below (still server-only - nothing here is ever published) so its
-// admin-panel storage stays out of this generic map.
-const LDAP_ADMIN_OVERRIDE_FIELD = {
-  LDAP_ENABLE: 'enabled',
-  LDAP_HOST: 'host',
-  LDAP_PORT: 'port',
-  LDAP_BASEDN: 'baseDN',
-  LDAP_AUTHENTIFICATION_USERDN: 'authentificationUserDN',
-  LDAP_USER_SEARCH_FILTER: 'userSearchFilter',
-  LDAP_USER_SEARCH_FIELD: 'userSearchField',
-  LDAP_ENCRYPTION: 'encryption',
+// Every LDAP_* setting is read through ONE accessor: the app's
+// server/lib/authConfig.js authEnv(), which answers with the Admin Panel /
+// People / LDAP override when one is stored and otherwise the environment
+// variable (models/lib/authConfigCatalog.js lists them all). A local Meteor
+// package cannot import the app (tests/packageAppImportBoundary.test.cjs says why), so
+// the app wires it here once at boot (server/ldapAdminSettingsBridge.js), and
+// until then - or in a plain-Node test - this reads the environment, as
+// authEnv() itself does when it has nothing stored.
+//
+// It used to map only eight variables to the Admin Panel, and read the
+// Settings document with a server-side findOne() that Meteor 3 refuses - the
+// exception was swallowed, so no Admin Panel LDAP value ever applied.
+const envAccessor = name => {
+  const resolve = globalThis.__wekanAuthEnv;
+  return typeof resolve === 'function' ? resolve(name) : process.env[name];
 };
-
-// A local Meteor package cannot import the app's Settings collection
-// directly (see configResolver.js's header comment), so the app hands this
-// module a getter instead - wired once at server boot by
-// server/ldapAdminSettingsBridge.js via setLdapSettingsAccessor(). Until
-// that runs (or if it is never wired, e.g. a test loading this file in
-// isolation), this falls back to env-var-only behaviour.
-let ldapSettingsAccessor = () => ({});
+let ldapSettingsAccessor = envAccessor;
 
 export function setLdapSettingsAccessor(fn) {
-  ldapSettingsAccessor = typeof fn === 'function' ? fn : () => ({});
+  ldapSettingsAccessor = typeof fn === 'function' ? fn : envAccessor;
 }
 
-function currentLdapAdminSettings() {
+// The raw string, as an environment variable would hold it.
+function ldapSetting(name) {
   try {
-    return ldapSettingsAccessor() || {};
+    return ldapSettingsAccessor(name);
   } catch (e) {
-    // Settings collection not ready yet (e.g. very early boot) - fall back to
-    // env-var-only behaviour rather than crashing the LDAP module.
-    return {};
+    // Settings not readable yet (very early boot) - the environment, rather
+    // than crashing the LDAP module.
+    return process.env[name];
   }
 }
 
@@ -134,10 +127,9 @@ export default class LDAP {
       // server/publications/settings.js). Reading it here, server-side only, to
       // actually perform the LDAP bind is fine; nothing below returns it to a
       // caller that could leak it to the browser.
-      Authentication_Password            : resolveConfigValue(
-        'LDAP_AUTHENTIFICATION_PASSWORD',
-        currentLdapAdminSettings().bindPassword,
-      ).value,
+      // NOT through settings_get(): its number coercion would turn a numeric
+      // password into a Number.
+      Authentication_Password            : ldapSetting('LDAP_AUTHENTIFICATION_PASSWORD'),
       Authentication_Fallback            : this.constructor.settings_get('LDAP_LOGIN_FALLBACK'),
       BaseDN                             : this.constructor.settings_get('LDAP_BASEDN'),
       Internal_Log_Level                 : this.constructor.settings_get('INTERNAL_LOG_LEVEL'), //this setting does not have any effect any more and should be deprecated
@@ -162,23 +154,18 @@ export default class LDAP {
       group_filter_group_member_attribute: this.constructor.settings_get('LDAP_GROUP_FILTER_GROUP_MEMBER_ATTRIBUTE'),
       group_filter_group_member_format   : this.constructor.settings_get('LDAP_GROUP_FILTER_GROUP_MEMBER_FORMAT'),
       group_filter_group_name            : this.constructor.settings_get('LDAP_GROUP_FILTER_GROUP_NAME'),
+      // #6744: Active Directory nested groups (team group -> access group).
+      // Off unless exactly true, so an existing install keeps direct membership.
+      group_filter_nested                : this.constructor.settings_get('LDAP_GROUP_FILTER_NESTED') === true,
       AD_Simple_Auth                     : this.constructor.settings_get('LDAP_AD_SIMPLE_AUTH'),
       Default_Domain                     : this.constructor.settings_get('LDAP_DEFAULT_DOMAIN'),
     };
   }
 
   static settings_get(name, ...args) {
-    const overrideField = LDAP_ADMIN_OVERRIDE_FIELD[name];
-    let value;
-    if (overrideField) {
-      value = resolveConfigValue(name, currentLdapAdminSettings()[overrideField]).value;
-    } else {
-      value = process.env[name];
-    }
+    let value = ldapSetting(name);
     if (value !== undefined) {
-      // The admin-override path can hand back an already-typed value (e.g. a
-      // Boolean for 'ldap.enabled', a SimpleSchema Boolean field) - only the
-      // env var's raw string needs the 'true'/'false'/numeric coercion below.
+      // Both sources hand back a string; a typed value is accepted as is.
       if (typeof value === 'string') {
         if (value === 'true' || value === 'false') {
           value = JSON.parse(value);
@@ -622,7 +609,9 @@ export default class LDAP {
         return [];
       }
 
-      filter.push(`(${this.options.group_filter_group_member_attribute}=${escapeLdapFilterValue(format_value)})`);
+      // #6744: with LDAP_GROUP_FILTER_NESTED, also the groups the user is in
+      // through other groups, so admin, role and org/team sync see them too.
+      filter.push(groupMemberClause(this.options, escapeLdapFilterValue(format_value)));
     }
 
     filter.push(')');
@@ -695,7 +684,8 @@ export default class LDAP {
         ldapUser.dn || ldapUser.objectName || ldapUser.distinguishedName;
       // Never turn a membership query into a search for any allowed group.
       if (typeof format_value !== 'string' || !format_value) return false;
-      filter.push(`(${this.options.group_filter_group_member_attribute}=${escapeLdapFilterValue(format_value)})`);
+      // #6744: a member of the allowed group through a nested group is a member.
+      filter.push(groupMemberClause(this.options, escapeLdapFilterValue(format_value)));
     }
 
     if (this.options.group_filter_group_id_attribute !== '') {
