@@ -4643,6 +4643,1521 @@ mixed-language audit remains open.
 - Extended exact-placeholder/opposing-operation regressions and translated add-comment browser assertions. Blockly/completeness: 13 tests pass; human-preference verification: 21 checks pass. Browser coverage is syntax-checked only because Playwright is absent locally; spoken accessibility and fluent wording remain unverified.
 - Ordinary placeholders decrease from 48,461 to 48,390 across 70 languages. The 148 pending source keys and broader translation/semantic audit remain open.
 
+## Veps Blockly comment and accessibility controls
+
+- Filled fifteen English placeholders in `ve-PP` through the protected merge: comment actions, conditional branches, inputs, list items, text, button, collapse/expand, angle degrees and empty trash.
+- Read [Veps MediaWiki messages](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/vep.json) for add/delete, comment, collapse/expand and field vocabulary. The [Veps–Hungarian dictionary](https://adoc.pub/vepsze-magyar-kisszotar-veps-vengrialaine-pen-vajehnik.html) supports `nübl’` (clothing button), `gradus` (degree), `rujobak` (trash container) and `nügüd’` (now). Extending the clothing-button word to a UI control remains provisional.
+- Replaced the unapplied draft's unverified button/input forms and Finnish-shaped trash compound. Its `eht` is “evening,” not “condition”; the new secondary-branch label uses a provisional “another if-rule” paraphrase. `tedopöud` is a drafted data-field compound, and block inputs are not necessarily text fields. Full phrases, inflection and these adaptations remain **low confidence** and require semantic review.
+- Extended exact-placeholder/opposing-action regression coverage and the existing translated add-comment browser assertion to Veps. Blockly/completeness: 13 tests pass; human-preference verification: 21 checks pass. Browser coverage is syntax-checked only because Playwright is absent locally. Neither browser interaction nor spoken accessibility was executed; structural checks do not establish fluency.
+- Ordinary placeholders decrease from 48,390 to 48,375 across 70 languages. The 148 pending source keys and broader translation/semantic audit remain open.
+
+## Wu Chinese and Nahuatl Blockly accessibility labels
+
+- Filled fifteen English placeholders each in Wu Chinese (`wuu-Hans`) and Nahuatl (`nah`): 30 values, using the protected merge. The group covers comment controls, conditional branches, inputs, list items, text, button, collapse/expand, angle degrees and empty trash.
+- Wu Chinese uses simplified characters and regional phrasing such as `删脱`, `里向` and `空个`. The variety-wide suitability of these forms remains provisional.
+- Nahuatl vocabulary research used [pachoa (press)](https://nahuatl.wired-humanities.org/content/pachoa), [tlazolli (trash)](https://nahuatl.wired-humanities.org/content/tlazolli) and [tlalia (place/set up)](https://nahuatl.wired-humanities.org/content/tlalia). The button is paraphrased as something pressed; add uses a placement verb. Replaced the initial raising/shrinking drafts before commit. Complete clauses, modern technical nouns, the degree loan and condition/input paraphrases remain **low confidence**; the dictionary does not attest the full UI sentences.
+- Extended exact-placeholder and opposing-operation checks and visible translated add-comment browser assertions to both locales. Blockly/completeness: 13 tests pass; human-preference verification: 21 checks pass. Browser coverage is syntax-checked only because Playwright is absent locally. Spoken accessibility and fluent wording remain unverified.
+- Ordinary placeholders decrease from 48,375 to 48,345 across 70 languages. Six locales still have English placeholders in this accessibility-label group. The 148 pending source keys and broader translation/semantic audit remain open.
+
+### Standard Moroccan Tamazight accessibility labels
+
+- Filled 13 English Blockly accessibility labels in `zgh`; preserved both existing comment commands. The protected fill changes only English placeholders.
+- Retained the exact `%1` angle argument with the degree symbol. Added the locale to positive/opposite-action/token coverage and the existing browser context-menu assertion.
+- Vocabulary references: [MediaWiki’s Standard Moroccan Tamazight catalog](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) for comment, list, entry and show wording; [Imassn tasgrut](https://imassn.com/dictionnaire/mot/tasgrut-8559) for basket. New phrases are direct drafts, not imported human translations.
+- Low confidence: button uses a wider Amazigh term whose Standard Moroccan usage is unconfirmed; entry may be less precise than a Blockly connection; the else-if phrase combines the existing else and if vocabulary; hide/show paraphrases collapse/expand. Basket needs review for the software trash metaphor. Degree-symbol pronunciation needs screen-reader review. This batch does not validate the language of other catalog values.
+- Ordinary placeholders decrease from 48,345 to 48,332 across 70 languages. Five locales still have English accessibility labels in this group. The 148 pending source keys and broader semantic audit remain open.
+- Validation: Blockly/completeness and human-preference suites, plus browser-spec syntax checking. Browser execution remains unavailable without the provisioned Playwright/app stack.
+
+### Greenlandic comment and accessibility labels
+
+- Filled fifteen English Blockly comment/accessibility placeholders in `kl` using the protected fill. Source arguments and existing translations remain intact.
+- Added Greenlandic to the control/opposite-action/token regression and the existing translated context-menu browser assertion.
+- References: [Sullissivik application guide](https://www.sullissivik.gl/Emner/Teknik_og_miljoe/Arealtildeling/-/media/0354379CD749405E94CA6701433FCECA.ashx) uses `ilannguguk`, `peeruk` and `toortagaq`; [MitID input guidance](https://www.mitid.dk/kl-gl/ikiortigit/hjaelpeuniversimi/kode-isissut/mitid-mut-kode-isissut-nutaaq/?language=kl-gl) uses `allaffissaq`; [Greenlandic-English dictionary](https://daka.gl/2018-kal-eng/) includes `eqqaavik`. These are vocabulary references, not attestations of the new full phrases.
+- Low confidence: “another condition” paraphrases else-if without explicitly stating the preceding branch failed; input uses a writing-field term although Blockly inputs can be connections; hide/show paraphrases collapse/expand. Case endings and full wording need review. Angle uses `%1°`; screen-reader pronunciation remains unverified.
+- Ordinary placeholders decrease from 48,332 to 48,317 across 70 languages. Four locales still have English labels in this group. The 148 pending source keys and wider semantic audit remain open.
+- Validation: Blockly/completeness tests and human-preference checks pass; browser spec syntax checked. Browser/spoken accessibility execution remains unverified.
+
+### Inuktitut comment and accessibility labels
+
+- Filled fifteen English Blockly comment/accessibility placeholders in `iu` through the protected fill; preserved existing values and exact arguments. Added the locale to opposite-action/token tests and the translated comment-menu browser assertion.
+- References: [Tusaalanga glossary](https://tusaalanga.ca/glossary?showall=1) supplies `sanikkuvik` (garbage can), `imaqanngittuq` (empty) and window open/close commands; [Angirrami learning resources](https://angirrami.com/) attest `ᐃᓚᓕᐅᑎᒍᒃ`; [Inuit Circumpolar Council](https://www.inuitcircumpolar.com/%E1%93%B1%E1%95%88%E1%93%B0%E1%91%A6-%E1%93%84%E1%93%87%E1%95%90%E1%94%AA%E1%90%8A%E1%96%93%E1%91%A6/%E1%90%83%E1%93%95%E1%92%8B%E1%91%A6-%E1%90%83%E1%93%84%E1%92%83%E1%91%8E%E1%91%90%E1%91%A6-%E1%90%85%E1%96%83%E1%93%AA%E1%93%9A%E1%92%8B%E1%90%8A%E1%92%83%E1%93%B4%E1%96%85/?lang=iu) uses the button noun in plural. These establish vocabulary, not the new complete phrases.
+- Low confidence: else-if is paraphrased as another rule and does not explicitly express the preceding false branch; input uses a placing/entry-place draft; list-item case endings and delete imperative need review. Open/close paraphrases expand/collapse. Comment and text follow existing short labels. `%1°` preserves the angle argument but spoken output is untested. These strings require semantic review, not just script checks.
+- Ordinary placeholders decrease from 48,317 to 48,302 across 70 languages. Three locales remain in this accessibility group; the 148 pending source keys and broader language audit remain open.
+- Validation: focused Blockly/completeness tests and human-preference checks; browser spec syntax checked. Browser and spoken accessibility checks were not run.
+
+### Blockly field-type labels: Kurdish, Tatar, Somali, Yiddish, Darija, Bhojpuri and Maithili
+
+- Filled 88 English field-type placeholders across `ku`, `ckb`, `tt`, `so`, `yi`, `ary`, `bho` and `mai` through the protected fill. Existing translations and source token inventories are preserved.
+- Translated angle, pixel image, checkbox, color, date, dropdown, grid dropdown, image, input, input name and function name. Added positive/token checks and negative distinctions for pixel/plain images, grid/plain dropdowns, and input/function names.
+- Technical wording is provisional, particularly Kurdish dropdown/grid compounds, the Somali function paraphrase, and Bhojpuri/Maithili selector descriptions. These are direct drafts; unsuccessful terminology searches are not evidence of attested usage. A first Sorani draft meaning a collapsed list was corrected to an opening-list description before committing.
+- Existing browser flows cover field editing for all eight locales. They do not assert spoken field-type output; that accessibility verification remains outstanding. This batch adds no claim of browser execution or fluency.
+- Validation: focused Blockly/completeness tests, human-preference checks and browser-spec syntax checking. This batch removes 88 ordinary English placeholders; unrelated in-progress Tigre changes are outside this commit.
+
+### Blockly field-type labels: Turkmen, Odia, Konkani, Papiamento and Wu Chinese
+
+- Filled 55 English field-type placeholders in `tk_TM`, `or_IN`, `kok`, `pap` and `wuu-Hans`. The protected fill preserves existing translations and source arguments.
+- Followed existing date, checkbox and dropdown vocabulary where suitable. Odia field labels omit the stray trailing vertical bars present in older generic labels; those older values were not overwritten by this fill.
+- Extended the existing field-type regression to these five locales, including distinctions between image/pixel image, dropdown/grid dropdown, input/input name and input/function names. Existing browser field-editing flows already include all five; spoken type announcements remain unverified.
+- Low confidence: Papiamento pixel/grid terminology and the new dropdown paraphrase need review; Turkmen grid terminology and Konkani technical compounds remain provisional. Wu uses shared written Chinese technical vocabulary; this does not establish regional spoken output. External searches did not provide authoritative attestations for the new full phrases.
+- Validation: focused Blockly/completeness suite, human-preference checks and browser-spec syntax. This batch removes 55 ordinary English placeholders. Unrelated in-progress locale and deployment changes remain outside the batch.
+
+### Walloon, Venetian and Manx field-type labels
+
+- Filled 34 English placeholders: eleven field types in each Walloon locale and Venetian, plus the Manx date label. Preserved the already translated Aromanian and other Manx fields and added both locales to regression coverage.
+- Corrected three visibly foreign generic labels in `wa-RR`: `Petsa`, `Dropdown nga Lista` and French `Case à cocher`. Added exact wording regression checks; direct correction is permitted for wrong-language seeds, unlike protected correct-language translations.
+- [Walloon orthography discussion](https://rifondou.walon.org/tecnikes_kesses.html) discusses `ingue`; [Walloon texts](https://rifondou.walon.org/lingaedje_walon.html) attest `imådje`. Other labels use direct drafts and existing locale vocabulary. Dropdown/grid compounds and Venetian spelling remain provisional; the two Walloon catalogs share these standard written forms.
+- Extended image/selector/name distinctions and token coverage. Existing browser flows include these locales, but spoken type output and browser execution remain unverified.
+- This batch removes 34 ordinary placeholders and corrects three wrong-language values. The broader semantic audit and 148 pending source keys remain open.
+
+### Sesotho, Setswana, Sepedi, Zulu and Xhosa field-type labels
+
+- Filled 66 English placeholders across `st`, `tn`, `nso`, `zu`, `zu-ZA` and `xh`, preserving correct-language translations and all source arguments through the protected fill.
+- [Multilingual Mathematics](https://lwimilinks.sadilar.org/media/documents/Multilingual_Mathematics.pdf), PDF pages 23 and 79, supplies angle terms and grid terms for the Sotho languages and Xhosa. [Microsoft's Zulu installation instructions](https://www.microsoft.com/zu-za/download/details.aspx?id=52668) attest `ibhokisi lokuqoka` for checkbox. Full field labels are new direct translations, not quoted human translations.
+- Low confidence remains for pixel loanword morphology, Zulu grid wording, input nomenclature and the use of ordinary work/task nouns for programming functions. Existing dropdown wording was retained as the terminology reference, not independently certified as fluent.
+- Added all six locale paths to positive/token checks and distinctions between pixel/plain images, grid/plain dropdowns and input/function names. Existing browser flows cover field editing in all six; they do not prove correct spoken type announcements. Browser execution remains outstanding.
+- This batch removes 66 ordinary English placeholders. The broader semantic audit and 148 pending source keys remain open.
+
+### Swati, Tsonga, Venda and Northern Ndebele field-type labels
+
+- Filled 44 English field-type placeholders across `ss`, `ts`, `ve` and `nd` through the protected fill, preserving source arguments and existing correct-language translations.
+- Corrected three Zulu-seeded generic labels in Venda and two Tsonga labels that used vague filler (`mhaka`, including a language-name prefix) instead of naming the controls. Exact wording regressions accompany these direct semantic corrections.
+- [Multilingual Mathematics](https://lwimilinks.sadilar.org/media/documents/Multilingual_Mathematics.pdf) supplies Swati, Tsonga and Venda angle vocabulary and Swati/Venda grid vocabulary. Its Ndebele entries concern Southern Ndebele and are not evidence for `nd` (Zimbabwean Northern Ndebele). [Zimbabwean Ndebele teaching material](https://cps.co.zw/uploads/1/3/5/3/13536366/isindebele_4_tg_mobile.pdf) provides general spelling context, not attestations for the new technical labels.
+- Low confidence: Northern Ndebele technical loans and compounds, pixel morphology throughout, Tsonga/Venda dropdown paraphrases and programming-function nouns require review. The labels are direct drafts, not externally translated strings.
+- Extended field-type distinctions and token checks. Existing browser field-editing flows cover these locales, but neither browser execution nor spoken type announcements were verified.
+- This batch removes 44 ordinary placeholders and repairs five wrong-language/filler values. The broader semantic audit and 148 pending source keys remain open.
+
+### Kinyarwanda, Kirundi, Luganda, Oromo and Chichewa field types
+
+- Filled 55 English field-type placeholders across `rw`, `rn`, `lg`, `om` and `ny` using the protected fill. Source arguments and existing correct-language translations remain intact.
+- Replaced Luganda generic labels `Dropdown Lukalala` and `Checkbox (mu Luganda)` with Luganda descriptions; these mixed-language seeds were not protected human translations. Added exact regression checks alongside the shared field-type distinctions and token checks.
+- Vocabulary references: [Rwanda mathematics curriculum](https://eastafricaschoolserver.org/content/_public/Local%20Topics/Rwanda/Rwanda%20Education%20Board%20Syllabuses/Syllabus/Lower-Primary/Integanyanyigisho%20y_Imibare_2015.pdf), [Kirundi-English dictionary](https://studylib.net/doc/27088730/kirundi) and [Oromo mathematics textbook](https://camaraethiopia.org.et/OromiaPrimary/CEE_MoE_Plasma/content/Maths/Primary/Afan%20Oromo/MathSBG3.pdf). These support ordinary mathematical vocabulary, not every new technical compound.
+- Low confidence: pixel/grid loanword spelling, Luganda angle terminology, input naming and Kirundi/Chichewa use of ordinary work nouns for functions require review. A Luganda draft using a filtering word for grid was replaced with a grid loan before application; Kinyarwanda function uses a technical loan instead of utility/benefit wording.
+- Existing browser flows include all five locales; browser execution and spoken accessibility verification remain outstanding. Tests establish structural distinctions, not fluency.
+- This batch removes 55 ordinary placeholders and corrects two mixed-language values. The 148 pending source keys and broader semantic audit remain open.
+
+### Bislama, Tok Pisin, Fijian and Samoan field types
+
+- Filled 44 English field-type placeholders across `bi`, `tpi`, `fj` and `sm`, preserving correct-language values and source arguments through the protected fill.
+- Replaced four mixed-language selector labels in Bislama and Tok Pisin, including the prefixed English `Tok blong sistem: Checkbox` and `Toksave: Checkbox`. Added exact correction checks and extended field-type distinctions/token coverage.
+- Vocabulary references: [Bislama spelling dictionary](https://bislama.org/images/dictionary/BislamaSpellingDictionary-EN-BI-v1.1.pdf), [Tok Pisin dictionary](https://en.wikibooks.org/wiki/Tok_Pisin/Dictionary), [Gatty's Fijian dictionary](https://www.folksong.org.nz/isa_lei/Fijian-English_Dictionary.pdf) and [Samoan dictionary](https://pure.mpg.de/rest/items/item_404545_3/component/file_404544/content). These support ordinary vocabulary, not all technical adaptations.
+- Low confidence: angle/corner distinctions, pixel loans, grid descriptions as an arrangement of boxes, and ordinary work nouns for programming functions need review. Input is described as information/things put inside; it may need greater precision for Blockly connections. Full phrases are direct drafts.
+- Existing browser flows cover field editing in all four locales, but browser execution and spoken announcements remain unverified. This batch removes 44 ordinary placeholders and corrects four mixed-language values; the broader semantic audit and 148 pending source keys remain open.
+
+### Māori, Tongan and Hawaiian field types
+
+- Filled 33 English field-type placeholders through the protected fill. Preserved existing correct-language translations and exact token inventories.
+- Corrected two Tongan selectors containing `Faka-Tonga:` plus English, and replaced opaque Hawaiian `kalopakowana`/`kekakapoka` control names with descriptive local wording. Added exact correction regressions and shared field-type distinctions.
+- Vocabulary references: Te Aka [koki](https://maoridictionary.co.nz/search?keywords=koki) and [tongiiti](https://maoridictionary.co.nz/word/39247); [Te Taura Whiri computer terms](https://www.tetaurawhiri.govt.nz/kupu-hou-te-rorohiko) for dropdown, input and function; [Hawaiian angle](https://wehe.hilo.hawaii.edu/?l=&q=angle); [NSW Tongan dictionary](https://education.nsw.gov.au/content/dam/main-education/teaching-and-learning/curriculum/multicultural-education/eald/eald-bilingual-dictionary-tongan.pdf) for angle vocabulary.
+- Low confidence: Tongan pixel loan, Hawaiian pixel description as a dotted image, checkbox descriptions, grid paraphrases as arranged boxes, and work nouns for programming functions. New full phrases remain drafts. Hawaiian pixel/grid dictionary requests were unavailable, so they do not establish attested technical usage.
+- Existing browser field-editing flows include all three locales; browser execution and spoken type announcements remain outstanding. Structural checks do not certify fluency.
+- This batch removes 33 ordinary placeholders and repairs four selector labels; the 148 pending source keys and broader semantic audit remain open.
+
+### Buryat, Chuvash and Sakha field types
+
+- Filled 33 English field-type placeholders in `bua`, `cv` and `sah` through the protected fill, preserving existing translations and exact source arguments.
+- Vocabulary references: [Buryat grammar](https://altaica.ru/LIBRARY/mong/BuriatGrammar.pdf) includes `булан` for corner/angle; [Chuvash angle entry](https://ru.wiktionary.org/wiki/%D1%83%D0%B3%D0%BE%D0%BB) gives `кӗтес`; [Sakha dictionary](https://sakhatyla.ru/translate?q=%D0%BC%D1%83%D0%BD%D0%BD%D1%83%D0%BA) distinguishes the mathematical use of `муннук`. The remaining phrases combine existing UI vocabulary with direct drafts and technical loans.
+- Low confidence: grid and checkbox descriptions, loanword morphology, dropdown phrasing and the date/day distinction require review. Sakha checkbox uses a square to be marked; an initial narrowness-based draft was rejected before application. Cyrillic script alone does not establish the correct language or meaning.
+- Extended pixel/plain image, grid/plain dropdown and input/function-name distinctions, plus token coverage. Existing browser flows cover field editing for these locales; browser execution and spoken type announcements remain unverified.
+- This batch removes 33 ordinary placeholders. The 148 pending source keys and broader semantic audit remain open.
+
+### Quechua, Aymara and Guarani field types
+
+- Filled 33 English field-type placeholders through the protected fill, preserving existing correct-language values and source arguments.
+- Corrected four mixed-language Quechua/Aymara selector labels, including `Kay willaymi: Checkboxta` and `Aymar aruna: Checkbox`, with descriptive local wording. Added exact correction regressions and shared type distinctions.
+- Vocabulary references: [Quechua k'uchu](https://aulex.org/qu-es/?busca=%22uchu%22), [Aymara educational vocabulary](https://cdn.www.gob.pe/uploads/document/file/4973488/item_55_vocabulario_aymara.pdf?v=1692022988), [Guarani dictionary](https://guaraniayvu.org/) and [Guarani takamby](https://www.proyectomontoya.org.py/nthg/takamby). These support basic words, not all new compounds. The attempted full-text Aymara angle lookup failed; its specific mathematical sense remains unconfirmed.
+- Low confidence: regional Quechua spelling, Aymara corner/angle terminology and inflection, pixel loans, grid descriptions using boxes, input/entry ambiguity and work nouns for programming functions need review. Date labels currently follow day terminology and need contextual review as calendar dates.
+- Existing browser flows cover all three locales; browser execution and spoken accessibility remain unverified. This batch removes 33 ordinary placeholders and corrects four mixed-language values; the 148 pending source keys and wider semantic audit remain open.
+
+### Tibetan, Dzongkha, Tigrinya and Kashmiri field types
+
+- Filled 44 English field-type placeholders through the protected fill; preserved existing correct-language translations and exact source arguments.
+- References: [Dzongkha Computer Terms](https://dokumen.pub/dzongkha-computer-terms-9789698961060.html) supplies pixel and grid loans and checkbox vocabulary, although its text extraction drops some Tibetan glyphs; [Tigrinya physics textbook](https://files.ethiopialearning.com/textbooks/Grade%2008/Grade_8_Subject_PHYSICS_Chapter_7_Language_TIGRIGNA_Retrieved_20150101.pdf) uses angle and color vocabulary. Other terms follow existing locale labels and direct drafts, not independently attested full translations.
+- Low confidence: Tibetan/Dzongkha programming-function nomenclature, reconstructed Dzongkha loan spelling, Tigrinya grid phrasing and Kashmiri dropdown agreement/technical loans need review. Shared scripts do not prove correct-language vocabulary. None of these drafts certifies semantic completeness.
+- Extended image, selector and input/function-name distinction checks plus token coverage. Existing browser field-editing flows include all four locales; browser and spoken accessibility checks remain unrun.
+- This batch removes 44 ordinary placeholders. The 148 pending source keys and broader semantic audit remain open.
+
+### Northern Sámi, Veps and Acehnese field types
+
+- Filled 33 English field-type placeholders through the protected fill and corrected two Malay-seeded Acehnese generic selectors (`Senarai juntai barah`, `kotak semak`). Existing correct-language translations and source arguments remain intact.
+- References: [Sámi angle discussion](https://www.mdpi.com/2227-7102/16/1/52), [Veps–Hungarian dictionary](https://adoc.pub/vepsze-magyar-kisszotar-veps-vengrialaine-pen-vajehnik.html) (`čoga`, mathematical angle; `muju`, color), and [Acehnese thesaurus](https://dokumen.pub/kamus-basa-aceh-kamus-bahasa-aceh-acehneseindonesianenglish-thesaurus-0858835061.html). Look-alike Veps candidates were not assumed to mean angle.
+- Low confidence: Veps dropdown grammar and grid compounds, Sámi grid description and input described as a writing field, Acehnese technical loans, and date terminology require review. The full labels are direct drafts, not attested phrases. Grid descriptions using squares may need greater precision.
+- Added positive/token and type-distinction coverage, exact Acehnese correction checks and Veps vocabulary assertions. Existing browser flows cover field editing, but browser execution and spoken announcements remain unverified.
+- This batch removes 33 ordinary placeholders and corrects two wrong-language selector labels. The broader semantic audit and 148 pending source keys remain open.
+
+### Akan, Bambara and Wolof field types
+
+- Filled 33 English field-type placeholders through the protected fill, preserving existing correct-language translations and source arguments.
+- Replaced Akan `Dropdown Nhyehyɛe` and generic activity-information filler used for checkbox with control descriptions. Added exact correction regressions and extended image/selector/input-name distinctions.
+- Vocabulary references: [Bambara lexicon](https://mooreburkina.com/sites/www.mooreburkina.com/files/pdf-files/Bambara%20Lexicon.pdf) gives `seleke` for angle/corner; [Bamadaba](https://bamadaba.coastsystems.net/index-french/) provides the Bambara vocabulary reference; [Wolof colors](https://www.jangal-apprendre-le-wolof.com/2023/12/vocabulaire-les-couleurs.html) attests `melo`; [Akan dictionary](https://www.akandictionary.com/) is a general vocabulary reference, not attestation of the new technical phrases.
+- Low confidence: corner/angle precision, pixel loans, grid descriptions using arranged boxes, date/day ambiguity and ordinary work/action nouns for programming functions require review. Input descriptions may need refinement for Blockly connections. Non-English text and distinct strings alone do not prove correct meaning.
+- Existing browser flows cover these locales; browser execution and spoken announcements remain unverified. This batch removes 33 ordinary placeholders and corrects two mixed-language/filler values. The 148 pending source keys and broader semantic audit remain open.
+
+### Volapük and Klingon field types
+
+- Filled 22 English field-type placeholders through the protected fill. Corrected Esperanto-seeded Volapük text/date controls and the French-seeded Klingon text control.
+- The [Volapük dictionary](https://en.wikibooks.org/wiki/Volap%C3%BCk/English-Volap%C3%BCk_dictionary) supplies angle, color, date, picture, list, insertion and function vocabulary. The [Klingon Language Institute](https://www.kli.org/about-klingon/new-klingon-words/date/) attests `HaStay'` (pixel) and `mIllogh` (picture); its angle entries support `tajvaj`. The [KLI discussion of mIw](https://lists.kli.org/archives/list/tlhingan-hol%40lists.kli.org/thread/CY77JPI34V3BFHK2KJZT5MNVGIJRB3S3/) gives procedure/process. [Klingonska's color reference](https://klingonska.org/ref/color.html) explains the verbal color vocabulary.
+- Low confidence: Volapük pixel image is paraphrased as a dotted image, checkbox as a markable square, and grid dropdown as an openable list in squares. Klingon color is a choice for coloring, date uses day, and grid dropdown describes a selection list with squares. Input describes a data-entry place; the fit to Blockly fields and connections needs review. These complete technical phrases are drafts, not dictionary attestations.
+- Extended field-type distinctions, token checks and exact correction regressions. Existing browser flows include both languages; browser execution and spoken announcements remain unverified. The 148 pending source keys and broader semantic audit remain open.
+
+### Ewe and Fulah field types
+
+- Filled 22 English field-type placeholders through the protected fill, retaining existing correct-language values. Extended source-token and field-type distinction checks to both locales.
+- Vocabulary references: the [Peace Corps Ewe workbook](https://www.livelingua.com/peace-corps/Ewe/Ewe%20Course%20-2010.pdf) gives picture vocabulary, and [Ameka's study of Ewe spatial language](https://pure.mpg.de/pubman/item/item_855622_4/component/file_855623/ameka_1995_The_linguistic_construction_of_space_in_Ewe_Cogn_Ling.pdf) attests `dzogoe` as corner. The [Fulfulde dictionary](https://mooreburkina.com/sites/www.mooreburkina.com/files/pdf-files/03%20Dictionnaire%20fulfulde%20-%20francais%20%20English.pdf) attests mathematical `lobbudu`; the [Pulaar education terminology](https://senprof.education.sn/PROGRAMME%20LECTURE%20POUR%20TOUS/documentation/Terminologies/Terminologie%20Pulaar%20fusion.pdf) attests color and picture vocabulary.
+- Low confidence: Ewe corner/angle precision, pixel loans, grid descriptions using boxes/squares, date/day ambiguity and ordinary work nouns for programming functions require review. Existing checkbox/dropdown wording is reused without claiming independent validation; Fulah regional vocabulary may need harmonization. Input terminology must also be checked against Blockly's specific field behavior.
+- Existing browser flows cover both locales but were not executed; spoken announcements remain unverified. The 148 pending source keys and broader semantic audit remain open.
+
+### Nahuatl field types
+
+- Filled 11 English field-type placeholders through the protected fill and extended field-type distinctions and source-token checks. Existing non-English control labels were preserved.
+- References: the Online Nahuatl Dictionary entries for [corner](https://nahuatl.wired-humanities.org/content/xomolli), [ordered sequence](https://nahuatl.wired-humanities.org/content/tlatecpantli), [container](https://nahuatl.wired-humanities.org/content/calli), [work](https://nahuatl.wired-humanities.org/content/tequitl) and [color](https://nahuatl.wired-humanities.org/node/177153), plus [UNAM's discussion of ixiptla](https://muac.unam.mx/ixiptla?lang=en) and the [calaquiliztli entry](https://en.wiktionary.org/wiki/calaquiliztli).
+- Low confidence: these are provisional technical paraphrases, mixing historical vocabulary with the catalog's modern relative construction. Corner is used for angle, day for date, and work for function. Pixel is a loan; checkbox uses a coined mark-container compound; grid dropdown describes a descending list with small containers. Input and name phrases need grammatical and Blockly-specific review. The cited entries attest components, not the complete UI phrases.
+- Existing Nahuatl browser flow remains registered but unexecuted. Spoken announcements, the 148 pending source keys and the broader semantic audit remain open.
+
+### Greenlandic field types
+
+- Filled 11 English field-type placeholders through the protected fill and extended field-type distinctions and source-token checks. Existing non-English values were preserved.
+- Vocabulary references: the [Greenland transport commission's satellite report](https://kanat.gl/-/media/transportkommissionen/rapporter/telekommunikation/kal/redegrelse_for_satellitkommunikation_i_grnland_kal.pdf) uses `qiverneq` in an angle explanation; [Oqaasileriffik's morphology resource](https://mofo.oqa.dk/Morphemes/kl/affix/nv/-iqluiq) identifies `qalipaat` as color/paint. [MitID's Greenlandic interface guide](https://www.mitid.dk/kl-gl/ikiortigit/hjaelpeuniversimi/mitid-quppernerit/) uses `allaffissaq` for a field, and [MitID Erhverv](https://www.mitid-erhverv.dk/gl/mitid-erhverv-imi-annertusisamik-atuuffiit/lokal-idm/) supplies software-function vocabulary. [This art-history discussion](https://www.journal18.org/issue12/poqs-temporal-sovereignty-and-the-inuit-printing-of-colonial-history/) describes `assiliaq` as image.
+- Low confidence: pixel inflection and the image-made-of-pixels phrase, a markable item for checkbox, grid as division into boxes, and the grammatical form of input/function names need review. Dropdown reuses the catalog's selection-list phrase; date uses day. The references attest component vocabulary and related uses, not the complete technical labels.
+- Existing Greenlandic browser flow is registered but unexecuted. Spoken announcements, the 148 pending source keys and the broader semantic audit remain open.
+
+### Inuktitut field types
+
+- Filled 11 English field-type placeholders through the protected fill, preserving existing non-English values and extending source-token and field-type distinction checks.
+- Vocabulary references: the [Inuit roots vocabulary](https://www.scribd.com/document/360705405/roots-en) defines `tiriqquq` as the corner/angle of a square or rectangular object. [Nunavut's Putuja Putuja lesson plans](https://www.gov.nu.ca/sites/default/files/documents/2025-10/Putuja_Putuja_Program_-_Lesson_Plans_for_Facilitators_ENG.pdf) use color vocabulary, and the [Inuusiq arts and crafts book](https://inuusiq.com/wp-content/uploads/2025/04/ELC-Arts-Crafts-Adult-Book-IK-EN-FINAL-1.pdf) uses `ᐊᔾᔨᙳᐊᖅ` for picture.
+- Low confidence: the angle term may imply a right-angle corner rather than any angle. Pixel is a provisional loan in an image-made-of-pixels phrase; grid is paraphrased using small containers; input uses a writing place and function uses ordinary work/task. Case endings and technical meanings need review. Checkbox reuses the existing marking-place label and date uses day. These references attest vocabulary, not complete technical phrases. The school mathematics glossary was located but could not be fetched, so it was not treated as evidence for a replacement angle term.
+- Existing browser coverage includes Inuktitut but remains unexecuted; spoken announcements, the 148 pending source keys and the broader semantic audit remain open.
+
+### Standard Moroccan Tamazight field types
+
+- Filled 11 English field-type placeholders in Tifinagh through the protected fill and extended field-type distinctions and source-token checks. Existing non-English values were preserved.
+- [MediaWiki's zgh catalog](https://raw.githubusercontent.com/wikimedia/mediawiki/master/languages/i18n/zgh.json) supplies Moroccan Tamazight image, list, date and name vocabulary. The [comparative Amazigh morphology study](https://dspace.ummto.dz/bitstreams/817d0a81-a14f-4ca9-9010-d6467bd4dd02/download) records angle/corner vocabulary across varieties; [this glossary](https://es.scribd.com/document/955571079/AMAWAL-TAMAZIGHT-TAFRANSIST) gives color vocabulary. Wider Amazigh usage is not by itself confirmation of a Standard Moroccan technical term.
+- Low confidence: angle and color terminology need locale-specific review; pixel is a provisional loan, grid is described using boxes, input uses insertion and function uses ordinary work/function vocabulary. Checkbox and dropdown reuse existing catalog phrases without claiming independent validation. The full technical phrases and their inflections remain provisional.
+- Existing browser flows include this locale but remain unexecuted. Spoken announcements, the 148 pending source keys and the broader semantic audit remain open.
+
+### Tigre field types
+
+- Filled 11 English field-type placeholders through the protected fill. Replaced `ተመር` in the date control with calendar-date vocabulary `ዕለት`; the former corresponds to the date fruit rather than this control's meaning.
+- References: [BeitTigre's parallel phrasebook](https://beittigre.github.io/tigre-multilingual-dictionaries/) supplies picture, corner, box, list, entry, name and function/duty vocabulary. Calendar-date usage is checked against its date/time file-view sentence, rather than the ambiguous isolated English word “date.” [Glosbe's Tigre color entry](https://en.glosbe.com/en/tig/Color) supplies `ሕብር`. Phrasebook data has uneven quality and is a vocabulary aid, not authoritative validation of full technical phrases.
+- Low confidence: corner is used for angle, dropdown is paraphrased as a downward list, and grid adds boxes. Pixel is a loan; entry and duty/function may need more specific programming terms. Inflections, noun phrases and regional usage remain provisional. Tigrinya search results were not used as Tigre evidence.
+- Extended token/type distinctions and added a calendar-date correction regression. Existing browser coverage is registered but unexecuted; spoken announcements, the 148 pending source keys and the broader semantic audit remain open.
+
+### Wolaytta field types and control filler
+
+- Filled ten English field-type placeholders through the protected fill and replaced three prefixed-English checkbox, dropdown and text controls. The angle label remains untranslated pending usable vocabulary evidence.
+- References: the [Wolayttatto teaching material](https://camaraethiopia.org.et/SNNPR/moe/content/SNE_TB/Sign%20Language%20G1-12/03-Wolayitato-Books-Sign-Language/07-HD-ESL-G7-SB.pdf) uses picture and paint vocabulary; [Lamberti and Sottile](https://dokumen.pub/the-wolaytta-language.html) document writing, entering and opening roots. Existing catalog vocabulary supplies list, name, date and work terms. These references do not attest the full technical phrases.
+- Low confidence: color uses paint vocabulary, date uses day, input uses entering and function uses ordinary work. Checkbox describes a box for marking; grid dropdown adds boxes to a list opening downward. Pixel is a loan. Orthography, compounds and grammatical endings need review; prefixed-English filler was not treated as a protected translation.
+- Added token/type distinction checks and exact correction regressions. Existing browser coverage remains registered but unexecuted. Angle, spoken announcements, the 148 pending source keys and the broader semantic audit remain open.
+
+### Cherokee field types
+
+- Filled 11 English field-type placeholders through the protected fill and extended source-token and field-type distinction checks. Existing non-English controls were preserved.
+- Vocabulary references: this [Cherokee dictionary compilation](https://www.witchcraft-academy.com/Library/Traditions/Native%20American/Cherokee_Dictionary.pdf) lists corner, picture, square and process; [the color lesson](https://www.culturev.com/cherokee/front/colors.html) provides color vocabulary. The compilation is a secondary resource with uneven transcription, not an authoritative software glossary. Existing catalog wording supplies checkbox, dropdown, day, input and name constructions.
+- Very low confidence: corner is used for angle, day for date and process for function. Pixel is an unverified syllabic loan; grid adds a four-cornered shape to the dropdown description. Transcription, grammatical agreement, noun phrases, input meaning and the existing dropdown/checkbox terms all require review. Correct script, distinct labels and token preservation do not establish fluent Cherokee.
+- Existing browser coverage is registered but unexecuted. Spoken announcements, the 148 pending source keys and the broader semantic audit remain open.
+
+### Kurdish and Tatar block and bubble labels
+
+- Filled 48 English placeholders in Northern Kurdish, Central Kurdish and Tatar: block-state/type labels, stack descriptions, input/branch counts and comment/warning bubble labels. Protected filling preserves existing correct-language values; numbered arguments are unchanged.
+- Stack is described as a sequence/chain of blocks and statement as a command. Distinguish singular/plural input, collapsed/disabled, statement/value and comment/warning. These are direct translations using the existing catalogs and general programming terminology, without a translation service.
+- Kurdish container, replaceability and bubble terminology remains lower confidence; accessibility wording and the stack/statement paraphrases need contextual review. Structural distinction checks do not prove semantic equivalence.
+- Added token and non-placeholder checks plus distinction regressions. Existing browser flows cover these locales but remain unexecuted; spoken announcements, the 148 pending source keys and the broader semantic audit remain open.
+
+### Yiddish, Turkmen, Bhojpuri and Maithili block and bubble labels
+
+- Filled 64 English placeholders through the protected fill: block-state/type labels, stack descriptions, input/branch counts and comment/warning bubbles. Numbered arguments and existing correct-language values are preserved.
+- Direct translations follow general programming vocabulary and the catalogs. Stack is expressed as a block chain/row and statement as a command/instruction. Bhojpuri and Maithili use their own clause endings; shared technical loans alone do not determine language identity.
+- Lower-confidence wording includes the stack/row and bubble metaphors, container loans and plural-input paraphrases. These labels need contextual accessibility review; distinct strings and intact tokens are structural checks, not proof of fluent wording.
+- Extended existing token, non-placeholder and distinction regressions to all four locales. Existing browser flows cover these languages but remain unexecuted. Spoken announcements, the 148 pending source keys and the broader semantic audit remain open.
+
+### Somali, Moroccan Arabic, Odia and Konkani block and bubble labels
+
+- Filled 64 English placeholders with the protected fill workflow, preserving all numbered arguments and existing translations. Input and comment terminology follows the respective catalogs.
+- Stack is described as a chain of blocks; statement uses command/instruction vocabulary. Moroccan Arabic uses local clauses such as `فيه` and `يقدر يتبدّل`; Konkani uses `आसा`/`आसात` and `बदलूंक येता` rather than Hindi clauses.
+- Container, bubble and stack metaphors, particularly Somali and Konkani technical wording, remain lower confidence and need contextual review. The collapsed/disabled and singular/plural checks establish distinctions, not fluency or semantic equivalence.
+- Extended the existing token and distinction regressions. Browser and spoken accessibility checks remain unexecuted; the 148 pending source keys and broader mixed-language audit remain open.
+
+### Māori, Samoan, Hawaiian and Tongan block and bubble labels
+
+- Filled 64 English placeholders through the protected workflow, retaining numbered arguments and existing translations. The stack labels use a pile/stack of blocks; statement uses instruction/command vocabulary.
+- Bubble vocabulary references: Māori [mirumiru in Te Aka](https://maoridictionary.co.nz/word/10795), Hawaiian [huʻa in the university dictionaries](https://hilo.hawaii.edu/wehe/?q=hua), and Samoan [puta in POLLEX](https://pollex.eva.mpg.de/entry/puta.2/). The dictionary senses do not establish software terminology; Samoan puta has other common meanings and is especially provisional here. Tongan uses a contextual “information box” paraphrase for the bubble.
+- Lower-confidence wording includes collapsed as shortened/folded, container and bubble metaphors, and value as worth/value. Tongan and Samoan clause construction and all spoken accessibility labels need contextual review. Distinct strings are not proof of semantic equivalence or fluency.
+- Extended existing token and block-label distinction checks. Browser and spoken accessibility checks remain unexecuted; the 148 pending source keys and broader semantic audit remain open.
+
+### Bislama, Tok Pisin, Fijian and Papiamento block and bubble labels
+
+- Filled 64 English placeholders through the protected workflow, preserving arguments and existing translations. Input and comment vocabulary follows the catalogs; statement uses command/instruction wording and stack uses a pile of blocks.
+- Bubble is paraphrased as a speech/information/text box. The [Fijian dictionary](https://www.folksong.org.nz/isa_lei/Fijian-English_Dictionary.pdf) gives vuso as froth/foam/spray; that does not establish an appropriate interface bubble label. The [Papiamentu word list](https://www.studiotaalwetenschap.nl/Bestanden/Lexilijst%20Papiaments.pdf) distinguishes a balloon (blas/blaas) from a box (kaha/caha); these labels use a contextual box paraphrase instead of assuming balloon means a software bubble.
+- Collapsed as shortened/folded, branches as arms/branches, container and value terminology remain provisional, particularly Fijian isau. Bislama and Tok Pisin retain their distinct clause spellings. Contextual and spoken accessibility review remains necessary; structural distinction tests do not establish fluency.
+- Extended token, non-placeholder and distinction checks. Browser checks remain unexecuted; the 148 pending source keys and broader semantic audit remain open.
+
+### Zulu, Xhosa, Swati and Northern Ndebele block and bubble labels
+
+- Filled 80 English placeholders in five catalogs (including both Zulu paths) through the protected workflow, preserving numbered arguments and existing translations. Input and comment wording follows each catalog.
+- Stack uses a pile of blocks, statement uses a command, and bubble is paraphrased as a text box. Collapsed is folded, while disabled is unavailable/prevented from operating; separate labels preserve those distinct states.
+- Technical metaphors, noun-class agreement around arbitrary numbers, and Swati/Northern Ndebele wording remain lower confidence. Northern Ndebele clauses use `kule-` and `-nengi`; Swati uses its own noun forms. Related-language resemblance alone is not evidence that a value is wrong-language text.
+- Extended token, non-placeholder and distinction checks to all five catalogs. These are structural checks, not proof of fluent or semantically equivalent labels. Browser and spoken accessibility checks remain unexecuted; 148 pending source keys and the broader wording audit remain open.
+
+### Sesotho, Setswana and Northern Sotho block and bubble labels
+
+- Checked container vocabulary against the [government multilingual mathematics dictionary](https://www.dsac.gov.za/sites/default/files/2023-11/Multilingual%20Mathematics%20Dictionary.pdf); corrected the new Northern Sotho draft to `setšhelo`. This supports the noun, not the surrounding software metaphors.
+- Filled 48 English placeholders through the protected workflow, preserving numbered arguments and existing translations. Input and comment terminology follows each catalog.
+- Stack is expressed as a pile of blocks, statement as an instruction, and bubble as a text box. Collapsed uses folded wording, distinct from the disabled/prevented-from-working state.
+- Technical metaphors, block loans and noun agreement around arbitrary numbered arguments remain provisional. Sesotho, Setswana and Northern Sotho retain their own clause forms and orthography. Related vocabulary does not by itself establish either correct or wrong-language wording.
+- Extended existing token, non-placeholder and distinction checks. These do not establish fluent wording. Browser and spoken accessibility checks remain unexecuted; 148 pending source keys and the broader semantic audit remain open.
+
+### Kinyarwanda, Kirundi, Luganda and Chichewa block and bubble labels
+
+- Filled 64 English placeholders through the protected workflow, preserving numbered arguments and existing translations. Input and comment vocabulary follows each catalog. Stack uses a sequence/row or pile of blocks; statement uses instruction/command wording and bubble is a text box.
+- Checked the fold verb against the [Kinyarwanda dictionary](https://www.rcsdk12.org/cms/lib/NY01001156/Centricity/Domain/4194/english-kinyarwanda-dictionary.pdf) and [Kirundi dictionary](https://www.matana.de/kirundi_alpha.pdf). Corrected the new collapsed drafts to use the fold stem rather than an unfold form. These references support vocabulary, not the entire inflected software label.
+- Technical metaphors, grammatical agreement, value terminology and block/part loans remain provisional. Kinyarwanda and Kirundi retain their distinct `iby-`/`ivy-` and `bifite`/`bifise` forms; related vocabulary alone cannot establish language correctness.
+- Extended token, non-placeholder and distinction checks. Browser and spoken accessibility checks remain unexecuted; 148 pending source keys and broader semantic review remain open.
+
+### Tsonga and Venda block and bubble labels
+
+- Filled 32 English placeholders through the protected workflow, preserving arguments and existing translations. Statement uses instruction wording and bubble uses a text-box paraphrase; collapsed/folded remains distinct from disabled/prevented from working.
+- Vocabulary references: the [multilingual mathematics dictionary](https://ulspace.ul.ac.za/bitstream/handle/10386/3519/multilingual%20mathematics%20dictionary%20R%20-%206_march_2013.pdf?isAllowed=y&sequence=1) supports Tsonga `nkoka` for value; the [multilingual dictionary hosted by the University of Limpopo](https://ulspace.ul.ac.za/server/api/core/bitstreams/a1a05d26-ee2d-49d5-9be8-4a33ebd145e8/content) supports Venda `tshifaredzi` for container.
+- Stack is a pile/group of blocks, which remains provisional, especially the broad Venda group wording. Block loans, replacement phrasing, numeral agreement and text-box metaphors also need contextual review. The vocabulary references do not validate the composed labels.
+- Extended token, non-placeholder and distinction checks. Browser and spoken accessibility checks remain unexecuted; 148 pending source keys and the broader semantic audit remain open.
+
+### Wu Chinese and Venetian block and bubble labels
+
+- Filled 32 English placeholders in `wuu-Hans` and `ve-CC` through the protected workflow, preserving numbered arguments and existing translations. Input and comment vocabulary follows the catalogs.
+- Wu uses shared Chinese technical nouns with Wu forms such as `里向个` and `好替换个`; shared written technical terms alone do not establish wrong-language text. Venetian uses `el ga`, `el se pol` and the catalog's `ł` orthography. The [Venetian dictionary](https://www.slideshare.net/libriveneti/venetian-dictionary) was consulted as a general vocabulary reference, not proof of the composed technical labels.
+- Stack is a connected string/pile of blocks; the Venetian bubble uses a text-balloon metaphor. Venetian container, disabled and bubble terminology, and regional Wu wording, remain lower confidence and need contextual review.
+- Extended token, non-placeholder and distinction checks. These do not prove fluent or semantically equivalent wording. Browser and spoken accessibility checks remain unexecuted; 148 pending source keys and broader semantic review remain open.
+
+### Walloon and Waray block labels; correction of mistaken locale identity
+
+- The registry explicitly names `wa-RR` Wáray-Wáray and `wa` Walon. Earlier audit entries and a field-label regression incorrectly treated both as Walloon. Those conclusions were wrong: the existing Waray comments were valid, while the subsequently inserted Walloon field labels were wrong-language text.
+- Filled 32 English block/bubble placeholders in the two languages separately. Corrected 15 wrong-language Waray values: eleven field types, date, checkbox, dropdown and multi-select. Replaced the regression that had enforced Walloon in the Waray catalog with Waray expectations and checks against copying the Walloon field labels.
+- Vocabulary references: Walloon [bouyote](https://wa.wiktionary.org/wiki/bouyote) and the [Waray corpus dictionary](https://dictionary.corporaproject.org/index.php?glossary=S&sort=word). Stack/pile, block loans, container and replacement phrasing remain provisional; dictionary vocabulary does not prove the composed labels fluent.
+- Preserved numbered arguments and extended existing block-label checks. Browser and spoken accessibility checks remain unexecuted. Further wrong-language review of `wa-RR`, the 148 pending keys and the broader semantic audit remain open.
+
+### Waray board and import controls: further Walloon contamination
+
+- Compared `wa-RR` with Walloon and inspected the source meanings. Corrected 40 verified Walloon values covering board membership restrictions, home/default boards, views, deadlines, import/export, user mapping and text notes. Preserved the `%s` day-count tokens and the non-deletion guarantees in the confirmation messages.
+- These are wrong-language corrections, not English-placeholder fills; the missing count does not change. Many additional Walloon values remain in the Waray catalog and require subsequent correction. Prior assertions that these shared Walloon values were correct translations for `wa-RR` must not be relied upon.
+- Added regression checks for the corrected key set, source tokens, known Walloon vocabulary, import/export distinctions and the non-deletion guarantees. The tests cannot prove fluent Waray. Template/default, swimlane and chart terminology remains provisional and needs contextual review; browser checks were not run.
+
+### Waray notes, favorites and related controls
+
+- Corrected 30 further Walloon values in `wa-RR`: note actions, favorites, permanent-delete settings, rule text matching, import guidance, selection and interruption labels. Source review restored the missing Markdown-import explanation that plain bulleted lists without checkboxes become open cards.
+- Preserved `%s`, Markdown examples and the statement that enabling permanent deletion does not itself delete content. Menu uses a choices paraphrase and normal uses usual/common wording. The initial shared-loan drafts lacked supporting Waray usage evidence; no equality exception was added for them. Technical loans and phrasing remain provisional.
+- Extended the Waray regression key set, token checks, import syntax checks and negative-operation distinctions. More wrong-language text remains; no claim of complete or fluent Waray coverage is made. Browser checks and the broader semantic audit remain open.
+
+### Waray organization, template and rule controls
+
+- Corrected 25 verified Walloon values in `wa-RR`, covering external issue links, email-template variable hints, database metadata, organization domains/admins, card field ordering and rule controls.
+- Preserved brace-delimited template variables, `#1234`, domain examples, `MULTITENANCY=true`, `DDP_TRANSPORT` and the database mode identifiers. Organization-admin wording retains both prohibitions: granting site-wide Admin privileges and managing a site administrator. Domain branding wording states which branding replaces which.
+- Extended the corrected-key set and added brace-token, setting-literal, authorization-negation and up/down distinction checks. Technical paraphrases for database/reactivity, tenant and branding remain provisional; structural checks do not establish fluency. Further Waray contamination, browser checks and broader semantic review remain open.
+
+### Waray authentication, rule and layout labels
+
+- Corrected 25 verified Walloon values in `wa-RR`, covering rule conditions/actions, LDAP/OAuth, passwordless login, board/card lists and layout controls. Preserved the distinction between requesting a code and confirming it was sent, one-time use, account conflict and the server-held secret never being displayed.
+- Preserved `%s`, camel-case `{cardLink}`, the other rule variables, `OAUTH_*_ENABLED`, `MAIL_URL` and `PASSWORDLESS_ENABLED`. Restored the header-icons hint's mobile/desktop notification detail omitted by the previous value.
+- Extended the corrected-key and brace-token checks, including camel-case names, configuration literals and authentication-state distinctions. Environment-variable, layout and login terminology remains provisional and requires contextual review. No authentication behavior changed. Browser checks and further wrong-language review remain open.
+
+### Waray role summaries, table views and layout controls
+
+- Corrected 25 verified Walloon values in `wa-RR`, covering sidebar resizing, checklist sound, public/private defaults, role summaries, table-view toggles, global search and coordinate labels.
+- Preserved the sound's default-off state, the role summary's read-only status, and each table toggle's current state and inverse action. Search operator/predicate names are localized in `globalSearch.js`; the replacement names remain single tokens without spaces or colons.
+- Extended corrected-key checks and added toggle, default-state, read-only and search-token regressions. Role/default and swimlane wording remains provisional and needs contextual review. Browser validation, further Waray contamination and broader semantic review remain open.
+
+### Waray reports, data recovery and history labels
+
+- Corrected 20 verified Walloon values in `wa-RR`, covering activity/security/database reports, login-location reporting, API usage, recovery, history and invitation-domain guidance.
+- Preserved IPv4/IPv6, REST API, MongoDB and `WITH_API=true`. API reporting retains one row per account/endpoint rather than per request; recovery wording distinguishes no recorded events from the database being healthy, and waiting from recovery completion.
+- Extended corrected-key, configuration, aggregation and first/last/edited/moved distinction checks. Technical language for corruption, recovery and database growth remains provisional; tests do not establish fluent wording. Browser checks and further wrong-language review remain open.
+
+### Waray storage, backup scope and board-status labels
+
+- Corrected 25 verified Walloon values in `wa-RR`, covering checklist text editing, identifiers, storage, board timing/status, lazy loading and organization backup scope. Product names and identifiers remain intact.
+- Backup guidance retains the exclusion of user accounts and instance settings and limits restoration writes to boards owned by the organization. Lazy-loading wording retains the restriction to large boards; time spent and remaining time remain distinct.
+- Extended the corrected-key regression, product-name checks and scope/restriction checks. Technical wording for compaction, connection strings, tenant overrides and subtasks remains provisional. Browser checks, further Waray contamination and broader semantic review remain open.
+
+### Waray migration, repair and import guidance
+
+- Corrected the remaining 31 candidates from the current exact-Walloon-match vocabulary scan of `wa-RR`. This scan is a heuristic, not a complete language audit: different wrong-language values and semantic errors can remain.
+- Corrected migration/repair, import/export, search syntax, checklist/layout, synchronization and Monte Carlo forecast labels. Preserved repair/restoration count tokens, code-formatted search examples, filename extensions and product names; retained unsuccessful-repair and partial-restoration meanings.
+- Extended token and negative-result regressions, including Markdown search syntax. Technical wording for migration detection, integrity, sticky headers and inheritance remains provisional and needs contextual review. Browser checks and broader semantic review remain open.
+
+### Waray Blockly editing, colors and control flow
+
+- Filled 39 English placeholders through the protected workflow, covering block editing, colors, loops and conditional branches. Left keyboard legends and ChromeOS unchanged. Preserved numbered arguments and numeric color ranges.
+- Kept breaking out of a loop distinct from skipping to its next iteration, and retained the final fallback branch when no condition is true. Existing Waray comment and input vocabulary guided wording; loop, palette, backpack and function terminology remains provisional.
+- Extended corrected-key/token checks and control-flow/range regressions. These structural and phrase checks do not establish full semantic equivalence or fluency. Browser and spoken accessibility checks remain unexecuted; broader language review remains open.
+
+### Waray Blockly loop conditions, clipboard and field editing
+
+- Filled 35 English placeholders through the protected workflow. Translated while/until semantics, clipboard/backpack operations, deletion confirmations, enable/disable and expand controls, bitmap labels and field editing. Preserved keyboard legends and every numbered argument.
+- Until repeats while the condition is false; while repeats while it is true. Bitmap labels retain row/column ordering and the count of enabled pixels. Existing catalog wording guided translations; backpack, external-input and bitmap terminology remains provisional.
+- Extended token, condition-polarity, opposite-action and row/column regressions. Browser and spoken accessibility checks remain unexecuted; structural checks do not establish full fluency or semantic equivalence.
+
+### Waray Blockly icon actions and input descriptions
+
+- Filled 34 English placeholders through the protected workflow: keyboard help, comment/warning/editor icon actions and condition/list/loop/math input descriptions. Preserved numbered arguments and existing keyboard legends.
+- Closed comment/warning icons announce opening; open icons announce closing. Input wording distinguishes start/end, first/second conditions, splitting text and joining lists, repeated values and repetition counts.
+- Extended token, icon-action and input-distinction regressions. Delimiter, inline-input, loop increment and mathematical constraint wording remains provisional and needs contextual accessibility review. Browser/spoken checks remain unexecuted; structural checks do not establish fluent wording.
+
+### Waray Blockly mathematical/text inputs and keyboard navigation
+
+- Filled 33 English placeholders through the protected workflow. Translated mathematical operands, coordinate and text-input labels, value positions and keyboard-navigation hints while preserving numbered arguments and keyboard legends.
+- Kept dividend/divisor, minimum/maximum, x/y, find/replace and statement/value distinct. Navigation wording retains holding the first key, accepting with the second and distinguishing copied from cut content.
+- Extended token, operand, opposite-operation and navigation-sequence checks. Division paraphrases, coordinate terminology and unconstrained movement wording remain provisional and need contextual accessibility review. Browser and spoken checks remain unexecuted.
+
+### Waray Blockly list creation and retrieval
+
+- Filled 27 English placeholders through the protected workflow, covering list creation, first/last/random/indexed retrieval and removal, and an end-relative sublist bound. Retained keyboard/platform names and the literal `#` position marker.
+- Distinguished returning an item without removal, removing and returning it, and removal alone across all four position modes. Empty-list wording retains length 0 and no data records.
+- Extended corrected-key/token checks and positive/negative operation wording checks. Programming return, random selection and end-relative indexing terminology remains provisional and needs contextual review. Browser and spoken accessibility checks remain unexecuted.
+
+### Waray Blockly list indexing, insertion and replacement
+
+- Filled 30 English placeholders through the protected workflow: sublists, indexed search, empty/length checks, repetition, reversal, insertion/replacement and ascending order. Preserved numbered arguments and literal position markers.
+- Retained the not-found return value, copy semantics of sublist/reversal operations, and distinctions between insertion and changing an existing value. First/last and counting from the end remain separate.
+- Extended token, missing-result, copy and operation checks. Index terminology and ascending-order phrasing remain provisional, particularly for nonnumeric sorting. Browser and spoken accessibility checks remain unexecuted; contextual language review remains open.
+
+### Waray Blockly sorting, text/list conversion and comparisons
+
+- Filled 29 English placeholders through the protected workflow, covering sorting, split/join, booleans, comparison announcements/tooltips, negation and the null tooltip. Preserved numbered arguments, keyboard/platform names and the programming literal `null`.
+- Retained sorting a copy, case-insensitive versus ordinary alphabetic ordering, strict versus inclusive comparisons and both branches of boolean negation. Split and join retain delimiter semantics.
+- Extended token, copy, comparison-boundary, sort-direction and negation checks. Delimiter, ordering and comparison phrasing remains provisional and needs contextual review. Browser and spoken accessibility checks remain unexecuted.
+
+### Waray Blockly conjunction, arithmetic and constants
+
+- Filled 27 English placeholders through the protected workflow, covering conjunction/ternary logic, arithmetic, atan2, constants, inclusive limits and divisibility. Preserved numbered arguments, mathematical notation, coordinate labels and the -180 to 180 range.
+- Kept both-input conjunction distinct from at-least-one disjunction, and retained both branches of the conditional expression. Bounds explicitly include the endpoints; evenness is paraphrased as divisibility by 2 without remainder.
+- Extended token, boolean-quantifier, inclusive-bound, angle-range and constant-notation checks. Square-root, golden-ratio and exponent terminology is lower confidence and needs contextual mathematical review. Browser and spoken accessibility checks remain unexecuted.
+
+### Waray Blockly numeric properties and statistics
+
+- The mode wording uses `agsob` (frequent), checked against the [Waray Dictionary](https://dictionary.corporaproject.org/index.php?glossary=A&sort=word); the derived superlative remains provisional.
+
+- Filled 25 English placeholders through the protected workflow, covering sign, parity, prime/whole properties, modulo, multiplication and list statistics. Preserved the `%1 ÷ %2` expression and distinguished positive/negative relative to zero.
+- Kept mean, median, modes, standard deviation and sum distinct; the modes tooltip returns a list rather than a single value. Statistical loanwords and the standard-deviation paraphrase remain lower confidence and require mathematical-language review.
+- Extended token, sign, modulo and statistic-distinction checks. These checks do not establish fluency or validate mathematical terminology. Browser and spoken accessibility checks remain unexecuted.
+
+### Waray Blockly random values and unary mathematics
+
+- Filled 28 English placeholders through the protected workflow: list statistics, random values, rounding, absolute values, exponentials, logarithms, negation and square roots. Preserved numbered arguments, bases, and the inclusive/exclusive random-number endpoints.
+- Added checks distinguishing upward/downward rounding, integer/float bounds, base-10 logarithms and sign reversal. Existing inventory checks cover all added keys and their placeholders.
+- Statistical, rounding and logarithm terminology remains provisional; mathematical fluency and spoken accessibility need contextual review. Browser checks were not run.
+
+### Waray Blockly trigonometry, variables and procedures
+
+- Filled 51 English placeholders through the protected workflow, covering trigonometry accessibility labels and tooltips, workspace controls, variables, function definitions and calls. Retained mathematical abbreviations and numbered arguments.
+- Kept degree/radian distinctions, inverse operations, return/no-return functions, disabled-definition restrictions and rename-all scope explicit. Added regression assertions for those distinctions alongside the existing token inventory checks.
+- Trigonometric loanwords, inverse-function wording and programming metaphors remain low confidence. Dictionary searches did not establish standard Waray trigonometric terminology; these proposed terms require fluent mathematical review. Browser and spoken accessibility checks were not run.
+
+### Waray Blockly screen-reader and navigation shortcuts
+
+- Filled 42 English placeholders through the protected workflow, covering screen-reader mode, directional movement and scrolling, stack navigation, focus, announcements and editing shortcuts. Preserved shortcut arguments and explicit on/off state transitions.
+- Kept scrolling the visible area distinct from moving a block, and retained start/end, first/last, previous/next and top/bottom distinctions. Added direction, state-transition and opposite-action regression checks alongside placeholder comparisons.
+- Screen-reader, focus and stack terminology remains provisional and needs contextual accessibility review. Browser and spoken screen-reader checks were not run; automated checks do not establish linguistic fluency.
+
+### Waray Blockly text operations
+
+- Filled 53 English placeholders through the protected workflow, covering text case, character positions, substrings, search, counts, joining, prompting, replacement, reversal and trimming. Preserved numbered arguments and position markers.
+- Kept append-at-end, not-found results, space-inclusive length, replace-all scope and copy semantics explicit. Added regression assertions for these behaviors and left/right/both trimming directions.
+- Title-case and substring wording is paraphrased and remains provisional pending contextual language review. Browser and spoken accessibility checks were not run; automated checks establish structure and selected semantic distinctions, not fluency.
+
+### Waray Blockly variables and workspace descriptions
+
+- Filled 44 English placeholders through the protected workflow, covering variable creation/conflicts, workspace counts/search, default names and shared list/function labels. Preserved numbered tokens and the leading spaces needed when comment-count fragments join workspace descriptions.
+- Kept search keyboard shortcuts and next/previous directions intact. Added shortcut, fragment-spacing, empty-workspace, get/set and shared-function-label regression checks.
+- Search-focus and variable-type language remains provisional pending contextual review. The remaining placeholder inventory still includes rule-editor and Scrum prose as well as keyboard names, platform names and mathematical notation; this batch does not complete Waray. Browser and spoken accessibility checks were not run.
+
+### Waray rule editor and Scrum planning
+
+- Filled 54 English placeholders through the protected workflow: block-rule messages, backlog views, Scrum roles/settings, estimates, sprint actions and planning labels. Reused the existing trigger/action/rule terms.
+- Preserved exactly-one trigger/action validation, administrator permission, reload-before-save conflicts, unfinished-work rollover and distinct completion policies. Added regression checks for these constraints and shared view labels.
+- Scrum Master, velocity, capacity and increment wording is provisional and requires domain-aware language review. Remaining Scrum report/event messages are still untranslated. Browser checks were not run.
+
+### Waray Scrum reports and observations
+
+- Corrected the wrong-language `export` label (`Ebaguer`) directly to `Pag-eksport`, matching the export instructions; this correction is separate from the 40 placeholder fills. Reused `agianan` for swimlane.
+
+- Filled 40 English placeholders through the protected workflow, covering Scrum events, states, close/cancel confirmations, report scope, snapshots and daily observations. Preserved every count/reference token, UTC and the 366-observation limit.
+- Retained unknown-versus-zero estimates, matching-unit/policy comparisons, assigned-card-only reports, omitted missing days and the distinction between observation exports and sprint-result exports. Added checks for these key constraints and different close/cancel outcomes.
+- Snapshot, retrospective and observation terminology is provisional and needs domain-aware language review. Browser checks were not run; tests cover tokens and selected semantic distinctions, not fluency.
+
+### Waray synchronization conflicts and previews
+
+- Filled 43 English placeholders through the protected workflow, covering conflict choices, replacement cards, previews and source-field omissions. Preserved source/local distinctions and both 100-entry/path limits.
+- Kept no-source-write behavior, retained local content, unchanged subcards, reused replacements and whole-list-sync exclusions explicit. Added checks for these distinctions and shared preview/source labels.
+- Synchronization, mapping, normalized-field and parser terminology remains provisional; the descriptive parser wording needs technical-language review. Browser checks were not run.
+
+### Waray synchronization reports and email failures
+
+- Filled 29 English placeholders through the protected workflow, covering sync run history, diagnostics, Jira estimate mapping and email failure categories. Preserved 20-run/30-day retention, full-list write access and exactly-one-field constraints.
+- Distinguished missing source values from explicit null, temporary from permanent SMTP rejection, and unconfirmed delivery from a saved receipt failure. Added regression checks for these distinctions and report actions that cannot resume or undo runs.
+- Diagnostic and authentication terminology is provisional and needs technical-language review. Browser checks were not run; automated coverage does not establish fluency.
+
+### Waray activity notification recovery
+
+- Filled 27 English placeholders through the protected workflow, covering pending activity notifications, delivery state, retry, pause/resume/cancel controls and rule-email loading failures.
+- Preserved the fact that retries never recreate activities, failed deliveries retain pending work, cancellation cannot be resumed and already queued/delivered messages are not recalled. Added negative-behavior, retention, conflict-review and distinct-action checks.
+- Delivery reservation, recipient-plan and metadata terminology remains provisional and requires technical-language review. Browser checks were not run. The next remaining-placeholder review must distinguish recognizable keyboard/platform names and mathematical notation from untranslated prose; this batch alone does not prove locale completeness.
+
+### Waray wrong-language audit: controls and authentication
+
+- Corrected 44 French, Walloon or mixed-language values directly after reading their English source and inspecting the stored vocabulary. These values were not protected correct-language Waray translations; the earlier Walloon-catalog equality scan missed them because the other catalog had different wording.
+- Covered board controls, labels, attachments, templates, loading indicators, authentication and forecasting. Preserved authentication app names, six-digit requirements, manual-entry spacing, file extensions and all forecast tokens. Added shared-label, multi-window and authentication regression checks.
+- The remaining-placeholder count is unchanged by these corrections. More wrong-language candidates remain, including list synchronization and attachment-query terms. Color, roadmap and API terminology is provisional; browser and fluent-speaker review remain open.
+
+### Waray wrong-language audit: list synchronization
+
+- Corrected 21 French or Walloon values directly: list synchronization controls, credential state, source settings and attachment query terms. Preserved the 15-minute interval, API/PROJECT identifiers and `%s` failure argument.
+- Read the localized operator/predicate registrations in `config/query-classes.js` and search-help use in `client/components/main/globalSearch.js`. Attachment aliases now use the single word `kalakip`, matching the Waray attachment label and avoiding the former embedded space.
+- Added interval, action-label, credential-state and query-token checks. The English-placeholder count is unchanged. More French query aliases remain for the next audit batch; credential terminology remains provisional and browser checks were not run.
+
+### Waray wrong-language audit: search aliases
+
+- Corrected 42 French/Walloon operator and predicate values directly. Retained existing shorthand symbols and abbreviations; used single-token Waray aliases compatible with the parser's letter/apostrophe syntax.
+- Added real-parser checks for twelve text operators, positive/negative attachment existence, invalid predicates and the apostrophe-bearing modified-date operator. Existing token inventory checks cover every corrected value.
+- Compacted query aliases such as `takdangpetsa` and `listahansusi` are provisional technical labels, not claims of standard orthography. Quarter terminology and wider locale fluency still require review. The English-placeholder count is unchanged; browser checks were not run.
+
+### Waray wrong-language audit: remaining accented prose
+
+- Corrected 41 French, Walloon or mixed-language values found by broadening the accent/vocabulary scan, including charts, previews, rule fragments, recurrence controls, storage and authentication status. Read each English source before replacing the foreign prose.
+- Preserved the reactivity environment-variable identifier and distinguished work remaining/completed, reset/recur, public/private and all-label scope. Added operation, shared-preview and authentication-state checks.
+- The exact-English count is unchanged. Removing these flagged values is not proof that all foreign text is gone: unaccented foreign words and semantic errors still require review. Flow-efficiency, accessibility and two-factor terminology remains provisional; browser checks were not run.
+
+### Waray wrong-language audit: board views and account labels
+
+- Corrected 52 French/Walloon values discovered by comparing both catalogs and reviewing each candidate, including unaccented words missed by the earlier character scans. Covered board views, font/theme controls, account labels, starred items and work timers.
+- Preserved unread-comment meaning, zoom directions, all-starred scope, SMTP identifiers and the Pomodoro argument. Added shared-label, direction and scope assertions.
+- Flow, cycle/lead-time and milestone terminology remains provisional. Further comparison candidates remain, including colors, rules, storage and diagnostics. The English-placeholder count is unchanged; browser and fluent-speaker checks remain outstanding.
+
+### Waray wrong-language audit: rules, accounts and storage
+
+- Corrected 84 French/Walloon or mixed-language values directly after reviewing their English source. Covered rule fragments, account and OAuth labels, card views, diagnostics, recurrence and storage settings.
+- Preserved LDAP error arguments, platform identifiers, the AWS region example and Cc notation. Kept reset and recurrence distinct; added shared-view/state, passwordless and identifier checks.
+- Role, performance, instance and diagnostic terminology remains provisional and needs contextual review. Remaining comparison candidates include colors, date-format labels and further diagnostics. English-placeholder counts are unchanged; browser checks were not run.
+
+### Waray wrong-language audit: diagnostics and process charts
+
+- Corrected 38 French/Walloon or misleading mixed-language values directly, covering diagnostics, events, import state, numeric search and process-chart labels. Restored the source distinction between mean, confidence and moving range instead of describing every statistic as cycle time.
+- Preserved CPU, OTP, IP versions, XmR and percent notation. Added shared-label, no-active-work and identifier checks; the number search alias is a single token.
+- Statistical moving-range, confidence and server terminology remains provisional and needs technical-language review. English-placeholder counts are unchanged. Color/date labels and recognizable shared terms still need separate review; browser checks were not run.
+
+### Waray wrong-language audit: colors and date-format labels
+
+- Corrected 15 values: eleven French/Walloon color names, three French date-format labels and an incomplete ISO-week calendar label. Retained the actual YYYY/MM/DD format notation and added Waray component names in the correct order.
+- Read the date-format options in `client/components/settings/settingBody.jade`: the stored option values are independent of their translated display labels. Added component-order, ISO-week and color-family checks.
+- Fine color distinctions and descriptive color wording remain low confidence and need visual/fluent-speaker review. English-placeholder counts are unchanged. Browser checks were not run; valid shared terms and further semantic review remain open.
+
+### Akan Blockly block and bubble labels
+
+- Filled 16 English placeholders through the protected workflow. Reused existing Akan input/comment terminology and translated block state, branch counts, stack descriptions, categories and warning bubbles.
+- Preserved every numbered argument and singular/plural input distinction. Registered Akan in the shared block/bubble regression suite, which checks tokens and distinct collapsed/disabled, statement/value and comment/warning labels.
+- Warning vocabulary was checked against the [Akan dictionary entry for kɔkɔbɔ](https://www.akandictionary.com/2022/01/16/kokobo-2/). Stack/container metaphors and the borrowed block term remain provisional and need contextual accessibility review. Browser and spoken checks were not run.
+
+### Akan Blockly editing, colors and control flow
+
+- Filled 44 English placeholders through the protected workflow, covering editing, color composition, loops and conditional branches. Preserved numbered arguments, blend bounds and RGB limits.
+- Corrected three generic filler values in the main red/green/blue labels directly; all previously said an unrelated phrase about task information. Matched these to the translated Blockly color controls.
+- Added per-key token checks, distinct color/operation checks, loop-only restrictions and opposite while/until conditions. Programming metaphors, variable and iteration wording remain provisional. Browser and fluent-speaker checks were not run.
+
+### Akan Blockly editing and field controls
+
+- Filled 39 English placeholders through the protected workflow, covering copy/cut/delete, backpack actions, enabled state, bitmap fields, multiline editing and comment/warning icons. Preserved every numbered argument and all-block scope.
+- Added per-key token checks, open/close icon behavior, enabled/disabled distinctions and separate clear/randomize actions. Existing singular/plural block descriptions remain intact.
+- Bitmap row/column, inline/external inputs and multiline wording are descriptive and provisional; contextual accessibility review is still needed. Browser and spoken checks were not run.
+
+### Akan Blockly input labels and keyboard guidance
+
+- Filled 58 English placeholders through the protected workflow, covering condition, list, loop, numeric and text inputs plus keyboard navigation. Preserved numbered arguments and x/y coordinate identifiers.
+- Kept dividend/divisor, start/end, first/second, maximum/minimum, split/join and copy/cut distinctions. Added per-key token checks and input-role/navigation assertions.
+- Mathematical input roles and keyboard terminology use descriptive, provisional wording requiring contextual review. Browser and spoken accessibility checks were not run.
+
+### Akan Blockly list creation and retrieval
+
+- Filled 46 English placeholders through the protected workflow, covering list creation, get/remove variants, sublists, search, length, repetition and reversal. Preserved numbered arguments and position markers.
+- Kept return-only, remove-only and remove-and-return behavior distinct for first, last, indexed and random items. Added those checks plus not-found sentinel and copy/reversal assertions.
+- List and sublist wording is descriptive and provisional; contextual language and accessibility review remains open. Browser and spoken checks were not run.
+
+### Akan Blockly list mutation, sorting and logic
+
+- Filled 47 English placeholders through the protected workflow, covering insertion/replacement, sorting, split/join, comparisons, negation and conditional expressions. Preserved numbered arguments and the null literal in its tooltip.
+- Added per-key token checks, insertion/replacement distinctions, strict/inclusive comparison boundaries, both/at-least-one boolean conditions and conditional-label consistency.
+- Sorting direction and programming wording remain provisional, especially for alphabetic ordering and case handling. Browser and spoken accessibility checks were not run.
+
+### Akan Blockly arithmetic and number properties
+
+- Filled 30 English placeholders through the protected workflow, covering arithmetic, atan2, constants, limits, parity, sign, primality and remainder. Preserved mathematical notation, coordinate labels, numbered arguments and angle bounds.
+- Added per-key token, inclusive-limit, sign, prime-lower-bound, modulo and constant-notation checks. Divisibility and prime properties use descriptive wording.
+- Square-root, golden-ratio, exponent and trigonometric terminology is low confidence and requires mathematical-language review. Browser and spoken accessibility checks were not run.
+
+### Akan Blockly statistics, random values and rounding
+
+- Filled 27 English placeholders through the protected workflow: list statistics, random values, powers and rounding. Preserved numbered arguments and inclusive/exclusive endpoints.
+- Added token, distinct-statistic, endpoint and rounding-direction checks. The mean tooltip explains sum divided by count, while modes refer to the most frequent items.
+- Standard-deviation, median and rounding terminology remains low confidence and requires mathematical-language review. Browser and spoken accessibility checks were not run.
+
+### Akan Blockly unary mathematics and workspace controls
+
+- Filled 39 English placeholders through the protected workflow, covering absolute values, powers, logarithms, negation, roots, trigonometry, minimap controls and new variables. Preserved bases and degree/radian distinctions.
+- Added token, logarithm-base, inverse-function, angle-unit, sign-reversal and open/close checks. Standard function names such as cosine and logarithm remain recognizable within Akan phrases; mathematical abbreviations remain unchanged.
+- Inverse-function, square-root and variable-type descriptions remain low confidence and require mathematical-language review. Browser and spoken accessibility checks were not run.
+
+### Akan Blockly procedures and screen-reader mode
+
+- Filled 31 English placeholders through the protected workflow: parent/backpack controls, procedure definitions and calls, rename/redo, zoom reset and screen-reader mode. Preserved numbered arguments and all-variable rename scope.
+- Added per-key token checks, return/no-return distinctions, function-only restrictions, disabled definitions and explicit off-to-on/on-to-off transitions.
+- Procedure-definition and screen-reader descriptions remain provisional and need contextual accessibility review; the technical parameter term remains recognizable within Akan prose. Browser and spoken checks were not run.
+
+### Akan Blockly navigation shortcuts
+
+- Filled 39 English placeholders through the protected workflow, covering movement, scrolling, focus, stack/page navigation and announcements. Used the existing Akan direction terms consistently.
+- Added per-key token checks, four-direction assertions, visible-area scrolling distinctions, opposite-action checks and explicit previous-item wording.
+- Focus, stack and announcement wording remains provisional and needs contextual accessibility review. Browser and spoken checks were not run.
+
+### Akan Blockly text operations
+
+Filled 55 English placeholders for text construction, character/sub-string access, searching, replacement, case changes, prompts and trimming. Preserved numbered arguments, absent-match results and spaces in length calculations; help URLs and numeric constants remain unchanged.
+
+Regression checks cover source-token inventories, first/last endpoints, reverse order, trim sides and distinct input types. Case and substring terminology remains provisional. Browser rendering and spoken accessibility were not run; automated checks do not establish fluency.
+
+### Akan Blockly variables and workspace messages
+
+Filled 42 English placeholders covering variable reads/writes and name conflicts, workspace counts, search controls, shared Blockly aliases and remaining general labels. Kept keyboard names in shortcut instructions and reused existing translations for shared procedure, condition and list labels.
+
+Regression checks cover all source placeholders, zero/one/many counts, leading spaces in comment fragments, keyboard shortcuts, opposite actions and shared labels. Variable/type and workspace terminology remains provisional. Browser rendering and spoken accessibility were not run.
+
+### Akan rule editing and Scrum planning
+
+Filled 54 English placeholders for block-rule editing, Scrum roles, backlog ordering, sprint controls, estimates and event planning. Corrected the existing generic activity-information phrase under `rules` to `Mmara`; the original value did not describe rules.
+
+Checks preserve source tokens, one-trigger/one-action restrictions, administrator permission, distinct start/close/cancel controls, minute units and shared board-view labels. Scrum roles, sprint and estimate terminology are descriptive and provisional. Browser checks were not run; string checks do not prove fluent wording.
+
+### Akan sprint reports and completion messages
+
+Filled 40 remaining English Scrum messages covering events, completion and cancellation, partial snapshots, daily observations and import status. Preserve unknown-versus-zero estimates, first recorded UTC observations, omitted days, separate export actions and exact placeholders.
+
+Tests cover tokens, distinct lifecycle states, completion/cancellation behavior, partial reports, UTC and the 366-observation limit. Snapshot, observation and Scrum terminology remains descriptive and low confidence pending contextual review. Browser rendering was not run.
+
+### Akan synchronization conflicts and previews
+
+Filled 43 English placeholders for conflict choices, duplicate mapping removal, archive restrictions, replacement creation, preview actions and source-field omissions. Preserve local content, unchanged subcards, source-only reading, retry reuse, display limits and hidden unmapped values.
+
+Regression checks cover source placeholders, action distinctions, local-content retention, no full-list run, 100-entry/path limits and shared omission labels. Synchronization, mapping and parser terminology is descriptive and provisional. Browser checks were not run.
+
+### Akan synchronization reports and email failures
+
+Filled 29 English messages for retained Sync reports, diagnostics, Jira estimates and email failures. Preserve the latest-20/30-day limits, unfinished versus failed outcomes, hour units, ignored missing values and explicit-null clearing.
+
+Regression coverage checks source tokens, retention limits, distinct outcomes, exact-one-field and missing/null semantics. Diagnostics and authentication terminology remains provisional. Browser checks were not run.
+
+### Akan activity-notification recovery
+
+Filled 27 English messages for pending notification delivery, retries, pause/resume/cancel controls and rule-email recovery. Preserve retained pending work, no recreation of original activities, permanent cancellation and the exclusion of already queued/delivered messages from recall.
+
+Regression checks compare source tokens, distinguish delivery states and controls, and cover retained work and cancellation language. Recovery and reservation terminology remains provisional. Browser checks were not run. Akan now has 29 exact-English entries in the placeholder report, consisting of keyboard names, operating-system names and mathematical notation; this does not establish the correctness of the rest of the catalog.
+
+### Akan generic filler correction: board, voting and display controls
+
+Found 596 entries using the same unrelated activity-information phrase (`Nsɛm a ɛfa dwumadi yi ho`). Corrected the first 60 board, voting, typography and display labels, including restoring numeric poker choices and `?` exactly as in English. These existing non-English values were semantically wrong and were corrected directly rather than passed through the English-only fill tool.
+
+Regression coverage rejects the old filler, checks source token inventories, literal voting values, the zoom range and opposite controls. Specialized theme, dependency and template labels remain provisional. Browser checks were not run; 536 instances of this exact filler remain for subsequent correction.
+
+### Akan generic filler correction: colors, fields and account controls
+
+Corrected another 60 unrelated filler values covering color names, custom fields, login, subscription and time tracking. Restored the intentionally empty comment placeholder, literal abbreviated list labels and Gantt name. The exact generic-filler inventory decreases from 536 to 476.
+
+Basic color terms were checked against [Boston University's Akan colors](https://www.bu.edu/200word/akan-twi/colors/) and [LearnAkan's color vocabulary](https://learnakan.com/colours-in-twi/). Uncommon shades use provisional descriptions or recognizable borrowed shade names; these and version/WIP terminology need contextual review. Tests check source tokens, empty/literal values, count and hour units, color distinctions and opposite controls. Browser checks were not run.
+
+### Akan generic filler correction: administration and diagnostics
+
+Corrected 60 generic filler values for login customization, registration, file limits, webhooks, database/OS diagnostics and card dates. Restore literal file-size units and preserve technical names such as FerretDB, MongoDB, CPU and reactivity mode identifiers. The exact generic-filler inventory decreases from 476 to 416.
+
+Tests cover source tokens, distinct attachment modes, shared labels, technical identifiers, time units and received/end dates. Operating-system, software-package and version terminology remains descriptive and provisional. Browser checks were not run.
+
+### Akan generic filler correction: rule schedules and actions
+
+Corrected 60 generic values for scheduling, rule triggers/actions, due-date conditions, checklist controls and email fragments. Preserve once/daily/weekday/weekly/monthly distinctions, Monday–Friday scope and opposite check/uncheck actions. The exact filler inventory decreases from 416 to 356.
+
+Tests check source placeholders, schedule cadence, time units, paired controls and shared labels. Short rule fragments and prepositions remain provisional because their combined wording needs contextual UI review. Browser checks were not run.
+
+### Akan generic filler correction: calendar and settings labels
+
+Corrected 43 generic values covering date fields, weekdays, role/status labels, read/unread controls and custom head settings. Restored protocol names, URL and the literal context separator. The exact filler inventory decreases from 356 to 313.
+
+Regression coverage checks source tokens, distinct weekdays, weekday-schedule consistency, read/unread states, shared templates, comma-separated examples and HTML/JSON identifiers. Role, domain and manifest terminology remains provisional. Search-operator filler remains for a dedicated pass with parser validation. Browser checks were not run.
+
+### Akan search operators and errors
+
+Corrected 49 search entries: 34 exact generic fillers and 15 mixed-language, malformed or unusable operator/predicate/error values. Restored canonical short aliases and replaced space-containing title/attachment aliases with single-word forms that the parser accepts. The exact filler inventory decreases from 313 to 279.
+
+The actual query parser now has Akan regression checks for quoted values, translated operators, positive/negative existence predicates, invalid limits, modified-date filters and ascending/descending sorts. Locale tests preserve source tokens and shared aliases. Compound technical search words remain low confidence and need language review. Browser checks were not run.
+
+### Akan generic filler correction: dependencies, locations and reports
+
+Corrected 60 generic values for navigation, completion, dependency relations, locations, diagnostics and wait indicators. Restore the Arial font name and API labels. Preserve relation direction, first/last observations and distinct wait animations. The exact filler inventory decreases from 279 to 219.
+
+Tests check source tokens, paired actions, inverse relations, geographic distinctions, identifiers and shared labels. Latitude/longitude, dependency and animation terms are descriptive and provisional. Browser checks were not run.
+
+### Akan generic filler correction: attachments, storage and account controls
+
+Corrected 60 generic values for tickets, file moves and repairs, storage diagnostics, accessibility and account lockouts. Restored storage provider names and preserved IDs, second units and distinct source/destination and pause/resume controls. The exact filler inventory decreases from 219 to 159.
+
+Tests cover source tokens, identifiers, units, paired controls and shared labels. Compaction, migration, session and accessibility terminology remains descriptive and provisional. Browser checks were not run.
+
+### Akan generic filler correction: cloud storage, backups and migrations
+
+Corrected 60 generic values for cloud credentials, backups, migrations and connection tests. Preserve Azure Blob, MongoDB 3, JSON and the `us-east-1` region example. Distinguish start/pause/stop, access/secret keys and whole-data replacement. The exact filler inventory decreases from 159 to 99.
+
+Tests cover source tokens, technical identifiers, lifecycle states, replacement scope and shared labels. Migration, backup and cloud-storage wording remains descriptive and provisional. Browser checks were not run.
+
+### Akan generic filler correction: remaining status and migration labels
+
+Corrected the remaining 99 exact occurrences of `Nsɛm a ɛfa dwumadi yi ho`, covering migrations, schedules, login, diagnostics and flow labels. Restore GridFS, S3 and Cron names; preserve interval numbers, CPU percentage, millisecond units and IP version identifiers. The exact filler inventory is now zero, which does not establish the accuracy of other catalog values.
+
+A full-catalog regression rejects that exact filler phrase. Batch checks cover source placeholders, scheduling intervals, technical values, opposite actions and shared labels. Migration, diagnostic and short grammatical wording remains provisional; mixed-language and semantic review continues. Browser checks were not run.
+
+### Akan mixed-language correction: board warnings and notifications
+
+Rewrote 32 mixed-language values containing English clauses and malformed substitutions. Covered permanent deletion, archiving, private/public access, imports, member removal and notification scope. Corrected the outdated board-restore description to refer to Archive on the All Boards page, matching the current English source.
+
+Tests preserve all source placeholders and HTML tags, deletion consequences, membership scope, last-admin restrictions and notification distinctions. Short menu references and administrative terminology need contextual review. Browser checks were not run. This batch does not change the exact-English placeholder count; the broader mixed-language audit continues.
+
+### Akan mixed-language correction: configuration and rule triggers
+
+Rewrote 24 mixed-language entries covering avatar/auth settings, organization domains, destructive confirmations, rule triggers and a due-date activity message. Restored the damaged `kanban.example.org` example and preserved `a.example.com`, `MULTITENANCY=true` and all activity placeholders/newlines.
+
+Tests cover tokens, literal identifiers, duplicate-list deletion conditions, irreversible warnings and shared auth labels. Rule fragments and authentication/tenant wording remain provisional pending contextual review. Browser checks were not run; other mixed-language values remain under audit.
+
+### Akan mixed-language correction: search and migration guidance
+
+Rewrote 15 mixed-language descriptions for card-window behavior, keyboard saving, permissions, search syntax, administration and database/Sandstorm migration. Restored damaged Sandstorm names and attachment paths; preserved both database URLs, environment variables and Snap command examples.
+
+Tests compare source placeholders and inline-code spans, verify paths/configuration literals, and cover unchanged filesystem data and irreversible deletion. Migration, tenant administration and rule/search wording remains descriptive and provisional. Browser checks were not run; other mixed-language values remain under review.
+
+### Akan mixed-language correction: display, transfer and anonymity settings
+
+Rewrote 12 mixed-language descriptions for plain-text display, import/export controls, avatar exclusions, anonymization and notification/activity settings. Restored corrupted product names and retained HTML/Markdown examples, mention syntax and anonymization examples.
+
+Checks cover source tokens, default-off statements, product names, literal examples and separate avatar/notification scope. Privacy and rich-text terminology remains descriptive and provisional; these string checks do not establish fluency. Browser checks were not run.
+
+### Akan mixed-language correction: migration confirmations and diagnostics
+
+Rewrote 12 mixed-language values for migration confirmations, CPU limits, background execution, minimum username length and S3 key guidance. Preserve archived/non-archived scope, duplicate-list removal conditions, IDs, numeric limits and named console controls. Quoted diagnostic messages remain literal English so users can recognize them.
+
+Regression checks cover source tokens, continuation prompts, scopes, technical identifiers and quoted messages. Migration terminology remains descriptive and provisional. Browser checks were not run; the catalog still needs further language review.
+
+### Akan mixed-language correction: import activities and archive guidance
+
+Rewrote 24 malformed or mixed-language entries covering activity logs, list widths, archive/restore guidance, account anonymization and imported-user mapping. Corrected the anonymization popup title, which incorrectly referred to importing users, and preserved the no-extra-permissions condition when mapping an imported member.
+
+Tests compare all source placeholder inventories, activity targets, archive retention/restoration, size limits and mapping permissions. Mapping and administrative wording remains provisional. Browser checks were not run; broader semantic review continues.
+
+### Akan mixed-language correction: permissions and account errors
+
+Rewrote 24 mixed-language permission, existence/error and export labels. Preserve assigned-only visibility, read-only/comment-only restrictions, worker self-assignment and the fact that enabling permanent deletion does not itself delete data. Keep source count placeholders and JSON/CSV/TSV/Excel identifiers.
+
+Regression checks cover source tokens, negative permissions, separate disabled/missing accounts and re-import guidance. Role and soft-deletion wording remains descriptive and provisional. Browser checks were not run; other mixed-language values remain under audit.
+
+### Akan mixed-language correction: filters and import formats
+
+Rewrote 24 filter/export/import messages, restoring machine-readable examples that had translated JSON field names and product names. Preserve Kanboard/Asana/ZenKit/Jira field names, API paths, spreadsheet headers, Trello extensions and advanced-filter syntax, including escapes.
+
+Tests check source tokens, exact example fragments, backslash counts and distinct ZIP error categories. Technical filter and import wording remains provisional. Browser checks were not run; the broader language audit continues.
+
+### Akan mixed-language correction: invitations and membership notices
+
+Rewrote 24 mixed-language entries covering Trello controls, membership, private-board access, WIP/file limits and invitation email. Preserve invitation tokens and line breaks, organization-admin scope and the distinction between hiding a WeKan member and revoking Sandstorm access.
+
+Tests cover source tokens, email formatting, permission restrictions, archive retention and separate API caps. Membership, storage and WIP terminology remains provisional. Browser checks were not run; broader language review continues.
+
+### Akan mixed-language correction: rule imports, reminders and search scope
+
+Rewrote 30 mixed-language rule triggers, import guidance, due reminders, deletion confirmations and search/template descriptions. Preserve activity placeholders, opposite trigger states, technical product names and permission-limited search scope. Count prefixes retain their trailing spaces.
+
+Tests compare source tokens, distinct due states, paired actions, deletion restrictions, product identifiers and formatting. Rule fragments, checklist and shared-template terminology remains provisional. Browser checks were not run; broader semantic review continues.
+
+### Akan mixed-language correction: search operator help
+
+Rewrote 16 mixed-language search-help values covering operator syntax, membership, dates, existence, sorting, limits and combined conditions. Preserve all operator/predicate placeholders, inline-code examples and angle-bracket metavariables exactly as supplied by English.
+
+Tests compare token, inline-code and metavariable inventories and cover absence checks, descending sort, positive integer limits, AND conditions and archived-card exclusion. Search terminology remains provisional. Existing parser regressions also pass; browser checks were not run.
+
+### Akan mixed-language correction: diagnostics and report descriptions
+
+Rewrote 18 mixed-language diagnostic, API/recovery report, creator and membership messages. Preserve log commands, the `WITH_API=true` setting, account/endpoint report granularity and deletion guards for nonempty organizations/teams. Existing literal `has:-due` and AND examples were reviewed and retained rather than mistaken for untranslated prose.
+
+Tests compare source tokens and command spans and check line breaks, identifiers, report scope and deletion restrictions. Recovery and API wording remains provisional. Browser checks were not run; the broader audit continues.
+
+### Akan mixed-language correction: storage maintenance and support
+
+Rewrote 14 mixed-language values covering attachment location repair, storage defaults, MongoDB compaction, PDF support, custom translations and login protection. Preserve secondaries-before-primary order, the single-node exception and the after-file-moves restriction from the English source.
+
+Tests cover source tokens, operational scope, product/format identifiers, logged-in-only support and irreversible deletion. Replica-set and compaction terms retain recognizable technical names within Akan prose and remain provisional. Browser checks were not run; this translation does not independently validate the operational guidance.
+
+### Akan mixed-language correction: lockouts and card loading
+
+Rewrote 14 account-state, lockout, storage-path, cron and card-loading messages. Preserve activation/deactivation direction, all-user unlock scope, the loading environment variables and the experimental partial-view warning.
+
+Tests compare source tokens, opposite controls, configuration literals and lazy-loading limitations. Resource/loading and account-protection terminology remains provisional. Browser checks were not run; broader language review continues.
+
+### Akan mixed-language correction: backup scope and migration descriptions
+
+Rewrote 16 mixed-language labels and descriptions for transfer controls, anonymization, backup scope and board migrations. Preserve organization ownership limits, excluded accounts/settings, duplicate-list deletion conditions and background continuation.
+
+Tests cover source tokens, ownership and deletion restrictions, technical identifiers, admin-only scope and shared anonymization labels. Backup and migration terminology remains provisional. Browser checks were not run; broader semantic review continues.
+
+### Akan mixed-language correction: account errors, repair results and flow labels
+
+Rewrote 20 mixed-language or malformed account, repair-result, import and flow-history messages. Preserve temporary-lockout behavior, unfixable/remaining counts, file extensions, selective-import scope and card-number query syntax.
+
+Tests compare source tokens and query examples and cover failed/partial outcomes, format names and distinct history labels. Flow-history and repair wording remains provisional. Browser checks were not run; broader language review continues.
+
+### Akan embedded filler correction: activities and flow reports
+
+A substring audit found 40 additional values containing the generic activity-information phrase inside longer strings; these were not exact matches in the earlier 596-entry inventory. Rewrote all 40, covering activity fragments, email templates, rule dates, flow reports and time adjustments. No occurrence of that phrase remains anywhere in the Akan catalog.
+
+Tests compare source placeholders, preserve `{{size}}`, simulation counts/UTC/horizon, percentile sample requirements, independent overlapping causes and date fallbacks. Statistical and forecasting terminology is low confidence and needs contextual review. Browser checks were not run; eliminating this phrase does not prove the catalog is fully correct.
+
+### Akan mixed-language correction: display toggles and selection
+
+Rewrote 22 mixed-language values for board selection/home behavior, width/keyboard toggles, fading tiers, dropdown entry and import/input errors. Preserve the current enabled/disabled state separately from the action performed by clicking.
+
+Tests cover source tokens, opposite toggle actions, one-board selection, tier numbers, Enter, the four-digit year example and both Trello credentials. Fading and display terminology remains provisional. Browser checks were not run; broader language review continues.
+
+## Akan input and scheduled-job corrections (batch 29)
+
+Corrected 22 mixed-English values for search input, default boards, attachment
+limits, storage, account lockouts and scheduled-job failures. Preserved Enter,
+`<body>`, `example.com`, the prohibition on @/spaces, positive limits and distinct
+schedule/delete/pause/resume/start outcomes. Technical Akan wording remains
+provisional; browser rendering and fluent-speaker review have not been performed.
+Source-token and operation/limit regression checks accompany these corrections.
+These were mixed-language values, so the English-placeholder count is unchanged.
+
+## Akan migration and deletion corrections (batch 30)
+
+Corrected 30 mixed-English messages for migrations, storage settings, sign-in,
+account enrollment, deletion confirmations and card dates/membership. Preserved
+S3, millisecond bounds, email paragraphs/tokens, permanent deletion and distinct
+pause/stop/resume operations. Added source-token and behavior-wording checks.
+Technical terminology remains low confidence pending fluent-speaker review;
+browser checks have not been run. English-placeholder counts are unchanged.
+
+## Akan controls and storage corrections (batch 31)
+
+Corrected 29 mixed-language values for card controls, upload limits, credential
+retention and migration controls. Restored exact Azure/Google Cloud menu labels
+inside translated navigation guidance. Preserved bytes, the logo height default,
+blank-to-retain behavior and distinct membership/assignment actions. Added token,
+menu-label and control checks. Technical wording remains low confidence pending
+fluent-speaker review. Browser checks remain unrun; placeholder counts unchanged.
+
+## Akan card and import corrections (batch 32)
+
+Corrected 28 mixed-language card, selection, text and import messages. Preserved
+JSON object keys in the multiple-card example; restored Trello menu labels and
+matched WeKan navigation instructions to the localized menu/export labels.
+Added token, parsed-JSON, navigation and permission/scope regression checks.
+Technical wording remains low confidence pending fluent-speaker review. Browser
+checks remain unrun. These corrections do not change English-placeholder counts.
+
+## Akan rule and search corrections (batch 33)
+
+Corrected 23 mixed-language rule, administration and search messages. Preserved
+query operators and example arguments verbatim, opposite check/uncheck actions,
+and archived/unarchived scope. Added token, query-syntax and action checks.
+Technical terminology remains low confidence pending fluent-speaker review.
+Browser checks remain unrun. English-placeholder counts are unchanged.
+
+## Akan file and memory corrections (batch 34)
+
+Corrected 24 mixed-language file, migration and Node memory labels. Restored the
+Node and Meteor-Files product names; preserved per-board versus all-attachment
+scope, GridFS/S3 destinations and original checklist order. Memory terminology
+is low confidence pending fluent-speaker review. Added source-token, product,
+scope and distinct-metric checks. Browser checks remain unrun. Two product-only
+values now correctly equal English; the placeholder tool excludes them, so its
+count remains 45,599 across 70 languages.
+
+## Akan storage guidance corrections (batch 35)
+
+Corrected 20 mixed-language administration/storage messages, including translated
+repair identifiers restored to `swimlaneId` and `listId`. Preserved provider names,
+optional key-file input versus pasted JSON, all-item scope and freed-space result
+wording. Added source-token, identifier and scope regression checks. Technical
+wording remains low confidence pending fluent-speaker review. Browser checks
+remain unrun; English-placeholder counts are unchanged.
+
+## Akan board controls and email corrections (batch 36)
+
+Corrected 23 mixed-language or misleading values for board controls, account
+emails, invitation status and file repair. The invitation label previously told
+the user to accept/save instead of reporting that it had not been accepted.
+Preserved email paragraphs/tokens, workspace placeholders, CAS/SAML and opposing
+star/unstar actions. Added regression checks. Technical wording remains low
+confidence pending fluent-speaker review; browser checks remain unrun.
+English-placeholder counts are unchanged.
+
+## Akan setting-action corrections (batch 37)
+
+Corrected 21 mixed-language setting and action labels, preserving WIP alternatives,
+relative/current dates, custom-field activity placeholders and the rule that an
+empty field matches any value. Aligned duplicate-list migration/step labels and
+card/list color labels. Added source-token and behavior-wording checks. Technical
+wording remains low confidence pending fluent-speaker review. Browser checks
+remain unrun; English-placeholder counts are unchanged.
+
+## Akan archive and color corrections (batch 38)
+
+Corrected 25 damaged or mixed-language archive, color and card-control values.
+Replaced the corrupted archive term with the term already used in guidance,
+aligned color actions, and preserved archive target distinctions and activity
+placeholders. Added token, target and terminology checks. Wording remains
+provisional pending fluent-speaker review. Browser checks remain unrun;
+English-placeholder counts are unchanged.
+
+## Akan import and invitation corrections (batch 39)
+
+Corrected 28 mixed-language or damaged values for imports, invitations, archive
+empty states, shortcuts and card controls. Restored the OpenProject product name
+and GET /api/v3/work_packages endpoint. Preserved invitation paragraphs/tokens,
+linked-card restrictions, numeric shortcuts and strict count threshold wording.
+Added token, endpoint and behavior checks. Wording remains low confidence pending
+fluent-speaker review; browser checks remain unrun. Placeholder counts unchanged.
+
+## Akan upload and diagnostics corrections (batch 40)
+
+Corrected 24 damaged or mixed-language upload, SMTP, diagnostics and color labels.
+Restored Node and preserved protocol/configuration names, optional webhook token
+wording, completed upload status and multi-selection label behavior. Added token,
+identifier and action checks. Technical terminology remains low confidence pending
+fluent-speaker review. Browser checks remain unrun. Node is intentionally a product
+name rather than translated prose.
+
+## Akan workflow and sorting corrections (batch 41)
+
+Corrected 24 damaged, mixed-language or misleading workflow/sorting labels.
+Repaired the enable/disable rule label, which previously repeated the same action.
+Preserved archive direction, Trello Butler best-effort wording, N-day and board
+placeholders and the literal closing body tag. Added source-token, direction and
+markup checks. Wording remains low confidence pending fluent-speaker review;
+browser checks remain unrun. English-placeholder counts are unchanged.
+
+## Akan sorting and report corrections (batch 42)
+
+Corrected 24 damaged or mixed-language sorting, report and field labels. Restored
+the literal `username` and `user:<username>` search example, preserved `%{value}`
+and HTML space entities, and aligned equivalent sorting labels. Added token,
+query-syntax, entity and report-distinction checks. Wording remains low confidence
+pending fluent-speaker review; browser checks remain unrun. Placeholder counts
+are unchanged.
+
+## Akan support and lockout corrections (batch 43)
+
+Memory terminology reference: [Node V8 documentation](https://github.com/nodejs/node/blob/main/doc/api/v8.md), including `does_zap_garbage`.
+
+Corrected 24 damaged or mixed-language support, storage, lockout and memory labels.
+Preserved known-user/wrong-password versus nonexistent-user distinctions and
+opposite filesystem states. Retained technical memory identifiers alongside
+provisional explanations. Added token, identifier and state checks. Technical
+wording remains low confidence pending fluent-speaker review; browser checks
+remain unrun. English-placeholder counts are unchanged.
+
+## Akan cloud-storage corrections (batch 44)
+
+Corrected 25 damaged or mixed-language storage messages. Restored Azure/Google
+product names, provider navigation labels, the Storage Object Admin role and
+client_email key. Preserved read/write permissions, disabled state and lazy-load
+scope. Added token, name and scope checks. Provider instructions are translated
+from the English source, not independently revalidated against live consoles.
+Technical wording remains low confidence; browser/fluent-speaker checks remain
+unrun. Product-only labels intentionally match English.
+
+## Akan repair and monitoring corrections (batch 45)
+
+Corrected 24 damaged or mixed-language repair, monitoring and repository labels.
+Preserved missing/corrupted alternatives, list/card/swimlane repair scope, possible
+conversion delay and AWS S3/SSL/TLS identifiers. Aligned repository terminology
+and CPU suffix. Added token, scope and terminology checks. Technical wording
+remains low confidence pending fluent-speaker review; browser checks remain
+unrun. English-placeholder counts are unchanged.
+
+## Akan drag and account guidance corrections (batch 46)
+
+Corrected 22 mixed-language or misleading drag, account and configuration labels.
+Restored Trello Card Attachments Downloader and AWS menu names from the English
+source. Preserved optional inputs, sidebar toggle targets, workspace tokens and
+connection-string alternatives. Added token, name and behavior checks. Provider
+navigation is not independently verified against live consoles. Wording remains
+low confidence pending fluent-speaker review; browser checks remain unrun.
+
+## Akan field and rule corrections (batch 47)
+
+Corrected 20 mixed-language or misleading field, rule and timeline messages.
+Restored the timeline confirmation's full field list, displayed-value target and
+no-deletion statement; preserved board-admin-only visibility. Aligned field
+creation labels and clarified rule actions. Added token, scope and state checks.
+Wording remains low confidence pending fluent-speaker review; browser checks
+remain unrun. English-placeholder counts are unchanged.
+
+## Akan grouping and field-summary corrections (batch 48)
+
+Corrected 18 mixed-language or misleading rule, board and field-summary messages.
+Restored number-field summation instead of a people count, opposite grouping
+states/actions and the synchronization interval's minutes unit. Preserved JSON/
+CSV, count tokens and the existing Sync now label. Added token, aggregate and
+state checks. Wording remains low confidence pending fluent-speaker review;
+browser checks remain unrun. English-placeholder counts are unchanged.
+
+## Akan timing and completion corrections (batch 49)
+
+Corrected 24 mixed-language timing, checklist and status messages. Preserved
+received/start/due/end distinctions, old/new activity values and the import
+timeout's retry guidance and possible causes. Aligned duplicate completion text.
+Added token, value-direction and state checks. Wording remains low confidence
+pending fluent-speaker review; browser checks remain unrun. Placeholder counts
+are unchanged.
+
+## Akan status and count corrections (batch 50)
+
+Corrected 23 mixed-language or misleading status, count and permission labels.
+Preserved stopped/completed migration distinctions, read-assigned-only scope,
+compact timing uncertainty, count notation and batch bounds. WIP groups now
+names groups rather than enabling a limit. Added source-token, unit and scope
+checks. Wording remains low confidence pending fluent-speaker review; browser
+checks remain unrun. English-placeholder counts are unchanged.
+
+## Akan movement and ordering corrections (batch 51)
+
+Corrected 25 mixed-language movement, ordering and guidance labels. Preserved
+up/down, left/right and top/bottom directions, own-list versus specified-list
+scope, oldest-first sorting and recurring time tokens. Restored Google Cloud
+menu labels from the English source. Added token, direction and scope checks.
+Wording remains low confidence pending fluent-speaker review; browser and live
+provider-console checks remain unrun. Placeholder counts are unchanged.
+
+## Akan account and connection corrections (batch 52)
+
+Corrected 15 mixed-language or misleading account, watch and connection messages.
+Fixed OAuth guidance to state that the local setting overrides the environment
+value, rather than follows it, while preserving server-only secret storage and
+never-shown wording. Added token, precedence and account-state checks. Wording
+remains low confidence pending fluent-speaker review; browser checks remain
+unrun. English-placeholder counts are unchanged.
+
+## Akan display and attachment corrections (batch 53)
+
+Corrected 23 mixed-language display, background, attachment and role labels.
+Aligned the Normal role label with its assigned-only description. Preserved
+pixel units, automatic width, assigned-only visibility and the private-page
+message's conditional wording and HTML link. Aligned equivalent background/view
+labels. Added token, markup and action checks. Wording remains low confidence
+pending fluent-speaker review; browser checks remain unrun. Placeholder counts
+are unchanged.
+
+## Akan view and customization corrections (batch 54)
+
+Corrected 25 mixed-language view, attachment and customization messages. Aligned
+matching view titles and preserved private-only board visibility, visible-only
+card loading, combined attachment/avatar scope and assetlinks.json. Added token,
+label-consistency and scope checks. Wording remains low confidence pending
+fluent-speaker review; browser checks remain unrun. Placeholder counts unchanged.
+
+## Akan results and scheduling corrections (batch 55)
+
+Corrected 26 mixed-language search-result, missing-data and scheduling messages.
+Preserved result/count tokens, missing-only restoration, scheduled versus executed
+outcomes and distinct pause/resume/start actions. Retained the source's coming-soon
+placeholder meaning. Added token, count and state checks. Wording remains low
+confidence pending fluent-speaker review; browser checks remain unrun.
+English-placeholder counts are unchanged.
+
+## Akan activity and assignment corrections (batch 56)
+
+Corrected 25 mixed-language activity, assignment, avatar and job messages.
+Preserved label-add/remove direction, assigned-only scope, activity placeholders
+and ongoing migration status. Aligned duplicate activity and avatar labels and
+used the corrected Normal role name. Added token, direction and scope checks.
+Wording remains low confidence pending fluent-speaker review; browser checks
+remain unrun. English-placeholder counts are unchanged.
+
+## Akan checklist and activity corrections (batch 57)
+
+Corrected 21 mixed-language checklist, activity and avatar labels. Preserved
+add/remove directions, numeric label shortcuts, completion-triggered sound and
+its default-off state, plus avatar size units. Added token, state and action
+checks. Wording remains low confidence pending fluent-speaker review; browser
+checks remain unrun. English-placeholder counts are unchanged.
+
+## Akan conversion and authorization corrections (batch 58)
+
+Corrected 14 mixed-language conversion, import and authorization messages.
+Preserved JSON/CSV/TSV formats, administrator versus member requirements, denial
+of permission and the domain-conflict prefix. Aligned duplicate-list labels and
+kept orphaned-card and broken-card repair distinct. Added token, format and
+requirement checks. Wording remains low confidence pending fluent-speaker review;
+browser checks remain unrun. English-placeholder counts are unchanged.
+
+## Akan rule-fragment and history corrections (batch 59)
+
+Corrected 18 malformed or mixed-language rule fragments, permissions and history
+states. Preserved move-to/from direction, restrictions on editing others' comments,
+inactive/pending states and Google Cloud ID. Aligned equivalent rule and rename
+labels. Added token, direction and restriction checks. Wording remains low
+confidence pending fluent-speaker review; browser checks remain unrun.
+English-placeholder counts are unchanged.
+
+## Akan voting and invitation corrections (batch 60)
+
+Corrected 12 mixed-language voting, invitation and endpoint messages. Aligned
+invitation subjects, preserved inviter tokens and leave/delete confirmations,
+and translated the source's AWS blank-endpoint versus compatible-provider URL
+instructions. Added token, subject and provider-name checks. Wording remains
+low confidence pending fluent-speaker review; browser and live provider-console
+checks remain unrun. English-placeholder counts are unchanged.
+
+## Akan prompts and font-sample corrections (batch 61)
+
+Corrected 10 mixed-language prompts, membership settings and display values.
+Preserved same-organization/team restrictions, password repetition, font-preview
+digits and card-fading behavior. The font sample translates the source sentence;
+it is not claimed to be an Akan pangram. Vocabulary references: [fox](https://learnakandictionary.com/english-twi/fox/)
+and [brown color wording](https://ghanasky.com/akan-twi-dictionary-translator/).
+Added token, scope and digit checks. Wording remains low confidence pending
+fluent-speaker review; browser checks remain unrun. Placeholder counts unchanged.
+
+## Akan template and swimlane corrections (batch 62)
+
+Corrected 18 mixed-language template, subtask and swimlane labels. Preserved
+multiple-card copying, below-position insertion, resize lock/unlock meaning and
+distinct card/list/board templates. Aligned template-container titles. Added token,
+target and direction checks. Wording remains low confidence pending fluent-speaker
+review; browser checks remain unrun. English-placeholder counts are unchanged.
+
+## Akan navigation and swimlane corrections (batch 63)
+
+Corrected 18 mixed-language navigation, detail and swimlane messages. Aligned
+move/copy/detail titles, Home and All Boards references and the close-dialog
+shortcut. Preserved the home-removal confirmation's explicit no-deletion meaning.
+Added token, scope and label-consistency checks. Wording remains low confidence
+pending fluent-speaker review; browser checks remain unrun. Placeholder counts
+are unchanged.
+
+## Akan migration-label corrections (batch 64)
+
+Corrected 14 mixed-language migration and summary labels. Preserved error/warning,
+paused/started/resumed and not-needed distinctions, as well as comprehensive scope.
+Added token, state and terminology checks. Technical wording remains low confidence
+pending fluent-speaker review; browser checks remain unrun. Placeholder counts
+are unchanged.
+
+## Akan action and account-label corrections (batch 65)
+
+Corrected 17 mixed-language account, action and timing labels. Restored Meteor's
+name and preserved trigger/action distinctions, this-week due filtering and
+spent-versus-remaining time. Aligned account-creation titles. Added token, product
+and meaning checks. Technical wording remains low confidence pending fluent-speaker
+review; browser checks remain unrun. English-placeholder counts are unchanged.
+
+## Somali Scrum planning and reports — 2026-10-07
+
+Filled 84 English placeholders in `so`, covering sprint planning, lifecycle,
+completion policies, report limitations and daily observations. Existing Somali
+translations remain unchanged. The regression suite covers all 102 Scrum/view
+messages, including the 18 translated earlier, and verifies source tokens,
+distinct lifecycle states, unknown versus zero estimates, partial visibility,
+the first UTC observation, omitted days, the 366-observation limit and the
+separate report export controls. Export references use the existing `Soo saar`
+label; swimlane wording follows the existing `Waddo` vocabulary.
+
+Terminology reference: [qiyaas in Wiktionary](https://en.wiktionary.org/wiki/qiyaas).
+The Somali civics textbook's [work-planning chapter](https://files.ethiopialearning.com/textbooks/Grade%2008/Grade_8_Subject_CIVICS_Chapter_8_Language_SOMALI_Retrieved_20150101.pdf)
+provides usage of `qorshe shaqo`. Sprint is rendered descriptively as a work cycle;
+Scrum and Planning Poker remain recognizable method names. Technical compounds,
+especially snapshot, increment and retrospective, remain low-confidence drafts
+pending fluent-speaker review. Automated checks establish structure and selected
+semantic distinctions, not fluency. Browser checks were not run.
+
+## Somali Sync conflicts, previews and reports — 2026-10-07
+
+Filled 63 English placeholders in `so`. Existing translations are preserved.
+Conflict wording distinguishes keeping local content from removing its Sync
+mapping, retaining subcards, replacement-card reuse and review-only scope.
+Preview and diagnostic messages preserve omitted source data, the two separate
+100-entry/path limits, 20-run retention over 30 days, full-list permissions and
+reports that cannot resume or undo work. Jira hints preserve `null`, the
+missing-versus-explicit-null distinction, hours and exactly one matching field.
+Archive wording follows the existing `U gudbi kaydka` label.
+
+Four new regression tests cover these distinctions and source placeholders.
+Together with the Somali Scrum checks and all-catalog structural check, eight
+tests pass; 21 human-preference checks pass. Browser checks were not run.
+Technical compounds for mappings, parser output and source baselines remain
+low-confidence drafts pending fluent-speaker review. No external translation
+service was used. The all-language backlog and wording audit remain open.
+
+## Somali rule editing and notification recovery — 2026-10-07
+
+Filled 46 English placeholders covering the block rule editor, SMTP failure
+categories and activity-notification recovery. Existing Somali values remain
+unchanged. Tests preserve exactly one trigger/action, administrator permission,
+reload-before-save, temporary versus permanent SMTP rejection, unconfirmed
+versus failed delivery, retained pending work, no activity recreation and
+cancellation that cannot recall already queued mail or delivered notifications.
+Pause, resume and cancel remain distinct actions.
+
+Three new regression tests pass alongside the earlier Somali suites and the
+234-catalog key-order/placeholder check (11 tests total); 21 human-preference
+checks pass. Browser checks were not run. Technical terms for recovery metadata,
+delivery reservations and rule blocks remain low-confidence drafts pending
+fluent-speaker review. The remaining Somali English-placeholder queue consists
+of Blockly messages; the broader language and wording audit remains open.
+
+## Somali Blockly editing, colours and control flow — 2026-10-07
+
+Filled 61 English placeholders in `so`. Existing translations, keyboard keycaps
+and platform names remain unchanged. Regression checks preserve Blockly argument
+inventories, variable-deletion restrictions, deletion counts, enabled/disabled
+controls, separate RGB channels, the 0–100 channel range and 0.0–1.0 blend ratio.
+Control-flow checks distinguish exiting a loop from continuing the next iteration,
+while-true from until-true, and the final conditional fallback.
+
+The Somali and Blockly suites plus the 234-catalog structural gate pass (51 tests),
+as do 21 human-preference checks. Browser checks were not run. Programming terms
+for variables, functions, loops and the block backpack remain low-confidence
+drafts pending fluent-speaker review. This batch does not complete Blockly or
+the all-language audit.
+
+## Somali Blockly lists — 2026-10-07
+
+Translated 75 English list messages: 73 counted placeholders and two short
+fragments (`to #` and `as`) omitted by the placeholder counter. Existing Somali
+translations remain unchanged. Regression checks cover every list key, allowing
+source-empty suffixes, help URLs and index symbols to remain unchanged. They
+preserve argument inventories, empty-list results, missing-item results, first
+and last indexing, get/remove/get-and-remove distinctions, insertion versus
+replacement, copies, sort direction and text/list conversion direction.
+
+All 53 focused translation/structural tests and 21 human-preference checks pass.
+Browser checks were not run. Programming vocabulary for indexing, delimiters
+and sorting remains low confidence pending fluent-speaker review. The broader
+language audit continues; placeholder counts alone omit some untranslated prose.
+
+## Somali Blockly logic and functions — 2026-10-07
+
+Translated 50 English values: 47 counted placeholders and three short labels
+(`or` and two function-definition `to` labels) excluded by the counter. The
+technical literal `null`, help URLs, numeric hues and empty suffixes remain
+unchanged. Existing Somali translations are preserved. Regression checks cover
+all logic and function messages, source tokens, strict versus inclusive
+comparisons, AND/OR and negation truth conditions, ternary label references,
+output versus no output, disabled definitions and duplicate parameters.
+
+All 56 focused translation/structural tests and 21 human-preference checks pass.
+Browser checks were not run. Function and parameter vocabulary remains
+low-confidence technical wording pending fluent-speaker review. This batch
+leaves the remaining Blockly and all-language audit work open.
+
+## Somali Blockly text operations — 2026-10-07
+
+Filled 55 English placeholders while preserving existing Somali translations.
+Checks cover every text-operation key, source token inventories, first/last and
+from-end indexing, missing-text results, empty text, lengths including spaces,
+replacement of all occurrences, copies, case conversion, trim direction and
+numeric versus text prompts. Shared list/text length and item labels agree.
+Help URLs, numeric hues and source-empty suffixes remain unchanged.
+
+All 58 focused translation/structural tests and 21 human-preference checks pass.
+Browser checks were not run. Programming vocabulary and case-conversion wording
+remain low-confidence drafts pending fluent-speaker review. Remaining Blockly
+families and the all-language wording audit are still open.
+
+## Somali Blockly variables and workspace controls — 2026-10-07
+
+Filled 45 English placeholders without changing existing Somali translations.
+Checks preserve variable names, duplicate-type and parameter warnings, getter
+versus setter labels, undo/redo distinctions, zero/one/many workspace counts,
+comment-fragment spacing, search result arguments and Enter/Shift+Enter/Escape
+navigation. Shared default item labels agree with text operations.
+
+All 60 focused translation/structural tests and 21 human-preference checks pass.
+Browser and screen-reader checks were not run. Technical wording for variable
+types, parameters, block stacks and focus remains low confidence pending
+fluent-speaker review. Remaining Blockly messages and the broader audit remain
+open.
+
+## Somali Blockly navigation and accessibility — 2026-10-07
+
+Filled 45 English placeholders for keyboard navigation and shortcut descriptions.
+Existing Somali translations are preserved. Tests retain shortcut placeholders,
+movement versus scrolling, four directions, start/finish/abort distinctions,
+next/previous headings and stacks, top/bottom targets and move acceptance.
+Duplicate controls share their existing label and screen-reader mode explicitly
+supports both enabling and disabling.
+
+All 61 focused translation/structural tests and 21 human-preference checks pass.
+Browser and screen-reader checks were not run. Wording for focus, block stacks,
+tooltips and spoken announcements remains low confidence pending fluent-speaker
+review. Remaining Blockly and all-language audit work stays open.
+
+## Somali Blockly inputs and bitmap fields — 2026-10-07
+
+Translated 61 English values: 60 counted placeholders and the short bitmap `on`
+label omitted by the counter. Existing Somali translations remain unchanged.
+Tests cover every input and field label, source token inventories, row/column
+positions, pixel on/off states, first/second operands, dividend/divisor roles,
+x/y coordinates, min/max distinctions and shared start/end and repeat labels.
+
+All 63 focused translation/structural tests and 21 human-preference checks pass.
+Browser and screen-reader checks were not run. Mathematical and accessibility
+vocabulary, especially coordinates and bitmap descriptions, remains low
+confidence pending fluent-speaker review. Remaining Blockly messages and the
+broader language audit stay open.
+
+## Somali Blockly remaining controls and announcements — 2026-10-07
+
+Filled 26 English placeholders for expand/open/close controls, icons, inline and
+external inputs, minimap navigation, parent announcements and screen-reader
+mode. Existing translations are unchanged. Tests preserve tokens, open versus
+close states, enabled/disabled announcements and their opposite actions, the
+absence of a parent, and shared conditional labels.
+
+All 64 focused translation/structural tests and 21 human-preference checks pass.
+Browser and screen-reader checks were not run. Accessibility and parent-block
+wording remains low confidence pending fluent-speaker review. The remaining
+counted Somali entries are mathematical messages, keyboard names, platform
+names and technical literals; their presence does not establish which should
+be translated. The broader all-language audit remains open.
+
+## Somali Blockly mathematics — 2026-10-07
+
+Filled 86 English placeholders, preserving existing translations, formula names,
+constants and source tokens. Regression checks distinguish inclusive integer
+bounds from the exclusive floating upper bound, degree inputs from radians,
+quotient from remainder, mean/median/mode, rounding direction and sign negation.
+They preserve the atan2 coordinate order and -180–180 range and all constant
+approximations.
+
+Terminology reference: [Planwise Somali STEM dataset](https://huggingface.co/datasets/planwise-data/somali-stem-dataset)
+for prime number, logarithm, median, standard deviation and trigonometric names.
+This is a provisional terminology source, not independent fluency validation.
+Mathematical compounds remain low confidence pending fluent-speaker review.
+All 66 focused translation/structural tests and 21 human-preference checks pass.
+Browser and screen-reader checks were not run. The 28 remaining counted Somali
+entries appear to be keycaps, platform names and technical literals; the broader
+catalog wording audit and all-language task are not complete.
+
+## Northern Sotho rule editing and notification recovery — 2026-10-07
+
+Filled 46 English placeholders in `nso` without changing existing translations.
+Wording follows the catalog's Poto, Melao, Imeile and Ditsebišo terminology.
+Vocabulary reference: [Sepedi terminology from Onke Solutions](https://www.onkesolutions.com/sepedi/)
+for confirmation and notification verbs. Technical compounds for triggers,
+delivery reservations and recovery metadata remain low-confidence drafts pending
+fluent-speaker review.
+
+Two focused tests and the structural check across 234 non-English catalogs pass,
+as do 21 human-preference checks. Tests preserve rule constraints, temporary
+versus permanent rejection, uncertain delivery, retained pending work, no
+activity recreation and cancellation without recall of queued/delivered messages.
+Browser checks were not run. The remaining language and wording audit stays open.
+
+## Northern Sotho Sync conflicts and previews — 2026-10-07
+
+Filled 43 English placeholders without changing existing translations. Checks
+preserve source token inventories, keeping local values versus source values,
+removing only duplicate mappings, retaining card content and subcards,
+replacement reuse and review-only scope. Preview/source reports share labels
+and preserve the 100-entry/path limits and hidden source-object values.
+
+The two new tests, earlier Northern Sotho recovery tests and the structural
+check across 234 non-English catalogs pass (five tests total), as do 21
+human-preference checks. Browser checks were not run. Technical compounds for
+synchronization, mappings, parsers and source baselines remain low confidence
+pending fluent-speaker review. Remaining language work stays open.
+
+## Northern Sotho Sync reports and estimates — 2026-10-07
+
+Filled the remaining 20 English Sync placeholders, preserving existing values.
+Tests now check tokens and non-English prose throughout the Sync family. New
+semantic checks preserve 20-run/30-day retention, partial changes after failure,
+reports that cannot resume or undo work, full-list write permissions, server
+availability, hours, exactly one matching field and missing versus explicit
+null source values. Jira and null remain technical literals.
+
+Seven focused translation/structural tests and 21 human-preference checks pass.
+Browser checks were not run. Technical compounds for diagnostics and mapped
+estimate fields remain low confidence pending fluent-speaker review. Remaining
+feature families and the all-language wording audit stay open.
+
+## Northern Sotho Scrum planning and reports — 2026-10-07
+
+Filled 84 English placeholders without changing existing translations. Tests
+cover all 102 Scrum and related view messages, including 18 earlier translations,
+and preserve source tokens, shared labels, distinct lifecycle states,
+unfinished-card movement, cancellation membership, partial reports, unknown
+versus zero estimates, first UTC observations, omitted days and the 366 limit.
+Export instructions use the existing Romela label and distinguish the section
+control from the toolbar control.
+
+Ten focused translation/structural tests and 21 human-preference checks pass.
+Browser checks were not run. Sprint is described as a work cycle; Scrum and
+Planning Poker remain method names. Technical compounds for snapshots,
+retrospectives, increments and scope remain low confidence pending fluent-speaker
+review. The remaining Blockly and all-language wording audit stays open.
+
+## Northern Sotho Blockly text operations — 2026-10-07
+
+Filled 55 English placeholders without changing existing translations. Tests
+cover all text-operation tokens, indexing and missing-text results, empty text,
+lengths including spaces, replacement of every occurrence, case conversion,
+trim direction and numeric versus text prompts. Replacement wording puts the
+replacement argument before the original, retaining their numbered identities.
+Help URLs, numeric hues and source-empty suffixes remain unchanged.
+
+All 49 focused translation/structural tests and 21 human-preference checks pass.
+Browser checks were not run. Programming vocabulary for variables, indexes,
+substrings and case conversion remains low confidence pending fluent-speaker
+review. The remaining language and wording audit stays open.
+
+## Northern Sotho Blockly logic — 2026-10-07
+
+Translated 26 English values: 25 counted placeholders and the short `or` label
+omitted by the counter. Existing translations, null, help URLs and numeric hues
+remain unchanged. Checks preserve source tokens, true/false and negation,
+AND/OR truth conditions, strict versus inclusive comparisons and references to
+the three ternary labels.
+
+All 50 focused translation/structural tests and 21 human-preference checks pass.
+Browser checks were not run. Programming terminology remains low confidence
+pending fluent-speaker review. The wider language and wording audit stays open.
+
+## Northern Sotho Blockly functions — 2026-10-07
+
+Translated 24 English values: 22 counted placeholders and two function-definition
+labels omitted by the counter. Existing translations, help URLs, numeric hues
+and source-empty suffixes are preserved. Checks cover every function key,
+argument tokens, shared definition labels, output versus no output, disabled
+definitions, duplicate parameters and function-only conditional returns.
+
+All 51 focused translation/structural tests and 21 human-preference checks pass.
+Browser checks were not run. Technical vocabulary for functions and parameters
+remains low confidence pending fluent-speaker review. The broader language and
+wording audit stays open.
+
+## Northern Sotho Blockly control flow — 2026-10-07
+
+Translated 33 English values: 26 counted placeholders and seven short if/do
+labels omitted by the counter. Existing translations and help URLs remain
+unchanged. Tests cover every control-flow key, source tokens, loop exit versus
+continuation, while-true versus until-true, the final conditional fallback,
+counting arguments and shared conditional/loop labels.
+
+All 52 focused translation/structural tests and 21 human-preference checks pass.
+Browser checks were not run. Programming vocabulary for loops, variables and
+conditions remains low confidence pending fluent-speaker review. The remaining
+language and wording audit stays open.
+
+## Northern Sotho Blockly variables — 2026-10-07
+
+Filled 22 English placeholders without changing existing translations. Checks
+preserve every variable-message token, deletion counts, function-definition
+restrictions, rename-all scope, conflicting types and parameter names, getter
+versus setter controls and distinct colour/number/text types. The default item
+name matches the text-operation label.
+
+All 53 focused translation/structural tests and 21 human-preference checks pass.
+Browser checks were not run. Variable and parameter terminology remains low
+confidence pending fluent-speaker review. Remaining Blockly and all-language
+wording work stays open.
+
+## Northern Sotho Blockly lists — 2026-10-07
+
+Translated 75 English values: 73 counted placeholders and two short to/as
+fragments omitted by the counter. Existing translations are preserved. Checks
+cover list tokens, empty and missing results, retrieval versus removal,
+insertion versus replacement, copies, sort direction and text/list conversion.
+
+The 53 focused translation tests and 21 human-preference checks pass. Two
+all-catalog structural checks fail because concurrent work added the English
+key `shortcut-edit-due-date` before adding it to the other catalogs; this batch
+does not alter that work. Browser checks were not run. List/index terminology
+remains low confidence pending fluent-speaker review. The broader audit is open.
+
+## Northern Sotho Blockly workspace — 2026-10-07
+
+Filled 23 English placeholders without changing existing translations. Tests
+preserve source tokens, zero/one/many block counts, comment-fragment spacing,
+search result arguments, Enter/Shift+Enter/Escape navigation and distinct
+copy/cut/paste and undo/redo actions.
+
+The 54 focused checks and 21 human-preference checks pass. Two all-catalog
+structural checks still fail on the concurrently added `shortcut-edit-due-date`
+key missing from other catalogs. Browser and screen-reader checks were not run.
+Workspace-stack and focus terminology remains low confidence pending fluent-
+speaker review. The broader language and wording audit stays open.
+
+## Northern Sotho Blockly colours and navigation — 2026-10-07
+
+Filled 59 English placeholders, preserving existing translations. Checks retain
+source tokens, distinct RGB channels, the 0–100 channel range, 0.0–1.0 blend
+ratio, four directions, movement versus scrolling, move confirmation and
+start/finish/abort distinctions. Screen-reader mode includes both on and off.
+
+The 55 focused checks and 21 human-preference checks pass. Two all-catalog
+structural checks still fail on the concurrent `shortcut-edit-due-date` addition.
+Browser and screen-reader checks were not run. Colour and navigation terminology
+remains low confidence pending fluent-speaker review. The broader audit is open.
+
+## Northern Sotho Blockly inputs and bitmap fields — 2026-10-07
+
+Translated 61 English values: 60 counted placeholders and the short on label
+omitted by the counter. Existing translations remain unchanged. Tests preserve
+all input/field tokens, row/column arguments, pixel states, operand roles,
+first/second inputs, coordinates and shared endpoint/repeat labels.
+Coordinate terminology follows the dihlomathišo usage in
+[Twinkl's Sepedi coordinate worksheet](https://www.twinkl.co.za/resource/winter-olympics-coordinates-worksheets-sepedi-za-m-1753884301).
+
+The 56 focused checks and 21 human-preference checks pass. Two all-catalog
+structural checks still fail on the concurrent `shortcut-edit-due-date` addition.
+Browser and screen-reader checks were not run. Mathematical and accessibility
+wording remains low confidence pending fluent-speaker review. The broader audit
+stays open.
+
+## Northern Sotho Blockly editing and accessibility — 2026-10-08
+
+Filled 46 English placeholders for block editing, backpack actions, icon
+controls, screen-reader announcements and zoom. Existing translations remain
+unchanged. Regression coverage preserves every source token, deletion counts,
+missing-parent negation, open/close and enable/disable distinctions, and the
+opposite actions offered by enabled/disabled screen-reader announcements.
+
+All 59 focused checks and 21 human-preference checks pass. The earlier
+all-catalog key mismatch has been resolved. Browser and screen-reader checks
+were not run. Backpack, parent-block and accessibility wording remains low
+confidence pending fluent-speaker review. The broader language audit stays open.
+
+## Northern Sotho Blockly mathematics — 2026-10-08
+
+Filled 86 English placeholders for arithmetic, number predicates, list
+statistics, rounding, constants and trigonometric accessible labels/tooltips.
+Formula abbreviations, URLs, symbols and hue values remain literal. Existing
+translations are preserved. Tests retain source tokens, numerical constants,
+random interval endpoints, degree/radian distinctions, operand order, signs
+and distinct statistical and rounding operations.
+
+Vocabulary uses skwerute, lokaritimi, palohlokakatišani and matlapalo from the
+[Multilingual Mathematics Dictionary](https://www.roekeloos.co.za/meertalige-wiskundewoordeboek-multilingual-mathematics-dictionary/).
+Palogare and the median paraphrase follow the
+[Department of Basic Education's Sepedi assessment guide](https://www.education.gov.za/Portals/0/Documents/Manuals/Diagnostic%20Assesment%20Books/Mathematics%20Books/Grade%203/Book%201/MATHEMATICS%20GRADE%2003%20SEPEDI%20BOOK%201.pdf?ver=2020-03-09-190712-000).
+These sources support individual terms, not full-sentence fluency. Standard
+deviation, golden ratio and trigonometric loan spellings remain low confidence
+and require fluent-speaker review. Browser and screen-reader checks were not run.
+
+The focused combined run passed 59 checks, with two catalog-structure failures
+because some locales lack the concurrent shortcut-edit-due-date source key.
+Human-preference verification passed 20 checks; its actual-merge check failed
+on that same catalog key mismatch. The broader language audit remains open.
+
 ## Original flagged inventory
 
 | Status | Flagged keys |
