@@ -1,0 +1,185 @@
+'use strict';
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { translationTokens } = require('../releases/translations/placeholder-tokens.mjs');
+const read = code => JSON.parse(fs.readFileSync(path.join(__dirname, '../imports/i18n/data', `${code}.i18n.json`), 'utf8'));
+const en = read('en');
+const keys = Object.keys(en).filter(key => key.startsWith('due-reminder-'));
+assert.equal(keys.length, 6);
+const pendingKeys = JSON.parse(fs.readFileSync(path.join(__dirname, '../releases/translations/pending-transifex.json'), 'utf8')).keys.map(entry => entry.key);
+for (const key of keys) assert.ok(!pendingKeys.includes(key), `${key}: filled group leaves pending queue`);
+for (const code of ['tk_TM', 'tt', 'so', 'ku', 'ckb', 'pap', 'tpi', 'bi', 'mi', 'sm', 'haw', 'zu', 'zu-ZA', 'xh', 'st', 'tn', 'rw', 'rn', 'ny', 'bho', 'mai', 'or_IN', 'kok', 'ary', 'yi', 'nd', 'ss', 'nso', 'ts', 'om', 'fj', 'to', 'gv', 'wa', 'wa-RR', 'ak', 'lg', 'bm', 'wo', 'ee', 'rup', 've-CC', 'bua', 'sah', 'cv', 've', 'se', 'ace', 'bo', 'dz', 'ti', 'ks', 'qu', 'ay', 'gn', 'ff', 'vo', 'tlh', 'kl', 'nah', 've-PP', 'zgh', 'iu', 'wal', 'tig', 'chr']) {
+  const locale = read(code);
+  assert.deepEqual(Object.keys(locale), Object.keys(en), `${code}: source key order`);
+  for (const key of keys) {
+    assert.ok(locale[key]?.trim(), `${code}:${key}: nonempty`);
+    assert.notEqual(locale[key], en[key], `${code}:${key}: translated`);
+    assert.deepEqual(translationTokens(locale[key]), translationTokens(en[key]), `${code}:${key}: exact source tokens`);
+  }
+  assert.match(locale['due-reminder-days-label'], /0/, `${code}: due-day zero`);
+  assert.deepEqual(locale['due-reminder-invalid'].match(/-?\d+/g), ['-14', '14'], `${code}: signed range retained`);
+  assert.match(locale['due-reminder-webhook'], /webhook/, `${code}: webhook terminology`);
+  assert.notEqual(locale['due-reminder-invalid'], locale['due-reminder-saved'], `${code}: success differs from error`);
+}
+assert.match(read('tk_TM')['due-reminder-days-label'], /otur.*položitel.*öňki.*otrisatel.*soňky.*boş/);
+assert.match(read('tt')['due-reminder-days-label'], /өтер.*уңай.*кадәрге.*тискәре.*соңгы.*буш/);
+assert.match(read('so')['due-reminder-days-label'], /hakadyo.*togan.*horreeya.*taban.*dambeeya.*bannaan/);
+assert.match(read('tk_TM')['due-reminder-invalid'], /iň köp on.*bitin/);
+assert.match(read('tt')['due-reminder-invalid'], /иң күбе ун бөтен/);
+assert.match(read('so')['due-reminder-invalid'], /ugu badnaan toban.*tiro dhan/);
+assert.match(read('ku')['due-reminder-days-label'], /virgulê.*erênî.*berî.*neyînî.*piştî.*vala/);
+assert.match(read('ckb')['due-reminder-days-label'], /کۆما.*ئەرێنی.*پێش.*نەرێنی.*دوای.*بەتاڵی/);
+assert.match(read('pap')['due-reminder-days-label'], /koma.*positivo.*promé.*negativo.*despues.*bashí/);
+assert.match(read('ku')['due-reminder-invalid'], /Herî zêde deh rojên tam/);
+assert.match(read('ckb')['due-reminder-invalid'], /زۆرترین دە ڕۆژی تەواو/);
+assert.match(read('pap')['due-reminder-invalid'], /máksimo dies dia henter/);
+assert.match(read('tpi')['due-reminder-days-label'], /koma.*winim 0.*paslain.*aninit long 0.*bihain.*stap nating/);
+assert.match(read('bi')['due-reminder-days-label'], /koma.*moa long 0.*bifo.*daon long 0.*afta.*emti/);
+assert.match(read('tpi')['due-reminder-invalid'], /tenpela de tasol.*namba olgeta/);
+assert.match(read('bi')['due-reminder-invalid'], /ten dei nomo.*mak antap.*ful namba/);
+assert.match(read('mi')['due-reminder-days-label'], /piko.*tōrunga.*mua.*tōraro.*muri.*pātea/);
+assert.match(read('sm')['due-reminder-days-label'], /koma.*sili i le 0.*lumanaʻi.*itiiti i le 0.*mavae.*avanoa/);
+assert.match(read('haw')['due-reminder-days-label'], /koma.*ʻoi aku i ka 0.*mua.*emi iho i ka 0.*hope.*hakahaka/);
+assert.match(read('mi')['due-reminder-invalid'], /kaua e neke atu.*tekau.*tauoti/);
+assert.match(read('sm')['due-reminder-invalid'], /lē sili atu.*sefulu.*numera atoa/);
+assert.match(read('haw')['due-reminder-invalid'], /helu piha.*ʻumi a emi mai/);
+for (const code of ['zu', 'zu-ZA']) {
+  assert.match(read(code)['due-reminder-days-label'], /ngokhefana.*ezingaphezu.*ezingaphambi.*ezingaphansi.*ezingemva.*kungenalutho/);
+  assert.match(read(code)['due-reminder-invalid'], /ezingadluli kweziyishumi.*eziphelele/);
+}
+assert.match(read('xh')['due-reminder-days-label'], /ngeekoma.*angaphezu.*ezingaphambi.*angaphantsi.*ezingemva.*kungenanto/);
+assert.match(read('st')['due-reminder-days-label'], /diphegelwana.*kahodimo.*pele.*ka tlase.*kamora.*ho se na letho/);
+assert.match(read('tn')['due-reminder-days-label'], /diphegelwana.*fetang.*pele.*kwa tlase.*morago.*go se na sepe/);
+assert.match(read('xh')['due-reminder-invalid'], /ezingadlulanga kwishumi.*apheleleyo/);
+assert.match(read('st')['due-reminder-invalid'], /sa feteng leshome.*felletseng/);
+assert.match(read('tn')['due-reminder-invalid'], /sa feteng lesome.*feletseng/);
+assert.match(read('rw')['due-reminder-days-label'], /udukitso.*iruta 0.*ibanziriza.*munsi ya 0.*iwukurikira.*ubusa/);
+assert.match(read('rn')['due-reminder-days-label'], /udukitso.*biruta 0.*ibanziriza.*munsi ya 0.*iwukurikira.*ubusa/);
+assert.match(read('ny')['due-reminder-days-label'], /makoma.*oposa 0.*asanafike.*ochepera 0.*pambuyo.*popanda kanthu/);
+assert.match(read('rw')['due-reminder-invalid'], /itarenze icumi.*yuzuye/);
+assert.match(read('rn')['due-reminder-invalid'], /itarenga cumi.*vyuzuye/);
+assert.match(read('ny')['due-reminder-invalid'], /osapitirira khumi.*athunthu/);
+assert.match(read('bho')['due-reminder-days-label'], /कॉमा.*धनात्मक.*पहिले.*ऋणात्मक.*बाद.*खाली/);
+assert.match(read('mai')['due-reminder-days-label'], /कॉमा.*धनात्मक.*पहिनेक.*ऋणात्मक.*बादक.*खाली/);
+assert.match(read('or_IN')['due-reminder-days-label'], /କମା.*ଧନାତ୍ମକ.*ପୂର୍ବର.*ଋଣାତ୍ମକ.*ପରର.*ଖାଲି/);
+assert.match(read('kok')['due-reminder-days-label'], /कॉमान.*धन संख्या.*आदले.*ऋण संख्या.*उपरांतचे.*रिकामें/);
+assert.match(read('bho')['due-reminder-invalid'], /पूरा संख्या.*जादे से जादे दस/);
+assert.match(read('mai')['due-reminder-invalid'], /पूर्ण संख्या.*बेसीसँ बेसी दस/);
+assert.match(read('or_IN')['due-reminder-invalid'], /ପୂର୍ଣ୍ଣ ସଂଖ୍ୟା.*ସର୍ବାଧିକ ଦଶଟି/);
+assert.match(read('kok')['due-reminder-invalid'], /पूर्ण संख्यांनी चडांत चड धा/);
+for (const code of ['bho', 'mai', 'kok']) {
+  for (const key of keys) assert.match(read(code)[key], /[\u0900-\u097F]/u, `${code}:${key}: Devanagari`);
+}
+for (const key of keys) assert.match(read('or_IN')[key], /[\u0B00-\u0B7F]/u, `${key}: Odia script`);
+assert.match(read('ary')['due-reminder-days-label'], /بفواصل.*الموجبة.*قبل.*السالبة.*بعدو.*خاوية/);
+assert.match(read('yi')['due-reminder-days-label'], /קאָמעס.*פּאָזיטיווע.*פֿאַר.*נעגאַטיווע.*נאָך.*ליידיק/);
+assert.match(read('ary')['due-reminder-invalid'], /أعداد صحيحة.*بحد أقصى عشرة/);
+assert.match(read('yi')['due-reminder-invalid'], /ביז צען גאַנצע צאָלן/);
+for (const key of keys) {
+  assert.match(read('ary')[key], /[\u0600-\u06FF]/u, `${key}: Arabic script`);
+  assert.match(read('yi')[key], /[\u0590-\u05FF]/u, `${key}: Hebrew script`);
+}
+assert.match(read('nd')['due-reminder-days-label'], /ngamakhoma.*ezingaphezu.*ezingaphambi.*ezingaphansi.*ezingemva.*kungelalutho/);
+assert.match(read('ss')['due-reminder-days-label'], /ngemakhoma.*letingetulu.*langaphambi.*letingaphansi.*langemuva.*kute lutfo/);
+assert.match(read('nso')['due-reminder-days-label'], /difegelwana.*fetago 0.*pele.*ka tlase.*morago.*go se na selo/);
+assert.match(read('ts')['due-reminder-days-label'], /tikoma.*tlulaka 0.*mahlweni.*ehansi.*ndzhaku.*ku nga ri na nchumu/);
+assert.match(read('nd')['due-reminder-invalid'], /ezingadluli ezilitshumi.*ezipheleleyo/);
+assert.match(read('ss')['due-reminder-invalid'], /langendluli kulalishumi.*letiphelele/);
+assert.match(read('nso')['due-reminder-invalid'], /sa fetego lesome.*di feletšego/);
+assert.match(read('ts')['due-reminder-invalid'], /nga tluriki khume.*leti heleleke/);
+assert.match(read('om')['due-reminder-days-label'], /qoodduudhaan.*0 caalu.*dura.*0 gadi.*booda.*duwwaa/);
+assert.match(read('fj')['due-reminder-days-label'], /koma.*levu cake.*bera.*lailai.*oti.*lala/);
+assert.match(read('to')['due-reminder-days-label'], /koma.*lahi ange.*kimuʻa.*siʻi ange.*kimui.*ʻatā/);
+assert.match(read('om')['due-reminder-invalid'], /kudhan hin caalle.*lakkoofsa guutuu/);
+assert.match(read('fj')['due-reminder-invalid'], /kua ni sivia na tini.*naba taucoko/);
+assert.match(read('to')['due-reminder-invalid'], /ʻikai laka hake.*hongofulu.*fika kakato/);
+assert.match(read('gv')['due-reminder-days-label'], /cowraghyn ",".*smoo na 0.*roish.*sloo na 0.*ny lurg.*follym/);
+assert.match(read('wa')['due-reminder-days-label'], /virgules.*pus grands.*divant.*pus ptits.*après.*vude/);
+assert.match(read('wa-RR')['due-reminder-days-label'], /koma.*labaw ha 0.*antes.*ubos ha 0.*katapos.*waray sulod/);
+assert.match(read('gv')['due-reminder-invalid'], /slane-earrooyn.*ny smoo na jeih/);
+assert.match(read('wa')['due-reminder-invalid'], /å pus dîjh.*nombes etirs/);
+assert.match(read('wa-RR')['due-reminder-invalid'], /diri malabaw hin napulo.*bug-os nga mga numero/);
+assert.match(read('ak')['due-reminder-days-label'], /koma.*ɛboro 0.*anim.*esua sen 0.*akyi.*hɔ kwa/);
+assert.match(read('lg')['due-reminder-days-label'], /obukoma.*ezisinga 0.*ezikulembera.*wansi wa 0.*eziddirira.*awatali kintu/);
+assert.match(read('ak')['due-reminder-invalid'], /nɔma mũ.*mma.*nnɔɔso nsen du/);
+assert.match(read('lg')['due-reminder-invalid'], /ezitasukka kkumi.*ennamba enzijjuvu/);
+assert.match(read('bm')['due-reminder-days-label'], /taamasiyɛn ",".*ka bon.*don ɲɛ.*ka dɔgɔn.*don kɔ.*kolon/);
+assert.match(read('wo')['due-reminder-days-label'], /koma.*ëpp 0.*jiitu.*yées 0.*topp.*neen/);
+assert.match(read('ee')['due-reminder-days-label'], /koma.*lolo wu 0.*do ŋgɔ.*sue wu 0.*kplɔe ɖo.*ƒuƒlu/);
+assert.match(read('bm')['due-reminder-invalid'], /tan walima o duguma.*jate dafalenw/);
+assert.match(read('wo')['due-reminder-invalid'], /dul ëpp fukk.*lim yu mat/);
+assert.match(read('ee')['due-reminder-invalid'], /mesɔ gbɔ wu ewo o.*xexlẽdzesi blibowo/);
+assert.match(read('rup')['due-reminder-days-label'], /virguli.*mai mari di 0.*dininti.*mai njitsi di 0.*dupã.*gol/);
+assert.match(read('ve-CC')['due-reminder-days-label'], /virgole.*positivi.*prima.*negativi.*dopo.*vodo/);
+assert.match(read('rup')['due-reminder-invalid'], /cel mult dzatsi.*numiri întredzi/);
+assert.match(read('ve-CC')['due-reminder-invalid'], /al màsimo diexe.*nùmari intieri/);
+assert.match(read('bua')['due-reminder-days-label'], /запятойгоор.*ехэ.*урдахи.*бага.*һүүлдэхи.*хооһон/);
+assert.match(read('sah')['due-reminder-days-label'], /запятойынан.*улахан.*иннинээҕи.*кыра.*кэннинээҕи.*кураанах/);
+assert.match(read('bua')['due-reminder-invalid'], /бүхэли тоонуудые.*арбанһаа олон бэшэ/);
+assert.match(read('sah')['due-reminder-invalid'], /бүтүн чыыһылалары.*уонтан элбэх буолбатах/);
+for (const code of ['bua', 'sah']) {
+  for (const key of keys) assert.match(read(code)[key], /[\u0400-\u04FF]/u, `${code}:${key}: Cyrillic`);
+}
+assert.match(read('cv')['due-reminder-days-label'], /запятойпа.*пысӑк.*умӗнхи.*пӗчӗк.*хыҫҫӑнхи.*пушӑ/);
+assert.match(read('cv')['due-reminder-invalid'], /тулли хисепсемпе.*вуннӑран ытла мар/);
+for (const key of keys) assert.match(read('cv')[key], /[ӑӗҫӳ]/u, `${key}: Chuvash letters`);
+assert.match(read('ve')['due-reminder-days-label'], /khoma.*fhiraho 0.*phanḓa.*fhasi ha 0.*murahu.*hu si na tshithu/);
+assert.match(read('ve')['due-reminder-invalid'], /a sa fhiri fumi.*nomboro dzo fhelelaho/);
+assert.match(read('se')['due-reminder-days-label'], /rihkuiguin.*positiiva.*ovdal.*negatiiva.*maŋŋá.*guorusin/);
+assert.match(read('se')['due-reminder-invalid'], /eanemustá logi.*ollesloguiguin/);
+assert.match(read('ace')['due-reminder-days-label'], /koma.*rayek.*sigohlom.*ubit.*lheueh.*soh/);
+assert.match(read('ace')['due-reminder-invalid'], /angka buleuet.*bèk leubèh nibak siplôh/);
+assert.match(read('bo')['due-reminder-days-label'], /དབྱེ་རྟགས་ ",".*ཕོ་གྲངས.*སྔོན.*མོ་གྲངས.*རྗེས.*སྟོང་པར/);
+assert.match(read('bo')['due-reminder-invalid'], /ཧྲིལ་གྲངས་མང་མཐར་བཅུ/);
+for (const key of keys) assert.match(read('bo')[key], /[\u0F00-\u0FFF]/u, `${key}: Tibetan script`);
+assert.match(read('dz')['due-reminder-days-label'], /",".*སྦོམ.*ཧེ་མའི.*ཆུང.*ཤུལ་མའི.*སྟོངམ/);
+assert.match(read('dz')['due-reminder-invalid'], /ཧྲིག་གྲངས་ མང་མཐའ་བཅུ/);
+for (const key of keys) assert.match(read('dz')[key], /[\u0F00-\u0FFF]/u, `${key}: Tibetan script`);
+assert.match(read('ti')['due-reminder-days-label'], /ብኮማ.*ዝዓበዩ.*ቅድሚኡ.*ዝነኣሱ.*ድሕሪኡ.*ጥርሑ/);
+assert.match(read('ti')['due-reminder-invalid'], /ምሉኣት ቁጽርታት.*ካብ ዓሰርተ ኣይብዛሕ/);
+for (const key of keys) assert.match(read('ti')[key], /[\u1200-\u137F]/u, `${key}: Ethiopic script`);
+assert.match(read('ks')['due-reminder-days-label'], /کاما.*بٔڈۍ.*برونٹھِم.*لۄکٕٹۍ.*پَتِم.*خٲلی/);
+assert.match(read('ks')['due-reminder-invalid'], /پُورٕ نمبر.*نہٕ دٔہ کھۄتہٕ زیٛادٕ/);
+for (const key of keys) assert.match(read('ks')[key], /[\u0600-\u06FF]/u, `${key}: Arabic script`);
+assert.match(read('qu')['due-reminder-days-label'], /komawan.*hatun.*ñawpaqninpi.*huch’uy.*qhipanpi.*ch’usaqta/);
+assert.match(read('qu')['due-reminder-invalid'], /hunt’a yupaykunata.*chunka utaq aswan pisillam/);
+assert.match(read('ay')['due-reminder-days-label'], /koma.*jach’a.*nayrïr.*jisk’a.*qhipa.*ch’usaq/);
+assert.match(read('ay')['due-reminder-invalid'], /phuqhat jakhunak.*tunka jan ukax juk’amp juk’akiñapawa/);
+assert.match(read('gn')['due-reminder-days-label'], /koma.*tuichavéva.*mboyve.*michĩvéva.*rire.*nandi/);
+assert.match(read('gn')['due-reminder-invalid'], /papapy oĩmbáva.*ani reiporu pa ára ári/);
+assert.match(read('ff')['due-reminder-days-label'], /koma.*ɓurɗe 0.*adii.*lesɗe 0.*caggal.*meho/);
+assert.match(read('ff')['due-reminder-invalid'], /limooje timmuɗe.*hoto ɓeydu ko ɓuri balɗe sappo/);
+assert.match(read('vo')['due-reminder-days-label'], /liunüls.*plu 0.*bü on.*läs 0.*pos on.*vagiki/);
+assert.match(read('vo')['due-reminder-invalid'], /numis lölik.*no gebolöd delis plu deg/);
+assert.match(read('tlh')['due-reminder-days-label'], /",".*mI' tIn law' 0 tIn puS.*nungbogh.*0 tIn law' mI' tIn puS.*tlha'bogh.*pagh yIghItlh/);
+assert.match(read('tlh')['due-reminder-invalid'], /jaj naQmey.*wa'maH.*puSbogh jajmey/);
+assert.match(read('kl')['due-reminder-days-label'], /komma.*annerusut.*siornani.*minnerusut.*kingorna.*imaqanngitsutut/);
+assert.match(read('kl')['due-reminder-invalid'], /kisitsisit ilivitsut.*qulit sinnernagit/);
+assert.match(read('nah')['due-reminder-days-label'], /machiotl ",".*panoh 0.*achto.*amo ahci 0.*zatepan.*cactoc/);
+assert.match(read('nah')['due-reminder-invalid'], /tlapohualtin tlen tzoncah.*amo ma pano mahtlactli/);
+assert.match(read('ve-PP')['due-reminder-days-label'], /komal.*pozitivaižed.*edel.*negativaižed.*jäl'ghe.*tühjäks/);
+assert.match(read('ve-PP')['due-reminder-invalid'], /täuzid.*ei enamba kut kümne/);
+assert.match(read('zgh')['due-reminder-days-label'], /",".*ⵉⴳⴳⵓⵜⵏ.*ⴷⴰⵜ.*ⵉⵎⵥⵥⵉⵢⵏ.*ⴷⴼⴼⵉⵔ.*ⵉⵅⵡⴰ/);
+assert.match(read('zgh')['due-reminder-invalid'], /ⵉⴽⵎⵎⵍⵏ.*ⴰⴷ ⵓⵔ ⵜⵣⵔⵉⵜ ⵎⵔⴰⵡ/);
+assert.match(read('iu')['due-reminder-days-label'], /",".*ᐊᖏᓂᖅᓴᐃᑦ.*ᓯᕗᕐᖓᒍᑦ.*ᒥᑭᓂᖅᓴᐃᑦ.*ᑭᖑᓂᐊᒍᑦ.*ᐃᓗᓕᖃᖏᑎᓪᓗᒍ/);
+assert.match(read('iu')['due-reminder-invalid'], /ᐅᓪᓗᓕᒫᓂᒃ.*ᖁᓕᓂᒃ.*ᐅᖓᑖᓅᙱᓪᓗᑎᑦ/);
+assert.match(read('wal')['due-reminder-days-label'], /",".*0-ppe daro.*kase.*0-ppe guutta.*guyye.*mela/);
+assert.match(read('wal')['due-reminder-invalid'], /kumetta.*tammu gallassaappe daro go'ettoppa/);
+assert.match(read('tig')['due-reminder-days-label'], /",".*ለዓቢ.*ቀደም.*ለንኢሽ.*ሓቆ.*ፋርግ/);
+assert.match(read('tig')['due-reminder-invalid'], /ካምል.*ዐስር.*ኢትሕለፍ/);
+assert.match(read('chr')['due-reminder-days-label'], /",".*ᎤᏟ ᎢᎦᎢ.*ᎢᎬᏱᏗᏢ.*ᎡᎳᏗ.*ᎤᎶᏐᏅ.*Ꮭ ᎪᎱᏍᏗ/);
+assert.match(read('chr')['due-reminder-invalid'], /ᎠᎧᎵᏬᎯ.*ᏍᎪᎯ.*Ꮭ ᎤᏟ ᎢᎦᎢ/);
+const localeFiles = fs.readdirSync(path.join(__dirname, '../imports/i18n/data'))
+  .filter(file => file.endsWith('.i18n.json') && !/^en(?:[-_.])/.test(file));
+assert.equal(localeFiles.length, 234, 'all non-English locale paths are covered');
+for (const file of localeFiles) {
+  const code = file.replace('.i18n.json', '');
+  const locale = read(code);
+  for (const key of keys) {
+    assert.ok(locale[key]?.trim(), `${code}:${key}: nonempty`);
+    assert.notEqual(locale[key], en[key], `${code}:${key}: no English placeholder`);
+    assert.deepEqual(translationTokens(locale[key]), translationTokens(en[key]), `${code}:${key}: exact tokens`);
+  }
+}
+console.log('Due reminder translations: 6 messages in all 234 non-English locales; detailed checks in 66 locales passed');

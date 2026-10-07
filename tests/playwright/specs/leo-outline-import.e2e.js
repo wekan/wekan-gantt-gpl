@@ -23,10 +23,14 @@ Body &lt;script&gt;alert(1)&lt;/script&gt;2</t>
 </tnodes>
 </leo_file>`;
 
-test('a Leo outline imports lists, cards, bodies and checklists', async ({ loggedInPage: page }) => {
+for (const language of ['en', 'ku', 'ckb', 'tt', 'tk_TM', 'yi', 'so', 'ny', 'bho', 'mai', 'or_IN', 'kok', 'st', 'tn', 'nso', 'zu', 'zu-ZA', 'xh', 'ss', 'nd', 'ts', 've', 'bi', 'tpi', 'mi', 'sm', 'fj', 'to', 'haw', 'pap', 'om', 'rw', 'rn', 'lg', 'ary', 'wa', 'wa-RR', 'ace', 'gv', 'se', 've-CC', 'rup', 'ak', 'bm', 'ee', 'wo', 'bua', 'cv', 'sah', 'bo', 'dz', 'ti', 'qu', 'ay', 'gn', 'ks', 'ff', 've-PP', 'vo', 'tlh', 'kl', 'iu', 'nah', 'zgh', 'tig', 'wal', 'chr']) {
+const locale = require(`../../../imports/i18n/data/${language}.i18n.json`);
+test(`a Leo outline imports lists, cards, bodies and checklists (${language})`, async ({ loggedInPage: page }) => {
   let boardId;
   try {
+    await page.evaluate(async language => await Meteor.callAsync('setLanguage', language), language);
     await navigateInApp(page, '/import/leo');
+    await expect(page.locator('label[for="import-textarea"]')).toContainText(locale['import-board-instruction-leo']);
     await page.locator('#import-textarea').fill(outline);
     await page.locator('.js-import-without-mapping').click();
     await waitForImportedBoard(page);
@@ -49,6 +53,7 @@ test('a Leo outline imports lists, cards, bodies and checklists', async ({ logge
     await expect(page.locator('.minicard-title').first()).toContainText('Leo card & more');
   } finally { if (boardId) db.cleanup({ boardIds: [boardId] }); }
 });
+}
 
 test('text that is not a Leo outline is refused without creating a board', async ({ loggedInPage: page, user }) => {
   await navigateInApp(page, '/import/leo');

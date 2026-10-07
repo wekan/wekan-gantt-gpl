@@ -16,6 +16,26 @@ const { parseAllowedUrlSchemes, allowedUriRegExp, hrefScheme, NEVER_LINKED } = a
 const read = file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
 
 async function main() {
+  const { translationTokens } = require('../releases/translations/placeholder-tokens.mjs');
+  const source = JSON.parse(read('imports/i18n/data/en.i18n.json'));
+  const key = 'automatic-linked-url-schemes-hint';
+  const schemes = text => (text.match(/\b(?:thunderlink|onenote|javascript|data|vbscript)\b/g) || []).sort();
+  const locales = fs.readdirSync(path.join(__dirname, '../imports/i18n/data'))
+    .filter(name => name.endsWith('.i18n.json') && !/^en(?:[-_]|\.)/.test(name))
+    .map(name => name.replace(/\.i18n\.json$/, ''));
+  assert.ok(locales.length >= 234, 'all non-English locales are discovered');
+  for (const code of locales) {
+    const locale = JSON.parse(read(`imports/i18n/data/${code}.i18n.json`));
+    assert.deepEqual(Object.keys(locale), Object.keys(source), `${code}: source order`);
+    assert.ok(locale[key]?.trim(), `${code}: nonempty hint`);
+    assert.notEqual(locale[key], source[key], `${code}: translated hint`);
+    assert.deepEqual(translationTokens(locale[key]), translationTokens(source[key]), `${code}: source tokens`);
+    assert.deepEqual(schemes(locale[key]), schemes(source[key]), `${code}: exact scheme identifiers`);
+  }
+  const pending = JSON.parse(read('releases/translations/pending-transifex.json'));
+  assert.ok(!pending.keys.some(entry => entry.key === key), 'filled hint leaves pending inventory');
+  assert.notDeepEqual(schemes('thunderlink onenote javascript data'), schemes(source[key]), 'missing blocked scheme is detected');
+  console.log(`  ok - URL scheme hint translations in ${locales.length} locales preserve identifiers`);
   // Parsing: how people write schemes, one per line or separated by commas.
   assert.deepEqual(parseAllowedUrlSchemes('thunderlink\nOneNote:\nfile://, conisio ; x-my-app'),
     ['conisio', 'file', 'onenote', 'thunderlink', 'x-my-app']);

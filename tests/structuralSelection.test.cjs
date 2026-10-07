@@ -82,3 +82,29 @@ assert.equal(preview.children[2].children[1].textContent, 'Second list');
 assert.equal(preview.children[3].children[1].textContent, 'A selected card');
 assert.equal(buildPreview(Array.from({length:10},()=>({kind:'list',id:'b'}))).children.at(-1).textContent, '+2');
 console.log('structuralSelection: named mixed preview, literal title text and bounded large selections passed');
+
+// Localized placement labels must remain distinct and preserve source tokens.
+{
+  const { translationTokens } = require('../releases/translations/placeholder-tokens.mjs');
+  const localeRoot = require('node:path').join(__dirname, '../imports/i18n/data');
+  const loadLocale = code => JSON.parse(fs.readFileSync(`${localeRoot}/${code}.i18n.json`, 'utf8'));
+  const source = loadLocale('en');
+  const pending = JSON.parse(fs.readFileSync(require('node:path').join(__dirname, '../releases/translations/pending-transifex.json'), 'utf8')).keys;
+  for (const key of ['move-selection-before', 'move-selection-after']) {
+    assert.ok(!pending.some(entry => entry.key === key), `${key}: filled group no longer pending`);
+  }
+  const codes = fs.readdirSync(localeRoot)
+    .filter(file => file.endsWith('.i18n.json') && !/^en(?:[-_.])/.test(file))
+    .map(file => file.replace(/\.i18n\.json$/, ''));
+  for (const code of codes) {
+    const locale = loadLocale(code);
+    assert.deepEqual(Object.keys(locale), Object.keys(source), `${code}: source key order`);
+    for (const key of ['move-selection-before', 'move-selection-after']) {
+      assert.ok(locale[key]?.trim(), `${code}:${key}: nonempty`);
+      assert.notEqual(locale[key], source[key], `${code}:${key}: translated`);
+      assert.deepEqual(translationTokens(locale[key]), translationTokens(source[key]), `${code}:${key}: source tokens`);
+    }
+    assert.notEqual(locale['move-selection-before'], locale['move-selection-after'], `${code}: opposite placements must differ`);
+  }
+  console.log(`structuralSelection: placement translations in ${codes.length} locales passed`);
+}

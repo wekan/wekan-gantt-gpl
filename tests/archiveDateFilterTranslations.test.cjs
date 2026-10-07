@@ -5,6 +5,13 @@ const path = require('node:path');
 const { translationTokens } = require('../releases/translations/placeholder-tokens.mjs');
 const read = code => JSON.parse(fs.readFileSync(path.join(__dirname, '../imports/i18n/data', `${code}.i18n.json`), 'utf8'));
 const en = read('en');
+// Native decimal digits express the same bounds; query literals remain exact.
+const digits = value => value.replace(/[۰-۹०-९০-৯]/g, digit => {
+  const point = digit.codePointAt(0);
+  const zero = [0x06f0, 0x0966, 0x09e6].find(start => point >= start && point <= start + 9);
+  return String(point - zero);
+}).match(/\d+/g);
+
 const keys = [
   "auto-archive-days",
   "auto-archive-off",
@@ -30,14 +37,17 @@ const keys = [
   "filter-column-age-hint",
   "advanced-filter-card-dates-hint"
 ];
-for (const code of ['tk_TM', 'tt', 'so', 'ku', 'ckb', 'pap', 'tpi', 'bi', 'yi', 'mi', 'sm', 'haw', 'zu', 'zu-ZA', 'xh', 'ny', 'st', 'tn', 'rw', 'rn', 'or_IN', 'bho', 'mai', 'kok', 'ary', 'nso', 'nd', 'ss', 'ts', 'om', 'fj', 'to', 'hsb', 'szl', 'se', 'wa', 'wa-RR', 'wuu-Hans', 'rup']) {
+const locales = fs.readdirSync(path.join(__dirname, '../imports/i18n/data')).filter(file => file.endsWith('.i18n.json') && !/^en(?:[-_]|\.)/.test(file)).map(file => file.replace('.i18n.json', ''));
+const pending = JSON.parse(fs.readFileSync(path.join(__dirname, '../releases/translations/pending-transifex.json'), 'utf8')).keys.map(entry => entry.key);
+for (const key of keys.slice(0, 3)) assert.ok(!pending.includes(key), `${key}: completed key leaves pending queue`);
+for (const code of locales) {
   const locale = read(code);
   assert.deepEqual(Object.keys(locale), Object.keys(en), `${code}: source key order`);
   for (const key of keys) {
     assert.ok(locale[key]?.trim(), `${code}:${key}: nonempty`);
     assert.notEqual(locale[key], en[key], `${code}:${key}: translated`);
     assert.deepEqual(translationTokens(locale[key]), translationTokens(en[key]), `${code}:${key}: exact placeholders`);
-    assert.deepEqual(locale[key].match(/\d+/g), en[key].match(/\d+/g), `${code}:${key}: numeric bounds`);
+    assert.deepEqual(digits(locale[key]), digits(en[key]), `${code}:${key}: numeric bounds`);
   }
   for (const token of ['@createdAt', '@receivedAt', '@startAt', '@dueAt', '@endAt', '@listEnteredAt', "@endAt >= '2026-01-01'", '@endAt = none']) {
     assert.ok(locale['advanced-filter-card-dates-hint'].includes(token), `${code}: literal query syntax ${token}`);
@@ -124,4 +134,119 @@ assert.match(read('wuu-Hans')['auto-archive-hint'], /模板绝勿会移到存档
 assert.match(read('wuu-Hans')['filter-column-age-hint'], /勿会重新算/);
 assert.match(read('rup')['auto-archive-hint'], /modelili nu s-mutã vãrnãoarã/);
 assert.match(read('rup')['filter-column-age-hint'], /nu ahurheashti di nou/);
-console.log('Archiving and date filters: 23 messages in 39 locales passed');
+for (const [code, script] of [['bo', /\p{Script=Tibetan}/u], ['ks', /\p{Script=Arabic}/u], ['ti', /\p{Script=Ethiopic}/u]]) {
+  for (const key of keys) assert.match(read(code)[key], script, `${code}:${key}: native script`);
+}
+assert.match(read('bo')['auto-archive-hint'], /ནམ་ཡང.*མི་སྤོ/);
+assert.match(read('bo')['filter-recency-day'], /འདས་པའི/);
+assert.match(read('bo')['filter-column-age-hint'], /བསྐྱར་དུ་མི་འགོ་ཚུགས/);
+assert.match(read('bua')['auto-archive-hint'], /хэзээдэшье архивта зөөгдэхэгүй/);
+assert.match(read('bua')['filter-column-age-hint'], /дахин эхилхэгүй/);
+assert.match(read('cv')['auto-archive-hint'], /нихӑҫан та архива куҫармаҫҫӗ/);
+assert.match(read('cv')['filter-column-age-hint'], /ҫӗнӗрен пуҫлатмасть/);
+assert.match(read('ks')['auto-archive-hint'], /نہٕ زانہہ/);
+assert.match(read('ks')['filter-column-age-hint'], /چھِ نہٕ/);
+assert.match(read('ti')['auto-archive-hint'], /ፈጺሞም.*ኣይግዕዙን/);
+assert.match(read('ti')['filter-column-age-hint'], /ኣይጅምሮን/);
+assert.match(read('gv')['auto-archive-hint'], /cha bee sampleyryn.*dy bragh/);
+assert.match(read('gv')['filter-column-age-hint'], /Cha vel reaghey kaart cur toshiaght noa/);
+assert.match(read('ve-CC')['auto-archive-hint'], /no i vien mai archiviài/);
+assert.match(read('ve-CC')['filter-column-age-hint'], /no fa ripartir/);
+assert.match(read('ve-PP')['auto-archive-hint'], /ei nikonz sirdeta/);
+assert.match(read('ve-PP')['filter-column-age-hint'], /ei algata uzin/);
+assert.match(read('ve')['auto-archive-hint'], /a dzi iswi.*na luthihi/);
+assert.match(read('ve')['filter-column-age-hint'], /a zwi thomi hafhu/);
+assert.match(read('ve')['filter-recency-day'], /awara/);
+assert.doesNotMatch(read('ve')['filter-due-next-month'], /Inyanga|ngenyanga/);
+assert.match(read('gn')['auto-archive-hint'], /araka'eve ndojeguerahái/);
+assert.match(read('gn')['filter-column-age-hint'], /nomoñepyrũjeýi/);
+assert.match(read('ee')['auto-archive-hint'], /womeʋua.*gbeɖe o/);
+assert.match(read('ee')['filter-column-age-hint'], /mewɔa.*egɔme o/);
+assert.match(read('wo')['auto-archive-hint'], /duñu yóbbu.*mukk/);
+assert.match(read('wo')['filter-column-age-hint'], /du tàmbaliwaat/);
+assert.match(read('ff')['auto-archive-hint'], /mbaɗaaka.*hay sahaa/);
+assert.match(read('ff')['filter-column-age-hint'], /fuɗɗintaako/);
+assert.match(read('tlh')['auto-archive-hint'], /not chenmoHmeH ghantoHmey/);
+assert.match(read('tlh')['filter-column-age-hint'], /taghqa'moHbe'lu'/);
+assert.match(read('tlh')['filter-due-previous-week'], /Hogh rInpu'bogh/);
+assert.match(read('tlh')['filter-due-next-month'], /jar veb/);
+assert.match(read('ay')['auto-archive-hint'], /janipuniw imañaru apatakiti/);
+assert.match(read('ay')['filter-column-age-hint'], /janiw.*mayamp qalltaykiti/);
+assert.match(read('qu')['auto-archive-hint'], /manam hayk'aqpas waqaychanaman apakunchu/);
+assert.match(read('qu')['filter-column-age-hint'], /manam.*musuqmanta qallarichinchu/);
+assert.equal(read('ay').week, 'Simana');
+assert.equal(read('ay').month, 'Phaxsi');
+assert.equal(read('qu').days, "P'unchawkuna");
+assert.equal(read('qu').month, 'Killa');
+assert.match(read('ak')['auto-archive-hint'], /wɔmfa nhwɛsoɔ nkɔ adekorabea da/);
+assert.match(read('ak')['filter-column-age-hint'], /mma.*mfi ase bio/);
+assert.match(read('lg')['auto-archive-hint'], /tebitwalibwa mu tterekero n’akatono/);
+assert.match(read('lg')['filter-column-age-hint'], /tekutandika bupya/);
+assert.equal(read('ak').days, 'Nna');
+assert.equal(read('ak').list, 'Din a wɔahyehyɛ');
+assert.notEqual(read('ak').list, read('ak').template);
+assert.match(read('ace')['auto-archive-hint'], /klise hana tom dipeusimpan/);
+assert.match(read('ace')['filter-column-age-hint'], /hana diitông phon lom/);
+assert.match(read('bm')['auto-archive-hint'], /misaliw tɛ bila marayɔrɔ la abada/);
+assert.match(read('bm')['filter-column-age-hint'], /tɛ.*daminɛ kokura/);
+assert.equal(read('ace').days, 'uroe');
+assert.match(read('sah')['auto-archive-hint'], /халыыптар хаһан да архыыпка көһөрүллүбэттэр/);
+assert.match(read('sah')['filter-column-age-hint'], /саҥаттан саҕалаабат/);
+assert.match(read('sah')['filter-due-previous-week'], /Ааспыт нэдиэлэҕэ/);
+assert.match(read('sah')['filter-due-next-month'], /Кэлэр ыйга/);
+assert.match(read('vo')['auto-archive-hint'], /rots neai paragivons/);
+assert.match(read('vo')['filter-column-age-hint'], /no primükon denu/);
+assert.equal(read('vo').date, 'Dät');
+assert.equal(read('vo').week, 'Vig');
+assert.equal(read('vo').month, 'Mul');
+assert.match(read('nah')['auto-archive-hint'], /neixcuitiltin ayic mohuicah pixcalco/);
+assert.match(read('nah')['filter-column-age-hint'], /amo occeppa quipehualtia/);
+assert.match(read('nah')['filter-due-previous-week'], /chicomeilhuitl tlen opanoc/);
+assert.match(read('nah')['filter-due-next-month'], /metztli tlen huallauh/);
+assert.match(read('kl')['auto-archive-hint'], /qaquguluunniit toqqorsivimmut nuunneqanngillat/);
+assert.match(read('kl')['filter-column-age-hint'], /nutaamik aallartitsinngilaq/);
+assert.match(read('kl')['filter-due-previous-week'], /Sapaatip akunnerani kingullermi/);
+assert.match(read('kl')['filter-due-next-month'], /Qaammatip tulliani/);
+assert.match(read('dz')['auto-archive-hint'], /ནམ་ཡང་ཡིག་མཛོད་ནང་མི་སྤོ/);
+assert.match(read('dz')['filter-column-age-hint'], /ལོག་འགོ་མི་བཙུགས/);
+assert.match(read('dz')['filter-due-previous-week'], /ཧེ་མའི་བདུན་ཕྲག/);
+assert.match(read('dz')['filter-due-next-month'], /ཤུལ་མའི་ཟླཝ/);
+assert.notEqual(read('dz')['auto-archive-hint'], read('bo')['auto-archive-hint']);
+assert.match(read('tig')['auto-archive-hint'], /አበደን ኢትትሐዝ/);
+assert.match(read('tig')['filter-column-age-hint'], /ምን ሐዲስ ኢለብድእ/);
+assert.match(read('tig')['filter-due-previous-week'], /ለሐልፈ እስቡዕ/);
+assert.match(read('tig')['filter-due-next-month'], /ለመጽእ ወርሕ/);
+assert.notEqual(read('tig')['auto-archive-hint'], read('ti')['auto-archive-hint']);
+assert.match(read('zgh')['auto-archive-hint'], /ⵓⵔ ⵜⵜⵡⴰⵙⵎⵓⵜⵜⵉⵏ.*ⴰⴱⴰⴷⴰⵏ/);
+assert.match(read('zgh')['filter-column-age-hint'], /ⵓⵔ ⵉⵙⵙⵏⵜⴰⵢ ⴷⴰⵖ/);
+for (const key of keys) {
+  const prose = read('zgh')[key].replace(/@endAt >= '2026-01-01'|@endAt = none|@[A-Za-z]+/g, '');
+  assert.match(prose, /[\u2D30-\u2D7F]/, `zgh:${key}: Tifinagh prose`);
+  assert.doesNotMatch(prose, /[A-Za-z]/, `zgh:${key}: no Latin fallback`);
+}
+assert.match(read('wal')['auto-archive-hint'], /leemisuwatu mulekka.*efettokkona/);
+assert.match(read('wal')['filter-column-age-hint'], /naa’anta doommissenna/);
+assert.match(read('wal')['filter-due-previous-week'], /Aadhdhida saaminttan/);
+assert.match(read('wal')['filter-due-next-month'], /Kaalliya aginan/);
+assert.equal(read('wal').days, 'Gallassata');
+assert.equal(read('wal').week, 'Saaminttaa');
+assert.equal(read('wal').month, 'Aginaa');
+assert.match(read('iu')['auto-archive-hint'], /ᖃᖓᒃᑯᑐᐃᓐᓇᖅ ᑐᖅᑯᕐᕕᒻᒧᑦ ᓅᑕᐅᙱᓚᑦ/);
+assert.match(read('iu')['filter-column-age-hint'], /ᐱᒋᐊᖅᑎᑦᑎᒃᑲᓐᓂᙱᓚᖅ/);
+assert.match(read('iu')['filter-due-previous-week'], /ᐊᓂᒍᖅᑐᒥ/);
+assert.match(read('iu')['filter-due-next-month'], /ᐊᒡᒋᖅᑐᒥ/);
+for (const key of keys) {
+  const prose = read('iu')[key].replace(/@endAt >= '2026-01-01'|@endAt = none|@[A-Za-z]+/g, '');
+  assert.match(prose, /[\u1400-\u167F]/, `iu:${key}: syllabic prose`);
+  assert.doesNotMatch(prose, /[A-Za-z]/, `iu:${key}: no Latin fallback`);
+}
+assert.match(read('chr')['auto-archive-hint'], /ᎥᏝ ᎢᏳᏍᏗ.*ᏱᎨᎦᏅᎦ/);
+assert.match(read('chr')['filter-column-age-hint'], /ᎥᏝ ᏔᎵᏁ ᏯᎴᏂᏍᎪ/);
+assert.match(read('chr')['filter-due-previous-week'], /ᎠᎵᏱᎵᏒ/);
+assert.match(read('chr')['filter-due-next-month'], /ᎠᏓᎾᏅ/);
+for (const key of keys) {
+  const prose = read('chr')[key].replace(/@endAt >= '2026-01-01'|@endAt = none|@[A-Za-z]+/g, '');
+  assert.match(prose, /[\u13A0-\u13FF]/, `chr:${key}: Cherokee prose`);
+  assert.doesNotMatch(prose, /[A-Za-z]/, `chr:${key}: no English fallback`);
+}
+console.log(`Archiving and date filters: 23 messages in ${locales.length} locales passed`);
