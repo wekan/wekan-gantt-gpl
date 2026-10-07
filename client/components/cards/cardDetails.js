@@ -3,6 +3,7 @@ import { canEditCardDependenciesHere } from '/client/lib/dependencyLayers';
 import { relativeCardSort } from '/client/lib/relativeCardPosition';
 import { Random } from 'meteor/random';
 import { ReactiveCache } from '/imports/reactiveCache';
+import { currentUserWith } from '/client/lib/currentUserWith';
 import { TAPi18n } from '/imports/i18n';
 import { ReactiveDict } from 'meteor/reactive-dict';
 import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
@@ -375,8 +376,8 @@ Template.cardDetails.onCreated(function () {
       Session.set('currentCard', null);
     }
     if (Session.get('popupCardId') === openedCardId) {
-      Session.delete('popupCardId');
-      Session.delete('popupCardBoardId');
+      Session.set('popupCardId', null);
+      Session.set('popupCardBoardId', null);
       Popup.close();
     }
 
@@ -439,7 +440,10 @@ Template.cardDetails.onCreated(function () {
     }
   };
 
-  Meteor.subscribe('unsaved-edits');
+  // #6745: the template's own subscription, stopped when the card closes. A
+  // bare Meteor.subscribe here is in no computation, so nothing ever stopped
+  // it: every card open added one more live 'unsaved-edits' publication.
+  this.subscribe('unsaved-edits');
 
   // Surface legacy CollectionFS attachments for the current board so they show
   // up in the card's attachment gallery and can be read in place (without
@@ -653,8 +657,9 @@ Template.registerHelper('cardCommentCountShown', function cardCommentCountShown(
   return count || null;
 });
 Template.registerHelper('cardHasUnreadComments', function cardHasUnreadComments() {
-  const user = ReactiveCache.getCurrentUser();
-  if (!user || !this._id) return false;
+  if (!this._id) return false;
+  const user = currentUserWith([`profile.cardLastViews.${this._id}`]);
+  if (!user) return false;
   const comments = ReactiveCache.getCardComments({ cardId: this._id }) || [];
   return comments.length > 0 && hasUnreadComments(comments, user.getCardLastViewedAt(this._id));
 });
@@ -1139,8 +1144,8 @@ Template.cardDetails.events({
     // is hidden, so this is the only close button. Close the popup and clear its
     // session state instead of running the board/route close flow below.
     if (Popup.isOpen() && Utils.getPopupCardId()) {
-      Session.delete('popupCardId');
-      Session.delete('popupCardBoardId');
+      Session.set('popupCardId', null);
+      Session.set('popupCardBoardId', null);
       Popup.close();
       return;
     }
@@ -1174,8 +1179,8 @@ Template.cardDetails.events({
 
     // Mini-screen/card-route flow: clear active card state and go back to board.
     Session.set('currentCard', null);
-    Session.delete('popupCardId');
-    Session.delete('popupCardBoardId');
+    Session.set('popupCardId', null);
+    Session.set('popupCardBoardId', null);
 
     if (boardId) {
       Utils.goBoardId(boardId);
@@ -1615,8 +1620,8 @@ Template.cardDetails.helpers({
   }
 });
 Template.cardDetailsPopup.onDestroyed(() => {
-  Session.delete('popupCardId');
-  Session.delete('popupCardBoardId');
+  Session.set('popupCardId', null);
+  Session.set('popupCardBoardId', null);
 });
 Template.cardDetailsPopup.helpers({
   popupCard() {
@@ -1754,8 +1759,8 @@ Template.cardDetailsActionsPopup.events({
     Filter.resetExceptions();
     Session.set('openCards', (Session.get('openCards') || []).filter(id => id !== card._id));
     if (Session.get('currentCard') === card._id) Session.set('currentCard', null);
-    Session.delete('popupCardId');
-    Session.delete('popupCardBoardId');
+    Session.set('popupCardId', null);
+    Session.set('popupCardBoardId', null);
     Popup.close();
     Utils.goBoardId(card.boardId);
     getSidebarInstance().setView('filter');
