@@ -161,6 +161,12 @@ const addUserToTeamBoards = async (userId, oldTeams, newTeams) => {
     console.error('addUserToTeamBoards failed:', error);
   }
 };
+// The LDAP group sync (server/ldapGroupSync.js) imports it; the wekan-oidc
+// package cannot import app code and reaches it through this global, the way
+// it reaches authEnv (#4178: users added to a team by a login provider were
+// never made members of the team's boards).
+export { addUserToTeamBoards };
+globalThis.__wekanAddUserToTeamBoards = addUserToTeamBoards;
 
 const getTAPi18n = () => require('/imports/i18n').TAPi18n;
 const isSandstorm =
@@ -1340,15 +1346,16 @@ Meteor.methods({
     user.setMobileMode(enabled);
   },
 
-  async setBoardView(view) {
+  async setBoardView(view, boardId) {
     check(view, String);
+    check(boardId, Match.Optional(Match.Maybe(String)));
     const user = await ReactiveCache.getCurrentUser();
     if (!user) throw new Meteor.Error('not-authorized', 'Must be logged in');
     // Must be awaited: the helper returns Users.updateAsync(...), so without await the
     // method resolves (and the client reloads) before profile.boardView is written —
     // and a rejected schema/write never surfaces. This made switching the board view
     // (e.g. to the new Statistics view) unreliable.
-    await user.setBoardView(view);
+    await user.setBoardView(view, boardId || undefined);
   },
 
   async setCreateUser(
@@ -1829,6 +1836,28 @@ Meteor.methods({
 // document is inserted, so the membership is stored atomically with the user and
 // existing entries are never duplicated. Failures are logged, never fatal to
 // sign-up.
+// #5339: OAUTH2_DEFAULT_ORGANIZATION (or Admin Panel / People / OAuth2) names
+// an EXISTING organization - by short name, display name or id - that every
+// account created by an OAuth2/OIDC login joins. Users of one identity
+// provider (a Nextcloud, say) often share no email domain, so the domain rule
+// above cannot group them. An organization that does not exist is not created:
+// the login goes on without it and the log says why.
+const addDefaultOauthOrganization = async user => {
+  try {
+    const name = String(authEnv('OAUTH2_DEFAULT_ORGANIZATION') || '').trim();
+    if (!name) return;
+    const org = (await ReactiveCache.getOrgs({ $or: [{ orgShortName: name }, { orgDisplayName: name }, { _id: name }] }))[0];
+    if (!org) {
+      console.warn(`OAUTH2_DEFAULT_ORGANIZATION: no organization "${name}"; the new user joins none.`);
+      return;
+    }
+    if ((user.orgs || []).some(o => o && o.orgId === org._id)) return;
+    user.orgs = (user.orgs || []).concat({ orgId: org._id, orgDisplayName: org.orgDisplayName || org.orgShortName || org._id });
+  } catch (error) {
+    console.error('addDefaultOauthOrganization failed:', error);
+  }
+};
+
 const autoAddOrgsByDomain = async user => {
   try {
     const emails = Array.isArray(user.emails) ? user.emails : [];
@@ -2003,6 +2032,7 @@ Accounts.onCreateUser(async (options, user) => {
 
     if (!existingUser) {
       await autoAddOrgsByDomain(user);
+      await addDefaultOauthOrganization(user);
       return user;
     }
 
@@ -2043,8 +2073,12 @@ Accounts.onCreateUser(async (options, user) => {
     }
     existingUser.authenticationMethod = user.authenticationMethod;
 
-    await Meteor.users.removeAsync({ _id: user._id });
-    await Meteor.users.removeAsync({ _id: existingUser._id });
+    // Meteor inserts the returned existingUser again, under the same _id. Remove
+    // it without the hooks: Users.after.remove is the account-deletion cleanup,
+    // and it would take this user off every board, card and team just before
+    // the account comes back, so a merged login lost all of its boards.
+    await Meteor.users.direct.removeAsync({ _id: user._id });
+    await Meteor.users.direct.removeAsync({ _id: existingUser._id });
     return existingUser;
   }
 

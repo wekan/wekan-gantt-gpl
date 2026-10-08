@@ -9,6 +9,82 @@ const sprintf = require('i18next-sprintf-postprocessor');
 const root = path.resolve(__dirname, '..');
 const read = name => JSON.parse(fs.readFileSync(path.join(root, name), 'utf8'));
 const records = read('releases/translations/audited-corrections.json');
+const currentKeys = [
+  "board-announcement",
+  "board-announcement-enabled",
+  "cards-use-list-color",
+  "import-board-instruction-opml",
+  "import-board-instruction-orgmode",
+  "import-board-instruction-todoist",
+  "external-link-rules",
+  "external-link-rules-description",
+  "external-link-identifier-aliases",
+  "read-only-field",
+  "r-moved-forward",
+  "r-moved-back",
+  "r-assignee",
+  "r-add-actinguser-assignee",
+  "r-remove-all-assignees",
+  "ldap-sync-now",
+  "ldap-sync-now-done",
+  "ldap-sync-now-error",
+  "ldap-sync-now-nothing",
+  "oauth-providers-allowed-email-domains",
+  "login-setting-env-only",
+  "stuck-sync-operation-heading",
+  "stuck-sync-operation-description",
+  "stuck-sync-operation-list",
+  "stuck-sync-operation-progress",
+  "stuck-sync-operation-reason",
+  "stuck-sync-operation-applied",
+  "stuck-sync-operation-reason-scope-changed",
+  "stuck-sync-operation-reason-access-denied",
+  "stuck-sync-operation-reason-trigger-unknown",
+  "stuck-sync-operation-reason-intent-missing",
+  "stuck-sync-operation-reason-unknown",
+  "stuck-sync-operation-replayable-now",
+  "stuck-sync-operation-discard",
+  "stuck-sync-operation-discard-confirm",
+  "stuck-sync-operation-refresh",
+  "stuck-sync-operation-empty",
+  "stuck-sync-operation-truncated",
+  "stuck-sync-operation-unavailable",
+  "stuck-sync-operation-missing",
+  "stuck-sync-operation-not-stuck",
+  "stuck-sync-operation-replayable",
+  "stuck-sync-operation-busy",
+  "stuck-sync-operation-failed",
+  "scrum-release-scope",
+  "scrum-releases-select-help",
+  "scrum-import-into-board",
+  "scrum-import-into-board-hint",
+  "scrum-import-preview",
+  "scrum-import-choose-file",
+  "scrum-import-invalid-file",
+  "scrum-import-preview-sprints",
+  "scrum-import-preview-releases",
+  "scrum-import-preview-cards",
+  "scrum-import-preview-nothing",
+  "scrum-import-into-board-done",
+  "scrum-import-card-not-matched",
+  "scrum-import-card-ambiguous",
+  "scrum-import-card-on-another-board",
+  "scrum-import-record-ambiguous",
+  "scrum-import-record-not-imported",
+  "scrum-import-sprint-finished",
+  "sync-planning-sprint",
+  "sync-planning-releases",
+  "sync-planning-fields",
+  "sync-planning-hint",
+  "scrum-history-checkpoint-stuck",
+  "scrum-history-checkpoint-counts",
+  "scrum-history-checkpoint-hint",
+  "scrum-history-checkpoint-rollback",
+  "scrum-history-checkpoint-discard",
+  "scrum-history-checkpoint-discard-confirm",
+  "scrum-history-checkpoint-ask-admin"
+];
+
 (async () => {
   const { spawnSync } = require('node:child_process');
   const { translationTokens } = await import('../releases/translations/placeholder-tokens.mjs');
@@ -16,6 +92,58 @@ const records = read('releases/translations/audited-corrections.json');
   for (const locale of ['ro', 'ro-RO']) {
     const data = read(`imports/i18n/data/${locale}.i18n.json`);
     assert.deepEqual(Object.keys(data), Object.keys(english), locale);
+    assert.match(data['scrum-import-into-board-hint'], /niciodată duplicate/);
+    assert.match(data['scrum-import-into-board-hint'], /ID sau după numărul cardului și titlu/);
+    assert.match(data['scrum-import-card-on-another-board'], /lăsat neschimbat/);
+    assert.match(data['scrum-import-sprint-finished'], /nu a fost mutat/);
+    assert.match(data['sync-planning-hint'], /mai întâi după ID-ul din sursă, apoi după nume/);
+    assert.match(data['sync-planning-hint'], /prima sincronizare nu elimină niciodată/);
+    assert.match(data['scrum-history-checkpoint-hint'], /numai dacă nimeni altcineva nu/);
+    assert.match(data['scrum-history-checkpoint-hint'], /fără a modifica nicio înregistrare/);
+    assert.match(data['scrum-history-checkpoint-discard-confirm'], /deja scrise/);
+    assert.match(data['scrum-releases-select-help'], /mai multor versiuni/);
+    assert.match(data['scrum-releases-select-help'], /toate versiunile/);
+    assert.match(data['scrum-releases-select-help'], /Ctrl.*Cmd/);
+
+    for (const key of currentKeys) {
+      assert.ok(data[key]?.trim(), key);
+      assert.notEqual(data[key], english[key], `${locale}:${key}: translate current prose`);
+    }
+    for (const name of ['LDAP_BACKGROUND_SYNC_IMPORT_NEW_USERS', 'LDAP_BACKGROUND_SYNC_KEEP_EXISTANT_USERS_UPDATED']) {
+      assert.ok(data['ldap-sync-now-nothing'].includes(name), name);
+    }
+    assert.match(data['stuck-sync-operation-description'], /compară din nou lista cu sursa sa/);
+    assert.match(data['stuck-sync-operation-discard-confirm'], /deja aplicate se păstrează/);
+    assert.match(data['stuck-sync-operation-discard-confirm'], /nu vor fi scrise niciodată/);
+    assert.match(data['stuck-sync-operation-replayable-now'], /nu poate fi abandonată/);
+    assert.match(data['stuck-sync-operation-replayable'], /nu a fost abandonată/);
+    assert.match(data['stuck-sync-operation-truncated'], /cele mai vechi 50/);
+    assert.match(data['login-setting-env-only'], /numai de mediul serverului/);
+    assert.match(data['login-setting-env-only'], /doar pentru citire/);
+    assert.notEqual(data['r-moved-forward'], data['r-moved-back']);
+    for (const literal of ['TODO', 'DONE', 'SCHEDULED', 'DEADLINE', 'CLOSED']) {
+      assert.ok(data['import-board-instruction-orgmode'].includes(literal), literal);
+    }
+    for (const literal of ['@labels', 'p1', 'p3', 'CSV']) {
+      assert.ok(data['import-board-instruction-todoist'].includes(literal), literal);
+    }
+    for (const literal of ['{number}', '{identifier}', '[{identifier}:{number}] = https://tracker.example.com/{identifier}/{number}']) {
+      assert.ok(data['external-link-rules-description'].includes(literal), literal);
+    }
+    assert.ok(data['external-link-identifier-aliases'].includes('TK=Task, IN=Incident'));
+
+    for (const key of Object.keys(english).filter(key => key.startsWith('interrupted-import-'))) {
+      assert.ok(data[key]?.trim(), key);
+      assert.notEqual(data[key], english[key], `${locale}:${key}: translate import recovery`);
+    }
+    assert.match(data['interrupted-import-description'], /nu poate fi reluat/);
+    assert.match(data['interrupted-import-description'], /inclusiv elementele adăugate ulterior/);
+    assert.match(data['interrupted-import-keep-confirm'], /Nu se elimină nimic/);
+    assert.match(data['interrupted-import-discard-confirm'], /eliminate definitiv/);
+    assert.match(data['interrupted-import-truncated'], /cele mai vechi 50/);
+    assert.match(data['interrupted-import-foreign-board'], /nu a fost modificat/);
+    assert.match(data['interrupted-import-state-discarding'], /ștergeți din nou/);
+
     for (const key of Object.keys(english)) {
       assert.deepEqual(translationTokens(data[key]), translationTokens(english[key]), `${locale}:${key}`);
     }

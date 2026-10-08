@@ -81,7 +81,7 @@ Meteor.methods({
     // feature lookup, creator or write is reached before authentication.
     // String is accepted alongside Object/Array for markdown-kanban text
     // imports (models/lib/externalParsers.js parseMarkdownKanban); the
-    // 'markdown', 'todotxt', 'taskwarrior', 'focalboard' and 'leo' cases below are the only
+    // 'markdown', 'todotxt', 'taskwarrior', 'focalboard', 'todoist', 'orgmode', 'leo' and 'opml' cases below are the only
     // ones that let a string through their own per-source check().
     check(board, Match.OneOf(Object, Array, String));
     check(data, Object);
@@ -99,9 +99,11 @@ Meteor.methods({
     try { validateImportSourceShape(importSource, board); }
     catch (error) { throw new Meteor.Error('invalid-import-format', error.message); }
     let creator;
-    // A .leo outline is XML: sanitizing the raw text would strip its tags as
-    // markup. It is parsed first and the parsed tasks are sanitized instead.
-    let importedBoard = importSource === 'leo' ? board : sanitizeImported(board, importSource, this);
+    // A .leo or OPML outline is XML: sanitizing the raw text would strip its
+    // tags as markup. It is parsed first and the parsed tasks are sanitized
+    // instead.
+    let importedBoard = importSource === 'leo' || importSource === 'opml' ? board
+      : sanitizeImported(board, importSource, this);
     switch (importSource) {
       case 'trello':
         check(board, Object);
@@ -174,6 +176,26 @@ Meteor.methods({
         }
         creator = new KanboardCreator(data, 'focalboard');
         break;
+      case 'todoist':
+        // A Todoist project template (CSV) - see models/lib/todoistCsvFormat.js.
+        check(board, String);
+        try {
+          importedBoard = EXTERNAL_PARSERS.todoist(importedBoard);
+        } catch (error) {
+          throw new Meteor.Error('invalid-import-format', error.message);
+        }
+        creator = new KanboardCreator(data, 'todoist');
+        break;
+      case 'orgmode':
+        // An Org mode outline (Emacs, Orgzly, Beorg) - see models/lib/orgModeFormat.js.
+        check(board, String);
+        try {
+          importedBoard = EXTERNAL_PARSERS.orgmode(importedBoard);
+        } catch (error) {
+          throw new Meteor.Error('invalid-import-format', error.message);
+        }
+        creator = new KanboardCreator(data, 'orgmode');
+        break;
       case 'leo':
         // The Leo literate editor's outline - see models/lib/leoOutline.js.
         check(board, String);
@@ -185,6 +207,19 @@ Meteor.methods({
         }
         importedBoard = sanitizeImported(importedBoard, 'leo', this);
         creator = new KanboardCreator(data, 'leo');
+        break;
+      case 'opml':
+        // An OPML outline (Workflowy, Dynalist, OmniOutliner, Logseq) - see
+        // models/lib/opmlOutline.js.
+        check(board, String);
+        if (!Meteor.isServer) return undefined;
+        try {
+          importedBoard = require('/server/lib/opmlImport').parseOpml(board);
+        } catch (error) {
+          throw new Meteor.Error('invalid-import-format', error.message);
+        }
+        importedBoard = sanitizeImported(importedBoard, 'opml', this);
+        creator = new KanboardCreator(data, 'opml');
         break;
       default:
         // NextCloud Deck / OpenProject / GitHub / GitLab / Gitea / Forgejo:
@@ -212,11 +247,18 @@ Meteor.methods({
     // 3. create all elements, bounded by a hard deadline on the server so a hung
     // import (e.g. a database operation that never returns) surfaces a timeout error
     // to the client instead of spinning forever. The client also runs its own watchdog.
+    // The import runs under a run record written before its first write
+    // (server/importRuns.js), so one that stops halfway is listed in Admin
+    // Panel -> Problems -> Recovery to keep or discard. When the deadline
+    // answers the client, the writer is told to stop at its next stage.
     if (Meteor.isServer) {
+      const replaceId = await replaceableBoardId(this.userId, currentBoard);
+      const tracked = require('/server/importRuns').trackImport({ userId: this.userId, source: importSource, creator,
+        execute: () => creator.create(importedBoard, replaceId) });
       return await withDeadline(
-        creator.create(importedBoard, await replaceableBoardId(this.userId, currentBoard)),
+        tracked.promise,
         importDeadlineMs(),
-        () => new Meteor.Error('import-timeout', 'Import took too long and was aborted'),
+        () => { tracked.abort(); return new Meteor.Error('import-timeout', 'Import took too long and was aborted'); },
       );
     }
     return await creator.create(importedBoard, await replaceableBoardId(this.userId, currentBoard));
@@ -311,6 +353,12 @@ Meteor.methods({
     const creator = new WekanCreator(additionalData);
     //data.title = `${data.title  } - ${  TAPi18n.__('copyCardPopup-title')}`;
     data.title = `${data.title}`;
-    return await creator.create(data, await replaceableBoardId(this.userId, currentBoardId));
+    const replaceId = await replaceableBoardId(this.userId, currentBoardId);
+    if (Meteor.isServer) {
+      // A copy writes a board the way an import does, and stops the same way.
+      return await require('/server/importRuns').trackImport({ userId: this.userId, source: 'clone', creator,
+        execute: () => creator.create(data, replaceId) }).promise;
+    }
+    return await creator.create(data, replaceId);
   },
 });

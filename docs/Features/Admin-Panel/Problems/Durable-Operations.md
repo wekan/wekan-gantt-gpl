@@ -58,6 +58,7 @@ recovery reclaimed it. Security-sensitive refusals remain in Problems → Securi
 | --- | --- |
 | Trello and other board imports | One source board; source ID maps to exactly one imported board before the queue index advances |
 | ZIP/JSON/CSV/Jira/Kanboard/ICS imports | Parsed source plus one board/card batch; created records carry the job/source key |
+| Board imports and copies (implemented) | An `importRuns` record written before the first write names the board id the import will create; the board carries the run id. A stopped run is flagged once and kept or discarded in Recovery; the source is not kept, so the rest is completed by importing again ([details](../../ImportExport/Import-Run-Recovery.md)) |
 | Attachment/avatar moves | One file version; destination size/checksum and metadata agree before source removal |
 | Text database migration | One collection batch ordered by `_id`; target upserts and evidence cover the checkpoint |
 | Backup/restore | One collection/file entry; staged archive/object and checksum manifest are published last |
@@ -286,6 +287,16 @@ A new run first finishes the list's unfinished operation. The
 under the list lease, with the actor and trigger stored in the intent (intent
 version 2). An operation still preparing has written nothing and is discarded,
 since a replay has no source data to rebuild it from.
+
+An operation whose scope or access went stale - the list was removed, recreated
+or reconfigured, its actor lost full-list write access, or its intent has no
+trigger - can never be replayed and would block the list's Sync for ever. It is
+marked once with one `list-sync-operation-stuck` Recovery event
+(`server/lib/listSyncStuck.js`), and an administrator discards it in
+[Problems → Recovery](Recovery.md#list-sync-operations-that-cannot-be-replayed):
+an immutable decision record first, then removal of its steps and marker under
+the list lease, with no further card writes. The discard is refused while a live
+check says the operation can still be replayed, and is idempotent.
 
 The in-flight-write and atomicity limits above still apply. Rule actions other
 than email need their own durable adapters before those boards can use this path.

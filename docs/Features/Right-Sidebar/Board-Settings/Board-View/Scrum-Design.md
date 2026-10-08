@@ -35,9 +35,21 @@ open sprints, fix versions, rank and epic links to sprints, releases, backlog
 rank and parents, reporting closed and active sprints' missing snapshots
 (2026-10-02, models/lib/jiraScrumPlanning.js). See the
 [Jira guide](../../../ImportExport/Jira/Jira.md) for mappings, selection controls
-and limitations. External sprint snapshots, multiple release assignments,
-epic relationships remain pending. Explicit numeric Jira estimate-field mapping
+and limitations. Since 2026-10-08 a card can be in several releases, and Jira
+import maps every fix version and Jira export writes them all (see
+[Several releases per card](#several-releases-per-card)). External sprint
+snapshots and epic relationships remain pending. Explicit numeric Jira estimate-field mapping
 is implemented; automatic field/schema discovery remains pending.
+
+GitLab iterations and milestones, OpenProject versions, sprints, position and
+story points, and Asana milestone tasks now become sprints, releases, backlog
+rank and the estimate field through the same journaled Scrum import stage
+(2026-10-08, models/lib/externalScrumPlanning.js); started and finished sprints
+are reported the same way as Jira's. Trello has no sprint or release data and
+its Power-Up data is reported. GitLab and OpenProject exports write sprints and
+releases back. See the
+[Format coverage](../../../ImportExport/Format-Coverage.md#scrum-planning-from-importers-other-than-jira)
+table for each source's fields and losses.
 
 ## Existing features to reuse
 
@@ -55,8 +67,8 @@ is implemented; automatic field/schema discovery remains pending.
 | Visibility | Board Settings / Swimlane, List and Card, card/minicard field ordering | Opt-in Scrum fields in those same settings, independently selectable |
 | Native backup | `models/exporter.js` and `models/wekanCreator.js` | Sprint records and complete ID remapping for new references |
 | Jira import | `models/jiraCreator.js` creates status lists, cards, labels and issue dependencies; retains time totals, issue types, workflow categories and selected numeric estimate fields | Sprint, epic, version, rank and automatic schema-driven custom-field mapping remain pending |
-| External formats and sync | `models/lib/externalParsers.js`, `externalExporters.js`, list synchronization | Current common fields omit Scrum data; advertised format coverage is not evidence of actual support |
-| Trello import | `models/trelloCreator.js`, custom fields and board structures | No universal Trello sprint schema: explicit mappings for custom fields and Power-Up data are required |
+| External formats and sync | `models/lib/externalParsers.js`, `externalExporters.js`, list synchronization; GitLab, OpenProject and Asana import sprints and releases (`externalScrumPlanning.js`), GitLab and OpenProject export them | List Sync writes no Scrum planning; GitHub, Gitea and Forgejo milestones stay labels |
+| Trello import | `models/trelloCreator.js`, custom fields and board structures; Power-Up data is counted in the import loss report | No universal Trello sprint schema: explicit mappings for custom fields and Power-Up data are required |
 
 The existing [manual Scrum guide](../../../Cards/Scrum.md) remains accurate for
 current releases. Do not describe its custom-field/swimlane conventions as a
@@ -97,7 +109,8 @@ estimation fields rather than parallel copies of the same information.
   start/completion dates, state (`planned`, `active`, `closed`, `cancelled`),
   cancellation reason, optional capacity with units, provenance and revision.
 - Cards: current sprint reference, historical sprint references, independent
-  backlog rank, optional release/increment reference and source issue type.
+  backlog rank, optional release/increment references (several; see
+  [Several releases per card](#several-releases-per-card)) and source issue type.
   Use existing estimates and parent relationships; imported points map to the
   configured numeric field rather than a competing second estimate.
 - Swimlanes: optional sprint/release association and purpose. A sprint may span
@@ -193,6 +206,15 @@ discarded as described and never replaced by a one-argument call. Non-Scrum
 keystrokes therefore still lack idempotent replay, and there is no visible
 recovery control yet; adding one needs new translated interface text.
 
+### An undo or redo that stopped on a conflict
+
+A checkpoint whose retry keeps failing - a record changed by somebody else, a
+changed History row, an author without write access - used to block the
+board's Scrum edits for good. A board administrator can now roll it back to its
+"before" values or keep the board as it is from the History recovery notice,
+and an operator can do the same offline. See
+[Resolve a Scrum History undo or redo that stopped on a conflict](Scrum-History-Recovery.md).
+
 Cancelling records a reason and preserves the history. Scrum accountabilities
 are visible information and do not grant access: all mutations must also satisfy
 the existing board/card write permissions. Board configuration and lifecycle
@@ -253,6 +275,62 @@ Saving uses the existing administrator-only configuration method, revision
 checks and History undo/redo. Four new label keys are present in all locale
 catalogs with English placeholders where translations are not yet supplied.
 
+## Several releases per card
+
+Implemented 2026-10-08. A card used to have one release, `scrum.releaseId`. It
+now has a list, `scrum.releaseIds`; a swimlane keeps its one `releaseId`.
+
+**Storage and compatibility - read-time, not a bulk migration.** Existing cards
+are not rewritten. Every reader goes through one helper,
+`cardReleaseIds(scrum)` in `models/lib/scrum.js`, which reads both fields the
+same way everywhere: `releaseIds` when it is an array, plus `releaseId` when it
+is set and not already in the list, read first (it is what an older writer that
+knew only that field last set). Duplicates collapse. Every write from the new
+code stores the list AND `releaseId` as its first entry (`withCardReleaseIds`),
+so a downgraded server, an older importer or a REST reader still sees a release
+it knows. A legacy card is brought to that form by its next Scrum write, once;
+reading or writing it back again changes nothing, so mixed data - some cards
+with `releaseId` alone, some with both - is safe at any time. A bulk migration
+was rejected because it would rewrite and re-revision every Scrum card on every
+board for no reader's benefit, and an interrupted one would leave exactly the
+mixed state the read rule already handles.
+
+**Writes (`scrum.updateCard`).** `releaseIds` replaces the list; a `releaseId`
+sent with it must be its first entry (or null with an empty list), otherwise
+the write is refused. `releaseId` alone is an older caller's single release:
+null clears the releases, an id becomes the first release and the others stay,
+because the release such a caller showed was the first one and it cannot see
+the rest. Every release must be the board's own: one query checks them all, and
+a release of another board - even of the same name - is refused. At most 100
+releases per card.
+
+**Copy, move and transfer.** Copies and moves to another board link each
+release by name on its own (`models/lib/scrumCopy.js`) and drop the ones
+without exactly one match. The native transfer writes a card with one release
+as `releaseId` alone, exactly as before, and only a card with several carries
+`releaseIds` (`portableCardReleases`): an older importer still reads ordinary
+files and refuses a several-release card loudly as an unknown field, rather
+than keeping one release silently. Import remaps every release; a release that
+is not in the file is refused as a foreign reference.
+
+**Jira.** Import maps every fix version of an issue to one of the card's
+releases (it used to keep the first and report the rest). Jira export writes
+each of the card's releases as a fix version - its Jira id when it came from
+Jira, released state, planned end as the release date and notes as the
+description - when Scrum is selected; the importer reads them back.
+
+**Reports, History, rules.** Each release in Board View / Sprints shows its
+cards and the done part (`releaseReports` in `models/lib/scrumReports.js`); a
+card counts in each of its releases. Scrum History records the whole card
+metadata, so undo and redo restore the list; its restore checks every release
+against the board, and undoing a release's creation is refused while any card
+still lists it. Rule e-mail card details name every release.
+
+**Not covered.** There are no Scrum release filters or search operators.
+List Sync can put a card in several releases (Jira's fix versions; see below).
+The REST API returns the card's `scrum` object as stored, with both fields;
+Scrum metadata is written only through the `scrum.updateCard` method.
+
 ## Import, export, copy and synchronization
 
 Standalone card copies (including copied subtasks) start a fresh Scrum metadata
@@ -279,6 +357,58 @@ destination list retains its own category and revision. Newly created lists
 start revision 1; existing lists are not silently reclassified by incoming
 cards. Sprint/release references on moved cards and swimlanes, their lifecycle
 coordination and History restoration still need integration.
+
+### Importing Scrum planning into an existing board
+
+Every board import creates a new board. A board administrator can also import
+the Scrum planning of a native transfer INTO a board that already exists
+(2026-10-08): Sprints view, **Import Scrum planning into this board**. The file
+is a WeKan board export (it carries `scrumTransfer`) or a bare `wekan-scrum-2`
+transfer. **Preview** runs the same plan as a dry run and writes nothing;
+**Import** then writes it. The method is `scrum.importIntoBoard(boardId, file,
+{ dryRun })`, administrators only on the server; the matching rules are pure
+(`models/lib/scrumTransferMerge.js`) and the writer is
+`server/lib/scrumTransferMerge.js`.
+
+What matches what, and why:
+
+| What | Matched by, in order | When nothing matches |
+| --- | --- | --- |
+| Sprints, releases | the same `_id` on this board; the same provenance; the same trimmed name, when exactly one record on each side has it | created, with the source's provenance |
+| Events | the same `_id` on this board; the same provenance | created, when its sprint is on this board |
+| Cards | the same `_id` on this board; a board export's card number AND title, exactly one card | reported, left alone - cards are never created |
+
+- **Provenance first, name last** makes a second import of the same file find
+  the records the first one created: they carry `{ system: 'wekan', recordId,
+  projectId }` of the source (or the Jira/GitLab/... provenance the file
+  already had). The name rule is the one card copies and moves follow
+  (`models/lib/scrumCopy.js`).
+- **Never a guess.** Two candidates, or two file records claiming one board
+  record, is `record-ambiguous`: the record is neither linked nor created, and a
+  card that named it keeps its own sprint or releases. A card with no match is
+  `card-not-matched`; one matching two cards, or two file cards matching one, is
+  `card-ambiguous`; a card ID that is another board's card is
+  `card-on-another-board`. Each is in the board's import report and the preview,
+  and nothing is written for it. Linked cards never match.
+- **A matched record is the board's own**: its name, dates, state and daily
+  history are not overwritten. A created sprint brings its lifecycle, snapshots
+  and daily history, remapped to this board's cards and lists; rows of cards or
+  lists that are not here leave the snapshot, which is marked partial.
+- **A matched card** gets the file's sprint, releases, backlog rank, issue type
+  and acceptance criteria; past sprints are added to, and a card leaving a sprint
+  remembers it, as `scrum.updateCard` does. A move into a finished sprint is
+  refused (`sprint-finished`). Estimates are the card's planning poker value or a
+  custom field, not Scrum metadata, and are not in the transfer, so they do not
+  change. Board settings, list categories and swimlane links stay the board's.
+- **Writes** go through the same journaled stage as every Scrum import
+  (`scrumImportWriter.js`): an interrupted import shows the incomplete-import
+  warning and is finished or discarded from the Scrum view, or offline
+  ([Scrum import recovery](../../../ImportExport/Scrum-Import-Recovery.md)). An
+  item's revision moves on by one, as any metadata write. The finished import is
+  recorded as one Scrum History change, like any other Scrum edit; an import
+  finished by recovery is not (no request is there to record it).
+- **Idempotent**: when nothing would change, nothing is written - not even the
+  report - and the preview says so.
 
 Implementation checkpoint: `models/lib/scrumTransfer.js` now defines and tests
 the `wekan-scrum-2` data contract and destination-ID remapping. Version 1 files
@@ -405,8 +535,28 @@ The existing Sync popup also selects title/description fields and card
 creation/source-absence archival; these settings retain board write
 authorization. Original/remaining time estimates now sync through the unique
 imported numeric time fields on the board, in hours, with mapping identity
-checks, local-edit review and zero/null/missing handling. Sprint/release and
-other providers' estimate Sync mappings remain pending.
+checks, local-edit review and zero/null/missing handling. GitLab's weight or
+time estimate syncs into a numeric field too.
+
+**Sprints and releases through List Sync** (2026-10-08). Two opt-in Sync
+switches put a synced card in its issue's sprint and releases while Scrum is
+enabled on the board:
+
+| Source | Sprint | Releases |
+| --- | --- | --- |
+| Jira | the Sprint field (found by its schema): the active sprint, else the last future one | `fixVersions` |
+| GitLab | `iteration` | `milestone` |
+| GitHub, Gitea, Forgejo | none | `milestone` |
+
+A missing sprint or release is created on the board, planned (a release may be
+released), with the source's dates; an existing one is found by its source id
+(`provenance`) first, then by name, and never on another board. Finished WeKan
+sprints receive no work. A local planning change stays until the source changes
+that issue's planning; a source omission never clears planning, an explicit
+null or empty value does, but only against the last Sync's baseline. Card
+changes run through Sync's conditional and durable writes, move the card's
+`scrumRevision` on and record the Scrum History row a manual change records, so
+undo works the same. Details: [Sync](../../../ImportExport/Sync.md#sprints-and-releases-scrum-planning).
 Card mappings and credentials now carry a
 provider/server/project identity, preserving old cards when switching sources.
 Legacy configurations require saving once to bind their existing mappings.

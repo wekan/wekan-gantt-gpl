@@ -103,6 +103,7 @@ import './undoRedoClaim.tests';
 
 import './scrumHistoryConfirmation.tests';
 import './scrumIncarnation.tests';
+import './scrumHistoryRecovery.tests';
 
 import "./cardListEntry.tests";
 import './autoArchiveCards.tests';
@@ -119,11 +120,14 @@ import './cardMoveLabelActivities.tests';
 import './storedRuleMoveBoard.tests';
 import './ruleEmailFollowedMove.tests';
 import './jiraScrumImport.tests';
+import './externalScrumImport.tests';
 import './listSyncGitlabEstimate.tests';
 import './scrumScopeHistory.tests';
 import './scrumSnapshotRows.tests';
+import './scrumTransferMerge.tests';
 import './continuousBackup.tests';
 import './copySubtaskScope.tests';
 import './ruleTriggerScope.tests';
 import './scrumMovedReferences.tests';
 import './editableCardIds.tests';
+import './listSyncPlanning.tests';

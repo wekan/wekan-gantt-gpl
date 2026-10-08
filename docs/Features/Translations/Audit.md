@@ -1,6 +1,1106 @@
 # Translation audit progress
 
-Audit date: **2026-09-12**. Last updated: **2026-10-07**.
+Audit date: **2026-09-12**. Last updated: **2026-10-08**.
+
+## Lithuanian import and synchronization recovery — 2026-10-08
+
+Translate 48 messages for interrupted imports and stalled synchronization.
+Preserve existing localized values and every source variable. Extend the existing
+suite with Lithuanian recovery decisions, source order and token inventories.
+Cover permanent deletion, retained applied changes and unrelated boards.
+No browser or screen-reader session was run; remaining Lithuanian messages,
+other languages and broader linguistic review remain unfinished.
+
+## Latvian controls and planning — 2026-10-08
+
+Translate 51 messages for controls, import guidance, LDAP, login settings, planning
+imports, planning synchronization and history recovery. Preserve existing values,
+variables and literal examples. Extend the existing Latvian suite with matching
+priority, non-duplication, unchanged cards and recovery-decision checks.
+No browser or screen-reader session was run; other languages and broader linguistic
+review remain unfinished.
+
+## Latvian import and synchronization recovery — 2026-10-08
+
+Translate 48 messages for interrupted board imports and stalled synchronization.
+Preserve existing translations and every source variable. Extend the Latvian suite
+with recovery decisions, source order and complete token inventories, including
+permanent deletion, retention of applied changes and protection of unrelated boards.
+No browser or screen-reader session was run; remaining Latvian messages, other
+languages and broader linguistic review are still unfinished.
+
+## Estonian controls and recovery — 2026-10-08
+
+Translate 70 current messages in et-EE, covering controls, import guidance, LDAP,
+login settings, stalled synchronization and interrupted imports. Preserve existing
+translations, source variables and literal syntax. Extend the existing suite with
+Estonian recovery decisions, source order and complete variable inventories.
+No browser or screen-reader session was run; other translations and broader
+linguistic review remain unfinished.
+
+## Russian controls and recovery — 2026-10-08
+
+Translate 69 current messages in each of three Russian catalogs, and reuse 29
+reviewed Russian planning translations in ru-UA, for 236 filled values.
+Cover controls, import guidance, LDAP, login address errors, stalled synchronization
+and interrupted imports. Preserve existing translations, variables and literal
+examples. Extend the Russian suite with all three source inventories and recovery
+decisions. No browser or screen-reader session was run; other translations and
+broader linguistic review remain unfinished.
+
+## Ukrainian controls and recovery — 2026-10-08
+
+Translate 69 current messages for controls, import guidance, LDAP, login address
+errors, stalled synchronization and interrupted board imports. Preserve existing
+translations, source variables and literal examples. Extend the Ukrainian suite
+with recovery decisions, opposite movement directions and Ukrainian prose checks.
+No browser or screen-reader session was run; other languages and broader
+linguistic review remain unfinished.
+
+## Greek planning and import recovery — 2026-10-08
+
+Translate 98 messages in each Greek catalog, for 196 filled values, preserving
+existing translations. Cover release selection, planning imports, synchronization,
+interrupted board imports, history recovery, controls, import formats, LDAP,
+login address errors and stalled synchronization. Extend the existing Greek suite
+with source order, complete token inventories, Greek prose and positive/negative
+recovery-decision checks. No browser or screen-reader session was run; other
+translations and broader linguistic review remain unfinished.
+
+## Turkish planning imports and history recovery — 2026-10-08
+
+Translate 29 current messages for release selection, planning imports,
+planning synchronization and conflicted history recovery. Preserve source
+variables, matching priority, non-duplication and recovery choices. Extend
+the Turkish suite with positive and negative decision checks. No browser
+or screen-reader session was run; broader linguistic review remains open.
+
+## Turkish controls, import guidance and stalled synchronization — 2026-10-08
+
+Translate 44 current Turkish messages, retaining localized values. Cover board
+controls, import formats, assignment, LDAP, OAuth, login address mismatches and
+stalled synchronization. Preserve literal examples, configuration names and
+variables, and distinguish cancellation from retaining already applied changes.
+Extend Turkish regression checks for these meanings. The preceding full run
+passed all 322 translation suites; this batch receives focused verification.
+No browser or screen-reader session was run. Translation work remains open.
+
+## Turkish interrupted import recovery — 2026-10-08
+
+Translate 25 current Turkish interrupted-import messages, preserving existing
+localized values. Retain the inability to resume without the source file,
+permanent removal including later additions, retention without deletion,
+the separate Scrum recovery checkpoint and protection of unrelated boards.
+Extend the existing Turkish suite with per-key prose and recovery-decision
+checks; the full token inventory remains checked. No browser or screen-reader
+session was run; other translations and linguistic review remain open.
+
+## Romanian planning imports and history recovery — 2026-10-08
+
+Translate 29 messages in each Romanian catalog, for 58 filled values.
+Cover release selection, planning imports, Sync planning and conflicted
+history recovery. Preserve existing localized values. Extend the existing
+suite with matching priority, non-duplication, unchanged cards and history
+recovery choices. No browser or screen-reader session was run; broader
+translation and linguistic review remain open.
+
+## Romanian controls, import guidance and stuck Sync recovery — 2026-10-08
+
+Translate 44 messages in each Romanian catalog, for 88 filled values.
+Cover board controls, link rules, import formats, assignment actions, LDAP,
+OAuth, server-only login settings and stuck Sync recovery. Preserve existing
+localized values. Extend the existing suite with literal syntax, configuration
+names, retained applied changes, unwritten pending changes and opposite movement
+directions. No browser or screen-reader session was run; other translations
+and linguistic review remain open.
+
+## Romanian interrupted import recovery — 2026-10-08
+
+Translate 25 messages in each Romanian catalog (ro and ro-RO), for 50 filled
+values, preserving existing translations. Retain the inability to resume
+without the source file, permanent removal including later additions,
+retention without deletion, the separate Scrum recovery checkpoint and
+protection of unrelated boards. Extend the existing Romanian suite with
+per-key prose and recovery-decision checks. No browser or screen-reader
+session was run; other translations and linguistic review remain open.
+
+## Hungarian controls, import guidance and stuck Sync recovery — 2026-10-08
+
+Translate 44 further current Hungarian values for board controls, link rules,
+import formats, assignment actions, LDAP, OAuth and stuck Sync recovery.
+Include the server-only login-setting explanation. Preserve existing localized
+values. Extend the existing suite with format literals, configuration names,
+retained applied changes, unwritten pending changes and opposite movement
+directions. No browser or screen-reader session was run; other translations
+and linguistic review remain open.
+
+## Hungarian interrupted import recovery — 2026-10-08
+
+Translate 25 current Hungarian interrupted-import messages, preserving existing
+localized values. Retain the inability to resume without the source file,
+permanent removal including later additions, retention without deletion,
+the separate Scrum recovery checkpoint and protection of unrelated boards.
+Extend the existing Hungarian suite with per-key prose and recovery-decision
+checks; the full token inventory remains checked. No browser or screen-reader
+session was run; other translations and linguistic review remain open.
+
+## Slovak controls, import guidance and stuck Sync recovery — 2026-10-08
+
+Translate 43 further current Slovak values for board controls, link rules,
+import formats, assignment actions, LDAP, OAuth and stuck Sync recovery.
+Preserve existing localized values. Extend the existing suite with format
+literals, configuration names, retained applied changes, unwritten pending
+changes and opposite movement directions. No browser or screen-reader
+session was run; other translations and linguistic review remain open.
+
+## Slovak interrupted import recovery — 2026-10-08
+
+Translate 25 current Slovak interrupted-import messages, preserving existing
+localized values. Retain the inability to resume without the source file,
+permanent removal including later additions, retention without deletion,
+the separate Scrum recovery checkpoint and protection of unrelated boards.
+Extend the existing Slovak suite with per-key prose and recovery-decision
+checks; the full token inventory remains checked. No browser or screen-reader
+session was run; other translations and linguistic review remain open.
+
+## Czech controls, import guidance and stuck Sync recovery — 2026-10-08
+
+Translate 43 further current Czech values for board controls, link rules,
+import formats, assignment actions, LDAP, OAuth and stuck Sync recovery.
+Preserve existing localized values. Extend the existing suite with format
+literals, configuration names, retained applied changes, unwritten pending
+changes and opposite movement directions. No browser or screen-reader
+session was run; other translations and linguistic review remain open.
+
+## Czech interrupted import recovery — 2026-10-08
+
+Translate 25 current Czech interrupted-import messages, preserving existing
+localized values. Retain the inability to resume without the source file,
+permanent removal including later additions, retention without deletion,
+the separate Scrum recovery checkpoint and protection of unrelated boards.
+Extend the existing Czech suite with per-key prose and recovery-decision
+checks; the full token inventory remains checked. No browser or screen-reader
+session was run; other translations and linguistic review remain open.
+
+## Polish planning and import recovery messages — 2026-10-08
+
+Translate 61 further current Polish values, preserving existing localized
+values. Cover board controls, link rules, planning imports, Sync and
+import/history recovery. Extend the existing suite with matching priority,
+non-duplication, unchanged cards, permanent removal, recovery choices and
+literal-example checks. No browser or screen-reader session was run;
+broader translation and linguistic review remain open.
+
+## Polish import formats and stuck Sync recovery — 2026-10-08
+
+Translate 36 current Polish values for import formats, assignment actions,
+LDAP, OAuth, release selection and stuck Sync recovery. Preserve existing
+localized values. Extend the existing suite with format literals,
+configuration names, retained applied changes and unwritten pending changes.
+Distinguish cannot discard from was not discarded. No browser or screen-reader
+session was run; other untranslated messages and linguistic review remain open.
+
+## Finnish planning and import recovery messages — 2026-10-08
+
+Translate 61 further current Finnish values, preserving existing localized
+values. Cover board controls, link rules, planning imports, Sync and
+import/history recovery. Extend the existing suite with matching priority,
+non-duplication, unchanged cards, permanent removal, recovery choices and
+literal-example checks. No browser or screen-reader session was run;
+broader translation and linguistic review remain open.
+
+## Norwegian Bokmal planning and import recovery messages — 2026-10-08
+
+Translate 61 further current Bokmal values, preserving existing localized
+values. Cover board controls, link rules, planning imports, Sync and
+import/history recovery. Extend the existing suite with matching priority,
+non-duplication, unchanged cards, permanent removal, recovery choices and
+literal-example checks. No browser or screen-reader session was run;
+broader translation and linguistic review remain open.
+
+## Norwegian Bokmal import formats and stuck Sync recovery — 2026-10-08
+
+Translate 36 current Bokmal values for import formats, assignment actions,
+LDAP, OAuth, release selection and stuck Sync recovery. Preserve existing
+localized values. Extend the existing suite with format literals,
+configuration names, retained applied changes and unwritten pending changes.
+Distinguish cannot discard from was not discarded. No browser or screen-reader
+session was run; other untranslated messages and linguistic review remain open.
+
+## Danish planning and import recovery messages — 2026-10-08
+
+Translate 61 further current Danish values, preserving existing localized
+values. Cover board controls, link rules, planning imports, Sync and
+import/history recovery. Extend the existing suite with matching priority,
+non-duplication, unchanged cards, permanent removal, recovery choices and
+literal-example checks. No browser or screen-reader session was run;
+broader translation and linguistic review remain open.
+
+## Danish import formats and stuck Sync recovery — 2026-10-08
+
+Translate 36 current Danish values for import formats, assignment actions,
+LDAP, OAuth, release selection and stuck Sync recovery. Preserve existing
+localized values. Extend the existing suite with format literals,
+configuration names, retained applied changes and unwritten pending changes.
+Distinguish cannot discard from was not discarded. No browser or screen-reader
+session was run; other untranslated messages and linguistic review remain open.
+
+## Swedish planning and import recovery messages — 2026-10-08
+
+Translate 61 further current Swedish values, preserving existing localized
+values. Cover board controls, link rules, planning imports, Sync and
+import/history recovery. Extend the existing suite with matching priority,
+non-duplication, unchanged cards, permanent removal, recovery choices and
+literal-example checks. No browser or screen-reader session was run;
+broader translation and linguistic review remain open.
+
+## Swedish import formats and stuck Sync recovery — 2026-10-08
+
+Translate 36 current Swedish values for import formats, assignment actions,
+LDAP, OAuth, release selection and stuck Sync recovery. Preserve existing
+localized values. Extend the existing suite with full source-key and token
+checks, format literals, configuration names, retained applied changes and
+unwritten pending changes. Distinguish cannot discard from was not discarded.
+No browser or screen-reader session was run; other untranslated messages and
+broader linguistic review remain open.
+
+## Dutch planning and import recovery messages — 2026-10-08
+
+Translate 61 further current values in each Dutch catalog (nl and nl-NL),
+for 122 filled values. Preserve existing localized values. Cover board
+controls, link rules, planning imports, Sync and import/history recovery.
+Extend the existing suite with checks for matching order, non-duplication,
+unchanged cards, permanent removal, recovery choices and literal examples.
+No browser or screen-reader session was run; broader translation and
+linguistic review remain open.
+
+## Dutch import formats and stuck Sync recovery — 2026-10-08
+
+Translate 36 current values in each of the two Dutch catalogs (nl and nl-NL),
+for 72 filled values. Preserve existing localized values. Cover import
+formats, assignment actions, LDAP, OAuth, release selection and stuck Sync
+recovery. Extend the existing suite to preserve format literals, configuration
+names, retained applied changes, unwritten pending changes and the difference
+between cannot discard and was not discarded. No browser or screen-reader
+session was run; other untranslated messages remain open.
+
+## Portuguese import formats and stuck Sync recovery — 2026-10-08
+
+Translate 36 more current values in each of four Portuguese catalogs, for
+144 filled values. Preserve Brazilian wording and existing localized values.
+Cover import formats, assignment actions, LDAP, OAuth, release selection and
+stuck Sync recovery. Extend the existing suite to preserve format literals,
+configuration names, retained applied changes, unwritten pending changes,
+and the difference between cannot discard and was not discarded. No browser
+or screen-reader session was run; broader translation work remains open.
+
+## Portuguese planning and recovery messages — 2026-10-08
+
+Translate 61 current English values in each of four Portuguese catalogs
+(pt, pt-PT, pt_PT and pt-BR), for 244 filled values. Preserve existing
+localized values and Brazilian terminology for files, planning and lanes.
+Cover board controls, link rules, planning imports, Sync and import/history
+recovery. Extend the existing suite with per-key prose checks, regional
+wording, recovery decisions, matching priority, permanent removal and literal
+syntax. No browser or screen-reader session was run; other untranslated
+messages remain open.
+
+## Spanish import formats and stuck Sync recovery — 2026-10-08
+
+Translate 36 more current values in each of the nine Spanish catalogs, for
+324 filled values. Cover OPML, Org mode and Todoist guidance, assignment
+rules, LDAP, OAuth, release selection and stuck Sync recovery. Preserve
+format literals and configuration names, retained applied changes, unwritten
+pending changes and the difference between cannot discard and was not
+discarded. Extend the existing nine-locale regression suite. No browser or
+screen-reader session was run; broader translation work remains open.
+
+## Spanish planning and recovery messages — 2026-10-08
+
+Translate 61 current English values in each of nine Spanish catalogs
+(es, es-AR, es-CL, es-CO, es-LA, es-MX, es-PE, es-PY and es_CO), for
+549 filled values. Preserve existing localized values and the shared
+Iteración/Versión terminology. Cover board controls, literal link rules,
+planning imports, Sync and import/history recovery. Extend the existing
+Spanish suite with per-key prose checks, recovery decisions, matching
+priority, non-duplication and permanent-deletion assertions. No browser or
+screen-reader session was run; other untranslated messages remain open.
+
+## Italian current planning and recovery messages — 2026-10-08
+
+Translate 97 current English values, preserving existing localized values.
+Cover board controls, link-rule syntax, import formats, assignment actions,
+LDAP, OAuth, Scrum planning and release selection, Sync planning, interrupted
+imports, stuck Sync and conflicted history recovery. Extend the Italian suite
+with per-key prose checks and assertions for matching priority, non-duplication,
+permanent removal, preserved applied changes, recovery decisions and literal
+syntax. No browser or screen-reader session was run; other locales remain
+unfinished.
+
+## German planning and recovery messages — 2026-10-08
+
+Translate 61 current English values in each of the four German catalogs
+(de, de-AT, de-CH and de_DE), for 244 filled values, preserving existing
+localized values. Use Swiss spelling in de-CH. Cover board controls,
+link-rule syntax, Scrum planning imports, Sync planning, interrupted board
+imports and conflicted history recovery. Extend the existing German suite
+with per-key translation checks and assertions for recovery decisions,
+matching priority, non-duplication, permanent removal and literal examples.
+No browser or screen-reader session was run; other locales remain unfinished.
+
+## French planning and recovery messages — 2026-10-08
+
+Translate 61 current English values in each of the five French catalogs
+(fr, fr-FR, fr-BE, fr-CH and fr-CA), for 305 filled values. Existing localized
+values are preserved by the fill helper. Cover board controls, link-rule
+syntax, Scrum planning imports, Sync planning, interrupted board imports
+and conflicted history recovery. Extend the existing French regression
+suite with per-key translation checks and recovery decision, matching-order,
+non-duplication, permanent-deletion and literal-syntax assertions. No browser
+or screen-reader session was run; other locales remain unfinished.
+
+## Aromanian card actions and account lockout corrections — 2026-10-08
+
+Replace 64 Italian values and a Spanish overtime label with Aromanian card,
+checklist, attachment, board and account controls. Preserve shared dialog
+labels, copy/move and maximize/minimize distinctions, the locked-users-only
+filter, S3, Cc and atan2 argument syntax. New phrasing remains low-confidence
+pending fluent review. Focused regression checks reject the old text and
+English fallbacks while comparing source token inventories. No browser or
+screen-reader session was run; broader linguistic work remains open.
+
+Also translate 25 interrupted-import messages, preserving the inability to
+resume without the source file, retention without removal, permanent discard
+of all board contents, the separate Scrum checkpoint, the oldest-50 limit,
+and protection of unrelated boards. Per-key tests retain every source token
+and guard these distinctions. This new wording is also provisional.
+
+
+## Aromanian search and organization language corrections — 2026-10-08
+
+Replace 48 Italian values in search, organization dialogs, rule actions and
+card controls. Preserve due-reminder variables, search-result counts and
+predicate syntax. Regression checks reject the previous Italian and English
+fallbacks, compare tokens, and preserve shared labels and opposite actions.
+New wording follows existing catalog terminology and remains low-confidence
+pending fluent review. No browser or screen-reader session was run; the
+remaining translation backlog and wrong-language review are still open.
+
+## Aromanian rule-builder language corrections — 2026-10-08
+
+Replace 35 clearly Italian rule conditions, actions and fragments. Preserve
+check/uncheck and top/bottom distinctions, shared checklist wording and the
+past-state meaning of made-incomplete. Regression checks reject the old
+Italian strings and English substitutions while retaining the full token
+inventory. New wording follows existing catalog terminology and remains
+low-confidence pending fluent review. No browser or screen-reader session
+was run; further wrong-language review and translation work remain open.
+
+## Northern Sotho planning import regressions — 2026-10-08
+
+Translate 20 new Scrum import and Sync planning messages. Extend the Scrum
+inventory from 111 to 127 while retaining per-key prose and token checks.
+Preserve non-duplication, unchanged foreign-board cards, source-ID matching
+priority and first-sync protection of planning. Both focused suites and
+global placeholder checks pass. The full 322-suite translation run passes
+with no failures (101 seconds), as do 21 human-preference checks.
+Full wording follows existing terminology
+and remains low-confidence pending fluent review. No browser or screen-reader
+session was run; broader translation and linguistic review remain open.
+The current ordinary backlog is 34,514 values in 51 locales, excluding 249
+source keys tracked separately as pending.
+
+## Maori planning import regressions — 2026-10-08
+
+Translate 20 new Scrum import and Sync planning messages. Extend the Scrum
+inventory from 111 to 127 while retaining per-key prose and token checks.
+Preserve non-duplication, unchanged foreign-board cards, source-ID matching
+priority and first-sync protection of planning. Full wording remains
+low-confidence pending fluent review. Vocabulary follows the catalog,
+[Te Aka tukutahi](https://maoridictionary.co.nz/word/45002) and
+[NZQA science and technology terms](https://www2.nzqa.govt.nz/assets/NCEA/Subject-pages/Chemistry/NZQASci-TechTermsMao-Eng.pdf).
+No browser or screen-reader session was run; two failures from the latest
+broad run remain to repair.
+
+## Somali planning import regressions — 2026-10-08
+
+Translate 20 new Scrum import and Sync planning messages. Update the Scrum
+inventory from 111 to 127 while retaining per-key prose and token checks.
+Preserve non-duplication, unchanged foreign-board cards, matching priority
+and first-sync protection of planning. Extend both suites for these meanings.
+Full wording follows existing terminology and remains low-confidence pending
+fluent review. No browser or screen-reader session was run; four failures
+from the latest broad run remain to repair.
+
+## Tok Pisin planning import regressions — 2026-10-08
+
+Translate 20 new Scrum import and Sync planning messages. Update the Scrum
+inventory from 111 to 127 while retaining every per-key translation/token
+check. Preserve non-duplication, unchanged foreign-board cards, matching
+priority and first-sync protection of planning. Extend both existing suites
+for these consequences. Full new wording follows the existing catalog and
+remains low-confidence pending fluent review. No browser or screen-reader
+session was run; six failures from the latest broad run remain to repair.
+
+## Ukrainian planning import regressions — 2026-10-08
+
+Translate 20 new Scrum import and Sync planning messages. Preserve counters,
+reference variables, non-duplication, unchanged foreign-board cards, source-ID
+matching priority and first-sync protection of existing planning. Extend the
+existing Ukrainian suite for these consequences. Its tests and global token
+checks pass. No browser or screen-reader session was run; eight failures from
+the latest broad run remain to repair.
+
+## Estonian planning import regressions — 2026-10-08
+
+Translate 20 new Scrum import and Sync planning messages. Preserve counters,
+reference variables, non-duplication, unchanged foreign-board cards, source-ID
+matching priority and first-sync protection of existing planning. Extend the
+existing Estonian suite for these consequences. No browser or screen-reader
+session was run; nine failures from the latest broad run remain to repair.
+
+## Hungarian planning import regressions — 2026-10-08
+
+Translate 20 new Scrum import and Sync planning messages. Preserve all
+counters/reference variables, non-duplication, unchanged foreign-board cards,
+source-ID matching priority and first-sync protection of existing planning.
+Extend the existing planning suite for these consequences. The Hungarian
+suite and global placeholder checks pass; ten failures from the latest broad
+run remain to repair. No browser or screen-reader session was run.
+
+## Russian planning import regressions — 2026-10-08
+
+Translate 20 new Scrum import and Sync planning messages in each Russian
+catalog (40 values). Preserve non-duplication, unchanged foreign-board cards,
+source-ID matching priority and first-sync protection of existing planning.
+Extend the planning suite to both catalogs for these messages and their token
+inventories. The Russian suite and global placeholder checks pass. Eleven
+other failures from the latest broad run still need repair. No browser or
+screen-reader session was run.
+
+## Czech and Slovak planning import regressions — 2026-10-08
+
+Translate 20 newly added Scrum import and Sync planning messages in each
+catalog (40 values). Preserve import counters, reference variables, source-ID
+matching priority, non-duplication, unchanged cards belonging to another
+board and first-sync protection of existing planning. Extend the existing
+planning suites for these consequences; both suites and global placeholder
+checks pass. Twelve other failures from the latest broad run remain to repair.
+No browser or screen-reader session was run.
+
+## Aromanian system and rule language corrections — 2026-10-08
+
+Replace 34 clearly Italian values in system information, card settings,
+parent-card display and rule controls. Preserve CPU and the activity label's
+%s variable; correct the deleted-attachment activity to past tense. Keep
+shared color-dialog and card-setting labels consistent. Leave the candidate
+“Commit FerretDB” unchanged because shared technical wording alone does not
+establish a wrong-language value.
+
+Also translate 16 newly added Scrum import messages, preserving matching
+priority, non-duplication, unchanged foreign-board cards and all counters.
+Tests reject the old Italian strings and English substitutions and check
+these distinctions. New wording remains low-confidence pending fluent
+review. The focused Aromanian and global placeholder checks pass. A fresh 322-suite
+run exposes fourteen other locale failures on the new Scrum import keys or changed
+Scrum inventory counts; those repairs remain open. No browser or screen-reader
+session was run; wider review continues.
+
+## Aromanian account and webhook language corrections — 2026-10-08
+
+Replace 35 clearly Italian values in account, invitation, template, time and
+webhook controls. Correct the overtime filter's old overdue-card wording to
+match overtime, preserve hour units, invitation variables and SMTP/Node/Meteor
+names, and distinguish outgoing from two-way webhooks. Regression checks
+reject the old Italian text and English substitutions.
+
+New wording follows existing catalog vocabulary and remains low-confidence
+pending fluent review. No browser or screen-reader session was run. Other
+wrong-language candidates and the wider translation backlog remain open.
+
+## Aromanian board-control language corrections — 2026-10-08
+
+Replace 35 further clearly Italian values in board/member actions, movement,
+selection, validation and keyboard help with Aromanian. Preserve the %s label
+variable and Excel CSV/TSV name. Regression checks reject the old Italian
+values and English substitutions and distinguish card/board removal and
+opposite movement directions. Full new phrasing remains low-confidence
+pending fluent review, following the existing catalog terminology.
+No browser or screen-reader session was run; the larger review continues.
+
+## Aromanian Italian-seed review — 2026-10-08
+
+A vocabulary review found 304 longer non-English values identical to the
+Italian catalog. Treat this as a candidate list, not automatic proof: shared
+words and technical terms may be valid. Correct 45 clearly Italian dialog,
+invitation, export and filter strings plus the previously identified completed
+and keyboard-shortcut labels (47 values). These wrong-language values are
+corrected directly, preserving source order and invitation variables.
+
+Regression checks reject the old Italian values and English replacements,
+retain invitation-counterpart equality and preserve PDF/iCal names. New
+Aromanian phrasing follows existing catalog terminology and remains
+low-confidence pending fluent review. The remaining candidates still need
+review. No browser or screen-reader session was run.
+
+## Aromanian stuck Sync recovery — 2026-10-08
+
+Translate 23 remaining reported messages for saved List Sync operations that
+cannot finish. Preserve applied changes, never write the saved remainder,
+and permit a fresh source comparison. Cover discard eligibility, the distinction
+between a refusal and an operation not discarded, oldest-50 ordering and the
+applied/total variables. All existing translated values remain untouched.
+
+Complete wording remains low-confidence pending fluent review, following the
+existing catalog and Farsharotu reference below. Clearing reported English
+placeholders does not resolve older mixed-language values or skipped short
+strings. No browser or screen-reader session was run.
+
+## Aromanian imports and controls — 2026-10-08
+
+Translate 47 import instructions, account settings, card-field controls,
+assignment/movement rules, keyboard labels and mathematical spoken labels.
+Preserve Org mode syntax, Todoist markers, environment identifiers and the
+link-rule placeholders {number}/{identifier}, their example URL and aliases.
+Extend tests for these examples, read-only scope, unchanged card data and
+opposite movement/page directions. Physical key legends remain recognizable.
+Also translate four newly added Sync planning messages, preserving source-ID
+matching priority and the first-Sync prohibition on removing planning.
+
+Use existing catalog vocabulary and the Farsharotu dictionary linked below;
+new terminology and complete grammar remain low-confidence pending fluent
+review. No browser or screen-reader session was run. Stuck Sync messages and
+older linguistic defects remain to be addressed.
+
+## Aromanian Sync choices and diagnostics — 2026-10-08
+
+Translate 63 conflict-resolution, preview, source-field, report, diagnostic
+and estimate messages. Preserve local/source scope, unchanged subcards,
+replacement-card reuse, 100-entry/path limits, 20-run/30-day retention and the
+inability of reports to resume or undo changes. Keep missing-versus-null
+semantics and the requirement for exactly one matching time field.
+
+Extend the Aromanian suite for all current Sync keys and these distinctions.
+Vocabulary follows the existing catalog and Farsharotu reference below;
+full new wording remains low-confidence pending fluent review. No browser
+or screen-reader session was run. Other translation work remains open.
+
+## Aromanian notification recovery — 2026-10-08
+
+Translate 36 mail failure and activity-notification recovery messages.
+Preserve temporary/permanent rejection, the prohibition on recreating an
+activity, retained pending work, irreversible cancellation and the inability
+to recall queued email or delivered notifications. Extend regression checks
+for these distinctions alongside the complete source-token inventory.
+
+Vocabulary follows existing catalog forms and the Farsharotu reference below.
+Full terminology and grammar remain low-confidence pending fluent review.
+No browser or screen-reader session was run. Other pending translations and
+older wrong-language values remain under review.
+
+## Aromanian Scrum instructions — 2026-10-08
+
+Translate 20 remaining Scrum instructions and recovery messages. Preserve
+unknown-versus-zero estimates, comparable estimate units/policies, UTC daily
+sampling, omitted days, the two export actions, retained cancelled-sprint
+membership and rollback eligibility. Extend coverage to all current Scrum
+keys and these distinctions, alongside the catalog-wide token inventory.
+
+Use the existing Aromanian vocabulary and the Farsharotu reference linked
+below. Complete software phrases and grammar remain low-confidence pending
+fluent review. No browser or screen-reader session was run; English and
+wrong-language values elsewhere in the catalog remain to be addressed.
+
+## Aromanian Scrum labels — 2026-10-08
+
+Translate 73 Scrum labels, actions, states and short reporting messages.
+Keep shared labels consistent and preserve the estimate counters, reference
+variable, minute unit and 366-observation limit. Replace the Aromanian test's
+older ASCII-only token scanner with the shared Unicode-aware scanner; extend
+coverage for the new batch and distinct lifecycle states/actions.
+
+Wording follows existing Aromanian catalog forms and the
+[Farsharotu English–Aromanian dictionary](https://farsharotu.org/an-english-aromanian-macedo-romanian-dictionary/).
+Its speed entry supports curundeatsã; full software phrases, modern terms and
+grammar remain low-confidence pending fluent review. Existing Italian-seeded
+values and other untranslated messages still require work. No browser or
+screen-reader session was run.
+
+## Remaining Scrum test failures — 2026-10-08
+
+Translate the nine new release-selection and recovery messages in Māori,
+Northern Sotho, Somali and Tok Pisin (36 values). Update their expected Scrum
+inventories from 102 to 111 while retaining the per-key translation and token
+checks. Add checks for keyboard legends, distinct rollback/retain actions and
+all four recovery counters. Full wording remains low-confidence pending fluent
+review; dictionary evidence supports vocabulary, not every software phrase.
+
+Vocabulary references: [Te Aka, whakahoki](https://maoridictionary.co.nz/search?keywords=whakahoki),
+[Department of Basic Education Northern Sotho wordlist](https://www.education.gov.za/LinkClick.aspx?fileticket=AZf94H84go4%3D&mid=4487&portalid=0&tabid=642),
+[Zorc Somali dictionary](https://zorc.net/RDZorc/SOMALI/SOMALI-ENGLISH%3DDICTIONARY.pdf),
+and [Tok Pisin senis](https://tokpisin.info/senis/).
+All 322 translation suites pass after these repairs (110 seconds), as do the
+21 human-preference checks. No browser or screen-reader session was run.
+The ordinary backlog remains 34,717 values in 52 locales, excluding 196 source
+keys tracked separately as pending. Broader translation work remains.
+
+## Planning regressions exposed by new source keys — 2026-10-08
+
+A full 322-suite translation run found ten failing suites after new release
+selection and Scrum recovery messages were added. Translate those nine messages
+in Czech, Slovak, Hungarian, two Russian catalogs, Ukrainian and Estonian
+(63 values). Existing planning coverage passes again in these six language
+suites without relaxing the assertions. Source-token checks cover the four
+recovery counters. Four remaining Scrum suites (Māori, Northern Sotho, Somali
+and Tok Pisin) still need the new translations and inventory-count updates;
+the full run is not yet green.
+
+## Pending German messages — 2026-10-08
+
+Translate 36 pending messages in each of four German catalogs (144 values),
+covering imports, assignment, LDAP, login, release selection and stuck List
+Sync recovery. Swiss German uses ss instead of ß in the new prose. Preserve
+source variables, configuration names and import syntax. Extend the German
+suite for regional spelling, retained applied changes, unwritten remaining
+changes, replay eligibility, oldest-50 ordering and multiple-release selection.
+No browser or screen-reader session was run. Other translation work and the
+broader linguistic audit remain open.
+
+## Pending French messages — 2026-10-08
+
+Translate 36 pending messages in each of the five French catalogs (180 values),
+covering imports, assignment rules, LDAP, login, release selection and stuck
+List Sync recovery. Existing translated values are protected by the fill merge.
+Preserve source variables, import syntax, configuration identifiers and the
+consequences of abandoning a saved operation. Extend the shared French suite
+for retained changes, unwritten remainder, replay eligibility, oldest-first
+ordering and membership in multiple releases. No browser or screen-reader
+session was run. The broader linguistic audit remains open.
+
+## Pending Finnish messages — 2026-10-08
+
+Translate 36 pending import, assignment, LDAP, login, release-selection and
+stuck List Sync messages. Preserve configuration names and import syntax,
+interpolation variables, multiple-release selection and oldest-50 ordering.
+Recovery wording keeps applied changes, never writes the saved remainder,
+and permits a fresh comparison with the source. Extend the existing Finnish
+regression suite for these distinctions and retain its full token inventory.
+No browser or screen-reader session was run. Other languages and older
+linguistic defects remain under review.
+
+## Manx pending release and stuck Sync messages — 2026-10-08
+
+Translate 25 newly pending messages about release membership and discarding
+unreplayable List Sync operations. Preserve multiple-release selection,
+Ctrl/Cmd legends, applied/total counters, oldest-50 ordering and the distinction
+between refusing a discard now and reporting that no discard occurred.
+The confirmation keeps applied changes, never writes the remaining saved
+changes, and permits a fresh source comparison on the next Sync.
+
+Regression checks cover these consequences and the catalog-wide source token
+inventory. Full wording and grammar remain low-confidence pending fluent review,
+using the existing catalog and dictionary references below. No browser or
+screen-reader session was run. Other locales and older language defects remain.
+
+## Remaining reported Manx messages — 2026-10-08
+
+Translate 47 remaining reported messages: import instructions, assignment rules,
+LDAP and login settings, card fields, keyboard/math labels and Scrum report
+explanations. Preserve import syntax, environment identifiers, percent variables,
+UTC observations, 366-record limits and unknown-versus-zero estimates.
+Keyboard labels retain physical Alt/Command/Enter/Tab legends where useful;
+other key functions and spoken mathematical terms use Manx words.
+
+Phil Kelly's dictionary linked below attests co-heenys, sheenys, tanjent and
+ogher arree. Complete software phrases and grammar remain low-confidence
+pending fluent review. The ordinary missing-value report now has no Manx entry; 25 newly added
+pending messages still need translation. Neither count proves that older values
+or skipped short strings are correct. No browser
+or screen-reader session was run.
+
+## Manx Sync conflicts and diagnostics — 2026-10-08
+
+Translate 63 Sync conflict, preview, source-field, run-report and estimate
+messages. Preserve local/source scope, unchanged subcards, reuse of replacement
+cards, 100-entry/path limits, 20-run/30-day retention, missing-versus-null values,
+and the requirement for exactly one matching time field. Reports remain unable
+to resume or undo a run. Existing non-English values are preserved.
+
+Extend Manx regression checks for these distinctions alongside the complete
+source placeholder inventory. Vocabulary follows the existing catalog and the
+Manx references below; Sync terminology and full grammar remain low-confidence
+pending fluent review. No browser or screen-reader session was run.
+
+## Manx notification delivery and recovery — 2026-10-08
+
+Translate 36 notification-recovery and email-failure messages. Distinguish
+permanent rejection from temporary rejection, missing from changed activity,
+pause from cancellation, retained pending work and irreversible cancellation.
+Preserve the warning that retries do not recreate activities and cancellation
+does not recall already queued mail or delivered notifications.
+
+Existing Manx regression coverage checks these distinctions and the source-wide
+placeholder inventory. Vocabulary follows the catalog and dictionary references
+below; delivery/recovery terminology and full grammar remain low-confidence
+pending fluent review. No browser or screen-reader session was run.
+
+## Manx Scrum planning labels — 2026-10-08
+
+Translate 71 Scrum labels and short messages for planning, estimates, sprint
+states, events and report navigation. Preserve unknown estimates as distinct
+from completed work, closing versus cancellation, minutes, and named tokens.
+The existing Manx suite now uses the shared source-token scanner, including
+numbered Blockly tokens, and checks consistent board/Scrum names and states.
+
+Vocabulary follows the existing catalog and
+[Phil Kelly's English–Manx dictionary, January 2026](https://www.learnmanx.com/media/PDFs/PDF%20resources%202022%20onwards/English%20to%20Manx%20dictionary%20compiled%20by%20Phil%20Kelly%20Jan%202026.pdf),
+linked by Culture Vannin. Dictionary words support the drafting, but the Scrum
+compounds and grammar remain low-confidence pending fluent review. Existing
+non-English translations were preserved. No browser session was run.
+
+## Additional import literals and grammatical boundaries — 2026-10-08
+
+Repair 16 Asana and OpenProject messages in 11 locale files: restore the data
+property, GET /tasks and GET /api/v3/work_packages. Keep surrounding prose and
+translated explanations of section membership. The parenthetical membership
+explanation is not a code example and is not forced back to English.
+
+Extend catalog-wide literal regression coverage from four to ten formats,
+including Taskwarrior, Focalboard, Org mode and todo.txt. Tests accept valid
+non-Latin grammatical affixes and Shona prefixes adjoining literal filenames,
+while still rejecting translated identifiers, changed case and malformed paths.
+No valid human wording was changed to satisfy English word-boundary assumptions.
+This is a structural audit; mixed-language prose and pending translations remain.
+No browser session was run.
+
+## Import code examples across locales — 2026-10-08
+
+Repair 73 import messages in 25 real locale files for Kanboard, NextCloud Deck,
+ZenKit and Jira. Restore case-sensitive JSON properties, array-field examples
+and API endpoints. Preserve surrounding prose and valid quotation styles.
+The initial 103 candidate rows included harmless typographic differences;
+a broader field-by-field check found additional damaged identifiers missed by
+that first scan. Changes are restricted to those literals, not a claim that
+all surrounding prose is in the correct language.
+
+The new catalog-wide regression suite verifies every locale path for these four
+formats. It accepts localized quotation marks while rejecting case changes,
+translated endpoints and identifiers embedded inside different names. Positive
+and negative fixtures exercise that distinction. Existing interpolation-token
+checks remain in place. Other formats and mixed-language prose still require
+review; no browser session was run.
+
+## Bislama import prose and literal examples — 2026-10-08
+
+Correct 13 mixed-language import instructions and translate the two new OPML
+and Org mode instructions. Restore Kanboard field identifiers, Deck's cards
+property, ZenKit's title property and Jira's /rest/api/2/search endpoint.
+Keep menu labels, JSON examples, named placeholders, Org status keywords,
+Markdown checkbox syntax and documented spreadsheet columns literal.
+
+Regression coverage checks these strings against their English-source literals,
+rejects known damaged field/path spellings and verifies import mappings.
+This extends the token audit beyond percent/underscore interpolation: JSON field
+names and endpoints are also code. Existing fully translated instructions remain
+unchanged. Complete prose remains provisional pending fluent review; no browser
+session was run. Vocabulary follows the existing references below.
+
+## Bislama storage, lockout and backup controls — 2026-10-08
+
+Correct 236 artificial English wrappers in storage moves, attachment repair,
+account lockout, migrations, backup controls and flow reports. Preserve product identifiers,
+JSON credential format and seconds as the lockout time unit. Distinguish pause
+from resume, failure retry from paused-work continuation, and all backup
+frequencies. The explicit “Tok blong sistem:” wrapper queue falls from 236 to zero.
+This does not establish overall Bislama quality: other mixed-language seeds
+and provisional wording still need review. Flow reports preserve the 2,000
+trials, UTC sampling, 3,650-day horizon, uncertainty, overlapping causes and
+creation/archive fallbacks. Statistical terminology remains low-confidence.
+
+Regression coverage checks these distinctions and the complete catalog's token
+inventory. Vocabulary follows the existing catalog and dictionary references
+below; technical compounds remain provisional pending fluent review. No browser
+session was run.
+
+## Bislama search syntax, support and memory reports — 2026-10-08
+
+Correct 76 artificial wrappers in search terms, support tickets, loading indicators
+and memory reports, leaving 236 wrappers. Correct another 12 search values:
+three operator names containing spaces, matching predicate labels and mixed-English
+error messages. The production parser accepts translated one-word names and
+portable abbreviations; it does not accept spaced operator labels. Native display
+prose remains separate from compact query syntax.
+
+Extend the existing runtime parser suite with Bislama quoted-value searches,
+missing/present attachment and assignee checks, overdue dates, invalid operators
+and invalid limits. All registered operator names are checked for lexical validity
+and collisions. The catalog-wide placeholder and HTML inventory remains covered.
+Technical compounds and full prose remain provisional pending fluent review;
+no browser session was run. Vocabulary follows the references below.
+
+## Bislama display, weekdays and report labels — 2026-10-08
+
+Correct 76 artificial English wrappers in display settings, weekdays,
+roles, locations, dependencies and reports. Restore literal separators, font
+names, URL and recognized region names. Preserve named import counts and the
+`%{value}` template token. The wrapper queue falls from 388 to 312.
+Search operator and predicate labels still need a separate parser-aware review.
+
+Regression coverage checks exact template tokens, distinct weekday names,
+show/hide actions, incomplete status and literal syntax. Vocabulary follows
+the existing Bislama catalog and dictionary references below; software compounds
+remain provisional pending fluent review. No browser session was run.
+
+## Bislama login, notifications and system labels — 2026-10-08
+
+Correct 145 more artificial English wrappers in navigation, subscriptions,
+attachment limits, invitation email, webhooks, system diagnostics and rule
+scheduling. Keep before/after and checked/unchecked instructions distinct. Keep
+product names, storage units and runtime/environment identifiers literal.
+The wrapper queue falls from 533 to 388. Translate the newly added Todoist
+import guidance too, preserving its menu action, CSV format, @labels and p1–p3
+priority references. Existing valid non-English translations remain untouched.
+
+Tests cover the source-wide token inventory, the corrected wrapper keys,
+blocked/unlimited states and Todoist checklist mapping. Vocabulary follows
+existing catalog and dictionary references below; full compounds remain
+provisional pending fluent review. No browser session was run.
+The affirmative label uses `Yo`, recorded as “yes, ok” in the
+[Bislama spelling dictionary](https://bislama.org/images/dictionary/BislamaSpellingDictionary-EN-BI-v1.1.pdf).
+
+## Bislama artificial wrapper correction — 2026-10-08
+
+Correct 120 older values that merely prefixed English with “Tok blong sistem:”.
+Board controls, dimensions, fonts, colors, voting, filters and invitation labels now use Bislama
+prose; numeric poker options, date-format tokens and punctuation retain their exact source values.
+Gantt and Planning Poker retain the existing shared technical-name policy.
+The wrapper queue falls from 653 to 533; an empty fill report did not detect it.
+Tests check the repaired keys, numeric options, zoom bounds and substitutions.
+Existing dictionary references below support vocabulary, while full software
+compounds remain provisional pending fluent review. No browser session was run.
+The [Bislama spelling dictionary](https://bislama.org/images/dictionary/BislamaSpellingDictionary-EN-BI-v1.1.pdf)
+and [ANU Bislama introduction](https://openresearch-repository.anu.edu.au/bitstreams/eeeaefaf-73b7-4d4d-afae-5287f83f91a3/download)
+support basic color vocabulary. Fine color shades use provisional descriptive
+phrases, rather than claiming a standardized technical color glossary.
+
+## Bislama workspace, Scrum, Sync and recovery — 2026-10-08
+
+Translate the remaining 224 reported values and 10 skipped short labels for Bislama: Blockly workspace
+announcements, rule editing, Scrum planning/reports, Sync conflicts/diagnostics,
+and notification delivery recovery. Preserve composed announcement spacing,
+numbered and named placeholders, unknown-versus-zero estimates, daily observation
+limits, local-only conflict handling, missing-versus-null values, and permanent
+cancellation versus temporary pause. Regression checks cover these distinctions.
+
+The ordinary fill report now has no Bislama entries. This is a mechanical
+milestone, not a claim of complete language quality: the broad short-string
+exemption is checked separately for if/do/as/to/or/on labels, while other
+skipped values and older artificial wrappers still need review. Technical compounds
+and complete prose remain provisional pending fluent Bislama review; vocabulary
+follows the existing catalog and dictionary references below. Existing non-English
+values were preserved. Browser and screen-reader sessions were not run.
+
+## Bislama functions and accessible navigation — 2026-10-08
+
+Translate 175 remaining Blockly messages for mathematics, functions, variables,
+keyboard navigation, text operations and screen-reader controls. Preserve return/no-return
+semantics, degree-versus-radian units, restricted function scope, opposite
+screen-reader states and numbered placeholders. Regression checks cover these
+distinctions and the complete catalog's source token and HTML inventories.
+
+Mathematical loanwords, notably logarithms and trigonometric function names,
+are provisional phonetic adaptations alongside explanatory Bislama prose.
+Text operations preserve all-occurrence replacement, failed-search sentinels,
+whitespace counting, trimming direction and append-at-end semantics.
+Existing dictionary references below support general vocabulary; these drafts
+still need fluent technical review. No existing non-English values were replaced.
+Browser and screen-reader sessions were not run.
+
+## Bislama lists, logic and mathematics — 2026-10-08
+
+Translate 155 values, including four pending LDAP notices, and directly repair
+the short OR label omitted by the short-string heuristic. Regression checks
+preserve get/remove distinctions, copies versus original lists, AND/OR conditions,
+inclusive integer bounds, the exclusive upper bound for random fractions, exact
+LDAP environment identifiers and all source placeholder inventories.
+
+The ordinary backlog now totals 35,319 values in 54 locales, including 399
+Bislama values. Another 156 source keys are tracked separately as pending; these
+are not evidence of completed translations. Statistics terms and complete software
+phrases remain provisional pending fluent review. Browser and screen-reader
+sessions were not run.
+
+Terminology references include the dictionaries linked below and the
+[Vanuatu education Bislama instruction manual](https://education.gov.vu/docs/ecce-forms/Early%20Child%20Development%20Scales%20Instraksenol%20Manuel%20%28Bislama%29.pdf),
+which provides addition/subtraction vocabulary. These references support words,
+not certification of every drafted sentence.
+
+## Bislama block controls and read-only login notice — 2026-10-08
+
+Fill 115 Bislama Blockly values and directly translate the short bitmap-on
+label skipped by the fill helper's short-string exemption. The bitmap states
+remain opposite; row/column and value substitutions keep their argument order.
+Loop tests distinguish true/false conditions, and input labels distinguish
+start/end, dividend/divisor, append/replace and list/text operations. Existing
+translations remain intact. The broader short-string heuristic still needs
+review: this explicit bitmap correction does not certify all skipped prose.
+
+Translate the new environment-only login notice in 62 locale files, visible
+through 63 non-English paths including the Russian symlink. It explains both
+that the server environment is the only configuration source and that the
+Admin Panel displays these controls read-only. Other ongoing implementation
+work added the source text; its code and unrelated catalog additions are kept
+outside this translation batch.
+
+The ordinary backlog is 35,470 values in 54 locales, including 550 Bislama
+values. Pending keys are changing as other features are implemented and must
+be recounted before completion. Existing Bislama dictionary references above
+support the drafted vocabulary; full software wording remains provisional.
+The bitmap-on repair also demonstrates why a zero missing-value count alone
+would not prove that every source message was translated.
+
+Regression coverage extends the existing Bislama and login-setting suites,
+including the complete source token inventory and representative server-only /
+read-only clauses. Browser and screen-reader sessions were not run.
+
+## Additional card-field locales and Bislama Blockly — 2026-10-08
+
+Add 30 card-field values across Assamese, Bashkir, Bhojpuri, Cantonese, Javanese,
+Konkani, Kurmanji Kurdish, Maithili, Odia, Pashto, Sindhi, Sorani Kurdish,
+Uyghur, Wu Chinese and Yiddish. Add another 44 Bislama card-field and Blockly
+values, and replace three artificial system-text color wrappers with native
+color names. Card-field coverage reaches 175 non-English locale paths; 59 remain.
+The ordinary report shows 35,585 missing values in 54 locales, with 151 source
+keys still tracked separately. Neither metric proves fluency.
+
+Bislama Blockly prose preserves variable-deletion restrictions, color ratios
+and ranges, loop bounds, break versus continue, and conditional fall-through.
+The locale-wide test now uses the shared token inventory, including numbered
+Blockly substitutions. Existing translated prose is preserved; the three color
+wrappers were deliberate wrong-language repairs. The native word `red` is
+exempted only for its two exact labels and exact source value. A fixture proves
+that changed source sentences and other locales are not exempted.
+
+Sources for terminology and dialect distinctions:
+
+- [Bislama dictionary](https://www.bislama.org/bislama-dictionary) and
+  [Bislama introduction and vocabulary](https://mtranslation.com.au/Bislama.pdf)
+  support `jenisim`, `kala`, `blu`, and the existing locale's grammatical pattern.
+- [Bislama green](https://en.wiktionary.org/wiki/gr%C4%ABn) records `grin` and
+  distinguishes it from the older broad blue/green color category.
+- [Kurmanji hiding](https://ku.wiktionary.org/wiki/ve%C5%9Fartin) supports the
+  hide verb and distinguishes related Sorani forms.
+- [Wu all/everything](https://en.wiktionary.org/wiki/%E4%B8%80%E5%84%95) supports
+  the dialectal all-scope vocabulary; the complete software phrasing remains
+  provisional, as do new compounds in the other minority-language drafts.
+
+Validation: 37 relevant suites pass after correcting the native Bislama red
+classification; the additional invariant suite and 21 human-preference checks
+pass. Card-field tests cover scripts, distinct Cantonese/Wu wording, and actual
+translated rendering. No browser or screen-reader session was run. Bislama's
+older mixed-English prose, including the card-loading explanation, remains
+visible work for the broader audit and is not certified by its historical gate.
+
+## Six keyboard-label and card-field batches — 2026-10-08
+
+Fill 119 values in Akan, Māori, Northern Sotho, Somali, Tok Pisin and Waray.
+Each locale's full `fill-translations.mjs --list` report is now empty, including
+keys held in the pending queue. This reports exact-English/missing-value
+coverage; it does not certify all existing prose as fluent or correct-language.
+The ordinary backlog drops to 35,628 values across 54 locales; 151 source keys
+remain separately tracked as pending. Card-field coverage reaches 159 of the
+234 non-English paths, with 75 paths still requiring those two messages.
+
+Keyboard labels retain recognizable modifier-key legends and translate
+navigation/editing functions. Home means the beginning, not a dwelling; Page Up
+and Page Down retain opposite directions; Backspace remains distinct from Space.
+Card-field help preserves all-board scope, unchanged stored data and settings,
+restoration on rechecking, and each board's own field order. Existing translated
+values were not overwritten. Wording is provisional, especially the assembled
+software terms in Akan, Northern Sotho and Waray, and merits speaker review.
+
+Terminology references:
+
+- [Te Aka Māori space terminology](https://maoridictionary.co.nz/search?keywords=space)
+  records `pātuhi mokowā` for the space-bar key.
+- [Akan key terminology](https://www.akandictionary.com/2021/05/09/safoa/)
+  supports `safoa`; its use for keyboard keys here is a software-context draft.
+- [Tok Pisin removal terminology](https://tokpisin.info/rausim/)
+  supports the removal verb used in the Backspace explanation.
+- [Somali key terminology](https://glosbe.com/en/so/key)
+  supports `fure`; existing locale terms supply board, card and settings names.
+
+The card-field rendering suite now includes these six locales. Keyboard tests
+check retained legends and distinct navigation directions; the full-catalog
+placeholder test checks spelling and multiplicity. Browser and screen-reader
+sessions were not run.
+
+## Further card-field translations — 2026-10-08
+
+Fill 44 card-field values in 22 additional locale paths: Amharic, Aragonese,
+Asturian, Breton, Corsican, Faroese, West Frisian (both paths), Haitian Creole,
+Hausa, Igbo, Latin, Luxembourgish, Malagasy, Maltese, Occitan, Brazilian
+Portuguese, Romansh, Sardinian, Scottish Gaelic, Sicilian and Yoruba. Both
+messages now have translated text in 153 non-English locale paths; 81 remain.
+Existing translations were retained. The ordinary backlog is unchanged because
+these two keys are tracked separately in the pending queue.
+
+The wording retains all-card and all-board scope, hiding on minicards and in
+board settings, no data/settings mutation, restoration when checked again,
+and each board's own field order. The shared catalog rendering and full token
+inventory tests cover these locales. Minority-language wording, particularly
+Breton, Faroese, Romansh, Sardinian, Scottish Gaelic and Sicilian, is provisional
+and should receive fluent-speaker review. Browser execution remains open.
+
+Terminology references, rather than external translation services:
+
+- [Maltese field terminology](https://glosbe.com/en/mt/field) distinguishes the
+  computing sense `qasam` from agricultural land.
+- [Breton hidden terminology](https://geriafurch.bzh/br/brfr/kuzhet) includes
+  the computing sense of `kuzhet`.
+- [Scottish Gaelic field terminology](https://www.faclair.com/?txtSearch=raon)
+  supports the noun `raon`; the complete software sentence is a draft.
+- [Sicilian hide terminology](https://dizziunariu.napizia.com/traina/?palora=ammucciari)
+  supports `ammucciari` rather than an Italian replacement.
+
+## Placeholder validation and current catalog repair — 2026-10-08
+
+All 246 locale paths were checked against the 3,900-key English catalog.
+Underscore interpolation names, printf arguments, numbered Blockly arguments,
+percent-braced variables and escaped percent tokens have matching spelling,
+case and multiplicity. No current token repairs were needed. The shared scanner
+now also recognizes non-Latin underscore names, so an extra translated token
+cannot escape validation. Fill rejects a damaged batch before writing anything;
+existing correct-language translations remain protected.
+
+Restore the two missing card-field visibility keys in source order. This batch
+adds 240 translated values; both keys now have non-English text in 131 locale
+paths. The other 103 non-English paths retain visible English placeholders for
+continued translation. English variants intentionally retain English. No other
+locale values were changed by this batch. Runtime i18next checks verify that
+completed messages render without falling back to English. Browser tests were
+not run. New wording still benefits from fluent-speaker review.
+
+The fill report no longer counts exact Blockly OS brands and compact math/code
+symbols as untranslated prose. These exemptions match both key and value;
+changed source prose, tooltips and accessibility labels remain translatable.
+The current ordinary backlog is 35,735 values in 60 locales, plus 151 source
+keys tracked separately in the pending queue. Neither these figures nor the
+passing tests establish full translation completion or fluency.
+
+Four stale audit findings now record the later Akan, Tok Pisin and Waray wording
+without restoring older English fragments. JSON examples retain their literal
+`title` and `description` property names. The Waray comma-separated example
+uses `butang` (thing/item), supported by the
+[Waray dictionary](https://dictionary.corporaproject.org/index.php?glossary=B&sort=word).
+Tok Pisin ordinal terminology can also be checked in the
+[Tok Pisin dictionary](https://tokpisin.info/namba/). The Akan organization
+assertion now accepts the noun in lowercase within a sentence.
+
+Validation: all 320 selected translation, placeholder and i18n suites pass;
+the additional card-field catalog/rendering suite passes, and all 21
+human-preference checks pass. CLI regression fixtures reject renamed, missing,
+extra and malformed tokens and verify that failed batches write no changes.
 
 ## Login-setting fill resumed — 2026-10-07
 
@@ -9983,9 +11083,9 @@ review; the remaining catalogs and broader language audit are unfinished.
 
 | Status | Flagged keys |
 | --- | ---: |
-| Corrected | 15,880 |
+| Corrected | 15,881 |
 | Restored pre-pull; awaiting validation | 0 |
-| Reviewed; retained unchanged | 4,201 |
+| Reviewed; retained unchanged | 4,200 |
 | Pending review or repair | 0 |
 | Total tracked | 20,081 |
 
@@ -10364,7 +11464,7 @@ explicit broader wrong-language review item and must be resolved before the
 full audit closes.
 
 The [correction ledger](../../../releases/translations/audited-corrections.json)
-records contain **22,831** exact before/after values, including unflagged
+records contain **22,836** exact before/after values, including unflagged
 repairs. [Detailed evidence](Audit-Evidence.md) preserves categorized findings,
 source references, dated commit history and low-confidence limits.
 Corrected counts classify changed values; they do not certify full fluency.

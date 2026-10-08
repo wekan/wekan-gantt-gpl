@@ -129,6 +129,8 @@ const SECTIONS = {
       ['autoRegistration', 'OAUTH2_AUTO_REGISTRATION', 'boolean', { defaultValue: true }],
       ['adminGroups', 'OAUTH2_ADMIN_GROUPS', 'text'],
       ['allowedEmailDomains', 'OAUTH2_ALLOWED_EMAIL_DOMAINS', 'text'],
+      // #5339: the organization every account created by an OAuth2/OIDC login joins.
+      ['defaultOrganization', 'OAUTH2_DEFAULT_ORGANIZATION', 'text'],
       ['propagateOidcData', 'PROPAGATE_OIDC_DATA', 'boolean', { defaultValue: false }],
       ['secretJwtKeyPath', 'OAUTH2_SECRET_JWT_KEY_PATH', 'path'],
       ['secretJwtIssuer', 'OAUTH2_SECRET_JWT_ISSUER', 'text'],
@@ -150,8 +152,14 @@ const SECTIONS = {
       ['mergeExistingUsers', 'CAS_MERGE_EXISTING_USERS', 'boolean', { defaultValue: false }],
     ],
   },
+  // Environment-only (maintainer decision of 2026-10-08): with HEADER_LOGIN_ID
+  // and HEADER_LOGIN_TRUSTED_IPS set, a proxy at a trusted address signs in as
+  // anyone it names, so turning that on must take access to the host, not only
+  // a site administrator's session. The Admin Panel shows these read-only; a
+  // value stored there before this change is ignored, and a save is refused.
   headerLogin: {
     storage: 'headerLogin',
+    envOnly: true,
     fields: [
       ['id', 'HEADER_LOGIN_ID', 'text'],
       ['email', 'HEADER_LOGIN_EMAIL', 'text'],
@@ -169,15 +177,21 @@ const SECTIONS = {
       // the variable decides, as it always did (#5879).
       ['defaultAuthenticationMethod', 'DEFAULT_AUTHENTICATION_METHOD', 'choice', { choices: AUTHENTICATION_METHODS, defaultValue: 'password' }],
       ['loginExpirationInDays', 'ACCOUNTS_COMMON_LOGIN_EXPIRATION_IN_DAYS', 'number', { defaultValue: 90, restart: true }],
+      // Automatic logout (models/lib/logoutTimer.js, server/logoutTimer.js).
+      ['logoutWithTimer', 'LOGOUT_WITH_TIMER', 'boolean', { defaultValue: false }],
+      ['logoutIn', 'LOGOUT_IN', 'number', { max: 3650 }],
+      ['logoutOnHours', 'LOGOUT_ON_HOURS', 'number', { max: 23 }],
+      ['logoutOnMinutes', 'LOGOUT_ON_MINUTES', 'number', { max: 59 }],
     ],
   },
 };
 
 const AUTH_CONFIG_SECTIONS = {};
 const BY_ENV_VAR = {};
-for (const [section, { storage, fields }] of Object.entries(SECTIONS)) {
+for (const [section, { storage, envOnly = false, fields }] of Object.entries(SECTIONS)) {
   AUTH_CONFIG_SECTIONS[section] = {
     storage,
+    envOnly,
     fields: fields.map(([key, envVar, type, options = {}]) => {
       const field = {
         key, envVar, type, section, storage,
@@ -192,6 +206,8 @@ for (const [section, { storage, fields }] of Object.entries(SECTIONS)) {
         aliases: options.aliases || [],
         defaultValue: options.defaultValue === undefined ? null : options.defaultValue,
         restart: options.restart === true,
+        max: options.max === undefined ? null : options.max,
+        envOnly,
       };
       for (const name of [envVar, ...field.aliases]) BY_ENV_VAR[name] = field;
       return field;
@@ -210,6 +226,7 @@ function isUnset(value) {
 // The value the Admin Panel stored for one field, or undefined when it has
 // none. `docs` is the Settings document (or the subset holding the sections).
 function adminValue(field, doc) {
+  if (field.envOnly) return undefined;
   const stored = doc && doc[field.storage];
   if (!stored || typeof stored !== 'object') return undefined;
   const value = stored[field.key];
@@ -331,6 +348,9 @@ function cleanAuthConfigInput(section, input) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     throw new TypeError('Login settings must be an object');
   }
+  if (spec.envOnly) {
+    throw new TypeError(`${section} settings can only be set in the environment`);
+  }
   const clearSecrets = input.clearSecrets === undefined ? [] : input.clearSecrets;
   if (!Array.isArray(clearSecrets)) throw new TypeError('clearSecrets must be a list');
   const set = {};
@@ -370,6 +390,9 @@ function cleanValue(field, raw) {
     case 'number': {
       const number = typeof raw === 'number' ? raw : Number(String(raw).trim());
       if (!Number.isFinite(number) || number < 0) throw new TypeError(`Invalid ${field.envVar}`);
+      if (field.max !== null && (number > field.max || !Number.isInteger(number))) {
+        throw new TypeError(`Invalid ${field.envVar}`);
+      }
       return number;
     }
     case 'choice':

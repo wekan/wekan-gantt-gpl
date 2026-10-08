@@ -337,7 +337,7 @@ test('every external export menu link returns text and refuses an unrelated user
   // Include description through the actual shared selection controls.
   const details = page.locator('.js-export-card-details-toggle');
   if (await details.getAttribute('aria-checked') !== 'true') await details.click();
-  for (const format of ['trello', 'jira', 'kanboard', 'deck', 'openproject', 'github', 'gitlab', 'gitea', 'forgejo', 'asana', 'zenkit', 'markdown', 'leo', 'todotxt', 'taskwarrior', 'focalboard']) {
+  for (const format of ['trello', 'jira', 'kanboard', 'deck', 'openproject', 'github', 'gitlab', 'gitea', 'forgejo', 'asana', 'zenkit', 'markdown', 'leo', 'todotxt', 'taskwarrior', 'focalboard', 'todoist', 'opml', 'orgmode']) {
     await test.step(format, async () => {
       const anchor = page.locator(`.js-pop-over a[href*="/export/${format}?"]`);
       await expect(anchor).toBeVisible();
@@ -385,6 +385,107 @@ test('Focalboard: a board.jsonl imports with its lists, labels, description, che
     expect(open.description).toBe('Two of them');
     expect(new Date(open.dueAt).toISOString().slice(0, 10)).toBe('2026-10-10');
     expect(db.find('card_comments', { cardId: open._id }).map(comment => comment.text)).toEqual(['Ordered']);
+    expect(db.find('checklistItems', { cardId: open._id }).map(item => [item.title, item.isFinished])).toEqual([['Call vendor', true]]);
+    const lists = db.find('lists', { boardId });
+    expect(lists.find(list => list._id === open.listId).title).toBe('Doing');
+    expect(lists.find(list => list._id === cards.find(card => card.title === 'Finished task').listId).title).toBe('Done');
+    await expect(page.locator('.minicard-title', { hasText: expected.title })).toBeVisible();
+  } finally { if (boardId) db.cleanup({ boardIds: [boardId] }); }
+});
+
+// A Todoist project template: sections, @labels and priority, the description,
+// sub-tasks as a checklist and notes as comments (models/lib/todoistCsvFormat.js).
+test('Todoist: a project template imports with its sections, labels, description, sub-tasks and notes', async ({ loggedInPage: page }) => {
+  let boardId;
+  const label = expected.label.replace(/ /g, '_');
+  try {
+    await navigateInApp(page, '/import/todoist');
+    await page.locator('#import-textarea').fill([
+      'TYPE,CONTENT,DESCRIPTION,PRIORITY,INDENT,AUTHOR,RESPONSIBLE,DATE,DATE_LANG,TIMEZONE,DURATION,DURATION_UNIT,DEADLINE,DEADLINE_LANG',
+      'meta,view_style=board,,,,,,,,,,,,',
+      'section,Doing,,,,,,,,,,,,',
+      `task,${expected.title} @${label},"Two of them, DN50",1,1,,,2026-10-10,en,UTC,,,,`,
+      'task,Call vendor,,4,2,,,,,,,,,',
+      'note,Ordered,,,,,,,,,,,,',
+      'section,Done,,,,,,,,,,,,',
+      'task,Finished task,,4,1,,,,,,,,,',
+    ].join('\r\n'));
+    await page.locator('.js-import-without-mapping').click();
+    await waitForImportedBoard(page);
+    boardId = page.url().match(/\/b\/([^/]+)/)[1];
+    const cards = db.find('cards', { boardId });
+    expect(cards).toHaveLength(2);
+    const open = cards.find(card => card.title === expected.title);
+    const board = db.findOne('boards', { _id: boardId });
+    expect(open.labelIds.map(id => board.labels.find(l => l._id === id).name).sort()).toEqual([label, 'p1'].sort());
+    expect(open.description).toBe('Two of them, DN50');
+    expect(new Date(open.dueAt).toISOString().slice(0, 10)).toBe('2026-10-10');
+    expect(db.find('card_comments', { cardId: open._id }).map(comment => comment.text)).toEqual(['Ordered']);
+    expect(db.find('checklistItems', { cardId: open._id }).map(item => [item.title, item.isFinished])).toEqual([['Call vendor', false]]);
+    const lists = db.find('lists', { boardId });
+    expect(lists.find(list => list._id === open.listId).title).toBe('Doing');
+    expect(lists.find(list => list._id === cards.find(card => card.title === 'Finished task').listId).title).toBe('Done');
+    await expect(page.locator('.minicard-title', { hasText: expected.title })).toBeVisible();
+  } finally { if (boardId) db.cleanup({ boardIds: [boardId] }); }
+});
+
+// An OPML outline as Workflowy writes it: lists, cards with their notes, a
+// checklist and the done state (models/lib/opmlOutline.js).
+test('OPML: an outline imports with its lists, notes, checklist and done state', async ({ loggedInPage: page }) => {
+  let boardId;
+  const attr = value => value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/\n/g, '&#10;');
+  try {
+    await navigateInApp(page, '/import/opml');
+    await page.locator('#import-textarea').fill([
+      '<?xml version="1.0"?>',
+      '<opml version="2.0"><head><title>From OPML</title></head><body>',
+      `<outline text="Doing"><outline text="${attr(expected.title)}" _note="${attr(expected.description)}">`,
+      '<outline text="Call vendor" _complete="true"/></outline></outline>',
+      '<outline text="Done"><outline text="Finished task" _complete="true"/></outline>',
+      '</body></opml>',
+    ].join('\n'));
+    await page.locator('.js-import-without-mapping').click();
+    await waitForImportedBoard(page);
+    boardId = page.url().match(/\/b\/([^/]+)/)[1];
+    const cards = db.find('cards', { boardId });
+    expect(cards).toHaveLength(2);
+    const open = cards.find(card => card.title === expected.title);
+    expect(open.description).toBe(expected.description);
+    expect(db.find('checklistItems', { cardId: open._id }).map(item => [item.title, item.isFinished])).toEqual([['Call vendor', true]]);
+    const lists = db.find('lists', { boardId });
+    expect(lists.find(list => list._id === open.listId).title).toBe('Doing');
+    expect(lists.find(list => list._id === cards.find(card => card.title === 'Finished task').listId).title).toBe('Done');
+    await expect(page.locator('.minicard-title', { hasText: expected.title })).toBeVisible();
+  } finally { if (boardId) db.cleanup({ boardIds: [boardId] }); }
+});
+
+// An Org mode outline: keyword, priority, tags, deadline, body and checkboxes
+// (models/lib/orgModeFormat.js).
+test('Org mode: headings import with their keyword, priority, tags, deadline, body and checkboxes', async ({ loggedInPage: page }) => {
+  let boardId;
+  const tag = expected.label.replace(/ /g, '_');
+  try {
+    await navigateInApp(page, '/import/orgmode');
+    await page.locator('#import-textarea').fill([
+      '#+TITLE: From Org',
+      '* Doing',
+      `** TODO [#A] ${expected.title} :${tag}:`,
+      '   DEADLINE: <2026-10-10 Sat>',
+      '   Two of them',
+      '   - [X] Call vendor',
+      '* Done',
+      '** DONE Finished task',
+    ].join('\n'));
+    await page.locator('.js-import-without-mapping').click();
+    await waitForImportedBoard(page);
+    boardId = page.url().match(/\/b\/([^/]+)/)[1];
+    const cards = db.find('cards', { boardId });
+    expect(cards).toHaveLength(2);
+    const open = cards.find(card => card.title === expected.title);
+    const board = db.findOne('boards', { _id: boardId });
+    expect(open.labelIds.map(id => board.labels.find(l => l._id === id).name).sort()).toEqual(['priority:A', tag].sort());
+    expect(open.description).toBe('Two of them');
+    expect(new Date(open.dueAt).toISOString().slice(0, 10)).toBe('2026-10-10');
     expect(db.find('checklistItems', { cardId: open._id }).map(item => [item.title, item.isFinished])).toEqual([['Call vendor', true]]);
     const lists = db.find('lists', { boardId });
     expect(lists.find(list => list._id === open.listId).title).toBe('Doing');

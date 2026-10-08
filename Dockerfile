@@ -20,7 +20,7 @@ LABEL org.opencontainers.image.source="https://github.com/wekan/wekan-gantt-gpl"
 # TARGETARCH and TARGETVARIANT are automatically provided by Docker Buildx
 ARG TARGETARCH
 ARG TARGETVARIANT
-ARG VERSION=12.23
+ARG VERSION=12.24
 ARG DEBIAN_FRONTEND=noninteractive
 
 ENV BUILD_DEPS="apt-utils gnupg wget bzip2 g++ curl libarchive-tools build-essential git ca-certificates python3 unzip"
@@ -50,6 +50,7 @@ ENV \
     AVATARS_UPLOAD_EXTERNAL_PROGRAM="" \
     AVATARS_UPLOAD_MIME_TYPES="" \
     AVATARS_UPLOAD_MAX_SIZE=72000 \
+    DEFAULT_AVATAR_URL="" \
     CARD_OPENED_WEBHOOK_ENABLED=false \
     MAX_IMAGE_PIXEL="" \
     IMAGE_COMPRESS_RATIO="" \
@@ -131,6 +132,7 @@ ENV \
     OAUTH2_AVATAR_MAP="" \
     OAUTH2_MERGE_EXISTING_USERS="" \
     OAUTH2_ALLOWED_EMAIL_DOMAINS="" \
+    OAUTH2_DEFAULT_ORGANIZATION="" \
     PROPAGATE_OIDC_DATA="" \
     OAUTH2_SECRET_JWT_KEY_PATH="" \
     OAUTH2_SECRET_JWT_ISSUER="" \
@@ -224,14 +226,15 @@ ENV \
     OAUTH_MEETUP_SECRET_FILE="" \
     OAUTH_PROVIDERS_LOGIN_STYLE="popup" \
     OAUTH_PROVIDERS_MERGE_EXISTING_USERS=false \
+    OAUTH_PROVIDERS_ALLOWED_EMAIL_DOMAINS="" \
     PASSWORDLESS_ENABLED=false \
     ORACLE_OIM_ENABLED=false \
     WAIT_SPINNER="" \
     WRITABLE_PATH=/data \
     S3="" \
-    MAIL_SERVICE_PASSWORD_FILE="" \
-    MONGO_PASSWORD_FILE="" \
-    S3_SECRET_FILE=""
+    MAIL_URL_FILE="" \
+    MONGO_URL_FILE="" \
+    S3_SECRET_KEY_FILE=""
 
 # Where this image's Node.js comes from is decided by the SAME script the .zip
 # bundles and the snap use - official nodejs.org, then unofficial-builds, then

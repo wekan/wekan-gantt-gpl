@@ -11,9 +11,15 @@ import { TAPi18n } from '/imports/i18n';
 import { Utils } from '/client/lib/utils';
 import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
 import { ReactiveCache } from '/imports/reactiveCache';
-const { DEFAULT_SCRUM_SETTINGS, getCardEstimate } = require('/models/lib/scrum');
-const { velocityReports, reportChartGroups } = require('/models/lib/scrumReports');
+const { DEFAULT_SCRUM_SETTINGS, getCardEstimate, cardReleaseIds } = require('/models/lib/scrum');
+const { velocityReports, reportChartGroups, releaseReports } = require('/models/lib/scrumReports');
 const { compareScrumCards } = require('/models/lib/scrumCardOrder');
+const { scrumTransferFileFields } = require('/models/lib/scrumTransferMerge');
+// What an import could not place, in words: the reasons an import into this
+// board adds (models/lib/scrumTransferMerge.js), else the general one.
+const LOSS_KEYS = { 'card-not-matched': 'scrum-import-card-not-matched', 'card-ambiguous': 'scrum-import-card-ambiguous',
+  'card-on-another-board': 'scrum-import-card-on-another-board', 'record-ambiguous': 'scrum-import-record-ambiguous',
+  'record-not-imported': 'scrum-import-record-not-imported', 'sprint-finished': 'scrum-import-sprint-finished' };
 const current = () => Template.instance();
 const data = () => current().dataState.get();
 const selectedSprint = tpl => tpl.dataState.get()?.sprints.find(s => s._id === tpl.sprintId.get());
@@ -86,11 +92,30 @@ async function mutate(tpl, method, ...args) {
     return false;
   } finally { if (!tpl.stopped) tpl.busy.set(false); }
 }
+const transferChanges = preview => !!(preview.sprints.created.length || preview.releases.created.length ||
+  preview.events.created || preview.cards.updated || preview.dailyObservations);
+// A dry run first, then the import itself, of the file chosen.
+async function importTransfer(tpl, dryRun) {
+  if (tpl.busy.get()) return;
+  if (!tpl.transferFile) { tpl.error.set(t('scrum-import-choose-file')); return; }
+  tpl.busy.set(true); tpl.error.set('');
+  try {
+    const result = await Meteor.callAsync('scrum.importIntoBoard', Session.get('currentBoard'), tpl.transferFile, { dryRun });
+    if (tpl.stopped) return;
+    tpl.transferPreview.set(result);
+    if (!dryRun) { invalidateScrumNames(); await refresh(tpl); }
+  } catch (error) {
+    if (!tpl.stopped) tpl.error.set(error.reason || error.message);
+  } finally { if (!tpl.stopped) tpl.busy.set(false); }
+}
 Template.scrumView.onCreated(function () {
   this.dataState = new ReactiveVar(null); this.loading = new ReactiveVar(true);
   this.error = new ReactiveVar(''); this.busy = new ReactiveVar(false);
   this.sprintId = new ReactiveVar(''); this.request = 0; this.stopped = false;
   this.releaseId = new ReactiveVar(''); this.eventId = new ReactiveVar('');
+  // A Scrum transfer imported into this board: the file's fields, and what
+  // the server said a dry run, or the import, does.
+  this.transferFile = null; this.transferPreview = new ReactiveVar(null);
   // Rows shown: each carries its own form, so a large board renders a page at
   // a time.
   this.cardLimit = new ReactiveVar(CARD_PAGE);
@@ -98,6 +123,7 @@ Template.scrumView.onCreated(function () {
     Session.get('currentBoard'); Meteor.userId();
     this.dataState.set(null); this.sprintId.set('');
     this.releaseId.set(''); this.eventId.set('');
+    this.transferFile = null; this.transferPreview.set(null);
     void refresh(this);
   });
 });
@@ -162,7 +188,17 @@ Template.scrumView.helpers({
   sprintOpen: () => ['planned', 'active'].includes(selectedSprint(current())?.state),
   sprintStart: () => dateValue(selectedSprint(current())?.plannedStart),
   sprintEnd: () => dateValue(selectedSprint(current())?.plannedEnd),
-  releases: () => (data()?.releases || []).map(r => ({ ...r, stateLabel: stateLabel(r.state), startLabel: dateValue(r.plannedStart), endLabel: dateValue(r.plannedEnd), releasedLabel: r.releasedAt ? new Date(r.releasedAt).toLocaleString() : '' })),
+  // Each release with the cards in it: a card with several releases counts in
+  // each (models/lib/scrumReports.js releaseReports), only the cards this
+  // reader may see.
+  releases() {
+    const result = data(); if (!result) return [];
+    const totals = new Map(releaseReports(result.releases, result.cards, { ...DEFAULT_SCRUM_SETTINGS, ...result.settings }, result.lists)
+      .map(report => [report.releaseId, report]));
+    const label = value => t('scrum-total', { count: value.count, estimate: value.estimate, unknown: value.unknown });
+    return result.releases.map(r => ({ ...r, stateLabel: stateLabel(r.state), startLabel: dateValue(r.plannedStart), endLabel: dateValue(r.plannedEnd), releasedLabel: r.releasedAt ? new Date(r.releasedAt).toLocaleString() : '',
+      scopeLabel: label(totals.get(r._id).scope), doneLabel: label(totals.get(r._id).done) }));
+  },
   selectedRelease: () => selectedRelease(current()),
   releaseOptions: () => (data()?.releases || []).map(r => ({ ...r, selected: r._id === current().releaseId.get() })),
   releaseStates: () => ['planned', 'released', 'cancelled'].map(value => ({ value, label: t(`scrum-state-${value}`), selected: value === (selectedRelease(current())?.state || 'planned') })),
@@ -192,8 +228,8 @@ Template.scrumView.helpers({
           rankLabel: card.scrum?.backlogRank ?? '—',
           rankValue: card.scrum?.backlogRank ?? '',
           sprintName: result.sprints.find(s => s._id === card.scrum?.sprintId)?.name || t('scrum-product-backlog'),
-          releaseName: result.releases.find(release => release._id === card.scrum?.releaseId)?.name || '—',
-          cardReleaseOptions: result.releases.map(release => ({ ...release, selected: release._id === card.scrum?.releaseId })),
+          releaseName: cardReleaseIds(card.scrum).map(id => result.releases.find(release => release._id === id)?.name).filter(Boolean).join(', ') || '—',
+          cardReleaseOptions: result.releases.map(release => ({ ...release, selected: cardReleaseIds(card.scrum).includes(release._id) })),
           cardUrl: FlowRouter.path('card', { boardId: board._id, slug: board.slug, cardId: card._id }),
           assignmentOptions: result.sprints.filter(s => ['planned', 'active'].includes(s.state)).map(s => ({ ...s, selected: s._id === card.scrum?.sprintId })) };
       });
@@ -219,6 +255,16 @@ Template.scrumReportTable.helpers({
         rows: group.rows.map(row => ({ ...row, series: row.series.map(series => ({ ...series, label: t(`scrum-${series.key}`) })) })),
       }));
   },
+  transferPreview: () => current().transferPreview.get(),
+  nothingToDo() {
+    const preview = current().transferPreview.get();
+    return !!preview && preview.dryRun && !transferChanges(preview);
+  },
+  canApply() {
+    const preview = current().transferPreview.get();
+    return !!preview && preview.dryRun && transferChanges(preview);
+  },
+  lossText() { return t(LOSS_KEYS[this.reason] || 'scrum-import-reference-omitted', { reference: this.sourceId }); },
   formatTotal(value) { return value ? t('scrum-total', { count: value.count, estimate: value.estimate, unknown: value.unknown }) : ''; },
 });
 Template.scrumView.events({
@@ -232,6 +278,15 @@ Template.scrumView.events({
   'change .js-scrum-sprint'(event, tpl) {
     tpl.sprintId.set(event.currentTarget.value); tpl.eventId.set(''); tpl.cardLimit.set(CARD_PAGE);
   },
+  async 'change .js-scrum-transfer-file'(event, tpl) {
+    tpl.transferFile = null; tpl.transferPreview.set(null); tpl.error.set('');
+    const file = event.currentTarget.files?.[0];
+    if (!file) return;
+    try { tpl.transferFile = scrumTransferFileFields(JSON.parse(await file.text())); }
+    catch (error) { tpl.error.set(error instanceof SyntaxError ? t('scrum-import-invalid-file') : error.message); }
+  },
+  async 'click .js-scrum-transfer-preview'(event, tpl) { event.preventDefault(); await importTransfer(tpl, true); },
+  async 'click .js-scrum-transfer-apply'(event, tpl) { event.preventDefault(); await importTransfer(tpl, false); },
   async 'click .js-scrum-resume-import'(event, tpl) { event.preventDefault(); await mutate(tpl, 'scrum.resumeImport'); },
   async 'click .js-scrum-discard-import'(event, tpl) { event.preventDefault(); await mutate(tpl, 'scrum.discardImport'); },
   'click .js-scrum-show-more'(event, tpl) { event.preventDefault(); tpl.cardLimit.set(tpl.cardLimit.get() + CARD_PAGE); },
@@ -274,7 +329,9 @@ Template.scrumView.events({
   async 'submit .js-scrum-card'(event, tpl) {
     event.preventDefault(); const values = fields(event.currentTarget);
     const card = tpl.dataState.get()?.cards.find(c => c._id === event.currentTarget.dataset.cardId);
-    if (card) await mutate(tpl, 'scrum.updateCard', card._id, { sprintId: nullable(values.sprintId), releaseId: nullable(values.releaseId), backlogRank: values.backlogRank === '' ? null : Number(values.backlogRank), issueType: values.issueType, acceptanceCriteria: values.acceptanceCriteria }, card.scrumRevision || 0);
+    // Every chosen release (none clears them), as the list.
+    const releaseIds = new FormData(event.currentTarget).getAll('releaseIds').filter(Boolean);
+    if (card) await mutate(tpl, 'scrum.updateCard', card._id, { sprintId: nullable(values.sprintId), releaseIds, backlogRank: values.backlogRank === '' ? null : Number(values.backlogRank), issueType: values.issueType, acceptanceCriteria: values.acceptanceCriteria }, card.scrumRevision || 0);
   },
   async 'submit .js-scrum-release'(event, tpl) {
     event.preventDefault(); const form = event.currentTarget; const values = fields(form);

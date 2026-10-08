@@ -3,11 +3,16 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const english=require('../imports/i18n/data/en.i18n.json');
 const data=require('../imports/i18n/data/mi.i18n.json');
+test('Māori imports retain foreign-board cards and avoid duplicates',()=>{
+ assert.match(data['scrum-import-into-board-hint'],/kāore e tāruatia/);
+ assert.match(data['scrum-import-card-on-another-board'],/kia kore e panonitia/);
+ assert.match(data['scrum-import-sprint-finished'],/Kāore.*i nukuhia/);
+});
 const {translationTokens}=require('../releases/translations/placeholder-tokens.mjs');
 const keys=Object.keys(english).filter(k=>k.startsWith('scrum-')||['board-view-product-backlog','board-view-sprints','board-view-sprint-report','board-view-velocity'].includes(k));
 
 test('Māori Scrum messages preserve coverage, tokens and shared labels',()=>{
- assert.equal(keys.length,102);
+ assert.equal(keys.length,127);
  for(const key of keys){
   assert.ok(data[key].trim(),key);
   assert.notEqual(data[key],english[key],key);
@@ -43,4 +48,11 @@ test('Māori report caveats preserve unknown estimates and daily sampling limits
  assert.match(data['scrum-daily-truncated'],/366/);
  assert.ok(data['scrum-daily-observations-help'].includes('mahi '+data.export));
  assert.match(data['scrum-daily-observations-help'],/tēnei wāhanga.*paeutauta/);
+});
+
+test('release selection and recovery distinguish retaining records from rollback',()=>{
+ assert.match(data['scrum-releases-select-help'],/Ctrl.*Cmd/);
+ assert.notEqual(data['scrum-history-checkpoint-rollback'],data['scrum-history-checkpoint-discard']);
+ assert.deepEqual(translationTokens(data['scrum-history-checkpoint-counts']),
+   ['__applied__','__conflicted__','__pending__','__total__']);
 });

@@ -42,14 +42,16 @@ async function main() {
   // Both external-import creators record it after the board exists.
   const read = file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
   const kanboard = read('models/kanboardCreator.js');
-  assert.match(kanboard, /await this\.createCards\(board, boardId\);\s*await recordImportLosses\(\{/);
+  // The Scrum planning stage (GitLab, OpenProject, Asana) runs between, so
+  // the report also carries what it could not keep.
+  assert.match(kanboard, /await this\.createCards\(board, boardId\);\s*await this\.createScrumPlanning\(board, boardId\);\s*await recordImportLosses\(\{/);
   assert.match(kanboard, /this\.losses\.push\(\.\.\.customFieldPlan\.unsupported\)/);
   assert.match(kanboard, /this\.losses\.push\(\.\.\.unsupported\)/);
   const jira = read('models/jiraCreator.js');
   assert.match(jira, /await recordImportLosses\(\{\s*source: 'jira',\s*warnings: jiraPageWarnings\(board\)/);
   const importJs = read('models/import.js');
-  // kanboard, markdown, todotxt, taskwarrior, focalboard, leo (the Leo outline) and the shared default branch.
-  assert.equal((importJs.match(/new KanboardCreator\(data, /g) || []).length, 7, 'every KanboardCreator knows its source');
+  // kanboard, markdown, todotxt, taskwarrior, focalboard, todoist, orgmode, leo (the Leo outline), opml and the shared default branch.
+  assert.equal((importJs.match(/new KanboardCreator\(data, /g) || []).length, 10, 'every KanboardCreator knows its source');
   assert.doesNotMatch(importJs, /new KanboardCreator\(data\)/);
   const children = read('models/lib/importedCardChildren.js');
   assert.match(children, /RecoveryEvents\.record\(report\.type/);

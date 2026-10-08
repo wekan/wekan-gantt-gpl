@@ -103,6 +103,9 @@ const OAUTH_PROVIDERS = [
 // The two settings shared by every provider, and the passwordless switch.
 const OAUTH_PROVIDERS_LOGIN_STYLE_VAR = 'OAUTH_PROVIDERS_LOGIN_STYLE';
 const OAUTH_PROVIDERS_MERGE_EXISTING_USERS_VAR = 'OAUTH_PROVIDERS_MERGE_EXISTING_USERS';
+// #1904: only these email domains may sign in with a provider, like
+// OAUTH2_ALLOWED_EMAIL_DOMAINS for OAuth2/OIDC. Comma separated; empty allows all.
+const OAUTH_PROVIDERS_ALLOWED_EMAIL_DOMAINS_VAR = 'OAUTH_PROVIDERS_ALLOWED_EMAIL_DOMAINS';
 const PASSWORDLESS_ENABLED_VAR = 'PASSWORDLESS_ENABLED';
 
 const PROVIDER_KEYS = OAUTH_PROVIDERS.map(p => p.key);
@@ -125,7 +128,7 @@ function isEmpty(value) {
 
 /**
  * Read one environment variable, honouring its `<NAME>_FILE` variant the way
- * OAUTH2_SECRET_FILE / MONGO_PASSWORD_FILE are documented: when `<NAME>` is
+ * OAUTH2_SECRET_FILE / MONGO_URL_FILE are documented: when `<NAME>` is
  * empty and `<NAME>_FILE` names a readable file, the trimmed file content is
  * the value (Docker/Kubernetes secrets mounted as files). `env` and `readFile`
  * are injectable so the decision is testable without touching the real
@@ -255,6 +258,15 @@ function isMergeExistingUsersAllowed(admin, env = process.env) {
 }
 
 /**
+ * The email domains provider logins are restricted to (#1904): the Admin
+ * Panel value when one is stored, otherwise OAUTH_PROVIDERS_ALLOWED_EMAIL_DOMAINS.
+ * Empty means every domain, as OAUTH2_ALLOWED_EMAIL_DOMAINS does for OAuth2.
+ */
+function allowedProviderEmailDomains(adminValue, env = process.env) {
+  return pick(adminValue, env[OAUTH_PROVIDERS_ALLOWED_EMAIL_DOMAINS_VAR]).value || '';
+}
+
+/**
  * The pure account-conflict decision, made when a provider login arrives:
  *   - no existing account with that email -> create a new one ('create');
  *   - the existing account was made by the SAME provider -> it is that user's
@@ -317,6 +329,8 @@ module.exports = {
   PROVIDER_KEYS,
   OAUTH_PROVIDERS_LOGIN_STYLE_VAR,
   OAUTH_PROVIDERS_MERGE_EXISTING_USERS_VAR,
+  OAUTH_PROVIDERS_ALLOWED_EMAIL_DOMAINS_VAR,
+  allowedProviderEmailDomains,
   PASSWORDLESS_ENABLED_VAR,
   providerByKey,
   providerByService,

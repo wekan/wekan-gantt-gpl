@@ -23,8 +23,9 @@ that by providing one-click installation on various platforms.
 
 - WeKan ® is used in [most countries of the world](https://snapcraft.io/wekan).
 - WeKan ® largest user has 30k users using WeKan ® in their company.
-- WeKan ® has been [translated](https://app.transifex.com/wekan/) to 234 languages,
-  171 of them essentially complete.
+- WeKan ® has been [translated](https://app.transifex.com/wekan/) into 234 locale catalogs;
+  182 have non-English text for over 90% of source keys. This measures text coverage,
+  not translation quality; language review and remaining translations are ongoing.
 - [Features](https://github.com/wekan/wekan/tree/main/docs/Features):
   - Real-time user interface
   - All Boards page, Drag drop reorder with one or Multi-Selection:
@@ -78,7 +79,7 @@ that by providing one-click installation on various platforms.
        - Select what to include: Card details, Board, Activities, Labels, People (Creator, Owner, Members, Assignees), Board Info (Board, List, Swimlane), Dates (Created, Received, Start, Due, End), Description, Custom Fields, Checklists, Subtasks, Comments, Attachments, Votin, Plannin Poker, Stickers, Location (link to map based on coordinates), Dependencies, Sort, Scrum Settings
       - Export to: PDF, Excel, HTML, Calendar feed (iCal), Dependencies JSON/SVG,
        CSV , ; TSV, JSON with/without attachmeents, .zip (Attachments),
-       Kanboard, Markdown, Leo, todo.txt, Taskwarrior, Focalboard,
+       Kanboard, Markdown, Leo, OPML, Org mode, todo.txt, Taskwarrior, Focalboard, Todoist,
        Trello, Jira, NextCloud Deck, OpenProject, GitHub, GitLab,
        Gitea, Forgejo, Asana, Zenkit
     - Scrum Settings

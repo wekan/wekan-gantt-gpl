@@ -59,323 +59,27 @@ https://wekan.fi/status/
 <details>
 <summary>Carried to a future release.</summary>
 
-Non-translation implementation resumed at the maintainer's explicit request
-on 2026-09-28 after the security and SAML fixes. Scrum, Sync and the other
-requirements below remain unfinished. Completed increments are recorded in
-Upcoming with test evidence; remaining requirements and external verification
-blockers stay here.
-Translation into all languages resumed at the maintainer's explicit request
-on 2026-10-07. This supersedes the earlier pause while Transifex was being
-evaluated. Preserve correct-language human translations; the checkpoints below
-record remaining work rather than completion.
-Local commits do not publish or release these changes.
+What is not done yet, and why, checked against the code on 2026-10-08.
+Finished work is in Upcoming and old-CHANGELOG/; the dated development logs
+that used to sit here are in git history.
 
-Pass of 2026-09-29: the six external import adapters were brought up to their
-format contracts, imports now parse only sanitized input and keep source
-creation dates, import losses are recorded in Problems → Recovery, and keyboard
-undo/redo persists request IDs (all in Upcoming). Later that day the items once
-blocked on new interface text or on a maintainer decision were built with
-English strings pending Transifex: start-date reminders and assignee
-recipients, per-activity notification options, the per-board reminder offset,
-auto-archival, the import-page loss report, the undo/redo recovery notice,
-rule variables in triggers with a picker, several triggers per rule, Jira issue
-types (Kanboard categories stay labels), semi-open boards, the Map view,
-several parents per card, export fidelity and the Leo outline format. What
-remains below is blocked for one of three stated reasons, not left unexamined:
+**Needs infrastructure or credentials:** Jira closed sprints and their
+commitment snapshots (the Jira Software sprint report API); live SMTP
+interoperability with external mail providers (rule email was tested against
+local SMTP only); the full matrix of Firefox on macOS, WebKit, mobile, full
+FerretDB and live identity providers.
 
-- **Decided "not now", kept open.** #2460 (see "Needs a maintainer
-  decision"), and filing the prepared #4790 split, which is a publishing step
-  for the maintainer. #2509 was closed on 2026-10-03 (see below).
-- **Needs infrastructure or affected data.** The environment-owner, snap and
-  data-verification items. The MySQL/MariaDB/PostgreSQL verification was done
-  once Docker was approved (see Upcoming); only SAP HANA remains, and its image
-  is amd64-only and needs a licence and about 16 GB of memory. File contents
-  from import sources need live API connectors with credentials, and Zenkit's
-  native export has no published schema to verify against.
-- **Architectural Scrum/Sync work.** Operator recovery for legacy rule emails
-  and online SMTP resolution (#2713), the Sync activation switches, Sync
-  History admission through the History gate and Scrum worker serialization
-  are built (see "Pass of 2026-09-30" below). The board History reservation
-  this once waited on was decided and built on 2026-09-30 as rows linked at
-  write; the Scrum items still open are listed under "Remaining, and why".
+**Properties of the backends, not steps left undone:** cards, History,
+activities and effects are coordinated by the write-ahead journal and replay,
+not by a transaction - FerretDB v1 has no multi-document transactions, so a
+snapshot is a sequence of reads and a card write already in flight cannot be
+fenced. SMTP delivery is at least once. History dates already flattened to
+strings, and legacy notifications already dismissed, cannot be reconstructed.
 
-**Paused for a release on 2026-09-29 - in progress, not in this release:**
-
-- **Failing suites, fixed since:** `calendarDateDisplay`, `multilineTitles`
-  and `pomodoroTimer` waited for the locale files to follow `en.i18n.json`'s
-  key order; all three pass as of 2026-10-02.
-- **Checked:** `SamlAccountMergeBleed` needs no Hall of Fame page: SAML
-  refused that merge from its first commit, so it is a detection category
-  like `CanaryBleed`, not a fixed vulnerability.
-- **Decisions built since:** the History reservation was decided as rows
-  linked at write and built on 2026-09-30 (see the second pass below).
-- **Intermittent import spec - not reproduced.** On 2026-09-30 all seven
-  import specs ran four times against a production bundle with no failures
-  (204 case runs). Every failure seen that day came from a `meteor run`
-  development server restarting while other work edited watched files, which
-  aborts a login in flight. The one real failure found, the GitLab fixture's
-  missing comment, is fixed in Upcoming. If the `jira-time-import` value
-  mismatch returns, record the run's server log with it.
-- **Waiting on the maintainer:** the split of issue #4790 is prepared in
-  [User-Filter-4790-Split.md](docs/Features/User-Filter-4790-Split.md) with
-  ready-to-run `gh issue create` commands; filing issues is a publishing step.
-
-Maintainer decisions of 2026-09-29, answering the blockers above:
-
-- **New interface text** is added to `en.i18n.json` and listed in
-  `releases/translations/pending-transifex.json`; the interface falls back to
-  English until the translating agent or Transifex fills each locale. Locale
-  files are that agent's work, not part of feature commits.
-- **Rule variables** ([#4294](https://github.com/wekan/wekan/issues/4294),
-  [#3195](https://github.com/wekan/wekan/issues/3195)): reuse the email
-  `{token}` syntax in action and trigger values, adding `{creator}`,
-  `{assignees}` and `{customField:Name}`; unknown tokens stay literal.
-- **Several triggers per rule** (#4294, [#2953](https://github.com/wekan/wekan/issues/2953)):
-  the rule fires when ANY of its triggers fires; actions run in order.
-- **Scrum/Sync** keeps the journal and reservation approach, finishing
-  ordinary-writer coordination before Sync is activated.
-- **Thumbnails** ([#3275](https://github.com/wekan/wekan/issues/3275)): a
-  separate `/cdn/storage/attachments/<id>/thumbnail` route.
-- **Semi-open boards** ([#3249](https://github.com/wekan/wekan/issues/3249)):
-  visible to every logged-in user of the instance, never in an unauthenticated
-  response.
-- **Several parents** ([#3626](https://github.com/wekan/wekan/issues/3626)): a
-  full parents-array model, migrating every ancestor walk.
-- **Code highlighting**: highlight.js, with only `hljs-*`/`language-*` classes
-  allowed on `span`/`code` inside `pre`.
-- **Custom URL schemes** ([#3218](https://github.com/wekan/wekan/issues/3218)):
-  off by default; an admin allowlist chooses which become links.
-- **Jira issue types** become a first-class card field with an icon; Kanboard
-  categories stay labels.
-- **Hot areas** ([#3256](https://github.com/wekan/wekan/issues/3256)): a new
-  Map board view with cards as markers on an uploaded image.
-- **User Filter** ([#4790](https://github.com/wekan/wekan/issues/4790)): split
-  into separate items and closed.
-- **Due reminders** ([#5323](https://github.com/wekan/wekan/issues/5323)): a
-  per-board offset and a webhook reminder, both in Board Settings →
-  Notifications.
-- **Not now**: a consolidated `act-editCard` webhook
-  ([#4912](https://github.com/wekan/wekan/issues/4912)); SQRL
-  ([#2460](https://github.com/wekan/wekan/issues/2460)) stays open for a future
-  maintained library; [#2509](https://github.com/wekan/wekan/issues/2509) waits
-  for the reporter.
-
-Maintainer decisions of 2026-09-30, for the design steps that remained:
-
-- **Partial or unknown SMTP acceptance**
-  ([#2713](https://github.com/wekan/wekan/issues/2713)): the send stays pending
-  in Admin Panel → Problems → Recovery with each recipient's status. An
-  administrator resends to unconfirmed recipients only, marks it sent, or drops
-  it; WeKan never resends by itself, so nobody receives a duplicate.
-- **Legacy unbound Sync commands**: nothing runs automatically. Admin Panel
-  lists each command with what it would do; an administrator re-binds it to the
-  current source, with a fresh access check, or discards it.
-- **Sync activation**: off by default. A board administrator enables Sync per
-  board and an instance administrator enables cron separately, so an upgrade
-  changes nothing on its own.
-- **The "Not now" issues** (#4912, #2460, #2509) stay open and stay listed
-  here with their reasons.
-
-Pass of 2026-09-30 - built and tested (all in Upcoming): the three decisions
-above - operator resolution of partially accepted rule emails, review of
-legacy rule emails and the Sync activation switches - plus GitLab import and
-export fidelity, todo.txt as a new format, OpenProject watchers and Asana
-followers as card watchers, a raced undo or redo applied once, Sync History
-admitted through the board's History writer gate, and one worker per Scrum
-History operation. 561 server tests pass; the new and affected browser specs
-pass in Chromium and WebKit against a production bundle (Firefox cannot launch
-on the macOS machine used). The only non-translation node suites still failing
-are `calendarDateDisplay`, `multilineTitles` and `pomodoroTimer`, which wait
-on locale key order.
-
-The multi-row History reservation, Scrum deleted-versus-recreated and receipt
-retention were blockers here until the decisions below.
-
-Maintainer decisions of 2026-09-30, answering those blockers:
-
-- **History reservation: link rows at write.** Sync and the rule archive
-  runner plan their History rows without `previousHash`; each row is linked
-  to the chain when it is appended, through the coordinated head, like an
-  ordinary edit. Ordinary History is never blocked or queued. This redesigns
-  the Sync and archive plan formats and their validators
-  (`validateSyncFieldHistory`, the archive plan's cross-card hash chain).
-- **Deleted versus recreated: incarnation ids.** Every Scrum record and
-  activity gets a new random incarnation id each time it is created; recovery
-  compares it, so a record deleted and recreated with the same values is not
-  taken for the original. Nothing is kept after deletion.
-- **Retention: compact after 90 days.** Receipts and request IDs (Scrum
-  completions and requests, Sync intents and completions, notification plans)
-  are compacted after 90 days to a permanent minimal id and outcome, the
-  notification outbox's policy, so a late retry still finds its receipt.
-- **Writer tokens: build online recovery.** History writers renew a liveness
-  heartbeat, and History inserts carry a fencing token, so a writer presumed
-  dead can have its token taken without stopping servers and cannot write
-  afterwards. The offline tool stays as the fallback. This changes the History
-  writer protocol for every writer and for migration.
-
-Second pass of 2026-09-30 - built and tested (in Upcoming):
-
-- Sync and archive rows are linked at write, with no reservation.
-- Scrum sprints, releases and events carry incarnations.
-- Finished rule email commands are compacted after 90 days.
-- Abandoned History writers are recovered online, fenced.
-
-Third pass of 2026-09-30 - built and tested (in Upcoming): activities carry
-incarnations; delivered Sync notification plans are compacted after 90 days;
-manual and scheduled Sync run through the durable journal, with replay every
-minute; the intermittent activity-recovery test was two test races and is fixed.
-
-Remaining, and why:
-
-- **Structural rule actions.** Every rule action type WeKan offers has a
-  durable adapter now (see Upcoming), on the card's own board and on another
-  board that has opted into Sync effects too. Since 2026-10-02 a move to
-  another board may be followed by card-field, checklist and link actions,
-  which act on the card where it went, and activities without a list (a new
-  swimlane, a move to another board) are delivered durably too. Built on
-  2026-10-03 as decided (below): a later move, sort, move-all or archive
-  resolves on the board the card went to, in both engines, and is durable
-  too, and so is a further move or move-all on to yet another board that
-  opted in. An email may follow such a move too since the second decision of
-  2026-10-03: it reads the card where the rule's own move put it.
-- **Scrum requirements** (from
-  [the Scrum design](docs/Features/Right-Sidebar/Board-Settings/Board-View/Scrum-Design.md)).
-  Built on 2026-10-02 and 2026-10-03 (see Upcoming): event-level scope
-  history and burndown, Jira sprints, versions, rank and epics, Jira estimate
-  discovery, GitLab estimate Sync, cross-board sprint and release references
-  linked by name, large-board paging, online recovery of interrupted imports,
-  and sprints with no card limit. What stays open, and why:
-  - *Concurrent snapshot consistency*: a snapshot is a sequence of reads, not
-    a transaction - the same backend property as "Atomicity" below.
-  - *Jira's closed sprints*: issue search JSON has no commitment or close
-    snapshot, so they are reported, not imported; importing them needs the
-    Jira Software sprint report API, which needs a live Jira and credentials.
-  - *Rebuilding an import whose plan was never fully saved*: the import's
-    source file is not kept, so such an import can only be discarded (which
-    changes nothing on the board).
-  - *History carried along by board transfer*: decided on 2026-10-02 -
-    a copied or imported board starts with fresh History, as documented.
-- **Atomicity.** Cards, History, activities and effects are coordinated by the
-  write-ahead journal and replay, not by a transaction. The FerretDB v1 backend
-  has no multi-document transactions, and journal ownership cannot fence a
-  card write that is already in flight. That is a property of the backends,
-  not a step left undone.
-
-Node suite health at this pass: 163 of 1445 suites fail; 162 already failed at
-the pass's starting commit (mostly translation-completeness suites, plus source
-guards such as `changeHistoryWiring` and `historyRestoreAppliesWhatIsShown`).
-The other, `activeForgeMirror`, read the real `.tools/wekan-gitlab` directory
-and failed on any checkout that has one; it is fixed in Upcoming.
-
-Maintainer decisions of 2026-10-02, for what remained above:
-
-- **Lists created before list lifetimes: assign on settings save.** A legacy
-  list gets its incarnation, and its Sync credential is reissued, the next time
-  an administrator saves its Sync settings. No migration assigns one, so an
-  upgrade breaks no stored credential; until the save, the list keeps direct
-  Sync.
-- **Structural rule actions: durable moves next.** Build a saved move command
-  that plans every row a move writes - the position History row, the legacy
-  UserPositionHistory row, relabel, renumber, custom-field mapping, checklists
-  and attachments - then make the other structural actions durable one at a
-  time.
-- **[#4912](https://github.com/wekan/wekan/issues/4912): an opt-in extra.** A
-  consolidated `act-editCard` event is sent to the global webhook only when an
-  administrator enables it. The per-field `act-a-changedTitle` /
-  `act-a-changedDescription` events stay as they are, so an existing receiver
-  gets no duplicate unless it opts in. Which card fields count as an edit is
-  still to be fixed when it is built.
-- **[#2460](https://github.com/wekan/wekan/issues/2460) stays open, not now**,
-  as decided on 2026-09-30.
-- **Rule moves out of the list: the guard follows the plan's own move.** The
-  rule stage's guard accepts the card where a saved move of the SAME rule plan
-  put it, so the plan's later actions act on the moved card; a move by anything
-  else still refuses them.
-- **Sprint and release on another board: linked by name.** A card or
-  swimlane copied or moved to another board takes that board's sprint and
-  release of the same name when exactly one matches, and drops them otherwise.
-- **History on board transfer: kept fresh.** A copied or imported board's
-  History starts at the copy, as documented; the source's rows are not carried.
-- **Cross-board rule effects: only if both boards opted in.** A rule that moves,
-  copies or links a card to another board is durable only when the destination
-  board has Sync effects enabled too; otherwise the source board keeps direct
-  Sync for it.
-
-Maintainer decisions of 2026-10-03, for what remained above:
-
-- **Rule actions after a move to another board: the destination board.** A
-  rule's later move, sort, move-all or archive after it moved the card to
-  another board resolves list and swimlane names, and archiving's cascade, on
-  the board where the card now is - in the ordinary engine and in durable Sync
-  alike. This changes existing rules that relied on the source board; once
-  both engines agree, those actions become durable too.
-- **Very large sprints: background job with progress.** Every per-card guard
-  stays. Closing a sprint and undoing or redoing a close run as a resumable
-  background job with a progress bar, so the browser never waits on one
-  method call.
-- **Continuous backup: cloud upload, encryption and applying a SQLite
-  restore.** The built-in engines upload segments and blobs to S3/MinIO, Azure
-  or GCS with the credentials of the Admin Panel / Attachments storage panes;
-  segments and blobs are encrypted at rest (AES-256-GCM, an
-  administrator-held key, needed to restore); and a restored SQLite file is
-  staged with the startup scripts' RESTORE_REQUESTED marker, so the next
-  restart puts it in place.
-
-Built on 2026-10-03 (in Upcoming): all three decisions above - rule actions
-after a move to another board resolve there, in both engines and durably;
-large sprints close, undo and redo in the background with progress; and
-continuous backup encrypts at rest, uploads to S3/MinIO, Azure or GCS, and
-applies a restored SQLite file on the next restart.
-- **[#2509](https://github.com/wekan/wekan/issues/2509): closed.** Changing
-  the order of fields and hiding fields on the card and the minicard (Board
-  Settings / Card and Board View) already customizes how a card looks.
-
-Maintainer decisions of 2026-10-03, second set:
-
-- **Email after a rule's move to another board: follow the rule's own move.**
-  The email reads the card on the destination board, only when the same run
-  or stored plan made the move and that board opted into Sync effects. Any
-  other card off the board stays refused.
-- **Docker Compose: FerretDB keeps an oplog** (`--repl-set-name`), so
-  continuous backup streams the database there. WeKan still polls.
-- **[#2460](https://github.com/wekan/wekan/issues/2460) (SQRL): kept open** as
-  it is.
-- **The #4790 split** stays the maintainer's to file.
-
-Built on 2026-10-03 (in Upcoming): the email follows the rule's own move in
-both engines and durably, and the Compose files run FerretDB with an oplog
-over a direct connection. Testing that against FerretDB found and fixed the
-oplog engine's refused cursor option, and the FerretDB fork now records
-dropped collections (wekan/FerretDB 3b111eac, for its next release).
-
-Built on 2026-10-02 (in Upcoming): the opt-in `act-editCard` event (#4912),
-lifetimes for old lists when their Sync settings are saved, durable rule moves
-anywhere on the card's own board and moving all cards of a list, durable rule
-checklist creation and removal, sorting a list, creating, copying and linking a
-card on its own board, adding a swimlane, Caddy's open-file limit in the snap
-(#6552) and LDAP diagnostics in production (#6548). Cross-board rule effects
-remain, as above.
-
-Built later on 2026-10-02 (in Upcoming): rule links, copies, moves and
-move-alls to another board when both boards opted in, card-field rules on
-linked cards, durable Sync runs whose rules move or archive the synced card,
-notifications and webhooks for cards their rules moved, and label activities
-kept when a card moves to another board.
-
-Investigated but not finished, with findings
-recorded for whoever picks them up next. Entries that have since been FIXED are
-removed from this list as they are handled (their fixes carry `Fixes #NNNN` and
-close on push): e.g. #4560/#4419/#4158 (LDAP, in the startup-upgrade
-batch), #4825/#4897 (All Boards/OAuth2 data), #4822 (maximized card
-position), #3826
-(subtask drag reorder), #5212/#5547 (mergebox/features batch), #3453/#3199/#3833
-(linked-card/archive/comment attachments), #4593 (late-joining team member board
-membership) and #3037 (REST card board-move).
-
-Checked against GitHub on 2026-07-28 and removed as no longer open: issues
-\#3138, \#3252, \#3276, \#3378, \#3748, \#3828, \#4055, \#4774, \#5149 and
-\#6511. The "already correct in the current code" category went with them - it
-held only issues \#4774 and \#4055, and both are closed now.
+**Waiting on the maintainer:** filing the
+[#4790](https://github.com/wekan/wekan/issues/4790) split prepared in
+[User-Filter-4790-Split.md](docs/Features/User-Filter-4790-Split.md), which is
+a publishing step.
 
 </details>
 
@@ -386,11 +90,16 @@ Status checked on 2026-10-08. Translation work has resumed, including keys
 previously held for Transifex. Completed work is recorded in Upcoming.
 
 - The current `node releases/translations/fill-translations.mjs --missing`
-  report counts **42,838 untranslated locale/string values in 70 languages**. It
-  excludes **149 source keys tracked separately as pending Transifex**: 148
-  have non-English values requiring wording review; the newly added
-  `shortcut-edit-due-date` still needs translations. Counts are a snapshot;
-  they do not establish the quality or language of other values.
+  report counts **34,717 untranslated locale/string values in 52 languages**.
+  It excludes **188 source keys tracked separately as pending Transifex**.
+  Exact Blockly OS brands and compact math/code symbols no longer inflate
+  the prose backlog. Counts are a snapshot; they do not establish the quality
+  or language of other values.
+- Placeholder inventories match English across all 246 locale paths. Fill now
+  rejects damaged token batches before writing. Both card-field visibility
+  keys are translated in 175 non-English paths; 59 paths still need them.
+  Catalog key order, all 321 translation/i18n suites and 21 human-preference
+  checks pass. Browser execution and the remaining translation work are open.
 - The 13 activity-notification preference keys have no empty or exact
   English-placeholder values in all 234 non-English locale paths and have left
   the pending queue. Provisional wording still needs language review.
@@ -415,1025 +124,6 @@ previously held for Transifex. Completed work is recorded in Upcoming.
   Browser scenarios for Finnish, Arabic and Japanese are syntax-checked but
   await Playwright and a running application. Continue the other pending keys
   and larger catalogs; this batch does not complete the all-language work.
-
-</details>
-
-<details>
-<summary>Active implementation checkpoint: Scrum, Sync and rule email recovery.</summary>
-
-A dated checkpoint, kept as history. Later passes in "Carried to a future
-release" above supersede its "unfinished" notes: the recovery notice,
-cross-document coordination through the journal, durable rule adapters and
-manual/cron activation are built; what is still open is listed there.
-
-Scrum History now persists private immutable completion receipts before
-checkpoint cleanup. The internal finalizer can reconcile an uncertain cleanup
-read from its original operation identity without repeating History writes,
-even after a restart or a successor checkpoint. Public Scrum undo/redo methods
-now accept optional caller-persisted request IDs, retaining the selected row
-and returning its original completion on retry. Empty and unsupported results
-remain stable too. Keyboard shortcuts now persist and retry request IDs; their
-visible recovery UI (which needs new translated text), non-Scrum replay and
-shared writer coordination remain unfinished.
-Validation for this increment is recorded in Upcoming.
-
-The preceding rule-email increment confirms independently verified SMTP
-acceptance offline, retaining an immutable operator decision before reconciling
-the exact receipt. It does not send or reset email. Sixty-three focused Node
-suites pass without skips, including the real MongoDB command-line workflow.
-The card-content email audit, linked-board discussion, link-placement metadata
-and timer ownership work already have Upcoming entries and regression evidence.
-
-Built on 2026-09-30 for [#2713](https://github.com/wekan/wekan/issues/2713)
-(see Upcoming): online operator resolution of partial or unknown SMTP
-acceptance, and review of legacy unbound commands and obsolete Details
-snapshots. The offline confirmation tool remains for independently verified
-acceptance by every recipient; keep all writers stopped while using it. What
-remains for #2713 is live SMTP interoperability with external providers,
-which needs real mail accounts.
-
-Scrum/Sync still needs cross-document coordination of cards, History, activities
-and effects; compound archive reservations; interrupted/deleted-record replay;
-remaining action/provider adapters; and safe manual/cron activation. Existing
-implementation and test checkpoints below remain authoritative. Other open
-non-translation categories remain in the queue; this checkpoint does not close
-those issues or treat external verification as complete. Translation into all
-languages remains outside the work queue.
-
-</details>
-
-<details>
-<summary>Snap login delay (#6701): confirmation pending.</summary>
-
-The report does not identify whether the snap uses MongoDB or FerretDB. The
-reported duplicate-insert oplog errors and delayed resumes were reproduced
-with FerretDB. [Cursor and oplog fixes](https://github.com/wekan/FerretDB/commit/aa58fe12)
-now pass race-checked regression tests and the LDAP session browser test with
-1,600 directory records. The same browser test passes on MongoDB 7.0.16 without
-an application login change. Confirm the affected snap's database and retest
-with the patched FerretDB build before closing [#6701](https://github.com/wekan/wekan/issues/6701).
-A cause specific to MongoDB or legacy data has not been established.
-
-</details>
-
-<details>
-<summary>Scrum and Sync resumed; remaining development handoff.</summary>
-
-A dated development log, kept as history: many of its "unfinished" notes were
-finished by later passes (durable Sync, startup replay, writer coordination,
-activation). The Scrum requirements it still lists as open are carried in
-"Remaining, and why" in "Carried to a future release" above.
-
-Scrum and Sync development resumed at the maintainer's request on 2026-09-27
-after the release pause, followed by the remaining non-translation work.
-Other implementation, translation and audit queues retain their checkpoints
-below. The original pause handoff recorded
-a clean working tree and local feature/fix commits; it made no remote writes
-or release/version changes. Current progress is recorded in Upcoming.
-
-**Scrum:** Product Backlog, Sprints, release/event editors, optional hidden
-metadata, team/calendar settings, commitment/result snapshots, Sprint Report
-and Velocity charts and Excel/PDF exports are implemented with focused tests.
-History supports revision checks, compound recovery checkpoints and undo/redo.
-Restoration retries now use stable per-author event IDs and verify immutable
-contents and integrity before accepting existing History rows. Restoration
-inserts now participate in persistent writer admission and, after explicit
-board migration, use the same coordinated head as ordinary edits. Concurrent
-retries retain the first persisted event, timestamp and predecessor. Failed
-confirmation preserves recovery evidence; closed admission and missing heads
-never trigger legacy fallback. Three Scrum History Node suites (18 cases) and
-five full-app cases pass, including eight retries alongside five ordinary
-edits. Restored-entity writes and undo/redo flags still require shared
-operation-level coordination. Pending redo now refuses a superseded source
-even when recovery reloads that already-invalidated row. Source identity,
-hash and invalidation state are rechecked before entity writes, restoration
-events and finalization. Twenty Node cases and eight Chromium cases pass,
-including a newer ordinary card edit during pending redo. The checkpoint
-remains for recovery; atomic coordination and resolution of superseded
-partial restores are unfinished. Legacy checkpoint operation IDs now use a
-conditional upgrade of the exact stored plan; concurrent workers adopt its
-first persisted ID instead of overwriting each other. Ownership checks and
-cleanup match the captured before/after values and revisions, so a replaced
-plan cannot authorize an old worker. Twenty-six Node/MongoDB cases and eight
-Chromium cases pass, including separate-client upgrades and legacy browser
-recovery. Already-applied content now also requires the exact expected
-revision: unchanged steps retain the original revision, updates advance once
-and recreated records start at one. Newer revisions with identical values
-retain the checkpoint instead of acknowledging stale recovery. Thirty-four
-Node/MongoDB cases and nine Chromium cases pass across all Scrum record types.
-Same-operation worker serialization and deletion/recreation ambiguity remain
-unfinished. Failed or damaged records retain the recovery checkpoint.
-Successful insert replies now require the same persisted-event verification;
-missing rows and failed confirmation reads keep recovery pending. Restored
-entity writes now require exact persisted values and revisions after each
-write, before timeline insertion and before finalization. False success
-replies, missing targets and failed readback retain the checkpoint. Thirty-six
-Node/MongoDB cases and a full-app false-acknowledgement/retry case pass.
-Batch verification is not a snapshot; atomic cross-document coordination
-remains unfinished. Conditional restoration writes now also match captured
-Scrum values, placement and card assignments, preserving unrelated title
-edits. Planning-record writes match all captured fields. Thirty-nine
-Node/MongoDB cases and the full-app raced-move case pass: a card moved after
-validation receives no old-board restoration, and its checkpoint remains.
-Cross-document permissions and writers outside revision tracking still need
-shared coordination. Resumption now preflights every saved target before
-advancing the first pending entity write. Mixed pending/applied batches are
-accepted, but an existing later conflict prevents additional partial writes.
-Forty Node/MongoDB cases and the full-app two-card conflict/retry case pass.
-The preflight remains a sequence of reads; same-operation serialization and
-atomicity are still unfinished.
-Finalization now verifies the source
-History row and persisted undo/redo state before deleting the exact operation's
-checkpoint. Retries preserve the original undo timestamp. Finalization now
-persists and verifies a private immutable receipt before deleting the exact
-checkpoint. False acknowledgements retain recovery evidence; a lost reply
-requires readback. The internal finalizer can use the original operation and
-receipt after an uncertain final read without touching a successor checkpoint
-or rewriting History. Public Scrum undo/redo now binds optional caller request
-IDs to the first stored selection before mutation. Retries use the original
-completion after uncertain cleanup and even after a later opposite operation.
-Changed/missing sources, lost original intent evidence and revoked access stop
-recovery. Empty stacks remain empty for that ID; non-Scrum selections are
-explicitly refused without mutation. Keyboard shortcuts now persist request
-IDs; recovery controls, non-Scrum replay, receipt retention and shared writer
-coordination remain unfinished. Ordinary writes
-and History remain non-atomic, and automatic startup replay is still pending.
-Native whole-board export/import and duplication remap planning records and
-snapshots, validate lifecycle/policy consistency, and report reduced data.
-Standalone copies preserve applicable metadata and drop foreign references;
-list categories survive new destination containers during moves.
-Daily observations now preserve the first measured state of each UTC day;
-the scoped reader reports unknown estimates, partial results and truncation.
-Sprint Report displays these observations as timestamped bars, with card-count
-and estimate metrics, gaps, unknown estimates and permission-scoped results.
-The daily section now exports the same scoped observations to Excel and PDF,
-including timestamps, estimate policies and partial/truncated-result notices.
-Native version 2 board transfer and duplication now preserve daily observations
-and remap their references; version 1 imports remain supported. Collectors skip
-unfinished imports. Recovery of interrupted multi-document imports remains
-unfinished, alongside broader History/undo transport.
-Imports now stage private per-document write plans with stable destination IDs
-and exact before/after values before applying Scrum changes. Conditional writes
-reject changed or moved targets. A board checkpoint covers preparation and
-marker cleanup, including imports with no sprint records. An offline maintenance
-command now validates and continues complete stored Scrum plans with all writers
-stopped. It uses non-expiring recovery claims and resumes interrupted cleanup.
-Normal imports now retain their checkpoint through private-plan removal too;
-cleanup failures remain guarded and can be continued with the same command.
-It can also undo interrupted Scrum plans in reverse order, with conditional
-target writes, durable progress and cleanup. Incomplete preparation can be
-discarded without destination writes. Online coordinated replay and partial
-plan reconstruction remain unfinished; the command does not recover the other
-native board-import stages or undo completed imports whose plans are gone.
-Marked incomplete imports also block Scrum edits, History writes and report
-exports, with a visible warning. This does not lock ordinary board/card edits
-or provide automatic import resume/rollback.
-Sprint start/close now use bounded projected queries and reject more than 10,000
-cards or lists before state/History writes. Done-list completion uses one lookup
-index per snapshot. Exact-limit inputs remain complete; overflows never become
-partial commitment/result snapshots. Lifecycle writes now preflight the BSON
-sizes of the sprint/rollover plan, compound History and recovery payload before
-mutating data, reserving room for journal/envelope fields. Large-board view
-pagination, separate storage for larger plans and concurrent snapshot
-consistency remain pending.
-Remaining: event-complete scope history and burndown,
-atomic original writes/History, the remaining large-board limits,
-complete cross-board move/reference/undo coordination, standalone
-planning-record mapping, existing-board scoped import and History transport.
-The design now records the implemented explicit Jira estimate-field mapping;
-automatic schema discovery remains pending.
-See the [Scrum design](docs/Features/Right-Sidebar/Board-Settings/Board-View/Scrum-Design.md).
-
-**External Scrum data and Sync:** Jira time totals, issue types, explicit status
-categories and explicitly selected numeric estimate fields now import/export
-through existing fields. Native copies retain the estimate mappings. Sync
-offers title/description/spent-time selection and controls for creating and
-archiving cards, with existing authorization and local-change checks. Jira
-estimates now sync into an explicitly selected, already mapped numeric custom
-field. The popup shows the source field and unit; mapping changes invalidate
-the old baseline. Zero, absent values and explicit null remain distinct.
-Local estimate edits use the existing conflict review, and conditional array
-writes preserve other custom fields and their order.
-Original and remaining Jira time estimates now have opt-in Sync switches. Each
-uses the unique imported numeric time field on the board, converting seconds
-to hours. Saved mapping identities are rechecked before writes; missing,
-ambiguous, changed or overlapping mappings stop the run. Zero, explicit null
-and absent values remain distinct, and simultaneous estimate changes retain
-unrelated custom fields. The popup reviews local/source conflicts. Twenty-five
-focused Node suites and twenty-two Chromium scenarios pass.
-Card mappings and credentials include provider/server/project identity.
-Source switches preserve old cards, require the new credential and reject
-unidentifiable legacy mappings. Save existing settings once to bind their
-legacy mappings and credential before resuming Sync.
-New card creation now uses stable list/source/issue IDs, preventing duplicate
-cards from concurrent creation attempts and preserving moved cards on retries.
-Creation conflicts stop the run and appear in the existing Sync popup.
-Scheduled/manual Sync and settings saves now share renewable per-list database
-reservations. Competing requests report busy; expired reservations can be
-reclaimed, and the previous owner stops at its next ownership check.
-Settings and an immutable private credential version now activate through one
-conditional list update. Interrupted saves retain the old or new pair; stale
-saves and delayed cleanup cannot replace a newer configuration's credential.
-An hourly sweep now retires bounded snapshots of unselected credential IDs.
-An opaque server-owned fence prevents delayed saves from activating retired
-tokens, including after damaged numeric counters are reset. Selected tokens
-and newer staging remain intact. Deleted-list credentials
-are now swept by exact identity. Each new list has a fresh lifetime identifier,
-so a recreated list cannot activate an old token or lose its new one to delayed
-cleanup. Malformed or exhausted counters are repaired by the sweep or an
-ordinary settings save. Unselected malformed versions are retired by identity;
-all writers must upgrade together.
-Scheduled Sync now runs as the account that saved the selected private
-credential version. Fresh account and full-list permission checks run before
-fetching and at guarded writes, and normal hooks receive that author. Existing
-configurations require one settings save to authorize scheduling; missing,
-disabled or no-longer-authorized accounts stop with a visible Sync error.
-This supplies attribution and access checks, not durable event completion.
-The Sync popup now compares conflicting title, description and spent-time
-values. Board writers can retain the local value or select the source value;
-fresh comparisons and conditional writes reject stale choices. Assigned-only
-writers review their assigned existing cards without running full-list Sync;
-their resolution writes also require the assignment to remain present.
-Duplicate mapping previews now identify extra cards and one consistently
-retained mapping. Extras can become local cards while keeping their content;
-changed mapping groups require a new review.
-Parents whose archival is blocked by active subcards can now remain local by
-removing only the parent Sync mapping. Previews omit subcard details and fresh
-source/parent checks reject stale choices; subcards remain untouched.
-Moved or detached cards can now be preserved while an unrestricted writer
-chooses a replacement in the watched list. Private conditional decisions retain
-the replacement ID across retries and restarts; previews expose only incoming
-source text and stale choices are rejected.
-Full-list writers can now preview saved Sync changes without applying them.
-The preview shares the actual write plan, lists bounded card summaries and
-counts normalized fields excluded by settings or lacking mappings. Ignored
-status-only changes no longer count as updates. Empty source baselines survive
-storage, so unchanged runs do not repeatedly update them.
-The preview now inventories fetched source paths before normalization: unmapped
-fields, excluded selections/items, unused fallbacks and representation changes.
-Unknown subtrees are reported as a whole, with bounded counts and no values.
-Full-list manual and scheduled runs now retain private outcome/coverage reports.
-The popup reads the latest 20 reports from the last 30 days with fresh full-list
-permission checks. Unfinished outcomes remain explicitly unknown; these
-reports do not resume or roll back partially applied writes. Instance admins
-can now inspect them in Problems/Recovery with status filters, literal board or
-list ID search, ten-row pagination and an explicit refresh. Administrator access
-is checked before and after reading; no collection is published.
-The private write-plan/checkpoint engine now has real MongoDB interruption
-coverage, including lost acknowledgements and interrupted cleanup. It is not
-yet connected to manual or scheduled Sync. Application adapters, private
-collection lifecycle, pause/cancel controls and restart scheduling remain open.
-The engine now persists mapped-estimate baselines and typed custom-field
-snapshots, permitting only explicitly mapped fields to change. Original and
-remaining Jira time estimates now survive the same persisted replay together
-with the primary estimate; overlapping target IDs are refused. Real MongoDB
-tests cover
-lost acknowledgements on update/clear, create and null/missing arrays, damaged
-mapping checksums and local-edit conflicts. This still uses a test adapter;
-production application/effect adapters remain unfinished.
-A shared mutation planner now prepares conditional field patches from saved
-steps without replacing unrelated card metadata. It compares the union of
-before/after fields and isolates expected-result predicates from driver
-mutation. Production Sync uses the same literal-value selector helper.
-MongoDB replay tests and twenty production Sync browser scenarios pass; durable
-History/activity completion still needs the production adapter.
-Cleanup now reads back plan and marker deletion before reporting success.
-Partial/zero deletes and uncertain reads retain or report incomplete outcomes;
-lost acknowledgements require verified absence, and successor operations remain
-untouched. Real MongoDB fault-injection tests cover these boundaries. The engine
-now requires stable caller-persisted intents and immutable private completion
-records before cleanup. A retry returns its original completion without building
-or applying card units, even after marker deletion, while newer jobs remain
-untouched. Production intent/storage retention and job lifecycle are still open.
-An internal card application adapter now performs conditional field writes and
-verifies their persisted results. Even when a retry finds the expected card,
-it requires a separate stable event acknowledgement before the journal advances.
-MongoDB tests cover interruption between card persistence and event completion,
-local edits, lost write replies, creation, archive and null-to-missing fields.
-The callback currently has a test receipt implementation; real History,
-activities, rules and notification delivery still need durable integration.
-The adapter is not enabled in manual or scheduled Sync yet.
-The internal History component now prepares fixed update/archive event batches
-and snapshots the redo rows a new edit supersedes. MongoDB tests interrupt
-between timeline rows and resume without duplicate events or invalidating rows
-undone later. Stable planning identities, predecessor verification and bounded
-plans are implemented. Production collection/job lifecycle, duplicate-hook
-suppression, creation effects and independent integrity-chain writers still
-require integration; activities and notifications
-are not acknowledged by this History component.
-Legacy redo rows without integrity hashes now retain exact typed snapshots
-inside private plans. Conditional invalidation and readback preserve their
-original missing/null/empty hashes and refuse changed contents or undo cycles.
-Interrupted replay handles hashed and legacy rows together; later undo rows
-remain untouched. This removes the legacy-row limitation from the internal
-History adapter, while production integration remains unfinished.
-History/effect plans now persist inside the same journal units as their card
-plans. Both are covered by one checksum and whole-plan validation before writes,
-then share recovery retention and verified cleanup. Missing, changed or
-oversized effects and attempts to resume without their validator are refused.
-The History validator also binds its rows to the exact card step and
-operation effect ID.
-The operation History planner now chains successive card batches through
-baseline-only steps and consumes captured redo candidates only at the first
-actual History change. Interrupted preparation resets the planner at index
-zero; persisted replay reuses the saved chain without replanning. Real MongoDB
-coverage spans three card units and interruption between History rows.
-Independent production History writers still need shared chain coordination.
-A durable append primitive now reserves one checksummed pending row per board
-through conditional head replacement. Another writer can finish an interrupted
-insert before reserving its successor, avoiding timestamp ties and lease-expiry
-forks. Six Node/MongoDB cases pass, including four independent clients and
-seventeen rows forming one chain. Verified bootstrap and ordinary writer
-binding are now implemented below. Redo coordination and multi-row Sync
-ownership remain unfinished.
-Existing-chain bootstrap now scans bounded batches, validates row hashes and
-ancestry, and refuses forks or missing predecessors before head insertion.
-Legacy unhashed rows remain untouched; cursor order and timestamps do not
-choose the head. Twelve append/bootstrap Node/MongoDB cases pass, including a
-300-row reversed-time chain and fresh-connection continuation. Participating
-writers now drain through the gate below; deployment-wide exclusion is still
-a caller responsibility. No automatic migration is enabled.
-Private History head storage now uses the real History schema. The internal
-append entry point validates complete defaults before reservation, preserves
-captured timestamps/whitespace and refuses missing or deleted heads. Twelve
-Node/MongoDB cases, one full-app case and two Chromium cases pass, including
-six concurrent schema-backed writes and denied browser access across all 18
-private recovery collections at that checkpoint. Ordinary writer switching
-and participating-writer exclusion now use the binding below; redo
-coordination remains unfinished.
-A persistent admission gate now drains participating legacy History writers
-before granting migration ownership. New writers are refused during draining;
-existing writers finish, and a verified head enables only the coordinated path.
-Failed writes retain their tokens without expiry. Eighteen Node/MongoDB cases
-pass, including separate clients across drain/bootstrap/append. Ordinary
-ChangeHistory.record now participates through private History writer gates.
-An explicit board migration drains registered writers, bootstraps the actual
-head and permanently switches ordinary appends to the coordinated path. The
-caller must exclude older servers and writers outside this path. Four full-app
-cases pass, including ten concurrent ordinary appends and refusal without
-legacy fallback after head deletion. Chromium checks all 19 private recovery
-collections for members/admins. Offline recovery now inspects admission gates
-and retires one exact uncertain writer token with all database writers stopped.
-It preserves other tokens, migration ownership and History rows, reconciles
-lost acknowledgements and refuses concurrent gate changes. Twenty-two focused
-Node/MongoDB cases pass, including the actual command in separate processes.
-The offline command can now migrate one board or the global History scope,
-using the same routine as the server and retaining its UUID across restart.
-Before the permanent switch, actual chain verification rejects stale heads,
-pending appends and forks without repairing or resetting stored evidence.
-Twenty-four Node/MongoDB cases and four full-app cases pass, including the
-actual command across drain, retirement, interrupted verification and resume.
-Online token recovery, missing-record replay, mixed-version rollout, redo
-coordination and multi-row Sync reservations remain unfinished; automatic
-migration stays disabled.
-Creation units now preserve the ordinary createCard activity payload in a
-bounded private plan with a stable ID and captured names/timestamps. Readback
-confirms insertion, but the journal cannot advance until a separate durable
-delivery callback acknowledges the same effect. History planning accepts
-creation without inventing field-edit events or consuming redo candidates.
-MongoDB tests cover interrupted delivery, lost insertion acknowledgements,
-plan corruption, replay and cleanup; Chromium verifies ordinary creation and
-the visible activity. Production feature flags, hook coordination, rule and
-notification delivery adapters remain unfinished.
-Update/archive activity plans now capture title and description edits, mapped
-custom-field changes and archive/restore events, preserving zero and clearing.
-Each event has a stable receipt identity and requires its own downstream
-acknowledgement. A combined MongoDB test resumes create/edit/archive units
-with their saved History and activity plans; completed events are not inserted
-again. Production hook coordination and durable delivery remain open.
-The shared effects coordinator now replaces test-only History/activity glue.
-It captures display metadata, validates both complete plans and their actor/time
-agreement before writes, checks adapters up front, then requires History and
-activity delivery completion. Mixed creation/update/archive MongoDB replay
-uses this module. Production activation and lifecycle remain unfinished.
-A shared activity delivery coordinator now requires the durable rules receipt,
-then exact notification and webhook plan receipts before returning the effect
-ID. It validates required adapters and list scope before effects, isolates saved
-inputs from adapter mutation, and checks ownership and captured policy around
-every stage. Disabled notifications still require rules. Replay revisits durable
-stage reconciliation instead of assuming earlier in-memory success. An internal
-binding uses actual stored notification/webhook entry points, live flags and
-now the stored rules stage by default. That stage installs the durable email
-adapter, mapping frozen invocation IDs to command indices. Empty/missing-action
-plans complete without action dispatch; unsupported pending actions fail
-preflight before email. Twenty-four Node/MongoDB cases and two full-app cases
-pass, including real SMTP through saved activity/rule delivery with watcher
-notifications disabled, exact aggregate receipts and refusal of unsupported
-sibling actions.
-Archive/unarchive preparation now captures the complete descendant cascade,
-with bounded post-order snapshots, one timestamp and a saved-plan checksum.
-Already satisfied roots preserve ordinary no-op behavior. Seven Node/MongoDB
-cases pass, including concurrent capture, restart, lost replies, malformed
-hierarchies and denied descendants. This helper writes no cards; production
-registration, conditional application and durable effects remain unfinished.
-The internal archive executor now applies conditional descendant-first writes
-with exact before/after predicates and separate durable per-card effects.
-Already changed cards still require their effect receipt before advancing;
-lost write/receipt replies reconcile by readback. Sixteen Node/MongoDB cases
-cover capture and execution, including interrupted child effects, restart,
-no-op roots, stale later cards, denied access and incomplete receipt prefixes.
-The bound Cards adapter now accepts only saved archive selectors/modifiers,
-runs under the captured actor and defers only its own archive/History hooks.
-Twelve Node cases and two full-app Meteor cases pass, including real schema
-writes, interrupted child effects and normal restore recording afterward.
-Saved History/activity plans now bind the complete archive cascade to its
-command checksum, preserving captured names/times and a cross-card hash chain.
-The execution wrapper preflights plans/adapters and rechecks live feature
-policy while reconciling History, activities and exact delivery receipts.
-All 24 archive Node/MongoDB cases pass, including fresh-connection continuation
-after child event insertion without duplicate rows. Production collection and
-delivery binding, shared History coordination and rule-stage activation remain
-pending; delivery callbacks are still controlled in these persistence tests.
-The archive activity adapter now restricts real Activities insertion to saved
-payloads under the captured actor, deferring ordinary delivery hooks. A full-app
-Meteor case combines real Cards, ChangeHistory and Activities, interrupts child
-delivery and resumes without duplicate rows; ordinary restore still records.
-All 25 archive Node/MongoDB cases pass. Production downstream delivery and
-shared History-writer coordination remain pending.
-Private archive command/effect/receipt collections now have recovery indexes,
-no TTL and denied browser writes. The real rule capture entry point validates
-current configuration, actor access and every saved descendant's parent/list
-identity, including on replay. Six capture unit cases, one full-app case and
-two Chromium cases pass; members/admins cannot write or read the 17 private
-Sync collections. Archive mutation activation and effect/delivery binding
-remain unfinished.
-The internal stored archive runner now binds private commands/effects/receipts
-to real Cards, History and Activities plus default saved-activity delivery.
-It requires an explicit board History reservation around the complete run;
-there is no fallback reservation. Twenty-six Node/MongoDB cases and one full-app
-case pass, including interrupted child delivery, exact replay receipts and
-refusal without History ownership. Ordinary History writers still need shared
-coordination before this runner is installed in manual/cron rule execution.
-Other action adapters, shared History-chain coordination, uncertain-send
-operator handling and manual/cron activation remain unfinished; ordinary
-executeRules is not substituted for durable rule replay.
-An internal rule-plan primitive now freezes ordered rule and action snapshots
-for a saved activity/effect, including duplicate matches, absent actions and
-empty selections. It binds actor, board/card identity and the activity hash;
-checksums and exact shape checks reject changed stored content. First-writer
-readback reconciles lost replies and concurrent builders without reselecting
-current rules. Preparation is bounded to 1,000 invocations and 14 MiB with
-incremental size checks. Thirteen Node/MongoDB cases pass, including six new
-selection/persistence cases. Production capture now uses the actual matching
-helper and raw action documents in a private registered collection. It checks
-the saved activity, live policy, actor access, assigned-only restrictions and
-current board/list/card scope around preparation and readback. A full-app test
-confirms real matching, frozen empty/nonempty selections and unchanged cards
-and activity counts; two Chromium cases deny member/admin browser writes and
-exposure for all eleven private recovery collections. Target/variable/date
-resolution, live action permissions, durable action execution and its receipts
-remain unfinished. Storing a rule plan does not complete a rule.
-Ordinary rule execution now waits for date, label and linked-card writes before
-running the next matched rule, and initial-date write failures propagate too.
-Forty controlled delayed-write/rejection cases cover twenty action paths and
-fail against the previous implementation; all 27 rule Node suites pass. This
-fixes Promise ownership only, not durable command receipts or restart replay.
-Rule email failures now propagate to callers too, preventing a scheduled slot
-from being marked successful after failed delivery or recipient lookup. Six
-controlled-adapter tests cover localized/fallback mail, retained card context,
-ordered execution and scanner isolation; all 28 rule Node suites pass. Actual
-SMTP delivery and durable rule-email replay remain unverified/unfinished.
-An internal rule execution coordinator now requires exact invocation receipts,
-validates all saved checkpoints and required adapters before effects, and
-records aggregate completion only after the ordered actions. Checkpoints bind
-the complete plan checksum; missing-action/empty selections retain explicit
-no-op receipts. Lost replies reconcile by readback, and missing predecessors
-or corrupted receipts stop replay. Fifteen Node/MongoDB cases pass, including
-a fresh-connection resume after interruption. The server entry point now binds
-actual saved selection and private indexed receipt storage to the same live
-activity, policy and access guard, including completed receipt reads. One
-full-app case verifies adapter rejection, persisted acknowledgement and replay;
-two Chromium cases deny member/admin access to twelve private collections.
-Command preparation, durable mutation adapters and manual/cron wiring remain
-unfinished; ordinary performAction cannot satisfy this adapter contract.
-Moving the source card also needs explicit before/after scope handling before
-a movement adapter can use the current guard.
-Localized email preparation now returns final transport fields separately from
-sending; ordinary mail uses the same preparation. Six new controlled tests
-cover language resolution, unchanged prepared content and propagated failures.
-A rule-email command must persist these fields and its explicit recipient;
-the existing user-grouped notification outbox resolves addresses later and
-cannot substitute directly. An internal command storage primitive now freezes
-prepared transport fields against the complete rule-plan checksum, invocation,
-activity hash and actor/board/card identity. Exact readback reconciles lost
-replies and concurrent builders; changed plans, corrupt content, malformed
-headers and oversized payloads are refused. Twenty-two Node/MongoDB cases pass,
-including seven command cases and fresh-connection reuse. The server entry point
-now prepares actual rule variables, recipient language and card-context footer
-through shared ordinary-mail code before storing in a private indexed command
-collection. Plain-text preparation omits absent HTML for BSON compatibility.
-Twenty focused cases, 28 rule Node suites, one full-app case and two Chromium
-cases pass; the browser denies member/admin access to thirteen collections.
-Dispatch, send-time recipient/configuration checks and operator recovery remain
-TODO. Persisting this command does not acknowledge sending or rule completion.
-An internal acceptance helper now derives intended recipients with Meteor's
-native MailComposer and requires all intended addresses to be accepted with
-no rejected or unexpected recipients. Five tests pass, including the actual
-composer with display names, quoted commas, groups and international domains.
-An internal dispatcher now persists and reads back a unique sending attempt
-before invoking its sender, verifies all-recipient acceptance and conditionally
-stores exact completion. Confirmed sent receipts skip replay; existing sending
-attempts remain uncertain and refuse automatic resend. Lost database replies
-reconcile through readback. Twenty Node/MongoDB/native-composer cases pass,
-including fresh-connection recovery; SMTP responses remain scripted. Production
-storage and sender binding now use a private indexed attempt collection and
-shared cancellable SMTP slots. Live guards compare rule/action snapshots and
-resolved recipient/sender, refuse disabled matching local accounts regardless
-of email case, and retain actor/policy/activity/scope checks. Twenty focused
-cases, one full-app binding case and two Chromium cases pass; fourteen private
-collections deny member/admin browser access. SMTP responses are controlled in
-the original app test. A second full-app case now uses real Meteor SMTP over
-loopback: accepted delivery persists without replay, connection loss after DATA
-retains uncertainty, and partial multi-recipient acceptance remains unfinished
-without another network send. Both full-app cases pass. External-provider
-interoperability, ambiguous-send operator handling and worker activation remain
-unfinished.
-An administrator-only report backend now exposes ten-row pages of attempt IDs,
-timestamps and sent/unconfirmed/invalid status, with literal ID search and page
-clamping. It reads no command payload or recipient address, rechecks admin
-access after reads and limits request rate. Four Node/MongoDB cases and one
-Chromium DDP case pass, including member denial, revocation during reads,
-private-field exclusion and pagination. The Admin Panel Recovery view now
-shows this report with ID search, status filters, refresh and pagination.
-A stale-callback unit test and two Chromium cases pass, including the actual
-rendered controls. Operator mutation controls remain unfinished; unconfirmed
-may include an in-flight attempt.
-Private operation, step and completion collections are now registered with
-server-only adapters, denied browser writes, recovery indexes and no TTL.
-The stored-operation entry point holds the list lease and requires fresh access
-checks plus exact board/list/incarnation/revision/source identity. Deleted,
-recreated, moved or reconfigured lists cannot consume old plans or receipts.
-Recovery evidence remains retained; legacy unversioned identities are refused.
-Fifteen Node suites and two Chromium DDP-denial cases pass. Manual/cron job
-activation, operator handling of stale scopes and retention remain pending.
-Stored operations now retain immutable private intent records binding each
-caller UUID to its original actor and versioned scope. Readback verifies
-registration after lost replies; replay checks the same identity throughout
-and forwards its actor to authorization, planning and application callbacks.
-Missing intent evidence cannot be reconstructed from an existing journal or
-completion under a new actor. Sixteen Node suites and both Chromium private
-storage tests pass. Job creation/UI, scheduling and retention remain open.
-Effect plans now capture explicit activity/notification policy. Disabled
-activities omit their plan and delivery callbacks while retaining History.
-Live policy is checked around effect persistence; changed settings stop the
-attempt without rewriting the saved policy. Notification policy reaches the
-required downstream adapter independently of activity/rule handling. Old
-version-one plans require the original enabled defaults. Sixteen Node suites
-pass, including MongoDB interrupted History with disabled activities. Wiring
-live flags into production job creation and delivery remains unfinished.
-The combined card/effects executor now validates the saved actor, complete
-plans, live policy and required adapters before card access. Policy/lease
-checks surround card application as well as History/activity completion.
-A post-write policy change retains the completed card mutation for replay,
-which finishes effects without writing the card again. Registered-storage
-MongoDB coverage now exercises intent, journal, card, activity and delivery
-receipt together. A bound internal card adapter now applies saved conditional
-mutations through the real Cards schema and business hooks under their actor.
-Only the owning async write defers planned History/activity recording; unrelated
-and later edits retain normal recording. Full-app Meteor coverage verifies
-schema defaults, conditional retries, archive/estimate edits, invalid-value
-rejection and ordinary recording after failure. Production activation still
-needs durable delivery and shared History coordination; manual/cron Sync
-does not invoke these adapters yet.
-The internal activity adapter now preserves validated saved timestamps and
-payloads through ordinary collection insertion. Its scoped hooks defer rules
-and notification/webhook delivery, while disabled activity recording still
-cancels insertion. Lost delivery resumes from the same stored event and still
-requires a separate receipt. Twenty Node suites and two full-app Meteor tests
-pass; durable downstream delivery and job activation remain unfinished.
-Notification dispatch now has an internal awaited path that waits for every
-started subscriber and propagates failures. Email/profile subscribers no longer
-hide persistence errors; the profile subscriber awaits its actual user-helper
-write instead of submitting its Promise as another database modifier. Eleven
-Node suites, three full-app Meteor tests and three Chromium notification cases
-pass. This confirms subscriber completion, not durable service receipts or SMTP
-delivery. Tray insertion now compares activity identity independently of the
-read flag and confirms storage by readback. Concurrent retries preserve a read
-notification and its timestamp instead of appending an unread duplicate. Real
-Meteor tests cover concurrent existing/new events and deleted users; twelve
-Node suites and three Chromium cases pass.
-New profile deliveries now atomically retain one private pending receipt beside
-the tray insertion, then move that evidence into a private receipt collection.
-Dismissal and automatic tray cleanup cannot erase delivery evidence. Revision
-checks reject delayed writes after another delivery has finished, and startup
-recovery completes retained markers without restoring dismissed rows. Both
-ordinary and awaited profile dispatch use this path. Fourteen Node suites with
-real MongoDB, four full-app Meteor tests and five Chromium scenarios pass;
-additional browser checks cover rename attempts against private marker fields.
-Receipts have no TTL. Retention and legacy already-dismissed events remain
-unresolved; old evidence cannot be reconstructed. Sync still needs frozen
-recipients, complete service orchestration, rule/action recovery and durable
-outgoing webhooks.
-Email rendering now has a shared preparation entry point that returns the
-complete job without enqueuing it. It captures caller parameters, recipient
-identity/language and one settings/template snapshot before rendering, so
-asynchronous work cannot combine changed inputs. The ordinary subscriber uses
-that result unchanged. Thirteen Node suites, five full-app Meteor tests and
-three Chromium SMTP cases pass.
-An internal notification-plan component now captures bounded recipient/service
-snapshots, binds them to the full saved activity hash and persists them with a
-checksum. Concurrent builders retain the first stored plan; replay cannot
-re-render content or choose new recipients. The executor rechecks access and
-requires exact tray receipts and email-enqueue identities. Seven Node suites
-pass with real MongoDB, including dismissal between stages, interrupted email
-enqueue, changed activity, plan corruption and competing preparations. This
-uses the actual tray/outbox storage components with supplied access guards.
-Production preparation now shares the ordinary activity hook's watcher,
-mention, mute, scoped-subscription and actor filtering. A shared tray-preference
-reader and the email preparer capture each selected user's service choices
-without dispatch. Planning follows the confirmed card mutation, checks its
-board/list context and refuses missing or moved cards. Twenty Node suites,
-six full-app Meteor tests and six Chromium/SMTP cases pass.
-Private notification-plan storage is now registered with recovery indexes,
-denied client writes and no TTL. A stored-stage entry point connects shared
-preparation to real tray receipts and email enqueue. It verifies the persisted
-activity and card/list scope, calls the operation's ownership/access guard,
-and checks captured global policy. Initial capture excludes recipients outside
-their current card-read scope. Replay retains the same audience while disabled
-accounts, revoked membership/assignment, changed subscriptions or disabled
-service preferences stop delivery. Nineteen Node suites, seven full-app Meteor
-tests (with a final expanded access rerun) and two Chromium DDP-denial cases
-pass. Interruption after tray acknowledgement preserves the original email
-content and does not restore a dismissed tray entry. Manual/cron Sync still
-does not invoke this stage. Plan retention, operator controls, saved Sync effect
-integration and durable rule/webhook completion remain unfinished. Enqueue
-acknowledgement does not mean SMTP, rules or webhook completion.
-Activity notification and webhook payloads now preserve zero, false, empty
-text and explicit null, while absent values remain omitted. This fixes lost
-zero estimates and unchecked custom-field values. SMTP and HTTP-serialization
-tests cover the values. Outgoing webhook preparation now returns a detached
-wire payload without HTTP, comment writes or echo locks. The ordinary method
-uses the same preparer. Parameters, endpoint/token and rendering language stay
-fixed across asynchronous language loading. Seven focused Node suites pass,
-including actual method execution with stubbed network/cache dependencies.
-An internal webhook-plan component now persists bounded integration/request
-snapshots with activity and configuration hashes. First-writer snapshots survive
-restarts without rebuilding targets or content. Immutable per-target receipts
-are read back after writes; replay skips confirmed deliveries and refuses
-corrupt evidence. Stable delivery IDs survive ambiguous HTTP acceptance or a
-failed receipt write. This is at-least-once delivery, not exactly once.
-Actual preparation shares ordinary board/global activity selection and rendered
-payloads, including suppressed targets and both webhook modes. Eight Node suites
-pass with real MongoDB; an expanded six-case storage suite and two full-app
-Meteor preparation cases pass again after the final changes. Network delivery
-is injected in these tests; no external HTTP or browser run was performed.
-A guarded HTTP adapter now stores exact successful responses before processing
-bidirectional reply effects. Replay reuses the stored response without another
-network request. It binds evidence to the full request/target/activity, checks
-live guards around each stage, confirms uncertain writes by readback and
-refuses corrupt or mismatched evidence. Production transport is fixed to
-fetchSafe with DNS/IP checks, redirects disabled, a 30-second total deadline
-and a 2 MiB response limit. Bidirectional effects still require a separate
-durable acknowledgement callback. Eleven Node suites pass with actual MongoDB;
-two full-app Meteor cases pass, including actual private-IP denial and stored
-response replay. Successful transport is scripted in tests; no external endpoint
-or browser was exercised.
-An internal comment-response stage now persists immutable before/text/time
-plans, including explicit no-action decisions. A conditional raw Mongo write
-records text, modification time and a bounded pending receipt atomically.
-Permanent revision fencing rejects delayed writes after receipt cleanup.
-Recovery transfers pending evidence to a durable receipt without restoring
-reply text over a later user edit. Changed/moved/deleted comments stop safely;
-no comments are recreated. Thirteen Node suites pass with MongoDB; the expanded
-eight-case storage suite also covers lost plan replies and concurrent builders.
-A combined HTTP/comment test resumes after a receipt-storage failure without
-another HTTP request or loss of the user's later text. This raw-driver stage
-is not active on production comments yet. Private marker fields are now defined
-in the schema, excluded by ordinary server reads (including publication cursors
-and JSON export reads), and rejected in DDP insert/update/rename/replacement
-attempts. Copies never inherit another comment's delivery evidence. Ordinary
-text edits preserve the stored markers. Eleven focused Node suites with MongoDB,
-two full-app Meteor cases and two Chromium member/admin cases pass; an expanded
-projection guard also passes. Denied private writes use the existing comment
-security summary in Problems. Five private webhook recovery collections are now
-registered for plans, delivery receipts, HTTP responses, comment plans and
-comment receipts, with replay indexes and no TTL. A guarded capture entry point
-uses the real activity/context and shared preparation code; it reuses the first
-stored snapshot after title, token or target-selection changes and rejects
-changed activities, moved cards, policy changes, lost ownership and corruption.
-Eight Node suites with MongoDB, three full-app Meteor cases and four Chromium
-cases pass. The browser checks deny 30 writes per member/admin account across
-all ten Sync recovery collections and verify that evidence stays private.
-The internal delivery entry point now connects private plans, guarded HTTP
-response replay and atomic comment receipts. Capture and replay require an
-active enabled actor with current write/card access; each target must still
-match its captured integration identity and complete configuration. Reply
-changes recheck the actual card/comment scope, comment capability and author/
-admin editing restrictions. Nine Node suites pass with MongoDB. Four full-app
-Meteor cases pass, and the expanded delivery case passes again with actual
-private-IP rejection. Production replay applies an accepted stored reply once
-and preserves a later human edit; revoked accounts/membership/assignments,
-changed tokens and restricted comment edits stop. Successful external HTTP was
-not exercised, and no new browser test was run for this internal entry point.
-Both ordinary and stored webhooks now have a 30-second total HTTP deadline
-covering DNS, connection and the complete response body. Deadline expiry closes
-active request/response streams; late DNS completion cannot start a connection.
-Optional redirect users share one budget across hops. Thirteen focused Node
-suites pass, including real local sockets held before headers or fed continuous
-body chunks; two Meteor cases pass. The expanded deadline suites pass again
-with late-response cleanup after transport failure. Existing LDAP/CAS group and
-SAML replay tests now name their Hall of Fame entries, restoring the coverage
-inventory check. Recovery startup, scheduled retries and retention/operator
-controls, along with activation in saved manual/cron Sync remain unfinished.
-Email notifications now use a private event/recipient outbox with persisted
-content and due times, automatic retry backoff and renewable recipient leases.
-Startup discovers pending work; legacy profile buffers migrate before removal.
-SMTP acceptance is verified before payloads are replaced with replay receipts.
-Deleted users, revoked board members and disabled email settings cancel sends.
-Nineteen focused Node suites, a separate actual app-startup recovery test and
-ten Chromium cases pass, including SMTP rejection/retry and blocked DDP writes.
-Delivery is at least once: an SMTP acknowledgement lost across a crash or lease
-expiry can duplicate mail. Problems → Recovery now provides recipient summaries
-and pause/resume/cancel controls, with persisted holds and cancellation cutoffs.
-Stable request receipts prevent late retries from overriding newer actions or
-cancelling later messages. Active sends refuse controls until the reservation
-is released. Reservation loss now closes the live SMTP connection, but cannot
-retract remote acceptance.
-Thirteen focused Node suites and thirteen Chromium scenarios pass, covering
-queue controls, recipient grouping, permissions, lost replies and delivery.
-Permanent SMTP failures now stop with safe reason categories. Temporary errors
-use positive jitter and at most twelve attempts per cycle. Attempts are stored
-before sending, so crashes cannot reset the budget. Recovery includes stopped
-counts and explicit retry. Repeated control requests cannot reset another
-cycle, and existing pauses remain in force. Fourteen focused Node suites and
-fourteen Chromium scenarios pass, including SMTP rejection and manual recovery.
-Email scans now select up to 100 distinct due recipients and run four workers
-per application process. A large backlog cannot hide other recipients behind
-the former 100-message selection limit. Overlapping scans share one pass.
-Nine focused Node suites and fourteen Chromium cases pass, including a slow
-SMTP recipient while another recipient completes delivery.
-SMTP DNS, connection and greeting waits default to 30 seconds, idle
-connections to two minutes, and the total send budget to two minutes.
-Validated environment variables configure the limits. Native MAIL_URL,
-native service settings without MAIL_URL, Admin Panel providers and
-certificate overrides all use cancellable per-message connections. Keep
-original message plugins, defaults, authentication and TLS requirements.
-HTTP/HTTPS CONNECT handshakes and tunneled SMTP share the deadline; late DNS
-or preparation cannot open a connection after expiry.
-
-Notification queue workers now share four delivery reservations across all
-processes using the same database. Reserve before recording an attempt, so
-full capacity leaves pending messages and retry budgets unchanged. Renew
-every 15 seconds; reclaim a crashed owner's slot after its 60-second expiry.
-A failed renewal, ownership loss or independent local expiry cancels that
-sender's SMTP connection, including when a database renewal hangs. Former
-owners cannot delete replacement reservations. Slots are private, deny
-member/admin DDP writes and contain no message content.
-
-Nine executed Node suites pass; the separate full-app-startup suite was
-skipped. Coverage includes separate worker processes, crash reclaim, hung
-renewal, replacement-owner safety, retry accounting and actual socket
-cancellation. Five full-app Meteor cases and sixteen Chromium
-delivery/recovery scenarios pass. Two phase-timeout browser cases require
-different settings and were skipped. The test SMTP sink now accepts expected
-connection resets from active cancellation while retaining all queue and
-deadline assertions.
-
-This is a bound on live notification-queue reservations, not a hard fence on
-an SMTP connection from a paused host. Keep application clocks synchronized.
-Direct email calls outside the queue are not counted, and remote acceptance
-remains at least once.
-
-Terminal email job and control-request metadata now has a configurable
-30-day retention period. Bounded background sweeps atomically replace old
-terminal rows with minimal permanent replay identities in the same private
-collections. Preserve pending/failed work, control holds and cancellation
-cutoffs; old event and command retries cannot recreate deliveries or cancel
-newer messages. Invalid identities or missing completion dates remain intact.
-The number of minimal receipts is not capped. Six focused Node suites, one
-full-app Meteor scheduler test and one Chromium Recovery replay/authorization
-scenario pass. Local MongoDB tests cover uncertain writes, changed states,
-keyset batches, concurrent sweeps and independent collection failures.
-Ordinary activity-to-notification recovery is implemented below; broader
-card/History/activity coordination remains unfinished.
-An internal write-ahead intent primitive now confirms immutable storage before
-allowing an activity insertion, reconciles uncertain replies and requires an
-exact activity snapshot on recovery. Only the creating call may insert a
-missing activity; later orphan retries cannot resurrect deleted records.
-Ordinary activity hooks now await private intent persistence before activity
-insertion, after final timestamps. Failed storage prevents the activity write.
-Scoped deferred Sync and disabled notifications skip ordinary capture.
-Asynchronous dispatch waits internally for every recipient's subscribers;
-only successful local writes compact the intent to a permanent receipt.
-Failures leave the activity snapshot pending. Bind the original dispatch
-actor, keep webhooks independent and deny member/admin DDP writes.
-Six MongoDB cases, three Node suites, three full-app Meteor cases and ten
-Chromium notification scenarios pass.
-Ordinary activity notifications now save private recipient/channel plans and
-rendered email payloads before delivering anything. Replays reuse the original
-content and language, verify exact tray/email receipts, and recheck current
-account, membership, mute/watch scope, assigned-only scope and preferences.
-Initial preparation excludes already ineligible services; later revocation
-stops replay without rewriting the saved audience. Bind each plan to the exact
-activity and dispatch actor, with checksum, recipient count and size limits.
-Ten MongoDB cases, three Node suites, three full-app Meteor cases and ten
-Chromium scenarios pass, including interruption between tray and email writes.
-Automatic recovery now scans up to 100 pending intent IDs per pass, one
-private payload at a time, after startup and every second. Configure the
-interval from one to sixty seconds. Local overlapping scans coalesce and
-keyset pagination advances past failed, busy and orphaned rows. Immediate
-and recovered delivery share a per-intent database reservation, renewed every
-15 seconds with 60-second crash reclaim. Ownership checks protect preparation,
-service writes and completion; old owners cannot remove successor leases.
-Recovery reuses saved plans or prepares a first plan from an unchanged stored
-activity. It never recreates missing activities or reruns rule/webhook hooks.
-Fourteen Node/MongoDB cases, three additional Node suites, four full-app Meteor
-cases and twelve Chromium scenarios pass, including scheduled SMTP recovery
-with and without an existing plan.
-Completed notification plans now compact immediately after matching intent
-acknowledgement. Keep a permanent unique plan ID, activity hash, checksum and
-version; remove recipient/channel data and rendered content. A bounded
-background sweep handles interruption between completion and compaction,
-using the same intent reservation and exact conditional replacement. Its
-60-second interval is configurable. Pending, orphaned, mismatched or damaged
-plans retain their payloads. Completion remains sufficient for cleanup after
-the original activity is deleted; the SMTP outbox keeps unsent mail separately.
-Twenty Node/MongoDB cases, three additional Node suites, four Meteor cases and
-thirteen Chromium scenarios pass, covering uncertain writes, stale writers,
-changed payloads, immediate compaction and scheduled cleanup. Operator
-resolution and unresolved-payload retention remain open. This recovers local
-tray/email enqueue, not the whole Sync effects lifecycle.
-Problems → Recovery now lists pending activity notification summaries with
-literal ID search, ten-row pages and status-specific retry availability.
-Enabled administrators can retry through the same reservation and permanent
-receipts as automatic delivery. Current admin access is checked inside the
-reservation and during delivery; missing activities are never recreated.
-Report responses omit saved activity content, recipients and rendered emails.
-Seven focused report/method cases, sixteen related Node/MongoDB cases, one
-full-app Meteor case and two Chromium scenarios pass. Pending-payload cleanup
-and broader recovery coordination remain unfinished.
-An internal pause/resume storage primitive now persists one versioned control
-row per intent under its delivery reservation. Requests carry the observed
-revision and a stable identity; old requests cannot undo newer decisions.
-Exact readback reconciles lost write replies, while false acknowledgements,
-malformed state, revoked access and non-pending intents fail. Six tests pass
-with real MongoDB, including concurrent requests and delayed stale writers.
-The control row is permanent to prevent revision reuse. Production delivery
-now reads a private control collection before preparation and local effects.
-Immediate ordinary dispatch, manual retry and background recovery all honor
-holds; the background scan skips held work without hiding later runnable rows.
-Malformed control state stops delivery. Twenty-three Node/MongoDB cases, one
-full-app Meteor case and one Chromium case pass. Browser coverage denies direct
-member/admin writes across all nine private notification collections.
-Recovery now exposes Pause delivery and Resume delivery to enabled admins.
-The report shows the stored hold and disables manual retry while paused.
-Requests use the displayed revision; conflicting or uncertain actions refresh
-rather than silently overriding a newer administrator decision. The method
-checks admin access before and inside the reservation and limits request rate.
-Twenty Node/MongoDB cases and three Chromium scenarios pass. A two-phase browser
-case pauses through the actual method, restarts the app on the same database,
-verifies the hold survives automatic scans, then resumes through the UI and
-observes automatic completion.
-Recovery now offers confirmed cancellation of remaining activity delivery,
-including orphaned notifications. A permanent terminal control row prevents
-both old and new Resume requests from reopening cancelled work. Repeating the
-same cancellation request is safe. Both delivery entry points refuse it, the
-scanner skips it, and the report keeps its cancelled status visible with
-controls disabled. Existing tray notifications and queued SMTP mail are not
-recalled. Twenty-three Node/MongoDB cases, one full-app Meteor case and three
-Chromium scenarios pass, including confirmation dismissal, denied access,
-terminal replay and orphan cancellation without activity recreation. Intent
-snapshots and rendered plans are compacted after cancellation as described
-below; broader card/History/activity recovery coordination remains open.
-An internal cancellation compactor now replaces rendered plans and intent
-snapshots with permanent terminal receipts. It confirms the plan receipt first,
-including inserting a tombstone when no plan was ever built, so delayed first
-writers cannot recreate payloads. Exact conditional writes, unchanged terminal
-control checks and readback handle interruption and uncertain acknowledgements.
-Orphans need no recreated activity. Twenty-five Node/MongoDB cases pass,
-including five new compaction cases.
-Production cancellation now invokes compaction after confirming the terminal
-control. The existing bounded recovery scan retries interrupted cleanup and
-stops scanning an intent once it has its compact cancelled state. Shared
-receipt validation makes ordinary capture/completion reject cancelled replays.
-Report queries include compact cancelled metadata, preserving literal ID
-search and visibility without reading original payloads; actions stay
-disabled. Twenty-eight Node/MongoDB cases, one full-app Meteor case and three
-Chromium scenarios pass, including recovery-pass cleanup, immediate UI
-cancellation, retained report rows, orphan cleanup, missing controls and
-prevention of capture/completion replay. Invalid or mismatched payloads remain
-for investigation. Pending and paused work is not automatically expired.
-Broader card/History/activity coordination and saved Sync effect activation
-remain unfinished.
-History field snapshots now preserve nested dates, including date-valued
-custom fields alongside mapped estimates. JSON transport and restoration retain
-Date types without interpreting date-looking text. Existing rows whose dates
-were already flattened into strings cannot be reconstructed safely.
-Current Sync write selectors now distinguish explicit null from missing fields.
-Adapter investigation also moved title/description activities after successful
-writes and made archive/entity/rule History hooks reject zero-match updates.
-Custom-field activities now compare saved values by field identity after
-successful array/dotted writes, including mapped Jira estimate Sync. No-op and
-failed writes emit nothing; advanced-filter rules use board-scoped definitions
-and observe the saved values. Browser regressions cover source conflicts,
-clearing, checkbox false and field removal. Durable effect delivery is pending.
-Crash recovery must still coordinate card changes with separate activity and
-History effects before a durable unit can be safely acknowledged.
-Remaining: external sprint histories without invented snapshots, multiple
-release assignments, epic relationships, automatic field/schema mapping,
-Trello and other Scrum adapters, complete provider schema/mapping coverage,
-binary/history transport, planning Sync, other providers' estimate Sync,
-durable custom-field activity/rule delivery,
-production mapped-field replay and restart checkpoints, fencing of in-flight
-writes after lease loss and atomic multi-card reconciliation.
-Changes during card writes remain nontransactional.
-See [Jira](docs/Features/ImportExport/Jira/Jira.md) and
-[Sync](docs/Features/ImportExport/Sync.md).
-
-**IFTTT Rules, Blocks, Workflows and History:** editable lazy-loaded Blocks,
-board-admin checks, responsive themed layouts and compound History are in
-place. DDP/REST edits, shared trigger/action records, deletion/restore and
-manual-button metadata have regression coverage. Advanced-filter comparisons
-now bind the field identity and value to the same array entry in both sidebar
-and rule queries; unknown field names cannot become value-only rule matches.
-Real MongoDB and Chromium cover multiple fields, missing fields and inequality.
-Grouped filters and whole-expression negation now use valid database selectors.
-Incomplete expressions are rejected before rule queries; sidebar fallback and
-left-to-right logical order are covered in Node, MongoDB and Chromium tests.
-Numeric conditions now retain decimal boundaries and reject partial numeric
-strings; currency-filter and rule regressions cover fractional values.
-History pagination now streams rows through bounded permission batches instead
-of fetching the complete scope into memory. Search, exact totals, contributors
-and final-page clamping retain their semantics; assigned-only checks fetch only
-card IDs in the batch. Scope scans and author counts still scale with history
-size, and concurrent writes/access changes do not form a consistent snapshot.
-Writes across documents are not transactional; concurrent-write recovery and
-failed-creation orphan cleanup
-still require work. The combined checkpoint passed 45 Node runner checks and
-18 Chromium scenarios; later Gujarati editing also passed. These are focused
-results, not certification of every language or concurrency scenario.
-See [Blocks](docs/Features/Automation/Rules/Blocks.md) and
-[History](docs/Features/Reports/History/History.md).
-
-**Charts, time tracking and requested UI changes:** the five flow-report pages
-and PDF/Excel exports reuse board data, dependencies and recorded History.
-Dependency changes, move reasons and author-attributed time adjustments have
-implementation/test records. The requested date/card popup positioning,
-swimlane option layout, Enter/multiline editors, themed buttons, responsive
-menus, language picker and board multiselection/duplication changes have local
-implementation and audit records. A complete requirement-by-requirement
-recheck across themes, RTL, widths and platforms remains unfinished; do not
-treat a focused pass as completion of every requested UI audit.
-See [flow analytics](docs/Features/Reports/Charts/Flow-Analytics.md),
-[time issues](docs/Features/Reports/Charts/Time-Issue-Audit.md),
-[editor audit](docs/DeveloperDocs/Editor-Enter-Audit.md),
-[popup audit](docs/DeveloperDocs/Popup-Layout-Audit.md) and
-[menu results](docs/Features/Menu-Audit-Results.md).
-
-**Issues and security:** the 2026-09-27 inventory triaged 140 open issues;
-triage is not implementation. Verified fixes and already-fixed closures have
-local commits, while unresolved requests retain their dispositions. Do not
-close umbrella requests or claim all open issues fixed. Authentication,
-assigned-only export and History authorization fixes and their verification
-are recorded in Upcoming; this is not a completed audit of every boundary.
-Card-copy override review confirmed and fixed CopyIdentityBleed: caller fields
-could replace the authorized source ID before private children were copied.
-Text-only overrides now preserve source identity, with unit/DDP/Chromium and
-Problems-summary coverage. See the
-[copy boundary audit](docs/Security/Card-Copy-Boundary-2026-09-29.md).
-Server card copies now validate destination list/swimlane ownership before
-sort reads, number allocation or copying children. DDP/REST reject foreign,
-missing and soft-deleted containers; board-wide lists remain valid. See the
-copy boundary audit for the nontransactional limit.
-Assigned-only source/descendant handling was reviewed on 2026-10-03: a copy
-carried subtasks the copier could not read, fixed in Upcoming (AssignedBleed);
-the card exporters already refuse assigned-only members, and rule email
-details check every subtask. Client-side template copy writes were reviewed
-the same day: they go through the Cards insert rules, which now also refuse
-another board's list or swimlane (Upcoming, BoardBleed). Legacy direct Rules
-writes were reviewed too: a rule could name another board's trigger and stop
-that board's own rule from running, fixed in Upcoming (RepointBleed).
-Concurrent permission changes were reviewed too: a copy checks the caller's
-access to the source, the destination and (since 2026-10-03) each subtask when
-it starts, and a membership revoked while the copy runs does not stop it. That
-is the "Atomicity" property below - FerretDB v1 has no multi-document
-transactions - not a check left out. Board-copy property merging was the same
-fault on boards and is fixed
-in Upcoming. The markdown viewer's form-field allowance was not exploitable: the
-second sanitizer stripped every input, including task-list checkboxes, which
-now render disabled.
-The [archived-card heatmap](https://github.com/wekan/wekan/issues/5444) is now
-implemented under Board View → Pulse, with unit and Chromium scope coverage.
-Unfinished inventory work still includes
-[additional database conformance runs](https://github.com/wekan/wekan/issues/6509).
-Live identity providers, affected deployment data and additional
-browser/backend matrices still require verification. The UI baseline failures
-were re-run on 2026-10-03 and none reproduces
-(docs/Features/Menu-Audit-Results.md).
-See the [issue inventory](docs/DeveloperDocs/All-Open-Issues-Audit-2026-09-27.md),
-[verified issue work](docs/DeveloperDocs/Open-Issue-Audit-2026-09-27.md) and
-[authentication audit](docs/Security/Authentication-Boundary-Audit-2026-09-27.md).
-
-**Release/mirroring and verification:** mirroring changes have local code,
-tests and [documentation](docs/DeveloperDocs/Forge-Mirroring.md). Actual remote
-mirroring, host-key acceptance, publishing and releases remain human operations.
-Latest focused application checks used local Meteor/MongoDB and Chromium;
-they do not establish full FerretDB, Firefox/WebKit, mobile or live-provider
-coverage. The earlier broad audit failures were re-run on 2026-10-03 and none
-reproduces (docs/Features/Menu-Audit-Results.md). No complete release build/test
-matrix was run for
-this pause. Older TODO Later entries below remain applicable and are not
-implicitly completed by this handoff. Translation status follows separately.
 
 </details>
 
@@ -1610,13 +300,9 @@ Directory domain, and a real SSPI handshake to build or verify at all; it also
 sits directly in the authentication path, where a wrong implementation done
 without that environment is a security risk rather than a convenience. The
 maintainer's own comment on the issue already flags Node 20 compatibility
-doubts and asks for a Windows/AD-experienced contributor),
-[#6744](https://github.com/wekan/wekan/issues/6744) (fixed with
-`LDAP_GROUP_FILTER_NESTED`, see Upcoming; the in-chain filter was checked to
-parse and encode correctly with ldapts 4.2.6, but a login through a nested group
-against a real Active Directory - the only directory with that matching rule -
-has not been run, as no AD server is available here). UCS (Univention App
-Center) and the Nextcloud ExApp take their settings from their own repositories,
+doubts and asks for a Windows/AD-experienced contributor).
+UCS (Univention App Center) and the Nextcloud ExApp take their settings from
+their own repositories,
 not this one: whether the login variables added on 2026-10-05 (the 14 missing
 ones, `LDAP_GROUP_FILTER_NESTED` and the `*_FILE` secrets) are offered there is
 not checked; with the Admin Panel overrides, those installs can set them in
@@ -1633,22 +319,6 @@ fixed; the separate HistoryIntegrity checksum mismatch needs the affected
 stored row and predecessor to reproduce. Do not regenerate hashes to hide it.
 See [investigation notes](docs/DeveloperDocs/LDAP-6692.md)).
 
-[#6509](https://github.com/wekan/wekan/issues/6509) — a request to TEST FerretDB
-v1 on MySQL, MariaDB and SAP HANA. MySQL and MariaDB are now confirmed: on
-2026-09-29 the conformance harness (`./build.sh` → Tests → All databases) ran
-its 110-case catalogue on SQLite, PostgreSQL 18, MySQL 9.7 and MariaDB 12.3
-and every case agreed, after a MySQL range fix it found (see Upcoming). **Only
-SAP HANA is untested**: its image is amd64-only and needs a licence acceptance
-and about 16 GB of memory, so it cannot run on the arm64 machine used here.
-
-[#6746](https://github.com/wekan/wekan/issues/6746) (a reinstalled snap never
-got FerretDB answering, and the restore saw "write: permission denied" on
-loopback. The reporter's kernel log shows the cause is on the host: AppArmor
-denies socket writes for every snap there, a known problem of snapd 2.77.1 on
-some kernels ([snapd bug 2169038](https://bugs.launchpad.net/snapd/+bug/2169038)).
-WeKan now names it at once (see Upcoming); waiting for the reporter to confirm
-that a kernel update or `sudo snap revert snapd` fixes it.)
-
 </details>
 
 <details>
@@ -1661,7 +331,8 @@ live check the previous entry asked for was done on 2026-09-29 against MySQL
 match the index on any of them, and the assumption that this was only a
 selectivity question was wrong for MySQL, whose `UNSIGNED INTEGER` JSON type
 made its range pushdown drop documents. Both are fixed and verified with
-EXPLAIN and the conformance catalogue. What remains is SAP HANA: its DocStore
+EXPLAIN and the conformance catalogue. What remains of
+[#6509](https://github.com/wekan/wekan/issues/6509) is SAP HANA: its DocStore
 index and range pushdown need a live HANA, which needs an amd64 machine, a
 licence and about 16 GB of memory.
 
@@ -1670,54 +341,9 @@ licence and about 16 GB of memory.
 <details>
 <summary>Feature requests / behaviour-by-design rather than bugs.</summary>
 
-Fixed in Upcoming and removed from this list:
-[#5323](https://github.com/wekan/wekan/issues/5323),
-[#4278](https://github.com/wekan/wekan/issues/4278),
-[#4294](https://github.com/wekan/wekan/issues/4294),
-[#2953](https://github.com/wekan/wekan/issues/2953),
-[#572](https://github.com/wekan/wekan/issues/572) and
-[#3195](https://github.com/wekan/wekan/issues/3195). The #4790 split is prepared
-and waits for the maintainer to file it (see "Waiting on the maintainer" above).
+The #4790 split is prepared and waits for the maintainer to file it (see
+"Waiting on the maintainer" above).
 
-[#2713](https://github.com/wekan/wekan/issues/2713) (email rules now offer
-optional live-card attachments, with source-access rechecks and verified
-filesystem/GridFS SMTP delivery. The original request also asks for all card
-content: live checklists and public comments now have an independent opt-in
-mail action choice with SMTP coverage. Details now includes dates, placement,
-labels/people, custom-field display values, notes and authorized relationships.
-Ordinary email rules now resolve live linked-card content across all selected
-sections and linked-board display fields with source-access rechecks. Stored
-Sync commands now persist and verify their source chain before dispatch;
-legacy unbound commands are reviewed in Recovery (2026-09-30). Details also
-includes persisted Flowtime/Pomodoro sessions and recurrence fields. Voting
-counts, public voter names and completed Poker results now follow disclosure
-settings, including persisted checks for stored commands. Linked-board voting
-now uses current target results and both boards' visibility settings. The six
-visible Scrum card fields are included with same-board name resolution and
-persisted visibility checks. The
-[content audit](docs/DeveloperDocs/Card-Email-Content-Audit.md) now tracks
-all 71 top-level card fields. Target-board discussion now checks each owner
-card and retains source evidence. Offline full-acceptance confirmation is now
-implemented, and online resolution is built (2026-09-30).
-Target archive/time state and active
-member names are now included, along with local recurrence. Linked-board
-wrapper content now uses local field and related-source policies. Local
-archive state and lifecycle timestamps now complete the placement audit.
-Timer session reads and writes now agree;
-completed work uses the current source total. Local placement,
-timers and visible Scrum now have a separate linked-card section. Moved-card
-SMTP now
-passes with all three content choices for filesystem and GridFS. Canonical
-and legacy Gantt references now share readable target titles with distinct
-type labels.
-Attachment manifests now identify the cover, upload metadata and actual sizes.
-Creator,
-stickers, checklist schedules, public comment authors and scoped reaction
-summaries are now included. Stored Details now binds related-source chains,
-admin access and custom-field definition fingerprints; older Details snapshots
-are reviewed in Recovery (2026-09-30). Converted checklist subtasks now use
-readable live titles and persisted reference evidence, including without
-Details),
 [#2698](https://github.com/wekan/wekan/issues/2698) (GitLab integration: one-way
 List Sync from GitLab issues existed, and on 2026-09-30 the GitLab importer and
 Sync source reached the format contract - assignees, dates, milestone,
@@ -1744,9 +370,13 @@ hangs.
 <details>
 <summary>Needs a maintainer decision on the intended contract (partly already works).</summary>
 
-Durable rule moves out of the card's list were decided on 2026-10-02 (the
-guard follows only a move the same rule plan saved) and are built, to other
-boards too (see Upcoming); they are no longer waiting here.
+The coordinated History chain (server/lib/storedHistoryChain.js) is switched
+on per board only by the offline releases/recover-history-writer.cjs, with
+every writer stopped. Switching it on online needs proof that no older server
+still writes History the legacy way, and a server older than the writer
+heartbeat cannot be seen at all - so the choice is between keeping the
+offline step, or requiring all servers to run a heartbeat-capable version
+before an online switch may assume it.
 
 [#2460](https://github.com/wekan/wekan/issues/2460) (SQRL login - the
 report is a single comment-free link to https://www.grc.com/sqrl from 2019.
@@ -1762,79 +392,28 @@ security-critical work that should not be freshly written without extensive
 review. SQRL's real-world adoption peaked around 2013-2016 and has not grown
 since this issue was filed; WebAuthn/FIDO2 passkeys are the passwordless
 standard that gained the adoption SQRL did not. Decided on 2026-10-03: kept
-open as it is, with no implementation attempted.),
-
-[#2713](https://github.com/wekan/wekan/issues/2713) (the attachment send path
-now works: a native form checkbox enables authorized live-card file reads,
-immutable byte snapshots and mailer propagation. Filesystem and GridFS delivery
-pass local SMTP tests; live cloud-account validation remains unperformed.
-The bounded snapshot and durable-command checks remain in place. Checklists
-and public comments can now be included independently, with private webhook
-state excluded. Details now covers ordinary card metadata, custom fields,
-notes and authorized relationships. Ordinary rules now send authorized live
-linked-source content. Stored Sync commands now persist and revalidate their
-source chain; legacy unbound-command recovery remains pending. Specialized
-Timer and recurrence snapshots now have Details and SMTP coverage. Card voting
-and completed Poker results also have disclosure checks and SMTP coverage;
-Linked-board voting now follows target policy with stored checks. Visible
-Scrum card metadata now has same-board reference and SMTP coverage. Final
-[content audit](docs/DeveloperDocs/Card-Email-Content-Audit.md) records concrete
-the 71-field inventory. Target-board discussion now uses per-card access and
-stored source evidence. Target archive/time state, active member names and local
-recurrence are now included. Linked-board wrapper content now uses local
-field and related-source policies. Local archive/lifecycle fields complete
-the placement audit. Timer reads and writes
-now agree, and
-completed work uses the current source total. Local placement,
-timers and visible Scrum now have a separate section. Moved-card SMTP passes
-for filesystem and
-GridFS with all three choices. Offline full-acceptance confirmation is now
-implemented; legacy commands and partial/unknown acceptance still need recovery.
-Creator/stickers and checklist/comment metadata gaps are now fixed.
-Canonical and legacy Gantt targets now use grouped, authorized titles.).
+open as it is, with no implementation attempted.).
 
 </details>
 
 <details>
-<summary>Deferred pending a security decision.</summary>
+<summary>Import/export: attachment contents, Zenkit, and formats not read yet.</summary>
 
-Both items that waited here were decided on 2026-09-29 and are built in
-Upcoming: custom URL schemes ([#3218](https://github.com/wekan/wekan/issues/3218))
-link only when an administrator lists them, and fenced code blocks are coloured
-by highlight.js with a tight class allowlist inside `pre` only. Nothing is
-waiting on a security decision now.
+docs/Features/ImportExport/Format-Coverage.md is the contract every format is
+held to, and every importer and exporter now meets it, with a loss report in
+Problems → Recovery and on the import page. Left open:
 
-</details>
+- Attachment CONTENTS from the JSON sources (Jira, Deck, OpenProject, Asana,
+  Zenkit, GitHub/GitLab): their exports carry attachment metadata only, so the
+  bytes need live API connectors with credentials.
+- Zenkit's native single-file export is unverified: Zenkit publishes no schema.
+- Formats WeKan does not read or write yet. Todoist, OPML and Org mode were
+  added on 2026-10-08; candidates not researched yet are Vikunja, Planka,
+  Taiga, Microsoft Planner and Notion. Each costs what todo.txt cost - a
+  parser, a formatter, tests, the picker and menu wiring and one instruction
+  string in English pending Transifex - and is taken one at a time.
 
-<details>
-<summary>Import/export: more formats, and the six existing ones brought up to full field fidelity.</summary>
-
-docs/Features/ImportExport/Format-Coverage.md is the design contract for every
-import/export format. Trello, the canonical WeKan zip, CSV/TSV, XLSX and PDF/
-HTML/SVG already meet it, each with real code and tests. GitHub/Gitea/Forgejo
-was brought up to it earlier (second assignee, milestone, state reason,
-comments, an `unsupported` loss report). The Jira, Kanboard, Nextcloud Deck,
-OpenProject, Asana and Zenkit IMPORT adapters now have their own fixture/spec
-passes (see Upcoming): comments, subtasks/hierarchy, dependencies, custom
-fields, dates, members and a loss report recorded in Problems → Recovery.
-The import page now shows the loss report itself (see Upcoming). Still open
-for them: (2) file CONTENTS - these JSON sources carry
-attachment metadata only, so bytes need live API connectors with credentials;
-(3) OpenProject watchers and Asana followers now become card watchers for
-board members (2026-09-30); Deck sharing rules have no
-safe mapping (an import never grants access); (4) Zenkit's native
-single-file export is unverified because Zenkit publishes no schema. The
-EXPORT formatters now carry what each importer reads (see Upcoming).
-
-Additional formats not yet researched or built: whatever other kanban/outline
-tools use for import/export that WeKan does not read or write yet (the Leo
-`.leo` outline is done, todo.txt was added on 2026-09-30, Taskwarrior and
-Focalboard on 2026-10-02, see Upcoming).
-Each new format costs roughly what todo.txt cost: a parser, a formatter,
-tests, the import picker and export menu wiring, and one instruction string,
-added in English and marked pending Transifex (the maintainer's 2026-09-29
-decision). Take them one at a time, following the todo.txt commit as the
-template.
+Deck sharing rules are not imported by design: an import never grants access.
 
 </details>
 
@@ -1853,45 +432,1579 @@ tests ran in Chromium and WebKit; Firefox cannot launch on the macOS machine
 used.
 
 </details>
+</details>
+
+# v12.24 2026-10-08 WeKan ® release
+
+**In short:** The login settings left open in October are finished:
+**header login** is environment-only, **automatic logout** works again,
+**LDAP** gets an honest Test connection and Sync now, and **secrets from
+files** cover database, mail and S3. Boards import and export as **Todoist**,
+**OPML** and **Org mode**, **rules** can set assignees, **webhooks** name the
+people they are about, and **OAuth providers** can be limited to email
+domains. **Scrum** planning syncs from Jira and GitLab and imports into an
+existing board, and an **interrupted import** can be kept or discarded.
+Seventeen long-open requests were closed as already implemented.
+
+This release adds the following new features:
+
+**Import and export** - three more formats, each a round trip with a loss
+report for what the other tool has no place for.
 
 <details>
-<summary>Login settings and secrets: what the 2026-10-05 Admin Panel work left open.</summary>
+<summary><a href="https://github.com/wekan/wekan/commit/ee0806b4c0">Translate Manx release and stuck Sync recovery messages</a>. Thanks to xet7.</summary>
 
-Every login environment variable is overridable in Admin Panel / People, and
-the LDAP and OAuth2 passwords can come from files (see Upcoming). Left open,
-each for the reason given:
-
-- [#5724](https://github.com/wekan/wekan/issues/5724) (closed, but only partly
-  done): `MAIL_SERVICE_PASSWORD_FILE`, `MONGO_PASSWORD_FILE` and
-  `S3_SECRET_FILE` are listed on every platform and still read by nothing;
-  `secrets/README.md` says so. Not login settings, and each needs a design
-  choice: Meteor connects with `MONGO_URL` before any application code runs, so
-  a Mongo password from a file could only be put into `MONGO_URL` by the
-  launcher - into the environment, which is what the file was meant to avoid;
-  `MAIL_SERVICE_PASSWORD` itself is read by nothing either (mail is configured
-  by `MAIL_URL` or the Admin Panel mail settings), and S3 reads
-  `S3_SECRET_KEY`, not `S3_SECRET`.
-- LDAP **Test connection** answers success without having connected when no
-  service account (`LDAP_AUTHENTIFICATION`) is set: it binds only with that
-  account, and ldapts opens the socket lazily. Checked on 2026-10-05 with an
-  unresolvable host. Needs a decision on what a test without credentials does -
-  an anonymous base search of `LDAP_BASEDN`, or saying that nothing was tested -
-  and a directory to verify it against.
-- `LOGOUT_WITH_TIMER`, `LOGOUT_IN`, `LOGOUT_ON_HOURS` and `LOGOUT_ON_MINUTES`
-  are offered by the snap and the start scripts, but no code reads them, so
-  they do nothing. Implement them or remove them from the platforms - a
-  maintainer decision.
-- Header login can now be switched on from Admin Panel / People by a site
-  administrator. It still fails closed without `HEADER_LOGIN_TRUSTED_IPS`, but
-  an administrator who sets both can let a proxy sign in as anyone. Whether
-  header login should stay environment-only is a maintainer decision.
-- `ldap_sync_now` (`packages/wekan-ldap/server/syncUser.js`) is never loaded and
-  nothing calls it. Its synchronous `Meteor.user()` was made async on
-  2026-10-05 so the whole-tree test holds; wire it to a "Sync now" button or
-  remove it.
+- Translate 25 pending messages, preserving release selection, applied/total
+  counters, discard consequences and oldest-first limits. Manx now has no
+  reported placeholders; older language defects still require review.
+- Three relevant suites pass. Complete wording remains low-confidence pending
+  fluent review. Browser and screen-reader sessions were not run.
 
 </details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8378a4c706">Translate remaining reported Manx controls and guidance</a>. Thanks to xet7.</summary>
+
+- Translate 47 messages, preserving import syntax, environment names, report
+  limits and named variables. The ordinary Manx backlog is cleared; 25 newly
+  added pending messages and older language quality remain under review.
+- Four relevant suites pass. Complete grammar remains low-confidence pending
+  fluent review. Browser and screen-reader sessions were not run.
+
 </details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/30013762c3">Translate Manx Sync conflicts and diagnostic reports</a>. Thanks to xet7.</summary>
+
+- Translate 63 messages while preserving source/local distinctions, missing/null
+  behavior, retention limits and reports that cannot resume or undo changes.
+- Three relevant suites pass. Sync terminology and full grammar remain
+  low-confidence pending fluent review. Browser and screen-reader sessions
+  were not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0691f5589d">Translate Manx notification delivery and recovery messages</a>. Thanks to xet7.</summary>
+
+- Translate 36 messages while preserving temporary/permanent rejection,
+  missing/changed activities, pause/cancel distinctions and non-recall warnings.
+- Three relevant suites pass. Delivery terminology and full grammar remain
+  low-confidence pending fluent review. Browser and screen-reader sessions
+  were not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e54ad20004">Translate Manx Scrum planning labels and states</a>. Thanks to xet7.</summary>
+
+- Translate 71 planning, estimate, event, state and report labels/messages.
+  Preserve named variables, time units and distinct completion/cancellation
+  states. Extend the Manx suite to use the shared placeholder scanner.
+- Three relevant suites pass. Scrum terminology and grammar remain
+  low-confidence
+  pending fluent review. Browser and screen-reader sessions were not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c1d3de6691">Restore Asana and OpenProject import literals</a>. Thanks to xet7.</summary>
+
+- Repair 16 messages in 11 locale files, restoring the data property and API
+  endpoints. Extend catalog-wide literal checks to ten import formats while
+  accepting valid grammatical affixes around filenames and commands.
+- Three relevant suites and 21 human-preference checks pass. Mixed-language
+  prose and untranslated messages remain under review. Browser sessions were
+  not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/416aedc706">Restore import example identifiers across locales</a>. Thanks to xet7.</summary>
+
+- Repair 73 Kanboard, Deck, ZenKit and Jira import messages in 25 locale files.
+  Restore case-sensitive field names and API paths, preserving surrounding
+  prose and valid quotation styles. Test these literals across every locale.
+- All 322 translation/i18n suites pass, including positive and negative checks
+  for localized typography and damaged identifiers. Other import formats and
+  mixed-language prose remain under review. Browser sessions were not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e33df4be4c">Repair Bislama import instructions and literal examples</a>. Thanks to xet7.</summary>
+
+- Correct 13 mixed-language import instructions and translate OPML and Org mode
+  help. Restore JSON field names and the Jira endpoint while preserving format
+  syntax, menu actions and interpolation variables.
+- Three relevant suites pass. A broader literal scan found 103 candidate entries
+  in 45 locale files; some are valid quotation variants, others need repair.
+  Full prose remains provisional; browser sessions were not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3c082ec6e5">Replace remaining Bislama artificial English wrappers</a>. Thanks to xet7.</summary>
+
+- Correct 236 storage, migration, backup and report values. Preserve provider
+  identifiers, time units, simulation limits, uncertainty and counting rules.
+  The explicit “Tok blong sistem:” queue is empty; other mixed-language text
+  and damaged technical examples still require review.
+- Three relevant suites pass, including the catalog-wide token inventory.
+  Statistical terminology and complete technical prose remain low-confidence.
+  Browser and screen-reader sessions were not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d332e18edb">Correct Bislama search syntax and report translations</a>. Thanks to xet7.</summary>
+
+- Correct 76 artificial English wrappers and 12 search labels/messages.
+  Use valid one-word query operators, preserve portable abbreviations and
+  verify quoted values, missing fields and invalid input with the real parser.
+  The remaining wrapper queue contains 236 values.
+- Four relevant suites pass, including catalog-wide placeholders and parser
+  execution. Technical compounds remain provisional pending fluent review.
+  Browser and screen-reader sessions were not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1eabb367e7">Boards import and export as Todoist project templates (CSV)</a>. Thanks to xet7.</summary>
+
+Sections become lists, tasks cards, indented sub-tasks a checklist and notes
+comments. `@label` words and priorities p1-p3 become labels, RESPONSIBLE the
+owner, and DATE and DEADLINE the start and due dates. Recurring dates in
+words, durations and orphan rows are reported. Export writes Todoist's own
+columns and `view_style=board` row. `tests/todoistCsv.test.cjs` covers quoted
+fields, the round trip and the negatives; a Playwright case imports through
+the page.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e6c8f85518">Boards import and export as OPML outlines from Workflowy, Dynalist, Logseq and others</a>. Thanks to xet7.</summary>
+
+Top-level outlines become lists, their children cards with `_note` as the
+description, and deeper outlines checklists; a completed item is marked done.
+Like the Leo outline the XML is parsed on the server only, never resolving
+DTDs or external entities. `tests/opmlOutline.test.cjs` includes an external
+entity and a node bomb among its negatives; a Playwright case imports through
+the page.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/711303af32">Boards import and export as Org mode outlines</a>. Thanks to xet7.</summary>
+
+Level-1 headings become lists and level-2 headings cards, keeping TODO
+keywords (including custom `#+TODO` ones), priorities, tags, SCHEDULED,
+DEADLINE and CLOSED, and turning checkboxes and deeper headings into
+checklists. Timestamps have no zone in Org and are read as UTC; repeaters are
+reported. `tests/orgMode.test.cjs` covers custom keywords, localized day names
+and the round trip; a Playwright case imports through the page.
+
+</details>
+
+**Rules** - the two parts of making rules less clunky that were still open.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f735eba194">A rule can set and clear assignees, and needs no title</a>. Thanks to xeruf and xet7.</summary>
+
+Add and Remove assignee actions take a username, a `{creator}` style token,
+the user who triggered the rule, or every assignee, and are durable through
+Sync like the member actions - so a new card can be assigned to its creator,
+as [#4294](https://github.com/wekan/wekan/issues/4294) asked. A rule added
+without a title is named after its trigger and action and renamed in place.
+This also fixed "Remove all members from the card", which iterated the
+assignees while removing members, so it removed only people who were both;
+its guards now read `models/cards.js` instead of assuming the field. A
+Playwright case creates an untitled rule and a card that gets its creator as
+assignee.
+
+</details>
+
+- [A rule can fire when a card moves forward to a later list or back to an earlier one](https://github.com/wekan/wekan/commit/eac524380f). Thanks to rlach and xet7.
+
+**Scrum** - planning a card across releases, and bringing planning in from
+elsewhere.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/958e9e13f3">GitLab, OpenProject and Asana imports bring their sprints and releases</a>. Thanks to xet7.</summary>
+
+Only Jira imports created Scrum planning. GitLab iterations and milestones,
+OpenProject versions and sprints, and Asana milestone tasks now become sprints
+and releases with their dates and state, through the same journaled stage as
+Jira, so an interrupted import is recovered the same way; OpenProject story
+points become the estimate field. Trello has none, and its Power-Up data is
+counted in the loss report. What an export cannot prove - a finished sprint,
+a bad date, an unknown state - is reported, never invented. GitLab and
+OpenProject exports write the planning back.
+`tests/externalScrumPlanning.test.cjs`
+covers each source and the negatives.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/727ceedd01">A card can be in more than one release</a>. Thanks to xet7.</summary>
+
+A card had one release, so Jira import kept only an issue's first fix version
+and Jira export wrote none. Releases are now a list, with the old single
+field kept as its first entry so older readers still see one; existing cards
+are read the same way and move to the list on their next Scrum save. Every
+release must belong to the board. Copies and moves link each release by name,
+the native transfer and Jira import and export carry them all, Board View /
+Sprints shows each release's cards and progress, and the Product Backlog and
+card details pick several. `tests/scrumMultipleReleases.test.cjs` fails if any
+code reads the single field directly.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c06bf8d0e9">List Sync brings an issue's sprint and releases into Scrum planning</a>. Thanks to xet7.</summary>
+
+While Scrum is enabled on the board, List Sync from Jira or GitLab carries an
+issue's sprint and fix versions or milestones into the card's planning. A
+missing sprint or release is created with the source's dates; an existing one
+is matched by its source ID, then by name. A local planning change stays until
+the source changes that issue's planning, and a first Sync never removes
+planning. The writes go through the durable Sync journal.
+`tests/listSyncPlanning.test.cjs` covers matching, creation and the
+negatives; a Meteor test and a Playwright spec drive it end to end. It has not
+been verified against live Jira or GitLab.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ef54907836">Scrum planning can be imported into a board that already exists</a>. Thanks to xet7.</summary>
+
+Every Scrum import created a new board. A board administrator can now import
+a wekan-scrum-2 transfer or a WeKan board export into the current board from
+the Sprints view, with a Preview that writes nothing. Sprints and releases are
+matched by ID, then provenance, then a name unique on both sides, and the rest
+are created once, so a second import of the same file changes nothing. Cards
+are only matched, never created; unmatched, ambiguous and other boards' cards
+are reported. The writes use the journaled Scrum import stage and are one
+Scrum History change. `tests/scrumTransferMerge.test.cjs` covers it.
+
+</details>
+
+**Sync and recovery** - what an administrator can do about a stuck Sync.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e8fac5e85c">An interrupted board import can be kept or discarded in Recovery</a>. Thanks to xet7.</summary>
+
+An import that stopped halfway left a partial board nothing recorded. Every
+board import, copy, Trello zip and Trello API import now records its run,
+with the new board's id, before the first write, and the board carries the
+run's id. A heartbeat keeps the run alive; a scan flags a stopped or failed
+run once in Admin Panel → Problems → Recovery, where an administrator keeps
+the partial board or discards it. Discard removes only the board stamped with
+that run, through the board's own removal, and is refused while its Scrum
+stage is busy. Resume is deliberately not offered, because the source file is
+not kept: import it again. `tests/importRuns.test.cjs` covers both decisions
+and the refusals.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/cb69750b17">A List Sync operation that can never be replayed can be discarded in Recovery</a>. Thanks to xet7.</summary>
+
+When a list was removed, recreated or reconfigured, or its actor lost write
+access, its saved Sync operation failed every minute with a console line and
+blocked that list's Sync. It is now marked once in Admin Panel → Problems →
+Recovery, a blocked manual Sync says why, and an administrator can discard it
+while the replay checks still fail. The discard holds the list's Sync lease,
+records one decision and writes no card; a retry or a second administrator
+only finishes it. `tests/listSyncStuck.test.cjs` covers the refusals and a
+second discard; a Playwright case drives the Recovery page.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9ad9813c09">A Scrum undo or redo stuck on a conflict can be rolled back or discarded</a>. Thanks to xet7.</summary>
+
+Such a checkpoint blocked every Scrum edit on its board for good, as only its
+author could retry it and every retry failed the same way. A board
+administrator now sees it in the History recovery notice and can roll it
+back, when nobody changed its records since, or keep the board as it is;
+either way is recorded in Recovery, a repeat is a no-op, and
+`releases/recover-scrum-history.cjs` does the same offline. A checkpoint not
+stuck on a conflict stays its author's to retry.
+
+</details>
+
+**Custom fields** - who may change a field's value.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/87ae8895c3">A custom field can be read-only: every member sees it, only board admins set it</a>. Thanks to CarloRampini and xet7.</summary>
+
+For a score or a value computed elsewhere
+([#3143](https://github.com/wekan/wekan/issues/3143)). The card offers editing
+only to board admins, and the server refuses anybody else through the same
+write guard as admin-only fields, so the REST API and rules acting as an admin
+still set it.
+
+</details>
+
+**Webhooks** - what an outgoing webhook says about an event.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5f413c12eb">An outgoing webhook names the list, board, swimlane, card link and the person assigned</a>. Thanks to chrisi51 and xet7.</summary>
+
+The payload carried mostly ids, and for an assignment it said who assigned
+but not who was assigned. The default payload now also has `list`, `board`,
+`swimlane` and `url`, `member` and `memberUsername` for joining or leaving a
+card, and `assignee`, `assigneeUsername` and `assigneeId` for an assignment
+([#3297](https://github.com/wekan/wekan/issues/3297)), so a chat integration
+can message that person. `WEBHOOKS_ATTRIBUTES` still replaces the list.
+
+</details>
+
+**People and lists** - two small requests that only needed doing.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b426f9cfa8">A user without an avatar can be shown one from DEFAULT_AVATAR_URL</a>. Thanks to jLouzado and xet7.</summary>
+
+An environment-only URL template - an intranet photo server or a
+Gravatar-style service - with `{username}`, `{userId}`, `{emailMd5}` or
+`{emailSha256}` replaced ([#824](https://github.com/wekan/wekan/issues/824)).
+The browser is redirected there; the server fetches nothing. An uploaded
+avatar always wins, and the initials come back when the image does not load.
+
+</details>
+
+- [Accounts created by an OAuth2/OIDC login can join a default organization, OAUTH2_DEFAULT_ORGANIZATION](https://github.com/wekan/wekan/commit/dfcd115ff3). Thanks to vasyugan and xet7.
+- [A card moved or copied to another board brings its labels, created there when the mover is that board's admin](https://github.com/wekan/wekan/commit/125e0960eb). Thanks to d3dbit and xet7.
+- [A board view chosen on a board stays on that board instead of changing every board](https://github.com/wekan/wekan/commit/80fb317fda). Thanks to DimDz, Meeques and xet7.
+- [A list can colour the cards that have no colour of their own, so cards change colour as they move](https://github.com/wekan/wekan/commit/998a9cc336). Thanks to C0rn3j and xet7.
+- [Each board can have an announcement of its own, shown to its members until dismissed](https://github.com/wekan/wekan/commit/7ccd987eb1). Thanks to TiibCD and xet7.
+- [References like [TK:1223] link to other tools through rules with {identifier} and abbreviations](https://github.com/wekan/wekan/commit/ed993fef84). Thanks to rzoss and xet7.
+- [Lists can be archived and restored through the REST API](https://github.com/wekan/wekan/commit/0a80496acf). Thanks to stevekiss and xet7.
+
+and hardens the login settings:
+
+**Admin Panel / People** - the login settings the 2026-10-05 work left open,
+each now doing what its name says.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a7628504f1">Header login is set by the environment only, and shown read-only in the Admin Panel</a>. Thanks to xet7.</summary>
+
+With `HEADER_LOGIN_ID` and `HEADER_LOGIN_TRUSTED_IPS` set, a proxy at a
+trusted address signs in as anyone it names. Since the 2026-10-05 Admin Panel
+work a site administrator could switch that on from People / Header login, so
+a stolen administrator session was enough to open every account. The six
+`HEADER_LOGIN_*` settings now come from the environment only: a value stored
+in the Admin Panel by an earlier version is ignored, the pane shows the values
+in effect read-only with no Save button, and a save sent by hand is refused
+and shown in Admin Panel → Problems as ProxyBleed. Every other login section
+stays overridable. `tests/authConfigCatalog.test.cjs` pins the resolution, the
+refusal and that only this section is environment-only; the Playwright spec
+`admin-login-env-overrides` drives the read-only pane and the refused save.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9d27f4be4d">LDAP Test connection without a service account searches the base DN before saying success</a>. Thanks to xet7.</summary>
+
+ldapts opens its socket lazily, and Test connection bound only when
+`LDAP_AUTHENTIFICATION` was set, so without a service account no operation
+ran and it reported success even for a host that does not resolve. It now
+does an anonymous base-scope search of `LDAP_BASEDN`, reading no attributes,
+and shows the directory's own error when that fails; without a base DN it says
+nothing could be tested. `tests/ldapTestConnectionProbe.test.cjs` pins the
+decision and runs the search with the shipped ldapts against a port where
+nothing listens. A login against a real directory was not run here.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/95147fc999">LDAP has a Sync now button that runs the background sync once</a>. Thanks to xet7.</summary>
+
+`ldap_sync_now` was never loaded, so no button could call it, and it imported
+every directory user regardless of the sync settings. It now runs the
+background sync once with `LDAP_BACKGROUND_SYNC_IMPORT_NEW_USERS` and
+`LDAP_BACKGROUND_SYNC_KEEP_EXISTANT_USERS_UPDATED` as they are set, for an
+active site administrator only, and shares one run at a time with the
+scheduled job. `tests/ldapSyncNow.test.cjs` pins it and fails when any other
+wekan-ldap methods file is left unloaded; the Playwright spec
+`admin-login-env-overrides` drives the button. A sync against a real directory
+was not run here.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c1d1a04790">Automatic logout with LOGOUT_WITH_TIMER and the LOGOUT_* settings works again</a>. Thanks to xet7.</summary>
+
+The platforms offered `LOGOUT_WITH_TIMER`, `LOGOUT_IN`, `LOGOUT_ON_HOURS` and
+`LOGOUT_ON_MINUTES` since 2018, but the code that read them went with the job
+queue it ran on. A login now ends `LOGOUT_IN` days after it was made, or at
+`LOGOUT_ON_HOURS`:`LOGOUT_ON_MINUTES` server time; once a minute the server
+removes the expired login tokens in one query and the browsers using them are
+signed out. All four are overridable in Admin Panel / People / Login. An
+unusable combination signs nobody out and the log says why.
+`tests/logoutTimer.test.cjs` checks the one-query cutoff against each login's
+deadline over two years of logins in three time zones; the Playwright spec
+`admin-login-env-overrides` drives it from the Admin Panel.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/71cd2aed05">MONGO_URL_FILE, MAIL_URL_FILE and S3_SECRET_KEY_FILE replace three secret files nothing read</a>. Thanks to xet7.</summary>
+
+`MAIL_SERVICE_PASSWORD_FILE`, `MONGO_PASSWORD_FILE` and `S3_SECRET_FILE` were
+offered on every platform and read by nothing ([#5724](https://github.com/wekan/wekan/issues/5724)).
+`MONGO_URL_FILE` holds the whole database URL and is read by the Docker
+entrypoint, the snap and both start scripts, because Meteor connects before
+WeKan's code runs; an unreadable file stops the start rather than falling back
+to a default database, and the snap log no longer prints a password written
+in `MONGO_URL`. `MAIL_URL_FILE` and `S3_SECRET_KEY_FILE` are read by the
+server at start. The dead names are gone from every platform, and a warning
+names the replacement when one is still set. `tests/envSecretFiles.test.cjs`
+runs the entrypoint's block for real and fails if any platform offers a
+retired name again.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/fe60911408">OAuth login providers can be restricted to email domains</a>. Thanks to jakubgs and xet7.</summary>
+
+Google, GitHub and the other Meteor login providers let anyone with an
+account there sign in ([#1904](https://github.com/wekan/wekan/issues/1904)).
+`OAUTH_PROVIDERS_ALLOWED_EMAIL_DOMAINS`, or its field under Admin Panel /
+People / OAuth login providers, restricts them with the same rule as
+`OAUTH2_ALLOWED_EMAIL_DOMAINS`, before an account is created and on every
+later login. A provider that sends no email is refused while it is set.
+
+</details>
+
+and fixes the following bugs:
+
+**Addresses** - which address WeKan's links and sign-in use when ROOT_URL is
+not the one people opened.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0f2e81e01b">Copied links use the address WeKan was opened at, not the snap's 127.0.0.1</a>. Thanks to n8willis and xet7.</summary>
+
+The snap's default ROOT_URL is 127.0.0.1, and every link built in the browser
+- Copy link of a card, list or swimlane, comment permalinks - read it, so a
+browser that opened WeKan by the machine's name copied a link nobody else
+could follow. When ROOT_URL is loopback and the page is not, the browser now
+builds those links from the page's own address, keeping ROOT_URL's path. A
+real ROOT_URL still wins, and emails keep ROOT_URL: `snap set wekan
+root-url=...` is still the setting for them. `tests/browserRootUrl.test.cjs`
+covers both directions.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4fc4f19f02">The sign-in page says why a Google login keeps returning to it</a>. Thanks to xet7.</summary>
+
+Signing in with Google returned to the sign-in page every time, with no
+error, when WeKan was opened at another address than ROOT_URL: the provider
+returns to ROOT_URL, and the login secret is left in that address's browser
+storage, where the sign-in page cannot read it. The provider accepts only its
+registered address, so the page cannot repair this; when a provider login is
+offered at another address, it now names both and says what to change.
+`tests/loginOriginMismatch.test.cjs` covers each kind of difference and the
+cases where nothing is shown.
+
+</details>
+
+**People and teams** - who belongs where after a login.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/29bca6f757">A login merged into an existing account keeps that account's boards</a>. Thanks to xet7.</summary>
+
+Merging an OIDC or OAuth login into an existing account removes that user
+and lets Meteor insert it again under the same id. The removal ran the
+account-deletion cleanup, which took the user off every board, card and team
+and deleted their avatar. It now removes without the hooks.
+`tests/mergedUserKeepsBoards.test.cjs` fails if any code removes an account
+through the hooks and then returns it.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d560e2fcf8">LDAP- and OIDC-synced team members become members of the team's boards</a>. Thanks to xet7.</summary>
+
+The login providers' group syncs added the team to the user with a plain
+push, skipping the board membership an Admin Panel team change grants
+(#4593), so such users could see the team's boards but not work on them. Both
+now run the same board sync; a test fails if any code adds a team without it.
+
+</details>
+
+**Subtasks** - where a new subtask lands.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/42c9a396e2">A subtask lands in the list its main board chose on the deposit board</a>. Thanks to TiibCD and xet7.</summary>
+
+The choice made in Board Settings / Subtasks was ignored, and a deposit
+board that itself sends subtasks elsewhere gave its subtasks a list of a third
+board. Several boards sharing one deposit board can now each land their
+subtasks in their own list ([#1781](https://github.com/wekan/wekan/issues/1781)).
+
+</details>
+
+**Admin Panel / Layout** - what the custom head settings put on the page.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6c3db838ac">Custom head meta tags reach the page, as meta elements only</a>. Thanks to xet7.</summary>
+
+The field was saved but never rendered. It is now, when custom head tags are
+enabled, keeping only `<meta>` elements and dropping scripts, styles and the
+`http-equiv` refresh and set-cookie that would act on every visitor.
+
+</details>
+
+and has the following developer-facing fixes:
+
+- [The receipt collections are pinned to the minimal form the 90-day retention decision asks for](https://github.com/wekan/wekan/commit/c0c424657e). Thanks to xet7.
+- [The card-field visibility writer guard counts only writes, not a read projection](https://github.com/wekan/wekan/commit/a9dc8faa98). Thanks to xet7.
+- [The release risk baseline knows the format specification links](https://github.com/wekan/wekan/commit/49353db813). Thanks to xet7.
+
+and closes these issues, which were already implemented:
+
+Where each one is in the code:
+[Issues-Already-Implemented-2026-10-08.md](docs/DeveloperDocs/Issues-Already-Implemented-2026-10-08.md).
+
+- [Auto add user name to a moved card, done by a rule](https://github.com/wekan/wekan/commit/e27ca445d5). Thanks to xet7.
+- [Receive notifications from other users only](https://github.com/wekan/wekan/commit/595f6aaed6). Thanks to gpelouze and xet7.
+- [Move lists to a different board](https://github.com/wekan/wekan/commit/f7879e95e6). Thanks to h0jeZvgoxFepBQ2C and xet7.
+- [Use the EXIF orientation of uploaded pictures](https://github.com/wekan/wekan/commit/1fbb9f4011). Thanks to CWempe and xet7.
+- [Smart search of cards](https://github.com/wekan/wekan/commit/f94cb41c00). Thanks to usmcamp0811 and xet7.
+- [Resend verification or change the verified flag](https://github.com/wekan/wekan/commit/0f85328f15). Thanks to lucg71 and xet7.
+- [Hide subtask boards on All Boards](https://github.com/wekan/wekan/commit/78899b673f). Thanks to nmd3 and xet7.
+- [Progress charts and work statistics for each board](https://github.com/wekan/wekan/commit/939aa8a95e). Thanks to xet7.
+- [Mini date field](https://github.com/wekan/wekan/commit/fcbd268d43). Thanks to gerroon and xet7.
+- [Edit rules, and send a card with its content and attachments by email](https://github.com/wekan/wekan/commit/054c6e091d). Thanks to kabi178 and xet7.
+- [Notification mail template](https://github.com/wekan/wekan/commit/dd410a3a8b). Thanks to hingerlanton and xet7.
+- [Auth0 redirect to the full-screen login page](https://github.com/wekan/wekan/commit/948020275b). Thanks to xet7.
+- [Common WIP limit for several columns](https://github.com/wekan/wekan/commit/61ad1272bb). Thanks to aviertio and xet7.
+- [All Boards drag and drop, and colour](https://github.com/wekan/wekan/commit/0a8c38f395). Thanks to compumatter and xet7.
+- [Master dashboard like Kanboard's Bigboard plugin](https://github.com/wekan/wekan/commit/d10fe621be). Thanks to Jieiku and xet7.
+- [Move a checklist from one card to another card](https://github.com/wekan/wekan/commit/9158772a61). Thanks to qiutian00 and xet7.
+- [Restrict the WeKan port to loopback](https://github.com/wekan/wekan/commit/68bdd70a51). Thanks to galletl and xet7.
+
+and improves translations and their validation:
+
+**Languages updated:** Afrikaans, Akan, Albanian, Amharic, Arabic, Aragonese,
+Armenian, Assamese, Asturian, Azerbaijani, Bashkir, Basque, Belarusian,
+Bengali, Bhojpuri, Bislama, Bosnian, Breton, Bulgarian, Burmese, Cantonese,
+Catalan, Chinese, Corsican, Croatian, Czech, Danish, Dutch, Esperanto,
+Estonian, Faroese, French, Galician, Georgian, German, Greek, Gujarati, Haitian
+Creole, Hausa, Hebrew, Hindi, Hungarian, Icelandic, Igbo, Indonesian, Irish,
+Japanese, Javanese, Kannada, Kazakh, Khmer, Konkani, Korean, Kurmanji Kurdish,
+Kyrgyz, Latin, Latvian, Lithuanian, Luxembourgish, Macedonian, Maithili,
+Malagasy, Malay, Malayalam, Maltese, Marathi, Mongolian, Māori, Nepali,
+Northern Sotho, Norwegian Bokmål, Occitan, Odia, Pashto, Persian, Polish,
+Portuguese, Punjabi, Romanian, Romansh, Russian, Sardinian, Scottish Gaelic,
+Serbian, Sicilian, Sindhi, Sinhala, Slovak, Slovenian, Somali, Sorani Kurdish,
+Spanish, Swahili, Tagalog, Tajik, Tamil, Tatar, Telugu, Thai, Tok Pisin,
+Turkish, Turkmen, Ukrainian, Urdu, Uyghur, Uzbek, Vietnamese, Waray, Welsh,
+West Frisian, Wu Chinese, Yiddish, Yoruba.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/faf6725f9a">Translate Lithuanian import and synchronization recovery</a>. Thanks to xet7.</summary>
+
+Fill 48 recovery messages, preserving source variables, existing translations,
+permanent deletion warnings and retention of changes already applied.
+
+Three focused translation suites and 21 human-preference checks pass.
+No browser or screen-reader session was run. Remaining Lithuanian messages,
+other languages and linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/be43a70825">Translate Latvian controls and planning</a>. Thanks to xet7.</summary>
+
+Fill 51 messages covering controls, import guidance, LDAP, login settings,
+planning imports and history recovery. Preserve variables, literal examples,
+matching priority, non-duplication and recovery decisions.
+
+Four focused translation suites and 21 human-preference checks pass.
+The current Latvian fill list is empty. No browser or screen-reader session
+was run; other languages and linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ef9af80034">Translate Latvian import and synchronization recovery</a>. Thanks to xet7.</summary>
+
+Fill 48 recovery messages, preserving variables, existing translations,
+permanent deletion warnings and retention of changes already applied.
+
+Three focused translation suites and 21 human-preference checks pass.
+No browser or screen-reader session was run. Remaining Latvian messages,
+other languages and linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/27998c617a">Translate Estonian controls and recovery</a>. Thanks to xet7.</summary>
+
+Fill 70 messages covering controls, import guidance, LDAP, login settings,
+stalled synchronization and interrupted imports. Preserve variables, literal
+examples, existing localized values and recovery decisions.
+
+Four focused translation suites and 21 human-preference checks pass.
+The current Estonian fill list is empty. No browser or screen-reader session
+was run; other languages and linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/24912011f5">Translate Russian controls and recovery</a>. Thanks to xet7.</summary>
+
+Fill 236 values across three Russian catalogs, covering controls, import
+guidance, LDAP, login address errors, planning and recovery. Preserve variables,
+literal examples, existing localized values and recovery decisions.
+
+Four focused translation suites and 21 human-preference checks pass.
+All three current Russian fill lists are empty. No browser or screen-reader
+session was run; other languages and linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1b3ea17c28">Translate Ukrainian controls and import recovery</a>. Thanks to xet7.</summary>
+
+Fill 69 messages covering controls, import guidance, LDAP, login address
+errors, stalled synchronization and interrupted imports. Preserve variables,
+literal examples and the distinction between deletion and retaining applied
+changes when discarding a synchronization operation.
+
+Four focused translation suites and 21 human-preference checks pass.
+The current Ukrainian fill list is empty. No browser or screen-reader
+session was run; other languages and linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c458610f62">Translate Greek controls and planning recovery</a>. Thanks to xet7.</summary>
+
+Fill 98 messages in each Greek catalog, for 196 values. Cover controls,
+import guidance, LDAP, login address errors, Scrum planning and recovery.
+Preserve variables, literal examples, matching priority and recovery choices.
+
+Five focused translation suites and 21 human-preference checks pass.
+Both current Greek fill lists are empty. No browser or screen-reader
+session was run; other languages and linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/02ee6a37c9">Translate Turkish planning imports and history recovery</a>. Thanks to xet7.</summary>
+
+Fill 29 messages covering release selection, planning imports, planning
+synchronization and conflicted history recovery. Preserve variables,
+matching priority, non-duplication and recovery choices.
+
+Three focused translation suites and 21 human-preference checks pass.
+The current Turkish fill list is empty. No browser or screen-reader session
+was run; other languages and broader linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a9b2601c30">Translate Turkish controls and synchronization recovery</a>. Thanks to xet7.</summary>
+
+Fill 44 messages covering board controls, import guidance, assignment, LDAP,
+OAuth, login address errors and stalled synchronization. Preserve variables,
+literal examples and the distinction between cancellation and retaining
+changes already applied.
+
+Four focused translation suites and 21 human-preference checks pass. The
+preceding full run passed all 322 translation suites. No browser or
+screen-reader session was run; broader translation work remains unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/16bfc9ebab">Translate Turkish interrupted import recovery</a>. Thanks to xet7.</summary>
+
+Fill 25 interrupted-import messages. Preserve source variables, permanent
+removal warnings, retention without deletion, the separate Scrum recovery
+checkpoint and protection of unrelated boards.
+
+Turkish, global placeholder and translation audit suites pass, together
+with 21 human-preference checks. No browser or screen-reader session was run.
+Other translations and broader linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7e3ae95014">Translate Romanian planning imports and history recovery</a>. Thanks to xet7.</summary>
+
+Fill 29 messages in each Romanian catalog for release selection, planning
+imports, Sync planning and history recovery. Preserve source variables,
+matching priority, unchanged cards and recovery decisions.
+
+Romanian, global placeholder and translation audit suites pass, together
+with 21 human-preference checks. No browser or screen-reader session was run.
+Other translations and broader linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b67435dd6d">Translate Romanian controls and stuck Sync recovery</a>. Thanks to xet7.</summary>
+
+Fill 44 messages in each Romanian catalog for board controls, link rules,
+import formats, assignment actions, LDAP, OAuth, server-only login settings
+and stuck Sync recovery. Preserve source variables, configuration names and
+the distinction between retained applied changes and discarded pending changes.
+
+Romanian, global placeholder, import-format and translation audit suites
+pass, together with 21 human-preference checks. No browser or screen-reader
+session was run. Other translations and linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/09a5b44862">Translate Romanian interrupted import recovery</a>. Thanks to xet7.</summary>
+
+Fill 25 interrupted-import messages in each Romanian catalog. Preserve
+source variables, permanent removal warnings, retention without deletion,
+the separate Scrum recovery checkpoint and protection of unrelated boards.
+
+Romanian, global placeholder and translation audit suites pass, together
+with 21 human-preference checks. No browser or screen-reader session was run.
+Other translations and broader linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2108d855ca">Translate Hungarian controls and stuck Sync recovery</a>. Thanks to xet7.</summary>
+
+Fill 44 messages for board controls, link rules, import formats, assignment
+actions, LDAP, OAuth, server-only login settings and stuck Sync recovery.
+Preserve source variables, configuration names and the distinction between
+retained applied changes and discarded pending changes.
+
+Hungarian, global placeholder, import-format and translation audit suites
+pass, together with 21 human-preference checks. No browser or screen-reader
+session was run. Other translations and linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/56600a495a">Translate Hungarian interrupted import recovery</a>. Thanks to xet7.</summary>
+
+Fill 25 interrupted-import messages. Preserve source variables, permanent
+removal warnings, retention without deletion, the separate Scrum recovery
+checkpoint and protection of unrelated boards.
+
+Hungarian, global placeholder and translation audit suites pass, together
+with 21 human-preference checks. No browser or screen-reader session was run.
+Other translations and broader linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/66b6c6cf7d">Translate Slovak controls and stuck Sync recovery</a>. Thanks to xet7.</summary>
+
+Fill 43 messages for board controls, link rules, import formats, assignment
+actions, LDAP, OAuth and stuck Sync recovery. Preserve source variables,
+configuration names and the distinction between retained applied changes
+and discarded pending changes.
+
+Slovak, global placeholder, import-format and translation audit suites pass,
+together with 21 human-preference checks. No browser or screen-reader
+session was run. Other translations and linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6079856b93">Translate Slovak interrupted import recovery</a>. Thanks to xet7.</summary>
+
+Fill 25 interrupted-import messages. Preserve source variables, permanent
+removal warnings, retention without deletion, the separate Scrum recovery
+checkpoint and protection of unrelated boards.
+
+Slovak, global placeholder and translation audit suites pass, together with
+21 human-preference checks. No browser or screen-reader session was run.
+Other translations and broader linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/cb9850aa9d">Translate Czech controls and stuck Sync recovery</a>. Thanks to xet7.</summary>
+
+Fill 43 messages for board controls, link rules, import formats, assignment
+actions, LDAP, OAuth and stuck Sync recovery. Preserve source variables,
+configuration names and the distinction between retained applied changes
+and discarded pending changes.
+
+Czech, global placeholder, import-format and translation audit suites pass,
+together with 21 human-preference checks. No browser or screen-reader
+session was run. Other translations and linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6cff7c86fc">Translate Czech interrupted import recovery</a>. Thanks to xet7.</summary>
+
+Fill 25 interrupted-import messages. Preserve source variables, permanent
+removal warnings, retention without deletion, the separate Scrum recovery
+checkpoint and protection of unrelated boards.
+
+Czech, global placeholder and translation audit suites pass, together with
+21 human-preference checks. No browser or screen-reader session was run.
+Other translations and broader linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/49e8be5cd1">Translate Polish planning imports and recovery messages</a>. Thanks to xet7.</summary>
+
+Fill 61 messages for board controls, link rules, planning imports, Sync and
+import/history recovery. Preserve source variables, literal examples,
+matching priority and permanent-removal warnings.
+
+Polish, global placeholder and translation audit suites pass, together with
+21 human-preference checks. No browser or screen-reader session was run.
+Other translations and broader linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8cdd39385f">Translate Polish import guidance and stuck Sync recovery</a>. Thanks to xet7.</summary>
+
+Fill 36 messages for import formats, assignment actions, LDAP, OAuth,
+release selection and stuck Sync recovery. Preserve source variables,
+configuration names and the distinction between retained applied changes
+and discarded pending changes.
+
+Polish, global placeholder, import-format and translation audit suites pass,
+together with 21 human-preference checks. No browser or screen-reader
+session was run. Other translations and linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e25bf4ec94">Translate Finnish planning imports and recovery messages</a>. Thanks to xet7.</summary>
+
+Fill 61 messages for board controls, link rules, planning imports, Sync and
+import/history recovery. Preserve source variables, literal examples,
+matching priority and permanent-removal warnings.
+
+Finnish, global placeholder and translation audit suites pass, together with
+21 human-preference checks. No browser or screen-reader session was run.
+Other translations and broader linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1918d37067">Translate Norwegian Bokmal planning imports and recovery messages</a>. Thanks to xet7.</summary>
+
+Fill 61 messages for board controls, link rules, planning imports, Sync and
+import/history recovery. Preserve source variables, literal examples,
+matching priority and permanent-removal warnings.
+
+Bokmal, global placeholder and translation audit suites pass, together with
+21 human-preference checks. No browser or screen-reader session was run.
+Other translations and broader linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/28d3785914">Translate Norwegian Bokmal import guidance and stuck Sync recovery</a>. Thanks to xet7.</summary>
+
+Fill 36 messages for import formats, assignment actions, LDAP, OAuth,
+release selection and stuck Sync recovery. Preserve source variables,
+configuration names and the distinction between retained applied changes
+and discarded pending changes.
+
+Bokmal, global placeholder, import-format and translation audit suites pass,
+together with 21 human-preference checks. No browser or screen-reader
+session was run. Other translations and linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9da06c16a4">Translate Danish planning imports and recovery messages</a>. Thanks to xet7.</summary>
+
+Fill 61 messages for board controls, link rules, planning imports, Sync and
+import/history recovery. Preserve source variables, literal examples,
+matching priority and permanent-removal warnings.
+
+Danish, global placeholder and translation audit suites pass, together with
+21 human-preference checks. No browser or screen-reader session was run.
+Other translations and broader linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/cd886e99fc">Translate Danish import guidance and stuck Sync recovery</a>. Thanks to xet7.</summary>
+
+Fill 36 messages for import formats, assignment actions, LDAP, OAuth,
+release selection and stuck Sync recovery. Preserve source variables,
+configuration names and the distinction between retained applied changes
+and discarded pending changes.
+
+Danish, global placeholder, import-format and translation audit suites pass,
+together with 21 human-preference checks. No browser or screen-reader
+session was run. Other translations and linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e00407123e">Translate Swedish planning imports and recovery messages</a>. Thanks to xet7.</summary>
+
+Fill 61 messages for board controls, link rules, planning imports, Sync and
+import/history recovery. Preserve source variables, literal examples,
+matching priority and permanent-removal warnings.
+
+Swedish, global placeholder and translation audit suites pass, together with
+21 human-preference checks. No browser or screen-reader session was run.
+Other translations and broader linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/36e11d85fd">Translate Swedish import guidance and stuck Sync recovery</a>. Thanks to xet7.</summary>
+
+Fill 36 messages for import formats, assignment actions, LDAP, OAuth,
+release selection and stuck Sync recovery. Preserve source variables,
+configuration names and the distinction between retained applied changes
+and discarded pending changes.
+
+Swedish, global placeholder, import-format and translation audit suites
+pass, together with 21 human-preference checks. No browser or screen-reader
+session was run. Other translations and linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d54be51d9c">Translate Dutch planning imports and recovery messages</a>. Thanks to xet7.</summary>
+
+Fill 61 messages in each Dutch catalog for board controls, link rules,
+planning imports, Sync and import/history recovery. Preserve source
+variables, literal examples, matching priority and permanent-removal warnings.
+
+Dutch, global placeholder and translation audit suites pass, together with
+21 human-preference checks. No browser or screen-reader session was run.
+Other translations and broader linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/78a076e317">Translate Dutch import guidance and stuck Sync recovery</a>. Thanks to xet7.</summary>
+
+Fill 36 messages in each Dutch catalog for import formats, assignment
+actions, LDAP, OAuth, release selection and stuck Sync recovery. Preserve
+source variables, configuration names, format syntax and the distinction
+between retained applied changes and discarded pending changes.
+
+Dutch, global placeholder, import-format and translation audit suites pass,
+together with 21 human-preference checks. No browser or screen-reader
+session was run. Other translations and linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9c4066ce8f">Translate Portuguese import guidance and stuck Sync recovery</a>. Thanks to xet7.</summary>
+
+Fill 36 messages in each of four Portuguese catalogs for import formats,
+assignment actions, LDAP, OAuth, release selection and stuck Sync recovery.
+Preserve regional wording, source variables, configuration names and the
+distinction between retained applied changes and discarded pending changes.
+
+Portuguese, global placeholder, import-format and translation audit suites
+pass, together with 21 human-preference checks. No browser or screen-reader
+session was run. Broader translation and linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ea258e866d">Translate Portuguese planning imports and recovery messages</a>. Thanks to xet7.</summary>
+
+Fill 61 messages in each of four Portuguese catalogs, preserving existing
+localized values and Brazilian terminology. Cover board controls, link
+rules, planning imports, Sync and import/history recovery. Preserve source
+variables, literal examples, matching priority and permanent-removal warnings.
+
+Portuguese, global placeholder and translation audit suites pass, together
+with 21 human-preference checks. No browser or screen-reader session was run.
+Other untranslated messages and broader linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f47f6b3c65">Translate Spanish import guidance and stuck Sync recovery</a>. Thanks to xet7.</summary>
+
+Fill 36 messages in each of nine Spanish catalogs for import formats,
+assignment rules, LDAP, OAuth, release selection and stuck Sync recovery.
+Preserve source variables, configuration names, format syntax and the
+distinction between retained applied changes and discarded pending changes.
+
+Spanish, global placeholder, import-format and translation audit suites pass,
+together with 21 human-preference checks. No browser or screen-reader session
+was run. Broader translation and linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/afafc47bf0">Translate Spanish planning imports and recovery messages</a>. Thanks to xet7.</summary>
+
+Fill 61 messages in each of nine Spanish catalogs, preserving existing
+localized values and shared planning terminology. Cover board controls,
+link rules, planning imports, Sync and import/history recovery. Preserve
+variables, literal examples, matching priority and permanent-deletion warnings.
+
+Spanish, global placeholder and translation audit suites pass, together with
+21 human-preference checks. No browser or screen-reader session was run.
+Newer untranslated messages and broader linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9687307660">Translate Italian planning and recovery messages</a>. Thanks to xet7.</summary>
+
+Fill 97 current messages for board controls, import formats, LDAP, OAuth,
+planning and recovery. Preserve existing localized values, source variables,
+literal examples, matching priority and distinctions between retaining
+applied changes and discarding pending ones.
+
+Italian, global placeholder, import-format and translation audit suites pass,
+together with 21 human-preference checks. The fill tool reports no remaining
+English placeholders in Italian. No browser or screen-reader session was run;
+other locales and broader linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d9b585135d">Translate German planning imports and recovery messages</a>. Thanks to xet7.</summary>
+
+Fill 61 messages in each of four German catalogs, preserving existing
+localized values and Swiss spelling. Cover board controls, link rules,
+planning imports, Sync and import/history recovery. Preserve source
+variables, literal examples, matching priority and permanent-removal warnings.
+
+German, global placeholder and translation audit suites pass, together with
+21 human-preference checks. No browser or screen-reader session was run.
+Other locale translations and broader linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/93c380310f">Translate French planning imports and recovery messages</a>. Thanks to xet7.</summary>
+
+Fill 61 messages in each of the five French catalogs, preserving existing
+localized values. Cover board controls, link rules, planning imports, Sync,
+interrupted imports and conflicted history recovery. Preserve variables,
+literal examples, source matching priority and permanent-discard warnings.
+
+French, global placeholder and translation audit suites pass, together with
+21 human-preference checks. No browser or screen-reader session was run.
+Other locale translations and broader linguistic review remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/cc7ff1c856">Translate Aromanian import recovery and repair mixed-language controls</a>. Thanks to xet7.</summary>
+
+Translate 25 interrupted-import messages and replace 65 Italian or Spanish
+card, checklist, attachment, board and account labels. Preserve source
+variables, recovery decisions, permanent-discard warnings, shared dialog
+wording and opposite actions. New phrasing remains low-confidence pending
+fluent review.
+
+Aromanian, global placeholder and translation audit suites pass. The fill
+tool reports no remaining English placeholders in Aromanian; broader
+wrong-language review and other locale translations remain unfinished.
+No browser or screen-reader session was run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/fd90691e00">Correct Italian-seeded Aromanian search and organization labels</a>. Thanks to xet7.</summary>
+
+Replace 48 wrong-language search, organization, rule and card labels.
+Preserve result-count variables, reminder variables, predicate syntax,
+shared labels and opposite actions. New wording remains low-confidence
+pending fluent review.
+
+Aromanian, global placeholder and translation audit suites pass. No browser
+or screen-reader session was run. Broader translation work remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/cca57e46b5">Correct Italian-seeded Aromanian rule-builder labels</a>. Thanks to xet7.</summary>
+
+Replace 35 wrong-language conditions, actions and fragments. Preserve
+check/uncheck and top/bottom distinctions, shared checklist wording and
+past-state meaning. New phrasing remains low-confidence pending fluent review.
+
+Aromanian, global placeholder and translation audit suites pass. No browser
+or screen-reader session was run. Further linguistic review and translation
+work remain open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6f4a96b8c0">Translate Northern Sotho planning imports and repair locale suites</a>. Thanks to xet7.</summary>
+
+Translate 20 messages and extend the Scrum inventory to 127 while retaining
+per-key translation and token checks. Preserve matching priority,
+non-duplication and first-sync protection of planning. Full new wording
+remains low-confidence pending fluent review.
+
+All 322 translation suites pass after these repairs, including global
+placeholder checks. All 21 human-preference checks also pass. No browser or screen-reader session was run; the all-language
+translation and linguistic review work continues.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/38e8f1d4bc">Translate Maori planning imports and repair locale suites</a>. Thanks to xet7.</summary>
+
+Translate 20 messages and extend the Scrum inventory to 127 while retaining
+per-key translation and token checks. Preserve matching priority,
+non-duplication and first-sync protection of planning. Full new wording
+remains low-confidence pending fluent review.
+
+Both Maori suites, global placeholder and translation audit checks pass.
+Two failures from the latest broad run still need repair. No browser or
+screen-reader session was run; the all-language work continues.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/50a2d2fce1">Translate Somali planning imports and repair locale suites</a>. Thanks to xet7.</summary>
+
+Translate 20 messages and extend the Scrum inventory to 127 while retaining
+per-key translation and token checks. Preserve matching priority,
+non-duplication and first-sync protection of planning. Full new wording
+remains low-confidence pending fluent review.
+
+Both Somali suites, global placeholder and translation audit checks pass.
+Four failures from the latest broad run still need repair. No browser or
+screen-reader session was run; the all-language work continues.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/eb846b6ca0">Translate Tok Pisin planning imports and repair locale suites</a>. Thanks to xet7.</summary>
+
+Translate 20 messages and extend the Scrum inventory to 127 without weakening
+per-key translation and token checks. Preserve matching priority,
+non-duplication and first-sync protection of planning. Full new wording
+remains low-confidence pending fluent review.
+
+Both Tok Pisin suites, global placeholder and translation audit checks pass.
+Six failures from the latest broad run still need repair. No browser or
+screen-reader session was run; the all-language work continues.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f06dd84b40">Translate Ukrainian Scrum import and Sync planning messages</a>. Thanks to xet7.</summary>
+
+Translate 20 messages and restore the Ukrainian planning suite. Preserve
+counters, matching priority, non-duplication, unchanged foreign-board cards
+and first-sync protection of existing planning.
+
+Ukrainian, global placeholder and translation audit suites pass. Eight
+failures from the latest broad run still need repair. No browser or
+screen-reader session was run; the all-language work continues.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/27fe2c86ed">Translate Estonian Scrum import and Sync planning messages</a>. Thanks to xet7.</summary>
+
+Translate 20 messages and restore the Estonian planning suite. Preserve
+counters, matching priority, non-duplication, unchanged foreign-board cards
+and first-sync protection of existing planning.
+
+Estonian, global placeholder and translation audit suites pass. Nine failures
+from the latest broad run still need repair. No browser or screen-reader
+session was run; the all-language work continues.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3ae3852099">Repair planning translations and Aromanian system labels</a>. Thanks to xet7.</summary>
+
+Translate 116 planning messages across Aromanian, Czech, Slovak, Hungarian
+and two Russian catalogs; correct 34 Italian-seeded Aromanian system and rule
+labels. Preserve counters, matching priority, non-duplication and protection
+of existing planning. New Aromanian wording remains low-confidence pending
+fluent review.
+
+Seven targeted translation suites pass, including global placeholder checks.
+Ten failures from the latest broad run still need repair. No browser or
+screen-reader session was run; the all-language work remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/94209a2764">Correct Italian-seeded Aromanian account and webhook labels</a>. Thanks to xet7.</summary>
+
+Replace 35 wrong-language values in account, invitation, template, time and
+webhook controls. Preserve overtime meaning, hour units, invitation variables
+and technical names; distinguish outgoing and two-way webhooks. Full new
+wording remains low-confidence pending fluent review.
+
+Aromanian, global placeholder and translation audit suites pass. No browser
+or screen-reader session was run. Further language review remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/cfc5edcbdb">Correct Italian-seeded Aromanian board controls</a>. Thanks to xet7.</summary>
+
+Replace 35 wrong-language values in board/member actions, movement, selection,
+validation and keyboard help. Preserve the label variable and Excel CSV/TSV
+name; cover opposite movement directions and card/board removal scope.
+Full new wording remains low-confidence pending fluent review.
+
+Aromanian, global placeholder and translation audit suites pass. No browser
+or screen-reader session was run. Further language review remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d7ff39eba6">Replace Italian-seeded Aromanian dialogs and filters</a>. Thanks to xet7.</summary>
+
+Correct 47 wrong-language values in dialogs, invitations, export controls and
+filters. Preserve invitation variables and PDF/iCal names; add regression
+checks against restoring the Italian text or replacing it with English.
+New Aromanian phrasing remains low-confidence pending fluent review.
+
+Aromanian, global placeholder and translation audit suites pass. No browser
+or screen-reader session was run. Further Italian-seed candidates and other
+languages remain under review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/76b35e70c6">Translate Aromanian stuck Sync recovery messages</a>. Thanks to xet7.</summary>
+
+Translate 23 messages, preserving applied changes, the unwritten remainder,
+replay eligibility and oldest-50 ordering. New wording remains low-confidence
+pending fluent review. The reported English-placeholder queue is empty;
+older mixed-language values and skipped short strings still need review.
+
+Aromanian, global placeholder and translation audit suites pass. No browser
+or screen-reader session was run. The all-language translation work continues.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5e251e53ac">Translate Aromanian imports, controls and Sync planning</a>. Thanks to xet7.</summary>
+
+Translate 47 messages, preserving import syntax, link-rule variables and
+examples, configuration identifiers and physical keyboard legends. Cover
+read-only fields, unchanged card data and Sync source-ID matching priority
+and its first-run protection of existing planning. New wording remains
+low-confidence pending fluent review.
+
+Aromanian, global placeholder, import literal and translation audit suites
+pass. No browser or screen-reader session was run. Other untranslated and
+wrong-language values remain under review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/43a7b0246e">Translate Aromanian Sync choices and diagnostics</a>. Thanks to xet7.</summary>
+
+Translate 63 conflict, preview, report and estimate messages. Preserve local
+and source scope, unchanged subcards, replacement reuse, report limits,
+missing-versus-null values and the single matching time-field requirement.
+New wording remains low-confidence pending fluent review.
+
+Aromanian, global placeholder and translation audit suites pass, along with
+21 human-preference checks. No browser or screen-reader session was run.
+Other untranslated and wrong-language values remain under review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a050566954">Translate Aromanian notification recovery messages</a>. Thanks to xet7.</summary>
+
+Translate 36 mail failure and activity-notification recovery messages.
+Preserve temporary/permanent rejection, retained pending work, the prohibition
+on recreating activities and irreversible cancellation. New wording remains
+low-confidence pending fluent review.
+
+Aromanian, global placeholder and translation audit suites pass, along with
+21 human-preference checks. No browser or screen-reader session was run.
+Other untranslated and wrong-language values remain under review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f73ce87d54">Translate remaining Aromanian Scrum instructions</a>. Thanks to xet7.</summary>
+
+Translate 20 instructions and recovery messages, preserving unknown estimates,
+UTC sampling, cancelled-sprint membership and rollback eligibility. Cover all
+current Scrum keys and the reporting/recovery distinctions alongside the
+source variable inventory. Full wording remains low-confidence pending fluent
+review.
+
+Aromanian, global placeholder and translation audit suites pass. No browser
+or screen-reader session was run. Other untranslated and wrong-language
+values remain under review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4eec94b7c8">Translate Aromanian Scrum labels and reporting controls</a>. Thanks to xet7.</summary>
+
+Translate 73 labels, actions, states and short reports. Preserve counters,
+reference variables, minute units and the 366-observation limit. Extend
+regression coverage for shared labels and distinct lifecycle states and use
+the shared Unicode-aware token scanner. New terminology and phrasing remain
+low-confidence pending fluent review.
+
+Aromanian, global placeholder and translation audit suites pass, as do 21
+human-preference checks. No browser or screen-reader session was run.
+Untranslated messages and older wrong-language values still require work.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4b0fde93ef">Translate new Scrum messages and repair four locale suites</a>. Thanks to xet7.</summary>
+
+Translate 36 release-selection and recovery messages in Māori, Northern Sotho,
+Somali and Tok Pisin. Update the expected Scrum inventory from 102 to 111 while
+retaining per-key translation and token checks. Cover keyboard legends,
+distinct rollback and retain actions, and all four recovery counters.
+Full new wording remains low-confidence pending fluent review.
+
+All 322 translation suites pass after these repairs, including the global
+placeholder checks. The 21 human-preference checks also pass. No browser or
+screen-reader session was run.
+Other translation and linguistic review work remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/478fcc07f0">Translate pending imports and recovery messages in German locales</a>. Thanks to xet7.</summary>
+
+Translate 144 values across four German catalogs, preserving Swiss spelling,
+source variables, import syntax and configuration identifiers. Extend German
+regression coverage for recovery consequences and multiple-release selection.
+Focused German, global placeholder, import literal and audit checks pass,
+along with 21 human-preference checks. No browser session was run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/362a43fa43">Translate new planning messages exposed by regression tests</a>. Thanks to xet7.</summary>
+
+Translate 63 release-selection and Scrum recovery values in Czech, Slovak,
+Hungarian, two Russian catalogs, Ukrainian and Estonian. Six planning suites
+pass again without weakened assertions; global placeholder checks also pass.
+The full 322-suite run exposed ten failures before these repairs. Four other
+Scrum translation suites still need new translations and inventory updates.
+The all-language translation and linguistic review work remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/20cae59763">Translate pending imports and recovery messages in French locales</a>. Thanks to xet7.</summary>
+
+Translate 180 values across the five French catalogs for imports, assignment,
+LDAP, login, release selection and stuck List Sync recovery. Preserve variables,
+configuration names and import syntax. Regression checks cover retained applied
+changes, the unwritten remainder, replay eligibility and multiple releases.
+
+The French suite, catalog-wide placeholder and import literal checks,
+translation audit suite and 21 human-preference checks pass. No browser or
+screen-reader session was run. Other translation and linguistic review work
+remains open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/bffc32f899">Translate pending Finnish import and Sync recovery messages</a>. Thanks to xet7.</summary>
+
+Translate 36 pending messages for imports, assignment rules, LDAP, login,
+release selection and stuck List Sync operations. Preserve variables,
+configuration names and import syntax. Recovery warnings retain applied
+changes and explain that remaining saved changes are never written.
+
+The Finnish regression suite, catalog-wide placeholder and import literal
+checks, translation audit suite and 21 human-preference checks pass.
+No browser or screen-reader session was run. Translation work for other
+languages and review of older linguistic defects continue.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5e00df9be7">Correct Bislama display, weekday and report translations</a>. Thanks to xet7.</summary>
+
+- Replace 76 artificial English wrappers while preserving template variables,
+  import counts, separators and font names. 312 older wrappers remain;
+  search operators still require a parser-aware review.
+- Three relevant suites pass, including the catalog-wide placeholder check.
+  Software compounds remain provisional pending fluent review. Browser and
+  screen-reader sessions were not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d4607ee49c">Correct Bislama navigation, diagnostics and rule labels</a>. Thanks to xet7.</summary>
+
+- Replace 145 artificial English wrappers and translate new Todoist import
+  guidance. Preserve runtime identifiers, units, protocol names, scheduling
+  directions, check states and source variables. 388 older wrappers remain.
+- Three relevant suites pass, including the catalog-wide placeholder inventory.
+  Full software compounds remain provisional pending fluent review. Browser
+  and screen-reader sessions were not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e882ed8901">Correct 120 Bislama entries containing English wrappers</a>. Thanks to xet7.</summary>
+
+- Replace artificial English wrappers in board, font, color, voting and filter
+  labels. Restore numeric choices, date formats and compact sort labels exactly.
+  The older wrapper queue falls from 653 to 533 values, outside the fill report.
+- Three relevant suites pass, including the catalog-wide placeholder inventory.
+  Fine color descriptions and software compounds remain provisional pending
+  fluent review. Browser and screen-reader sessions were not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d787085c30">Translate remaining reported Bislama messages and short controls</a>. Thanks to xet7.</summary>
+
+- Translate 224 workspace, Scrum, Sync and notification-recovery messages
+  plus ten short Blockly labels skipped by the fill report. Preserve variables,
+  report limits, missing/null distinctions and cancellation consequences.
+- Three relevant suites pass, including the catalog-wide placeholder check.
+  The Bislama fill report is empty, but 653 older values with the artificial
+  “Tok blong sistem:” prefix still require language correction. Technical
+  compounds remain provisional. Browser and screen-reader sessions were not run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/74e4048f32">Translate Bislama functions, navigation and text operations</a>. Thanks to xet7.</summary>
+
+- Translate 175 Blockly messages for mathematical operations, functions,
+  variables, keyboard navigation, screen-reader controls and text operations.
+  Preserve result behavior, angle units, opposite states, replacement scope,
+  whitespace rules and numbered substitutions.
+- Three relevant suites pass, including the catalog-wide placeholder check.
+  Browser and screen-reader sessions were not run. Mathematical loanwords
+  and complete software phrases remain provisional pending fluent review.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5501cf17ae">Translate Bislama lists, logic and mathematics</a>. Thanks to xet7.</summary>
+
+- Translate 156 labels and messages, including four LDAP notices and the
+  short OR label. Preserve exact source tokens and environment identifiers,
+  list copy/removal semantics, logical conditions and random-number bounds.
+- Five relevant regression suites pass, including the catalog-wide token
+  inventory. Browser and screen-reader sessions were not run. Statistical
+  terminology and complete Bislama software phrases remain provisional.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/59e67383ec">Translate Bislama controls and read-only login guidance</a>. Thanks to xet7.</summary>
+
+- Translate 116 Bislama Blockly labels, including the short bitmap-on label,
+  and 62 environment-only login notices visible through 63 locale paths.
+  Preserve bitmap states, operand roles, placeholder order and read-only scope.
+- All 321 translation/i18n suites and 21 human-preference checks pass.
+  Browser and screen-reader sessions were not run; Bislama software compounds
+  remain provisional and the broader translation audit continues.
+- This shared-checkout commit also contains catalog additions being staged by
+  the concurrent login-settings workflow. Their English placeholders remain
+  tracked for translation; no unrelated implementation code was included.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/58ce223329">Translate more card-field help and Bislama blocks</a>. Thanks to xet7.</summary>
+
+- Add 74 translations across 16 locales and correct three Bislama color
+  wrappers. Preserve field hiding/restoration semantics, color ranges,
+  variable-deletion restrictions and Blockly loop/conditional behavior.
+- Preserve exact placeholders, including numbered Blockly arguments. Keep
+  Bislama's native red label without exempting English sentences or other
+  locales. Tests cover both valid terms and changed-source rejection.
+- The 37 relevant suites, the additional invariant suite and 21 human-preference
+  checks pass. Script and translated rendering checks cover the card fields.
+  Browser and screen-reader sessions were not run. Provisional wording and the
+  remaining mixed-language/translation audit stay open.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3ec8138130">Translate remaining keyboard labels in six locales</a>. Thanks to xet7.</summary>
+
+- Fill 119 keyboard and card-field strings in Akan, Māori, Northern Sotho,
+  Somali, Tok Pisin and Waray. Their full fill reports now contain no remaining
+  placeholders; this measures coverage rather than fluency.
+- Preserve recognizable physical keys, opposite navigation directions,
+  card-field hiding scope and exact source variables. Existing translations
+  are retained. All 31 relevant suites and 21 human-preference checks pass.
+- New software wording is provisional, especially in Akan, Northern Sotho and
+  Waray. Terminology sources are recorded in the translation audit. Browser
+  and screen-reader sessions were not run; the broader translation work remains.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e503945ef1">Report locale text coverage accurately</a>. Thanks to xet7.</summary>
+
+The README now reports 182 of 234 locale catalogs with non-English text for
+more than 90 percent of source keys. This replaces the stale count of 171
+and the stronger, unverified claim that those translations are essentially
+complete. The source-derived language-wiring check retains the exact numeric
+assertion and requires the wording to distinguish coverage from quality.
+
+Validation: all six language-wiring checks pass. The other 21 additional
+locale, notification-language and Transifex suites passed in the related run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5ce7549bcf">Translate more card-field visibility help</a>. Thanks to xet7.</summary>
+
+- Fill 44 values in 22 further locale paths, bringing this message pair to
+  153 translated non-English paths. Preserve hiding scope, stored data and
+  settings, restoration and each board's own field order.
+- All 30 relevant suites pass, including full catalog placeholder inventories
+  and translated-text rendering. Browser tests were not run.
+- Breton, Faroese, Romansh, Sardinian, Scottish Gaelic and Sicilian drafts need
+  fluent-speaker review. Terminology references and remaining work are recorded
+  in the translation audit. No external translation service was used.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/07a33f5d5f">Protect translation variables and restore catalog coverage</a>. Thanks to xet7.</summary>
+
+- Verify the English token inventory across all 246 locale paths, including
+  non-Latin renamed tokens, positional arguments and repeated variables.
+  Reject invalid fill batches atomically while preserving existing translations.
+- Restore the two missing card-field settings keys in source order and add
+  240 translated values. English fallback remains visible for unfinished
+  locales.
+- Keep exact OS brands and compact Blockly math/code symbols out of the prose
+  backlog without exempting help text or accessibility labels.
+- Reconcile four superseded audit records and accept the Akan organization noun
+  in its current sentence case. Preserve literal JSON example property names.
+- Validation: 321 translation/i18n suites and 21 human-preference checks pass,
+  including catalog rendering and negative fill fixtures. Browser tests were
+  not run. Remaining translation work and fluent-speaker review stay open.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
 
 # v12.23 2026-10-08 WeKan ® release
 
@@ -2014,7 +2127,8 @@ report with seven assignees and asserts no avatar overlaps the comment.
 <summary><a href="https://github.com/wekan/wekan/commit/a30eaaf22f69c65a3f6dbde318c87589380f9d7c">Translate card-field visibility in eight languages</a></summary>
 
 - Add 16 missing translations in Finnish, Swedish, German, French, Spanish,
-  Portuguese, Italian and Dutch. Preserve existing strings, key order and tokens;
+  Portuguese, Italian and Dutch. Preserve existing strings, key order and
+  tokens;
   check unchanged card data/settings, re-enabling fields and per-board ordering.
 - Validation: 38 translation checks and 21 human-preference checks pass. Two
   repository-wide checks still fail on these keys missing from other locales.
@@ -2077,8 +2191,10 @@ Thanks to xet7 !
 <details>
 <summary><a href="https://github.com/wekan/wekan/commit/2e9243f3c88b0fcacdeed0c5dd3537c54e5db761">Translate Moroccan Arabic observations and Sync conflicts</a></summary>
 
-- Fill 36 placeholders, retaining existing translations. Check observation limits,
-  import restrictions, no source writes, mapping-only removal, unchanged subcards
+- Fill 36 placeholders, retaining existing translations. Check observation
+  limits,
+  import restrictions, no source writes, mapping-only removal, unchanged
+  subcards
   and replacement reuse, together with script, source order and placeholders.
 - Validation: 54 translation checks and 21 human-preference checks pass. Two
   repository-wide checks fail on new card-field-visibility keys missing from
@@ -2093,7 +2209,8 @@ Thanks to xet7 !
 <details>
 <summary><a href="https://github.com/wekan/wekan/commit/263d3ff9e6cf4532c990e6b4a6d2ddddc5a465d2">Translate Moroccan Arabic sprint reports and events</a></summary>
 
-- Fill 36 placeholders, retaining existing translations. Check estimate semantics,
+- Fill 36 placeholders, retaining existing translations. Check estimate
+  semantics,
   cancellation membership, unfinished-work destinations, partial reports and
   event distinctions, together with script, source order and placeholders.
 - Validation: 53 translation checks and 21 human-preference checks pass. Two
@@ -2157,8 +2274,10 @@ Thanks to xet7 !
 <details>
 <summary><a href="https://github.com/wekan/wekan/commit/14c765311b05d4421fc70829ec1ad5e2845b9f16">Translate Moroccan Arabic text processing</a></summary>
 
-- Fill 42 placeholders, retaining existing translations. Check character positions,
-  search roles, replacement arguments and scope, counted spaces and prompt types,
+- Fill 42 placeholders, retaining existing translations. Check character
+  positions,
+  search roles, replacement arguments and scope, counted spaces and prompt
+  types,
   together with script, source order and placeholders.
 - Validation: 48 translation checks and 21 human-preference checks pass. Two
   repository-wide checks fail on new card-field-visibility keys missing from
@@ -2190,7 +2309,8 @@ Thanks to xet7 !
 <summary><a href="https://github.com/wekan/wekan/commit/5b7f2d18d89c4d2ed35f6a607def4cdf96c9bdfe">Translate Moroccan Arabic procedures and accessibility controls</a></summary>
 
 - Fill 39 placeholders, retaining existing translations. Check return values,
-  disabled definitions, duplicate parameters, function-only blocks, screen-reader
+  disabled definitions, duplicate parameters, function-only blocks,
+  screen-reader
   toggles and rename scope, together with script, source order and placeholders.
 - Validation: 46 translation checks and 21 human-preference checks pass. Two
   repository-wide checks fail on new card-field-visibility keys missing from
@@ -2346,7 +2466,8 @@ Thanks to xet7 !
 
 - Fill 27 Turkmen placeholders, preserving existing translations, retry
   boundaries, pending work and irreversible cancellation warnings.
-- Remove the obsolete custom-colors-in-use entry after its English source was removed.
+- Remove the obsolete custom-colors-in-use entry after its English source was
+  removed.
 - Technical wording remains low confidence pending speaker review.
 - All 64 translation checks and 21 human-preference checks pass. Browser
   checks were not run. Further translations and the audit continue.

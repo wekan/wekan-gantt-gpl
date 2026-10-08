@@ -41,7 +41,6 @@ import {
   normalizeDependencies,
 } from '/models/metadata/dependencies';
 import {
-  filterCopiedLabelIds,
   remapCoverId,
 } from '/server/lib/cardCopyHelpers';
 const {
@@ -58,6 +57,26 @@ import Checklists from '/models/checklists';
 import Lists from '/models/lists';
 import { debounce } from '/imports/lib/collectionHelpers';
 const { SimpleSchema } = require('/imports/simpleSchema');
+
+// #1759: map a card's labels onto the board it moves or is copied to, creating
+// the missing ones there when the actor is that board's admin
+// (models/lib/crossBoardLabels.js).
+async function crossBoardLabelIds(card, oldBoard, newBoard) {
+  const { planCrossBoardLabels } = require('/models/lib/crossBoardLabels');
+  let actorId = null;
+  try { actorId = Meteor.userId(); } catch (e) { actorId = null; }
+  const plan = planCrossBoardLabels({
+    sourceLabels: (oldBoard && oldBoard.labels) || [],
+    labelIds: card.labelIds || [],
+    destLabels: (newBoard && newBoard.labels) || [],
+    canCreate: !!(newBoard && actorId && typeof newBoard.hasAdmin === 'function' && newBoard.hasAdmin(actorId)),
+    newId: () => Random.id(6),
+  });
+  if (plan.create.length) {
+    await Boards.updateAsync(newBoard._id, { $push: { labels: { $each: plan.create } } });
+  }
+  return plan.labelIds;
+}
 
 const Cards = new Mongo.Collection('cards');
 
@@ -342,6 +361,11 @@ Cards.attachSchema(
     'syncLastSource.remainingEstimateMapping': { type: String, optional: true },
     'syncLastSource.estimateMapping': { type: String, optional: true },
     'syncLastSource.spentTime': { type: Number, optional: true, min: 0 },
+    // The planning Sync last applied (models/lib/listSyncPlanning.js), in this
+    // board's record ids; '' is "no sprint".
+    'syncLastSource.sprint': { type: String, optional: true },
+    'syncLastSource.releases': { type: Array, optional: true },
+    'syncLastSource.releases.$': { type: String },
     syncExternalId: {
       type: String,
       optional: true,
@@ -1148,23 +1172,17 @@ Cards.helpers({
     // we must only copy the labels and custom fields if the target board
     // differs from the source board
     if (this.boardId !== boardId) {
-      const oldBoard = await ReactiveCache.getBoard(this.boardId);
       // A board may have no `labels` array (e.g. one created via the REST API,
-      // which does not seed default labels) — guard so a cross-board copy does
-      // not throw "Cannot read properties of undefined (reading 'filter')".
-      const oldBoardLabels = (oldBoard && oldBoard.labels) || [];
-
-      // Get old label names
-      const oldCardLabels = oldBoardLabels.filter(label => {
-          return (this.labelIds || []).includes(label._id);
-        }).map(x => x.name);
+      // which does not seed default labels); crossBoardLabelIds reads either
+      // board's labels defensively.
+      const oldBoard = await ReactiveCache.getBoard(this.boardId);
 
       const newBoard = await ReactiveCache.getBoard(boardId);
-      // #2970: only map labels that exist by NAME on the destination board and
-      // skip unnamed labels, otherwise every unnamed destination label would be
-      // wrongly selected (mirrors the guard used by Cards.move()).
-      const newCardLabels = filterCopiedLabelIds((newBoard && newBoard.labels) || [], oldCardLabels);
-      cardData.labelIds = copyOptions ? (copyOptions.labels ? [...(this.labelIds || [])] : []) : newCardLabels;
+      // #2970: only labels named on both boards are matched, never unnamed
+      // ones; #1759: a missing named label is created on the destination board
+      // when the actor is its admin (crossBoardLabelIds above).
+      cardData.labelIds = copyOptions ? (copyOptions.labels ? [...(this.labelIds || [])] : [])
+        : await crossBoardLabelIds(this, oldBoard, newBoard);
 
       // A scoped board copy clones definitions and remaps their IDs after the
       // cards exist. Do not share/mutate the source definitions on this path.
@@ -1663,20 +1681,31 @@ Cards.helpers({
     return buildCustomFieldsWD(card.customFields, definitions);
   },
 
-  colorClass() {
+  // #4756: the card's own colour, else its list's when the list asks for it
+  // (models/lib/cardDisplayColor.js). The list is the one this card is shown
+  // in, so a linked card follows the list it sits in.
+  displayColor() {
     const card = this.getRealCard();
+    if (card.color) return card.color;
+    const { effectiveCardColor } = require('/models/lib/cardDisplayColor');
+    const list = this.listId ? ReactiveCache.getList(this.listId) : null;
+    return effectiveCardColor(card, list && typeof list.then !== 'function' ? list : null);
+  },
+
+  colorClass() {
+    const color = this.displayColor();
     // #5514: a custom '#rrggbb' hex has no CSS class (templates prepend
     // `minicard-` / `card-details-`); it is applied inline via colorStyle().
-    if (card.color && !isHexColor(card.color)) return card.color;
+    if (color && !isHexColor(color)) return color;
     return '';
   },
 
   colorStyle() {
-    const card = this.getRealCard();
+    const color = this.displayColor();
     // #5514: for a custom hex color, set the background inline plus an
     // automatically readable text color. Empty for named colors.
-    if (isHexColor(card.color)) {
-      return `background-color:${card.color} !important;color:${contrastText(card.color)} !important;`;
+    if (isHexColor(color)) {
+      return `background-color:${color} !important;color:${contrastText(color)} !important;`;
     }
     return '';
   },
@@ -3064,20 +3093,15 @@ Cards.helpers({
 
     if (this.boardId !== boardId) {
       const oldBoard = await ReactiveCache.getBoard(this.boardId);
-      const oldBoardLabels = Array.isArray(oldBoard?.labels) ? oldBoard.labels : [];
-      const oldCardLabels = oldBoardLabels.filter(label => {
-          return (this.labelIds || []).includes(label._id);
-        }).map(x => x.name);
 
       const newBoard = await ReactiveCache.getBoard(boardId);
       if (!newBoard) {
         throw new Meteor.Error('board-not-found', 'Destination board not found while moving card.');
       }
       const allowedMemberIds = (newBoard.members || []).filter(member => member.isActive === true).map(x => x.userId);
-      const newBoardLabels = Array.isArray(newBoard.labels) ? newBoard.labels : [];
-      const newCardLabelIds = newBoardLabels.filter(label => {
-          return label.name && oldCardLabels.includes(label.name);
-        }).map(x => x._id);
+      // #1759: named labels are matched, and a missing one is created on the
+      // destination board when the actor is its admin (crossBoardLabelIds).
+      const newCardLabelIds = await crossBoardLabelIds(this, oldBoard, newBoard);
 
       const newCardNumber = await newBoard.getNextCardNumber();
 

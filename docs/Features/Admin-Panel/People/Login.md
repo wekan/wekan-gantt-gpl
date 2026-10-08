@@ -43,6 +43,14 @@ Oracle OIM), **CAS**, **Header login**, **OAuth login providers** and
 `/admin/people/oidc`, `/admin/people/cas`, `/admin/people/header-login`,
 `/admin/people/oauth` and `/admin/people/passwordless`.
 
+**Header login is the exception: it is set by the environment only** (decided
+on 2026-10-08). With `HEADER_LOGIN_ID` and `HEADER_LOGIN_TRUSTED_IPS` set, a
+proxy at a trusted address signs in as anyone it names, so switching it on has
+to take access to the host, not only a site administrator's session. Its
+section shows the values in effect read-only, with no Save button; a value
+stored there by an earlier version is ignored, and a save sent by hand is
+refused and shown in Admin Panel → Problems as ProxyBleed.
+
 Each field is labelled with its environment variable and says which value is in
 effect: the Admin Panel's, the environment variable's, or the default. Leaving
 a field empty, or choosing **Default**, removes the override, and the
@@ -64,9 +72,39 @@ are shown with any password written inside a URL masked by the server, and a
 URL field refuses a user name or password in it.
 
 The LDAP section has **Test connection**, which tries the LDAP settings in
-effect. The list of variables per section is
+effect. With a service account (`LDAP_AUTHENTIFICATION`) it binds with it;
+without one it does an anonymous base-scope search of `LDAP_BASEDN`, reading
+no attributes. Either way it reports success only when the directory answered,
+and otherwise shows the directory's own error; without a service account and
+without `LDAP_BASEDN` it says that nothing could be tested.
+
+**Sync LDAP users now** runs the LDAP background sync once, immediately, with
+the settings in effect: `LDAP_BACKGROUND_SYNC_IMPORT_NEW_USERS` imports
+directory users not in WeKan yet, and
+`LDAP_BACKGROUND_SYNC_KEEP_EXISTANT_USERS_UPDATED` refreshes the ones that
+are. `LDAP_BACKGROUND_SYNC` (the schedule) does not have to be on, but with
+neither of the other two it says there is nothing to sync. A click during a
+scheduled run waits for that run instead of starting a second one. The list of variables per section is
 `models/lib/authConfigCatalog.js`; SAML's is `models/lib/samlConfig.js` and the
 OAuth login providers' is `models/lib/oauthProviders.js`.
+
+## Automatic logout
+
+`LOGOUT_WITH_TIMER=true` signs users out automatically; Admin Panel / People /
+Login overrides it and the three settings below like any other login setting.
+A login ends at a deadline counted from when it was made:
+
+| Settings | A login ends |
+| --- | --- |
+| `LOGOUT_IN=2` | two days after it was made |
+| `LOGOUT_ON_HOURS=3` | at the next 03:00 |
+| `LOGOUT_IN=1`, `LOGOUT_ON_HOURS=9`, `LOGOUT_ON_MINUTES=55` | at 09:55 on the day after the day it was made |
+
+Times are the server's local time. Once a minute the server removes every login
+that has passed its deadline, and the browsers using it are signed out. An
+unusable combination (an hour over 23, minutes without an hour, neither
+`LOGOUT_IN` nor `LOGOUT_ON_HOURS`) signs nobody out, and the server log says
+why. The deadline arithmetic is `models/lib/logoutTimer.js`.
 
 ## Related
 

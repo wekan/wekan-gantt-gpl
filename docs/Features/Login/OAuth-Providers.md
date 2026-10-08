@@ -76,6 +76,7 @@ And three settings that apply to all of them at once:
 | --- | --- |
 | `OAUTH_PROVIDERS_LOGIN_STYLE` | `popup` (default) opens the provider in a popup window; `redirect` leaves the page and comes back. Use `redirect` where popups are blocked, for example inside an iframe or on some phones. |
 | `OAUTH_PROVIDERS_MERGE_EXISTING_USERS` | Default `false`: a provider login whose email already belongs to a WeKan account made another way (password, LDAP, OAuth2, ...) is refused. `true` links the provider to that account instead. This is the same rule as `OAUTH2_MERGE_EXISTING_USERS`: only enable it when you trust every enabled provider to have verified the email, or an attacker who controls an account at one provider with your user's email gets your user's boards. |
+| `OAUTH_PROVIDERS_ALLOWED_EMAIL_DOMAINS` | Comma-separated email domains, for example `example.com,example.org`: only a provider login whose email is in one of them may sign in, on its first login and every later one, so narrowing it also applies to existing accounts. A provider that sends no email (GitHub with a private address) is refused while it is set. Empty allows every domain. The same rule as `OAUTH2_ALLOWED_EMAIL_DOMAINS` for OAuth2/OIDC; also in Admin Panel / People / OAuth login providers (#1904). |
 | `PASSWORDLESS_ENABLED` | Not a provider, but the other Meteor accounts login: a one-time code by email. See [Passwordless](Passwordless.md). |
 
 They are commented out, with these explanations, in every place WeKan is
@@ -141,6 +142,16 @@ see [REST API](../../API/REST-API.md#admin-panel-oauth-login-providers-and-passw
 - *"redirect_uri_mismatch"* or *"The redirect URI is not registered"*: the
   callback URL at the provider is not exactly `<ROOT_URL>/_oauth/<service>`.
   Check `ROOT_URL` (scheme, host, port, no trailing path) and register that.
+- After signing in at the provider, the browser is back on WeKan's sign-in
+  page, every time, with no error: WeKan was opened at another address than
+  `ROOT_URL` - `http` where it says `https`, `www.` or not, an IP address,
+  another port, or a snap still on its `http://127.0.0.1` default. The
+  provider returns to `ROOT_URL`, and the login secret is left in that
+  address's browser storage, where this page cannot read it. Open WeKan at
+  `ROOT_URL`, or set `ROOT_URL` to the address people use (snap:
+  `sudo snap set wekan root-url='https://wekan.example.com'`) and register
+  `<ROOT_URL>/_oauth/<service>` at the provider. The sign-in page says this,
+  naming both addresses, when it happens.
 - The popup closes and nothing happens: the browser blocked third-party
   cookies for the popup, or WeKan is inside an iframe. Set
   `OAUTH_PROVIDERS_LOGIN_STYLE=redirect`.

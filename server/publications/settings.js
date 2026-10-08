@@ -85,6 +85,8 @@ const SETTING_FIELDS = {
   automaticLinkedUrlSchemes: 1,
   externalLinkPatternPrefix: 1,
   externalLinkPatternUrl: 1,
+  externalLinkRules: 1,
+  externalLinkIdentifierAliases: 1,
   customTopLeftCornerLogoImageUrl: 1,
   customTopLeftCornerLogoLinkUrl: 1,
   customTopLeftCornerLogoHeight: 1,
@@ -175,6 +177,7 @@ const SETTING_FIELDS = {
   'oauthProviders.meetup.secretSet': 1,
   oauthProvidersLoginStyle: 1,
   oauthProvidersMergeExistingUsers: 1,
+  oauthProvidersAllowedEmailDomains: 1,
   passwordlessEnabled: 1,
 };
 

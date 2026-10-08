@@ -63,6 +63,19 @@ Settings.attachSchema(
       type: String,
       optional: true,
     },
+    // #1463: further autolink rules, one "<token> = <url>" per line with
+    // {number} and {identifier}, and identifier abbreviations "TK=Task".
+    // See models/lib/externalLinkRules.js.
+    externalLinkRules: {
+      type: String,
+      optional: true,
+      max: 20000,
+    },
+    externalLinkIdentifierAliases: {
+      type: String,
+      optional: true,
+      max: 5000,
+    },
     // Admin Panel / Features / Notifications (issue #5820).
     // disableActivities: stop recording AND showing all activity-feed entries.
     // disableNotifications: never send watch notifications.
@@ -545,6 +558,12 @@ Settings.attachSchema(
     // existing account that has the same verified email instead of a new one.
     oauthProvidersMergeExistingUsers: {
       type: Boolean,
+      optional: true,
+    },
+    // OAUTH_PROVIDERS_ALLOWED_EMAIL_DOMAINS (#1904): comma-separated domains
+    // provider logins are restricted to; empty or unset allows every domain.
+    oauthProvidersAllowedEmailDomains: {
+      type: String,
       optional: true,
     },
     // PASSWORDLESS_ENABLED: Meteor's accounts-passwordless one-time email code.

@@ -795,7 +795,16 @@ Template.setListColorPopup.onCreated(function () {
   const data = Template.currentData();
   this.currentList = Lists.findOne(data._id) || data;
   this.currentColor = new ReactiveVar(this.currentList.color);
+  this.cardsUseListColor = new ReactiveVar(this.currentList.cardsUseListColor === true);
 });
+
+// #4756: save the colour and whether cards follow it, together.
+async function saveListColor(tpl, color) {
+  await tpl.currentList.setColor(color);
+  if ((tpl.currentList.cardsUseListColor === true) !== tpl.cardsUseListColor.get()) {
+    await tpl.currentList.setCardsUseListColor(tpl.cardsUseListColor.get());
+  }
+}
 
 Template.setListColorPopup.helpers({
   colors() {
@@ -810,6 +819,9 @@ Template.setListColorPopup.helpers({
       return tpl.currentColor.get() === color;
     }
   },
+  cardsUseListColor() {
+    return Template.instance().cardsUseListColor.get();
+  },
   // #5514: current color as a '#rrggbb' hex for the native color wheel <input>.
   currentColorHex() {
     return toHex(Template.instance().currentColor.get()) || '#0079bf';
@@ -821,6 +833,10 @@ Template.setListColorPopup.events({
     const paletteData = Blaze.getData(event.currentTarget);
     tpl.currentColor.set(paletteData?.color);
   },
+  'click .js-cards-use-list-color'(event, tpl) {
+    event.preventDefault();
+    tpl.cardsUseListColor.set(!tpl.cardsUseListColor.get());
+  },
   // #5514: picking from the native color wheel stores a custom hex.
   'input .js-list-color-wheel'(event, tpl) {
     const value = event.currentTarget.value;
@@ -831,7 +847,7 @@ Template.setListColorPopup.events({
   async 'submit form'(event, tpl) {
     event.preventDefault();
     try {
-      await tpl.currentList.setColor(tpl.currentColor.get());
+      await saveListColor(tpl, tpl.currentColor.get());
     } catch (err) {
       console.error('[ListColor] submit form setColor error:', err);
     }
@@ -840,7 +856,7 @@ Template.setListColorPopup.events({
   async 'click .js-submit'(event, tpl) {
     event.preventDefault();
     try {
-      await tpl.currentList.setColor(tpl.currentColor.get());
+      await saveListColor(tpl, tpl.currentColor.get());
     } catch (err) {
       console.error('[ListColor] click submit setColor error:', err);
     }
@@ -862,7 +878,16 @@ Template.setListColorPopup.events({
 // fields and calls the configuration, Sync and conflict-resolution methods in
 // server/methods/listSync.js. Authority and fresh comparison checks stay there.
 const syncFieldLabel = field => ({ spentTime: 'spent-time-hours', estimate: 'scrum-estimate',
-  originalEstimate: 'sync-original-time', remainingEstimate: 'sync-remaining-time' })[field] || field;
+  originalEstimate: 'sync-original-time', remainingEstimate: 'sync-remaining-time',
+  // Scrum planning (models/lib/listSyncPlanning.js); `scrum` is how a preview
+  // names a card whose planning changes.
+  sprint: 'sync-planning-sprint', releases: 'sync-planning-releases', scrum: 'sync-planning-fields' })[field] || field;
+// The fields each source can sync: planning only where its issues carry it
+// (models/lib/listSyncPlanning.js SOURCE_PLANNING).
+const syncFieldChoices = type => (type === 'jira'
+  ? ['title', 'description', 'spentTime', 'estimate', 'originalEstimate', 'remainingEstimate', 'sprint', 'releases']
+  : type === 'gitlab' ? ['title', 'description', 'estimate', 'sprint', 'releases']
+    : type ? ['title', 'description', 'releases'] : ['title', 'description']);
 
 Template.listSyncPopup.onCreated(function () {
   const tpl = this;
@@ -980,11 +1005,12 @@ Template.listSyncPopup.helpers({
   syncTimeEnabled() {
     return Template.instance().selectedSyncFields.get().some(field => ['originalEstimate', 'remainingEstimate'].includes(field));
   },
+  syncPlanningEnabled() {
+    return Template.instance().selectedSyncFields.get().some(field => ['sprint', 'releases'].includes(field));
+  },
   syncTextFields() {
     const fields = Template.instance().selectedSyncFields.get();
-    const type = Template.instance().selectedSyncType.get();
-    const choices = type === 'jira' ? ['title', 'description', 'spentTime', 'estimate', 'originalEstimate', 'remainingEstimate']
-      : type === 'gitlab' ? ['title', 'description', 'estimate'] : ['title', 'description'];
+    const choices = syncFieldChoices(Template.instance().selectedSyncType.get());
     return choices.map(field => ({ field, label: syncFieldLabel(field), checked: fields.includes(field) }));
   },
   listSyncSourceTypes() {
@@ -1132,9 +1158,8 @@ Template.listSyncPopup.events({
   'change .js-list-sync-type'(event, tpl) {
     tpl.clearSyncPreview();
     tpl.selectedSyncType.set(event.currentTarget.value);
-    const kept = event.currentTarget.value === 'jira' ? null
-      : event.currentTarget.value === 'gitlab' ? ['title', 'description', 'estimate'] : ['title', 'description'];
-    if (kept) tpl.selectedSyncFields.set(tpl.selectedSyncFields.get().filter(field => kept.includes(field)));
+    const kept = syncFieldChoices(event.currentTarget.value);
+    tpl.selectedSyncFields.set(tpl.selectedSyncFields.get().filter(field => kept.includes(field)));
   },
   'click a.js-toggle-list-sync-enabled'(event, tpl) {
     tpl.clearSyncPreview();

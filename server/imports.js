@@ -349,6 +349,8 @@ import '/server/checklistResetSchedule';
 import '/server/autoArchiveCards';
 import '/server/listSync';
 import '/server/methods/listSync';
+import '/server/methods/listSyncStuck';
+import '/server/importRuns';
 import '/server/methods/instanceFeatures';
 import '/server/methods/emailRecovery';
 import '/server/methods/importReport';
@@ -405,6 +407,10 @@ import '/server/methods/loginOffices';
 // Presence for Admin Panel > People (#3678, #3734): last-active timestamp set on
 // login and refreshed by an open client session's heartbeat.
 import '/server/lastActiveOnLogin';
+// Automatic logout: LOGOUT_WITH_TIMER and the LOGOUT_* settings.
+import '/server/logoutTimer';
+// #824: DEFAULT_AVATAR_URL for users without an avatar of their own.
+import '/server/defaultAvatar';
 import '/server/methods/lastActiveHeartbeat';
 import '/server/importedUserReconciliation';
 

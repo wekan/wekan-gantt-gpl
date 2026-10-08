@@ -108,9 +108,10 @@
       #-----------------------------------------------------------------
       # MongoDB database URL required
       export MONGO_URL=mongodb://127.0.0.1:27017/wekan
-      # MONGO_PASSWORD_FILE : MongoDB password file (Docker secrets)
-      # example : export MONGO_PASSWORD_FILE=/run/secrets/mongo_password
-      #export MONGO_PASSWORD_FILE=
+      # MONGO_URL_FILE : a file holding the whole MongoDB URL, password included
+      # (Docker secrets). Comment out MONGO_URL above to use it.
+      # example : export MONGO_URL_FILE=/run/secrets/mongo_url
+      #export MONGO_URL_FILE=
       #-----------------------------------------------------------------
       # MONGO_OPLOG_URL: MongoDB oplog connection for real-time reactivity
       # Required for Change Streams and OpLog tailing to work.
@@ -148,9 +149,9 @@
       #   ap-southeast-1,ap-northeast-1,sa-east-1
       #
       #export S3='{"s3":{"key": "xxx", "secret": "xxx", "bucket": "xxx", "region": "xxx"}}'
-      # S3_SECRET_FILE : S3 secret file (Docker secrets)
-      # example : export S3_SECRET_FILE=/run/secrets/s3_secret
-      #export S3_SECRET_FILE=
+      # S3_SECRET_KEY_FILE : a file holding S3_SECRET_KEY, the S3 secret access key (Docker secrets)
+      # example : export S3_SECRET_KEY_FILE=/run/secrets/s3_secret_key
+      #export S3_SECRET_KEY_FILE=
       #-----------------------------------------------------------------
       # https://github.com/wekan/wekan/wiki/Troubleshooting-Mail
       # https://github.com/wekan/wekan-mongodb/blob/master/docker-compose.yml
@@ -162,9 +163,9 @@
       #export MAIL_SERVICE=Outlook365
       #export MAIL_SERVICE_USER=firstname.lastname@hotmail.com
       #export MAIL_SERVICE_PASSWORD=SecretPassword
-      # MAIL_SERVICE_PASSWORD_FILE : Password file for mail service (Docker secrets)
-      # example : export MAIL_SERVICE_PASSWORD_FILE=/run/secrets/mail_service_password
-      #export MAIL_SERVICE_PASSWORD_FILE=
+      # MAIL_URL_FILE : a file holding the whole MAIL_URL, password included (Docker secrets)
+      # example : export MAIL_URL_FILE=/run/secrets/mail_url
+      #export MAIL_URL_FILE=
       #---------------------------------------------
       #export KADIRA_OPTIONS_ENDPOINT=http://127.0.0.1:11011
       #---------------------------------------------
@@ -204,6 +205,9 @@
       #export AVATARS_UPLOAD_EXTERNAL_PROGRAM="/usr/local/bin/avscan {file}"
       #export AVATARS_UPLOAD_MIME_TYPES="image/*"
       #export AVATARS_UPLOAD_MAX_SIZE=500000
+      # DEFAULT_AVATAR_URL : avatar of users who have not set one, a URL with {username},
+      # {userId}, {emailMd5} or {emailSha256} replaced. Example: http://192.168.1.200/avatars/{username}.png
+      #export DEFAULT_AVATAR_URL=
       #---------------------------------------------------------------
       #---------------------------------------------------------------
       # ==== CARD OPENED, SEND WEBHOOK MESSAGE ====
@@ -639,6 +643,8 @@
       #
       # OAUTH2_ALLOWED_EMAIL_DOMAINS : Comma separated e-mail domains allowed to log in with OAuth2/OIDC. Empty: every domain. Example: example.com,example.org
       #export OAUTH2_ALLOWED_EMAIL_DOMAINS=
+      # OAUTH2_DEFAULT_ORGANIZATION : an existing organization (short name, display name or id) that every account created by an OAuth2/OIDC login joins.
+      #export OAUTH2_DEFAULT_ORGANIZATION=
       #
       # PROPAGATE_OIDC_DATA : Update groups, admin status, e-mail, full name and username from the OIDC provider at every login (true). Default: false
       #export PROPAGATE_OIDC_DATA=
@@ -867,6 +873,9 @@
       # account with the same email. Default: false = the login is refused, not merged,
       # like OAUTH2_MERGE_EXISTING_USERS. Enable only if you trust the provider's emails.
       #export OAUTH_PROVIDERS_MERGE_EXISTING_USERS=false
+      # OAUTH_PROVIDERS_ALLOWED_EMAIL_DOMAINS : only these email domains may sign in with
+      # the providers above, comma separated, like OAUTH2_ALLOWED_EMAIL_DOMAINS. Empty: all.
+      #export OAUTH_PROVIDERS_ALLOWED_EMAIL_DOMAINS=example.com
       # PASSWORDLESS_ENABLED : email a one-time sign-in code instead of asking a
       # password. Needs MAIL_URL. Also switchable in Admin Panel / People / Login.
       #export PASSWORDLESS_ENABLED=true
@@ -887,6 +896,22 @@
         for _f in /sys/fs/cgroup/memory.max /sys/fs/cgroup/memory/memory.limit_in_bytes; do [ -r "$_f" ] || continue; _b=$(cat "$_f" 2>/dev/null || true); case "$_b" in ''|max|*[!0-9]*) continue;; esac; _m=$((_b/1048576)); [ "$_m" -gt 0 ] && [ "$_m" -lt "$_memory_mb" ] && _memory_mb=$_m; break; done
         _heap_mb=$((_memory_mb*3/5)); [ "$_heap_mb" -gt 4096 ] && _heap_mb=4096
         export NODE_OPTIONS="--max-old-space-size=$_heap_mb"
+      fi
+      # MONGO_URL_FILE (#5724): a file holding the whole MongoDB URL, password
+      # included (Docker / Kubernetes secrets). Read here because Meteor connects
+      # with MONGO_URL before any WeKan code runs. MONGO_URL wins when both are set.
+      if [ -z "${MONGO_URL:-}" ] && [ -n "${MONGO_URL_FILE:-}" ]; then
+        if [ ! -r "$MONGO_URL_FILE" ]; then
+          echo "ERROR: MONGO_URL_FILE=$MONGO_URL_FILE cannot be read." >&2
+          exit 1
+        fi
+        MONGO_URL="$(cat "$MONGO_URL_FILE")"
+        if [ -z "$MONGO_URL" ]; then
+          echo "ERROR: MONGO_URL_FILE=$MONGO_URL_FILE is empty." >&2
+          exit 1
+        fi
+        export MONGO_URL
+        echo "Using MONGO_URL from MONGO_URL_FILE"
       fi
       bash -c "ulimit -s 65500; exec node main.js"
       #node main.js

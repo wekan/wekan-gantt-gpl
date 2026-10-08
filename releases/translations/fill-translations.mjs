@@ -42,6 +42,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { translationTokens } from './placeholder-tokens.mjs';
 
 const DATA_DIR = 'imports/i18n/data';
 const EN_FILE = path.join(DATA_DIR, 'en.i18n.json');
@@ -82,6 +83,9 @@ const isEnglishVariant = code => /^en([_-].*)?$/.test(code) || code === 'en';
 // needs a different word. Keep those exceptions per locale; putting them in the
 // source-wide list would hide real work in every language.
 const LOCALE_INVARIANTS = {
+  // Bislama's native color term is also "red". Exempt only these labels and
+  // this exact source value; changed source prose still needs translation.
+  bi: new Set(['color-red', 'blockly-COLOUR_RGB_RED'].filter(key => en[key] === 'red')),
   kw: new Set(["blockly-ALT_KEY", "blockly-BACKSPACE_KEY", "blockly-CAPS_LOCK_KEY", "blockly-CHROME_OS", "blockly-COMMAND_KEY", "blockly-CONTROL_KEY", "blockly-END_KEY", "blockly-ENTER_KEY", "blockly-ESCAPE", "blockly-HOME_KEY", "blockly-INSERT_KEY", "blockly-LINUX", "blockly-MAC_OS", "blockly-MATH_TRIG_ACOS", "blockly-MATH_TRIG_ASIN", "blockly-MATH_TRIG_ATAN", "blockly-MATH_TRIG_COS", "blockly-MATH_TRIG_SIN", "blockly-MATH_TRIG_TAN", "blockly-OPTION_KEY", "blockly-PAGE_DOWN_KEY", "blockly-PAGE_UP_KEY", "blockly-PAUSE_KEY", "blockly-SHIFT_KEY", "blockly-TAB_KEY", "blockly-WINDOWS"]),
   as: new Set(["blockly-ALT_KEY", "blockly-BACKSPACE_KEY", "blockly-CAPS_LOCK_KEY", "blockly-CHROME_OS", "blockly-COMMAND_KEY", "blockly-CONTROL_KEY", "blockly-END_KEY", "blockly-ENTER_KEY", "blockly-ESCAPE", "blockly-HOME_KEY", "blockly-INSERT_KEY", "blockly-LINUX", "blockly-LOGIC_NULL", "blockly-MAC_OS", "blockly-MATH_TRIG_ACOS", "blockly-MATH_TRIG_ASIN", "blockly-MATH_TRIG_ATAN", "blockly-MATH_TRIG_COS", "blockly-MATH_TRIG_SIN", "blockly-MATH_TRIG_TAN", "blockly-OPTION_KEY", "blockly-PAGE_DOWN_KEY", "blockly-PAGE_UP_KEY", "blockly-PAUSE_KEY", "blockly-SHIFT_KEY", "blockly-SPACE_KEY", "blockly-TAB_KEY", "blockly-WINDOWS"]),
   am: new Set(["blockly-ALT_KEY", "blockly-BACKSPACE_KEY", "blockly-CAPS_LOCK_KEY", "blockly-CHROME_OS", "blockly-COMMAND_KEY", "blockly-CONTROL_KEY", "blockly-END_KEY", "blockly-ENTER_KEY", "blockly-ESCAPE", "blockly-HOME_KEY", "blockly-INSERT_KEY", "blockly-LINUX", "blockly-LOGIC_NULL", "blockly-MAC_OS", "blockly-MATH_TRIG_ACOS", "blockly-MATH_TRIG_ASIN", "blockly-MATH_TRIG_ATAN", "blockly-MATH_TRIG_COS", "blockly-MATH_TRIG_SIN", "blockly-MATH_TRIG_TAN", "blockly-OPTION_KEY", "blockly-PAGE_DOWN_KEY", "blockly-PAGE_UP_KEY", "blockly-PAUSE_KEY", "blockly-SHIFT_KEY", "blockly-SPACE_KEY", "blockly-TAB_KEY", "blockly-WINDOWS"]),
@@ -1047,8 +1051,26 @@ const pendingTransifex = new Set(((readJson('releases/translations/pending-trans
   .filter(row => row && typeof row.key === 'string' && row.key in en)
   .map(row => row.key));
 
+// Blockly's operating-system names and compact mathematical/code symbols are
+// valid as written in any locale. Match BOTH key and value: their explanatory
+// tooltips and accessibility labels still need prose translations, as does any
+// future source wording that replaces a symbol. Existing localized names win.
+const BLOCKLY_TECHNICAL_VALUES = {
+  'blockly-CHROME_OS': 'ChromeOS',
+  'blockly-LINUX': 'Linux',
+  'blockly-MAC_OS': 'macOS',
+  'blockly-WINDOWS': 'Windows',
+  'blockly-LOGIC_NULL': 'null',
+  'blockly-MATH_TRIG_ACOS': 'acos',
+  'blockly-MATH_TRIG_ASIN': 'asin',
+  'blockly-MATH_TRIG_ATAN': 'atan',
+  'blockly-MATH_TRIG_COS': 'cos',
+  'blockly-MATH_TRIG_SIN': 'sin',
+  'blockly-MATH_TRIG_TAN': 'tan',
+};
 const isInvariantForLocale = (code, key) =>
-  isInvariantSource(en[key]) || Boolean(LOCALE_INVARIANTS[code]?.has(key)) || reviewedSourceTerms.has(`${code}:${key}`);
+  BLOCKLY_TECHNICAL_VALUES[key] === en[key]
+  || isInvariantSource(en[key]) || Boolean(LOCALE_INVARIANTS[code]?.has(key)) || reviewedSourceTerms.has(`${code}:${key}`);
 
 function langFile(code) { return path.join(DATA_DIR, `${code}.i18n.json`); }
 
@@ -1138,6 +1160,10 @@ if (mode === '--apply') {
     if (!(k in en)) { ignored++; continue; }              // not a real key
     if (typeof v !== 'string' || !v.trim() || v === en[k]) { ignored++; continue; }
     if (!isPlaceholder(j, k) || isInvariantForLocale(code, k)) { skippedHuman++; continue; } // never overwrite a human translation
+    if (JSON.stringify(translationTokens(v)) !== JSON.stringify(translationTokens(en[k]))) {
+      console.error(`[fill] ${code}:${k}: broken source placeholders; no translations written.`);
+      process.exit(1);
+    }
     j[k] = v; filled++;
   }
   writeOrdered(langFile(code), j);

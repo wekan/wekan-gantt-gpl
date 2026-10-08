@@ -603,6 +603,402 @@
     {
       "key": "card-field-visibility-desc",
       "since": "2026-10-08"
+    },
+    {
+      "key": "login-setting-env-only",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "ldap-sync-now",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "ldap-sync-now-done",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "ldap-sync-now-error",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "ldap-sync-now-nothing",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "import-board-instruction-todoist",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "import-board-instruction-opml",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "import-board-instruction-orgmode",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "r-assignee",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "r-add-actinguser-assignee",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "r-remove-all-assignees",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "oauth-providers-allowed-email-domains",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "scrum-release-scope",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "scrum-releases-select-help",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "stuck-sync-operation-heading",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "stuck-sync-operation-description",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "stuck-sync-operation-list",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "stuck-sync-operation-progress",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "stuck-sync-operation-reason",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "stuck-sync-operation-applied",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "stuck-sync-operation-reason-scope-changed",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "stuck-sync-operation-reason-access-denied",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "stuck-sync-operation-reason-trigger-unknown",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "stuck-sync-operation-reason-intent-missing",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "stuck-sync-operation-reason-unknown",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "stuck-sync-operation-replayable-now",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "stuck-sync-operation-discard",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "stuck-sync-operation-discard-confirm",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "stuck-sync-operation-refresh",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "stuck-sync-operation-empty",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "stuck-sync-operation-truncated",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "stuck-sync-operation-unavailable",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "stuck-sync-operation-missing",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "stuck-sync-operation-not-stuck",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "stuck-sync-operation-replayable",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "stuck-sync-operation-busy",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "stuck-sync-operation-failed",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "read-only-field",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "scrum-history-checkpoint-stuck",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "scrum-history-checkpoint-counts",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "scrum-history-checkpoint-hint",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "scrum-history-checkpoint-rollback",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "scrum-history-checkpoint-discard",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "scrum-history-checkpoint-discard-confirm",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "scrum-history-checkpoint-ask-admin",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "cards-use-list-color",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "board-announcement",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "board-announcement-enabled",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "external-link-rules",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "external-link-rules-description",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "external-link-identifier-aliases",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "r-moved-forward",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "r-moved-back",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "sync-planning-sprint",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "sync-planning-releases",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "sync-planning-fields",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "sync-planning-hint",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "scrum-import-into-board",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "scrum-import-into-board-hint",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "scrum-import-preview",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "scrum-import-choose-file",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "scrum-import-invalid-file",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "scrum-import-preview-sprints",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "scrum-import-preview-releases",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "scrum-import-preview-cards",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "scrum-import-preview-nothing",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "scrum-import-into-board-done",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "scrum-import-card-not-matched",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "scrum-import-card-ambiguous",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "scrum-import-card-on-another-board",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "scrum-import-record-ambiguous",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "scrum-import-record-not-imported",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "scrum-import-sprint-finished",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "interrupted-import-heading",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "interrupted-import-description",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "interrupted-import-board",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "interrupted-import-progress",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "interrupted-import-created",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "interrupted-import-source",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "interrupted-import-state-stopped",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "interrupted-import-state-failed",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "interrupted-import-state-discarding",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "interrupted-import-scrum",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "interrupted-import-counts",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "interrupted-import-no-board",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "interrupted-import-keep",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "interrupted-import-discard",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "interrupted-import-keep-confirm",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "interrupted-import-discard-confirm",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "interrupted-import-refresh",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "interrupted-import-empty",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "interrupted-import-truncated",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "interrupted-import-unavailable",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "interrupted-import-missing",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "interrupted-import-not-interrupted",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "interrupted-import-foreign-board",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "interrupted-import-scrum-busy",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "interrupted-import-failed",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "login-origin-mismatch",
+      "since": "2026-10-08"
     }
   ]
 }

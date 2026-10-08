@@ -31,6 +31,20 @@ RecoveryEvents.types = {
   ATTACHMENT_PERMANENTLY_DELETED: 'attachment-permanently-deleted',
   // Detail lists what an import could not bring over (models/lib/importLossReport.js).
   IMPORT_COMPLETED_WITH_WARNINGS: 'import-completed-with-warnings',
+  // A saved list Sync operation that cannot be replayed blocks the list's Sync
+  // until an administrator discards it (server/lib/listSyncStuck.js).
+  LIST_SYNC_OPERATION_STUCK: 'list-sync-operation-stuck',
+  LIST_SYNC_OPERATION_DISCARDED: 'list-sync-operation-discarded',
+  // A Scrum History undo or redo stopped on a conflict, rolled back or
+  // discarded by a board administrator or the offline command
+  // (server/lib/scrumHistoryRecovery.js).
+  SCRUM_HISTORY_CHECKPOINT_RESOLVED: 'scrum-history-checkpoint-resolved',
+  // A board import that stopped before finishing, flagged once by the run
+  // scan, and an administrator's decision to discard or keep its partial
+  // board (server/lib/importRuns.js).
+  IMPORT_INTERRUPTED: 'import-interrupted',
+  IMPORT_DISCARDED: 'import-discarded',
+  IMPORT_KEPT: 'import-kept',
 };
 
 RecoveryEvents.attachSchema(
