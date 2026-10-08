@@ -123,3 +123,57 @@ const data = JSON.parse(fs.readFileSync(path.join(root, 'imports/i18n/data/mk.i1
   assert.equal(data.swimlane, 'Лента');
   console.log('macedonianAuditedTranslations: actual date and label rendering, checklist removal meaning and native labels passed');
 })().catch(error => { console.error(error); process.exitCode = 1; });
+
+const englishRecoverySource = require('../imports/i18n/data/en.i18n.json');
+const { translationTokens } = require('../releases/translations/placeholder-tokens.mjs');
+const interruptedImportKeys = Object.keys(englishRecoverySource).filter(key => key.startsWith('interrupted-import-'));
+assert.equal(interruptedImportKeys.length, 25);
+for (const key of interruptedImportKeys) {
+  assert.notEqual(data[key], englishRecoverySource[key], key);
+  assert.deepEqual(translationTokens(data[key]), translationTokens(englishRecoverySource[key]), key);
+  assert.match(data[key], /[ЃѓЌќЏџЉљЊњЈјЅѕА-Яа-я]/u, key);
+}
+assert.match(data['interrupted-import-description'], /изворната датотека не се чува/);
+assert.match(data['interrupted-import-description'], /сè што е додадено потоа/);
+assert.match(data['interrupted-import-discard-confirm'], /трајно се отстрануваат/);
+assert.match(data['interrupted-import-keep-confirm'], /Ништо не се отстранува/);
+assert.match(data['interrupted-import-foreign-board'], /не е променето/);
+assert.match(data['interrupted-import-truncated'], /50 најстари/);
+assert.match(data['interrupted-import-scrum-busy'], /сè уште се запишува или обновува/);
+
+const syncRecoveryKeys = Object.keys(englishRecoverySource).filter(key => key.startsWith('stuck-sync-operation-'));
+assert.equal(syncRecoveryKeys.length, 23);
+for (const key of syncRecoveryKeys) {
+  assert.notEqual(data[key], englishRecoverySource[key], key);
+  assert.deepEqual(translationTokens(data[key]), translationTokens(englishRecoverySource[key]), key);
+}
+assert.match(data['stuck-sync-operation-description'], /веќе применетите промени остануваат/);
+assert.match(data['stuck-sync-operation-description'], /преостанатите зачувани промени никогаш не се запишуваат/);
+assert.match(data['stuck-sync-operation-reason-access-denied'], /право за запишување во целиот список/);
+assert.match(data['stuck-sync-operation-replayable-now'], /не може да се отфрли/);
+assert.match(data['stuck-sync-operation-not-stuck'], /не може да се отфрли/);
+assert.match(data['stuck-sync-operation-truncated'], /50 најстари/);
+assert.match(data['stuck-sync-operation-busy'], /се синхронизира во моментов/);
+
+const translatedPlanningControls = ["board-announcement", "board-announcement-enabled", "cards-use-list-color", "import-board-instruction-opml", "import-board-instruction-orgmode", "import-board-instruction-todoist", "external-link-rules", "external-link-rules-description", "external-link-identifier-aliases", "read-only-field", "r-moved-forward", "r-moved-back", "r-assignee", "r-add-actinguser-assignee", "r-remove-all-assignees", "ldap-sync-now", "ldap-sync-now-done", "ldap-sync-now-error", "ldap-sync-now-nothing", "oauth-providers-allowed-email-domains", "login-origin-mismatch", "scrum-release-scope", "scrum-releases-select-help", "scrum-import-into-board", "scrum-import-into-board-hint", "scrum-import-preview", "scrum-import-choose-file", "scrum-import-invalid-file", "scrum-import-preview-sprints", "scrum-import-preview-releases", "scrum-import-preview-cards", "scrum-import-preview-nothing", "scrum-import-into-board-done", "scrum-import-card-not-matched", "scrum-import-card-ambiguous", "scrum-import-card-on-another-board", "scrum-import-record-ambiguous", "scrum-import-record-not-imported", "scrum-import-sprint-finished", "sync-planning-sprint", "sync-planning-releases", "sync-planning-fields", "sync-planning-hint", "scrum-history-checkpoint-stuck", "scrum-history-checkpoint-counts", "scrum-history-checkpoint-hint", "scrum-history-checkpoint-rollback", "scrum-history-checkpoint-discard", "scrum-history-checkpoint-discard-confirm", "scrum-history-checkpoint-ask-admin", "login-setting-env-only"];
+for (const key of translatedPlanningControls) {
+  assert.notEqual(data[key], englishRecoverySource[key], key);
+  assert.deepEqual(translationTokens(data[key]), translationTokens(englishRecoverySource[key]), key);
+}
+for (const literal of ['TODO', 'DONE', 'SCHEDULED', 'DEADLINE', 'CLOSED']) {
+  assert.ok(data['import-board-instruction-orgmode'].includes(literal), literal);
+}
+for (const literal of ['@labels', 'p1', 'p3', 'CSV']) {
+  assert.ok(data['import-board-instruction-todoist'].includes(literal), literal);
+}
+assert.ok(data['external-link-rules-description'].includes('[{identifier}:{number}] = https://tracker.example.com/{identifier}/{number}'));
+assert.ok(data['external-link-identifier-aliases'].includes('TK=Task, IN=Incident'));
+for (const literal of ['LDAP_BACKGROUND_SYNC_IMPORT_NEW_USERS', 'LDAP_BACKGROUND_SYNC_KEEP_EXISTANT_USERS_UPDATED']) {
+  assert.ok(data['ldap-sync-now-nothing'].includes(literal), literal);
+}
+assert.match(data['login-origin-mismatch'], /ROOT_URL/);
+assert.match(data['sync-planning-hint'], /првата синхронизација никогаш не го отстранува/);
+assert.match(data['scrum-import-into-board-hint'], /никогаш не се дуплираат/);
+assert.match(data['scrum-history-checkpoint-hint'], /никој друг.*не ги променил/);
+assert.match(data['scrum-history-checkpoint-hint'], /не менува записи/);
+assert.match(data['login-setting-env-only'], /само за читање/);

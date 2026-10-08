@@ -4,6 +4,256 @@ const fs = require('node:fs');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const data = JSON.parse(fs.readFileSync(path.join(root, 'imports/i18n/data/hr.i18n.json'), 'utf8'));
+const english = JSON.parse(fs.readFileSync(path.join(root, 'imports/i18n/data/en.i18n.json'), 'utf8'));
+const { translationTokens } = require('../releases/translations/placeholder-tokens.mjs');
+const correctedControls = ["activity-moved", "activity-checklist-uncompleted-card", "allboards.starred", "allboards.remaining", "allboards.workspaces", "allboards.add-workspace", "allboards.add-workspace-prompt", "allboards.add-subworkspace", "allboards.add-subworkspace-prompt", "allboards.edit-workspace-name", "addWorkspacePopup-title", "add-template", "add-card-to-top-of-list", "add-card-to-bottom-of-list", "convertChecklistItemToCardPopup-title", "add-cover", "add-after-list", "memberPopup-title", "and-n-other-card", "and-n-other-card_plural", "template-container", "board-change-background-image", "board-background-image-url", "remove-background-image", "board_members", "board-private-info", "board-public-info", "boardChangeColorPopup-title", "allBoardsChangeBackgroundImagePopup-title", "boardChangeViewPopup-title", "board-view", "zoom-level", "enter-zoom-level", "board-view-collapse", "board-view-gantt", "board-view-table", "calendar-previous-month-label", "calendar-next-month-label", "due-today", "positiveVoteMembersPopup-title", "negativeVoteMembersPopup-title", "vote-question", "card-edit-planning-poker", "poker-question", "poker-finish", "poker-result-votes", "poker-result-who", "poker-replay", "set-estimation", "cardArchivePopup-title", "cardDetailsActionsPopup-title", "cardAssigneePopup-title", "deleteAvatarPopup-title", "close-card", "color-indigo", "color-lime", "color-magenta", "color-mistyrose", "color-orange", "color-paleturquoise", "color-peachpuff", "color-plum", "color-saddlebrown", "color-sky", "color-slateblue", "unset-color", "comments", "comment-only", "comment-only-desc", "comment-assigned-only"];
+for (const key of correctedControls) {
+  assert.doesNotMatch(data[key], /[\p{Script=Cyrillic}]/u, key);
+  assert.deepEqual(translationTokens(data[key]), translationTokens(english[key]), key);
+}
+assert.equal(data['allboards.workspaces'], 'Radni prostori');
+assert.match(data['activity-checklist-uncompleted-card'], /nedovršenu/);
+assert.match(data['add-card-to-top-of-list'], /vrh popisa/);
+assert.match(data['add-card-to-bottom-of-list'], /dno popisa/);
+assert.match(data['board-private-info'], /<strong>privatna<\/strong>/);
+assert.match(data['board-public-info'], /<strong>javna<\/strong>/);
+assert.match(data['enter-zoom-level'], /50-300%/);
+assert.equal(data['board-view-table'], 'Tablica');
+assert.equal(data['poker-result-who'], 'Tko');
+assert.equal(data['calendar-previous-month-label'], 'Prethodni mjesec');
+assert.equal(data['calendar-next-month-label'], 'Sljedeći mjesec');
+assert.match(data['comment-only-desc'], /samo komentirati/);
+const correctedPermissions = ["deleteCommentPopup-title", "read-only", "read-assigned-only", "worker", "worker-desc", "computer", "confirm-subtask-delete-popup", "copy-card-link-to-clipboard", "copy-text-to-clipboard", "linkCardPopup-title", "copyManyCardsPopup-title", "current", "custom-field-currency-option", "custom-field-dropdown-none", "date-format", "date-format-yyyy-mm-dd", "date-format-dd-mm-yyyy", "date-format-mm-dd-yyyy", "deleteCustomFieldPopup-title", "deleteLabelPopup-title", "done", "edit-wip-limit", "soft-wip-limit", "addReactionPopup-title", "editCardSpentTimePopup-title", "editNotificationPopup-title", "email", "email-address", "email-enrollAccount-subject", "email-fail", "email-fail-text", "email-invalid", "email-invite", "email-invite-subject", "push-invite-title", "enable-wip-limit", "error-board-doesNotExist", "error-board-notAdmin", "error-board-notAMember", "error-json-malformed", "error-json-schema", "error-list-doesNotExist", "error-user-doesNotExist", "error-user-notAllowSelf", "error-user-notCreated", "error-username-taken", "error-email-taken", "export-board", "export-card", "export-card-attachment-size", "exportBoardPopup-title", "exportCardPopup-title", "sort", "sorted", "remove-sort", "list-label-modifiedAt", "list-label-title", "list-label-sort", "list-label-short-modifiedAt", "list-label-short-title", "list-label-short-sort", "filter", "filter-cards", "filter-dates-label", "filter-no-due-date"];
+for (const key of correctedPermissions) {
+  assert.doesNotMatch(data[key], /[\p{Script=Cyrillic}]/u, key);
+  assert.deepEqual(translationTokens(data[key]), translationTokens(english[key]), key);
+}
+for (const key of ['date-format-yyyy-mm-dd', 'date-format-dd-mm-yyyy', 'date-format-mm-dd-yyyy']) {
+  assert.equal(data[key], english[key], 'literal date format: ' + key);
+}
+assert.match(data['worker-desc'], /samo premještati.*dodijeliti sebe.*komentirati/);
+assert.equal(data['read-only'], 'Samo za čitanje');
+assert.equal(data.computer, 'Računalo');
+assert.match(data['error-board-notAdmin'], /administrator/);
+assert.match(data['error-board-notAMember'], /član/);
+assert.match(data['error-user-notAllowSelf'], /Ne možete pozvati sami sebe/);
+assert.match(data['email-fail'], /nije uspjelo/);
+assert.match(data['error-json-malformed'], /JSON/);
+assert.match(data['list-label-modifiedAt'], /posljednjeg pristupa/);
+assert.equal(data['filter-no-due-date'], 'Bez roka');
+const correctedFilters = ["filter-overdue", "filter-due-today", "filter-due-tomorrow", "filter-clear", "filter-labels-label", "filter-assignee-label", "filter-creator-label", "filter-no-assignee", "filter-custom-fields-label", "filter-no-custom-fields", "filter-hide-empty", "filter-on-desc", "filter-to-selection", "other-filters-label", "advanced-filter-label", "fullname", "header-logo-title", "show-activities", "import-board", "import-json-placeholder", "import-map-members", "invalid-date", "invalid-time", "invalid-user", "joined", "just-invited", "keyboard-shortcuts", "label-default", "link-card", "list-archive-cards", "list-archive-cards-pop", "list-move-cards", "set-color-list", "settingsUserPopup-title", "settingsTeamPopup-title", "settingsOrgPopup-title", "listImportCardPopup-title", "listImportCardsTsvPopup-title", "link-list", "list-delete-suggest-archive", "gantt", "log-out", "log-in", "loginPopup-title", "memberMenuPopup-title", "menu", "move-selection", "copy-selection", "moveCardPopup-title", "moveCardToBottom-title", "moveCardToTop-title", "moveSelectionPopup-title", "copySelectionPopup-title", "selection-color", "multi-selection", "multi-selection-member", "multi-selection-on", "normal-assigned-only", "notify-watch", "participating", "remove-cover", "search-example", "select-color", "select-board", "setWipLimitPopup-title", "shortcut-add-self", "shortcut-assign-self", "shortcut-autocomplete-emoji", "shortcut-autocomplete-members", "shortcut-clear-filters"];
+for (const key of correctedFilters) {
+  assert.doesNotMatch(data[key], /[\p{Script=Cyrillic}]/u, key);
+  assert.deepEqual(translationTokens(data[key]), translationTokens(english[key]), key);
+}
+assert.equal(data['filter-due-today'], 'Rok danas');
+assert.equal(data['filter-due-tomorrow'], 'Rok sutra');
+assert.match(data['filter-hide-empty'], /prazne popise/);
+assert.match(data['list-archive-cards-pop'], /povratak na ploču/);
+assert.match(data['list-delete-suggest-archive'], /sačuvali aktivnosti/);
+assert.equal(data['move-selection'], 'Premjesti odabir');
+assert.equal(data['copy-selection'], 'Kopiraj odabir');
+assert.match(data['moveCardToBottom-title'], /na dno/);
+assert.match(data['moveCardToTop-title'], /na vrh/);
+assert.equal(data['log-in'], 'Prijava');
+assert.equal(data['log-out'], 'Odjava');
+assert.match(data['shortcut-add-self'], /Dodaj sebe/);
+assert.match(data['shortcut-assign-self'], /Dodijeli sebe/);
+assert.match(data['search-example'], /Enter/);
+assert.match(data['listImportCardsTsvPopup-title'], /Excel CSV\/TSV/);
+const correctedSidebar = ["shortcut-close-dialog", "shortcut-filter-my-cards", "shortcut-toggle-filterbar", "shortcut-toggle-searchbar", "shortcut-toggle-sidebar", "show-cards-minimum-count", "sidebar-open", "sidebar-close", "signupPopup-title", "starred-boards", "starred-boards-description", "team", "this-board", "this-card", "spent-time-hours", "overtime-hours", "has-overtime-cards", "has-spenttime-cards", "tracking", "unassign-member", "unsaved-description", "unwatch", "upload", "upload-avatar", "uploaded-avatar", "uploading-files", "upload-failed", "upload-completed", "import-usernames", "view-it", "warn-list-archived", "watching", "welcome-board", "welcome-swimlane", "card-templates-swimlane", "list-templates-swimlane", "board-templates-swimlane", "what-to-do", "wipLimitErrorPopup-title", "wipLimitErrorPopup-dialog-pt2", "people", "invite-people", "to-boards", "email-addresses", "smtp-host-description", "smtp-port-description", "smtp-tls-description", "smtp-host", "smtp-port", "smtp-tls", "send-smtp-test", "email-templates-title", "email-templates-invite-subject", "email-templates-invite-body", "email-templates-activity-subject", "email-templates-activity-body", "invitation-code", "email-invite-register-subject", "email-smtp-test-subject", "email-smtp-test-text", "error-invitation-code-not-exist", "error-notAuthorized", "webhook-title", "webhook-token", "outgoing-webhooks", "bidirectional-webhooks", "outgoingWebhooksPopup-title", "boardCardTitlePopup-title", "disable-webhook", "global-webhook", "new-outgoing-webhook", "MongoDB_storage_engine", "MongoDB_Oplog_enabled", "OS_Arch", "OS_Cpus"];
+for (const key of correctedSidebar) {
+  assert.doesNotMatch(data[key], /[\p{Script=Cyrillic}]/u, key);
+  assert.deepEqual(translationTokens(data[key]), translationTokens(english[key]), key);
+}
+assert.equal(data['sidebar-open'], 'Otvori bočnu traku');
+assert.equal(data['sidebar-close'], 'Zatvori bočnu traku');
+assert.match(data['upload-failed'], /nije uspio/);
+assert.match(data['upload-completed'], /je dovršen/);
+assert.match(data['unsaved-description'], /nespremljen opis/);
+assert.match(data['wipLimitErrorPopup-dialog-pt2'], /Premjestite.*ili.*veće WIP/);
+assert.match(data['smtp-port-description'], /odlaznu e-poštu/);
+assert.match(data['smtp-tls-description'], /TLS.*SMTP/);
+assert.match(data['email-templates-invite-subject'], /Predmet/);
+assert.match(data['email-templates-invite-body'], /Sadržaj/);
+assert.match(data['disable-webhook'], /Onemogući/);
+assert.match(data['bidirectional-webhooks'], /Dvosmjerni/);
+assert.match(data['error-notAuthorized'], /Nemate ovlasti/);
+assert.equal(data['welcome-swimlane'], 'Prekretnica 1');
+const correctedCardSettings = ["OS_Freemem", "OS_Loadavg", "OS_Platform", "OS_Release", "OS_Totalmem", "OS_Type", "OS_Uptime", "show-field-on-card", "showLabel-field-on-card", "tableVisibilityMode", "createdAt", "modifiedAt", "verified", "active", "card-received", "card-received-on", "card-end", "card-end-on", "editCardReceivedDatePopup-title", "editCardEndDatePopup-title", "setCardColorPopup-title", "setSelectionColorPopup-title", "setCardActionsColorPopup-title", "setSwimlaneColorPopup-title", "setListColorPopup-title", "board-delete-notice", "delete-board-confirm-popup", "delete-all-notifications", "default-subtasks-board", "queue", "subtask-settings", "card-settings", "minicard-settings", "boardSubtaskSettingsPopup-title", "boardCardSettingsPopup-title", "boardMinicardSettingsPopup-title", "deposit-subtasks-board", "show-parent-in-minicard", "description-on-minicard", "cover-attachment-on-minicard", "badge-attachment-on-minicard", "prefix-with-full-path", "prefix-with-parent", "subtext-with-full-path", "subtext-with-parent", "change-card-parent", "parent-card", "source-board", "no-parent", "activity-added-label", "activity-removed-label", "activity-delete-attach", "activity-added-label-card", "activity-removed-label-card", "activity-delete-attach-card", "r-rule", "r-add-trigger", "r-add-action", "r-board-rules", "r-view-rule", "r-delete-rule", "r-new-rule-name", "r-no-rules", "r-edit-rule-trigger-action", "r-w-assignee-added", "r-w-assignee-removed", "r-board", "r-sort-by", "r-trigger", "r-action"];
+for (const key of correctedCardSettings) {
+  assert.doesNotMatch(data[key], /[\p{Script=Cyrillic}]/u, key);
+  assert.deepEqual(translationTokens(data[key]), translationTokens(english[key]), key);
+}
+assert.match(data['board-delete-notice'], /Brisanje je trajno/);
+assert.match(data['delete-board-confirm-popup'], /nije moguće poništiti/);
+assert.match(data['activity-added-label'], /dodao/);
+assert.match(data['activity-removed-label'], /uklonio/);
+assert.match(data['prefix-with-full-path'], /punom putanjom/);
+assert.match(data['prefix-with-parent'], /nadređenom karticom/);
+assert.equal(data['r-trigger'], 'Okidač');
+assert.equal(data['r-action'], 'Radnja');
+const correctedRuleActions = ["r-when-a-card", "set-filter", "r-moved-to", "r-moved-from", "r-archived", "r-unarchived", "r-when-the-label", "r-when-a-member", "r-when-the-member", "r-when-a-assignee", "r-when-the-assignee", "r-when-a-attach", "r-when-a-end-date-changed", "r-when-a-received-date-changed", "r-when-a-checklist", "r-when-the-checklist", "r-completed", "r-made-incomplete", "r-when-a-item", "r-when-the-item", "r-move-card-to", "r-top-of", "r-bottom-of", "r-its-list", "r-unarchive", "r-card", "r-label", "r-member", "r-remove-all", "r-set-color", "r-checklist", "r-check-all", "r-uncheck-all", "r-items-check", "r-item", "r-of-checklist", "r-send-email", "r-rule-details", "r-d-send-email", "r-d-archive", "r-d-unarchive", "r-d-add-label", "r-d-remove-label", "r-create-card", "r-in-list", "r-in-swimlane", "r-d-add-member", "r-d-remove-member", "r-d-remove-all-member", "r-d-check-one", "r-d-uncheck-one", "r-d-check-of-list", "r-d-add-checklist", "r-d-remove-checklist", "r-by", "r-add-checklist", "r-with-items", "r-items-list", "r-add-swimlane", "r-swimlane-name", "r-set", "r-update", "r-df-start-at", "r-df-due-at", "r-df-end-at", "r-df-received-at", "custom-product-name", "layout", "hide-logo", "error-undefined", "duplicate-board", "team-number", "restore-all", "delete-all", "previous_as", "a-dueAt", "a-endAt", "a-startAt", "a-receivedAt", "above-selected-card"];
+for (const key of correctedRuleActions) {
+  assert.doesNotMatch(data[key], /[\p{Script=Cyrillic}]/u, key);
+  assert.deepEqual(translationTokens(data[key]), translationTokens(english[key]), key);
+}
+assert.match(data['r-d-archive'], /u arhivu/);
+assert.match(data['r-d-unarchive'], /iz arhive/);
+assert.match(data['r-d-add-member'], /Dodaj/);
+assert.match(data['r-d-remove-member'], /Ukloni/);
+assert.match(data['r-check-all'], /Označi sve/);
+assert.match(data['r-uncheck-all'], /Poništi/);
+assert.equal(data['r-top-of'], 'Vrh');
+assert.equal(data['r-bottom-of'], 'Dno');
+assert.equal(data['r-items-list'].split(',').length, 3);
+assert.match(data['r-when-a-end-date-changed'], /završetka/);
+assert.match(data['r-when-a-received-date-changed'], /primitka/);
+const correctedSearchControls = ["below-selected-card", "duenow", "assignee", "no-assignee", "cardAssigneesPopup-title", "addmore-detail", "show-on-card", "show-on-minicard", "new", "editOrgPopup-title", "newOrgPopup-title", "editTeamPopup-title", "newTeamPopup-title", "editUserPopup-title", "newUserPopup-title", "notifications", "view-all", "filter-by-unread", "mark-all-as-read", "remove-all-read", "allow-rename", "allowRenamePopup-title", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "status", "owner", "last-modified-at", "last-activity", "voting", "archived", "task", "create-task", "ok", "organizations", "teams", "displayName", "shortName", "website", "person", "my-attachments", "list", "myCardsViewChange-title", "myCardsViewChange-choice-table", "myCardsSortChange-choice-dueat", "dueCards-title", "dueCardsViewChange-title", "dueCardsViewChangePopup-title", "dueCardsViewChange-choice-me", "dueCardsViewChange-choice-all", "globalSearch-title", "n-n-of-n-cards-found", "operator-board", "operator-board-abbrev", "operator-swimlane", "operator-swimlane-abbrev", "operator-list-abbrev", "operator-label", "operator-user", "operator-member", "operator-member-abbrev", "operator-assignee", "operator-assignee-abbrev", "operator-creator", "operator-status", "operator-due", "operator-created", "operator-modified", "operator-sort", "operator-comment", "operator-has", "operator-limit", "operator-debug", "operator-org", "operator-team", "operator-description"];
+for (const key of correctedSearchControls) {
+  assert.doesNotMatch(data[key], /[\p{Script=Cyrillic}]/u, key);
+  assert.deepEqual(translationTokens(data[key]), translationTokens(english[key]), key);
+}
+const searchAbbreviations = Object.entries(data).filter(([key]) => /^operator-.*-abbrev$/.test(key)).map(([, value]) => value);
+assert.equal(new Set(searchAbbreviations).size, searchAbbreviations.length);
+for (const key of correctedSearchControls.filter(key => key.startsWith('operator-'))) {
+  assert.match(data[key], /^[\p{Letter}\p{Mark}]+$/u, key + ': searchable operator syntax');
+}
+assert.equal(data['operator-board'], 'ploča');
+assert.equal(data['operator-swimlane'], 'traka');
+assert.equal(data['operator-member'], 'član');
+assert.equal(data['operator-assignee'], 'zaduženi');
+assert.match(data['filter-by-unread'], /nepročitano/);
+assert.match(data['mark-all-as-read'], /Označi.*pročitano/);
+assert.match(data['remove-all-read'], /Ukloni.*pročitano/);
+assert.equal(data['wednesday'], 'Srijeda');
+assert.equal(data['myCardsViewChange-choice-table'], 'Tablica');
+const correctedPredicates = ["operator-attachment-text", "operator-checklist-text", "predicate-archived", "predicate-open", "predicate-ended", "predicate-all", "predicate-overdue", "predicate-week", "predicate-month", "predicate-quarter", "predicate-year", "predicate-due", "predicate-modified", "predicate-created", "predicate-attachment", "predicate-description", "predicate-checklist", "predicate-start", "predicate-end", "predicate-assignee", "predicate-member", "predicate-public", "predicate-private", "predicate-selector", "predicate-projection", "operator-unknown-error", "operator-status-invalid", "next-page", "previous-page", "heading-notes", "globalSearch-instructions-status-archived", "link-to-search", "excel-font", "label-colors", "label-names", "archived-at", "sort-cards", "sort-is-on", "cardsSortPopup-title", "due-date", "server-error", "title-alphabetically", "links-heading", "move-swimlane", "moveSwimlanePopup-title", "custom-field-stringtemplate", "creator", "creator-on-minicard", "reports", "boardsReportTitle", "office-people", "copy-swimlane", "copySwimlanePopup-title", "wait-spinner", "Bounce", "Cube", "Dot", "Scaleout", "Wave", "maximize-card", "minimize-card", "subject", "details", "carbon-copy", "ticket"];
+for (const key of correctedPredicates) {
+  assert.doesNotMatch(data[key], /[\p{Script=Cyrillic}]/u, key);
+  assert.deepEqual(translationTokens(data[key]), translationTokens(english[key]), key);
+}
+for (const key of correctedPredicates.filter(key => key.startsWith('predicate-') || key.endsWith('-text'))) {
+  assert.match(data[key], /^[\p{Letter}\p{Mark}]+$/u, key + ': searchable token syntax');
+}
+assert.equal(data['excel-font'], 'Arial');
+assert.match(data['carbon-copy'], /Cc:/);
+assert.equal(data['predicate-public'], 'javno');
+assert.equal(data['predicate-private'], 'privatno');
+assert.equal(data['predicate-quarter'], 'tromjesečje');
+assert.match(data['move-swimlane'], /Premjesti/);
+assert.match(data['copy-swimlane'], /Kopiraj/);
+assert.match(data['maximize-card'], /Povećaj/);
+assert.match(data['minimize-card'], /Smanji/);
+assert.match(data['next-page'], /Sljedeća/);
+assert.match(data['previous-page'], /Prethodna/);
+const correctedAdminControls = ["tickets", "ticket-number", "open", "pending", "closed", "resolved", "cancelled", "history", "request", "requests", "help-request", "cardDetailsPopup-title", "add-teams", "confirm-btn", "add-organizations", "legalNotice", "copied", "moveChecklist", "moveChecklistPopup-title", "newLineNewItem", "originOrder", "copyChecklist", "copyChecklistPopup-title", "copyChecklistFromTemplate", "copyChecklistFromTemplatePopup-title", "card-show-lists", "attachment-move", "move-progress-pause", "path", "version-name", "size", "storage", "action", "board-title", "uploading", "remaining_time", "speed", "progress", "password-again", "register", "forgot-password", "minicardDetailsActionsPopup-title", "Mongo_sessions_count", "allowed-avatar-filetypes", "drag-board", "newTranslationPopup-title", "editTranslationPopup-title", "translation", "translation-text", "collapse", "uncollapse", "support", "supportPopup-title", "support-title", "support-content", "accessibility-title", "accessibility-content", "accounts-lockout-locked-users", "accounts-lockout-failed-attempts", "accounts-lockout-remaining-time", "accounts-lockout-user-locked", "accounts-lockout-status", "admin-people-filter-show", "admin-people-filter-active", "admin-people-active-status", "accounts-lockout-unlock-all", "add-cron-job", "attachments-path", "board-operations", "cron-jobs", "cron-error-severity", "cron-error-message", "cron-error-details", "cron-retry-failed", "complete"];
+for (const key of correctedAdminControls) {
+  assert.doesNotMatch(data[key], /[\p{Script=Cyrillic}]/u, key);
+  assert.deepEqual(translationTokens(data[key]), translationTokens(english[key]), key);
+}
+assert.equal(data['pending'], 'Na čekanju');
+assert.equal(data['resolved'], 'Riješeno');
+assert.equal(data['cancelled'], 'Otkazano');
+assert.match(data['moveChecklist'], /Premjesti/);
+assert.match(data['copyChecklist'], /Kopiraj/);
+assert.match(data['copyChecklistFromTemplate'], /iz predloška/);
+assert.equal(data['collapse'], 'Sažmi');
+assert.equal(data['uncollapse'], 'Proširi');
+assert.match(data['accounts-lockout-locked-users'], /Zaključani/);
+assert.match(data['accounts-lockout-unlock-all'], /Otključaj sve/);
+assert.match(data['cron-retry-failed'], /neuspjele migracije/);
+assert.match(data['Mongo_sessions_count'], /Mongo/);
+const correctedMigrationControls = ["idle", "sandstorm-storage-item", "anonymized-user", "features-notifications", "backup-restore", "all-migrations", "select-migration", "pause", "stop", "migration-progress", "migration-status", "mongodb-gridfs-storage", "pause-all-migrations", "s3-access-key", "s3-connection-failed", "s3-endpoint", "s3-minio-storage", "s3-port-description", "s3-secret-key", "s3-secret-key-placeholder", "s3-secret-key-required", "s3-settings-saved", "save-s3-settings", "schedule-board-archive", "schedule-board-cleanup", "start-all-migrations", "stop-all-migrations", "test-s3-connection", "writable-path", "add-job", "attachment-settings", "automatic-migration", "back-to-settings", "board-migration", "card-show-lists-on-minicard", "comprehensive-board-migration", "lost-cards", "lost-cards-list", "migration-needed", "migration-complete", "migration-running", "migration-failed", "migrations", "no-issues-found", "run-migration", "migration-progress-overall", "migration-progress-status", "migration-progress-details", "steps", "view", "has-swimlanes", "step-analyze-board-structure", "step-validate-migration", "step-analyze-lists", "step-update-cards", "step-finalize", "step-restore-cards", "cleanup", "cleanup-old-jobs", "completed", "converting-board", "cpu-cores", "cpu-usage", "current-action", "database-migrations", "days-old", "duration", "errors", "every-1-day", "every-1-hour", "every-1-minute", "every-10-minutes", "every-30-minutes", "every-5-minutes", "every-6-hours", "export-monitoring", "filesystem-attachments", "filesystem-storage", "force-board-scan", "gridfs-size"];
+for (const key of correctedMigrationControls) {
+  assert.doesNotMatch(data[key], /[\p{Script=Cyrillic}]/u, key);
+  assert.deepEqual(translationTokens(data[key]), translationTokens(english[key]), key);
+}
+assert.match(data['s3-access-key'], /Pristupni ključ S3/);
+assert.match(data['s3-secret-key'], /Tajni ključ S3/);
+assert.match(data['s3-secret-key-required'], /obvezan/);
+assert.match(data['s3-connection-failed'], /nije uspjelo/);
+assert.match(data['mongodb-gridfs-storage'], /MongoDB GridFS/);
+assert.match(data['s3-minio-storage'], /S3\/MinIO/);
+assert.match(data['start-all-migrations'], /Pokreni sve/);
+assert.match(data['pause-all-migrations'], /Pauziraj sve/);
+assert.match(data['stop-all-migrations'], /Zaustavi sve/);
+assert.match(data['migration-failed'], /nije uspjela/);
+assert.equal(data['migration-complete'], 'Dovršeno');
+assert.match(data['every-6-hours'], /6 sati/);
+assert.match(data['every-30-minutes'], /30 minuta/);
+assert.match(data['export-monitoring'], /Izvezi podatke/);
+const correctedFlowMessages = ["idle-migration", "job-description", "job-details", "job-name", "job-queue", "last-run", "max-concurrent", "memory-usage", "migration-batch-size", "migration-delay-ms", "migration-detector", "migration-log", "migration-markers", "migration-resumed", "migration-steps", "next", "next-run", "operation-type", "overall-progress", "page", "pause-migration", "previous", "refresh", "resume-migration", "run-once", "s3-size", "scanning-status", "schedule", "showing", "start-test-operation", "start-time", "step-progress", "stop-migration", "storage-distribution", "system-resources", "total-operations", "total-size", "unmigrated-boards", "weight", "cron", "current-step", "confirm", "problems-status-title", "wip-limit-group-select-swimlane", "wip-limit-group-apply-swimlane", "board-view-aging-wip", "board-view-size-cycle-time", "flow-age-days", "flow-p85", "flow-samples", "flow-episodes", "flow-active", "flow-finish-days", "flow-finish-date", "flow-history-days", "flow-size-source", "flow-size", "flow-details", "flow-note-agingWip", "flow-note-blockerAnalysis", "flow-note-monteCarlo", "flow-note-processBehavior", "flow-note-sizeCycleTime", "move-reason", "ask-move-reason", "time-adjustment-note"];
+for (const key of correctedFlowMessages) {
+  assert.doesNotMatch(data[key], /[\p{Script=Cyrillic}]/u, key);
+  assert.deepEqual(translationTokens(data[key]), translationTokens(english[key]), key);
+}
+assert.equal(data['cron'], 'Cron');
+assert.match(data['migration-delay-ms'], /\(ms\)/);
+assert.match(data['resume-migration'], /Nastavi/);
+assert.match(data['stop-migration'], /Zaustavi/);
+assert.match(data['flow-note-agingWip'], /85.*najmanje pet/);
+assert.match(data['flow-note-agingWip'], /nepoznato/);
+assert.match(data['flow-note-blockerAnalysis'], /preklapaju.*zasebno/);
+assert.match(data['flow-note-monteCarlo'], /2\.000.*UTC/);
+assert.match(data['flow-note-monteCarlo'], /bez dovršenih stavki/);
+assert.match(data['flow-note-monteCarlo'], /nije jamstvo.*3\.650/);
+assert.match(data['flow-note-processBehavior'], /XmR.*najmanje dva/);
+assert.match(data['flow-note-sizeCycleTime'], /nevaljani datumi izostavljaju/);
+assert.match(data['time-adjustment-note'], /Negativne vrijednosti.*ispravke/);
+assert.match(data['time-adjustment-note'], /neevidentirano vrijeme ne može/);
+const syncRecoveryKeys = Object.keys(english).filter(key => key.startsWith('stuck-sync-operation-'));
+assert.equal(syncRecoveryKeys.length, 23);
+for (const key of syncRecoveryKeys) {
+  assert.notEqual(data[key], english[key], key);
+  assert.doesNotMatch(data[key], /[\p{Script=Cyrillic}]/u, key);
+  assert.deepEqual(translationTokens(data[key]), translationTokens(english[key]), key);
+}
+assert.match(data['stuck-sync-operation-description'], /već primijenjene promjene ostaju/);
+assert.match(data['stuck-sync-operation-description'], /preostale spremljene promjene nikada se ne zapisuju/);
+assert.match(data['stuck-sync-operation-replayable-now'], /ne može odbaciti/);
+assert.match(data['stuck-sync-operation-not-stuck'], /ne može odbaciti/);
+assert.match(data['stuck-sync-operation-reason-access-denied'], /pravo pisanja za cijeli popis/);
+assert.match(data['stuck-sync-operation-truncated'], /50 najstarijih/);
+assert.match(data['stuck-sync-operation-busy'], /upravo sinkronizira/);
+const translatedPlanningControls = ["board-announcement", "board-announcement-enabled", "cards-use-list-color", "import-board-instruction-opml", "import-board-instruction-orgmode", "import-board-instruction-todoist", "external-link-rules", "external-link-rules-description", "external-link-identifier-aliases", "read-only-field", "r-moved-forward", "r-moved-back", "r-assignee", "r-add-actinguser-assignee", "r-remove-all-assignees", "ldap-sync-now", "ldap-sync-now-done", "ldap-sync-now-error", "ldap-sync-now-nothing", "oauth-providers-allowed-email-domains", "login-origin-mismatch", "scrum-release-scope", "scrum-releases-select-help", "scrum-import-into-board", "scrum-import-into-board-hint", "scrum-import-preview", "scrum-import-choose-file", "scrum-import-invalid-file", "scrum-import-preview-sprints", "scrum-import-preview-releases", "scrum-import-preview-cards", "scrum-import-preview-nothing", "scrum-import-into-board-done", "scrum-import-card-not-matched", "scrum-import-card-ambiguous", "scrum-import-card-on-another-board", "scrum-import-record-ambiguous", "scrum-import-record-not-imported", "scrum-import-sprint-finished", "sync-planning-sprint", "sync-planning-releases", "sync-planning-fields", "sync-planning-hint", "scrum-history-checkpoint-stuck", "scrum-history-checkpoint-counts", "scrum-history-checkpoint-hint", "scrum-history-checkpoint-rollback", "scrum-history-checkpoint-discard", "scrum-history-checkpoint-discard-confirm", "scrum-history-checkpoint-ask-admin", "login-setting-env-only"];
+for (const key of translatedPlanningControls) {
+  assert.notEqual(data[key], english[key], key);
+  assert.deepEqual(translationTokens(data[key]), translationTokens(english[key]), key);
+}
+for (const literal of ['TODO', 'DONE', 'SCHEDULED', 'DEADLINE', 'CLOSED']) {
+  assert.ok(data['import-board-instruction-orgmode'].includes(literal), literal);
+}
+for (const literal of ['@labels', 'p1', 'p3', 'CSV']) {
+  assert.ok(data['import-board-instruction-todoist'].includes(literal), literal);
+}
+assert.ok(data['external-link-rules-description'].includes('[{identifier}:{number}] = https://tracker.example.com/{identifier}/{number}'));
+assert.ok(data['external-link-identifier-aliases'].includes('TK=Task, IN=Incident'));
+for (const literal of ['LDAP_BACKGROUND_SYNC_IMPORT_NEW_USERS', 'LDAP_BACKGROUND_SYNC_KEEP_EXISTANT_USERS_UPDATED']) {
+  assert.ok(data['ldap-sync-now-nothing'].includes(literal), literal);
+}
+assert.match(data['login-origin-mismatch'], /ROOT_URL/);
+assert.match(data['sync-planning-hint'], /prva sinkronizacija nikada ne uklanja/);
+assert.match(data['scrum-import-into-board-hint'], /nikada se ne udvostručuju/);
+assert.match(data['scrum-history-checkpoint-hint'], /nitko drugi.*nije promijenio/);
+assert.match(data['scrum-history-checkpoint-hint'], /ne mijenja zapise/);
+assert.match(data['login-setting-env-only'], /samo za čitanje/);
+assert.equal(data.board, 'Ploča');
+assert.equal(data.swimlane, 'Traka');
+assert.deepEqual(Object.keys(data), Object.keys(english));
+for (const key of Object.keys(english)) {
+  assert.deepEqual(translationTokens(data[key]), translationTokens(english[key]), key);
+  if (key.startsWith('interrupted-import-')) {
+    assert.notEqual(data[key], english[key], key);
+    assert.doesNotMatch(data[key], /[\p{Script=Cyrillic}]/u, key);
+  }
+}
+assert.match(data['interrupted-import-description'], /ne može nastaviti/);
+assert.match(data['interrupted-import-description'], /uključujući sve što je dodano nakon toga/);
+assert.match(data['interrupted-import-keep-confirm'], /Ništa se ne uklanja/);
+assert.match(data['interrupted-import-discard-confirm'], /trajno se uklanjaju/);
+assert.match(data['interrupted-import-foreign-board'], /nije izmijenjena/);
+assert.match(data['interrupted-import-truncated'], /50 najstarijih/);
 const corrections = JSON.parse(fs.readFileSync(path.join(root, 'releases/translations/audited-corrections.json'), 'utf8')).filter(row => row.locale === 'hr');
 assert.ok(corrections.length >= 18);
 for (const row of corrections) assert.doesNotMatch(data[row.key], /[\p{Script=Cyrillic}]/u);
@@ -155,7 +405,6 @@ assert.doesNotMatch(data['vote-public'], /rezultate/);
 assert.match(data['wipLimitErrorPopup-dialog-pt1'], /veći je od WIP ograničenja/);
 assert.match(data['calendar-system-islamic-rgsa'], /opažanje Mjeseca/);
 assert.match(data['calendar-system-islamic-tbla'], /tablični, astronomska epoha/);
-const english = require('../imports/i18n/data/en.i18n.json');
 for (const example of ['== != <= >= && || ( )', 'Field1 == Value1', "'Field 1' == 'Value 1'", 'F1 == V1 || F1 == V2', 'F1 == V1 && ( F2 == V2 || F2 == V3 )', 'F1 == /Tes.*/i']) {
   assert.ok(data['advanced-filter-description'].includes(example), example);
 }

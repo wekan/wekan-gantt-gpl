@@ -20,7 +20,7 @@ LABEL org.opencontainers.image.source="https://github.com/wekan/wekan-gantt-gpl"
 # TARGETARCH and TARGETVARIANT are automatically provided by Docker Buildx
 ARG TARGETARCH
 ARG TARGETVARIANT
-ARG VERSION=12.24
+ARG VERSION=12.25
 ARG DEBIAN_FRONTEND=noninteractive
 
 ENV BUILD_DEPS="apt-utils gnupg wget bzip2 g++ curl libarchive-tools build-essential git ca-certificates python3 unzip"
@@ -224,7 +224,7 @@ ENV \
     OAUTH_MEETUP_CLIENT_ID="" \
     OAUTH_MEETUP_SECRET="" \
     OAUTH_MEETUP_SECRET_FILE="" \
-    OAUTH_PROVIDERS_LOGIN_STYLE="popup" \
+    OAUTH_PROVIDERS_LOGIN_STYLE="redirect" \
     OAUTH_PROVIDERS_MERGE_EXISTING_USERS=false \
     OAUTH_PROVIDERS_ALLOWED_EMAIL_DOMAINS="" \
     PASSWORDLESS_ENABLED=false \

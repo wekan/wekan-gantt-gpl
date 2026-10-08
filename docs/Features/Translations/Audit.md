@@ -2,6 +2,950 @@
 
 Audit date: **2026-09-12**. Last updated: **2026-10-08**.
 
+## Wu rules and Scrum imports — 2026-10-08
+
+Translate 30 rule-editor and Scrum import messages. Preserve exact source tokens,
+JSON, ID and keyboard names; check permissions, saved/unsaved state, nonduplicating
+imports, ambiguous matches and unchanged foreign-board cards. Wu wording is lower
+confidence and needs native review. No browser session was run. Remaining English
+strings and older Mandarin-like passages require work.
+
+## Wu current Blockly fill list completed — 2026-10-08
+
+Translate 32 workspace, search, variable and alias messages. The full current Wu
+fill list now contains no Blockly entries. Preserve variables and keyboard names;
+check zero/one/many descriptions, search directions and shared aliases. Wu wording
+is lower confidence and needs native review. No browser or screen-reader session
+was run. Other strings and older Mandarin-like passages still require work.
+
+## Wu Blockly text values and variables — 2026-10-08
+
+Translate 35 text-value, trimming and variable messages. Preserve exact variables;
+check replacement source/destination, all occurrences, whitespace counting,
+left/right/both trimming, copied text and variable-type conflicts. Wu wording is
+lower confidence and needs native review. No browser or screen-reader session
+was run. Remaining translations and older Mandarin-like passages require work.
+
+## Wu Blockly text positions — 2026-10-08
+
+Translate 30 text append, case, counting and substring messages. Preserve exact
+source variables; check lowercase/uppercase/title case, copied text, first/last
+letters and indexing from either end. Wu wording is lower confidence and needs
+native review. No browser or screen-reader session was run. Remaining translations
+and older Mandarin-like passages require work.
+
+## Wu Blockly keyboard shortcuts — 2026-10-08
+
+Translate 37 shortcut and key labels. Preserve source variables and key names;
+check movement/scroll directions, start/end and first/last positions, next/previous
+pages, focus destinations and starting/finishing moves. Wu wording is lower
+confidence and needs native review. No browser or screen-reader session was run.
+Remaining translations and older Mandarin-like passages require work.
+
+## Wu Blockly procedures and screen-reader modes — 2026-10-08
+
+Translate 30 procedure, variable, accessibility and shortcut messages. Preserve
+source variables and Shift; check returning/non-returning functions, disabled
+calls, function-only scope, rename-all scope and opposite screen-reader transitions.
+Wu wording is lower confidence and needs native review. No browser or screen-reader
+session was run. Remaining translations and older Mandarin-like passages require work.
+
+## Wu Blockly trigonometry and workspace — 2026-10-08
+
+Translate 30 trigonometry, workspace, variable and keyboard messages. Preserve
+variables and key names; check inverse functions, degrees rather than radians,
+page directions, absent parent blocks and variable types. Wu wording is lower
+confidence and needs native review. No browser or screen-reader session was run.
+Remaining translations and older Mandarin-like passages require work.
+
+## Wu Blockly rounding and unary math — 2026-10-08
+
+Translate 30 random-number, rounding, unary-math and inverse-trigonometry messages.
+Preserve variables and mathematical literals; check inclusive/exclusive random
+bounds, rounding directions, exponential bases, logarithms and negation. Wu wording
+is lower confidence and needs native review. No browser or screen-reader session
+was run. Remaining translations and older Mandarin-like passages require work.
+
+## Wu Blockly number properties and statistics — 2026-10-08
+
+Translate 30 number-property and statistics messages. Preserve variables and the
+division symbol; check inclusive bounds, odd/even and positive/negative numbers,
+mean/median/mode, list-valued mode results and minimum/maximum. Wu wording is lower
+confidence and needs native review. No browser or screen-reader session was run.
+Remaining translations and older Mandarin-like passages require work.
+
+## Wu Blockly logic and arithmetic — 2026-10-08
+
+Translate 30 logic, arithmetic and constant messages. Preserve variables, null,
+coordinate labels, mathematical examples and degree limits. Check negation, both
+versus at-least-one conditions, ternary labels, arithmetic results and bounds.
+Wu wording is lower confidence and needs native review. No browser or screen-reader
+session was run. Remaining translations and older Mandarin-like passages require work.
+
+## Wu Blockly sorting and logic — 2026-10-08
+
+Translate 30 insertion, replacement, sorting, split/join and comparison messages.
+Preserve source variables; check opposite sort directions, copied lists, case
+sensitivity, true/false and inclusive versus strict comparisons. Wu wording is
+lower confidence and needs native review. No browser or screen-reader session
+was run. Remaining translations and older Mandarin-like passages require work.
+
+## Wu Blockly list positions and removal — 2026-10-08
+
+Translate 30 list-removal, slicing, lookup and repetition messages. Preserve exact
+variables; check removal with/without return, start/end indexing, not-found results,
+value/count roles and copying before reversing. Wu wording is lower confidence
+and needs native review. No browser or screen-reader session was run. Remaining
+English strings and older Mandarin-like passages still require work.
+
+## Wu Blockly navigation and list retrieval — 2026-10-08
+
+Translate 35 input, keyboard-navigation and list messages. Preserve variables and
+key names; check copy/cut feedback, movement confirmation, empty-list length,
+first/last positions and retrieval with or without removal. Wu wording is lower
+confidence and needs native review. No browser or screen-reader session was run.
+Remaining English strings and older Mandarin-like passages still require work.
+
+## Wu Blockly input roles — 2026-10-08
+
+Translate 40 input labels. Preserve variables and coordinate names; check start/end
+positions, split/join sources, repeated value/count, dividend/divisor, minimum/maximum
+and first/second numbers. Wu wording is lower confidence and needs native review.
+No browser or screen-reader session was run. Remaining English strings and older
+Mandarin-like passages still require work.
+
+## Wu Blockly fields and accessibility — 2026-10-08
+
+Translate 30 field, key, icon and input messages. Preserve exact variables and
+keyboard names; check bitmap row/column roles, lit/off states, opposite icon actions
+and first/second conditions. Wu wording is lower confidence and needs native
+review. No browser or screen-reader session was run. Remaining English strings
+and older Mandarin-like passages still require work.
+
+## Wu Blockly loops and editing — 2026-10-08
+
+Translate 35 loop, condition, copy, deletion and enable/disable messages. Preserve
+source variables and the Control key name; check true/false loop conditions,
+fallback branches, deletion counts and opposite editing actions. Wu wording is
+lower confidence and needs native review. No browser session was run. Older
+Mandarin-like passages and remaining English strings still require work.
+
+## Wu imports and Blockly controls — 2026-10-08
+
+Translate 35 import, login, keyboard, color and control-flow messages. Preserve
+source variables, import keywords, key names and numeric limits; check prohibited
+variable deletion, loop-only use and break/continue distinctions. Wu wording is
+lower confidence and needs native review. No browser session was run. Older
+Mandarin-like passages and remaining English strings still require work.
+
+## Wu Chinese settings — 2026-10-08
+
+Translate 17 board, link, assignment and LDAP strings in `wuu-Hans`, preserving
+variables, link-template braces, examples and environment names. Extend checks for
+Wu wording, permissions and opposite movement and success/failure labels. Existing
+Mandarin-like passages still require a vocabulary audit; script checks cannot prove
+Wu language correctness. Wording is lower confidence and needs native review.
+References: [Wu writing](https://zh.wikipedia.org/wiki/吴语字) and existing Wu
+catalog phrasing. No browser session was run. Remaining translations are unfinished.
+
+## Broad verification after Papiamento filling — 2026-10-08
+
+Run `node tests/run-node-suites.cjs Translation translation`: 298 selected suites,
+zero failures in 99 seconds. This is filename-filtered coverage, not every repository
+test. The missing report counts 33,092 values across 47 languages and excludes
+250 source keys pending Transifex. Papiamento's full fill list is empty. Native
+review, wrong-language audits and remaining translations are still unfinished.
+
+## Papiamento current fill list completed — 2026-10-08
+
+Translate the final 49 recovery, import, history and environment-setting strings.
+The full current Papiamento fill list is empty. Preserve source variables; check
+retained changes, permanent import removal, untouched foreign boards, rollback
+conditions and read-only settings. Specialized wording is lower confidence and
+needs native review. No browser session was run. Other languages remain unfinished.
+
+## Papiamento notification recovery — 2026-10-08
+
+Translate 30 notification-recovery and interrupted-Sync messages. Preserve exact
+variables; check missing versus changed activities, retained pending work, distinct
+pause/resume/cancel actions, irreversible cancellation and retained applied changes.
+Specialized wording is lower confidence and needs native review. No browser
+session was run. Other translations remain unfinished.
+
+## Papiamento Sync outcomes and mail failures — 2026-10-08
+
+Translate 35 Sync outcome, estimate, planning, mail-failure and activity messages.
+Preserve variables and technical literals; check temporary/permanent rejection,
+unknown outcomes, partial changes, missing-versus-null values, first-Sync planning
+retention and notification retries without activity recreation. Specialized wording
+is lower confidence and needs native review. No browser session was run. Work remains unfinished.
+
+## Papiamento Sync previews and source reports — 2026-10-08
+
+Translate 30 replacement, preview and source-report messages. Preserve variables
+and numeric limits; check replacement reuse, saved settings, conflict resolution,
+distinct create/update/archive actions, omitted values and report retention.
+Specialized wording is lower confidence and needs native review. No browser
+session was run. Other translations remain unfinished.
+
+## Papiamento import preview and Sync conflicts — 2026-10-08
+
+Translate 30 Scrum import-preview and Sync-conflict messages. Preserve source
+variables, ID and JSON; check ambiguity, unchanged cards on other boards, local
+versus source choices, retained duplicate content and unchanged subcards. Verify
+that warnings retain the absence of source writes and full-list synchronization.
+Specialized wording needs native review. No browser session was run. Work remains unfinished.
+
+## Papiamento Scrum reports and observations — 2026-10-08
+
+Translate 45 Scrum event, state, report and daily-observation messages. Preserve
+source variables, UTC and the 366-observation limit. Check opposite scope changes,
+close/cancel behavior, partial-report scope, unknown-versus-zero estimates and
+unavailable operations during incomplete imports. Specialized wording is lower
+confidence and needs native review. No browser session was run. Work remains unfinished.
+
+## Papiamento imports and Scrum planning — 2026-10-08
+
+Translate 45 import instructions and Scrum planning labels. Preserve format and
+application names, Org keywords, priority syntax and keyboard names. Check import
+mappings, shared view labels, start/close/cancel actions, unfinished-work rollover
+and distinct completion policies. Specialized wording is lower confidence and
+needs native review. No browser session was run. Other translations remain unfinished.
+
+## Papiamento board settings and rules — 2026-10-08
+
+Translate 30 board, link-rule, assignment, LDAP, login and block-editor strings.
+Preserve source placeholders, link-template braces and examples, configuration
+names and URLs. Check permissions, opposite movement directions, saved/unsaved
+states and success/failure messages. Specialized wording is lower confidence and
+needs native review. No browser session was run. Other translations remain unfinished.
+
+## Papiamento final Blockly messages — 2026-10-08
+
+Translate 44 variable, workspace, search and alias messages. The full current
+fill list now contains no Blockly entries. Preserve variables and keyboard names;
+check next/previous search, zero/one/many composition, variable conflicts and shared
+procedure aliases. Specialized wording is lower confidence and needs native review.
+No browser or screen-reader session was run. Other translations remain unfinished.
+
+## Papiamento Blockly text operations — 2026-10-08
+
+Translate 53 text-operation labels and explanations. Preserve exact source
+variables; check first/last and start/end positions, letter case, trimming sides,
+not-found results, counting spaces and replacing all occurrences. Specialized
+wording is lower confidence and needs native review. No browser or screen-reader
+session was run. Remaining translations are unfinished.
+
+## Papiamento Blockly keyboard shortcuts — 2026-10-08
+
+Translate 41 English shortcut and key labels. Preserve source variables and key
+names; check movement and scrolling directions, first/last and next/previous
+navigation, abort/finish actions and focus destinations. Specialized wording is
+lower confidence and needs native review. No browser or screen-reader session
+was run. Remaining translations are unfinished.
+
+## Papiamento Blockly procedures and screen-reader modes — 2026-10-08
+
+Translate 28 English procedure, variable and accessibility messages. Preserve
+variables and key names; check returning/non-returning functions, disabled
+definitions, function scope, rename scope and opposite screen-reader transitions.
+Specialized wording is lower confidence and needs native review. No browser or
+screen-reader session was run. Remaining translations are unfinished.
+
+## Papiamento Blockly trigonometry and workspace — 2026-10-08
+
+Translate 42 English math, variable and workspace messages. Preserve variables,
+key names and bases; check degrees versus radians, inverse functions, sign
+inversion and page directions. Specialized wording is lower confidence and needs
+native review. No browser or screen-reader session was run. Remaining translations
+are unfinished.
+
+## Papiamento Blockly statistics and rounding — 2026-10-08
+
+Translate 32 English math messages. Preserve variables and numeric bases; check
+random-number endpoint inclusion, rounding directions, minimum/maximum and
+mean/median/mode distinctions. Specialized mathematical wording is lower confidence
+and needs native review. No browser or screen-reader session was run. Remaining
+translations are unfinished.
+
+## Papiamento Blockly arithmetic — 2026-10-08
+
+Translate 30 English arithmetic messages. Preserve variables, constants, numeric
+bounds and mathematical notation; check inclusive limits, angle units, parity
+and positive/negative distinctions. Specialized mathematical wording is lower
+confidence and needs native review. No browser or screen-reader session was run.
+Remaining translations are unfinished.
+
+## Papiamento Blockly logic — 2026-10-08
+
+Translate 25 English logic messages. Preserve variables and null; check strict
+versus inclusive comparisons, equality versus inequality, both versus at least
+one input, negation and matching conditional labels. Specialized wording is lower
+confidence and needs native review. No browser or screen-reader session was run.
+Remaining translations are unfinished.
+
+## Papiamento Blockly list mutation and sorting — 2026-10-08
+
+Translate 42 English list messages. Preserve variables and index markers; check
+insertion versus replacement, operations on copies, missing-item results, first
+and last positions, case-insensitive sorting and join/split distinctions.
+Specialized wording is lower confidence and needs native review. No browser or
+screen-reader session was run. Remaining translations are unfinished.
+
+## Papiamento Blockly navigation and retrieval — 2026-10-08
+
+Translate 34 English navigation and list messages. Preserve variables and index
+markers; check retrieval versus removal, combined operations, empty-list length,
+copy/cut hints and movement confirmation. Specialized wording is lower confidence
+and needs native review. No browser or screen-reader session was run. Remaining
+translations are unfinished.
+
+## Papiamento Blockly input roles — 2026-10-08
+
+Translate 44 English list, numeric and text input labels. Preserve variables and
+coordinate letters; check start/end positions, loop bounds, division operand roles
+and repeated labels. Specialized wording is lower confidence and needs native
+review. No browser or screen-reader session was run. Remaining translations are
+unfinished.
+
+## Papiamento Blockly fields and icons — 2026-10-08
+
+Translate 35 English field, input, keyboard and icon messages. Preserve numbered
+variables and key names; check opening/closing actions, pixel states, row/column
+order, start/end keys and first/second conditions. Specialized wording is lower
+confidence and needs native review. No browser or screen-reader session was run.
+Remaining translations are unfinished.
+
+## Papiamento Blockly loops and deletion — 2026-10-08
+
+Translate 35 English loop, condition and editing messages. Preserve numbered
+variables and key names; check opposite loop conditions, final fallback branches,
+loop bounds, deletion counts and copy/cut distinctions. Specialized wording is
+lower confidence and needs native review. No browser or screen-reader session
+was run. Remaining translations are unfinished.
+
+## Papiamento Blockly editing and colors — 2026-10-08
+
+Translate 30 English Blockly editing, color and loop-control messages. Preserve
+variables, key names and numeric bounds; check forbidden deletion and loop scope.
+Use the shared token parser in the locale test so numbered Blockly variables are
+covered. Color vocabulary follows the Papiamentu column in
+[the comparison table](https://nl.wikibooks.org/wiki/Papiamento), matching the
+catalog's existing spelling style. Specialized wording is lower confidence and
+needs native review. No browser or screen-reader session was run. Remaining
+translations are unfinished.
+
+## Broad verification after Yiddish filling — 2026-10-08
+
+Run `node tests/run-node-suites.cjs Translation translation`: 298 selected suites,
+zero failures, 97 seconds. This is a filename-filtered run, not every repository
+test. The current missing report counts 33,800 values across 48 languages and
+excludes 250 source keys tracked separately as pending Transifex. Yiddish's full
+fill list is empty. Placeholder validation is structural evidence, not proof of
+correct language or fluency. No browser or screen-reader session was run;
+remaining translations and broader vocabulary review are unfinished.
+
+## Yiddish remaining import and history recovery — 2026-10-08
+
+Translate 33 remaining English fill-list entries. Preserve counters; check
+permanent deletion including later additions, retained partial boards, foreign
+board protection, rollback conflicts and read-only settings. The current full
+Yiddish fill list is empty. Specialized wording is lower confidence and needs
+native review. No browser or screen-reader session was run. Broader vocabulary
+review and translations in other languages remain unfinished.
+
+## Yiddish List Sync recovery — 2026-10-08
+
+Translate 23 English recovery messages. Preserve counters; check retained applied
+changes, unwritten pending changes, whole-list access, replayable-operation
+protection and the oldest-50 limit. Specialized wording is lower confidence and
+needs native review. No browser or screen-reader session was run. Remaining
+translations are unfinished.
+
+## Yiddish activity notification recovery — 2026-10-08
+
+Translate 23 English activity-recovery and rule-email messages. Preserve source
+variables; check retained pending work, unavailable source activities, revoked
+access and permanent cancellation without recalling queued mail or delivered
+notifications. Specialized wording is lower confidence and needs native review.
+No browser or screen-reader session was run. Remaining translations are unfinished.
+
+## Yiddish Sync planning and notification diagnostics — 2026-10-08
+
+Translate 30 English Sync, mail-failure and activity-recovery messages. Preserve
+variables, Jira identifiers, SMTP and null. Check missing-versus-null values,
+exact field matching, first-sync planning retention, retry behavior and temporary
+versus permanent failures. Specialized wording is lower confidence and needs native
+review. No browser or screen-reader session was run. Remaining translations are
+unfinished.
+
+## Yiddish Sync source and run reports — 2026-10-08
+
+Translate 25 English source-field and run-report messages. Preserve variables;
+check 100-entry/path limits, 20-run and 30-day retention, hidden values, possible
+partial changes and reports that neither resume nor undo a run. Specialized
+wording is lower confidence and needs native review. No browser or screen-reader
+session was run. Remaining translations are unfinished.
+
+## Yiddish Sync conflicts and preview — 2026-10-08
+
+Translate 25 English conflict and preview messages. Check that no changes are
+sent to the source, limited review does not imply full-list synchronization,
+detaching retains content, subcards remain unchanged and retries reuse replacement
+cards. Preserve source variables. Specialized wording is lower confidence and
+needs native review. No browser or screen-reader session was run. Remaining
+translations are unfinished.
+
+## Yiddish Scrum imports and observations — 2026-10-08
+
+Translate 35 English Scrum import, observation and partial-report messages.
+Preserve counters, references, UTC, JSON and ID. Check omitted days, unknown
+estimates versus zero, the 366 limit, duplicate prevention, unchanged foreign-board
+cards and finished-sprint protection. Specialized wording is lower confidence and
+needs native review. No browser or screen-reader session was run. Remaining
+translations are unfinished.
+
+## Yiddish sprint planning and reports — 2026-10-08
+
+Translate 45 English Scrum planning, release and reporting messages. Preserve
+counters and selection shortcuts. Check unknown estimates versus zero, compatible
+comparison units, release removal scope, sprint states and close/cancel outcomes.
+Specialized Scrum wording is lower confidence and needs native review. No browser
+or screen-reader session was run. Remaining translations are unfinished.
+
+## Yiddish rule validation and Scrum settings — 2026-10-08
+
+Translate 30 English rule-editor and Scrum labels. Preserve source variables and
+check exact trigger/action limits, reload-before-save conflicts, administrator
+permissions and distinct completion policies. Specialized Scrum wording is lower
+confidence and needs native review. No browser or screen-reader session was run.
+Remaining translations are unfinished.
+
+## Yiddish imports and settings — 2026-10-08
+
+Translate 23 English board, import, link-rule, LDAP and login messages. Preserve
+variables, import syntax, configuration names and link examples. Check movement
+directions, read-only permissions and empty-domain behavior. Existing board/card
+terminology is retained. Specialized wording is lower confidence and needs native
+review. No browser or screen-reader session was run. Remaining translations are
+unfinished.
+
+## Yiddish remaining Blockly search and aliases — 2026-10-08
+
+Translate the last 20 English Blockly fill-list entries: search controls, counters
+and legacy labels. Preserve variables and keyboard shortcuts; check previous/next
+navigation, no matches and consistency with corresponding modern labels. The full
+Yiddish fill list now contains no Blockly entries; other entries remain.
+Specialized wording remains lower confidence and needs native review. No browser
+or screen-reader session was run. The overall translation work is unfinished.
+
+## Yiddish Blockly text values and workspace counts — 2026-10-08
+
+Translate 45 English text, variable and workspace messages. Preserve variables
+and leading spaces in joined announcements. Check trimming directions, copied
+results, replacing all occurrences, counted spaces and zero/one/many messages.
+Specialized wording is lower confidence and needs native review. No browser or
+screen-reader session was run. Remaining translations are unfinished.
+
+## Yiddish Blockly text positions — 2026-10-08
+
+Translate 45 English text and navigation messages. Preserve variables and index
+markers; check scrolling directions, letter-case distinctions, first/last and
+end-relative positions, copying and missing-text results. Specialized wording is
+lower confidence and needs native review. No browser or screen-reader session
+was run. Remaining translations are unfinished.
+
+## Yiddish Blockly shortcuts and accessibility — 2026-10-08
+
+Translate 45 English procedure, shortcut and screen-reader messages. Preserve
+variables and key names; check directional pairs, abort/finish actions, function
+scope and opposite screen-reader state transitions. Specialized wording is lower
+confidence and needs native review. No browser or screen-reader session was run.
+Remaining translations are unfinished.
+
+## Yiddish Blockly functions and trigonometry — 2026-10-08
+
+Translate 45 English function, variable, navigation and trigonometry messages.
+Preserve variables and key names; check degrees versus radians, inverse functions,
+returning versus non-returning functions, disabled definitions and page direction.
+Specialized wording is lower confidence and needs native review. No browser or
+screen-reader session was run. Remaining translations are unfinished.
+
+## Yiddish Blockly statistics and rounding — 2026-10-08
+
+Translate 45 English math messages, preserving variables, division notation and
+logarithm bases. Check random-number endpoint inclusion, rounding directions,
+minimum/maximum, mean/median/mode and sign inversion. Specialized mathematical
+wording is lower confidence and needs native review. No browser or screen-reader
+session was run. Remaining translations are unfinished.
+
+## Yiddish Blockly comparisons and arithmetic — 2026-10-08
+
+Translate 45 English logic and arithmetic messages. Preserve variables, null,
+coordinate names, constants and mathematical notation. Check strict/inclusive
+comparisons, both/either conditions, inclusive bounds, angle units and matching
+conditional labels. Specialized mathematical wording is lower confidence and
+needs native review. No browser or screen-reader session was run. Remaining
+translations are unfinished.
+
+## Yiddish Blockly list mutation and logic — 2026-10-08
+
+Translate 45 English list and logic messages, preserving variables and index
+markers. Check insertion versus replacement, operations on copies, missing-item
+results, first/last positions and Boolean values. Specialized programming wording
+is lower confidence and needs native review. No browser or screen-reader session
+was run. Remaining translations are unfinished.
+
+## Yiddish Blockly navigation and lists — 2026-10-08
+
+Translate 50 English text-input, keyboard-navigation and list messages. Preserve
+numbered variables, the zero-length boundary and position markers. Check that
+retrieving, removing and retrieving-with-removal remain distinct, with separate
+first/last positions and copy/cut hints. Specialized programming wording is lower
+confidence and needs native review. No browser or screen-reader session was run.
+Remaining translations are unfinished.
+
+## Yiddish Blockly fields — 2026-10-08
+
+Translate 65 English field, input, keyboard and icon labels. Preserve numbered
+variables, coordinate letters and recognizable key names. Check row/column
+order, opening versus closing, start/end positions and distinct division inputs.
+Specialized programming wording is lower confidence and needs native review.
+No browser or screen-reader session was run. Remaining Yiddish and other-language
+translations are unfinished.
+
+## Yiddish Blockly controls — 2026-10-08
+
+Translate 65 English Blockly messages, including colors, loops, conditions,
+keyboard labels and deletion prompts. Preserve numbered variables and numeric
+bounds; test opposite loop conditions, forbidden deletion and loop-only use.
+Color vocabulary checked against [Wiktionary's Yiddish color table](https://en.wiktionary.org/wiki/Template:table:colors/yi).
+Specialized programming wording remains lower confidence and needs native review.
+No browser or screen-reader session was run. The Yiddish backlog and translation
+work in other languages remain unfinished.
+
+## Afrikaans planning and settings — 2026-10-08
+
+Translate 51 remaining English fill-list entries in each Afrikaans catalog
+(102 values), covering planning, imports, link rules and settings. Preserve
+variables, import syntax, environment names and examples. Check first-sync
+retention, duplicate prevention and conflict recovery. Both current fill lists
+are empty. No browser or screen-reader session was run; broader vocabulary
+review and translations in other languages are unfinished.
+
+## Afrikaans interrupted board imports — 2026-10-08
+
+Translate 25 English import recovery messages in each Afrikaans catalog (50
+values). Preserve variables and established terminology. Check permanent deletion
+including later additions, retaining partial data, foreign-board protection,
+Scrum recovery and the oldest-50 limit. No browser or screen-reader session was
+run; remaining translations and broader vocabulary review are unfinished.
+
+## Afrikaans List Sync recovery — 2026-10-08
+
+Translate 23 English recovery messages in each of af and af_ZA (46 values),
+preserving source counters and existing terminology. Check retained changes,
+unwritten changes, revoked access, replayable operations and the oldest-50 limit.
+No browser or screen-reader session was run; remaining translations and broader
+vocabulary review are unfinished.
+
+## Icelandic planning and settings — 2026-10-08
+
+Translate 51 remaining English fill-list entries into Icelandic, covering
+planning, imports, link rules, settings and Scrum recovery. Preserve variables,
+import syntax, environment names and examples. Check first-sync retention,
+nonduplicating imports, conflict recovery and read-only settings. The current
+Icelandic fill list is empty. Other languages and vocabulary review remain;
+no browser or screen-reader session was run.
+
+## Icelandic interrupted board imports — 2026-10-08
+
+Translate 25 English import recovery messages into Icelandic, preserving source
+variables and established board/card terminology. Check permanent deletion
+including later additions, retaining partial data, foreign-board protection,
+Scrum recovery and the oldest-50 limit. No browser or screen-reader session was
+run; remaining translations and broader vocabulary review are unfinished.
+
+## Icelandic List Sync recovery — 2026-10-08
+
+Translate 23 English recovery messages into Icelandic, preserving source counters
+and existing board/list terminology. Check retained changes, unwritten changes,
+revoked access, replayable operations and the oldest-50 limit. No browser or
+screen-reader session was run; remaining translations and vocabulary review
+are unfinished.
+
+## Albanian planning and settings — 2026-10-08
+
+Translate 51 remaining English fill-list entries into Albanian, covering planning,
+imports, link rules, settings and Scrum recovery. Preserve variables, import
+syntax, environment names and examples. Check first-sync retention, nonduplicating
+imports, conflict recovery and read-only settings. The current Albanian fill list
+is empty. Other languages and vocabulary review remain; no browser or
+screen-reader session was run.
+
+## Albanian interrupted board imports — 2026-10-08
+
+Translate 25 English import recovery messages into Albanian, preserving source
+variables and established board/card terminology. Check permanent deletion
+including later additions, retaining partial data, foreign-board protection,
+Scrum recovery and the oldest-50 limit. No browser or screen-reader session was
+run; remaining translations and broader vocabulary review are unfinished.
+
+## Albanian List Sync recovery — 2026-10-08
+
+Translate 23 English recovery messages into Albanian, preserving source counters
+and existing board/list terminology. Check retained changes, unwritten changes,
+revoked access, replayable operations and the oldest-50 limit. No browser or
+screen-reader session was run; remaining translations and vocabulary review
+are unfinished.
+
+## Belarusian planning and settings — 2026-10-08
+
+Translate 51 remaining English fill-list entries into Belarusian, covering
+planning, imports, link rules, settings and Scrum recovery. Preserve variables,
+import syntax, environment names and examples. Check first-sync retention,
+nonduplicating imports, conflict recovery and read-only settings. The current
+Belarusian fill list is empty. Other languages and vocabulary review remain;
+no browser or screen-reader session was run.
+
+## Belarusian interrupted board imports — 2026-10-08
+
+Translate 25 English import recovery messages into Belarusian, preserving source
+variables and established board/card terminology. Check permanent deletion
+including later additions, retaining partial data, foreign-board protection,
+Scrum recovery and the oldest-50 limit. No browser or screen-reader session was
+run; remaining translations and broader vocabulary review are unfinished.
+
+## Belarusian List Sync recovery — 2026-10-08
+
+Translate 23 English recovery messages into Belarusian, preserving source
+counters and existing board/list terminology. Check retained changes, unwritten
+changes, revoked access, replayable operations and the oldest-50 limit. No browser
+or screen-reader session was run; remaining translations and vocabulary review
+are unfinished.
+
+## Upper Sorbian minimum labels — 2026-10-08
+
+Retain the existing minimum labels for the numeric lower bound and minimum-list
+operator. Upper Sorbian numerical usage is documented in
+[Magiske ličby zwonka serbskeje reality](https://piwarc.wordpress.com/2012/04/11/magiske-licby-zwonka-serbskeje-reality/).
+Recognize only these two exact keys and source values in Upper Sorbian. Tests
+keep minimum reportable in other locales and detect later English prose in both
+keys. No screen-reader session was run; newer messages and other languages remain.
+
+## Shared Silesian and Upper Sorbian mathematical labels — 2026-10-08
+
+Keep the existing plus/minus accessibility labels: these are valid native terms,
+not English gaps. Evidence: [Upper Sorbian CLDR annotations](https://unicode.org/cldr/charts/44/delta/hsb.html)
+and [Silesian emoji vocabulary](https://www.sweasy26.com/silesian/).
+The fill checker now recognizes only the two exact keys and source values in
+these two locales. Regression checks keep other keys, other locales, changed
+source prose and unverified minimum labels visible. No screen-reader session
+was run; remaining translations and vocabulary review are unfinished.
+
+## Serbian planning and settings — 2026-10-08
+
+Translate 51 remaining English fill-list entries into Serbian, covering planning,
+imports, link rules, settings and Scrum recovery. Preserve variables, technical
+examples and existing legal-workflow terminology. Check first-sync retention,
+nonduplicating imports, conflict recovery and read-only settings. The current
+Serbian fill list is empty. Other languages and vocabulary review remain;
+no browser or screen-reader session was run.
+
+## Serbian interrupted board imports — 2026-10-08
+
+Translate 25 English import recovery messages into Serbian, preserving source
+variables and existing legal-workflow terminology. Check permanent deletion
+including later additions, keeping partial data, foreign-board protection,
+Scrum recovery and the oldest-50 limit. No browser or screen-reader session was
+run; remaining translations and broader vocabulary review are unfinished.
+
+## Serbian List Sync recovery — 2026-10-08
+
+Translate 23 English List Sync recovery messages into Serbian, preserving source
+counters and the catalog's existing legal-workflow board/list terminology.
+Check retained changes, unwritten changes, revoked access, replayable operations
+and the oldest-50 limit. No browser or screen-reader session was run; remaining
+translations and broader vocabulary review are unfinished.
+
+## Macedonian planning and settings — 2026-10-08
+
+Translate 51 remaining English fill-list entries into Macedonian, covering
+planning, imports, link rules, settings and Scrum recovery. Preserve variables,
+import syntax, environment names and examples. Check first-sync retention,
+nonduplicating imports, conflict recovery and read-only settings. The current
+Macedonian fill list is empty. Other languages and vocabulary review remain;
+no browser or screen-reader session was run.
+
+## Macedonian List Sync recovery — 2026-10-08
+
+Translate 23 English List Sync recovery messages into Macedonian, preserving
+source counters and existing board/list terminology. Check retained changes,
+unwritten changes, revoked access, replayable operations and the oldest-50 limit.
+No browser or screen-reader session was run; remaining translations and broader
+vocabulary review are unfinished.
+
+## Macedonian interrupted board imports — 2026-10-08
+
+Translate 25 English import recovery messages into Macedonian, preserving source
+variables and existing board/card terminology. Check permanent deletion including
+later additions, keeping a partial board, foreign-board protection, Scrum recovery
+and the oldest-50 limit. No browser or screen-reader session was run; remaining
+translations and broader vocabulary review are unfinished.
+
+## Bosnian planning and settings — 2026-10-08
+
+Translate 51 remaining English fill-list entries into Bosnian, covering planning,
+imports, link rules, settings and Scrum recovery. Preserve source variables,
+import syntax, environment names and examples. Check retention, nonduplicating
+imports, conflict recovery and read-only settings. The current Bosnian fill list
+is empty. Other languages and vocabulary review remain unfinished; no browser
+or screen-reader session was run.
+
+## Bosnian interrupted board imports — 2026-10-08
+
+Translate 25 English import recovery messages into Bosnian, preserving exact
+source variables and existing board, swimlane and attachment terminology.
+Check permanent deletion including later additions, keeping a partial board,
+foreign-board protection, Scrum recovery and the oldest-50 limit. No browser or
+screen-reader session was run; other translations and vocabulary review remain.
+
+## Bosnian List Sync recovery — 2026-10-08
+
+Translate 23 English List Sync recovery messages into Bosnian, preserving
+counters and existing Bosnian board/list terminology. Check retained changes,
+unwritten pending changes, revoked access, replayable operations and the oldest-50
+limit. No browser or screen-reader session was run. Other translations and the
+broader vocabulary review remain unfinished.
+
+## Croatian planning and settings — 2026-10-08
+
+Translate the remaining 51 English fill-list entries into Croatian: planning,
+imports, link rules, settings and Scrum recovery. Preserve source variables,
+import syntax, configuration names and examples. Check first-sync retention,
+nonduplicating imports, recovery conflicts and read-only settings. The current
+Croatian fill list is empty. Vocabulary review and other languages remain;
+no browser or screen-reader session was run.
+
+## Croatian List Sync recovery — 2026-10-08
+
+Translate all 23 remaining English List Sync recovery messages into Croatian.
+Preserve counters and explain retained changes, discarded pending changes,
+revoked access, replayable operations and the oldest-50 display limit. Regression
+checks cover these distinctions and exact source variables. No browser or
+screen-reader session was run; other translations and vocabulary review remain.
+
+## Croatian monitoring and flow explanations — 2026-10-08
+
+Correct the remaining 66 Cyrillic-containing Croatian values, covering jobs,
+monitoring, flow analysis and time adjustments. Preserve variables and technical
+names. Check forecast limits, unknown history, sample thresholds and correction
+semantics. No Cyrillic values remain, but this does not certify all vocabulary.
+No browser or screen-reader session was run; remaining translations and review
+are unfinished.
+
+## Croatian migrations and storage — 2026-10-08
+
+Replace 80 Serbian values with Croatian, covering migrations, S3 storage,
+monitoring and schedules. Preserve source variables and storage product names.
+Check access versus secret keys, required credentials, failure versus completion,
+start/pause/stop and schedule intervals. No browser or screen-reader session was
+run; further wrong-language review and remaining translations are unfinished.
+
+## Croatian administration and support — 2026-10-08
+
+Replace 75 Serbian values with Croatian, covering request states, checklists,
+attachments, accounts, support, accessibility and scheduled jobs. Preserve source
+variables and Mongo. Check move/copy, collapse/expand, lock/unlock, request outcomes
+and failed migration retries. No browser or screen-reader session was run;
+further wrong-language review and remaining translations are unfinished.
+
+## Croatian search predicates and reports — 2026-10-08
+
+Replace 65 Serbian values with Croatian or the required technical literal,
+covering search predicates, pagination, reports, sorting and wait indicators.
+Restore Arial and preserve Cc and source variables. Check searchable token syntax,
+public/private states, move/copy actions and size controls. No browser or
+screen-reader session was run; further language review and translations remain.
+
+## Croatian search and notification controls — 2026-10-08
+
+Replace 80 Serbian values with Croatian, covering search operators, notifications,
+weekdays, organizations, assignments and card views. Preserve source variables
+and distinct search abbreviations. Check read/unread actions, board and swimlane
+vocabulary, and member/assignee distinctions. No browser or screen-reader session
+was run; further wrong-language review and remaining translations are unfinished.
+
+## Croatian rule actions and triggers — 2026-10-08
+
+Replace 80 Serbian values with Croatian, covering rule triggers, actions,
+checklists, dates and layout controls. Preserve variables and comma-separated
+checklist examples. Check opposite actions, archive directions, list positions
+and date meanings. No browser or screen-reader session was run; further
+wrong-language review and remaining translations are unfinished.
+
+## Croatian card settings and rules — 2026-10-08
+
+Replace 70 Serbian values with Croatian, covering system labels, card settings,
+deletion notices, activity messages and rules. Preserve source variables and test
+permanent deletion, added versus removed labels, full paths versus parents, and
+triggers versus actions. No browser or screen-reader session was run; further
+wrong-language review and remaining translations are unfinished.
+
+## Croatian sidebars, uploads and email settings — 2026-10-08
+
+Replace 75 Serbian values with Croatian, covering sidebars, uploads, time labels,
+SMTP, email templates, webhooks and system labels. Preserve variables and technical
+names. Extend native-vocabulary checks and distinctions between opposite actions,
+upload outcomes, email subjects and bodies, and webhook directions.
+No browser or screen-reader session was run; further wrong-language review and
+remaining translations are unfinished.
+
+## Croatian filters, archives and selection — 2026-10-08
+
+Replace 70 Serbian values with Croatian, covering filters, imports, archive
+guidance, settings, selection controls and keyboard shortcuts. Preserve variables,
+format names and the Enter key name. Extend vocabulary and semantic checks for
+restoring archived cards, copying versus moving, and membership versus assignment.
+No browser or screen-reader session was run; further wrong-language review and
+remaining translations are unfinished.
+
+## Croatian permissions, email and exports — 2026-10-08
+
+Replace 65 Serbian values with Croatian, covering permissions, email, errors,
+exports, sorting and date filters. Restore literal date-format patterns and
+preserve source variables. Extend regression checks for technical literals,
+native vocabulary, restricted permissions and failure messages.
+No browser or screen-reader session was run; further wrong-language review and
+remaining translations are unfinished.
+
+## Croatian workspace and board controls — 2026-10-08
+
+Replace 70 Serbian values with Croatian, covering activity messages, workspaces,
+board controls, visibility, voting, colors and comment permissions. Preserve source
+variables, HTML emphasis and the zoom range. Extend regression checks with native
+vocabulary and opposite action meanings, in addition to script checks.
+No browser or screen-reader session was run; further wrong-language review and
+remaining translations are unfinished.
+
+## Croatian interrupted imports and core labels — 2026-10-08
+
+Translate 25 interrupted-import messages and replace Serbian board and swimlane
+labels with Croatian, for 27 corrected values. Preserve variables and existing
+correct-language values. Extend Croatian checks with source order, full variable
+inventories, native labels and recovery-decision meanings.
+No browser or screen-reader session was run; further wrong-language review and
+remaining translations are unfinished.
+
+## Slovenian controls and planning — 2026-10-08
+
+Translate 51 messages in each Slovenian catalog, for 102 filled values.
+Cover controls, import guidance, LDAP, login settings, planning imports and
+history recovery. Preserve variables, literal examples and existing translations.
+Extend regression checks for matching priority, non-duplication and recovery choices.
+No browser or screen-reader session was run; other languages and broader
+linguistic review remain unfinished.
+
+## Slovenian stalled synchronization recovery — 2026-10-08
+
+Translate 23 messages in each Slovenian catalog, for 46 filled values.
+Preserve every source variable and existing localized values. Extend the
+Slovenian suite with checks for retained applied changes, unwritten pending
+changes and the distinction between unavailable and unnecessary discard actions.
+No browser or screen-reader session was run; remaining translations and
+broader linguistic review are unfinished.
+
+## Slovenian monitoring and flow explanations — 2026-10-08
+
+Replace 81 Serbian values in each Slovenian catalog, for 162 corrections.
+Cover monitoring, migration controls and flow-analysis explanations. Preserve
+variables, time units, numeric limits and warnings about unknown history and
+forecast uncertainty. Extend native-vocabulary and semantic regression checks.
+No browser or screen-reader session was run. Removing Cyrillic seed text does
+not establish full linguistic correctness; remaining translations and review
+of text written in the Latin alphabet are unfinished.
+
+## Slovenian administration and migrations — 2026-10-08
+
+Replace 80 Serbian values in each Slovenian catalog, for 160 corrections.
+Cover support, account locks, storage, scheduled jobs and migrations. Preserve
+source tokens and technology names. Extend regression checks for Slovenian
+vocabulary, credential distinctions and pause/start/stop actions.
+No browser or screen-reader session was run; further wrong-language review and
+remaining translations are unfinished.
+
+## Slovenian card details and uploads — 2026-10-08
+
+Replace 70 Serbian values in each Slovenian catalog, for 140 corrections.
+Cover card details, ticket states, checklists, uploads and translation controls.
+Preserve source tokens and the Cc header notation. Extend native-vocabulary
+checks and distinctions between copying, moving, closing and resolving.
+No browser or screen-reader session was run; further wrong-language review and
+remaining translations are unfinished.
+
+## Slovenian search and card views — 2026-10-08
+
+Replace 75 Serbian values in each Slovenian catalog, for 150 corrections.
+Cover search operators and predicates, card views, sorting and related labels.
+Preserve variables and restore the literal Arial font name. Extend regression
+checks with native vocabulary and unique localized search abbreviations.
+No browser or screen-reader session was run; further wrong-language review and
+remaining translations are unfinished.
+
+## Slovenian settings and notifications — 2026-10-08
+
+Replace 70 Serbian values in each Slovenian catalog, for 140 corrections.
+Cover filters, settings, uploads, notifications, weekdays and task labels.
+Preserve source tokens, format names and trailing count-label spacing.
+Extend regression checks with native vocabulary and opposite action meanings.
+No browser or screen-reader session was run; further wrong-language review and
+remaining translations are unfinished.
+
+## Slovenian workspace and board controls — 2026-10-08
+
+Replace 65 Serbian values in each Slovenian catalog, for 130 corrections.
+Cover workspaces, board controls, views, voting, comments, export and date filters.
+Preserve variables and the numeric zoom range. Extend regression checks with the
+corrected key inventory and Slovenian vocabulary, not just script detection.
+No browser or screen-reader session was run; further wrong-language review and
+remaining translations are unfinished.
+
+## Slovenian interrupted imports and core nouns — 2026-10-08
+
+Translate 25 interrupted-import messages in each Slovenian catalog and replace
+the Serbian board and swimlane labels with Slovenian, for 54 corrected values.
+Preserve source variables and existing correct-language translations. Extend
+the Slovenian suite with native labels, recovery choices and token checks.
+No browser or screen-reader session was run; further wrong-language review and
+remaining translations are unfinished.
+
+## Bulgarian controls and planning — 2026-10-08
+
+Translate 51 messages for controls, import guidance, LDAP, login settings, planning
+imports, synchronization and history recovery. Preserve existing localized values,
+source variables and literal examples. Extend Bulgarian regression checks for
+matching priority, non-duplication, unchanged cards and recovery choices.
+No browser or screen-reader session was run; other languages and broader
+linguistic review remain unfinished.
+
+## Bulgarian import and synchronization recovery — 2026-10-08
+
+Translate 48 messages for interrupted imports and stalled synchronization.
+Preserve existing translations and every source variable. Extend the Bulgarian
+suite with recovery decisions and native prose checks, including permanent
+deletion, retention of applied changes and protection of unrelated boards.
+No browser or screen-reader session was run; remaining Bulgarian messages,
+other languages and broader linguistic review remain unfinished.
+
+## Lithuanian controls and planning — 2026-10-08
+
+Translate 51 messages for controls, import guidance, LDAP, login settings, planning
+imports, synchronization and history recovery. Preserve existing translations,
+source variables and literal examples. Extend Lithuanian regression checks for
+matching priority, non-duplication, unchanged cards and recovery choices.
+No browser or screen-reader session was run; other languages and broader
+linguistic review remain unfinished.
+
 ## Lithuanian import and synchronization recovery — 2026-10-08
 
 Translate 48 messages for interrupted imports and stalled synchronization.

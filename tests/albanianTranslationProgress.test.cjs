@@ -291,4 +291,57 @@ assert.deepEqual(tags(albanian['globalSearch-instructions-operator-number']),
   ['<number>', '<number>']);
 assert.deepEqual(tokens(albanian['activity-checklist-completed-card']),
   ['__board__', '__card__', '__checklist__', '__list__', '__swimlane__']);
-console.log('albanianTranslationProgress: complete Albanian backlog passed');
+console.log('albanianTranslationProgress: historical catalog baseline passed; newer entries checked separately');
+
+const { translationTokens } = require('../releases/translations/placeholder-tokens.mjs');
+const recoveryKeys = Object.keys(english).filter(key => key.startsWith('stuck-sync-operation-'));
+assert.equal(recoveryKeys.length, 23);
+for (const key of recoveryKeys) {
+  assert.notEqual(albanian[key], english[key], key);
+  assert.deepEqual(translationTokens(albanian[key]), translationTokens(english[key]), key);
+}
+assert.match(albanian['stuck-sync-operation-description'], /ndryshimet e zbatuara mbeten/);
+assert.match(albanian['stuck-sync-operation-description'], /ndryshimet e tjera të ruajtura nuk shkruhen kurrë/);
+assert.match(albanian['stuck-sync-operation-reason-access-denied'], /të drejtë shkrimi në të gjithë listën/);
+assert.match(albanian['stuck-sync-operation-replayable-now'], /nuk mund të hidhet poshtë/);
+assert.match(albanian['stuck-sync-operation-not-stuck'], /nuk mund të hidhet poshtë/);
+assert.match(albanian['stuck-sync-operation-truncated'], /50 veprimet më të vjetra/);
+assert.match(albanian['stuck-sync-operation-busy'], /po sinkronizohet tani/);
+
+const interruptedImportKeys = Object.keys(english).filter(key => key.startsWith('interrupted-import-'));
+assert.equal(interruptedImportKeys.length, 25);
+for (const key of interruptedImportKeys) {
+  assert.notEqual(albanian[key], english[key], key);
+  assert.deepEqual(translationTokens(albanian[key]), translationTokens(english[key]), key);
+}
+assert.match(albanian['interrupted-import-description'], /skedari burimor nuk ruhet/);
+assert.match(albanian['interrupted-import-description'], /gjithçka të shtuar më pas/);
+assert.match(albanian['interrupted-import-counts'], /__swimlanes__ korsi/);
+assert.match(albanian['interrupted-import-discard-confirm'], /hiqen përgjithmonë/);
+assert.match(albanian['interrupted-import-keep-confirm'], /Asgjë nuk hiqet/);
+assert.match(albanian['interrupted-import-foreign-board'], /nuk u ndryshua/);
+assert.match(albanian['interrupted-import-truncated'], /50 importet më të vjetra/);
+assert.match(albanian['interrupted-import-scrum-busy'], /ende po shkruhet ose po rikuperohet/);
+
+const translatedPlanningControls = ["board-announcement", "board-announcement-enabled", "cards-use-list-color", "import-board-instruction-opml", "import-board-instruction-orgmode", "import-board-instruction-todoist", "external-link-rules", "external-link-rules-description", "external-link-identifier-aliases", "read-only-field", "r-moved-forward", "r-moved-back", "r-assignee", "r-add-actinguser-assignee", "r-remove-all-assignees", "ldap-sync-now", "ldap-sync-now-done", "ldap-sync-now-error", "ldap-sync-now-nothing", "oauth-providers-allowed-email-domains", "login-origin-mismatch", "scrum-release-scope", "scrum-releases-select-help", "scrum-import-into-board", "scrum-import-into-board-hint", "scrum-import-preview", "scrum-import-choose-file", "scrum-import-invalid-file", "scrum-import-preview-sprints", "scrum-import-preview-releases", "scrum-import-preview-cards", "scrum-import-preview-nothing", "scrum-import-into-board-done", "scrum-import-card-not-matched", "scrum-import-card-ambiguous", "scrum-import-card-on-another-board", "scrum-import-record-ambiguous", "scrum-import-record-not-imported", "scrum-import-sprint-finished", "sync-planning-sprint", "sync-planning-releases", "sync-planning-fields", "sync-planning-hint", "scrum-history-checkpoint-stuck", "scrum-history-checkpoint-counts", "scrum-history-checkpoint-hint", "scrum-history-checkpoint-rollback", "scrum-history-checkpoint-discard", "scrum-history-checkpoint-discard-confirm", "scrum-history-checkpoint-ask-admin", "login-setting-env-only"];
+for (const key of translatedPlanningControls) {
+  assert.notEqual(albanian[key], english[key], key);
+  assert.deepEqual(translationTokens(albanian[key]), translationTokens(english[key]), key);
+}
+for (const literal of ['TODO', 'DONE', 'SCHEDULED', 'DEADLINE', 'CLOSED']) {
+  assert.ok(albanian['import-board-instruction-orgmode'].includes(literal), literal);
+}
+for (const literal of ['@labels', 'p1', 'p3', 'CSV']) {
+  assert.ok(albanian['import-board-instruction-todoist'].includes(literal), literal);
+}
+assert.ok(albanian['external-link-rules-description'].includes('[{identifier}:{number}] = https://tracker.example.com/{identifier}/{number}'));
+assert.ok(albanian['external-link-identifier-aliases'].includes('TK=Task, IN=Incident'));
+for (const literal of ['LDAP_BACKGROUND_SYNC_IMPORT_NEW_USERS', 'LDAP_BACKGROUND_SYNC_KEEP_EXISTANT_USERS_UPDATED']) {
+  assert.ok(albanian['ldap-sync-now-nothing'].includes(literal), literal);
+}
+assert.match(albanian['login-origin-mismatch'], /ROOT_URL/);
+assert.match(albanian['sync-planning-hint'], /sinkronizimi i parë nuk e heq kurrë/);
+assert.match(albanian['scrum-import-into-board-hint'], /nuk dyfishohen kurrë/);
+assert.match(albanian['scrum-history-checkpoint-hint'], /askush tjetër nuk i ka ndryshuar/);
+assert.match(albanian['scrum-history-checkpoint-hint'], /nuk ndryshon asnjë regjistrim/);
+assert.match(albanian['login-setting-env-only'], /vetëm për lexim/);
