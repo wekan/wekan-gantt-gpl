@@ -6158,6 +6158,3827 @@ because some locales lack the concurrent shortcut-edit-due-date source key.
 Human-preference verification passed 20 checks; its actual-merge check failed
 on that same catalog key mismatch. The broader language audit remains open.
 
+## Māori Scrum and synchronization — 2026-10-08
+
+Filled 147 English placeholders: 84 Scrum planning/reporting messages and 63
+Sync conflict, preview, report and estimate-mapping messages. Existing Māori
+translations are preserved. Sprint wording follows the catalog's wā mahi poto,
+and synchronization uses its existing tukutahi and papā vocabulary. Pūrongo is
+attested in [Te Aka Māori Dictionary](https://maoridictionary.co.nz/word/6307).
+Technical compounds for snapshots, scope, mapping and parser behavior remain
+provisional and need fluent-speaker review.
+
+Seven focused checks pass, covering all 102 Scrum keys and all Sync keys with
+source-token inventories, shared labels, cancellation membership, unknown
+estimates, daily sampling, distinct export actions, local-data preservation,
+read-only diagnostics, retention periods and missing-versus-null semantics.
+All 21 human-preference checks pass. The shared catalog-completeness check
+still fails because some locales lack shortcut-edit-due-date. Browser and
+screen-reader checks were not run. The broader language audit remains open.
+
+## Māori activity recovery and rule editing — 2026-10-08
+
+Filled 46 English placeholders for rule blocks, mail failure categories and
+activity-notification recovery. Existing translations are preserved. The
+confirmation wording follows the catalog's whakaū and the corresponding
+[Te Aka dictionary entry](https://maoridictionary.co.nz/search?keywords=whakau).
+Notification, mail and rule vocabulary also follows existing Māori values.
+Worker reservations, recovery metadata and receipt terminology remain
+provisional pending fluent-speaker review.
+
+Nine focused Māori checks and all 21 human-preference checks pass. Regression
+coverage preserves source tokens, the one-trigger/one-action constraint,
+administrator permissions, stale-rule reload, uncertain versus failed delivery,
+no activity recreation, retained work and irreversible cancellation without
+recalling queued mail. The shared catalog completeness check still fails on
+missing shortcut-edit-due-date keys in other locales. Browser and screen-reader
+checks were not run. The broader language and wording audit remains open.
+
+## Māori Blockly text operations — 2026-10-08
+
+Filled 55 English placeholders for text creation, searching, replacement,
+case changes, character positions, prompts and trimming. Existing translations
+are preserved. Pūmatua, pūriki and āputa follow the
+[Paekupu literacy glossary](https://paekupu.co.nz/words/wordlist/te-reo-matatini/english-to-maori).
+These terms support the vocabulary, not full-sentence fluency. Index,
+substring and variable wording remains provisional pending speaker review.
+
+The combined focused run passes 47 checks, including all 11 Māori checks.
+Two shared catalog checks still fail because other locales lack the
+shortcut-edit-due-date source key. All 21 human-preference checks pass.
+Regression coverage preserves tokens, search operands and failure return,
+replacement arguments, all-occurrence semantics, case distinctions, trim
+directions and number/text prompts. Browser and screen-reader checks were
+not run. The broader language and wording audit remains open.
+
+## Māori Blockly logic and functions — 2026-10-08
+
+Translated 50 English values: 47 counted placeholders and three short labels
+omitted by the counter (or and the two function-definition titles). Existing
+translations remain unchanged. Taumahi and tāuru follow the
+[Paekupu computing glossary](https://media.paekupu.co.nz/words/wordlist/hangarau/maori-to-english).
+Full-sentence wording and technical parameter/statement terms remain
+provisional pending fluent-speaker review.
+
+The combined focused run passes 49 checks, including all 13 Māori checks.
+Two shared catalog checks still fail on the missing shortcut-edit-due-date key
+in other locales. All 21 human-preference checks pass. Tests preserve source
+tokens, true/false negation, inclusive/exclusive comparisons, both-versus-one
+conditions, ternary label references, return/no-return distinctions, disabled
+function warnings and matching definition labels. Browser and screen-reader
+checks were not run. The broader language and wording audit remains open.
+
+## Māori Blockly controls and variables — 2026-10-08
+
+Translated 55 English values: 48 counted placeholders and seven short control
+labels omitted by the counter. Existing translations remain unchanged.
+Koromeke follows the [Paekupu computing glossary](https://www.paekupu.co.nz/words/wordlist/hangarau/maori-to-english/),
+and [taurangi](https://media.paekupu.co.nz/word/taurangi) follows its mathematics
+entry. Compound loop and variable warnings remain provisional pending fluent
+review. The regression found an initially missed variable-deletion warning;
+that warning is now translated too.
+
+The combined focused run passes 51 checks, including all 15 Māori checks.
+Two shared catalog checks still fail on missing shortcut-edit-due-date keys
+in other locales. All 21 human-preference checks pass. Coverage preserves
+source tokens, loop bounds, while/until truth states, break/continue actions,
+branch order, shared do labels, variable types, deletion counts and function
+parameter warnings. Browser and screen-reader checks were not run. The broader
+language and wording audit remains open.
+
+## Māori Blockly list operations — 2026-10-08
+
+Translated 75 English values: 73 counted placeholders plus the short to-number
+and as labels omitted by the counter. Existing translations remain unchanged.
+List and text terminology follows the catalog; kōmaka is also attested in
+[CORE Education's digital-readiness glossary](https://core-ed.org/en_NZ/free-resources/kia-takatu-a-matihiko-digital-readiness/glossary/).
+Index, sub-list and delimiter wording remains provisional pending fluent review.
+
+The combined focused run passes 53 checks, including all 17 Māori checks.
+Two shared catalog checks still fail on missing shortcut-edit-due-date keys
+in other locales. All 21 human-preference checks pass. Coverage preserves
+source tokens, empty-list length, search failure return, first/last positions,
+get/remove/get-and-remove distinctions, repeated item/count arguments, copy
+semantics, sort direction and text/list conversion with separators. Browser
+and screen-reader checks were not run. The broader language audit remains open.
+
+## Māori Blockly workspace, colours and navigation — 2026-10-08
+
+Filled 82 English placeholders for workspace counts, search, editing shortcuts,
+colour controls and keyboard navigation. Existing translations remain unchanged.
+The translations preserve stack/comment counts, Enter/Shift+Enter/Escape search
+instructions, RGB channels and numeric ranges, move-versus-scroll distinctions,
+move confirmation and start/finish/abort actions. Search labels distinguish
+next and previous matches and retain the no-match message.
+
+The combined focused run passes 55 checks, including all 19 Māori checks.
+Two shared catalog checks still fail on missing shortcut-edit-due-date keys
+in other locales. All 21 human-preference checks pass. Browser and screen-reader
+checks were not run. Workspace, stack and accessibility compounds remain
+provisional pending fluent-speaker review. The broader language audit is open.
+
+## Māori Blockly inputs and bitmap fields — 2026-10-08
+
+Translated 61 English values: 60 counted placeholders and the short on label
+omitted by the counter. Existing translations remain unchanged. Dividend and
+divisor follow the [Paekupu mathematics glossary](https://media.paekupu.co.nz/words/wordlist/p%C4%81ngarau/english-to-maori),
+and coordinates follow its [ordered-pair entry](https://media.paekupu.co.nz/word/takirua-raupapa).
+Full-sentence accessibility and technical compounds remain provisional pending
+fluent-speaker review.
+
+The combined focused run passes 56 checks, including all 20 Māori checks.
+Two shared catalog checks still fail on missing shortcut-edit-due-date keys
+in other locales. All 21 human-preference checks pass. Coverage preserves
+source tokens, bitmap row/column arguments, pixel states, operand roles,
+first/second inputs, coordinates and shared endpoint/repeat labels. Browser
+and screen-reader checks were not run. The broader language audit remains open.
+
+## Māori Blockly editing and accessibility — 2026-10-08
+
+Filled 46 English placeholders for block editing, backpack operations, icon
+controls, zoom and screen-reader announcements. Existing translations remain
+unchanged. Empty backpack explicitly removes all contents; it differs from
+removing a single block. Tests preserve source tokens, deletion counts,
+missing-parent negation, open/close and enable/disable distinctions, and the
+opposite actions offered by enabled/disabled screen-reader announcements.
+
+The combined focused run passes 57 checks, including all 21 Māori checks.
+Two shared catalog checks still fail on missing shortcut-edit-due-date keys
+in other locales. All 21 human-preference checks pass. Browser and screen-reader
+checks were not run. Backpack, parent-block and accessibility wording remains
+provisional pending fluent-speaker review. The broader language audit is open.
+
+## Māori Blockly mathematics — 2026-10-08
+
+Filled 86 English placeholders for arithmetic, statistics, number predicates,
+rounding, constants and trigonometry. Existing translations remain unchanged.
+Vocabulary follows the [Paekupu mathematics glossary](https://media.paekupu.co.nz/words/wordlist/p%C4%81ngarau/english-to-maori)
+and [geometry glossary](https://paekupu.co.nz/topic/ahuahanga/english-to-maori),
+including ine mahora, pūtakerua, pūkōaro, aho, whenu and pātapa. Natural logarithm
+is described as base-e logarithm; radians retain the unit identifier rad.
+Golden-ratio and compound tooltip wording remains provisional pending fluent
+review; dictionary terms do not establish full-sentence accuracy.
+
+The combined focused run passes 59 checks, including all 23 Māori checks.
+Two shared catalog checks still fail on missing shortcut-edit-due-date keys
+in other locales. All 21 human-preference checks pass. Coverage preserves
+source tokens, formula literals, random interval endpoints, degree/radian
+contrasts, operand order, signs and distinct statistical/rounding operations.
+Browser and screen-reader checks were not run. The broader language audit
+remains open.
+
+## Tok Pisin activity recovery and rule editing — 2026-10-08
+
+Filled 46 English placeholders for rule blocks, mail failures and activity
+notification recovery. Corrected two English-seeded labels, rules and r-trigger,
+which previously merely prefixed Rules and Trigger with Toksave:. Other existing
+translations remain unchanged. Message and sending vocabulary follows the
+[Tok Pisin dictionary's tok entry](https://tokpisin.info/tok/) and
+[salim entry](https://tokpisin.info/salim/). Technical worker reservations,
+metadata, mail authentication and permanent-failure wording remain low confidence
+pending fluent-speaker review. Other English-prefixed seed values still need audit.
+
+Two focused checks and all 21 human-preference checks pass. Coverage preserves
+source tokens, the one-trigger/one-action rule, administrator permissions,
+stale-rule reload, uncertain versus failed delivery, no activity recreation,
+retained work and irreversible cancellation without recalling queued mail.
+The shared catalog-completeness check still fails on missing shortcut-edit-due-date
+keys in other locales. Browser and screen-reader checks were not run. The broader
+language and wording audit remains open.
+
+## Tok Pisin synchronization — 2026-10-08
+
+Filled 63 English placeholders for Sync conflicts, previews, source-field
+reports, retained runs, recovery diagnostics and estimate mappings. Existing
+translations remain unchanged. Wording follows the catalog's Sink, sos, bokis
+and skelim terms. Parser behavior is paraphrased as a data-reading process.
+Mapping, normalization, retention and partial-run wording remains low confidence
+pending fluent-speaker review.
+
+Six focused checks and all 21 human-preference checks pass. Tests cover all
+Sync source-token inventories, shared labels, no source writes, retained local
+content, unchanged subcards, replacement reuse, full-list permissions, retention
+periods and missing-versus-explicit-null behavior. The shared catalog-completeness
+check still fails on missing shortcut-edit-due-date keys in other locales.
+Browser and screen-reader checks were not run. The broader language and wording
+audit remains open.
+
+## Tok Pisin Scrum planning and reports — 2026-10-08
+
+Filled 84 English placeholders for Scrum roles, settings, sprint actions,
+backlog views and reporting. Existing translations remain unchanged. Sprint,
+kat, bot, skelim and history wording follows the existing catalog. Backlog,
+scope, snapshot and completion-policy descriptions remain low confidence
+pending fluent-speaker review.
+
+Nine focused Tok Pisin checks and all 21 human-preference checks pass. Scrum
+coverage includes all 102 keys, exact source tokens, shared labels, distinct
+states/actions, cancelled sprint membership, unfinished-card destinations,
+unknown-versus-zero estimates, matching units/policies, daily sampling limits
+and section-versus-toolbar export actions. The shared catalog-completeness
+check still fails on missing shortcut-edit-due-date keys in other locales.
+Browser and screen-reader checks were not run. The broader language and
+wording audit remains open.
+
+## Tok Pisin Blockly text operations — 2026-10-08
+
+Filled 55 English placeholders for text creation, search, replacement, letter
+case, character positions, prompts and trimming. Existing translations remain
+unchanged. Left/right wording uses han kais and han sut, attested in the
+[dictionary's kais entry](https://www.tokpisin.info/category/tok-pisin-to-english/k/)
+and [sut entry](https://www.tokpisin.info/sut/). Variable, index and substring
+wording remains low confidence pending fluent-speaker review.
+
+The combined focused run passes 47 checks, including all 11 Tok Pisin checks.
+Two shared catalog checks still fail on missing shortcut-edit-due-date keys
+in other locales. All 21 human-preference checks pass. Coverage preserves
+source tokens, search operands and failure return, replacement arguments,
+all-occurrence semantics, case distinctions, trim directions and number/text
+prompts. Browser and screen-reader checks were not run. The broader language
+and wording audit remains open.
+
+## Tok Pisin Blockly logic and functions — 2026-10-08
+
+Translated 50 English values: 47 counted placeholders and three short labels
+omitted by the counter. Existing translations remain unchanged. Function
+behavior is described as a named work operation. Technical input/parameter
+loans and function-definition wording remain low confidence pending fluent
+speaker review.
+
+The combined focused run passes 49 checks, including all 13 Tok Pisin checks.
+Two shared catalog checks still fail on missing shortcut-edit-due-date keys
+in other locales. All 21 human-preference checks pass. Coverage preserves
+source tokens, true/false negation, strict/inclusive comparisons, both-versus-one
+conditions, ternary label references, return/no-return distinctions, disabled
+function warnings and matching definition labels. Browser and screen-reader
+checks were not run. The broader language and wording audit remains open.
+
+## Tok Pisin loop controls
+
+Translated 33 Blockly loop and conditional messages, including seven short labels excluded by the placeholder counter. Preserved source placeholders and distinguished while/until truth conditions, break/continue behavior, counted loops and conditional branches. Technical wording is provisional and needs fluent-speaker review; browser and screen-reader checks were not run.
+
+Validation: 50 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. Remaining inventory: 43,207 English placeholders across 70 languages, with 149 source keys pending review.
+
+## Tok Pisin list operations
+
+Translated 75 Blockly list messages, including two short labels excluded by the placeholder counter. Preserved source placeholders, index directions, empty-list behavior, copy semantics, sorting and split/join behavior. Tests distinguish fetching, removing and fetching with removal, as well as insertion and replacement. Existing correct-language values remain unchanged. Technical wording, including random selection, remains provisional pending fluent-speaker review; browser and screen-reader checks were not run.
+
+Validation: 52 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. Remaining inventory: 43,134 English placeholders across 70 languages, with 149 source keys pending review.
+
+## Tok Pisin variables, colours and workspace navigation
+
+Translated 68 Blockly messages for variable creation and deletion, colour selection and mixing, keyboard navigation, workspace announcements and search. Preserved source placeholders, comment-fragment spacing, colour ranges and keyboard names. Tests cover variable definition safeguards, input assignment, navigation modifiers and next/previous search. Existing correct-language values remain unchanged. Technical wording remains provisional pending fluent-speaker review; browser and screen-reader checks were not run.
+
+Validation: 54 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. Remaining inventory: 43,066 English placeholders across 70 languages, with 149 source keys pending review.
+
+## Tok Pisin input and bitmap-field labels
+
+Translated 61 Blockly input and field labels, including the short pixel-on label excluded by the placeholder counter. Preserved source placeholders and distinguished pixel states, rows and columns, start/end positions, minimum/maximum, dividend/divisor, split/join and append/replace. Existing correct-language values remain unchanged. Technical wording remains provisional pending fluent-speaker review; browser and screen-reader checks were not run.
+
+Validation: 55 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. Remaining inventory: 43,006 English placeholders across 70 languages, with 149 source keys pending review.
+
+## Tok Pisin editing commands and accessibility shortcuts
+
+Translated 82 Blockly editing, backpack, warning, navigation and screen-reader messages. Preserved source placeholders and distinguished deletion scope, copy/paste direction, enabling/disabling, opening/closing and directional shortcuts. Existing correct-language values remain unchanged. Technical wording remains provisional pending fluent-speaker review; browser and screen-reader checks were not run.
+
+Validation: 57 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. Remaining inventory: 42,924 English placeholders across 70 languages, with 149 source keys pending review.
+
+## Tok Pisin maths messages
+
+Translated 86 Blockly maths messages. Preserved source placeholders, mathematical symbols, constant values, operand order, inclusive/exclusive limits and degree/radian distinctions. Tests cover aggregation types, signs, rounding and logarithm bases. Existing correct-language values remain unchanged. Searches for Tok Pisin mathematical terminology did not establish standard terms for advanced operations. Loan spellings and paraphrases for trigonometry, logarithms, roots, prime numbers, golden ratio and standard deviation are low confidence and require fluent-speaker review; these checks do not establish linguistic correctness. Browser and screen-reader checks were not run.
+
+Validation: 59 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. Remaining inventory: 42,838 English placeholders across 70 languages, with 149 source keys pending review.
+
+## Tok Pisin common interface wording audit
+
+Corrected 83 mixed-language values containing the `Toksave:` prefix followed by English, covering basic interface labels, file metadata, filtering, selection states, invitations, previews and time units. These were not correct-language human translations. Existing correct-language values remain unchanged. The initial prefix scan found 500 values; 417 remain for review after this batch. This is only one detector: values without the prefix also require language review. Wording remains provisional pending fluent-speaker review; browser and screen-reader checks were not run.
+
+Validation: 61 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. The English-placeholder counter remains 42,838 across 70 languages because prefixed English was already excluded by that counter; it does not prove language completeness. There are 149 source keys pending review.
+
+## Tok Pisin rule and scheduling wording audit
+
+Corrected 74 mixed-language values containing the `Toksave:` prefix, covering rules, recurrence, due-date reminders, checklist actions, weekdays, scheduled jobs and backup frequency. Preserved placeholder inventories and numeric intervals; distinguished due dates from end dates and pause/resume/start states. Existing correct-language values remain unchanged. The prefix inventory falls from 417 to 343; unprefixed values also need review. Technical wording remains provisional pending fluent-speaker review; browser and screen-reader checks were not run.
+
+Validation: 63 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. These corrections do not reduce the English-placeholder counter, which excludes mixed-language values differing from English.
+
+## Tok Pisin storage and migration wording audit
+
+Corrected 56 mixed-language values containing the `Toksave:` prefix, covering storage, attachment repair, avatars, backup scope and migration controls. Preserved placeholder inventories and units; distinguished source/destination, pausing/stopping, paused/stopped and resume actions. Existing correct-language values remain unchanged. The prefix inventory falls from 343 to 287; unprefixed values also need review. Technical wording remains provisional pending fluent-speaker review; browser and screen-reader checks were not run.
+
+Validation: 65 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. These corrections do not reduce the English-placeholder counter, which excludes mixed-language values differing from English.
+
+## Tok Pisin reporting and monitoring wording audit
+
+Corrected 41 mixed-language values containing the `Toksave:` prefix, covering reports, office and API history, recovery events, CPU and memory usage, queues and operation monitoring. Preserved source placeholders and technical identifiers; distinguished first/last events and concurrent-operation limits. Existing correct-language values remain unchanged. The prefix inventory falls from 287 to 246; unprefixed values also need review. Technical wording remains provisional pending fluent-speaker review; browser and screen-reader checks were not run.
+
+Validation: 67 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. These corrections do not reduce the English-placeholder counter, which excludes mixed-language values differing from English.
+
+## Tok Pisin system and connection wording audit
+
+Corrected 48 mixed-language values containing the `Toksave:` prefix, covering runtime and OS information, memory metrics, SMTP, webhooks, custom HTML/JSON and cloud connections. Preserved source placeholders, product names, configuration identifiers and region examples; distinguished free/total/used memory, webhook directions and access/secret keys. Existing correct-language values remain unchanged. The prefix inventory falls from 246 to 198; unprefixed values also need review. Technical loan words and metric descriptions remain low confidence pending fluent-speaker review; browser and screen-reader checks were not run.
+
+Validation: 69 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. These corrections do not reduce the English-placeholder counter, which excludes mixed-language values differing from English.
+
+## Tok Pisin card, account and ticket wording audit
+
+Corrected 57 mixed-language values containing the `Toksave:` prefix, covering card dependencies, locations, ticket states, accounts, authentication labels and lockout timing. Preserved source placeholders, including `%{value}`, and distinguished login/logout, ticket states and coordinate directions. Existing correct-language values remain unchanged. The prefix inventory falls from 198 to 141; unprefixed values also need review. Technical wording remains provisional pending fluent-speaker review; browser and screen-reader checks were not run.
+
+Validation: 71 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. These corrections do not reduce the English-placeholder counter, which excludes mixed-language values differing from English.
+
+## Tok Pisin general controls wording audit
+
+Corrected 68 mixed-language values containing the `Toksave:` prefix, covering general controls, support, accessibility, loading indicators, work limits and storage summaries. Preserved source placeholders, units and technical identifiers; distinguished pause/stop, collapse/expand and single-run scope. Existing correct-language values remain unchanged. The prefix inventory falls from 141 to 73; unprefixed values also need review. Technical wording remains provisional pending fluent-speaker review; browser and screen-reader checks were not run.
+
+Validation: 73 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. These corrections do not reduce the English-placeholder counter, which excludes mixed-language values differing from English.
+
+## Tok Pisin search keyword wording audit
+
+Corrected 21 mixed-language search keywords containing the `Toksave:` prefix. Source inspection in `config/query-classes.js` confirms translated operators are parser inputs restricted to letters, combining marks and apostrophes. Replacement operators use single words and do not collide with other registered Tok Pisin operators. Query keywords such as `diu`, `taimlus` and `tripelamun` are provisional compact forms, not validated standard terminology; fluent-speaker review remains required. Other pre-existing multiword operator translations still require a separate syntax audit. Existing correct-language values remain unchanged. The prefix inventory falls from 73 to 52; unprefixed values also need review. Browser and screen-reader checks were not run.
+
+Validation: 75 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. These corrections do not reduce the English-placeholder counter, which excludes mixed-language values differing from English.
+
+## Tok Pisin colour wording audit
+
+Corrected all 25 colour labels containing the `Toksave:` prefix. Basic terms blak, blu, grin, ret, wait and yelo are supported by the [Tok Pisin dictionary colour entries](https://www.tokpisin.info/tag/colours-kala-tok-pisin/). Less common shades use distinct descriptive phrases; these approximations are low confidence and need fluent-speaker and visual review. Tests preserve source tokens and distinguish the 25 labels, but cannot prove perceptual colour accuracy. Existing correct-language values remain unchanged. The prefix inventory falls from 52 to 27; unprefixed values also need review. Browser and screen-reader checks were not run.
+
+Validation: 76 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. These corrections do not reduce the English-placeholder counter, which excludes mixed-language values differing from English.
+
+## Tok Pisin analytics wording audit
+
+Corrected the remaining 27 values containing the `Toksave:` English-seeding prefix, covering flow analytics, forecast explanations and time adjustments. Preserved source tokens, trial counts, UTC days, forecast bounds, missing-history caveats and start/end fallback descriptions. Existing correct-language values remain unchanged. No values retain that prefix; this only completes the prefix-specific cleanup, not the language audit. Unprefixed values, search syntax and low-confidence terminology still require review. Statistical descriptions remain provisional pending fluent-speaker review; browser and screen-reader checks were not run.
+
+Validation: 78 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. These corrections do not reduce the English-placeholder counter, which excludes mixed-language values differing from English.
+
+## Tok Pisin search help wording audit
+
+Corrected 40 unprefixed mixed-language search instructions and error messages. Preserved source placeholders and syntax metavariables; translated prose and sample list names, repaired the due-date example closing backtick and aligned the negated due-date example with the translated keywords. Tests distinguish AND/OR, negation, descending sort, positive integer limits, case handling and archive defaults. Already coherent nearby messages remain unchanged. Wording remains provisional pending fluent-speaker review; browser and screen-reader checks were not run. Existing multiword query operators still require syntax review.
+
+Validation: 80 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. These corrections do not reduce the English-placeholder counter, which excludes mixed-language values differing from English.
+
+## Tok Pisin account and invitation wording audit
+
+Corrected 34 unprefixed mixed-language account, invitation, email-template and validation messages, including the mistranslated optional username hint. Preserved all source tokens and restored email paragraph breaks. Tests distinguish reset/verification instructions, successful/failed invitations, password mismatch, minimum username length and required/optional inputs. Existing coherent nearby translations remain unchanged. Wording remains provisional pending fluent-speaker review; browser and screen-reader checks were not run.
+
+Validation: 82 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. These corrections do not reduce the English-placeholder counter, which excludes mixed-language values differing from English.
+
+## Tok Pisin file-handling wording audit
+
+Corrected 25 unprefixed mixed-language attachment, transfer-limit and storage-setting messages. Preserved all source tokens, units and product identifiers. Tests distinguish upload/download direction, successful/failed saving, positive limits and database-location repair. Existing coherent deletion warnings remain unchanged. Technical wording remains provisional pending fluent-speaker review; browser and screen-reader checks were not run.
+
+Validation: 84 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. These corrections do not reduce the English-placeholder counter, which excludes mixed-language values differing from English.
+
+## Tok Pisin import wording audit
+
+Corrected 29 mixed-language import instructions, archive errors and member-mapping messages. Restored literal schema names such as `title` and `cards` that had been translated inside examples, preserved source tokens and added the missing plain-bulleted-Markdown behavior. Tests cover schema literals, file-count versus file-size failures, unsafe paths, unmapped members and selected import/export parts. The prefix regression allows the genuine Tok Pisin notice in `import-members-map-note`; a translated notice is not an English seed. Technical wording remains provisional pending fluent-speaker review; browser and screen-reader checks were not run.
+
+Validation: 86 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. These corrections do not reduce the English-placeholder counter, which excludes mixed-language values differing from English.
+
+## Tok Pisin export wording audit
+
+Corrected 17 mixed-language export options and related external import instructions. Preserved placeholders, Excel naming and distinctions among people/date fields and disk-space failures. Restored the Jira path `GET /rest/api/2/search` and actual Trello menu names; retained the WeKan export label in its instruction. Tests cover these literals and conditional attachment download behavior. Wording remains provisional pending fluent-speaker review; browser and screen-reader checks were not run.
+
+Validation: 88 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. These corrections do not reduce the English-placeholder counter, which excludes mixed-language values differing from English.
+
+## Tok Pisin deletion and restoration wording audit
+
+Corrected 24 mixed-language deletion confirmations, linked-item restrictions and restoration messages. Preserved source tokens and database field identifiers. Tests cover irreversible-action warnings, archive alternatives, duplicate-list conjunctions, member restrictions and failed-restoration counts. Existing coherent nearby warnings remain unchanged. Wording remains provisional pending fluent-speaker review; browser and screen-reader checks were not run.
+
+Validation: 90 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. These corrections do not reduce the English-placeholder counter, which excludes mixed-language values differing from English.
+
+## Tok Pisin custom-field wording audit
+
+Corrected 13 mixed-language or mistranslated custom-field messages, including the multi-select label that used planting vocabulary. Preserved source placeholders, positional order and HTML space entities. Tests cover deletion scope, multiple selection, Enter-key instructions and setting/unsetting values. Existing coherent nearby labels remain unchanged. Wording remains provisional pending fluent-speaker review; browser and screen-reader checks were not run.
+
+Validation: 92 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. These corrections do not reduce the English-placeholder counter, which excludes mixed-language values differing from English.
+
+## Tok Pisin notification wording audit
+
+Corrected 10 mixed-language notification subscription hints, read/unread actions, due reminders and mention messages. Preserved all source tokens. Tests distinguish participant/watcher scope, read/unread/removal actions and approaching/current/overdue reminders. Existing coherent notification settings remain unchanged. Wording remains provisional pending fluent-speaker review; browser and screen-reader checks were not run.
+
+Validation: 93 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. These corrections do not reduce the English-placeholder counter, which excludes mixed-language values differing from English.
+
+## Tok Pisin checklist and subtask wording audit
+
+Corrected 18 mixed-language or misleading checklist and subtask messages, including the automatic-reset off label and sound default. Preserved source tokens and counters. Tests distinguish completion filters, collapse/expand, original line order, disabled defaults and board/list destinations. Existing coherent nearby translations remain unchanged. Wording remains provisional pending fluent-speaker review; browser and screen-reader checks were not run.
+
+Validation: 95 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. These corrections do not reduce the English-placeholder counter, which excludes mixed-language values differing from English.
+
+## Tok Pisin role and membership wording audit
+
+Corrected 19 mixed-language role descriptions, membership restrictions and account activation labels. Preserved all source tokens. Tests cover read-only/comment-only restrictions, normal-role settings restrictions, assigned-card visibility, global-admin rights, unsaved role previews and activation directions. Existing coherent nearby translations remain unchanged. Wording remains provisional pending fluent-speaker review; browser and screen-reader checks were not run.
+
+Validation: 97 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. These corrections do not reduce the English-placeholder counter, which excludes mixed-language values differing from English.
+
+## Tok Pisin date and time wording audit
+
+Corrected 19 mixed-language or ambiguous date/time messages, including distinct due-date and end-date edit labels. Preserved source tokens and date-format literals. Tests cover hour units, received-date changes, old/new timestamp direction, total spent time and week-start selection. Existing coherent reminders remain unchanged. Wording remains provisional pending fluent-speaker review; browser and screen-reader checks were not run.
+
+Validation: 99 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. These corrections do not reduce the English-placeholder counter, which excludes mixed-language values differing from English.
+
+## Tok Pisin movement and copy wording audit
+
+Corrected 24 mixed-language or incomplete copy, movement and conversion messages. Preserved source tokens and JSON field names while translating sample values. Tests parse the JSON example and verify directions, selected-item scope, absent source data and optional move reasons. Existing coherent nearby translations remain unchanged. Technical wording remains provisional pending fluent-speaker review; browser and screen-reader checks were not run.
+
+Validation: 101 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. These corrections do not reduce the English-placeholder counter, which excludes mixed-language values differing from English.
+
+## Tok Pisin rule-builder wording audit
+
+Corrected 32 mixed-language rule-builder labels, trigger descriptions and rule import/export instructions. Preserved source tokens and external format/product names. Tests distinguish added/removed and archived/restored triggers, import/export directions and limitations on Butler and visual-workflow imports. Existing coherent nearby translations remain unchanged. Technical wording remains provisional pending fluent-speaker review; browser and screen-reader checks were not run.
+
+Validation: 103 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. Mixed-language values require this wording audit independently of the English-placeholder counter.
+
+## Tok Pisin rule-action wording audit
+
+Corrected 25 mixed-language rule actions and conditions, including two short English prepositions excluded from the placeholder inventory. Preserved all source tokens. Tests distinguish top/bottom positions, current versus specified lists, checking/unchecking all items, daily schedules and before/after timing. Existing coherent nearby translations remain unchanged. Wording remains provisional pending fluent-speaker review; browser and screen-reader checks were not run.
+
+Validation: 105 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. Mixed-language values require this wording audit independently of the English-placeholder counter.
+
+## Tok Pisin error wording audit
+
+Corrected 22 mixed-language errors and empty-state messages. Preserved source tokens, format identifiers and example values. Tests cover missing objects, authorization and self-invitation restrictions, year/domain validation, filename cancellation, linked-card restrictions and re-export recovery instructions. Existing coherent nearby errors remain unchanged. Wording remains provisional pending fluent-speaker review; browser and screen-reader checks were not run.
+
+Validation: 107 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. Mixed-language values require this wording audit independently of the English-placeholder counter.
+
+## Tok Pisin visibility and sharing wording audit
+
+Corrected 18 mixed-language or misleading visibility and template-sharing messages. The private label no longer implies access for only one person. Preserved source tokens and login-link markup. Tests distinguish public visibility from member-only editing, private board membership, default-description fallback and shared-template scope. Existing coherent nearby translations remain unchanged. Wording remains provisional pending fluent-speaker review; browser and screen-reader checks were not run.
+
+Validation: 109 tests passed; two existing catalog-wide tests still fail because catalogs lack `shortcut-edit-due-date`. Human-preference checks: 21 passed. Mixed-language values require this wording audit independently of the English-placeholder counter.
+
+## Tok Pisin filter and sorting wording audit
+
+Corrected 34 mixed-language or misleading filter and sorting values. The labels
+now distinguish assigned work, empty lists, archived lists and selected cards.
+Restored the literal alphabetical endpoints A and Z: the earlier wording had
+translated A as “wanpela” (one). Source tokens remain unchanged. Technical wording
+is provisional pending fluent-speaker review.
+
+The combined translation run passes 111 checks. Two existing catalog checks fail
+on the missing due-date shortcut key. All 21 human-preference checks pass.
+Browser and screen-reader checks were not run. The wider audit remains open.
+
+## Tok Pisin label and compact-card wording audit
+
+Corrected 18 mixed-language values for labels, multiple selection, compact-card
+settings, API file-size limits and added teams or organizations. Label shortcuts
+now distinguish toggling one card from adding or removing labels on multiple
+cards; the deletion warning retains both irreversibility and loss of history.
+Source tokens are preserved. Wording is provisional pending fluent-speaker review.
+
+The combined translation run passes 113 checks. Two existing catalog checks fail
+on the missing due-date shortcut key. All 21 human-preference checks pass.
+Browser and screen-reader checks were not run. The wider audit remains open.
+
+## Tok Pisin help and migration wording audit
+
+Corrected 25 mixed-language help messages, including advanced filtering, imports,
+backup scope, migration confirmations and recovery warnings. Filter examples and
+shell commands remain unchanged; menu references match the translated controls.
+Checks retain organization-only restore scope, archived-item distinctions and
+irreversibility warnings. Technical wording remains provisional pending speaker
+review.
+
+The combined translation run passes 116 checks. Two existing catalog checks fail
+on the missing due-date shortcut key. All 21 human-preference checks pass.
+Browser and screen-reader checks were not run. The wider audit remains open.
+
+## Tok Pisin administration and privacy wording audit
+
+Corrected 16 mixed-language or incorrect administration descriptions. The account
+anonymization confirmation previously repeated export help; it now explains
+permanent replacement of identity, removal of the avatar, disabled login and
+preserved history. Restored literal CARDS_LOADING options and identity examples.
+Checks retain storage-operation ordering, deletion warnings and code-display
+behavior. Technical wording remains provisional pending fluent-speaker review.
+
+The combined translation run passes 118 checks. Two existing catalog checks fail
+on the missing due-date shortcut key. All 21 human-preference checks pass.
+Browser and screen-reader checks were not run. The wider audit remains open.
+
+## Tok Pisin access, imports and due-date wording audit
+
+Corrected 29 mixed-language values for access limits, imports, card searching,
+due dates and administrative controls. Checks preserve organization-admin limits,
+non-destructive enabling of deletion, literal hostnames and environment settings,
+Excel column identifiers and due-date distinctions. The search help and its
+“My cards” control now agree. Technical wording remains provisional pending
+fluent-speaker review.
+
+The combined translation run passes 120 checks. Two existing catalog checks fail
+on the missing due-date shortcut key. All 21 human-preference checks pass.
+The English-placeholder report still counts 42,838 values across 70 languages;
+it excludes most mixed-language corrections. Browser and screen-reader checks
+were not run. The wider audit remains open.
+
+## Tok Pisin controls and reporting wording audit
+
+Corrected 22 mixed-language control, reporting, support and account-status
+messages. Checks preserve the image-size template token, API configuration
+literal, report aggregation scope, available location information and the
+difference between no locked accounts and a locked account. Technical wording
+remains provisional pending fluent-speaker review.
+
+The combined translation run passes 122 checks. Two existing catalog checks fail
+on the missing due-date shortcut key. All 21 human-preference checks pass.
+Browser and screen-reader checks were not run. The wider audit remains open.
+
+## Tok Pisin S3 and Sandstorm wording audit
+
+Corrected 38 English or mixed-language storage strings. Restored literal
+files/attachments and files/avatars paths in migration help, retained AWS menu
+labels and hostname examples, and clarified that hiding a member in WeKan does
+not revoke Sandstorm access. Tests cover secret-key requirements, single-display
+warnings and enabled/disabled states. Technical wording remains provisional
+pending fluent-speaker review.
+
+The combined translation run passes 124 checks. Two existing catalog checks fail
+on the missing due-date shortcut key. All 21 human-preference checks pass.
+The counted English-placeholder inventory remains 42,838 across 70 languages;
+that report excludes pending source keys and mixed-language corrections.
+Browser and screen-reader checks were not run. The wider audit remains open.
+
+## Tok Pisin Azure and Google Cloud wording audit
+
+Corrected 26 mixed-language cloud-storage settings and instructions. External
+Azure and Google Cloud console labels and the client_email JSON key remain
+literal. Checks distinguish optional credentials, keeping saved secrets, file
+versus pasted-JSON input, read/write permissions and connection outcomes.
+Technical wording remains provisional pending fluent-speaker review.
+
+The combined translation run passes 126 checks. Two existing catalog checks fail
+on the missing due-date shortcut key. All 21 human-preference checks pass.
+Browser and screen-reader checks were not run. The wider audit remains open.
+
+## Tok Pisin layout, loading and maintenance wording audit
+
+Corrected 21 mixed-language labels and instructions for layout, card loading,
+filesystem storage, backups and maintenance. Checks preserve enable/disable
+opposites, experimental partial-loading limitations, accurate counters, reload
+instructions and maintenance continuing after the browser closes. Technical
+wording remains provisional pending fluent-speaker review.
+
+The combined translation run passes 128 checks. Two existing catalog checks fail
+on the missing due-date shortcut key. All 21 human-preference checks pass.
+Browser and screen-reader checks were not run. The wider audit remains open.
+
+## Tok Pisin policy and scheduling wording audit
+
+Corrected 18 mixed-language permission, scheduling, keyboard and import/export
+messages. Checks preserve editing shortcut conditions, activity placeholders,
+server-side import/export restrictions, board cloning and single-attachment
+scope, and avatar-only exclusions that keep names and other data. Technical
+wording remains provisional pending fluent-speaker review.
+
+The combined translation run passes 130 checks. Two existing catalog checks fail
+on the missing due-date shortcut key. All 21 human-preference checks pass.
+Browser and screen-reader checks were not run. The wider audit remains open.
+
+## Tok Pisin customization wording audit
+
+Corrected 16 mixed-language customization labels. Checks preserve HTML insertion
+boundaries, assetlinks.json, logo placement and default height, and distinguish
+creating, editing and deleting custom translations. Technical wording remains
+provisional pending fluent-speaker review.
+
+The combined translation run passes 132 checks. Two existing catalog checks fail
+on the missing due-date shortcut key. All 21 human-preference checks pass.
+Browser and screen-reader checks were not run. The wider audit remains open.
+
+## Tok Pisin diagnostics and storage status wording audit
+
+Corrected 21 English or mixed-language diagnostic and storage messages. Checks
+preserve batch and CPU limits, success/failure distinctions, connection-error
+tokens and file/avatar repair scope. Technical descriptions of heap contexts
+are low confidence and need fluent-speaker review, as does the wider wording.
+
+The combined translation run passes 134 checks. Two existing catalog checks fail
+on the missing due-date shortcut key. All 21 human-preference checks pass.
+Browser and screen-reader checks were not run. The wider audit remains open.
+
+## Tok Pisin migration and repair workflow wording audit
+
+Corrected 36 mixed-language migration and repair messages. Restored the literal
+Snap database setting name, previously translated inside the command. Checks
+preserve database URLs, environment variables, excluded file/avatar data,
+restart ordering, numeric delay limits and repair scope. Technical wording
+remains provisional pending fluent-speaker review.
+
+The combined translation run passes 136 checks. Two existing catalog checks fail
+on the missing due-date shortcut key. All 21 human-preference checks pass.
+Browser and screen-reader checks were not run. The wider audit remains open.
+
+## Tok Pisin backup and scheduled-job wording audit
+
+Corrected 19 mixed-language backup and scheduled-job messages. Checks distinguish
+missing-only restoration from replacing all data, retain monthly limits and
+selection prerequisites, and distinguish paused and failed jobs. Technical
+wording remains provisional pending fluent-speaker review.
+
+The combined translation run passes 138 checks. Two existing catalog checks fail
+on the missing due-date shortcut key. All 21 human-preference checks pass.
+Browser and screen-reader checks were not run. The wider audit remains open.
+
+## Tok Pisin navigation and display wording audit
+
+Corrected 19 mixed-language navigation and display messages. Checks preserve
+assigned-only visibility, comment-only versus read-only permissions, toggle
+behavior, assignment order and matching view/popup titles. Technical wording
+remains provisional pending fluent-speaker review.
+
+The combined translation run passes 140 checks. Two existing catalog checks fail
+on the missing due-date shortcut key. All 21 human-preference checks pass.
+Browser and screen-reader checks were not run. The wider audit remains open.
+
+## Tok Pisin location and selection wording audit
+
+Corrected 13 mixed-language location, role and selection labels. Checks preserve
+location success/failure distinctions, reading versus commenting on assigned
+cards, Enter key references and consistent color-picker titles. Wording remains
+provisional pending fluent-speaker review.
+
+The combined translation run passes 142 checks. Two existing catalog checks fail
+on the missing due-date shortcut key. All 21 human-preference checks pass.
+Browser and screen-reader checks were not run. The wider audit remains open.
+
+## Tok Pisin confirmations and connection help wording audit
+
+Corrected 18 mixed-language confirmations and connection-help messages. Checks
+preserve affected objects, single versus all-user unlocking, board placeholders,
+optional authentication tokens, SMTP/TLS labels and PDF download fallback.
+Wording remains provisional pending fluent-speaker review.
+
+The combined translation run passes 144 checks. Two existing catalog checks fail
+on the missing due-date shortcut key. All 21 human-preference checks pass.
+Browser and screen-reader checks were not run. The wider audit remains open.
+
+## Tok Pisin remaining file and card controls wording audit
+
+Corrected 40 mixed-language file, card, display and maintenance controls. Checks
+preserve signed-in visibility markup, workspace and database placeholders,
+list-wide operations, CSV/TSV distinctions and database-copy exclusions. Technical
+wording remains provisional pending fluent-speaker review.
+
+The combined translation run passes 146 checks. Two existing catalog checks fail
+on the missing due-date shortcut key. All 21 human-preference checks pass.
+Browser and screen-reader checks were not run. The wider audit remains open.
+
+## Tok Pisin form and card-aging wording audit
+
+Corrected 19 mixed-language or misleading form and display labels. The account
+anonymization label incorrectly described importing users; it now refers to the
+account. Checks preserve three fading levels, idle-day conditions, worker-role
+limits and new-card versus all-card scope. Wording remains provisional pending
+fluent-speaker review.
+
+The combined translation run passes 148 checks. Two existing catalog checks fail
+on the missing due-date shortcut key. All 21 human-preference checks pass.
+Browser and screen-reader checks were not run. The wider audit remains open.
+
+## Tok Pisin import controls wording audit
+
+Corrected 21 mixed-language import controls and progress messages. Checks
+preserve file extensions, the external Trello attachment tool name, API-key URL,
+optional input, member mapping deferred until later and minimum board selection.
+Wording remains provisional pending fluent-speaker review.
+
+The combined translation run passes 150 checks. Two existing catalog checks fail
+on the missing due-date shortcut key. All 21 human-preference checks pass.
+Browser and screen-reader checks were not run. The wider audit remains open.
+
+## Tok Pisin account lockout wording audit
+
+Corrected 15 mixed-language account and lockout labels. Checks distinguish
+existing users with wrong passwords from nonexistent usernames, preserve failure
+threshold wording and single/all-user scope, and retain the OTP identifier.
+Wording remains provisional pending fluent-speaker review.
+
+The combined translation run passes 152 checks. Two existing catalog checks fail
+on the missing due-date shortcut key. All 21 human-preference checks pass.
+Browser and screen-reader checks were not run. The wider audit remains open.
+
+## Tok Pisin migration controls and monitoring wording audit
+
+Corrected 29 mixed-language migration and monitoring labels. Checks preserve
+storage destinations, administrator-only permissions, completed versus remaining
+work, forced scanning and export versus refresh failures. Technical wording
+remains provisional pending fluent-speaker review.
+
+The combined translation run passes 154 checks. Two existing catalog checks fail
+on the missing due-date shortcut key. All 21 human-preference checks pass.
+Browser and screen-reader checks were not run. The wider audit remains open.
+
+## Tok Pisin scheduling and time-label wording audit
+
+Corrected 16 mixed-language scheduling, time-summary and display labels. Checks
+preserve scheduling-failure scope, upcoming functionality, time spent versus
+time remaining, and checklist visibility actions. Wording remains provisional
+pending fluent-speaker review.
+
+The combined translation run passes 156 checks. Two existing catalog checks fail
+on the missing due-date shortcut key. All 21 human-preference checks pass.
+Browser and screen-reader checks were not run. The wider audit remains open.
+
+## Tok Pisin privacy and support controls wording audit
+
+Corrected 15 mixed-language privacy, support and favorite controls. Checks
+preserve import/export directions, adding versus removing favorites, board versus
+page targets, tenant-wide settings and automatic loading for large boards.
+Wording remains provisional pending fluent-speaker review.
+
+The combined translation run passes 158 checks. Two existing catalog checks fail
+on the missing due-date shortcut key. All 21 human-preference checks pass.
+Browser and screen-reader checks were not run. The wider audit remains open.
+
+## Tok Pisin remaining rule-control wording audit
+
+Corrected 16 English or mixed-language rule labels. Checks distinguish complete
+from incomplete, weekly from monthly schedules, selection from checkmarks, and
+preserve the import-count placeholder and symbolic N-day duration. Wording
+remains provisional pending fluent-speaker review.
+
+The combined translation run passes 160 checks. Two existing catalog checks fail
+on the missing due-date shortcut key. All 21 human-preference checks pass.
+Browser and screen-reader checks were not run. The wider audit remains open.
+
+## Tok Pisin avatar and repository wording audit
+
+Corrected 15 mixed-language or misleading avatar, repository and interface
+labels. WIP Limit Groups previously described enabling a limit; it now names
+groups. Checks preserve consistent avatar controls, editing versus enabling
+limits, and the sign-in prerequisite for uploads. Technical wording remains
+provisional pending fluent-speaker review.
+
+The combined translation run passes 162 checks. Two existing catalog checks fail
+on the missing due-date shortcut key. All 21 human-preference checks pass.
+Browser and screen-reader checks were not run. The wider audit remains open.
+
+## Tok Pisin organization and background labels wording audit
+
+Corrected eight mixed-language organization, team and board-background labels.
+Checks preserve member-propagation direction, authentication-provider sync scope,
+source tokens and matching labels for equivalent actions. Wording remains
+provisional pending fluent-speaker review.
+
+The combined translation run passes 163 checks. Two existing catalog checks fail
+on the missing due-date shortcut key. All 21 human-preference checks pass.
+Browser and screen-reader checks were not run. The wider audit remains open.
+
+## Tok Pisin history and notification wording audit
+
+Corrected six mixed-language descriptions and status messages. Checks distinguish
+disabling activity recording from suppressing notifications while retaining
+recording, preserve avatar-export exclusions and default-off settings, and retain
+the minimum-administrator requirement. Wording remains provisional pending
+fluent-speaker review.
+
+The combined translation run passes 164 checks. Two existing catalog checks fail
+on the missing due-date shortcut key. All 21 human-preference checks pass.
+Browser and screen-reader checks were not run. The wider audit remains open.
+
+## Tok Pisin shortcut wording and key inventory audit
+
+Corrected five mixed-language shortcut labels and added the missing due-date
+shortcut translation. Tok Pisin now matches English's full key inventory and
+order. Checks distinguish adding oneself as a member from taking an assignment,
+and preserve the opened-card scope of due-date editing. Wording remains
+provisional pending fluent-speaker review.
+
+The combined translation run passes 165 checks. Two existing catalog checks
+still fail on the missing due-date shortcut key in other locales. All 21
+human-preference checks pass. Browser and screen-reader checks were not run.
+The wider translation and wording audit remains open.
+
+## Due-date shortcut inventory repair: 30 languages
+
+Added the missing shortcut-edit-due-date translation to ar, bg, cs, da, de, el,
+es, fi, fr, he, hr, hu, id, it, ja, ko, nb, nl, pl, pt, pt-BR, ro, ru, sk, sv,
+tr, uk, vi, zh-CN and zh-TW. Each catalog now matches English's key inventory and
+order. No existing translation values changed. Tests preserve source tokens and
+check opened-card scope in representative scripts; they do not establish fluency.
+
+The focused translation run passes 38 checks. Two existing catalog checks still
+fail on the missing shortcut in other locales. All 21 human-preference checks
+pass. Browser and screen-reader checks were not run. Remaining languages and the
+broader wording audit remain open.
+
+## Due-date shortcut inventory repair: 26 more languages
+
+Added the missing shortcut-edit-due-date translation to af, be, bn, bs, ca, eu,
+fa, gl, hi, is, km, lt, lv, mk, ml, mr, ms, pa, sl, sq, sr, sw, ta, th, tl and
+ur. Each catalog now matches English's key inventory and order. Existing values
+were preserved. Tests cover tokens and opened-card scope in representative
+scripts, but do not establish fluency; wording remains subject to speaker review.
+
+The focused translation run passes 39 checks. Two existing catalog checks still
+fail on the missing shortcut in other locales. All 21 human-preference checks
+pass. Browser and screen-reader checks were not run. Remaining languages and the
+broader wording audit remain open.
+
+## Due-date shortcut inventory repair: 14 additional locales
+
+Added shortcut-edit-due-date to az, cy, en-GB, eo, et-EE, ga, gu-IN, hy, ka, kk,
+mn, ne, te-IN and uz. British English intentionally retains the English wording.
+Each catalog matches English's key inventory and order without changing existing
+values. Checks cover tokens and opened-card scope in representative languages;
+they do not establish fluency. Wording remains subject to speaker review.
+
+The focused translation run passes 40 checks. Two existing catalog checks still
+fail on the missing shortcut in other locales. All 21 human-preference checks
+pass. Browser and screen-reader checks were not run. Remaining locales and the
+broader wording audit remain open.
+
+## Due-date shortcut inventory repair: 47 regional variants
+
+Added the missing shortcut to regional variants of Arabic, Azerbaijani, Czech,
+Welsh, German, Greek, English, Spanish, Persian, French, Hebrew, Hindi, Japanese,
+Khmer, Korean, Malay, Dutch, Polish, Portuguese, Romanian, Russian, Ukrainian,
+Uzbek, Vietnamese and Chinese. English variants retain English; Chinese variants
+use their existing simplified/traditional script. Existing values were preserved.
+Each affected catalog matches English's key inventory and order. Tests cover
+source tokens and correspondence to the base-language translation.
+
+The focused run passes 41 checks. Two existing catalog checks still fail on the
+missing shortcut elsewhere. All 21 human-preference checks pass. Browser and
+screen-reader checks were not run. Remaining locales and wording review stay open.
+
+## Due-date shortcut inventory repair: 16 additional variant catalogs
+
+Added shortcut-edit-due-date to af_ZA, ca@valencia, ca_ES, de_DE, en_AU, en_ID,
+en_SG, en_TR, en_ZA, es_CO, pt_PT, sl_SI, cmn, zh, zh_SG and gl-ES, using the
+corresponding language translation. Existing values were preserved. Each affected
+catalog matches English's key inventory and order; English regional catalogs
+intentionally retain English wording, including underscore-based locale names.
+
+The focused run passes 42 checks. Two existing catalog checks still fail on the
+missing shortcut elsewhere. All 21 human-preference checks pass. Browser and
+screen-reader checks were not run. Remaining locales and wording review stay open.
+
+## Due-date shortcut inventory repair: 14 more languages
+
+Added shortcut-edit-due-date to am, ckb, ha, ht, kn, ku, ky, mg, my, ps, sd, si,
+tg and yo. Existing values were preserved. Each affected catalog matches
+English's key inventory and order. Tests cover source tokens and opened-card
+scope in representative languages, but do not establish fluency. Translations
+remain provisional pending speaker review.
+
+The focused run passes 43 checks. Two existing catalog checks still fail on the
+missing shortcut elsewhere. All 21 human-preference checks pass. Browser and
+screen-reader checks were not run. Remaining locales and wording review stay open.
+
+## Due-date shortcut inventory repair: seven additional catalogs
+
+Added shortcut-edit-due-date to ary, fy, fy-NL, la, lb, mt and oc. Existing values
+were preserved, and each catalog now matches English key inventory and order.
+Opened-card wording draws on existing locale terminology and dictionary checks:
+[Luxembourgish oppen](https://en.wiktionary.org/wiki/oppen),
+[Maltese miftuħ](https://en.wiktionary.org/wiki/miftu%C4%A7), and
+[Occitan dobrir/dobèrt](https://en.wiktionary.org/wiki/dobrir).
+Wording is provisional; Occitan and Moroccan Arabic phrasing is low confidence
+pending speaker review. Tests check tokens and scope, not fluency.
+
+The focused run passes 44 checks. Two existing catalog checks still fail on the
+missing shortcut elsewhere. All 21 human-preference checks pass. Browser and
+screen-reader checks were not run. Remaining locales and wording review stay open.
+
+### Missing due-date shortcut: Indic languages and Cantonese
+
+Added the absent shortcut to Assamese, Odia, Bhojpuri, Maithili and Cantonese,
+using existing card, open and due-date vocabulary. Existing translations are
+preserved, and every catalog follows English source key order. Bhojpuri,
+Maithili and Odia wording remains low confidence pending fluent review.
+Tests check key order, placeholder inventories and opened-card scope; they do
+not establish fluency. Browser and screen-reader checks were not run.
+
+### Missing due-date shortcut: twenty additional languages
+
+Added the missing shortcut in Aragonese, Asturian, Breton, Corsican, Faroese,
+Friulian, Scottish Gaelic, Manx, Javanese, Romansh, Sardinian, Sicilian,
+Turkmen, Tatar, Yiddish, Zulu, Xhosa, Somali, Igbo and Shona. Existing values
+are preserved, with source key order and placeholder inventories checked.
+Aragonese, Breton, Faroese, Friulian, Manx, Romansh, Sardinian and Igbo
+wording is low confidence pending fluent review. Browser and screen-reader
+checks were not run. Tests establish catalog structure, not fluency.
+
+Vocabulary references: [Friulian vierte](https://en.wiktionary.org/wiki/vierte),
+[Breton digor](https://fr.wiktionary.org/wiki/ouvert),
+[Romansh avert](https://fr.wiktionary.org/wiki/avert) and
+[Sardinian dictionary](https://www.limbasardasudsardigna.it/sar/images/Documenti/Didatica_e_Ainas/Vocabolariu_Sardu_Italianu_Spano.pdf).
+
+### Missing due-date shortcut: twenty-three further locales
+
+Added the shortcut in Bashkir, Buryat, Bislama, Fijian, Hawaiian, Konkani,
+Cornish, Luganda, Māori, Northern Ndebele, Northern Sotho, Chichewa, Oromo,
+Papiamento, Kirundi, Kinyarwanda, Samoan, Swati, Southern Sotho, Tswana,
+Tigrinya, Uyghur and the South African Zulu variant. Existing translations
+remain unchanged. Catalog key order, token inventories and representative
+opened-card wording are covered. Buryat, Fijian, Konkani, Cornish, Kirundi,
+Swati and Tigrinya wording is low confidence pending fluent review.
+Browser and screen-reader checks were not run; structural tests do not prove
+fluency. The wider translation audit remains incomplete.
+
+Vocabulary reference: the [Cornish Language Partnership phrasebook](https://www.magakernow.org.uk/default_page-937.html) confirms `ygor` for open.
+
+### Missing due-date shortcut: thirteen further languages
+
+Added the shortcut in Akan, Bambara, Chuvash, Ewe, Guarani, Sakha,
+Northern Sámi, Silesian, Tsonga, Venda, Wolof, Kashubian and Walloon.
+Existing translations remain unchanged. Key order and token inventories are
+checked together with representative opened-card wording. Chuvash, Ewe,
+Sakha, Silesian, Kashubian and Walloon wording remains low confidence.
+Browser, screen-reader and fluent-speaker checks were not run.
+
+Vocabulary references: [Northern Sámi rabas](https://fr.wiktionary.org/wiki/rabas)
+and [Wolof ubbeeku](https://jangileen.kalam-alami.net/dictionary/browse/O).
+These support vocabulary choices, not validation of the complete sentences.
+
+### Missing due-date shortcut: eleven languages and legacy tags
+
+Added the shortcut in Tibetan, Dzongkha, Kashmiri, Quechua, Tongan, Upper
+Sorbian, Venetian, Veps, Flemish, Waray and Wu Chinese. Legacy tags were
+resolved against the language registry: ve-CC is Venetian, ve-PP is Veps,
+vl-SS is Flemish and wa-RR is Waray. Existing translations remain unchanged;
+wrong-language content elsewhere in these catalogs still needs correction.
+All eleven additions except Flemish are low confidence pending fluent review.
+Tests check source key order, tokens and representative opened-card wording,
+including rejection of known wrong-language prefixes. Browser and
+screen-reader checks were not run; tests do not establish linguistic fluency.
+
+### Missing due-date shortcut: eight further languages
+
+Added the shortcut in Acehnese, Aymara, Fulah, Greenlandic, Nahuatl,
+Neapolitan, Volapük and Klingon. Existing values remain unchanged; source
+key order and token inventories are checked. These additions are low
+confidence pending fluent review. Tests check representative opened-card
+wording, not grammatical fluency. Browser and screen-reader checks were not run.
+
+Vocabulary references: [Acehnese thesaurus](https://fileserver-az.core.ac.uk/download/160609809.pdf),
+[Volapük dictionary](https://en.wikibooks.org/wiki/Volap%C3%BCk/English-Volap%C3%BCk_dictionary),
+[Klingon dictionary](https://klingonska.org/dict/). These support vocabulary,
+not certification of the composed sentences.
+
+### Final missing due-date shortcut entries
+
+Added the shortcut in Cherokee, Inuktitut, Ladin, Aromanian, Tigre,
+Arabic-script Uzbek, Wolaytta and Standard Moroccan Tamazight. All eight
+are low confidence pending fluent review. Existing strings are preserved;
+wrong-language strings elsewhere still need correction. Tests cover source
+key order, placeholders, script and representative opened-card wording.
+Browser and screen-reader checks were not run. Fluency is not established.
+
+Vocabulary references: [Ladin davierta](https://en.wiktionary.org/wiki/davierta),
+[Aromanian dishcljid](https://kaikki.org/dictionary/Aromanian/meaning/d/di/dishcljid.html),
+[Wolaytta grammar and word list](https://external.dandelon.com/download/attachments/dandelon/ids/DE006004286393F16AF24C1257A3600455B73.pdf),
+[Tamazight opening vocabulary](https://imassn.com/dictionnaire/mot/arzam-11398).
+
+### Kurdish Blockly controls and colours
+
+Translated 26 English placeholders covering collapsed blocks, variable deletion,
+colour mixing and loop/conditional instructions. The placeholder-only merge
+preserved existing translations. Tests compare source token inventories and key
+order, and check loop restrictions and numeric colour ranges. Technical wording
+for loops and collapsed blocks remains low confidence pending fluent review.
+Browser and screen-reader checks were not run. Product names and mathematical
+notation found in other locales were not changed merely to lower the count.
+
+### Kurdish Blockly editing and accessibility instructions
+
+Filled 54 further English placeholders for conditions, repetition, copy/delete,
+block editing, bitmap fields, keyboard help and icon announcements. Existing
+translations were preserved by the placeholder-only merge. Tests verify source
+key order and token inventories, distinguish true/false loop conditions and
+open/closed controls, and retain bitmap row/column placeholders. Technical
+wording for inline inputs and bitmap controls remains low confidence.
+Browser and screen-reader checks were not run; tests do not prove fluency.
+
+### Kurdish Blockly input labels and keyboard navigation
+
+Filled 57 English placeholders for list, number, text and statement input
+labels, keyboard navigation and empty-list creation. The placeholder-only merge
+preserved existing translations. Regression checks cover source tokens, key
+order, distinct operands and list boundaries, and hold-key instructions.
+Technical wording for statement positions, iteration and replacement remains
+low confidence pending fluent review. Browser and screen-reader checks were
+not run; structural checks do not establish fluency.
+
+### Kurdish Blockly list operations
+
+Filled 52 English placeholders for creating lists, retrieving and removing
+items, sublists, indexing, repetition, reversal, insertion and sorting.
+Existing translations are preserved. Tests check source tokens and key order,
+distinguish retrieval from removal and replacement from insertion, and retain
+copy semantics and the not-found sentinel. Index and sublist terminology
+remains low confidence pending fluent review. Browser and screen-reader checks
+were not run; tests do not establish fluency.
+
+### Kurdish Blockly sorting and logic
+
+Filled 29 English placeholders covering list sorting and splitting, comparisons,
+Boolean logic and conditional values. Existing translations and the null literal
+are preserved. Tests compare source tokens and key order, distinguish inclusive
+comparisons and AND/OR behavior, and match tooltip field names to visible labels.
+Technical wording for case-insensitive sorting remains low confidence pending
+fluent review. Browser and screen-reader checks were not run.
+
+### Kurdish Blockly arithmetic and statistics labels
+
+Filled 40 English placeholders for arithmetic, constants, bounds, number tests,
+remainders and list statistics. Existing translations and mathematical notation
+are preserved. Tests check key order, placeholders, literal constants, degree
+ranges, inclusive bounds and distinct operations. Technical terminology for
+roots, prime numbers and standard deviation remains low confidence pending
+fluent review. Browser and screen-reader checks were not run.
+
+### Kurdish Blockly statistics, random values and unary math
+
+Filled 39 English placeholders for statistical tooltips, random values, rounding,
+absolute values, logarithms, negation and spoken trigonometric labels. Existing
+translations and symbolic function names are preserved. Tests compare source
+tokens and key order, verify inclusive/exclusive random bounds and distinguish
+mode lists, negation and rounding directions. Statistical and trigonometric
+terminology remains low confidence pending fluent review. Browser and
+screen-reader checks were not run.
+
+### Kurdish Blockly functions and variable controls
+
+Filled 40 English placeholders for trigonometric tooltips, workspace controls,
+variable creation and procedure definitions/calls. Existing translations are
+preserved. Tests verify source tokens, key order, degree units, disabled-call
+restrictions, function-only blocks and return-value distinctions. Parent-block
+and procedure-output terminology remains low confidence pending fluent review.
+Browser and screen-reader checks were not run.
+
+### Kurdish Blockly keyboard shortcuts and announcements
+
+Filled 44 English placeholders for variable renaming, screen-reader state,
+keyboard navigation, movement, scrolling and announcements. The placeholder-only
+merge preserved existing translations. Tests compare source tokens and key order,
+and distinguish directions, movement lifecycle and accessibility mode toggles.
+Keyboard-focus and block-stack terminology remains low confidence pending fluent
+review. Browser and screen-reader checks were not run.
+
+### Kurdish Blockly text operations
+
+Filled 41 English placeholders for appending, case conversion, character and
+substring selection, counting, searching, joining, length and prompts. Existing
+translations are preserved. Tests compare source tokens and key order, retain
+append direction and not-found results, and check spaces in length calculations.
+Case-conversion and substring terminology remains low confidence pending fluent
+review. Browser and screen-reader checks were not run.
+
+### Kurdish Blockly replacement, variables and workspace messages
+
+Filled 36 English placeholders for text replacement/trimming, variable controls,
+workspace descriptions and search navigation. Existing translations are preserved.
+Tests verify source tokens, key order, replacement direction, all-occurrence scope,
+copy semantics, leading separator spaces and literal keyboard combinations.
+Workspace-stack and search-focus terminology remains low confidence pending fluent
+review. Browser and screen-reader checks were not run.
+
+### Kurdish Blockly aliases and rule-editor messages
+
+Filled 25 English placeholders for search results, zoom, repeated Blockly labels
+and the rule editor. Existing translations were preserved. Tests verify source
+tokens, key order, alias consistency, one-trigger/one-action restrictions,
+administrator permission and reloading before saving a conflicting edit.
+Trigger and zoom terminology remains low confidence pending fluent review.
+Browser and screen-reader checks were not run.
+
+### Kurdish Scrum settings and planning labels
+
+Filled 36 English placeholders for board views, Scrum roles and settings,
+estimates, completion policies, sprint controls and backlog help. Existing
+translations are preserved. Tests check tokens and key order, distinguish
+cancellation from completion and marked-complete from list-based completion,
+and retain unfinished-work and planned/active sprint qualifications.
+Scrum-role and increment terminology remains low confidence pending fluent
+review. Browser and screen-reader checks were not run.
+
+### Kurdish sprint report and event labels
+
+Filled 35 English placeholders for sprint events, totals, estimates, lifecycle
+states, workflow categories and import references. Existing translations are
+preserved. Tests check key order, token inventories and distinct event and
+lifecycle labels. Retrospective and swimlane terminology remains low confidence
+pending fluent review. Browser and screen-reader checks were not run.
+
+### Kurdish sprint report caveats and lifecycle confirmations
+
+Filled 13 English placeholders for snapshots, report limitations, sprint close
+and cancel confirmations, daily observations and incomplete imports. Existing
+translations are preserved. Tests compare source tokens and key order, check
+unknown-versus-zero estimates, UTC and missing days, the 366-observation limit,
+partial visibility and lifecycle effects. Snapshot and observation terminology
+remains low confidence pending fluent review. Browser and screen-reader checks
+were not run.
+
+### Kurdish Sync conflicts and preview labels
+
+Filled 26 English placeholders for conflict resolution, duplicate mapping,
+archival restrictions, replacement cards and preview actions. Existing text is
+preserved. Tests check source tokens and key order, no source-system writes,
+content preservation, unchanged subcards, replacement reuse and limited review
+scope. Mapping and baseline terminology remains low confidence pending fluent
+review. Browser and screen-reader checks were not run.
+
+### Kurdish Sync omissions and run reports
+
+Filled 23 English placeholders for preview limits, source omissions, conversion,
+parser warnings and run history. Existing text is preserved. Tests check source
+tokens and key order, 100-entry/path limits, 20-run/30-day retention, hidden
+values and partial-change warnings. Parser, path and representation terminology
+remains low confidence pending fluent review. Browser and screen-reader checks
+were not run.
+
+### Kurdish Sync diagnostics and mail failure labels
+
+Filled 21 English placeholders for run outcomes, diagnostics, estimate mapping
+and mail failures. Existing translations are preserved. Tests verify source
+tokens and key order, full-list permissions, 30-day history, no resume/undo,
+missing-versus-null values and review before retrying unconfirmed delivery.
+Diagnostic and receipt terminology remains low confidence pending fluent review.
+Browser and screen-reader checks were not run.
+
+### Kurdish activity recovery and time estimates
+
+Filled 26 English placeholders for mapped time estimates, pending activity
+notifications, retry states and delivery controls. Existing text is preserved.
+Tests check source tokens, key order, exactly-one-field requirements, missing
+versus null values, no activity recreation and retention of pending work.
+Reservation and recovery-metadata terminology remains low confidence pending
+fluent review. Browser and screen-reader checks were not run.
+
+### Kurdish final recovery messages and keyboard labels
+
+Filled three recovery placeholders and eighteen Blockly keyboard labels.
+Cancellation retains permanent/no-resume wording and the caveat that queued
+email and delivered notifications are not recalled. Keyboard labels add Kurdish
+descriptions while preserving physical key names; product names, null and
+trigonometric notation remain unchanged. Tests verify key order, source tokens,
+key-name recognition and cancellation caveats. Browser and screen-reader checks
+were not run; fluency remains subject to review.
+
+### Bhojpuri Blockly controls and colours
+
+Filled 20 English placeholders for block controls, variable deletion and colour
+selection/mixing. Existing translations are preserved. Tests compare source
+tokens and key order, retain numeric colour ranges and the deletion prohibition,
+and check representative Bhojpuri vocabulary. Variable/function terminology is
+low confidence pending fluent review. Browser and screen-reader checks were not run.
+A current check also found all 149 pending-Transifex keys already have non-English
+values in Kurdish; that establishes coverage, not linguistic quality.
+
+### Bhojpuri Blockly loops and conditions
+
+Filled 24 English placeholders for loop flow, iteration, repetition and conditional
+branches. Existing translations are preserved. Tests compare source tokens and key
+order, retain loop-only restrictions, distinguish true/false conditions and check
+the final fallback branch. Loop and iteration terminology remains low confidence
+pending fluent review. Browser and screen-reader checks were not run.
+
+### Bhojpuri Blockly editing and accessibility labels
+
+Filled 39 English placeholders for copy/cut/delete, block states, bitmap fields,
+keyboard help and icon labels. Existing translations are preserved. Tests compare
+source tokens and key order, distinguish enabled/disabled and open/closed states,
+and retain deletion counts, bitmap coordinates and help keys. Bitmap-column and
+inline-input wording remains low confidence pending fluent review. Browser and
+screen-reader checks were not run.
+
+### Bhojpuri Blockly condition, list and number inputs
+
+Filled 31 English placeholders for input labels, list boundaries, loop increments,
+math operands and coordinates. Existing text is preserved. Tests compare source
+tokens and key order, distinguish start/end positions and division operands,
+and retain x/y coordinates. Delimiter and operand wording remains low confidence
+pending fluent review. Browser and screen-reader checks were not run.
+
+### Bhojpuri text inputs and keyboard navigation
+
+Filled 30 English placeholders for text/number inputs, keyboard navigation and
+empty-list creation. Existing translations are preserved. Tests compare source
+tokens and key order, distinguish search from replacement and retain numeric
+empty-list length. Statement-position terminology remains low confidence pending
+fluent review. Browser and screen-reader checks were not run.
+
+### Bhojpuri Blockly list retrieval and removal
+
+Filled 30 English placeholders for list creation, item selection, retrieval,
+removal and sublists. Existing translations are preserved. Tests compare source
+tokens and key order, distinguish retrieval/removal/combined operations and
+first/last positions. Sublist terminology remains low confidence pending fluent
+review. Browser and screen-reader checks were not run.
+
+### Bhojpuri list indexing, insertion and sorting
+
+Filled 32 English placeholders for indexing, length, repetition, reversal,
+insertion, replacement and sorting. Existing translations are preserved. Tests
+compare source tokens and key order, distinguish insertion from replacement,
+sort directions and text/list conversion. Index and case-insensitive sorting
+terminology remains low confidence pending fluent review. Browser and
+screen-reader checks were not run.
+
+### Bhojpuri Blockly logic and comparisons
+
+Filled 29 English placeholders for splitting/joining, Boolean values, comparisons,
+negation and conditional expressions. Existing translations and the null literal
+are preserved. Tests compare source tokens and key order, distinguish strict and
+inclusive comparisons and AND/OR behavior, and ensure conditional tooltips use
+the visible field labels. Delimiter and Boolean terminology remains low confidence
+pending fluent review. Browser and screen-reader checks were not run.
+
+### Bhojpuri Blockly arithmetic and number tests
+
+Filled 28 English placeholders for arithmetic, constants, bounds, divisibility,
+number types and remainders. Existing translations and formulas are preserved.
+Tests compare source tokens and key order, retain numeric constants and coordinate
+ranges, and distinguish number types and quotient/remainder operations. Inverse
+trigonometry terminology remains low confidence pending fluent review. Browser
+and screen-reader checks were not run.
+
+### Bhojpuri statistics, random numbers and rounding
+
+Filled 29 English placeholders for list statistics, random numbers, powers,
+rounding and absolute values. Existing translations are preserved. Tests compare
+source tokens and key order, distinguish statistical operations and rounding
+directions, and retain random bounds. Statistical and rounding terminology remains
+low confidence pending fluent review. Browser and screen-reader checks were not run.
+
+### Bhojpuri logarithms and trigonometry
+
+Filled 27 English placeholders for absolute values, powers, logarithms, roots,
+negation and trigonometric descriptions. Existing translations and symbolic
+function names are preserved. Tests compare source tokens and key order, retain
+base 10 and e, and distinguish inverse functions and absolute value/negation.
+Technical trigonometry terminology remains low confidence pending fluent review.
+Browser and screen-reader checks were not run.
+
+### Bhojpuri workspace and function controls
+
+Filled 37 English placeholders for workspace navigation, variables, backpack actions,
+and function definitions and calls. Existing translations and source placeholders
+are preserved. Regression coverage checks the batch token inventories, return versus
+no-return descriptions, named invocations, disabled definitions and function-only
+return restrictions. Technical wording remains low confidence pending speaker review.
+Browser and screen-reader checks were not run; the broader language audit continues.
+
+### Bhojpuri navigation shortcuts and screen-reader controls
+
+Filled 39 English placeholders for variable renaming, zoom reset, screen-reader
+mode and navigation/editing shortcuts. Existing translations and source tokens are
+preserved. Regression checks cover the batch token inventories, distinct movement
+and scrolling directions, next/previous targets, and inverse screen-reader toggle
+actions. Accessibility terminology remains low confidence pending speaker review.
+Browser and screen-reader checks were not run; the broader audit continues.
+
+### Bhojpuri text operations and variable controls
+
+Filled 71 English placeholders for text extraction, joining, searching, replacement,
+case conversion, trimming, input prompts, variable controls and remaining shortcut
+actions. Existing translations and source token inventories are preserved. Regression
+coverage includes first/last positions, whitespace counting, replacement argument
+order, trim sides and number/text prompts. Technical wording remains low confidence
+pending speaker review. Browser and screen-reader checks were not run; the broader
+translation audit continues.
+
+### Bhojpuri workspace search and block rule editor
+
+Filled 59 English placeholders for keyboard names, workspace counts and search,
+remaining shared block labels, and rule-editor messages. Keyboard names retain the
+physical key inscriptions with Bhojpuri descriptions. Product names and mathematical
+symbols remain unchanged. Existing translations and source placeholders are preserved.
+Regression checks cover search shortcuts, count-fragment spacing, rule-state labels,
+and administrator and single-trigger restrictions. Technical wording remains low
+confidence pending speaker review. Browser and screen-reader checks were not run;
+Scrum and other feature translations remain unfinished.
+
+### Bhojpuri Scrum planning and sprint controls
+
+Filled 74 English placeholders for Scrum settings, roles, work estimates, sprint
+lifecycle controls, events and reports. Existing translations and source tokens are
+preserved. Regression coverage checks key order, placeholder inventories, distinct
+sprint states, shared navigation labels, minute units and unknown-versus-zero estimate
+wording. Scrum terminology remains low confidence pending speaker review. Browser
+checks were not run; remaining feature strings and the broader audit are unfinished.
+
+### Bhojpuri daily observations and Sync conflicts
+
+Filled 54 English placeholders for Scrum daily observations, import status, Sync
+conflicts, preview and source omissions. Existing translations and source placeholders
+are preserved. Regression checks cover token inventories, UTC references, observation
+and path limits, shared labels, source-system non-writing and unchanged subcards.
+Technical wording remains low confidence pending speaker review. Browser checks were
+not run; remaining Sync and recovery translations and the broader audit continue.
+
+### Bhojpuri Sync diagnostics and notification recovery
+
+Filled 49 English placeholders for retained Sync reports, Jira estimate fields,
+mail failures and activity notification recovery. Existing translations and source
+tokens are preserved. Regression checks cover key order, placeholders, report retention,
+explicit null handling, distinct delivery states and non-recreation guidance.
+Technical wording remains low confidence pending speaker review. Browser checks were
+not run; remaining recovery strings and the broader language audit continue.
+
+### Bhojpuri final recovery controls and inventory check
+
+Filled six remaining ordinary English placeholders for notification cancellation,
+stale controls and rule-email recovery. Regression checks preserve source tokens and
+the warnings that cancellation cannot resume or recall prior delivery. Existing
+translations are preserved. Technical wording remains low confidence pending speaker
+review; browser checks were not run.
+
+The default Bhojpuri inventory now contains only 11 product names and mathematical
+symbols, intentionally unchanged. None of the 149 pending-Transifex source keys
+remain identical to English in this locale. This does not establish linguistic completeness:
+the full language-quality audit and other locales remain unfinished.
+
+### Central Kurdish Blockly colours and flow controls
+
+Filled 39 English placeholders in Sorani for colour operations, block controls,
+loops and conditional statements. Existing translations and source placeholders are
+preserved. Regression coverage checks key order, script, tokens, colour bounds and
+loop-control distinctions. Script checks do not establish fluency; technical wording
+remains low confidence pending speaker review. Browser and right-to-left layout checks
+were not run. Remaining Central Kurdish strings and the broader audit continue.
+
+### Central Kurdish Blockly editing and accessibility
+
+Filled 54 English placeholders for loop conditions, editing actions, deletion
+confirmations, bitmap fields, input labels and accessibility announcements. Existing
+translations and source tokens are preserved. Regression checks cover source key order,
+script and token inventories, true/false conditions, opposite editing states and
+variable-deletion references. Technical wording remains low confidence pending speaker
+review. Browser, screen-reader and right-to-left layout checks were not run. The
+remaining translation inventory and broader language audit are unfinished.
+
+### Central Kurdish input labels and keyboard navigation
+
+Filled 48 English placeholders for list, number, text and value input labels and
+keyboard navigation instructions. Existing translations and source tokens are preserved.
+Regression checks cover script and token inventories, dividend/divisor distinctions,
+minimum/maximum, start/end positions, coordinates and copy/cut announcements. Technical
+wording remains low confidence pending speaker review. Browser, screen-reader and
+right-to-left layout checks were not run. The broader translation audit continues.
+
+### Central Kurdish list retrieval and removal
+
+Filled 42 English placeholders for list construction, retrieval, removal, sublists,
+search, emptiness and length. Existing translations and source placeholders are
+preserved. Regression checks cover key order, script and token inventories, retrieval
+versus removal wording, first/last occurrences and empty-list length. Technical wording
+remains low confidence pending speaker review. Browser, screen-reader and right-to-left
+layout checks were not run. Remaining strings and the broader audit continue.
+
+### Central Kurdish list editing and comparisons
+
+Filled 37 English placeholders for list repetition, insertion, replacement, sorting,
+text/list conversion and initial Boolean comparisons. Existing translations and source
+tokens are preserved. Regression checks cover key order, script and token inventories,
+insertion versus replacement, copy semantics, sort direction and inclusive comparisons.
+Technical wording remains low confidence pending speaker review. Browser, screen-reader
+and right-to-left layout checks were not run. The broader translation audit continues.
+
+### Central Kurdish logic and arithmetic
+
+Filled 35 English placeholders for comparisons, Boolean operations, conditional
+values, arithmetic, constants and numeric bounds. Existing translations and source
+tokens are preserved. Regression checks cover source order, script, placeholders,
+referenced conditional labels, constant notation, coordinates and operator distinctions.
+Technical wording remains low confidence pending speaker review. Browser, screen-reader
+and right-to-left layout checks were not run. The broader translation audit continues.
+
+### Central Kurdish statistics and number tests
+
+Filled 35 English placeholders for number tests, remainder, list statistics, random
+numbers and rounding. Existing translations and source placeholders are preserved.
+Regression coverage checks key order, script, token inventories, distinct statistical
+operations, number polarity, rounding directions and exclusive random-fraction bounds.
+Technical wording remains low confidence pending speaker review. Browser, screen-reader
+and right-to-left layout checks were not run. The broader translation audit continues.
+
+### Central Kurdish logarithms and trigonometry
+
+Filled 34 English placeholders for mathematical functions, accessible trigonometric
+labels, workspace movement and typed variables. Existing translations, standard
+mathematical symbols and source tokens are preserved. Regression checks cover key
+order, script, token inventories, logarithm bases, direct/inverse functions and degree
+rather than radian units. Technical wording remains low confidence pending speaker
+review. Browser, screen-reader and right-to-left layout checks were not run. The
+broader translation audit continues.
+
+### Central Kurdish function and variable controls
+
+Filled 37 English placeholders for functions, variables, backpack actions and
+screen-reader controls. Existing translations and source tokens are preserved.
+Regression checks cover key order, script, placeholder inventories, functions with
+and without return values, named invocations and function-only return restrictions.
+Technical wording remains low confidence pending speaker review. Browser, screen-reader
+and right-to-left layout checks were not run. The broader translation audit continues.
+
+### Central Kurdish keyboard shortcuts
+
+Filled 39 English placeholders for editing, focus, movement, scrolling and accessible
+navigation shortcuts. Existing translations and source tokens are preserved. Regression
+coverage checks key order, script, placeholder inventories, physical left/right directions,
+next/previous targets and distinct move/focus actions. Technical wording remains low
+confidence pending speaker review. Browser, screen-reader and right-to-left layout
+checks were not run. The broader translation audit continues.
+
+### Central Kurdish text operations
+
+Filled 47 English placeholders for text joining, case conversion, character positions,
+substrings, search, length, prompts and replacement. Existing translations and source
+tokens are preserved. Regression checks cover key order, script, token inventories,
+first/last distinctions, whitespace counting and replacement argument order. Technical
+wording remains low confidence pending speaker review. Browser, screen-reader and
+right-to-left layout checks were not run. The broader translation audit continues.
+
+### Central Kurdish workspace and variable messages
+
+Filled 69 English placeholders for keyboard labels, text trimming, variables,
+workspace search and counts, and shared block labels. Physical key inscriptions,
+existing translations and source tokens are preserved. Regression checks cover key
+order, script, placeholder inventories, search shortcuts, count-fragment spacing and
+trim directions. Technical wording remains low confidence pending speaker review.
+Browser, screen-reader and right-to-left layout checks were not run. The broader
+translation audit continues.
+
+### Central Kurdish rule editor and Scrum planning
+
+Filled 49 English placeholders for rule-editor guidance, Scrum settings, roles,
+estimates, backlog ordering and sprint controls. Existing translations and source
+tokens are preserved. Regression checks cover key order, script, placeholders,
+shared navigation labels, distinct sprint actions and single-trigger restrictions.
+Technical wording remains low confidence pending speaker review. Browser and
+right-to-left layout checks were not run. The broader translation audit continues.
+
+### Central Kurdish sprint reports and daily observations
+
+Filled 44 English placeholders for sprint events, states, reports, import status and
+daily observations. Existing translations and source placeholders are preserved.
+Regression coverage checks source order, script, token inventories, UTC references,
+the 366-observation limit, unknown-versus-zero wording and distinct sprint states.
+Technical wording remains low confidence pending speaker review. Browser and
+right-to-left layout checks were not run. The broader translation audit continues.
+
+### Central Kurdish Sync conflicts and preview
+
+Filled 37 English placeholders for Sync conflicts, local-card preservation, preview
+and source omissions. Existing translations and source tokens are preserved. Regression
+checks cover source order, script, placeholders, source-system non-writing, unchanged
+subcards, preview limits and shared labels. Technical wording remains low confidence
+pending speaker review. Browser and right-to-left layout checks were not run. The
+broader translation audit continues.
+
+### Central Kurdish Sync diagnostics and mail failures
+
+Filled 37 English placeholders for source omissions, retained Sync reports, estimate
+mapping, mail failures and initial activity-recovery guidance. Existing translations
+and source placeholders are preserved. Regression checks cover key order, script,
+tokens, retention and path limits, explicit null handling and delivery distinctions.
+Technical wording remains low confidence pending speaker review. Browser and
+right-to-left layout checks were not run. The broader translation audit continues.
+
+### Central Kurdish recovery controls
+
+Filled 25 English placeholders for notification retry, pause, cancellation and
+recovery states. Existing translations and source tokens are preserved. Regression
+checks cover key order, script, placeholders, distinct delivery states and permanent
+cancellation warnings. Technical wording remains low confidence pending speaker review.
+Browser and right-to-left layout checks were not run. The broader audit continues.
+
+The Central Kurdish default inventory now retains only 11 product names and mathematical
+symbols. None of the 149 pending-Transifex source keys remain identical to English.
+These counts do not establish fluency or completion of the broader language audit.
+
+### Tatar Blockly controls and opening activity messages
+
+Filled 24 English placeholders for block controls, colours and loop actions. Corrected
+nine opening activity, membership and comment strings whose vocabulary and endings
+were inconsistent with Tatar, including the previous title-change verb and reply labels.
+Source placeholders and correct-language existing translations are preserved. Regression
+checks cover key order, tokens, Tatar vocabulary, colour bounds and loop distinctions.
+Technical wording remains low confidence pending speaker review. Script checks alone
+are not a language audit. Browser checks were not run; further mixed-language entries
+and English placeholders remain in this locale.
+
+### Tatar loop and editing controls
+
+Filled 33 English placeholders for loops, conditions, copy/cut and deletion actions.
+Existing translations and source placeholders are preserved. Regression checks cover
+key order, token inventories, true/false loop conditions, loop-only restrictions,
+variable references and count parameters. Technical wording remains low confidence
+pending speaker review. Browser checks were not run. Further Tatar mixed-language
+corrections and English placeholders remain; the broader audit continues.
+
+### Tatar editing and accessibility labels
+
+Filled 37 English placeholders for block editing, bitmap controls, comments, warnings
+and input labels. Existing translations and source tokens are preserved. Regression
+checks cover key order, token inventories, opposite actions, bitmap row/column labels
+and variable references. Technical wording remains low confidence pending speaker
+review. Browser and screen-reader checks were not run. Further Tatar mixed-language
+corrections and English placeholders remain; the broader audit continues.
+
+### Tatar list, number and text input labels
+
+Filled 39 English placeholders for list, loop, arithmetic, text and value inputs.
+Existing translations and source tokens are preserved. Regression checks cover key
+order, token inventories, dividend/divisor distinctions, coordinates, start/end positions
+and shared repeat-count labels. Technical wording remains low confidence pending
+speaker review. Browser and screen-reader checks were not run. Further Tatar
+mixed-language corrections and English placeholders remain; the broader audit continues.
+
+### Tatar keyboard navigation and list construction
+
+Filled 29 English placeholders for keyboard navigation, list construction and item
+retrieval. Existing translations and source placeholders are preserved. Regression
+checks cover source order, tokens, move-key references, copy/cut announcements,
+retrieval versus removal and empty-list length. Technical wording remains low
+confidence pending speaker review. Browser and screen-reader checks were not run.
+Further Tatar corrections and the broader language audit continue.
+
+### Tatar list removal and editing
+
+Filled 32 English placeholders for list removal, sublists, indexing, repetition,
+reversal and insertion. Existing translations and source tokens are preserved.
+Regression checks cover key order, placeholders, removal without return, copy semantics,
+first/last positions and insertion versus replacement. Technical wording remains low
+confidence pending speaker review. Browser checks were not run. Further Tatar
+mixed-language corrections and the broader translation audit continue.
+
+### Tatar sorting and logic comparisons
+
+Filled 32 English placeholders for list replacement, sorting, text/list conversion,
+Boolean values and comparisons. Existing translations and source tokens are preserved.
+Regression checks cover key order, placeholders, sort direction, conversion direction,
+inclusive comparison bounds and copy semantics. Technical wording remains low
+confidence pending speaker review. Browser checks were not run. Further Tatar
+mixed-language corrections and the broader translation audit continue.
+
+### Tatar logic and arithmetic explanations
+
+Filled 25 English placeholders for Boolean operations, conditional values, arithmetic,
+constants and numeric bounds. Existing translations and source tokens are preserved.
+Regression checks cover source order, placeholders, mathematical constants, coordinates,
+conditional label references and logical distinctions. Technical wording remains low
+confidence pending speaker review. Browser checks were not run. Further Tatar
+mixed-language corrections and the broader translation audit continue.
+
+### Tatar number tests and statistics
+
+Filled 30 English placeholders for divisibility, number tests, remainder and list
+statistics. Existing translations and source tokens are preserved. Regression coverage
+checks key order, placeholders, distinct statistical operations, number polarity,
+remainder notation and shared minimum/maximum labels. Technical wording remains low
+confidence pending speaker review. Browser checks were not run. Further Tatar
+mixed-language corrections and the broader translation audit continue.
+
+### Tatar random numbers and mathematical functions
+
+Filled 28 English placeholders for sums, random numbers, rounding, logarithms, powers
+and initial inverse-trigonometric labels. Existing translations, standard symbols and
+source placeholders are preserved. Regression coverage checks key order, tokens,
+exclusive random bounds, logarithm bases and rounding/negation distinctions. Technical
+wording remains low confidence pending speaker review. Browser checks were not run.
+Further Tatar corrections and the broader language audit continue.
+
+### Tatar trigonometry and workspace controls
+
+Filled 24 English placeholders for trigonometric labels and explanations, workspace
+movement, typed variables and backpack actions. Existing translations, standard
+mathematical symbols and source tokens are preserved. Regression checks cover key
+order, placeholders, degree-versus-radian wording, inverse functions and variable types.
+Technical wording remains low confidence pending speaker review. Browser and
+screen-reader checks were not run. Further Tatar corrections and the broader audit continue.
+
+### Tatar function controls
+
+Filled 27 English placeholders for function definitions and calls, variables, zoom
+and screen-reader guidance. Existing translations and source tokens are preserved.
+Regression checks cover source order, placeholders, return/no-return distinctions,
+named invocations and function-only return restrictions. Technical wording remains
+low confidence pending speaker review. Browser and screen-reader checks were not run.
+Further Tatar corrections and the broader language audit continue.
+
+### Tatar navigation shortcuts and screen-reader controls
+
+Filled 40 English placeholders for editing, focus, movement, scrolling and navigation
+shortcuts, including the screen-reader enabled state. Existing translations and source
+tokens are preserved. Regression checks cover source order, placeholders, distinct
+directions, next/previous targets and screen-reader states. Technical wording remains
+low confidence pending speaker review. Browser and screen-reader checks were not run.
+Further Tatar corrections and the broader language audit continue.
+
+### Tatar text positions and search
+
+Filled 32 English placeholders for appending text, case conversion, character retrieval,
+joining, substrings and search. Existing translations and source tokens are preserved.
+Regression checks cover key order, placeholders, first/last distinctions, letter case,
+count argument order and the not-found result. Technical wording remains low confidence
+pending speaker review. Browser checks were not run. Further Tatar corrections and
+the broader language audit continue.
+
+### Tatar text formatting and variable controls
+
+Filled 34 English placeholders covering text joining, length, printing, input
+prompts, replacement, reversal, whitespace trimming, and variable access and
+conflict messages. Source placeholder inventories and locale key order are
+preserved. Regression coverage checks replacement arguments, distinct trim sides,
+number versus text prompts, and quoted variable and procedure references.
+Technical wording remains low confidence pending speaker review. Browser and
+screen-reader checks were not run. Further Tatar corrections and the broader
+language audit remain unfinished.
+
+### Tatar workspace search and block rule controls
+
+Filled 41 English placeholders covering workspace descriptions, search controls,
+block aliases and rule-editor help, validation, permission and saved states.
+Preserved source tokens, keyboard shortcut names, comment-fragment spacing and
+locale key order. Regression coverage checks navigation distinctions, fragment
+spacing, function aliases, search arguments and validation wording.
+Technical wording remains low confidence pending speaker review. Browser and
+screen-reader checks were not run. Older rule strings still contain wrong-language
+wording; those corrections and the broader language audit remain unfinished.
+
+### Tatar Scrum planning and sprint reports
+
+Filled 61 English placeholders for planning views, roles, estimate sources and
+units, completion policies, sprint lifecycle controls, events and reporting.
+Preserved source placeholders and locale key order. Coverage checks distinct
+sprint states, completed versus incomplete work, scope additions versus removals,
+view aliases, and the warning that unknown estimates are not zero estimates.
+Technical Scrum terminology remains low confidence pending speaker review.
+Browser checks were not run. Further Tatar translations and wrong-language
+corrections, and the broader language audit, remain unfinished.
+
+### Tatar observations, synchronization conflicts and previews
+
+Filled 56 English placeholders for remaining sprint controls, daily observations,
+synchronization conflict choices and change previews. Preserved source tokens,
+UTC notation, numeric limits and locale key order. Regression coverage checks
+unknown-versus-zero estimate wording, source-write negation, unchanged subcards,
+and distinct local/source, detach/replacement and create/update/archive choices.
+Technical terminology remains low confidence pending speaker review. Browser
+checks were not run. Further Tatar translations and wrong-language corrections,
+and the broader language audit, remain unfinished.
+
+### Tatar synchronization diagnostics and notification recovery
+
+Filled 56 English placeholders for source-field diagnostics, retained run reports,
+Jira estimate fields, mail failures and activity-notification recovery. Preserved
+source tokens, numeric retention limits, Jira/SMTP names and explicit null wording.
+Regression coverage checks missing-source versus null handling, mail failure and
+recovery-state distinctions, and the promise that retries do not recreate activities.
+Technical terminology remains low confidence pending speaker review. Browser checks
+were not run. Further Tatar translations and wrong-language corrections, and the
+broader language audit, remain unfinished.
+
+### Tatar keyboard labels and remaining recovery controls
+
+Filled 28 English placeholders for keyboard labels and activity delivery controls.
+Key-cap names remain recognizable alongside Tatar descriptions. Regression coverage
+checks pause/resume/cancel distinctions and the warning that permanent cancellation
+cannot resume or recall queued mail and delivered notifications. Source tokens and
+locale key order remain intact. The default inventory now contains only 11 product
+names and mathematical identifiers, preserved unchanged; this is not a fluency or
+wrong-language audit. Older Tatar strings still require wrong-language corrections.
+Technical wording remains low confidence pending speaker review. Browser checks
+were not run. The broader language audit remains unfinished.
+
+### Tatar rule editor wrong-language corrections
+
+Corrected 46 older rule-editor values with Turkish-like vocabulary or incorrect
+meaning, including rule names, trigger events, selection, and import/export help.
+Correct existing values such as the required-title message, disabled state and
+import/export labels were retained. Source placeholders and key order remain intact.
+Regression coverage checks Tatar rule vocabulary and rejects characteristic old
+wrong-language terms, alongside event polarity and import/export distinctions.
+Technical wording remains low confidence pending speaker review. Browser checks
+were not run. Further wrong-language corrections and the broader audit remain.
+
+### Tatar scheduled rules and workflow import corrections
+
+Corrected 43 wrong-language workflow, schedule, date-trigger, button and sorting
+values. Retained the correct board label and card-date fragment. Preserved source
+placeholders, product names and the literal N in the duration label. Regression
+coverage checks Tatar recurrence and button vocabulary, distinct date directions,
+completion polarity and workflow import names, alongside full token inventories.
+Technical wording remains low confidence pending speaker review. Browser checks
+were not run. Further wrong-language corrections and the broader audit remain.
+
+### Tatar trigger events and date-change corrections
+
+Corrected 37 older trigger, movement, attachment and checklist values, including
+date events that previously omitted setting a date and conflated due/end dates.
+Retained correct month, board, list and card labels and the title/description
+condition. Inspected the trigger-template references for short fragments; composed
+sentences still require browser and speaker review. Regression coverage checks
+Tatar attachment vocabulary, four distinct date kinds with set-or-change meaning,
+movement direction, archive polarity and equivalent attachment event labels.
+Source placeholder inventories and key order remain intact. Technical wording is
+low confidence pending speaker review. Browser checks were not run. Further
+wrong-language corrections and the broader audit remain unfinished.
+
+### Tatar checklist, movement and email action corrections
+
+Corrected 31 wrong-language rule action values, including remove, check/uncheck,
+list positions, archive restoration and email labels. Retained correct existing
+labels and variable-help translations, including their brace-delimited tags.
+Regression coverage checks Tatar position vocabulary, removal and checking
+polarity, member versus label removal, and equivalent email action labels.
+Source token inventories and key order remain intact. Technical wording and
+composed fragments remain low confidence pending speaker review. Browser checks
+were not run. Further wrong-language corrections and the broader audit remain.
+
+### Tatar rule action descriptions and checklist guidance
+
+Corrected 31 wrong-language rule descriptions and instructions for archives,
+checklists, swimlanes, dates and card links. Kept correct existing member and label
+commands and the start/received date labels. Preserved comma-separated example
+syntax, source placeholders and locale key order. Regression coverage checks
+check/uncheck and archive polarity, checklist aliases, due/end date distinctions,
+and the instructions for comma separation and matching all values with an empty field.
+Technical wording and composed fragments remain low confidence pending speaker
+review. Browser checks were not run. Further corrections and the broader audit remain.
+
+### Tatar activity messages and title argument order
+
+Corrected 31 activity and comment-control values, including attachment, label,
+checklist, comment and custom-field events. Also corrected an earlier Tatar title
+message that reversed the meanings of its two sequential %s arguments: the activity
+template supplies the new title before the card link. Regression coverage checks
+that order, exact placeholder case/counts, vocabulary, label aliases and action
+polarity. Correct existing nearby translations were retained. Technical wording
+remains low confidence pending speaker review. Browser checks were not run.
+Further wrong-language corrections and the broader audit remain unfinished.
+
+### Tatar movement, import and membership activity corrections
+
+Corrected 27 older activity values for archives, imports, movement and membership.
+Preserved named placeholders and sequential %s argument roles: object, destination,
+and source in the import message, and object, source, destination in movement.
+Regression coverage checks those distinctions, source/destination case endings,
+and add/remove membership and archive/restore differences. Correct adjacent
+activity labels were retained. Technical wording remains low confidence pending
+speaker review. Browser checks were not run. Further wrong-language corrections
+and the broader audit remain unfinished.
+
+### Tatar checklist activity and workspace corrections
+
+Corrected 35 checklist activity, date activity and workspace values. Confirmed
+argument roles against activities.jade: checklist/item precedes card, and date
+precedes card. Regression coverage checks those roles, completion polarity,
+workspace aliases and distinct subworkspace labels. Correct adjacent labels were
+retained. Source placeholders and key order remain intact. Technical wording
+remains low confidence pending speaker review. Browser checks were not run.
+Further wrong-language corrections and the broader audit remain unfinished.
+
+### Tatar board selection and layout corrections
+
+Corrected 33 board selection, home-board, date activity and layout strings.
+Preserved correct adjacent translations and source placeholders. Regression
+coverage checks Tatar width/height vocabulary, personal versus shared settings,
+switch distinctions, home removal without board deletion and date argument order.
+Technical wording remains low confidence pending speaker review. Browser checks
+were not run. Further wrong-language corrections and the broader audit remain.
+
+### Tatar common controls, announcements and loading warning
+
+Corrected 23 wrong-language checklist, administrator, announcement, reconnect and
+archive values. Retained correct adjacent controls and source placeholders.
+Regression coverage checks empty-result negation, add/edit form distinctions,
+checklist aliases, plural counts and the warning about data loss when refreshing
+during loading. Technical wording remains low confidence pending speaker review.
+Browser checks were not run. Further corrections and the broader audit remain.
+
+### Tatar archive, attachments and board visibility corrections
+
+Corrected 32 archive, attachment, background and board-membership values. Kept
+correct adjacent translations, including the soft-delete explanation. Preserved
+source placeholders, strong markup and key order. Regression coverage checks
+permanent deletion versus soft deletion, empty archive negation, board-settings
+aliases, private/public distinctions and board/card member/assignee scopes.
+Technical wording remains low confidence pending speaker review. Browser checks
+were not run. Further wrong-language corrections and the broader audit remain.
+
+### Tatar board views, appearance and navigation corrections
+
+Corrected 26 wrong-language board navigation, appearance, display-mode and view
+labels. Preserved correct neighboring translations, source placeholders, zoom
+limits and Gantt product names. Regression coverage checks equivalent view/color/
+background labels, zoom direction, display-mode and calendar distinctions, and
+Tatar statistics vocabulary. Technical wording remains low confidence pending
+speaker review. Browser checks were not run. Further corrections and the broader
+audit remain unfinished.
+
+### Tatar card archival, deletion and editing guidance
+
+Corrected 29 calendar-navigation and card-control values. Replaced wrong-language
+archive/delete explanations and corrected overdue wording that previously implied
+postponement. Preserved correct adjacent translations and source token inventories.
+Regression coverage checks archive invisibility and later restoration, permanent
+deletion, overdue meaning, date distinctions and editing targets. Technical wording
+remains low confidence pending speaker review. Browser checks were not run.
+Further wrong-language corrections and the broader audit remain unfinished.
+
+### Tatar voting and planning-poker corrections
+
+Corrected 27 wrong-language voting and card-action strings and restored ten poker
+number/question-mark labels that had inappropriate prose appended. Numeric options
+now match the source exactly; they are symbols, not untranslated prose. Preserved
+correct adjacent translations and source placeholders. Regression coverage checks
+exact options, support/opposition, logged-in access and permanent-deletion wording.
+Technical terminology remains low confidence pending speaker review. Browser checks
+were not run. Further corrections and the broader audit remain unfinished.
+
+### Tatar popup, dependency and account-action corrections
+
+Corrected 30 popup labels for dependencies, organizations, accounts, imports,
+restoration and dimensions. Correct adjacent member and export labels remain.
+Regression coverage checks Tatar organization vocabulary, deletion versus
+anonymization, distinct restoration/import targets, equivalent sorting/background
+actions and width/height distinctions. Source tokens and key order remain intact.
+Technical wording remains low confidence pending speaker review. Browser checks
+were not run. Further wrong-language corrections and the broader audit remain.
+
+### Tatar user mapping and appearance corrections
+
+Corrected 32 login, user-mapping, theme and font values. Replaced the Turkish font
+preview with Tatar prose while retaining all sample digits. Preserved correct
+adjacent labels and placeholders. Regression coverage checks the mapping permission
+ceiling, no-results negation, equivalent action labels, five distinct font sizes,
+Tatar preview vocabulary and CAS/SAML names. Technical wording remains low confidence
+pending speaker review. Browser checks were not run. Further wrong-language
+corrections and the broader audit remain unfinished.
+
+### Tatar navigation, starring and card-aging corrections
+
+Corrected 31 wrong-language navigation, preference, starring and aging values.
+Preserved correct text-note and auto-archive translations. Source placeholders
+and key order remain intact. Regression coverage checks direction and toggle
+pairs, three numbered fading tiers, equivalent preference labels and archive
+restoration guidance. Technical wording remains low confidence pending speaker
+review. Browser checks were not run. Further corrections and the broader audit remain.
+
+### Tatar color and comment-permission corrections
+
+Corrected 36 wrong-language color, comment and read-only values and restored the
+source blank comment placeholder, removing an inappropriate language suffix.
+Preserved correct adjacent translations and source tokens. Regression coverage
+checks Tatar color vocabulary, distinct shades, the exact blank placeholder and
+comment/read-only restrictions. Specialized color wording remains low confidence
+pending speaker review. Browser checks were not run. Further wrong-language
+corrections and the broader audit remain unfinished.
+
+### Tatar copying, restricted roles and custom-field controls
+
+Corrected 30 permission, deletion, clipboard, copying and custom-field values.
+Translated the embedded multi-card JSON example while preserving its title and
+description property names and valid syntax. Regression coverage parses that
+example and checks restricted-role wording, deletion permanence, distinct copy
+targets and field-label aliases. Correct adjacent translations and source tokens
+were retained. Technical wording remains low confidence pending speaker review.
+Browser checks were not run. Further corrections and the broader audit remain.
+
+### Tatar field options and date-format notation
+
+Corrected 22 wrong-language field and editing strings and restored three date-format
+labels to their source notation (YYYY, MM, DD). Preserved correct adjacent values,
+including permanent-deletion guidance. Regression coverage checks exact format
+notation, none/unknown distinctions, Enter guidance, field-type vocabulary and
+start/due date differences. Source token inventories and key order remain intact.
+Technical wording remains low confidence pending speaker review. Browser checks
+were not run. Further corrections and the broader audit remain unfinished.
+
+### Tatar email templates and permission/import errors
+
+Corrected 34 editing, account-email, invitation and error values. Preserved source
+placeholders, email paragraph structure and JSON/CSV/TSV/WeKan names. Regression
+coverage checks invitation aliases, standalone URL paragraphs, admin/member
+requirements, send/failure distinctions and denied-role wording. Correct nearby
+email labels remain. Technical wording remains low confidence pending speaker
+review. Browser and email-delivery checks were not run. Further wrong-language
+corrections and the broader audit remain unfinished.
+
+### Tatar export controls and account-conflict messages
+
+Corrected 29 account-conflict, export and attachment-metadata values. Preserved
+correct board-export labels, source tokens and PDF/Excel/iCal names. Regression
+coverage checks inability and disk-space conditions, free/needed distinctions,
+uploader versus upload time, subtask aliases and distinct account-name conflicts.
+Technical wording remains low confidence pending speaker review. Browser and
+export-runtime checks were not run. Further corrections and the broader audit remain.
+
+### Tatar sorting and filtering corrections
+
+Corrected 34 sorting and filtering values while preserving correct recent date-range
+and list-age guidance. Replaced duplicate sorting abbreviations with distinct Tatar
+initials for time, name and manual order. Source tokens and key order remain intact.
+Regression coverage checks date periods, missing versus overdue dates, creator versus
+assignee, absent-field negation and sorting abbreviations. Technical wording remains
+low confidence pending speaker review. Browser checks were not run. Further
+wrong-language corrections and the broader audit remain unfinished.
+
+### Tatar advanced-filter and import guidance corrections
+
+Corrected 25 filter, activity and import values. Restored technical examples that
+had been transliterated, including JSON keys, API paths, .xlsx and regex syntax.
+Completed the existing Markdown instruction with its missing plain-bullet behavior.
+Preserved correct neighboring import guidance and source placeholders. Regression
+coverage checks literal identifiers and examples, Markdown bullet guidance and
+show/hide distinctions. Technical wording remains low confidence pending speaker
+review. Browser and import-runtime checks were not run. Further corrections and
+the broader audit remain unfinished.
+
+### Tatar Trello import options and archive errors
+
+Corrected 28 Trello import and workspace values. Restored literal .json/.zip
+extensions and the downloader name while preserving the API-key URL and source
+tokens. Regression coverage checks these literals, optional workspace wording,
+and distinct archive-size, file-count, inner-file-size and unsafe-path failures.
+Technical wording remains low confidence pending speaker review. Browser and
+import-runtime checks were not run. Further corrections and the broader audit remain.
+
+### Tatar import progress and member-mapping corrections
+
+Corrected 23 import-progress, cancellation and member-mapping values. Preserved
+correct selection text, source placeholders and Trello API naming. Regression
+coverage checks cancel versus cancel-and-delete, resume and running/paused states,
+permanent-deletion warning, minimum selection and current-user mapping fallback.
+Technical wording remains low confidence pending speaker review. Browser and
+import-runtime checks were not run. Further corrections and the broader audit remain.
+
+### Tatar validation, label and board-membership corrections
+
+Corrected 22 validation, version, label and board-membership values. Preserved
+correct neighboring label-override text and source placeholders. Regression
+coverage checks the four-digit year example, minimum-one-admin requirement,
+permanent label deletion, removal from all cards when leaving a board and
+label-creation aliases. Technical wording remains low confidence pending speaker
+review. Browser checks were not run. Further corrections and the broader audit remain.
+
+### Tatar list actions and settings corrections
+
+Corrected 21 list, settings and login values. Restored the explicit inability to
+recover a deleted list and retained the archive alternative that preserves history.
+Preserved correct neighboring labels and source tokens. Regression coverage checks
+bulk-card scope, distinct settings targets, deletion versus archival guidance,
+calendar/Gantt/login aliases and Excel CSV/TSV naming. Technical wording remains
+low confidence pending speaker review. Browser checks were not run. Further
+wrong-language corrections and the broader audit remain unfinished.
+
+### Tatar selection, notification and normal-role corrections
+
+Corrected 25 selection, empty-archive, notification and role values. Preserved
+correct adjacent labels and source tokens. Regression coverage checks copy/move
+aliases, top/bottom distinctions, empty archives, normal-role settings restrictions,
+assigned-only visibility and muted/unaccepted negation. Technical wording remains
+low confidence pending speaker review. Browser checks were not run. Further
+wrong-language corrections and the broader audit remain unfinished.
+
+### Tatar visibility, previews and notification scope
+
+Corrected 17 notification, visibility, preview and removal values. Preserved correct
+signed-in-user visibility text and source placeholders. Regression coverage checks
+login-link markup, membership-only editing, public search visibility, blank-field
+default guidance, preview aliases and image-only paste wording. Technical wording
+remains low confidence pending speaker review. Browser checks were not run.
+Further wrong-language corrections and the broader audit remain unfinished.
+
+### Tatar member removal, rescue and search controls
+
+Corrected 22 removal, unsaved-description, search and shortcut values. Preserved
+correct adjacent text, including the Sandstorm access warning, and all source
+placeholders. Regression coverage checks removal from all cards and notification,
+replace-description wording, equivalent rename/close labels and self-membership
+versus self-assignment. Technical wording remains low confidence pending speaker
+review. Browser checks were not run. Further corrections and the broader audit remain.
+
+### Tatar sidebar shortcuts and automatic board opening
+
+Corrected 20 shortcut, sidebar, starring and time labels while preserving correct
+adjacent starred-item translations. Source tokens and key order remain intact.
+Regression coverage checks distinct sidebar targets, open/close and automatic-open
+states, assigned-card scope, greater-than count wording and hour units. Technical
+wording remains low confidence pending speaker review. Browser checks were not run.
+Further wrong-language corrections and the broader audit remain unfinished.
+
+### Tatar tracking, upload and shortcut-range corrections
+
+Corrected 18 time, tracking, upload and logo-setting values while preserving correct
+Pomodoro and nearby labels. Source placeholders, 1-9 shortcut ranges and URL naming
+remain intact. Regression coverage checks adding/removing labels, upload states,
+spent/overtime distinctions, unsaved text and image/link URL differences. Technical
+wording remains low confidence pending speaker review. Browser and upload-runtime
+checks were not run. Further corrections and the broader audit remain unfinished.
+
+## Tatar settings and transfer-limit corrections
+
+Corrected 33 wrong-language or incomplete values for custom branding, watching,
+welcome content, WIP validation and attachment/API transfer limits. Preserved the
+logo default of 27, milestone 1, URL scheme examples and WIP identifier. Clarified
+that either empty autolink field disables linking, and kept upload/download limits
+and successful/failed saves distinct. Existing correct-language neighbors remain.
+Technical wording remains low confidence pending speaker review. Focused tests
+cover key order, source tokens and these distinctions; browser checks were not run.
+
+## Tatar email and registration settings corrections
+
+Corrected 31 wrong-language values for size limits, registration, invitations,
+SMTP configuration, email templates and webhook labels. Preserved SMTP/TLS names,
+invitation placeholders and paragraph structure, subject/body distinctions and
+optional webhook authentication. Existing correct-language values were retained.
+Technical wording remains low confidence pending speaker review. Focused tests
+cover key order, source tokens and these distinctions; browser checks were not run.
+
+## Tatar webhooks and system information corrections
+
+Corrected 35 webhook and system-information values, including two product names
+with spurious language suffixes. Restored literal changeStreams, oplog, polling,
+METEOR_REACTIVITY_ORDER and DDP_TRANSPORT identifiers. Kept webhook directions,
+free/total memory and version/commit labels distinct; retained valid neighbors.
+Technical wording remains low confidence pending speaker review. Focused tests
+cover key order, source tokens and runtime identifiers; browser checks were not run.
+
+## Tatar custom fields and organization settings corrections
+
+Corrected 33 wrong-language values for time units, custom fields, account settings,
+visibility and organization/team administration. Restored domain examples and the
+literal MULTITENANCY=true setting. Preserved administrator scope restrictions,
+new/all card distinctions and the sum-of-fields meaning rather than a field count.
+Existing correct-language translations were retained. Technical wording remains
+low confidence pending speaker review. Focused checks cover tokens, key order,
+domain syntax and administration restrictions; browser checks were not run.
+
+## Tatar deletion and subtask settings corrections
+
+Corrected 33 wrong-language date, color, deletion and subtask settings values.
+Preserved irreversible deletion warnings, the requirement that duplicate lists
+have the same name and contain no cards, and the board placeholder. Corrected the
+board-deletion warning to refer to the board rather than a card. Existing valid
+translations remain. Technical wording remains low confidence pending speaker
+review. Focused checks cover tokens, key order, deletion scope and matching popup
+labels; browser checks were not run.
+
+## Tatar minicard and label activity corrections
+
+Corrected 23 wrong-language minicard, hierarchy and activity values. Preserved
+checklist counters and sequential label/card and field/value/card arguments,
+verified against activities.jade and the labelActivityMessage helper. Existing
+correct-language parent-card labels were retained. Technical wording remains low
+confidence pending speaker review. Focused tests check tokens, key order, counter
+notation and rendered argument roles; browser checks were not run.
+
+## Tatar branding and authentication-label corrections
+
+Corrected 32 branding, authentication-label, layout and administration values,
+including four literal protocol/URL labels. Restored assetlinks.json and HTML tag
+names, preserved JSON markers and opening/closing body boundaries, and retained
+existing correct-language OAuth/passwordless translations. Technical wording
+remains low confidence pending speaker review. Focused tests cover key order,
+source tokens and literal configuration syntax; browser checks were not run.
+
+## Tatar due reminders and account-deletion corrections
+
+Corrected 33 wrong-language reminder, positioning, deletion and display values.
+Preserved old/new date tokens, all mention fields, the first-reminder distinction,
+and irreversible user/team/organization/swimlane deletion warnings. Retained valid
+loading and card-edit messages. Technical wording remains low confidence pending
+speaker review. Focused tests check key order, placeholder inventories, reminder
+states and deletion warnings; browser checks were not run.
+
+## Tatar editor preferences and administration popup corrections
+
+Corrected 17 wrong-language or incomplete display, editor and administration
+values. Restored literal Enter, Shift+Enter and Ctrl/Cmd+Enter shortcuts, retained
+both save/newline modes and the multiple-card window behavior, and kept create
+and edit actions distinct. Existing valid neighboring translations remain.
+Technical wording remains low confidence pending speaker review. Focused tests
+cover key order, source tokens and editor behavior; browser checks were not run.
+
+## Tatar role settings and weekday corrections
+
+Corrected 41 wrong-language notification controls, role settings, weekdays and
+task labels. Preserved global administrators' unrestricted rights, the read-only
+permission preview before saving, read/unread distinctions and linked-card deletion
+prerequisites. Existing correct-language notification preferences remain. Technical
+wording remains low confidence pending speaker review. Focused tests cover key
+order, source tokens, permissions and weekday names; browser checks were not run.
+
+## Tatar shared-template and domain corrections
+
+Corrected 19 wrong-language domain, shared-template, identity and calendar labels.
+Restored the literal example.com validation example, the prohibition on @ and
+spaces, multiple-scope selection and the nonempty Templates board condition.
+Existing correct-language table-view and calendar values remain. Technical wording
+remains low confidence pending speaker review. Focused checks cover key order,
+source tokens, domain syntax and sharing scope; browser checks were not run.
+
+## Tatar search views and result-message corrections
+
+Corrected 34 search-view, due-card and result messages, including the literal slash
+separator. Preserved permission-limited scope, member-or-assignee filtering,
+incomplete-card criteria and result placeholders. Existing correct-language labels
+remain. Technical wording remains low confidence pending speaker review. Focused
+tests check key order, source tokens, filter semantics and matching view labels;
+browser checks were not run.
+
+## Tatar search operator and predicate corrections
+
+Corrected 38 wrong-language search aliases, predicates and the unknown-operator
+error. Restored literal # and @ shorthand. Full aliases use single words accepted
+by the production parser, including previously spaced debug/checklist aliases.
+Existing correct-language aliases remain. Technical wording remains low confidence
+pending speaker review. Focused tests cover tokens, key order, parser-compatible
+characters and alias uniqueness; browser checks were not run.
+
+## Tatar search instructions and validation corrections
+
+Corrected 32 wrong-language search validation, pagination and instruction values.
+Restored executable list:Blocked and user:<username> examples, preserved operator
+placeholders and syntax metavariables, and repaired unmatched formatting in the
+due-date and label help. Technical wording remains low confidence pending speaker
+review. Focused tests cover key order, tokens, syntax markers and balanced inline
+code; browser checks were not run.
+
+## Tatar search logic and export-label corrections
+
+Corrected 19 search-help and label values, including the literal Arial font name.
+Preserved OR/AND distinctions, negation and descending-sort syntax, positive page
+limits and the archived-card exclusion default. Restored literal query examples
+and retained valid neighboring text. Technical wording remains low confidence
+pending speaker review. Focused tests cover tokens, key order, query examples and
+search logic; browser checks were not run.
+
+## Tatar card sorting and dependency-label corrections
+
+Corrected 18 wrong-language sorting, completion, sticker and dependency labels.
+Restored literal A/Z sort indicators and preserved opposing completion, visibility,
+addition and removal actions. Existing correct-language dependency permissions and
+import/export messages remain. Technical wording remains low confidence pending
+speaker review. Focused tests cover key order, source tokens, sort directions and
+action distinctions; browser checks were not run.
+
+## Tatar dependency import, backgrounds and location corrections
+
+Corrected 26 wrong-language dependency, background and location values. Preserved
+relationship directions, JSON/SVG identifiers, import counters, the image-size
+token and distinct latitude/longitude labels. Existing valid neighboring values
+remain. Technical wording remains low confidence pending speaker review. Focused
+tests cover key order, source tokens, file formats and relationship distinctions;
+browser checks were not run.
+
+## Tatar map detection and diagnostics corrections
+
+Corrected 21 wrong-language map, diagnostic, sorting and creator values. Restored
+literal snap and Docker log commands and the Enter key name. Preserved location
+detection states and newest/oldest ordering. Existing correct-language template
+syntax guidance remains. Technical wording remains low confidence pending speaker
+review. Focused tests cover key order, source tokens, executable commands and
+ordering distinctions; browser checks were not run.
+
+## Tatar report and office activity corrections
+
+Corrected 28 wrong-language report, office and API values, including two literal
+API labels. Restored IPv4/IPv6 and REST identifiers, preserved successful-login
+counts and API aggregation by account and endpoint rather than individual request.
+Existing correct-language labels remain. Technical wording remains low confidence
+pending speaker review. Focused tests cover key order, tokens, protocol names and
+reporting distinctions; browser checks were not run.
+
+## Tatar API recovery and waiting-animation corrections
+
+Corrected 25 wrong-language API, recovery, copying and waiting-animation values.
+Restored literal REST API and WITH_API=true syntax, preserved MongoDB, first/last
+call distinctions and automatic continuation after recovery. Technical wording
+remains low confidence pending speaker review. Focused tests cover key order,
+source tokens, runtime identifiers and distinct animation names; browser checks
+were not run.
+
+## Tatar ticket states and deletion constraints corrections
+
+Corrected 18 wrong-language card sizing, ticket, request and history labels.
+Preserved the restriction against deleting organizations or teams with members,
+distinct pending/closed/resolved/cancelled states and literal Cc: mail notation.
+Existing correct-language history actions remain. Technical wording remains low
+confidence pending speaker review. Focused tests cover key order, source tokens,
+state distinctions and deletion constraints; browser checks were not run.
+
+## Tatar team invitation and heap-metric corrections
+
+Corrected 16 wrong-language card detail, team invitation and memory metric values.
+Preserved the disabled-self-registration condition, board-scoped team removal,
+invitation success/error distinction and literal Node name. Existing correct-language
+saved-filter text remains. Technical wording remains low confidence pending speaker
+review. Focused tests cover key order, tokens, invitation conditions and distinct
+heap metrics; browser checks were not run.
+
+## Tatar memory and checklist-control corrections
+
+Corrected 24 wrong-language memory, organization, legal-notice and checklist
+values. Preserved Node and allocator identifiers, distinct memory measurements,
+board-scoped removal and one-line/one-item mapping with original-order behavior.
+Technical wording remains low confidence pending speaker review. Focused tests
+cover key order, source tokens, technical identifiers and checklist distinctions;
+browser checks were not run.
+
+## Tatar checklist copying and attachment-storage corrections
+
+Corrected 22 wrong-language checklist and attachment controls, including two
+literal storage product labels. Restored GridFS, S3, CollectionFS and Meteor-Files
+names; preserved single-attachment, all-attachment and board-only scopes. Existing
+correct-language text-editing labels remain. Technical wording remains low confidence
+pending speaker review. Focused tests cover tokens, key order, storage names and
+operation scopes; browser checks were not run.
+
+## Tatar storage repair and default-destination corrections
+
+Corrected 19 wrong-language storage values, including the literal S3/MinIO label.
+Preserved read-enabled storage eligibility, attachment-and-avatar repair scope,
+new-upload destination semantics and distinct repair/save states. Technical wording
+remains low confidence pending speaker review. Focused tests cover tokens, key
+order, identifiers and state distinctions; browser checks were not run.
+
+## Tatar storage statistics and compaction corrections
+
+Corrected 19 wrong-language storage statistics, identifiers and compaction values,
+including two literal product labels. Preserved the requirement to finish bulk
+moves first, the blocking-operation warning and replica-node ordering described
+by the source text. Technical wording remains low confidence pending speaker
+review. Focused checks cover key order, tokens, identifiers and prerequisites;
+browser checks were not run.
+
+## Tatar board status and transfer-progress corrections
+
+Corrected 18 wrong-language board status, transfer progress and general labels.
+Preserved distinct spent, overtime and remaining-time concepts, the compaction
+error prefix and repeated-password prompt. Existing correct-language neighboring
+values remain. Technical wording remains low confidence pending speaker review.
+Focused tests cover key order, tokens and status distinctions; browser checks
+were not run.
+
+## Tatar upload validation and custom-translation corrections
+
+Corrected 21 wrong-language upload, workspace and custom-translation values.
+Preserved byte units, the workspace placeholder, PDF/Mongo/ISO 8601 identifiers,
+and irreversible deletion wording. Existing valid account labels remain.
+Technical wording remains low confidence pending speaker review. Focused tests
+cover key order, source tokens, units and validation distinctions; browser checks
+were not run.
+
+## Tatar recurrence and checklist-visibility corrections
+
+Corrected 11 wrong-language or misleading import, checklist and recurrence values.
+Restored literal .zip and JSON references and distinguished card recurrence from
+checklist reset. Kept valid interval labels and existing translations. Technical
+wording remains low confidence pending speaker review. Focused tests cover key
+order, tokens, file identifiers and recurrence/visibility distinctions; browser
+checks were not run.
+
+## Tatar support and login-lockout corrections
+
+Corrected 22 wrong-language support, accessibility and login-lockout values.
+Preserved signed-in-only support access, known/unknown username distinctions,
+wrong-password context, seconds units and separate lockout/failure windows.
+Technical wording remains low confidence pending speaker review. Focused tests
+cover key order, source tokens, access restrictions and units; browser checks
+were not run.
+
+## Tatar unlock and user-activation corrections
+
+Corrected 20 wrong-language lockout, people-filter and scheduled-job labels.
+Preserved single-user versus all-user unlock scope, active/inactive filters and
+opposite activation actions. Existing correct-language presence and team labels
+remain. Technical wording remains low confidence pending speaker review. Focused
+tests cover tokens, key order, unlock scope and activation distinctions; browser
+checks were not run.
+
+## Tatar scheduled-job and storage-path corrections
+
+Corrected 24 wrong-language job and storage-path messages. Preserved distinct
+archive/backup/cleanup scheduling outcomes, pause/resume/delete actions and the
+coming-soon qualification. Technical wording remains low confidence pending
+speaker review. Focused tests cover tokens, key order, outcome distinctions and
+separate attachment/avatar paths; browser checks were not run.
+
+## Tatar migration errors and filesystem-state corrections
+
+Corrected 23 wrong-language migration and filesystem values. Preserved error versus
+warning distinctions, retry versus resume actions, empty-state explanations and
+opposing filesystem states. Retained the valid time label. Technical wording remains
+low confidence pending speaker review. Focused tests cover tokens, key order and
+status/action distinctions; browser checks were not run.
+
+## Tatar cloud storage and migration-guidance corrections
+
+Corrected 22 wrong-language cloud-storage and migration values, including four
+literal service labels. Restored provider names, database URLs, environment
+variables, Snap commands and Sandstorm directory paths. Preserved migration scope
+and target availability requirements. Technical wording remains low confidence
+pending speaker review. Focused tests cover tokens, key order and executable
+configuration syntax; browser checks were not run.
+
+## Tatar Sandstorm migration-cleanup corrections
+
+Corrected 11 wrong-language migration, disk usage and feature labels. Preserved
+successful migration as the prerequisite for deleting old MongoDB files, the
+FerretDB/filesystem destination and irreversible deletion warnings. Existing valid
+feature descriptions remain. Technical wording remains low confidence pending
+speaker review. Focused tests cover key order, tokens, migration states and cleanup
+prerequisites; browser checks were not run.
+
+## Tatar loading-mode and text-rendering corrections
+
+Corrected 12 wrong-language performance and rendering values. Updated the stale
+loading description to match the English automatic-threshold behavior and restored
+both environment-variable names. Preserved lazy-mode limitations, HTML/Markdown
+examples and default-off rendering controls. Existing valid feature descriptions
+remain. Technical wording remains low confidence pending speaker review. Focused
+tests cover tokens, key order and literal configuration syntax; browser checks
+were not run.
+
+## Tatar import/export and anonymization corrections
+
+Corrected 14 wrong-language import/export and anonymization values. Replaced the
+incorrect export description in the account-anonymization confirmation with its
+actual consequences: permanent identity replacement, avatar removal, disabled
+login, retained history and no undo. Restored service names and field identifiers.
+Technical wording remains low confidence pending speaker review. Focused tests
+cover tokens, key order, literal identifiers and account consequences; browser
+checks were not run.
+
+## Tatar notification controls and backup-scope corrections
+
+Corrected 18 wrong-language notification and backup values. Preserved the difference
+between disabling activity recording, notifications and subscriptions, plus the
+organization-backup exclusions and restore ownership boundary. Kept the existing
+correct-language backup-path description. Technical wording remains low confidence
+pending speaker review. Focused checks cover tokens, key order and scope semantics;
+browser checks were not run.
+
+## Tatar backup scheduling and restore-mode corrections
+
+Corrected 15 wrong-language schedule, restore-mode and cloud credential labels.
+Preserved HH:MM, the 1-28 monthly range and add-missing versus replace-all modes.
+Reviewed and retained the existing correct-language continuous-backup messages,
+including encryption, retention and restore safeguards. Technical wording remains
+low confidence pending speaker review. Focused tests cover tokens, key order,
+formats and mode distinctions; browser checks were not run.
+
+## Tatar cloud credential and console-path corrections
+
+Corrected 22 wrong-language cloud credential descriptions and console paths.
+Restored literal external UI labels, client_email, key1, service names and .csv.
+Preserved optional credential alternatives and blank-to-retain behavior. These
+translations follow the English source instructions; external consoles were not
+revalidated. Technical wording remains low confidence pending speaker review.
+Focused tests cover tokens, key order, UI labels and navigation steps; browser
+checks were not run.
+
+## Tatar cloud status and migration-control corrections
+
+Corrected 23 wrong-language cloud status and migration-control values, including
+two literal provider labels. Restored GridFS and S3/MinIO names and preserved
+credential state, connection/save outcomes and pause/stop distinctions. Technical
+wording remains low confidence pending speaker review. Focused tests cover tokens,
+key order, provider names and opposing states; browser checks were not run.
+
+## Tatar migration outcomes and S3-control corrections
+
+Corrected 22 wrong-language migration and S3 values. Restored literal AWS, S3,
+MinIO, GridFS and CollectionFS names; preserved start/stop/pause outcomes and
+attachment/avatar migration guidance. Technical wording remains low confidence
+pending speaker review. Focused tests cover tokens, key order, service identifiers
+and outcome distinctions; browser checks were not run.
+
+## Tatar S3 connection and scheduled operation corrections
+
+Corrected 22 wrong-language values for S3 connection settings, secret keys,
+scheduled board operations and migration controls. Preserved example hostnames,
+AWS region identifiers, S3/MinIO and SSL/TLS. Regression coverage checks literal
+connection examples and distinct outcomes and scheduling actions, alongside
+English key order and placeholder inventories. Technical wording remains low
+confidence pending speaker review. Browser checks were not run. The broader
+wrong-language audit continues.
+
+## Tatar board migration corrections
+
+Corrected 45 wrong-language storage, migration and recovery strings. Preserved
+swimlaneId/listId, URL and ID identifiers, the empty duplicate deletion conditions,
+the non-archived recovery restriction, administrator access and the warning that
+restoring all archived items is difficult to undo. Regression checks cover these
+restrictions alongside key order and placeholder inventories. Technical wording
+remains low confidence pending speaker review. Browser checks were not run.
+The broader language audit remains ongoing.
+
+## Tatar migration progress corrections
+
+Corrected 34 wrong-language migration progress, recovery step and cleanup
+values. Retained the correct existing translation of steps. Preserved URL and
+ID labels, distinct recovery targets, the named lost-card swimlane, and the
+one-time conversion notice allowing continued board use. Regression coverage
+checks those semantics alongside key order and placeholder inventories. Technical
+wording remains low confidence pending speaker review. Browser checks were not
+run; the broader wrong-language audit continues.
+
+## Tatar job monitoring corrections
+
+Corrected 39 wrong-language job, resource monitoring and migration setting
+values, including restoring the literal GridFS storage name. Retained the correct
+existing errors translation. Preserved CPU, GridFS and S3 identifiers, numeric
+intervals, percentage units and the 1-100 batch range. Regression coverage checks
+these details alongside placeholder inventories and key order. Technical wording
+remains low confidence pending speaker review. Browser checks were not run; the
+broader wrong-language audit continues.
+
+## Tatar migration threshold corrections
+
+Corrected 35 wrong-language threshold, migration control, monitoring and minicard
+values. Restored the literal S3 storage name. Preserved numeric ranges, CPU and
+S3 identifiers, millisecond units, pause versus resume, and the background
+processing notices. Regression coverage checks these details alongside key order
+and placeholder inventories. Technical wording remains low confidence pending
+speaker review. Browser checks were not run; the broader audit continues.
+
+## Tatar repository access corrections
+
+Corrected 31 wrong-language resource status, repository and account access
+strings. Retained the correct start-time label and restored the literal Cron
+name. Preserved OTP/API identifiers, byte units, temporary account lockout
+and distinct pause/stop actions. Regression coverage checks these details
+alongside key order and placeholder inventories. Technical wording remains
+low confidence pending speaker review. Browser checks were not run; the
+broader language audit continues.
+
+## Tatar repair status corrections
+
+Corrected 25 wrong-language account, repair status and resource labels. Retained
+five correct neighboring values. Preserved repair count placeholders, the missing
+board condition preventing automatic repair, CPU labels and the three-character
+username minimum. The problem summary references the existing acknowledgement
+button translation. Regression coverage checks these details alongside key order
+and placeholder inventories. Technical wording remains low confidence pending
+speaker review. Browser checks were not run; the broader audit continues.
+
+## Tatar event and scoped import corrections
+
+Corrected 21 wrong-language event, export and import values, retaining nine
+correct neighboring strings. Restored IP/IPv4/IPv6 labels, .json/.zip extensions
+and the Jira name. Corrected the card-number search alias to a single Tatar word
+and preserved its example placeholder. Regression coverage checks identifiers,
+formats and selection restrictions alongside key order and placeholder inventories.
+Technical wording remains low confidence pending speaker review. Browser checks
+were not run; the broader language audit continues.
+
+## Tatar WIP and flow report label corrections
+
+Corrected 37 WIP group and flow report values containing wrong-language text or
+incomplete substitutes for the English labels. Preserved XmR, the 85th percentile
+and day units. Restored distinctions between target and finish dates, mean and
+moving range, and the minimum capacity wording. Neighboring two-factor, list-sync
+and map translations were retained. Statistical terminology remains low confidence
+pending speaker review. Regression coverage checks key order, tokens and important
+label distinctions. Browser checks were not run; flow report explanations and the
+broader language audit remain unfinished.
+
+## Tatar flow report explanation corrections
+
+Replaced nine incomplete or wrong-language flow report, move-reason and time
+adjustment values with full translations. Preserved sampling counts, forecast
+limits, no-guarantee wording, date fallbacks, missing-history restrictions and
+negative time corrections. Regression checks cover these constraints as well as
+key order and placeholder inventories. Statistical terminology remains low
+confidence pending speaker review. Browser checks were not run; the broader
+language audit remains unfinished.
+
+## Tatar ZenKit instruction correction
+
+A follow-up wrong-language vocabulary scan found a missed ZenKit import
+instruction. Corrected its prose and restored the literal title, stages and items
+JSON fields. Added regression coverage for the full JSON example and product
+name alongside placeholder and key-order checks. Technical wording remains low
+confidence pending speaker review. Browser checks were not run. Vocabulary scans
+are not proof of complete language correctness; the broader audit continues.
+
+## Odia Blockly controls and colours
+
+Filled 24 English placeholders in the Odia catalog for Blockly colour controls,
+block operations and loop actions. Applied through the placeholder-only merge,
+preserving existing translations. Tests compare key order, Odia script and exact
+placeholder inventories, and check colour bounds and distinct loop actions.
+Technical wording remains low confidence pending speaker review. Browser checks
+were not run. Further Odia placeholders and the broader language audit remain.
+
+## Odia Blockly loops and conditionals
+
+Filled 20 English placeholders for loop controls, conditional branches and
+iteration help. Preserved indexed placeholders and distinguished true-driven
+while loops from false-driven until loops. The placeholder-only merge retained
+existing translations. Regression coverage checks script, key order, tokens and
+condition polarity. Technical wording remains low confidence pending speaker
+review. Browser checks were not run; further Odia translations remain.
+
+## Odia Blockly editing and bitmap labels
+
+Filled 30 English placeholders for editing commands, variable deletion, bitmap
+accessibility and field labels. Preserved indexed count, variable, row and column
+references. Existing translations were retained by the placeholder-only merge.
+Regression coverage checks key order, script, tokens and distinct opposing actions.
+Technical wording remains low confidence pending speaker review. Browser checks
+were not run; further Odia translations and the broader audit remain unfinished.
+
+## Odia Blockly help and input labels
+
+Filled 29 English placeholders for keyboard help, icon actions and list input
+labels. Preserved indexed tokens, open/close actions, first/second conditions
+and start/end positions. Existing translations were retained by the placeholder-only
+merge. Regression coverage checks these distinctions alongside script, key order
+and token inventories. Technical wording remains low confidence pending speaker
+review. Browser checks were not run; further Odia translations remain.
+
+## Odia mathematical and text input labels
+
+Filled 29 English placeholders for numerical, loop and text input labels.
+Preserved coordinate names, indexed placeholders and distinctions between
+dividend/divisor, minimum/maximum and start/end positions. The placeholder-only
+merge retained existing translations. Regression coverage checks these roles,
+script, key order and token inventories. Technical wording remains low confidence
+pending speaker review. Browser checks were not run; further translations remain.
+
+## Odia list creation and keyboard navigation
+
+Filled 22 English placeholders for keyboard navigation, list creation and item
+selection. Preserved indexed shortcut tokens, empty-list length and the index
+marker. Existing translations were retained by the placeholder-only merge.
+Regression coverage checks token roles and distinct copy/cut and get/remove
+actions alongside script and key order. Technical wording remains low confidence
+pending speaker review. Browser checks were not run; further translations remain.
+
+## Odia list retrieval and removal
+
+Filled 20 English placeholders for list item retrieval, removal and sublist
+selection. Preserved first/last/random positions, index markers and the difference
+between returning, removing and returning with removal. The placeholder-only merge
+retained existing translations. Regression coverage checks these meanings alongside
+script, key order and token inventories. Technical wording remains low confidence
+pending speaker review. Browser checks were not run; further translations remain.
+
+## Odia list search and insertion
+
+Filled 22 English placeholders for list search, length, reversal and insertion.
+Preserved indexed tokens, the not-found return value, reversal of a copy, and
+the distinction between insertion and setting an existing item. Existing
+translations were retained by the placeholder-only merge. Regression coverage
+checks these details alongside script, key order and token inventories. Technical
+wording remains low confidence pending speaker review. Browser checks were not
+run; further Odia translations remain.
+
+## Odia sorting and comparison labels
+
+Filled 25 English placeholders for sorting, splitting and joining lists, Boolean
+values and comparisons. Preserved indexed tokens, sorting a copy, case-insensitive
+ordering and inclusive versus strict comparisons. Existing translations were
+retained by the placeholder-only merge. Regression coverage checks these details
+alongside script, key order and token inventories. Technical wording remains low
+confidence pending speaker review. Browser checks were not run; further translations
+remain.
+
+## Odia Boolean logic and arithmetic
+
+Filled 21 English placeholders for logic, conditional values and arithmetic.
+Preserved null, atan2, coordinate placeholders and the signed degree range.
+Conditional help uses the translated branch labels. Existing translations were
+retained by the placeholder-only merge. Regression coverage checks these details
+and Boolean distinctions alongside script, key order and token inventories.
+Technical wording remains low confidence pending speaker review. Browser checks
+were not run; further Odia translations remain.
+
+## Odia constants and number properties
+
+Filled 22 English placeholders for mathematical constants, bounds and number
+properties. Preserved numeric examples, mathematical symbols, indexed tokens and
+inclusive bounds. The placeholder-only merge retained existing translations.
+Regression coverage checks constant examples and distinct number properties,
+alongside script, key order and placeholder inventories. Technical wording remains
+low confidence pending speaker review. Browser checks were not run; further
+Odia translations remain.
+
+## Odia list statistics and random fractions
+
+Filled 21 English placeholders for list statistics and random fractions. Preserved
+distinctions between mean, median and mode, the list-valued mode result, and
+inclusive zero versus exclusive one bounds. The placeholder-only merge retained
+existing translations. Regression coverage checks those details alongside script,
+key order and token inventories. Statistical wording remains low confidence pending
+speaker review. Browser checks were not run; further Odia translations remain.
+
+## Odia rounding and mathematical functions
+
+Filled 23 English placeholders for integer generation, rounding and mathematical
+functions. Preserved inclusive bounds, indexed tokens and exponential/logarithmic
+bases. Existing translations were retained by the placeholder-only merge.
+Regression coverage checks rounding directions and function distinctions alongside
+script, key order and token inventories. Technical wording remains low confidence
+pending speaker review. Browser checks were not run; further translations remain.
+
+## Odia trigonometry and variable creation
+
+Filled 22 English placeholders for trigonometric descriptions, workspace movement
+and variable creation. Retained literal function abbreviations and preserved degree
+versus radian wording and distinct variable types. The placeholder-only merge
+retained existing translations. Regression coverage checks these details alongside
+script, key order and token inventories. Technical wording remains low confidence
+pending speaker review. Browser checks were not run; further translations remain.
+
+## Odia procedure definitions and calls
+
+Filled 22 English placeholders for function definitions, calls, warnings and paste
+actions. Preserved indexed function names, return/no-return distinctions and
+function-only restrictions. Existing translations were retained by the placeholder-only
+merge. Regression coverage checks those details alongside script, key order and
+token inventories. Technical wording remains low confidence pending speaker review.
+Browser checks were not run; further Odia translations remain.
+
+## Odia screen-reader and shortcut commands
+
+Filled 21 English placeholders for variable renaming, screen-reader modes and
+workspace shortcuts. Preserved variable/shortcut tokens and distinguished current
+on/off state from the action to toggle it. Existing translations were retained by
+the placeholder-only merge. Regression coverage checks state/action distinctions,
+script, key order and token inventories. Technical wording remains low confidence
+pending speaker review. Browser checks were not run; further translations remain.
+
+## Odia directional keyboard shortcuts
+
+Filled 22 English placeholders for directional movement, scrolling, stack and page
+navigation. Preserved opposing directions and distinctions between movement and
+scrolling. Existing translations were retained by the placeholder-only merge.
+Regression coverage checks directional consistency, distinct navigation targets,
+script, key order and token inventories. Technical wording remains low confidence
+pending speaker review. Browser checks were not run; further translations remain.
+
+## Odia text case and character selection
+
+Filled 20 English placeholders for shortcut help, text appending, case conversion
+and character selection. Preserved indexed roles, position markers and copy
+semantics. Case conversion wording refers to letter case rather than font size.
+The placeholder-only merge retained existing translations. Regression coverage
+checks these details alongside script, key order and token inventories. Technical
+wording remains low confidence pending speaker review. Browser checks were not
+run; further Odia translations remain.
+
+## Odia text joining and substrings
+
+Filled 22 English placeholders for text joining, substring selection and search.
+Preserved index markers, first/last search distinctions, not-found return tokens
+and the first-text-in-second-text relationship. Existing translations were retained
+by the placeholder-only merge. Regression coverage checks these details alongside
+script, key order and token inventories. Technical wording remains low confidence
+pending speaker review. Browser checks were not run; further translations remain.
+
+## Odia text replacement and whitespace
+
+Filled 21 English placeholders for text prompts, replacement, reversal, trimming
+and basic editor labels. Preserved indexed replacement roles, replacement of all
+occurrences, spaces in length counts and trimming at text ends. Existing
+translations were retained by the placeholder-only merge. Regression coverage
+checks these details alongside script, key order and token inventories. Technical
+wording remains low confidence pending speaker review. Browser checks were not
+run; further Odia translations remain.
+
+## Odia variable warnings and workspace counts
+
+Filled 19 English placeholders for variables and workspace announcements. Preserved
+variable/type/procedure references, zero/one/many stack counts, comment suffix
+spacing and indexed tokens. Existing translations were retained by the placeholder-only
+merge. Regression coverage checks those details alongside script and key order.
+Technical wording remains low confidence pending speaker review. Browser checks
+were not run; further Odia translations remain.
+
+## Odia workspace search and shared labels
+
+Filled 21 English placeholders for workspace search, shared block labels and the
+rule-editor tab. Preserved keyboard shortcut names, match index/total roles and
+consistent duplicate labels. Existing translations were retained by the placeholder-only
+merge. Regression coverage checks these details alongside script, key order and
+token inventories. Technical wording remains low confidence pending speaker review.
+Browser checks were not run; rule-editor help and further translations remain.
+
+## Odia rule editor guidance
+
+Filled nine English placeholders for rule editing, validation and permissions.
+Preserved the one-trigger/one-action requirement, administrator permission and
+reload-before-save conflict guidance. Existing translations were retained by the
+placeholder-only merge. Regression coverage checks restrictions and state labels
+alongside script, key order and token inventories. Technical wording remains low
+confidence pending speaker review. Browser checks were not run; further Odia
+feature translations remain.
+
+## Odia Scrum planning settings
+
+Filled 28 English placeholders for Scrum roles, planning settings, completion
+policies and sprint actions. Preserved distinct estimate source/unit labels and
+start/close/cancel actions. Existing translations were retained by the placeholder-only
+merge. Regression coverage checks shared label consistency and semantic distinctions,
+alongside script, key order and token inventories. Technical wording remains low
+confidence pending speaker review. Browser checks were not run; further Odia
+Scrum translations remain.
+
+## Odia sprint reports and events
+
+Filled 30 English placeholders for sprint goals, events, report categories and
+state labels. Preserved report placeholders, minute units and the distinction
+between unknown and zero estimates. Existing translations were retained by the
+placeholder-only merge. Regression coverage checks report caveats and event/state
+distinctions alongside script, key order and token inventories. Technical wording
+remains low confidence pending speaker review. Browser checks were not run; further
+Odia translations remain.
+
+## Odia sprint lifecycle and observations
+
+Filled 25 English placeholders for sprint states, closing/cancellation and daily
+observations. Preserved partial-report restrictions, UTC days, the 366 observation
+limit, missing-day omissions and unknown estimates. Existing translations were
+retained by the placeholder-only merge. Regression coverage checks these details
+alongside script, key order and token inventories. Technical wording remains low
+confidence pending speaker review. Browser checks were not run; further translations
+remain.
+
+## Odia sync conflict guidance
+
+Filled 16 English placeholders: the remaining Scrum import warning and initial
+sync conflict guidance. Preserved local/source distinctions, no-source-write
+assurance, review-only scope and unchanged subcards. The placeholder-only merge
+retained existing translations. Regression coverage checks these restrictions
+alongside script, key order and token inventories. Technical wording remains low
+confidence pending speaker review. Browser checks were not run; further sync
+translations and the broader language audit remain unfinished.
+
+## Odia sync preview guidance
+
+Filled 18 English placeholders for replacement cards, sync previews and omitted
+fields. Preserved unchanged previous cards, replacement reuse, the 100-entry
+limit and parser omission caveats. Existing translations were retained by the
+placeholder-only merge. Regression coverage checks these details alongside script,
+key order and token inventories. Technical wording remains low confidence pending
+speaker review. Browser checks were not run; further sync translations remain.
+
+## Odia source omissions and sync reports
+
+Filled 18 English placeholders for source-field omissions and sync run reports.
+Preserved hidden object values, the 100-path limit, 20-run/30-day retention and
+partial-change warnings. Existing translations were retained by the placeholder-only
+merge. Regression coverage checks report limits and the no-resume/no-undo caveat
+alongside script, key order and token inventories. Technical wording remains low
+confidence pending speaker review. Browser checks were not run; further translations
+remain.
+
+## Odia sync diagnostics and estimate mapping
+
+Filled 12 English placeholders for diagnostics, report access and Jira estimate
+mapping. Preserved the 30-day period, ID/Jira/null identifiers, hour units,
+exactly-one-field requirement and missing-versus-null distinction. Existing
+translations were retained by the placeholder-only merge. Regression coverage
+checks those details alongside script, key order and token inventories. Technical
+wording remains low confidence pending speaker review. Browser checks were not
+run; further Odia translations remain.
+
+## Odia email failures and notification recovery
+
+Filled 36 English placeholders for email failures and activity notification
+recovery. Preserved SMTP identifiers, temporary versus permanent failures,
+retained pending work, retry limitations and irreversible cancellation caveats.
+Existing translations were retained by the placeholder-only merge. Regression
+coverage checks script, key order, token inventories and those distinctions.
+Technical wording remains low confidence pending speaker review. Browser checks
+were not run; the broader translation audit remains unfinished.
+
+## Odia short labels and keyboard announcements
+
+Filled 37 remaining English labels, including short Blockly words omitted by the
+usual missing-string filter, spoken mathematical constants and keyboard names.
+Preserved indexed announcement tokens, menu symbol and list index marker.
+Operating-system brands, null and trigonometric function notation remain literal.
+The merge filled 18 keyboard names; 19 filter-excluded English values were
+filled directly after verifying equality with English. Existing translations were
+retained. Regression coverage checks script, token inventories, key order and
+repeated control labels.
+Keyboard transliterations and technical wording remain low confidence pending
+speaker review. Browser and screen-reader checks were not run.
+
+## Maithili Blockly colours and loop controls
+
+Filled 31 English placeholders for block controls, colour selection and loop
+instructions. Preserved colour bounds and indexed variable/function/list tokens.
+The placeholder-only merge retained existing translations. Regression coverage
+checks script, key order, token inventories and loop-control distinctions.
+Technical terminology remains low confidence pending speaker review. Browser
+checks were not run; further Maithili strings and the broader audit remain.
+
+## Maithili conditions and block editing
+
+Filled 36 English values for conditional branches, repetition and block editing.
+Short labels excluded by the fill filter were changed directly only after checking
+that they still matched English. Preserved indexed tokens, deletion counts,
+true/false loop conditions and final fallback branches. Regression coverage checks
+script, key order, token inventories and these semantic distinctions. Technical
+wording remains low confidence pending speaker review. Browser checks were not
+run; further Maithili translations and the broader audit remain unfinished.
+
+## Maithili input and accessibility labels
+
+Filled 34 English values for bitmap controls, accessible field announcements and
+list inputs. Filter-excluded short labels were changed directly only after checking
+that they matched English. Preserved indexed row/column roles, repeated-value
+versus repetition-count labels and open/close actions. Regression coverage checks
+script, key order, token inventories and those distinctions. Technical wording
+remains low confidence pending speaker review. Browser and screen-reader checks
+were not run; further Maithili translations and the broader audit remain.
+
+## Maithili mathematical and text input labels
+
+Filled 32 English placeholders for list, loop, mathematical and text inputs.
+The placeholder-only merge preserved existing translations. Preserved coordinate
+axes, indexed value tokens and distinctions between dividend/divisor, minimum/
+maximum and start/end positions. Regression coverage checks these details, script,
+key order and token inventories. Technical wording remains low confidence pending
+speaker review. Browser checks were not run; the broader audit remains unfinished.
+
+## Maithili list creation and keyboard navigation
+
+Filled 29 English placeholders for value inputs, keyboard navigation and list
+creation/retrieval. The placeholder-only merge preserved existing translations.
+Preserved indexed key roles, empty-list length, index marker and distinct get,
+remove and get-and-remove actions. Regression coverage checks those distinctions,
+script, key order and token inventories. Technical wording remains low confidence
+pending speaker review. Browser and screen-reader checks were not run; further
+Maithili translations and the broader audit remain unfinished.
+
+## Maithili list removal, indexing and sublists
+
+Filled 26 English values for list removal, sublists, search and length. Existing
+translations were retained; filter-excluded short labels were changed directly
+only after verifying equality with English. Preserved index markers, missing-item
+return tokens and distinctions between removal and removal with a returned value.
+Regression coverage checks those details, script, key order and token inventories.
+Technical wording remains low confidence pending speaker review. Browser checks
+were not run; further Maithili translations and the broader audit remain.
+
+## Maithili list editing and sorting
+
+Filled 28 English values for repetition, insertion, replacement, sorting and
+splitting/joining lists. Existing translations were retained; filter-excluded
+short labels were filled directly after verifying equality with English. Preserved
+indexed item/count roles, copy semantics and case-insensitive sorting meaning.
+Regression coverage checks those details, script, key order and token inventories.
+Technical wording remains low confidence pending speaker review. Browser checks
+were not run; further Maithili translations and the broader audit remain.
+
+## Maithili logic controls and comparisons
+
+Filled 25 English values for Boolean operations, comparisons, negation and
+conditional values. Existing translations were retained; filter-excluded short
+labels were filled directly only after checking equality with English. Preserved
+null, indexed tokens, inclusive comparisons and both-versus-at-least-one meaning.
+Regression coverage checks those distinctions, script, key order and tokens.
+Technical wording remains low confidence pending speaker review. Browser checks
+were not run; further Maithili translations and the broader audit remain.
+
+## Maithili arithmetic and number properties
+
+Filled 28 English values for arithmetic, constants, bounded numbers and number
+properties. Existing translations were retained; filter-excluded spoken constants
+were filled directly only after checking equality with English. Preserved numeric
+constants, coordinate roles, angle bounds and inclusive limits. Regression coverage
+checks these details, script, key order and token inventories. Technical wording
+remains low confidence pending speaker review. Browser checks were not run;
+further Maithili translations and the broader audit remain unfinished.
+
+## Maithili statistical functions
+
+Filled 24 English placeholders for remainders, statistical functions and spoken
+mathematical operators. The placeholder-only merge retained existing translations.
+Preserved division tokens and distinctions between mean, median, modes and standard
+deviation, including the list returned for modes. Regression coverage checks those
+details, script, key order and token inventories. Statistical terminology remains
+low confidence pending speaker review. Browser checks were not run; further
+Maithili translations and the broader audit remain unfinished.
+
+## Maithili rounding and random numbers
+
+Filled 24 English placeholders for random numbers, rounding, powers, logarithms
+and spoken operators. The placeholder-only merge retained existing translations.
+Preserved inclusive/exclusive random bounds, indexed limits and e/base-10 notation.
+Regression coverage checks those details, distinct rounding directions, script,
+key order and token inventories. Mathematical terminology remains low confidence
+pending speaker review. Browser checks were not run; further Maithili translations
+and the broader audit remain unfinished.
+
+## Maithili trigonometry and variable controls
+
+Filled 26 English placeholders for trigonometry, workspace movement, variable
+creation and paste controls. The placeholder-only merge retained existing
+translations. Preserved degree-versus-radian caveats, distinct variable types and
+parent-block tokens. Regression coverage checks those details, script, key order
+and token inventories. Technical terminology remains low confidence pending
+speaker review. Browser and screen-reader checks were not run; further Maithili
+translations and the broader audit remain unfinished.
+
+## Maithili procedure and rename controls
+
+Filled 25 English values for procedure definitions, calls, parameters and variable
+renaming. Existing translations were retained; the filter-excluded short title
+was filled directly after verifying equality with English. Preserved function-name
+tokens, output/no-output distinctions and disabled-definition warnings. Regression
+coverage checks these details, script, key order and token inventories. Technical
+wording remains low confidence pending speaker review. Browser checks were not
+run; further Maithili translations and the broader audit remain unfinished.
+
+## Maithili screen-reader and shortcut labels
+
+Filled 29 English placeholders for screen-reader mode and keyboard navigation.
+The placeholder-only merge retained existing translations. Preserved toggle-key
+tokens and distinct enabled/disabled, start/end, previous/next and directional
+actions. Regression coverage checks those details, script, key order and tokens.
+Technical wording remains low confidence pending speaker review. Browser and
+screen-reader checks were not run; further Maithili translations and the broader
+audit remain unfinished.
+
+## Maithili shortcuts and text case
+
+Filled 24 English placeholders for navigation shortcuts, text appending, letter
+case and character selection. The placeholder-only merge retained existing
+translations. Preserved indexed append roles, character index markers, copy
+semantics and distinct letter-case operations. Regression coverage checks those
+details, script, key order and token inventories. Technical wording remains low
+confidence pending speaker review. Browser and screen-reader checks were not run;
+further Maithili translations and the broader audit remain unfinished.
+
+## Maithili substrings and text search
+
+Filled 24 English placeholders for text extraction, counting, joining and search.
+The placeholder-only merge retained existing translations. Preserved indexed
+search/count roles, character index markers and missing-match return tokens.
+Regression coverage checks those details, script, key order and token inventories.
+Technical wording remains low confidence pending speaker review. Browser checks
+were not run; further Maithili translations and the broader audit remain.
+
+## Maithili text processing and input prompts
+
+Filled 25 English placeholders for text processing, input prompts and basic
+variable controls. The placeholder-only merge retained existing translations.
+Preserved replacement-token roles, all-occurrence behavior, spaces in length
+counts and trimming from one or both ends. Regression coverage checks these
+details, script, key order and tokens. Technical wording remains low confidence
+pending speaker review. Browser checks were not run; further Maithili translations
+and the broader audit remain unfinished.
+
+## Maithili variable warnings and workspace search
+
+Filled 28 English values for variable warnings, workspace counts and search.
+Existing translations were retained; short control aliases excluded by the filter
+were filled directly after verifying equality with English. Preserved name/type
+roles, count and comment tokens, search-key names and match tokens. Regression
+coverage checks those details, script, key order and token inventories. Technical
+wording remains low confidence pending speaker review. Browser and screen-reader
+checks were not run; further Maithili translations and the broader audit remain.
+
+## Maithili Blockly aliases and rule editor
+
+Filled 25 English values for repeated Blockly labels and rule-editor messages.
+Existing translations were retained; short aliases excluded by the filter were
+filled directly after verifying equality with English. Preserved one-trigger/
+one-action validation, permission requirements and reload-before-save guidance.
+Regression coverage checks those details, alias consistency, script, key order
+and token inventories. Technical wording remains low confidence pending speaker
+review. Browser checks were not run; the broader translation audit continues.
+
+## Maithili Scrum settings and sprint labels
+
+Filled 30 English placeholders for Scrum roles, planning settings and sprint
+actions. The placeholder-only merge retained existing translations. Preserved
+numeric-field meaning, distinct completion policies and separate start/close/
+cancel actions. Regression coverage checks those details, repeated labels, script,
+key order and token inventories. Scrum terminology remains low confidence pending
+speaker review. Browser checks were not run; further Maithili translations and
+the broader audit remain unfinished.
+
+## Maithili sprint reports and planning messages
+
+Filled 30 English placeholders for sprint events, reports, backlog planning and
+states. The placeholder-only merge retained existing translations. Preserved
+minute units, report count/estimate/unknown tokens and the distinction between
+unknown and zero estimates. Regression coverage checks those details, separate
+states, script, key order and token inventories. Scrum terminology remains low
+confidence pending speaker review. Browser checks were not run; further Maithili
+translations and the broader audit remain unfinished.
+
+## Maithili sprint observations and partial reports
+
+Filled 21 English placeholders for sprint closure, partial reports and daily
+observations. The placeholder-only merge retained existing translations. Preserved
+source-reference tokens, UTC, the 366-observation limit and the first-observation
+versus end-of-day distinction. Regression coverage checks report limitations,
+script, key order and token inventories. Technical wording remains low confidence
+pending speaker review. Browser checks were not run; further Maithili translations
+and the broader audit remain unfinished.
+
+## Maithili sync conflicts and import caveats
+
+Filled 23 English placeholders for remaining Scrum caveats, sync conflicts and
+preview headings. The placeholder-only merge retained existing translations.
+Preserved UTC, WeKan, local-data retention, unchanged subcards, review scope and
+replacement reuse. Regression coverage checks those details, script, key order
+and token inventories. Technical wording remains low confidence pending speaker
+review. Browser checks were not run; further Maithili translations and the broader
+audit remain unfinished.
+
+## Maithili sync preview and source fields
+
+Filled 20 English placeholders for sync previews and omitted source fields.
+The placeholder-only merge retained existing translations. Preserved the 100-entry
+limit, parser omission caveats and hidden values for unmapped objects. Regression
+coverage checks those details, repeated labels, script, key order and tokens.
+Technical wording remains low confidence pending speaker review. Browser checks
+were not run; further Maithili translations and the broader audit remain.
+
+## Maithili sync reports and diagnostics
+
+Filled 21 English placeholders for sync reports, diagnostics and estimate mapping.
+The placeholder-only merge retained existing translations. Preserved report limits,
+retention, partial-change caveats, write-access requirements and missing-versus-null
+behavior. Regression coverage checks those details, script, key order and tokens.
+Technical wording remains low confidence pending speaker review. Browser checks
+were not run; further Maithili translations and the broader audit remain.
+
+## Maithili email failures and notification recovery
+
+Filled 38 English placeholders for email failures, notification recovery and the
+remaining sync time-estimate guidance. The placeholder-only merge retained existing
+translations. Preserved SMTP/Jira/null identifiers, hour units, exactly-one-field
+requirements, retained pending work and irreversible cancellation caveats.
+Regression coverage checks those details, script, key order and tokens. Technical
+wording remains low confidence pending speaker review. Browser checks were not
+run; the broader translation audit remains unfinished.
+
+## Maithili storage settings omitted by the fill filter
+
+Filled 29 English-identical storage and general labels found by comparing the
+complete locale with English, including product-prefixed descriptions omitted by
+the usual missing-string filter. Direct edits first verified equality with English
+and retained existing translations. Preserved service names, protocol identifiers
+and endpoint examples. Regression coverage checks these details, script, key order
+and tokens. Technical wording remains low confidence pending speaker review.
+Browser checks were not run; the broader translation audit remains unfinished.
+
+## Maithili keyboard announcements and short labels
+
+Filled 21 English values for keyboard names, indexed movement announcements,
+planning poker and the current-user choice. Existing translations were retained;
+filter-excluded labels were filled directly only after verifying equality with
+English. Preserved indexed announcement roles and the menu symbol. Regression
+coverage checks those details, script, key order and tokens. Keyboard
+transliterations remain low confidence pending speaker review. Browser and
+screen-reader checks were not run; the broader translation audit remains unfinished.
+
+## Maithili short rule and count fragments
+
+Filled seven English-identical fragments omitted by the missing-string filter.
+Inspected rule sorting, actor inputs, email recipient placeholders and count
+labels before selecting wording. Direct edits verified equality with English and
+retained existing translations. Regression coverage checks recipient/count alias
+consistency, distinct actor/sort labels, script, key order and tokens. Fragment
+word order remains low confidence pending speaker review in the assembled UI.
+Browser checks were not run; the broader translation audit remains unfinished.
+
+## Konkani Blockly colours and block controls
+
+Filled 20 English placeholders for Blockly colour selection and block controls.
+The placeholder-only merge retained existing translations. Preserved colour bounds
+and indexed variable/function roles. Regression coverage checks those details,
+script, key order and token inventories. Technical terminology remains low
+confidence pending speaker review. Browser checks were not run; further Konkani
+translations and the broader audit remain unfinished.
+
+## Konkani loops and conditional controls
+
+Filled 27 English values for loop execution, conditional branches and block copying.
+Existing translations were retained; short labels excluded by the filter were
+filled directly after verifying equality with English. Preserved indexed loop
+roles, true/false conditions and fallback branches. Regression coverage checks
+those details, script, key order and tokens. Technical terminology remains low
+confidence pending speaker review. Browser checks were not run; further Konkani
+translations and the broader audit remain unfinished.
+
+## Konkani block editing and bitmap controls
+
+Filled 25 English values for editing, deletion and bitmap controls. Existing
+translations were retained; filter-excluded short labels were filled directly
+after verifying equality with English. Preserved deletion counts, variable names,
+bitmap dimensions and row/column roles. Regression coverage checks those details,
+opposite actions, script, key order and tokens. Technical wording remains low
+confidence pending speaker review. Browser checks were not run; further Konkani
+translations and the broader audit remain unfinished.
+
+## Konkani input and accessibility labels
+
+Filled 29 English placeholders for accessible fields, editor controls and list
+inputs. The placeholder-only merge retained existing translations. Preserved
+indexed field roles, opposite open/close actions and distinct value/count and
+start/end inputs. Regression coverage checks those details, script, key order
+and token inventories. Technical wording remains low confidence pending speaker
+review. Browser and screen-reader checks were not run; further Konkani translations
+and the broader audit remain unfinished.
+
+## Konkani mathematical and text input labels
+
+Filled 32 English placeholders for list, loop, mathematical and text inputs.
+The placeholder-only merge retained existing translations. Preserved coordinate
+axes, indexed values and distinct dividend/divisor, minimum/maximum and start/end
+roles. Regression coverage checks those details, script, key order and tokens.
+Technical wording remains low confidence pending speaker review. Browser checks
+were not run; further Konkani translations and the broader audit remain.
+
+## Konkani keyboard navigation and list creation
+
+Filled 24 English placeholders for navigation, value inputs and list creation.
+The placeholder-only merge retained existing translations. Preserved key-token
+roles, empty-list length, index markers and distinct retrieval actions. Regression
+coverage checks these details, script, key order and token inventories. Technical
+wording remains low confidence pending speaker review. Browser and screen-reader
+checks were not run; further Konkani translations and the broader audit remain.
+
+## Konkani list retrieval, removal and sublists
+
+Filled 23 English values for list retrieval, removal and sublists. Existing
+translations were retained; the filter-excluded short index label was filled
+directly after verifying equality with English. Preserved return-versus-removal
+semantics, index markers and copy behavior. Regression coverage checks those
+details, script, key order and tokens. Technical wording remains low confidence
+pending speaker review. Browser checks were not run; further Konkani translations
+and the broader audit remain unfinished.
+
+## Konkani list search, editing and sorting
+
+Filled 27 English placeholders for list search, repetition, editing and sorting.
+The placeholder-only merge retained existing translations. Preserved missing-item
+return tokens, item/count roles, copy behavior and distinct insertion/replacement
+actions. Regression coverage checks those details, script, key order and tokens.
+Technical wording remains low confidence pending speaker review. Browser checks
+were not run; further Konkani translations and the broader audit remain.
+
+## Konkani list conversion and comparisons
+
+Filled 24 English placeholders for splitting/joining lists, Boolean values and
+comparisons. The placeholder-only merge retained existing translations. Preserved
+delimiter behavior, inclusive comparisons and negation of true/false values.
+Regression coverage checks those details, script, key order and token inventories.
+Technical wording remains low confidence pending speaker review. Browser checks
+were not run; further Konkani translations and the broader audit remain.
+
+## Konkani logic and arithmetic controls
+
+Filled 22 English values for Boolean conditions, arithmetic and spoken constants.
+Existing translations were retained; filter-excluded short labels were filled
+directly after checking equality with English. Preserved null, atan2, coordinate
+roles, angle bounds and both-versus-at-least-one conditions. Regression coverage
+checks those details, script, key order and tokens. Technical wording remains low
+confidence pending speaker review. Browser checks were not run; further Konkani
+translations and the broader audit remain unfinished.
+
+## Konkani constants and number properties
+
+Filled 21 English values for constants, bounded numbers, number properties and
+remainders. Existing translations were retained; the spoken pi label was filled
+directly after verifying equality with English. Preserved numeric constants,
+inclusive limits and remainder operands. Regression coverage checks these details,
+script, key order and tokens. Mathematical terminology remains low confidence
+pending speaker review. Browser checks were not run; further Konkani translations
+and the broader audit remain unfinished.
+
+## Konkani statistics and random-number bounds
+
+Filled 24 English placeholders for statistical functions, random numbers and
+rounding. The placeholder-only merge retained existing translations. Preserved
+mean/median/mode distinctions, the list returned for modes, inclusive/exclusive
+bounds and separate rounding directions. Regression coverage checks those details,
+script, key order and tokens. Statistical terminology remains low confidence
+pending speaker review. Browser checks were not run; further Konkani translations
+and the broader audit remain unfinished.
+
+## Konkani powers, logarithms and trigonometry
+
+Filled 29 English placeholders for mathematical functions and spoken operators.
+The placeholder-only merge retained existing translations. Preserved e/base-10
+notation, sign reversal and degree-versus-radian caveats. Regression coverage
+checks those details, script, key order and tokens. Mathematical terminology
+remains low confidence pending speaker review. Browser checks were not run;
+further Konkani translations and the broader audit remain unfinished.
+
+## Konkani workspace navigation and function definitions
+
+Filled 34 English placeholders for navigation, typed variables and functions.
+The placeholder-only merge retained existing translations. Regression coverage
+checks return-value distinctions, disabled-definition and scope warnings,
+distinct variable types, script, key order and tokens. Technical terminology
+remains low confidence pending speaker review. Browser checks were not run;
+further Konkani translations and the broader audit remain unfinished.
+
+## Konkani accessibility shortcuts and text controls
+
+Filled 67 English placeholders for accessibility announcements, navigation
+shortcuts and text operations. The placeholder-only merge retained existing
+translations. Regression coverage checks mode-state reversals, move-versus-scroll
+actions, navigation endpoints, letter-case forms and text operand roles, plus
+script, key order and tokens. Technical wording remains low confidence pending
+speaker review. Browser and screen-reader checks were not run; further Konkani
+translations and the broader audit remain unfinished.
+
+## Konkani text search and variable assignments
+
+Filled 47 English placeholders for text operations, variable assignments and
+name-collision warnings. The placeholder-only merge retained existing
+translations. Regression coverage checks not-found results, replacement operand
+roles, whitespace boundaries, substring direction and collision contexts, plus
+script, key order and tokens. Technical wording remains low confidence pending
+speaker review. Browser checks were not run; further Konkani translations
+and the broader audit remain unfinished.
+
+## Konkani workspace announcements and rule editor
+
+Filled 40 English placeholders for workspace counts, search controls and rule
+editing. The placeholder-only merge retained existing translations. Regression
+coverage checks composed block/comment counts, keyboard instructions, search
+position roles, invalid-graph guidance, conflicts and administrator permissions,
+plus script, key order and tokens. Technical wording remains low confidence
+pending speaker review. Browser and screen-reader checks were not run;
+further Konkani translations and the broader audit remain unfinished.
+
+## Konkani Scrum planning
+
+Filled 48 English placeholders for Scrum roles, planning, completion policies,
+estimates and events. The placeholder-only merge retained existing translations.
+Regression coverage checks policy distinctions, sprint actions, event labels,
+estimate sources versus units, timebox units and planned/active assignment,
+plus script, key order and tokens. Technical wording remains low confidence
+pending speaker review. Browser checks were not run; further Konkani
+translations and the broader audit remain unfinished.
+
+## Konkani sprint reports and daily observations
+
+Filled 36 English placeholders for sprint reports, lifecycle states, partial
+snapshots and daily observations. The placeholder-only merge retained existing
+translations. Regression coverage checks unknown-versus-zero estimates,
+comparable units and policies, membership retention, partial-report scope,
+UTC sampling, missing days, export destinations and the 366-observation limit,
+plus script, key order and tokens. Technical wording remains low confidence
+pending speaker review. Browser checks were not run; further Konkani
+translations and the broader audit remain unfinished.
+
+## Konkani Sync conflicts and previews
+
+Filled 41 English placeholders for Sync conflicts, previews and source omissions.
+The placeholder-only merge retained existing translations. Regression coverage
+checks local-content retention, unchanged subcards, replacement reuse, no writes
+to the source, partial review, preview limits and hidden values, plus script,
+key order and tokens. Technical wording remains low confidence pending speaker
+review. Browser checks were not run; further Konkani translations and the
+broader audit remain unfinished.
+
+## Konkani Sync reports, estimates and mail diagnostics
+
+Filled 31 English placeholders for run reports, estimate mappings and mail
+failures. The placeholder-only merge retained existing translations. Regression
+coverage checks retention limits, uncertain outcomes, lack of resume/undo,
+write-access requirements, missing-versus-null estimates, hour units and
+delivery uncertainty, plus script, key order and tokens. Technical wording
+remains low confidence pending speaker review. Browser checks were not run;
+further Konkani translations and the broader audit remain unfinished.
+
+## Konkani notification recovery
+
+Filled 27 English placeholders for notification delivery recovery and controls.
+The placeholder-only merge retained existing translations. Regression coverage
+checks that retries never recreate activities, pending work is retained,
+recipient restrictions remain effective, and permanent cancellation cannot
+resume or recall queued email and delivered notifications, plus script,
+key order and tokens. Technical wording remains low confidence pending
+speaker review. Browser checks were not run; the excluded-English audit,
+further Konkani translations and the broader audit remain unfinished.
+
+## Konkani excluded-English storage and system labels
+
+The full English-identical audit found prose omitted by the fill tool.
+Filled 33 storage, system and general labels directly after asserting each
+value still matched English; existing translations were retained. Coverage
+checks service names, endpoint examples, configuration distinctions, script,
+key order and tokens. Technical wording remains low confidence pending
+speaker review. Browser checks were not run. Short labels and keyboard
+names still need work; the wider language audit remains unfinished.
+
+## Konkani keyboard names and short Blockly labels
+
+Filled 27 English-identical values, including short labels omitted by the fill
+tool, after asserting each still matched English. Existing translations were
+retained. Keyboard names retain recognizable key markings with a Konkani
+key label. Coverage checks markings, ordinal roles, consistent procedure
+labels, control clauses, script, key order and tokens. Technical wording
+remains low confidence pending speaker review. Browser and screen-reader
+checks were not run; other short labels and the broader audit remain unfinished.
+
+## Konkani short rule and board labels
+
+Filled nine English-identical labels after checking sorting, actor, mail
+recipient and count fragments in their templates. Existing translations were
+retained. Coverage checks recipient/actor distinctions, shared total labels,
+script and tokens. Assembled sentence order and technical wording remain
+low confidence pending speaker review. Browser checks were not run; the
+broader language and fluency audit remains unfinished.
+
+## Turkmen Blockly colours and initial controls
+
+Filled 24 English placeholders for block controls, colours and loop exits.
+The placeholder-only merge retained existing translations. Coverage checks
+colour bounds, variable/function token roles, deletion restrictions, warnings
+and break-versus-continue behavior, plus key order and token inventories.
+Technical wording remains low confidence pending speaker review. Browser
+checks were not run. Further Turkmen translations and the wider fluency
+audit remain unfinished.
+
+## Turkmen loops, conditions and editing
+
+Filled 35 English placeholders for loops, conditional branches and block editing.
+The placeholder-only merge retained existing translations. Coverage checks
+true/false loop conditions, fallback branches, count bounds, list/item roles,
+deletion confirmation operands and distinct editing actions, plus key order
+and token inventories. Technical wording remains low confidence pending
+speaker review. Browser checks were not run; further Turkmen translations
+and the broader audit remain unfinished.
+
+## Turkmen editing and input labels
+
+Filled 44 English placeholders for bitmap editing, accessibility actions and
+input labels. The placeholder-only merge retained existing translations.
+Coverage checks bitmap dimensions and coordinates, open/close actions,
+condition and position distinctions, list/text roles and keyboard hints,
+plus key order and tokens. Technical wording remains low confidence pending
+speaker review. Browser and screen-reader checks were not run; further
+Turkmen translations and the broader audit remain unfinished.
+
+## Turkmen mathematical inputs and keyboard navigation
+
+Filled 38 English placeholders for mathematical and text operands, value
+positions and keyboard navigation. The placeholder-only merge retained existing
+translations. Coverage checks dividend/divisor distinctions, bounds, coordinates,
+search/replacement roles and held-key versus confirmation shortcuts, plus key
+order and tokens. Technical wording remains low confidence pending speaker
+review. Browser and screen-reader checks were not run; further Turkmen
+translations and the broader audit remain unfinished.
+
+## Turkmen list retrieval and removal
+
+Filled 33 English placeholders for list creation, retrieval, removal and sublists.
+The placeholder-only merge retained existing translations. Coverage checks
+retrieval versus removal, combined operations, empty-list length, copied
+sublists and indexing from the end, plus key order and token inventories.
+Technical wording remains low confidence pending speaker review. Browser
+checks were not run; further Turkmen translations and the broader audit
+remain unfinished.
+
+## Turkmen list search, updates and sorting
+
+Filled 31 English placeholders for list search, insertion, replacement and
+sorting. The placeholder-only merge retained existing translations. Coverage
+checks not-found results, repetition operands, insertion versus assignment,
+copied lists, sort directions and letter-case handling, plus key order and
+tokens. Technical wording remains low confidence pending speaker review.
+Browser checks were not run; further Turkmen translations and the broader
+audit remain unfinished.
+
+## Turkmen comparisons and Boolean logic
+
+Filled 33 English placeholders for text/list conversion, comparisons, Boolean
+logic and initial arithmetic help. The placeholder-only merge retained existing
+translations. Coverage checks equality boundaries, negation, both-versus-any
+conditions, ternary labels, null notation and delimiter roles, plus key order
+and tokens. Technical wording remains low confidence pending speaker review.
+Browser checks were not run; further Turkmen translations and the broader
+audit remain unfinished.
+
+## Turkmen arithmetic and number properties
+
+Filled 29 English placeholders for arithmetic, constants, number properties
+and initial aggregate labels. The placeholder-only merge retained existing
+translations. Coverage checks mathematical notation, angle units, inclusive
+bounds, remainder operands and distinct number properties, plus key order
+and tokens. Mathematical terminology remains low confidence pending speaker
+review. Browser checks were not run; further Turkmen translations and the
+broader audit remain unfinished.
+
+## Turkmen statistics and rounding
+
+Filled 29 English placeholders for statistical aggregates, random numbers,
+rounding and initial function labels. The placeholder-only merge retained
+existing translations. Coverage checks distinct aggregates, the mode's list
+result, inclusive/exclusive random bounds, rounding directions and logarithm
+bases, plus key order and tokens. Mathematical terminology remains low
+confidence pending speaker review. Browser checks were not run; further
+Turkmen translations and the broader audit remain unfinished.
+
+## Turkmen mathematical functions and initial workspace controls
+
+Filled 27 English placeholders for powers, logarithms, trigonometry and
+workspace controls. The placeholder-only merge retained existing translations.
+Coverage checks logarithm bases, sign reversal, degree-versus-radian caveats,
+inverse functions and variable-type distinctions, plus key order and tokens.
+Mathematical terminology remains low confidence pending speaker review.
+Browser checks were not run; further Turkmen translations and the broader
+audit remain unfinished.
+
+## Turkmen variables and function controls
+
+Filled 36 English placeholders for variables, function definitions and workspace
+actions. The placeholder-only merge retained existing translations. Coverage
+checks return-value distinctions, disabled definitions, scope restrictions,
+conditional returns, variable types and accessibility shortcuts, plus key
+order and tokens. Technical wording remains low confidence pending speaker
+review. Browser and screen-reader checks were not run; further Turkmen
+translations and the broader audit remain unfinished.
+
+## Turkmen accessibility shortcuts
+
+Filled 41 English placeholders for screen-reader states, navigation and editing
+shortcuts. The placeholder-only merge retained existing translations. Coverage
+checks mode-state reversals, block movement versus scrolling, movement
+cancellation/completion, navigation endpoints and spoken information, plus
+key order and tokens. Technical wording remains low confidence pending
+speaker review. Browser and screen-reader checks were not run; further
+Turkmen translations and the broader audit remain unfinished.
+
+## Turkmen text operations and search
+
+Filled 37 English placeholders for text creation, letter case, character
+positions, substrings and search. The placeholder-only merge retained
+existing translations. Coverage checks case forms, copied text, operand
+roles, indexing from the end and not-found results, plus key order and
+tokens. Technical wording remains low confidence pending speaker review.
+Browser checks were not run; further Turkmen translations and the broader
+audit remain unfinished.
+
+## Turkmen text values and variable assignments
+
+Filled 31 placeholders, including the concurrently added custom-colors-in-use
+label. Existing translations were retained. Coverage checks replacement roles,
+whitespace boundaries, assignment operands and variable-collision contexts,
+plus key order and tokens. Of 53 checks, 51 passed; two repository-wide checks
+failed because other locales lack the new English custom-colors-in-use key.
+All 21 human-preference checks passed. Technical wording remains low confidence
+pending speaker review. Browser checks were not run; further translations
+and the broader audit remain unfinished.
+
+## Turkmen workspace announcements and rule editor
+
+Filled 40 English placeholders for workspace counts, search and rule editing.
+The placeholder-only merge retained existing translations. Coverage checks
+composed counts, keyboard instructions, invalid connections, conflicts and
+administrator permissions, plus key order and tokens. Of 54 checks, 52 passed;
+two repository-wide checks still fail because other locales lack the new
+custom-colors-in-use key. All 21 human-preference checks passed. Technical
+wording remains low confidence pending speaker review. Browser and screen-reader
+checks were not run; further translations and the broader audit remain unfinished.
+
+## Turkmen Scrum planning
+
+Filled 36 English placeholders for Scrum roles, planning, completion policies,
+estimate settings and sprint actions. The placeholder-only merge retained
+existing translations. Coverage checks policy and lifecycle distinctions,
+source versus unit labels and planned/active assignment, plus key order and
+tokens. Of 56 checks, 54 passed; two repository-wide checks still fail because
+other locales lack custom-colors-in-use. All 21 human-preference checks passed.
+Technical wording remains low confidence pending speaker review. Browser
+checks were not run; further translations and the broader audit remain unfinished.
+
+## Turkmen sprint events and reports
+
+Filled 35 English placeholders for sprint events, reports and lifecycle states.
+The placeholder-only merge retained existing translations. Coverage checks
+unknown-versus-zero estimates, comparable units and policies, retained
+membership, partial-report scope, lifecycle states and minute units, plus
+key order and tokens. Of 57 checks, 55 passed; two repository-wide checks
+still fail because other locales lack custom-colors-in-use. All 21
+human-preference checks passed. Technical wording remains low confidence
+pending speaker review. Browser checks were not run; further translations
+and the broader audit remain unfinished.
+
+## Turkmen daily observations and import status
+
+Filled 13 English placeholders for daily observations, partial snapshots and
+import status. Existing translations were retained. Coverage checks UTC
+sampling, missing days, unknown-versus-zero estimates, export destinations,
+the 366-observation limit and unavailable import actions, plus key order and
+tokens. Of 58 checks, 56 passed; two repository-wide checks still fail because
+other locales lack custom-colors-in-use. All 21 human-preference checks passed.
+Technical wording remains low confidence pending speaker review. Browser
+checks were not run; further translations and the broader audit remain unfinished.
+
+## Turkmen Sync conflicts
+
+Filled 23 English placeholders for Sync conflicts and initial preview controls.
+Existing translations were retained. Coverage checks no writes to the source,
+local-content retention, unchanged subcards, replacement reuse and partial
+review, plus key order and tokens. Of 60 checks, 58 passed; two repository-wide
+checks still fail because other locales lack custom-colors-in-use. All 21
+human-preference checks passed. Technical wording remains low confidence
+pending speaker review. Browser checks were not run; further translations
+and the broader audit remain unfinished.
+
+## Turkmen Sync previews and run reports
+
+Filled 29 English placeholders for source omissions, previews and run reports.
+Existing translations were retained. Coverage checks entry/path limits,
+retention, hidden values, no resume/undo and distinct outcomes, plus key order
+and tokens. Of 61 checks, 59 passed; two repository-wide checks still fail
+because other locales lack custom-colors-in-use. All 21 human-preference
+checks passed. Technical wording remains low confidence pending speaker
+review. Browser checks were not run; further translations and the broader
+audit remain unfinished.
+
+## Turkmen Sync diagnostics and mail failures
+
+Filled 20 English placeholders for Sync diagnostics, estimate mappings and
+mail failures. Existing translations were retained. Coverage checks write
+access, uncertain outcomes, missing-versus-null values, hour units and
+delivery uncertainty, plus key order and tokens. Of 62 checks, 60 passed;
+two repository-wide checks still fail because other locales lack
+custom-colors-in-use. All 21 human-preference checks passed. Technical wording
+remains low confidence pending speaker review. Browser checks were not run;
+further translations and the broader audit remain unfinished.
+
+## Turkmen notification recovery
+
+Filled 27 English placeholders for notification recovery and delivery controls.
+Existing translations were retained. Removed the obsolete custom-colors-in-use
+entry and its test reference after concurrent work removed that English key.
+Coverage checks no activity recreation, retained pending work, recipient
+restrictions and irreversible cancellation, plus key order and tokens.
+All 64 translation checks and 21 human-preference checks pass. Technical
+wording remains low confidence pending speaker review. Browser checks were
+not run; the excluded-English audit and broader translation work remain unfinished.
+
+## Turkmen excluded-English labels and keyboard names
+
+Filled 38 English-identical labels, including short controls excluded by the
+fill tool, after asserting each value still matched English. Existing
+translations were retained. Keyboard names retain their printed markings.
+Coverage checks ordinal roles, on/off states, consistent control clauses,
+procedure labels, key order and tokens. All 65 translation checks and 21
+human-preference checks pass. Technical wording remains low confidence pending
+speaker review. Browser and screen-reader checks were not run; the broader
+language and fluency audit remains unfinished.
+
+## Moroccan Arabic Blockly colours and controls
+
+Filled 20 Blockly placeholders and two concurrently added card-field visibility
+labels. Existing translations were retained. Coverage checks colour ranges,
+deletion restrictions, variable/function roles, script, key order and tokens.
+Of 40 checks, 38 passed; two repository-wide checks fail because other locales
+lack the new card-field-visibility keys. All 21 human-preference checks passed.
+Technical wording remains low confidence pending speaker review. The older
+catalog also needs dialect review. Browser and RTL checks were not run;
+further translations and the broader audit remain unfinished.
+
+## Moroccan Arabic Blockly loops and conditions
+
+Filled 24 English placeholders without replacing existing translations. Regression
+coverage checks source key order, Arabic script, placeholder inventories, break
+versus continue, loop-only restrictions, true versus false conditions, the final
+else branch and count-variable/bound/step ordering. Of 41 checks, 39 passed;
+two repository-wide checks still fail because other locales lack the recently
+added card-field-visibility keys. All 21 human-preference checks passed.
+Technical Darija wording remains low confidence pending speaker review. Browser,
+RTL and screen-reader checks were not run. Remaining placeholders and the older
+catalog's dialect and semantic audit remain open.
+
+## Moroccan Arabic workspace and accessible input labels
+
+Filled 54 English placeholders and the short bitmap-on label excluded from the
+ordinary listing. Existing translations were retained. Tests cover script,
+source order and tokens, open/close and enable/disable actions, bitmap on/off,
+row/column arguments, deletion count/variable roles and list start/end positions.
+Of 42 checks, 40 passed; two repository-wide checks still fail because other
+locales lack the new card-field-visibility keys. All 21 human-preference checks
+passed. Technical Darija wording remains low confidence pending speaker review.
+Browser, RTL and screen-reader checks were not run. Further placeholders and
+the broader dialect and semantic audit remain unfinished.
+
+## Moroccan Arabic numeric inputs and keyboard navigation
+
+Filled 52 placeholders covering numeric/text input roles, keyboard hints and
+initial list controls, without replacing existing translations. Tests check
+source order, Arabic script, placeholder inventories, dividend/divisor roles,
+minimum/maximum, x/y coordinates, loop bounds, append-at-end, held-key and
+position-acceptance arguments, empty-list length and indexing from the end.
+Of 43 checks, 41 passed; two repository-wide checks still fail because other
+locales lack the new card-field-visibility keys. All 21 human-preference checks
+passed. Technical Darija wording remains low confidence pending speaker review.
+Browser, RTL and screen-reader checks were not run. Remaining placeholders and
+the broader dialect and semantic audit remain open.
+
+## Moroccan Arabic list retrieval and removal
+
+Filled 42 English placeholders without replacing existing translations. Tests
+check source order, Arabic script, tokens, retrieval without removal, removal
+without a return value, combined retrieval/removal, first/last positions, copied
+sublists and reversal, not-found results, repetition arguments and insertion
+bounds. Of 44 checks, 42 passed; two repository-wide checks still fail because
+other locales lack the new card-field-visibility keys. All 21 human-preference
+checks passed. Technical Darija wording remains low confidence pending speaker
+review. Browser, RTL and screen-reader checks were not run. Further placeholders
+and the broader dialect and semantic audit remain unfinished.
+
+## Moroccan Arabic list sorting and logic
+
+Filled 45 ordinary placeholders and the short logical-or label, retaining
+existing translations. Tests cover source order, script, tokens, strict versus
+inclusive comparisons, inequality, negation, both versus at-least-one inputs,
+conditional branch labels, sorting a copy, case-insensitive ordering and
+joining versus splitting. Of 45 checks, 43 passed; two repository-wide checks
+still fail because other locales lack the new card-field-visibility keys.
+All 21 human-preference checks passed. Technical Darija wording remains low
+confidence pending speaker review. Browser, RTL and screen-reader checks were
+not run. Remaining placeholders and the broader language audit stay open.
+
+## Moroccan Arabic math and statistics
+
+Filled 50 English placeholders without replacing existing translations. Tests
+check source order, script, tokens, inclusive/exclusive random bounds, constraint
+arguments, angle units and range, base/exponent roles, remainder versus quotient,
+mean/median/mode/deviation, number properties and unchanged constant formulas.
+Of 46 checks, 44 passed; two repository-wide checks still fail because other
+locales lack the new card-field-visibility keys. All 21 human-preference checks
+passed. Technical Darija wording remains low confidence pending speaker review.
+Browser, RTL and screen-reader checks were not run. Remaining placeholders and
+the broader language audit stay open.
+
+## Moroccan Arabic math functions and workspace controls
+
+Filled 43 placeholders without replacing existing translations. Tests check
+source order, script, tokens, rounding direction, exponential/logarithm bases,
+negation, direct/inverse trigonometric functions, degrees versus radians,
+minimap navigation, absent parent blocks and colour/number/text variable types.
+Of 47 checks, 45 passed; two repository-wide checks still fail because other
+locales lack the new card-field-visibility keys. All 21 human-preference checks
+passed. Technical Darija wording remains low confidence pending speaker review.
+Browser, RTL and screen-reader checks were not run. Remaining placeholders and
+the broader language audit stay open.
+
+## Moroccan Arabic procedures and accessibility controls
+
+Filled 39 placeholders without replacing existing translations. Tests check
+source order, script, tokens, functions with/without results, disabled definitions,
+duplicate parameters, function-only return blocks, true-condition returns,
+screen-reader state/toggle direction, rename-all scope and cancelled movement.
+Of 48 checks, 46 passed; two repository-wide checks still fail because other
+locales lack the new card-field-visibility keys. All 21 human-preference checks
+passed. Technical Darija wording remains low confidence pending speaker review.
+Browser, RTL and screen-reader checks were not run. Remaining placeholders and
+the broader language audit stay open.
+
+## Moroccan Arabic navigation shortcuts and letter case
+
+Filled 37 placeholders without replacing existing translations. Stack top/bottom
+means the beginning/end of the block sequence. Tests check source order, script,
+tokens, move/scroll directions, next/previous pages, append text/target arguments,
+lower/upper/title case and copying text while changing letter case.
+Of 49 checks, 47 passed; two repository-wide checks still fail because other
+locales lack the new card-field-visibility keys. All 21 human-preference checks
+passed. Technical Darija wording remains low confidence pending speaker review.
+Browser, RTL and screen-reader checks were not run. Remaining placeholders and
+the broader language audit stay open.
+
+## Moroccan Arabic text positions and replacement
+
+Filled 42 placeholders without replacing existing translations. Tests check
+source order, script, tokens, first/last and reverse-index positions, search
+text/container roles, not-found results, spaces counted in text length,
+replacement arguments and all-occurrence scope, character reversal and prompt
+types. Of 50 checks, 48 passed; two repository-wide checks still fail because
+other locales lack the new card-field-visibility keys. All 21 human-preference
+checks passed. Technical Darija wording remains low confidence pending speaker
+review. Browser, RTL and screen-reader checks were not run. Remaining placeholders
+and the broader language audit stay open.
+
+## Moroccan Arabic variables and workspace search
+
+Filled 36 placeholders without replacing existing translations. Tests check
+source order, script, tokens, trimming sides and copying, variable assignment
+roles and name conflicts, composed workspace counts, next/previous search keys,
+closing search with focus restored and match number/total/content arguments.
+Of 51 checks, 49 passed; two repository-wide checks still fail because other
+locales lack the new card-field-visibility keys. All 21 human-preference checks
+passed. Technical Darija wording remains low confidence pending speaker review.
+Browser, RTL and screen-reader checks were not run. Remaining placeholders and
+the broader language audit stay open.
+
+## Moroccan Arabic rule editor and Scrum entry labels
+
+Filled 31 placeholders without replacing existing translations. Tests check
+source order, script, tokens, Blockly alias consistency, one-trigger/one-action
+validation, disconnected/extra block removal, concurrent-edit reload warnings,
+board-admin permission, unsaved-change discard and distinct Scrum roles.
+Of 52 checks, 50 passed; two repository-wide checks still fail because other
+locales lack the new card-field-visibility keys. All 21 human-preference checks
+passed. Technical Darija and Scrum terminology remain low confidence pending
+speaker review. Browser, RTL and screen-reader checks were not run. Remaining
+placeholders and the broader language audit stay open.
+
+## Moroccan Arabic Scrum settings and sprint controls
+
+Filled 31 placeholders without replacing existing translations. Tests check
+source order, Arabic script, tokens, separate completion policies, start/close/
+cancel actions, unfinished-work rollover scope, planned/active sprint assignment,
+numeric custom-field estimates and consistency with board-view labels.
+Of 54 checks, 52 passed; two repository-wide checks still fail because other
+locales lack the new card-field-visibility keys. All 21 human-preference checks
+passed. Technical Darija and Scrum terminology remain low confidence pending
+speaker review. Browser, RTL and screen-reader checks were not run. Remaining
+placeholders and the broader language audit stay open.
+
+## Moroccan Arabic sprint reports and events
+
+Filled 36 placeholders without replacing existing translations. Tests check
+source order, script, tokens, unknown estimates distinct from zero, comparable
+estimate units/policies, unfinished-card destinations, retained membership after
+cancellation, partial-report scope, omitted import references, minute units and
+distinct sprint states and review/retrospective labels. Of 55 checks, 53 passed;
+two repository-wide checks still fail because other locales lack the new
+card-field-visibility keys. All 21 human-preference checks passed. Technical
+Darija and Scrum terminology remain low confidence pending speaker review.
+Browser, RTL and screen-reader checks were not run. Remaining placeholders and
+the broader language audit stay open.
+
+## Moroccan Arabic daily observations and Sync conflicts
+
+Filled 36 placeholders without replacing existing translations. Tests check
+source order, script, tokens, first UTC-day observations, missing changes and
+unknown estimates, 366-observation bounds, incomplete import restrictions,
+no writes to source, partial review scope, mapping removal with content retained,
+unchanged subcards, reused replacement cards and 100-entry preview limits.
+Of 56 checks, 54 passed; two repository-wide checks still fail because other
+locales lack the new card-field-visibility keys. All 21 human-preference checks
+passed. Technical Darija wording remains low confidence pending speaker review.
+Browser, RTL and screen-reader checks were not run. Remaining placeholders and
+the broader language audit stay open.
+
+## Moroccan Arabic Sync previews and run reports
+
+Filled 31 placeholders without replacing existing translations. Tests check
+source order, script, tokens, normalized-source scope, hidden unmapped values,
+100-path limits, 20-run/30-day retention, possible partial changes, no resume or
+undo through reports, full-list write/server requirements and unfinished outcomes.
+Of 57 checks, 55 passed; two repository-wide checks still fail because other
+locales lack the new card-field-visibility keys. All 21 human-preference checks
+passed. Technical Darija wording remains low confidence pending speaker review.
+Browser, RTL and screen-reader checks were not run. Remaining placeholders and
+the broader language audit stay open.
+
+## Moroccan Arabic estimates and notification recovery
+
+Filled 31 placeholders without replacing existing translations. Tests check
+source order, script, tokens, ignored missing values versus explicit-null clearing,
+exactly one matching estimate field, hour units, temporary/permanent rejection,
+unconfirmed delivery, no recreated activities and withdrawn recipient permission.
+Of 59 checks, 57 passed; two repository-wide checks still fail because other
+locales lack the new card-field-visibility keys. All 21 human-preference checks
+passed. Technical Darija wording remains low confidence pending speaker review.
+Browser, RTL and screen-reader checks were not run. Remaining placeholders and
+the broader language audit stay open.
+
+## Moroccan Arabic recovery completion and short-label audit
+
+Filled 44 English-identical values: ten recovery messages, eighteen keyboard
+names with printed key text retained, and sixteen short labels skipped by the
+ordinary fill filter. Direct writes were limited to values still equal to English.
+Tests check source order, script, tokens, permanent cancellation, no recall of
+queued mail or delivered notifications, retained pending work, temporary pause,
+keyboard names and matching Blockly aliases. Of 60 checks, 58 passed; two
+repository-wide checks still fail because other locales lack the new card-field-
+visibility keys. All 21 human-preference checks passed. The ordinary placeholder
+list now retains technical names and notation. This does not complete the older
+catalog's dialect or semantic audit. Technical wording remains low confidence;
+speaker, browser, RTL and screen-reader review remain pending.
+
+## Card-field visibility labels in eight languages
+
+Added the two missing source keys in Finnish, Swedish, German, French, Spanish,
+Portuguese, Italian and Dutch (16 translations). No existing translation was
+overwritten. Source key order and placeholder inventories are checked, alongside
+unchanged card data/settings, re-enabling fields and each board's field order.
+Of 40 checks, 38 passed; two repository-wide checks still fail because other
+locales lack these keys. All 21 human-preference checks passed. Browser checks
+were not run. Menu wording and regional terminology remain open to speaker
+review; the remaining catalogs and broader language audit are unfinished.
+
 ## Original flagged inventory
 
 | Status | Flagged keys |
