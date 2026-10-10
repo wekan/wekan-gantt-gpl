@@ -879,6 +879,12 @@ const LOCALE_INVARIANTS = {
   // retain their conventional spelling. No descriptive prose is exempted.
   ...Object.fromEntries(['fr', 'fr-FR', 'fr-BE', 'fr-CH', 'fr-CA'].map(code =>
     [code, new Set([
+      // Native French plurals (Académie: date A9D0115, heure A9H0629).
+      // Require exact source values so changed prose is offered for translation.
+      ...Object.entries({
+        'notification-delivery-part-dates': 'Dates',
+        'notification-delivery-minutes': '__count__ minutes',
+      }).filter(([key, value]) => en[key] === value).map(([key]) => key),
       'blockly-ALT_KEY', 'blockly-ARIA_TYPE_FIELD_ANGLE', 'blockly-ARIA_TYPE_FIELD_DATE',
       'blockly-ARIA_TYPE_FIELD_IMAGE', 'blockly-CHROME_OS', 'blockly-CONTEXT_MENU_KEY',
       'blockly-FIELD_LABEL_OPTION_INDEX', 'blockly-FIELD_LABEL_VARIABLE',
@@ -995,6 +1001,10 @@ const LOCALE_INVARIANTS = {
   // IEC mathematical usage: https://scm.iec.cat/wp-content/uploads/2018/01/sessions_olimpiada.pdf
   // XTEC division terminology: https://ioc.xtec.cat/materials/FP/Recursos/fp_asx_m03_/web/fp_asx_m03_htmlindex/WebContent/u1/a1/continguts.html
   ...Object.fromEntries(['ca', 'ca_ES', 'ca@valencia'].map(code => [code, new Set([
+    // Catalan dates is the plural of data (IEC DCVB, entry data).
+    // Only the reviewed locales and exact source label are exempted.
+    ...(en['notification-delivery-part-dates'] === 'Dates'
+      ? ['notification-delivery-part-dates'] : []),
     ...(code !== 'ca' ? ['blockly-PAUSE_KEY'] : []),
     'blockly-ARIA_TYPE_FIELD_ANGLE', 'blockly-ARIA_TYPE_FIELD_COLOUR',
     'blockly-INPUT_LABEL_LOOP_BY', 'blockly-INPUT_LABEL_MATH_DIVIDEND',

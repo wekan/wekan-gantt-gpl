@@ -2,6 +2,579 @@
 
 Audit date: **2026-09-12**. Last updated: **2026-10-10**.
 
+## Galician current fills — 2026-10-10
+
+Translate 110 English placeholders in each of gl and gl-ES, 220 values in
+total, for attached cards, linked fields, calendar mode, member mapping,
+CSV columns, multiple-board import/export, webhooks, notifications, Wrike
+workflows and subtask completion. Both full current fill lists are empty.
+Every changed value was English in the parent commit; existing translations
+are preserved. Follow the existing taboleiro, tarxeta, lista, carril and
+campos personalizados terminology. Longer technical wording remains provisional
+pending speaker review; older catalog fluency is not fully audited.
+
+Preserve source placeholders, WEBHOOKS_ATTRIBUTES, GET /workflows and Wrike
+state names. Regressions verify permissions, field directions, member
+replacement, ZIP semantics, export permissions, inherited settings, quiet
+hours and workflow completion states. Both full current fill lists replace
+the historical completion gates. Register six browser cases for linked fields,
+import-people choices and notification delivery. Syntax and discovery pass;
+execution remains unverified because the local app and browser system
+dependencies are unavailable. All 305 translation/Blockly suites, 246 catalog
+inventories and 21 human-preference checks pass. The wider all-language backlog
+and semantic audit remain open.
+
+## Valencian current fills — 2026-10-10
+
+Translate 109 English placeholders in ca@valencia, registered as ca-valencia,
+for attached cards, linked fields, calendar mode, member mapping, CSV columns,
+multiple-board import/export, webhooks, notifications, Wrike and subtasks.
+Use the Catalan batch as the starting text and review the complete proposal,
+adapting regional forms to the existing este/esta wording, substituïx,
+convertix, siguen, tinga, continga, ací, llig, eixida and guardar. Correct the
+eixida contraction to d’eixida. Every changed value was English in the parent
+commit; existing translations are preserved. Longer technical and regional
+wording remains provisional pending speaker review.
+
+Dates is already native wording (the reviewed Catalan data plural). Extend
+only the exact-source date-label exemption to this locale, with tests for
+locale isolation and changed-source rejection. The full current fill list is
+empty. Preserve source placeholders, WEBHOOKS_ATTRIBUTES, GET /workflows and
+Wrike states. Regressions cover regional forms, permissions, field direction,
+member replacement, ZIP semantics, inherited settings, timing and completion.
+
+Register three browser cases using the actual ca-valencia runtime tag and
+ca@valencia file. Syntax and discovery pass; execution remains unverified
+because the local app and browser system dependencies are unavailable.
+All 305 translation/Blockly suites, 246 catalog inventories and 21
+human-preference checks pass. Older catalog fluency and the wider all-language
+backlog and semantic audit remain open.
+
+## Catalan current fills and shared date label — 2026-10-10
+
+Translate 109 English placeholders in each of ca and ca_ES, 218 values in
+total, for attached cards, linked fields, calendar mode, member mapping,
+CSV columns, multiple-board import/export, webhooks, notifications, Wrike
+workflows and subtask completion. Both full current fill lists are empty.
+Every changed value was English in the parent commit; existing translations
+are preserved. Follow the existing tauler, fitxa, llista, carril and camps
+personalitzats terminology. Longer technical wording remains provisional
+pending speaker review; older catalog fluency is not fully audited.
+
+The remaining Dates label is already native Catalan, the plural of data
+([IEC DCVB, data](https://dcvb.iec.cat/results.asp?Word=data), date sense).
+Keep it unchanged and recognize only this exact source value in these two
+reviewed locales. Fixture tests prove that another locale and changed English
+source prose still appear as untranslated. Do not exempt broader sentences.
+
+Preserve source placeholders, WEBHOOKS_ATTRIBUTES, GET /workflows and Wrike
+state names. Regressions verify permissions, field directions, member
+replacement, ZIP semantics, inherited settings, quiet hours and completion
+states. Add both full current fill-list checks and six browser cases. Syntax
+and discovery pass; execution remains unverified because the local app and
+browser system dependencies are unavailable. All 305 translation/Blockly
+suites, 246 catalog inventories and 21 human-preference checks pass. The wider
+all-language backlog and semantic audit remain open.
+
+## Greek current fills — 2026-10-10
+
+Translate 110 English placeholders in each of el and el-GR, 220 values in
+total, for attached cards, linked fields, calendar mode, member mapping,
+CSV columns, multiple-board import/export, webhooks, notifications, Wrike
+workflows and subtask completion. Both full current fill lists are empty.
+Every changed value was English in the parent commit; existing translations
+are preserved. Follow the existing πίνακας, κάρτα, λίστα, διάδρομος and
+προσαρμοσμένα πεδία terminology. Longer technical wording remains provisional
+pending speaker review; older catalog fluency is not fully audited.
+
+Preserve source placeholders, WEBHOOKS_ATTRIBUTES, GET /workflows and Wrike
+state names. Regressions verify permissions, field directions, member
+replacement, ZIP semantics, export permissions, inherited settings, quiet
+hours and workflow completion states, alongside the existing recovery checks.
+Add full current fill-list checks for both catalogs and six browser cases for
+linked fields, import-people choices and notification delivery. Syntax and
+discovery pass; execution remains unverified because the local app and browser
+system dependencies are unavailable. All 305 translation/Blockly suites,
+246 catalog inventories and 21 human-preference checks pass. The wider
+all-language backlog and semantic audit remain open.
+
+## Malay current fills — 2026-10-10
+
+Translate 176 English placeholders in each of ms and ms-MY, 352 values in
+total, for attached cards, linked fields, calendar mode, member mapping,
+CSV columns, multiple-board import/export, webhooks, notifications, Wrike,
+LDAP and import/synchronization recovery. Both full current fill lists are
+empty. Every changed value was English in the parent commit; existing
+translations are preserved. Follow the existing papan, kad, senarai,
+aliran renang and ruangan khas terminology, with Malay fail, pautan,
+tetapan, ahli, pelayan and penyegerakan vocabulary. Longer technical wording
+remains provisional pending speaker review; older catalog fluency is not
+fully audited.
+
+Preserve source placeholders, parsed link-rule syntax, LDAP settings,
+WEBHOOKS_ATTRIBUTES, GET /workflows, Wrike states and Org mode keywords.
+Regressions check permissions, field directions, member replacement, ZIP
+semantics, timing, workflow states, permanent deletion, preserved applied
+changes and environment-only settings. Both full current fill lists replace
+the historical completion gates. Register six browser cases for linked fields,
+import-people choices and notification delivery. Syntax and discovery pass;
+execution remains unverified because the local app and browser system
+dependencies are unavailable. All 305 translation/Blockly suites, 246 catalog
+inventories and 21 human-preference checks pass. The wider all-language
+backlog and semantic audit remain open.
+
+## Indonesian current fills — 2026-10-10
+
+Translate 176 English placeholders in id for attached cards, linked fields,
+calendar mode, member mapping, CSV columns, multiple-board import/export,
+webhooks, notifications, Wrike, LDAP and import/synchronization recovery.
+The full current fill list is empty. Every changed value was English in the
+parent commit; existing translations are preserved. Follow the existing papan,
+kartu, daftar, jalur and kolom khusus terminology. Longer technical wording
+remains provisional pending speaker review; older catalog fluency is not
+fully audited.
+
+Preserve source placeholders, parsed link-rule syntax, LDAP settings,
+WEBHOOKS_ATTRIBUTES, GET /workflows, Wrike states and Org mode keywords.
+Regressions check permissions, field directions, member replacement, ZIP
+semantics, timing, workflow states, permanent deletion, preserved applied
+changes and environment-only settings. The full current fill list replaces
+the historical completion gate. Register three browser cases for linked fields,
+import-people choices and notification delivery. Syntax and discovery pass;
+execution remains unverified because the local app and browser system
+dependencies are unavailable. All 305 translation/Blockly suites, 246 catalog
+inventories and 21 human-preference checks pass. The wider all-language
+backlog and semantic audit remain open.
+
+## Korean current fills — 2026-10-10
+
+Translate 206 English placeholders in each of ko and ko-KR, 412 values in
+total, for attached cards, linked fields, calendar mode, member mapping,
+CSV columns, multiple-board import/export, webhooks, notifications, Wrike,
+planning, LDAP and import/synchronization recovery. Both full current fill
+lists are empty. Every changed value was English in the parent commit;
+existing translations are preserved. Follow the existing 보드, 카드, 목록,
+스윔레인 and 사용자정의 항목 terminology. Longer technical wording remains
+provisional pending speaker review; older catalog fluency is not fully audited.
+
+Preserve source placeholders, parsed link-rule syntax, LDAP settings,
+WEBHOOKS_ATTRIBUTES, GET /workflows, Wrike states and Org mode keywords.
+Regressions check permissions, field directions, member replacement, ZIP
+semantics, timing, workflow states, permanent deletion, preserved applied
+changes, initial synchronization and checkpoint conflict restrictions. Both
+full current fill lists replace the historical completion gates. Register six
+browser cases for linked fields, import-people choices and notification delivery.
+Syntax and discovery pass; execution remains unverified because the local app
+and browser system dependencies are unavailable. All 305 translation/Blockly
+suites, 246 catalog inventories and 21 human-preference checks pass. The wider
+all-language backlog and semantic audit remain open.
+
+## Hiragana current fills — 2026-10-10
+
+Translate all 206 current English placeholders in ja-HI (registered as
+ja-Hira) directly into hiragana, including loanwords. Add spaces between
+phrases for readability. Preserve source placeholders and technical names,
+API paths, settings, Org mode keywords and link-rule syntax. The full current
+fill list is empty. Every changed value was English in the parent commit;
+other values are preserved. Longer technical phrasing and word spacing remain
+provisional pending reader review.
+
+Regression coverage checks all 206 values for hiragana and absence of kanji
+or katakana, all catalog tokens, field direction, permissions, member mapping,
+ZIP semantics, notification timing, workflow states, permanent deletion,
+retained changes and recovery conflict restrictions. Register three browser
+cases with the actual ja-Hira runtime tag and ja-HI source file. Syntax and
+discovery pass; execution remains unverified because the local app and browser
+system dependencies are unavailable. All 305 translation/Blockly suites,
+246 catalog inventories and 21 human-preference checks pass.
+
+The old script audit is still substantial: 3,641 unchanged values contain
+kanji or katakana. This count identifies review candidates, not proof that
+every character is prose (some may be examples or literal data). Those entries
+must be reviewed against English and converted where appropriate, preserving
+code and placeholders. An empty fill list does not prove script completion.
+The wider all-language backlog and semantic audit remain open.
+
+## Standard Japanese current fills — 2026-10-10
+
+Translate 206 English placeholders in each of ja and ja-JP, 412 values in
+total, for attached cards, linked fields, calendar mode, member mapping,
+CSV columns, multiple-board import/export, webhooks, notifications, Wrike,
+planning, LDAP and import/synchronization recovery. Both full current fill
+lists are empty. Every changed value was English in the parent commit;
+existing translations are preserved. Use ボード, カード, リスト, スイムレーン
+and カスタムフィールド consistently. Longer technical wording remains
+provisional pending speaker review; older catalog fluency is not fully audited.
+
+Preserve source placeholders, parsed link-rule syntax, LDAP settings,
+WEBHOOKS_ATTRIBUTES, GET /workflows, Wrike states and Org mode keywords.
+Regressions check permissions, propagation directions, member replacement,
+ZIP semantics, quiet hours, workflow states, permanent deletion, preservation
+of applied changes, initial synchronization and checkpoint conflict restrictions.
+Add five browser cases alongside existing base Japanese notification coverage.
+All six pass syntax and discovery; execution remains unverified because the
+local app and browser system dependencies are unavailable. All 304
+translation/Blockly suites, 246 catalog inventories and 21 human-preference
+checks pass.
+
+The ja-HI file is registered as ja-Hira (Hiragana), but contains ordinary kanji
+wording, including 削除 and 保存. It still has 206 current placeholders and
+needs a separate script review; the historical completed-catalog gate does not
+prove its current completion. This batch does not copy kanji wording into it.
+The wider all-language backlog and semantic audit remain open.
+
+## Russian current fills — 2026-10-10
+
+Translate 110 English placeholders in each of ru, ru_RU and ru-UA, 330 values
+in total, for attached cards, linked fields, calendar mode, member mapping,
+CSV columns, multiple-board import/export, webhooks, notifications, Wrike
+workflows and subtask completion. All three full current fill lists are empty.
+Every changed value was English in the parent commit; existing translations
+are preserved. Follow the existing доска, карточка, список, дорожка and
+настраиваемые поля terminology. Longer technical wording remains provisional
+pending speaker review; older catalog fluency is not fully audited.
+
+Preserve exact source placeholders, WEBHOOKS_ATTRIBUTES, GET /workflows and
+Wrike state names. Regressions cover edit permissions, field propagation
+directions, member replacement, ZIP semantics, export permissions, inherited
+settings, quiet hours and workflow completion states. Extend the regression
+to all three full current fill lists. Add eight browser cases alongside the
+existing base Russian notification case. All nine pass syntax and discovery;
+execution remains unverified because the local app and browser system
+dependencies are unavailable. All 304 translation/Blockly suites, 246 catalog
+inventories and 21 human-preference checks pass. The wider all-language
+backlog and semantic audit remain open.
+
+## Ukrainian current fills — 2026-10-10
+
+Translate 110 English placeholders in each of uk and uk-UA, 220 values in
+total, for attached cards, linked fields, calendar mode, member mapping,
+CSV columns, multiple-board import/export, webhooks, notifications, Wrike
+workflows and subtask completion. Both full current fill lists are empty.
+Every changed value was English in the parent commit; existing translations
+are preserved. Follow the existing дошка, картка, список, лінія and
+налаштовані поля terminology. Longer technical wording remains provisional
+pending speaker review; older catalog fluency is not fully audited.
+
+Preserve exact source placeholders, WEBHOOKS_ATTRIBUTES, GET /workflows and
+Wrike state names. Regressions cover edit permissions, field propagation
+directions, member replacement, ZIP semantics, export permissions, inherited
+settings, quiet hours and workflow completion states. Extend the regression
+to both full current catalogs. Add five browser cases alongside the existing
+base Ukrainian notification case. All six cases pass syntax and discovery;
+execution remains unverified because the local app and browser system
+dependencies are unavailable. All 304 translation/Blockly suites, 246 catalog
+inventories and 21 human-preference checks pass. The wider all-language
+backlog and semantic audit remain open.
+
+## Turkish current fills — 2026-10-10
+
+Translate 110 English placeholders in tr for attached cards, linked fields,
+calendar mode, member mapping, CSV columns, multiple-board import/export,
+webhooks, notifications, Wrike workflows and subtask completion. The full
+current fill list is empty. Every changed value was English in the parent
+commit; all existing translations are preserved. Follow the existing pano,
+kart, liste, kulvar and özel alanlar terminology. Longer technical wording
+remains provisional pending speaker review; older catalog fluency is not
+fully audited.
+
+Preserve all source placeholders, WEBHOOKS_ATTRIBUTES, GET /workflows and
+Wrike state names. Regressions cover edit permissions, field propagation
+directions, member replacement, ZIP semantics, export permissions, inherited
+settings, quiet hours and workflow completion states. Replace the historical
+completion gate with the full current fill list. Add browser cases for linked
+fields and import-people choices; notification delivery already covers Turkish.
+All three cases pass syntax and discovery, but execution remains unverified
+because the local app and browser system dependencies are unavailable.
+All 304 translation/Blockly suites, 246 catalog inventories and 21
+human-preference checks pass. The wider all-language backlog and semantic
+audit remain open.
+
+## Romanian current fills and field label correction — 2026-10-10
+
+Translate 110 English placeholders in each of ro and ro-RO, 220 values in
+total, for attached cards, linked fields, calendar mode, member mapping,
+CSV columns, multiple-board import/export, webhooks, notifications, Wrike
+workflows and subtask completion. Both full current fill lists are empty.
+Separately correct the Italian custom-fields label Campi personalizzati to
+Romanian Câmpuri personalizate in both catalogs. The 220 fills were English
+in the parent commit; all other values except those two wrong-language labels
+are preserved. Use the existing panou, card, listă and culoar terminology.
+Longer technical wording remains provisional pending speaker review; older
+catalog fluency and language identification are not fully audited.
+
+Preserve source placeholders, WEBHOOKS_ATTRIBUTES, GET /workflows and Wrike
+state names. Regressions cover Romanian field wording, edit permissions,
+field propagation directions, member replacement, ZIP semantics, export
+permissions, inherited settings, quiet hours and workflow completion states.
+Replace the historical completion gate with both full current fill lists.
+Register six browser cases for linked fields, import-people choices and
+notification delivery. Syntax and discovery are verified; execution remains
+unverified because the local app and browser system dependencies are unavailable.
+All 304 translation/Blockly suites, 246 catalog inventories and 21
+human-preference checks pass. The wider all-language backlog and semantic
+audit remain open.
+
+## Hungarian current fills — 2026-10-10
+
+Translate 110 English placeholders in hu for attached cards, linked fields,
+calendar mode, member mapping, CSV columns, multiple-board import/export,
+webhooks, notifications, Wrike workflows and subtask completion. The full
+current fill list is empty. Every changed value was English in the parent
+commit; all existing translations are preserved. Use the existing tábla,
+kártya, lista, úszósáv and egyéni mezők terminology. Longer technical wording
+remains provisional pending speaker review; older catalog fluency is not
+fully audited.
+
+Preserve exact source placeholders, WEBHOOKS_ATTRIBUTES, GET /workflows and
+Wrike state names. Regressions cover permissions, one-way/two-way propagation,
+member replacement, ZIP semantics, export permissions, inherited settings,
+quiet hours and workflow completion states. Replace the historical completion
+gate with the full current fill list. Register three browser cases for linked
+fields, import-people choices and notification delivery. Syntax and discovery
+are verified; execution remains unverified because the local app and browser
+system dependencies are unavailable. All 304 translation/Blockly suites,
+246 catalog inventories and 21 human-preference checks pass. The wider
+all-language backlog and semantic audit remain open.
+
+## Slovak current fills and Czech seed corrections — 2026-10-10
+
+Translate 110 English placeholders in sk for attached cards, linked fields,
+calendar mode, member mapping, CSV columns, multiple-board import/export,
+webhooks, notifications, Wrike workflows and subtask completion. The full
+current fill list is empty. Separately correct 198 Czech or mixed-language
+values, including Vlastní pole to Slovak Vlastné polia, menus, filters,
+activity text, rules, account labels and time-reporting guidance. Each had
+Czech-specific spelling or vocabulary in the parent commit. The 110 fills
+were English; all other values are preserved.
+Use the existing nástenka, karta, zoznam and dráha terminology. Longer technical
+wording remains provisional pending speaker review; this is not a complete
+fluency audit of older translations.
+
+Preserve all source placeholders, WEBHOOKS_ATTRIBUTES, GET /workflows and
+Wrike state names. Regressions reject the identified Czech seed vocabulary and check native
+Slovak terms, time-correction semantics, the field label, edit permissions,
+field propagation directions, member replacement, ZIP semantics, inherited
+settings, quiet hours and workflow completion states. The full current fill
+list replaces the older completed-catalog-only regression gate.
+
+Add three browser cases for linked fields, import-people choices and
+notification delivery. Syntax and discovery are verified; browser execution
+remains unverified because the local app and browser system dependencies are
+unavailable. All 304 translation/Blockly suites, 246 catalog key/token
+inventories and 21 human-preference checks pass. Wider translation work and
+semantic auditing remain open. The Czech
+spelling scan is a focused guard, not proof that every older value is fluent
+Slovak; vocabulary and source meanings were reviewed for these 198 replacements.
+
+## Czech base and regional current fills — 2026-10-10
+
+Fill 110 English placeholders in cs and 206 in cs-CZ, 316 values in total.
+Write 110 current translations in each catalog (220 values), and reuse 96
+existing base Czech translations for regional English placeholders. Both full
+current fill lists are empty. Every changed value was English in the parent
+commit; all other values are preserved. Reused values match the parent base
+catalog exactly. Follow the existing tablo, karta, seznam, dráha and vlastní
+pole terminology. Longer technical wording remains provisional pending speaker
+review; this batch is not a full fluency audit of older translations.
+
+Translate attached cards, linked fields, calendar mode, member mapping,
+CSV columns, multiple-board import/export, webhooks, notifications, Wrike
+workflows and subtask completion. Regional reuse includes planning,
+synchronization, announcements and interrupted-import recovery. Preserve all
+source tokens, WEBHOOKS_ATTRIBUTES, GET /workflows and Wrike state names.
+Regressions check edit permissions, field propagation directions, member
+replacement, ZIP semantics, inherited settings, quiet hours, completion states,
+retained changes, destructive recovery warnings and checkpoint constraints.
+
+Extend the Czech regression to both full current catalogs and add six browser
+cases for linked fields, import-people choices and notification delivery.
+Syntax and discovery are verified; browser execution remains unverified because
+the local app and browser system dependencies are unavailable. All 304
+translation/Blockly suites, 246 catalog key/token inventories and 21
+human-preference checks pass. Wider translation work and semantic auditing
+remain open.
+
+## Polish base and regional current fills — 2026-10-10
+
+Fill 110 English placeholders in pl and 206 in pl-PL: 316 values in total.
+Write 110 current translations for both catalogs (220 values), and reuse
+96 existing base Polish translations for regional English placeholders.
+Both full current fill lists are empty. Every changed value was English in
+the parent commit; all other values are preserved. Reused translations match
+the parent base catalog exactly. Use the existing tablica, karta, lista,
+ścieżka and niestandardowe pola terminology. Longer technical wording remains
+provisional pending speaker review; older catalog fluency is not fully audited.
+
+Cover attached cards, linked fields, calendar mode, import member mapping,
+CSV columns, multiple-board imports/exports, webhooks, notifications, Wrike
+workflows and subtask completion. Reused regional translations also cover
+planning, synchronization, announcements and interrupted-import recovery.
+Preserve source tokens, WEBHOOKS_ATTRIBUTES, GET /workflows and Wrike state
+names. Regressions verify permissions, field propagation directions, member
+replacement, ZIP semantics, inherited settings, quiet hours, completion states,
+retained changes, destructive recovery warnings and checkpoint constraints.
+
+Extend the Polish regression to both full current catalogs and register six
+browser cases for linked fields, import-people choices and notification delivery.
+Syntax and discovery are checked; browser execution remains unverified because
+the local app and browser system dependencies are unavailable. All 304
+translation/Blockly suites, 246 catalog key/token inventories and 21
+preservation checks pass. Wider translation work and semantic auditing remain open.
+
+## Dutch base and regional current fills — 2026-10-10
+
+Translate 110 English placeholders in each of nl and nl-NL, 220 values in
+total, for attached cards, linked fields, calendar mode, member mapping, CSV
+columns, multiple-board imports/exports, webhooks, notifications, Wrike
+workflows and subtask completion. Both full current fill lists are empty.
+Every changed value was English in the parent commit; all other values are
+preserved. Use the existing bord, kaart, lijst, werkbaan and maatwerkvelden
+terminology. Longer technical phrasing remains provisional pending speaker
+review; this is not a complete audit of older catalog wording.
+
+Preserve exact source placeholders, WEBHOOKS_ATTRIBUTES, GET /workflows and
+Wrike's state-group names. Regressions cover edit permissions on both cards,
+one-way/two-way field propagation, archived cards, member replacement, ZIP
+files that are single exports, export permissions, inherited webhook settings,
+waiting until quiet hours end and workflow completion states.
+
+Extend the existing Dutch regression to both full current fill lists and add
+six representative browser cases for linked fields, import-people choices and
+notification delivery. Syntax and discovery are checked; execution remains
+unverified because the local app and browser system dependencies are unavailable.
+All 304 translation/Blockly suites, 246 catalog key/token inventories and
+21 preservation checks pass. The wider all-language translation work and
+semantic audit remain open.
+
+## Portuguese base and regional current fills — 2026-10-10
+
+Translate 110 English placeholders in each of pt, pt-BR, pt-PT and pt_PT,
+440 values in total, for attached cards, linked fields, calendar mode, member
+mapping, CSV columns, multiple-board import/export, webhooks, notifications,
+Wrike workflows and subtask completion. All four full current fill lists are
+empty. Every changed value was English in the parent commit; all other values
+are preserved. Follow the newer European Portuguese prose in pt/pt-PT/pt_PT
+with ficheiro, utilizador, folha and pista; Brazilian wording uses arquivo,
+usuário, planilha and raia, and the catalog's campos customizados terminology.
+Do not overwrite older catalog choices. Longer technical and regional phrasing
+remains provisional pending speaker review.
+
+Preserve source tokens, WEBHOOKS_ATTRIBUTES, GET /workflows and Wrike's state
+group names. Regressions cover permissions, one-way/two-way field propagation,
+archived cards, member replacement, ZIP exports, export permissions, inherited
+webhook behavior, quiet hours and completion states. Brazilian link wording
+uses the masculine noun link; European wording retains ligação. The older
+catalogs' broader semantic audit remains open.
+
+Extend the existing Portuguese test to the full current fill of all four
+variants, including Brazilian Portuguese in its first fill-list gate. Add
+12 representative browser cases for linked fields, import-people choices and
+notification delivery. Syntax and discovery are checked; browser execution
+remains unverified because the local app and browser system dependencies are
+unavailable. All 304 translation/Blockly suites, 246 catalog key/token
+inventories and 21 preservation checks pass. The ordinary backlog remains
+29,735 values in 42 locales: these fills were pending source strings excluded
+from that report. The wider all-language work remains open.
+
+## Spanish base and regional current fills — 2026-10-10
+
+Translate 110 English placeholders in each of es, es-AR, es-CL, es-CO, es-LA,
+es-MX, es-PE, es-PY and es_CO, 990 values in total. Coverage includes attached
+cards, linked fields, calendar mode, member mapping, CSV columns, multiple-board
+import/export, webhooks, notifications, Wrike workflows and subtask completion.
+All nine full current fill lists are empty. Every changed value was English
+in the parent commit; all other values are preserved, including existing
+regional wording. Use the shared tablero, tarjeta, lista, carril and campos
+personalizados terminology. New wording uses neutral Spanish; regional style
+and longer technical phrasing remain provisional pending speaker review.
+
+Preserve every source placeholder, WEBHOOKS_ATTRIBUTES, GET /workflows and
+Wrike's state-group names. Regression checks cover edit access to both cards,
+archived-card restrictions, one-way/two-way field propagation, importer-as-user
+mapping, ZIP files that are single exports, export permissions, inherited
+webhook settings, waiting until quiet hours end and workflow completion states.
+This does not certify the language quality of every older catalog value.
+
+Extend the existing Spanish regression to all nine full current fills and
+add 27 representative browser cases across linked fields, import-people
+choices and notification delivery. Syntax and discovery are checked; browser
+execution remains unverified because the local app and browser system
+dependencies are unavailable. All 304 translation/Blockly suites, 246 catalog
+key/token inventories and 21 human-preference checks pass. The ordinary backlog remains 29,735 values
+in 42 locales: these fills were pending source strings excluded from that
+report. The wider all-language and semantic-review work remains open.
+
+## French base and regional current fills — 2026-10-10
+
+Translate 108 English placeholders in each of fr, fr-FR, fr-BE, fr-CA and fr-CH,
+540 values in total, for attached cards, linked fields, calendar mode, member
+mapping, CSV columns, multiple-board import/export, webhooks, notifications,
+Wrike workflows and subtask completion. All five full current fill lists are
+empty. Every changed catalog value was English in the parent commit; all other
+values are preserved. Use the existing tableau, carte, liste, couloir and
+champs personnalisés vocabulary in each regional catalog.
+
+Two remaining identical values are correct French: Dates and __count__ minutes.
+Protect both values only in these five French locales, with exact source-value
+checks, rather than changing their wording.
+The [Académie date entry](https://www.dictionnaire-academie.fr/article/A9D0115?history=0)
+uses the calendar sense and plural dates; its
+[heure entry](https://www.dictionnaire-academie.fr/article/A9H0629) uses minutes
+as the time unit. The count token remains code. Exceptions are exact-value bound,
+so a future English source change is not automatically exempted; existing
+reviewed-source tests cover stale-value rejection and locale isolation. The
+older audited-reviews manifest is unchanged; it only accepts historical audit
+findings.
+
+Preserve source placeholders, WEBHOOKS_ATTRIBUTES, GET /workflows and Wrike's
+state-group names. Meaning checks cover permissions, one-way/two-way links,
+archived cards, member replacement, ZIP files that are single exports, export
+permissions, inherited webhook behavior, quiet hours and completion states.
+Longer technical and regional phrasing remains provisional pending speaker
+review; older catalog fluency is not certified by this batch.
+
+Extend the existing French regression to all five current fills and the exact
+shared-word exceptions. Add fourteen browser cases, with fifteen representative
+cases across the five variants when including the existing French notification
+case. Syntax and discovery are checked; execution remains unverified because
+the local app and browser system dependencies are unavailable. All 246 catalog
+key/token inventories and 21 preservation checks pass. All 304 translation/
+Blockly suites pass after the exact-source exception change. The ordinary
+backlog remains 29,735 values in 42 locales: these fills were pending source
+strings excluded from that report. The wider all-language work remains open.
+
+## German base and regional current fills — 2026-10-10
+
+Translate 110 English placeholders in each of de, de-AT, de-CH and de_DE,
+440 values in total, for attached cards, linked fields, calendar mode, member
+mapping, CSV columns, multiple-board imports/exports, webhooks, notifications,
+Wrike workflows and subtask completion. All four full current fill lists are
+empty. Keep the catalogs' Arbeitstafel, Karte and Arbeitsbahn terminology.
+
+The Swiss spelling regression exposed 86 older de-CH values containing ß.
+Normalize only that character to ss in those values, preserving their wording
+and meaning; protect the convention across the entire Swiss catalog. These
+are separate orthographic corrections, not placeholder fills. All other values
+are preserved, and every filled value was English in the parent commit.
+
+Preserve exact placeholders, WEBHOOKS_ATTRIBUTES, GET /workflows and Wrike's
+state-group names. Meaning checks cover edit permissions, one-way/two-way
+field propagation, archived-card restrictions, member replacement, ZIP files
+that are single exports, export permissions, inherited webhook settings, quiet
+hours and completion states. Longer technical wording remains provisional
+pending speaker review; the old catalogs' broader semantic audit remains open.
+
+Extend the existing German regression to the full current fill of all four
+variants and add twelve representative browser cases across linked fields,
+import-people choices and notification delivery. Browser execution remains
+unverified because the local app and browser system dependencies are unavailable;
+syntax and discovery are checked. All 304 translation/Blockly suites pass,
+as do 16 German/Blockly suites rerun after the spelling corrections. All 246
+catalog key/token inventories and 21 human-preference checks pass. The ordinary
+backlog remains 29,735 values in 42 locales; these fills were pending source
+strings excluded from that report. The wider all-language work remains open.
+
 ## Italian current fill — 2026-10-10
 
 Translate 110 current English placeholders for attached cards, linked fields,

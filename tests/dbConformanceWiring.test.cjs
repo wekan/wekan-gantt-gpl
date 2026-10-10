@@ -430,4 +430,39 @@ test('bail mode exits at backend errors and compares before starting another bac
   assert.match(loop, /node tests\/dbConformance\/compare\.cjs[\s\S]*PIPESTATUS\[0\][\s\S]*stop_on_failure/);
 });
 
+// MongoDB 8 and 9 run beside the FerretDB backends, as the real servers, so a
+// fault every FerretDB backend shares is still a difference. The first such run
+// found $group giving every accumulator after the first an empty group.
+test('MongoDB 6, 7, 8 and 9 are compared too, queried directly, and a refused kernel is a SKIP', () => {
+  const sh = read('releases/db-conformance.sh');
+  assert.ok(sh.includes('"mongodb6|image:mongo:6.0|mongodb|27017|mongodb"'));
+  // MongoDB 7 is the one WeKan's own compose file runs, read from that file.
+  assert.ok(sh.includes('"mongodb7|docker-compose-mongodb-v7.yml|wekandb|27017|mongodb"'));
+  assert.match(read('docker-compose-mongodb-v7.yml'), /^  wekandb:\n(?:.*\n)*?    image: mongo:7/m);
+  assert.equal((sh.match(/^\s+mongodb\*\)$/gm) || []).length, 2, 'every mongodb* backend starts and is pinged the same way');
+  assert.ok(sh.includes('"mongodb8|image:mongo:8.0|mongodb|27017|mongodb"'));
+  assert.ok(sh.includes('"mongodb9|image:mongo:9.0|mongodb|27017|mongodb"'));
+  assert.match(sh, /image:\*\) image="\$\{file#image:\}" ;;/, 'an image: entry names its image directly');
+  // The mongodb handler runs the catalogue against MongoDB and starts no FerretDB.
+  const direct = sh.slice(sh.indexOf('if [ "$handler" = mongodb ]; then\n    echo "---- $name: running'),
+    sh.indexOf('echo "---- $name: starting the FerretDB we just built ----"'));
+  assert.match(direct, /node tests\/dbConformance\/run\.cjs --uri "\$url" --label "\$name"/);
+  assert.match(direct, /\n {4}continue\n/);
+  assert.doesNotMatch(direct, /FERRET_BIN/);
+  // A kernel MongoDB refuses is the machine's, not a WeKan failure: a SKIP, never an ERROR.
+  assert.match(sh, /Linux kernel versions 6\.19 and newer has a known incompatibility'; then\n\s+up=2; break/);
+  assert.match(sh, /if \[ "\$up" -eq 2 \]; then[\s\S]{0,400}echo "SKIP  \$name  MongoDB refuses Linux kernel/);
+  // EVERYTHING in both scripts runs this same script, so both get MongoDB.
+  assert.ok(read('build.sh').includes('./releases/db-conformance.sh'));
+  assert.ok(read('build.bat').includes('bash ./releases/run-everything.sh'));
+});
+
+test('the $text case is valid on MongoDB: a text index first, and the score by type only', () => {
+  const { CASES } = require('./dbConformance/cases.cjs');
+  const text = CASES.find(c => c.name === '$meta textScore');
+  assert.deepEqual(text.textIndex, { name: 'text' });
+  assert.deepEqual(text.redact, ['score']);
+  assert.match(read('tests/dbConformance/run.cjs'), /if \(c\.textIndex\) await col\.createIndex\(c\.textIndex\);/);
+});
+
 console.log(`\n${passed} tests passed`);
