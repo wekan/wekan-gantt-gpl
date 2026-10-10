@@ -14,6 +14,16 @@ template(name="import")
         button.primary.js-open-imported-board(type="button") {{_ 'import-report-open-board'}}
     if zipImporting
       .warning {{_ 'import-trello-zip-progress'}}
+    if manyProgress
+      .warning.js-import-many-progress {{manyProgress}}
+    //- What "Import many boards" did, file by file.
+    if manyResults
+      .import-report.js-import-many-results
+        h2 {{_ 'import-many-results-heading'}}
+        ul
+          each manyResults
+            li.import-report-row(class="{{#if ok}}is-imported{{else}}is-failed{{/if}}") {{name}}: {{#if ok}}{{_ 'import-many-imported'}}{{else}}{{error}}{{/if}}
+        button.primary.js-import-many-all-boards(type="button") {{_ 'all-boards'}}
     //- #1173: ONE import page. Every source used to be its own address reached
       from its own link in the board sidebar, and the page never said which
       others existed - so "where do I import a Jira export" was answered by a
@@ -55,11 +65,16 @@ template(name="import")
 template(name="importTextarea")
   form
     p: label(for='import-textarea') {{instruction}} {{_ 'import-board-instruction-about-errors'}}
-    if isExcelImport
+    //- One file chooser and one text box for every source
+      (models/lib/importSources.js): the chooser accepts that source's
+      files, and the text box shows where its export can be pasted.
+    if importAccept
       p.import-file-row
-        label(for='import-excel-file') {{_ 'import-excel-file'}}
-        input.js-import-excel-file(id='import-excel-file' type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    else
+        label(for='import-file') {{_ 'import-file-label'}}
+        if isTrelloImport
+          span.quiet.import-file-hint {{_ 'import-trello-json-file-hint'}}
+        input.js-import-file(id='import-file' type="file" accept="{{importAccept}}")
+    if importPaste
       textarea.js-import-json(id='import-textarea' placeholder="{{_ importPlaceHolder}}" autofocus)
         | {{jsonText}}
     if isJiraImport
@@ -71,19 +86,7 @@ template(name="importTextarea")
           option(value=fieldId) {{name}}
       label(for='jira-estimate-unit') {{_ 'scrum-estimate-unit'}}
       input.js-jira-estimate-unit(id='jira-estimate-unit' type='text' maxlength='80')
-    if isWekanImport
-      //- #1173: a WeKan export can be a .json or a .zip - the .zip is the one to
-        use when a board's attachments are too large to sit inside one JSON
-        string. Both land in the same place; the .zip is unpacked in the browser
-        and its files are put back on their metadata rows.
-      p.import-file-row
-        label(for='import-wekan-file') {{_ 'import-wekan-file'}}
-        input.js-import-json-file(id='import-wekan-file' type="file" accept=".json,.zip,application/json,application/zip")
     if isTrelloImport
-      p.import-file-row
-        label(for='import-json-file') {{_ 'import-trello-json-file'}}
-        span.quiet.import-file-hint {{_ 'import-trello-json-file-hint'}}
-        input.js-import-json-file(id='import-json-file' type="file" accept=".json,application/json")
       p.import-file-row
         label(for='import-zip-file') {{_ 'import-trello-zip-file'}}
         span.quiet.import-file-hint {{_ 'import-trello-zip-file-hint'}}
@@ -91,6 +94,32 @@ template(name="importTextarea")
       p.import-file-row
         label(for='import-workspace-name') {{_ 'import-trello-workspace'}}
         textarea.js-import-workspace-name(rows="2" id='import-workspace-name' placeholder="{{_ 'import-trello-workspace-placeholder'}}")
+    //- Who the file's people become, the same for every source
+      (models/lib/importMembersMode.js): existing users chosen in the next
+      step, placeholder users keeping their names, or the person importing.
+    .import-members-mode
+      p
+        strong {{_ 'import-members-mode-heading'}}
+      each membersModes
+        a.flex.js-import-members-mode(data-mode="{{mode}}" href="#")
+          .materialCheckBox(class="{{#if checked}}is-checked{{/if}}")
+          span {{_ label}}
+    //- "Import many boards" (models/lib/importManyFiles.js): several export
+      files of this source, or one .zip holding them, each its own board -
+      what the Trello .zip does, for every source. When files are chosen here,
+      the Import buttons import them instead of the field above.
+    p.import-file-row.import-many
+      label(for='import-many-files') {{_ 'import-many-boards'}}
+      span.quiet.import-file-hint {{_ 'import-many-boards-hint'}}
+      input.js-import-many-files(id='import-many-files' type="file" multiple)
+    if isGeneralizedImport
+      //- "One board per project" (models/lib/importSplit.js): each swimlane the
+        import would make becomes its own board.
+      p.import-file-row
+        a.flex.js-import-split-toggle(href="#")
+          .materialCheckBox(class="{{#if splitByProject}}is-checked{{/if}}")
+          span {{_ 'import-one-board-per-project'}}
+        span.quiet.import-file-hint {{_ 'import-one-board-per-project-hint'}}
     input.primary.wide(type="submit" value="{{_ 'import'}}")
     button.primary.wide.js-import-without-mapping(type="button") {{_ 'import-without-mapping-members'}}
   if isTrelloImport

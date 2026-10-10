@@ -29,8 +29,9 @@ function gateItem(item, wanted) {
 const iso = value => (value ? new Date(value).toISOString() : undefined);
 
 // Formats with a place for sprints and releases: GitLab iterations and
-// milestones, OpenProject sprints and versions (externalExportFormatters.js).
-const SCRUM_FORMATS = new Set(['gitlab', 'openproject']);
+// milestones, OpenProject sprints and versions, Taiga milestones
+// (externalExportFormatters.js).
+const SCRUM_FORMATS = new Set(['gitlab', 'openproject', 'taiga']);
 const PLANNING_FIELDS = { _id: 1, name: 1, goal: 1, notes: 1, state: 1, plannedStart: 1, plannedEnd: 1, releasedAt: 1 };
 async function scrumPlanning(boardId) {
   const ScrumSprints = require('/models/scrumSprints').default;
@@ -40,6 +41,22 @@ async function scrumPlanning(boardId) {
     ScrumReleases.find({ boardId }, { fields: PLANNING_FIELDS, sort: { plannedEnd: 1, name: 1 } }).fetchAsync(),
   ]);
   return { sprints, releases };
+}
+
+const WRIKE_FORMATS = new Set(['wrike', 'wrikeworkflow']);
+
+// The board's rules as { trigger, action } with only the fields a Wrike
+// status group is read from: the list a moveCard trigger names, and the
+// action's type.
+async function moveCompletionRules(boardId) {
+  const rules = await ReactiveCache.getRules({ boardId });
+  const out = [];
+  for (const rule of rules || []) {
+    const [trigger, action] = await Promise.all([ReactiveCache.getTrigger(rule.triggerId), ReactiveCache.getAction(rule.actionId)]);
+    if (!trigger || !action) continue;
+    out.push({ trigger: { activityType: trigger.activityType, listName: trigger.listName }, action: { actionType: action.actionType } });
+  }
+  return out;
 }
 
 async function collect(boardId, fields, format) {
@@ -65,6 +82,9 @@ async function collect(boardId, fields, format) {
       state: 1, plannedEnd: 1, releasedAt: 1, notes: 1, provenance: 1 } }).fetchAsync()).map(release => [release._id, release]))
     : null;
   const planning = SCRUM_FORMATS.has(format) && want('scrum') ? await scrumPlanning(boardId) : null;
+  // A Wrike status group comes from the board's move-and-complete rules
+  // (models/lib/wrikeWorkflow.js), so both Wrike exports read them.
+  const workflowRules = WRIKE_FORMATS.has(format) ? await moveCompletionRules(boardId) : null;
 
   // The rest of a card, read once per board and only when selected. Custom
   // fields reach this export only after server/lib/adminOnlyCustomFields
@@ -113,6 +133,8 @@ async function collect(boardId, fields, format) {
       listTitle: listById[c.listId] || '',
       swimlaneTitle: swById[c.swimlaneId] || 'Default',
       dueAt: iso(c.dueAt),
+      ...(c.dueAt && c.dueComplete ? { dueComplete: true } : {}),
+      ...(c.color ? { color: c.color } : {}),
       labelIds: c.labelIds || [],
       labels: (c.labelIds || []).map(id => labelById[id]).filter(Boolean),
       ...(want('dates') ? { startAt: iso(c.startAt), endAt: iso(c.endAt), createdAt: iso(c.createdAt) } : {}),
@@ -120,6 +142,12 @@ async function collect(boardId, fields, format) {
         owner: people[0], assignees: people.slice(1), creator: username(c.userId), requestedBy: c.requestedBy || undefined,
       } : {}),
       ...(want('subtasks') && c.parentId ? { parentCardId: c.parentId } : {}),
+      // Card dependencies, for formats with relations of their own (Redmine).
+      ...(want('dependencies') && Array.isArray(c.cardDependencies) && c.cardDependencies.length ? {
+        dependencies: c.cardDependencies.filter(dep => dep && dep.cardId).map(dep => ({ cardId: dep.cardId, type: dep.type })),
+      } : {}),
+      // Hours spent, for formats with a place for tracked time (Super Productivity).
+      ...(want('dates') && Number(c.spentTime) > 0 ? { spentTime: Number(c.spentTime) } : {}),
       ...(comments.length ? { comments: comments.filter(cm => cm.cardId === c._id)
         .map(cm => ({ text: cm.text, author: username(cm.userId), date: iso(cm.createdAt) })) } : {}),
       ...(cardChecklists.length ? { checklists: cardChecklists } : {}),
@@ -128,14 +156,31 @@ async function collect(boardId, fields, format) {
   });
   return { board, lists, swimlanes, jiraEstimateMapping: estimateMapping,
     ...(planning ? { scrumSprints: planning.sprints, scrumReleases: planning.releases } : {}),
+    ...(workflowRules ? { workflowRules } : {}),
     items: items.map(item => gateItem(item, wanted)) };
 }
 
 export async function buildExternalExport(boardId, format, fields) {
   const formatter = formatters[format];
   if (!formatter) return null;
-  const formatted = formatter(await collect(boardId, fields, format));
-  return require('/server/lib/secureTransfer').secureTransfer(formatted, {
-    direction: 'export', source: `export:${format}`,
-  });
+  const { secureTransfer } = require('/server/lib/secureTransfer');
+  const context = { direction: 'export', source: `export:${format}` };
+  // A JSON document is checked as it is sent. A formatter that writes a
+  // document of its own - OPML, Leo's XML, Markdown, CSV - returns text in that
+  // format's syntax, which is not HTML: passing the finished document through
+  // the HTML sanitizer stripped its markup (OPML's <outline text="..."> lost
+  // every card), logged its own tags as unsafe markup on every export, and held
+  // a whole board to the size of one string.
+  const collected = await collect(boardId, fields, format);
+  const formatted = formatter(collected);
+  if (typeof formatted !== 'string') return secureTransfer(formatted, context);
+  // A text document is made again from the board's values passed through the
+  // boundary: the cards (plain objects collect builds) and the board's, lists'
+  // and swimlanes' titles. The board, its lists and swimlanes are collection
+  // documents with helpers, so each keeps its prototype and gets a checked
+  // title - the boundary refuses a non-plain object as a whole.
+  const safeTitle = doc => (doc && typeof doc.title === 'string'
+    ? Object.assign(Object.create(Object.getPrototypeOf(doc)), doc, { title: secureTransfer(doc.title, context) }) : doc);
+  return formatter({ ...collected, board: safeTitle(collected.board), lists: (collected.lists || []).map(safeTitle),
+    swimlanes: (collected.swimlanes || []).map(safeTitle), items: secureTransfer(collected.items, context) });
 }

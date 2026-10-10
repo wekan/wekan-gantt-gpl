@@ -1,6 +1,2988 @@
 # Translation audit progress
 
-Audit date: **2026-09-12**. Last updated: **2026-10-08**.
+Audit date: **2026-09-12**. Last updated: **2026-10-10**.
+
+## Italian current fill — 2026-10-10
+
+Translate 110 current English placeholders for attached cards, linked fields,
+calendar mode, member mapping, CSV columns, multiple-board imports/exports,
+webhooks, notification delivery, Wrike workflows and subtask completion.
+The full current Italian fill list is empty. Every changed value was English
+in the parent commit; all other values are preserved. Use the existing bacheca,
+scheda, lista, corsia and campi personalizzati terminology.
+
+Preserve exact placeholders, WEBHOOKS_ATTRIBUTES, GET /workflows and Wrike's
+state-group names. Meaning checks distinguish one-way from two-way links,
+require edit permission on both cards, retain archived-card restrictions,
+replace all imported people with the importer only for that selected mode,
+and preserve single-export ZIP handling and export permissions. Quiet hours
+wait until their end, webhook defaults retain inherited behavior, and Wrike
+completion rules distinguish completed/cancelled from active/deferred states.
+Longer technical phrasing remains provisional pending speaker review; this
+batch does not certify the fluency of every older catalog value.
+
+Extend the existing Italian regression to the full current fill and add
+representative UI cases for linked fields, import people and notification
+settings. Browser execution remains unverified because the local app and
+browser system dependencies are unavailable; syntax and discovery are checked.
+All 304 translation/Blockly suites, 246 catalog key/token inventories and
+21 human-preference checks pass.
+The ordinary backlog remains 29,735 values in 42 locales: these fills were
+pending source strings excluded from that report. The wider all-language
+translation work and semantic audit remain open.
+
+## Norwegian Bokmål and Danish current fills — 2026-10-10
+
+Translate 110 English placeholders in each catalog, 220 values in total, for
+attached cards, linked custom fields, calendar mode, member mapping, CSV
+columns, multiple-board import/export, webhooks, notification delivery, Wrike
+workflows and subtask completion. Both full current fill lists are empty.
+All changed values were English in the parent commit; every other value is
+preserved. Retain each catalog's tavle/kort/svømmebane terminology, Norwegian
+tilpassede felt and Danish brugerdefinerede felter.
+
+Preserve all source placeholders, WEBHOOKS_ATTRIBUTES, GET /workflows and
+Wrike's Active, Completed, Deferred and Cancelled group names. Wording keeps
+one-way versus two-way field changes distinct, requires edit access to both
+cards, blocks archived-card linking, distinguishes member-mapping choices,
+handles a ZIP that is itself one export as one board and retains export
+permissions. Notification wording preserves inherited webhook defaults and
+waiting until quiet hours end. Wrike's completion rules retain their group
+semantics and its own automation cannot be exported. Longer technical wording
+remains provisional pending speaker review; older catalog fluency is not
+certified by this batch.
+
+Extend both existing regression suites to their full current fill lists,
+with checks for source tokens, parsed constants, permissions, field direction,
+member replacement, imports and notification/workflow meanings. Add six
+representative browser cases across linked fields, import-people choices and
+notification delivery. Browser execution remains unverified because the local
+app and browser system dependencies are unavailable; syntax and discovery
+are checked. All 304 translation/Blockly suites, 246 catalog key/token
+inventories and 21 human-preference checks pass. The ordinary backlog remains 29,735 values in 42 locales: these
+220 fills were pending source strings excluded from that report. The wider
+all-language translation and semantic-review work remains open.
+
+## Finnish and Swedish current fills — 2026-10-10
+
+Translate 110 English placeholders in each catalog, 220 values in total, for
+attached cards, linked custom fields, calendar mode, member mapping, CSV
+columns, multiple-board import/export, webhooks, notification delivery, Wrike
+workflows and subtask completion. Both full current fill lists are empty.
+All changed values were English in the parent commit; every other value is
+preserved. Keep the established Finnish taulu/kortti/uimarata and Swedish
+tavla/kort/simbana terminology.
+
+Preserve source tokens, WEBHOOKS_ATTRIBUTES, GET /workflows and Wrike's exact
+Active, Completed, Deferred and Cancelled state-group names. Wording preserves
+one-way versus two-way field propagation, edit access to both cards, archived
+card restrictions, placeholder-user mapping, single-export ZIP handling and
+export permissions. Quiet hours wait until their end; webhook defaults retain
+the inherited behavior. Wrike completion rules distinguish completed/cancelled
+from active/deferred states and do not imply that Wrike automation can be
+exported. Longer technical wording remains provisional pending speaker review.
+This does not certify the language quality of every older string.
+
+Extend the existing Finnish and Swedish regressions to their full current
+fill lists and add meaning checks for permissions, propagation direction,
+member replacement, notification timing and workflow state rules. Keep Igbo's
+separate historical gate unchanged in the shared Swedish suite. Add Finnish
+and Swedish to the existing linked-field and import-people browser cases and
+Swedish to notification delivery; Finnish delivery coverage already exists.
+All 304 translation/Blockly suites pass.
+All six representative cases pass syntax and discovery checks. Browser
+execution remains unverified because the local app and browser system
+dependencies are unavailable. All 246 catalog key/token inventories and
+21 human-preference checks pass. The ordinary backlog remains 29,735 values
+in 42 locales: these fills were pending strings excluded from that count.
+
+## Esperanto current fill — 2026-10-10
+
+Translate 227 current English placeholders, including pending source keys, for
+attached cards, linked fields, 22 import formats, member mapping, CSV columns,
+multiple-board imports and exports, link rules, webhooks, notification delivery,
+Wrike workflows, LDAP, subtask completion, Scrum planning and recovery.
+The current full Esperanto fill list is empty. Every changed value was English
+in the parent commit; every other existing value is preserved. Use the existing
+tabulo, karto, naĝlinio, propra kampo and kontrollisto terminology.
+
+Preserve external menu names and parsed column names, file extensions, API
+paths, configuration constants, URL templates and exact source placeholders.
+Import instructions retain first-board selection, missing attachment/description
+limits and parent/subtask mappings. Recovery wording distinguishes keeping an
+unchanged partial board from permanently deleting its entire content, including
+later additions; discarded list-sync operations retain changes already applied.
+Scrum rollback remains conditional on no intervening edits, and first sync does
+not remove planning. Longer technical phrasing remains provisional pending
+speaker review; this is not a complete audit of older catalog wording.
+
+Extend the Esperanto regression from the historical completed catalog to the
+full current fill, and check all key/token inventories, import literals,
+permissions, directionality and destructive/non-destructive recovery meanings.
+Add representative Esperanto browser cases for linked fields, import people
+choices and notification settings. Browser execution remains unverified because
+the local app and browser system dependencies are unavailable; syntax and
+discovery are checked. All 304 translation/Blockly suites, 246 catalog
+key/token inventories and 21 preservation checks pass. The ordinary backlog
+remains 29,735 in 42 locales: these 227 fills were pending source strings
+excluded from that report. The wider all-language goal remains open.
+
+## Remaining notification time labels — 2026-10-10
+
+Fill 150 English values in the remaining 75 locale files. The daily send-time
+and quiet-hours end labels now have translations in all 234 non-English locale
+paths. All other catalog values are preserved, and the 12 English catalogs
+retain their English labels. This completes these two keys, not the wider
+translation or wrong-language audit.
+
+Use clock-time and time-range wording; a time/hour or end noun is used where
+an isolated preposition or suffix would be awkward. Respect the registry's
+legacy tags: ve-CC is Venetian, ve-PP is Veps and ve is Venda; wa-RR is Waray
+and wa is Walloon. Uzbek uz-AR uses Arabic script for both labels.
+
+Lexical references for the less familiar terms include:
+
+- [Acehnese thesaurus](https://fileserver-az.core.ac.uk/download/160609809.pdf): sampoe, until.
+- [Cherokee Central Schools time vocabulary](https://shiyo.org/time): the o'clock label.
+- [Volapük grammar](https://www.panix.com/~bartlett/volgram.html): tü for time and jü for an endpoint.
+- [Klingon time expressions](https://klingonska.org/ref/time.html): rep for clock time;
+  [Klingon lexicon](https://www.frathwiki.com/Klingon/lexicon): Dor for a period ending.
+- [Veps comparative word forms](https://www.pure.ed.ac.uk/ws/portalfiles/portal/291143483/talk_handout.pdf): lop, end.
+- [Venda mathematics terminology](https://www.education.gov.za/Portals/0/Documents/MTbBE/mttbe%20terminology/Tshivenda%20Grade%204%20and%205%20MathematicsTerminology.pdf?ver=2025-11-06-164434-523): u swika in a clock-time range.
+- [Tamazight dictionary](https://www.livelingua.com/peace-corps/Tamazight/Tamazight-English-Dictionary-2007.pdf): ar, until.
+- [Wolaytta questionnaire](https://bmjopen.bmj.com/content/bmjopen/15/1/e081659/DC1/embed/inline-supplementary-material-1.pdf?download=true): saatiyaa and time endpoints;
+  [Wolaytta story ending](https://bibleforchildren.org/PDFs/wolaytta/03_Noah_and_the_Great_Flood_Wolaytta_CB6.pdf): wursetta.
+- [Uzbek literary discussion](https://ishanch.blogfa.com/post/310): آخری as an endpoint, used here instead of a detached suffix.
+
+These references support vocabulary, not speaker validation of complete UI
+phrasing. Low-confidence wording remains in Acehnese, Aymara, Bambara, Buryat,
+Cherokee, Chuvash, Dzongkha, Ewe, Fulfulde, Inuktitut, Greenlandic, Konkani,
+Kashmiri, Ladin, Nahuatl, Aromanian, Sakha, Tigre, Klingon, Tongan, Arabic-script
+Uzbek, Veps, Volapük, Wolaytta and Tamazight. Their labels are provisional and
+remain eligible for replacement by reviewed correct-language human translations.
+
+Extend the time-label regression to every non-English locale, including the
+legacy-tag distinctions, script examples, exact tokens and English-variant
+protection. Add eight representative notification UI cases for Klingon,
+Volapük, Venda, Venetian, Veps, Waray, Tamazight and Cherokee. Browser execution
+requires the unavailable local app; syntax and test discovery are checked.
+All 304 translation/Blockly suites pass.
+The file discovers 28 browser cases in total. All 246 catalogs pass the
+source-key and exact-placeholder inventory; all 21 human-preference checks
+pass. The short-prose queue falls from 1,831 candidates in 190 locales to
+1,681 in 183. The ordinary backlog remains 29,735 values in 42 locales and
+excludes 383 pending source keys. No catalog-wide fluency claim follows from
+finishing these two labels.
+
+## Notification time labels across 151 locale paths — 2026-10-10
+
+Translate the two short delivery labels omitted from ordinary fill reports:
+At identifies the daily send-time input, while To identifies the end of quiet
+hours. The batch changes 298 values in 149 JSON files, covering 302 values
+across 151 locale paths because two existing aliases share catalog files.
+Every changed value was English; all other values are preserved. English
+variants, including underscore-tagged variants, remain English.
+
+Use time-context wording, including explicit send/end-time nouns where a
+standalone preposition would be awkward. Georgian and Uyghur end-time labels
+name the ending time rather than showing an unattached suffix. The source
+Jade template confirms the labels belong to dailyTime and quietEnd, not a
+recipient selector. Shared regional catalogs retain their existing script
+conventions. Short labels and regional usage remain provisional pending
+speaker review, particularly Amharic, Khmer, Burmese, Malagasy and Uyghur.
+Lexical checks include [Khmer ម៉ោង](https://en.wiktionary.org/wiki/ម៉ោង)
+for clock time and [Burmese အထိ](https://en.wiktionary.org/wiki/အထိ)
+for a time-span endpoint. The direct Amharic dictionary page was unavailable;
+its wording remains provisional. Dictionary meanings do not validate every
+regional interface phrasing in this batch.
+
+The new regression suite checks all 151 paths for source order, nonempty
+non-English labels and exact tokens; pins representative time meanings;
+protects English variants; and verifies the template's time-input wiring.
+All 246 catalogs pass key/token inventories. Eight existing notification UI
+cases now cover Arabic, Finnish, French, Japanese, Russian, Turkish, Ukrainian
+and Traditional Chinese; syntax and discovery pass, browser execution is
+unverified. These are representative UI cases, not browser validation of all
+151 locale paths.
+All 304 translation/Blockly suites and all 21 human-preference checks pass.
+
+The short-prose review queue falls from 2,133 candidates in 229 locales to
+1,831 in 190. Both delivery labels still need direct translation in 75
+non-English locale paths, including minority and constructed languages.
+The ordinary backlog remains 29,735 in 42 locales; those counts exclude this
+short prose and do not prove linguistic completeness.
+
+## Papiamento current fill — 2026-10-10
+
+Fill 112 English values: 110 pending strings for card attachments/links,
+member mapping, CSV and multiple-board imports, exports, webhook identity,
+delivery settings, Wrike workflows and subtask completion, plus the short
+At/To delivery labels. The full current Papiamento fill list is empty. Every
+filled value was English in the parent commit. Correct five older mixed-Spanish
+values separately: map-to-existing-user-desc, org-admins-description, roles-info,
+dueCardsViewChange-choice-all-description and globalSearchViewChange-choice-all-description.
+Preserve original role limits, global-admin rights and search visibility. Other
+existing translations are untouched.
+
+Use the catalog's Papiamentu spelling and established Tabla, Karchi, Kaminda
+and Kamponan personalisá terminology. Lexical research for linking includes
+[the indexed bilingual entry for konektá](https://es.glosbe.com/es/pap/conectar),
+with general vocabulary checked against the historical
+[Papiamentu-Dutch dictionary](https://www.dbnl.org/tekst/jans550dicc01_01/jans550dicc01_01_0004.php).
+The Kaikki mirror, French Wiktionary page and Flowently grammar PDF could not
+be fetched; indexed excerpts were not treated as validation of full sentences. Longer
+technical compounds remain low confidence pending fluent-speaker review.
+An empty placeholder list does not complete the older semantic audit; the five
+identified mixed-language descriptions are now corrected, with negative guards
+against their Spanish seed vocabulary.
+
+Regression checks cover link direction, matching field name/type, unchanged
+unmatched fields, both-card permissions, hidden and self-linked cards,
+identity substitution on import, archive semantics, ignored sheets, webhook
+privacy and incomplete subtasks. API identifiers remain literal. All 246
+catalogs pass key order and exact placeholder inventories. Three localized
+browser scenarios are syntax-checked and discovered for linked fields, import
+identity mapping and delivery settings; browser execution remains unverified.
+The broad translation/Blockly run passes all 303 suites, clearing the last
+current-fill failure in that selection. After the final mixed-language fixes,
+the Papiamento, audited-corrections and audit-progress suites pass again. All
+21 human-preference checks pass. This is not an all-language completeness claim.
+
+The ordinary backlog stays at 29,735 in 42 locales because these fills were
+pending or short prose. The short-prose review queue falls to 2,133 candidates
+in 229 locales.
+
+## Zulu current fills — 2026-10-10
+
+Fill 112 English values in each of `zu` and `zu-ZA` (224 locale/string values).
+The 110 current pending strings cover card attachments, linked fields, member
+mapping, CSV and multiple-board imports, exports, webhook identity, delivery
+settings, Wrike workflows and subtask completion. Also translate the short
+At/To delivery labels. Both full current fill lists are empty. Every changed
+value was English in the parent commit; all existing Zulu translations are preserved.
+Correct one Xhosa label separately: Make them all me now explicitly uses the
+current user in place of all imported people. The previous wording suggested
+assignment. The importer and its existing people-mode test establish the
+identity-substitution behavior.
+
+Terminology follows the existing Zulu catalogs. The Department of Arts and
+Culture's [multilingual science and technology terminology list](https://dsacevents.dsac.gov.za/NLTS/docs/natSciencesTech_gr46_Nguni2013.pdf)
+records isixhumanisi and -xhumanisa for link, and -ngabonakaliyo for invisible.
+These are lexical references rather than validation of full software sentences.
+Specialist compounds and longer explanatory prose remain low confidence pending
+fluent-speaker review. Empty fill reports do not establish a complete semantic
+audit of the older catalogs.
+
+Regression checks distinguish links in either direction, unchanged unmatched
+fields, edit rights on both cards, invisible cards, self-links, import exclusions,
+archives containing one export, hiding webhook identity and incomplete subtasks.
+Wrike API group names and GET /workflows stay literal. All 246 catalogs pass
+key order and exact placeholder inventories. Four linked-field and notification
+browser scenarios are syntax-checked and discovered across the two Zulu paths.
+Three more localized import-people cases cover both Zulu paths and Xhosa, with
+the current user replacing imported identities and no placeholder user created.
+Browser execution remains unverified.
+The broad translation/Blockly run passes 302 of 303 suites; Papiamento is the
+remaining current-fill failure. The Zulu and Xhosa targeted suites also pass
+after the identity-label clarification. All 21 preservation checks pass.
+
+The ordinary backlog remains 29,735 in 42 locales: these fills are pending keys
+or short prose. The short-prose queue falls to 2,135 candidates in 229 locales.
+
+## Wu and Xhosa current fills — 2026-10-10
+
+Fill 112 English values in each of `wuu-Hans` and `xh`: 110 pending strings
+for card attachment/linking, member mapping, CSV and multiple-board imports,
+exports, webhook identity, delivery settings, Wrike workflows and subtask
+completion, plus the short At/To delivery labels. Both full current fill
+lists are empty. All 224 filled values were English in the parent commit.
+Four Xhosa values are corrected separately: the custom-fields label and both
+edit-custom-fields headings used tradition/custom (`yesiko`) terminology;
+the swimlane label named swimming without a lane. All other existing values
+remain untouched. Other old Xhosa activity and customization wording still
+needs review; empty reports do not establish fluent language throughout.
+
+Wu wording follows the catalog's northern Wu vocabulary and constructions,
+including 搿, 侬, 勿, 卡片浪 and 个辰光. The
+[dictionary entry for 畀](https://en.wiktionary.org/wiki/畀) records its Wu use,
+and the [Wu interface example](https://tatoeba.org/wuu/sentences/show/904789)
+provides additional native-interface context. They do not validate the full
+technical sentences. Xhosa vocabulary research uses IsiXhosa.click for
+[dibanisa](https://isixhosa.click/word/925) and
+[lungiselela](https://isixhosa.click/word/260). The
+[dictionary entry for isiko](https://kaikki.org/dictionary/Xhosa/meaning/i/is/isiko.html)
+records the noun custom, rather than the software notion of customization.
+The prepared/custom-field and swimming-lane compounds remain provisional;
+longer technical sentences in both languages are low confidence pending
+fluent-speaker review.
+
+Tests cover current-fill gates, exact source placeholders, link direction,
+matching field name/type, unmatched fields left unchanged, both-card
+permissions, hidden-card and self-link refusal, member mapping exclusions,
+single-export archives, notification identity and completion negation.
+All 246 catalogs pass key order and exact token inventory; all 21
+human-preference checks pass. Four browser scenarios for linked fields and notification settings are syntax-checked and
+discovered in Wu/Xhosa; browser execution remains unverified. A fresh local
+connection check finds no application listening on port 3000.
+The broad translation/Blockly run passes 301 of 303 suites; the remaining
+current-fill failures are Papiamento and Venda/Zulu. The Wu and Xhosa gates
+now pass.
+
+The ordinary backlog remains 29,735 in 42 locales because this batch fills
+pending strings and short prose. The short-prose review queue falls to 2,139
+candidates in 231 locales. Shared words still require individual review.
+
+## Lithuanian and Yiddish current fills — 2026-10-10
+
+Fill 112 English values in each locale: 110 current pending strings for card
+attachments, linked fields, imports/exports, notification delivery, webhooks,
+Wrike workflows and subtask completion, plus the short delivery labels At/To
+omitted from the ordinary report. Both full current fill lists are empty.
+The ordinary report remains 29,735 in 42 locales because these fills were
+pending keys or short prose. The short-prose audit now includes capitalized
+At/To: 2,143 candidates in 232 locales, including 462 previously unreported
+At/To values. These are review candidates, not an automatic correction list. This is placeholder coverage, not a full semantic
+review of either catalog.
+
+Correct 12 malformed Lithuanian values separately: `card`, `cardType-card`
+and `cards-count-one` used the truncated/non-Lithuanian `Kort`; nine activity
+messages contained untranslated swimlane prose. Use the catalog's existing
+kortelė and plaukimo juosta vocabulary, preserving old/new move directions.
+The [Lithuanian dictionary entry](https://www.zodynas.lt/terminu-zodynas/k/kortele)
+also supports kortelė for card.
+
+Correct 40 Yiddish values that used מנהג (custom in the sense of tradition)
+for user customization. The [Yiddish dictionary entry](https://en.wiktionary.org/wiki/מינהג)
+distinguishes that noun from [אייגן, own](https://en.wiktionary.org/wiki/אייגן).
+Use inflected own-field/own-content phrasing for fields, logos, HTML and
+translation overrides. Restore executable field/filter examples and the
+singular Size field label. The [published Yiddish form](https://opwdd.ny.gov/benefit-eligibility-questionnaire-yiddish)
+provides צוטשעפּען for attach; full technical compounds and longer sentences
+remain low confidence pending speaker review. These sources establish lexical
+building blocks, not validation of the full interface translations.
+
+All other existing translations are unchanged. Exact source placeholder
+inventories and key order pass in all 246 catalogs. New regressions include
+whole-catalog token/markup checks, current-fill coverage, one-way and two-way
+links, unmatched fields, permission rejection, import archive behavior,
+notification identity, completion negation and the corrected terminology.
+The 21 human-preference checks pass. Four browser cases for linking fields
+and notification settings in Lithuanian/Yiddish are syntax-checked and
+discovered; execution remains unverified without a running application.
+The broad translation/Blockly run passes 299 of 303 suites. The shared
+Breton/Lithuanian/Yiddish suite now passes; four current-fill failures remain
+in Galician/Xhosa, Papiamento, Venda/Zulu and Wu. The nine short-prose audit
+checks pass, including the added capitalized-label cases.
+
+## Hawaiian current fill completed — 2026-10-10
+
+Fill the remaining 349 English values: 87 Blockly text/workspace strings,
+102 planning/report/import messages, 78 Sync/email/recovery controls, 81 final
+recovery messages and the short `%1 of %2` announcement omitted from ordinary
+reports. All changed values were English in the parent commit. Existing
+translations are untouched. Specialist planning, recovery and programming
+wording remains low confidence pending fluent-speaker review.
+
+The 17 physical keyboard legends (Alt, Backspace, Caps Lock, Command, Control,
+End, Enter, Escape, Home, Insert, Option, Page Down, Page Up, Pause, Shift,
+Space and Tab) are retained explicitly, scoped to Hawaiian, the exact key and
+its current English value. This is classification of printed key names, not
+translation. The full current fill list is empty, including pending keys;
+whole-Blockly regression coverage also checks short prose excluded from the
+report. Help URLs, math notation, OS brands and OK remain intentional literals.
+An empty fill report does not establish fluent wording or completion of the
+older malformed-seed audit, which remains open.
+
+Tests cover composed workspace messages and whitespace, source placeholders,
+unknown-versus-zero estimates, partial reports, UTC observation limits,
+missing-versus-null Sync values, no writes back to source systems, permanent
+cancellation, interrupted imports and recovery permissions. Four existing
+browser flows now cover Hawaiian: backlog paging, activity recovery with
+ordinary-user denial, interrupted-import discard and stuck-Sync discard.
+Together with the existing Blocks flow, five selected scenarios pass syntax
+checking and Playwright discovery. Browser execution remains unverified.
+All 246 catalogs pass source key order and exact placeholder inventories.
+The broad translation/Blockly run passes 297 of 302 suites; the five existing
+current-fill failures remain in Breton/Lithuanian/Yiddish, Galician/Xhosa,
+Papiamento, Venda/Zulu and Wu. All 21 human-preference checks pass.
+
+The ordinary report falls from 30,022 values in 43 languages to 29,735 in 42.
+Of that 287-entry reduction, 270 are translated prose and 17 are physical-key
+exceptions. Another 78 fills are in the pending queue and one is short prose.
+The remaining all-language work and wrong-language review remain open.
+
+## Hawaiian Blockly math, procedures and navigation — 2026-10-10
+
+Fill another 171 English values for arithmetic, numeric tests, statistics,
+trigonometric help, functions, variables, screen-reader controls and shortcuts,
+including three later aliases. All changed values were English in the parent
+commit; existing translations remain untouched. Mathematical constants, code
+notation, degree units, ranges and positional placeholders are retained.
+
+Terminology research includes the published
+[Māmaka Kaiao dictionary scan](https://tlingitlanguage.com/wp-content/uploads/2015/07/hawaiian-scan.pdf)
+for kumu pahōonui lua (square root), helu kumu (prime), helu kaulike (even),
+helu kauʻewa (odd) and the signed/whole number names;
+[a Hawaiian classroom lesson](https://studylib.net/doc/12104030/title-grade-6-grade-math)
+for mean and median; and the Hawaiian entry in
+[Wiktionary's logarithm translations](https://en.wiktionary.org/wiki/logarithm)
+for huhui helu. Several direct dictionary pages and the full PDF fetch were
+unavailable; indexed dictionary entries supplied the cited vocabulary.
+Trigonometric labels use mathematical function names with Hawaiian explanatory
+prose. Statistical, exponent and programming compounds remain low confidence
+pending fluent-speaker review; the sources do not certify the whole sentences.
+
+Whole-family regression checks cover mathematical prose, procedures, shortcuts
+and screen-reader messages. Tests pin random-number inclusivity, clamp bounds,
+atan2's range, degree/radian distinction, logarithm bases, average/median/mode,
+functions with/without output, disabled definitions and screen-reader states.
+All 19 targeted suites and 21 preservation checks pass; all 246 catalogs pass
+source key order and exact placeholder inventories. The existing Hawaiian
+Blocks browser scenario passes syntax checking and discovery, but execution
+remains unverified. The preceding broad run's five other-catalog completion
+failures remain open.
+
+Hawaiian's full fill list drops from 536 to 365 entries (287 ordinary and 78
+pending). The ordinary all-language report drops from 30,193 to 30,022 values
+across 43 languages. Remaining text, workspace and planning messages, physical
+key-label review, and the wider semantic audit are still open.
+
+## Hawaiian Blockly inputs, lists and logic — 2026-10-10
+
+Fill another 186 English values for input/accessibility labels, keyboard
+navigation, list creation and manipulation, and Boolean/comparison controls.
+This includes 13 short labels omitted from the normal fill list and the later
+list aliases. All changed values were English in the parent commit, and all
+previous translations remain untouched. Use the established papa inoa, mea loli,
+waiwai and palaka vocabulary; specialist phrasing remains low confidence pending
+fluent-speaker review.
+
+The regression gate now covers whole input, list and logic families, allowing
+only source help URLs, hue numbers, empty affixes, the index symbol and null to
+remain English-identical. Positive and negative assertions distinguish get,
+remove and get-and-remove, copy versus mutation, first versus last indexing,
+AND versus OR, and strict versus inclusive comparisons. Ternary help names its
+translated controls, and numbered placeholders render in navigation and repeat
+messages. Existing correct translations are not replaced to satisfy the gate.
+
+All 19 targeted suites and 21 preservation checks pass. All 246 catalogs pass
+key order and exact placeholder inventories. The existing Hawaiian Blocks
+edit/save/context-menu browser scenario passes syntax checking and Playwright
+discovery; execution remains unverified. The wider broad-suite completion
+failures recorded below remain open.
+
+Hawaiian's full fill list decreases from 709 to 536 entries (458 ordinary,
+78 pending); the ordinary all-language report falls from 30,366 to 30,193 values
+across 43 languages. The difference between 186 fills and the 173-entry report
+reduction is the 13 short labels. Physical key legends remain unchanged, and
+remaining mathematical, text, procedure and planning messages are still open.
+
+## Hawaiian imports, delivery controls and Blockly — 2026-10-10
+
+Fill another 169 English values: 22 import instructions, 70 link/notification/
+webhook/LDAP/visibility controls (including the short At and To labels omitted
+by the normal fill list), 67 Blockly color/loop/editor controls and ten Blocks
+view messages. All changed values were English in the parent commit; existing
+translations are untouched. The full Hawaiian fill list drops from 876 to 709,
+and the ordinary backlog from 30,443 to 30,366 values across 43 languages.
+Hawaiian accounts for 631 of those ordinary values; pending keys and the wider
+wrong-language/short-prose audits remain open.
+
+The programming-block term palaka is an extension of the dictionary's physical
+[block](https://wehe.hilo.hawaii.edu/?q=block) sense; lākiō is supported by the
+[rate](https://wehe.hilo.hawaii.edu/?q=rate) entry's ratio usage. Programming
+compounds and long technical sentences remain low confidence pending speaker
+review. Product menu names, CSV headers, file extensions, numeric ranges, query
+examples and source placeholders are retained deliberately.
+
+The Hawaiian suite now uses the shared token extractor for every source key,
+including Blockly's numbered placeholders. Positive and negative checks cover
+import exclusions, first-board limits, required English headers, identity
+omission, visibility without data changes, while/until and break/continue.
+All 19 targeted suites and 21 preservation checks pass. The import-instruction
+and notification UI scenarios are syntax-checked and discovered alongside the
+existing Hawaiian Blocks drag/edit/save/menu scenario (25 selected tests).
+Browser execution remains unverified: localhost:3000 has no running app.
+The preceding broad run's five other-catalog completion failures remain open;
+this batch neither edits those catalogs nor relaxes their assertions.
+
+## Hawaiian card links and import mapping — 2026-10-10
+
+Fill 61 English placeholders for attached cards, linked custom fields, board
+announcements, CSV column mapping and bulk import/export. Correct eight nearby
+malformed seed strings for editing/deleting custom fields, currency, dropdown
+options and numbers. Other existing translations remain unchanged. The catalog
+still contains malformed seed prose outside this batch; this is not a completed
+semantic audit.
+
+Terminology follows the existing Papa / Kāleka / Papa inoa catalog vocabulary,
+with [kāleka](https://wehe.hilo.hawaii.edu/?q=k%C4%81leka) and
+[hoʻopili](https://wehe.hilo.hawaii.edu/?q=ho%CA%BBopili) checked in the University
+of Hawaiʻi dictionaries. Technical compounds and longer sentences remain
+low confidence pending fluent-speaker review.
+
+The extended Hawaiian regression suite checks source key order, catalog-wide
+placeholder and HTML inventories, nonempty/non-English batch values, link
+transfer directions, two-card permissions, unchanged unmatched fields and
+removal of malformed seed words. All 21 human-preference checks pass. The
+existing linked-fields browser scenario now covers Hawaiian labels and the
+hidden-card rejection; it passes syntax checking and Playwright discovery.
+All 14 Blockly-named suites pass. Of 302 translation-named suites, 297 pass;
+five fail current-fill completion checks on newly added English placeholders:
+`bretonLithuanianYiddishTranslations`, `galicianXhosaTranslations`,
+`papiamentoTranslationProgress`, `upcomingVendaZuluTranslationFill` and
+`wuTranslationProgress`. Those catalogs and suites are unchanged in this batch;
+their remaining translations must be filled without weakening the tests. All
+246 catalogs pass key-order and exact-placeholder checks. Browser execution
+is unverified: no application responds at localhost:3000.
+
+The Hawaiian current fill list has 876 entries left (including pending keys).
+The ordinary report remains 30,443 values in 43 languages because these 61
+filled keys are in the separate pending queue, now containing 383 source keys.
+No pending key is removed until its all-language coverage is complete.
+
+## Broad verification after Xhosa fill — 2026-10-09
+
+All 333 translation-related suites pass in 128 seconds after Xhosa filling and
+the README coverage refresh to 191 catalogs over 90% non-English text. A new
+full-current-fill regression gate for xh passes separately. The ordinary backlog
+is 30,443 values across 43 languages, excluding 271 pending source keys; both
+card-field visibility messages are filled in 181 of 234 non-English paths.
+These measurements do not certify fluency. Browser execution and the remaining
+translation and language-quality work are outstanding.
+
+## Xhosa current fill completion — 2026-10-09
+
+Translate the final seven import instructions in xh for Quire, Wrike, Teamwork,
+Businessmap, Redmine, Notion and Plane. The current fill list is empty. Tests
+retain header requirements, hierarchy markers and data exclusions. All three
+targeted suites and 21 preservation checks pass. This verifies placeholder filling,
+not fluency. Specialized wording remains low confidence pending speaker review;
+browser execution and the wider translation backlog are outstanding.
+
+## Xhosa task and board import instructions — 2026-10-09
+
+Translate nine instructions in xh for ClickUp, Nullboard, Kanri, Pivotal Tracker,
+Tasks.org, monday.com, Super Productivity, Taiga and Vikunja. Tests retain command
+literals, first-board limits, completion dates and attachment exclusions. All
+three targeted suites and 21 preservation checks pass. Seven import instructions
+remain. Specialized wording remains low confidence pending speaker review;
+browser execution and the wider translation backlog are outstanding.
+
+## Xhosa outline and planning import instructions — 2026-10-09
+
+Translate eight instructions in xh for OPML, Org mode, Todoist, Planner,
+MeisterTask, Obsidian, Linear and TickTick. Tests retain export commands, field
+names, tokens, completion dates, archived cards and list mappings. All three
+targeted suites and 21 preservation checks pass. Sixteen import instructions
+remain. Specialized wording remains low confidence pending speaker review;
+browser execution and the wider translation backlog are outstanding.
+
+## Xhosa Blockly text and workspace completion — 2026-10-09
+
+Translate the remaining 70 Blockly entries in xh for text, variables and workspace
+messages. Tests retain count/search variables, whitespace in composed messages,
+keyboard names and copy semantics. Both targeted suites and all 21 preservation
+checks pass. The 24 import instructions remain untranslated. Specialized wording
+remains low confidence pending speaker review; browser execution and the wider
+translation backlog are outstanding.
+
+## Xhosa Blockly shortcuts and text controls — 2026-10-09
+
+Translate 40 messages in xh for shortcuts, text case, character positions and
+substring controls. Tests preserve variables and keyboard labels, retain indexing
+from the end and copy semantics, distinguish directions and render text counts.
+Both targeted suites and all 21 preservation checks pass. Specialized wording
+remains low confidence pending speaker review. Browser execution and remaining
+translations are outstanding.
+
+## Xhosa Blockly accessibility and shortcuts — 2026-10-09
+
+Translate 40 messages in xh for procedure inputs, renaming, screen-reader controls
+and navigation shortcuts. Tests retain variables and keyboard labels, distinguish
+screen-reader states and navigation directions, and render the rename prompt.
+Both targeted suites and all 21 preservation checks pass. Specialized wording
+remains low confidence pending speaker review. Browser execution and remaining
+translations are outstanding.
+
+## Xhosa Blockly editor and procedures — 2026-10-09
+
+Translate 35 messages in xh for editor navigation, variables and procedures.
+Tests retain keyboard labels and function-name variables, distinguish functions
+with and without output and preserve disabled-function and placement warnings.
+Both targeted suites and all 21 preservation checks pass. Specialized wording
+remains low confidence pending speaker review. Browser execution and remaining
+translations are outstanding.
+
+## Xhosa Blockly mathematical functions — 2026-10-09
+
+Translate 30 messages in xh for rounding, logarithms, roots and trigonometry.
+Tests preserve logarithm bases and exponent notation, distinguish rounding and
+inverse functions, and retain degrees-versus-radians instructions. Both targeted
+suites and all 21 preservation checks pass. Specialized wording remains low
+confidence pending speaker review. Browser execution and remaining translations
+are outstanding.
+
+## Xhosa Blockly numeric tests and statistics — 2026-10-09
+
+Translate 35 messages in xh for numeric tests, statistics and random values.
+Tests retain variables, prime/sign distinctions, inclusive integer bounds and
+exclusive floating-point upper bounds. Standard-deviation terminology follows
+[IsiXhosa.click](https://isixhosa.click/word/1871). Both targeted suites and all
+21 preservation checks pass. Specialized wording remains low confidence pending
+speaker review. Browser execution and remaining translations are outstanding.
+
+## Xhosa Blockly logic and arithmetic — 2026-10-09
+
+Translate 30 messages in xh for Boolean logic, arithmetic and numeric bounds.
+Tests retain variables, mathematical constants, coordinate limits and inclusive
+bounds, distinguish both/at-least-one conditions and match ternary labels to their
+tooltip. Both targeted suites and all 21 preservation checks pass. Specialized
+wording remains low confidence pending speaker review. Browser execution and
+remaining translations are outstanding.
+
+## Xhosa Blockly list editing and comparisons — 2026-10-09
+
+Translate 35 messages in xh for list editing, sorting, splitting and comparisons.
+Tests preserve sort variables and copy semantics, distinguish insertion from
+replacement, and retain strict versus inclusive comparisons. Both targeted suites
+and all 21 preservation checks pass. Specialized wording remains low confidence
+pending speaker review. Browser execution and remaining translations are
+outstanding.
+
+## Xhosa Blockly list retrieval and removal — 2026-10-09
+
+Translate 40 messages in xh for list retrieval, removal, sublists and repetition.
+Tests distinguish return/remove operations, retain copy semantics and missing-item
+variables, and render repetition counts. Both targeted suites and all 21
+preservation checks pass. Specialized wording remains low confidence pending
+speaker review. Browser execution and remaining translations are outstanding.
+
+## Xhosa Blockly navigation and list creation — 2026-10-09
+
+Translate 40 messages in xh for numeric/text inputs, keyboard navigation and list
+creation. Tests retain coordinate names, keyboard variables and zero-length list
+semantics, distinguish copy/cut and minimum/maximum, and check shared position
+labels. Both targeted suites and all 21 preservation checks pass. Specialized
+wording remains low confidence pending speaker review. Browser execution and
+remaining translations are outstanding.
+
+## Xhosa Blockly input and accessibility labels — 2026-10-09
+
+Translate 40 messages in xh for input labels, keyboard help and accessibility
+actions. Tests preserve variables, render the help key and distinguish open/close,
+start/end and dividend/divisor labels. Both targeted suites and all 21
+preservation checks pass. Specialized wording remains low confidence pending
+speaker review. Browser execution and remaining translations are outstanding.
+
+## Xhosa Blockly conditions and editor actions — 2026-10-09
+
+Translate 45 messages in xh for conditions, loops, editor actions and bitmap
+accessibility labels. Tests distinguish true/false loop conditions, enable/disable
+and copy/cut actions, retain keyboard labels and render coordinates and deletion
+counts. Both targeted suites and all 21 preservation checks pass. Specialized
+wording remains low confidence pending speaker review. Browser execution and
+remaining translations are outstanding.
+
+## Xhosa Blockly colors and loop controls — 2026-10-09
+
+Translate 36 messages in xh for Blockly controls, colors, loops and the read-only
+server setting. Tests retain percent variables, printed keyboard labels, numeric
+limits and loop-only restrictions, and render a four-variable loop title. Both
+targeted suites and all 21 preservation checks pass. Specialized wording remains
+low confidence pending speaker review. Browser execution and remaining
+translations are outstanding.
+
+## Xhosa interrupted imports and history recovery — 2026-10-09
+
+Translate 35 messages in xh for interrupted board imports and Scrum history
+recovery. Tests preserve variables, render multi-count messages and retain
+permanent deletion, unchanged-board and conditional rollback warnings. Both
+targeted suites and all 21 preservation checks pass. Specialized wording remains
+low confidence pending speaker review. Browser execution and remaining
+translations are outstanding.
+
+## Xhosa recovery controls and stuck sync operations — 2026-10-09
+
+Translate 40 messages in xh for notification delivery controls and stuck list
+sync operations. Tests preserve applied/total variables, render their counts,
+distinguish pause from cancellation and retain discard consequences and the
+50-record limit. Both targeted suites and all 21 preservation checks pass.
+Specialized wording remains low confidence pending speaker review. Browser
+execution and remaining translations are outstanding.
+
+## Xhosa diagnostics and notification failures — 2026-10-09
+
+Translate 35 messages in xh for sync diagnostics, Jira estimates, planning and
+notification failures. Tests retain missing-versus-null behavior, field matching,
+planning restrictions, report access and notification retry warnings. Both targeted
+suites and all 21 preservation checks pass. Specialized wording remains low
+confidence pending speaker review. Browser execution and remaining translations
+are outstanding.
+
+## Xhosa sync reports and omissions — 2026-10-09
+
+Translate 24 messages in xh for omitted fields, source comparisons and recent
+sync reports. Regression checks retain the 100-entry/path limits, 20-run and
+30-day retention, hidden values and partial-failure warnings. Both targeted
+suites and all 21 preservation checks pass. Specialized wording remains low
+confidence pending speaker review. Browser execution and remaining translations
+are outstanding.
+
+## Xhosa sync conflicts and preview actions — 2026-10-09
+
+Translate 20 messages in xh for conflict resolution and preview actions. Tests
+retain partial-review scope, local content and unchanged-subcard guarantees,
+replacement reuse and preview prerequisites. Both targeted suites and all 21
+preservation checks pass. Specialized wording remains low confidence pending
+speaker review. Browser execution and remaining translations are outstanding.
+
+## Xhosa planning imports and previews — 2026-10-09
+
+Translate 22 messages in xh for daily exports, planning imports and sync
+conflicts. Preserve count and reference variables, UTC, JSON and ID. Tests
+render preview counts and retain no-duplication, unchanged-card, finished-sprint
+and no-source-write warnings. Both targeted suites and all 21 preservation
+checks pass. Specialized wording remains low confidence pending speaker review.
+Browser execution and remaining translations are outstanding.
+
+## Xhosa sprint states and daily observations — 2026-10-09
+
+Translate 24 messages in xh, preserving references, UTC and the 366-observation
+limit. Tests retain close/cancel behavior, partial-report scope, omitted days,
+unknown estimates and rendered references. Both targeted suites and all 21
+preservation checks pass. Specialized wording remains low confidence pending
+speaker review. Browser execution and remaining translations are outstanding.
+
+## Xhosa sprint reports and events — 2026-10-09
+
+Translate 30 messages in xh for releases, backlog ordering, sprint events,
+reports and states. Tests render summary variables and retain keyboard names,
+unknown-versus-zero estimates and matching-unit comparison restrictions. Both
+targeted suites and all 21 preservation checks pass. Specialized wording remains
+low confidence pending speaker review. Browser execution and remaining
+translations are outstanding.
+
+## Xhosa planning settings — 2026-10-09
+
+Translate 30 planning labels in xh, covering views, roles, estimates, completion
+policies and sprint actions. Regression checks preserve start/close/cancel
+distinctions, unfinished-work wording and consistent view labels. Both targeted
+suites and all 21 preservation checks pass. Specialized wording remains low
+confidence pending speaker review. Browser execution and remaining translations
+are outstanding.
+
+## Xhosa board and rule settings — 2026-10-09
+
+Translate 29 English placeholders in xh: announcements, colors, link rules,
+read-only fields, assignee rules, LDAP, provider restrictions and the rule editor.
+Preserve percent and brace variables, URL examples and setting identifiers.
+Regression checks cover permissions, conflicts, hidden-field preservation and
+rendered errors. Both targeted suites and all 21 preservation checks pass.
+Vocabulary references include the [IsiXhosa dictionary](https://isixhosa.click/all).
+Specialized wording is low confidence pending speaker review. Browser execution
+and remaining translations are outstanding.
+
+## Zulu keyboard labels and current fill completion — 2026-10-09
+
+Translate 18 keyboard labels per Zulu catalog (36 values), retaining printed
+key names, and correct the possessive in the monday.com instruction. Both
+current fill lists are empty; this does not establish complete linguistic
+quality. Regression checks retain key legends and directions and verify empty
+fill lists. Three targeted suites and all 21 preservation checks pass.
+The broad run completed 333 suites in 128 seconds: 332 passed and one detected
+a stale README coverage count. Update 188 to the measured 190 catalogs over 90%
+non-English text; the failing language-wiring suite then passes all six checks.
+The ordinary backlog is 31,151 values in 44 locales, excluding 271 pending
+source keys. Both card-field visibility messages are translated in 180 of 234
+non-English paths. Specialized terminology, browser execution and the remaining
+language work still need review and completion.
+
+## Zulu import instructions, final group — 2026-10-09
+
+Translate seven instructions per Zulu catalog (14 values): Quire, Wrike,
+Teamwork.com, Businessmap, Redmine, Notion and Plane. Preserve column names,
+commands, formats, hierarchy markers and variables. Tests retain English-header
+requirements and excluded-data warnings. All three targeted suites and 21
+preservation checks pass. Specialized terminology remains low confidence pending
+speaker review. Browser execution and remaining translations are outstanding.
+
+## Zulu import instructions, middle group — 2026-10-09
+
+Translate nine instructions per Zulu catalog (18 values): ClickUp, Nullboard,
+Kanri, Pivotal Tracker, Tasks.org, monday.com, Super Productivity, Taiga and
+Vikunja. Preserve commands, formats and variables. Tests retain first-board
+selection, archive handling and attachment exclusions. All three targeted
+suites and 21 preservation checks pass. Specialized terminology remains low
+confidence pending speaker review. Browser execution and remaining translations
+are outstanding.
+
+## Zulu import instructions, first group — 2026-10-09
+
+Translate eight instructions per Zulu catalog (16 values): OPML, Org mode,
+Todoist, Planner, MeisterTask, Obsidian, Linear and TickTick. Preserve export
+commands, format names and variables. Tests retain completed-item and archive
+behavior, completion dates and swimlane mapping. All three targeted suites and
+21 preservation checks pass. Specialized terminology remains low confidence
+pending speaker review. Browser execution and remaining translations are outstanding.
+
+## Zulu recovery decisions and history checkpoints — 2026-10-09
+
+Translate 22 messages per Zulu catalog (44 values): interrupted-import decisions,
+history checkpoints and read-only server settings. Tests render checkpoint
+variables and retain keep/discard distinctions, foreign-board protection,
+rollback restrictions and read-only semantics. Both targeted suites and all
+21 preservation checks pass. Specialized terminology remains low confidence
+pending speaker review. Browser execution and remaining translations are outstanding.
+
+## Zulu interrupted board imports — 2026-10-09
+
+Translate 25 messages per Zulu catalog (50 values) for stuck-sync outcomes and
+interrupted board imports. Preserve reference, stage and count variables.
+Tests render all six object counts and retain oldest-50 limits, replayability,
+kept applied changes, unavailable source files and deletion of later additions.
+Both targeted suites and all 21 preservation checks pass. Specialized terminology
+remains low confidence pending speaker review. Browser execution and remaining
+translations are outstanding.
+
+## Zulu notification controls and stuck sync operations — 2026-10-09
+
+Translate 25 recovery messages per Zulu catalog (50 values), preserving applied
+and total variables. Tests render progress counts and retain irreversible
+cancellation, retained pending work, no-recreation and already-applied-change
+guarantees. Both targeted suites and all 21 preservation checks pass. Specialized
+terminology remains low confidence pending speaker review. Browser execution
+and remaining translations are outstanding.
+
+## Zulu mail failures and notification recovery — 2026-10-09
+
+Translate 25 messages per Zulu catalog (50 values), covering mail failures,
+time and planning synchronization, and pending notification recovery. Tests
+retain review-before-retry warnings, exactly-one-field requirements, null
+semantics, source-ID precedence and no-activity-recreation guarantees. Both
+targeted suites and all 21 preservation checks pass. Specialized terminology
+remains low confidence pending speaker review. Browser execution and remaining
+translations are outstanding.
+
+## Zulu sync reports and diagnostics — 2026-10-09
+
+Translate 30 messages per Zulu catalog (60 values), covering source omissions,
+run reports, diagnostics, Jira estimate mapping and SMTP rejection categories.
+Tests preserve retention and truncation limits, hidden values, incomplete-run
+caveats, permissions and missing-versus-null semantics. Both targeted suites
+and all 21 preservation checks pass. Specialized terminology remains low
+confidence pending speaker review. Browser execution and remaining translations
+are outstanding.
+
+## Zulu sync recovery and previews — 2026-10-09
+
+Translate 25 sync messages per Zulu catalog (50 values). Tests preserve local
+content and subcard guarantees, replacement reuse, saved-source and conflict
+prerequisites, the first-100 limit and parser omission caveats. Both targeted
+suites and all 21 preservation checks pass. Specialized terminology remains
+low confidence pending speaker review. Browser execution and remaining
+translations are outstanding.
+
+## Zulu planning imports and daily observations — 2026-10-09
+
+Translate 35 messages per Zulu catalog (70 values) for planning imports,
+daily observations and sync conflicts. Preserve reference/count variables,
+UTC, JSON and technical identifiers. Regression checks render preview counts,
+retain omitted-day and unknown-estimate caveats, prevent duplicate records and
+keep unchanged-card and no-source-write instructions. Both targeted suites and
+all 21 preservation checks pass. Specialized terminology remains low confidence
+pending speaker review. Browser execution and remaining translations are outstanding.
+
+## Zulu sprint planning and reports — 2026-10-09
+
+Translate 50 sprint and reporting messages per Zulu catalog (100 values).
+Preserve underscore variables and keyboard names. Regression checks render
+summary totals, distinguish closed/cancelled states, retain membership and
+rollover behavior, and keep unknown estimates distinct from zero. Both targeted
+suites and all 21 preservation checks pass. Specialized terminology remains
+low confidence pending speaker review. Browser execution and remaining
+translations are outstanding.
+
+## Zulu link, rule-editor and Scrum settings — 2026-10-09
+
+Translate 38 application messages per Zulu catalog (76 values): link rules,
+card-field visibility, rule editing and Scrum settings. Preserve brace variables,
+URL examples and alias mappings. Regression checks retain permission and conflict
+instructions, one-trigger/one-action restrictions, hidden-field data preservation
+and close/cancel distinctions. Both targeted suites and all 21 preservation
+checks pass. Specialized terminology remains low confidence pending speaker
+review. Browser execution and remaining translations are outstanding.
+
+## Zulu statistics and trigonometry — 2026-10-09
+
+Translate 27 mathematical messages per Zulu catalog (54 values), retaining
+function identifiers and coordinate variables. Mean, median and mode vocabulary
+follows the [Oxford English–IsiZulu maths dictionary](https://www.oxford.co.za/files/lookinside/9780190734381.pdf).
+Regression checks distinguish these statistics, preserve function symbols and
+base 10, render coordinates and retain degrees rather than radians. Both targeted
+suites and all 21 preservation checks pass. Specialized terminology remains low
+confidence pending speaker review. Browser execution and remaining translations
+are outstanding.
+
+## Zulu number properties, powers and roots — 2026-10-09
+
+Translate 26 mathematical values per Zulu catalog (52 values), retaining
+constants, formulas and numerical notation. Root and prime terminology follows
+the [government mathematics dictionary](https://www.dsac.gov.za/sites/default/files/2023-11/Multilingual%20Mathematics%20Dictionary.pdf).
+Specialized wording is low confidence pending speaker review. Regression checks
+preserve constant expressions and distinguish even/odd, rounding directions,
+absolute values and negation. Both targeted suites and all 21 preservation
+checks pass. Browser execution and remaining translations are outstanding.
+
+## Zulu keyboard navigation and screen-reader messages — 2026-10-09
+
+Translate 50 navigation and accessibility messages per Zulu catalog (100 values).
+Preserve shortcut variables. Tests render movement shortcuts and distinguish
+screen-reader on/off instructions, left/right directions and cancel/finish
+actions. Both targeted suites and all 21 preservation checks pass. Specialized
+terminology remains low confidence pending speaker review. Browser execution
+and remaining translations are outstanding.
+
+## Zulu Blockly input accessibility labels — 2026-10-09
+
+Translate 51 input labels per Zulu catalog (102 values), preserving numbered
+variables and coordinate names. Regression checks distinguish start/end,
+minimum/maximum, dividend/divisor and find/replace inputs, and render an input
+number. Both targeted suites and all 21 preservation checks pass. Specialized
+terminology remains low confidence pending speaker review. Browser execution
+and remaining translations are outstanding.
+
+## Zulu variable and workspace messages — 2026-10-09
+
+Translate 58 values per Zulu catalog (116 values) for variables, workspace
+announcements, search and legacy control labels. Preserve exact variables,
+keyboard shortcuts and leading spaces in joined comment phrases. Tests render
+variable conflicts and joined workspace counts and check consistent conditional
+labels. Both targeted suites and all 21 preservation checks pass. Specialized
+terminology remains low confidence pending speaker review. Browser execution
+and remaining translations are outstanding.
+
+## Zulu Blockly text operations — 2026-10-09
+
+Translate 55 text-operation values in each Zulu catalog (110 values). Preserve
+numbered variables, position markers and empty grammar suffixes. Regression
+checks cover rendered replacement order, left/right trimming, all-occurrence
+replacement, not-found values and spaces counted in text length. Both targeted
+suites and all 21 preservation checks pass. Specialized terminology remains
+low confidence pending speaker review. Browser execution and remaining
+translations are outstanding.
+
+## Zulu procedure controls and broad verification — 2026-10-09
+
+The broad translation run passed all 333 selected suites in 128 seconds after
+the Zulu logic batch. Then translate 24 procedure strings in each Zulu catalog
+(48 values), preserving function-name variables and empty grammar suffixes.
+Regression checks cover output/no-output distinctions, disabled functions,
+function-only restrictions and rendered calls. Both targeted suites and all
+21 preservation checks pass after the edits. Specialized programming terminology
+remains low confidence pending speaker review; browser execution and the
+remaining translations are outstanding.
+
+## Zulu Blockly logic and basic arithmetic — 2026-10-09
+
+Translate 59 strings per Zulu catalog (118 values) for logic, comparisons,
+basic arithmetic, bounds and random numbers. Retain numbered variables, null
+and mathematical symbols. Regression checks distinguish AND from OR, positive
+from negative, inclusive from exclusive bounds, and verify ternary labels and
+rendered bound variables. Both targeted suites and all 21 preservation checks
+pass. Specialized terminology remains low confidence pending speaker review.
+Browser execution and remaining translations are outstanding.
+
+## Zulu Blockly list operations — 2026-10-09
+
+Translate 75 list-operation strings in each of zu and zu-ZA (150 values),
+covering creation, indexing, retrieval, removal, insertion, sorting and splitting.
+Preserve numbered placeholders and non-prose configuration values. Tests distinguish
+retrieval from removal and combined operations, ascending from descending order,
+and render repeated-item variables. Both targeted suites and all 21 preservation
+checks pass. Specialized programming terms are low confidence pending speaker
+review. Browser execution and the remaining catalog backlog are outstanding.
+
+## Zulu Blockly editor and accessibility labels — 2026-10-09
+
+Fill 50 more English values in each Zulu catalog (zu and zu-ZA): editor actions,
+loop conditions, deletion confirmations, bitmap labels, keyboard help and icon
+labels. Preserve every percent variable. Extend the existing regression suite
+with true/false loop distinctions and rendered deletion and pixel-coordinate
+examples. Both targeted suites and all 21 preservation checks pass. Specialized
+programming vocabulary remains low confidence pending speaker review. Browser
+execution and remaining translations are still outstanding.
+
+## Zulu board settings and Blockly controls — 2026-10-09
+
+Translate 52 English placeholders in each of zu and zu-ZA (104 values): board
+announcements, read-only fields, assignee rules, LDAP synchronization, provider
+restrictions, and Blockly colors, loops and conditions. Existing correct-language
+translations are unchanged. Retain exact percent variables and LDAP setting names.
+The existing Venda/Zulu suite now checks these keys, permission and loop
+restrictions, RGB bounds, and rendered variable and error examples. It and the
+whole-catalog placeholder suite pass, along with all 21 preservation checks.
+These are direct fills; specialized Zulu programming terms are low confidence and
+need speaker review. Color vocabulary was checked against the
+[umbala dictionary entry](https://en.wiktionary.org/wiki/umbala).
+Browser execution and the remaining translations are outstanding.
+
+## Albanian import instructions — 2026-10-09
+
+Translate all 21 newer import instructions in sq. Preserve export commands,
+column names, file extensions, hierarchy markers and variables. Regression
+checks cover first-board selection, archived and completed tasks, unsupported
+attachments, English headers and task hierarchy. Import-instruction and
+whole-catalog placeholder suites pass, as do all 21 preservation checks.
+Language auditing, browser review and the wider translation backlog remain
+outstanding.
+
+## Afrikaans import instructions, final group — 2026-10-09
+
+Translate seven instructions in af: Quire, Wrike, Teamwork.com, Businessmap,
+Redmine, Notion and Plane, completing the newer group of 21 imports. Preserve
+commands, column names, extensions, hierarchy markers and variables. Regression
+checks cover excluded data, English headers and task hierarchy. Import-instruction
+and placeholder suites and all 21 preservation checks pass. The current Afrikaans
+fill list is empty; language quality, browser review and the wider translation
+backlog remain outstanding.
+
+## Afrikaans import instructions, middle group — 2026-10-09
+
+Translate six instructions in af: Pivotal Tracker, Tasks.org, monday.com,
+Super Productivity, Taiga and Vikunja. Preserve commands, extensions and variables.
+Regression checks cover excluded attachments, completion dates, update-to-comment
+mapping, archived tasks and iterations as sprints. Import-instruction and
+placeholder suites and all 21 preservation checks pass. Remaining translations,
+language auditing and browser review are outstanding.
+
+## Afrikaans import instructions, first group — 2026-10-09
+
+The broad run after the Galician corrections passed all 333 translation-related
+suites in 129 seconds. Translate eight Afrikaans instructions: Planner,
+MeisterTask, Obsidian, Linear, TickTick, ClickUp, Nullboard and Kanri. Preserve
+commands, extensions and variables. After these edits, import-instruction and
+whole-catalog placeholder suites pass; preservation checks also passed this run.
+Regression checks cover completion, archives, first-board selection and swimlanes.
+Remaining translations, language auditing and browser review are outstanding.
+
+## Galician interrupted-import and history recovery — 2026-10-09
+
+Translate 34 messages in gl and gl-ES, replacing 68 English values: interrupted
+imports, Scrum history recovery, an action error and server-only login settings.
+Preserve all counters and reference variables. Regression checks cover missing
+source files, deletion including later additions, non-destructive keep,
+foreign-board preservation, conflict blocking and rollback restrictions.
+Both relevant suites and all 21 preservation checks pass. Both current fill lists
+are empty; that does not prove language quality. Existing wording, browser review
+and the wider all-language translation backlog remain outstanding.
+
+## Galician synchronization recovery — 2026-10-09
+
+Translate 21 messages in gl and gl-ES, replacing 42 English values: stalled-sync
+explanations, reasons, counters and controls. Preserve exact variables. Regression
+checks cover retained applied changes, unwritten pending changes, access loss,
+operations that cannot be discarded and oldest-first limits. Both relevant suites
+and all 21 preservation checks pass. Remaining translations, language auditing
+and browser review are outstanding.
+
+## Galician planning results — 2026-10-09
+
+Translate 17 messages in gl and gl-ES, replacing 34 English values: Scrum import
+results, reference warnings, planning synchronization and the stalled-sync heading.
+Preserve all counters and reference variables. Regression checks cover invalid
+JSON, unchanged foreign-board cards, finished sprints, source-ID matching order,
+retained local changes and first-sync behavior. Both relevant suites and all 21
+preservation checks pass. Remaining translations, language auditing and browser
+review are outstanding.
+
+## Galician settings and planning — 2026-10-09
+
+Translate 20 messages in gl and gl-ES, replacing 40 English values: link rules,
+read-only fields, automation actions, LDAP, provider restrictions and initial
+Scrum import controls. Preserve percent variables, brace tokens, link examples
+and configuration names. Regression checks cover administrator-only edits,
+unchanged unmatched cards, non-duplicating imports, direction and unrestricted
+empty domain settings. Both relevant suites and all 21 preservation checks pass.
+Remaining translations, language auditing and browser review are outstanding.
+
+## Galician import instructions, final group — 2026-10-09
+
+Translate seven instructions in gl and gl-ES, replacing 14 English values:
+Quire, Wrike, Teamwork.com, Businessmap, Redmine, Notion and Plane. This completes
+the newer group of 21 imports in both catalogs. Preserve commands, column names,
+extensions, hierarchy markers and variables. Regression checks cover excluded
+data, English headers and task hierarchy. Three relevant suites and all 21
+preservation checks pass. Remaining translations, language auditing and browser
+review are outstanding.
+
+## Galician import instructions, middle group — 2026-10-09
+
+Translate six instructions in gl and gl-ES, replacing 12 English values:
+Pivotal Tracker, Tasks.org, monday.com, Super Productivity, Taiga and Vikunja.
+Preserve commands, extensions and variables. Regression checks cover excluded
+attachments, completion dates, update-to-comment mapping, archived tasks and
+iterations as sprints. Three relevant suites and all 21 preservation checks pass.
+Remaining imports, language auditing and browser review are outstanding.
+
+## Shared Galician terminology corrections — 2026-10-09
+
+Correct 53 mixed-language messages in each of gl and gl-ES: 106 values covering
+activity messages, Home, board backgrounds, card actions, Trello, automation and
+loading. Preserve exact variables and format literals. Restore the single-board
+Home limit, keep the no-deletion warning, and remove the unsupported default claim
+from the all-cards loading label. Record every correction in the audited ledger.
+Three relevant suites and all 21 preservation checks pass. More language auditing,
+remaining translations and browser review are outstanding.
+
+## Further Galician regional terminology corrections — 2026-10-09
+
+Replace 93 additional Portuguese values in gl-ES with reviewed Galician wording
+from gl: board/card actions, search and report labels, automation, account messages
+and migration controls. Record each correction in the audited ledger. Tests
+preserve exact percent and underscore tokens, reject Portuguese terms and check
+complete/incomplete, above/below and password mismatch distinctions. Three relevant
+suites and all 21 preservation checks pass. Mixed-language values elsewhere,
+remaining translations and browser review are still outstanding.
+
+## Galician regional label corrections — 2026-10-09
+
+Replace 33 Portuguese labels and messages in gl-ES with reviewed Galician wording
+from gl: board/card/swimlane names, archive states, card actions, export labels
+and the password-reset subject. Record the before/after values in the audited
+correction ledger. Regression checks reject the Portuguese wording and compare
+all underscore and percent tokens against English. Three relevant suites and all
+21 preservation checks pass. More mixed-language values remain in both Galician
+catalogs; browser review and the wider translation backlog are outstanding.
+
+## Galician announcements and initial imports — 2026-10-09
+
+Translate 14 messages in gl and gl-ES, replacing 28 English values: board
+announcements and list colors, outline imports and the first eight newer import
+instructions. Preserve commands, format keywords, extensions and variables.
+Regression checks cover hierarchy, comments, completion, first-board selection,
+archives and swimlane mappings. Three relevant suites and all 21 preservation
+checks pass. Existing Portuguese labels in gl-ES, including board/card/swimlane,
+still require correction; remaining imports, browser review and the wider
+translation backlog are outstanding.
+
+## Catalan and Valencian recovery results — 2026-10-09
+
+Translate 28 messages in ca, ca_ES and ca@valencia, replacing 84 English values:
+interrupted-import results and controls, Scrum history recovery and the
+server-only login settings notice. Preserve all counters, references and regional
+wording. Regression checks cover non-destructive keep, permanent discard,
+foreign-board preservation, conflict blocking and rollback restrictions.
+Four relevant suites and all 21 preservation checks pass. All three current fill
+lists are empty; that does not prove the quality of existing wording. Browser
+review and the wider all-language translation backlog remain outstanding.
+
+## Catalan and Valencian recovery controls — 2026-10-09
+
+Translate 22 messages in ca, ca_ES and ca@valencia, replacing 66 English values:
+stalled-sync reasons and controls, plus the interrupted-import explanation.
+Preserve placeholders and regional wording. Regression checks cover access
+restrictions, operations that cannot be discarded, retained applied changes,
+unwritten pending changes, oldest-first limits and deletion of the entire partial
+board including later additions. Four relevant suites and all 21 preservation
+checks pass. Browser review and the wider translation backlog remain outstanding.
+
+## Catalan and Valencian planning results — 2026-10-09
+
+Translate 20 messages in ca, ca_ES and ca@valencia, replacing 60 English values:
+Scrum import results, reference warnings, planning synchronization and initial
+stalled-sync recovery text. Preserve all counters and reference variables.
+Regression checks cover unchanged foreign-board cards, finished sprints, matching
+order, retained local changes, first-sync behavior and applied versus pending
+recovery changes. Four relevant suites and all 21 preservation checks pass.
+Browser review and the wider translation backlog remain outstanding.
+
+## Catalan and Valencian settings and planning — 2026-10-09
+
+Translate 25 messages in ca, ca_ES and ca@valencia, replacing 75 English values:
+board announcements, link rules, read-only fields, automation actions, LDAP,
+provider restrictions and initial Scrum import controls. Preserve percent and
+underscore variables, brace tokens, link examples and configuration names.
+Regression checks cover administrator-only edits, unchanged unmatched cards,
+non-duplicating imports, direction and unrestricted empty domain settings.
+Four relevant suites and all 21 preservation checks pass. Browser review and the
+wider translation backlog remain outstanding.
+
+## Catalan and Valencian outline imports — 2026-10-09
+
+Translate OPML, Org mode and Todoist instructions in ca, ca_ES and ca@valencia,
+replacing nine English values. Preserve application names, format keywords,
+commands, variables, label syntax and priority identifiers. Regression checks
+cover completed items, hierarchy, subtasks and note-to-comment mapping.
+Import-instruction and placeholder suites and all 21 preservation checks pass.
+Browser review and the wider translation backlog remain outstanding.
+
+## Catalan and Valencian import instructions, remaining group — 2026-10-09
+
+Translate the remaining 13 instructions in ca, ca_ES and ca@valencia, replacing
+39 English values and completing this group of 21 in all three catalogs. Preserve
+commands, column names, extensions, hierarchy markers, variables and regional
+wording. Regression checks cover excluded data, English headers, task hierarchy
+and archived tasks. Import-instruction and placeholder suites and all 21
+preservation checks pass. Three older import instructions in each catalog,
+browser review and the wider translation backlog remain outstanding.
+
+## Catalan and Valencian import instructions, first group — 2026-10-09
+
+Translate eight instructions in ca, ca_ES and ca@valencia, replacing 24 English
+values. Preserve commands, extensions and variables, with Valencian regional
+wording. Regression checks cover first-board selection, completed-task dates,
+archived cards and swimlane mappings. Import-instruction and placeholder suites
+and all 21 preservation checks pass. Remaining instructions, browser review and
+the wider translation backlog remain outstanding.
+
+## Russian import instructions, remaining group — 2026-10-09
+
+Translate the remaining 13 instructions in ru, ru_RU and ru-UA, also serving the
+ru-RU symlink: 39 stored values, completing this group of 21 across four paths.
+Preserve commands, column names, extensions, hierarchy markers and variables.
+Regression checks cover excluded data, English headers, task hierarchy and
+archived tasks. Import-instruction and placeholder suites and all 21 preservation
+checks pass. Browser review and the wider translation backlog remain outstanding.
+
+## Russian import instructions, first group — 2026-10-09
+
+Translate eight instructions in ru, ru_RU and ru-UA, also serving the ru-RU
+symlink: 24 stored values across four locale paths. Preserve the alias, commands,
+extensions and variables. Regression checks cover first-board selection,
+completed-task dates, archived cards and swimlane mappings. Import-instruction and
+placeholder suites and all 21 preservation checks pass. Both Ukrainian fill lists
+are now empty, which does not prove language quality. Remaining Russian imports,
+browser review and the wider translation backlog remain outstanding.
+
+## Ukrainian regional planning and recovery — 2026-10-09
+
+Fill 94 English values in uk-UA from reviewed existing Ukrainian translations:
+board announcements, link rules, read-only fields, automation actions, LDAP,
+Scrum planning and history, stalled synchronization and interrupted imports.
+Preserve existing regional translations, exact variables, configuration names and
+link-rule examples. Extend regional regression coverage for non-destructive and
+destructive recovery meanings, access restrictions and planning behavior.
+Four relevant suites and all 21 preservation checks pass. Browser review and the
+wider all-language translation backlog remain outstanding.
+
+## Ukrainian regional outline imports — 2026-10-09
+
+Fill the three older English import instructions in uk-UA: OPML, Org mode and
+Todoist, using the existing Ukrainian translations and retaining the Todoist
+export command. Check exact placeholders, application and format names, Org mode
+keywords, hierarchy, completion state and note-to-comment mapping. Both Ukrainian
+catalogs now have no exact English import-instruction values. All 333 translation-related suites pass in 128 seconds, and all 21 preservation
+checks pass; browser and language review remain outstanding.
+
+The current ordinary fill report still counts 32,567 untranslated values in 46
+locales, excluding 271 deferred source keys. Those deferred keys remain within the
+translation task. A further 94 regional English values already have Ukrainian
+translations available for review and reuse; the wider task is not complete.
+
+## Ukrainian import instructions, remaining group — 2026-10-09
+
+Translate the remaining 13 instructions in uk and uk-UA, replacing 26 English
+values and completing all 21 instructions in this group in both catalogs.
+Preserve commands, column names, extensions, hierarchy markers and variables.
+Regression checks cover excluded data, English headers, task hierarchy and
+archived tasks. Import-instruction and placeholder suites and all 21 preservation
+checks pass. Browser review and the wider all-language translation backlog remain
+outstanding, including three older import instructions still in English in uk-UA.
+
+## Ukrainian import instructions, first group — 2026-10-09
+
+Translate eight instructions in uk and uk-UA: Planner, MeisterTask, Obsidian,
+Linear, TickTick, ClickUp, Nullboard and Kanri, replacing 16 English values.
+Preserve commands, extensions and variables. Regression checks cover first-board
+selection, completed-task dates, archived cards and swimlane mappings.
+Import-instruction and placeholder suites and all 21 preservation checks pass.
+The remaining 13 instructions in this group in each catalog, browser review and
+the wider all-language translation backlog remain outstanding.
+
+## Lithuanian import instructions — 2026-10-09
+
+Translate all 21 instructions in this group in lt. Preserve commands, column
+names, extensions, hierarchy markers and variables. Regression checks cover
+first-board selection, completed-task dates, archived cards, swimlane mappings,
+excluded data, English headers and task hierarchy. Import-instruction and
+placeholder suites and all 21 preservation checks pass. Browser review and the
+wider all-language translation backlog remain outstanding.
+
+## Latvian import instructions — 2026-10-09
+
+Translate all 21 instructions in this group in lv. Preserve commands, column
+names, extensions, hierarchy markers and variables. Regression checks cover
+first-board selection, completed-task dates, archived cards, swimlane mappings,
+excluded data, English headers and task hierarchy. Import-instruction and
+placeholder suites and all 21 preservation checks pass. Browser review and the
+wider all-language translation backlog remain outstanding.
+
+## Estonian import instructions — 2026-10-09
+
+Translate all 21 instructions in this group in et-EE. Preserve commands, column
+names, extensions, hierarchy markers and variables. Regression checks cover
+first-board selection, completed-task dates, archived cards, swimlane mappings,
+excluded data, English headers and task hierarchy. Import-instruction and
+placeholder suites and all 21 preservation checks pass. Browser review and the
+wider all-language translation backlog remain outstanding.
+
+## Bosnian import instructions, remaining group — 2026-10-09
+
+Translate the remaining 13 instructions in bs, completing all 21 import
+instructions in this group. Preserve commands, column names, extensions,
+hierarchy markers and variables. Regression checks cover excluded data, English
+headers, task hierarchy and archived tasks. Import-instruction and placeholder
+suites and all 21 preservation checks pass. Browser review and the wider
+all-language translation backlog remain outstanding.
+
+## Bosnian import instructions, first group — 2026-10-09
+
+Translate eight instructions in bs: Planner, MeisterTask, Obsidian, Linear,
+TickTick, ClickUp, Nullboard and Kanri. Preserve commands, extensions and variables.
+Regression checks cover completed-task dates, archived cards, first-board selection
+and swimlane mappings. Import-instruction and placeholder suites and all 21
+preservation checks pass. Remaining Bosnian instructions, browser review and the
+wider translation backlog remain outstanding.
+
+## Serbian import instructions, remaining group — 2026-10-09
+
+Translate the remaining 13 instructions in sr, completing all 21 import
+instructions there. Use Serbian Cyrillic prose and preserve commands, columns,
+extensions, hierarchy markers and variables. Regression checks cover excluded
+data, English headers, task hierarchy and archived tasks. Import-instruction and
+placeholder suites and all 21 preservation checks pass. Browser review and the
+wider all-language translation backlog remain outstanding.
+
+## Serbian import instructions, first group — 2026-10-09
+
+Translate eight instructions in sr: Planner, MeisterTask, Obsidian, Linear,
+TickTick, ClickUp, Nullboard and Kanri. Use Serbian Cyrillic prose and preserve
+commands, extensions and variables. Regression checks cover completed-task dates,
+archived cards, first-board selection and swimlane mappings. Import-instruction
+and placeholder suites and all 21 preservation checks pass. Remaining Serbian
+instructions, browser review and the wider translation backlog remain outstanding.
+
+## Slovenian import instructions, remaining group — 2026-10-09
+
+Translate the remaining 13 instructions in sl and sl_SI (26 values), completing
+all 21 import instructions in those catalogs. Preserve commands, columns,
+extensions, hierarchy markers and variables. Regression checks cover excluded
+data, English headers, task hierarchy and archived tasks. Import-instruction and
+placeholder suites and all 21 preservation checks pass. Browser review and the
+wider all-language translation backlog remain outstanding.
+
+## Slovenian import instructions, first group — 2026-10-09
+
+Translate eight instructions in sl and sl_SI (16 values): Planner, MeisterTask,
+Obsidian, Linear, TickTick, ClickUp, Nullboard and Kanri. Preserve commands,
+extensions and variables. Regression checks cover completed-task dates, archived
+cards, first-board selection and swimlane mappings. Import-instruction and
+placeholder suites and all 21 preservation checks pass. Remaining Slovenian
+instructions, browser review and the wider translation backlog remain outstanding.
+
+## Croatian import instructions and verification refresh — 2026-10-09
+
+Translate all 21 import instructions in hr, preserving commands, columns,
+extensions, hierarchy markers and variables. Regression checks cover first-board
+selection, completion dates, excluded data, English headers, task hierarchy and
+archived cards. The final import-instruction and placeholder suites and all 21
+preservation checks pass. The broader translation/language/placeholder/completion
+selection also passes: 333 suites, no failures, 129 seconds.
+
+The refreshed missing report lists 32,567 ordinary untranslated values across 46
+locales. That report excludes 271 deferred source keys; those keys remain within
+the translation goal. Passing tests does not establish translation completeness.
+Browser review and the wider all-language translation backlog remain outstanding.
+
+## Bulgarian import instructions, remaining group — 2026-10-09
+
+Translate the remaining 13 instructions in bg, completing all 21 import
+instructions there. Preserve commands, columns, extensions, hierarchy markers and
+variables. Regression checks cover excluded data, English headers, task hierarchy
+and archived tasks. Import-instruction, placeholder and Vietnamese/Bulgarian
+completion suites and all 21 preservation checks pass. Browser review and the
+wider translation backlog remain outstanding.
+
+## Bulgarian import instructions, first group — 2026-10-09
+
+Translate eight instructions in bg: Planner, MeisterTask, Obsidian, Linear,
+TickTick, ClickUp, Nullboard and Kanri. Preserve commands, extensions and variables.
+Regression checks cover completed-task dates, archived cards, first-board selection
+and swimlane mappings. Import-instruction, placeholder and Vietnamese/Bulgarian
+completion suites and all 21 preservation checks pass. Remaining Bulgarian
+instructions, browser review and the wider translation backlog remain outstanding.
+
+## Vietnamese import instructions, remaining group — 2026-10-09
+
+Translate the remaining 13 instructions in vi and vi-VN (26 values), completing
+all 21 import instructions in those catalogs. Preserve commands, columns,
+extensions, hierarchy markers and variables. Regression checks cover excluded
+data, English headers, task hierarchy and archived tasks. Import-instruction,
+placeholder and Vietnamese/Bulgarian completion suites and all 21 preservation
+checks pass. Browser review and the wider translation backlog remain outstanding.
+
+## Vietnamese import instructions, first group — 2026-10-09
+
+Translate eight instructions in vi and vi-VN (16 values): Planner, MeisterTask,
+Obsidian, Linear, TickTick, ClickUp, Nullboard and Kanri. Preserve commands,
+extensions and variables. Regression checks cover completed-task dates, archived
+cards, first-board selection and swimlane mappings. Import-instruction, placeholder
+and Vietnamese/Bulgarian completion suites and all 21 preservation checks pass.
+Remaining Vietnamese instructions, browser review and the wider translation
+backlog remain outstanding.
+
+## Malay import instructions, remaining group — 2026-10-09
+
+Translate the remaining 13 instructions in ms and ms-MY (26 values), completing
+all 21 import instructions in those catalogs. Preserve commands, columns,
+extensions, hierarchy markers and variables. Regression checks cover excluded
+data, English headers, task hierarchy and archived tasks. Import-instruction and
+placeholder suites and all 21 preservation checks pass. Browser review and the
+wider all-language translation backlog remain outstanding.
+
+## Malay import instructions, first group — 2026-10-09
+
+Translate eight instructions in ms and ms-MY (16 values): Planner, MeisterTask,
+Obsidian, Linear, TickTick, ClickUp, Nullboard and Kanri. Preserve commands,
+extensions and variables. Regression checks cover completed-task dates, archived
+cards, first-board selection and swimlane mappings. Import-instruction and
+placeholder suites and all 21 preservation checks pass. Remaining Malay
+instructions, browser review and the wider translation backlog remain outstanding.
+
+## Indonesian import instructions, remaining group — 2026-10-09
+
+Translate the remaining 13 instructions in id, completing all 21 import
+instructions there. Preserve commands, columns, extensions, hierarchy markers and
+variables. Regression checks cover excluded data, English headers, task hierarchy
+and archived tasks. Import-instruction and placeholder suites and all 21
+preservation checks pass. Browser review and the wider translation backlog remain
+outstanding.
+
+## Indonesian import instructions, first group — 2026-10-09
+
+Translate eight instructions in id: Planner, MeisterTask, Obsidian, Linear,
+TickTick, ClickUp, Nullboard and Kanri. Preserve commands, extensions and variables.
+Regression checks cover completed-task dates, archived cards, first-board selection
+and swimlane mappings. Import-instruction and placeholder suites and all 21
+preservation checks pass. Remaining Indonesian instructions, browser review and
+the wider translation backlog remain outstanding.
+
+## Korean import instructions, remaining group — 2026-10-09
+
+Translate the remaining 13 instructions in ko and ko-KR (26 values), completing
+all 21 import instructions in those catalogs. Preserve commands, columns,
+extensions, hierarchy markers and variables. Regression checks cover excluded
+data, English headers, task hierarchy and archived tasks. Import-instruction and
+placeholder suites and all 21 preservation checks pass. Browser review and the
+wider all-language translation backlog remain outstanding.
+
+## Korean import instructions, first group — 2026-10-09
+
+Translate eight instructions in ko and ko-KR (16 values): Planner, MeisterTask,
+Obsidian, Linear, TickTick, ClickUp, Nullboard and Kanri. Preserve commands,
+extensions and variables. Regression checks cover completed-task dates, archived
+cards, first-board selection and swimlane mappings. Import-instruction and
+placeholder suites and all 21 preservation checks pass. Remaining Korean
+instructions, browser review and the wider translation backlog remain outstanding.
+
+## Hiragana import instructions, remaining group — 2026-10-09
+
+Translate the remaining 13 instructions in ja-HI, completing all 21 import
+instructions there. Preserve commands, columns, extensions, hierarchy markers and
+variables while writing prose in Hiragana. Regression checks reject Kanji and
+Katakana and cover excluded data, English headers, task hierarchy and archived
+tasks. Import-instruction and placeholder suites and all 21 preservation checks
+pass. Browser review and the wider translation backlog remain outstanding.
+
+## Hiragana import instructions, first group — 2026-10-09
+
+Translate eight instructions in ja-HI: Planner, MeisterTask, Obsidian, Linear,
+TickTick, ClickUp, Nullboard and Kanri. Preserve commands, extensions and variables
+while writing the prose in Hiragana. Regression checks reject Kanji and Katakana
+in this batch and cover first-board selection, completion dates and archived cards.
+Import-instruction and placeholder suites and all 21 preservation checks pass.
+Remaining Hiragana instructions, browser review and the wider translation backlog
+remain outstanding.
+
+## Japanese import instructions, remaining group — 2026-10-09
+
+Translate the remaining 13 instructions in ja and ja-JP (26 values), completing
+all 21 import instructions in those catalogs. Preserve commands, columns,
+extensions, hierarchy markers and variables. Regression checks cover excluded
+data, English headers, task hierarchy and archived tasks. Import-instruction and
+placeholder suites and all 21 preservation checks pass. Hiragana wording, browser
+review and the wider all-language translation backlog remain outstanding.
+
+## Japanese import instructions, first group — 2026-10-09
+
+Translate eight instructions in ja and ja-JP (16 values): Planner, MeisterTask,
+Obsidian, Linear, TickTick, ClickUp, Nullboard and Kanri. Preserve commands,
+extensions and variables. Regression checks cover completed-task dates, archived
+cards, first-board selection and swimlane mappings. Import-instruction and
+placeholder suites and all 21 preservation checks pass. The remaining Japanese
+instructions, separate Hiragana wording, browser review and the wider translation
+backlog remain outstanding.
+
+## Greek import instructions, remaining group — 2026-10-09
+
+Translate the remaining 13 instructions in el and el-GR (26 values), completing
+all 21 import instructions in those catalogs. Preserve commands, columns,
+extensions, hierarchy markers and variables. Regression checks cover excluded
+data, English headers, task hierarchy and archived tasks. Import-instruction and
+placeholder suites and all 21 preservation checks pass. Browser review and the
+wider all-language translation backlog remain outstanding.
+
+## Greek import instructions, first group — 2026-10-09
+
+Translate eight instructions in el and el-GR (16 values): Planner, MeisterTask,
+Obsidian, Linear, TickTick, ClickUp, Nullboard and Kanri. Preserve commands,
+extensions and variables. Regression checks cover completed-task dates, archived
+cards, first-board selection and swimlane mappings. Import-instruction and
+placeholder suites and all 21 preservation checks pass. Remaining Greek
+instructions, browser review and the wider translation backlog remain outstanding.
+
+## Turkish import instructions — 2026-10-09
+
+Translate all 21 import instructions in tr, preserving commands, columns,
+extensions, hierarchy markers and variables. Regression checks cover first-board
+selection, excluded data, English headers, completion dates and archived tasks.
+Import-instruction and placeholder suites and all 21 preservation checks pass.
+Browser review and the wider all-language translation backlog remain outstanding.
+
+## Hungarian import instructions — 2026-10-09
+
+Translate all 21 import instructions in hu, preserving commands, columns,
+extensions, hierarchy markers and variables. Regression checks cover first-board
+selection, excluded data, English headers, completion dates and archived tasks.
+Import-instruction and placeholder suites and all 21 preservation checks pass.
+Browser review and the wider all-language translation backlog remain outstanding.
+
+## Romanian import instructions — 2026-10-09
+
+Translate all 21 import instructions in ro and ro-RO (42 values), preserving
+commands, columns, extensions, hierarchy markers and variables. Regression checks
+cover first-board selection, excluded data, English headers, completion dates and
+archived tasks. Import-instruction and placeholder suites and all 21 preservation
+checks pass. Browser review and the wider translation backlog remain outstanding.
+
+## Slovak import instructions — 2026-10-09
+
+Translate all 21 import instructions in sk, preserving commands, columns,
+extensions, hierarchy markers and variables. Regression checks cover first-board
+selection, excluded data, English headers, completion dates and archived tasks.
+Import-instruction and placeholder suites and all 21 preservation checks pass.
+Browser review and the wider all-language translation backlog remain outstanding.
+
+## Czech import instructions — 2026-10-09
+
+Translate all 21 import instructions in cs and cs-CZ (42 values), preserving
+commands, columns, extensions, hierarchy markers and variables. Regression checks
+cover first-board selection, excluded data, English headers, completion dates and
+archived tasks. Import-instruction and placeholder suites and all 21 preservation
+checks pass. Browser review and the wider translation backlog remain outstanding.
+
+## Polish import instructions — 2026-10-09
+
+Translate all 21 import instructions in pl and pl-PL (42 values), preserving
+commands, columns, extensions, hierarchy markers and variables. Regression checks
+cover first-board selection, excluded data, English headers, completion dates and
+archived tasks. Import-instruction and placeholder suites and all 21 preservation
+checks pass. Browser review and the wider translation backlog remain outstanding.
+
+## Norwegian Bokmål import instructions — 2026-10-09
+
+Translate all 21 import instructions in nb, preserving literal commands, columns,
+extensions, hierarchy markers and variables. Regression checks cover first-board
+selection, excluded data, English headers, completion dates and archived tasks.
+Import-instruction and placeholder suites and all 21 preservation checks pass.
+Browser review and the wider all-language translation backlog remain outstanding.
+
+## Danish import instructions — 2026-10-09
+
+Translate all 21 import instructions in the Danish catalog, preserving commands,
+column names, extensions, hierarchy markers and variables. Regression checks cover
+first-board selection, excluded data, English headers, completion dates and
+archived tasks. Import-instruction and placeholder suites and all 21 preservation
+checks pass. Browser review and the wider translation backlog remain outstanding.
+
+## Swedish import instructions — 2026-10-09
+
+Translate all 21 import instructions in the Swedish catalog, preserving literal
+commands, columns, extensions, hierarchy markers and variables. Regression checks
+cover first-board selection, excluded data, English headers, completed-task dates
+and archived tasks. Import-instruction and placeholder suites and all 21
+preservation checks pass. Browser review and the wider all-language translation
+backlog remain outstanding.
+
+## Dutch import instructions — 2026-10-09
+
+Translate all 21 import instructions in nl and nl-NL (42 values), preserving
+commands, columns, extensions, hierarchy markers and variables. Keep the catalogs'
+existing werkbaan terminology. Regression checks cover first-board selection,
+excluded data, English headers, completed-task dates and archived tasks. Both
+import-instruction and placeholder suites and all 21 preservation checks pass.
+Browser review and the wider all-language translation backlog remain outstanding.
+
+## Italian import instructions — 2026-10-09
+
+Translate all 21 import instructions in the Italian catalog, preserving commands,
+column names, extensions, hierarchy markers and variables. Regression checks cover
+first-board selection, excluded data, English header requirements and archived
+tasks. Import-instruction and placeholder suites and all 21 preservation checks
+pass. Browser review and the wider translation backlog remain outstanding.
+
+## Portuguese import instructions, remaining group — 2026-10-09
+
+Translate 13 remaining instructions in four Portuguese catalogs (52 values),
+completing all 21 import instructions in those catalogs. Preserve regional terms,
+commands, columns, extensions and hierarchy markers. Regression checks cover
+excluded data, English header requirements and archived tasks. Import-instruction
+and placeholder suites and all 21 preservation checks pass. Browser review and
+the wider all-language translation backlog remain outstanding.
+
+## Portuguese import instructions, first group — 2026-10-08
+
+Translate eight instructions in pt, pt-BR, pt-PT and pt_PT (32 values), preserving
+commands, extensions and variables. Brazilian Portuguese uses raia/arquivo while
+the other catalogs use pista/ficheiro. Regression checks cover those distinctions,
+first-board selection, completed-task dates and archived cards. Import-instruction
+and placeholder suites and all 21 preservation checks pass. Remaining Portuguese
+instructions, browser review and the wider translation backlog remain outstanding.
+
+## Spanish import instructions, remaining group — 2026-10-08
+
+Translate 13 remaining instructions in nine Spanish catalogs (117 values),
+completing all 21 import instructions in those catalogs. Preserve commands,
+columns, extensions and hierarchy markers. Regression checks cover excluded data,
+English header requirements and archived tasks. Import-instruction and placeholder
+suites and all 21 preservation checks pass. Browser review and the wider
+all-language translation backlog remain outstanding.
+
+## Spanish import instructions, first group — 2026-10-08
+
+Translate eight instructions in nine Spanish catalogs (72 values): Planner,
+MeisterTask, Obsidian, Linear, TickTick, ClickUp, Nullboard and Kanri. Preserve
+commands, extensions and variables. Regression checks cover first-board selection,
+completed-task dates, archived cards and import mappings. Import-instruction and
+placeholder suites and all 21 preservation checks pass. The remaining Spanish
+instructions, browser review and the wider translation backlog remain outstanding.
+
+## French import instructions, remaining group — 2026-10-08
+
+Translate the remaining 13 import instructions in fr, fr-BE, fr-CA, fr-CH and
+fr-FR (65 values), completing all 21 instructions in those catalogs. Preserve
+commands, columns, extensions and hierarchy markers. Regression checks cover
+excluded data, English header requirements and archived tasks. Import-instruction
+and placeholder suites and all 21 preservation checks pass. Browser review and
+the wider all-language translation backlog remain outstanding.
+
+## French import instructions, first group — 2026-10-08
+
+Translate eight instructions in fr, fr-BE, fr-CA, fr-CH and fr-FR (40 values):
+Planner, MeisterTask, Obsidian, Linear, TickTick, ClickUp, Nullboard and Kanri.
+Preserve source-product commands, file extensions and variables. Regression checks
+cover mappings, archived/completed tasks and first-board selection. Import-instruction
+and placeholder suites and all 21 preservation checks pass. The other French import
+instructions, browser review and the wider translation backlog remain outstanding.
+
+## German import instructions — 2026-10-08
+
+Translate 21 import instructions in de, de-AT, de-CH and de_DE (84 values).
+Preserve source-product menu labels, file extensions, column names and hierarchy
+markers. Regression checks cover variables, commands, first-board selection,
+archived/completed tasks and excluded descriptions, relationships and attachments.
+Import-instruction and placeholder suites and all 21 preservation checks pass.
+Browser review and the wider all-language translation backlog remain outstanding.
+
+## Cherokee warning and complete warning inventory — 2026-10-08
+
+Translate the Cherokee warning, preserving variables and ROOT_URL. Replace the
+accumulated batch list in the warning test with discovery of every non-English
+catalog; explicitly reject missing and empty values. All 234 non-English catalog
+paths now differ from English for this warning and pass exact-token, address-role,
+configuration-name and substitution checks. The placeholder suite and all 21
+preservation checks also pass. Cherokee vocabulary follows existing address labels
+and the [Cherokee localization style guide](https://device.report/m/ec97d073ab6cbd68782ca40920086dfc88494072dd04c880442803a81c119438.pdf).
+The Cherokee prose has low confidence and needs native review. This completes the
+warning's inventory coverage only; browser review, translation quality review and
+the wider all-language backlog remain outstanding.
+
+## Tamazight and Inuktitut warnings — 2026-10-08
+
+Translate two warnings with exact repeated address variables and ROOT_URL.
+Verify Tifinagh and Canadian Aboriginal syllabics and reject Latin letters in
+prose after removing literal code names. Warning coverage includes 206 paths;
+warning and placeholder suites and all 21 preservation checks pass. Terminology
+was checked against [Tamazight government usage](https://mjcc.gov.ma/zgh/)
+and existing Inuktitut catalog terms. These direct translations have lower
+confidence and need native review. Cherokee remains the only English warning
+path. Browser review and the wider translation backlog remain outstanding.
+
+## Tigre and Wolaytta warnings and labels — 2026-10-08
+
+Translate two warnings with exact repeated address variables and ROOT_URL.
+Replace three prefixed English Wolaytta labels and record them in the ledger.
+Warning coverage includes 204 paths; warning, placeholder and correction-ledger
+suites and all 21 preservation checks pass. Wolaytta entry/opening terminology
+was checked against [published Wolaytta text](https://www.bible.com/bible/3205/REV.3.WOB).
+These direct translations have low confidence and need native review. Three
+English warning paths remain: Cherokee, Inuktitut and Tamazight. Browser review
+and the wider translation backlog remain outstanding.
+
+## Greenlandic and Nahuatl warnings; broad regression run — 2026-10-08
+
+Translate two warnings with exact repeated address variables and ROOT_URL.
+Warning coverage includes 202 paths. The focused warning and placeholder suites
+and all 21 preservation checks pass. A broader run using Translation, Placeholder,
+Language, translation, placeholder, language and Completion filters passed all
+333 selected Node suites in 126 seconds. This verifies those suites, not completion
+or native quality of all catalogs. The two new translations have lower confidence
+and need native review. The warning still has five English paths: Cherokee,
+Inuktitut, Tigre, Wolaytta and Tamazight. Browser review and the broader translation
+backlog remain outstanding.
+
+## Veps, Volapük and Klingon warnings — 2026-10-08
+
+Translate three warnings with exact repeated address variables and ROOT_URL.
+Warning coverage includes 200 catalog paths; warning and placeholder suites and
+all 21 preservation checks pass. Vocabulary references include the
+[Volapük dictionary](https://en.wikibooks.org/wiki/Volap%C3%BCk/English-Volap%C3%BCk_dictionary)
+and [Klingon lexicon](https://www.frathwiki.com/Klingon/lexicon).
+These translations have lower confidence and need native review. The warning
+still has seven English paths; browser review and the wider translation backlog
+remain outstanding.
+
+## Arabic-script Uzbek and Kashmiri warnings — 2026-10-08
+
+Translate two warnings with exact repeated address variables and ROOT_URL.
+Correct three Latin-script Uzbek labels in the explicitly Arabic-script catalog,
+recording them in the ledger. Tests reject Latin letters in these labels and in
+warning prose after removing literal code names. Warning coverage includes 197
+paths; warning, placeholder and correction-ledger suites and all 21 preservation
+checks pass. Script reference: [Eski o‘zbek yozuvi](https://n.ziyouz.com/books/eski_uzbek_yozuvi/Eski%20o%27zbek%20yozuvi%20%28M.Hamidova%2C%20N.Sulaymonova%29.pdf).
+These direct translations have lower confidence and need native review. This
+warning still has 10 English paths. Other Latin-script Uzbek values, browser
+review and the wider translation backlog remain outstanding.
+
+## Tibetan, Dzongkha and Tigrinya warnings — 2026-10-08
+
+Translate three warnings with exact repeated address variables and ROOT_URL,
+using separate Tibetan and Dzongkha prose. Warning coverage includes 195 paths;
+warning and placeholder suites and all 21 preservation checks pass. Dzongkha
+address terminology was checked against the [Dzongkha Development Commission](https://www.dzongkha.gov.bt/).
+These translations have lower confidence and need native review. This warning
+still has 12 English paths; browser review and the wider translation backlog
+remain outstanding.
+
+## Bambara, Ewe and Fulah warnings — 2026-10-08
+
+Translate three warnings with exact repeated address variables and ROOT_URL.
+Warning coverage includes 192 paths; warning and placeholder suites and all 21
+preservation checks pass. Bambara service terminology was checked against
+[Bamadaba](https://bamadaba.coastsystems.net/lexicon/s/), alongside existing catalog
+terminology. These translations have lower confidence and need native review.
+This warning still has 15 English paths; browser review and the wider translation
+backlog remain outstanding.
+
+## Acehnese, Aymara, Guarani and Quechua warnings — 2026-10-08
+
+Translate four warnings with unchanged repeated address variables and ROOT_URL.
+Correct five Aymara/Quechua labels that had language-name prefixes or English
+text, recording the replacements in the correction ledger. Warning coverage
+includes 189 paths. Warning, placeholder and audited-correction suites and all
+21 preservation checks pass. Guarani web terminology was checked against
+[Mozilla usage](https://www.mozilla.org/gn/privacy/faq/), and Andean terminology
+against [ARUSIMIÑEE](https://www.illaa.org/pirwa/diccionarios/arusiminee.html).
+These direct translations have lower confidence and need native review. This
+warning still has 18 English paths; browser review and the wider translation
+backlog remain outstanding.
+
+## Buryat, Chuvash and Sakha warnings — 2026-10-08
+
+Translate three warnings with exact repeated address variables and ROOT_URL.
+Warning coverage includes 185 catalog paths; warning and placeholder suites and
+all 21 preservation checks pass. Buryat page terminology was checked against the
+[Buryat explanatory dictionary](https://edbl.ru/d/dutaha/) and Sakha address
+terminology against [Wiktionary](https://en.wiktionary.org/wiki/аадырыс).
+These translations have lower confidence and need native review. This warning
+still has 22 English paths; browser review and the wider translation backlog
+remain outstanding.
+
+## Oromo, Luganda, Wolof and Akan warnings — 2026-10-08
+
+Translate four warnings with unchanged address variables and ROOT_URL. Warning
+coverage includes 182 paths; warning and placeholder suites and all 21 preservation
+checks pass. Wolof page terminology was checked against the
+[Senegal education terminology list](https://senprof.education.sn/PROGRAMME%20LECTURE%20POUR%20TOUS/documentation/Terminologies/Terminologie%20wolof%20fusion.pdf).
+These translations have lower confidence and need native review. The warning still
+has 25 English paths. The missing-string report continues to list 46 languages and
+271 deferred source keys; the deferred keys remain in the translation task's scope.
+Browser review and the wider all-language backlog remain outstanding.
+
+## Flemish, Northern Sámi, Manx and Cornish warnings — 2026-10-08
+
+Translate four warnings, preserving repeated address variables and ROOT_URL.
+Warning coverage includes 178 catalog paths. Warning and placeholder suites and
+all 21 preservation checks pass. Terminology was checked against
+[Sámediggi usage](https://samediggi.fi/dav/diehtosuodji/),
+[the Manx corpus](https://corpus.gaelg.im/Browse/Focklyn-noa-Sage-King) and
+[the Cornish dictionary](https://www.cornishdictionary.org.uk/sites/default/files/SWF_dictionary_20190530_final.pdf).
+Northern Sámi, Manx and Cornish prose has lower confidence and needs native review.
+This warning still has 29 English paths; browser review and the wider all-language
+backlog remain outstanding.
+
+## Moroccan Arabic, Hiragana, Walloon, Waray and Venetian warnings — 2026-10-08
+
+Translate five warning values according to their registered languages, including
+legacy identifiers ja-HI (Hiragana), wa-RR (Waray) and ve-CC (Venetian).
+Check repeated address roles, ROOT_URL and Hiragana script. Warning coverage now
+includes 174 paths. Warning and placeholder suites and all 21 preservation checks
+pass. Walloon page terminology was checked against [Walon usage](https://aberteke.walon.org/haurdeyes.html)
+and Venetian address terminology against [Wikisionario usage](https://vec.wiktionary.org/wiki/Discusion_Utensa:GatoSelvadego).
+These direct translations have lower confidence and need native review. This warning
+still has 33 English catalog paths; browser review and the wider all-language
+backlog remain outstanding.
+
+## Southern African warnings and Venda label — 2026-10-08
+
+Translate five warnings in Northern Sotho, Ndebele, Swati, Tsonga and Venda.
+Correct the Venda login label from Zulu to “U dzhena” and record it in the audit
+ledger. Preserve the separate Venetian and Veps catalogs: their legacy identifiers
+ve-CC and ve-PP are explicitly registered as those languages, not Venda variants.
+Warning coverage now includes 169 paths. Warning, placeholder and audited-correction
+suites and all 21 preservation checks pass. The prose has lower confidence and needs
+native review. The warning still has 38 English paths; browser review and the wider
+all-language backlog remain outstanding.
+
+## Māori, Hawaiian, Samoan, Tongan and Fijian warnings — 2026-10-08
+
+Translate five warning values with exact variables. Māori sign-in terminology
+was checked against the [Māori Language Commission](https://www.tetaurawhiri.govt.nz/kupu-hou-te-rorohiko).
+Warning coverage now includes 164 paths; warning and placeholder suites and all
+21 preservation checks pass. Hawaiian, Samoan, Tongan and Fijian prose has lower
+confidence and needs native review. This warning still has 43 English catalog
+paths; browser review and the wider all-language backlog remain outstanding.
+
+## Friulian, Romansh, Ladin, Aromanian and Latin warnings — 2026-10-08
+
+Translate five warning values. Terminology was checked against the existing
+catalogs, [ARLeF usage](https://arlef.it/privacy/) and [Micurá de Rü usage](https://www.micura.it/la/privacy-policy).
+Warning coverage now includes 159 paths; warning and placeholder suites and all
+21 preservation checks pass. This prose has lower confidence and needs native
+review. The warning still has 48 English catalog paths. Also correct the Aromanian login label from French “Connexion” to “Intrari” and
+remove the “Latine:” prefix from the Latin label, recording both corrections in
+the audit ledger with regression checks. Browser review and the wider
+all-language backlog remain outstanding.
+
+## Assamese, Odia, Maithili, Bhojpuri and Konkani warnings — 2026-10-08
+
+Translate five warning values in the existing catalog scripts. Warning coverage
+now includes 154 paths with exact repeated address variables, rendering order
+and ROOT_URL checked. Warning and placeholder suites and all 21 preservation
+checks pass. These translations have lower confidence and need native review.
+This warning still has 53 English catalog paths; browser review and the wider
+all-language backlog remain outstanding.
+
+## Breton, Kashubian, Upper Sorbian, Silesian and Faroese warnings — 2026-10-08
+
+Translate five warning values with exact variables and existing sign-in terms.
+Warning tests now cover 149 catalog paths, checking repeated variables, address
+order and ROOT_URL. Warning and placeholder suites and all 21 preservation checks
+pass. These translations have lower confidence and need native review. This
+warning still has 58 English catalog paths; browser review and the wider
+all-language backlog remain outstanding.
+
+## Regional Romance sign-in warnings — 2026-10-08
+
+Translate five values in Aragonese, Asturian, Sardinian, Sicilian and Neapolitan.
+Warning tests now cover 144 paths with exact repeated variables, address order
+and ROOT_URL checked. Warning and placeholder suites and all 21 preservation
+checks pass. These translations have lower confidence and need native review.
+The warning alone still has 63 English catalog paths after this batch; browser
+review and the much wider all-language backlog remain outstanding.
+
+## Kinyarwanda, Kirundi, Chichewa, Sesotho and Setswana warnings — 2026-10-08
+
+Translate five sign-in warning values using existing catalog terminology.
+Warning coverage now includes 139 paths with exact repeated address variables,
+rendering order and ROOT_URL checked. Warning and placeholder suites and all 21
+preservation checks pass. These translations have lower confidence and require
+native review. Browser review and the wider all-language backlog remain open.
+
+## Further African sign-in warnings — 2026-10-08
+
+Translate six values for Yoruba, Igbo, Shona, Zulu and its South African variant,
+and Xhosa. Warning coverage now includes 134 catalog paths, with exact repeated
+address variables, rendering order and ROOT_URL checked. Warning and placeholder
+suites and all 21 preservation checks pass. These translations have lower
+confidence and need native review. Browser review and the wider all-language
+backlog remain outstanding.
+
+## Tatar, Bashkir, Tajik and Turkmen sign-in warnings — 2026-10-08
+
+Translate four warning values, preserving the locale scripts, both occurrences
+of each address variable and ROOT_URL. Warning coverage now includes 128 catalog
+paths. Warning and placeholder suites and all 21 preservation checks pass.
+These translations have lower confidence and need native review. Browser review
+and the wider all-language backlog remain outstanding.
+
+## Sindhi, Pashto, Kurdish and Uyghur sign-in warnings — 2026-10-08
+
+Translate five values in Sindhi, Pashto, Kurmanji, Sorani and Uyghur, retaining
+their respective scripts. Warning coverage now includes 124 catalog paths with
+exact repeated address variables, rendering order and ROOT_URL checks. Warning
+and placeholder suites and all 21 preservation checks pass. This prose has lower
+confidence and needs native review; right-to-left browser rendering and the wider
+all-language backlog remain outstanding.
+
+## Amharic, Burmese, Khmer and Pacific sign-in warnings — 2026-10-08
+
+Translate six physical catalog values for Amharic, Burmese, Khmer, Bislama and
+Tok Pisin. The Khmer regional symlink exposes the same value under a seventh
+catalog path and is preserved. Warning coverage now includes 119 paths, checking
+repeated variables, address order, ROOT_URL and the shared Khmer value. Warning
+and placeholder suites and all 21 preservation checks pass. Amharic and Pacific
+prose has lower confidence and needs native review. Browser checks and the wider
+all-language backlog remain open.
+
+## Five further sign-in warning languages — 2026-10-08
+
+Translate the warning in Javanese, Haitian Creole, Malagasy, Somali and Hausa.
+The regression suite now checks 112 catalogs for exact repeated address variables,
+rendering order and ROOT_URL. Warning and placeholder suites and all 21 preservation
+checks pass. Malagasy, Somali and Hausa prose has lower confidence and needs native
+review. Browser review and the wider all-language backlog remain outstanding.
+
+## Celtic and western European sign-in warnings — 2026-10-08
+
+Translate ten values in Welsh and its British variant, Irish, Scottish Gaelic,
+Occitan, Corsican, Maltese, Luxembourgish, and Frisian and its Dutch variant.
+The warning suite now checks 107 catalogs for exact repeated address variables,
+rendering order and ROOT_URL. Warning and placeholder suites and all 21
+preservation checks pass. The less familiar regional prose has lower confidence
+and needs native review. Browser review and the all-language backlog remain open.
+
+## Central Asian and Caucasian sign-in warnings — 2026-10-08
+
+Translate 11 values in Mongolian, Kazakh, Kyrgyz, Uzbek and its Latin/regional
+variants, Azerbaijani and its variants, Georgian and Armenian. The warning suite
+now checks 97 catalogs for exact repeated address variables, rendering order and
+ROOT_URL. The warning and placeholder suites and all 21 preservation checks pass.
+Native and browser review and the wider all-language backlog remain outstanding.
+The separate Uzbek Arabic-script catalog is not covered by this batch.
+
+## Additional sign-in warning languages and Chinese variants — 2026-10-08
+
+Translate 15 values covering Catalan and Valencian, Galician, Basque, Esperanto,
+Thai, Swahili, Tagalog, remaining Mandarin/Chinese variants and Cantonese. Use
+separate Valencian and Cantonese wording. The warning regression suite now checks
+86 catalogs for exact repeated address variables, rendering order and ROOT_URL.
+The warning and placeholder suites and all 21 preservation checks pass. Native
+and browser review and the wider all-language backlog remain outstanding.
+
+## South Asian sign-in address warnings — 2026-10-08
+
+Translate the warning in Hindi and its Indian variant, Bengali, Tamil, Telugu,
+Marathi, Gujarati, Kannada, Malayalam, Nepali, Urdu, Punjabi and Sinhala: 13 new
+values. The warning regression suite now checks 71 catalogs for exact repeated
+address variables, rendering order and the ROOT_URL literal. The targeted warning
+and placeholder suites and all 21 preservation checks pass. Native review,
+complex-script and right-to-left browser rendering, and the wider all-language
+backlog remain outstanding.
+
+## Sign-in warning regional and additional language coverage — 2026-10-08
+
+Fill the warning in 24 additional regional catalogs using their corresponding
+language translations. Add Arabic, Persian, Hebrew and Ukrainian wording across
+eight catalogs, for 32 new values. The regression suite now checks 58 catalogs
+for exact repeated address variables, rendering order and the ROOT_URL literal.
+The warning and placeholder suites and all 21 preservation checks pass. Native
+review, right-to-left browser rendering and the wider all-language backlog remain
+outstanding.
+
+## Sign-in address warning in 26 locales — 2026-10-08
+
+Translate the origin mismatch warning in German (including Austrian and Swiss),
+French (including Canadian), Spanish (including Argentine), Italian, Portuguese,
+Brazilian Portuguese, Dutch, Swedish, Danish, Norwegian Bokmål, Polish, Czech,
+Slovak, Romanian, Hungarian, Indonesian, Malay, Vietnamese, Japanese, Korean,
+Simplified Chinese and Traditional Chinese. Tests preserve ROOT_URL and both
+occurrences of each address variable in their configured/opened/corrective roles.
+The targeted warning and placeholder suites and all 21 preservation checks pass.
+Native and browser review and the wider all-language backlog remain outstanding.
+
+## Remaining Finnish import and sign-in prose — 2026-10-08
+
+Translate 13 remaining import instructions and the sign-in origin mismatch
+warning. The fill tool now reports zero Finnish placeholders, including deferred
+keys listed by its --list mode. Its invariant exclusions still apply; this is not
+a claim of native review or exhaustive short-word review. Import regression tests,
+placeholder tests and all 21 preservation checks pass. Coverage checks literal
+commands, file extensions, hierarchy depth, omitted data, archive mappings and
+the repeated expected/actual address variables. Native and browser review remain
+outstanding, as does the wider all-language backlog.
+
+## Seven additional import formats in three locales — 2026-10-08
+
+Translate 21 instructions in Wu, Papiamento and Yiddish for Quire, Wrike,
+Teamwork.com, Businessmap, Redmine, Notion and Plane. Preserve source commands,
+column names, hierarchy markers, file extensions and warnings about omitted data.
+All three failures from the 332-suite translation run now pass on targeted rerun,
+along with the expanded import-instruction suite, placeholder suite and all 21
+preservation checks. The complete 332-suite run was not repeated after this batch.
+Native and browser review remain outstanding; the wider backlog is unfinished.
+
+## Finnish import instructions and full placeholder scan — 2026-10-08
+
+Translate eight pending import instructions: Planner, MeisterTask, Obsidian,
+Linear, TickTick, ClickUp, Nullboard and Kanri. Preserve product commands, file
+extensions, first-board limits, archived-card mapping and completion dates.
+The registered import-instruction suite and all 21 preservation checks pass.
+A direct full comparison found matching placeholder inventories for 988,920
+values across 246 catalog paths. This count includes locale variants and does
+not establish translation completeness or native quality. The broader translation
+suite run is still being reviewed; native and browser review remain outstanding.
+
+## Kashubian Scrum planning and recovery — 2026-10-08
+
+Translate 31 values using existing terminology. Preserve exact variables,
+keyboard names and count roles. Focused assertions and all 21 preservation
+checks pass. All three suites now pass: completed translation batches, placeholder
+preservation and language wiring. This verifies their registered scope, not full
+translation of every catalog. Recovery prose has lower confidence and needs native
+review; browser checks and the all-language backlog remain open.
+
+## Scottish Gaelic Scrum planning and recovery — 2026-10-08
+
+Translate 31 values using existing terminology. Preserve exact variables,
+keyboard names and count roles. Focused assertions, placeholder and language
+wiring suites, and all 21 preservation checks pass. The completion suite now
+reaches an untranslated Kashubian release label. Recovery prose has lower
+confidence and needs native review; browser checks and the all-language backlog
+remain open.
+
+## Welsh Scrum planning and recovery — 2026-10-08
+
+Translate 62 values across Welsh and British Welsh using existing terminology.
+Preserve exact variables, keyboard names and count roles. Focused assertions for
+both catalogs, placeholder and language wiring suites, and all 21 preservation
+checks pass. The completion suite now reaches an untranslated Scottish Gaelic
+release label. Native review, browser checks and the all-language backlog remain open.
+
+## Basque Scrum planning and recovery — 2026-10-08
+
+Translate 31 planning, import and recovery values using existing terminology.
+Preserve exact variables, keyboard names and count roles. Focused Basque checks,
+placeholder and language wiring suites, and all 21 preservation checks pass.
+The completion suite now reaches an untranslated Welsh release label. Recovery
+prose needs native review; browser checks and the all-language backlog remain open.
+
+## Breton Scrum planning and recovery — 2026-10-08
+
+Translate 31 planning, import and recovery values, preserving exact placeholders,
+keyboard names and count roles. Focused Breton checks, placeholder and language
+wiring suites, and all 21 preservation checks pass. The completion suite now
+reaches an untranslated Basque release label. Recovery prose has lower confidence
+and needs native review; browser checks and the all-language backlog remain open.
+Computing terminology was checked against the [Breton language office glossary](https://www.brezhoneg.bzh/uploads/Document/20/798_536_an-urzhiataerezh.pdf).
+
+## Occitan Scrum planning and recovery — 2026-10-08
+
+Translate 31 planning, import and recovery values using existing terminology.
+Preserve variables, keyboard names and count roles, and distinguish rollback from
+keeping records. Focused Occitan, placeholder and language-wiring checks pass,
+as do all 21 preservation checks. The large completion suite now reaches an
+untranslated Breton release label. Recovery prose has lower confidence and needs native review;
+browser checks and the wider all-language backlog remain unfinished.
+
+## Asturian Scrum planning and recovery — 2026-10-08
+
+Translate 31 planning, import and recovery values using existing terminology.
+Preserve variables, keyboard names and count roles, and distinguish rollback from
+keeping records. Focused Asturian, placeholder and language-wiring checks pass,
+as do all 21 preservation checks. The large completion suite now reaches an
+untranslated Occitan release label. Recovery prose has lower confidence and needs native review;
+browser checks and the wider all-language backlog remain unfinished.
+
+## Aragonese Scrum planning and recovery — 2026-10-08
+
+Translate 31 planning, import and recovery values using existing terminology.
+Preserve exact variables, keyboard names and count roles, and distinguish rollback
+from keeping records. Check cambiar/cambiau vocabulary against
+https://en.wiktionary.org/wiki/cambiar#Aragonese . Recovery prose has lower confidence
+and needs native review. Focused Aragonese, placeholder and language-wiring checks
+pass, as do all 21 preservation checks. The large completion suite now reaches an
+untranslated Asturian release label. Browser checks and the wider backlog remain
+unfinished.
+
+## Neapolitan Scrum planning and recovery — 2026-10-08
+
+Translate 31 planning, import and recovery values using existing terminology.
+Preserve every variable, keyboard name and count role, and distinguish rollback
+from keeping records. Focused Neapolitan, placeholder and language-wiring checks pass,
+as do all 21 preservation checks. The large completion suite now reaches an
+untranslated Aragonese release label. Recovery prose has lower confidence and needs native review;
+browser checks and the wider all-language backlog remain unfinished.
+
+## Sicilian Scrum planning and recovery — 2026-10-08
+
+Translate 31 planning, import and recovery values using existing terminology.
+Preserve every variable, keyboard name and count role, and distinguish rollback
+from keeping records. Check canciari/canciamentu vocabulary against
+https://scn.wiktionary.org/wiki/canciari . Recovery prose has lower confidence and
+needs native review. Focused Sicilian, placeholder and language-wiring checks pass,
+as do all 21 preservation checks. The large completion suite now reaches an
+untranslated Neapolitan release label. Browser checks and the wider backlog remain
+unfinished.
+
+## Sardinian Scrum planning and recovery — 2026-10-08
+
+Translate 31 planning, import and recovery values using existing iteratzione,
+versione and tàula terminology. Preserve exact variables, keyboard names and count
+roles, and distinguish rollback from keeping records. Focused Sardinian, placeholder
+and language-wiring checks pass, as do all 21 preservation checks. The large completion
+suite now reaches an untranslated Sicilian release label. Recovery prose has lower
+confidence and needs native review; browser checks and the wider backlog remain
+unfinished.
+
+## Corsican Scrum planning and recovery — 2026-10-08
+
+Translate 31 planning, import and recovery values using the existing iterazione,
+versione and tavula terminology. Preserve placeholders, keyboard names, count roles
+and the distinction between rollback and preserving records. Focused Corsican,
+placeholder and language-wiring checks pass, as do all 21 preservation checks. The
+large completion suite now reaches an untranslated Sardinian release label. Recovery prose has
+lower confidence and needs native review. Browser checks and the wider all-language
+backlog remain unfinished.
+
+## Irish Scrum planning and recovery — 2026-10-08
+
+Translate 31 planning, import and recovery values. Preserve exact placeholders,
+keyboard names and count roles; distinguish rollback from preserving records.
+Use existing ráib/eisiúint terminology and Foclóir's computing preview term:
+https://www.focloir.ie/en/dictionary/ei/preview
+Focused Irish, placeholder and language-wiring checks pass, as do all 21 preservation
+checks. The large completion suite now reaches an untranslated Corsican release label.
+Recovery wording has lower confidence and needs native review. Browser checks
+and the wider all-language backlog remain unfinished.
+
+## Kannada Scrum planning and recovery — 2026-10-08
+
+Translate 31 planning, import and recovery values using existing terminology.
+Preserve every placeholder, keyboard name and reordered count role; keep rollback
+distinct from preserving records and retain the first-sync no-removal rule. Focused
+Kannada, placeholder and language-wiring checks pass, as do all 21 preservation
+checks. The large completion suite now reaches an untranslated Irish release label.
+Native review, browser checks and the wider all-language backlog remain unfinished.
+
+## Gujarati Scrum planning and recovery — 2026-10-08
+
+Translate 31 planning, import and recovery values using existing terminology.
+Preserve every placeholder, keyboard name and reordered count role; keep rollback
+distinct from preserving records and retain the first-sync no-removal rule. Focused
+Gujarati, placeholder and language-wiring checks pass, as do all 21 preservation
+checks. The large completion suite now reaches an untranslated Kannada planning label.
+Native review, browser checks and the wider all-language backlog remain unfinished.
+
+## Thai Scrum planning and recovery — 2026-10-08
+
+Translate 31 planning, import and recovery values using existing sprint/release
+terminology. Preserve exact placeholders, keyboard names and count roles, and keep
+rollback distinct from preserving records. Focused Thai, placeholder and language-
+wiring checks pass, as do all 21 preservation checks. The large completion suite
+now reaches an untranslated Gujarati release label. Native review, browser checks
+and the wider all-language backlog remain unfinished.
+
+## Urdu Scrum planning and recovery — 2026-10-08
+
+Translate 31 planning, import and recovery values using existing sprint/release
+terminology. Preserve all placeholders, keyboard names and reordered count roles,
+and distinguish rollback from keeping records unchanged. Focused Urdu, placeholder
+and language-wiring checks pass, as do all 21 preservation checks. The large completion
+suite now reaches an untranslated Thai release label. Native review, browser and
+right-to-left rendering checks, and the wider backlog remain unfinished.
+
+## Nepali Scrum planning and recovery — 2026-10-08
+
+Translate 31 planning, import and recovery values using existing sprint/release
+terminology. Preserve all placeholders, keyboard names and reordered count roles,
+and distinguish rollback from keeping records unchanged. Focused Nepali, placeholder
+and language-wiring checks pass, as do all 21 preservation checks. The large completion
+suite now reaches an untranslated Urdu release label. Native review, browser checks
+and the wider all-language backlog remain unfinished.
+
+## Tamil Scrum planning and recovery — 2026-10-08
+
+Translate 31 planning, import and recovery values. Preserve all placeholders,
+keyboard names and count roles, along with the first-sync no-removal rule and the
+distinction between rollback and keeping records unchanged. Focused Tamil, placeholder
+and language-wiring checks pass, as do all 21 preservation checks. The large completion
+suite now reaches an untranslated Nepali release label. Native review, browser checks
+and the wider all-language backlog remain unfinished.
+
+## Bengali Scrum planning and recovery — 2026-10-08
+
+Translate 31 planning, import and recovery values, preserving exact placeholders,
+keyboard names and count roles despite reordered Bengali sentences. Keep rollback
+distinct from preserving records, and retain the first-sync no-removal rule.
+Focused batch, placeholder and language-wiring checks pass, as do all 21 preservation
+checks. The large completion suite advances to an untranslated Tamil release label.
+Native review, browser checks and the wider all-language backlog remain unfinished.
+
+## Hindi Scrum planning, import and recovery — 2026-10-08
+
+Translate 62 values across both Hindi catalogs. Preserve every placeholder, keyboard
+name, import match result and recovery choice. Keep the first-sync no-removal rule
+explicit. Extend regression coverage for keyboard names, first-sync behavior and
+keeping records unchanged. Focused checks of all 62 values, placeholder and language-
+wiring suites, and all 21 preservation checks pass. The large completion suite now
+reaches an untranslated Bengali release label. Native review, browser checks and
+the wider all-language backlog remain unfinished.
+
+## Malay and Indonesian Scrum import and recovery — 2026-10-08
+
+Translate 93 values across both Malay catalogs and Indonesian, using each locale’s
+existing sprint/release terminology. Preserve exact placeholders, keyboard names, matching failures and
+rollback versus keeping already-written records. Extend the existing Malay checks
+for these recovery and keyboard details, and verify that the first sync never removes
+planning. Placeholder and language-wiring suites pass. The large completion suite
+advances past Malay to an untranslated Hindi planning label. Native review, browser checks and the
+remaining all-language backlog are unfinished.
+
+## Persian Scrum import and recovery — 2026-10-08
+
+Translate 56 values in both Persian catalogs: release selection, import previews,
+matching failures and interrupted-operation recovery. Preserve every variable and
+keyboard name, and distinguish rollback from keeping already-written records.
+Extend the existing Persian regression block for keyboard names and recovery
+semantics. Catalog-wide placeholder and language-wiring tests pass; the large
+completion suite advances beyond Persian to an untranslated Malay release label.
+All 21 human-translation preservation checks pass. Native review, browser checks
+and the wider backlog remain unfinished.
+
+## Hebrew Scrum import/recovery and coverage count — 2026-10-08
+
+Translate 56 values in both Hebrew catalogs: release scope, multi-release selection,
+Scrum import previews/errors and interrupted-operation recovery. Preserve exact
+placeholder counts, Ctrl/Cmd/Mac names and the effect of clearing every selection.
+Keep rollback distinct from preserving already-written records. The existing
+Hebrew regression block checks every Scrum string; extend it for keyboard names and
+removal from all releases. Recompute the README's mechanical coverage count as 188
+of 234 non-English catalogs above 90 percent. This count does not certify quality.
+The language-wiring and catalog-wide placeholder suites pass; the large completion
+suite now reaches the next untranslated Persian release label after the Hebrew block.
+A focused check of all 56 Hebrew values and recovery semantics passes, as do all
+21 human-translation preservation checks.
+The preceding broad run reported 27 failures in 1,736 suites over 503 seconds while
+concurrent files were changing; its Papiamento missing-import failure has since passed
+a focused rerun. Native review, browser checks and remaining translations are unfinished.
+
+## Super Productivity, Taiga and Vikunja import instructions — 2026-10-08
+
+Translate nine new instructions in Wu Chinese, Papiamento and Yiddish. Retain menu
+commands, filenames and status names; preserve archive behavior, subtask mapping,
+custom fields and explicit attachment exclusions. Tests cover literals, placeholders
+and archive/exclusion meanings. Native review, browser validation and the broader
+all-language backlog remain unfinished.
+
+## Bengali, Kannada and Nepali short interface labels — 2026-10-08
+
+Translate 12 English values: sort criterion, rule actor, email recipient and the
+current-user due-card filter. The rule templates confirm that the two English by
+labels have different roles; use explicit field labels rather than a shared
+preposition. Preserve exact token inventories. Composed interface wording needs
+native review, and browser checks and the wider backlog remain unfinished.
+
+## Mongolian short Blockly labels — 2026-10-08
+
+Translate 14 short English values using Mongolian control and pixel-state vocabulary
+already present in the tooltips. Preserve movement context and input argument roles,
+list position markers and equivalent control/procedure labels. Composed labels need
+native review; browser and screen-reader validation were not run. The wider backlog
+remains unfinished.
+
+## Remaining-work snapshot — 2026-10-08
+
+The standard missing report still counts 32,567 values across 46 languages, excluding
+261 pending-Transifex source keys. The separate short-prose audit finds 1,751 review
+candidates across 185 locales; shared native words can equal English, so these are
+not all confirmed missing translations. Neither report establishes linguistic
+completeness. The full Node suite is being checked after the latest import fills.
+
+## Tasks.org and monday.com import instructions — 2026-10-08
+
+Translate six instructions in Wu Chinese, Papiamento and Yiddish. Preserve source
+menu commands, file extensions, completion dates, priority-to-custom-field mapping
+and updates-to-comments mapping. Regression checks cover these details and exact
+placeholder inventories. Native review and browser checks remain outstanding, as
+does the broader all-language translation backlog.
+
+## Seven new import instructions in three languages — 2026-10-08
+
+Translate 21 new instructions for Obsidian, Linear, TickTick, ClickUp, Nullboard,
+Kanri and Pivotal Tracker in Wu Chinese, Papiamento and Yiddish. Preserve product menu labels, file
+extensions, raw-note labels, archive behavior and first-board-only imports. Regression
+checks cover those literals and meanings alongside the completed-catalog checks.
+The instruction and placeholder suites pass; the three completed-catalog suites
+now fail only on a concurrently added Tasks.org instruction, which remains to translate.
+Papiamento and Wu wording need native review; browser checks were not run. The broader
+all-language translation backlog remains unfinished.
+
+## Punjabi, Swahili and Latin-script Uzbek short labels — 2026-10-08
+
+Translate 62 English Blockly labels across five catalogs. Preserve movement input
+and context arguments, list position markers, matching procedure aliases and distinct
+pixel states. Reuse conditional and execution terms from existing tooltips. Composed
+labels need native review; browser/screen-reader checks were not run. This batch does
+not finish the remaining translation backlog.
+
+## Marathi, Malayalam and Telugu short Blockly labels — 2026-10-08
+
+Translate 31 short English labels across three catalogs. Match existing conditional
+and execution terminology, preserve movement context/input argument roles, and keep
+procedure aliases consistent. Pixel-on states remain distinct from pixel-off states.
+Composed block labels have lower confidence and need native review; screen-reader and
+browser validation were not run. Wider translation work remains unfinished.
+
+## Czech, Japanese and Chinese short labels — 2026-10-08
+
+Translate 14 English values across 12 locale paths. Distinguish Czech sort-criterion
+and rule-actor labels using the rule templates, translate Japanese or, and reorder
+Chinese movement announcements while preserving %1 input and %2 context roles.
+Only exact English values are changed. Regression coverage includes argument roles
+and the existing Chinese human-translation protection suite. Browser/screen-reader
+validation and wider translation work remain unfinished.
+
+## Yiddish and Papiamento short Blockly labels — 2026-10-08
+
+Translate 29 short English labels: movement context, conditional/execution words,
+list ranges and assignment, procedure headings and lit pixel state. Retain Papiamento
+OK as a shared label. Preserve indexed arguments and consistency between modern and
+legacy Blockly labels. Papiamento wording needs native review; browser/screen-reader
+tests and wider translation work remain unfinished.
+
+## Finnish, German and French short Blockly labels — 2026-10-08
+
+Translate 20 English values across Finnish, four German and five French locale paths:
+the input/context movement announcement and the lit bitmap-pixel state. Preserve
+indexed argument roles, using context-before-input wording in Finnish. Existing
+non-English values are not overwritten. Extend regression coverage for the exact
+argument roles and preserve the technical notation excluded by the short-prose audit.
+Screen-reader/browser validation and the wider translation work remain unfinished.
+
+## MeisterTask instruction translations — 2026-10-08
+
+Translate the new MeisterTask import instruction into Wu, Papiamento and Yiddish.
+Preserve the Export project menu label, CSV format, section/task mapping, completion
+dates and support for MeisterTask's own import format. Extend the existing import
+instruction regression test. These translations need native review, particularly
+Papiamento technical vocabulary; browser tests and wider translation work remain
+unfinished.
+
+## Planner instruction translations — 2026-10-08
+
+The Planner source instruction has landed in 7ef5b875fa. Finalize its Wu, Papiamento
+and Yiddish translations and the regression test, preserving the export menu label,
+.xlsx extension and Progress/Priority/Completed By field names. Clarify that Planner
+buckets are task groups, not storage buckets. The three previously failing suites
+passed before the next source addition. The Planner-specific regression still passes;
+the latest rerun finds the new MeisterTask instruction in those three completeness
+checks. Wording, particularly Papiamento technical vocabulary, needs native review. Browser tests and wider translation work remain
+unfinished. The earlier pending-commit note is historical and is resolved by this batch.
+
+## Short source-prose audit — 2026-10-08
+
+Add `node releases/translations/audit-short-prose.mjs`, a read-only report for English
+short words hidden by the fill tool's under-three-letter invariant exemption. It finds
+1,907 candidates in 198 locale files in the current working catalog; Wu has none.
+The report preserves indexed arguments and excludes units, product names, symbols,
+English variants and already-different translations. These are review candidates,
+not confirmed untranslated values: shared native words must not be overwritten.
+
+Two regression tests pass for candidate detection, variable preservation, technical
+exclusions and non-mutation. The ordinary fill tool is unchanged, so this supplemental
+report must be included in remaining-language review. The broader translation goal
+remains unfinished. Pending Planner locale edits remain separate from this tool.
+
+## Wu catalog review checkpoint — 2026-10-08
+
+Run `node tests/run-node-suites.cjs Translation translation`: 299 suites selected,
+296 passed and three failed in 107 seconds. All three failures were the newly added
+Microsoft Planner instruction in Wu, Papiamento and Yiddish. Translate that instruction
+in those catalogs and add a literal/mapping regression test: the three failed suites
+plus the new test pass (four suites). Do not describe the original broad run as green.
+The Planner wording needs native review, particularly Papiamento technical vocabulary.
+The source key belongs to concurrent staged Planner work; dependent locale/test edits
+remain uncommitted until that source change is committed.
+
+Continue the source comparison through the remaining Blockly, Scrum, sync and recovery
+entries to the end of the current catalog. Retain the existing Wu prose reviewed in
+this pass; technical brands, URLs, empty Blockly suffixes and mathematical symbols
+remain unchanged. This is a source review, not native-speaker or screen-reader validation.
+
+The missing report still counts 32,567 values across 46 languages, excluding 251 source
+keys pending Transifex. Its invariant detector treats source strings with fewer than
+three letters as complete, which hid translatable Blockly labels such as if, do and
+%1 of %2. Those Wu labels were translated in the preceding batch. The detector's broad
+short-string exemption remains a follow-up for all languages; an empty fill list must
+not be used as proof that every visible label is translated.
+
+## Wu Blockly-label corrections — 2026-10-08
+
+Translate 15 remaining English Blockly labels, including control-flow words, procedure
+headings, list assignment and a movement announcement. The local Blockly caller uses
+%1 for an input label and %2 for its enclosing context; preserve those roles when
+reordering the Wu possessive phrase. These labels were absent from the missing-string
+report, so an empty report alone does not prove completion. Refresh exact-value audit
+records. Wu wording needs native review; screen-reader/browser tests were not run and
+the wider translation work remains unfinished.
+
+## Wu flow-report corrections — 2026-10-08
+
+Correct 39 analytics and time-adjustment values, replacing abbreviated fragments
+with complete labels and explanations. Preserve forecast trials/horizon, UTC and
+zero-throughput sampling, uncertainty, missing-history behavior, cycle-date fallbacks
+and the distinction between time corrections and work sessions. Refresh exact-value
+audit records. Statistical terminology has lower confidence and needs native review;
+browser tests were not run and all-language work remains unfinished.
+
+## Wu import and sync corrections — 2026-10-08
+
+Correct 24 import/export, WIP group and list-sync values. Restore group meanings and
+PROJECT/owner/repo examples. Preserve search syntax, file extensions, item variables,
+15-minute synchronization and selected-parts behavior. Refresh exact-value audit
+records. Wu prose needs native review; browser tests were not run and all-language
+work remains unfinished.
+
+## Wu account and repair-result corrections — 2026-10-08
+
+Correct 22 account, repository and repair-result values. Restore Cron and status labels,
+preserve the username minimum and fixed/unfixable/restored/remaining count variables,
+and retain the missing-board reason for unsuccessful automatic repair. Refresh
+exact-value audit records. Wu prose needs native review; browser tests were not run
+and all-language work remains unfinished.
+
+## Wu job-control corrections — 2026-10-08
+
+Correct 26 job, migration-control and monitoring values. Restore task rather than
+employment and board rather than motherboard meanings. Preserve batch, CPU and delay
+ranges, the pause threshold and background continuation after closing the browser.
+Refresh exact-value audit records. Wu prose needs native review; browser tests were
+not run and all-language work remains unfinished.
+
+## Wu monitoring-label corrections — 2026-10-08
+
+Correct 30 repair, monitoring and interval values. Restore elapsed-day, completion,
+export-monitoring and board-scan meanings; retain GridFS as a product name and numeric
+repeat intervals. Clarify per-swimlane lists and once-per-board conversion without
+interrupting board use. Refresh exact-value audit records. Wu prose needs native review;
+browser tests were not run and all-language work remains unfinished.
+
+## Wu repair-prompt corrections — 2026-10-08
+
+Correct 28 repair and migration values. Restore exact swimlaneId spelling, running
+rather than jogging, and board rather than circuit-board meanings. Keep non-archived
+scope for lost-card recovery, all-archived scope and the difficult-undo warning for
+archive restoration, and shared-list conversion before duplicate cleanup. Refresh
+exact-value audit records. Wu prose needs native review; browser tests were not run
+and all-language work remains unfinished.
+
+## Wu storage and task corrections — 2026-10-08
+
+Correct 32 storage, scheduled-task and migration values. Restore task rather than job
+vacancy, board operations and migration scope. Preserve endpoint/region examples,
+SSL/TLS and CollectionFS names, and the conjunction of empty-list and populated
+same-title-list conditions for cleanup. Refresh exact-value audit records. Wu prose
+needs native review; browser tests were not run and all-language work remains unfinished.
+
+## Wu cloud setup and migration-status corrections — 2026-10-08
+
+Correct 24 cloud and migration values. Preserve console menu labels and product names,
+file-or-pasted-JSON alternatives, retained secrets and all-migration stop scope.
+Distinguish in-progress status from successful or failed operations. Refresh exact-value
+audit records. Wu prose needs native review; browser tests were not run and all-language
+work remains unfinished.
+
+## Wu cloud-help corrections — 2026-10-08
+
+Correct 19 anonymization, restore and cloud-storage values. Preserve counter examples,
+mention and field names, credential fallbacks, client_email, console menu labels and
+the once-only secret-key display warning. Existing Wu continuous-backup strings are
+retained. Refresh exact-value audit records. Wu prose needs native review; browser
+tests were not run and all-language work remains unfinished.
+
+## Wu settings-help corrections — 2026-10-08
+
+Correct 20 loading, rendering, import/export, account, notification and backup values.
+Replace stale manual-loading help with automatic mode and its threshold setting, and
+replace export help incorrectly used as the account-anonymization confirmation.
+Preserve configuration names, Markdown/HTML examples, avatar scope and organization
+backup exclusions. Refresh exact-value audit records. Wu prose needs native review;
+browser tests were not run and all-language work remains unfinished.
+
+## Wu migration-help corrections — 2026-10-08
+
+Correct 17 storage and migration-help values. Preserve database URLs, environment
+variables, Snap commands, Sandstorm file paths and the target-database placeholder.
+Keep migration prerequisites, attachment/avatar exclusions and irreversible-deletion
+warnings. Refresh exact-value audit records. Wu prose needs native review; browser
+tests were not run and all-language work remains unfinished.
+
+## Wu account and scheduled-job corrections — 2026-10-08
+
+Correct 43 account and scheduled-job values. Check peopleBody.jade to distinguish
+account enablement from recent activity. Restore board rather than circuit-board
+meanings and distinguish no paused migrations from an inability to resume migrations.
+Preserve scheduling rather than claiming operations have finished. Refresh exact-value
+audit records. Wu prose needs native review; browser tests were not run and all-language
+work remains unfinished.
+
+## Wu recurrence and lockout corrections — 2026-10-08
+
+Correct 28 translation-control, recurrence, support and lockout values. Restore Markdown
+as the format name and card recurrence rather than checklist reset, checked against
+server/cardRecurrenceSchedule.js. Preserve ZIP/JSON/ISO literals, irreversible deletion,
+known/unknown user distinctions and single/all-user unlock scope. Refresh exact-value
+audit records. Wu prose needs native review; browser tests were not run and all-language
+work remains unfinished.
+
+## Wu storage and progress corrections — 2026-10-08
+
+Correct 25 storage, progress and workspace values. Restore filesystem path, upload
+progress and board-ID meanings. Preserve the workspace variable, database product
+names and compaction instructions, including secondary-before-primary order and the
+single-node case. Refresh exact-value audit records. Wu prose needs native review;
+browser tests were not run and all-language work remains unfinished.
+
+## Wu diagnostics and storage corrections — 2026-10-08
+
+Correct 45 diagnostic, organization, checklist and storage values. Restore Node
+as a product name, board rather than forum, moving a checklist rather than moving
+house, and original sequence rather than purchase order. Preserve storage names and
+clarify the distinction between all attachments and a board's attachments. Refresh
+exact-value audit records. Wu prose needs native review; browser tests were not run
+and all-language work remains unfinished.
+
+## Wu animation and invitation corrections — 2026-10-08
+
+Correct 18 animation, team and invitation values. Check the Rotateplane and Scaleout
+CSS to distinguish the rotating square and expanding/fading animation from an airplane
+and horizontal expansion. Preserve Cc and clarify removal from a board and disabled
+self-registration. Refresh exact-value audit records. Wu prose needs native review;
+browser tests were not run and all-language work remains unfinished.
+
+## Wu report and template corrections — 2026-10-08
+
+Correct 21 report, template and permission values. Restore the administrator and
+card-creator roles. Preserve template placeholders, HTML space entities and the API
+configuration literal; keep account/endpoint aggregation and deletion restrictions.
+Refresh exact-value audit records. Wu prose needs native review; browser tests were
+not run and all-language work remains unfinished.
+
+## Wu dependency and map corrections — 2026-10-08
+
+Correct 17 dependency, background, map and server-help values. Preserve imported and
+unmatched line counts, the background size placeholder and executable log commands.
+Restore Snap as the installation product name rather than translating it as a snapshot.
+Refresh exact-value audit records. Wu prose needs native review; browser tests were
+not run and all-language work remains unfinished.
+
+## Wu search-logic help corrections — 2026-10-08
+
+Correct 15 search-help values. Preserve predicate variables, code examples, OR/AND
+semantics, missing-field negation, descending-sort syntax and positive page limits.
+Restore Available/red example names in the explanation so they match the query.
+Refresh exact-value audit records. Wu prose needs native review; browser tests were
+not run and all-language work remains unfinished.
+
+## Wu search-help corrections — 2026-10-08
+
+Correct 16 search-help values. Preserve operator placeholders, angle-bracket arguments,
+backtick examples and quoting syntax. Clarify member/assignee alternatives, container
+title matching, organization/team scope and recent creation/modification intervals.
+Refresh exact-value audit records. Wu prose needs native review; browser tests were
+not run and all-language work remains unfinished.
+
+## Wu search-predicate corrections — 2026-10-08
+
+Correct 17 search-predicate and validation values. Restore calendar-quarter, attachment,
+assignee and visibility meanings. Preserve operator/value variables, percent placeholders
+and positive-integer validation. Refresh exact-value audit records. Wu prose needs native
+review; browser tests were not run and all-language work remains unfinished.
+
+## Wu search-result and operator corrections — 2026-10-08
+
+Correct 27 search-result and operator values. Preserve missing-item placeholders and
+range/total roles. Restore source search abbreviations b, s, l, m and a, and correct
+board, assignee, sort and attachment meanings. Refresh exact-value audit records.
+Wu prose needs native review; browser tests were not run and all-language work remains
+unfinished.
+
+## Wu shared-template and card-view corrections — 2026-10-08
+
+Correct 22 shared-template and card-view values. Restore board/table meanings and
+personal attachment scope. Preserve nonempty template-board filtering, authorized-board
+scope, incomplete due cards and the member-or-assignee search restriction. Retain existing
+Wu table-view toggle descriptions. Refresh exact-value audit records and source-token
+checks. Wu prose needs native review; browser tests were not run and all-language work
+remains unfinished.
+
+## Wu calendar and domain corrections — 2026-10-08
+
+Correct 15 weekday, status, checklist and domain values. Preserve linked-card deletion
+prerequisites and the example.com example with its prohibition on @ and spaces.
+Distinguish checked checklist items from selection. Refresh exact-value audit records
+and check source tokens. Wu prose needs native review; browser tests were not run and
+all-language work remains unfinished.
+
+## Wu notification controls and role corrections — 2026-10-08
+
+Correct 13 display, notification and role values. Preserve opposite read/unread actions,
+assigned-card scope, the global-admin exception and preview of unsaved role choices.
+Retain existing Wu reminder thresholds and notification-precedence explanations.
+Refresh exact-value audit records and check source tokens. Wu prose needs native review;
+browser tests were not run and all-language work remains unfinished.
+
+## Wu reminders and card-control corrections — 2026-10-08
+
+Correct 19 reminder, deletion and card-control values. Preserve named reminder and
+mention variables, current-versus-past due meanings and irreversible deletion warnings.
+Clarify one-window versus multiple-window behavior and assignee terminology. Retain
+existing Wu editor shortcut and checklist-sound explanations. Refresh exact-value audit
+records. Wu prose needs native review; browser tests were not run and all-language work
+remains unfinished.
+
+## Wu date and placement corrections — 2026-10-08
+
+Correct 22 copying, deletion, date-activity and placement values. Preserve named old/new
+date variables, card identifiers and percent placeholders. Replace the childbirth due-date
+mistranslation and distinguish approaching, past and today. Retain opposite placement
+and irreversible swimlane deletion. Refresh exact-value audit records. Wu prose needs
+native review; browser tests were not run and all-language work remains unfinished.
+
+## Wu login and configuration-literal corrections — 2026-10-08
+
+Correct 16 login and configuration values. Restore CAS as a protocol name, preserve
+one-time email-code behavior and distinguish positions after the opening body tag and
+before its closing tag. Retain environment names, login placeholders and existing origin
+mismatch variables. Refresh exact-value audit records. Wu prose needs native review;
+browser tests were not run and all-language work remains unfinished.
+
+## Wu rule-field action corrections — 2026-10-08
+
+Correct 20 rule-action and configuration values. Preserve checklist checking versus
+unchecking, all-member scope, empty-field wildcard behavior and comma-separated items.
+Retain the OAuth environment-variable pattern, setting precedence and hidden-secret
+statement. Refresh exact-value audit records and check source tokens. Wu prose needs
+native review; browser tests were not run and all-language work remains unfinished.
+
+## Wu checklist and movement-action corrections — 2026-10-08
+
+Correct 18 rule-action fragments. Restore checkbox actions rather than inspection,
+and distinguish a card's own list from a selected list for top/bottom moves. Preserve
+any-trigger semantics, ordered actions and source variables. Retain existing brace
+variable hints. Refresh exact-value audit records. Wu prose needs native review;
+browser tests were not run and all-language work remains unfinished.
+
+## Wu rule-condition corrections — 2026-10-08
+
+Correct 24 rule-condition and action fragments. Restore date-set as well as date-change
+triggers, completion/checking distinctions and the acting-user membership action.
+Preserve source tokens and all-member removal scope. Retain existing forward/backward
+movement wording. Refresh exact-value audit records. Wu prose needs native review;
+browser tests were not run and all-language work remains unfinished.
+
+## Wu rule movement and completion corrections — 2026-10-08
+
+Correct 18 rule fragments. Replace emotional-movement and firearm-trigger meanings;
+retain opposite completion actions, all-card movement, N-day duration and dates relative
+to now. Preserve source tokens and refresh exact-value audit records. Wu prose needs
+native review; browser tests were not run and all-language work remains unfinished.
+
+## Wu rule-import and schedule corrections — 2026-10-08
+
+Correct 18 rule-import and schedule values. Preserve imported/unmapped count variables,
+product names, Butler export limitations and reporting of unsupported lines/nodes.
+Retain Monday–Friday scope and distinct once/weekly schedule labels. Refresh exact-value
+audit records. Wu prose needs native review; browser tests were not run and all-language
+work remains unfinished.
+
+## Wu rule-trigger corrections — 2026-10-08
+
+Correct 21 rule-trigger and workflow values. Replace firearm-trigger and assignee
+mistranslations; preserve added/removed and archived/restored event distinctions,
+the named time variable and JSON/CSV literals. Refresh exact-value audit records.
+Wu prose needs native review; browser tests were not run and all-language work remains
+unfinished.
+
+## Wu parent-card and activity corrections — 2026-10-08
+
+Correct 22 minicard, parent-card and activity values. Restore positional roles:
+removed label before owner, custom-field name before value before owner, and unset
+field name before owner. Preserve counts and distinguish parent cards from human
+parents. Refresh exact-value audit records. Wu prose needs native review; browser
+tests were not run and all-language work remains unfinished.
+
+## Wu organization and deletion corrections — 2026-10-08
+
+Correct 22 organization, deletion and subtask-setting values. Preserve organization
+administrator limits, board variables, permanent deletion warnings and the requirement
+that duplicate lists have both matching names and no cards. Clarify subtask destination
+and minicard scope. Retain existing Wu domain-request explanations. Refresh exact-value
+audit records. Wu prose needs native review; browser tests were not run and all-language
+work remains unfinished.
+
+## Wu administration and field-scope corrections — 2026-10-08
+
+Correct 19 administration, custom-field and organization values. Restore Node and
+Meteor product names and distinguish adding fields to new versus all cards. Preserve
+administrator-only visibility, example domains and MULTITENANCY=true. Retain the
+existing read-only field permission explanation. Refresh exact-value audit records.
+Wu prose needs native review; browser tests were not run and all-language work remains
+unfinished.
+
+## Wu limits and mail-setting corrections — 2026-10-08
+
+Correct 24 task-limit, transfer-limit, invitation and mail-setting values. Preserve
+WIP alternatives, separate API buffering caps, avatar defaults and named invitation
+variables. Restore board destination and sender meanings; retain template brace
+variables unchanged. Refresh exact-value audit records. Wu prose needs native review;
+browser tests were not run and all-language work remains unfinished.
+
+## Wu tracking and link corrections — 2026-10-08
+
+Correct 18 time-tracking, shortcut, watching and link values. Replace wristwatch and
+elapsed-time mistranslations; retain shortcut ranges and opposite label actions.
+Preserve the either-field-empty disable condition and source tokens. Leave existing
+URL-scheme restrictions and link-template examples intact. Refresh exact-value audit
+records. Wu prose needs native review; browser tests were not run and all-language
+work remains unfinished.
+
+## Wu shortcuts and starred-item corrections — 2026-10-08
+
+Correct 25 shortcut, threshold and starred-item values. Distinguish card membership
+from assignment and cards assigned to the current user from cards assigned by them.
+Preserve opposite default-board actions, top-of-list placement, Enter and hour units.
+Refresh exact-value audit records and check source tokens. Wu prose needs native
+review; browser tests were not run and all-language work remains unfinished.
+
+## Wu visibility and member-removal corrections — 2026-10-08
+
+Correct 24 visibility, profile, removal and unsaved-description values. Preserve
+login-link markup, named member/board variables and notification scope. Distinguish
+public viewing from member-only editing and membership removal from card deletion.
+Retain existing Sandstorm access warning. Refresh exact-value audit records. Wu prose
+needs native review; browser tests were not run and all-language work remains unfinished.
+
+## Wu selection and notification corrections — 2026-10-08
+
+Correct 27 selection, membership, archive and notification values. Clarify operations
+on selected items, opposite top/bottom movement, assigned-card visibility and ordinary
+editing limits. Preserve creator/member notification scope and watched objects.
+Refresh exact-value audit records and check source tokens. Wu prose needs native
+review; browser tests were not run and all-language work remains unfinished.
+
+## Wu member and list-operation corrections — 2026-10-08
+
+Correct 26 member-mapping, role and list-operation values. Preserve board-title
+variables, four-digit year guidance and the last-administrator restriction. Distinguish
+leaving card membership from deleting cards, and recoverable archiving from permanent
+list/history deletion. Refresh exact-value audit records. Wu prose needs native review;
+browser tests were not run and the all-language work remains unfinished.
+
+## Wu Trello import corrections — 2026-10-08
+
+Correct 25 Trello import, archive-error and cancellation values. Preserve file
+extensions, product names and API credential terms. Retain both required credentials,
+all-board ZIP import, conditional workspace creation and irreversible deletion limited
+to the current job's imported boards. Refresh exact-value audit records and preserve
+source tokens. Wu prose needs native review; browser tests were not run and the
+all-language work remains unfinished.
+
+## Wu import-instruction corrections — 2026-10-08
+
+Correct 19 import labels and instructions. Preserve source variables, API paths,
+JSON schema keys, markdown syntax and spreadsheet headers. Retain grouping and
+completion behavior, optional rule import and deferred member mapping. Leave existing
+Wu outline and task-list instructions intact. Refresh exact-value audit records.
+Wu prose needs native review; browser tests were not run and all-language work remains
+unfinished.
+
+## Wu sorting and filter corrections — 2026-10-08
+
+Correct 27 sorting, filtering and navigation values. Restore sort abbreviations and
+single-quoted advanced-filter examples; preserve operators, escapes and regex syntax.
+Distinguish creators from assignees and retain case-insensitive text-trigger behavior.
+Retain existing Wu date-range and list-age safeguards. Refresh exact-value records.
+Wu prose needs native review; browser tests were not run and all-language work remains
+unfinished.
+
+## Wu errors and export corrections — 2026-10-08
+
+Correct 30 import-error, account and export values. Preserve technical literals,
+linked-card restrictions and the recovery instruction to re-export an empty board.
+Restore disk-space and file-size meanings; remove hidden characters inside Excel.
+Refresh exact-value audit records and check token preservation. Wu prose needs native
+review; browser tests were not run and all-language work remains unfinished.
+
+## Wu email and field-message corrections — 2026-10-08
+
+Correct 25 field, email, invitation and access messages. Preserve all named template
+variables, Enter and JSON literals. Retain role restrictions and the guarantee that
+enabling permanent deletion does not itself delete content. Correct decline from
+economic decline to refusal. Refresh exact-value audit records. Wu prose needs native
+review; browser tests were not run and all-language work remains unfinished.
+
+## Wu permissions and copying corrections — 2026-10-08
+
+Correct 23 permissions, confirmation, clipboard and import values. Preserve assigned
+card visibility, read-only limits and the worker's self-assignment scope. Retain
+JSON property names while translating sample values. Check moving every card with
+its list and permanent deletion of custom-field history. Refresh exact-value audit
+records. Wu prose needs native review; browser tests were not run and all-language
+work remains unfinished.
+
+## Wu color and comment-role corrections — 2026-10-08
+
+Correct 20 archive-navigation, color and comment-role values. Restore the All Boards
+archive path. Translate color names as colors rather than fruits, food or naval
+forces. Confirm the no-comments key is a board role in source; preserve comment-only
+and assigned-card restrictions. Refresh exact-value audit records and preserve tokens.
+Wu prose needs native review; browser tests were not run and all-language work remains
+unfinished.
+
+## Wu member search and toggle corrections — 2026-10-08
+
+Correct 20 member-search, font, avatar, toggle and card-aging values. Preserve
+opposite toggle actions, matching-user scope, all ten font-preview digits and three
+idle-day fading levels. Retain existing Wu auto-archive safeguards and text-note
+confirmation. Refresh exact-value audit records. Wu prose needs native review;
+browser tests were not run and the all-language work remains unfinished.
+
+## Wu planning and card dialog corrections — 2026-10-08
+
+Correct 19 planning, card and account dialog values. Replace the English WHO,
+playing-card and assignee mistranslations; retain archive/delete distinctions.
+Restore anonymization scope to accounts and preserve the imported-member role limit
+in account mapping. Preserve source variables and numeric planning choices. Refresh
+exact-value audit records. Wu prose needs native review; browser tests were not run
+and the all-language work remains unfinished.
+
+## Wu voting and archive corrections — 2026-10-08
+
+Correct 17 archive, card and voting values. Preserve overdue-day variables,
+recoverable swimlane archiving and permanent vote deletion. Clarify card membership
+scope, affirmative votes and opposing voters; align Planning Poker terminology.
+Refresh exact-value audit records. Wu prose needs native review; browser tests were
+not run and the all-language work remains unfinished.
+
+## Wu timeline and card lifecycle corrections — 2026-10-08
+
+Correct 22 timeline, calendar and card lifecycle values. Preserve the comment
+count and ISO identifier. Restore the table-view meaning and calendar date-display
+scope; retain all timeline restoration fields and the no-deletion guarantee.
+Distinguish irreversible deletion from recoverable card/list archiving. Refresh
+exact-value audit records. Wu prose needs native review; browser tests were not run
+and the all-language work remains unfinished.
+
+## Wu board visibility and membership corrections — 2026-10-08
+
+Correct 20 board, assignment, visibility and view strings. Replace committee,
+motherboard, wristwatch and physical-collapse mistranslations. Translate private
+and public prose while retaining strong tags, star count and workspace variables.
+Distinguish all-card assignments from current-card assignments. Refresh exact-value
+audit records. Wu wording needs native review; browser tests were not run and the
+all-language work remains unfinished.
+
+## Broad verification after Wu archive corrections — 2026-10-08
+
+Run `node tests/run-node-suites.cjs Translation translation`: 299 selected suites,
+zero failures in 100 seconds. This is filename-filtered translation coverage, not
+every repository test. The missing report counts 32,567 values across 46 languages,
+excluding 250 source keys pending Transifex. Wu's full fill list is empty, but older
+wrong-language wording remains to review. Browser tests were not run. Native review
+and the remaining all-language work are unfinished.
+
+## Wu archive and attachment corrections — 2026-10-08
+
+Correct 30 archive, attachment, loading and board-setting values. Distinguish
+permanent deletion from recoverable removal, retain the loading data-loss warning,
+and preserve card-count and size variables. Retain the existing administrator-only
+board-creation restriction. Refresh exact-value audit records. Wu prose needs native
+review; browser tests were not run and the wider translation audit is unfinished.
+
+## Wu checklist and member corrections — 2026-10-08
+
+Correct 18 checklist, card, membership and administrator strings. Restore matching
+cards, completed addition, administrator role and placement after a list. Preserve
+source tokens and refresh exact-value audit records. Wu prose is lower confidence
+and needs native review. Browser tests were not run; the wider audit is unfinished.
+
+## Wu width and shortcut setting corrections — 2026-10-08
+
+Correct 11 list-placement, width and shortcut messages to Wu. Preserve source
+tokens and check shared/personal scope, resizing every list and opposite toggle
+actions. Retain the existing correct Wu minimum-width validation. Refresh exact-value
+audit records. Prose is lower confidence and needs native review. No browser
+session was run. The broader language audit remains unfinished.
+
+## Wu workspace and home-board corrections — 2026-10-08
+
+Correct 15 workspace, selection, home-board and date messages. Restore the missing
+single-board restriction, preserve the distinction between removing from Home and
+deleting a board, and clarify positional date roles. Preserve source tokens and
+refresh exact-value audit evidence. Wu prose is lower confidence and needs native
+review. No browser session was run. The broader language audit remains unfinished.
+
+## Wu checklist dates and Markdown correction — 2026-10-08
+
+Correct eight checklist, comment, date and workspace-icon values. Restore item
+before checklist and date before owner in positional messages; express cancelling
+completion as an action. Restore Markdown's format name instead of the unrelated
+price-reduction wording. Preserve exact tokens and refresh audit evidence. Wu prose
+needs native review. No browser session was run. The broader audit is unfinished.
+
+## Wu activity-summary argument order — 2026-10-08
+
+Correct 25 activity summaries to Wu wording. Repair reversed positional `%s` roles
+in import, exclusion, removal and checklist messages; inventory equality alone
+cannot detect swapped arguments. Preserve source counts and check the surrounding
+role wording. Update exact-value audit records. Wording is lower confidence and
+needs native review. No browser session was run. The broader audit is unfinished.
+
+## Wu board activity corrections — 2026-10-08
+
+Replace 24 Mandarin-like or malformed comment, creation, archive, import, movement
+and membership messages with Wu wording. Preserve exact source tokens and record
+the updated values in the correction ledger. Check distinct actions, archive versus
+removal, old/new board roles and import terminology. Wording is lower confidence
+and needs native review. No browser session was run. The language audit is unfinished.
+
+## Wu activity language corrections — 2026-10-08
+
+Replace 26 Mandarin-like activity and permission messages directly with Wu wording.
+The English-placeholder fill cannot correct these existing values. Preserve every
+source token, including `__checkList__` case, and repair title-argument order.
+Check checked/unchecked and completed/incomplete actions, shared label aliases and
+Wu vocabulary beyond Han script. Wording is lower confidence and needs native
+review. No browser session was run. The broader language audit remains unfinished.
+
+## Wu current fill list completed — 2026-10-08
+
+Translate the final 33 interrupted-import, history and environment-setting strings.
+The full current Wu fill list is empty. Preserve exact variables; check permanent
+removal, preserved boards, untouched foreign boards, rollback conditions and read-only
+settings. Wu wording is lower confidence and needs native review. No browser session
+was run. Older Mandarin-like passages and other languages remain unfinished.
+
+## Wu Sync planning and interrupted operations — 2026-10-08
+
+Translate 25 planning and interrupted-Sync messages. Preserve exact variables and
+ID; check source matching order, first-Sync planning retention, applied changes
+remaining after discard, suppressed unwritten changes and replayable operations.
+Wu wording is lower confidence and needs native review. No browser session was
+run. Remaining English strings and older Mandarin-like passages require work.
 
 ## Wu rules and Scrum imports — 2026-10-08
 
@@ -12408,7 +15390,7 @@ explicit broader wrong-language review item and must be resolved before the
 full audit closes.
 
 The [correction ledger](../../../releases/translations/audited-corrections.json)
-records contain **22,836** exact before/after values, including unflagged
+records contain **24,225** exact before/after values, including unflagged
 repairs. [Detailed evidence](Audit-Evidence.md) preserves categorized findings,
 source references, dated commit history and low-confidence limits.
 Corrected counts classify changed values; they do not certify full fluency.

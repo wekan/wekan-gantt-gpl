@@ -1,3 +1,4 @@
+import { membersMode, membersMappingFor, importedPeople } from '/models/lib/importMembersMode';
 import { Meteor } from 'meteor/meteor';
 import { ReactiveCache } from '/imports/reactiveCache';
 import Activities from '/models/activities';
@@ -5,10 +6,11 @@ import Boards from './boards';
 import Cards from '/models/cards';
 import Lists from '/models/lists';
 import Swimlanes from '/models/swimlanes';
-import { CARD_COLORS } from '/models/metadata/colors';
+import { CARD_COLORS, LABEL_COLORS } from '/models/metadata/colors';
 import {
   importedCustomFieldValues,
   planImportedCustomFields,
+  planImportedLabels,
   planImportedLinks,
   planImportedTask,
 } from '/models/lib/importedTaskPlan';
@@ -50,7 +52,10 @@ export class KanboardCreator {
     // Parser and planner losses, recorded once the board exists.
     this.losses = [];
     this._nowDate = new Date();
-    this.members = data && data.membersMapping ? data.membersMapping : {};
+    // Who the file's people become - chosen users, placeholders, or the
+    // person importing - the same for every source (models/lib/importMembersMode.js).
+    this.membersMode = membersMode(data);
+    this.members = membersMappingFor(data, () => Meteor.userId());
     this.lists = {};
     this.swimlanes = {};
     this.cardIds = [];
@@ -137,13 +142,20 @@ export class KanboardCreator {
       stars: 0,
       title,
     };
-    // Tags -> board labels.
-    const tagNames = new Set();
-    for (const task of this._tasks(data)) {
-      (task.tags || []).forEach(t => tagNames.add(typeof t === 'string' ? t : t.name));
+    // Placeholders are members of the board, inactive and with no rights, so
+    // they show in its member list for an admin to map to real users.
+    for (const userId of this.placeholderIds || []) {
+      boardToCreate.members.push({ userId, wekanId: userId, isActive: false, isAdmin: false,
+        isNoComments: false, isCommentOnly: false, swimlaneId: false });
     }
-    for (const name of tagNames) {
-      if (name) boardToCreate.labels.push({ _id: Random.id(6), color: 'black', name });
+    // Tags -> board labels, black unless the source gives a color: on the tag
+    // itself (Kanri), or in the board's `label_colors` { name: color } (Taiga's
+    // tags_colors, already mapped to WeKan label colors).
+    const sourceColors = data.label_colors && typeof data.label_colors === 'object' ? data.label_colors : {};
+    for (const { name, color } of planImportedLabels(this._tasks(data), LABEL_COLORS)) {
+      const named = Object.prototype.hasOwnProperty.call(sourceColors, name) ? sourceColors[name] : undefined;
+      const chosen = color === 'black' && LABEL_COLORS.includes(named) ? named : color;
+      boardToCreate.labels.push({ _id: Random.id(6), color: chosen, name });
     }
 
     const boardId = await Boards.direct.insertAsync(boardToCreate);
@@ -172,15 +184,25 @@ export class KanboardCreator {
     }
   }
 
+  // A column's limit: `wip_limit` (Obsidian Kanban's "## Lane (5)") or
+  // Kanboard's own `task_limit`; 0 or nothing is no limit.
+  _columnLimit(data, name) {
+    const column = (Array.isArray(data.columns) ? data.columns : []).find(c => (c.title || c.name) === name);
+    const limit = column ? Number(column.wip_limit ?? column.task_limit) : NaN;
+    return Number.isInteger(limit) && limit > 0 ? limit : undefined;
+  }
+
   async createLists(data, boardId) {
     let sort = 0;
     for (const name of this._columnNames(data)) {
+      const limit = this._columnLimit(data, name);
       const listId = await Lists.direct.insertAsync({
         archived: false,
         boardId,
         createdAt: this._now(),
         title: name,
         sort,
+        ...(limit ? { wipLimit: { value: limit, enabled: true, soft: false } } : {}),
       });
       this.lists[name] = listId;
       sort += 1;
@@ -213,7 +235,7 @@ export class KanboardCreator {
       if (cardToCreate.archived) cardToCreate.archivedAt = this._now();
       for (const t of task.tags || []) {
         const name = typeof t === 'string' ? t : t.name;
-        const label = name && board.getLabel(name, 'black');
+        const label = name && (board.labels || []).find(l => l.name === name);
         if (label) cardToCreate.labelIds.push(label._id);
       }
       if (plan.memberIds.length) cardToCreate.members = plan.memberIds;
@@ -307,6 +329,13 @@ export class KanboardCreator {
     if (isSandstorm && currentBoardId) {
       const currentBoard = await ReactiveCache.getBoard(currentBoardId);
       await currentBoard.archive();
+    }
+    // The people of the file nobody chose a user for become placeholders,
+    // unless everyone is the person importing (models/lib/importMembersMode.js).
+    this.placeholderIds = [];
+    if (Meteor.isServer && this.membersMode !== 'me') {
+      const { createImportPlaceholders } = require('/server/lib/importPlaceholderUsers');
+      this.placeholderIds = await createImportPlaceholders(importedPeople(this._tasks(board)), this.members, { source: this.source });
     }
     const boardId = await this.createBoard(board);
     await this.createSwimlanes(board, boardId);

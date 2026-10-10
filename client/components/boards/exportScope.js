@@ -243,11 +243,31 @@ const EXPORT_FORMAT_GROUPS = [
       { key: 'taskwarrior', icon: 'fa-terminal', label: 'Taskwarrior', path: 'export/taskwarrior', ext: 'json', scopes: BOARD_ONLY },
       { key: 'focalboard', icon: 'fa-th-large', label: 'Focalboard', path: 'export/focalboard', ext: 'jsonl', scopes: BOARD_ONLY },
       { key: 'todoist', icon: 'fa-check-square-o', label: 'Todoist', path: 'export/todoist', ext: 'csv', scopes: BOARD_ONLY },
+      { key: 'planner', icon: 'fa-th-list', label: 'Microsoft Planner', path: 'export/planner', ext: 'xlsx', scopes: BOARD_ONLY },
+      { key: 'meistertask', icon: 'fa-tasks', label: 'MeisterTask', path: 'export/meistertask', ext: 'csv', scopes: BOARD_ONLY },
+      { key: 'obsidian', icon: 'fa-diamond', label: 'Obsidian Kanban', path: 'export/obsidian', ext: 'md', scopes: BOARD_ONLY },
+      { key: 'linear', icon: 'fa-bars', label: 'Linear', path: 'export/linear', ext: 'csv', scopes: BOARD_ONLY },
+      { key: 'ticktick', icon: 'fa-check-circle-o', label: 'TickTick', path: 'export/ticktick', ext: 'csv', scopes: BOARD_ONLY },
+      { key: 'clickup', icon: 'fa-check-square', label: 'ClickUp', path: 'export/clickup', ext: 'csv', scopes: BOARD_ONLY },
+      { key: 'nullboard', icon: 'fa-sticky-note-o', label: 'Nullboard', path: 'export/nullboard', ext: 'nbx', scopes: BOARD_ONLY },
+      { key: 'kanri', icon: 'fa-columns', label: 'Kanri', path: 'export/kanri', ext: 'json', scopes: BOARD_ONLY },
+      { key: 'pivotal', icon: 'fa-flag', label: 'Pivotal Tracker', path: 'export/pivotal', ext: 'csv', scopes: BOARD_ONLY },
+      { key: 'redmine', icon: 'fa-bug', label: 'Redmine', path: 'export/redmine', ext: 'csv', scopes: BOARD_ONLY },
+      { key: 'tasksorg', icon: 'fa-check-circle-o', label: 'Tasks.org', path: 'export/tasksorg', ext: 'json', scopes: BOARD_ONLY },
+      { key: 'monday', icon: 'fa-table', label: 'monday.com', path: 'export/monday', ext: 'xlsx', scopes: BOARD_ONLY },
+      { key: 'superproductivity', icon: 'fa-check-circle-o', label: 'Super Productivity', path: 'export/superproductivity', ext: 'json', scopes: BOARD_ONLY },
+      { key: 'vikunja', icon: 'fa-file-archive-o', label: 'Vikunja', path: 'export/vikunja', ext: 'zip', scopes: BOARD_ONLY },
+      { key: 'wrike', icon: 'fa-table', label: 'Wrike', path: 'export/wrike', ext: 'xlsx', scopes: BOARD_ONLY },
+      { key: 'wrikeworkflow', icon: 'fa-sitemap', label: 'Wrike workflow', path: 'export/wrikeworkflow', ext: 'json', scopes: BOARD_ONLY },
+      { key: 'teamwork', icon: 'fa-table', label: 'Teamwork.com', path: 'export/teamwork', ext: 'xlsx', scopes: BOARD_ONLY },
+      { key: 'businessmap', icon: 'fa-table', label: 'Businessmap (Kanbanize)', path: 'export/businessmap', ext: 'xlsx', scopes: BOARD_ONLY },
+      { key: 'quire', icon: 'fa-sitemap', label: 'Quire', path: 'export/quire', ext: 'csv', scopes: BOARD_ONLY },
+      { key: 'notion', icon: 'fa-table', label: 'Notion', path: 'export/notion', ext: 'csv', scopes: BOARD_ONLY },
       ...[
         ['trello', 'Trello'], ['jira', 'Jira'], ['deck', 'NextCloud Deck'],
         ['openproject', 'OpenProject'], ['github', 'GitHub'], ['gitlab', 'GitLab'],
         ['gitea', 'Gitea'], ['forgejo', 'Forgejo'], ['asana', 'Asana'],
-        ['zenkit', 'Zenkit'],
+        ['zenkit', 'Zenkit'], ['taiga', 'Taiga'],
       ].map(([format, label]) => ({
         key: format,
         icon: 'fa-upload',
@@ -441,11 +461,35 @@ Template.exportScopeBody.events({
   },
 });
 
+// "Export all boards" (server/routes/exportAllBoards.js): the formats of this
+// menu that can be written for many boards at once - WeKan JSON, CSV/TSV,
+// Excel (one workbook, a sheet per board) and every tool format - with the
+// menu's own labels. PDF, HTML, iCalendar and the dependency graph are
+// documents of one board and are not among them.
+function massExportFormats() {
+  const out = [{ key: 'wekan', label: 'JSON' }];
+  EXPORT_FORMAT_GROUPS.forEach(group => group.entries.forEach(entry => {
+    if (entry.key === 'excel') out.push({ key: 'excel', label: 'Excel' });
+    else if (['csv', 'scsv', 'tsv'].includes(entry.key)) out.push({ key: entry.key, label: entry.key === 'tsv' ? 'TSV' : `CSV ${entry.label}` });
+    else if (/^export\/[a-z]+$/.test(entry.path || '') && entry.path !== 'export/csv') out.push({ key: entry.path.slice(7), label: entry.label });
+  }));
+  return out;
+}
+
+// The download of "Export all boards" in `format`; with `boardIds`, only those.
+function massExportUrl(format, boardIds) {
+  const params = new URLSearchParams({ authToken: Accounts._storedLoginToken() || '' });
+  if (Array.isArray(boardIds) && boardIds.length) params.set('boardIds', boardIds.join(','));
+  return `/api/export-all-boards/${format}?${params.toString()}`;
+}
+
 // `exportUrlFor` is what the board popup uses to build the same URLs with the
 // same selection - one query string, built in one place, whichever popup asks.
 export {
   selectedFields,
   selection,
   readExportFile,
+  massExportFormats,
+  massExportUrl,
   exportUrl as exportUrlFor,
 };

@@ -999,6 +999,538 @@
     {
       "key": "login-origin-mismatch",
       "since": "2026-10-08"
+    },
+    {
+      "key": "import-board-instruction-planner",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "import-board-instruction-meistertask",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "import-board-instruction-obsidian",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "import-board-instruction-linear",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "import-board-instruction-ticktick",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "import-board-instruction-clickup",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "import-board-instruction-nullboard",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "import-board-instruction-kanri",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "import-board-instruction-pivotal",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "import-board-instruction-tasksorg",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "import-board-instruction-monday",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "import-board-instruction-superproductivity",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "import-board-instruction-taiga",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "import-board-instruction-vikunja",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "import-board-instruction-quire",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "import-board-instruction-wrike",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "import-board-instruction-teamwork",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "import-board-instruction-businessmap",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "import-board-instruction-redmine",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "import-board-instruction-notion",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "import-board-instruction-plane",
+      "since": "2026-10-08"
+    },
+    {
+      "key": "r-wrike-workflow",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "r-wrike-workflow-note",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "r-export-wrike-workflow",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "r-import-wrike-workflow",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "r-import-wrike-workflow-done",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "import-many-boards",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "import-many-boards-hint",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "import-one-board-per-project",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "import-one-board-per-project-hint",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "import-many-progress",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "import-many-results-heading",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "import-many-imported",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "export-all-boards",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "export-selected-boards",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "export-all-boards-hint",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "exportAllBoardsPopup-title",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "import-members-mode-heading",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "import-members-mode-map",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "import-members-mode-placeholder",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "import-members-mode-me",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "csv-mapping-title",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "csv-mapping-description",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "csv-mapping-not-in-file",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "csv-mapping-column-number",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "csv-mapping-list-missing",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "csv-mapping-list-name",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "csv-mapping-custom-fields",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "csv-mapping-boards",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "csv-mapping-skipped-sheets",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "csv-mapping-title-required",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "csv-mapping-list-required",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "invalid-import-mapping",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "import-file-label",
+      "since": "2026-10-09"
+    },
+    {
+      "key": "attach-card",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "attach-card-hint",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "attached-card-unavailable",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "detach-card",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "attach-card-self",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "attach-card-limit",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "attach-card-not-found",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "attachCardPopup-title",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "subtask-mark-done",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "subtask-mark-not-done",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "subtask-done-no-permission",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "webhook-payload-heading",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "webhook-payload-description",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "webhook-payload-text",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "webhook-payload-fields",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "webhook-payload-field-standard",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "webhook-payload-field-ids",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "webhook-payload-field-names",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "webhook-payload-field-links",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "webhook-payload-field-actor",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "webhook-payload-field-people",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "webhook-payload-field-details",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "webhook-hide-identity",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "webhook-someone",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "custom-field-links",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "custom-field-links-hint",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "custom-field-links-none",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "custom-field-link-unavailable",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "custom-field-link-fields",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "custom-field-link-no-fields",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "custom-field-link-inactive",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "custom-field-unlink",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "custom-field-link-target",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "custom-field-link-direction",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "custom-field-link-both",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "custom-field-link-send",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "custom-field-link-sends",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "custom-field-link-receives",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "custom-field-link-add",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "field-link-self",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "field-link-limit",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "field-link-archived",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "field-link-invalid",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "field-link-not-found",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "field-link-not-allowed",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "cardCustomFieldLinksPopup-title",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "board-view-calendar-mode",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-delivery-layout",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-delivery-layout-classic",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-delivery-layout-clear",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-delivery-parts",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-delivery-part-board",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-delivery-part-actor",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-delivery-part-card",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-delivery-part-list",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-delivery-part-swimlane",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-delivery-part-details",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-delivery-part-dates",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-delivery-part-link",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-delivery-grouping",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-delivery-grouping-all",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-delivery-grouping-board",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-delivery-grouping-card",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-delivery-grouping-none",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-delivery-schedule",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-delivery-schedule-immediate",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-delivery-schedule-interval",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-delivery-schedule-daily",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-delivery-interval",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-delivery-minutes",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-delivery-daily-time",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-delivery-quiet",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-delivery-quiet-from",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-delivery-quiet-to",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-delivery-quiet-clear",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-delivery-timezone",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-delivery-invalid",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-group-card",
+      "since": "2026-10-10"
+    },
+    {
+      "key": "notification-group-board",
+      "since": "2026-10-10"
     }
   ]
 }

@@ -116,10 +116,12 @@ Body &amp; more</t>
   // Wiring: the same places Markdown is registered.
   await test('Leo is offered on the import page and in the export menu, served as XML', () => {
     const importJs = read('client/components/import/import.js');
-    assert.match(importJs, /\{ key: 'leo', name: 'Leo' \}/);
-    assert.match(importJs, /dataSource === 'markdown' \|\| dataSource === 'leo'/);
+    assert.match(read('models/lib/importSources.js'), /\{ key: 'leo', name: 'Leo'[,}]/); // the one list of sources
+    // The page reads every source through one path described in
+    // models/lib/importSources.js, not a branch of its own.
+    assert.match(read('models/lib/importSources.js'), /\{ key: 'leo', name: '[^']+', \.\.\.TEXT/, 'read by the one import path');
     assert.match(read('client/components/boards/exportScope.js'), /key: 'leo'.*path: 'export\/leo', ext: 'leo', scopes: BOARD_ONLY/);
-    assert.match(read('models/export.js'), /leo: 'application\/xml'/);
+    assert.match(read('server/lib/renderExternalExport.js'), /leo: 'application\/xml'/);
     const en = JSON.parse(read('imports/i18n/data/en.i18n.json'));
     const keys = Object.keys(en);
     assert.equal(keys[keys.indexOf('import-board-instruction-markdown') + 1], 'import-board-instruction-leo');
@@ -127,7 +129,11 @@ Body &amp; more</t>
   await test('the import parses the raw XML server-side and sanitizes the parsed tasks', () => {
     const src = read('models/import.js');
     // OPML is XML too, and is parsed first the same way (tests/opmlOutline.test.cjs).
-    assert.match(src, /importSource === 'leo' \|\| importSource === 'opml' \? board\s*: sanitizeImported\(board, importSource, this\)/);
+    // So is a Vikunja export: its data.json carries HTML inside JSON strings,
+    // which sanitizing the raw text as markup would break (tests/vikunjaFormat.test.cjs).
+    // And a Notion export, whose zip is opened on the server (tests/notionFormat.test.cjs).
+    // And a Plane export, whose CSV cells hold JSON (tests/planeFormat.test.cjs).
+    assert.match(src, /importSource === 'leo' \|\| importSource === 'opml' \|\| importSource === 'vikunja' \|\| importSource === 'notion' \|\| importSource === 'plane' \? board\s*: sanitizeImported\(board, importSource, this\)/);
     const leoCase = src.slice(src.indexOf("case 'leo':"), src.indexOf('default:', src.indexOf("case 'leo':")));
     assert.match(leoCase, /check\(board, String\)/);
     assert.match(leoCase, /if \(!Meteor\.isServer\) return undefined;/);

@@ -26,6 +26,7 @@ const { starredPagesOf, isPageStarred } = require('/models/lib/starredPages');
 const Users = Meteor.users;
 const getUtils = () => require('/client/lib/utils').Utils;
 const { GROUP_KEYS, cleanMutedGroups } = require('/models/lib/notificationActivityGroups');
+const { deliverySchemaFields, MEMBER_CHANNELS } = require('/models/lib/notificationDelivery');
 
 // Public-board collapse persistence helpers (cookie-based for non-logged-in users)
 if (Meteor.isClient) {
@@ -356,6 +357,19 @@ Users.attachSchema(
       /**
        * Member-level override of email notifications (see
        * models/lib/notificationSettings.js).
+       */
+      type: Boolean,
+      optional: true,
+    },
+    // #5171: the member's own e-mail and tray delivery - content, grouping,
+    // schedule. Wins over the board and Admin Panel settings for their own
+    // notifications. See models/lib/notificationDelivery.js.
+    ...deliverySchemaFields('profile.notificationDelivery', MEMBER_CHANNELS),
+    'profile.webhookHideIdentity': {
+      /**
+       * #3695: true leaves this member's name, username and id out of every
+       * outgoing webhook - as the actor and as the person a join or
+       * assignment is about (models/lib/webhookPayload.js). Unset = named.
        */
       type: Boolean,
       optional: true,
@@ -707,6 +721,15 @@ Users.attachSchema(
       type: Date,
       optional: true,
     },
+    'profile.notifications.$.showAt': {
+      /**
+       * #5171: when the drawer starts showing this entry (ms since epoch),
+       * from the member's tray schedule (models/lib/notificationDelivery.js).
+       * Unset = at once, as before.
+       */
+      type: Number,
+      optional: true,
+    },
     'profile.rescueCardDescription': {
       /**
        * show dialog for saving card description on unintentional card closing
@@ -849,6 +872,7 @@ Users.attachSchema(
         'board-view-swimlanes',
         'board-view-lists',
         'board-view-cal',
+        'board-view-calendar-mode',
         'board-view-multiboard-cal',
         'board-view-gantt',
         'board-view-gantt-frappe',
@@ -1113,10 +1137,11 @@ Users.attachSchema(
     },
     'profile.keyboardShortcuts': {
       /**
-       * User-specified state of keyboard shortcut activation.
+       * User-specified state of keyboard shortcut activation. On by default,
+       * the same default isKeyboardShortcuts() reads (#6755).
        */
       type: Boolean,
-      defaultValue: false,
+      defaultValue: true,
     },
     'profile.verticalScrollbars': {
       /**

@@ -7,6 +7,7 @@ import {
   parseExportScope,
 } from './lib/exportFields';
 import { pruneImportDocument } from './lib/importParts';
+import { validateImportSourceShape } from './lib/importSourceShape';
 const { safeEntryPath } = require('./lib/backupPaths');
 // The wekan.json of an import zip inflates to at most this (ZipBombBleed).
 const MAX_IMPORT_DOCUMENT_BYTES = 256 * 1024 * 1024;
@@ -124,9 +125,14 @@ runOnServer(function () {
       user = await ReactiveCache.getUser({ _id: req.userId });
     }
 
+    // newBoard=1 (All Boards > Import, and "Import many boards"): the .zip
+    // becomes a NEW board through the full-board importer, as its .json would,
+    // with the attachment files put back on their rows as the .json carries
+    // them. Without it, the document is imported into the board named here.
+    const newBoard = req.query && req.query.newBoard === '1';
     const boardId = req.query && req.query.boardId;
     const board = boardId ? await ReactiveCache.getBoard(boardId) : null;
-    if (!board) {
+    if (!board && !newBoard) {
       answer(404, { error: 'Not found' });
       return;
     }
@@ -135,7 +141,7 @@ runOnServer(function () {
     // active membership (MutationBleed sibling, 2026-10-02 - read-only,
     // comment-only and worker members could import into a board).
     const { memberCan } = require('/models/lib/boardRoleCapabilities');
-    if (!board.isVisibleBy(user) || !memberCan(board.members || [], user._id, 'write')) {
+    if (board && (!board.isVisibleBy(user) || !memberCan(board.members || [], user._id, 'write'))) {
       answer(403, { error: 'Forbidden' });
       return;
     }
@@ -196,6 +202,26 @@ runOnServer(function () {
         const entry = entriesById.get(attachment && attachment._id);
         return entry ? entry.stream() : null;
       };
+
+      if (newBoard) {
+        // A new board from the whole document, by the full-board importer,
+        // with each attachment file streamed from the archive into storage as
+        // the importer reaches it - never held in memory, whatever its size,
+        // within only the Admin Panel's upload limit.
+        validateImportSourceShape('wekan', doc);
+        const { WekanCreator } = require('./wekanCreator');
+        const creator = new WekanCreator({ membersMode: req.query && req.query.membersMode, importFields: fields });
+        creator.attachmentStream = attachmentStream;
+        const { DDP } = require('meteor/ddp');
+        const tracked = require('/server/importRuns').trackImport({ userId: user._id, source: 'wekan-zip', creator,
+          execute: () => creator.create(doc, null) });
+        const newBoardId = await DDP._CurrentMethodInvocation.withValue(
+          { userId: user._id, isSimulation: false, connection: null },
+          () => tracked.promise,
+        );
+        answer(200, { ok: true, boardId: newBoardId });
+        return;
+      }
 
       const scope = parseExportScope(req.query);
       const { ScopedImporter } = require('./server/scopedImporter');

@@ -1,5 +1,6 @@
 // Todoist project CSV (https://todoist.com/help/articles/360000748525): what
-// Todoist's "Export as a template" writes and "Import from template" reads.
+// Todoist's Manage data > Export as CSV writes and Import from CSV reads (once
+// "Export as a template" and "Import from template").
 // Import and export live together so tests/todoistCsv.test.cjs runs the round
 // trip in plain Node - no Meteor import here.
 //
@@ -36,7 +37,10 @@ const NO_SECTION = 'No section';
 const LABEL = /(^|\s)@([^\s@]+)/g;
 
 // RFC 4180: quoted fields may hold commas, line breaks and doubled quotes.
-export function readCsv(text) {
+// `name` is the format named in its errors; MeisterTask's CSV reuses this.
+// `separator` is the field separator: ',' unless a format writes another
+// (Redmine's CSV uses ';' in locales whose decimal separator is a comma).
+export function readCsv(text, name = 'Todoist', separator = ',') {
   const source = String(text == null ? '' : text).replace(/^﻿/, '');
   const rows = [];
   let row = [];
@@ -50,13 +54,13 @@ export function readCsv(text) {
       continue;
     }
     if (ch === '"' && field === '') quoted = true;
-    else if (ch === ',') { row.push(field); field = ''; } else if (ch === '\n' || ch === '\r') {
+    else if (ch === separator) { row.push(field); field = ''; } else if (ch === '\n' || ch === '\r') {
       if (ch === '\r' && source[i + 1] === '\n') i += 1;
       row.push(field); rows.push(row); row = []; field = '';
     } else field += ch;
-    if (rows.length > MAX_TODOIST_ROWS) throw new Error(`Todoist CSV has more than ${MAX_TODOIST_ROWS} rows`);
+    if (rows.length > MAX_TODOIST_ROWS) throw new Error(`${name} CSV has more than ${MAX_TODOIST_ROWS} rows`);
   }
-  if (quoted) throw new Error('Todoist CSV has an unclosed quote');
+  if (quoted) throw new Error(`${name} CSV has an unclosed quote`);
   if (field !== '' || row.length) { row.push(field); rows.push(row); }
   return rows.filter(cells => cells.some(cell => cell.trim() !== ''));
 }

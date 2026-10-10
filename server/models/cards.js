@@ -48,6 +48,8 @@ import ChecklistItems from '/models/checklistItems';
 import { subtaskCustomFields } from '/imports/lib/subtaskHelpers';
 import { ensureIndex } from '/server/lib/mongoStartup';
 import { canEditCardOrLinkedCard } from '/server/lib/linkedCardPermission';
+// #4693: setSubtaskDone - tick a subtask done from the parent's Subtasks list.
+import '/server/lib/subtaskDoneMethod';
 import getSlug from 'limax';
 // ErrorBleed: refusals answer with their real status and a safe message.
 const { publicErrorData } = require('/server/lib/apiResponseHelpers');
@@ -1795,6 +1797,9 @@ WebApp.handlers.put(
         { $set: { customFields: req.body.customFields } },
       );
       updated = true;
+      // #5681: `.direct` skips the hook that carries linked custom fields.
+      const { propagateLinkedCustomFields } = require('/server/models/customFieldLinks');
+      await propagateLinkedCustomFields(await Cards.findOneAsync(paramCardId), beforeEdit.customFields);
     }
     // #3697: accept any "clear" payload (null / "" / [] / a single id) and always
     // store a String[] — never null — so removing the last member/assignee over
@@ -2281,6 +2286,9 @@ WebApp.handlers.post(
       { _id: paramCardId, listId: paramListId, boardId: paramBoardId, archived: false },
       { $set: { customFields: updatedCustomFields } },
     );
+    // #5681: `.direct` skips the hook that carries linked custom fields.
+    const { propagateLinkedCustomFields } = require('/server/models/customFieldLinks');
+    await propagateLinkedCustomFields(await Cards.findOneAsync(paramCardId), card.customFields);
     sendJsonResult(res, {
       code: 200,
       data: { _id: paramCardId, customFields: updatedCustomFields },

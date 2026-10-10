@@ -16,6 +16,27 @@ import { formatTodoTxt } from './todoTxtFormat.js';
 import { formatTaskwarrior } from './taskwarriorFormat.js';
 import { formatFocalboard } from './focalboardFormat.js';
 import { formatTodoistCsv } from './todoistCsvFormat.js';
+import { formatPlannerRows } from './plannerFormat.js';
+import { formatMeisterTaskCsv } from './meistertaskCsvFormat.js';
+import { formatObsidianKanban } from './obsidianKanbanFormat.js';
+import { formatLinearCsv } from './linearCsvFormat.js';
+import { formatTickTickCsv } from './ticktickCsvFormat.js';
+import { formatClickUpCsv } from './clickupCsvFormat.js';
+import { formatNullboard } from './nullboardFormat.js';
+import { formatKanri } from './kanriFormat.js';
+import { formatPivotalCsv } from './pivotalCsvFormat.js';
+import { formatRedmineCsv } from './redmineCsvFormat.js';
+import { formatTasksOrgBackup } from './tasksorgFormat.js';
+import { formatMondaySheets } from './mondayFormat.js';
+import { formatBusinessmapSheets } from './businessmapFormat.js';
+import { formatSuperProductivity } from './superProductivityFormat.js';
+import { formatTaiga } from './taigaFormat.js';
+import { formatVikunja } from './vikunjaFormat.js';
+import { formatWrikeRows } from './wrikeFormat.js';
+import { formatWrikeWorkflow } from './wrikeWorkflow.js';
+import { formatTeamworkSheet } from './teamworkFormat.js';
+import { formatQuireCsv } from './quireCsvFormat.js';
+import { formatNotionCsv } from './notionFormat.js';
 import { formatOpml } from './opmlOutlineFormat.js';
 import { formatOrgMode } from './orgModeFormat.js';
 
@@ -63,6 +84,48 @@ function positions(items) {
   return new Map(ranked.map((item, index) => [item.cardId, index + 1]));
 }
 
+// Kanboard task links, as getAllTaskLinks returns them for each task: `task_id`
+// is the OTHER task and `label` the link type read from this task. Kanboard
+// keeps every link from both ends, so each parent card and each dependency is
+// written twice, the second time with the opposite label; the importer
+// (parseKanboard) folds the two back into one. A link to a card that is not in
+// the export has no task to point at and is left out.
+const KANBOARD_LINK_LABEL = {
+  'related-to': 'relates to', blocks: 'blocks', 'is-blocked-by': 'is blocked by',
+  duplicates: 'duplicates', 'is-duplicated-by': 'is duplicated by',
+  fixes: 'fixes', 'is-fixed-by': 'is fixed by',
+};
+const KANBOARD_OPPOSITE_LABEL = {
+  'relates to': 'relates to', blocks: 'is blocked by', 'is blocked by': 'blocks',
+  duplicates: 'is duplicated by', 'is duplicated by': 'duplicates',
+  fixes: 'is fixed by', 'is fixed by': 'fixes',
+  'is a child of': 'is a parent of', 'is a parent of': 'is a child of',
+};
+function kanboardTaskLinks(items) {
+  const number = new Map(items.map((item, index) => [item.cardId, index + 1]));
+  const links = items.map(() => []);
+  const written = new Set();
+  let id = 0;
+  const add = (from, to, label) => {
+    const key = `${from}>${to}:${label}`;
+    if (from === to || written.has(key)) return;
+    written.add(key);
+    written.add(`${to}>${from}:${KANBOARD_OPPOSITE_LABEL[label]}`);
+    links[from - 1].push({ id: id += 1, task_id: to, label });
+    links[to - 1].push({ id: id += 1, task_id: from, label: KANBOARD_OPPOSITE_LABEL[label] });
+  };
+  items.forEach((item, index) => {
+    const self = index + 1;
+    const parent = number.get(item.parentCardId);
+    if (parent) add(self, parent, 'is a child of');
+    list(item.dependencies).forEach(dep => {
+      const other = dep && number.get(dep.cardId);
+      if (other) add(self, other, KANBOARD_LINK_LABEL[dep.type] || 'relates to');
+    });
+  });
+  return links;
+}
+
 export const formatters = {
   // NextCloud Deck: board with stacks, each stack carrying its cards.
   deck: ({ board, lists, items }) => ({
@@ -88,27 +151,33 @@ export const formatters = {
     })),
   }),
   // Kanboard: columns, swimlanes and tasks, the shape the Kanboard importer reads.
-  kanboard: ({ board, lists, swimlanes, items }) => ({
-    board: { name: board.title },
-    columns: lists.map(l => ({ title: l.title })),
-    swimlanes: swimlanes.map(s => ({ name: s.title })),
-    tasks: items.map(i => ({
-      title: i.title,
-      description: i.description,
-      column_name: i.listTitle,
-      swimlane_name: i.swimlaneTitle,
-      date_due: i.dueAt,
-      ...(has(i.startAt) ? { date_started: i.startAt } : {}),
-      ...(has(i.endAt) ? { date_completed: i.endAt } : {}),
-      ...(has(i.createdAt) ? { date_creation: i.createdAt } : {}),
-      ...(has(i.owner) ? { owner_username: i.owner } : {}),
-      ...(has(i.creator) ? { creator_username: i.creator } : {}),
-      tags: i.labels,
-      ...(checklistItems(i).length ? { subtasks: checklistItems(i).map(x => ({ title: x.title, status: x.done ? 2 : 0 })) } : {}),
-      ...(list(i.comments).length ? { comments: i.comments.map(c => ({
-        comment: c.text, username: c.author, date_creation: c.date })) } : {}),
-    })),
-  }),
+  // Tasks are numbered 1..n; parent cards and dependencies become task links.
+  kanboard: ({ board, lists, swimlanes, items }) => {
+    const links = kanboardTaskLinks(items);
+    return {
+      board: { name: board.title },
+      columns: lists.map(l => ({ title: l.title })),
+      swimlanes: swimlanes.map(s => ({ name: s.title })),
+      tasks: items.map((i, index) => ({
+        id: index + 1,
+        title: i.title,
+        description: i.description,
+        column_name: i.listTitle,
+        swimlane_name: i.swimlaneTitle,
+        date_due: i.dueAt,
+        ...(has(i.startAt) ? { date_started: i.startAt } : {}),
+        ...(has(i.endAt) ? { date_completed: i.endAt } : {}),
+        ...(has(i.createdAt) ? { date_creation: i.createdAt } : {}),
+        ...(has(i.owner) ? { owner_username: i.owner } : {}),
+        ...(has(i.creator) ? { creator_username: i.creator } : {}),
+        tags: i.labels,
+        ...(checklistItems(i).length ? { subtasks: checklistItems(i).map(x => ({ title: x.title, status: x.done ? 2 : 0 })) } : {}),
+        ...(list(i.comments).length ? { comments: i.comments.map(c => ({
+          comment: c.text, username: c.author, date_creation: c.date })) } : {}),
+        ...(links[index].length ? { links: links[index] } : {}),
+      })),
+    };
+  },
   // OpenProject: a work-packages collection with HAL links.
   openproject: collected => {
     const { items } = collected;
@@ -307,6 +376,57 @@ export const formatters = {
   focalboard: data => formatFocalboard(data),
   // A Todoist project template (CSV); round-trips with parseTodoistCsv (todoistCsvFormat.js).
   todoist: formatTodoistCsv,
+  // Microsoft Planner's Excel export: rows that models/export.js writes as .xlsx
+  // (server/lib/plannerWorkbook.js); round-trips with parsePlannerRows.
+  planner: formatPlannerRows,
+  // MeisterTask's CSV import shape; round-trips with parseMeisterTaskCsv.
+  meistertask: formatMeisterTaskCsv,
+  // The Obsidian Kanban plugin's board file; round-trips with parseObsidianKanban.
+  obsidian: formatObsidianKanban,
+  // Linear's CSV export columns; round-trips with parseLinearCsv.
+  linear: formatLinearCsv,
+  // TickTick's backup CSV; round-trips with parseTickTickCsv.
+  ticktick: formatTickTickCsv,
+  // ClickUp's workspace export columns; round-trips with parseClickUpCsv.
+  clickup: formatClickUpCsv,
+  // A Nullboard .nbx board file; round-trips with parseNullboard.
+  nullboard: formatNullboard,
+  // Kanri's single-board JSON export; round-trips with parseKanri (kanriFormat.js).
+  kanri: formatKanri,
+  // The stories CSV Pivotal Tracker's import reads; round-trips with parsePivotalCsv.
+  pivotal: formatPivotalCsv,
+  // The English CSV Redmine's issue import maps; round-trips with parseRedmineCsv.
+  redmine: formatRedmineCsv,
+  // A Tasks.org backup that its Import backup reads; round-trips with parseTasksOrgBackup.
+  tasksorg: formatTasksOrgBackup,
+  // monday.com's Excel import table: sheets models/export.js writes as .xlsx
+  // (server/lib/mondayWorkbook.js); round-trips with parseMondaySheets.
+  monday: formatMondaySheets,
+  // Businessmap's Excel import columns: sheets models/export.js writes as .xlsx
+  // (server/lib/businessmapWorkbook.js); round-trips with parseBusinessmapSheets.
+  businessmap: formatBusinessmapSheets,
+  // A Super Productivity backup its "Import from File" reads; round-trips
+  // with parseSuperProductivity.
+  superproductivity: collected => formatSuperProductivity(collected),
+  // A Taiga project dump that Taiga's load_dump reads; round-trips with parseTaiga (taigaFormat.js).
+  taiga: data => formatTaiga(data),
+  // Vikunja's data export: projects that models/export.js writes as the .zip
+  // (vikunjaArchiveFiles, server/lib/vikunjaArchive.js); round-trips with parseVikunjaExport.
+  vikunja: data => formatVikunja(data),
+  // Wrike's Excel import template: rows models/export.js writes as .xlsx
+  // (server/lib/wrikeWorkbook.js); round-trips with parseWrikeRows.
+  wrike: formatWrikeRows,
+  // The board's lists as a Wrike workflow, in the JSON Wrike's GET /workflows
+  // returns (models/lib/wrikeWorkflow.js): the workflow the wrike export's
+  // Workflow and Custom Status cells name.
+  wrikeworkflow: formatWrikeWorkflow,
+  // Teamwork.com's Excel task import template: rows models/export.js writes as
+  // .xlsx (server/lib/teamworkWorkbook.js); round-trips with parseTeamworkSheet.
+  teamwork: formatTeamworkSheet,
+  // The CSV Quire's Import CSV reads; round-trips with parseQuireCsv (quireCsvFormat.js).
+  quire: formatQuireCsv,
+  // The CSV Notion's CSV import reads; round-trips with parseNotionExport (notionFormat.js).
+  notion: formatNotionCsv,
   // An OPML outline; round-trips with parseOpml (opmlOutline.js, server-only).
   opml: formatOpml,
   // An Org mode outline; round-trips with parseOrgMode (orgModeFormat.js).

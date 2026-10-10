@@ -62,6 +62,9 @@ const BOARD_LIST_FIELDS = {
   dateLastActivity: 1,
   allowsCardCounterList: 1,
   allowsBoardMemberList: 1,
+  // #5171: how this board's notifications show in the members' tray (layout,
+  // grouping). Settings, no secret - members see them in Board Settings too.
+  notificationDelivery: 1,
 };
 
 // The global relationship-only boards publication does not stream every public
@@ -878,6 +881,10 @@ publishComposite('board', async function(boardId, isArchived, generation) {
       // CardCommentReactions at board level
       {
         async find(board) {
+          // #6745: reactions are shown only under the comments of an OPEN
+          // card. A lazy board ships no comments here either, so it ships no
+          // reactions: the opened card's own come from `openCardData`.
+          if (await boardIsLazy(board)) return null;
           return await ReactiveCache.getCardCommentReactions({ boardId: board._id }, {}, true);
         }
       },

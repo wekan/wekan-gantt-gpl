@@ -6228,7 +6228,7 @@ for (const code of ['uz', 'uz-LA', 'uz-UZ']) {
     assert.doesNotMatch(locale[key], /\b(ciartes|tabellai|utenc|injuntes|Incolla|Sposta)\b/, `rm:${key}: no mixed-language seed`);
   }
   assert.ok(locale['import-board-instruction-openproject'].includes('GET /api/v3/work_packages'));
-  for (const token of ['GET /rest/api/2/search', '"issues"', '"automationRules"']) assert.ok(locale['import-board-instruction-jira'].includes(token));
+  for (const token of ['GET /rest/api/3/search/jql', '"issues"', '"automationRules"']) assert.ok(locale['import-board-instruction-jira'].includes(token));
   for (const token of ['.zip', '.json', 'Trello Card Attachments Downloader']) assert.ok(locale['import-trello-zip-file-hint'].includes(token));
   assert.match(locale['label-delete-pop'], /na po betg vegnir fatg enavos.*cronologia vegn destruida/);
   assert.match(locale['normal-desc'], /Na po betg midar ils parameters/);
@@ -9757,6 +9757,10 @@ for (const code of ['he', 'he-IL']) {
     assert.match(locale[key], /\p{Script=Hebrew}/u, `${code}:${key}: Hebrew text`);
     assert.deepEqual(translationTokens(locale[key]), translationTokens(english[key]), `${code}:${key}: tokens`);
   }
+  for (const keyName of ['Ctrl', 'Cmd', 'Mac']) assert.ok(locale['scrum-releases-select-help'].includes(keyName), `${code}: preserve ${keyName}`);
+  assert.match(locale['scrum-releases-select-help'], /להסיר את הכרטיס מכל הגרסאות/);
+  assert.match(locale['scrum-history-checkpoint-hint'], /אינה משנה רשומות/);
+  assert.notEqual(locale['scrum-history-checkpoint-rollback'], locale['scrum-history-checkpoint-discard']);
   assert.match(locale['scrum-report-help'], /אינן הערכות אפס/);
   assert.match(locale['scrum-partial-report'], /רק כרטיסים שמשויכים אליך כעת/);
   assert.match(locale['scrum-daily-observations-help'], /אינן מתעדות כל שינוי/);
@@ -9837,6 +9841,9 @@ for (const code of ['fa', 'fa-IR']) {
     assert.notEqual(locale[key], english[key], `${code}:${key}: untranslated`);
     assert.deepEqual(translationTokens(locale[key]), translationTokens(english[key]), `${code}:${key}: tokens`);
   }
+  for (const keyName of ['Ctrl', 'Cmd', 'Mac']) assert.ok(locale['scrum-releases-select-help'].includes(keyName), `${code}: preserve ${keyName}`);
+  assert.match(locale['scrum-history-checkpoint-hint'], /هیچ رکوردی را تغییر نمی‌دهد/);
+  assert.notEqual(locale['scrum-history-checkpoint-rollback'], locale['scrum-history-checkpoint-discard']);
   assert.match(locale['sync-conflict-hint'], /چیزی به سامانهٔ منبع فرستاده نمی‌شود/);
   assert.match(locale['sync-conflict-detach-hint'], /محتوای آن در WeKan باقی می‌ماند/);
   assert.match(locale['sync-report-partial'], /ادامه نمی‌دهند.*برنمی‌گردانند/);
@@ -9850,8 +9857,21 @@ for (const code of ['fa', 'fa-IR']) {
   assert.match(locale['email-recovery-confirm-cancel'], /قابل بازیابی نیست/);
   assert.match(locale['history-request-hint'], /هرگز نمی‌تواند تغییر دیگری را برگرداند/);
 }
+for (const code of ['ms', 'ms-MY', 'id']) {
+  const locale = read(code);
+  for (const key of ['sync-planning-sprint', 'sync-planning-fields', 'sync-planning-hint', 'sync-planning-releases', 'scrum-history-checkpoint-hint', 'scrum-releases-select-help']) {
+    assert.notEqual(locale[key], english[key], `${code}:${key}: untranslated`);
+    assert.deepEqual(translationTokens(locale[key]), translationTokens(english[key]), `${code}:${key}: tokens`);
+  }
+  for (const token of ['Ctrl', 'Cmd', 'Mac']) assert.ok(locale['scrum-releases-select-help'].includes(token), `${code}: ${token}`);
+  assert.notEqual(locale['scrum-history-checkpoint-rollback'], locale['scrum-history-checkpoint-discard']);
+  assert.match(locale['sync-planning-hint'], code === 'id' ? /pertama tidak pernah menghapus perencanaan/ : /pertama tidak pernah membuang perancangan/);
+}
 for (const code of ['ms', 'ms-MY']) {
   const locale = read(code);
+  for (const keyName of ['Ctrl', 'Cmd', 'Mac']) assert.ok(locale['scrum-releases-select-help'].includes(keyName), `${code}: preserve ${keyName}`);
+  assert.match(locale['scrum-history-checkpoint-hint'], /tanpa mengubah sebarang rekod/);
+  assert.notEqual(locale['scrum-history-checkpoint-rollback'], locale['scrum-history-checkpoint-discard']);
   for (const key of hiraganaBatchKeys) {
     assert.notEqual(locale[key], english[key], `${code}:${key}: untranslated`);
     assert.deepEqual(translationTokens(locale[key]), translationTokens(english[key]), `${code}:${key}: tokens`);
@@ -11313,7 +11333,7 @@ for (const code of ['hi', 'hi-IN']) {
   assert.ok(locale['import-board-instruction-openproject'].includes('GET /api/v3/work_packages'));
   assert.ok(locale['import-board-instruction-asana'].includes('GET /tasks'));
   assert.ok(locale['import-board-instruction-asana'].includes('memberships'));
-  assert.ok(locale['import-board-instruction-jira'].includes('GET /rest/api/2/search'));
+  assert.ok(locale['import-board-instruction-jira'].includes('GET /rest/api/3/search/jql'));
   assert.ok(locale['import-board-instruction-jira'].includes('automationRules'));
   for (const token of ['## ', '- [ ]', '- [x]']) {
     assert.ok(locale['import-board-instruction-markdown'].includes(token));
@@ -11423,7 +11443,7 @@ for (const code of ['hi', 'hi-IN']) {
   assert.ok(locale['import-board-instruction-openproject'].includes('GET /api/v3/work_packages'));
   assert.ok(locale['import-board-instruction-asana'].includes('GET /tasks'));
   assert.ok(locale['import-board-instruction-asana'].includes('memberships'));
-  assert.ok(locale['import-board-instruction-jira'].includes('GET /rest/api/2/search'));
+  assert.ok(locale['import-board-instruction-jira'].includes('GET /rest/api/3/search/jql'));
   assert.ok(locale['import-board-instruction-jira'].includes('automationRules'));
   assert.match(locale['email-recovery-confirm-cancel'], /nun se puen restaurar/);
   assert.match(locale['email-recovery-description'], /unvíu inciertu pue repetise/);
@@ -11510,7 +11530,7 @@ for (const code of ['hi', 'hi-IN']) {
   }
   assert.match(locale['import-board-instruction-openproject'], /paquets de trabalh/);
   assert.ok(locale['import-board-instruction-openproject'].includes('GET /api/v3/work_packages'));
-  assert.ok(locale['import-board-instruction-jira'].includes('GET /rest/api/2/search'));
+  assert.ok(locale['import-board-instruction-jira'].includes('GET /rest/api/3/search/jql'));
   for (const token of ['"issues"', '"automationRules"']) {
     assert.ok(locale['import-board-instruction-jira'].includes(token));
   }
@@ -12039,7 +12059,7 @@ for (const code of ['cy', 'cy-GB']) {
     assert.deepEqual(translationTokens(locale[key]), translationTokens(english[key]), `csb:${key}: tokens`);
     assert.doesNotMatch(locale[key], /(?:Wklej |wyszukiwania|przypisane|Przejrzyj|Zaimportowana)/);
   }
-  for (const literal of ['GET /rest/api/2/search', '"issues"', '"automationRules"']) assert.ok(locale['import-board-instruction-jira'].includes(literal));
+  for (const literal of ['GET /rest/api/3/search/jql', '"issues"', '"automationRules"']) assert.ok(locale['import-board-instruction-jira'].includes(literal));
   assert.doesNotMatch(locale['import-board-instruction-jira'], /api\/2\/Szëkôj/);
   for (const literal of ['todo.txt', '"x"', '+project', '@context', '(A)', 'due:', 't:']) assert.ok(locale['import-board-instruction-todotxt'].includes(literal));
   assert.ok(locale['import-board-instruction-wekan'].includes(locale.menu));
@@ -13803,4 +13823,199 @@ for (const code of ['cy', 'cy-GB']) {
   assert.match(locale['rule-email-legacy-access-denied'], /ni mô ju przistãpù/);
   assert.match(locale['rule-email-legacy-description'], /WeKan nie wëslë jich sóm/);
   assert.match(locale['rule-email-resolution-resend-uncertain'], /mògła dojsc abò nie dojsc/);
+}
+
+for (const code of ['hi', 'hi-IN']) {
+  const locale = read(code);
+  for (const token of ['Ctrl', 'Cmd', 'Mac']) assert.ok(locale['scrum-releases-select-help'].includes(token), `${code}: ${token}`);
+  assert.ok(locale['scrum-history-checkpoint-counts'].replace('__total__', '10').replace('__applied__', '3').startsWith('10 में से 3'));
+  assert.match(locale['sync-planning-hint'], /पहला समन्वयन कभी योजना नहीं हटाता/);
+  assert.match(locale['scrum-history-checkpoint-hint'], /कोई रिकॉर्ड नहीं बदलता/);
+  assert.notEqual(locale['scrum-history-checkpoint-rollback'], locale['scrum-history-checkpoint-discard']);
+}
+
+{
+  const locale = read('bn');
+  for (const token of ['Ctrl', 'Cmd', 'Mac']) assert.ok(locale['scrum-releases-select-help'].includes(token), `bn: ${token}`);
+  assert.match(locale['sync-planning-hint'], /প্রথম সমন্বয় কখনো পরিকল্পনা সরিয়ে দেয় না/);
+  assert.match(locale['scrum-history-checkpoint-hint'], /কোনো রেকর্ড বদলায় না/);
+  assert.notEqual(locale['scrum-history-checkpoint-rollback'], locale['scrum-history-checkpoint-discard']);
+  assert.ok(locale['scrum-history-checkpoint-counts'].replace('__total__', '10').replace('__applied__', '3').startsWith('10টি পরিবর্তনের মধ্যে 3টি'));
+}
+
+{
+  const locale = read('ta');
+  for (const token of ['Ctrl', 'Cmd', 'Mac']) assert.ok(locale['scrum-releases-select-help'].includes(token), `ta: ${token}`);
+  assert.match(locale['sync-planning-hint'], /முதல் ஒத்திசைவு ஒருபோதும் திட்டமிடலை அகற்றாது/);
+  assert.match(locale['scrum-history-checkpoint-hint'], /எந்தப் பதிவையும் மாற்றாது/);
+  assert.notEqual(locale['scrum-history-checkpoint-rollback'], locale['scrum-history-checkpoint-discard']);
+  assert.ok(locale['scrum-history-checkpoint-counts'].replace('__total__', '10').replace('__applied__', '3').startsWith('10 மாற்றங்களில் 3'));
+}
+
+{
+  const locale = read('ne');
+  for (const token of ['Ctrl', 'Cmd', 'Mac']) assert.ok(locale['scrum-releases-select-help'].includes(token), `ne: ${token}`);
+  assert.match(locale['sync-planning-hint'], /पहिलो समक्रमणले कहिल्यै योजना हटाउँदैन/);
+  assert.match(locale['scrum-history-checkpoint-hint'], /कुनै अभिलेख परिवर्तन हुँदैन/);
+  assert.notEqual(locale['scrum-history-checkpoint-rollback'], locale['scrum-history-checkpoint-discard']);
+  assert.ok(locale['scrum-history-checkpoint-counts'].replace('__total__', '10').replace('__applied__', '3').startsWith('10 परिवर्तनमध्ये 3'));
+}
+
+{
+  const locale = read('ur');
+  for (const token of ['Ctrl', 'Cmd', 'Mac']) assert.ok(locale['scrum-releases-select-help'].includes(token), `ur: ${token}`);
+  assert.match(locale['sync-planning-hint'], /پہلی ہم وقتی کبھی منصوبہ بندی نہیں ہٹاتی/);
+  assert.match(locale['scrum-history-checkpoint-hint'], /کوئی ریکارڈ نہیں بدلتا/);
+  assert.notEqual(locale['scrum-history-checkpoint-rollback'], locale['scrum-history-checkpoint-discard']);
+  assert.ok(locale['scrum-history-checkpoint-counts'].replace('__total__', '10').replace('__applied__', '3').startsWith('10 تبدیلیوں میں سے 3'));
+}
+
+{
+  const locale = read('th');
+  for (const token of ['Ctrl', 'Cmd', 'Mac']) assert.ok(locale['scrum-releases-select-help'].includes(token), `th: ${token}`);
+  assert.match(locale['sync-planning-hint'], /การซิงค์ครั้งแรกจะไม่ลบแผนออก/);
+  assert.match(locale['scrum-history-checkpoint-hint'], /ไม่เปลี่ยนแปลงรายการใด/);
+  assert.notEqual(locale['scrum-history-checkpoint-rollback'], locale['scrum-history-checkpoint-discard']);
+  assert.ok(locale['scrum-history-checkpoint-counts'].replace('__total__', '10').replace('__applied__', '3').includes('3 จาก 10'));
+}
+
+{
+  const locale = read('gu-IN');
+  for (const token of ['Ctrl', 'Cmd', 'Mac']) assert.ok(locale['scrum-releases-select-help'].includes(token), `gu-IN: ${token}`);
+  assert.match(locale['sync-planning-hint'], /પ્રથમ સમન્વય ક્યારેય આયોજન દૂર કરતો નથી/);
+  assert.match(locale['scrum-history-checkpoint-hint'], /કોઈ રેકોર્ડ બદલાતો નથી/);
+  assert.notEqual(locale['scrum-history-checkpoint-rollback'], locale['scrum-history-checkpoint-discard']);
+  assert.ok(locale['scrum-history-checkpoint-counts'].replace('__total__', '10').replace('__applied__', '3').startsWith('10 ફેરફારોમાંથી 3'));
+}
+
+{
+  const locale = read('kn');
+  for (const token of ['Ctrl', 'Cmd', 'Mac']) assert.ok(locale['scrum-releases-select-help'].includes(token), `kn: ${token}`);
+  assert.match(locale['sync-planning-hint'], /ಮೊದಲ ಸಿಂಕ್ ಎಂದಿಗೂ ಯೋಜನೆಯನ್ನು ತೆಗೆದುಹಾಕುವುದಿಲ್ಲ/);
+  assert.match(locale['scrum-history-checkpoint-hint'], /ಯಾವುದೇ ದಾಖಲೆಯನ್ನು ಬದಲಾಯಿಸುವುದಿಲ್ಲ/);
+  assert.notEqual(locale['scrum-history-checkpoint-rollback'], locale['scrum-history-checkpoint-discard']);
+  assert.ok(locale['scrum-history-checkpoint-counts'].replace('__total__', '10').replace('__applied__', '3').startsWith('10 ಬದಲಾವಣೆಗಳಲ್ಲಿ 3'));
+}
+
+{
+  const locale = read('ga');
+  for (const token of ['Ctrl', 'Cmd', 'Mac']) assert.ok(locale['scrum-releases-select-help'].includes(token), `ga: ${token}`);
+  assert.match(locale['sync-planning-hint'], /ní bhaineann an chéad sioncronú pleanáil riamh/);
+  assert.match(locale['scrum-history-checkpoint-hint'], /ní athraítear aon taifead/);
+  assert.notEqual(locale['scrum-history-checkpoint-rollback'], locale['scrum-history-checkpoint-discard']);
+  assert.ok(locale['scrum-history-checkpoint-counts'].replace('__total__', '10').replace('__applied__', '3').includes('3 as 10'));
+}
+
+{
+  const locale = read('co');
+  for (const token of ['Ctrl', 'Cmd', 'Mac']) assert.ok(locale['scrum-releases-select-help'].includes(token), `co: ${token}`);
+  assert.match(locale['sync-planning-hint'], /a prima sincrunizazione ùn caccia mai a pianificazione/);
+  assert.match(locale['scrum-history-checkpoint-hint'], /ùn cambia nisun registru/);
+  assert.notEqual(locale['scrum-history-checkpoint-rollback'], locale['scrum-history-checkpoint-discard']);
+  assert.ok(locale['scrum-history-checkpoint-counts'].replace('__total__', '10').replace('__applied__', '3').startsWith("3 cambiamenti nant'à 10"));
+}
+
+{
+  const locale = read('sc');
+  for (const token of ['Ctrl', 'Cmd', 'Mac']) assert.ok(locale['scrum-releases-select-help'].includes(token), `sc: ${token}`);
+  assert.match(locale['sync-planning-hint'], /sa prima sincronizatzione non bogat mai sa pianificatzione/);
+  assert.match(locale['scrum-history-checkpoint-hint'], /non càmbiat perunu registru/);
+  assert.notEqual(locale['scrum-history-checkpoint-rollback'], locale['scrum-history-checkpoint-discard']);
+  assert.ok(locale['scrum-history-checkpoint-counts'].replace('__total__', '10').replace('__applied__', '3').startsWith('3 cambiamentos de 10'));
+}
+
+{
+  const locale = read('scn');
+  for (const token of ['Ctrl', 'Cmd', 'Mac']) assert.ok(locale['scrum-releases-select-help'].includes(token), `scn: ${token}`);
+  assert.match(locale['sync-planning-hint'], /la prima sincrunizzazzioni nun leva mai la pianificazzioni/);
+  assert.match(locale['scrum-history-checkpoint-hint'], /nun cancia nuddu riggistru/);
+  assert.notEqual(locale['scrum-history-checkpoint-rollback'], locale['scrum-history-checkpoint-discard']);
+  assert.ok(locale['scrum-history-checkpoint-counts'].replace('__total__', '10').replace('__applied__', '3').startsWith('3 canciamenti di 10'));
+}
+
+{
+  const locale = read('nap');
+  for (const token of ['Ctrl', 'Cmd', 'Mac']) assert.ok(locale['scrum-releases-select-help'].includes(token), `nap: ${token}`);
+  assert.match(locale['sync-planning-hint'], /primma sincrunizzazzione nun leva maje/);
+  assert.match(locale['scrum-history-checkpoint-hint'], /nun cagna nisciun record/);
+  assert.notEqual(locale['scrum-history-checkpoint-rollback'], locale['scrum-history-checkpoint-discard']);
+  assert.ok(locale['scrum-history-checkpoint-counts'].replace('__total__', '10').replace('__applied__', '3').startsWith("3 cagnamiente 'e 10"));
+}
+
+{
+  const locale = read('an');
+  for (const token of ['Ctrl', 'Cmd', 'Mac']) assert.ok(locale['scrum-releases-select-help'].includes(token), `an: ${token}`);
+  assert.match(locale['sync-planning-hint'], /a primera sincronización nunca elimina a planificación/);
+  assert.match(locale['scrum-history-checkpoint-hint'], /no cambia garra rechistro/);
+  assert.notEqual(locale['scrum-history-checkpoint-rollback'], locale['scrum-history-checkpoint-discard']);
+  assert.ok(locale['scrum-history-checkpoint-counts'].replace('__total__', '10').replace('__applied__', '3').includes('3 de 10'));
+}
+
+{
+  const locale = read('ast-ES');
+  for (const token of ['Ctrl', 'Cmd', 'Mac']) assert.ok(locale['scrum-releases-select-help'].includes(token), `ast-ES: ${token}`);
+  assert.match(locale['sync-planning-hint'], /la primera sincronización nunca quita la planificación/);
+  assert.match(locale['scrum-history-checkpoint-hint'], /nun camuda nengún rexistru/);
+  assert.notEqual(locale['scrum-history-checkpoint-rollback'], locale['scrum-history-checkpoint-discard']);
+  assert.ok(locale['scrum-history-checkpoint-counts'].replace('__total__', '10').replace('__applied__', '3').includes('3 de 10'));
+}
+
+{
+  const locale = read('oc');
+  for (const token of ['Ctrl', 'Cmd', 'Mac']) assert.ok(locale['scrum-releases-select-help'].includes(token), `oc: ${token}`);
+  assert.match(locale['sync-planning-hint'], /la primièra sincronizacion suprimís pas jamai la planificacion/);
+  assert.match(locale['scrum-history-checkpoint-hint'], /càmbia pas cap d'enregistrament/);
+  assert.match(locale['scrum-history-checkpoint-hint'], /sonque se degun mai a pas modificat/);
+  assert.notEqual(locale['scrum-history-checkpoint-rollback'], locale['scrum-history-checkpoint-discard']);
+  assert.ok(locale['scrum-history-checkpoint-counts'].replace('__total__', '10').replace('__applied__', '3').startsWith('3 cambiaments sus 10'));
+}
+
+{
+  const locale = read('br');
+  for (const token of ['Ctrl', 'Cmd', 'Mac']) assert.ok(locale['scrum-releases-select-help'].includes(token), `br: ${token}`);
+  assert.match(locale['sync-planning-hint'], /ne zilemel ket ar c’houbredañ kentañ ar steuñv morse/);
+  assert.match(locale['scrum-history-checkpoint-hint'], /hep kemmañ enrolladenn ebet/);
+  assert.match(locale['scrum-history-checkpoint-hint'], /n’eus den all ebet/);
+  assert.notEqual(locale['scrum-history-checkpoint-rollback'], locale['scrum-history-checkpoint-discard']);
+  assert.ok(locale['scrum-history-checkpoint-counts'].replace('__total__', '10').replace('__applied__', '3').includes('3 diwar 10'));
+}
+
+{
+  const locale = read('eu');
+  for (const token of ['Ctrl', 'Cmd', 'Mac']) assert.ok(locale['scrum-releases-select-help'].includes(token), `eu: ${token}`);
+  assert.match(locale['sync-planning-hint'], /lehen sinkronizazioak ez du inoiz plangintza kentzen/);
+  assert.match(locale['scrum-history-checkpoint-hint'], /ez du erregistrorik aldatzen/);
+  assert.match(locale['scrum-history-checkpoint-hint'], /beste inork erregistro horiek aldatu ez dituenean/);
+  assert.notEqual(locale['scrum-history-checkpoint-rollback'], locale['scrum-history-checkpoint-discard']);
+  assert.ok(locale['scrum-history-checkpoint-counts'].replace('__total__', '10').replace('__applied__', '3').startsWith('10 aldaketatik 3'));
+}
+
+for (const code of ['cy', 'cy-GB']) {
+  const locale = read(code);
+  for (const token of ['Ctrl', 'Cmd', 'Mac']) assert.ok(locale['scrum-releases-select-help'].includes(token), `${code}: ${token}`);
+  assert.match(locale['sync-planning-hint'], /nid yw’r cysoniad cyntaf byth yn dileu cynllunio/);
+  assert.match(locale['scrum-history-checkpoint-hint'], /nid yw’n newid unrhyw gofnodion/);
+  assert.match(locale['scrum-history-checkpoint-hint'], /nad oes neb arall wedi newid/);
+  assert.notEqual(locale['scrum-history-checkpoint-rollback'], locale['scrum-history-checkpoint-discard']);
+  assert.ok(locale['scrum-history-checkpoint-counts'].replace('__total__', '10').replace('__applied__', '3').includes('3 o 10'));
+}
+
+{
+  const locale = read('gd');
+  for (const token of ['Ctrl', 'Cmd', 'Mac']) assert.ok(locale['scrum-releases-select-help'].includes(token), `gd: ${token}`);
+  assert.match(locale['sync-planning-hint'], /cha toir a’ chiad sioncronachadh planadh air falbh idir/);
+  assert.match(locale['scrum-history-checkpoint-hint'], /cha tèid clàr sam bith atharrachadh/);
+  assert.match(locale['scrum-history-checkpoint-hint'], /mur eil duine eile air na clàran sin atharrachadh/);
+  assert.notEqual(locale['scrum-history-checkpoint-rollback'], locale['scrum-history-checkpoint-discard']);
+  assert.ok(locale['scrum-history-checkpoint-counts'].replace('__total__', '10').replace('__applied__', '3').includes('3 à 10'));
+}
+
+{
+  const locale = read('csb');
+  for (const token of ['Ctrl', 'Cmd', 'Mac']) assert.ok(locale['scrum-releases-select-help'].includes(token), `csb: ${token}`);
+  assert.match(locale['sync-planning-hint'], /pierszô synchronizacjô nigdë nie rëmô planowaniô/);
+  assert.match(locale['scrum-history-checkpoint-hint'], /nie zmieniô niżódnëch zapisów/);
+  assert.match(locale['scrum-history-checkpoint-hint'], /nicht jinszi nie zmienił/);
+  assert.notEqual(locale['scrum-history-checkpoint-rollback'], locale['scrum-history-checkpoint-discard']);
+  assert.ok(locale['scrum-history-checkpoint-counts'].replace('__total__', '10').replace('__applied__', '3').includes('3 z 10'));
 }

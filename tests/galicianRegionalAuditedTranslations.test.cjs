@@ -352,3 +352,298 @@ for (const example of ["'Field 1' == 'Value 1'", "Field1 == I\\'m", 'F1 == V1 &&
 
 const baseGalician = require('../imports/i18n/data/gl.i18n.json');
 for (const key of ['advanced-filter-description', 'calendar-system-islamic-rgsa', 'calendar-system-islamic-tbla', 'globalSearch-instructions-operator-due', 'globalSearch-instructions-operator-label']) assert.equal(baseGalician[key], data[key]);
+
+const repairedLabels = {
+  "board": "Taboleiro",
+  "card": "Tarxeta",
+  "swimlane": "Carril",
+  "add-existing-card-as-subtask-empty": "Non se atoparon tarxetas coincidentes",
+  "convertChecklistItemToCardPopup-title": "Converter en tarxeta",
+  "and-n-other-card": "E __count__ tarxeta máis",
+  "and-n-other-card_plural": "E __count__ tarxetas máis",
+  "archived-boards": "Taboleiros no Arquivo",
+  "no-archived-boards": "Non hai taboleiros no Arquivo.",
+  "board-not-found": "Non se atopou o taboleiro",
+  "boardChangeTitlePopup-title": "Renomear o taboleiro",
+  "boardMenuPopup-title": "Configuración do taboleiro",
+  "boardChangeViewPopup-title": "Vista do taboleiro",
+  "board-view": "Vista do taboleiro",
+  "card-archived": "Esta tarxeta moveuse ao Arquivo.",
+  "card-settings-linked-card": "Tarxeta ligada",
+  "cardDeletePopup-title": "Eliminar a tarxeta?",
+  "cardArchivePopup-title": "Arquivar a tarxeta?",
+  "cardDetailsActionsPopup-title": "Accións da tarxeta",
+  "bookmarksPopup-title": "Taboleiros favoritos",
+  "cards-count-one": "Tarxeta",
+  "cardType-card": "Tarxeta",
+  "cardType-linkedCard": "Tarxeta ligada",
+  "cardType-linkedBoard": "Taboleiro ligado",
+  "close-board": "Pechar o taboleiro",
+  "close-card": "Pechar a tarxeta",
+  "linkCardPopup-title": "Ligar tarxeta",
+  "copyCardPopup-title": "Copiar a tarxeta",
+  "email-resetPassword-subject": "Restablece o teu contrasinal en __siteName__",
+  "error-board-doesNotExist": "Este taboleiro non existe",
+  "export-card": "Exportar a tarxeta",
+  "export-card-pdf": "Exportar a tarxeta a PDF",
+  "exportCardPopup-title": "Exportar a tarxeta"
+};
+const { translationTokens } = require('../releases/translations/placeholder-tokens.mjs');
+const englishLabels = require('../imports/i18n/data/en.i18n.json');
+for (const [key, value] of Object.entries(repairedLabels)) {
+  assert.equal(data[key], value, key);
+  assert.deepEqual(translationTokens(data[key]), translationTokens(englishLabels[key]), key);
+  assert.doesNotMatch(data[key], /Cartão|cartão|cartões|Quadro|quadro|senha|Configurações|não|Sem /, key);
+}
+
+const furtherRepairedLabels = {
+  "act-createBoard": "creou o taboleiro __board__",
+  "act-importBoard": "importou o taboleiro __board__",
+  "leaveBoardPopup-title": "Saír do taboleiro?",
+  "link-card": "Ligar a esta tarxeta",
+  "linkCardToBoardPopup-title": "Ligar ao taboleiro",
+  "linkCardToNewBoard": "Crear taboleiro a partir desta tarxeta",
+  "my-boards": "Os meus taboleiros",
+  "no-archived-cards": "Non hai tarxetas no Arquivo.",
+  "remove-from-board": "Eliminar do taboleiro",
+  "remove-member-from-card": "Eliminar da tarxeta",
+  "rename-board": "Renomear o taboleiro",
+  "select-board": "Seleccionar taboleiro",
+  "shortcut-filter-my-cards": "Filtrar as miñas tarxetas",
+  "starred-boards": "Taboleiros destacados",
+  "go-to-board": "Ir ao taboleiro",
+  "card-templates-swimlane": "Modelos de tarxeta",
+  "board-templates-swimlane": "Modelos de taboleiro",
+  "tableVisibilityMode": "Visibilidade dos taboleiros",
+  "boardDeletePopup-title": "Eliminar o taboleiro?",
+  "delete-board": "Eliminar taboleiro",
+  "card-settings": "Configuración da tarxeta",
+  "boardCardSettingsPopup-title": "Configuración da tarxeta",
+  "description-on-minicard": "Descrición na minitarxeta",
+  "change-card-parent": "Cambiar o pai da tarxeta",
+  "parent-card": "Tarxeta pai",
+  "source-board": "Taboleiro de orixe",
+  "r-board-rules": "Regras do taboleiro",
+  "r-board": "Taboleiro",
+  "r-mark-complete": "Marcar a tarxeta como completa",
+  "r-mark-incomplete": "Marcar a tarxeta como incompleta",
+  "r-when-a-card": "Cando unha tarxeta",
+  "r-the-board": "o taboleiro",
+  "r-move-card-to": "Mover a tarxeta a",
+  "r-card": "tarxeta",
+  "r-remove-all-labels": "Elimina todas as etiquetas da tarxeta",
+  "r-create-card": "Crear nova tarxeta",
+  "r-link-card": "Ligar a tarxeta a",
+  "duplicate-board": "Duplicar taboleiro",
+  "above-selected-card": "Enriba da tarxeta seleccionada",
+  "below-selected-card": "Debaixo da tarxeta seleccionada",
+  "show-on-card": "Mostrar na tarxeta",
+  "show-on-minicard": "Mostrar na minitarxeta",
+  "board-admin": "Administrador do taboleiro",
+  "my-cards": "As miñas tarxetas",
+  "myCardsViewChange-title": "Vista das miñas tarxetas",
+  "myCardsViewChangePopup-title": "Vista das miñas tarxetas",
+  "myCardsSortChange-title": "Ordenación das miñas tarxetas",
+  "myCardsSortChangePopup-title": "Ordenación das miñas tarxetas",
+  "myCardsSortChange-choice-board": "Por taboleiro",
+  "dueCards-title": "Tarxetas con vencemento",
+  "globalSearchViewChange-choice-me": "As miñas tarxetas",
+  "globalSearchViewChange-choice-all": "Todas as tarxetas",
+  "broken-cards": "Tarxetas danadas",
+  "no-cards-found": "Non se atoparon tarxetas",
+  "one-card-found": "Atopouse unha tarxeta",
+  "n-cards-found": "Atopáronse %s tarxetas",
+  "operator-board": "taboleiro",
+  "globalSearch-instructions-status-archived": "`__predicate_archived__` - tarxetas arquivadas",
+  "sort-cards": "Ordenar tarxetas",
+  "sort-boards": "Ordenar taboleiros",
+  "cardsSortPopup-title": "Ordenar tarxetas",
+  "creator-on-minicard": "Creador na minitarxeta",
+  "boardsReportTitle": "Informe de taboleiros",
+  "cardsReportTitle": "Informe de tarxetas",
+  "maximize-card": "Maximizar tarxeta",
+  "minimize-card": "Minimizar tarxeta",
+  "cardDetailsPopup-title": "Detalles da tarxeta",
+  "card-show-lists": "A tarxeta mostra as listas",
+  "card-id": "ID da tarxeta",
+  "board-id": "ID do taboleiro",
+  "board-title": "Título do taboleiro",
+  "board-status": "Estado do taboleiro",
+  "board-status-cards-with-time": "Tarxetas con tempo empregado",
+  "password-again": "Contrasinal (de novo)",
+  "forgot-password": "Esqueceu o contrasinal",
+  "minicardDetailsActionsPopup-title": "Detalles da tarxeta",
+  "drag-board": "Arrastrar taboleiro",
+  "accounts-lockout-locked-users": "Usuarios bloqueados",
+  "accounts-lockout-user-locked": "O usuario está bloqueado",
+  "board-operations": "Operacións do taboleiro",
+  "schedule-board-backup": "Programar a copia de seguridade do taboleiro",
+  "attachment-settings": "Configuración de anexos",
+  "back-to-settings": "Volver á configuración",
+  "board-migration": "Migración do taboleiro",
+  "board-migrations": "Migracións de taboleiros",
+  "lost-cards": "Tarxetas perdidas",
+  "step-fix-orphaned-cards": "Corrixir as tarxetas orfas",
+  "step-update-cards": "Actualizar as tarxetas",
+  "step-restore-cards": "Restaurar as tarxetas",
+  "converting-board": "Convertendo o taboleiro",
+  "unmigrated-boards": "Taboleiros sen migrar",
+  "password-mismatch": "Os contrasinais non coinciden",
+  "user-exists": "O usuario xa existe"
+};
+for (const [key, value] of Object.entries(furtherRepairedLabels)) {
+  assert.equal(data[key], value, key);
+  assert.deepEqual(translationTokens(data[key]), translationTokens(englishLabels[key]), key);
+  assert.doesNotMatch(data[key], /cartão|cartões|quadro|usuário|senha|configurações/i, key);
+}
+assert.match(data['r-mark-complete'], /como completa/);
+assert.match(data['r-mark-incomplete'], /como incompleta/);
+assert.match(data['above-selected-card'], /Enriba/);
+assert.match(data['below-selected-card'], /Debaixo/);
+assert.match(data['password-mismatch'], /non coinciden/);
+
+const sharedRepairs = {
+  "act-deleteCard": "eliminou a tarxeta __card__ da lista __list__ no carril __swimlane__ do taboleiro __board__",
+  "act-removeBoard": "eliminou o taboleiro __board__",
+  "act-removeList": "eliminou a lista __list__ do taboleiro __board__",
+  "act-removeSwimlane": "eliminou o carril __swimlane__ do taboleiro __board__",
+  "set-selected-starred": "Marcar como favoritos os taboleiros seleccionados",
+  "set-selected-home": "Definir como taboleiro de inicio (ábrese despois de iniciar sesión)",
+  "home-board-badge": "Taboleiro de inicio (ábrese despois de iniciar sesión)",
+  "home-board-empty": "Arrastra aquí só un taboleiro para abrilo despois de iniciar sesión",
+  "home-board-remove-confirm": "Quitar este taboleiro do Inicio? O taboleiro non se elimina.",
+  "list-width-shared-note": "Esta anchura compártese con todas as persoas deste taboleiro.",
+  "boardBackgroundsPopup-title": "Fondos do taboleiro",
+  "restoreArchivedCardToListPopup-title": "Restaurar a tarxeta na lista",
+  "card-aging": "Envellecemento das tarxetas (esvaecer as tarxetas antigas)",
+  "move-card-up": "Mover a tarxeta cara arriba",
+  "move-card-down": "Mover a tarxeta cara abaixo",
+  "confirm-move-list-to-swimlane": "Mover esta lista e todas as súas tarxetas ao outro carril?",
+  "error-notAllowed": "O teu rol no taboleiro non permite facer iso",
+  "import-trello-zip-no-boards": "Non se atoparon ficheiros .json de taboleiros de Trello no .zip.",
+  "import-trello-zip-progress": "Importando taboleiros do .zip, agarda…",
+  "import-trello-workspace-placeholder": "O taboleiro importado colócase neste espazo de traballo, que se crea se non existe",
+  "trello-import-selected": "Importar os taboleiros seleccionados",
+  "trello-importing": "Importando taboleiros…",
+  "trello-select-boards": "Selecciona polo menos un taboleiro para importar.",
+  "trello-import-more": "Importar máis taboleiros",
+  "trello-delete-imported": "Eliminar os taboleiros importados",
+  "set-default-board-title": "Preme para abrir este taboleiro automaticamente despois de iniciar sesión.",
+  "org-propagate-members-to-boards": "Propagar os membros aos taboleiros",
+  "team-propagate-members-to-boards": "Propagar os membros aos taboleiros",
+  "checklist-count-on-minicard": "Reconto de elementos da lista de verificación (0/0) na minitarxeta",
+  "r-w-card-created": "Créase unha tarxeta",
+  "r-w-card-archived": "Arquívase unha tarxeta",
+  "r-w-card-unarchived": "Desarquívase unha tarxeta",
+  "r-of-cards-in-list": "para as tarxetas da lista",
+  "r-when-due": "Cando a data de vencemento dunha tarxeta",
+  "r-when-card-in-list": "Cando unha tarxeta leva na lista",
+  "r-card-button": "Botón de tarxeta",
+  "r-board-button": "Botón de taboleiro",
+  "allow-invite-to-board": "Permitir convidar ao taboleiro",
+  "drag-template-here-to-share": "Arrastra aquí un taboleiro modelo para compartilo",
+  "remove-domain-from-board": "Seguro que queres quitar este dominio deste taboleiro?",
+  "search-boards": "Buscar taboleiros",
+  "drag-to-connect": "Arrastra para conectar con outra tarxeta",
+  "import-dependencies-empty": "Selecciona un taboleiro e proporciona polo menos unha liña de dependencia",
+  "board-backgrounds": "Fondos do taboleiro",
+  "boardBackgrounds-title": "Fondos do taboleiro",
+  "set-as-active": "Establecer como fondo do taboleiro",
+  "board-status-loading-mode": "Carga de tarxetas",
+  "board-status-overtime-cards": "Tarxetas con horas extra",
+  "cards-loading": "Carga de tarxetas",
+  "cards-loading-auto": "Automática (baixo demanda só para taboleiros grandes)",
+  "cards-loading-all": "Todas as tarxetas",
+  "cards-loading-lazy": "Baixo demanda (só as tarxetas visibles)",
+  "board-view-aging-wip": "Envellecemento do traballo en curso"
+};
+for (const code of ['gl', 'gl-ES']) {
+  const catalog = require('../imports/i18n/data/' + code + '.i18n.json');
+  for (const [key, value] of Object.entries(sharedRepairs)) {
+    assert.equal(catalog[key], value, code + ': ' + key);
+    assert.deepEqual(translationTokens(catalog[key]), translationTokens(englishLabels[key]), key);
+    assert.doesNotMatch(catalog[key], /cartão|cartões|quadro|preguiçoso/i, key);
+  }
+  assert.match(catalog['home-board-empty'], /só un taboleiro/);
+  assert.match(catalog['home-board-remove-confirm'], /non se elimina/);
+  assert.match(catalog['cards-loading-lazy'], /só as tarxetas visibles/);
+  assert.doesNotMatch(catalog['cards-loading-all'], /predeterminado/);
+  for (const literal of ['.json', 'Trello', '.zip']) assert.ok(catalog['import-trello-zip-no-boards'].includes(literal));
+}
+
+const settingsKeys = ["external-link-rules", "external-link-rules-description", "external-link-identifier-aliases", "read-only-field", "r-moved-forward", "r-moved-back", "r-assignee", "r-add-actinguser-assignee", "r-remove-all-assignees", "ldap-sync-now", "ldap-sync-now-done", "ldap-sync-now-error", "ldap-sync-now-nothing", "oauth-providers-allowed-email-domains", "scrum-release-scope", "scrum-releases-select-help", "scrum-import-into-board", "scrum-import-into-board-hint", "scrum-import-preview", "scrum-import-choose-file"];
+for (const code of ['gl', 'gl-ES']) {
+  const catalog = require('../imports/i18n/data/' + code + '.i18n.json');
+  for (const key of settingsKeys) {
+    assert.ok(catalog[key]?.trim(), key);
+    assert.notEqual(catalog[key], englishLabels[key], code + ': ' + key);
+    assert.deepEqual(translationTokens(catalog[key]), translationTokens(englishLabels[key]), key);
+  }
+  assert.match(catalog['read-only-field'], /só os administradores do taboleiro poden cambialo/);
+  assert.match(catalog['scrum-import-into-board-hint'], /nunca se duplican/);
+  assert.match(catalog['scrum-import-into-board-hint'], /non coinciden.*sen cambios/);
+  assert.match(catalog['r-moved-forward'], /adiante.*posterior/);
+  assert.match(catalog['r-moved-back'], /atrás.*anterior/);
+  assert.match(catalog['oauth-providers-allowed-email-domains'], /en branco permítense todos/);
+  for (const literal of ['LDAP_BACKGROUND_SYNC_IMPORT_NEW_USERS', 'LDAP_BACKGROUND_SYNC_KEEP_EXISTANT_USERS_UPDATED']) assert.ok(catalog['ldap-sync-now-nothing'].includes(literal));
+  assert.ok(catalog['external-link-rules-description'].includes('[{identifier}:{number}] = https://tracker.example.com/{identifier}/{number}'));
+  assert.deepEqual(catalog['external-link-rules-description'].match(/\{[^{}]+\}/g), englishLabels['external-link-rules-description'].match(/\{[^{}]+\}/g));
+  assert.ok(catalog['external-link-identifier-aliases'].includes('TK=Task, IN=Incident'));
+}
+
+const planningKeys = ["scrum-import-invalid-file", "scrum-import-preview-sprints", "scrum-import-preview-releases", "scrum-import-preview-cards", "scrum-import-preview-nothing", "scrum-import-into-board-done", "scrum-import-card-not-matched", "scrum-import-card-ambiguous", "scrum-import-card-on-another-board", "scrum-import-record-ambiguous", "scrum-import-record-not-imported", "scrum-import-sprint-finished", "sync-planning-sprint", "sync-planning-releases", "sync-planning-fields", "sync-planning-hint", "stuck-sync-operation-heading"];
+for (const code of ['gl', 'gl-ES']) {
+  const catalog = require('../imports/i18n/data/' + code + '.i18n.json');
+  for (const key of planningKeys) {
+    assert.ok(catalog[key]?.trim(), key);
+    assert.notEqual(catalog[key], englishLabels[key], code + ': ' + key);
+    assert.deepEqual(translationTokens(catalog[key]), translationTokens(englishLabels[key]), key);
+  }
+  assert.match(catalog['scrum-import-invalid-file'], /non é JSON válido/);
+  assert.match(catalog['scrum-import-card-on-another-board'], /outro taboleiro.*sen cambios/);
+  assert.match(catalog['scrum-import-sprint-finished'], /Non se moveu.*sprint finalizado/);
+  assert.match(catalog['sync-planning-hint'], /primeiro polo ID da fonte e despois polo nome/);
+  assert.match(catalog['sync-planning-hint'], /primeira sincronización nunca elimina a planificación/);
+  assert.match(catalog['sync-planning-hint'], /cambio local.*mantense ata que a fonte cambia/);
+  assert.doesNotMatch(catalog['sync-planning-hint'], /primeira sincronización elimina/);
+}
+
+const syncRecoveryKeys = ["stuck-sync-operation-description", "stuck-sync-operation-list", "stuck-sync-operation-progress", "stuck-sync-operation-reason", "stuck-sync-operation-applied", "stuck-sync-operation-reason-scope-changed", "stuck-sync-operation-reason-access-denied", "stuck-sync-operation-reason-trigger-unknown", "stuck-sync-operation-reason-intent-missing", "stuck-sync-operation-reason-unknown", "stuck-sync-operation-replayable-now", "stuck-sync-operation-discard", "stuck-sync-operation-discard-confirm", "stuck-sync-operation-refresh", "stuck-sync-operation-empty", "stuck-sync-operation-truncated", "stuck-sync-operation-unavailable", "stuck-sync-operation-missing", "stuck-sync-operation-not-stuck", "stuck-sync-operation-replayable", "stuck-sync-operation-busy"];
+for (const code of ['gl', 'gl-ES']) {
+  const catalog = require('../imports/i18n/data/' + code + '.i18n.json');
+  for (const key of syncRecoveryKeys) {
+    assert.ok(catalog[key]?.trim(), key);
+    assert.notEqual(catalog[key], englishLabels[key], code + ': ' + key);
+    assert.deepEqual(translationTokens(catalog[key]), translationTokens(englishLabels[key]), key);
+  }
+  assert.match(catalog['stuck-sync-operation-description'], /cambios xa aplicados mantéñense/);
+  assert.match(catalog['stuck-sync-operation-description'], /cambios gardados pendentes nunca se escriben/);
+  assert.match(catalog['stuck-sync-operation-discard-confirm'], /cambios que xa aplicou mantéñense/);
+  assert.doesNotMatch(catalog['stuck-sync-operation-discard-confirm'], /cambios que xa aplicou elimínanse/);
+  assert.match(catalog['stuck-sync-operation-reason-access-denied'], /xa non ten acceso de escritura a toda a lista/);
+  assert.match(catalog['stuck-sync-operation-replayable-now'], /non se pode descartar/);
+  assert.match(catalog['stuck-sync-operation-not-stuck'], /non se pode descartar/);
+  assert.match(catalog['stuck-sync-operation-replayable'], /non se descartou/);
+  assert.match(catalog['stuck-sync-operation-truncated'], /50 máis antigas/);
+}
+
+const recoveryResultKeys = ["stuck-sync-operation-failed", "interrupted-import-heading", "interrupted-import-description", "interrupted-import-board", "interrupted-import-progress", "interrupted-import-created", "interrupted-import-source", "interrupted-import-state-stopped", "interrupted-import-state-failed", "interrupted-import-state-discarding", "interrupted-import-scrum", "interrupted-import-counts", "interrupted-import-no-board", "interrupted-import-keep", "interrupted-import-discard", "interrupted-import-keep-confirm", "interrupted-import-discard-confirm", "interrupted-import-refresh", "interrupted-import-empty", "interrupted-import-truncated", "interrupted-import-unavailable", "interrupted-import-missing", "interrupted-import-not-interrupted", "interrupted-import-foreign-board", "interrupted-import-scrum-busy", "interrupted-import-failed", "scrum-history-checkpoint-stuck", "scrum-history-checkpoint-counts", "scrum-history-checkpoint-hint", "scrum-history-checkpoint-rollback", "scrum-history-checkpoint-discard", "scrum-history-checkpoint-discard-confirm", "scrum-history-checkpoint-ask-admin", "login-setting-env-only"];
+for (const code of ['gl', 'gl-ES']) {
+  const catalog = require('../imports/i18n/data/' + code + '.i18n.json');
+  for (const key of recoveryResultKeys) {
+    assert.ok(catalog[key]?.trim(), key);
+    assert.notEqual(catalog[key], englishLabels[key], code + ': ' + key);
+    assert.deepEqual(translationTokens(catalog[key]), translationTokens(englishLabels[key]), key);
+  }
+  assert.match(catalog['interrupted-import-description'], /non se pode continuar porque non se conserva o ficheiro de orixe/);
+  assert.match(catalog['interrupted-import-description'], /incluído todo o que se engadiu desde entón/);
+  assert.match(catalog['interrupted-import-keep-confirm'], /Non se elimina nada/);
+  assert.match(catalog['interrupted-import-discard-confirm'], /todo o seu contido elimínanse permanentemente/);
+  assert.match(catalog['interrupted-import-foreign-board'], /non se modificou/);
+  assert.match(catalog['interrupted-import-truncated'], /50 máis antigas/);
+  assert.match(catalog['scrum-history-checkpoint-hint'], /só se ofrece cando ninguén máis modificou/);
+  assert.match(catalog['scrum-history-checkpoint-hint'], /non modifica ningún rexistro/);
+  assert.match(catalog['scrum-history-checkpoint-stuck'], /bloqueada ata que se resolva/);
+  assert.match(catalog['login-setting-env-only'], /Só o contorno do servidor.*só para lectura/);
+  assert.doesNotMatch(catalog['interrupted-import-keep-confirm'], /elimínase o taboleiro/);
+}

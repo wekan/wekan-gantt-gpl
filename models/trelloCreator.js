@@ -1,3 +1,5 @@
+import { membersMode, membersMappingFor } from '/models/lib/importMembersMode';
+const { trelloCardShortLink, resolveTrelloCardAttachments } = require('/models/lib/attachedCards');
 import { Meteor } from 'meteor/meteor';
 import { ReactiveCache } from '/imports/reactiveCache';
 import { TAPi18n } from '/imports/i18n';
@@ -73,6 +75,9 @@ export class TrelloCreator {
     this.lists = {};
     // Map of cards Trello ID => Wekan ID
     this.cards = {};
+    // #3257: Trello card attachments - a card attached to a card - waiting for
+    // every card to exist: [{ cardId (WeKan), shortLink, url }].
+    this.pendingCardAttachments = [];
     // Map of attachments Wekan ID => Wekan ID
     this.attachmentIds = {};
     // Map of checklists Wekan ID => Wekan ID
@@ -80,7 +85,10 @@ export class TrelloCreator {
     // The comments, indexed by Trello card id (to map when importing cards)
     this.comments = {};
     // the members, indexed by Trello member id => Wekan user ID
-    this.members = data.membersMapping ? data.membersMapping : {};
+    // Who the file's people become - chosen users, placeholders, or the
+    // person importing - the same for every source (models/lib/importMembersMode.js).
+    this.membersMode = membersMode(data);
+    this.members = membersMappingFor(data, () => Meteor.userId());
 
     // maps a trelloCardId to an array of trelloAttachments
     this.attachments = {};
@@ -601,6 +609,12 @@ export class TrelloCreator {
           type: raw.mimeType || raw.type || undefined,
           userId: raw.idMemberCreator || raw.userId,
           file: raw.file,
+          // A .zip import points the attachment at its zip entry, and gives its
+          // size, on the raw object (server/routes/importTrelloZip.js); leaving
+          // them out here made every zip attachment fall back to downloading
+          // its Trello URL, which needs Trello's own login, so none arrived.
+          zipEntryKey: raw.zipEntryKey,
+          bytes: raw.bytes,
         };
         const existing = attachmentsById.get(id);
         if (existing) {
@@ -609,6 +623,8 @@ export class TrelloCreator {
           if (!existing.file && norm.file) existing.file = norm.file;
           if (!existing.url && norm.url) existing.url = norm.url;
           if (!existing.type && norm.type) existing.type = norm.type;
+          if (!existing.zipEntryKey && norm.zipEntryKey) existing.zipEntryKey = norm.zipEntryKey;
+          if (!existing.bytes && norm.bytes) existing.bytes = norm.bytes;
           return;
         }
         attachmentsById.set(id, norm);
@@ -626,6 +642,15 @@ export class TrelloCreator {
         // card description below, instead of trying to download them.
         const links = [];
         for (const att of mergedAttachments) {
+          // #3257: a card attached to this card is a link to a Trello card.
+          // It becomes the WeKan card made from the same export once every
+          // card exists (end of createCards); one of another board stays a
+          // link in the description.
+          const shortLink = !att.file && !att.zipEntryKey ? trelloCardShortLink(att.url) : null;
+          if (shortLink) {
+            this.pendingCardAttachments.push({ cardId, shortLink, url: att.url });
+            continue;
+          }
           // attached link, not a file
           if (att.name && att.name === att.url) {
             links.push(att.url);
@@ -642,7 +667,21 @@ export class TrelloCreator {
             }
           };
           try {
-            if (att.file) {
+            // The uploaded .zip's files are streamed into storage as they are
+            // read (server/routes/importTrelloZip.js sets attachmentStream),
+            // whatever their size, within only the Admin Panel's upload limit.
+            const stream = !att.file && this.attachmentStream ? this.attachmentStream(att) : null;
+            if (stream) {
+              const { writeImportedAttachment } = require('/server/lib/importAttachmentStream');
+              const fileRef = await writeImportedAttachment(stream, {
+                fileName: att.fileName || att.name || 'attachment',
+                type: att.type,
+                userId: this._user(att.userId),
+                meta,
+                declaredSize: att.bytes,
+              });
+              await setCover(fileRef && fileRef._id);
+            } else if (att.file) {
               // Bytes already provided from the uploaded attachments ZIP.
               // Insert them directly instead of downloading the
               // OAuth-protected Trello URL. writeAsync is the server-side
@@ -727,7 +766,31 @@ export class TrelloCreator {
       }
       result.push(cardId);
     }
+    await this.attachImportedCards(trelloCards);
     return result;
+  }
+
+  // #3257: each Trello card attachment to a card of this export becomes an
+  // attached card; any other stays a link in the card's description, as an
+  // attached link always did.
+  async attachImportedCards(trelloCards) {
+    const { attach, unresolved } = resolveTrelloCardAttachments(trelloCards, this.cards, this.pendingCardAttachments);
+    for (const [cardId, ids] of Object.entries(attach)) {
+      await Cards.direct.updateAsync(cardId, { $set: { attachedCardIds: ids } });
+    }
+    const byCard = new Map();
+    for (const { cardId, url } of unresolved) byCard.set(cardId, [...(byCard.get(cardId) || []), url]);
+    for (const [cardId, urls] of byCard) {
+      const card = await Cards.findOneAsync(cardId, { fields: { description: 1 } });
+      const heading = `## ${TAPi18n.__('links-heading')}`;
+      let desc = ((card && card.description) || '').trim();
+      // Under the card's links heading when its other links made one.
+      if (desc.includes(heading)) desc += '\n';
+      else desc += `${desc ? '\n\n' : ''}${heading}\n`;
+      desc += urls.map(url => `* ${url}\n`).join('');
+      await Cards.direct.updateAsync(cardId, { $set: { description: desc } });
+    }
+    this.pendingCardAttachments = [];
   }
 
   // Create labels if they do not exist and load this.labels.

@@ -283,6 +283,23 @@ Cards.attachSchema(
         },
       }),
     },
+    customFieldLinks: {
+      /**
+       * #5681: the cards this card's custom fields are linked to, by field
+       * name (models/lib/customFieldLinks.js). Written only by the server
+       * methods in server/models/customFieldLinks.js, on both cards at once.
+       */
+      type: Array,
+      optional: true,
+    },
+    'customFieldLinks.$': {
+      type: new SimpleSchema({
+        cardId: { type: String },
+        mode: { type: String, allowedValues: ['both', 'send', 'receive'] },
+        userId: { type: String },
+        createdAt: { type: Date, optional: true },
+      }),
+    },
     recurrenceInterval: {
       /**
        * Kanboard-style whole-card recurrence: automatically create a fresh copy
@@ -383,6 +400,18 @@ Cards.attachSchema(
       defaultValue: [],
     },
     'labelIds.$': {
+      type: String,
+    },
+    attachedCardIds: {
+      /**
+       * #3257: the cards attached to this card (Trello's card attachments),
+       * by id - any card the user may read, on any board. Shown beside the
+       * file attachments (models/lib/attachedCards.js).
+       */
+      type: Array,
+      optional: true,
+    },
+    'attachedCardIds.$': {
       type: String,
     },
     members: {
@@ -1617,8 +1646,11 @@ Cards.helpers({
   },
 
   subtasksFinished() {
+    // #4693: a subtask is finished when it is archived OR marked complete
+    // (dueComplete, ticked in the parent's Subtasks list) -
+    // models/lib/subtaskDone.js isSubtaskDone, the same rule as the heading.
     const ret = ReactiveMiniMongoIndex.getSubTasksWithParentId(this.getRealId(), {
-      archived: true,
+      $or: [{ archived: true }, { dueComplete: true }],
     });
     return ret;
   },

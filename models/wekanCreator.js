@@ -1,3 +1,4 @@
+import { membersMode, membersMappingFor } from '/models/lib/importMembersMode';
 import { Meteor } from 'meteor/meteor';
 import { ReactiveCache } from '/imports/reactiveCache';
 import Actions from '/models/actions';
@@ -101,7 +102,10 @@ export class WekanCreator {
     // Map of rules Wekan ID => Wekan ID
     this.rules = {};
     // the members, indexed by Wekan member id => Wekan user ID
-    this.members = data.membersMapping ? data.membersMapping : {};
+    // Who the file's people become - chosen users, placeholders, or the
+    // person importing - the same for every source (models/lib/importMembersMode.js).
+    this.membersMode = membersMode(data);
+    this.members = membersMappingFor(data, () => Meteor.userId());
     // Map of triggers Wekan ID => Wekan ID
     this.triggers = {};
     // Map of actions Wekan ID => Wekan ID
@@ -377,7 +381,8 @@ export class WekanCreator {
     // members are added inactive and non-admin so they are visible in the board's member
     // list but hold no permissions until reconciled — a wrong/auto mapping must never
     // silently grant board access. The importer stays the sole active admin.
-    if (boardToImport.members) {
+    // When everyone is the person importing, nobody else joins the board.
+    if (boardToImport.members && this.membersMode !== 'me') {
       const importerId = Meteor.userId();
       boardToImport.members.forEach(wekanMember => {
         const entry = planImportedBoardMember(wekanMember, importerId);
@@ -611,7 +616,21 @@ export class WekanCreator {
             }
           };
           try {
-            if (att.file) {
+            // A .zip export's files are streamed into storage as they are
+            // read (models/importZip.js sets attachmentStream), whatever their
+            // size, within only the Admin Panel's upload limit.
+            const stream = !att.file && this.attachmentStream ? this.attachmentStream(att) : null;
+            if (stream) {
+              const { writeImportedAttachment } = require('/server/lib/importAttachmentStream');
+              const fileRef = await writeImportedAttachment(stream, {
+                fileName: att.name || 'attachment',
+                type: att.type,
+                userId: this._user(att.userId),
+                meta,
+                declaredSize: att.size,
+              });
+              await setCover(fileRef && fileRef._id);
+            } else if (att.file) {
               // WeKan exports embed attachment bytes as base64. Insert them
               // with the server-side Meteor-Files API writeAsync (insertAsync
               // is client-only; the older Attachments.insert(..., cb, true) call
@@ -874,6 +893,19 @@ export class WekanCreator {
           $set: { cardDependencies: remapped },
         });
       }
+    }
+  }
+
+  // #3257: the cards attached to a card follow the cards that came in the same
+  // export to their new ids; one that did not is dropped rather than left
+  // pointing at a card of the installation the export came from.
+  async createAttachedCards(wekanCards) {
+    const { remapAttachedCardIds } = require('/models/lib/attachedCards');
+    for (const card of wekanCards) {
+      const newCardId = this.cards[card._id];
+      if (!newCardId || !Array.isArray(card.attachedCardIds) || !card.attachedCardIds.length) continue;
+      const remapped = remapAttachedCardIds(card.attachedCardIds, this.cards, newCardId);
+      if (remapped.length) await Cards.direct.updateAsync(newCardId, { $set: { attachedCardIds: remapped } });
     }
   }
 
@@ -1156,6 +1188,7 @@ export class WekanCreator {
       { method: 'createCards', source: 'cards' },
       { method: 'createSubtasks', source: 'cards' },
       { method: 'createCardDependencies', source: 'cards' },
+      { method: 'createAttachedCards', source: 'cards' },
       { method: 'createScrumData' },
       { method: 'createChecklists', source: 'checklists' },
       { method: 'createChecklistItems', source: 'checklistItems' },
@@ -1180,23 +1213,32 @@ export class WekanCreator {
   async recreateBackgrounds(board, boardId) {
     if (!Meteor.isServer) return;
     const backgrounds = (board.attachments || []).filter(
-      att => att && att.source === 'board-background' && att.file && !att.cardId,
+      att => att && att.source === 'board-background' && !att.cardId && (att.file || this.attachmentStream),
     );
     if (!backgrounds.length) return;
     const idMap = {};
     for (const bg of backgrounds) {
       try {
-        const buffer = Buffer.from(bg.file, 'base64');
-        const fileRef = await Attachments.writeAsync(
-          buffer,
-          {
+        const stream = !bg.file && this.attachmentStream ? this.attachmentStream(bg) : null;
+        if (!bg.file && !stream) continue;
+        const fileRef = stream
+          ? await require('/server/lib/importAttachmentStream').writeImportedAttachment(stream, {
             fileName: bg.name || 'background',
             type: bg.type || 'image/jpeg',
             userId: this._user(),
             meta: { boardId, source: 'board-background' },
-          },
-          true,
-        );
+            declaredSize: bg.size,
+          })
+          : await Attachments.writeAsync(
+            Buffer.from(bg.file, 'base64'),
+            {
+              fileName: bg.name || 'background',
+              type: bg.type || 'image/jpeg',
+              userId: this._user(),
+              meta: { boardId, source: 'board-background' },
+            },
+            true,
+          );
         if (fileRef && fileRef._id && bg._id) {
           idMap[bg._id] = fileRef._id;
         }

@@ -20,7 +20,7 @@ LABEL org.opencontainers.image.source="https://github.com/wekan/wekan-gantt-gpl"
 # TARGETARCH and TARGETVARIANT are automatically provided by Docker Buildx
 ARG TARGETARCH
 ARG TARGETVARIANT
-ARG VERSION=12.25
+ARG VERSION=12.26
 ARG DEBIAN_FRONTEND=noninteractive
 
 ENV BUILD_DEPS="apt-utils gnupg wget bzip2 g++ curl libarchive-tools build-essential git ca-certificates python3 unzip"
@@ -29,7 +29,7 @@ ENV \
     DEBUG=false \
     DDP_TRANSPORT=sockjs \
     NODE_VERSION=v26.11.1 \
-    METEOR_RELEASE=METEOR@3.6-beta.3 \
+    METEOR_RELEASE=METEOR@3.6-rc.0 \
     USE_EDGE=false \
     NPM_VERSION=12.2.0 \
     SRC_PATH=./ \

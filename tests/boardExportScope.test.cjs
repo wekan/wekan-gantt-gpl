@@ -434,7 +434,7 @@ test('every downloadable format carries the selection, and the server reads it',
     // exports share one handler (serveExternalExport), which does.
     const route = `'/api/boards/:boardId/${p}'`;
     // Kanboard joined the shared handler when its own route was removed.
-    if (!server.includes(route) && !/^export\/(trello|jira|deck|kanboard|openproject|github|gitlab|gitea|forgejo|asana|zenkit|markdown|leo|todotxt|taskwarrior|focalboard|todoist|opml|orgmode)$/.test(p)) {
+    if (!server.includes(route) && !/^export\/(trello|jira|deck|kanboard|openproject|github|gitlab|gitea|forgejo|asana|zenkit|markdown|leo|todotxt|taskwarrior|focalboard|todoist|planner|meistertask|obsidian|linear|ticktick|clickup|nullboard|kanri|pivotal|redmine|tasksorg|monday|superproductivity|taiga|vikunja|notion|wrike|wrikeworkflow|teamwork|businessmap|quire|opml|orgmode)$/.test(p)) {
       return true;
     }
     return false;
@@ -448,7 +448,9 @@ test('every downloadable format carries the selection, and the server reads it',
     assert.ok(/parseExportFields\(req\.query && req\.query\.fields/.test(read(file)),
       `${file} must read the selection from the query`);
   }
-  assert.ok(/buildExternalExport\(boardId, format,\s*\n\s*parseExportFields\(req\.query && req\.query\.fields, BOARD_EXPORT_FIELD_KEYS\)\)/
+  // The route hands the selection to the shared renderer
+  // (server/lib/renderExternalExport.js), which hands it to the collector.
+  assert.ok(/renderExternalExport\(boardId, format,\s*\n\s*parseExportFields\(req\.query && req\.query\.fields, BOARD_EXPORT_FIELD_KEYS\)\)/
     .test(read('models/export.js')),
     'and the external-tool exports (Trello, Jira, GitHub, Markdown, ...) must read it too');
 });
