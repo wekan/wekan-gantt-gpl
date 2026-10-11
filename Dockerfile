@@ -20,7 +20,7 @@ LABEL org.opencontainers.image.source="https://github.com/wekan/wekan-gantt-gpl"
 # TARGETARCH and TARGETVARIANT are automatically provided by Docker Buildx
 ARG TARGETARCH
 ARG TARGETVARIANT
-ARG VERSION=12.31
+ARG VERSION=12.32
 ARG DEBIAN_FRONTEND=noninteractive
 
 ENV BUILD_DEPS="apt-utils gnupg wget bzip2 g++ curl libarchive-tools build-essential git ca-certificates python3 unzip"
@@ -286,8 +286,9 @@ useradd --user-group --system --create-home --home-dir /home/wekan wekan
 apt-get update --assume-yes
 apt-get upgrade --assume-yes
 apt-get install --assume-yes --no-install-recommends ${BUILD_DEPS}
-# Runtime MIME detection and Node.js atomic operations survive build cleanup.
-apt-get install --assume-yes --no-install-recommends file libatomic1
+# Runtime MIME detection, Node.js atomics and the UCS migration Docker client
+# survive build cleanup. docker-cli installs no daemon or buildx recommendation.
+apt-get install --assume-yes --no-install-recommends file libatomic1 docker-cli
 
 # Multi-arch mapping: Docker TARGETARCH -> WeKan's own platform name, which is
 # both the bundle .zip's name and what resolve-node-source.sh is asked about.
@@ -464,6 +465,11 @@ COPY --chmod=644 releases/ferretdb/recovery-bridge.mjs /build/recovery-bridge.mj
 # serve the "waiting for database" page instead of leaving the web port unbound
 # for a reverse proxy to time out on.
 COPY --chmod=644 releases/ferretdb/db-ready.mjs /build/db-ready.mjs
+
+# UCS runs this same image with an explicit migration command. Only that
+# temporary container receives the Docker socket; normal startup is unchanged.
+COPY releases/ucs-migration /opt/ucs-migration
+RUN chmod 755 /opt/ucs-migration/start.sh /opt/ucs-migration/tools/*
 
 COPY releases/nextcloud/capability.json /build/nextcloud-exapp-capability.json
 
