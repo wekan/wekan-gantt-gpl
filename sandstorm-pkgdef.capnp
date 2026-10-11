@@ -22,10 +22,10 @@ const pkgdef :Spk.PackageDefinition = (
     appTitle = (defaultText = "Wekan"),
     # The name of the app as it is displayed to the user.
 
-    appVersion = 1227,
+    appVersion = 1228,
     # Increment this for every release.
 
-    appMarketingVersion = (defaultText = "12.27~2026-10-10"),
+    appMarketingVersion = (defaultText = "12.28~2026-10-11"),
     # Human-readable presentation of the app version.
 
     minUpgradableAppVersion = 0,
@@ -227,9 +227,10 @@ const pkgdef :Spk.PackageDefinition = (
 
 const myCommand :Spk.Manifest.Command = (
   # Here we define the command used to start up your server.
-  #argv = ["/sandstorm-http-bridge", "4000", "--", "./start-memory.sh"],
   #argv = ["/sandstorm-http-bridge", "4000", "--", "node", "--stack-size=65500", "start.js"],
-  argv = ["/sandstorm-http-bridge", "4000", "--", "./start-memory.sh"],
+  # node, not a shell script: a grain has no /bin/sh (meteor-spk's bin/ holds only
+  # mongod, niscud and node), so a "./start-memory.sh" died with execvp ENOENT.
+  argv = ["/sandstorm-http-bridge", "4000", "--", "node", "start-memory.js"],
   environ = [
     # Note that this defines the *entire* environment seen by your app.
     #---------------------------------------------------------------------
@@ -240,7 +241,7 @@ const myCommand :Spk.Manifest.Command = (
     #bash -c "ulimit -s 65500; exec node --stack-size=65500 main.js"
     #---------------------------------------------------------------------
     (key = "PATH", value = "/usr/local/bin:/usr/bin:/bin"),
-    # Files root for the Node24/FerretDB build: attachments/, avatars/ and the
+    # Files root for the Node26/FerretDB build: attachments/, avatars/ and the
     # FerretDB SQLite db/ live under /var/files (start.js also exports this). See
     # docs/Platforms/FOSS/Container/Sandstorm/Meteor3/Migration.md.
     (key = "WRITABLE_PATH", value = "/var/files"),

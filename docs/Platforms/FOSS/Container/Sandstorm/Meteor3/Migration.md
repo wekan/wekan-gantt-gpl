@@ -21,7 +21,7 @@ built 2021‑10‑23). Its `meteor-spk.deps` payload is a 2015‑era design:
 | `bin/node` | Node **14.17.5** (stock, from nodejs.org) | **Node 26.x** (Meteor 3.6-beta.1) |
 | `bin/mongod` | MongoDB **3.0.7** (WiredTiger) | keep — read‑only migration source only |
 | `bin/niscud` | MongoDB **2.x** (Kenton's Niscu fork) | keep (niscu→3.0 migration) |
-| `lib/` | glibc **2.31** (Ubuntu 20.04) | regenerate on 22.04 (glibc 2.35) for node24/ferretdb |
+| `lib/` | glibc **2.31** (Ubuntu 20.04) | regenerate on 22.04 (glibc 2.35) for node26/ferretdb |
 | `start.js` | launches Mongo 3.0 + niscu→3.0 migration | rewrite for FerretDB |
 
 `start.js` in 0.6.0 is functionally identical to 0.5.1 (only reformatted). It still launches
@@ -105,7 +105,7 @@ Start from the 0.6.0 base, then:
 - The **importer** (Stage 2) resolves its `mongodb`/`bson` from the WeKan bundle via
   `NODE_PATH=<bundle>/programs/server/node_modules` (the modern driver, separate process from
   `start.js`, so it does not clash with the old driver Stage 1 uses).
-- **Regenerate `lib/`, `lib64/`, `usr/lib`** on Ubuntu 22.04/24.04 (glibc 2.35) for node24 +
+- **Regenerate `lib/`, `lib64/`, `usr/lib`** on Ubuntu 22.04/24.04 (glibc 2.35) for node26 +
   ferretdb. Keep the **old** libs separately under `migratemongo/lib` for mongod3/mongoexport
   (dual‑lib pattern, exactly as the snap does with `MM_LIB`).
 
@@ -121,7 +121,9 @@ amd64 only. (arm64 Sandstorm is out of scope here; the migratemongo 3.x binaries
 
 The canonical launcher is committed at
 [`sandstorm-src/start.js`](../../../../../../sandstorm-src/start.js); the spk build copies it into
-`meteor-spk.deps/start.js`. It is a CJS launcher, spawned by the pkgdef as `... node start.js`.
+`meteor-spk.deps/start.js`. It is a CJS launcher, started by
+[`sandstorm-src/start-memory.js`](../../../../../../sandstorm-src/start-memory.js), which the
+pkgdef runs as `... node start-memory.js` to give it a memory-derived V8 heap first.
 On first launch it runs the migration chain for whatever the grain holds —
 **niscu (2.x) → MongoDB 3.0** (Stage 1, the preserved legacy path, for very old grains) then
 **MongoDB 3.0 → FerretDB** (Stage 2) — then runs WeKan on FerretDB. Fresh grains and
@@ -342,7 +344,10 @@ and refreshes.
 - `WRITABLE_PATH`: `/var/wekan-uploads` → **`/var/files`**.
 - Do **not** set `MONGO_URL` in `environ` (start.js sets it to the FerretDB port).
 - Bump `appVersion` and `appMarketingVersion`.
-- Keep `argv = ["/sandstorm-http-bridge", "4000", "--", "node", "start.js"]`.
+- Keep `argv = ["/sandstorm-http-bridge", "4000", "--", "node", "start-memory.js"]`. The
+  command must be run BY node: a grain has no `/bin/sh` (meteor-spk's `bin/` holds only
+  `mongod`, `niscud` and `node`), so a shell script there fails with
+  `execvp(...): No such file or directory`.
 - `SANDSTORM=1` and `METEOR_SETTINGS={"public":{"sandstorm":true}}` are already present — that
   drives `isSandstorm` for the new admin panel.
 
@@ -376,7 +381,7 @@ and refreshes.
 - [ ] **TEST** fresh install (no `/var/wiredTigerDb`): skips migration, runs on empty FerretDB.
 - [ ] **TEST** grain disk headroom — migration transiently holds old Mongo + new SQLite + extracted
       files at once, within the grain quota.
-- [ ] **TEST** `LD_LIBRARY_PATH` split — node24/ferretdb on the fresh 2.35 libs; mongo‑3.0 CLIs on
+- [ ] **TEST** `LD_LIBRARY_PATH` split — node26/ferretdb on the fresh 2.35 libs; mongo‑3.0 CLIs on
       the old libs; no cross‑contamination.
 - [ ] **TEST** Admin Panel / Attachments / Sandstorm: status accuracy, disk numbers, guarded delete.
 

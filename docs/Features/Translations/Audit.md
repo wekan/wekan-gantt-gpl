@@ -2,6 +2,646 @@
 
 Audit date: **2026-09-12**. Last updated: **2026-10-10**.
 
+## Gujarati current fills — 2026-10-10
+
+Translate 196 English placeholders in gu-IN. Its full current fill list is empty,
+including pending Transifex keys. Cover linked cards and fields, 22 import-format
+instructions, member mapping, CSV columns, bulk imports and exports, webhooks,
+notifications, Wrike workflows, subtasks, LDAP, link rules, read-only server settings
+and interrupted import/List Sync recovery. Every changed value was English in the
+parent commit; existing translations remain unchanged. Use બોર્ડ, કાર્ડ, યાદી,
+સ્વિમલેન and કસ્ટમ ક્ષેત્રો terminology. Longer Gujarati technical wording remains
+provisional and low-confidence pending speaker review; older catalog terminology
+and fluency are not fully audited.
+
+Regressions compare all keys and exact underscore/percent tokens with English.
+Check field permissions/directions, unmapped imports, ZIP behavior, inherited
+settings, quiet hours and completion states. Keep import exclusions, required
+English headers, first-board selection, subtask markers, compressed-file handling,
+link-rule syntax, LDAP constants, WEBHOOKS_ATTRIBUTES, GET /workflows and Org mode
+keywords. Recovery checks retain applied changes, never write discarded remaining
+changes, refuse discard of replayable operations, distinguish keep from permanent
+removal, include later additions and leave unrelated boards untouched. Verify the
+oldest-50 limits, server-environment-only configuration and Gujarati rather than
+Devanagari script in representative new prose.
+
+All 306 translation/Blockly suites, 246 catalog inventories and 21 human-preference
+checks pass. Five browser cases for linked fields, import-people choices,
+notification delivery, stuck List Sync and interrupted import recovery pass syntax
+and discovery; execution remains unverified without the local app and browser
+system dependencies. A fresh full per-locale inventory counts 58,504 remaining
+values across 130 non-English locale files, including pending Transifex keys.
+The all-language backlog and semantic audit remain open.
+
+## Hindi current fills — 2026-10-10
+
+Translate 392 English placeholders: 196 each in hi and hi-IN. Both full current
+fill lists are empty, including pending Transifex keys. Cover linked cards and
+fields, 22 import-format instructions, member mapping, CSV columns, bulk imports
+and exports, webhooks, notifications, Wrike workflows, subtasks, LDAP, link rules,
+read-only server settings and interrupted import/List Sync recovery. Every changed
+value was English in the parent commit; existing translations remain unchanged.
+Use बोर्ड, कार्ड, सूची, स्विमलेन, कार्यभारी and कस्टम फ़ील्ड terminology. Longer
+Hindi technical wording remains provisional and low-confidence pending speaker
+review; older catalog terminology and fluency are not fully audited.
+
+Regressions compare all keys and exact underscore/percent tokens with English.
+Check field permissions/directions, unmapped imports, ZIP behavior, inherited
+settings, quiet hours and completion states. Keep import exclusions, required
+English headers, first-board selection, subtask markers, compressed-file handling,
+link-rule syntax, LDAP constants, WEBHOOKS_ATTRIBUTES, GET /workflows and Org mode
+keywords. Recovery checks retain applied changes, never write discarded remaining
+changes, refuse discard of replayable operations, distinguish keep from permanent
+removal, include later additions and leave unrelated boards untouched. Verify the
+oldest-50 limits and server-environment-only configuration.
+
+All 306 translation/Blockly suites, 246 catalog inventories and 21 human-preference
+checks pass. Ten browser cases for linked fields, import-people choices,
+notification delivery, stuck List Sync and interrupted import recovery pass syntax
+and discovery; execution remains unverified without the local app and browser
+system dependencies. A fresh full per-locale inventory counts 58,700 remaining
+values across 131 non-English locale files, including pending Transifex keys.
+The all-language backlog and semantic audit remain open.
+
+## Traditional Chinese current fills — 2026-10-10
+
+Translate 678 English placeholders: 226 each in zh-Hant, zh-TW and zh-HK. All three
+full current fill lists are empty, including pending Transifex keys. Cover linked
+cards and fields, 22 import-format instructions, member mapping, CSV columns,
+bulk imports and exports, webhooks, notifications, Wrike workflows, subtasks,
+Scrum planning/import/checkpoint controls, LDAP, link rules and interrupted
+import/List Sync recovery. Every changed value was English in the parent commit;
+existing translations remain unchanged. Use Traditional Chinese 清單、自訂欄位、
+承辦人、待辦清單、封存、匯入 and 匯出 terminology. Clarify project iterations and
+board-local planning changes. Specialist wording remains provisional pending
+speaker review; older catalog terminology and fluency are not fully audited.
+
+Replace historical completion gates with full current-catalog checks. Compare
+all keys and exact underscore/percent tokens with English. Semantic checks cover
+field permissions/directions, unmapped imports, ZIP behavior, inherited settings,
+quiet hours and completion states. Keep import exclusions, required English
+headers, first-board selection, subtask markers, link-rule syntax, LDAP constants,
+WEBHOOKS_ATTRIBUTES, GET /workflows and Org mode keywords. Recovery checks retain
+applied changes, never write discarded remaining changes, refuse discard of
+replayable operations, distinguish keep from permanent removal, include later
+additions and leave unrelated boards untouched. Scrum checks preserve no-duplication,
+unchanged unmatched cards, first-Sync planning, rollback eligibility and keeping
+records unchanged. Selected checks reject Simplified Chinese forms in these fills.
+
+All 306 translation/Blockly suites, 246 catalog inventories and 21 human-preference
+checks pass. Fifteen browser cases for linked fields, import-people choices,
+notification delivery, stuck List Sync and interrupted import recovery pass syntax
+and discovery; execution remains unverified without the local app and browser
+system dependencies. A fresh full per-locale inventory counts 59,092 remaining
+values across 133 non-English locale files, including pending Transifex keys.
+The all-language backlog and semantic audit remain open.
+
+## Simplified Chinese current fills — 2026-10-10
+
+Translate 1,356 English placeholders: 226 each in cmn, zh, zh-CN, zh-GB, zh-Hans
+and zh_SG. All six full current fill lists are empty, including pending Transifex
+keys. Cover linked cards and fields, 22 import-format instructions, member mapping,
+CSV columns, bulk imports and exports, webhooks, notifications, Wrike workflows,
+subtasks, Scrum planning/import/checkpoint controls, LDAP, link rules and
+interrupted import/List Sync recovery. Every changed value was English in the
+parent commit; existing translations remain unchanged. Use Simplified Chinese
+看板、卡片、列表、泳道、自定义字段 terminology. Longer technical wording remains
+provisional pending speaker review; older catalog terminology and fluency are not
+fully audited. Traditional Chinese catalogs remain a separate pending batch.
+
+Replace historical completion gates with full current-catalog checks. Compare
+all keys and exact underscore/percent tokens with English. Semantic checks cover
+field permissions/directions, unmapped imports, ZIP semantics, inherited settings,
+quiet hours and completion states. Keep import exclusions, required English
+headers, first-board selection, subtask markers, link-rule syntax, LDAP constants,
+WEBHOOKS_ATTRIBUTES, GET /workflows and Org mode keywords. Recovery checks retain
+applied changes, never write discarded remaining changes, refuse discard of
+replayable operations, distinguish keep from permanent removal, include later
+additions and leave unrelated boards untouched. Scrum checks preserve no-duplication,
+unchanged unmatched cards, first-Sync planning, rollback eligibility and keeping
+records unchanged. Selected checks reject Traditional Chinese forms in these fills.
+
+All 306 translation/Blockly suites, 246 catalog inventories and 21 human-preference
+checks pass. Thirty browser cases for linked fields, import-people choices,
+notification delivery, stuck List Sync and interrupted import recovery pass syntax
+and discovery. Map the zh_SG filename to the registered zh-SG runtime tag. Browser
+execution remains unverified without the local app and system dependencies.
+A fresh full per-locale inventory counts 59,770 remaining values across 136
+non-English locale files, including pending Transifex keys. The all-language
+backlog and semantic audit remain open.
+
+## Arabic legacy-language review — 2026-10-10
+
+Review all 456 remaining candidates from the earlier Persian-seed scan (462 minus
+six core labels already repaired). Correct 358 values in each of ar, ar-DZ and
+ar-EG: 1,074 values total. Retain 98 valid/shared Arabic candidates per catalog
+and leave every value outside this correction set unchanged. The reviewed queue
+is now exhausted. No Persian-specific پ, چ, ژ, گ, ک or ی letters remain in these
+three catalogs, but this check is only supporting evidence: same-script vocabulary
+and unflagged values still require broader semantic review.
+
+Corrections cover activity messages, voting, colors, custom fields, account and
+invitation emails, import/export guidance, filtering, webhook controls, rules,
+settings, reminders, organizations, search and flow analytics. Restore permanent
+removal warnings, exact email roles and source variables, before/after date roles,
+watch versus mute and check versus uncheck. Disable-webhook now says disable rather
+than delete. Restore every clause of the blocker-history explanation, including
+unknown starts, retained snapshots for deleted cards and separately counted
+overlapping causes. Keep Arial as the actual font family, Markdown as a format,
+HTML tags unchanged and ASCII commas in the parsed rule-item example. Retain valid
+shared words such as عضو, عنوان and صف rather than treating matches as errors.
+Longer rule fragments, color shades and analytics wording remain low-confidence
+pending speaker review.
+
+All 306 translation/Blockly suites, 246 catalog inventories and 21 human-preference
+checks pass. Full Arabic placeholder gates still report zero. The existing rule
+color browser test now covers all three Arabic locales and checks the translated
+action text and green/red labels along with the saved action. Three Arabic cases
+pass syntax and discovery; runtime remains unverified without the local app and
+browser system dependencies. The all-language placeholder backlog remains 61,126
+values across 142 locale files; broader language and short-prose audits remain open.
+
+## Arabic current fills and core-language repairs — 2026-10-10
+
+Translate 678 English placeholders: 226 each in ar, ar-DZ and ar-EG. All three
+full current fill lists are empty, including pending Transifex keys. Cover linked
+cards and fields, 22 import-format instructions, member mapping, CSV columns,
+bulk imports and exports, webhooks, notifications, Wrike workflows, subtasks,
+Scrum planning/import/checkpoint controls, LDAP, link rules and interrupted
+import/List Sync recovery. Every fill replaced English. Separately replace six
+Persian core labels per catalog (18 values): board, swimlane, custom-fields,
+assignee, cardAssigneePopup-title and add-swimlane. Use لوحة, مسار, الحقول المخصصة
+and المكلّف, with vocabulary assertions as well as Persian-letter rejection.
+Other existing values remain unchanged.
+
+The broader Arabic wrong-language audit is NOT complete. Inspection found Persian
+activity messages, voting text, colors, email templates and other older values.
+A candidate scan of ar found 462 values matching Persian at the same key or
+containing Persian-specific letters, before these six corrections. Some are valid
+shared Arabic words, so this is a review queue, not a count of proven errors.
+Review vocabulary and source meaning before replacing the remaining candidates
+and inspect nonmatching values too. Empty placeholder reports do not establish
+that these catalogs are entirely Arabic. Longer new technical wording remains
+low-confidence pending speaker review.
+
+Regressions compare all keys and exact underscore/percent tokens with English.
+Check field permissions/directions, import exclusions and literal headers, member
+replacement, ZIP behavior, inherited settings, quiet hours and completion states.
+Preserve link-rule syntax, LDAP constants, WEBHOOKS_ATTRIBUTES, GET /workflows and
+Org mode keywords. Recovery checks retain applied changes, never write discarded
+remaining changes, refuse discard of replayable operations, distinguish keep from
+permanent removal, include later additions and leave unrelated boards untouched.
+Scrum checks preserve no-duplication and unchanged-unmatched-card behavior, first
+Sync planning, rollback eligibility and keep-without-record-changes semantics.
+
+All 306 translation/Blockly suites, 246 catalog inventories and 21 human-preference
+checks pass. Fifteen browser cases for linked fields, import-people choices,
+notification delivery, stuck List Sync and interrupted import recovery pass syntax
+and discovery; runtime execution remains unverified without the local app and
+browser system dependencies. A fresh full per-locale inventory counts 61,126
+remaining values across 142 non-English locale files, including pending Transifex
+keys. The all-language backlog and semantic audit remain open.
+
+## Hebrew current fills — 2026-10-10
+
+Translate 396 English placeholders: 198 each in he and he-IL. Both full current
+fill lists are empty, including pending Transifex keys. Cover attached cards,
+linked fields, 22 import-format instructions, member mapping, CSV columns, bulk
+imports and exports, webhooks, notifications, Wrike workflows, subtasks, planning,
+LDAP, link rules, read-only fields and interrupted import/List Sync recovery.
+Every changed value was English in the parent commit; existing translations
+remain unchanged. Follow לוח, כרטיס, רשימה, מסלול and שדות מותאמים אישית terminology.
+Longer Hebrew technical wording remains provisional and low-confidence pending
+speaker review; older catalog terminology and fluency are not fully audited.
+
+Regressions compare all keys and exact underscore/percent tokens with English.
+Check permissions, field directions, unmapped imports, ZIP semantics, inherited
+settings, quiet hours and completed versus incomplete states. Import checks keep
+unsupported-data exclusions, required English headers, first-board selection and
+both single-level and nested subtask markers. Preserve parsed constants, link-rule
+syntax, LDAP settings, WEBHOOKS_ATTRIBUTES, GET /workflows and Org mode keywords.
+Recovery checks retain already-applied changes, never write discarded remaining
+changes, refuse discard of replayable operations, distinguish keep from permanent
+removal, include later additions in deletion warnings and leave unrelated boards
+untouched. Verify the oldest-50 limit and that first Sync never removes planning.
+
+All 306 translation/Blockly suites, 246 catalog inventories and 21 human-preference
+checks pass. Ten browser cases for linked fields, import-people choices,
+notification delivery, stuck List Sync and interrupted import recovery pass syntax
+and discovery; runtime execution remains unverified without the local app and
+browser system dependencies. A fresh full per-locale inventory counts 61,804
+remaining values across 145 non-English locale files, including pending Transifex
+keys. The all-language backlog and semantic audit remain open.
+
+## Persian current fills — 2026-10-10
+
+Translate 398 English placeholders: 199 each in fa and fa-IR. Both full current
+fill lists are empty, including pending Transifex keys. Cover attached cards,
+linked fields, 22 import-format instructions, member mapping, CSV columns, bulk
+imports and exports, webhooks, notifications, Wrike workflows, subtasks, planning,
+LDAP, link rules, read-only settings and interrupted import/List Sync recovery.
+Every changed value was English in the parent commit; existing translations
+remain unchanged. Follow برد، کارت، لیست، مسیر and فیلدهای شخصی terminology.
+Longer Persian technical wording remains provisional and low-confidence pending
+speaker review; older catalog terminology and fluency are not fully audited.
+
+Regressions compare all keys and exact underscore/percent tokens with English.
+Check permissions, field directions, unmapped imports, ZIP semantics, inherited
+settings, quiet hours and completed versus incomplete states. Import checks keep
+unsupported-data exclusions, required English headers, first-board selection and
+subtask depth markers. Preserve parsed constants, link-rule syntax, LDAP settings,
+WEBHOOKS_ATTRIBUTES, GET /workflows and Org mode keywords. Recovery checks retain
+already-applied changes, never write discarded remaining changes, refuse discard
+of replayable operations, distinguish keep from permanent removal, include later
+additions in deletion warnings and leave unrelated boards untouched. Verify the
+oldest-50 limit and that first Sync never removes planning.
+
+All 306 translation/Blockly suites, 246 catalog inventories and 21 human-preference
+checks pass. Ten browser cases for linked fields, import-people choices,
+notification delivery, stuck List Sync and interrupted import recovery pass syntax
+and discovery; runtime execution remains unverified without the local app and
+browser system dependencies. A fresh full per-locale inventory counts 62,200
+remaining values across 147 non-English locale files, including pending Transifex
+keys. The all-language backlog and semantic audit remain open.
+
+## Estonian current fills — 2026-10-10
+
+Translate 110 English placeholders in et-EE for attached cards, linked fields,
+member mapping, CSV columns, bulk imports and exports, webhooks, notifications,
+Wrike workflows and subtasks. The full current fill list is empty, including
+pending Transifex keys. Every changed value was English in the parent commit;
+existing translations remain unchanged. Follow kaart, loetelu, ujumisrada and
+kohandatud väljad terminology. Use Saatmisintervall for the interval control's
+label. Longer technical wording remains provisional and low-confidence pending
+speaker review; older catalog terminology and fluency are not fully audited.
+
+Add a full current-catalog completion gate alongside the shared historical gates
+for other languages. Reuse the existing asynchronous source-order and exact
+underscore/percent token checks. New semantic checks cover field matching,
+unchanged unmatched fields, editing permissions, propagation directions, member
+replacement, unmapped imports, ZIP semantics, export permissions, inherited
+settings, quiet hours and completed versus incomplete states. Preserve parsed
+constants, WEBHOOKS_ATTRIBUTES and GET /workflows. All 306 translation/Blockly
+suites, 246 catalog inventories and 21 human-preference checks pass. Three browser
+cases for linked fields, import-people choices and notification delivery pass
+syntax and discovery; runtime execution remains unverified without the local app
+and browser system dependencies. A fresh full per-locale inventory counts 62,598
+remaining values across 149 non-English locale files, including pending Transifex
+keys. The all-language backlog and semantic audit remain open.
+
+## Afrikaans current fills — 2026-10-10
+
+Translate 240 English placeholders: 110 in af and 130 in af_ZA. Both full current
+fill lists are empty, including pending Transifex keys. Cover attached cards,
+linked fields, member mapping, CSV columns, bulk imports and exports, webhooks,
+notifications, Wrike workflows and subtasks; the regional catalog also receives
+20 missing import-format instructions. Every changed value was English in the
+parent commit; existing translations remain unchanged. Follow the existing kaart,
+lys, swembaan, pasgemaakte velde and gevolmagtigde terminology. Longer technical
+wording remains provisional and low-confidence pending speaker review; older
+catalog terminology and fluency are not fully audited.
+
+Replace historical completion gates with full current-catalog checks. Regressions
+compare every key and exact underscore/percent token with English and check field
+matching, unchanged unmatched fields, editing permissions, propagation directions,
+member replacement, unmapped imports, ZIP semantics, export permissions, inherited
+settings, quiet hours and completed versus incomplete states. Preserve external
+menu/column labels, WEBHOOKS_ATTRIBUTES and GET /workflows. Regional import checks
+retain unsupported-data exclusions, required English headers, first-board selection
+and subtask depth markers. All 306 translation/Blockly suites, 246 catalog inventories
+and 21 human-preference checks pass. Six browser cases for linked fields,
+import-people choices and notification delivery pass syntax and discovery; runtime
+execution remains unverified without the local app and browser system dependencies.
+A fresh full per-locale inventory counts 62,708 remaining values across 150
+non-English locale files, including pending Transifex keys. The all-language
+backlog and semantic audit remain open.
+
+## Belarusian current fills — 2026-10-10
+
+Translate 130 English placeholders in be for attached cards, linked fields,
+20 import-format instructions, member mapping, CSV columns, bulk imports and
+exports, webhooks, notifications, Wrike workflows and subtasks. The full current
+fill list is empty, including pending Transifex keys. Every changed value was
+English in the parent commit; all existing translations are preserved. Follow
+дошка, картка, спіс, дарожка and карыстальніцкія палі terminology. The new values
+use Belarusian vocabulary and contain no Russian-only и, щ or ъ letters.
+Longer technical wording remains provisional and low-confidence pending speaker
+review; older catalog fluency is not fully audited.
+
+Regressions check full key order and exact underscore/percent tokens, field
+matching, unchanged unmatched fields, editing permissions, propagation directions,
+member replacement, unmapped imports, ZIP semantics, export permissions, inherited
+settings, quiet hours and completed versus incomplete states. Preserve external
+menu/column labels, WEBHOOKS_ATTRIBUTES and GET /workflows. Import checks retain
+unsupported-data exclusions, required English headers, first-board selection and
+subtask depth markers. All 306 translation/Blockly suites, 246 catalog inventories
+and 21 human-preference checks pass. Three browser cases for linked fields,
+import-people choices and notification delivery pass syntax and discovery; runtime
+execution remains unverified without the local app and browser system dependencies.
+A fresh full per-locale inventory counts 62,948 remaining values across 152
+non-English locale files, including pending Transifex keys. The all-language
+backlog and semantic audit remain open.
+
+## Icelandic current fills — 2026-10-10
+
+Translate 130 English placeholders in is for attached cards, linked fields,
+20 import-format instructions, member mapping, CSV columns, bulk imports and
+exports, webhooks, notifications, Wrike workflows and subtasks. The full current
+fill list is empty and replaces the historical completion gate. Every changed
+value was English in the parent commit; all existing translations are preserved.
+Follow tafla, spjald, listi, sundbraut, sérsniðnir reitir and ábyrgðaraðili wording.
+Review the notification interval in its actual label/dropdown context and use
+Tíðni; distinguish each notification being separate from grouped delivery.
+Longer technical wording remains provisional pending speaker review; older
+catalog fluency is not fully audited.
+
+Preserve exact source placeholders, WEBHOOKS_ATTRIBUTES, GET /workflows, Wrike
+state names and external menu/column labels. Regressions check full key order
+and all tokens, field matching, unchanged unmatched fields, editing permissions,
+propagation directions, member replacement, unmapped imports, ZIP semantics,
+export permissions, inherited settings, quiet hours and completed versus
+incomplete states. Import checks retain unsupported-data exclusions, required
+English headers, first-board selection and subtask depth markers. Three browser
+cases for linked fields, import-people choices and notification delivery pass
+syntax and discovery; runtime execution remains unverified without the local app
+and browser system dependencies. All 306 translation/Blockly suites,
+246 catalog inventories and 21 human-preference checks pass. A fresh full per-locale `--list` inventory counts
+63,078 remaining values across 153 non-English locale files, including pending
+Transifex keys. The all-language backlog and semantic audit remain open.
+
+## Bosnian current fills — 2026-10-10
+
+Translate 110 English placeholders in bs for attached cards, linked fields,
+calendar mode, member mapping, CSV columns, bulk imports and exports, webhooks,
+notifications, Wrike workflows and subtasks. The full current fill list is empty.
+Every changed value was English in the parent commit; all existing translations
+are preserved. Follow tabla, kartica, lista, traka and prilagođena polja wording,
+with Bosnian izvoz/uvoz, izvještaj, zavisnosti and sačuvati forms. Longer technical
+wording remains provisional pending speaker review; older catalog fluency is not
+fully audited.
+
+Extend the South Slavic current-catalog suite with Bosnian vocabulary and
+behavior checks. Preserve exact source placeholders, WEBHOOKS_ATTRIBUTES,
+GET /workflows and Wrike state names. Verify full key order and token inventories,
+matching versus unchanged fields, editing permissions, bidirectional versus
+one-way propagation, member replacement, unmapped imports, ZIP semantics,
+export permissions, inherited settings, quiet hours and completed versus
+incomplete states. Three browser cases for linked fields, import-people choices
+and notification delivery pass syntax and discovery; runtime execution remains
+unverified without the local app and browser system dependencies. All 306
+translation/Blockly suites, 246 catalog inventories and 21 human-preference
+checks pass. A fresh full per-locale `--list`
+inventory counts 63,208 remaining values across 154 non-English locale files,
+including pending Transifex keys. The all-language backlog and semantic audit
+remain open.
+
+## Albanian current fills — 2026-10-10
+
+Translate 110 English placeholders in sq for attached cards, linked fields,
+calendar mode, member mapping, CSV columns, bulk imports and exports, webhooks,
+notifications, Wrike workflows and subtasks. The full current fill list is empty.
+Every changed value was English in the parent commit; all existing translations
+are preserved. Follow tabelë, kartë, listë, korsi, fusha të personalizuara and
+webhook-e terminology. Correct the new subtask wording to the existing compound
+nëndetyrë spelling. Longer technical wording remains provisional pending speaker
+review; older catalog fluency is not fully audited.
+
+Replace the historical completion gate with the full current fill list. Preserve
+all source placeholders, WEBHOOKS_ATTRIBUTES, GET /workflows and Wrike state
+names. Regressions check full key order and underscore/percent token inventories,
+matching versus untouched fields, editing permissions, propagation directions,
+member replacement, unmapped imports, ZIP semantics, export permissions,
+inherited settings, quiet hours and completed versus incomplete states. Three
+browser cases for linked fields, import-people choices and notification delivery
+pass syntax and discovery; runtime execution remains unverified without the local
+app and browser system dependencies. All 306 translation/Blockly suites,
+246 catalog inventories and 21 human-preference checks pass. A fresh full per-locale `--list` inventory counts
+63,318 remaining values across 155 non-English locale files, including pending
+Transifex keys. The all-language backlog and semantic audit remain open.
+
+## Latvian current fills — 2026-10-10
+
+Translate 110 English placeholders in lv for attached cards, linked fields,
+calendar mode, member mapping, CSV columns, bulk imports and exports, webhooks,
+notifications, Wrike workflows and subtasks. The full current fill list is empty.
+Every changed value was English in the parent commit; all existing translations
+are preserved. Follow dēlis, kartiņa, saraksts and josla terminology, with
+pielāgotie lauki for custom fields. Technical vocabulary references include
+[kārtula in the Latvian terminology portal](https://termini.gov.lv/atrast/k%C4%81rtula/lv)
+and [Latvian webhook usage in Microsoft documentation](https://support.microsoft.com/lv-LV/teams/apps-service/create-incoming-webhooks-with-workflows-for-microsoft-teams).
+Longer technical wording remains provisional pending speaker review; older
+catalog fluency is not fully audited.
+
+Preserve all source placeholders, WEBHOOKS_ATTRIBUTES, GET /workflows and Wrike
+state names. Regressions check full current completion, complete key order and
+token inventories, Latvian vocabulary rather than Lithuanian carryovers, field
+matching, unchanged unmatched fields, editing permissions, propagation directions,
+member replacement, unmapped imports, ZIP semantics, export permissions, inherited
+settings, quiet hours and completed versus incomplete states. Three browser cases
+cover linked fields, import-people choices and notification delivery; syntax and
+discovery pass, while runtime execution remains unverified because the local app
+and browser system dependencies are unavailable. All 306 translation/Blockly
+suites, 246 catalog inventories and 21 human-preference checks pass. A fresh full per-locale `--list` inventory
+counts 63,428 remaining values across 156 non-English locale files, including
+pending Transifex keys. The all-language backlog and semantic audit remain open.
+
+## Macedonian vocabulary follow-up — 2026-10-10
+
+Review all 317 previously flagged values longer than 15 characters that matched
+Bulgarian or Serbian at the same key. Correct 262 wrong-language, mixed-language
+or meaning-drifted values, while retaining 55 valid shared Macedonian/technical
+terms. Every value outside the explicit correction set is unchanged. The retained
+terms include calendar/timeline labels, file types, database names and Blockly
+expressions; matching another locale alone does not justify replacing them.
+
+Correct activity messages, workspaces, profile/member settings, dates and filters,
+assignment and search controls, storage and migration settings, notifications,
+accessibility labels and diagnostic instructions. Restore distinctions such as
+exporting versus converting, all users versus visibility rights, last access
+versus last modification, a start time versus starting a timer, and optional
+move reasons. Keep technical date-format strings, Arial and Cron literal. The
+three-card JSON example now has Macedonian sample prose with literal title and
+description property names. Update its existing audited-corrections record to
+this reviewed result; the earlier structural repair had retained Serbian prose.
+The historical Macedonian repair queue is empty again, without changing the
+original audit evidence or adding new historical review records.
+
+Extend regression coverage for native vocabulary, positive and negative action
+meanings, schedule intervals, account lockout, JSON parsing, literal formats and
+shared terms that must remain unchanged. Full key order and underscore/percent
+token inventories still match English. The current placeholder list remains
+empty; these corrections improve language and meaning rather than reducing that
+count. This completes review of the 317 flagged matches, not of every older
+Macedonian value. Shorter strings and nonmatching wrong-language values may need
+further review. Longer or specialized corrections remain lower confidence
+pending native-speaker review.
+
+The broad run exercised 306 translation/Blockly suites: 305 passed and the
+corrections-record suite caught the outdated Serbian JSON example value. After
+updating that existing record, the failed suite, audit-progress suite and focused
+Macedonian suite pass on rerun. All 246 catalog inventories and 21 preservation
+checks pass. Existing Macedonian browser cases pass syntax and discovery; browser runtime execution remains
+unverified without the local app and browser system dependencies. The wider
+all-language backlog and semantic audit remain open.
+
+## Macedonian current fills and language corrections — 2026-10-10
+
+Translate 130 English placeholders in mk for attached cards, linked fields,
+20 import-format instructions, member mapping, CSV columns, bulk imports and
+exports, webhooks, notifications, Wrike workflows and subtasks. The full current
+fill list is empty. Correct 154 existing wrong-language or mixed-language values:
+133 identified by non-Macedonian letter forms, the Bulgarian custom
+fields label, and 20 additional vocabulary/uppercase-script corrections. These
+include assignment labels, archives, activity messages, custom fields, weekdays,
+rule controls, CPU/memory labels, task actions and diagnostic descriptions.
+Correct the truncated blocker-analysis and process-behavior descriptions against
+the complete English source, including retained history, overlapping causes,
+creation/archive fallbacks and the two-completion minimum.
+
+Use Macedonian карта, список, лента, прилагодени полиња and задолжено лице.
+Terminology references: the official dictionary entries for
+[задолжен](https://makedonski.gov.mk/corpus/l/zadolzhen-prid) and
+[поле](https://makedonski.gov.mk/corpus/l/pole-sr). Preserve native Macedonian
+accented forms such as ѝ; removing non-Macedonian letters alone is not a language
+audit. Check vocabulary and meaning too. Comparison with the parent commit
+proves 130 English-only fills plus the 154 explicitly reviewed corrections,
+with all other values preserved. Longer technical and corrected wording remains
+provisional pending speaker review; older catalog fluency is not fully audited.
+A further vocabulary comparison flags 317 remaining non-English values longer
+than 15 characters that exactly match the Bulgarian or Serbian value of the
+same key. These are review candidates, not automatic replacement targets:
+shared native words and technical labels may legitimately match. Examples needing
+review include activity messages and workspace controls. This follow-up remains
+open even though the placeholder list is empty.
+
+Preserve source key order, exact placeholder inventories, HTML, parsed Wrike
+constants, WEBHOOKS_ATTRIBUTES and external menu/column names. Regressions cover
+full current completion, non-Macedonian letter rejection, native vocabulary,
+link directions, permissions, member replacement, ZIP semantics, import-format
+requirements, inherited settings, quiet hours, completion states, archive and
+delete distinctions, and complete diagnostic meanings. Three browser cases for
+linked fields, import-people choices and notification delivery pass syntax and
+discovery; runtime execution remains unverified because the local app and browser
+system dependencies are unavailable. All 306 translation/Blockly suites,
+246 catalog inventories and 21 human-preference checks pass. A fresh full per-locale `--list` inventory counts
+63,538 remaining values across 157 non-English locale files, including pending
+Transifex keys. The all-language backlog and semantic audit remain open.
+
+## Bulgarian current fills — 2026-10-10
+
+Translate 110 English placeholders in bg for attached cards, linked fields,
+calendar mode, member mapping, CSV columns, bulk imports and exports, webhooks,
+notifications, Wrike workflows and subtasks. Its full current fill list is
+empty. Every changed value was English in the parent commit; existing
+translations are preserved. Use the established табло, карта, списък, коридор,
+собствени полета and изпълнител terminology. Longer technical wording remains
+provisional pending speaker review; older catalog fluency is not fully audited.
+
+Preserve exact source placeholders, WEBHOOKS_ATTRIBUTES, GET /workflows and
+Wrike state names. Extend the South Slavic regression with Bulgarian vocabulary
+and meaning checks, in addition to script, full key order, all token inventories
+and current completion. Cover field matching, unchanged unmatched fields,
+permissions, bidirectional versus one-way propagation, member replacement,
+unmapped imports, ZIP semantics, export permissions, inherited settings,
+quiet hours and completed versus incomplete states. Three browser cases for
+linked fields, import-people choices and notification delivery pass syntax and
+discovery; runtime execution remains unverified because the local app and
+browser system dependencies are unavailable. All 306 translation/Blockly suites,
+246 catalog inventories and 21 human-preference checks pass. A fresh full per-locale `--list` inventory
+counts 63,668 remaining values across 158 non-English locale files, including
+pending Transifex keys. The all-language backlog and semantic audit remain open.
+
+## Croatian, Serbian and Slovenian current fills — 2026-10-10
+
+Translate 110 English placeholders in each of hr, sr, sl and sl_SI, 440 values
+in total, for attached cards, linked fields, calendar mode, member mapping,
+CSV columns, bulk imports and exports, webhooks, notifications, Wrike workflows
+and subtasks. All four full current fill lists are empty. Every changed value
+was English in the parent commit; existing translations are preserved. Use
+Croatian ploča, kartica, popis, traka and prilagođena polja; Slovenian tabla,
+kartica, seznam, plavalna steza and poljubna polja; and the Serbian catalog's
+established Cyrillic legal-workflow vocabulary списи, предмет, део поступка,
+поступак and придружене рубрике. Longer technical wording remains provisional
+pending speaker review; older catalog fluency is not fully audited.
+
+Preserve exact source placeholders, WEBHOOKS_ATTRIBUTES, GET /workflows and
+Wrike state names. The combined regression checks full current completion,
+source key order and all tokens, plus vocabulary as well as script. Meaning
+checks cover field matching, untouched unmatched fields, editing permissions,
+bidirectional versus one-way propagation, member replacement, unmapped imports,
+ZIP semantics, export permissions, inherited settings, quiet hours and completed
+versus incomplete states. Twelve browser cases cover linked fields, import-people
+choices and notification delivery in all four catalogs. Syntax and discovery
+pass; runtime execution remains unverified because the local app and browser
+system dependencies are unavailable. All 306 translation/Blockly suites,
+246 catalog inventories and 21 human-preference checks pass. A fresh full per-locale `--list` inventory counts
+63,778 remaining values across 159 non-English locale files, including pending
+Transifex keys. The all-language backlog and semantic audit remain open.
+
+## Vietnamese current fills — 2026-10-10
+
+Translate 207 English placeholders in each of vi and vi-VN, 414 values in
+total, for attached cards, linked fields, OPML and Org mode imports, member
+mapping, CSV columns, bulk exports, external links, webhooks, notifications,
+Wrike workflows, LDAP synchronization, subtasks, Scrum planning and recovery.
+Both full current fill lists are empty. Every changed value was English in the
+parent commit; existing translations are preserved. Follow the existing bảng,
+thẻ, danh sách, làn ngang and trường tùy chỉnh terminology. Longer technical
+wording remains provisional pending speaker review; older catalog fluency is
+not fully audited.
+
+Preserve source placeholders, technical identifiers, external-link examples
+and parsed Org mode and Wrike constants. Extend the Vietnamese suite to check
+both full current fill lists, complete key order and token inventories, field
+directions, permissions, member replacement, ZIP semantics, inheritance,
+quiet hours and completed versus incomplete states. Recovery regressions
+cover retained changes, permanent deletion, foreign-board protection, duplicate
+prevention, preservation of local planning, the first synchronization and
+conflict-sensitive rollback. Six browser cases for linked fields, import-people
+choices and notification delivery pass syntax and discovery; runtime execution
+remains unverified because the local app and browser system dependencies are
+unavailable. All 305 translation/Blockly suites, 246 catalog inventories and
+21 human-preference checks pass.
+A full per-locale `--list` inventory after this batch finds 64,218 remaining
+values across 163 non-English locale files, including pending Transifex source
+keys. This is broader than `--missing`, which omits the pending queue. These
+counts identify remaining placeholders, not fluency or wrong-language text.
+The wider all-language backlog and semantic audit remain open.
+
+## Basque current fills — 2026-10-10
+
+Translate 196 English placeholders in eu for attached cards, linked fields,
+calendar mode, 22 import-format instructions, member mapping, CSV columns,
+bulk exports, external link rules, webhooks, notifications, Wrike workflows,
+LDAP synchronization, subtasks and interrupted operations. The full current fill
+list is empty. Follow the existing arbela, txartela, zerrenda, erraila and
+eremu pertsonalizatuak terminology. Preserve existing translations and all
+source placeholders, parsed constants, query examples and external menu labels.
+Longer technical wording remains provisional pending speaker review; older
+catalog fluency is not fully audited.
+
+The maintainer's concurrent commit e595f9a83b included the complete batch and
+its regressions before preparing v12.27. Comparison against that commit's
+parent verifies exactly 196 English-only replacements and no changes to
+existing translations. A follow-up review corrects 23 newly filled values to
+use the txartel stem before determiners/modifiers, in conversion descriptions
+and after a count; it leaves pre-existing translations alone. Reference:
+[Basque public-service usage of txartel bat](https://egoitza.araba.eus/eu/entsegu-zentroa-beste-txartel-bat-ematea-aurrekoa-lapurtu-galdu-hondatu-edo-gaizki-dabilelako)
+and [txartel dictionary and inflection](https://en.wiktionary.org/wiki/txartel).
+The Basque gate now checks the full current fill list;
+Uyghur retains its historical gate. Regressions cover field directions and
+permissions, member replacement, ZIP semantics, notification inheritance and
+timing, completed versus incomplete states, unsupported import data, required
+English column names, retained sync changes, permanent board deletion,
+read-only settings and protection of a board created by another import.
+
+Three browser cases for linked fields, import-people choices and notification
+delivery pass syntax and discovery. Runtime execution remains unverified
+because the local app and browser system dependencies are unavailable.
+All 305 translation/Blockly suites, 246 catalog key-order and token inventories
+and 21 human-preference checks pass. The focused Basque regression also passes
+after the noun-form corrections. The wider all-language backlog and semantic audit remain open.
+
 ## Galician current fills — 2026-10-10
 
 Translate 110 English placeholders in each of gl and gl-ES, 220 values in
