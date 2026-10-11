@@ -20,7 +20,7 @@ LABEL org.opencontainers.image.source="https://github.com/wekan/wekan-gantt-gpl"
 # TARGETARCH and TARGETVARIANT are automatically provided by Docker Buildx
 ARG TARGETARCH
 ARG TARGETVARIANT
-ARG VERSION=12.30
+ARG VERSION=12.31
 ARG DEBIAN_FRONTEND=noninteractive
 
 ENV BUILD_DEPS="apt-utils gnupg wget bzip2 g++ curl libarchive-tools build-essential git ca-certificates python3 unzip"
@@ -464,6 +464,8 @@ COPY --chmod=644 releases/ferretdb/recovery-bridge.mjs /build/recovery-bridge.mj
 # serve the "waiting for database" page instead of leaving the web port unbound
 # for a reverse proxy to time out on.
 COPY --chmod=644 releases/ferretdb/db-ready.mjs /build/db-ready.mjs
+
+COPY releases/nextcloud/capability.json /build/nextcloud-exapp-capability.json
 
 USER wekan
 ENV PORT=8080
