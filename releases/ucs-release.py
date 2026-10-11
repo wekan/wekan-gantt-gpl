@@ -28,6 +28,21 @@ def app_id(value):
     return value
 
 
+def release_selection(wekan, ferretdb):
+    for data in (wekan, ferretdb):
+        if data.get('isDraft') is not False or data.get('isPrerelease') is not False:
+            raise ValueError('Select published stable releases only')
+    tag = wekan.get('tagName', '')
+    if not tag.startswith('v'):
+        raise ValueError('Expected a versioned WeKan release tag')
+    selected = version(tag[1:])
+    dbtag = ferretdb.get('tagName', '')
+    if not re.fullmatch(r'v1\.[0-9]+\.[0-9]+', dbtag):
+        raise ValueError('Expected a FerretDB v1 release tag')
+    return {'VERSION': selected,
+            'UCS_FERRETDB_IMAGE': f'ghcr.io/wekan/ferretdb:{dbtag}'}
+
+
 def images(compose, replacements):
     """Replace only active image lines and retain every prior reference/comment."""
     service = None
@@ -56,10 +71,14 @@ def prepare(repo, output, release, database_image=''):
     release = version(release)
     source = Path(repo) / 'component'
     compose = (source / 'compose').read_text()
+    image_pattern = r'ghcr\.io/wekan/ferretdb:v1\.[0-9]+\.[0-9]+'
     if not database_image:
-        database_image = re.search(r'^    image: (ghcr.io/wekan/ferretdb@sha256:[a-f0-9]{64})$', compose, re.M).group(1)
-    if not re.fullmatch(r'ghcr\.io/wekan/ferretdb@sha256:[a-f0-9]{64}', database_image):
-        raise ValueError('Pin the wekan/FerretDB v1 GHCR image by digest, not upstream FerretDB v2 or latest')
+        match = re.search(r'^    image: (' + image_pattern + r')$', compose, re.M)
+        if not match:
+            raise ValueError('Compose must select a version-tagged wekan/FerretDB v1 GHCR image')
+        database_image = match.group(1)
+    if not re.fullmatch(image_pattern, database_image):
+        raise ValueError('Select a wekan/FerretDB v1 GHCR version tag, for example ghcr.io/wekan/ferretdb:v1.92.0')
     app_image = f'ghcr.io/wekan/wekan:v{release}'
     helper_image = f'ghcr.io/wekan/wekan-ucs-migration:v{release}'
     destination = Path(output) / 'component'
@@ -149,12 +168,24 @@ def upload(portal, directory, source_app, target_app):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=('prepare', 'plan', 'upload'))
-    parser.add_argument('--version', required=True, type=version)
+    parser.add_argument('action', choices=('prepare', 'plan', 'upload', 'resolve'))
+    parser.add_argument('--version', type=version)
+    parser.add_argument('--wekan-release')
+    parser.add_argument('--ferretdb-release')
     parser.add_argument('--repo', default='univention')
     parser.add_argument('--directory', default='.tools/ucs-release')
     parser.add_argument('--cli', default='.tools/univention-appcenter-control')
     args = parser.parse_args()
+    if args.action == 'resolve':
+        result = release_selection(json.loads(Path(args.wekan_release).read_text()),
+                                   json.loads(Path(args.ferretdb_release).read_text()))
+        with open(os.environ['GITHUB_ENV'], 'a') as output:
+            for key, value in result.items():
+                output.write(f'{key}={value}\n')
+        print(json.dumps(result))
+        return
+    if not args.version:
+        parser.error('--version is required for prepare, plan and upload')
     if args.action == 'prepare':
         result = prepare(args.repo, args.directory, args.version, os.getenv('UCS_FERRETDB_IMAGE', ''))
         print(json.dumps(result))
