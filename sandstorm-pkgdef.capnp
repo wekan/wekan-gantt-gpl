@@ -22,10 +22,10 @@ const pkgdef :Spk.PackageDefinition = (
     appTitle = (defaultText = "Wekan"),
     # The name of the app as it is displayed to the user.
 
-    appVersion = 1233,
+    appVersion = 1234,
     # Increment this for every release.
 
-    appMarketingVersion = (defaultText = "12.33~2026-10-11"),
+    appMarketingVersion = (defaultText = "12.34~2026-10-12"),
     # Human-readable presentation of the app version.
 
     minUpgradableAppVersion = 0,
@@ -233,6 +233,9 @@ const myCommand :Spk.Manifest.Command = (
   argv = ["/sandstorm-http-bridge", "4000", "--", "node", "start-memory.js"],
   environ = [
     # Note that this defines the *entire* environment seen by your app.
+    # Lightweight startup markers. Enable METEOR_PROFILE only for diagnostics:
+    # its hook stack traces force expensive source-map processing at startup.
+    (key = "WEKAN_STARTUP_TIMING", value = "1"),
     #---------------------------------------------------------------------
     # https://github.com/wekan/wekan/issues/3585#issuecomment-1021522132
     # Add more Node heap:

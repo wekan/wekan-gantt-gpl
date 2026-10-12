@@ -192,6 +192,7 @@ test('every script in releases/ is reachable from BOTH menus', () => {
   // Deliberately not in the Releases menu, each for a stated reason. A script
   // added here must be given one.
   const SKIP = {
+    'externalize-server-source-maps.mjs': 'internal source-map helper imported by bundle-trim.mjs, not a standalone menu action',
     'recover-scrum-import.cjs': 'manual offline database recovery requires a board ID; not a release action',
     'translations/import-blockly.cjs': 'translation catalog helper; invoked explicitly for Blockly updates',
     'translations/placeholder-tokens.mjs': 'shared pure placeholder parser used by translation validation',
@@ -249,6 +250,16 @@ test('every script in releases/ is reachable from BOTH menus', () => {
     'embed-verified-node.sh': 'release-workflow: called per native build job to '
       + 'download+verify the bundled Node.js from the wekan/node fork',
     'install-node-for-arch.sh': 'release-workflow: runs inside the build container',
+    'compile-native-addons.mjs': 'release-workflow: the win32 and win-arm64 jobs\n'
+      + '      call it inside a BUILT bundle to compile bcrypt/argon2 for a CPU with no\n'
+      + '      prebuild, with the node-gyp that bundle\'s install brought; nothing to\n'
+      + '      point it at until a build exists',
+    'strip-node.sh': 'release-workflow: embed-verified-node.sh and\n'
+      + '      install-node-for-arch.sh call it on the node they just verified and put\n'
+      + '      in a bundle; it takes one binary and has no release step of its own',
+    'fetch-mongo-tools.sh': 'release-workflow: every bundle job, the arch\n'
+      + '      repack and build-release-bundle.sh call it to put one platform\'s MongoDB\n'
+      + '      Database Tools in a bundle; it has no release step of its own',
     'resolve-node-source.sh': 'release-workflow: a lookup the other scripts, the\n      bundle jobs and the Dockerfile call - it prints where a platform\'s Node.js\n      comes from and downloads nothing itself',
     'require-binaries.sh': 'release-workflow: called per build job',
     'record-provenance.sh': 'release-workflow: called per build job',

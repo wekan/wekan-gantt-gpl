@@ -1,10 +1,10 @@
-import { Client } from 'ldapts';
 import { Log } from 'meteor/logging';
 // #6548: details go through the LDAP logger, which prints when LDAP_LOG_ENABLED
 // is true and redacts secrets. Meteor's debug level never prints in production,
 // so in the snap (and every bundle) none of them were ever visible.
 import { log_debug, log_info } from './logger';
 import { normalizeLdapEncryption } from './encryptionSetting';
+import { ldapCertificateHint } from './tlsCertificateHint';
 import { buildUserIdFilter } from './userIdFilter';
 import {
   missingGroupLookupSettings,
@@ -229,6 +229,8 @@ export default class LDAP {
 
     log_debug('clientOptions', clientOptions);
 
+    // Registering LDAP accounts does not require loading the LDAP client.
+    const { Client } = require('ldapts');
     this.client = new Client(clientOptions);
 
     if (this.options.encryption === 'starttls') {
@@ -253,6 +255,9 @@ export default class LDAP {
       // #6548: a failed bind used to leave no trace of why. The DN and the
       // directory's answer, never the password (logger.js redacts secrets).
       log_info(`Bind failed for ${dn}:`, error);
+      // #6762: a refused certificate says what to do about it.
+      const hint = ldapCertificateHint(error);
+      if (hint) Log.warn(hint);
       throw error;
     }
   }
