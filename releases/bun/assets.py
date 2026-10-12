@@ -6,7 +6,6 @@ import os
 from pathlib import Path
 import re
 import sys
-import tarfile
 import urllib.request
 import zipfile
 
@@ -32,11 +31,13 @@ def asset_name(tag, target):
     validate_tag(tag)
     if target not in {item['target'] for item in TARGETS}:
         raise ValueError('Unknown Bun target: ' + target)
-    return f'wekan-{tag[1:]}-bun-{target}.tar.gz'
+    return f'wekan-{tag[1:]}-bun-{target}.zip'
 
 
 def plan(release, bun_release, only='', missing=False):
     tag = validate_tag(release['tag_name'])
+    if not re.fullmatch(r'bun-v[0-9]+\.[0-9]+\.[0-9]+', bun_release['tag_name']):
+        raise ValueError('Expected a stable Bun release')
     if release.get('draft'):
         raise ValueError('Publish the WeKan release before attaching Bun bundles')
     supported = {item['asset'] for item in TARGETS}
@@ -79,7 +80,8 @@ def fetch_runtime(bun_tag, target):
     download(base + sums.name, sums)
     expected = next(line.split()[0] for line in sums.read_text().splitlines()
                     if line.split()[-1].lstrip('*') == archive.name)
-    actual = hashlib.file_digest(archive.open('rb'), 'sha256').hexdigest()
+    with archive.open('rb') as source:
+        actual = hashlib.file_digest(source, 'sha256').hexdigest()
     if actual != expected:
         raise ValueError('Bun archive checksum mismatch')
     binary = 'bun.exe' if item['platform'] == 'win32' else 'bun'
@@ -105,8 +107,14 @@ def package(tag, target):
     (bundle / '.bun-smoke-ok').unlink()
     output = Path('dist')
     output.mkdir(exist_ok=True)
-    with tarfile.open(output / name, 'w:gz', dereference=True) as archive:
-        archive.add(bundle, arcname='bundle')
+    with zipfile.ZipFile(output / name, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=1) as archive:
+        # Dereference dependency links, including directories, as the tar bundles did.
+        # ZipFile.write records Unix executable permissions for Bun and launchers.
+        for directory, directories, files in os.walk(bundle, followlinks=True):
+            directories.sort()
+            archive.write(directory)
+            for filename in sorted(files):
+                archive.write(Path(directory) / filename)
     with (output / name).open('rb') as source:
         digest = hashlib.file_digest(source, 'sha256').hexdigest()
     (output / (name + '.sha256sum')).write_text(f'{digest}  {name}\n')
