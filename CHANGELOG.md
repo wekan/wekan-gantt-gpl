@@ -403,74 +403,76 @@ not have).
 </details>
 
 <details>
-<summary>Design questions waiting for the maintainer, 2026-10-14.</summary>
+<summary>Decided on 2026-10-14 (second round), waiting to be implemented.</summary>
 
-Everything decided on 2026-10-14 is built (see Upcoming). The open requests
-below need an answer first; each line is the question that decides it, with
-the choice the code would most easily take.
-[#802](https://github.com/wekan/wekan/issues/802) (per-organization and per-team tabs in All Boards where their admins
-manage members - and should WeKan ever write group changes back to LDAP, or
-only read them?),
-[#5141](https://github.com/wekan/wekan/issues/5141) (which organizations and teams may a board admin add: only those
-they belong to, or every one in the instance, which the picker would then
-list to every board admin?),
-[#4265](https://github.com/wekan/wekan/issues/4265) (leaving a board that came through a team: hide it in a per-user
-list that can be undone, or end that one board's team membership for that
-user?),
-[#2217](https://github.com/wekan/wekan/issues/2217) (a board setting that shows the Rules to members read-only?),
-[#5847](https://github.com/wekan/wekan/issues/5847) (which further logins, and a "log out everywhere" in Member
-Settings that ends every session?),
-[#1324](https://github.com/wekan/wekan/issues/1324) (Bitbucket through the generic OAuth2 settings with a how-to, or a
-provider of its own?),
-[#2805](https://github.com/wekan/wekan/issues/2805) (one shared header row for all swimlanes, as a board view setting?),
-[#2809](https://github.com/wekan/wekan/issues/2809) (a linked whole list: a live mirror of another list, editable like
-linked cards, or read-only?),
-[#2171](https://github.com/wekan/wekan/issues/2171) (should search scroll the board to the match and highlight it?),
-[#2110](https://github.com/wekan/wekan/issues/2110) (minicard avatars in the order people were added; a colour per
-avatar and a name tooltip?),
-[#2040](https://github.com/wekan/wekan/issues/2040) (a board-defined label order that lists can be sorted by?),
-[#2015](https://github.com/wekan/wekan/issues/2015) (a QR code of the card link in the card menu, drawn in the browser?),
-[#1953](https://github.com/wekan/wekan/issues/1953) (a Board Settings picker for the swimlane new subtasks go to?),
-[#1931](https://github.com/wekan/wekan/issues/1931) (an existing card from ANOTHER board as a subtask, for members of
-both?),
-[#1618](https://github.com/wekan/wekan/issues/1618) (a person responsible for a checklist item, and items in the
-calendar and Gantt?),
-[#864](https://github.com/wekan/wekan/issues/864) (drag-and-drop and adding cards in the Table view?),
-[#211](https://github.com/wekan/wekan/issues/211) (named column sets over the same cards, per board or per user?),
-[#140](https://github.com/wekan/wekan/issues/140) (real-time shared editing of descriptions: which editor and sync
-library?),
-[#1273](https://github.com/wekan/wekan/issues/1273) (keep the `#label`/`@member` text in the title: per user or per
-board?),
-[#1178](https://github.com/wekan/wekan/issues/1178) (sketching onto a card, saved as an image attachment?),
-[#4791](https://github.com/wekan/wekan/issues/4791) (grouping boards by first letter, board labels and organization
-subgroups: which of these?),
-[#2012](https://github.com/wekan/wekan/issues/2012) (story and task card types with fields of their own?),
-[#2111](https://github.com/wekan/wekan/issues/2111) and [#1604](https://github.com/wekan/wekan/issues/1604) (which other changes are marked unread on a card,
-and a per-user switch?),
-[#2026](https://github.com/wekan/wekan/issues/2026) and [#1377](https://github.com/wekan/wekan/issues/1377) (browser push notifications, a webhook activity
-picker and an all-boards activity feed: which first?),
-[#1297](https://github.com/wekan/wekan/issues/1297) (a Mattermost direct message to each member and assignee?),
-[#2290](https://github.com/wekan/wekan/issues/2290) (webhooks on login and registration, which carry personal data?),
-[#1100](https://github.com/wekan/wekan/issues/1100) (Matrix notifications through a webhook, or a bot?),
-[#2435](https://github.com/wekan/wekan/issues/2435) (a member picker for a rule email's To field?),
-[#4434](https://github.com/wekan/wekan/issues/4434) (the clear HTML layout as the default, and for account emails?),
-[#5148](https://github.com/wekan/wekan/issues/5148) (ntfy as a notification channel?),
-[#4198](https://github.com/wekan/wekan/issues/4198) (ActivityPub: what a board would publish, and to whom?),
-[#4930](https://github.com/wekan/wekan/issues/4930) (a Trellinator-compatible API, or a guide to the REST API?),
-[#6554](https://github.com/wekan/wekan/issues/6554) (Gogs beside WeKan in the Compose files, or a link only?),
-[#1126](https://github.com/wekan/wekan/issues/1126) (an RFID guide over the REST API?),
-[#1293](https://github.com/wekan/wekan/issues/1293) (an Android share target that makes a card on a chosen board?),
-[#1188](https://github.com/wekan/wekan/issues/1188) (on Sandstorm, copy a grain sharing link instead of the card URL?),
-[#2662](https://github.com/wekan/wekan/issues/2662) (a FreeBSD port and rc.d script, maintained here or by a ports
-maintainer?),
-[#687](https://github.com/wekan/wekan/issues/687) (publish the Nextcloud ExApp; WebDAV attachment storage and CalDAV
-sync?),
-[#632](https://github.com/wekan/wekan/issues/632) (update the Rancher doc, or remove it?),
-[#1040](https://github.com/wekan/wekan/issues/1040) (LibreJS license markers in the bundle?),
-outgoing webhooks to an internal address (a Node-RED or chat server on the
-same network is refused by the SSRF guard, which [#2017](https://github.com/wekan/wekan/issues/2017)'s how-to now
-says: should the Admin Panel accept a list of internal destinations that
-webhooks may reach?).
+The maintainer answered every open design question; each is built as decided.
+[#802](https://github.com/wekan/wekan/issues/802) (a tab per organization and team in All Boards, where their admins
+manage members; LDAP groups are only read, never written back),
+[#5141](https://github.com/wekan/wekan/issues/5141) (a board admin may add only the organizations and teams they belong
+to),
+[#4265](https://github.com/wekan/wekan/issues/4265) (leaving a board that came through a team hides it in a per-user
+list it can be restored from; the team membership stays),
+[#2217](https://github.com/wekan/wekan/issues/2217) (Admin Panel / Settings / Visibility gets an option, off by default,
+that lets a board show its Rules to members read-only),
+[#5847](https://github.com/wekan/wekan/issues/5847) (Log out everywhere in Member Settings, and passkey / WebAuthn
+login),
+[#1324](https://github.com/wekan/wekan/issues/1324) (Bitbucket through the generic OAuth2 settings, with a how-to),
+[#2805](https://github.com/wekan/wekan/issues/2805) (one shared, sticky list header row for all swimlanes, as a board
+view setting),
+[#2809](https://github.com/wekan/wekan/issues/2809) (a linked whole list: a live mirror of another board's list,
+editable by whoever may write the source board),
+[#2171](https://github.com/wekan/wekan/issues/2171) (search scrolls the board to the selected match and highlights it,
+with next and previous),
+[#2110](https://github.com/wekan/wekan/issues/2110) (minicard avatars in the order people were added, a name tooltip,
+and a lasting colour per person),
+[#2040](https://github.com/wekan/wekan/issues/2040) (a board-defined label order that a list can be sorted by),
+[#1953](https://github.com/wekan/wekan/issues/1953) (a Board Settings picker for the swimlane new subtasks go to),
+[#1931](https://github.com/wekan/wekan/issues/1931) (an existing card from another board as a subtask, for users who
+may write both boards),
+[#1618](https://github.com/wekan/wekan/issues/1618) (a person responsible for each checklist item, and dated items in
+the calendar and Gantt),
+[#864](https://github.com/wekan/wekan/issues/864) (drag-and-drop and adding cards in the Table view),
+[#211](https://github.com/wekan/wekan/issues/211) (named column sets over the same cards, per board),
+[#140](https://github.com/wekan/wekan/issues/140) (real-time shared editing of descriptions with Yjs and the current
+editor),
+[#1273](https://github.com/wekan/wekan/issues/1273) (a Member Settings switch to keep the `#label` / `@member` text in
+the title; default as now),
+[#1178](https://github.com/wekan/wekan/issues/1178) (drawing onto a card, saved as both PNG and SVG and editable later,
+reusing the drawing code of the "Red Strings" issue),
+[#4791](https://github.com/wekan/wekan/issues/4791) (All Boards grouped by first letter, by board labels and by
+organization subgroups),
+[#2012](https://github.com/wekan/wekan/issues/2012) (story and task card types with custom fields of their own),
+[#2111](https://github.com/wekan/wekan/issues/2111) and [#1604](https://github.com/wekan/wekan/issues/1604) (every change to any field of a card is marked unread
+- title, description, attachments, checklists, members, dates, labels - with
+a per-user switch),
+[#2026](https://github.com/wekan/wekan/issues/2026) and [#1377](https://github.com/wekan/wekan/issues/1377) (browser push notifications, a webhook activity picker
+in the UI, and an all-boards activity feed),
+[#1297](https://github.com/wekan/wekan/issues/1297) (a webhook option to also send a Mattermost direct message to each
+member and assignee),
+[#2290](https://github.com/wekan/wekan/issues/2290) (an instance webhook on login and registration in the Admin Panel,
+off by default, with the user name and time only unless more is chosen),
+[#1100](https://github.com/wekan/wekan/issues/1100) (Matrix notifications through the webhook, no bot),
+[#2435](https://github.com/wekan/wekan/issues/2435) (a member picker with autocomplete for a rule email's To field;
+free addresses still allowed),
+[#4434](https://github.com/wekan/wekan/issues/4434) (the clear HTML layout as the default for notifications and for
+account emails),
+[#5148](https://github.com/wekan/wekan/issues/5148) (ntfy as a notification channel, per user, through the SSRF
+guard),
+[#4198](https://github.com/wekan/wekan/issues/4198) (ActivityPub: a public board publishes its card activity to
+followers, read-only),
+[#1126](https://github.com/wekan/wekan/issues/1126) (an RFID how-to over the REST API),
+[#1293](https://github.com/wekan/wekan/issues/1293) (an Android share target that makes a card on a chosen board and
+list),
+[#1188](https://github.com/wekan/wekan/issues/1188) (on Sandstorm, Copy card URL copies a grain sharing link),
+[#2662](https://github.com/wekan/wekan/issues/2662) (an rc.d script in the FreeBSD bundle here, and a ports Makefile
+proposed to FreeBSD),
+[#687](https://github.com/wekan/wekan/issues/687) (publish the Nextcloud ExApp, WebDAV attachment storage and CalDAV
+sync),
+[#632](https://github.com/wekan/wekan/issues/632) (update the Rancher doc to current Rancher, Kubernetes and Helm),
+[#1040](https://github.com/wekan/wekan/issues/1040) (LibreJS license markers in the browser bundle),
+outgoing webhooks to internal addresses (an Admin Panel list of internal
+destinations webhooks may reach, empty by default - see [#2017](https://github.com/wekan/wekan/issues/2017)'s how-to).
+[#6554](https://github.com/wekan/wekan/issues/6554) (Gogs beside WeKan) is closed as WONTFIX.
 
 Not a question, but ongoing work:
 [#337](https://github.com/wekan/wekan/issues/337) (move buttons, focus trap, landmarks and many labels exist; many links
@@ -560,23 +562,233 @@ used.
 </details>
 
 <details>
-<summary>Planned: Android bundles, once their Node.js exists.</summary>
+<summary>Not possible from a Sandstorm grain, recorded so it is not asked again.</summary>
 
-Requested on 2026-10-13; everything else of it is done (see Upcoming): Bun
-single files, musl bundles and AppImages, outgoing webhooks, list sync and
-the REST API through Sandstorm. Builds run on GitHub Actions only.
-
-- Android on the WeKan platforms: `android-*` bundles for all four Android
-  CPUs, once wekan/node-patches has published its `node-android-*` binaries.
-  The single-file workflow builds them as soon as those bundles exist.
-- Not possible, recorded so it is not asked again: Jira list sync from a
-  Sandstorm grain ([#2208](https://github.com/wekan/wekan/issues/2208),
-  [#2167](https://github.com/wekan/wekan/issues/2167)). Jira signs in only with an `Authorization` header, and the
-  bridge proxy puts its own grant there.
+Everything requested on 2026-10-13 is done (see Upcoming): Bun single files,
+musl and Android bundles, and outgoing webhooks, list sync and the REST API
+through Sandstorm. Builds run on GitHub Actions only. What cannot work:
+Jira list sync from a grain
+([#2208](https://github.com/wekan/wekan/issues/2208),
+[#2167](https://github.com/wekan/wekan/issues/2167)) - Jira signs in only
+with an `Authorization` header, and the bridge proxy puts its own grant
+there.
 
 </details>
 
 </details>
+
+# v12.42 2026-10-14 WeKan ® release
+
+**In short:** a new **Version Control** board view shows a board as a
+**GitHub** or **Gitea** issue tracker, with releases, a **wiki** and history
+with undo, and a whole **GitHub organization** imports into it, its **GitHub
+Actions** as Rules. Optional **Trello**, **Jira**, **GitHub** and **Gitea**
+compatible APIs let their clients use WeKan as a backend. Old boards get their
+keys in one pass, list sync keeps issue details current, any board view can be
+a **read-only public view**, and WeKan has **Android** bundles.
+
+This release adds the following new features:
+
+**Board views** - a repository's issue tracker as a view, and which views the
+public sees.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/326d9bbf61">Version Control: the board as a GitHub or Gitea issue tracker</a>. Thanks to xet7.</summary>
+
+Board → View → **Version Control**, in the board's own theme. A card is an
+issue: open, or closed when archived, in a list named *Closed*, *Done*,
+*Resolved*, *Merged* or *Wontfix*, or closed upstream. The issue number is
+the upstream one of an imported issue, else the card number. The board's
+labels are labels, and labels with a due date and the importers'
+`milestone:` labels are milestones, with progress bars. Comments are the
+conversation, attachments the files. The search box takes GitHub's words:
+`is:open`, `label:`, `-label:`, `milestone:`, `author:`, `assignee:@me`,
+`no:label` and `sort:`. **New issue**, **Close** and **Reopen** write through
+the ordinary collections, so the **History** tab (the board's history table)
+shows them and **Restore** undoes them. A synced issue is closed in its
+tracker. **Import** opens the GitHub, GitLab, Gitea and Forgejo importers, and
+each synced list has a **Sync now** button. Visitors see it read-only. Tested
+by `tests/versionControlView.test.cjs`. See
+[Version Control view](docs/Features/Board/Version-Control-View.md).
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/326d9bbf61">A public board's public views are for the public; its members keep theirs</a>. Thanks to xet7.</summary>
+
+Board Settings → Board View's *Show on* and *Default on Public Board* now
+apply to the people looking who are not members: visitors who are not logged
+in, and logged-in users who are not on the board. The board's members get the
+*Private* columns. So a public board can open read-only in Version Control,
+Email, Chat or any other view for the world, and list only the views chosen
+for it, while its members keep every view. Before, a public board's members
+had the public menu too. `boardViewAudience` in
+`models/lib/boardViewSettings.js`; `tests/boardViewSettings.test.cjs` covers
+visitors, non-members, former members and members.
+
+</details>
+
+**Import and sync** - what an issue tracker's issues bring with them.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/326d9bbf61">GitHub, GitLab, Gitea and Forgejo issues bring their files</a>. Thanks to xet7.</summary>
+
+The files an issue or its comments link or carry become card attachments in
+Admin Panel → Attachments → Default Storage. These are GitHub
+`user-attachments` and `user-images` links, GitLab `/uploads/` links, and
+Gitea and Forgejo assets and `/attachments/<uuid>` links, at most 50 per
+issue. Each one is downloaded through the import's SSRF guard, which checks
+every redirect hop, and the upload checks its type and size. One that cannot
+be fetched is on the import's loss report. Ordinary links are not files.
+`models/lib/issueAttachments.js`; `tests/issueAttachments.test.cjs`.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/326d9bbf61">List sync can bring each issue's comments, labels, state and files</a>. Thanks to xet7.</summary>
+
+A new Sync option for GitHub, GitLab, Gitea and Forgejo, off by default.
+Comments come from one paged repository-wide list (GitHub and Gitea), or
+from each issue's notes (GitLab). They are keyed by the tracker's comment id,
+and an edit upstream updates them. A label sync added and the issue lost is
+taken off, and labels added in WeKan stay. Each file is downloaded once. It
+runs after a successful sync as a step of its own, so a failure is shown and
+retried and never undoes the title and description sync. Gitea issues are
+fetched with `type=issues`. A rate-limited answer is waited out once when it
+frees up within a minute; otherwise the run ends with the time to try again.
+`tests/listSyncIssueDetails.test.cjs`.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/935e68dfdd">A whole GitHub organization imports, each repository as its own board</a>. Thanks to xet7.</summary>
+
+Import → GitHub → **Import a whole GitHub organization**: every repository of
+an organization or user becomes a board named `owner/repository`, opening in
+Version Control. Issues go through the ordinary `importBoard`, run as the
+person who started the job, with their comments, labels and files. Releases
+are cards in a *Releases* list, with their files attached only when chosen.
+`.github/workflows` files become Rules. Each wiki is read from its git
+repository with isomorphic-git (1.42.4, pinned), with every request through
+the SSRF guard and only to github.com. A page is a card in the *Wiki* list:
+its `[[links]]` point at the linked pages' cards and are attached to them,
+and each commit that changed it is a dated edit in the card's history, so
+**Restore** brings back an older version. Version Control gains **Releases**
+and **Wiki** tabs, the wiki laid out as on GitHub. The job shows progress, can
+be cancelled, pauses on a restart and stops at a rate limit. The token is
+kept in memory only. Tests: `tests/githubOrgImport.test.cjs`,
+`tests/githubWiki.test.cjs` and `tests/workflowYaml.test.cjs`, the last
+checking 52 real workflow files against js-yaml.
+
+</details>
+
+**Rules** - what GitHub Actions workflows needed, for everyone.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/935e68dfdd">GitHub Actions workflows become Rules; Rules gain comments, cron and descriptions</a>. Thanks to xet7.</summary>
+
+Issue events become triggers. Label, close, reopen, comment, assign and
+create steps become actions, from the well-known actions or from `gh issue`
+commands, and `actions/stale` becomes an aging rule. A build, test or script
+is never run: such a workflow is a disabled rule with its YAML as its
+description. For this, WeKan's Rules gain several parts, available to every
+board:
+
+- a **commented on** trigger;
+- an **add comment** action, written as the person whose change ran the rule
+  and only where they may comment;
+- **cron schedules** in UTC (`models/lib/cronSchedule.js`);
+- a rule **description**, shown on the rule.
+
+Tests: `tests/githubActionsRules.test.cjs`, `tests/cronSchedule.test.cjs` and
+`tests/ruleCommentCron.test.cjs`.
+
+</details>
+
+**Optional APIs** - other trackers' clients, with WeKan as their backend.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/86ec72fade">Trello, Jira, GitHub and Gitea compatible APIs, off until an admin ticks them</a>. Thanks to xet7.</summary>
+
+Admin Panel → Settings → Visibility → **Optional APIs** turns on REST APIs
+in Trello's, Jira's, GitHub's and Gitea's shape (#4930), each described with
+the address a client uses. None has rights of its own: each translates a
+request into the matching request to WeKan's own REST API, made with the
+caller's WeKan token, so every WeKan permission applies unchanged. An API that
+is not ticked answers 404, and `WITH_API` turns them all off. Trello covers
+members, boards, lists, cards, labels, comments and checklists. In Jira a
+board is a project (the board key), a card is an issue (`DEV-7`), lists are
+statuses, and simple JQL works. In GitHub and Gitea a board is a repository and
+a card an issue, open or closed as in Version Control. Deleting archives. See
+[Optional APIs](docs/API/Optional-APIs.md). `tests/optionalApis.test.cjs`
+fails if any of them writes past WeKan's REST API.
+`server/lib/tests/compatApi.tests.js` runs them over real HTTP.
+
+</details>
+
+**Cards** - opening a card on a phone.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/326d9bbf61">A QR code of the card's link in the card menu</a>. Thanks to xet7.</summary>
+
+Card menu → **QR code** shows the card's link as a QR code, to open the card
+on a phone or tablet. It is drawn in the browser by WeKan's own encoder
+(`models/lib/qrCode.js`: byte mode, level M, versions 1–10), so the link is
+sent to no QR service. `tests/qrCode.test.cjs` checks the encoder module for
+module against qrcode-svg, which Meteor's accounts-2fa ships, and checks that
+no outside QR service is used anywhere.
+
+</details>
+
+**Platforms** - where WeKan runs.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b8d9cb2565">Android bundles for Termux, for all four Android CPUs</a>. Thanks to xet7.</summary>
+
+Every release that has wekan/node-patches' Android Node.js also has
+`wekan-<version>-android-arm64.zip`, `-x64`, `-armv7` and `-x86`, with
+FerretDB. Each is the release's Linux bundle rebuilt inside Termux's own
+image with that Node.js, checked against its SHA256: every native addon is
+built for it, and sharp against Termux's libvips. Before it is published,
+each addon's architecture is checked, sharp must load, and the bundle must
+start and answer HTTP 200. A CPU whose Android Node.js is not published yet
+is skipped and builds by itself once it is. `tests/androidBundles.test.cjs`
+covers the build and the workflow. See [Android](docs/Platforms/FOSS/OS/Android.md).
+
+</details>
+
+and fixes the following bugs:
+
+**Board keys** - how old boards get theirs.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d0378f33c2">Old boards get their keys in one pass, in seconds rather than hours</a>. Thanks to Raymond-Voogt and xet7.</summary>
+
+v12.41 gave each board without a key one at startup by re-reading every key
+of the instance per board. It also counted up from 2 again for every board
+sharing a title. That is quadratic: on 32,500 boards it ran for hours of slow
+queries. Now the keys in use are read once, the new ones are planned in
+memory, linearly, and written in batches, each only where the board still has
+no key. A single new board reads only the keys that could collide with it,
+through a new index. Tests: `tests/boardKeyBackfill.test.cjs` (32,500 boards
+planned well under a second) and `server/lib/tests/boardKeys.tests.js`.
+
+</details>
+
+**Rules** - when a rule runs.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/935e68dfdd">A disabled rule no longer runs on a schedule or from its button</a>. Thanks to xet7.</summary>
+
+Turning a rule off (#2322) stopped it only for card events: the scheduler and
+the rule's button ran it anyway, because neither looked at `enabled`. Both
+check it now. Imported GitHub Actions workflows rely on this, since a
+workflow that is code is imported disabled. Pinned by
+`tests/ruleCommentCron.test.cjs`.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
 
 # v12.41 2026-10-14 WeKan ® release
 

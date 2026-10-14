@@ -341,6 +341,13 @@ import '/server/publications/userDesktopDragHandles';
 import '/server/publications/userBoardView';
 import '/server/publications/users';
 import '/server/publications/trelloImportJobs';
+import '/server/publications/githubImportJobs';
+import '/server/githubOrgImport';
+// Optional APIs, off until ticked (models/lib/optionalApis.js): Trello, Jira,
+// GitHub and Gitea in front of WeKan's REST API.
+import '/server/compatApi/trello';
+import '/server/compatApi/jira';
+import '/server/compatApi/githubLike';
 
 // ----------------------------------------------------------------------------
 // 14. Server — routes (REST API, file serving)
@@ -356,6 +363,7 @@ import '/server/routes/exportAllBoards';
 import '/server/routes/inboundEmail';
 import '/server/emailToCard';
 import '/server/emailView';
+import '/server/versionControlView';
 import '/server/emailBounces';
 import '/server/lib/imapInbound';
 import '/server/sandstormEmail';

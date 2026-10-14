@@ -1631,6 +1631,322 @@
     {
       "key": "sandstorm-sync-granted",
       "since": "2026-10-14"
+    },
+    {
+      "key": "board-view-version-control",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "feature-views-version-control",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "feature-views-version-control-desc",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-issues",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-milestones",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-new-issue",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-submit-issue",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-open",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-closed",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-sort-created-desc",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-sort-created-asc",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-sort-updated-desc",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-sort-comments-desc",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-opened-by",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-comment-count",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-open-issues",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-due",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-no-due-date",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-no-issues",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-no-milestones",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-no-labels",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-no-files",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-no-description",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-none",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-leave-comment",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-close",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-reopen",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-open-card",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-issue-title-required",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-issue-title-too-long",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-issue-body-too-long",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-no-list",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "card-qr-code",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "card-qr-code-desc",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "card-qr-code-too-long",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-sync-now",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-synced-from",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-synced-issue",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "sync-issue-details",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "cardQrCodePopup-title",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "r-commented",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "r-add-comment",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "r-add-comment-placeholder",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "r-on-cron-schedule",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "r-for-cards-in-list",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "r-cron-invalid",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "rule-disabled",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-releases",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-wiki",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-wiki-pages",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-no-releases",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "vcs-no-wiki",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "github-org-import",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "github-org-import-desc",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "github-org-import-owner",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "github-org-import-token",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "github-org-import-token-hint",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "github-org-import-issues",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "github-org-import-releases",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "github-org-import-release-files",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "github-org-import-actions",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "github-org-import-wiki",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "github-org-import-forks",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "github-org-import-start",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "github-org-import-progress",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "github-org-import-result",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "github-org-import-owner-invalid",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "github-org-import-no-repos",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "github-org-import-running",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "optional-apis",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "optional-apis-desc",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "optional-api-trello",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "optional-api-trello-desc",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "optional-api-jira",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "optional-api-jira-desc",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "optional-api-github",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "optional-api-github-desc",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "optional-api-gitea",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "optional-api-gitea-desc",
+      "since": "2026-10-14"
     }
   ]
 }

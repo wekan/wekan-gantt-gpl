@@ -114,9 +114,11 @@ test('the board view menu, rows, moves and fallback skip what the instance disab
 });
 
 test('wiring: every place that draws or picks a board view asks the instance', () => {
-  assert.match(read('client/lib/utils.js'), /resolveBoardView\(board, stored, allowBoardView\)/);
+  // ...and the viewer, deliberately: a public board's visitors get its public
+  // views, its members its private ones (boardViewAudience).
+  assert.match(read('client/lib/utils.js'), /resolveBoardView\(board, stored, allowBoardView, Meteor\.userId\(\)\)/);
   assert.match(read('client/components/boards/boardHeader.js'),
-    /boardViewMenuEntries\(board, Utils\.boardView\(\), allowBoardView\)/);
+    /boardViewMenuEntries\(board, Utils\.boardView\(\), allowBoardView, Meteor\.userId\(\)\)/);
   const sidebar = read('client/components/sidebar/sidebar.js');
   assert.match(sidebar, /orderedBoardViews\(board\)\.filter\(v => allowBoardView\(v\.view\)\)/);
   // Negative, tree-wide: no client code draws the menu or resolves a view
@@ -138,7 +140,8 @@ test('wiring: every place that draws or picks a board view asks the instance', (
 test('storage: site admin only, published without secrets, pilots not writable by users', () => {
   const method = read('server/methods/instanceFeatures.js');
   assert.match(method, /async requireSiteAdmin\(\)|async function requireSiteAdmin\(\) \{\s*const user = await Meteor\.userAsync\(\);\s*if \(user\?\.isAdmin !== true\) throw/);
-  assert.equal((method.match(/await requireSiteAdmin\(\);/g) || []).length, 2, 'both methods check the admin');
+  // Three since saveOptionalApis joined the two feature methods: each checks.
+  assert.equal((method.match(/await requireSiteAdmin\(\);/g) || []).length, 3, 'every method checks the admin');
   assert.match(method, /featureSettingsModifier\(decisions\)/);
   assert.match(read('server/imports.js'), /import '\/server\/methods\/instanceFeatures';/);
   const settingsPub = read('server/publications/settings.js');
