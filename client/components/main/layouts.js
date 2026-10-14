@@ -3,6 +3,7 @@ import { TAPi18n } from '/imports/i18n';
 const { OAUTH_PROVIDERS, providerByKey } = require('/models/lib/oauthProviders');
 const { loginOriginMismatch, offersProviderLogin } = require('/models/lib/loginOriginMismatch');
 import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
+import { Accounts } from 'meteor/accounts-base';
 import Users from '/models/users';
 import { EscapeActions } from '/client/lib/escapeActions';
 import { enablePageDragscroll, disablePageDragscroll } from '/client/lib/pageDragscroll';
@@ -52,6 +53,16 @@ Template.userFormsLayout.onCreated(function () {
     require('/client/lib/sqrl').signInWithSqrlToken(sqrlToken)
       .then(() => FlowRouter.go('/'))
       .catch(() => templateInstance.sqrlMessage.set(TAPi18n.__('sqrl-sign-in-failed')));
+  }
+  // #5758: back from /sso/windows with a one-time token (server/windowsSso.js).
+  const windowsSsoToken = FlowRouter.getQueryParam('windowsSso');
+  if (windowsSsoToken && !Meteor.userId()) {
+    const failed = () => templateInstance.sqrlMessage.set(TAPi18n.__('windows-sso-failed'));
+    if (windowsSsoToken === 'failed') failed();
+    else {
+      Accounts.callLoginMethod({ methodArguments: [{ windowsSso: String(windowsSsoToken) }],
+        userCallback: error => (error ? failed() : FlowRouter.go('/')) });
+    }
   }
   // The ROOT_URL origin and this page's, when they differ and a provider
   // login is offered (models/lib/loginOriginMismatch.js).
@@ -294,6 +305,7 @@ Template.userFormsLayout.onDestroyed(function () {
 Template.userFormsLayout.helpers({
   passkeysSupported() { return require('/client/lib/passkeys').passkeysSupported(); },
   passkeyMessage() { return Template.instance().passkeyMessage.get(); },
+  windowsSsoOffered() { return Meteor.settings?.public?.windowsSsoEnabled === true; },
   sqrlOffered() { return require('/client/lib/sqrl').sqrlOffered(Template.instance().currentSetting.get()); },
   sqrlShown() { return Template.instance().sqrlShown.get(); },
   sqrlMessage() { return Template.instance().sqrlMessage.get(); },
@@ -553,10 +565,12 @@ function showLoginError(err) {
     return;
   }
   const reason = err.reason || err.message || '';
-  errorDiv.textContent =
-    err.error === 'oauth-account-conflict'
-      ? TAPi18n.__('oauth-account-conflict')
-      : reason || String(err.error || err);
+  // #2460: an account its member locked to SQRL says so in their language.
+  const translated = ['oauth-account-conflict', 'sqrl-only', 'sqrl-hardlock']
+    .find(key => err.error === key || reason === key);
+  errorDiv.textContent = translated
+    ? TAPi18n.__(translated)
+    : reason || String(err.error || err);
 }
 
 Template.defaultLayout.events({

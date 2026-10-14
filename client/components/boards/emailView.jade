@@ -24,14 +24,18 @@ template(name="emailView")
             li.email-view-folder(class="{{#if active}}is-active{{/if}}")
               a.js-email-folder(href="#" data-folder="{{id}}")
                 i.fa.fa-folder-o
-                span.email-view-folder-name {{title}}
+                span.email-view-folder-name
+                  +inlineViewer
+                    = title
         if labelFolders.length
           li.email-view-folder-heading {{_ 'labels'}}
           each labelFolders
             li.email-view-folder(class="{{#if active}}is-active{{/if}}")
               a.js-email-folder(href="#" data-folder="{{id}}")
                 span.email-view-label-dot(class="{{labelColorClass color}}" style="{{labelColorStyle color}}")
-                span.email-view-folder-name {{name}}
+                span.email-view-folder-name
+                  +inlineViewer
+                    = name
     .email-view-main
       unless receiving
         p.quiet.email-view-hint {{_ 'email-view-not-receiving'}}
@@ -44,12 +48,20 @@ template(name="emailViewRow")
       if outgoing
         span.quiet {{_ 'email-view-to'}}&nbsp;
       | {{sender}}
+    //- Markdown, like every card title and description in WeKan: the viewer
+      honours the Admin Panel's security settings for links and code.
     td.email-view-subject
-      span.email-view-subject-title {{title}}
+      .email-view-subject-title
+        +viewer
+          = title
       if snippet
-        span.email-view-snippet  - {{snippet}}
+        .email-view-snippet
+          +viewer
+            = snippet
       each labels
-        span.card-label.email-view-row-label(class="{{labelColorClass color}}" style="{{labelColorStyle color}}" title=name) {{name}}
+        span.card-label.email-view-row-label(class="{{labelColorClass color}}" style="{{labelColorStyle color}}" title=name)
+          +inlineViewer
+            = name
       a.email-view-reply.js-email-reply(href="#" title="{{_ 'email-view-reply'}}" data-card-id="{{_id}}")
         i.fa.fa-reply
     td.email-view-date {{date}}

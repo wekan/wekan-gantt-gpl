@@ -133,12 +133,44 @@ test.describe('Email view', () => {
     }
   });
 
+  test('a row renders its subject and preview as Markdown, like every card title in WeKan', async ({ boardPage: page, board }) => {
+    const restore = enableInbound();
+    try {
+      db.updateOne('boards', { _id: board.boardId }, { $set: { emailToCard: { enabled: true, listId: board.listIds[0] } } });
+      const alpha = db.findOne('cards', { boardId: board.boardId, title: 'Alpha Card' });
+      db.updateOne('cards', { _id: alpha._id }, { $set: {
+        title: '# Alpha **bold** card',
+        description: 'From: Sam Sender <sam@example.test>\n\nSee [the docs](https://example.org/docs) and **this**.',
+        receivedAt: new Date(),
+        email: { direction: 'in', from: { name: 'Sam Sender', address: 'sam@example.test' }, to: [], cc: [],
+          subject: 'Alpha', messageId: '<md1@example.test>', threadIds: ['<md1@example.test>'], at: new Date() },
+      } });
+      await openView(page, board, 'board-view-email');
+      const row = page.locator('.email-view-row', { hasText: 'Alpha' });
+      await expect(row.locator('.email-view-subject-title strong')).toHaveText('bold');
+      await expect(row.locator('.email-view-snippet a[href="https://example.org/docs"]')).toHaveText('the docs');
+      await expect(row.locator('.email-view-snippet strong')).toHaveText('this');
+      // Negative: no Markdown shown as text, and the sender line is not in the preview.
+      for (const cell of ['.email-view-subject-title', '.email-view-snippet']) {
+        const text = await row.locator(cell).innerText();
+        expect(text).not.toMatch(/\*\*|^#|\]\(/m);
+      }
+      await expect(row.locator('.email-view-snippet')).not.toContainText('From:');
+    } finally { restore(); }
+  });
+
   test('says where to turn email on when the board does not receive it', async ({ boardPage: page, board }) => {
     await openView(page, board, 'board-view-email');
     await expect(page.locator('.email-view-hint')).toContainText('does not receive email yet');
     await expect(page.locator('.email-view .js-email-compose')).toBeVisible();
   });
 });
+
+// Load the Chat view again, so the channel tree is fetched afresh.
+async function view_reload(page, board) {
+  await page.reload();
+  await openView(page, board, 'board-view-chat');
+}
 
 test.describe('Chat view', () => {
   test('tree, card and chat; send a message; fold and resize saved on the profile', async ({ boardPage: page, board, user }) => {
@@ -265,6 +297,57 @@ test.describe('Chat view', () => {
       .dragTo(tree.locator(`[data-kind="swimlane"][data-id="${board.swimlaneId}"] > .chat-view-row`));
     await page.waitForTimeout(500);
     expect(db.findOne('cards', { _id: beta._id }).listId).toBe(beta.listId);
+  });
+
+  test('channels: folding rows stay in the view, a first message moves a board up, unread counts, Markdown names', async ({ boardPage: page, board, user }) => {
+    const other = db.seedBoard({ ownerId: user.id, title: 'Quiet **board** :tada:', cardTitlesPerList: [['Talk here']] });
+    const friend = db.seedUser();
+    try {
+      await openView(page, board, 'board-view-chat');
+      const tree = page.locator('.chat-view-tree');
+      // Nothing said anywhere yet: both boards are under Other boards.
+      const heading = tree.locator('.chat-view-node-heading');
+      await expect(heading).toBeVisible();
+      const quiet = tree.locator(`[data-kind="board"][data-id="${other.boardId}"]`);
+      await expect(quiet).toBeVisible();
+      // Its name is Markdown: bold and an emoji, no ** shown.
+      await expect(quiet.locator(':scope > .chat-view-row strong')).toHaveText('board');
+      expect(await quiet.locator(':scope > .chat-view-row').innerText()).not.toContain('**');
+      // Clicking a board folds and unfolds it here; the page stays on this board in the Chat view.
+      const url = page.url();
+      await quiet.locator(':scope > .chat-view-row').click();
+      await expect(quiet).toHaveClass(/is-open/);
+      await expect(quiet).toHaveAttribute('aria-expanded', 'true');
+      await expect(quiet.getByText('Talk here', { exact: true })).toBeVisible();
+      expect(page.url()).toBe(url);
+      await expect(page.locator('.chat-view')).toBeVisible();
+      await quiet.locator(':scope > .chat-view-row').click();
+      await expect(quiet).not.toHaveClass(/is-open/);
+      // Somebody else writes on that board: it moves up out of Other boards,
+      // with one unread message on every level down to the card.
+      const talk = db.findOne('cards', { boardId: other.boardId, title: 'Talk here' });
+      db.insertOne('card_comments', { _id: db.uid('cmt'), boardId: other.boardId, cardId: talk._id, userId: friend.id,
+        text: 'Hello', createdAt: new Date(), modifiedAt: new Date() });
+      await page.evaluate(() => new Promise(resolve => Meteor.call('chatViewChannels', () => resolve())));
+      await view_reload(page, board);
+      const moved = page.locator(`.chat-view-tree [data-kind="board"][data-id="${other.boardId}"]`);
+      await expect(moved.locator(':scope > .chat-view-row .chat-view-unread')).toHaveText('1');
+      const before = await moved.evaluate(el => {
+        const h = el.parentElement.querySelector('.chat-view-node-heading');
+        return !h || (el.compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+      });
+      expect(before).toBe(true);
+      await moved.locator(':scope > .chat-view-row').click();
+      await expect(moved.locator('[data-kind="card"] .chat-view-unread')).toHaveText('1');
+      // Negative: my own message is never unread to me.
+      db.insertOne('card_comments', { _id: db.uid('cmt'), boardId: other.boardId, cardId: talk._id, userId: user.id,
+        text: 'Mine', createdAt: new Date(), modifiedAt: new Date() });
+      await view_reload(page, board);
+      await expect(page.locator(`.chat-view-tree [data-kind="board"][data-id="${other.boardId}"] > .chat-view-row .chat-view-unread`)).toHaveText('1');
+    } finally {
+      db.deleteMany('card_comments', { boardId: other.boardId });
+      db.cleanup({ boardIds: [other.boardId], userIds: [friend.id] });
+    }
   });
 
   test('right to left: the panes are mirrored', async ({ boardPage: page, board }) => {

@@ -383,6 +383,9 @@ import '/server/caldavSync';
 import '/server/sharedDescription';
 // #2460: SQRL sign-in.
 import '/server/sqrl';
+import '/server/windowsSso';
+import '/server/apiImport';
+import '/server/chatView';
 
 // ----------------------------------------------------------------------------
 // 14. Server — routes (REST API, file serving)
