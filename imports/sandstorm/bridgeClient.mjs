@@ -23,6 +23,9 @@ import { Identity, Identity$Client, Identity_PowerboxTag, Profile_Pronouns } fro
 import { StaticAsset_Protocol } from './capnp/util.mjs';
 import { PowerboxDescriptor } from './capnp/powerbox.mjs';
 import { BridgeConfig } from './capnp/package.mjs';
+import { ApiSession$Client, ApiSession_PowerboxTag } from './capnp/api-session.mjs';
+import { HackSessionContext$Client } from './capnp/hack-session.mjs';
+import { EmailSendPort$Client, EmailMessage } from './capnp/email.mjs';
 
 export const SANDSTORM_API_SOCKET = '/tmp/sandstorm-api';
 
@@ -127,6 +130,38 @@ export function parseIdentityRequestPermissions(descriptorBase64) {
   return permissions;
 }
 
+// The Powerbox query for an external HTTP API (an ApiSession) at canonicalUrl:
+// a PowerboxDescriptor with one tag, ApiSession's type id, whose value is an
+// ApiSession.PowerboxTag. Packed and base64'd the way the shell wants it, with
+// '/' and '+' replaced as for the identity descriptor in /sandstorm.js. The
+// client embeds the result as a constant; tests/sandstormApiEgress.test.cjs
+// rebuilds it here so the two cannot drift.
+export function apiSessionDescriptor(canonicalUrl) {
+  if (!/^https?:\/\/[^/]+(\/.*[^/])?$/.test(canonicalUrl)) {
+    throw new Error('canonicalUrl must be an http(s) URL without a trailing slash');
+  }
+  const message = new Message();
+  const descriptor = message.initRoot(PowerboxDescriptor);
+  const tag = descriptor._initTags(1).get(0);
+  tag.id = ApiSession$Client.interfaceId;
+  const value = new Message().initRoot(ApiSession_PowerboxTag);
+  value.canonicalUrl = canonicalUrl;
+  tag.value = value;
+  return Buffer.from(message.toPackedArrayBuffer()).toString('base64')
+    .replace(/\//g, '_').replace(/\+/g, '-');
+}
+
+// The other direction, for the tests: which ApiSession URL a descriptor asks for.
+export function parseApiSessionDescriptor(descriptorBase64) {
+  const bytes = Buffer.from(descriptorBase64.replace(/_/g, '/').replace(/-/g, '+'), 'base64');
+  const descriptor = new Message(toArrayBuffer(bytes), true).getRoot(PowerboxDescriptor);
+  const tag = descriptor.tags.get(0);
+  return {
+    tagId: tag.id,
+    canonicalUrl: utils.getAs(ApiSession_PowerboxTag, tag.value).canonicalUrl,
+  };
+}
+
 async function sessionContext(bridge, sessionId) {
   const { context } = await bridge.getSessionContext((p) => { p.id = sessionId; }).promise();
   return context;
@@ -213,4 +248,93 @@ function enumName(values, n) {
 
 function toArrayBuffer(bytes) {
   return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+}
+
+// --- Grain email (sandstorm src/sandstorm/hack-session.capnp, email.capnp) ---
+//
+// A grain's session context is also a HackSessionContext and an
+// EmailSendPort: getPublicId() gives the grain its own address,
+// <publicId>@<hostname> (assigned on the first call - until then the grain
+// has none), and send() mails through the server's SMTP, From the grain's
+// address or the user's verified one, at most 20 recipients a message.
+// Mail TO the grain is written by the bridge as Maildir files under
+// /var/mail (server/sandstormEmail.js reads them).
+
+// A session context to keep: unlike claimIdentity's, this one is NOT
+// released, so notifications can still be sent after that browser tab has
+// gone (the shell does not revoke it; it lasts until the grain restarts).
+export async function retainSessionContext(bridge, sessionId) {
+  return sessionContext(bridge, sessionId);
+}
+
+export async function grainPublicId(context) {
+  const hack = new HackSessionContext$Client(context.client);
+  const r = await hack.getPublicId(() => {}).promise();
+  return { publicId: r.publicId, hostname: r.hostname, isDemoUser: r.isDemoUser };
+}
+
+const MAX_RECIPIENTS = 20;
+
+function setAddress(struct, { address = '', name = '' } = {}) {
+  struct.address = address;
+  if (name) struct.name = name;
+}
+
+// Fill an EmailMessage from { from, to, cc, bcc, replyTo, subject, text, html,
+// messageId, inReplyTo, references, date, attachments: [{ filename,
+// contentType, content, cid }] }, addresses as { address, name }. Throws when
+// the recipients are over Sandstorm's limit, which the shell would refuse.
+export function fillEmailMessage(email, message) {
+  const lists = ['to', 'cc', 'bcc'].map((k) => (Array.isArray(message[k]) ? message[k] : []));
+  if (lists.reduce((n, l) => n + l.length, 0) > MAX_RECIPIENTS) {
+    throw new Error(`Sandstorm sends to at most ${MAX_RECIPIENTS} recipients a message`);
+  }
+  const date = message.date instanceof Date ? message.date : new Date();
+  email.date = BigInt(date.getTime()) * 1000000n;
+  if (message.from && message.from.address) setAddress(email._initFrom(), message.from);
+  const [to, cc, bcc] = lists;
+  [[to, (n) => email._initTo(n)], [cc, (n) => email._initCc(n)], [bcc, (n) => email._initBcc(n)]]
+    .forEach(([list, init]) => {
+      if (!list.length) return;
+      const out = init(list.length);
+      list.forEach((a, i) => setAddress(out.get(i), a));
+    });
+  if (message.replyTo && message.replyTo.address) setAddress(email._initReplyTo(), message.replyTo);
+  if (message.messageId) email.messageId = message.messageId;
+  for (const [key, init] of [['references', (n) => email._initReferences(n)], ['inReplyTo', (n) => email._initInReplyTo(n)]]) {
+    const ids = Array.isArray(message[key]) ? message[key] : (message[key] ? [message[key]] : []);
+    if (ids.length) {
+      const out = init(ids.length);
+      ids.forEach((id, i) => out.set(i, String(id)));
+    }
+  }
+  email.subject = message.subject || '';
+  if (message.text) email.text = message.text;
+  if (message.html) email.html = message.html;
+  const attachments = Array.isArray(message.attachments) ? message.attachments.filter((a) => a && a.content) : [];
+  if (attachments.length) {
+    const out = email._initAttachments(attachments.length);
+    attachments.forEach((a, i) => {
+      const bytes = Buffer.isBuffer(a.content) ? a.content : Buffer.from(String(a.content));
+      const att = out.get(i);
+      att.contentType = a.contentType || 'application/octet-stream';
+      att.contentDisposition = a.cid ? `inline; filename="${a.filename || 'file'}"`
+        : `attachment; filename="${a.filename || 'file'}"`;
+      if (a.cid) att.contentId = `<${a.cid}>`;
+      att._initContent(bytes.length).copyBuffer(bytes);
+    });
+  }
+  return email;
+}
+
+export async function sendGrainEmail(context, message) {
+  const port = new EmailSendPort$Client(context.client);
+  await port.send((p) => { fillEmailMessage(p._initEmail(), message); }).promise();
+}
+
+// For the tests: an EmailMessage built in its own message, read back.
+export function emailMessageRoundTrip(message) {
+  const m = new Message();
+  fillEmailMessage(m.initRoot(EmailMessage), message);
+  return new Message(m.toArrayBuffer(), false).getRoot(EmailMessage);
 }

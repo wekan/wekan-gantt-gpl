@@ -83,6 +83,28 @@ const isEnglishVariant = code => /^en([_-].*)?$/.test(code) || code === 'en';
 // needs a different word. Keep those exceptions per locale; putting them in the
 // source-wide list would hide real work in every language.
 const LOCALE_INVARIANTS = {
+  // Southern Sotho retains the legends printed on physical keyboard keys.
+  st: new Set(Object.entries({
+    "blockly-ALT_KEY": "Alt",
+    "blockly-BACKSPACE_KEY": "Backspace",
+    "blockly-CAPS_LOCK_KEY": "Caps Lock",
+    "blockly-COMMAND_KEY": "Command",
+    "blockly-CONTEXT_MENU_KEY": "≣ Menu",
+    "blockly-CONTROL_KEY": "Control",
+    "blockly-END_KEY": "End",
+    "blockly-ENTER_KEY": "Enter",
+    "blockly-ESCAPE": "Escape",
+    "blockly-HOME_KEY": "Home",
+    "blockly-INSERT_KEY": "Insert",
+    "blockly-OPTION_KEY": "Option",
+    "blockly-PAGE_DOWN_KEY": "Page Down",
+    "blockly-PAGE_UP_KEY": "Page Up",
+    "blockly-PAUSE_KEY": "Pause",
+    "blockly-SHIFT_KEY": "Shift",
+    "blockly-SPACE_KEY": "Space",
+    "blockly-TAB_KEY": "Tab"
+}).filter(([key, value]) => en[key] === value).map(([key]) => key)),
+
   // Hawaiian keeps the legends printed on physical keyboard keys. Match the
   // exact English label so a future change to explanatory prose is not exempt.
   haw: new Set(Object.entries({
@@ -153,7 +175,7 @@ const LOCALE_INVARIANTS = {
   // Mongolian retains physical key legends, platform names and code notation.
   mn: new Set(["blockly-ALT_KEY", "blockly-BACKSPACE_KEY", "blockly-CAPS_LOCK_KEY", "blockly-CHROME_OS", "blockly-COMMAND_KEY", "blockly-CONTROL_KEY", "blockly-END_KEY", "blockly-ENTER_KEY", "blockly-ESCAPE", "blockly-HOME_KEY", "blockly-INSERT_KEY", "blockly-LINUX", "blockly-LOGIC_NULL", "blockly-MAC_OS", "blockly-MATH_TRIG_ACOS", "blockly-MATH_TRIG_ASIN", "blockly-MATH_TRIG_ATAN", "blockly-MATH_TRIG_COS", "blockly-MATH_TRIG_SIN", "blockly-MATH_TRIG_TAN", "blockly-OPTION_KEY", "blockly-PAGE_DOWN_KEY", "blockly-PAGE_UP_KEY", "blockly-PAUSE_KEY", "blockly-SHIFT_KEY", "blockly-SPACE_KEY", "blockly-TAB_KEY", "blockly-WINDOWS"]),
   // Latin retains keyboard legends, brands, code symbols and shared Latin terms.
-  la: new Set(["blockly-ALT_KEY", "blockly-ARIA_TYPE_FIELD_COLOUR", "blockly-BACKSPACE_KEY", "blockly-CAPS_LOCK_KEY", "blockly-CHROME_OS", "blockly-COLOUR_BLEND_RATIO", "blockly-COMMAND_KEY", "blockly-CONTROL_KEY", "blockly-ENTER_KEY", "blockly-ESCAPE", "blockly-HOME_KEY", "blockly-INPUT_LABEL_MATH_DIVISOR", "blockly-INPUT_LABEL_NUMBER_MAX", "blockly-INPUT_LABEL_NUMBER_MIN", "blockly-INSERT_KEY", "blockly-LINUX", "blockly-LOGIC_NULL", "blockly-MAC_OS", "blockly-MATH_ADDITION_SYMBOL_ARIA", "blockly-MATH_ONLIST_OPERATOR_MAX_ARIA", "blockly-MATH_ONLIST_OPERATOR_MIN_ARIA", "blockly-MATH_SUBTRACTION_SYMBOL_ARIA", "blockly-MATH_TRIG_ACOS", "blockly-MATH_TRIG_ASIN", "blockly-MATH_TRIG_ATAN", "blockly-MATH_TRIG_COS", "blockly-MATH_TRIG_SIN", "blockly-MATH_TRIG_TAN", "blockly-OPTION_KEY", "blockly-PAGE_DOWN_KEY", "blockly-PAGE_UP_KEY", "blockly-PAUSE_KEY", "blockly-SHIFT_KEY", "blockly-SPACE_KEY", "blockly-TAB_KEY", "blockly-WINDOWS"]),
+  la: new Set([...(en.error === 'Error' ? ['error'] : []), ...(en['problems-status-title'] === 'Status' ? ['problems-status-title'] : []), ...(en['migration-progress-status'] === 'Status' ? ['migration-progress-status'] : []), ...(en['accounts-lockout-status'] === 'Status' ? ['accounts-lockout-status'] : []), ...(en['move-progress-resume'] === 'Resume' ? ['move-progress-resume'] : []), ...(en['remove-btn'] === 'Remove' ? ['remove-btn'] : []), ...(en['map-region-asia'] === 'Asia' ? ['map-region-asia'] : []), ...(en['dependency-color'] === 'Color' ? ['dependency-color'] : []), ...(en['allboards.workspace-color'] === 'Color' ? ['allboards.workspace-color'] : []), ...(en['r-remove'] === 'Remove' ? ['r-remove'] : []), ...(en['predicate-selector'] === 'selector' ? ['predicate-selector'] : []), "blockly-ALT_KEY", "blockly-ARIA_TYPE_FIELD_COLOUR", "blockly-BACKSPACE_KEY", "blockly-CAPS_LOCK_KEY", "blockly-CHROME_OS", "blockly-COLOUR_BLEND_RATIO", "blockly-COMMAND_KEY", "blockly-CONTROL_KEY", "blockly-ENTER_KEY", "blockly-ESCAPE", "blockly-HOME_KEY", "blockly-INPUT_LABEL_MATH_DIVISOR", "blockly-INPUT_LABEL_NUMBER_MAX", "blockly-INPUT_LABEL_NUMBER_MIN", "blockly-INSERT_KEY", "blockly-LINUX", "blockly-LOGIC_NULL", "blockly-MAC_OS", "blockly-MATH_ADDITION_SYMBOL_ARIA", "blockly-MATH_ONLIST_OPERATOR_MAX_ARIA", "blockly-MATH_ONLIST_OPERATOR_MIN_ARIA", "blockly-MATH_SUBTRACTION_SYMBOL_ARIA", "blockly-MATH_TRIG_ACOS", "blockly-MATH_TRIG_ASIN", "blockly-MATH_TRIG_ATAN", "blockly-MATH_TRIG_COS", "blockly-MATH_TRIG_SIN", "blockly-MATH_TRIG_TAN", "blockly-OPTION_KEY", "blockly-PAGE_DOWN_KEY", "blockly-PAGE_UP_KEY", "blockly-PAUSE_KEY", "blockly-SHIFT_KEY", "blockly-SPACE_KEY", "blockly-TAB_KEY", "blockly-WINDOWS"]),
   // Haitian Creole retains keyboard legends, OS brands and programming symbols.
   ht: new Set(["blockly-ALT_KEY", "blockly-BACKSPACE_KEY", "blockly-CAPS_LOCK_KEY", "blockly-CHROME_OS", "blockly-COMMAND_KEY", "blockly-CONTROL_KEY", "blockly-ENTER_KEY", "blockly-ESCAPE", "blockly-HOME_KEY", "blockly-INSERT_KEY", "blockly-LINUX", "blockly-LOGIC_NULL", "blockly-MAC_OS", "blockly-MATH_TRIG_ACOS", "blockly-MATH_TRIG_ASIN", "blockly-MATH_TRIG_ATAN", "blockly-MATH_TRIG_COS", "blockly-MATH_TRIG_SIN", "blockly-MATH_TRIG_TAN", "blockly-OPTION_KEY", "blockly-PAGE_DOWN_KEY", "blockly-PAGE_UP_KEY", "blockly-PAUSE_KEY", "blockly-SHIFT_KEY", "blockly-SPACE_KEY", "blockly-TAB_KEY", "blockly-WINDOWS"]),
   // Uzbek retains physical key legends, OS brands, null and trigonometric symbols.
@@ -357,6 +379,43 @@ const LOCALE_INVARIANTS = {
 
   // Corsican retains these printed key legends, product names and math symbols.
   'co': new Set([
+    'blockly-OPTION_KEY',
+    'blockly-PAGE_DOWN_KEY',
+    'blockly-PAGE_UP_KEY',
+    'blockly-PAUSE_KEY',
+    'blockly-SHIFT_KEY',
+    'blockly-SPACE_KEY',
+
+    'blockly-BACKSPACE_KEY',
+    'blockly-CAPS_LOCK_KEY',
+    'blockly-CONTROL_KEY',
+    'blockly-END_KEY',
+    'blockly-ENTER_KEY',
+    'blockly-ESCAPE',
+    'blockly-HOME_KEY',
+    'blockly-INSERT_KEY',
+
+    'gridfs-storage',
+    's3-storage',
+    'move-storage-azure',
+    'move-storage-gcs',
+    'azure-blob-storage',
+    'azure-blob-storage-description',
+    'gcs-storage',
+    'gcs-storage-description',
+    'move-storage-collectionfs',
+    'move-storage-gridfs',
+    'move-storage-s3',
+    'move-scope',
+    'stats-collectionfs',
+    'stats-mongo-files',
+    'mongodb-compact',
+    'apiReportTitle',
+    'api-endpoint',
+    'excel-font',
+    'map-region-usa',
+    'map-region-asia',
+    'pomodoro',
     'blockly-ALT_KEY',
     'blockly-CHROME_OS',
     'blockly-COMMAND_KEY',
@@ -1070,12 +1129,11 @@ const reviewedSourceTerms = new Set((readJson(
 // sentence containing an application placeholder is still translatable.
 const isInvariantSource = value => {
   if (!/\p{Letter}/u.test(value)) return true;
-  if (value.replace(/[^\p{Letter}]/gu, '').length < 3) return true;
   const withoutPlaceholders = value.replace(/__[a-zA-Z0-9_-]+__/g, '');
   if (!/\p{Letter}/u.test(withoutPlaceholders)) return true;
   if (/^(?:YYYY-MM-DD|DD-MM-YYYY|MM-DD-YYYY)$/.test(value)) return true;
   if (/^https?:\/\/\S+$/.test(value)) return true; // example/placeholder URLs stay identical in every locale
-  return /^(Meteor|Node|MongoDB.*|OAuth2|LDAP|CAS|GridFS|Arial|Gantt|Frappe Gantt|DHTMLX Gantt|S3.*|CollectionFS|Google Cloud Storage\.?|Azure Blob.*|Meteor-Files|Microsoft Azure Blob Storage\.?|MongoDB Compact|Bytes|URL|Logo|Cron|OS|Platform|USA|Asia|OK|Planning Poker|API|Bigboard|Google|GitHub|Facebook|X \(Twitter\)|Meteor Developer|Weibo|Meetup)$/.test(value);
+  return /^(Meteor|Node|MongoDB|MongoDB CollectionFS|MongoDB Meteor-Files|OAuth2|LDAP|CAS|GridFS|Arial|Gantt|Frappe Gantt|DHTMLX Gantt|S3|S3\/MinIO|CollectionFS|Google Cloud Storage\.?|Azure Blob|Azure Blob Storage|Meteor-Files|Microsoft Azure Blob Storage\.?|MongoDB Compact|Bytes|URL|Logo|Cron|OS|Platform|USA|Asia|OK|Planning Poker|API|Bigboard|Google|GitHub|Facebook|X \(Twitter\)|Meteor Developer|Weibo|Meetup)$/.test(value);
 };
 // Keys added in English on purpose while they wait for Transifex
 // (pending-transifex.json, written by add-pending-keys.mjs). A locale value
@@ -1086,6 +1144,22 @@ const isInvariantSource = value => {
 const pendingTransifex = new Set(((readJson('releases/translations/pending-transifex.json') || {}).keys || [])
   .filter(row => row && typeof row.key === 'string' && row.key in en)
   .map(row => row.key));
+
+// Only these reviewed short symbols are language-independent; short prose is not.
+const SHORT_TECHNICAL_VALUES = {
+  "list-label-short-modifiedAt": "(L)",
+  "list-label-short-title": "(N)",
+  "list-label-short-sort": "(M)",
+  "attachment-limit-unit-gb": "GB",
+  "attachment-limit-unit-mb": "MB",
+  "operator-board-abbrev": "b",
+  "operator-swimlane-abbrev": "s",
+  "operator-list-abbrev": "l",
+  "operator-member-abbrev": "m",
+  "operator-assignee-abbrev": "a",
+  "blockly-MATH_CONSTANT_E_ARIA": "e",
+  "blockly-MATH_CONSTANT_PI_ARIA": "pi"
+};
 
 // Blockly's operating-system names and compact mathematical/code symbols are
 // valid as written in any locale. Match BOTH key and value: their explanatory
@@ -1104,8 +1178,23 @@ const BLOCKLY_TECHNICAL_VALUES = {
   'blockly-MATH_TRIG_SIN': 'sin',
   'blockly-MATH_TRIG_TAN': 'tan',
 };
+// Reviewed ordinary words shared with English. Restrict by locale, key and
+// exact source value: a longer replacement sentence must remain translatable.
+const SHARED_SOURCE_WORDS = {
+  ...Object.fromEntries(['es', 'es-AR', 'es-CL', 'es-CO', 'es_CO', 'es-LA',
+    'es-MX', 'es-PE', 'es-PY', 'it'].map(code => [code, { no: 'No' }])),
+  ...Object.fromEntries(['nl', 'nl-NL'].map(code => [code, { 'r-is': 'is' }])),
+  ...Object.fromEntries(['af', 'af_ZA'].map(code => [code,
+    { 'r-is': 'is', 'blockly-LISTS_SET_INDEX_INPUT_TO': 'as' }])),
+};
+const isSharedSourceWord = (code, key) =>
+  Object.hasOwn(SHARED_SOURCE_WORDS[code] || {}, key)
+  && SHARED_SOURCE_WORDS[code][key] === en[key];
+
 const isInvariantForLocale = (code, key) =>
-  BLOCKLY_TECHNICAL_VALUES[key] === en[key]
+  SHORT_TECHNICAL_VALUES[key] === en[key]
+  || BLOCKLY_TECHNICAL_VALUES[key] === en[key]
+  || isSharedSourceWord(code, key)
   || isInvariantSource(en[key]) || Boolean(LOCALE_INVARIANTS[code]?.has(key)) || reviewedSourceTerms.has(`${code}:${key}`);
 
 function langFile(code) { return path.join(DATA_DIR, `${code}.i18n.json`); }

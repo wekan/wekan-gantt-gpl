@@ -194,3 +194,70 @@ assert.match(swedishDelivery['r-wrike-workflow-note'], /egna automatiseringsregl
 assert.ok(swedishDelivery['r-wrike-workflow-note'].includes('GET /workflows'));
 assert.ok(swedishDelivery['webhook-payload-field-standard'].includes('WEBHOOKS_ATTRIBUTES'));
 assert.notEqual(swedishDelivery['subtask-mark-done'], swedishDelivery['subtask-mark-not-done']);
+
+for (const key of ['attach-card', 'attachCardPopup-title', 'attach-card-hint', 'attached-card-unavailable', 'detach-card', 'attach-card-self', 'attach-card-limit', 'attach-card-not-found', 's3-file-id']) {
+  const source = JSON.parse(fs.readFileSync(path.join(root, 'imports/i18n/data/en.i18n.json'), 'utf8'));
+  assert.notEqual(locales.ig[key], source[key], key);
+}
+assert.match(locales.ig['attach-card-hint'], /njikọ kaadị.*aha kaadị.*bọọdụ a/);
+assert.match(locales.ig['attach-card-self'], /Enweghị ike.*onwe ya/);
+assert.match(locales.ig['attach-card-not-found'], /Achọtaghị.*ị nwere ike ịhụ/);
+assert.match(locales.ig['attached-card-unavailable'], /na-enweghị ike ịhụ/);
+assert.match(locales.ig['attach-card-limit'], /ọnụ ọgụgụ.*kachasị/);
+assert.doesNotMatch(locales.ig['detach-card'], /Hichapụ/);
+assert.equal(locales.ig['s3-file-id'], 'Njirimara faịlụ S3');
+
+assert.equal(locales.ig['custom-fields'], 'Oghere ahaziri');
+assert.doesNotMatch(locales.ig['custom-fields'], /Omenala/);
+assert.match(locales.ig['custom-field-link-both'], /Ụzọ abụọ.*nke ọzọ/);
+assert.match(locales.ig['custom-field-link-send'], /Otu ụzọ.*kaadị bụ isi/);
+assert.match(locales.ig['custom-field-links-hint'], /otu aha na ụdị.*A naghị agbanwe.*naanị na otu kaadị/);
+assert.match(locales.ig['custom-field-link-inactive'], /enweghịzi ike idezi kaadị abụọ.*ebe nchekwa/);
+assert.match(locales.ig['field-link-not-allowed'], /Ị ga-enwe ike idezi kaadị abụọ/);
+assert.match(locales.ig['field-link-self'], /Enweghị ike.*onwe ya/);
+assert.match(locales.ig['field-link-archived'], /Enweghị ike.*ebe nchekwa/);
+assert.notEqual(locales.ig['custom-field-link-sends'], locales.ig['custom-field-link-receives']);
+assert.match(locales.ig['board-announcement-enabled'], /onye ọ bụla.*bọọdụ a/);
+assert.match(locales.ig['cards-use-list-color'], /na-enweghị agba nke ha/);
+
+const igboImportFormats = ['opml', 'orgmode', 'meistertask', 'obsidian', 'linear', 'ticktick', 'clickup', 'nullboard', 'kanri', 'pivotal'];
+for (const format of igboImportFormats) {
+  const guide = locales.ig[`import-board-instruction-${format}`];
+  assert.doesNotMatch(guide, /Top-level|become lists|then paste|In [A-Z]/);
+  assert.match(guide, /ndepụta|kaadị/);
+}
+assert.match(locales.ig['import-board-instruction-orgmode'], /TODO na DONE.*SCHEDULED, DEADLINE na CLOSED/);
+assert.match(locales.ig['import-board-instruction-meistertask'], /ọrụ emechara.*ụbọchị e mechara/);
+assert.match(locales.ig['import-board-instruction-nullboard'], /akara raw.*bọọdụ mbụ/);
+assert.match(locales.ig['import-board-instruction-kanri'], /data niile.*bọọdụ mbụ/);
+assert.match(locales.ig['import-board-instruction-clickup'], /kọlụm niile/);
+
+for (const format of ['tasksorg', 'monday', 'superproductivity', 'taiga', 'vikunja', 'quire', 'wrike', 'teamwork', 'businessmap', 'redmine', 'notion', 'plane']) {
+  assert.match(locales.ig[`import-board-instruction-${format}`], /^Na /);
+  assert.doesNotMatch(locales.ig[`import-board-instruction-${format}`], /then paste|become lists|Attachments are not imported/);
+}
+for (const format of ['taiga', 'vikunja']) assert.match(locales.ig[`import-board-instruction-${format}`], /A naghị ebubata mgbakwunye/);
+assert.match(locales.ig['import-board-instruction-businessmap'], /Title, Column, Lane, Owner, Deadline.*Bekee/);
+assert.match(locales.ig['import-board-instruction-redmine'], /Bekee.*tupu mbupụ/);
+assert.match(locales.ig['import-board-instruction-teamwork'], /--, ##.*>>.*ọkwa/);
+assert.match(locales.ig['import-board-instruction-notion'], /Status.*kọlụm mbụ.*akụkọ mbubata.*A naghị ebubata mmekọrịta, onyonyo na mgbakwunye/);
+assert.match(locales.ig['import-board-instruction-plane'], /enweghị nkọwa ọdịnaya ma ọ bụ mgbakwunye/);
+
+assert.match(locales.ig['import-members-mode-placeholder'], /aha nke ha.*ndị ọrụ n’ezie ma emechaa/);
+assert.notEqual(locales.ig['import-members-mode-map'], locales.ig['import-members-mode-me']);
+assert.match(locales.ig['csv-mapping-description'], /gbanwee.*adịghị na faịlụ/);
+assert.match(locales.ig['csv-mapping-list-required'], /aha ndepụta.*ma ọ bụ họrọ kọlụm/);
+assert.equal(locales.ig['csv-mapping-column-number'], 'Kọlụm __number__');
+assert.match(locales.ig['import-many-boards-hint'], /faịlụ ọ bụla.*na-enweghị ijikọ.*bụ otu bọọdụ.*kama ọdịnaya oghere dị n’elu/);
+assert.match(locales.ig['import-many-progress'], /__done__.*__total__.*__name__/);
+assert.match(locales.ig['export-all-boards-hint'], /ị nwere ike ibupụ.*mpempe akwụkwọ maka bọọdụ ọ bụla.*\.zip nwere faịlụ maka bọọdụ ọ bụla/);
+
+assert.match(locales.ig['trello-export-desc'], /API Trello.*igodo API Trello na token.*"Swimlane: …".*na-agbanweghachi/);
+assert.match(locales.ig['trello-export-warnings'], /Enweghị ike.*ihe niile/);
+assert.match(locales.ig['sandstorm-trello-access-needed'], /enweghị ohere Ịntanetị nke ya.*Buru ụzọ/);
+assert.match(locales.ig['sandstorm-trello-access-granted'], /nwere ike ịnweta Trello/);
+assert.notEqual(locales.ig['sandstorm-trello-access-needed'], locales.ig['sandstorm-trello-access-granted']);
+assert.match(locales.ig['import-file-label'], /Họrọ faịlụ.*ma ọ bụ tapawa ederede/);
+assert.match(locales.ig['export-selected-boards'], /ndị ahọpụtara/);
+assert.notEqual(locales.ig['export-selected-boards'], locales.ig['export-all-boards']);
+assert.match(locales.ig['import-one-board-per-project'], /Otu bọọdụ.*ọ bụla/);

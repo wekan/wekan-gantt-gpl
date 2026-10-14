@@ -18,6 +18,46 @@ const SearchPage = require('../pages/SearchPage');
 const BoardPage = require('../pages/BoardPage');
 
 test.describe('Search', () => {
+  test('Latin search help explains negation, conjunction and archive defaults', async ({ boardPage }) => {
+    await boardPage.evaluate(() => Meteor.callAsync('setLanguage', 'la'));
+    const sp = new SearchPage(boardPage);
+    await sp.navigateToGlobalSearch();
+    const help = boardPage.locator('.global-search-instructions');
+    await expect(help).toContainText('habet:-debitum');
+    await expect(help).toContainText('sine die debito');
+    await expect(help).toContainText('Pro ordine descendente');
+    await expect(help).toContainText('cuilibet condicionum');
+    await expect(help).toContainText('omnibus operatoribus');
+    await expect(help).toContainText('Praedefinite chartae in archivo non quaeruntur.');
+    await expect(help).not.toContainText('Latine:');
+  });
+
+  test('Latin overdue predicate excludes future cards', async ({ boardPage, board, user }) => {
+    db.updateOne('users', { _id: user.id }, { $set: { 'profile.language': 'la' } });
+    db.updateOne('cards', { boardId: board.boardId, title: 'Alpha Card' }, { $set: { dueAt: new Date(Date.now() - 86400000) } });
+    db.updateOne('cards', { boardId: board.boardId, title: 'Beta Card' }, { $set: { dueAt: new Date(Date.now() + 7 * 86400000) } });
+    await boardPage.reload();
+    await expect(boardPage.locator('html')).toHaveAttribute('lang', 'la');
+    const sp = new SearchPage(boardPage);
+    await sp.navigateToGlobalSearch();
+    await sp.globalSearch('debitum:praeteritum');
+    await expect.poll(() => sp.globalSearchResultTitles(), { timeout: 20000 }).toContain('Alpha Card');
+    expect(await sp.globalSearchResultTitles()).not.toContain('Beta Card');
+    await expect(boardPage.locator('.global-search-error-messages')).toHaveCount(0);
+  });
+
+  test('Latin title operator finds a matching card and excludes other titles', async ({ boardPage, user }) => {
+    db.updateOne('users', { _id: user.id }, { $set: { 'profile.language': 'la' } });
+    await boardPage.reload();
+    await expect(boardPage.locator('html')).toHaveAttribute('lang', 'la');
+    const sp = new SearchPage(boardPage);
+    await sp.navigateToGlobalSearch();
+    await sp.globalSearch('tituluschartae:"Alpha Card"');
+    await expect.poll(() => sp.globalSearchResultTitles(), { timeout: 20000 }).toContain('Alpha Card');
+    expect(await sp.globalSearchResultTitles()).not.toContain('Beta Card');
+    await expect(boardPage.locator('.global-search-error-messages')).toHaveCount(0);
+  });
+
   test('Veps overdue search uses the translated predicate and excludes future cards', async ({ boardPage, board, user }) => {
     db.updateOne('users', { _id: user.id }, { $set: { 'profile.language': 've-PP' } });
     db.updateOne('cards', { boardId: board.boardId, title: 'Alpha Card' }, { $set: { dueAt: new Date(Date.now() - 86400000) } });
@@ -30,6 +70,45 @@ test.describe('Search', () => {
     await expect.poll(() => sp.globalSearchResultTitles(), { timeout: 20000 }).toContain('Alpha Card');
     expect(await sp.globalSearchResultTitles()).not.toContain('Beta Card');
     await expect(boardPage.locator('.global-search-error-messages')).toHaveCount(0);
+  });
+
+  test('Corsican overdue search uses the translated predicate and excludes future cards', async ({ boardPage, board, user }) => {
+    db.updateOne('users', { _id: user.id }, { $set: { 'profile.language': 'co' } });
+    db.updateOne('cards', { boardId: board.boardId, title: 'Alpha Card' }, { $set: { dueAt: new Date(Date.now() - 86400000) } });
+    db.updateOne('cards', { boardId: board.boardId, title: 'Beta Card' }, { $set: { dueAt: new Date(Date.now() + 7 * 86400000) } });
+    await boardPage.reload();
+    await expect(boardPage.locator('html')).toHaveAttribute('lang', 'co');
+    const sp = new SearchPage(boardPage);
+    await sp.navigateToGlobalSearch();
+    await sp.globalSearch('scadenza:scadutu');
+    await expect.poll(() => sp.globalSearchResultTitles(), { timeout: 20000 }).toContain('Alpha Card');
+    expect(await sp.globalSearchResultTitles()).not.toContain('Beta Card');
+    await expect(boardPage.locator('.global-search-error-messages')).toHaveCount(0);
+  });
+
+  test('Corsican search help explains absence, sorting and case-insensitive text', async ({ boardPage, user }) => {
+    db.updateOne('users', { _id: user.id }, { $set: { 'profile.language': 'co' } });
+    await boardPage.reload();
+    await expect(boardPage.locator('html')).toHaveAttribute('lang', 'co');
+    const sp = new SearchPage(boardPage);
+    await sp.navigateToGlobalSearch();
+    const help = boardPage.locator('.global-search-instructions');
+    await expect(help).toContainText('has:-due');
+    await expect(help).toContainText('senza data di scadenza');
+    await expect(help).toContainText('Per un urdinamentu discendente');
+    await expect(help).toContainText('ùn distinguenu micca e maiuscule da e minuscule');
+    await expect(help).not.toContainText('Per impostazione predefinita');
+  });
+
+  test('Southern Sotho search help explains positive and negative integer values', async ({ boardPage }) => {
+    await boardPage.evaluate(() => Meteor.callAsync('setLanguage', 'st'));
+    const sp = new SearchPage(boardPage);
+    await sp.navigateToGlobalSearch();
+    const help = boardPage.locator('.global-search-instructions');
+    await expect(help).toContainText('palo e felletseng e kgolo ho 0');
+    await expect(help).toContainText('kapa e ka tlase ho 0');
+    await expect(help).not.toContainText('nomoro e felletseng e ntle');
+    await expect(help).toContainText('has:-due');
   });
 
   test('global search returns cards matching the query and excludes non-matching cards', async ({ boardPage, board }) => {
@@ -377,4 +456,20 @@ test.describe('Search', () => {
     await expect(boardPage.locator('.js-table-view-toggle-swimlane-groups'))
       .toHaveAttribute('aria-pressed', 'true');
   });
+});
+
+
+test('Haitian attachment search accepts the corrected predicate and negation', async ({ boardPage: page }) => {
+  await page.evaluate(() => Meteor.callAsync('setLanguage', 'ht'));
+  const sp = new SearchPage(page);
+  await sp.navigateToGlobalSearch();
+  const help = page.locator('.global-search-instructions');
+  await expect(help).toContainText('pyès-atache');
+  await expect(help).not.toContainText('pyès-jwenn');
+  await sp.globalSearch('gen:-pyès-atache');
+  await expect.poll(() => sp.globalSearchResultTitles(), { timeout: 20000 }).toContain('Alpha Card');
+  await expect(page.locator('.global-search-error-messages')).toHaveCount(0);
+  await sp.globalSearch('gen:pyès-atache');
+  await expect.poll(() => sp.globalSearchResultTitles(), { timeout: 20000 }).not.toContain('Alpha Card');
+  await expect(page.locator('.global-search-error-messages')).toHaveCount(0);
 });

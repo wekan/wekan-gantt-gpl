@@ -216,6 +216,26 @@ Settings.attachSchema(
       optional: true,
       blackbox: true,
     },
+    // Email to card (#794): Admin Panel -> Notification Settings -> Inbound
+    // email. On/off, the board-address domain, the provider webhook's secret
+    // and the IMAP mailboxes polled, with their passwords. Never published:
+    // the Admin Panel reads it through getInboundMailSettings, which leaves the
+    // secret and the passwords out (server/emailToCard.js,
+    // models/lib/emailToCard.js inboundMailAdminView).
+    inboundMail: {
+      type: Object,
+      optional: true,
+      blackbox: true,
+    },
+    // Email bounces (#794): Admin Panel -> E-mail -> Bounces. { enabled,
+    // rules: { hard|soft|auto-reply|complaint: { actions, threshold } },
+    // sesTopicArns } - what to do with mail that comes back, and which Amazon
+    // SNS topics may report it (models/lib/emailBounce.js, server/emailBounces.js).
+    emailBounces: {
+      type: Object,
+      optional: true,
+      blackbox: true,
+    },
     productName: {
       type: String,
       optional: true,

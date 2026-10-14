@@ -207,6 +207,7 @@ import '/server/dynamicImportOrigin';
 // ----------------------------------------------------------------------------
 import '/server/import-users-for-methods';
 import '/server/trelloApiImport';
+import '/server/trelloApiExport';
 
 // ----------------------------------------------------------------------------
 // 9. Server — lib (utilities, sanitizers, guards)
@@ -342,6 +343,11 @@ import '/server/routes/exportAllBoards';
 // Reply-by-email (#2414). Never imported before ReplyBleed was fixed, so the
 // endpoint the docs describe did not exist.
 import '/server/routes/inboundEmail';
+import '/server/emailToCard';
+import '/server/emailView';
+import '/server/emailBounces';
+import '/server/lib/imapInbound';
+import '/server/sandstormEmail';
 import '/server/routes/legacyAttachments';
 import '/server/routes/universalFileServer';
 
@@ -427,6 +433,7 @@ import '/server/importedUserReconciliation';
 // ----------------------------------------------------------------------------
 import '/sandstorm';
 import '/server/sandstorm';
+import '/server/sandstormEgress';
 
 import '/server/methods/fileStatusAudit';
 import '/server/methods/instrumentationReport';

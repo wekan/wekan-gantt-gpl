@@ -361,6 +361,26 @@ Users.attachSchema(
       type: Boolean,
       optional: true,
     },
+    'profile.chatViewLayout': {
+      /**
+       * Board View / Chat: { treeWidth, chatWidth, treeCollapsed,
+       * cardCollapsed, chatCollapsed } - the member's pane widths and which
+       * panes are folded (models/lib/chatView.js cleanChatLayout).
+       */
+      type: Object,
+      optional: true,
+      blackbox: true,
+    },
+    'profile.emailToCard': {
+      /**
+       * Email to card (#794): { enabled, parts } - whether this member's
+       * board addresses work, and which parts of an email they want on the
+       * card (models/lib/emailToCard.js). Unset = on, the board's parts.
+       */
+      type: Object,
+      optional: true,
+      blackbox: true,
+    },
     // #5171: the member's own e-mail and tray delivery - content, grouping,
     // schedule. Wins over the board and Admin Panel settings for their own
     // notifications. See models/lib/notificationDelivery.js.
@@ -905,6 +925,8 @@ Users.attachSchema(
         'board-view-process-behavior',
         'board-view-size-cycle-time',
         'board-view-map',
+        'board-view-email',
+        'board-view-chat',
       ],
     },
     'profile.listSortBy': {

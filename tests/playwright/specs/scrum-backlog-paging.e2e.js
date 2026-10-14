@@ -4,7 +4,7 @@ const { test, expect } = require('../fixtures');
 const db = require('../helpers/db');
 const { loginWithToken, openBoard } = require('../helpers/auth');
 
-for (const language of ['en', 'haw']) {
+for (const language of ['st', 'en', 'haw']) {
 test(`Product Backlog shows a page of rows at a time, in Scrum order, and more on request in ${language}`, async ({ page, user, board }) => {
   const [card] = db.find('cards', { boardId: board.boardId });
   const ids = [];
@@ -23,6 +23,9 @@ test(`Product Backlog shows a page of rows at a time, in Scrum order, and more o
     await expect(page.locator('.pop-over .js-open-product-backlog-view')).toContainText(strings['board-view-product-backlog']);
     await page.locator('.pop-over .js-open-product-backlog-view').click();
     await expect(page.getByText(strings['scrum-backlog-help'], { exact: true })).toBeVisible();
+    const estimateHeading = page.locator('.scrum-table thead th').nth(1);
+    await expect(estimateHeading).toHaveText(strings['scrum-estimate']);
+    if (language === 'st') await expect(estimateHeading).not.toHaveText('Boholo');
     const rows = page.locator('.scrum-table tbody tr[data-card-id]');
     await expect(rows).toHaveCount(100);
     await expect(rows.last()).toContainText(/Paged 09[0-9]/);

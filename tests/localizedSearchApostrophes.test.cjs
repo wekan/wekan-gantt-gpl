@@ -210,3 +210,37 @@ for (const operator of bislamaOperators) {
 }
 assert.equal(new Set(bislamaOperators).size, bislamaOperators.length,
   'every registered Bislama operator has an unambiguous name');
+
+labels = JSON.parse(read('imports/i18n/data/co.i18n.json'));
+for (const [key, field] of [['operator-customfield', 'customfield'], ['operator-attachment-text', 'attachment-text'], ['operator-checklist-text', 'checklist-text']]) {
+  const parsed = query(`${labels[key]}:"two words"`);
+  assert.equal(parsed.hasErrors(), false, key);
+  assert.equal(parsed.getQueryParams().getPredicate(field), 'two words', key);
+}
+for (const [key, field] of [['predicate-attachment', 'attachment'], ['predicate-checklist', 'checklist'], ['predicate-start', 'startAt']]) {
+  for (const absent of [false, true]) {
+    const parsed = query(`${labels['operator-has']}:${absent ? '-' : ''}${labels[key]}`);
+    assert.equal(parsed.hasErrors(), false, key);
+    assert.deepEqual(JSON.parse(JSON.stringify(parsed.getQueryParams().getPredicate('has'))), { field, exists: !absent });
+  }
+}
+const corsicanOverdue = query(`${labels['operator-due']}:${labels['predicate-overdue']}`);
+assert.equal(corsicanOverdue.hasErrors(), false);
+assert.equal(corsicanOverdue.getQueryParams().getPredicate('dueAt').operator, '$lt');
+assert.equal(query(`${labels['operator-has']}:nonexistent-field`).hasErrors(), true);
+assert.equal(query(`${labels['operator-created']}:${labels['predicate-overdue']}`).hasErrors(), true);
+
+for (const [key, field] of [['predicate-due', 'dueAt'], ['predicate-created', 'createdAt'], ['predicate-modified', 'modifiedAt']]) {
+  for (const descending of [false, true]) {
+    const parsed = query(`${labels['operator-sort']}:${descending ? '-' : ''}${labels[key]}`);
+    assert.equal(parsed.hasErrors(), false, key);
+    assert.deepEqual(JSON.parse(JSON.stringify(parsed.getQueryParams().getPredicate('sort'))),
+      { name: field, order: descending ? 'des' : 'asc' });
+  }
+}
+assert.equal(query(`${labels['operator-sort']}:not-a-sort`).hasErrors(), true);
+
+const corsicanCardNumber = query(`${labels['operator-number']}:42`);
+assert.equal(corsicanCardNumber.hasErrors(), false);
+assert.equal(corsicanCardNumber.getQueryParams().getPredicate('cardNumber'), 42);
+assert.equal(query(`${labels['operator-number']}:not-a-number`).hasErrors(), true);

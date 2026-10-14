@@ -1,6 +1,5037 @@
 # Translation audit progress
 
-Audit date: **2026-09-12**. Last updated: **2026-10-10**.
+Audit date: **2026-09-12**. Last updated: **2026-10-14**.
+
+## Igbo Trello and Sandstorm transfers — 2026-10-14
+
+Commit `93ef17b326` translates 15 transfer strings, preserving the literal
+`Swimlane: …` label and distinguishing absent versus granted Sandstorm access,
+partial exports, selected-board exports and file-versus-text import input.
+Direct technical wording needs fluent review.
+
+The Igbo/Swedish and guarded-correction suites pass with 30,901 ledger entries;
+all 21 human-preference checks pass. Exact comparison preserves 38,430 existing
+Chinese values. The Trello export-dialog browser case passes syntax and discovery;
+execution is pending. Full all-language semantic verification remains unfinished.
+
+## Igbo import mapping and bulk operations — 2026-10-14
+
+Commit `1cea7b89f1` translates 24 member choices, column-mapping controls and
+bulk import/export messages. Assertions preserve named placeholders, later
+mapping to real users, required column/list alternatives and ZIP layout rules.
+Direct technical wording needs fluent review.
+
+The Igbo/Swedish and guarded-correction suites pass with 30,886 ledger entries;
+all 21 human-preference checks pass. Exact comparison preserves 38,430 existing
+Chinese values. Two browser cases pass syntax and discovery; runtime execution
+is pending. Full all-language semantic and translation verification is unfinished.
+
+## Igbo import guides, second batch — 2026-10-14
+
+Commit `7e8ebcd458` translates twelve further import guides: Tasks.org,
+monday.com, Super Productivity, Taiga, Vikunja, Quire, Wrike, Teamwork,
+Businessmap, Redmine, Notion and Plane. Assertions retain import exclusions,
+English-header requirements, subtask markers and Notion's fallback mapping.
+Technical prose is lower confidence and requires fluent review.
+
+The Igbo/Swedish and guarded-correction suites pass with 30,862 ledger entries;
+all 21 human-preference checks pass. Exact comparison preserves 38,430 existing
+Chinese values. All 22 Igbo import browser cases pass syntax and discovery;
+runtime execution is pending. All-language semantic verification is unfinished.
+
+## Igbo import guides, first batch — 2026-10-14
+
+Commit `29282c6ddf` translates ten guides: OPML, Org mode, MeisterTask,
+Obsidian, Linear, TickTick, ClickUp, Nullboard, Kanri and Pivotal Tracker.
+Tests cover literal Org mode identifiers, completion dates, all-column exports,
+raw labels and first-board limits. Longer technical prose is lower confidence
+and needs fluent review.
+
+The Igbo/Swedish and guarded-correction suites pass with 30,850 ledger entries;
+all 21 human-preference checks pass. Exact comparison preserves 38,430 existing
+Chinese values. Ten import-guide browser cases pass syntax and discovery;
+execution remains pending. All-language semantic and translation work is unfinished.
+
+## Igbo linked fields and board controls — 2026-10-14
+
+Commit `77218ed315` translates 26 pending strings and repairs the custom-fields
+label, previously a repetition of culture. Link directions, same-name/type
+matching, unmatched fields, authorization, archive restrictions and announcement
+audiences now have Igbo text. Direct technical wording needs fluent review.
+
+The Igbo/Swedish and guarded-correction suites pass with 30,840 ledger entries;
+all 21 human-preference checks pass. Exact comparison preserves 38,430 existing
+Chinese values. Two browser cases pass syntax and discovery; execution remains
+pending. The full Igbo placeholder list still contains 191 entries, including
+pending keys. All-language translation and semantic review are unfinished.
+
+## Igbo attachments and refreshed inventory — 2026-10-14
+
+Commit `4e80dcf3ba` translates nine attachment and storage strings. The shared
+Igbo/Swedish suite and guarded-correction suite pass with 30,813 ledger entries.
+All 21 human-preference checks pass; exact comparison preserves 38,430 existing
+Chinese values. One attachment browser case passes syntax and discovery;
+execution and fluent review remain pending.
+
+After this batch, the filtered `--missing` report counts 30,116 values in
+87 languages. It excludes 379 pending source keys, which remain in scope.
+This is not a full per-locale inventory or proof that other text is correct.
+All-language semantic and translation work remain unfinished.
+
+## Scottish Gaelic import details and header tooltip — 2026-10-14
+
+Commit `399e9a19d7` restores three incomplete translations: Jira search fields,
+pagination and page-import alternatives; Excel column mapping and per-sheet
+boards; and the header tooltip's notification-toggle explanation. Technical
+wording needs fluent review. API parameters and JSON field names stay literal.
+
+Catalog and guarded-correction suites pass with 30,804 ledger entries. All 21
+human-preference checks pass; exact comparison preserves 38,430 existing Chinese
+values. Four browser cases pass syntax and discovery, with header assertions
+added to existing action cases and Jira/Excel added to the import guide suite.
+Browser execution and full all-language semantic verification remain unfinished.
+
+## Scottish Gaelic report controls — 2026-10-14
+
+Commit `999922d6a6` includes 24 report-label corrections prepared during this
+review, plus their catalog and browser assertions. Targets, estimates, historical
+stays, open episodes and statistical measures now have descriptive labels.
+The numeric-field sum label retains the source meaning and was left unchanged.
+Specialist statistical terminology is lower confidence and needs fluent review.
+
+Catalog and guarded-correction suites pass with 30,801 ledger entries; all 21
+human-preference checks pass. Comparison against the pre-work commit `2dd80befcf`
+preserves 38,430 existing Chinese values. Five report browser cases pass syntax
+and discovery, including expanded target and size-field checks; runtime has not
+been executed. Full all-language semantic verification remains unfinished.
+
+## Scottish Gaelic report explanations — 2026-10-14
+
+Commit `8b46431477` corrects eleven report strings: five headings, five
+methodology notes and the error message. The notes now retain historical
+sample minimums, unknown entry history, overlapping blocker counting, Monte
+Carlo assumptions and limits, and cycle-time fallback dates. Statistical
+terminology is lower confidence and requires fluent review.
+
+The guarded-correction suite passes with 30,777 ledger entries. The catalog
+suite initially failed on an assertion using an unlenited spelling; correcting
+that test made its rerun pass. All 21 human-preference checks pass, and exact
+comparison preserves 38,430 existing Chinese values. Five browser cases pass
+syntax and discovery; runtime remains pending.
+
+Full semantic and all-language verification remain unfinished.
+
+## Scottish Gaelic dates and card-link actions — 2026-10-14
+
+Commit `19f5807e04` corrects four date triggers that omitted initial setting,
+the Gregorian ISO-week calendar label, and two card-link action labels that
+obscured destination linking and creation from a source card. Seven values
+changed; direct wording still needs fluent review.
+
+Catalog and guarded-correction checks pass with 30,766 ledger entries, and all
+21 human-preference checks pass. Exact comparison preserves 38,430 existing
+Chinese values. Two browser cases cover date-trigger rows and card-link actions;
+syntax and discovery pass, but runtime execution remains pending.
+
+The full all-language semantic review is unfinished. These checks establish
+specific corrected meanings, not completeness or fluent verification.
+
+## Scottish Gaelic action meanings and stale English — 2026-10-14
+
+Commit `1fda1c4dd0` corrects seven strings: two entirely English import guides
+for Todoist and Planner, three recurrence labels that described resetting,
+and two move-reason labels that described a card description. Existing account
+anonymization help retains its permanent-change and retained-history warnings.
+Direct Scottish Gaelic technical prose still needs fluent review.
+
+Catalog and guarded-correction checks pass with 30,759 ledger entries; all 21
+human-preference checks pass. Exact comparison preserves 38,430 existing Chinese
+values. Four browser cases pass syntax and discovery but have not been executed.
+
+These stale English guides escaped the zero-placeholder gate because their
+wording differed from current English. Full semantic review, fluent verification
+and the all-language objective remain unfinished.
+
+## Scottish Gaelic recovery and full placeholder gate — 2026-10-14
+
+Commit `53be36536d` translates 38 recovery and server-only setting messages.
+Discarded sync work retains applied changes; discarded imports permanently
+remove their partial boards, including later additions. Missing source files,
+untouched foreign boards, busy operations and oldest-50 limits remain explicit.
+Technical prose needs fluent review.
+
+The Scottish Gaelic catalog and guarded-correction suites pass with 30,752
+correction ledger entries. The full placeholder check now returns no entries,
+including pending keys. All 21 human-preference checks pass; exact comparison
+preserves 38,430 existing Chinese values. Two recovery browser cases pass syntax
+and discovery; runtime remains pending.
+
+Zero detected placeholders does not prove correct meaning or detect every stale
+English passage. Scottish Gaelic and all-language semantic review are unfinished.
+
+## Scottish Gaelic workflows and permission messages — 2026-10-14
+
+Commit `73bdd4061b` translates 19 strings for read-only fields, Wrike workflows,
+rule actions, LDAP sync, provider domain restrictions and subtask completion.
+Status groups, automation export limits, environment names, empty-domain
+behavior and edit restrictions remain explicit. Technical prose needs fluent
+review; external provider interfaces were not revalidated.
+
+The Scottish Gaelic catalog and guarded-correction suites pass with 30,714
+correction ledger entries. All 21 human-preference checks pass; exact comparison
+preserves 38,430 existing Chinese values. Three browser cases cover LDAP access
+and subtask completion, including a comment-only member. Syntax and discovery
+pass; runtime remains pending.
+
+Scottish Gaelic and all-language translation and semantic review are unfinished.
+
+## Scottish Gaelic integrations and notification delivery — 2026-10-14
+
+Commit `9724c40077` translates 53 strings for Trello export, Sandstorm access,
+link rules, webhook content and notification delivery. Literal link-rule tokens,
+example URLs and Trello round-trip labels are retained. Unset webhook settings,
+identity omission, per-card/per-board grouping and quiet-hour deferral remain
+explicit. Technical prose needs fluent review; external provider interfaces were
+not revalidated.
+
+The Scottish Gaelic catalog and guarded-correction suites pass with 30,695
+correction ledger entries. All 21 human-preference checks pass; exact comparison
+preserves 38,430 existing Chinese values. The notification browser case passes
+syntax and discovery; runtime remains pending.
+
+Scottish Gaelic and all-language translation and semantic review are unfinished.
+
+## Scottish Gaelic import mapping and bulk exports — 2026-10-14
+
+Commit `6a028b4327` translates 27 strings for user matching, column mapping,
+bulk-file import and bulk export. Placeholder-user names, later matching,
+required title columns, single-list fallback, single-export ZIP exceptions and
+per-board workbook sheets remain explicit. Technical prose needs fluent review.
+
+The Scottish Gaelic catalog and guarded-correction suites pass with 30,642
+correction ledger entries. All 21 human-preference checks pass; exact comparison
+preserves 38,430 existing Chinese values. Two browser cases cover user choices
+and workbook/ZIP layout. Syntax and discovery pass; runtime remains pending.
+
+Scottish Gaelic and all-language translation and semantic review are unfinished.
+
+## Scottish Gaelic import guidance, second batch — 2026-10-14
+
+Commit `c5f86df1a3` translates twelve guides: Tasks.org, monday.com, Super
+Productivity, Taiga, Vikunja, Quire, Wrike, Teamwork, Businessmap, Redmine,
+Notion and Plane. English column-name requirements, nested-task markers and
+warnings about omitted attachments, comments, relations or descriptions remain
+explicit. Technical prose is lower confidence and needs fluent review. External
+provider interfaces were not revalidated.
+
+The Scottish Gaelic catalog and guarded-correction suites pass with 30,615
+correction ledger entries. All 21 human-preference checks pass; exact comparison
+preserves 38,430 existing Chinese values. All 22 import-help browser cases for
+this locale pass syntax and discovery; runtime remains pending.
+
+Scottish Gaelic and all-language translation and semantic review are unfinished.
+
+## Scottish Gaelic import guidance, first batch — 2026-10-14
+
+Commit `7f86d9f396` translates ten guides: OPML, Org mode, MeisterTask,
+Obsidian, Linear, TickTick, ClickUp, Nullboard, Kanri and Pivotal Tracker.
+Hierarchy mapping, source menu labels, completion dates, Org keywords,
+all-column export and first-board-only limits are retained. Technical prose is
+lower confidence and needs fluent review. External provider interfaces were
+not revalidated.
+
+The Scottish Gaelic catalog and guarded-correction suites pass with 30,603
+correction ledger entries. All 21 human-preference checks pass; exact comparison
+preserves 38,430 existing Chinese values. Ten browser cases pass syntax and
+discovery; runtime remains pending.
+
+Scottish Gaelic and all-language translation and semantic review are unfinished.
+
+## Scottish Gaelic field links and announcements — 2026-10-14
+
+Commit `4f35ee5751` translates 26 English strings for field links, board
+announcements, calendar mode and card colours. Matching field names and types,
+one-way/two-way changes, unavailable cards, archived cards and permission loss
+remain explicit. Fields present on only one card remain unaffected. The text
+uses the catalog's card, board and custom-field terminology; fluent review is
+still needed.
+
+The Scottish Gaelic catalog and guarded-correction suites pass with 30,593
+correction ledger entries. All 21 human-preference checks pass; exact comparison
+preserves 38,430 existing Chinese values. Two browser cases cover field-link
+behavior and announcement audience. Syntax and discovery pass; runtime remains
+pending.
+
+Scottish Gaelic and all-language translation and semantic review are unfinished.
+
+## Scottish Gaelic attachments and legacy storage — 2026-10-14
+
+Commit `4f5f5d0d33` translates 41 English placeholders: eight attached-card
+messages and 33 older storage labels and rule connectors. The catalog's existing
+card and board terminology is retained. Attachment limits, visibility and
+self-attachment restrictions remain explicit. Technical storage wording is
+lower confidence and needs fluent review; attempted dictionary queries did not
+provide usable lexical entries, so no dictionary verification is claimed.
+
+The Scottish Gaelic catalog and guarded-correction suites pass with 30,567
+correction ledger entries. All 21 human-preference checks pass; exact comparison
+preserves 38,430 existing Chinese values. Two browser cases cover attachment
+behavior and access/secret-key fields. Syntax and discovery pass; runtime remains
+pending. The older catalog gate passes, but newer feature text remains English.
+
+The reviewed Irish checklist/reset labels retained their main distinctions.
+Neither that targeted review nor this Scottish Gaelic batch completes semantic
+verification. The all-language objective remains unfinished.
+
+## Irish rule subjects and assembled grammar — 2026-10-14
+
+Commit `503d439ddc` corrects six labels for card and assignee triggers. Assignee
+events no longer read as commands, and the assignee noun no longer names the
+assigner. The grammar helper omits the extra linking verb after Irish temporal
+subjects containing bhíonn. Tests cover locale variants, a distinct language
+sharing the prefix, reactive helper selection and assembled named subjects.
+
+The Irish catalog, guarded-correction and rule-grammar suites pass with 30,526
+correction ledger entries. All 21 human-preference checks pass; exact comparison
+preserves 38,430 existing Chinese values. The Irish browser case for rule rows
+and saved descriptions passes syntax and discovery; runtime remains pending.
+
+These changes do not establish fluency for every assembled rule. Irish and
+all-language semantic review remain unfinished.
+
+## Irish import and header help omissions — 2026-10-14
+
+Commit `32ae43650c` corrects three entries. Jira guidance restores the fields
+query, nextPageToken pagination and ways to import multiple pages. Excel
+restores per-sheet boards and the mapping step. Header help identifies its
+mobile/desktop scope through notifications. Current English source was used;
+external provider interfaces were not revalidated. The reviewed GCS and backup
+help retained its credential, permission and restore distinctions unchanged.
+
+The Irish catalog and guarded-correction suites pass with 30,520 correction
+ledger entries. All 21 human-preference checks pass; exact comparison preserves
+38,430 existing Chinese values. Five browser cases cover the two guides and
+header tooltip alongside existing action checks. Syntax and discovery pass;
+runtime remains pending.
+
+Irish and all-language semantic review remain unfinished.
+
+## Irish date triggers and card actions — 2026-10-14
+
+Commit `301fd32e09` corrects seven labels. Four date triggers now include both
+setting and changing the date. The ISO calendar label identifies Gregorian
+weeks under ISO 8601 rather than a year-first date format. Linking to a board
+no longer incorrectly specifies this board, and creating a board identifies
+the source card.
+
+The Irish catalog and guarded-correction suites pass with 30,517 correction
+ledger entries. All 21 human-preference checks pass; exact comparison preserves
+38,430 existing Chinese values. The card-action browser case passes syntax and
+discovery; runtime remains pending.
+
+Other Irish rule fragments and the wider catalog still need semantic review.
+The all-language objective remains unfinished.
+
+## Irish report metric labels — 2026-10-14
+
+Commit `36579f0e7c` corrects 24 labels. Report metrics now identify age in stage,
+percentiles, historical stays, signals, blocking cards, open episodes, confidence
+and minimum predicted capacity. Moving-range labels describe absolute successive
+differences. The numeric summary explicitly sums values of marked fields, and
+the WIP action names the swimlane it applies to.
+
+The Irish catalog and guarded-correction suites pass with 30,510 correction
+ledger entries. All 21 human-preference checks pass; exact comparison preserves
+38,430 existing Chinese values. Six browser cases cover report help, report
+controls and numeric sums excluding hidden fields. Syntax and discovery pass;
+runtime remains pending.
+
+Irish and all-language semantic review remain unfinished.
+
+## Irish report explanations — 2026-10-14
+
+Commit `7676469d0e` corrects eleven analytics strings. Five report titles now
+identify their reports rather than loosely related metrics. Methodology notes
+restore missing-history handling, retained history for deleted cards, overlapping
+blockers, zero-throughput days, forecast uncertainty, minimum valid completions
+and date fallbacks. The report-loading error now explains the retry action.
+
+The Irish catalog and guarded-correction suites pass with 30,486 correction
+ledger entries. All 21 human-preference checks pass; exact comparison preserves
+38,430 existing Chinese values. Five browser cases check report menu names and
+methodology notes. Syntax and discovery pass; runtime remains pending.
+
+Other report labels and the rest of the Irish catalog still require semantic
+review. The all-language objective remains unfinished.
+
+## Irish semantic review: actions and stale guides — 2026-10-14
+
+Commit `e4d4b2125c` corrects eight entries. Todoist and Planner retained old
+English instructions despite the zero-placeholder result. The translations now
+follow the current English source; external provider interfaces were not
+revalidated. Card recurrence no longer says reset, move reasons retain
+optionality, and permanent anonymization uses replacement values rather than
+values described as temporary.
+
+The Irish catalog and guarded-correction suites pass with 30,475 correction
+ledger entries. All 21 human-preference checks pass; exact comparison preserves
+38,430 existing Chinese values. Five browser cases cover import help and action
+dialogs without confirming destructive actions. Syntax and discovery pass;
+runtime remains pending.
+
+The stale English passages demonstrate the limits of placeholder detection.
+Irish and all-language semantic review remain unfinished.
+
+## Irish recovery messages and full placeholder gate — 2026-10-14
+
+Commit `ee99da3ddf` translates 38 strings for stopped list syncs, interrupted
+imports and server-only login settings. Discarding saved sync work retains
+applied changes; discarding an interrupted import permanently removes its
+partial board, including subsequent additions. Missing source files, untouched
+foreign boards, busy operations and oldest-50 limits remain explicit.
+
+The Irish catalog and guarded-correction suites pass with 30,467 correction
+ledger entries. The full Irish placeholder check now returns no entries,
+including keys marked pending Transifex. All 21 human-preference checks pass;
+exact comparison preserves 38,430 existing Chinese values. Two recovery browser
+cases pass syntax and discovery; runtime remains pending.
+
+Zero detected placeholders does not establish correct meaning or identify every
+stale English passage. Irish semantic review and the all-language objective
+remain unfinished.
+
+## Irish workflows and permission messages — 2026-10-14
+
+Commit `9ccf484c6d` translates 19 strings for read-only fields, Wrike workflow
+mapping, rule actions, LDAP sync, provider email-domain restrictions and
+subtask completion. Wrike status groups and its automation export limitation
+remain explicit. LDAP environment names and empty-domain behaviour are retained.
+External provider interfaces were not revalidated.
+
+The Irish catalog and guarded-correction suites pass with 30,429 correction
+ledger entries. All 21 human-preference checks pass; exact comparison preserves
+38,430 existing Chinese values. Three browser cases cover LDAP authorization
+and subtask completion, including refusal for a comment-only member. Syntax
+and discovery pass; runtime remains pending.
+
+Remaining Irish feature text and all-language semantic review are unfinished.
+
+## Irish integration and notification settings — 2026-10-14
+
+Commit `b3a554e748` translates 42 strings covering link rules, webhook payloads,
+identity omission, notification content, grouping, schedules and quiet hours.
+Link-rule placeholders and the example URL remain literal. Grouping by card
+and board stays distinct, and quiet hours explicitly defer delivery until they
+end. Unset webhook settings retain inherited behaviour.
+
+The Irish catalog and guarded-correction suites pass with 30,410 correction
+ledger entries. All 21 human-preference checks pass; exact comparison preserves
+38,430 existing Chinese values. The Irish notification browser case passes
+syntax and discovery; runtime remains pending.
+
+Remaining Irish feature text and all-language semantic review are unfinished.
+
+## Irish import and export controls — 2026-10-14
+
+Commit `1c92a11f39` translates 38 controls for user matching, column mapping,
+bulk imports and exports, Trello export and Sandstorm access. Placeholder-user
+names, separate sheets and boards, single-export ZIP exceptions, permission
+requirements and the literal Trello round-trip label remain explicit.
+
+The Irish catalog and guarded-correction suites pass with 30,368 correction
+ledger entries. All 21 human-preference checks pass; exact comparison preserves
+38,430 existing Chinese values. Two browser cases cover user-matching choices
+and bulk export layout. Syntax and discovery pass; runtime remains pending.
+
+A fresh full Irish placeholder inventory reports 99 entries, including keys
+marked pending Transifex. These remain in scope. Irish semantic review and the
+all-language objective remain unfinished.
+
+## Irish import guidance, second batch — 2026-10-14
+
+Commit `bc97a96117` translates twelve guides: Tasks.org, monday.com, Super
+Productivity, Taiga, Vikunja, Quire, Wrike, Teamwork, Businessmap, Redmine,
+Notion and Plane. English column-name requirements, nested-task markers,
+completion dates and omitted attachments, comments, relations or descriptions
+remain explicit. External provider interfaces were not revalidated.
+
+The Irish catalog and guarded-correction suites pass with 30,330 correction
+ledger entries. All 21 human-preference checks pass; exact comparison preserves
+38,430 existing Chinese values. All 22 Irish import-help browser cases pass
+syntax and discovery; runtime remains pending.
+
+Remaining Irish feature text and all-language semantic review are unfinished.
+
+## Irish import guidance, first batch — 2026-10-14
+
+Commit `6be0ca89dc` translates ten English guides: OPML, Org mode, MeisterTask,
+Obsidian, Linear, TickTick, ClickUp, Nullboard, Kanri and Pivotal Tracker. They
+retain hierarchy mapping, source menu labels, completion dates, Org keywords,
+all-column export and first-board-only restrictions. External provider
+interfaces were not revalidated.
+
+The Irish catalog and guarded-correction suites pass with 30,318 correction
+ledger entries. All 21 human-preference checks pass; exact comparison preserves
+38,430 existing Chinese values. Ten import-help browser cases pass syntax and
+discovery; runtime remains pending.
+
+Remaining Irish feature text and all-language semantic review are unfinished.
+
+## Irish card links and legacy storage placeholders — 2026-10-14
+
+Commit `f71a482f02` translates 67 English placeholders. Card attachments and
+custom-field links retain self-link rejection, inaccessible-card messages,
+permission requirements, paused-link conditions and one-way/two-way behaviour.
+Announcements, calendar mode and list colours are translated too. The existing
+regression gate exposed 33 older storage labels and rule connectors, now filled.
+
+The Irish catalog and guarded-correction suites pass with 30,308 correction
+ledger entries. All 21 human-preference checks pass; exact comparison preserves
+38,430 existing Chinese values. Four browser cases cover attachments, field
+links, announcements and S3 key fields. Syntax and discovery pass; runtime
+remains pending.
+
+The older completed-catalog placeholder gate now passes. Newer Irish feature
+text remains untranslated, and Irish and all-language semantic review remain
+unfinished. Zero placeholders in the older subset is not full verification.
+
+## Malagasy action labels and refreshed inventory — 2026-10-14
+
+Commit `aaaa3391bc` corrects four labels: the optional move reason, the setting
+requesting it, version-check failure and header-icon toggle scope. This resolves
+the move-reason finding recorded in the preceding storage audit.
+
+The Malagasy catalog and guarded-correction suites pass with 30,241 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. One new browser case covers the move
+dialog and header tooltip. Syntax and discovery pass; runtime remains pending.
+
+The refreshed placeholder inventory reports 89 languages with untranslated
+strings. It excludes 379 pending-Transifex keys, which remain in scope. Neither
+that inventory nor a zero-placeholder result verifies semantic correctness.
+Malagasy and all-language review remain unfinished.
+
+## Malagasy storage authentication terminology — 2026-10-14
+
+Commit `7ec01cb14e` corrects three Google Cloud and backup help entries that
+called authentication credentials permissions. Optional JSON keys, key-file
+fallback and default credentials remain explicit; permission instructions are
+unchanged. External provider interfaces were not revalidated.
+
+The Malagasy catalog and guarded-correction suites pass with 30,237 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. One new browser case passes syntax
+and discovery; browser runtime remains pending.
+
+Malagasy and all-language semantic review remain unfinished. The optional
+move-reason label still needs correction in a following review.
+
+## Malagasy scheduling and time attribution — 2026-10-14
+
+Commit `bd274fb312` corrects 14 entries. The card model confirms that recurrence
+creates a fresh copy rather than resetting the original. Date triggers retain
+both setting and changing a date. Time-adjustment help now explains grouping by
+the editor of the total, the difference from work sessions, negative corrections
+and the inability to attribute previously unrecorded time. Calendar, timeline
+and reminder labels retain information omitted or blurred by earlier wording.
+
+The Malagasy catalog and guarded-correction suites pass with 30,234 correction
+ledger entries. All 21 human-preference checks pass; exact comparison preserves
+38,430 existing Chinese values. Two new browser cases cover recurrence and time
+adjustments. Syntax and discovery pass; browser runtime remains pending.
+
+Malagasy and all-language semantic review remain unfinished.
+
+## Malagasy report labels and WIP groups — 2026-10-14
+
+Commit `e6d688867c` corrects 35 entries. Numeric summaries now describe the sum
+of values, WIP groups name groups instead of enabling limits, and selection
+labels distinguish swimlanes from boards. Report labels clarify forecasts,
+confidence, open episodes, cycle duration and minimum predicted capacity.
+
+The Malagasy catalog and guarded-correction suites pass with 30,220 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. Eight browser cases cover numeric
+summaries, WIP groups, report menus and the existing account warning. Syntax
+and discovery pass; runtime remains pending.
+
+Malagasy and all-language semantic review remain unfinished.
+
+## Malagasy account consequences and report explanations — 2026-10-14
+
+Commit `01204a94f0` corrects eight entries. Account anonymization used unrelated
+export help and mislabeled the action and dialog. The warning now explains
+permanent identity replacement, avatar removal, disabled login, retained
+history and irreversibility. Five analytics notes replace fragments with full
+explanations of missing history, overlapping blockers, forecast uncertainty,
+minimum samples and date fallbacks.
+
+The Malagasy catalog and guarded-correction suites pass with 30,185 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. Six browser cases inspect report
+help and the account warning without confirming the account action. Syntax
+and discovery pass; runtime remains pending.
+
+Malagasy and all-language semantic review remain unfinished.
+
+## Malagasy stale import guidance — 2026-10-14
+
+Commit `0e518992bb` repairs five guides. Todoist and Planner retained old
+English passages despite the zero-placeholder result. Jira omitted pagination
+and query fields, Excel omitted worksheet mapping, and CSV used the wrong
+delimiter term. The repaired text follows the current English guidance;
+external provider interfaces were not revalidated.
+
+The Malagasy catalog and guarded-correction suites pass with 30,177 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. Five browser cases pass syntax and
+discovery; runtime remains pending.
+
+This finding reinforces that zero detected placeholders is not complete
+semantic verification. Malagasy and all-language review remain unfinished.
+
+## Malagasy import and Scrum recovery — 2026-10-14
+
+Commit `ef2e446d98` translates 29 entries for interrupted imports, Scrum
+conflicts and server-only login settings. Permanent partial-board deletion,
+retained records, other users' edits and rollback restrictions remain explicit.
+
+The Malagasy catalog and guarded-correction suites pass with 30,172 correction
+ledger entries. The full catalog placeholder check now returns no entries,
+including keys marked pending Transifex. This does not prove complete semantic
+correctness or detect every stale English passage. All 21 human-preference
+checks pass, and exact comparison preserves 38,430 existing Chinese values.
+Four recovery browser cases pass syntax and discovery; runtime remains pending.
+
+Malagasy semantic review and the all-language objective remain unfinished.
+
+## Malagasy stopped synchronization recovery — 2026-10-14
+
+Commit `8422cc349c` translates 18 recovery messages. They retain the distinction
+between applied changes that remain and pending writes that are abandoned.
+Lost access, changed lists, resumable operations, busy operations and the
+oldest-50 display limit remain explicit.
+
+The Malagasy catalog and guarded-correction suites pass with 30,143 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. The sync-recovery browser case covers
+administrator discard behavior. Syntax and discovery pass; runtime remains
+pending.
+
+Further Malagasy translations and all-language semantic review remain unfinished.
+
+## Malagasy Scrum planning transfers — 2026-10-14
+
+Commit `36647667e6` translates 21 entries for release selection, Scrum import
+matching and previews, and planning synchronization. Unmatched cards remain
+unchanged, existing planning is linked rather than duplicated, and local
+changes and first-sync safeguards remain explicit.
+
+The Malagasy catalog and guarded-correction suites pass with 30,125 correction
+ledger entries. An initial catalog assertion used the uninflected form of a
+word; its corrected pattern passes. All 21 human-preference checks pass, and
+exact comparison preserves 38,430 existing Chinese values. Scrum import and
+planning-sync browser cases pass syntax and discovery; runtime remains pending.
+
+Further Malagasy translations and all-language semantic review remain unfinished.
+
+## Malagasy workflows and administration — 2026-10-14
+
+Commit `9c09c273d4` translates 25 messages for Wrike workflows, LDAP sync,
+OAuth domain restrictions, import selection, subtask permissions and Blockly
+fragments. Status mappings, read-only scope, empty-domain behavior, technical
+identifiers and numeric placeholders remain intact.
+
+The Malagasy catalog and guarded-correction suites pass with 30,104 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. Two subtask cases and one LDAP case
+cover successful actions and denied access. Syntax and discovery pass; runtime
+execution remains pending. Wrike guidance follows the current English source;
+external provider behavior was not revalidated.
+
+Further Malagasy translations and all-language semantic review remain unfinished.
+
+## Malagasy integrations and notification delivery — 2026-10-14
+
+Commit `519e99e4f3` translates 45 messages for Sandstorm access, external-link
+rules, webhook payloads and notification delivery. Literal matching syntax,
+inherited defaults, identity-hiding choices, grouping, schedules and quiet-hour
+behavior remain explicit.
+
+The Malagasy catalog and guarded-correction suites pass with 30,079 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. The notification-settings browser
+case covers layout, grouping, daily delivery and webhook identity. Syntax and
+discovery pass; runtime execution remains pending.
+
+Further Malagasy translations and all-language semantic review remain unfinished.
+
+## Malagasy bulk transfer and mapping choices — 2026-10-14
+
+Commit `ef60786045` translates 35 messages. Member mapping distinguishes existing
+users, named placeholders and the importing user. Column mapping explains
+missing fields and required choices. Bulk-transfer help retains the distinction
+between one export archive and multiple boards, permitted exports and per-board
+Excel/ZIP layouts. Trello and Sandstorm help keeps its technical markers.
+
+The Malagasy catalog and guarded-correction suites pass with 30,034 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. Two browser cases inspect member
+choices and bulk-export layouts. Syntax and discovery pass; runtime execution
+remains pending.
+
+Further Malagasy translations and all-language semantic review remain unfinished.
+
+## Malagasy project import guidance — 2026-10-14
+
+Commit `b3eaaf9f4e` translates twelve guides for Tasks.org, monday.com,
+Super Productivity, Taiga, Vikunja, Quire, Wrike, Teamwork, Businessmap,
+Redmine, Notion and Plane. The translations retain unsupported-data warnings,
+English column requirements, task nesting, completion dates and fallback
+mappings. They follow the current English source; provider interfaces were
+not revalidated.
+
+The Malagasy catalog and guarded-correction suites pass with 29,999 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. The browser suite now covers all
+22 translated import formats. Syntax and discovery pass; runtime execution
+remains pending.
+
+Further Malagasy translations and all-language semantic review remain unfinished.
+
+## Malagasy outline and task import guides — 2026-10-14
+
+Commit `211c67ad11` translates ten guides: OPML, Org mode, MeisterTask,
+Obsidian, Linear, TickTick, ClickUp, Nullboard, Kanri and Pivotal Tracker.
+The translations preserve hierarchy mappings, completion dates, first-board
+restrictions, format markers and literal provider menu names. They follow the
+current English instructions; external provider interfaces were not revalidated.
+
+The Malagasy catalog and guarded-correction suites pass with 29,987 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. Ten import-help browser cases pass
+syntax and discovery; runtime execution remains pending.
+
+Further Malagasy translations and all-language semantic review remain unfinished.
+
+## Malagasy linked cards and storage placeholders — 2026-10-14
+
+Commit `7d10b098f8` translates 67 English placeholders. The first 34 cover
+linked cards, custom-field matching and directions, access restrictions,
+announcements, calendar mode and color inheritance. The existing legacy
+catalog test then exposed 33 older English storage labels and rule connectors;
+these were translated too, without weakening the check.
+
+The Malagasy catalog and guarded-correction suites pass with 29,977 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. Four browser cases cover attached
+cards, custom-field links, announcement help and S3 credentials. Syntax and
+discovery pass; runtime execution remains pending.
+
+Malagasy still has newer untranslated messages. Neither the legacy catalog
+gate nor this batch proves complete semantic review. The full all-language
+objective remains unfinished.
+
+## Haitian Creole card actions and bounce thresholds — 2026-10-14
+
+Commit `50955434aa` corrects four entries. Board creation identifies its source
+card, linking no longer implies a fixed board, version-check failure explains
+what could not be checked, and bounce help describes the configured threshold.
+
+The Haitian catalog and guarded-correction suites pass with 29,910 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. Two browser cases inspect the card
+actions and bounce help. Syntax and discovery pass; runtime remains pending.
+
+A refreshed inventory counts 30,222 untranslated strings in 90 languages,
+excluding 379 keys marked pending Transifex. Those pending keys also remain
+within the requested translation scope. Catalog counts do not establish
+semantic correctness. Haitian and all-language review remain unfinished.
+
+## Haitian Creole import and synchronization guidance — 2026-10-14
+
+Commit `4063ccbbc8` corrects four entries. Jira help restores pagination,
+required query fields and alternatives for combining pages. Excel help now
+explains generic tables, column mapping and separate boards for worksheets
+with headers. Scrum preview help uses Haitian wording, and list sync identifies
+an external tracking system and its background checks. Provider interfaces
+were not revalidated; these translations follow the current English source.
+
+The Haitian catalog and guarded-correction suites pass with 29,906 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. Browser coverage includes Jira and
+Excel help, Scrum import and list synchronization. Syntax and discovery pass;
+runtime execution remains pending.
+
+The remaining Blockly sections were reviewed against the English meanings,
+including logic, numeric limits, list operations and accessibility guidance;
+no additional corrections were identified in that pass. This is not a claim
+of complete Haitian or all-language semantic verification.
+
+## Haitian Creole analytics meanings and limits — 2026-10-14
+
+Commit `8a4cf08d65` corrects 39 entries. Five methodology notes previously
+replaced substantial explanations with symbols and fragments. They now explain
+missing history, overlapping blocker causes, simulation assumptions and limits,
+cycle-date fallbacks and omitted invalid values. Report headings and metrics
+use meaningful labels; movement reasons remain optional, time adjustments name
+the author, and the never-synced label includes its missing negation.
+
+The Haitian catalog and guarded-correction suites pass with 29,902 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. Six browser cases check report help
+and time adjustments. Syntax and discovery pass; runtime remains pending.
+The source's 2,000-trial, 3,650-day and five-stay threshold constants were
+checked against the analytics implementation.
+
+Haitian semantic review and the all-language objective remain unfinished.
+
+## Haitian Creole WIP groups and numeric summaries — 2026-10-14
+
+Commit `dcb7064e49` corrects six labels. WIP groups no longer use enable-limit
+wording, group names remain optional, and swimlane selection no longer adds a
+board reference. The numeric summary describes summing values of selected
+numeric custom fields, rather than counting fields. This matches the list
+header's numeric summary and the sidebar's group editor.
+
+The Haitian catalog and guarded-correction suites pass with 29,863 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. Two browser cases cover group labels
+and a numeric total excluding a hidden field. Syntax and discovery pass;
+runtime execution remains pending.
+
+Haitian semantic review and the all-language objective remain unfinished.
+
+## Haitian Creole backup and credential terminology — 2026-10-14
+
+Commit `9bc9a3fe7e` corrects eight storage-help entries. Authentication credentials
+no longer use the word for qualifications, backup settings no longer use the
+word for environments, and destination directories use consistent terminology.
+Two related article corrections improve cloud help. Key-length requirements,
+the missing-key restore warning, backup paths, optional authentication choices
+and literal provider menu/permission labels remain intact.
+
+The Haitian catalog and guarded-correction suites pass with 29,857 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. A browser case checks cloud credential
+labels and fallback help. Syntax and discovery pass; runtime remains pending.
+External provider interfaces were not revalidated; the translations follow the
+current source guidance.
+
+Haitian semantic review and the all-language objective remain unfinished.
+
+## Haitian Creole account anonymization warning — 2026-10-14
+
+Commit `cdcbe1e430` fixes the account-anonymization action label and confirmation.
+The confirmation incorrectly duplicated export-anonymization help, omitting the
+actual consequences. It now explains permanent username/name/email replacement,
+avatar removal, disabled login, retained history and continued anonymous account
+references. The wording matches the current English source and the behavior in
+`server/models/users.js`.
+
+The Haitian catalog and guarded-correction suites pass with 29,849 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. A browser case checks each consequence
+and rejects export-only wording without confirming the account action. Syntax
+and discovery pass; runtime remains pending.
+
+Haitian semantic review and the all-language objective remain unfinished.
+
+## Haitian Creole recurrence and checklist reset — 2026-10-14
+
+Commit `95f0938b36` corrects eight labels. Card recurrence and checklist reset
+previously used identical wording. Their labels now distinguish repeating a
+card from removing checklist marks automatically, including their disabled
+options. The distinction matches `server/cardRecurrenceSchedule.js` and the
+checklist reset model. Checking all items explicitly sets check marks, and
+known-account help describes recognized usernames with incorrect passwords.
+
+The Haitian catalog and guarded-correction suites pass with 29,847 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. A browser case compares both popups
+without changing their schedules. Syntax and discovery pass; runtime remains
+pending.
+
+Haitian semantic review and the all-language objective remain unfinished.
+
+## Haitian Creole due-card scope and search — 2026-10-14
+
+Commit `7c5571248e` corrects nine entries. Due Cards labels now include cards
+with future deadlines rather than implying they are already due. My Attachments
+no longer adds an unsupported card restriction. Two hyphenated search tokens
+retained the old attachment mistranslation and now use “pyès-atache”; table-view
+swimlane labels use the established term.
+
+The Haitian catalog and guarded-correction suites pass with 29,839 correction
+ledger entries. The production Query parser accepts the corrected attachment
+predicate with and without negation and rejects an unknown field. All 21
+human-preference checks pass, and exact comparison preserves 38,430 existing
+Chinese values. The browser case checks search help and matching results;
+syntax and discovery pass, runtime remains pending.
+
+Haitian semantic review and the all-language objective remain unfinished.
+
+## Haitian Creole administration and precedence — 2026-10-14
+
+Commit `54c2af0993` corrects 14 entries. Organization hostnames and administrator
+status no longer use literal army/flag meanings. Notification settings describe
+board and member overrides instead of cancellations. Assignee, resizing and
+notification-panel labels are consistent, and the header-toggle description
+retains the full range of affected icons. Tenant domains keep their examples,
+MULTITENANCY=true prerequisite and empty-field instruction; organization admins
+still cannot grant or manage site-wide administrator access.
+
+The Haitian catalog and guarded-correction suites pass with 29,830 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. The notification browser case checks
+the corrected precedence help and rejects the old cancellation term. Syntax
+and discovery pass; runtime remains pending.
+
+Haitian semantic review and the all-language objective remain unfinished.
+
+## Haitian Creole visibility and email settings — 2026-10-14
+
+Commit `a7346d6a58` corrects 14 settings strings. SMTP host no longer uses the
+word for an army; URL schemes become clickable links rather than being clicked
+automatically. Starred swimlanes use the established board term. Visibility
+labels and email-template subjects/bodies now have clear Haitian grammar,
+retaining default descriptions and the distinction between invitations and
+activity notifications. Either empty external-link field still disables linking.
+
+The Haitian catalog and guarded-correction suites pass with 29,816 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. A browser case checks SMTP and template
+labels and rejects their old wording; syntax and discovery pass, runtime remains
+pending.
+
+Haitian semantic review and the all-language objective remain unfinished.
+
+## Haitian Creole uploads and archive guidance — 2026-10-14
+
+Commit `08b5bbf36f` corrects ten entries. Attachment-export metadata and map
+controls now use the upload verb rather than the download verb; default storage
+explicitly refers to newly uploaded attachments. The archive hint points to
+All Boards instead of the old home-page header. Dropdown, template-container
+and creator-filter labels use consistent terms. Map administrator permissions
+and the supported image examples remain intact.
+
+The Haitian catalog and guarded-correction suites pass with 29,802 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. Haitian Creole joins the existing
+map-upload browser case, with explicit upload wording assertions. Syntax and
+discovery pass; runtime remains pending.
+
+Haitian semantic review and the all-language objective remain unfinished.
+
+## Haitian Creole calendars and core controls — 2026-10-14
+
+Commit `6227e6b908` corrects 20 entries. Fourteen calendar labels were French
+despite the Haitian locale tag. They now use Haitian Creole, retaining the
+Gregorian/ISO-week distinction, Indian national calendar, Jalali and Minguo
+names, and the two Ethiopian variants. Six other fixes repair roadmap spelling,
+the bucket-list idiom, account anonymization, snapshot-date meaning and assignee
+terminology. These errors were invisible to English-placeholder counts.
+
+The Haitian catalog and guarded-correction suites pass with 29,792 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. A calendar-selector browser case
+checks native labels and rejects French text; syntax and discovery pass,
+runtime remains pending.
+
+Haitian semantic review and the all-language objective remain unfinished.
+
+## Haitian Creole subtasks and checklists — 2026-10-14
+
+Commit `5dd13b7808` corrects 30 entries across card controls, activity text and
+settings. Subtask variants now consistently use “sou-travay”; checklist controls
+use “lis verifikasyon”. The empty-search message specifies matching cards,
+template-copy labels retain “from”, and the attachment-removal prompt uses the
+correct article while retaining its file-preservation and restoration meanings.
+
+The Haitian catalog and guarded-correction suites pass with 29,772 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. The existing Haitian subtask browser
+case now checks its heading and add button; it and the denied-access case pass
+syntax and discovery. Runtime remains pending.
+
+The current placeholder inventory remains empty, but Haitian semantic review
+and the all-language objective are unfinished.
+
+## Haitian Creole attachment and rule semantics — 2026-10-14
+
+Commit `bcdf935521` corrects 81 existing translations. Thirteen rule strings
+confused unchecking with disabling, mistranslated attachments, omitted date
+initialization or used inconsistent assignee grammar. Reviewing the assembled
+checklist-action sentence also restored its connecting preposition. The same
+attachment mistranslation occurred in 68 further messages, now corrected across
+imports, storage, backup, activity and deletion prompts. Technical strings and
+placeholders remain intact; permanent and reversible deletion stay distinct.
+
+The Haitian catalog and guarded-correction suites pass with 29,742 correction
+ledger entries. Three older assertions contained the mistranslated term and
+were corrected. All 21 human-preference checks pass, and 38,430 existing Chinese
+values remain unchanged. Rule-builder and attachment-settings browser cases
+pass syntax and discovery; runtime remains pending.
+
+These semantic errors existed with zero current English placeholders. The
+inventory is therefore only one check; full Haitian semantic review and the
+all-language objective remain unfinished.
+
+## Haitian Creole current placeholders and stale English — 2026-10-14
+
+Commit `eca6c80825` translates eight remaining current placeholders and repairs
+two older English import guides for Todoist and Planner. Those guides differed
+from the current English source, so equality-based counting missed them. The
+translations follow the current source guidance; external interfaces were not
+revalidated. Literal menu names and field mappings remain intact.
+
+The current Haitian placeholder inventory is empty, including pending keys.
+A regression gate now checks that inventory. A targeted English-prose scan of
+all 4,270 Haitian values finds no further matches outside URLs, but this does
+not prove semantic correctness or cover every possible untranslated phrase.
+
+The Haitian catalog and guarded-correction suites pass with 29,661 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. Six browser cases cover recovery
+permissions, LDAP and import guides; syntax and discovery pass, runtime remains
+pending. Haitian semantic review and the all-language objective are unfinished.
+
+## Haitian Creole planning sync and recovery — 2026-10-14
+
+Commit `940aee620b` translates 48 Scrum matching, planning-sync, blocked-sync
+and interrupted-import entries. Checks retain source-ID precedence, local
+planning preservation, first-sync behavior, already-applied changes, missing
+source-file restrictions, permanent deletion and protection of unrelated boards.
+
+The Haitian catalog and guarded-correction suites pass with 29,651 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. Haitian Creole joins three existing
+browser cases for planning sync, stuck-operation discard and interrupted-import
+discard. They verify labels, persisted behavior and unrelated-data protection.
+Syntax and discovery pass; runtime remains pending.
+
+Further Haitian strings and other languages still require translation and
+semantic review. The all-language objective remains unfinished.
+
+## Haitian Creole workflows and planning — 2026-10-14
+
+Commit `8c8c00546d` translates 45 administration, workflow, Blockly and Scrum
+entries. Checks preserve read-only permissions, Wrike completion groups,
+LDAP variable names, OAuth empty-field behavior, subtask state distinctions,
+planning matching rules and positional/interpolation placeholders. The Wrike
+state meanings match `models/lib/wrikeWorkflow.js`.
+
+The Haitian catalog and guarded-correction suites pass with 29,603 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. Haitian Creole joins both existing
+subtask browser cases: successful editing and denied comment-only access.
+Syntax and discovery pass; browser runtime remains pending.
+
+Further Haitian strings and other languages still require translation and
+semantic review. The all-language objective remains unfinished.
+
+## Haitian Creole integrations and notifications — 2026-10-14
+
+Commit `38e2004f8e` translates 49 entries for Trello/Sandstorm access, link rules,
+webhook payloads and notification delivery. Checks retain literal rule syntax,
+inherited settings, identity hiding, quiet-hour delays, grouping distinctions
+and placeholders. Haitian Creole joins the existing notification-settings UI
+case, which exercises saving settings and reverting to inherited defaults.
+
+The Haitian catalog and guarded-correction suites pass with 29,558 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. Browser syntax and discovery pass;
+runtime remains pending.
+
+The refreshed inventory reports 30,236 missing values across 91 languages,
+excluding 379 pending keys. Pending keys remain in scope, and equality-based
+counts cannot prove semantic correctness. Further Haitian strings and other
+languages still require translation and review; the objective is unfinished.
+
+## Haitian Creole bulk imports and exports — 2026-10-14
+
+Commit `7687970a9d` translates 20 mapping, multi-board import and export entries.
+Checks preserve member-mapping limits, single-board archives, per-project
+boundaries, Excel/ZIP layouts, Trello's literal swimlane label and placeholders.
+
+The Haitian catalog and guarded-correction suites pass with 29,509 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. A bulk-export browser case passes
+syntax and discovery; runtime remains pending.
+
+Further Haitian strings and other languages still require translation and
+semantic review. The all-language objective remains unfinished.
+
+## Haitian Creole import mapping — 2026-10-14
+
+Commit `a79388c894` translates 15 entries covering Businessmap, Redmine, Notion,
+Plane, imported-user choices and CSV column mapping. Checks retain English-header
+requirements, omitted data, Notion's fallback column, deferred user mapping and
+the shared-list fallback. The column-number placeholder remains exact.
+
+The Haitian catalog and guarded-correction suites pass with 29,489 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. Four new import browser cases pass
+syntax and discovery; runtime remains pending. Businessmap checks the file input
+because its source definition is spreadsheet-only.
+
+Further Haitian strings and other languages still require translation and
+semantic review. The all-language objective remains unfinished.
+
+## Haitian Creole project imports — 2026-10-14
+
+Commit `e26b9f041b` translates guides for Pivotal Tracker, Tasks.org, monday.com,
+Super Productivity, Taiga, Vikunja, Quire, Wrike and Teamwork. Checks retain
+attachment/comment exclusions, archive states, completion dates, compressed
+JSON handling, nested-task markers and custom-field mappings.
+
+The Haitian catalog and guarded-correction suites pass with 29,474 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. The browser suite now registers 18
+Haitian import cases. Spreadsheet-only formats check file inputs, matching
+`models/lib/importSources.js`. Syntax and discovery pass; runtime is pending.
+
+Further Haitian strings and other languages still require translation and
+semantic review. The all-language objective remains unfinished.
+
+## Haitian Creole outline and task imports — 2026-10-14
+
+Commit `80e756b223` translates nine import guides (OPML, Org mode, MeisterTask,
+Obsidian, Linear, TickTick, ClickUp, Nullboard and Kanri) plus the card-color hint.
+Checks preserve hierarchy mappings, completion states, literal menu labels,
+Org mode markers and first-board-only limits. These translations follow the
+existing source guidance; external product interfaces were not revalidated.
+
+The Haitian catalog and guarded-correction suites pass with 29,465 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. Nine import browser cases pass syntax
+and discovery; runtime remains pending.
+
+Further Haitian strings and other languages still need translation and semantic
+review. The all-language objective remains unfinished.
+
+## Haitian Creole linked cards and storage — 2026-10-14
+
+Commit `4ac5621e64` translates 66 English placeholders: 33 linked-card and
+announcement entries, followed by 33 storage and rule fragments exposed by the
+existing catalog test. Checks preserve matching names/types, one-way/two-way
+propagation, permission failures, archived-card restrictions and storage states.
+The email-recipient placeholder uses “bay”, based on its rule-editor context.
+
+The Haitian catalog and guarded-correction suites pass with 29,455 correction
+ledger entries. All 21 human-preference checks pass, and exact comparison
+preserves 38,430 existing Chinese values. Haitian Creole is registered in the
+existing linked-field browser test; syntax and discovery pass, runtime is pending.
+
+The older catalog gate now passes, but newer Haitian import instructions remain
+English. That gate does not prove full completion. Other languages and semantic
+verification remain part of the unfinished objective.
+
+## Reviewed words shared with English — 2026-10-14
+
+Commit `db56686e35` recognizes 16 valid words across 14 locales: Spanish/Italian
+“No”, Dutch “is”, and Afrikaans “is”/“as”. Existing locale values are unchanged.
+Matching requires the exact locale, key and current source value. Tests reject
+longer source phrases, unrelated keys and unrelated locales.
+
+The Dutch catalog, reviewed-source and technical/shared-name suites all pass,
+as do all 21 human-preference checks. This is a translation-tool correction;
+no product UI changes or new browser tests are needed.
+
+The refreshed inventory reports 30,269 missing values across 91 languages,
+excluding 379 pending keys. The reduction is removal of false positives, not
+newly translated text. Pending keys and semantic review remain part of the
+unfinished all-language objective.
+
+## Latin stale-English import instructions — 2026-10-14
+
+Commit `96e2c6f620` translates Todoist and Planner import instructions that were
+still English but differed from the current English source. This demonstrates
+why English-equality counts alone cannot prove completion. The translations
+follow the current source guidance, retaining literal menu labels and mappings
+for sections, tasks, subtasks, labels, priorities and custom fields.
+
+Three translation suites pass with 29,389 correction ledger entries. All 21
+human-preference checks pass, and exact comparison preserves 38,430 existing
+Chinese values. The existing import browser suite now includes both Latin
+instructions; syntax and discovery pass, runtime remains pending.
+
+The refreshed `fill-translations.mjs --missing` inventory reports 30,285 values
+across 105 languages. It separately excludes 379 pending keys; those exclusions
+are not evidence of translation completeness. Latin has no legacy prefix, but
+unprefixed semantic review and the all-language objective remain unfinished.
+
+## Latin legacy-prefix cleanup and flow reports — 2026-10-14
+
+Commit `d1e8c955e3` repairs the final 65 Latin values containing “Latine:”.
+Regression checks retain report thresholds, UTC sampling, upper/lower-tail
+forecast distinctions, overlapping causes, missing-history rules and import
+scope. The full catalog now rejects any recurrence of that prefix.
+
+Three translation suites pass with 29,387 correction ledger entries. All 21
+human-preference checks pass, and exact comparison preserves 38,430 existing
+Chinese values. Five flow-report browser tests pass syntax and discovery;
+runtime remains pending.
+
+Zero legacy prefixes does not establish linguistic completion. A fresh scan
+finds English prose in `import-board-instruction-todoist` and
+`import-board-instruction-planner`. Other unprefixed values and all other
+languages still need semantic review. All-language verification is unfinished.
+
+## Latin status, accounts and repair results — 2026-10-14
+
+Commit `6f0bbb9a34` repairs 70 status, repository, account and repair-result
+entries. Regression checks retain temporary lockout, required credentials,
+minimum username length, acknowledgement instructions and repair counters.
+Latin “Error” and “Status” receive exact source/key exceptions with negative tests.
+
+Three translation suites pass with 29,322 correction ledger entries. All 21
+human-preference checks pass, and exact comparison preserves 38,430 existing
+Chinese values. Problem-summary browser coverage seeds a test event and checks
+review/acknowledgement guidance; syntax and discovery pass, runtime is pending.
+
+There remain 65 Latin values containing “Latine:”. Unprefixed values and other
+languages still require semantic review; all-language verification is unfinished.
+
+## Latin monitoring and conversion progress — 2026-10-14
+
+Commit `2e4f49297e` repairs 65 monitoring and progress entries. Regression checks
+retain batch and CPU bounds, millisecond units, interval values, one conversion
+per board, continued board use and background continuation after browser closure.
+Error states, previous/next runs and migration destinations stay distinct.
+
+Three translation suites pass with 29,252 correction ledger entries. All 21
+human-preference checks pass, and exact comparison preserves 38,430 existing
+Chinese values. Browser coverage renders progress and conversion templates and
+checks translated counts and guidance; syntax and discovery pass, runtime is pending.
+
+There remain 135 Latin values containing “Latine:”. Unprefixed values and other
+languages still require semantic review; all-language verification is unfinished.
+
+## Latin migration confirmations and progress — 2026-10-14
+
+Commit `7991925d05` repairs 40 migration confirmation and progress entries.
+Regression checks retain shared-list conversion before deletion, duplicate-list
+conditions, archived-item exclusions, hard-to-undo restoration and field IDs.
+The Latin word “Status” has an exact source/key exception with negative coverage.
+
+Three translation suites pass with 29,187 correction ledger entries. All 21
+human-preference checks pass, and exact comparison preserves 38,430 existing
+Chinese values. Browser coverage renders the migration template with a temporary
+visibility helper, without running a migration. Syntax and discovery pass;
+runtime remains pending.
+
+There remain 200 Latin values containing “Latine:”. Unprefixed values and other
+languages still require semantic review; all-language verification is unfinished.
+
+## Latin board migrations — 2026-10-14
+
+Commit `5c32f58834` repairs 44 board-migration and storage-action entries.
+Regression checks retain the conjunction of empty and duplicate-list conditions,
+restoration of swimlanes/lists/cards, missing-field identifiers, board-local
+attachment repair scope and administrator-only migration access.
+
+Three translation suites pass with 29,147 correction ledger entries. All 21
+human-preference checks pass, and exact comparison preserves 38,430 existing
+Chinese values. Filesystem browser coverage checks the path label and read-only
+input; syntax and discovery pass, runtime remains pending.
+
+There remain 240 Latin values containing “Latine:”. Unprefixed values and other
+languages still require semantic review; all-language verification is unfinished.
+
+## Latin migration status and S3 — 2026-10-14
+
+Commit `d9f565bdb7` repairs 44 migration-state and S3 entries. Regression checks
+distinguish pausing from stopping, progress from completed actions, successful
+from failed connections and access keys from secret keys. Endpoint examples,
+region examples, CollectionFS source and SSL/TLS remain explicit.
+
+Three translation suites pass with 29,103 correction ledger entries. All 21
+human-preference checks pass, and exact comparison preserves 38,430 existing
+Chinese values. S3 browser coverage checks translated key labels, secret input
+masking and endpoint guidance; syntax and discovery pass, runtime is pending.
+
+There remain 284 Latin values containing “Latine:”. Unprefixed values and other
+languages still require semantic review; all-language verification is unfinished.
+
+## Latin cloud configuration guidance — 2026-10-14
+
+Commit `efbff09543` repairs 29 cloud guidance and status entries. Literal console
+labels and credential identifiers remain unchanged; surrounding instructions
+are Latin. Regression checks retain one-time secret display, blank-value
+preservation and the choice between a key file and pasted JSON. These edits
+translate the existing instructions, without revalidating external console layouts.
+
+Three translation suites pass with 29,059 correction ledger entries. All 21
+human-preference checks pass, and exact comparison preserves 38,430 existing
+Chinese values. Extended Azure browser coverage checks the translated path;
+syntax and discovery pass, runtime remains pending.
+
+There remain 328 Latin values containing “Latine:”. Unprefixed values and other
+languages still require semantic review; all-language verification is unfinished.
+
+## Latin backup scope and credentials — 2026-10-14
+
+Commit `6bfdbc9179` repairs 35 backup and cloud credential entries. Regression
+checks retain organization-owned restoration boundaries, exclusion of shared
+accounts/settings, missing-only versus replacement modes, schedule formats and
+optional credential sources. Blank secrets retain their existing value.
+
+Three translation suites pass with 29,030 correction ledger entries. All 21
+human-preference checks pass, and exact comparison preserves 38,430 existing
+Chinese values. Backup browser coverage checks schedule choices and time input;
+syntax and discovery pass, runtime remains pending.
+
+There remain 357 Latin values containing “Latine:”. Unprefixed values and other
+languages still require semantic review; all-language verification is unfinished.
+
+## Latin security settings — 2026-10-14
+
+Commit `386fbba5ec` repairs 26 security labels and explanations. Regression
+checks retain disabled defaults, server-side import/export refusal, avatar-only
+exclusions, anonymization effects, account history preservation, irreversible
+changes and the distinction between activities, notifications and observation.
+Markdown/HTML examples and anonymization identifiers remain literal.
+
+Three translation suites pass with 28,995 correction ledger entries. All 21
+human-preference checks pass, and exact comparison preserves 38,430 existing
+Chinese values. Security browser coverage checks default and enforcement text;
+syntax and discovery pass, runtime remains pending.
+
+There remain 392 Latin values containing “Latine:”. Unprefixed values and other
+languages still require semantic review; all-language verification is unfinished.
+
+## Latin migration and card loading — 2026-10-14
+
+Commit `e949142731` repairs 26 database migration and card-loading entries.
+Regression checks retain connection URLs, environment variables, Snap commands,
+Sandstorm file paths, target availability, first-launch timing, irreversible
+file deletion and the experimental limits of lazy loading. Attachments remain
+explicitly excluded from the text-data migration.
+
+Three translation suites pass with 28,969 correction ledger entries. All 21
+human-preference checks pass, and exact comparison preserves 38,430 existing
+Chinese values. Migration browser coverage checks the explanatory text without
+starting migration; syntax and discovery pass, runtime remains pending.
+
+There remain 418 Latin values containing “Latine:”. Unprefixed values and other
+languages still require semantic review; all-language verification is unfinished.
+
+## Latin scheduling and cloud storage — 2026-10-14
+
+Commit `8cf28c4464` repairs 52 scheduled-job and cloud storage entries. Checks
+retain scheduling versus completion, successful versus failed actions, retrying
+failed migrations versus resuming paused ones, optional Azure connection strings
+and literal cloud service names. Filesystem enabled/disabled states stay distinct.
+
+Three translation suites pass with 28,943 correction ledger entries. All 21
+human-preference checks pass, and exact comparison preserves 38,430 existing
+Chinese values. Azure browser coverage checks the translated connection-string
+explanation and password input; syntax and discovery pass, runtime is pending.
+
+There remain 444 Latin values containing “Latine:”. Unprefixed values and other
+languages still require semantic review; all-language verification is unfinished.
+
+## Latin support and lockout controls — 2026-10-14
+
+Commit `08137b1d4a` repairs 50 support, accessibility, lockout, scheduling and
+storage-path entries. Checks retain the support login restriction, missing-info
+states, known-user/wrong-password versus nonexistent-user distinction, timing
+units, all-user scope and opposing activation actions. The shared Latin word
+“Status” has an exact key/source exception with a negative longer-prose test.
+
+Three translation suites pass with 28,891 correction ledger entries. All 21
+human-preference checks pass, and exact comparison preserves 38,430 existing
+Chinese values. Existing lockout browser coverage now includes Latin; syntax
+and discovery pass, execution remains pending.
+
+There remain 496 Latin values containing “Latine:”. Unprefixed values and other
+languages still require semantic review; all-language verification is unfinished.
+
+## Latin maintenance and account controls — 2026-10-14
+
+Commit `5002df4c9d` repairs 44 maintenance, account, upload and custom-translation
+entries. Checks retain secondary-before-primary ordering, the single-node case,
+completion of bulk moves before compaction, byte units, irreversible deletion
+and checked-versus-all checklist scopes. Workspace placeholders remain exact.
+
+Three translation suites pass with 28,841 correction ledger entries. All 21
+human-preference checks pass. Exact comparison preserves 38,430 existing Chinese
+values. Maintenance browser coverage checks warning text without invoking the
+maintenance operation; syntax and discovery pass, runtime remains pending.
+
+There remain 546 Latin values containing “Latine:”. Unprefixed values and other
+languages still require semantic review; all-language verification is unfinished.
+
+## Latin storage and attachment repair — 2026-10-14
+
+Commit `104480b6cc` repairs 44 storage and progress entries. The descriptions
+retain the distinction between recorded storage and the actual file location,
+read-enabled storage scope, newly uploaded attachments and saved/failed states.
+Technical storage names stay literal; “Resume” is also the Latin imperative,
+protected by an exact-key/source exception and a negative longer-prose test.
+
+Three translation suites pass with 28,797 correction ledger entries. All 21
+human-preference checks pass, and exact comparison preserves 38,430 existing
+Chinese values. The admin storage browser test checks the repair explanation
+and default destination controls; syntax and discovery pass, runtime is pending.
+
+There remain 590 Latin values containing “Latine:”. Unprefixed values and other
+languages still require semantic review. All-language verification is unfinished.
+
+## Latin checklist and attachment actions — 2026-10-14
+
+Commit `a83a794b12` repairs 32 mixed-language entries for checklist actions,
+attachment moves and notification email fields. Source inspection confirms the
+legal-notice link follows the acceptance fragment; its accusative case now
+completes “Pergendo accipis nostram notitiam iuridicam”.
+
+Regression checks distinguish copying from moving, retain original item order,
+board-wide attachment scope, destination names and the empty-source condition.
+All three translation suites pass with 28,753 correction ledger entries. All
+21 human-preference checks pass, and exact comparison preserves 38,430 existing
+Chinese values. The new checklist menu browser test passes syntax and discovery;
+its runtime remains unverified.
+
+There remain 634 Latin values containing “Latine:”. Unprefixed values and other
+languages still require semantic review; all-language verification is unfinished.
+
+## Latin invitations and Node memory — 2026-10-14
+
+Commit `2dd8c45cab` repairs 35 prefixed invitation, organization, memory and
+related entries. Regression checks preserve registration conditions, administrator
+contact instructions, allocated/used/peak memory, RSS, native/detached contexts
+and diagnostic heap overwriting. The shared Latin imperative “Remove” retains an
+exact source/key exception with negative coverage for longer English prose.
+
+Memory terminology was checked against the
+[Node.js V8 documentation](https://github.com/nodejs/node/blob/main/doc/api/v8.md),
+including the bit-pattern overwrite behavior of does_zap_garbage.
+
+The Latin, guarded-correction and shared-word suites pass with 28,721 ledger
+entries. All 21 human-preference checks pass. Memory-label browser coverage
+checks the distinct statistics; syntax and discovery pass, runtime remains pending.
+Exact comparison preserves 38,430 existing Chinese values.
+
+There remain 666 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin waiting indicators and ticket labels — 2026-10-14
+
+Commit `5df2e188cc` repairs 30 prefixed waiting-indicator, window-control,
+deletion, ticket and history entries. Regression checks retain eight distinct
+indicator names, maximize/minimize actions, the remaining-user deletion
+restriction, Cc syntax, five ticket states and four history actions.
+
+The Latin and guarded-correction suites pass with 28,686 ledger entries. All 21
+human-preference checks pass. Card-window browser coverage checks both titles
+and toggles between maximized and normal views. Syntax and discovery pass;
+browser runtime remains pending. Exact comparison preserves 38,430 existing
+Chinese values.
+
+There remain 701 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin office, API and recovery reports — 2026-10-14
+
+Commit `1c0204e23e` repairs 25 prefixed office, API, recovery and swimlane-copy
+entries. Regression checks distinguish first/last observations and retain
+per-account/endpoint aggregation, the exclusion of per-request rows, WITH_API=true,
+text backups, re-migration from MongoDB and automatic continuation after recovery.
+
+The Latin and guarded-correction suites pass with 28,656 ledger entries. All 21
+human-preference checks pass. Office-report browser coverage checks translated
+login and first/last observation headers. Syntax and discovery pass; browser
+runtime remains pending. Exact comparison preserves 38,430 existing Chinese values.
+
+There remain 731 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin string templates and reports — 2026-10-14
+
+Commit `bd9d654aae` repairs 30 prefixed field, activity and report entries.
+Regression checks preserve substitution tokens and space entities, invisible-file
+filtering, administrator/impersonated-user distinctions, IPv4/IPv6, optional
+country/city data and successful-login counts grouped by person.
+
+The Latin and guarded-correction suites pass with 28,631 ledger entries. All 21
+human-preference checks pass. Custom-field browser coverage now selects string
+templates, checks format/separator labels and verifies dropdown settings hide.
+Syntax and discovery pass; browser runtime remains pending. Exact comparison
+preserves 38,430 existing Chinese values.
+
+There remain 756 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin locations and backgrounds — 2026-10-14
+
+Commit `08c7d5314b` repairs 30 prefixed location, background, sorting and server
+error entries. Regression checks preserve title aliases, size placeholders,
+latitude/longitude, detection failure/success, exact troubleshooting commands and
+newest/oldest sorting. The shared place name “Asia” has an exact source/key
+exception with negative coverage for longer English prose.
+
+The Latin, guarded-correction and shared-word suites pass with 28,601 ledger
+entries. All 21 human-preference checks pass. Location browser coverage checks
+invalid input followed by a coordinate-bearing map link; syntax and discovery
+pass, runtime remains pending. Exact comparison preserves 38,430 existing Chinese
+values.
+
+There remain 786 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin sorting and dependencies — 2026-10-14
+
+Commit `959bfbcedc` repairs 37 prefixed sorting, completion, sticker and dependency
+entries. Regression checks preserve ascending/descending order, completion
+polarity, blocks/blocked-by and fixes/fixed-by direction, JSON/SVG formats,
+minimum import input and unmatched counts. The shared Latin word “Color” keeps
+an exact source/key exception with a negative test for longer English prose.
+
+The Latin, guarded-correction and shared-word suites pass with 28,571 ledger
+entries. All 21 human-preference checks pass. Dependency-picker browser coverage
+checks both relation directions and selects the blocked-by option, opening a
+collapsed section when necessary. Syntax and discovery pass; browser runtime
+remains pending. Exact comparison preserves 38,430 existing Chinese values.
+
+There remain 816 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin search instructions and examples — 2026-10-14
+
+Commit `30c12e510c` repairs 32 prefixed search-help, card-number and related
+entries. Regression checks preserve query tokens, localized user and absent-date
+examples, descending sorting, per-page positive limits, OR/AND distinctions,
+positive/negative date ranges, case insensitivity and archive defaults. All search
+instruction and operator entries are checked for remaining legacy prefixes.
+
+The Latin and guarded-correction suites pass with 28,534 ledger entries. All 21
+human-preference checks pass. Search-help browser coverage checks rendered
+explanations and syntax; discovery and syntax checks pass, runtime remains pending.
+Exact comparison preserves 38,430 existing Chinese values.
+
+There remain 853 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin search predicates and introductory help — 2026-10-14
+
+Commit `e3ea440a31` repairs 40 prefixed search predicates, validation errors,
+pagination and introductory help entries. Regression checks preserve predicate
+uniqueness and registration, positive-integer limits, placeholders, quoted values
+and a list example that uses the Latin operator. The shared word “selector” has
+an exact source/key exception with negative coverage for longer English text.
+
+The Latin, guarded-correction and shared-word suites pass with 28,502 ledger
+entries. All 21 human-preference checks pass. Overdue-search browser coverage
+requires a past-due card and excludes a future card; syntax and discovery pass,
+runtime remains pending. Exact comparison preserves 38,430 existing Chinese values.
+
+There remain 885 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin search messages and operators — 2026-10-14
+
+Commit `cb3da6ac52` repairs 48 prefixed search entries. Regression checks
+preserve access limits, membership/assignment scope, quoted missing-result values,
+counts, shorthand aliases, distinct full operator names and parser registration.
+The title operator is distinct from the label operator.
+
+The Latin and guarded-correction suites pass with 28,462 ledger entries. All 21
+human-preference checks pass. Title-search browser coverage requires a matching
+card and excludes a different title; syntax and discovery pass, runtime remains
+pending. Exact comparison preserves 38,430 existing Chinese values.
+
+There remain 925 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin template sharing and card views — 2026-10-14
+
+Commit `13f06820f7` repairs 40 prefixed shared-template, domain and card-view
+entries. Regression checks preserve domain examples, multiple sharing scopes,
+nonempty template-board filtering, view-title aliases, sort distinctions and
+the permission and incomplete-card restrictions of the all-users due view.
+
+The Latin and guarded-correction suites pass with 28,414 ledger entries. All 21
+human-preference checks pass. Template-settings browser coverage checks the
+scope explanation, nonempty-board condition and three scope controls. Syntax
+and discovery pass; browser runtime remains pending. Exact comparison preserves
+38,430 existing Chinese values.
+
+There remain 973 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin role explanations and weekdays — 2026-10-14
+
+Commit `61480096ba` repairs 35 prefixed role, weekday, deletion and checklist
+visibility entries. Regression checks preserve unrestricted global-admin rights,
+read-only previews before saving, assigned-only visibility, seven distinct weekdays,
+linked-card deletion prerequisites and item/checklist visibility distinctions.
+
+The Latin and guarded-correction suites pass with 28,374 ledger entries. All 21
+human-preference checks pass. Role-settings browser coverage checks the rights and
+preview explanations and save button. Syntax and discovery pass; browser runtime
+remains pending. Exact comparison preserves 38,430 existing Chinese values.
+
+There remain 1,013 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin reminders and preference descriptions — 2026-10-14
+
+Commit `ee4ce8a1eb` repairs 35 prefixed reminder, deletion, preference and
+read-state entries. Regression checks preserve approaching/past/current due
+states, irreversible deletion, self-account scope, keyboard combinations,
+both preference modes, card/minicard distinctions and read/unread actions.
+
+The Latin and guarded-correction suites pass with 28,339 ledger entries. All 21
+human-preference checks pass. Preferences browser coverage checks translated
+labels and tooltips for keyboard modes and multiple card windows. Syntax and
+discovery pass; browser runtime remains pending. Exact comparison preserves
+38,430 existing Chinese values.
+
+There remain 1,048 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin authentication and date activity — 2026-10-14
+
+Commit `d0676f4a76` repairs 30 prefixed authentication, duplication, deletion,
+date activity and placement entries. Regression checks preserve default/display
+settings, OIDC, irreversible deletion, restore/delete distinctions, old/new date
+placeholders, date-message line breaks and relative placement directions.
+
+The Latin and guarded-correction suites pass with 28,304 ledger entries. All 21
+human-preference checks pass. Swimlane-warning browser coverage checks the title,
+irreversible-deletion explanation and confirmation button. Syntax and discovery
+pass; browser runtime remains pending. Exact comparison preserves 38,430 existing
+Chinese values.
+
+There remain 1,083 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin rule hints and branding settings — 2026-10-14
+
+Commit `c59113bebf` repairs 40 prefixed rule hints, date controls, authentication
+names and branding settings. Regression checks preserve empty-field matching,
+comma-separated checklist examples, another-list movement, date clearing and
+field distinctions, authentication names, HTML tags and assetlinks.json.
+
+The Latin and guarded-correction suites pass with 28,274 ledger entries. All 21
+human-preference checks pass. Checklist-instructions browser coverage checks the
+comma-separated placeholder, initially empty input and explanatory note. Syntax
+and discovery pass; browser runtime remains pending. Exact comparison preserves
+38,430 existing Chinese values.
+
+There remain 1,113 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin rule actions and saved descriptions — 2026-10-14
+
+Commit `fd921c8fef` repairs 50 prefixed action fragments and descriptions.
+Regression coverage compares assembled movement and checklist labels with saved
+wording, and preserves top/bottom, check/uncheck, archive/restore and member scope.
+The exact Latin imperative “Remove” is a legitimate shared word; the filler now
+exempts only its exact source/key pair, with negative coverage for longer prose.
+
+The Latin, guarded-correction and shared-word suites pass with 28,234 ledger
+entries. All 21 human-preference checks pass. Movement-control browser coverage
+checks both options and selects bottom; syntax and discovery pass, runtime remains
+pending. Exact comparison preserves 38,430 existing Chinese values.
+
+There remain 1,153 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin trigger sentences and linking verbs — 2026-10-14
+
+Commit `61a2f68df0` repairs 33 prefixed trigger fragments and three unprefixed
+assignee/date labels. Latin predicates contain finite verbs, so the shared
+rule-grammar helper now omits the separate linking verb for Latin. Regression
+coverage checks assembled named-subject sentences, locale matching boundaries,
+live language changes, archive direction and initial/later date changes.
+
+The Latin, guarded-correction and shared grammar suites pass with 28,184 ledger
+entries. All 21 human-preference checks pass. Existing browser coverage for rows
+and saved descriptions now includes Latin; syntax and discovery pass, runtime
+remains pending. Exact comparison preserves 38,430 existing Chinese values.
+
+There remain 1,203 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. This repairs the linking-verb issue identified in the
+previous batch; it does not establish fluency of every remaining rule action.
+All-language translation and semantic verification remain unfinished.
+
+## Latin rule actions and durations — 2026-10-14
+
+Commit `5e94c5e2a0` repairs 24 prefixed rule-action, duration and button labels.
+Regression checks distinguish before/after, card/board buttons, complete and
+incomplete actions, all-card scope, relative dates and five duration units.
+
+The Latin and guarded-correction suites pass with 28,148 ledger entries. All 21
+human-preference checks pass. Workflow-toolbox browser coverage checks both
+completion actions and the disabled creation button before parts are selected.
+Syntax and discovery pass; browser runtime remains pending. Exact comparison
+preserves 38,430 existing Chinese values.
+
+There remain 1,236 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. Upcoming shared trigger fragments require checking
+Latin agreement and case across their subject/predicate combinations; the current
+rule grammar helper still retains the separate Latin linking verb.
+All-language translation and semantic verification remain unfinished.
+
+## Latin rule import and scheduling — 2026-10-14
+
+Commit `1f11631552` repairs 30 prefixed import and scheduling entries. Regression
+checks preserve Butler export limitations, supported-subset conversion, unmapped
+line/node reporting, n8n and Node-RED names, Monday–Friday boundaries, distinct
+repeat intervals and approaching versus overdue dates.
+
+The Latin and guarded-correction suites pass with 28,124 ledger entries. All 21
+human-preference checks pass. Import-dialog browser coverage checks limitations,
+an initially empty input and unchanged format identifiers. Syntax and discovery
+pass; browser runtime remains pending. Exact comparison preserves 38,430 existing
+Chinese values.
+
+There remain 1,260 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin rule builder and activity messages — 2026-10-14
+
+Commit `6150377ef5` repairs 40 prefixed rule-builder and activity entries.
+Regression checks preserve setting versus clearing custom-field values, triggers
+versus actions, existing-rule editing, archive/restoration direction, any-label
+conditions, daily scheduling, received dates, format literals and selection scope.
+
+The Latin and guarded-correction suites pass with 28,094 ledger entries. All 21
+human-preference checks pass. Existing workflow-builder browser coverage now
+includes Latin, including the disabled creation button before parts are selected.
+Syntax and discovery pass; browser runtime remains pending. Exact comparison
+preserves 38,430 existing Chinese values.
+
+There remain 1,290 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin deletion warnings and subtask settings — 2026-10-14
+
+Commit `0da6274347` repairs 40 prefixed deletion, subtask, minicard and activity
+entries. Regression checks preserve irreversible deletion, the same-name and
+empty-list conditions, settings aliases, full ancestry versus immediate parent,
+prefix versus subtext placement, checklist counts and activity placeholders.
+The full-path wording follows the parent-card chain in `models/cards.js`.
+
+The Latin and guarded-correction suites pass with 28,054 ledger entries. All 21
+human-preference checks pass. Duplicate-list warning browser coverage passes
+syntax and discovery; runtime remains pending. Exact comparison preserves
+38,430 existing Chinese values.
+
+There remain 1,330 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin organization permissions and tenant labels — 2026-10-14
+
+Commit `7729efb8e0` repairs 25 prefixed entries for tenant domains, organization
+administrators, membership, card dates and colors. Regression checks preserve
+comma-separated hostnames, MULTITENANCY=true, the empty-domain condition, limited
+organization administration, matching team/organization actions and distinct date
+and selection labels.
+
+The Latin and guarded-correction suites pass with 28,014 ledger entries. All 21
+human-preference checks pass. Organization-admin browser coverage passes syntax
+and discovery; runtime remains pending. Exact comparison preserves 38,430
+existing Chinese values.
+
+There remain 1,370 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin field policies and system metrics — 2026-10-14
+
+Commit `f8a09add9c` repairs 30 prefixed labels for OS metrics, time units,
+custom-field scope, account settings, board visibility and organizations. Tests
+preserve free versus total memory, new versus all cards, sums at the list top,
+private-only visibility, created/modified dates and membership propagation versus
+synchronization from the authentication provider.
+
+The Latin and guarded-correction suites pass with 27,989 ledger entries. All 21
+human-preference checks pass. Existing custom-field browser coverage now checks
+both card scopes; syntax and discovery pass, runtime remains pending. Exact
+comparison preserves 38,430 existing Chinese values.
+
+There remain 1,395 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin webhooks and system information — 2026-10-14
+
+Commit `0dda250d79` repairs 30 prefixed labels for webhooks, notification layout,
+platform information and database/runtime details. Tests retain product names,
+changeStreams/oplog/polling, METEOR_REACTIVITY_ORDER and DDP_TRANSPORT, optional
+authentication, disable actions, compatibility wording and outgoing versus
+bidirectional webhook labels.
+
+The Latin and guarded-correction suites pass with 27,959 ledger entries. All 21
+human-preference checks pass. Existing Latin notification-settings browser coverage
+already checks the changed layout label; syntax and discovery pass, runtime remains
+pending. Exact comparison preserves 38,430 existing Chinese values.
+
+There remain 1,425 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin transfer limits, SMTP and invitations — 2026-10-14
+
+Commit `49dc81ea2b` repairs 40 prefixed messages for transfer limits, avatar
+policy, registration, SMTP and invitations. Tests preserve literal GB/MB/Bytes,
+separate server-side API safety caps, positive limits, default avatar permission,
+unlimited/maximum/blocked modes, outgoing SMTP direction, sending a test to
+oneself and invitation variables and paragraphs.
+
+The Latin and guarded-correction suites pass with 27,929 ledger entries. All 21
+human-preference checks pass. The existing attachment-limit browser scenario now
+also checks Latin directions and units; syntax and discovery pass, runtime remains
+pending. Exact comparison preserves 38,430 existing Chinese values.
+
+There remain 1,455 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin uploads, appearance and WIP warnings — 2026-10-14
+
+Commit `7842c44d16` repairs 30 prefixed messages for uploads, logo settings,
+welcome content, templates and WIP limits. Tests distinguish upload failure and
+completion, logo image/link URLs, upper-left placement and default height,
+one URL scheme per line, archived-list warnings, watching scope and both WIP
+recovery choices: move tasks out or raise the limit.
+
+The Latin and guarded-correction suites pass with 27,889 ledger entries. All 21
+human-preference checks pass. WIP-warning browser coverage checks the title and
+both choices; syntax and discovery pass, runtime remains pending. Exact comparison
+preserves 38,430 existing Chinese values.
+
+There remain 1,495 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin sidebar, default boards and tracking — 2026-10-14
+
+Commit `42ab802edd` repairs 30 prefixed messages for sidebar controls,
+starred/default boards, time labels, tracking, assignments and shortcuts. Tests
+preserve the card-count threshold, automatic opening and its removal, shortcut
+range and member order, multi-selection add/remove distinctions, notification
+participation scope and unassignment versus membership removal.
+
+The Latin and guarded-correction suites pass with 27,859 ledger entries. All 21
+human-preference checks pass. Existing shortcut-page coverage now checks both
+multi-selection label actions; syntax and discovery pass, runtime remains pending.
+Exact comparison preserves 38,430 existing Chinese values.
+
+There remain 1,525 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin member removal and shortcuts — 2026-10-14
+
+Commit `7f256bce30` repairs 30 prefixed messages for member removal, unsaved
+descriptions, search, WIP limits and shortcuts. Tests retain all-card removal
+and notification, the separate Sandstorm access-revocation step, unsaved-change
+conditions, maximum task count, search scope and the distinction between joining
+a card and assigning it to oneself.
+
+The Latin and guarded-correction suites pass with 27,829 ledger entries. All 21
+human-preference checks pass. Shortcut-page browser coverage checks membership,
+assignment and assigned-card filter labels; syntax and discovery pass, runtime
+remains pending. Exact comparison preserves 38,430 existing Chinese values.
+
+There remain 1,555 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin visibility, notification and archive descriptions — 2026-10-14
+
+Commit `48a62a615e` repairs 30 prefixed messages for selection, roles,
+notifications, private/public boards, previews and empty archives. Tests preserve
+public viewing versus editing by added members, assigned-card visibility,
+notification participation and watch scopes, muting all changes, HTML login links
+and consistent preview labels.
+
+The Latin and guarded-correction suites pass with 27,799 ledger entries. All 21
+human-preference checks pass. The existing archive-tab browser scenario now also
+covers Latin, distinguishing empty cards, lists and swimlanes; syntax and discovery
+pass, runtime remains pending. Exact comparison preserves 38,430 existing Chinese
+values.
+
+There remain 1,585 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin list actions and board departure — 2026-10-14
+
+Commit `5cb027f4c4` repairs 30 prefixed messages for board departure, list
+archiving/deletion, moving and copying selections, settings and navigation.
+Tests preserve all-card scope, irreversible list deletion versus recoverable
+archiving, retained activity, top/bottom destinations and consistent popup labels.
+
+The Latin and guarded-correction suites pass with 27,769 ledger entries. All 21
+human-preference checks pass. A list-deletion browser case checks the permanent
+loss warning and archive alternative without deleting anything; syntax and
+discovery pass, runtime remains pending. Exact comparison preserves 38,430
+existing Chinese values.
+
+There remain 1,615 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin member mapping and validation — 2026-10-14
+
+Commit `0225b90529` repairs 25 prefixed strings for mapping, running/paused
+statuses, version checks, date validation, labels and board membership. Tests
+preserve assigning unmapped members to the current user, selecting an existing
+user, four-digit year entry, irreversible label history loss and retaining at
+least one administrator.
+
+The Latin and guarded-correction suites pass with 27,739 ledger entries. All 21
+human-preference checks pass. The existing keyboard-shortcut browser case also
+checks the translated menu label; syntax and discovery pass, runtime remains
+pending. Exact comparison preserves 38,430 existing Chinese values.
+
+There remain 1,645 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin Trello import messages — 2026-10-14
+
+Commit `2e641f3fb7` repairs 40 prefixed messages for Trello JSON/ZIP imports,
+workspace placement, API credentials, progress and cancellation. Tests distinguish
+whole-archive size, file count and individual-file limits, unsafe paths, both
+required credentials, at-least-one-board selection and irreversible deletion of
+boards already imported by the current job. Cancel and resume remain distinct.
+
+The Latin and guarded-correction suites pass with 27,714 ledger entries. All 21
+human-preference checks pass. Browser coverage checks ZIP and credential labels
+and password-field masking without contacting Trello; syntax and discovery pass,
+runtime remains pending. Exact comparison preserves 38,430 existing Chinese values.
+
+There remain 1,670 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin advanced filters and import guides — 2026-10-14
+
+Commit `7f26a7e7a9` repairs 30 prefixed messages, including advanced-filter
+syntax and import guides for Kanboard, Deck, OpenProject, issues, Asana, ZenKit,
+CSV, Jira, Excel and WeKan. Stale Jira instructions now retain the full endpoint,
+required fields, pagination and automation rules. Excel describes column mapping
+and a board for every sheet with a header. Filter examples retain literal
+operators, quotes, escapes, parentheses and the regular expression.
+
+The Latin and guarded-correction suites pass with 27,674 ledger entries. All 21
+human-preference checks pass. Nine added import-instruction browser cases pass
+syntax and discovery; runtime remains pending. Exact comparison preserves
+38,430 existing Chinese values.
+
+There remain 1,710 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin sorting and filter controls — 2026-10-14
+
+Commit `9860c8a248` repairs 30 prefixed strings for sort labels and abbreviations,
+date filters, missing values and member/assignee/creator distinctions. Tests
+preserve today/tomorrow/this-week/next-week periods, overdue versus missing dates,
+showing archived lists and hiding empty lists. The creator filter no longer has
+a duplicated language prefix.
+
+The Latin and guarded-correction suites pass with 27,644 ledger entries. All 21
+human-preference checks pass. A date-filter browser case checks translated labels
+and mutually exclusive radio states; syntax and discovery pass, runtime remains
+pending. Exact comparison preserves 38,430 existing Chinese values.
+
+There remain 1,740 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin exports and name collision errors — 2026-10-14
+
+Commit `855b54d55a` repairs 30 prefixed messages for duplicate names and email
+addresses, card exports, attachment metadata and sorting. Tests preserve export
+permission denial, free versus needed disk space, uploader versus upload time,
+all five date fields, omitted attachments and consistent export/subtask labels.
+
+The Latin and guarded-correction suites pass with 27,614 ledger entries. All 21
+human-preference checks pass. Card-export popup coverage checks the translated
+action title; syntax and discovery pass, runtime remains pending. Exact comparison
+preserves 38,430 existing Chinese values.
+
+There remain 1,770 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin account emails and import errors — 2026-10-14
+
+Commit `737e8cd4d0` repairs 25 prefixed messages for email/push invitations,
+password reset, email verification, permissions and import errors. Tests retain
+named variables and URL paragraphs, matching email/push invitations,
+administrator versus member requirements, CSV/TSV delimiter meanings, empty
+export recovery instructions and linked-card cycle restrictions.
+
+The Latin and guarded-correction suites pass with 27,584 ledger entries. All 21
+human-preference checks pass. A malformed-JSON import browser case checks the
+translated error and retained input; syntax and discovery pass, runtime remains
+pending. Exact comparison preserves 38,430 existing Chinese values.
+
+There remain 1,800 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin custom fields, deletion settings and account emails — 2026-10-14
+
+Commit `9c5f1c6ad4` repairs 50 prefixed strings for custom fields, editing,
+permanent-deletion settings and account emails. Tests preserve all-card field
+removal and history loss, the global-administrator boundary and the fact that
+enabling deletion does not itself delete data. Date-format tokens retain their
+literal spelling; enrollment email paragraphs, URL and named variables survive.
+
+The Latin and guarded-correction suites pass with 27,559 ledger entries. All 21
+human-preference checks pass. Custom-field browser coverage checks type labels
+and the empty dropdown-option input and its instructions; syntax and discovery
+pass, runtime remains pending. Exact comparison preserves 38,430 existing Chinese
+values.
+
+There remain 1,825 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin roles, comments and copy controls — 2026-10-14
+
+Commit `9b890bbe16` repairs 30 prefixed strings for assigned-card roles,
+read-only access, hidden comments, worker actions, checklist deletion and copy
+controls. The intentionally empty comment placeholder no longer contains a
+language-name prefix. Tests preserve assigned-card visibility, no-edit clauses,
+worker self-assignment, moving all cards with a list, JSON format instructions
+and the distinction between deleting a checklist and an item.
+
+The Latin and guarded-correction suites pass with 27,509 ledger entries. All 21
+human-preference checks pass. Comment-editor browser coverage checks the empty
+placeholder and initial value; syntax and discovery pass, runtime remains
+pending. Exact comparison preserves 38,430 existing Chinese values.
+
+There remain 1,875 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin colors and navigation — 2026-10-14
+
+Commit `30024f1e66` repairs 32 prefixed strings: all 25 color labels, close/back
+controls, the skip link and a stale archive-restoration instruction. The latter
+now points to Archive on All Boards instead of the old Home header. Tests cover
+unique color names, basic color anchors, dark/pale distinctions, placeholders
+and the restoration destination. Less common shade descriptions are lower
+confidence and still need linguistic review; uniqueness is not proof of accuracy.
+
+The Latin and guarded-correction suites pass with 27,479 ledger entries. All 21
+human-preference checks pass. Skip-link browser coverage checks its Latin label,
+focus visibility and content target; syntax and discovery pass, runtime remains
+pending. Exact comparison preserves 38,430 existing Chinese values.
+
+There remain 1,905 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin fonts, card aging and movement — 2026-10-14
+
+Commit `35d2caec77` repairs 35 prefixed strings for font previews and sizes,
+avatar controls, stars, automatic list widths, card fading and directional
+movement. Tests preserve the numeric preview, five distinct font-size labels,
+toggle state/action, all three fading intensities and their idle-day condition,
+and upward/downward/leftward/rightward actions.
+
+The Latin and guarded-correction suites pass with 27,447 ledger entries. All 21
+human-preference checks pass. The existing Latin font-popup browser case now
+checks the translated preview and size label; syntax and discovery pass, runtime
+remains pending. Exact comparison preserves 38,430 existing Chinese values.
+
+There remain 1,937 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin member mapping and appearance labels — 2026-10-14
+
+Commit `8e336c5a13` repairs 40 prefixed messages for import/restore popups,
+member mapping, sign-in labels, themes and fonts. The mapping instructions retain
+transfer of cards, comments and activity, the imported member's role limit and
+search by name, username or email across all users. The Clear theme category is
+now an adjective rather than a destructive command.
+
+The Latin and guarded-correction suites pass with 27,412 ledger entries. Checks
+cover permission limits, scope and consistent labels; all 21 human-preference
+checks pass. Font-popup browser coverage passes syntax and discovery; runtime
+remains pending. Exact comparison preserves 38,430 existing Chinese values.
+
+There remain 1,972 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin voting, Planning Poker and popup labels — 2026-10-14
+
+Commit `9c55d0f589` repairs 45 prefixed strings for voting, Planning Poker,
+dependencies, organization/team controls and account actions. Poker numbers and
+the uncertainty symbol now appear without a language prefix. Planning Poker
+remains its technical name. The anonymization label now describes anonymizing
+an account instead of importing users.
+
+Tests cover numeric choices, opposing votes, finish/replay distinctions,
+irreversible deletion and existing-user mapping. The Latin and guarded-correction
+suites pass with 27,372 ledger entries, along with all 21 human-preference checks.
+Two browser cases cover positive and negative vote labels and their recorded
+results; syntax and discovery pass, runtime remains pending. Exact comparison
+preserves 38,430 existing Chinese values.
+
+There remain 2,012 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin card archive and voting messages — 2026-10-14
+
+Commit `d3ea074216` repairs 40 prefixed messages for card archiving and deletion,
+list/swimlane restoration, card editing and voting. Gantt remains its technical
+name. Semantic tests preserve permanent loss of actions on deletion, retained
+history when archiving, later restoration, card membership scope, authenticated
+voter eligibility and opposing vote roles.
+
+The Latin and guarded-correction suites pass with 27,327 ledger entries. All 21
+human-preference checks pass. An archive-confirmation browser case checks the
+restoration message and that the card remains unarchived before confirmation;
+syntax and discovery pass, runtime remains pending. Exact comparison preserves
+38,430 existing Chinese values.
+
+There remain 2,057 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin board appearance and view controls — 2026-10-14
+
+Commit `57534c06e9` repairs 44 mixed-language labels and messages for board
+backgrounds, colors, visibility, membership, assignees, zoom, desktop/mobile
+modes and views. Tests preserve private/public HTML, current-card versus
+board-wide assignment scope, avatar limits, drag-handle instructions, repeated
+popup labels and the 50–300% zoom range.
+
+The Latin and guarded-correction suites pass with 27,287 ledger entries. All 21
+human-preference checks pass. Calendar-menu browser coverage passes syntax and
+discovery; runtime remains pending. Exact comparison preserves 38,430 existing
+Chinese values.
+
+There remain 2,097 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin sizing and archive controls — 2026-10-14
+
+Commit `f6f05040ae` repairs 55 prefixed or mixed-language strings for list
+widths, swimlane height, keyboard shortcuts, checklist controls, administrator
+announcements, archives and attachments. Semantic checks preserve personal
+versus shared widths, resizing one/all lists, current toggle state versus next
+action, positive integer height, singular/plural card counts, refresh data loss
+and irreversible attachment deletion. Repeated popup and action labels agree.
+
+The Latin and guarded-correction suites pass with 27,243 ledger entries. All 21
+human-preference checks pass. A browser case checks both shortcut-toggle titles
+and restores the initial state; syntax and discovery pass, runtime remains
+pending. Exact comparison preserves 38,430 existing Chinese values.
+
+There remain 2,141 Latin values containing “Latine:”. Unprefixed values also
+require linguistic review. All-language translation and semantic verification
+remain unfinished.
+
+## Latin checklist and workspace review — 2026-10-14
+
+Commit `51421f5384` repairs 60 mixed-language activity and board controls,
+including checklist completion, date changes, workspace creation, board selection,
+Home removal and list positioning. Tests preserve argument order, opposite
+checklist states, administrator-only permanent deletion and the distinction
+between removing the initial-board setting and deleting a board.
+
+Latin Color is a valid shared word. Its detector exception is restricted to the
+exact workspace-color source value; a negative test verifies that changed English
+prose and unrelated keys remain translatable.
+
+The Latin, guarded-correction and technical-exception suites pass with 27,188
+ledger entries. All 21 human-preference checks pass. Workspace navigation and
+creation-form browser coverage passes syntax and discovery; runtime remains
+pending. Exact comparison preserves 38,430 existing Chinese values.
+
+There remain 2,196 Latin values containing “Latine:” (2,183 start with it).
+Unprefixed strings also require review. All-language translation and semantic
+verification remain unfinished.
+
+## Latin activity-message review — 2026-10-14
+
+Commit `1e254be892` repairs 65 prefixed, mixed-language or grammatically broken
+strings for activity history, attachments, comments, checklist completion,
+card moves, membership restrictions and basic reply controls. The review found
+2,321 Latin strings prefixed with “Latine:” before this batch; 2,256 remain.
+This confirms that an empty English-placeholder report does not prove that a
+locale is correctly translated.
+
+Tests preserve the new-title/object order of positional arguments, old and new
+card locations, completed/incomplete states, label aliases and the restriction
+on administrators editing other users' comments. The Latin and repair-ledger
+suites pass with 27,128 guarded corrections; all 21 human-preference checks pass.
+The added card-history browser case passes syntax and discovery; runtime remains
+pending. Exact comparison preserves 38,430 existing Chinese values.
+
+Latin still needs extensive linguistic review, including unprefixed values.
+All-language translation and semantic verification remain unfinished.
+
+## Latin synchronization and recovery — 2026-10-13
+
+Commit `dc4ea4984b` fills the remaining 51 pending English-equal placeholders
+for planning synchronization, stuck list operations, interrupted board imports,
+Scrum history recovery and environment-only settings. Regression checks preserve
+source-ID/name matching precedence, first-sync retention, retained applied
+changes, permanent deletion of imported boards including later additions,
+untouched foreign boards and rollback restrictions after concurrent edits.
+
+The Latin suite and all 21 human-preference checks pass. Five Latin browser
+cases cover list recovery, interrupted imports, rollback, concurrent changes
+and member permissions. Syntax and discovery pass; runtime execution remains
+pending. Exact comparison preserves 38,430 existing Chinese values.
+
+Latin's default --list output is now empty. This is a placeholder milestone,
+not a completed linguistic audit: older mixed-language Latin strings still
+need review. All-language translation and semantic verification remain unfinished.
+
+## Latin workflow and Scrum imports — 2026-10-13
+
+Commit `1212eb97c7` fills 35 pending strings for Wrike workflow import/export,
+LDAP synchronization, OAuth domains, subtasks and Scrum import previews and
+errors. Two guarded repairs remove language-name prefixes from preview and
+history labels. Tests preserve literal Wrike states and LDAP variables,
+comma-separated domain rules, opposite subtask actions, deduplication and
+matching precedence, foreign-board restrictions and completed-sprint behavior.
+
+The Latin and repair-ledger suites pass with 27,063 guarded corrections. All 21
+human-preference checks pass. Latin joins the existing Scrum import browser
+scenario; syntax and discovery pass, while runtime execution remains pending.
+Exact comparison preserves 38,430 existing Chinese values.
+
+Latin's default --list output now contains 51 English placeholders among keys
+marked pending Transifex. All-language translation and semantic verification
+remain unfinished, including review of older mixed-language Latin strings.
+
+## Latin notification, webhook and link settings — 2026-10-13
+
+Commit `08eb3aabba` fills 46 pending strings for Sandstorm/Trello access,
+external-link rules, webhook contents and identity, notification layouts,
+grouping, schedules, quiet hours and read-only fields. Tests preserve inheritance,
+omitted identity, grouping distinctions, waiting until quiet hours end and
+administrator-only writes. Named link variables, example URLs, aliases and
+WEBHOOKS_ATTRIBUTES remain literal.
+
+The Latin suite and all 21 human-preference checks pass. Latin joins the existing
+notification-delivery settings browser test; syntax and discovery pass, while
+runtime execution remains pending. Exact comparison preserves 38,430 existing
+Chinese values. Only English-equal placeholders changed.
+
+Latin's default --list output now contains 86 English placeholders among keys
+marked pending Transifex. All-language translation and semantic verification
+remain unfinished.
+
+## Latin import mapping and export controls — 2026-10-13
+
+Commit `6f71d68317` fills 35 pending strings for member mapping, CSV column
+mapping, multiple-board imports, all/selected-board exports, Trello export and
+Sandstorm access. Tests preserve named placeholder users, missing-column choices,
+ZIP boundaries, precedence of selected files, cross-board relationship reports,
+export permissions and the literal Swimlane label used for round trips.
+
+The Latin suite and all 21 human-preference checks pass. The added Trello export
+dialog browser case passes syntax and discovery without providing credentials
+or contacting Trello; runtime execution remains pending. Exact comparison
+preserves 38,430 existing Chinese values. Only English-equal values changed.
+
+Latin's default --list output now contains 132 English placeholders, among keys
+marked pending Transifex. All-language translation and semantic verification
+remain unfinished.
+
+## Latin import instructions, second batch — 2026-10-13
+
+Commit `8d76a58ff8` fills ten pending guides for Super Productivity, Taiga,
+Vikunja, Quire, Wrike, Teamwork, Businessmap, Redmine, Notion and Plane.
+Checks cover attachment/comment/description exclusions, required English column
+names, Org-independent task nesting markers, compressed Taiga input, Notion's
+fallback status column and preserved archive state. Source menu labels and
+file-format names remain literal where users need to find them.
+
+The Latin suite and all 21 human-preference checks pass. Ten additional browser
+cases bring Latin import-instruction coverage to 23; syntax and discovery pass,
+while runtime remains pending. Exact comparison preserves 38,430 existing
+Chinese values. Only English-equal placeholders were changed.
+
+Latin's default --list output now contains 167 English placeholders. These are
+pending-Transifex values excluded from the filtered --missing summary. All-language
+translation and semantic verification remain unfinished.
+
+## Latin import instructions, first batch — 2026-10-13
+
+Commit `ec0e77480e` fills twelve pending guides: OPML, Org mode, MeisterTask,
+Obsidian, Linear, TickTick, ClickUp, Nullboard, Kanri, Pivotal Tracker, Tasks.org
+and monday.com. A guarded repair replaces mixed English in the Trello guide.
+Literal source menu labels, extensions, Org markers, hierarchy mappings,
+completion dates and first-board-only behavior remain intact.
+
+The Latin and repair-ledger suites pass with 27,061 guarded corrections. Added
+semantic checks cover the hierarchy, completion dates, first-board restriction,
+raw-note labels, all-column selection and custom-field/comment mappings. All 21
+human-preference checks pass. Thirteen Latin import browser cases pass syntax
+and discovery; runtime execution remains pending. Exact comparison preserves
+38,430 existing Chinese values.
+
+The Latin default --list output is down to 177 English placeholders. This batch
+reduces pending-Transifex values rather than the filtered --missing summary.
+All-language translation and semantic verification remain unfinished.
+
+## Latin pending card-linking strings — 2026-10-13
+
+Commit `90ed19f207` fills 34 English placeholders for attached cards, linked
+custom fields, announcements, calendar mode and list-colour inheritance.
+Two guarded repairs remove Latine prefixes and correct card-link inflection.
+The existing Charta, Tabula and Campi proprii terminology is retained.
+
+The Latin and repair-ledger suites pass with 27,060 guarded corrections. Added
+checks cover direction, matching field names/types, one-card-only fields,
+permissions, archived cards and self-link rejection. All 21 human-preference
+checks pass. Latin joins the existing attachment and custom-field-link browser
+suites; syntax and discovery pass, while runtime execution remains pending.
+Exact comparison preserves 38,430 existing Chinese values.
+
+The default Latin --list output now contains 189 English placeholders. The
+filtered --missing count excludes them because their source keys are pending
+Transifex; that exclusion does not make them translated or remove them from the
+user's objective. Esperanto's default --list was also checked and is empty.
+All-language translation and semantic verification remain unfinished.
+
+## Short rule labels in four more locales — 2026-10-13
+
+Commit `abf6ab4137` fills 40 English-equal values in Javanese jv, Kazakh kk,
+Tajik tg and Somali so. These cover sorting, copulas, recipients, actors,
+self-selection and numeric counts; Somali also receives its remaining Blockly
+ordinal, condition and action labels. The Kazakh count separator is a slash,
+matching the numeric template without forcing inflected word order. Full
+rule-sentence grammar remains unverified and requires contextual review.
+
+Two focused suites pass, with 273 reviewed values across 38 locales. New checks
+preserve Somali control aliases and distinguish conditions from actions. All 21
+human-preference checks pass. The four existing Blockly browser cases pass
+syntax and discovery; runtime execution remains pending. Exact comparison
+preserves 38,430 existing Chinese values; no non-English value was overwritten.
+
+The filtered inventory is 30,285 candidates across 105 locales, plus 379 pending
+Transifex source keys tracked separately. All-language translation and semantic
+verification remain unfinished.
+
+## Short Blockly controls in ten locales — 2026-10-13
+
+Commit `0e554efcaf` fills 126 English values in nine physical locale files:
+ka, km, km_KH, la, tt, jv, kk, tg and sn. The existing km-KH symlink resolves to
+km_KH, so ten locale names receive 140 translated entries without changing the
+symlink. The batch covers ordinal announcements, if/do aliases, pixel on states,
+range endpoints, assignment connectors, logical or and procedure prefixes.
+Existing translated tooltips and controls supplied the terminology reference.
+
+Two focused suites pass, including 233 reviewed values across 37 locale names.
+Alias consistency, placeholders, numeric markers, distinct on/off states and
+valid shared words are checked. All 21 human-preference checks pass. Nine added
+Blockly browser cases join the existing Tatar case; all ten pass syntax and
+discovery. Runtime execution remains pending. Exact comparison preserves
+38,430 existing Chinese values. Native-speaker refinement remains welcome.
+
+The filtered inventory is 30,325 candidates across 109 locales, plus 379 pending
+Transifex source keys tracked separately. All-language translation and semantic
+verification remain unfinished.
+
+## Short rule and Blockly labels in six languages — 2026-10-13
+
+Commit `8685cab6a7` fills 40 English placeholders in bn, ne, hu, is, sq and tl,
+and repairs the Tagalog sublist endpoint from mula # to hanggang #. Source
+inspection confirms that r-of and of appear between counts: Bengali, Nepali and
+Hungarian use a slash instead of a fragment with incorrect word order. Other
+fills distinguish sorting, acting users, email recipients, self-selection and
+Blockly pixel/procedure labels. Full rule-sentence grammar still needs review.
+
+Three focused suites pass, including 93 reviewed short-label values across 27
+locales and 27,058 guarded corrections. All 21 preservation checks pass. Six
+added Blockly browser cases pass syntax and discovery; runtime execution remains
+pending. Exact comparison preserves 38,430 existing Chinese values. No existing
+non-English value changed except the explicitly guarded Tagalog endpoint.
+
+The filtered inventory is 30,465 candidates across 116 languages, plus 379
+pending Transifex source keys tracked separately. All-language translation and
+semantic verification remain unfinished.
+
+## Short-label and S3 gaps across 22 locales — 2026-10-13
+
+Commit `6b97949c4a` fills 52 English-equal placeholders using the guarded fill
+workflow. The batch covers Belarusian, both Japanese variants, Serbian, Turkish,
+Bosnian, Croatian, Slovak, Czech and its variant, Hungarian, Greek and its variant,
+Bislama, Esperanto, Armenian, Portuguese pt_PT, both Catalan variants, Colombian
+Spanish es_CO, Tok Pisin and Luxembourgish. It translates S3 field labels,
+Blockly ordinal announcements, pixel states, range endpoints and procedure
+prefixes, along with Japanese or, Belarusian No and Tok Pisin Me/of.
+
+The two focused suites pass: new coverage checks nonempty translated values,
+placeholder inventories, S3 names, distinct pixel states and preservation of
+valid shared words. All 21 human-preference checks pass. Ten added S3 cases and
+seven added Blockly cases join the existing Bislama/Tok Pisin cases; all 19 pass
+syntax and discovery. Runtime execution remains pending. Exact comparison
+preserves 38,430 existing Chinese values. Technical terminology remains open to
+native-speaker refinement.
+
+The filtered queue now contains 30,505 candidates across 122 languages, with
+379 pending Transifex source keys tracked separately. These counts exclude
+pending keys even though the default --list output includes them. Shared words
+still require contextual review; the all-language objective remains unfinished.
+
+## Southern Sotho historical review: email and catalog end — 2026-10-13
+
+Commit `94f4cf2409` reviews source keys 4070–4269 and repairs eight values.
+Email help distinguishes labels from letters and message contents from a body,
+expresses the recipient maximum, and identifies the SES sending address rather
+than the destination. Disabled-address wording describes the existing state.
+Mixed English in settings, domain and raw-MIME relay descriptions is translated.
+
+The Southern Sotho and repair-ledger suites pass with 27,057 guarded corrections;
+all 21 human-preference checks pass. The added SES settings browser case passes
+syntax and discovery; runtime remains pending. Exact comparison preserves
+38,430 existing Chinese values. Review reaches the end of the current 4,270-key
+catalog but does not establish native-level accuracy. Technical terminology
+still benefits from native-speaker verification.
+
+The refreshed filtered inventory reports 30,557 English-equal candidates across
+135 languages, plus 379 source keys pending Transifex tracked separately. Shared
+words and technical names require contextual review rather than automatic
+replacement. All-language translation and semantic verification remain unfinished.
+
+## Southern Sotho historical review: Scrum and recovery — 2026-10-13
+
+Commit `6d74dfa66f` reviews source keys 3730–4069 and repairs two values.
+The Scrum estimate heading no longer means size, and rollover progress uses
+the translated sprint term. Existing source-conflict boundaries, missing/null
+value distinctions, delivery uncertainty and irreversible cancellation warnings
+are preserved, along with valid Blockly aliases and numeric colour constants.
+
+The Southern Sotho and repair-ledger suites pass with 27,049 guarded corrections;
+all 21 human-preference checks pass. The existing Southern Sotho backlog browser
+case now checks the estimate heading. Syntax and discovery pass; runtime remains
+pending. Exact comparison preserves 38,430 existing Chinese values. Historical
+review reaches key 4069; all-language translation and semantic review remain
+unfinished.
+
+## Southern Sotho historical review: Blockly operations — 2026-10-13
+
+Commit `0056f57d79` reviews source keys 3170–3729 and repairs six values.
+The atan2 tooltip translates inverse tangent; four trigonometry tooltips use
+angular-degree terminology, preserving the negative/positive bounds and the
+exclusion of radians. Vertical movement shortcuts use the movement verb.
+Valid loop, list, logic, text, keyboard labels and placeholders are preserved.
+
+The ledger suite verifies 27,047 guarded corrections. The Southern Sotho suite
+passes after updating two assertions that required the previous angle wording.
+Checks cover units, movement direction, numeric bounds, negation and destructive
+list operations. All 21 human-preference checks pass. The existing Southern
+Sotho Blockly browser case passes syntax and discovery; runtime remains pending.
+Exact comparison preserves 38,430 existing Chinese values. Historical review
+reaches key 3729; all-language translation and semantic review remain unfinished.
+
+## Southern Sotho historical review: analytics and synchronization — 2026-10-13
+
+Commit `2bc93bdfde` reviews source keys 3000–3169 and repairs 54 values.
+Chart notes now explain missing history, overlapping blockers, zero-throughput
+sampling, upper/lower-tail forecasts, uncertainty, simulation limits and
+cycle-time fallbacks. Time corrections are distinguished from work sessions,
+including negative adjustments and unattributable earlier time. Sync labels
+name synchronization rather than agreement; credentials are not permissions.
+Statistical terminology remains subject to native-speaker review.
+
+The Southern Sotho and repair-ledger suites pass with 27,041 guarded corrections;
+all 21 human-preference checks pass. Seven new browser cases cover the five chart
+notes, time-adjustment help and list synchronization. Syntax and discovery pass;
+runtime execution remains pending. Exact comparison preserves 38,430 existing
+Chinese values. Historical review reaches key 3169; all-language translation and
+semantic review remain unfinished.
+
+## Southern Sotho historical review: WIP groups and field summaries — 2026-10-13
+
+Commit `77f401cdee` reviews source keys 2840–2999 and repairs nine values.
+WIP group labels identify groups, optional group names and swimlane selection
+rather than enabling a limit or choosing a board. Severity describes seriousness
+rather than pain. API endpoints identify connection points, and numeric sums and
+date ranges refer to custom data fields. Other valid wording is preserved.
+
+The Southern Sotho and repair-ledger suites pass with 26,987 guarded corrections;
+all 21 human-preference checks pass. A read-only WIP dialog browser case checks
+the translated title and controls. Syntax and discovery pass; runtime execution
+remains pending. Exact comparison preserves 38,430 existing Chinese values.
+Historical review reaches key 2999; all-language translation and semantic review
+remain unfinished.
+
+## Southern Sotho historical review: storage and migration — 2026-10-13
+
+Commit `a14536c444` reviews source keys 2600–2839 and repairs seven values.
+S3 endpoint and region prose is translated while literal service menu names
+remain intact. Restore messages distinguish archived records from saved data,
+and orphaned cards refer to missing list or swimlane links rather than owners.
+Other valid backup and recovery instructions are preserved.
+
+The Southern Sotho and repair-ledger suites pass with 26,978 guarded corrections;
+all 21 human-preference checks pass. The existing S3 settings browser case now
+checks translated endpoint and region hints. Syntax and discovery pass; runtime
+execution remains pending. Exact comparison preserves 38,430 existing Chinese
+values. Historical review reaches key 2839; all-language translation and
+semantic review remain unfinished.
+
+## Southern Sotho historical review: anonymization and backup scope — 2026-10-13
+
+Commit `77c1437808` reviews source keys 2480–2599 and repairs four values.
+The account-anonymization action and confirmation no longer describe imported
+users and export anonymization. The warning explains permanent replacement of
+username, full name and email, avatar removal, disabled login, retained board,
+card and comment history, and no undo. Whole-instance backup scope identifies
+the WeKan installation rather than an example; organization backup exclusions
+and restore ownership limits remain intact. Other valid wording is preserved.
+
+The Southern Sotho and repair-ledger suites pass with 26,971 guarded corrections;
+all 21 human-preference checks pass. The existing confirmation-dialog browser
+case now checks the warning without submitting the action. Syntax and discovery
+pass; runtime execution remains pending. Exact comparison preserves 38,430
+existing Chinese values. Historical review reaches key 2599; all-language
+translation and semantic review remain unfinished.
+
+## Southern Sotho historical review: reset and recurrence — 2026-10-13
+
+Commit `e9479f0b07` reviews source keys 2350–2479 and repairs eight values.
+Automatic checklist reset and card recurrence no longer share unclear wording:
+labels and dialog titles distinguish resetting from repeating a card, and off
+options negate the corresponding action. The last-active label identifies user
+activity, and migration severity describes seriousness rather than pain.
+Other valid wording is preserved.
+
+The Southern Sotho and repair-ledger suites pass with 26,967 guarded corrections;
+all 21 human-preference checks pass. The browser case opens card recurrence and
+checks its title and off option without changing the schedule. Syntax and
+discovery pass; runtime execution remains pending. Exact comparison preserves
+38,430 existing Chinese values. Historical review reaches key 2479;
+all-language translation and semantic review remain unfinished.
+
+## Southern Sotho historical review: report metrics and templates — 2026-10-13
+
+Commit `26090b467a` reviews source keys 2135–2349 and repairs five values.
+Recovery severity identifies seriousness rather than pain. Both the checklist
+copy action and dialog identify the template source rather than an example.
+The custom-translation count uses the noun for text lines, and remaining time
+refers to the due date rather than the end date. Other valid wording is preserved.
+
+The Southern Sotho and repair-ledger suites pass with 26,959 guarded corrections;
+all 21 human-preference checks pass. The browser case checks the template-copy
+action and opens its dialog without copying contents. Syntax and discovery
+pass; runtime execution remains pending. Exact comparison preserves 38,430
+existing Chinese values. Historical review reaches key 2349; all-language
+translation and semantic review remain unfinished.
+
+## Southern Sotho historical review: search constraints — 2026-10-13
+
+Commit `d50db7b0bc` reviews source keys 1990–2134 and repairs three values.
+Search-limit help explicitly requires an integer greater than zero. Day-offset
+help distinguishes integers greater than zero from those below zero instead
+of calling them good and bad. The background-image error names the maximum
+allowed size. Valid search operators, examples, tokens and other wording in
+this range are preserved.
+
+The Southern Sotho and repair-ledger suites pass with 26,954 guarded corrections;
+all 21 human-preference checks pass. Search-help browser coverage passes syntax
+and discovery; runtime execution remains pending. Exact comparison preserves
+38,430 existing Chinese values. Historical review reaches key 2134;
+all-language translation and semantic review remain unfinished.
+
+## Southern Sotho historical review: templates and table controls — 2026-10-13
+
+Commit `19cc07f1ed` reviews source keys 1845–1989 and repairs five values.
+Shared-template guidance explicitly limits the listed users to those with
+content in their template boards. My Attachments uses clear word order.
+Table grouping identifies swimlanes rather than rows while preserving the
+opposite on/off actions. Search-limit validation explicitly requires an
+integer greater than zero rather than a good integer. Valid wording and
+search syntax elsewhere in this range are preserved.
+
+The Southern Sotho and repair-ledger suites pass with 26,951 guarded corrections;
+all 21 human-preference checks pass. Shared-template browser coverage passes
+syntax and discovery; runtime execution remains pending. Exact comparison
+preserves 38,430 existing Chinese values. Historical review reaches key 1989;
+all-language translation and semantic review remain unfinished.
+
+## Southern Sotho historical review: configuration and visibility — 2026-10-13
+
+Commit `08871f2aa6` reviews source keys 1590–1844 and repairs seven values.
+Rule-variable help describes data fields rather than agricultural fields.
+OAuth help clarifies the environment setting, the local override and server
+storage of the secret without displaying it. Public/private board controls
+identify boards rather than presence and distinguish defaults from visibility.
+The header-toggle hint restores the mobile/desktop notification behavior.
+Other valid wording is preserved, including all rule tokens.
+
+The final Southern Sotho and repair-ledger suites pass with 26,946 guarded
+corrections; all 21 human-preference checks pass. OAuth browser coverage passes
+syntax and discovery; runtime execution remains pending. Exact comparison
+preserves 38,430 existing Chinese values. Historical review reaches key 1844;
+all-language translation and semantic review remain unfinished.
+
+## Short-string inventory correction and Southern Sotho fill — 2026-10-13
+
+Commit `15643364b0` removes the blanket exemption for strings with fewer than
+three letters. Exact key/value pairs preserve reviewed units, list shortcuts,
+operator abbreviations and mathematical symbols. Short words such as by, is,
+if, do and phrases such as `%1 of %2` remain translatable. Tests distinguish
+these cases and preserve exact technical names from the previous correction.
+
+Filled 20 Southern Sotho strings through the guarded fill tool, with no human
+translations overwritten. The full non-exempt exact-English inventory for
+Southern Sotho remains empty; semantic review is still at key 1589. The updated
+filtered inventory reports **30,557 candidate strings across 135 languages**,
+with 379 pending-Transifex source keys separately tracked. This larger count
+exposes previously hidden work. Valid shared words may need documented
+locale-specific exemptions rather than translation; the count is an audit
+queue, not a claim that every identical word is incorrect.
+
+Seven Southern Sotho, inventory, Corsican and Maltese suites pass, along with
+all 21 human-preference checks. The personal due-card filter browser case passes
+syntax and discovery; runtime execution remains pending. Exact comparison
+preserves 38,430 existing Chinese values. All-language completion is unproven.
+
+## Southern Sotho historical review: automation conditions — 2026-10-13
+
+Commit `9dc53b66f9` reviews source keys 1417–1589 and repairs 13 values.
+Enabled/disabled states and their toggle identify activation clearly.
+Auto-detect no longer says learn. Assignee conditions include their conditional
+wording, and four date triggers include both setting and changing the date.
+Removing all labels no longer says removing goals. The short English fragments
+`by` and `is` are translated. Other valid wording in this range is preserved.
+
+The Southern Sotho and repair-ledger suites pass with 26,939 guarded corrections;
+all 21 human-preference checks pass. Workflow-import browser coverage passes
+syntax and discovery; runtime execution remains pending. Exact comparison
+preserves 38,430 existing Chinese values. Historical review reaches key 1589.
+
+The inventory still exempts every value containing fewer than three letters,
+which hid `by` and `is`. Reviewing that blanket exemption remains necessary:
+short function words are translatable, unlike genuine symbols or abbreviations.
+All-language completion remains unproven.
+
+## Storage inventory correction and Southern Sotho fill — 2026-10-13
+
+Commit `d223f4fd53` closes the broad-prefix inventory gap documented below.
+`isInvariantSource` now recognizes exact MongoDB, S3 and Azure Blob technical
+names; it no longer exempts descriptive prose merely because it begins with
+one of those names. Positive tests preserve product names, while negative tests
+require current and hypothetical status/error prose to remain translatable.
+
+Filled the 22 newly exposed Southern Sotho storage strings through the guarded
+fill tool, with no existing human translations skipped or overwritten. Provider
+names, technical identifiers and example hosts remain intact. Southern Sotho
+has no non-exempt exact-English placeholders under the corrected inventory.
+Its historical semantic review remains at key 1416.
+
+The corrected filtered backlog is **29,110 strings across 77 languages**;
+379 pending-Transifex source keys are reported separately. The larger backlog
+reflects newly visible work, not lost translations. Southern Sotho and inventory
+suites pass, as do five Corsican/Maltese suites and all 21 human-preference
+checks. The S3 settings browser case passes syntax and discovery; runtime
+execution remains pending. All 38,430 existing Chinese values are preserved.
+The complete repository suite was not run; all-language completion is unproven.
+
+## Southern Sotho historical review: database status and ordering — 2026-10-13
+
+Commit `12b380b74d` reviews source keys 1280–1416 and repairs six values.
+MongoDB status labels translate compatible version, storage engine and enabled
+Oplog while retaining technical names. Card-field ordering uses data-field
+terminology rather than agricultural fields, with clear up/down movement labels.
+The Southern Sotho and repair-ledger suites pass with 26,926 guarded corrections;
+all 21 human-preference checks pass. Card-settings browser coverage passes syntax
+and discovery; runtime execution remains pending. Exact comparison preserves
+38,430 existing Chinese values. Historical review has reached key 1416.
+
+**New inventory gap:** `isInvariantSource` in `fill-translations.mjs` exempts
+whole strings matching `MongoDB.*`, `S3.*` and `Azure Blob.*`. These include
+25 descriptive source strings, not just product names. Exact comparison against
+English found 1,293 untranslated values for those keys across 68 non-English
+locale files after this batch, including 22 remaining in Southern Sotho.
+This count excludes English locale variants and the actual technical names
+MongoDB CollectionFS, MongoDB Meteor-Files, MongoDB Compact, S3, S3/MinIO,
+Azure Blob and Azure Blob Storage. Narrowing these exemptions and translating
+the uncovered prose remain necessary. The previous zero-placeholder gate is
+not proof of completeness. Existing Chinese values remain protected.
+
+## Southern Sotho historical review: link and email settings — 2026-10-13
+
+Commit `8cb58645cb` reviews source keys 1130–1279 and repairs ten values.
+URL schemes are made clickable rather than clicked automatically. External
+tracker settings describe automatic linking rather than confident linking,
+with either empty field disabling it. The URL template no longer says picture.
+The transfer-limit validation requires a value greater than zero rather than
+a good limit. Email-template headings and labels distinguish invitation and
+activity-notification subjects and bodies. Other valid wording is preserved.
+
+The Southern Sotho and repair-ledger suites pass with 26,920 guarded corrections;
+all 21 human-preference checks pass. A browser case checks the five email-template
+labels in administration settings without changing their contents. Syntax and
+discovery pass; runtime execution remains pending. Exact comparison preserves
+38,430 existing Chinese values. Historical review has reached key 1279;
+all-language work remains unfinished.
+
+## Southern Sotho historical review: labels and visibility — 2026-10-13
+
+Commit `9b7942b661` reviews source keys 930–1129 and repairs nine values.
+Labels identify labels rather than letters. Linking to a board no longer
+claims that it is the current board; creating a board identifies the source
+card. Public visibility is expressed as a state, and custom public/private
+description settings use coherent noun phrases with explicit default fallback
+when left empty. The empty starred-items message now says nothing has been
+starred yet. Other valid wording in this range is preserved.
+
+The Southern Sotho and repair-ledger suites pass with 26,910 guarded corrections;
+all 21 human-preference checks pass. A browser case checks the card-link action
+in the card menu, including absence of the incorrect current-board qualifier.
+Syntax and discovery pass; runtime execution remains pending. Exact comparison
+preserves 38,430 existing Chinese values. Historical review has reached key
+1129; all-language work remains unfinished.
+
+## Southern Sotho historical review: stale import instructions — 2026-10-13
+
+Commit `126aaebb91` reviews source keys 814–929 and repairs six values.
+Todoist and Planner had older English text, missed by the zero-placeholder gate
+because their values differed from current English. They now use Southern Sotho
+while preserving literal source menu names. Jira includes its fields parameter,
+ID-only warning, pagination token and options to combine or separately import
+pages. Excel includes ordinary tables, WeKan workbooks, column mapping and a
+board per sheet with a header. Taskwarrior and Focalboard labels no longer say
+letters. Other valid wording in this range is preserved.
+
+The Southern Sotho and repair-ledger suites pass with 26,901 guarded corrections;
+all 21 human-preference checks pass. Six import-help browser cases pass syntax
+and discovery; runtime execution remains pending. Exact comparison preserves
+38,430 existing Chinese values. The exact-match placeholder count remains zero,
+but this batch demonstrates why that count cannot establish translation
+completeness. Historical review has reached key 929; all-language work continues.
+
+## Southern Sotho historical review: fields, export and filter help — 2026-10-13
+
+Commit `44cc4c30ee` reviews source keys 590–813 and repairs five values.
+Custom fields no longer refer to agricultural fields. The Excel export failure
+and available-space label describe unused capacity instead of price. Advanced
+filter help specifies single quotation marks and preserves the literal escape
+syntax, replacing the incorrect curly apostrophe. Markdown import help restores
+the omitted plain-bullet-list support and open-card result. Other valid wording
+in this range is preserved.
+
+The Southern Sotho and repair-ledger suites pass with 26,895 guarded corrections;
+all 21 human-preference checks pass. Existing browser suites now include Southern
+Sotho filter examples and Markdown instructions. Syntax and discovery pass;
+runtime execution remains pending. Exact comparison preserves 38,430 existing
+Chinese values. Southern Sotho still has zero non-exempt English placeholders;
+historical review has reached key 813. The all-language objective is unfinished.
+
+## Southern Sotho historical review: archive and template controls — 2026-10-13
+
+Commit `e69d2c7311` reviews source keys 455–589 and repairs three values.
+Archive restoration points to Archive on All Boards, replacing the obsolete
+home-page header directions. Worker identifies a person instead of work, and
+Save as Template identifies a reusable template instead of a picture. Valid
+existing account, theme, comment-permission and checklist wording is preserved.
+
+The Southern Sotho and repair-ledger suites pass with 26,890 guarded corrections.
+All 21 human-preference checks pass. A browser case checks the archive help
+without confirming the archive operation; syntax and discovery pass, while
+runtime execution remains pending. Exact comparison preserves 38,430 existing
+Chinese values. Full placeholder coverage remains zero; historical review has
+reached key 589. The all-language objective remains unfinished.
+
+## Southern Sotho historical review: board and card controls — 2026-10-13
+
+Commit `397ea42870` reviews source keys 220–454 and repairs nine values.
+Avatar help specifies the allowed limit. Timeline wording refers to the
+state at a time rather than since that time. Roadmap grouping no longer says
+analyze, and Pulse no longer says sympathy. Unread comments remain distinct
+from new descriptions; due-today and overdue messages explicitly identify
+the deadline. Account anonymization no longer refers to imported users, and
+card labels no longer say letters. Valid existing translations are preserved.
+
+The Southern Sotho and full repair-ledger suites pass, verifying 26,887
+guarded corrections. All 21 human-preference checks pass. A new browser case
+opens card labels and the account-anonymization confirmation and checks their
+titles without submitting the account mutation. Syntax and discovery pass;
+runtime execution remains pending. Exact comparison preserves 38,430 existing
+Chinese values. Full placeholder coverage remains zero; historical review
+has reached key 454 and the all-language objective remains unfinished.
+
+## Southern Sotho historical review: activity and controls — 2026-10-13
+
+Commit `ef05274b3c` reviews source keys 0–219 and repairs four values.
+The activity template supplies the new title before the card link; the
+translation had reversed their roles despite preserving both percent tokens.
+Default-template guidance now says automatically rather than confidently.
+The height constraint explicitly requires an integer greater than zero, and
+the subtask search message specifies matching cards rather than all cards.
+Other valid wording is preserved, including shared terms and variants.
+
+The Southern Sotho and full repair-ledger suites pass, verifying 26,878
+guarded corrections. All 21 human-preference checks pass. The existing
+activity-rendering browser suite gains a Southern Sotho case with positive
+and negative argument-order assertions; syntax and discovery pass, but
+runtime execution remains pending. Exact comparison preserves 38,430
+existing Chinese values. Full placeholder coverage remains zero, while
+historical semantic review has only reached key 219 and is unfinished.
+
+## Southern Sotho remaining recovery translations — 2026-10-13
+
+Commit `80df25497d` fills the final 72 non-exempt English placeholders.
+The full-inventory regression gate now requires zero placeholders across
+Southern Sotho, including pending feature strings. Recovery checks retain
+no activity recreation, no recall of queued email or delivered notifications,
+permanent cancellation, retained applied sync changes, no further saved
+writes after discard, and no resumption of imports whose source is not kept.
+Discarding a partial import includes later additions; foreign boards remain
+untouched. Scrum rollback requires no intervening edits, while keeping the
+board changes no records.
+
+The Southern Sotho regression suite and all 21 human-preference checks pass.
+Six browser cases register across activity recovery, interrupted imports,
+stuck sync and Scrum history recovery, including permission and intervening-
+edit negatives. Syntax and discovery pass; runtime execution remains pending
+without the UI stack. Exact comparison preserves 38,430 existing Chinese
+values and all previously translated Southern Sotho values.
+
+Southern Sotho has zero full-list and filtered English placeholders. The
+global filtered backlog remains 27,839 strings across 41 languages, excluding
+379 pending Transifex keys. Placeholder coverage is not native fluency or a
+complete review of historical text. Native review, runtime UI validation and
+the broader all-language objective remain unfinished.
+
+## Southern Sotho sync diagnostics and planning — 2026-10-13
+
+Commit `b7fb228486` fills 45 placeholders for source reports, retention,
+diagnostics, estimate mapping, email failures and Scrum sync planning.
+Semantic checks retain 100-path, 20-run and 30-day limits, hidden source
+values, possible partial changes, full-list write access and no-resume/no-undo
+warnings. Missing values remain distinct from explicit null; estimate fields
+require exactly one match. Planning keeps local changes until the source
+changes and is never removed by the first sync.
+
+The Southern Sotho regression suite and all 21 human-preference checks pass.
+The existing sync-planning browser case now includes Southern Sotho; syntax
+and discovery pass, but runtime execution remains pending without the UI
+stack. Exact comparison preserves 38,430 existing Chinese values and all
+existing translated Southern Sotho values.
+
+The full Southern Sotho placeholder count falls from 117 to 72. Its filtered
+inventory is 25; the global filtered backlog is 27,864 across 42 languages.
+Native review and the all-language objective remain unfinished.
+
+## Southern Sotho Scrum import and sync guidance — 2026-10-13
+
+Commit `1128608ba5` fills 50 daily-observation, Scrum-import, sync-conflict
+and preview placeholders. Checks retain no-duplicate record matching,
+unchanged unmatched and foreign-board cards, incomplete-import restrictions,
+no source-system writes, assigned-card review rather than full-list sync,
+local-copy preservation, unchanged subcards and replacement reuse on retries.
+Preview guidance retains saved-settings scope, source refetching, the first
+100 entries and possible parser omissions.
+
+The Southern Sotho regression suite and all 21 human-preference checks pass.
+The existing Scrum import browser case now includes Southern Sotho; syntax
+and discovery pass, but runtime execution remains pending without the UI
+stack. Exact comparison preserves 38,430 existing Chinese values and all
+existing translated Southern Sotho values.
+
+The full Southern Sotho placeholder count falls from 167 to 117. Its filtered
+inventory is 66; the global filtered backlog is 27,905 across 42 languages.
+Native review and the all-language objective remain unfinished.
+
+## Southern Sotho Scrum planning and report guidance — 2026-10-13
+
+Commit `59b761f444` fills 75 planning, role, sprint, release and report
+placeholders. Semantic checks retain multiple-release selection, cancellation
+membership, rollover destinations and assigned-card report limits. Report
+help separates unknown estimates from zero and requires matching units and
+policies for velocity comparisons. Daily observations retain first-recorded
+UTC timestamps, omitted days, no every-change/end-of-day claim and separate
+export actions. Descriptive Scrum terminology needs native review.
+
+The Southern Sotho regression suite and all 21 human-preference checks pass.
+The existing backlog paging browser case now includes Southern Sotho;
+syntax and discovery pass, but runtime execution remains pending without
+the UI stack. Exact comparison preserves 38,430 existing Chinese values
+and existing Southern Sotho translations.
+
+The full Southern Sotho placeholder count falls from 242 to 167. Its filtered
+inventory is 101; the global filtered backlog is 27,940 across 42 languages.
+The all-language translation and fluency objective remains unfinished.
+
+## Southern Sotho Blockly text and rule-editor messages — 2026-10-13
+
+Commit `b6740c17a0` fills 115 placeholders for text operations, shortcuts,
+workspace messages and the rule editor. Checks retain counting spaces,
+replacing all matches, index direction, not-found values, trim-copy semantics,
+search-key legends and leading spaces for concatenated announcements. Alias
+strings match their base labels. Rule help retains one trigger and one action,
+disconnected-block rejection, reload-after-conflict and board-admin permission.
+A full-inventory gate finds no remaining non-exempt English Blockly strings.
+Descriptive programming terminology still needs native review.
+
+The Southern Sotho regression suite and all 21 human-preference checks pass.
+The existing Blockly interaction browser case passes syntax and discovery;
+runtime execution remains pending without the UI stack. Exact comparison
+preserves 38,430 existing Chinese values and existing Southern Sotho text.
+
+The full Southern Sotho placeholder count falls from 357 to 242. Its filtered
+inventory is 174; the global filtered backlog is 28,013 across 42 languages.
+The all-language translation and fluency objective remains unfinished.
+
+## Southern Sotho Blockly procedures and math controls — 2026-10-13
+
+Commit `b54fe95288` fills 95 placeholders for random numbers, rounding,
+unary math, trigonometry, variables, procedures, accessibility and shortcuts.
+Checks retain exclusive floating-point upper bounds, inclusive integer
+bounds, degrees rather than radians, sign reversal and absolute magnitude.
+Procedure checks distinguish returning and non-returning functions, disabled
+definitions and scope restrictions. Screen-reader instructions retain the
+opposite action for each current state, and numbered tokens are unchanged.
+Mathematical and programming terms remain lower confidence pending native
+review.
+
+The Southern Sotho regression suite and all 21 human-preference checks pass.
+The existing Blockly interaction browser case passes syntax and discovery;
+runtime execution remains pending without the UI stack. Exact comparison
+preserves 38,430 existing Chinese values and existing translated Southern
+Sotho values.
+
+The full Southern Sotho placeholder count falls from 452 to 357. Its filtered
+inventory is 289; the global filtered backlog is 28,128 across 42 languages.
+The all-language translation and fluency objective remains unfinished.
+
+## Southern Sotho Blockly logic and mathematics — 2026-10-13
+
+Commit `fb193ebb80` fills 90 placeholders for list sorting and splitting,
+Boolean logic, comparisons, arithmetic, constants and statistics. Semantic
+checks preserve copy behavior, case-insensitive sorting, AND/OR, strict versus
+inclusive comparisons, negation and matching ternary branch labels. Numeric
+checks retain degrees and -180/180 limits, inclusive bounds, prime-number
+restrictions, positive/negative zero boundaries, remainders and constants.
+Statistical and trigonometric terms remain lower confidence pending native
+review.
+
+The Southern Sotho regression suite and all 21 human-preference checks pass.
+The existing Blockly interaction browser case passes syntax and discovery;
+runtime execution remains pending without the UI stack. Exact comparison
+preserves 38,430 existing Chinese values and all existing translated Southern
+Sotho values.
+
+The full Southern Sotho placeholder count falls from 542 to 452. Its filtered
+inventory is 384; the global filtered backlog is 28,223 across 42 languages.
+The all-language translation and fluency objective remains unfinished.
+
+## Southern Sotho Blockly accessibility and list operations — 2026-10-13
+
+Commit `c9fdb2f34c` fills 110 placeholders for input labels, keyboard
+navigation and list operations. Checks preserve numbered tokens, distinguish
+dividend/divisor and get/remove/get-and-remove, and retain first/last index
+direction, empty-list length, copying rather than mutating, insertion
+positions and the value returned when a searched item is absent.
+Programming terminology remains lower confidence pending native review.
+
+The Southern Sotho regression suite and all 21 human-preference checks pass.
+The existing Blockly drag, field-editing and context-menu browser case passes
+syntax and discovery checks; runtime execution remains pending without the
+UI stack. Exact comparison preserves 38,430 existing Chinese values and
+existing translated Southern Sotho values.
+
+The full Southern Sotho placeholder count falls from 652 to 542. Its filtered
+inventory is 474; the global filtered backlog is 28,313 across 42 languages.
+Native fluency and the all-language objective remain unverified and unfinished.
+
+## Southern Sotho Blockly editor and control flow — 2026-10-13
+
+Commit `73e233a13b` fills 75 English placeholders for editor actions,
+accessibility labels, colours and control flow. Eighteen keyboard legends
+remain recognizable with exemptions guarded by the exact English source.
+The token checker now includes numbered percent and positional printf tokens,
+with negative cases for renumbering and omitted repeated tokens. Semantic
+checks distinguish break/continue and while/until, retain colour ranges and
+verify function-bound variable deletion restrictions.
+
+Variable and programming terminology uses descriptive wording with lower
+confidence and needs native review. The Southern Sotho regression suite and
+21 human-preference checks pass. The existing Blockly drag, field-editing and
+context-menu browser case passes syntax and discovery; runtime execution
+remains pending without the UI stack. Exact comparison preserves 38,430
+existing Chinese values and existing Southern Sotho translations.
+
+The full Southern Sotho placeholder count falls from 745 to 652: 75 fills
+and 18 explicit keyboard exemptions. Its filtered inventory is 584; the
+global filtered backlog is 28,423 across 42 languages. This is not fluency
+certification, and the all-language objective remains unfinished.
+
+## Southern Sotho notifications and automation settings — 2026-10-13
+
+Commit `7c10778dac` fills 46 English placeholders. Delivery settings retain
+grouping scope, quiet-hour waiting and daily frequency. Wrike help preserves
+completed/cancelled versus active/deferred states and the unavailable export
+of native automation rules. LDAP environment names stay literal; OAuth
+email-domain help preserves empty-means-all. Field visibility explains that
+hiding does not change card data or board settings and that showing restores
+each board's configuration. Subtask permission restrictions remain explicit.
+
+The Southern Sotho regression suite and all 21 human-preference checks pass.
+Three browser cases register: member notification settings and positive and
+negative subtask-permission cases. Syntax and discovery pass; runtime
+execution remains pending without the UI stack. Exact comparison preserves
+38,430 existing Chinese values; existing translated Southern Sotho is intact.
+
+The full Southern Sotho placeholder count falls from 791 to 745. Its filtered
+inventory is 677; the global filtered backlog is 28,516 across 42 languages.
+Fluency review and the all-language objective remain unfinished.
+
+## Southern Sotho import and webhook controls — 2026-10-13
+
+Commit `d33245d26b` fills 55 placeholders for member mapping, CSV columns,
+batch import/export, Trello access, link rules, webhook payloads and the
+classic notification layout. Checks retain no-member-mapping behavior,
+ZIP-as-one-export handling, export permission limits, the literal
+`Swimlane:` marker, link-rule token inventories and inherited webhook settings.
+Existing translated values were not overwritten.
+
+The Southern Sotho regression suite and all 21 human-preference checks pass.
+Two existing browser cases gain Southern Sotho: missing-list CSV validation
+and mapping all imported people to the current user. Syntax and discovery
+pass; runtime execution remains pending without the UI stack. Exact
+comparison preserves 38,430 existing Chinese values.
+
+The full Southern Sotho English-placeholder inventory falls from 846 to 791.
+Its filtered inventory is 677; the global filtered backlog is 28,516 across
+42 languages, excluding pending Transifex strings. Native fluency and the
+all-language objective remain unverified and unfinished.
+
+## Southern Sotho import format instructions — 2026-10-13
+
+Commit `42d5187bf6` fills 22 English import-help placeholders. Instructions
+preserve source menu names, file formats, field mappings and restrictions:
+first-board selection for Nullboard and Kanri, English column names for
+Businessmap and Redmine, and omitted comments, attachments or descriptions
+where the source format lacks them. Org mode keywords and Teamwork hierarchy
+markers remain literal. Existing translated values are preserved.
+
+The Southern Sotho regression suite and all 21 human-preference checks pass.
+All 22 existing import-help browser cases now include Southern Sotho; syntax
+and discovery pass, but runtime execution remains pending without the UI
+stack. Exact comparison preserves 38,430 existing Chinese values.
+
+The full Southern Sotho placeholder inventory falls from 868 to 846. These
+are pending feature strings, so its filtered inventory remains 677 and the
+global filtered backlog remains 28,516 across 42 languages. Native fluency
+and the full all-language objective remain unverified and unfinished.
+
+## Southern Sotho card links — 2026-10-13
+
+Commit `c6a5484608` fills 34 English placeholders for card attachments,
+linked custom fields, board announcements, calendar mode and inherited card
+colours. Matching requires both field name and type; fields present on only
+one card stay unchanged. One-way and two-way directions, unavailable-card
+privacy, archived-card restrictions and permission to edit both cards remain
+explicit. Existing translated values were not overwritten.
+
+The Southern Sotho regression suite and all 21 human-preference checks pass.
+The attached-card and linked-field browser cases now include Southern Sotho;
+syntax and discovery pass, but runtime execution remains pending without
+the UI stack. Exact comparison preserves 38,430 existing Chinese values.
+
+Southern Sotho has 677 filtered untranslated strings and 868 in the full
+list including pending feature strings. These 34 fills were pending feature
+strings, so the global filtered inventory remains 28,516 strings across
+42 languages, excluding 379 pending Transifex keys.
+These counts do not establish fluency; the all-language objective remains
+unfinished.
+
+## Corsican final recovery and email review — 2026-10-13
+
+Commit `e88d2ebc11` reviews the final 440 strings, reaching all 4,270
+English source keys. Five Italian labels become Corsican: sync progress,
+reason, two refresh buttons and incoming email attachments. Existing
+translated Scrum, sync, import, email and chat prose is preserved.
+Regression checks retain partial-import and permanent-deletion warnings,
+idempotent history retries, private address permissions and recipient limits.
+
+The Corsican suite and full ledger verification pass; the ledger contains
+26,874 guarded corrections. All 21 human-preference checks pass. Recovery
+browser assertions for both refresh buttons pass syntax and discovery;
+runtime execution remains pending without the UI stack. Exact comparison
+preserves 38,430 existing Chinese values.
+
+The refreshed filtered inventory still contains 28,516 untranslated strings
+across 42 languages, excluding 379 pending Transifex keys. Corsican has no
+filtered English backlog. Source-ordered review is not native-speaker
+certification, and the all-language translation and fluency audit remains
+unfinished.
+
+## Corsican remaining Blockly operations and Scrum labels — 2026-10-13
+
+Commit `6d22052060` extends the source-ordered review through key 3829.
+The 460 reviewed strings include list, logic, math, procedure and text
+operations, Blockly aliases and the following Scrum labels. Existing
+translated prose is largely preserved. Eight corrections align remaining
+physical keyboard names and workspace search shortcuts and repair the
+sorting verb. Regression checks distinguish AND/OR, inclusive integer
+bounds, exclusive floating-point upper bounds, and degrees versus radians.
+
+The Corsican and full repair-ledger suites pass; the ledger verifies
+26,869 guarded corrections. All 21 human-preference checks pass. The existing
+Blockly drag, field-editing and context-menu browser case now includes
+Corsican; syntax and discovery pass, but runtime execution remains pending.
+Exact comparison preserves 38,430 existing Chinese values. Fluency and the
+broader language objective remain unverified and unfinished.
+
+## Corsican Blockly accessibility and list operations — 2026-10-13
+
+Commit `0b753e316d` extends the source-ordered review through key 3369.
+The reviewed accessibility, control-flow and list prose is largely already
+translated and is preserved. Eight physical keyboard legends retain their
+recognizable printed names instead of action words. An earlier map example
+no longer restricts a floor plan to the ground floor. The Corsican token
+check now includes numbered percent tokens, with negative cases for changed
+numbers and missing repeated tokens, alongside the existing ledger checks.
+
+The Corsican and full repair-ledger suites pass; the ledger verifies
+26,861 guarded corrections. All 21 human-preference checks pass. The existing
+map browser suite gains Corsican and a negative check for the old narrow
+example; syntax and discovery pass, but runtime execution remains pending.
+Exact comparison preserves 38,430 existing Chinese values. This review does
+not certify fluency or complete the broader language objective.
+
+## Corsican flow analysis and WIP groups — 2026-10-13
+
+Commit `1b73b3a0b9` repairs 47 values in the source-ordered review through
+key 3089. Flow notes now retain full methodology rather than abbreviated
+formulas: historical samples, overlapping blockers, retained snapshots,
+zero-throughput days, forecast tails, the 3,650-day horizon, no-guarantee
+qualification, date fallbacks and omitted invalid inputs. WIP controls name
+groups rather than enabling a list limit. Authentication and sync errors
+lose misleading or wrong-language wording. Statistical terms, including
+moving range, are lower confidence and need native review.
+
+The Corsican and full repair-ledger suites pass; the ledger verifies
+26,852 guarded corrections. All 21 human-preference checks pass. Five
+chart-methodology browser cases pass syntax checking and register, but
+runtime execution remains pending. Existing shared vocabulary is preserved.
+Exact comparison preserves 38,430 existing Chinese values. Broader language
+review remains unfinished.
+
+## Corsican accounts, reports and scoped imports — 2026-10-13
+
+Commit `105eb49d8c` repairs 45 values in the source-ordered review through
+key 2989. Account errors, repository labels and scoped-import choices lose
+Italian wording. Problem-report help retains reviewed-area acknowledgement
+and resetting new counts. Repair guidance keeps both count placeholders
+and explains that cards without boards cannot be repaired automatically.
+The card-number keyword becomes numeru and its help retains query syntax.
+
+Three suites pass: Corsican, the full repair ledger (26,805 corrections)
+and the actual search parser, including valid/invalid native number queries.
+All 21 human-preference checks pass. Both Corsican report browser cases
+register; the new summary case seeds and cleans up a problem event to show
+the conditional help. Syntax checking passes, but runtime execution remains
+pending. Exact comparison preserves 38,430 existing Chinese values. Broader
+language review remains unfinished.
+
+## Corsican monitoring and job controls — 2026-10-13
+
+Commit `c1cc3c49cd` repairs 52 values in the source-ordered review through
+key 2899. Monitoring exports, queue labels and migration actions lose
+Italian wording. Batch size retains 1-100, the CPU pause threshold retains
+10-90, and the delay remains in milliseconds. Migration guidance retains
+one-time execution and continued background work after the browser closes.
+GridFS and S3 remain literal without invented language prefixes.
+
+The Corsican and full repair-ledger suites pass; the ledger verifies
+26,760 guarded corrections. All 21 human-preference checks pass. Browser
+validation remains pending with the local app unavailable. Exact comparison
+preserves 38,430 existing Chinese values. A fresh filtered inventory finds
+28,516 English placeholders across 42 locales, excluding 379 keys marked
+pending Transifex. This count does not verify target-language correctness;
+the broader review remains unfinished.
+
+## Corsican board migrations and progress — 2026-10-13
+
+Commit `f4d12f7b0f` repairs 55 values in the source-ordered review through
+key 2819. Duplicate-list guidance requires both an empty list and another
+same-title list containing cards. Its confirmation retains conversion of
+shared lists to per-swimlane lists before deletion. Comprehensive repairs
+retain list ordering, card positions and swimlane structure. Individual
+repair actions and progress states lose Italian wording.
+
+The Corsican and full repair-ledger suites pass; the ledger verifies
+26,708 guarded corrections. All 21 human-preference checks pass. Several
+migration labels have no current client UI references; the conversion
+progress template still uses its description and estimated-time label.
+No new browser case was added for this batch, and rendered validation is
+pending with the local app unavailable. Exact comparison preserves 38,430
+existing Chinese values. Broader language review remains unfinished.
+
+## Corsican restore modes and cloud configuration — 2026-10-13
+
+Commit `56dd1cbf08` repairs 51 values in the source-ordered review through
+key 2729. Restore wording preserves filesystem/database destinations and
+the chosen mode. Cloud help retains optional key-file/JSON alternatives,
+blank-field behavior, read/write permission, and the one-time display of
+an S3 secret key. Provider menu labels, client_email and role names remain
+literal. Migration states and storage names lose Italian wording and
+invented language prefixes.
+
+The Corsican and full repair-ledger suites pass; the ledger verifies
+26,653 guarded corrections. All 21 human-preference checks pass. Four
+Corsican attachment browser cases register, including cloud help; syntax
+checking passes, but runtime execution remains pending. Exact comparison
+preserves 38,430 existing Chinese values. Broader language review remains
+unfinished.
+
+## Corsican feature controls and backup guidance — 2026-10-13
+
+Commit `cf03f236b5` repairs 42 values in the source-ordered review through
+key 2629. Card loading now describes automatic threshold selection and both
+environment overrides. The account-anonymization confirmation now describes
+permanent identity replacement, avatar removal, disabled login, retained
+history and irreversibility; it previously repeated export instructions.
+Import/export anonymization, plain-text rendering and notification controls
+retain their distinct scopes. Organization restores remain limited to owned
+boards and exclude shared accounts/settings. Backup paths stay literal.
+
+The Corsican and full repair-ledger suites pass; the final ledger check
+verifies 26,602 guarded corrections. All 21 human-preference checks pass.
+Two performance/security help browser cases pass syntax checking and
+register. Runtime execution is unavailable: a fresh localhost:3000 probe
+failed to connect. Exact comparison preserves 38,430 existing Chinese
+values. Broader language review remains unfinished.
+
+## Corsican scheduling, cloud storage and migration — 2026-10-13
+
+Commit `f8c5783f41` repairs 49 values in the source-ordered review through
+key 2509. Scheduled-job controls distinguish pause, resume, start and retry.
+Cloud names remain literal and Azure connection-string guidance retains
+its optional replacement of account name and key. Database migration keeps
+its attachment/avatar exclusion, running-target prerequisite, both local
+URLs, environment variable names, restart and Snap configuration commands.
+Sandstorm migration states and raw-file labels lose Italian wording.
+
+The Corsican and full repair-ledger suites pass; the ledger contains
+26,560 guarded corrections. All 21 human-preference checks pass. Three
+Corsican attachment browser cases register, including migration help;
+syntax checking passes, but runtime execution remains pending. Exact
+comparison preserves 38,430 existing Chinese values. Broader language
+review remains unfinished.
+
+## Corsican recurrence, uploads and account controls — 2026-10-13
+
+Commit `9cb558de5f` repairs 46 values in the source-ordered review through
+key 2419. Card recurrence no longer says automatic reset: the scheduler
+creates the next occurrence. Upload guidance preserves invalid-name
+cancellation for both upload and rename, byte limits and PDF fallback.
+Lockout wording distinguishes a correct username with a wrong password
+from a username that does not exist. Support and visibility controls lose
+Italian wording; ISO 8601 and workspace placeholders remain intact.
+
+The Corsican and full repair-ledger suites pass; the ledger contains
+26,511 guarded corrections. All 21 human-preference checks pass. The new
+lockout-settings browser case passes syntax checking and registers, but
+has not run against the application. Exact comparison preserves 38,430
+existing Chinese values. Broader language review remains unfinished.
+
+## Corsican checklists, storage and status — 2026-10-13
+
+Commit `588e39a31e` repairs 53 values in the source-ordered review through
+key 2329. Checklist text keeps one item per line and original ordering.
+Storage controls retain backend names, source selection and newly uploaded
+attachment scope. The Compact warning keeps blocking behavior, secondary
+replicas before the primary, and primary-only behavior for a single-node
+oplog replica set. Overtime remains distinct from overdue deadlines.
+
+The Corsican and full repair-ledger suites pass; the ledger contains
+26,465 guarded corrections. All 21 human-preference checks pass. Both
+Corsican attachment browser cases register, including the new default-storage
+case; syntax checking passes, but runtime execution remains pending.
+Exact comparison preserves all 38,430 existing Chinese values. Broader
+language review remains unfinished.
+
+## Corsican reports, recovery and tickets — 2026-10-13
+
+Commit `5c96e8b59e` repairs 63 values in the source-ordered review through
+key 2219. Office reporting retains grouping by person and IPv4/IPv6 login
+counts. API reporting retains one row per account and endpoint, rather
+than per request. Recovery wording retains corruption detection, text
+backups, restores, MongoDB re-migration and automatic database repair.
+Ticket states, spinner labels and card controls lose Italian wording.
+API names and HTML space entities remain literal.
+
+The Corsican and full repair-ledger suites pass; the ledger contains
+26,412 guarded corrections. All 21 human-preference checks pass. The new
+recovery-report browser case passes syntax checking and registers, but has
+not run against the application. Exact comparison preserves all 38,430
+existing Chinese values. Broader language review remains unfinished.
+
+## Corsican remaining search help and controls — 2026-10-13
+
+Commit `5fce837d4e` repairs 50 values in the source-ordered review through
+key 2109. Search help preserves absence checks, descending-sort syntax,
+OR/AND behavior and case-insensitive matching. Dependency and map controls
+lose Italian wording. Arial, USA and Asia retain their proper names without
+invented language prefixes and have explicit invariant entries.
+
+The Corsican, full repair-ledger and actual-parser suites pass; the ledger
+contains 26,349 guarded corrections. Parser checks exercise ascending and
+descending sorts for due, created and modified dates, plus an invalid sort.
+All 21 human-preference checks pass. Two Corsican search browser cases
+register, including the new help-text case; syntax checks pass, but browser
+runtime execution remains pending. Exact comparison preserves 38,430
+existing Chinese values. Broader language review remains unfinished.
+
+## Corsican search keywords and instructions — 2026-10-13
+
+Commit `d017d184dc` repairs 37 values in the source-ordered review through
+key 2009. Search help retains literal examples, interpolation tokens and
+syntax metavariables. Created/modified filters now correctly describe the
+last N days, rather than reversing the time direction. Native keywords
+replace Italian wording, including existence and overdue predicates.
+
+Three suites pass: Corsican, the full repair ledger (26,299 corrections),
+and the actual search-parser harness. The latter covers quoted text,
+positive/negative existence, overdue dates and rejected invalid predicates.
+All 21 human-preference checks pass. A browser case for overdue results
+and exclusion of future cards passes syntax checking and registers; it has
+not run against the application. Exact comparison preserves 38,430 existing
+Chinese values. Broader language review remains unfinished.
+
+## Corsican templates and search results — 2026-10-13
+
+Commit `930fd9fe2b` repairs 47 values in the source-ordered review through
+key 1939. Due-card guidance retains incomplete cards with due dates from
+authorized boards. Global search retains authorized boards and the My Cards
+restriction to membership or assignment. Template guidance retains the
+organization/team/domain scopes. Result counts and not-found messages keep
+their placeholders and plural meaning. Search abbreviations and the context
+separator lose unrelated in-progress prefixes.
+
+The Corsican and full repair-ledger suites pass; the ledger contains
+26,262 guarded corrections. All 21 human-preference checks pass. The existing
+shared-template browser case registers with the corrected scope hint and a
+negative check for prior Italian text; it has not run against the
+application. Exact comparison preserves all 38,430 protected Chinese values
+and limits this locale batch to the 47 reviewed replacements. Broader
+language review remains unfinished.
+
+## Corsican preferences, role controls and weekdays — 2026-10-13
+
+Commit `0343ff48a0` repairs 44 values in the source-ordered review through
+key 1844. Editor preferences retain Enter, Shift+Enter and Ctrl/Cmd+Enter
+behavior and the multiple-card setting retains its enabled/disabled window
+behavior. Role guidance preserves global-admin rights and the read-only
+preview of unsaved selections. Linked-card deletion keeps its prerequisite
+ordering. Weekday names follow the Corsican forms in Educorsica's
+[U Corsu Bellu Bellu 2.0](https://www.educorsica.fr/phocadownload/pdf/corsu_bellu_bellu_2.pdf).
+
+The Corsican and full repair-ledger suites pass; the ledger contains
+26,215 guarded corrections. All 21 human-preference checks pass. A new
+member-preference browser case registers for the two behavior tooltips and
+multiple-card label; it has not run against the application. Negative tests
+reject specific Italian phrases rather than valid shared words. Exact
+comparison preserves all 38,430 protected Chinese values and limits this
+locale batch to the 44 reviewed replacements. Broader language review
+remains unfinished.
+
+## Corsican rule summaries, login settings and date activities — 2026-10-13
+
+Commit `f2b4ea8984` repairs 59 values in the source-ordered review through
+key 1739. Rule summaries retain email destinations, archive restoration,
+checklist actions and current date/time. Passwordless guidance retains
+`MAIL_URL` and `PASSWORDLESS_ENABLED`. LDAP, OAuth2, CAS, URL and Logo lose
+unrelated in-progress prefixes. Date activities retain old/new value order,
+placement labels retain above/below and left/right directions, and swimlane
+deletion retains activity loss and inability to recover.
+
+The Corsican and full repair-ledger suites pass; the ledger contains
+26,171 guarded corrections. All 21 human-preference checks pass. A new
+passwordless-settings browser case registers and checks the localized hint,
+both prerequisite identifiers and the enabled-setting label without changing
+settings. It has not run against the application. Exact comparison preserves
+all 38,430 protected Chinese values and limits this locale batch to the 59
+reviewed replacements. Broader language review remains unfinished.
+
+## Corsican date triggers and action fragments — 2026-10-13
+
+Commit `ed0c2c3ffc` repairs 40 values in the source-ordered review through
+key 1604. Due, start, end and received-date conditions again say the date
+is set or changed. Assignee fragments regain their condition wording.
+Checklist complete/incomplete and checked/unchecked states retain their
+negations. Movement destinations distinguish top from bottom, restoration
+from archiving, and email destination from a time-range endpoint.
+
+The Corsican and full repair-ledger suites pass; the ledger contains
+26,112 guarded corrections. All 21 human-preference checks pass. A new
+date-trigger browser case registers alongside the two existing Corsican
+rule cases, checking all four date conditions for initial setting and later
+changes. It has not run against the application. Exact comparison preserves
+all 38,430 protected Chinese values and limits this locale batch to the 40
+reviewed replacements. Broader language review remains unfinished.
+
+## Corsican automation workflows and scheduling — 2026-10-13
+
+Commit `2c787355da` repairs 58 values in the source-ordered review through
+key 1534. Workflow help distinguishes triggers from actions and creation
+from replacing an existing rule's action. Butler guidance retains the lack
+of rules in board exports, supported-subset conversion and reporting of
+unmapped lines. n8n and Node-RED guidance retains unmapped-node reporting.
+Scheduling, movement and complete/incomplete actions keep their direction,
+placeholders and negation. Valid shared terminology is retained.
+
+The Corsican and full repair-ledger suites pass; the ledger contains
+26,072 guarded corrections. All 21 human-preference checks pass. A new
+workflow-builder case registers alongside the existing empty-rules-page
+case; it checks help, separate trigger/action slots and disabled creation
+without a rule. It has not run against the application. Exact comparison
+preserves all 38,430 protected Chinese values and limits this locale batch
+to the 58 reviewed replacements. Broader language review remains unfinished.
+
+## Corsican hierarchy, activities and rules — 2026-10-13
+
+Commit `6ad1329613` repairs 43 values in the source-ordered review through
+key 1434. Minicard settings retain card-parent relationships and distinguish
+prefixes from text below the card and full paths from the immediate parent.
+Movement controls retain up/down direction and checklist counts retain
+`(0/0)`. Label and attachment activities use completed-action wording with
+all percent placeholders unchanged. Rule controls distinguish adding,
+viewing, deleting and editing the trigger/action.
+
+The Corsican and full repair-ledger suites pass; the ledger contains
+26,014 guarded corrections. All 21 human-preference checks pass. A new
+empty-rules-page browser case registers for the heading, empty state,
+creation action and title placeholder; it has not run against the
+application. Exact comparison preserves all 38,430 protected Chinese values
+and limits this locale batch to the 43 reviewed replacements. Broader
+language review remains unfinished.
+
+## Corsican invitations and organization administration — 2026-10-13
+
+Commit `1eb90ef43f` repairs 62 values in the source-ordered review through
+key 1369. Invitation text retains the user, inviter, URL and invitation-code
+tokens. Tenant-domain guidance preserves example hostnames,
+`MULTITENANCY=true`, branding replacement and the empty non-tenant setting.
+Organization admins remain limited to their organization's people and
+backups, with neither site-admin grants nor management of site admins.
+Board deletion retains all lists, cards, labels, activities and inability
+to recover. Field controls distinguish new cards from all cards.
+
+The Corsican and full repair-ledger suites pass; the ledger contains
+25,971 guarded corrections. All 21 human-preference checks pass. The
+existing field-controls browser case registers with four additional display
+and creation-scope labels; it has not run against the application. Exact
+comparison preserves all 38,430 protected Chinese values and limits this
+locale batch to the 62 reviewed replacements. Broader language review
+remains unfinished.
+
+## Corsican uploads and attachment limits — 2026-10-13
+
+Commit `84e25df892` repairs 42 values in the source-ordered review through
+key 1209. Upload, download and API limits retain their separate directions;
+API buffering retains distinct server-side safety caps. Positive-value
+validation, unlimited/blocked modes and success/failure messages remain
+distinct. GB, MB and Bytes lose unrelated in-progress prefixes. Tracking
+and board watching retain their different notification scope, unassigning
+names the assignment, and WIP guidance keeps both recovery alternatives.
+
+The Corsican and full repair-ledger suites pass; the ledger contains
+25,909 guarded corrections. All 21 human-preference checks pass. A new
+attachment-limit browser case registers, checking four transfer labels and
+all three size units after selecting the maximum-size mode. It has not
+run against the application. Exact comparison preserves all 38,430
+protected Chinese values and limits this locale batch to the 42 reviewed
+replacements. Broader language review remains unfinished.
+
+## Corsican settings, shortcuts and membership — 2026-10-13
+
+Commit `6f2e4740ab` repairs 42 values in the source-ordered review through
+key 1129. Member removal retains removal from all board cards and the
+notification sent to the member. Unsaved descriptions retain the recovery
+prompt before closing and replacement of the current description. Empty
+custom visibility descriptions retain their default fallback. Time-tracking
+labels distinguish overtime from overdue cards. Pomodoro loses its
+unrelated time suffix and is recorded as an invariant technique name in
+the existing Corsican exception set.
+
+The Corsican suite passes after correcting the test variable and preserving
+existing invariant key legends; the full repair-ledger suite passes with
+25,867 guarded corrections. All 21 human-preference checks pass. A new
+shortcuts browser case registers for filter and sidebar actions; it has not
+run against the application. Exact comparison preserves all 38,430
+protected Chinese values and limits this locale batch to the 42 reviewed
+replacements. Broader language review remains unfinished.
+
+## Corsican board, archive and member controls — 2026-10-13
+
+Commit `01e3a9542e` repairs 52 values in the source-ordered review through
+key 1044. Personal override labels no longer imply cancellation and Gantt
+loses an unrelated in-progress prefix. Label deletion retains all-card
+removal, history destruction and irreversibility. Selection controls keep
+their target and movement direction. Assigned-only users retain restricted
+visibility and normal-user editing; muted, participating and watched
+notifications retain their distinct conditions.
+
+The Corsican and full repair-ledger suites pass; the ledger contains
+25,825 guarded corrections. All 21 human-preference checks pass. A new
+archive-tab browser case registers and checks the distinct empty-card,
+empty-list and empty-swimlane messages while rejecting prior Italian prose.
+It has not run against the application. Exact comparison preserves all
+38,430 protected Chinese values and limits this locale batch to the 52
+reviewed replacements. Broader language review remains unfinished.
+
+## Corsican Trello import and cancellation controls — 2026-10-13
+
+Commit `b03a4afca6` repairs 43 values in the source-ordered review through
+key 949. ZIP guidance retains multiple boards, per-board attachment
+folders and distinct count, size and unsafe-path failures. Timeout wording
+retains interruption, retry and both possible causes. Cancellation with
+deletion applies to boards already imported by this job and retains the
+irreversibility warning. Member mapping retains assignment of unmapped
+members to the current user. Existing correct wording is preserved.
+
+The Corsican and full repair-ledger suites pass; the ledger contains
+25,773 guarded corrections. All 21 human-preference checks pass. A new
+Trello import browser case registers and checks instructions, ZIP guidance,
+optional workspace placement, mapping controls and empty file inputs.
+It has not run against the application. Exact comparison preserves all
+38,430 protected Chinese values and limits this locale batch to the 43
+reviewed replacements. Broader language review remains unfinished.
+
+## Corsican filtering and importer guidance — 2026-10-13
+
+Commit `8b9c88ba25` repairs 28 values in the source-ordered review through
+key 834. Todoist and Planner contained older English sentences differing
+from the current source, demonstrating why a zero exact-English inventory
+cannot establish completion. Their replacements retain the current export
+paths, classic Planner alternative, field mappings and supported file type.
+Kanboard, Deck, OpenProject, issue and Focalboard guidance keeps literal
+properties, endpoint and placeholder tokens, and the image/attachment
+exclusion. Filter controls and imported-member labels lose mixed Italian
+wording and an unrelated in-progress prefix. An already-correct archive
+label was left unchanged.
+
+The Corsican and full repair-ledger suites pass after the final review;
+the ledger contains 25,730 guarded corrections. All 21 human-preference
+checks pass. Six additional importer browser cases register, bringing that
+shared suite to 75 cases; Planner checks the file input because it does not
+accept pasted text. These cases have not run against the application.
+Exact comparison preserves all 38,430 protected Chinese values and limits
+this locale batch to the 28 reviewed replacements. Broader language review
+remains unfinished.
+
+## Corsican fields, accounts and exports — 2026-10-13
+
+Commit `4f89cd92e3` repairs 62 values in the source-ordered review through
+key 734. Enrollment, password reset and email verification retain their
+distinct purposes, placeholders and paragraph structure. Board-admin,
+member and role restrictions keep their negations. Permanent-delete
+settings retain both the global-admin scope and the fact that enabling the
+option does not delete content by itself. Export controls retain format,
+field selection and attachment metadata. Correct invitation prose and
+existing date-format abbreviations were left unchanged.
+
+The Corsican and full repair-ledger suites pass after the final wording
+revision; the ledger contains 25,702 guarded corrections. All 21
+human-preference checks pass. A new custom-field browser case registers,
+checking the creation heading and four translated field types and rejecting
+prior Italian text and the multi-selection typo. It has not run against the
+application. Exact comparison preserves all 38,430 protected Chinese values
+and limits this locale batch to the 62 reviewed replacements. Broader
+language review remains unfinished.
+
+## Corsican navigation, colors and role controls — 2026-10-13
+
+Commit `dbaa663280` repairs 47 values in the source-ordered review through
+key 614. Corrections retain movement direction, both remaining card-aging
+thresholds, the Archive location on All Boards, assigned-card visibility,
+comment-only restrictions and the worker's limited actions. The unrelated
+in-progress prefix is removed from the intentionally empty comment
+placeholder. The repair-ledger test now requires exact emptiness when the
+English source is empty, while retaining its nonempty check elsewhere.
+
+Basic color terms were checked against a [Corsican vocabulary list](https://fichesvocabulaire.com/liste-de-vocabulaire-corse-pour-debutant-les-couleurs).
+The [Collectivity of Corsica garden description](https://www.giardini.corsica/co/i-spezii/bellombra/)
+attests the color term `carminu`. Specialized shade paraphrases remain
+lower confidence and open to native-speaker refinement; this is not a
+certification of fluency.
+
+The Corsican and full repair-ledger suites pass with 25,640 guarded
+corrections. All 21 human-preference checks pass. The existing color-rule
+browser suite registers an additional Corsican case, verifying translated
+labels and saved color selection; it has not run against the application.
+Exact comparison preserves all 38,430 protected Chinese values and limits
+this locale batch to the 47 reviewed replacements. Broader language review
+remains unfinished.
+
+## Corsican profile and appearance controls — 2026-10-13
+
+Commit `18278cce84` corrects 38 profile, member-mapping and appearance
+values. Member mapping retains cards, comments and activity, the imported
+role and the prohibition on extra permissions. Favorite toggles retain
+add/remove direction. Card aging keeps inactivity thresholds and reduced
+visibility rather than implying deletion.
+
+The Corsican and full repair-ledger suites pass; the ledger contains
+25,593 guarded corrections. All 21 human-preference checks pass. A new
+font-controls browser case registers and checks the menu and size labels;
+it has not run against the application. Exact comparison preserves all
+38,430 protected Chinese values and limits this locale batch to the 38
+reviewed replacements. Broader language review remains unfinished.
+
+## Corsican card controls and Planning Poker — 2026-10-13
+
+Commit `a63e83ec5e` corrects 47 mixed-language or misleading card, archive,
+voting and account values. The Planning Poker name, numeric scores and
+unknown score now exactly match the invariant source values rather than
+carrying an unrelated in-progress prefix. Card deletion retains loss of
+all activities, inability to reopen and irreversibility. Archive messages
+retain disappearance from the list or board without claiming deletion.
+
+The Corsican and full repair-ledger suites pass; the ledger contains
+25,555 guarded corrections. All 21 human-preference checks pass. A new
+Planning Poker browser case registers, checking its heading and all ten
+score labels while rejecting the prior prefix. It has not executed against
+the application. Exact comparison preserves all 38,430 protected Chinese
+values and limits locale changes to the 47 reviewed replacements. Broader
+language review remains unfinished.
+
+## Corsican board views and timeline wording — 2026-10-13
+
+Commit `b61c0df17f` repairs 26 menu, view, calendar and timeline values.
+Mixed Italian labels are replaced, Watch refers to following rather than
+generic notifications, Gantt loses an unrelated in-progress prefix, and
+ISO 8601 regains the Gregorian calendar and week-system meaning. Timeline
+text retains the past-state date and all restored fields with no deletion.
+The already-correct shared word `Statistiche` was left unchanged.
+
+The Corsican and full repair-ledger suites pass; the ledger records
+25,508 guarded corrections. All 21 human-preference checks pass. A new
+calendar-settings browser case registers for Gregorian and ISO week labels,
+respecting the existing runtime calendar-support check. It has not run
+against the application. Exact comparison preserves all 38,430 protected
+Chinese values and limits the locale batch to 26 reviewed replacements.
+Broader language review remains unfinished.
+
+## Corsican board display and attachment warnings — 2026-10-13
+
+Commit `b1c1c68040` repairs 27 values found through direct review of board,
+archive, template and attachment controls. The offline message retains
+refresh-related data loss and the server-stop check. Board creation now
+names boards instead of little squares. Archive actions remain distinct
+from permanent attachment deletion, and reordering instructions retain both
+dragging and clicking with the workspace placeholder unchanged.
+
+The Corsican and full repair-ledger suites pass; the ledger contains
+25,482 guarded corrections. All 21 human-preference checks pass. A new
+Templates-page browser case registers and checks the corrected container
+creation label and tooltip. It has not run against the application.
+Exact comparison preserves all 38,430 existing protected Chinese values
+and limits this locale batch to 27 reviewed replacements. Broader language
+review remains unfinished.
+
+## Corsican workspace and card controls — 2026-10-13
+
+Commit `9869b00d25` corrects 37 values found by direct source comparison
+beyond the earlier phrase scan. Workspace and subworkspace controls,
+selection actions, Home-board guidance, date activities, widths, swimlane
+heights and subtask labels no longer retain the reviewed Italian fragments.
+Tests preserve exact date tokens, one-board selection, opening after login,
+nondeletion of the board itself and positive-integer height validation.
+
+The Corsican and full repair-ledger suites pass; the ledger now contains
+25,455 guarded corrections. All 21 human-preference checks pass. Both
+Corsican subtask browser cases register, with the completion workflow also
+checking the corrected add-subtask control. Runtime execution remains
+pending. Exact comparison preserves all 38,430 protected Chinese values
+and limits the locale change to the 37 reviewed replacements. Broader
+language review remains unfinished.
+
+## Corsican repair and recovery guidance — 2026-10-13
+
+Commit `d7c43eeb4b` repairs 20 mixed-language values. The account action
+no longer says import-user anonymization. Watching restrictions retain
+rejected subscription changes and the disabled default. Recovery warnings
+retain non-archived-only scope for lost items versus all archived items,
+administrator-only execution and the difficulty of undoing restoration.
+`swimlaneId`, `listId`, `Lost Cards` and cloud-product names remain literal.
+
+The Corsican and full repair-ledger suites pass; the ledger contains
+25,418 guarded corrections. All 21 human-preference checks pass. The S3
+browser case registers with the corrected endpoint guidance assertion;
+it has not executed against the application. The final comparison preserves
+all 38,430 Chinese values in the current parent, including concurrent
+additions committed during this work. Only the 20 specified Corsican values
+changed in this batch. Broader language review remains unfinished.
+
+## Corsican storage migration and avatar guidance — 2026-10-13
+
+Commit `78d684e364` repairs 25 mixed-language storage, account and scheduling
+values. Migration text retains the running-target prerequisite, unaffected
+filesystem files, first-launch Sandstorm migration, exact attachment/avatar
+paths and irreversible cleanup after successful migration. Compact guidance
+retains the lack of automatic shrinking and the requirement to finish file
+moves first. Avatar settings retain other data and their disabled defaults.
+
+The Corsican and full repair-ledger suites pass, bringing the ledger to
+25,398 guarded repairs. All 21 human-preference checks pass. The S3 settings
+browser suite now includes Corsican and verifies path-style guidance along
+with existing field descriptions; its Corsican case registers but has not
+run against the application. Exact comparison preserves all 38,385 existing
+protected Chinese values and limits locale changes to the 25 reviewed keys.
+Broader language review remains unfinished.
+
+## Corsican administrative and storage wording — 2026-10-13
+
+Commit `1e10d606b5` corrects 25 mixed-language role, membership, shared-template, search and storage messages. Deletion refusals retain the
+presence of at least one member. Shared-template help retains multiple
+scope selection and the nonempty-template requirement. Search guidance
+retains AND across differing operators and the literal placeholder example.
+Storage controls retain global versus board scope and GridFS/S3 destinations.
+
+The Corsican and full repair-ledger suites pass, bringing the ledger to
+25,373 guarded repairs. All 21 human-preference checks pass. The new
+shared-template browser case registers and checks the corrected description,
+multiple scopes and nonempty eligibility; runtime execution remains pending.
+Exact comparison preserves all 38,385 existing protected Chinese values
+and isolates the 25 reviewed locale edits. Broader language review remains
+unfinished; filtered English-placeholder counts are unaffected.
+
+## Corsican settings and confirmations — 2026-10-13
+
+Commit `f4e5519c87` repairs 25 mixed-language settings, rule actions and
+confirmation messages. Duplicate-list deletion retains both conditions:
+matching names and no cards. Card movement retains top/bottom and own-list
+versus specified-list distinctions. Avatar guidance retains upload blocking,
+synchronization context and the enabled default. Custom HTML and assetlinks
+labels retain literal markup and filenames.
+
+The Corsican and full repair-ledger suites pass; the ledger now contains
+25,348 guarded corrections. All 21 human-preference checks pass. A new
+notification-drawer browser case registers for the localized delete-all
+confirmation, dismisses it and checks that the notification remains. It has
+not run against the application. All 38,385 protected Chinese values remain
+unchanged, and only the 25 reviewed locale values enter this commit.
+
+A follow-up phrase scan still flags 70 Corsican candidates containing
+selected Italian forms. This is a review queue, not a complete measure of
+wrong-language content: other phrases may be missed and shared words need
+individual judgment. Broader language review remains unfinished.
+
+## Corsican filter help and access guidance — 2026-10-13
+
+Commit `e7a4eb0ffd` repairs 20 mixed-language values. Advanced-filter prose
+now uses Corsican while preserving the source operators, quoted examples,
+escaped apostrophe, precedence examples and regex literally. The existing
+advanced-filter audit now includes Corsican. Trello guidance retains saved
+credentials and attachment/background/avatar downloads. Visibility text
+separates public viewing and search indexing from member-only editing.
+Sandstorm's warning explicitly retains the separate access-revocation step.
+
+The Corsican, advanced-filter and full repair-ledger suites pass; the
+ledger contains 25,323 guarded corrections. All 21 human-preference checks
+pass. The new sidebar-help browser case registers, checking the localized
+text and exact examples while rejecting previous Italian wording. It has
+not executed against the application.
+
+Exact comparison preserves all 38,385 protected Chinese values and limits
+the locale commit to the 20 reviewed replacements. Filtered placeholder
+counts do not measure these non-English repairs. Older Corsican strings
+and fluent phrasing still require review.
+
+## Corsican board warnings and import guidance — 2026-10-13
+
+Commit `d07120761b` repairs 33 mixed-language values for board visibility,
+archives, widths, deletion, invitations, filters and imports. Visibility
+retains the future tense and HTML emphasis. Custom-field deletion explicitly
+retains irreversibility, all-card removal and loss of history. Linked-card
+errors retain the inaccessible-card warning; empty-board import errors
+retain the instruction to export again using the current version.
+
+Jira's old translation omitted pagination and field requirements. The
+replacement preserves the complete endpoint, the IDs-only warning without
+fields, `nextPageToken`, combined-page or per-board alternatives, and the
+`issues` and `automationRules` literals. Excel now explains column mapping
+and one board per sheet rather than describing only the old fixed layout.
+
+The Corsican and full repair-ledger suites pass, as do all 21
+human-preference checks. The ledger now contains 25,303 guarded repairs.
+The importer browser suite registers 69 cases, including added Corsican
+ZenKit, Jira and Excel cases; Excel checks its file chooser because the
+source registry does not enable text paste for that format. Browser runtime
+execution remains pending. All 38,385 protected Chinese values are unchanged.
+Broader language review remains unfinished; these mixed-language repairs
+do not reduce the filtered English-placeholder count.
+
+## Corsican permission and board controls — 2026-10-13
+
+Commit `724fd0730d` repairs 37 mixed-language values. Membership and
+comment restrictions, role descriptions, subtask labels, custom fields,
+archive advice, list widths and deletion titles now use Corsican. Two
+meaning errors are corrected: the account-anonymization title no longer
+refers to imported users, and access for logged-in users no longer says
+registered users. Archive advice retains restoration and activity retention.
+
+The Corsican and full repair-ledger suites pass; the ledger now records
+25,270 guarded corrections. All 21 human-preference checks pass. A complete
+key/token comparison covers 4,265 live source keys. Semantic assertions
+retain read-only and assigned-only restrictions, administrator comment
+restrictions, private-versus-shared widths and archive behavior.
+
+The two Corsican subtask browser cases register, with the completion case
+now checking the corrected `Sottucompiti` heading and rejecting its previous
+Italian form. They have not run against the application. Exact comparison
+preserves all 38,385 existing protected Chinese values and isolates the
+37 specified Corsican edits from concurrent additions. Broader language
+review remains unfinished; filtered placeholder totals do not measure these
+mixed-language corrections.
+
+## Corsican activity notification wording — 2026-10-13
+
+Commit `f7e256b997` corrects 39 notification values containing Italian or
+English fragments. Explicit Corsican text replaces attachment, checklist,
+custom-field and swimlane terms, alongside membership, import, restore and
+movement actions. Exact repair entries bring the ledger to 25,233 rows.
+Checks preserve source token spelling and case, including `__checkList__`,
+and retain source/destination order and completed/uncompleted distinctions.
+
+Both the Corsican suite and full repair-ledger suite pass; all 21
+human-preference checks pass. Source inspection confirms the server and
+clear notification drawer use these `act-*` keys. A new drawer browser case
+registers and checks Corsican card creation without English swimlane text
+or raw tokens; it has not executed against the application.
+
+The final guarded comparison preserves all 38,385 Chinese values present
+in the current parent revision, including concurrent additions committed
+during this work. Only the 39 specified Corsican values changed in this
+batch. The filtered backlog is unaffected by these repairs to non-English
+values; many older Corsican strings still need review.
+
+## Corsican mixed-language activity messages — 2026-10-13
+
+Commit `e3c22d9e92` replaces 22 Italian or mixed-language activity values
+with Corsican. Examples include `creato`, `inviato`, `importato`,
+`selezionata`, `disattivato` and `lista di controllo`. The subtask activity
+also loses an erroneous literal `1` before `%s`. Existing correct Corsican
+activity values are retained.
+
+The exact before/after repairs bring the ledger to 25,194 entries. Both
+the Corsican suite and full correction-ledger suite pass, including token
+preservation, replay idempotence and protection for newer wording. All
+21 human-preference checks pass. Negative checks reject the repaired Italian
+phrases and distinguish checked/unchecked and added/removed meanings.
+
+The card-creation browser workflow now registers English and Corsican
+cases. Source inspection confirms it renders `activity-added`, so its
+Corsican assertion checks `hà aghjuntu` and rejects the former `ha aghjuntu`.
+These cases have not run against the application. All 38,079 protected
+Chinese values remain unchanged; concurrent mail-report additions remain
+outside the commit. The filtered count is unaffected because these were
+non-English mixed-language values. Many older Corsican activity, membership
+and board strings still require correction; fluent review remains pending.
+
+## Corsican import instructions — 2026-10-13
+
+Commit `9198e84b39` fills 22 English import-format instructions. Checks
+preserve literal Orgmode keywords and Teamwork headers, nesting syntax,
+first-board limits, English-header requirements and unsupported-data
+warnings. Taiga retains separate epic/issue swimlanes; Vikunja retains
+percent-complete and completion custom fields; Quire retains the warning
+that comments and attachments are absent from its CSV.
+
+The Corsican suite now runs the full filtered inventory, including pending
+keys, and passes with zero placeholders. All 21 human-preference checks
+pass. The shared importer browser suite registers 66 cases across Corsican,
+Maltese and Swahili, including 22 added Corsican cases; application execution
+is still pending. Only the 22 English values changed, with all 38,079
+protected Chinese values preserved and concurrent mail-report additions
+excluded from the commit.
+
+The global filtered count is 53,224 across 113 catalogs. A zero filtered
+count does not certify Corsican fluency: older Italian wording, exempt
+prose, regional phrasing and browser execution remain to be reviewed.
+
+## Corsican import, export and board controls — 2026-10-13
+
+Commit `342e479ed9` fills 65 English values for imported-person choices,
+CSV mapping, batch import/export, Trello, Sandstorm, board settings, link
+patterns, Wrike workflows, LDAP, login restrictions and subtasks. Semantic
+checks preserve source-column correction, named placeholder users, single
+export ZIP exceptions, export permissions, required Sandstorm access,
+Wrike status mapping, read-only restrictions and subtask state negation.
+Technical literals and catalog-wide token and HTML inventories are checked.
+
+The Corsican suite and 21 human-preference checks pass. Eight browser cases
+register across seven existing workflows: CSV mapping, imported people,
+Trello export, calendar mode, Wrike workflows, LDAP and subtask completion
+(including the permission-denial case). They have not run against the app.
+
+Exact comparison confirms only these 65 English values changed; all 38,079
+protected Chinese values remain unchanged. Concurrent mail-report additions
+remain outside the commit. Corsican now has 22 import-format placeholders;
+the global filtered backlog is 53,246 across 114 catalogs. Fluent wording
+review, older mixed-language corrections and browser execution remain open.
+
+## Corsican notification delivery — 2026-10-13
+
+Commit `877a3a7e81` fills 39 English notification and webhook messages.
+Checks retain inherited settings and unchanged default payloads, literal
+`WEBHOOKS_ATTRIBUTES`, omission of the user's name, grouped versus separate
+messages, daily scheduling and waiting until quiet hours end. Tokens and
+HTML tags remain covered by the catalog-wide checks.
+
+The Corsican suite and 21 human-preference checks pass. The existing
+notification-settings browser workflow now includes Corsican and registers;
+it has not executed against the application. Only the 39 English values
+changed. All 38,079 protected Chinese values remain unchanged, with
+concurrent mail-report additions excluded from the commit.
+
+Corsican now has 87 filtered placeholders. The global filtered count is
+53,311 across 114 catalogs. Synchronization-planning strings were already
+translated and were left intact. Older mixed-language text, regional
+phrasing, exempt strings and browser execution remain under review.
+
+## Corsican recovery decisions — 2026-10-13
+
+Commit `ef77f5a3f3` fills 37 English synchronization/import recovery
+messages. The suite checks all 48 messages in those groups, including the
+11 already translated. Assertions distinguish preserved applied changes
+from changes never written, retryable operations from discardable ones,
+and keeping a partial board from deleting it permanently. Warnings retain
+missing source files, later additions and untouched unrelated boards.
+
+The Corsican suite and 21 human-preference checks pass. Two browser cases
+register for synchronization discard and interrupted-import discard, but
+have not executed against the application.
+
+Only the 37 English values changed. All 38,079 existing protected Chinese
+values remain unchanged, and concurrent mail-report additions are outside
+the commit. Corsican now has 126 filtered placeholders; the global count
+is 53,350 across 114 catalogs. Regional phrasing, older mixed-language text
+and browser execution still require review.
+
+## Corsican card attachments and linked fields — 2026-10-13
+
+Commit `cdb2405e93` fills 30 English placeholders. Checks cover matching
+field names/types, one-way and two-way propagation, untouched unmatched
+fields, edit permission, paused links, archived cards and unreadable cards.
+The historical catalog gate remains separate from the pending-feature
+inventory. Its success message now describes that narrower scope.
+
+The Corsican suite and all 21 human-preference checks pass. Two existing
+browser workflows now include Corsican and register successfully; they have
+not run against the application. Exact comparison confirms only these 30
+English values changed, and all 38,079 protected Chinese values remain
+unchanged. Concurrent mail-report additions remain outside the commit.
+
+The full filtered inventory now has 163 Corsican placeholders and 53,387
+values across 114 catalogs globally. Older Corsican text visibly mixes
+Italian wording (for example `campo personalizzato` and `Puoi spostare`);
+it remains a separate correction task, not a completed language audit.
+Regional phrasing in this batch is provisional pending fluent review.
+The attachment term `appicciu` is supported by the Corsican authority's
+[mail-writing vocabulary](https://paesidei.isula.corsica/wp-content/uploads/2024/09/2024-03-12_Arnesi-da-currieri-mail_FG-PL.pdf).
+
+Swahili's supplementary exempt/short queues contain only `Bytes`, `Asia`,
+`Alt` and `Command`. These were left unchanged for individual review;
+there are no short-prose candidates in that locale. This does not certify
+the wider catalog's fluency.
+
+## Swahili import instructions — 2026-10-13
+
+Commit `d963a78bf4` fills the remaining 22 import-format instructions.
+Regression checks preserve Orgmode keywords, Teamwork headers and nesting
+syntax, first-board-only behavior, English-header requirements and warnings
+about data excluded from source exports or imports.
+
+Both Swahili suites and 21 human-preference checks pass. All 4,232 live
+source keys have matching Swahili key order and placeholder inventories.
+Only the 22 English values changed; prior Swahili translations and all
+38,079 protected Chinese values remain unchanged. Concurrent mail-report
+additions remain outside the commit.
+
+The shared Maltese/Swahili browser suite registers 44 importer cases;
+application execution remains pending. Swahili's full filtered report is
+empty. The global filtered backlog is 53,417 values across 114 catalogs.
+Exempt strings, short prose, broader language review and browser execution
+remain unfinished; a zero filtered count does not establish fluency.
+
+## Swahili export guidance and settings — 2026-10-13
+
+Commit `e02fd383b5` fills 46 English values for batch import/export, Trello,
+Sandstorm access, board settings, external-link patterns, Wrike workflows,
+LDAP and login restrictions. The text preserves the single-export ZIP
+exception, workbook-versus-file output, omitted member mapping, export
+permissions, required Sandstorm access and partial-export warnings.
+
+Both Swahili suites and all 21 human-preference checks pass. The feature
+suite verifies tokens and technical literals, including `Swimlane: …`, link
+pattern examples, Wrike status groups, `GET /workflows` and LDAP variables.
+Semantic checks retain read-only roles, environment-only settings, empty
+allowed-domain behavior and color fallback. Only the 46 English values
+changed; prior Swahili translations and all 38,079 protected Chinese values
+match the parent. Concurrent mail-report additions remain separate.
+
+Four added browser cases register for calendar, Trello dialog, Wrike round
+trip and LDAP refusal. They have not run against a rebuilt application.
+Swahili now has 22 import-format instructions in the filtered inventory;
+the global count is 53,439 across 115 catalogs. Remaining fills, exempt
+strings, wider wording review and browser execution remain unfinished.
+
+## Swahili notification, mapping and Scrum controls — 2026-10-13
+
+Commit `387b88c959` fills 79 English values: notification delivery and
+webhooks, planning synchronization, CSV and imported-person mapping, Scrum
+transfers and subtasks. The wording retains quiet-hour waiting, inherited
+defaults, identity omission, source-ID matching and the first-sync safeguard.
+Import messages distinguish named placeholders from real users, missing
+columns, ambiguous cards, unmatched data and completed work periods.
+
+Both Swahili suites and all 21 human-preference checks pass. The expanded
+feature suite covers at least 155 translated messages and verifies exact
+tokens, negative meanings, change direction and retained data. Guarded
+comparison confirms that only the 79 English values changed; prior Swahili
+translations and all 38,079 protected Chinese values remain unchanged.
+Concurrent mail-report additions were preserved outside this commit.
+
+Seven added browser cases register across notification settings, planning
+sync, person mapping, CSV mapping, Scrum transfer and subtask flows. They
+include missing-list validation, repeat import and comment-only permission
+refusal, but have not run against a rebuilt app. Swahili's filtered count
+falls from 147 to 68; the global inventory is 53,485 across 115 catalogs.
+Further fills, broader wording review and browser execution remain open.
+
+## Swahili card links and recovery — 2026-10-13
+
+Commit `c4f4e465f2` fills 76 English placeholders: 30 attached-card and
+linked-field messages, and 46 recovery messages. The linked-field guidance
+preserves matching name/type, untouched unmatched fields, edit access on
+both cards and one-way versus two-way propagation. Recovery guidance keeps
+already applied sync changes, rejects replayable-operation discards, explains
+permanent deletion of imported boards including later additions, and limits
+rollback to records without intervening edits.
+
+Both Swahili suites and all 21 human-preference checks pass. Positive and
+negative semantic checks distinguish directions, permissions and destructive
+versus retaining actions. All current keys and tokens match English. Only
+the 76 English values were changed; earlier non-English Swahili values and
+all 38,079 protected Chinese values remain unchanged. Concurrent mail-report
+additions were preserved and excluded from the commit.
+
+Seven existing browser cases register with Swahili: attachment, linked-field,
+list-sync recovery, interrupted-import recovery and three Scrum conflict or
+permission paths. They have not run against a rebuilt application. Broader
+Swahili terminology and composed grammar still require review.
+
+Swahili's filtered inventory falls from 223 to 147. The global inventory is
+53,564 across 115 catalogs. Further fills, semantic review and browser
+execution remain unfinished.
+
+## Maltese exempt prose and short labels — 2026-10-13
+
+Commit `6d5ae79420` repairs 38 English values hidden by the normal inventory:
+MongoDB and S3 storage prose, platform/geography labels, rule fragments,
+My Cards' person label, progress wording and Blockly announcements. The
+normal fill tool intentionally skipped these exempt values. Exact-English
+guards were therefore applied directly and all before/after pairs were
+recorded in the correction ledger. Concurrent new mail-report text was
+preserved and excluded from the commit.
+
+Maltese [EU terminology](https://eur-lex.europa.eu/legal-content/MT/ALL/?uri=LEGISSUM%3A4675300)
+supports `pjattaforma` and `ħażna`. The
+[dictionary entry attributing byte terminology to Microsoft Language Portal](https://pl.glosbe.com/pl/mt/bajt)
+uses `byte` and `bytes`, so the unit label stays unchanged rather than
+inventing a spelling. `Logo` and the physical `Alt` legend also remain.
+Product names, exact endpoint examples and all placeholders are retained.
+
+Five suites and 21 human-preference checks pass. The full ledger verifies
+25,172 records, exact-before application, idempotency and preservation of
+newer translations. All current Maltese keys and tokens match English;
+only the 38 audited pre-existing values changed, while all 38,079 protected
+Chinese values are unchanged. The S3 settings browser case registers with
+Maltese labels and descriptions; execution remains pending.
+
+The Maltese exempt-prose audit now lists only Bytes, Logo and Alt, and the
+short-prose audit returns an empty object. These queues do not certify all
+older wording. Rule fragments have been translated, but full composed-rule
+grammar and the broader all-language review remain open.
+
+## Maltese filtered inventory completion — 2026-10-13
+
+Commit `f26aaac01e` fills the remaining 22 import-format instructions.
+Across the recent batches, 223 English feature placeholders were filled.
+`fill-translations.mjs --list mt` now returns `{}` including pending keys.
+The progress test checks this full current inventory rather than the old
+completed-catalog snapshot. This milestone is not full semantic certification:
+exempt English labels, short prose and older wording still need review.
+
+The new instructions retain source behavior: first-board-only imports for
+Nullboard and Kanri, unavailable attachments for Taiga and Vikunja, unavailable
+comments/attachments in Quire CSV, missing relations/images/attachments in
+Notion, and absent descriptions/attachments in Plane. Businessmap requires
+English headers and Redmine requires an English export. Org mode tokens,
+Teamwork headers and nesting symbols retain exact spelling.
+
+All four Maltese suites and 21 human-preference checks pass. Only the 22
+English values changed; earlier non-English Maltese text and all 38,079
+protected Chinese values match the parent. Twenty-two browser cases assert
+the Maltese instructions and reject full English fallback on the actual
+import pages. Initial discovery used the older external Playwright copy and
+hit a duplicate-runner error after local dependencies appeared. Discovery
+with `tests/playwright/node_modules/playwright/cli.js` succeeds with 22 cases.
+They have not been executed against a rebuilt app.
+
+The refreshed global filtered inventory is 53,640 values across 115 catalogs.
+Other languages, broader semantic review, exempt strings and browser
+execution remain unfinished.
+
+## Maltese settings and workflow rules — 2026-10-13
+
+Commit `ce113b5a50` fills 23 English values for announcements, calendar mode,
+list colors, external-link patterns, read-only fields, Wrike workflows,
+rule actions, LDAP and login restrictions. Literal placeholders, example
+URLs, alias examples, Wrike statuses, `GET /workflows` and LDAP environment
+variables retain their exact spelling. The workflow note distinguishes
+completed/cancelled from active/deferred states and retains the limitation
+on exporting Wrike's own automation rules.
+
+All four Maltese suites and 21 human-preference checks pass. Checks cover
+read-only permissions, color fallback, environment-only controls, empty
+allowed-domain lists and technical literals. Only 23 English values changed;
+previous Maltese translations and all 38,079 protected Chinese values match
+the parent. Three browser cases register for calendar mode, Wrike workflow
+round trips and LDAP synchronization refusal. They retain their behavior
+checks and add localized labels. Execution remains pending.
+
+Maltese's filtered inventory now contains 22 import-format instructions.
+The global count is 53,662 across 116 catalogs. Completing this inventory
+will still require broader wording review and browser execution; it does
+not imply completion of every language.
+
+## Maltese multiple-board import and export — 2026-10-13
+
+Commit `bbe5b139d2` fills 23 English values for multiple-board imports,
+project splitting, export selection, Trello exports and Sandstorm access.
+The guidance distinguishes an archive of exports from one export packaged
+as ZIP, retains the absence of member mapping, and explains workbook sheets
+versus individual files. The Trello round-trip label `Swimlane: …` and all
+product names remain literal. Sandstorm access must be granted first.
+
+Four Maltese suites and all 21 human-preference checks pass. Semantic checks
+cover the archive exception, input precedence, cross-board dependency report,
+export permissions and partial export warnings. A parent comparison verifies
+that only 23 English values changed and all 38,079 protected Chinese values
+remain unchanged. The existing Trello export-dialog browser case includes
+Maltese and checks instructions, attachment selection, empty credentials
+and absent results without contacting Trello. It registers but has not run.
+
+Maltese has 45 filtered English values left. The global inventory is 53,685
+across 116 catalogs. Remaining translations, broader wording review and
+browser execution are still required.
+
+## Maltese Scrum transfers and subtasks — 2026-10-13
+
+Commit `c87fcb37ec` fills 20 English values for Scrum transfer previews,
+release selection, matching errors and subtask completion. Existing Maltese
+terminology for work cycles and versions is retained. Messages explicitly
+preserve unmatched cards, avoid duplicate planning, distinguish ambiguous
+matches and foreign boards, and refuse moving a card into a finished cycle.
+The release-selection guidance retains Ctrl, Cmd and Mac.
+
+Four Maltese suites and all 21 human-preference checks pass. Positive and
+negative checks verify matching semantics, unchanged records, permissions
+and done versus not-done actions. Only the 20 English placeholders changed;
+all existing non-English Maltese text and 38,079 protected Chinese values
+match the parent. Three browser cases register: Scrum transfer with repeat
+import and authorization checks, subtask completion toggling, and a
+comment-only member's refusal. They assert localized text but have not run
+against a rebuilt application.
+
+Maltese has 68 filtered English values remaining. The global inventory is
+53,708 across 116 catalogs. Further fills, semantic review and browser
+execution remain necessary for the complete all-language objective.
+
+## Maltese import people and column mapping — 2026-10-13
+
+Commit `f0c5c03cb1` fills 16 English values for imported-person choices and
+CSV column mapping. The options distinguish existing users, temporary users
+retaining their own names for later mapping, and the person importing.
+CSV guidance retains absent columns, skipped sheets, a required title and
+the single-list fallback when the file has no list column.
+
+All four Maltese suites and 21 human-preference checks pass. The existing
+progress suite now checks these messages and their distinctions. A parent
+comparison proves that only the 16 English placeholders changed; previous
+Maltese translations and all 38,079 protected Chinese values are preserved.
+
+Two browser cases register: assigning imported people to the importing user,
+and CSV mapping with a missing-list validation error followed by a successful
+import. The CSV case asserts the translated error. Neither has run against
+a rebuilt application. Maltese has 88 filtered placeholders remaining; the
+global inventory is 53,728 across 116 catalogs. The broader objective remains
+unfinished.
+
+## Maltese notification delivery and planning sync — 2026-10-13
+
+Commit `1e6b6340df` fills 43 English placeholders for notification layout,
+grouping and scheduling, outgoing webhook contents and identity, and Scrum
+planning sync. Existing Maltese Scrum terminology is retained. The planning
+hint keeps the requirement to enable Scrum, source dates and ID-before-name
+matching, retention of local changes until the source changes, and the
+promise that a first sync never removes planning.
+
+Four Maltese suites and all 21 human-preference checks pass. The new checks
+cover quiet hours as waiting rather than deletion, grouping by card versus
+board, inherited defaults, identity omission, protocol names and exact
+tokens. An initial assertion used a different spelling of the verb for
+keeping; it was corrected to match the translation, and all suites reran.
+Only the intended 43 English values changed. Every earlier non-English
+Maltese value and all 38,079 protected Chinese values remain unchanged.
+
+Two browser cases register in the existing member-notification and planning
+sync flows. The latter selects Maltese and asserts the entire translated
+planning hint while retaining its functional sync checks. Browser execution
+is still pending. Maltese's filtered inventory falls from 147 to 104, and
+the global inventory from 53,787 to 53,744 across 116 catalogs. Further
+translation, semantic review and browser execution remain required.
+
+## Maltese recovery messages — 2026-10-13
+
+Commit `57a10d1ac9` fills 46 English placeholders for stopped list sync,
+interrupted board imports and Scrum history recovery. The translations
+preserve the different outcomes: already applied sync changes remain,
+unwritten changes are abandoned, discarding an import permanently deletes
+its board and later additions, keeping a board removes nothing, and
+rollback is available only without intervening changes. The separate Scrum
+stage is explicitly named to avoid mistaking it for the board itself.
+
+All three Maltese suites and 21 human-preference checks pass. Semantic
+checks distinguish destructive and retaining actions, preserve the oldest-50
+limit, and verify every token against English. The older progress test's
+success message now identifies its earlier-catalog scope. A parent comparison
+confirms only the 46 English values changed; earlier non-English Maltese
+text and all 38,079 protected Chinese values remain unchanged.
+
+Five cases register in the existing list-sync, interrupted-import and Scrum
+history browser flows. They cover successful recovery, intervening conflicts
+and ordinary-member restrictions. Browser execution is pending; the preceding
+batch found the configured local application unavailable.
+
+Maltese now has 147 filtered English placeholders, down from 193. The full
+inventory falls by 46 to 53,787 values across 116 catalogs. Remaining fills,
+broader language review and browser execution are still required.
+
+## Maltese attached cards and linked fields — 2026-10-13
+
+Commit `60528034c1` fills all 30 remaining English values for attached cards
+and linked custom fields in `mt`. It retains the catalog's card, board and
+custom-field terminology. The instructions distinguish matching name/type,
+untouched unmatched fields, one-way and two-way propagation, and outgoing
+versus incoming changes. Error messages preserve edit permission on both
+cards, inaccessible cards, self-link refusal, archived cards and limits.
+
+Three semantic tests pass, including negative assertions against reversed
+directions and read-only permission. All 21 human-preference checks pass.
+The complete Maltese key order and placeholder inventory match English.
+A comparison with the parent shows that only these 30 English placeholders
+changed and every existing non-English value was retained. All 38,079
+existing values in the nine protected Chinese catalogs are unchanged.
+
+The existing attached-card and custom-field-link browser flows now each
+include Maltese. They cover normal linking, propagation or opening,
+removal, and refusal of a card the user cannot read. Both cases register.
+The configured local application at `http://localhost:3000` returned
+`ECONNREFUSED` when probed, so browser execution remains pending.
+
+Maltese's full filtered fill report falls from 223 to 193 values. The global
+inventory is 53,833 across 116 non-English catalogs. This batch completes
+one feature group; it does not certify the rest of the Maltese catalog or
+complete the all-language objective. Further fills, semantic review and
+browser execution remain open.
+
+## Time-history Khmer and regional-language review — 2026-10-13
+
+Commit `1a7fa67d94` completes the note in nine catalog paths: `km`, `km-KH`,
+`km_KH`, `my`, `am`, `yi`, `bho`, `mai` and `kok`. The Khmer regional hyphen
+path is a symlink to the underscore file, so this changes eight physical
+files while testing all nine paths. The symlink remains intact. The browser
+flow maps `km_KH` to the registered `km-KH` tag and checks Yiddish RTL layout.
+
+Each replacement states the four missing source meanings: grouping by the
+person editing the total, exclusion of individual work sessions, negative
+corrections, and inability to attribute earlier unrecorded time. The
+[Yiddish correction verb](https://en.wiktionary.org/wiki/פֿאַרריכטן)
+was checked as vocabulary support, not sentence certification. These seven
+languages' technical prose is provisional pending fluent review, as recorded
+in the commit. Bhojpuri, Maithili and Konkani use their respective grammatical
+forms rather than a shared Hindi sentence; script alone is not the check.
+
+Three suites pass: 142 meaning fixtures, all 25,134 recorded corrections,
+and unchanged acceptances. All 21 human-preference checks pass. Every key
+and placeholder in the nine paths matches the current 4,231-key English
+source. Only the note hunks entered the commit; the 39 concurrently added
+email/chat keys remain separate. All 37,728 earlier values in the protected
+Chinese catalogs match the parent commit.
+
+The browser suite registers 143 language cases including English and three
+other cases, 146 total. This is discovery verification; the cases have not
+run against a rebuilt app. Seventy-eight abbreviated notes remain, including
+eight protected `zh` catalogs. The refreshed filtered inventory is 53,863
+values across 116 catalogs; the ordinary report has 28,516 across 42,
+excluding 379 pending source keys. Broader semantic review and browser
+execution remain unfinished.
+
+## Time-history Kurdish, Asian and African review — 2026-10-13
+
+Commit `021d016f5d` restores the complete explanation in eight catalogs:
+Kurmanji (`ku`), Sorani (`ckb`), Pashto (`ps`), Sindhi (`sd`), Uyghur (`ug`),
+Hausa (`ha`), Somali (`so`) and Japanese Hiragana (`ja-HI`). The last is
+registered as `ja-Hira`: its note now uses Hiragana, and the browser flow
+selects the registered tag. A script check rejects Han and Katakana in
+that note. The original shortened value already contained Kanji; this
+repair addresses both missing meaning and the variant's declared script.
+
+The [Kurmanji correction entry](https://ku.wiktionary.org/wiki/sererast_kirin)
+supports correction terminology; it does not certify the complete phrase.
+The seven non-Japanese technical translations are provisional pending
+fluent review, as recorded in the commit. All four source distinctions
+are explicit: grouping by the editor of the total, exclusion of individual
+work sessions, negative corrections and unavailable earlier attribution.
+
+All three selected suites pass: the shared fixture covers 133 explanations,
+the correction ledger has 25,125 rows, and the unchanged-acceptance suite
+passes. All 21 human-preference checks pass. Every key and placeholder in
+the eight catalogs was checked against English. Only the intended note
+changed in each catalog. All 37,728 values in the nine protected Chinese
+catalogs were compared with HEAD after the email feature landed and match.
+
+The existing browser flow registers 134 language cases including English,
+plus three other cases (137 total). RTL checks now include Sorani, Pashto,
+Sindhi and Uyghur. This is syntax/discovery verification only; execution
+against a rebuilt app remains pending. Eighty-seven abbreviated notes
+remain, including the eight protected `zh` catalogs. Other protected
+Chinese varieties are also retained. The full all-language review and
+English-fill backlog remain unfinished.
+
+## Chinese email-to-card review — 2026-10-13
+
+Commit `f84a8e3a83` adds semantic and browser coverage for the 49 new email
+strings in `cmn`, `zh`, `zh-CN`, `zh-GB`, `zh-Hans`, `zh_SG`, `zh-HK`,
+`zh-Hant` and `zh-TW`. The feature and translations were already present
+in concurrent working-tree changes. This review did not rewrite them.
+All 441 new values contain Chinese text, differ from English, preserve
+placeholders and retain required protocol and provider names. Checks cover
+identity, write permission, secret retention, old-address invalidation,
+Sandstorm subjects, quoted-message omission, and read versus delete choices.
+All 37,287 pre-existing values in these catalogs match parent `706c9f34c1`.
+
+Both focused suites pass, including all nine new semantic cases without
+skips, and all 21 human-preference checks pass. Eighteen browser cases
+register for board destinations and administrator controls. They have not
+run against a rebuilt app. Unsaved mailbox rows are removed without saving
+credentials or contacting mail servers. Both test files explicitly skip
+when the independently developed feature's English source strings are
+absent; the current working tree includes those strings.
+
+A refreshed inventory after concurrent email translations counts 53,863
+filtered English candidates across 116 non-English catalogs, including
+pending keys. The ordinary report counts 28,516 values across 42 catalogs,
+excluding 379 pending source keys. No email keys remain in the filtered
+fill inventory. These counts do not certify the semantic quality of all
+translations. Broader language review, the remaining time-history notes,
+and browser execution remain unfinished.
+
+## Time-history regional and South Asian review — 2026-10-13
+
+Commit `c6aa8490d0` repairs 23 more abbreviated notes: Belarusian, Assamese,
+Odia, Punjabi, Sinhala, Javanese, Haitian Creole, Frisian (`fy`, `fy-NL`),
+Luxembourgish, Latin, Faroese, Welsh (`cy`, `cy-GB`), Irish, Scottish Gaelic,
+Occitan, Asturian, Aragonese, Corsican, Sardinian, Sicilian and Tajik.
+All four source meanings are stated explicitly. The Latin note no longer
+contains the artificial repeated `Latine:` wrapper. Tajik names the total
+number of hours rather than an amount of money.
+
+Vocabulary checks used [Teanglann's negative entry](https://www.teanglann.ie/en/fgb/di%C3%BAltach)
+and [Foclóir's attribution entry](https://www.focloir.ie/en/dictionary/ei/attribute)
+for Irish; [the Aragonese orthographic dictionary](https://www.efaragonesa.org/biblio/Edacar13.pdf)
+attests `rechistrar`; [Asturian correición](https://en.wiktionary.org/wiki/correici%C3%B3n)
+and [the Sardinian spelling tool](https://cros.nor-web.eu/) support correction
+terminology. [Sicilian Wikimedia usage](https://commons.wikimedia.org/wiki/Commons%3ARename_a_category/scn)
+supports `currizzioni`, replacing the initial draft spelling. These checks
+support vocabulary, not complete sentence certification. Faroese, Frisian,
+Scottish Gaelic, Aragonese, Corsican, Sardinian and Sicilian technical prose
+is provisional and explicitly marked for fluent review in the source commit.
+
+The existing four-meaning fixture now covers 125 catalog paths. Its positive
+checks require each distinction and its negative checks reject the previous
+shorthand. Both affected suites pass, including all 25,117 ledger rows and
+their exact-before matching, idempotency and preservation of newer reviewed
+text. All 21 human-preference checks pass. All keys and placeholder tokens
+were checked against the current English source in the 23 changed catalogs.
+
+The shared browser correction flow automatically includes the new fixture
+locales: 126 cases register, including primary English. They have not been
+executed against a rebuilt app. Only the note hunks were staged; unrelated
+pre-existing values and concurrent new email keys were preserved. Existing
+Chinese values were compared individually and left unchanged.
+
+The filtered backlog remains 65,329 values across 234 non-English paths.
+Eighty-seven further catalog paths still have the shorthand note, alongside
+the eight protected `zh` paths that must remain unchanged. The latter are
+not permission to override the user's explicit preservation instruction.
+The full all-language objective, broader semantic review and browser
+execution remain unfinished.
+
+## Further time-history meaning repairs — 2026-10-13
+
+Commit `44d8210a69` repairs 48 more catalog values. Forty-three cover Arabic,
+Persian, Hebrew, Bengali, Marathi, Nepali, Tamil, Thai, Kannada, Urdu,
+Malayalam, Telugu, Hindi, Gujarati, Esperanto, Catalan, Galician, Basque,
+Estonian, Latvian, Lithuanian, Icelandic, Afrikaans, Swahili, Tagalog,
+Albanian, Bosnian, Macedonian, Serbian, Armenian, Georgian, Kazakh, Kyrgyz
+and Mongolian, with their selected regional paths. Five English regional
+catalogs (`en_AU`, `en_ID`, `en_SG`, `en_TR`, `en_ZA`) also retained the
+abbreviated symbol-based note and now use the complete English explanation.
+
+All four source distinctions are restored: changes grouped by the person
+editing the total, not individual work sessions, negative values as
+corrections, and no attribution for earlier unrecorded time. Latvian had
+Lithuanian fragments, Bosnian a Cyrillic Serbian opening and Macedonian a
+Bulgarian username label; the complete replacement removes those fragments.
+The Urdu explanation also replaces a defective transcription of hours.
+Already complete notes such as Bulgarian are preserved.
+
+The two affected suites pass. The shared meaning fixture now covers 102
+catalogs, retaining positive checks for all four clauses and negative checks
+against their previous shorthand. English regional files must equal the
+English source; other locales must differ. The full correction-ledger suite
+passes all 25,094 rows, including exact-before repair matching, idempotency
+and preservation of newer reviewed translations. All 21 human-preference
+checks pass. The initial 43 catalogs were checked against all current source
+keys and tokens; the full ledger covers the five later English repairs too.
+
+The existing browser flow now registers 103 cases, including primary English.
+It tests translated report text after actual time corrections and rejection
+of a negative total. RTL catalogs additionally require an RTL page, and
+Valencian uses the registered `ca-valencia` language tag. Browser execution
+against a rebuilt app remains pending.
+
+Only the time-note hunks were staged in the locale files. The source commit
+preserves every other pre-existing value and does not include the concurrent
+new email keys. Existing Chinese values were compared individually and left
+unchanged. The filtered working-tree backlog remains 65,329 values across
+234 non-English paths. A shorthand scan still finds 110 further catalog
+paths and the eight protected `zh` paths; the latter must not be changed
+under the current instructions. The scan is a review queue, not permission
+to overwrite other existing translations. Broader language review and the
+all-language objective remain unfinished.
+
+## Time-history explanation review — 2026-10-13
+
+Commit `3fe68ad266` repairs `time-adjustment-note` in 54 catalog paths.
+The older notes were short labels around delta/not-equal symbols. They
+omitted the source's four substantive points: changes are grouped by the
+person editing the total, are not individual work sessions, negative values
+are corrections, and earlier unrecorded time cannot be attributed. The
+Romanian note also mixed Spanish and French wording; Vietnamese retained a
+Malay opening. Complete replacements remove those foreign fragments.
+
+This batch covers Swedish, Norwegian Bokmål, Danish, German, French,
+Spanish, Portuguese, Italian, Dutch, Polish, Czech, Russian, Ukrainian,
+Turkish, Azerbaijani, Hungarian, Romanian, Greek, Malay, Vietnamese, Japanese
+and Korean, including the selected regional files. Brazilian Portuguese keeps
+its spelling of registered; the other Portuguese catalogs use theirs.
+Existing full explanations such as Finnish, Croatian, Slovak, Slovenian and
+Indonesian were left alone. No existing Chinese value changed.
+
+The meaning fixture tests all four clauses for each catalog and proves that
+the previous text omitted them. Its negative shorthand check recognizes a
+standalone delta symbol, not the Greek letter inside a word. The full ledger
+suite passes with 25,046 corrections and verifies idempotency, tokens and
+preservation of newer translations. All 21 human-preference checks pass.
+The browser test extends the existing real correction flow rather than
+adding a label-only duplicate: positive adjustments, a rejected negative
+total, a negative correction, translated report explanations, exports and
+retained history. All 55 cases register (54 locales and English), but they
+have not run against a rebuilt app.
+
+Concurrent email work added 49 source keys and English placeholders to the
+catalogs. Only the time-note diff was staged in each locale, preserving that
+independent work. Comparison against the parent proves that the note is the
+only changed pre-existing value in each of the 54 catalogs; new keys were
+left intact. Existing Chinese values were compared individually and retained.
+
+The current working-tree source has 4,192 keys. Its filtered inventory now
+counts 65,329 values across all 234 non-English paths; the ordinary report
+counts 39,982 values across 234 paths and excludes 379 pending keys. The
+increase from 53,863 is exactly the 49 new keys in each non-English catalog.
+Earlier empty per-locale reports therefore predate this addition and do not
+establish current completion. Other time-note translations, the new email
+strings and the broader semantic and browser audits remain unfinished.
+
+## Latin Uzbek assignee and time-history repairs — 2026-10-13
+
+Commit `6c10d035c2` repairs thirteen values in each of `uz`, `uz-UZ` and
+`uz-LA`, 39 recorded corrections. `Tayinlovchi` names the assigning party,
+whereas `tayinlangan shaxs` names the person assigned. The contrast is
+attested in [UzA's Uzbek usage](https://uza.uz/oz/posts/muvofiqlikni-baholash-organlarini-tayinlash-tartibi-togrisidagi-nizom-tasdiqlandi_739868),
+which uses the active and passive forms for the appointing and appointed
+bodies. This is language evidence, not application-specific terminology.
+The correction covers singular/plural labels, popups, rule labels, export
+fields, keyboard guidance and user/assignee searches. Query literals and
+username placeholders are preserved.
+
+The previous time-history note was only an abbreviated symbol-based line.
+The repaired text follows the full English source: changes to totals are
+grouped by the editor, are not individual work sessions, negative amounts
+are corrections, and earlier unrecorded time cannot be attributed. Regression
+assertions check all four distinctions, rather than only the assignee noun.
+
+Both the locale suite and full correction-ledger suite pass; the ledger now
+contains 24,992 repairs and verifies exact-before matching, idempotency and
+preservation of newer reviewed text. All 21 human-preference checks pass.
+The three catalogs retain exact source key order and placeholder inventories;
+parent comparison proves that every changed value has its exact ledger row
+and all unrelated values remain untouched. Six browser cases register for
+assigning a card through its popup and reading the time-history note. They
+have not run against a rebuilt app.
+
+This batch does not reduce the English fill backlog: 53,863 values across
+116 paths remain in the filtered inventory. Existing Chinese text and the
+Arabic-script `uz-AR` file are unchanged. That file also contains the older
+Latin assignee labels and needs a separate script-aware correction. This
+batch repairs the nouns in rule fragments; it does not certify the assembled
+rule sentences, whose word order remains under review. Broader semantic
+review and the full all-language objective remain unfinished.
+
+## Latin Uzbek features and recovery — 2026-10-13
+
+Commit `6825f00ac7` fills 238 source-identical values in each of `uz`, `uz-UZ`
+and `uz-LA`, 714 values total. These are 223 feature placeholders, the Bytes
+label and fourteen Blockly key descriptions. The feature text covers linked
+cards and fields, importer instructions, bulk import/export, Trello/Sandstorm,
+notifications, LDAP, Scrum planning and interrupted-operation recovery.
+Existing board, list and field vocabulary guides the new text; new assignee
+references describe the assigned person as `tayinlangan shaxs`.
+
+Keyboard descriptions include the original physical key legend in parentheses
+so users can identify it. Page Up and Page Down retain opposite directions,
+and Backspace describes deleting the preceding character. Alt remains its key
+name. The extra fifteen keys were filled directly after exact comparison to
+English because the ordinary helper excludes them. No existing non-English
+value was changed. The Arabic-script `uz-AR` catalog and every Chinese catalog
+are untouched by this batch.
+
+Four focused suites pass: Asturian/Welsh/Uzbek, exempt-prose, short-prose and
+shared-label tests. The Latin Uzbek gate now checks the full current list,
+including pending features. Tests check link direction and permissions,
+preservation versus permanent deletion, refusal to discard replayable work,
+Scrum matching and conflict recovery, and first-sync preservation. File-format
+markers, upstream menu names, LDAP variables and external-link syntax stay
+literal. Runtime interpolation covers card notifications, zero applied
+changes, failed imports and Scrum conflict counts.
+
+All 21 human-preference checks pass. Key order and exact placeholders match
+across all 246 catalogs / 1,019,178 pairs. Parent comparison proves exactly
+238 fills per catalog and preservation of every earlier non-English value.
+Twenty-seven browser cases register across seven specs: linked fields,
+notification delivery, interrupted imports, stuck sync, Trello export,
+Scrum history recovery and Blockly. They have not been executed against a
+rebuilt running app.
+
+The filtered backlog is 53,863 values across 116 non-English catalog paths.
+The supplemental exempt-prose queue has 3,755 candidates across 226 locales;
+the short-prose queue has 1,649 across 180. Latin Uzbek full fill lists are
+empty, but that does not certify existing wording. The older `Tayinlovchi`
+assignee labels, composed rule grammar, Arabic-script Uzbek and the wider
+semantic audit still need review. Technical prose remains subject to fluent
+review. The overall all-language objective is not complete.
+
+## Azerbaijani features, recovery and accessibility — 2026-10-13
+
+Commit `9d8a48c4d8` fills 230 source-identical values in each of `az`, `az-AZ`
+and `az-LA`, 690 values total. The 223 current feature placeholders cover
+linked cards and fields, importer instructions, bulk import/export, Trello and
+Sandstorm access, notifications, LDAP, Scrum planning and interrupted-operation
+recovery. The corrected `lövhə` and assigned-person terminology is used.
+
+Seven labels were outside the normal fill list: Bytes, S3 bucket, S3 port,
+the two count separators, Blockly's nested-input movement announcement and
+its pixel-on state. These were filled directly only after confirming each
+still exactly equalled English. Fixed numerator/denominator layouts use `/`;
+the movement announcement places the parent before its contained input,
+while pixel on/off remain distinct. Alt, Command and Tab retain their physical
+key legends, and OK remains a conventional acknowledgment. No existing
+non-English value changed, including the preceding terminology repairs.
+No Chinese catalog changed.
+
+Four focused suites pass: the existing Azerbaijani/Croatian/Polish/Slovak
+suite, exempt-prose audit, short-prose audit and shared-label suite. The
+Azerbaijani gate now checks the full current list, including pending features.
+Positive and negative checks cover link direction, two-card edit permission,
+permanent deletion versus preservation, refusal to discard replayable work,
+Scrum conflicts, completed-sprint handling and first-sync preservation. Import
+format literals, LDAP variables, Wrike statuses and external-link syntax are
+preserved. Runtime interpolation exercises card notifications, zero applied
+changes, a failed import and Scrum conflict counts.
+
+All 21 human-preference checks pass. All 246 catalogs retain English key order
+and exact placeholders across 1,019,178 locale/key pairs. Parent comparison
+confirms exactly 230 fills in each catalog with every previous non-English
+value untouched. Thirty browser cases register across eight existing specs:
+notification delivery, linked fields, interrupted imports, stuck sync,
+Trello export, Scrum history recovery, S3 settings and Blockly. They have not
+run against a rebuilt app; registration is not execution evidence.
+
+The full filtered backlog is now 54,532 values across 119 non-English paths.
+The ordinary report still counts 28,516 values across 42 locales, excluding
+379 pending source keys. Supplemental audits flag 3,800 exempt-prose candidates
+across 226 locales and 1,649 short-prose candidates across 180 locales.
+These are review queues, not automatic errors. Azerbaijani's full fill lists
+are empty; complete semantic review is still open, including older storage
+wording and composed rule grammar. Technical prose remains subject to fluent
+review. The overall all-language objective is not complete.
+
+## Azerbaijani board and assignee terminology — 2026-10-13
+
+Commit `30a92983f5` repairs 38 values in each of `az`, `az-AZ` and `az-LA`,
+114 exact locale/key changes. The catalogs used `şura` for Kanban boards,
+although that noun denotes a council or assembly. The repaired text uses
+`lövhə`, already present in other board strings and attested for board/panel.
+See [şura](https://en.wiktionary.org/wiki/şura) and
+[lövhə](https://en.wiktionary.org/wiki/lövhə). Declined forms are adjusted to
+their sentence roles, rather than replacing the noun stem mechanically.
+
+Assignee labels now use `Təyin edilmiş şəxs`, the singular of the catalog's
+existing assigned-people terminology, instead of a label suggesting the
+assigning person. Repairs also make Restore and Schedule Archive commands
+verbs, translate the English `public` inside preserved emphasis, retain the
+public-view/member-edit distinction, and fix invitation case endings. Source
+inspection confirms outgoing activity notifications prefix the actor name,
+so member-add/remove messages retain active predicates. Query syntax, name
+markers, invitation tokens and HTML tags remain exact.
+
+The first negative scan found two additional council labels in the regional
+card-to-board creation command. The base catalog used the word for a sheet
+there instead of card. All three now explicitly create a board from this
+card. The full repair set is recorded in the ledger, now 24,953 entries;
+parent comparison proves every unrelated value is unchanged. No `zh` catalog
+changed. This does not certify all Azerbaijani wording or rule grammar.
+
+The terminology suite and full correction-ledger suite pass, as do 21
+human-preference checks. Tests cover singular assigned-person labels, add
+versus remove, public visibility versus edit permission, invitation and search
+tokens, dictionary terminology and rendered notification substitution. Exact
+source key order and tokens match across 246 catalogs / 1,019,178 pairs.
+Three browser cases register for the three variants, reading the create-board
+and visibility dialogs and assigning a card through its corrected popup.
+They have not been executed against a rebuilt running app.
+
+These are wrong-meaning repairs to existing translations, not English fills.
+The filtered backlog remains 55,201 values across 122 non-English paths.
+Azerbaijani still has 223 current feature placeholders in each of its three
+catalogs; the next fills must use the corrected board and assignee terms.
+The overall translation and language-quality audit remains unfinished.
+
+## Malayalam features and Scrum recovery — 2026-10-13
+
+Commit `0ae7f04e55` fills 223 current placeholders and thirteen labels hidden
+by exemptions. A parent comparison confirms all 236 replaced values were
+English. Existing non-English Malayalam values are unchanged, and no `zh`
+catalog changed. The fills use established board, card, list, lane, field,
+attachment and assignee terminology. Longer technical clauses remain
+provisional pending speaker review.
+
+The additional thirty Scrum strings distinguish existing planning from new
+records, ambiguous or unmatched cards, cards on another board, finished
+sprints, local changes retained until the source changes, and first-sync
+preservation. Recovery wording distinguishes rollback from keeping all
+records, permits rollback only without later conflicting edits, and keeps
+board-administrator authority explicit. All original source tokens remain.
+
+Short-label review uses recipient and actor labels before the corresponding
+inputs and `/` between fixed-order current/total counts. The generic linking
+verb becomes `ആണ്`; the language-aware rule helper omits it before existing
+Malayalam action predicates, including temporal phrases ending in `പ്പോൾ`.
+This removes the extra word but does not certify complete trigger sentence
+word order. The Kannada browser test is generalized to cover both languages
+without duplicating its UI and saved-description assertions.
+
+Six focused suites pass: Malayalam, Kannada, Basque rule grammar,
+browser-language fallback, shared labels and exempt prose. They cover
+permissions, import exclusions, recovery consequences, Scrum conflicts,
+locale-tag boundaries, source literals and runtime substitution including
+zero. All 21 human-preference checks pass. Source key order and exact tokens
+match across 246 catalogs / 1,019,178 pairs. Nine Malayalam browser cases
+register, including three Scrum history cases for rollback, later edits and
+ordinary-member restrictions. Execution still needs a rebuilt running app.
+
+The full filtered inventory is 55,201 values across 122 non-English paths.
+The ordinary report remains 28,516 values across 42 locales, excluding 379
+pending keys. Supplemental candidates fall to 3,809 across 226 locales;
+short-prose candidates fall to 1,661 across 180 locales. Malayalam's full
+fill list and short-prose queue are empty. Remaining physical key legends,
+product names and notation are retained. Whole-catalog language review and
+the overall translation task remain unfinished.
+
+## Urdu feature fills and RTL coverage — 2026-10-13
+
+Commit `762bb1df85` fills 193 current English placeholders. A parent comparison
+confirms every replaced value was English and all earlier non-English Urdu
+values are unchanged. No `zh` catalog changed. The fills use the catalog's
+existing board, card, list, lane, field and assignee terminology; literal
+source menu names, column headers, file extensions, APIs and Trello's
+`Swimlane: …` marker remain usable. Longer technical clauses are provisional
+pending speaker review.
+
+The full current fill list is empty, including pending keys. Review of
+remaining Latin-containing source-equal values leaves product names, physical
+keyboard legends and mathematical notation. An Arabic-script check on new
+values is only structural evidence: Persian, Arabic and Urdu share a script,
+so it does not prove target-language accuracy or whole-catalog fluency.
+
+Three focused suites pass: Urdu, shared labels and exempt prose. They check
+permissions, one-way field directions, values left unchanged, import
+exclusions and first-board behavior, inherited settings, irreversible removal
+versus retaining a board, discarded changes never being written, source-file
+retention, Trello access states and runtime substitution including zero.
+The static RTL suite passes all seven checks; 21 human-preference checks pass.
+Exact source-token inventories and key order match across 246 catalogs /
+1,019,178 pairs. These do not prove visual mixed-direction text layout.
+
+Browser discovery registers ten Urdu cases: five feature flows for linked
+fields, notification settings, both recovery views and Trello export, plus
+five existing RTL layout cases for the home page, board, card details, list
+pages and administration. The export dialog explicitly checks the document's
+RTL direction. Browser execution remains open until a rebuilt running app
+is available; no rendered-layout pass is claimed.
+
+The full filtered inventory falls to 55,424 values across 123 non-English
+paths. The ordinary report remains 28,516 values across 42 locales, excluding
+379 pending keys. Supplemental and short-prose snapshots remain 3,814 across
+226 locales and 1,669 across 181 locales respectively. Whole-catalog language
+verification and the overall task remain unfinished.
+
+## Kannada features, exempt labels and rule helper — 2026-10-13
+
+Commit `10c4cc3bfa` fills 193 current feature placeholders and nine labels
+hidden by exemptions: Bytes, Platform, Logo, USA, Asia, the generic linking
+verb, recipient label and two count separators. A parent comparison confirms
+all 202 previous values were English. Every earlier non-English Kannada
+value is unchanged, and no `zh` catalog changed. Product names, abbreviations,
+format/query literals and physical key legends remain intentional.
+
+Actual template inspection found count order fixed as current / total in
+card vote/poker summaries and migration progress. Both translated separators
+use `/` so the existing layout does not put a Kannada postposition before its
+noun. The generic `r-is` label becomes `ಇದೆ`, but the rule-trigger helper omits
+it in Kannada rows: the existing action phrases already contain their verb,
+such as `ಪೂರ್ಣಗೊಂಡಿದೆ` and `ಅಪೂರ್ಣಗೊಳಿಸಲಾಗಿದೆ`. This removes the redundant
+inserted word; it does not claim to repair every full trigger clause's word
+order. The change uses the existing language-aware helper, retains Basque
+and Thai behavior, and does not alter other locales or subject ordering.
+
+Five suites pass: Kannada, Basque rule grammar, browser-language fallback,
+shared labels and exempt prose. Tests check locale aliases and prefix
+boundaries, existing predicates, field directions, permissions, import
+exclusions, irreversible deletion versus retention, source literals and
+runtime interpolation including zero. All 21 human-preference checks pass;
+source key order and tokens match across 246 catalogs / 1,019,178 pairs.
+Six browser cases register for Kannada linked fields, notifications, both
+recovery views, Trello export and rule rows with a saved description. They
+still require a rebuilt running app. Full sentence grammar and longer new
+technical wording remain provisional pending speaker review.
+
+The full filtered inventory is 55,617 values across 124 non-English paths.
+The ordinary report remains 28,516 values across 42 locales, excluding 379
+pending keys. Supplemental candidates fall to 3,814 across 226 locales; the
+short-prose queue falls to 1,669 across 181 locales. Kannada's full fill list
+and short-prose queue are empty; its five supplemental candidates are physical
+key legends. Whole-catalog semantic verification and the overall translation
+task remain unfinished.
+
+## Thai feature fills — 2026-10-13
+
+Commit `0a7eba3e4e` fills 193 current placeholders and the exempt Bytes label.
+Comparison with the parent confirms all 194 replaced values were English;
+every earlier non-English Thai value is unchanged. No `zh` catalog changed.
+The translations use existing terms for boards, cards, lists, swimlanes,
+custom fields, checklists and assignees. Source menu names, file extensions,
+column headers and round-trip markers remain literal where users must find
+or supply them. Longer technical wording is provisional pending speaker review.
+
+Review of remaining source-equal values leaves product names, abbreviations,
+query letters, mathematical functions, OK and physical keyboard legends.
+Descriptions consisting only of cloud product names are retained too. A
+narrow scan found no Khmer, Lao, Myanmar, Cyrillic or Devanagari script; that
+result does not prove that every Thai sentence has been semantically reviewed.
+The full current fill list is empty, including pending feature keys.
+
+Three focused suites pass: Thai, shared labels and exempt prose. Tests cover
+which card sends or receives changes, permission loss, values left unchanged,
+import exclusions and first-board behavior, inherited notification settings,
+permanent deletion versus retention, no stored import source, Trello network
+permission states and runtime interpolation including zero. Source key order
+and exact tokens match across all 246 catalogs / 1,019,178 pairs; all 21
+human-preference checks pass. Five Thai browser cases register for linked
+fields, notification settings, both recovery views and Trello export. These
+still require execution against a rebuilt running app.
+
+The full filtered inventory falls to 55,810 values across 125 non-English
+paths. The ordinary report remains 28,516 values across 42 locales, excluding
+379 pending keys. The supplemental queue falls by one to 3,819 candidates
+across 226 locales. The whole-language semantic audit and overall translation
+task remain unfinished. No external translation service or remote upload was
+used.
+
+## Tamil feature fills and calendar spelling — 2026-10-13
+
+Commit `5de70e0399` fills 193 feature placeholders and the exempt Bytes label.
+A parent comparison confirms 183 existing values were English; eleven keys
+were newly added. Four other changed values are explicit calendar spelling
+repairs; all remaining existing values are unchanged. No `zh` catalog changed.
+
+The misspelling `நாள்கட்டி` is corrected to `நாள்காட்டி` in the board calendar,
+multi-board calendar, iCal export and generic calendar labels, as well as the
+new calendar-mode fill. This agrees with existing calendar-system and feature
+labels. [Wiktionary's நாள்காட்டி entry](https://en.wiktionary.org/wiki/நாள்காட்டி)
+records it as a form of [நாட்காட்டி, calendar](https://ta.wiktionary.org/wiki/நாட்காட்டி).
+Four exact before/after repairs bring the ledger to 24,839 records; its tests
+also verify that a newer reviewed translation is not replaced by an old repair.
+
+Review of unchanged English source values leaves product names, abbreviations,
+mathematical functions and physical keyboard legends. The five supplemental
+Tamil candidates are Alt, Command, Option, Shift and Tab, retained as printed
+key names. That retention does not certify the language or semantics of every
+other Tamil value. Longer new technical wording remains provisional pending
+speaker review; it follows the catalog's board/card/list/field terminology.
+
+Four relevant suites pass: Telugu/Tamil, shared labels, exempt prose and the
+correction ledger. Checks cover two-card permissions, one-way field direction,
+fields left unchanged, imported versus excluded data, irreversible deletion,
+source retention, notification inheritance, literal format identifiers, Trello
+round-trip markers and runtime substitution including zero. Exact key order
+and token inventories match across 1,019,178 locale/key pairs; 21
+human-preference checks pass. Six Tamil browser cases register for linked
+fields, notification settings, both recovery views, Trello export and calendar
+mode. Browser execution still needs a rebuilt running app.
+
+The full filtered inventory is now 56,003 values across 126 non-English paths;
+the ordinary report remains 28,516 values across 42 locales, excluding 379
+pending keys. The supplemental queue falls by one to 3,820 candidates across
+226 locales. Tamil's current fill list is empty. Whole-catalog semantic and
+wrong-language review, browser execution and the overall task remain open.
+
+## Nepali features and new Trello labels — 2026-10-13
+
+Commit `9384c350fa` fills 193 Nepali strings: 182 existing English placeholders
+and eleven Trello/Sandstorm keys added to English during this batch. It also
+adds those eleven new keys in nine Chinese paths (`cmn` and the eight `zh`
+paths). A parent comparison confirms all 182 replacements were English and
+all original non-English values are unchanged. Every earlier human-verified
+`zh` value is preserved; only the new keys were added. The round-trip label
+marker `Swimlane: …` remains literal in every new description.
+
+Commit `66bd077c36` fills the eleven new Marathi keys. Bengali translations
+arrived from concurrent work before the fill attempt; the helper skipped all
+eleven, preserving them. Tests were matched to that existing wording after
+checking the same meaning. The new English source, source-key propagation and
+other concurrent feature work are outside these two translation commits.
+
+Eight focused suites pass: Nepali, Bengali, Marathi, upcoming Chinese,
+traditional Chinese, Chinese list widths, shared labels and exempt prose.
+The audit checks permission directions, inherited notification settings,
+quiet periods, import exclusions, permanent removal versus keeping data,
+API keys/tokens and missing versus granted network access. Exact source key
+order and placeholder inventories match across 246 catalogs / 1,019,178 pairs;
+21 human-preference checks pass. These are structural and selected semantic
+checks, not a certification of every sentence's language or fluency.
+
+Playwright discovery registers 13 export-dialog cases (English, Bengali,
+Marathi, Nepali and nine Chinese paths), plus four Nepali feature cases for
+linked fields, notification settings and recovery. The export-dialog tests
+inspect labels, descriptions and initial controls without starting an export.
+Browser execution remains unverified without a rebuilt running application.
+Longer technical compounds remain provisional pending speaker review.
+
+Snapshot after the batch and concurrent new-string fills: the ordinary report
+has 28,516 values across 42 locales and excludes 379 pending source keys.
+The full filtered inventory has 56,196 values across 127 non-English paths.
+The supplemental queue still has 3,821 candidates across 226 locales. Shared
+spellings and physical key names require individual review; these are not all
+errors. Whole-catalog wrong-language review and the overall translation task
+remain unfinished. No external translation service or remote upload was used.
+
+## Eight additional storage catalogs — 2026-10-13
+
+Commit `49b1e07a48` fills 200 English MongoDB/S3 settings values: 25 each in
+Nepali, Kannada, Malayalam, Javanese, Kazakh, Kyrgyz, Tajik and Somali. Each
+replacement was compared with the parent commit and was identical to the
+English source. Existing translations and all human-verified `zh` catalogs
+remain unchanged. The surrounding S3 instructions were read and retained;
+new labels follow their existing access-key, secret-key, region, endpoint and
+storage terminology. Brands, host examples and literal console labels remain
+recognizable. Longer software compounds are provisional pending speaker review.
+
+The expanded supplemental suite checks enabled versus disabled, successful
+versus failed connections, mandatory secret keys, source key order and exact
+token inventories, plus i18next rendering without English fallback. All 13
+relevant locale and audit suites pass. Storage-settings browser discovery
+registers 14 locale cases, including secret-key guidance; those cases still
+need a running app rebuilt with the new catalogs. No browser pass is claimed.
+
+The supplemental review queue falls from 4,021 to 3,821 candidates across 226
+locales. The ordinary filtered inventory remains 54,981 values across 128
+locale paths because it excluded these technical-prefix strings. Neither
+count establishes that all remaining non-English values are correct; broader
+wrong-language, semantic and native-grammar review remains unfinished.
+
+## Storage settings in four languages — 2026-10-13
+
+Commit `3e10d0aa1d` fills 25 English MongoDB/S3 settings values each in Bengali,
+Icelandic, Tagalog and Albanian: 100 fills that the main tool had excluded as
+technical names. A parent comparison verifies every original value was English.
+The other existing Bengali, Icelandic and Albanian S3 instructions were read and
+preserved. Tagalog's 15 remaining S3 clauses contained mixed English and Tagalog
+or translated literal AWS console labels; exact before/after repairs are recorded
+in the correction ledger, now 24,835 records. No other non-English value changed.
+Existing human-verified `zh` catalogs remain unchanged.
+
+The settings review preserves compatibility, enabled/disabled and success/failure
+states, required secret keys, ports, regions, endpoint examples, authentication
+and attachment meaning. The Tagalog rewrite preserves MinIO/non-AWS requirements,
+the blank AWS endpoint default, literal menu labels and the one-time secret-key
+warning. It uses native connecting clauses around technical terms rather than
+English sentence fragments. Whole software wording is provisional pending speaker
+review; this batch does not certify the rest of these four catalogs.
+
+The four locale suites and correction-ledger suite passed. The supplemental audit
+suite initially caught a faulty negative test: it matched the English `it` inside
+Tagalog `ito`. Word boundaries now distinguish them, and all five tests in that
+suite pass, including i18next rendering, source tokens, state distinctions and
+preservation of newer human wording. Six browser settings cases register for
+English, Marathi and these four locales. Execution remains unverified without a
+running rebuilt app; no cloud configuration or credential was changed.
+
+The supplemental queue now has 4,021 candidates across 226 locales, down by 100.
+Intentional names and native shared spellings still require individual retention
+review; they are not automatically errors. The filtered fill inventory remains
+54,981 values across 128 locale paths because it never counted this prose.
+The wider wrong-language, semantic and browser review remains unfinished.
+
+## Marathi fills and hidden source-equal prose — 2026-10-13
+
+Commit `f263dd0b8d` fills 212 current placeholders plus 55 English settings,
+rule and keyboard labels excluded by the fill tool. A parent comparison
+confirms all 267 original values were English; existing Marathi wording and
+all `zh` catalogs remain unchanged. Marathi's ordinary fill list and the new
+supplemental queue are empty. The filtered global fill inventory is now 54,981
+values across 128 locale paths. This is not a count of all translation work.
+
+The raw comparison found 120 source-equal Latin-containing Marathi labels
+outside help URLs. Fifty-five needed translation; the remaining 65 are product
+names, format strings, abbreviations, mathematical functions or symbols. Count
+separators use `1 / 10`, preserving numerator/denominator order in templates
+that cannot put the Marathi postposition after the total. Rule actor and sort
+controls use standalone native labels before their inputs. Physical keyboard
+legends remain visible alongside Marathi function names. No existing values
+were replaced merely because they use Devanagari like Hindi; a narrow scan for
+common Hindi copulas, pronouns and action words found zero candidates, which
+is not evidence that all Marathi wording has been semantically reviewed.
+
+The [supplemental audit](../../../releases/translations/audit-exempt-prose.mjs)
+is read-only. The main fill script exempts whole strings beginning with `S3`
+or `MongoDB`, not just product names, so an empty fill list missed ordinary
+English descriptions and settings states. The new queue exposes 4,121
+candidates across 226 locales, excluding exact technical names. Some generic
+labels or physical key legends are intentional; each candidate needs review.
+The report identifies existing human-verified `zh` catalogs explicitly; it
+never writes any locale. Only confirmed missing strings may be added there.
+The separate short-prose audit now reports 1,673 candidates across 182 locales.
+
+Tests check complete key/token inventories, state distinctions, field directions,
+permissions, imported/excluded data, source literals, destructive consequences,
+first-sync preservation, unmatched-card handling, conflict-aware rollback and
+runtime substitution including zero. Marathi, shared-label, card-field,
+supplemental-audit and Scrum recovery suites pass. Eight Marathi browser cases
+register across linked fields, notification delivery, two recovery views,
+Scrum history and storage settings. The configured localhost:3000 app is not
+running, so those cases remain unexecuted. A rebuilt app is needed to exercise
+the new catalogs. Longer technical explanations remain provisional pending
+speaker review; the wider wrong-language and whole-catalog audit is unfinished.
+
+## Bengali current fills — 2026-10-13
+
+Commit `012ee1eb0c` fills 182 English values, covering linked fields, 22 import
+formats, member and CSV mapping, bulk import/export, link rules, webhooks,
+notifications, Wrike workflows, LDAP, subtasks and interrupted-operation
+recovery. A comparison with the parent confirms that every changed value was
+English; existing Bengali translations remain untouched. The full current
+Bengali fill list is empty, including pending keys. The global full inventory
+now has 55,193 values across 129 non-English locale paths; the ordinary
+nonpending backlog remains 28,516 values across 42 locales.
+
+The extended Bengali suite preserves exact source tokens and key order and
+checks permission boundaries, field directions, required English import
+headers, first-board selection, import exclusions, subtask markers, workflow
+states, LDAP constants, inherited delivery settings and quiet hours. Recovery
+checks distinguish retaining applied changes from deleting an imported board,
+include later board additions, refuse to discard replayable operations, retain
+unrelated boards and preserve the oldest-50 limit. Runtime interpolation covers
+zero, counts, card names, stages and errors. Three focused suites pass.
+
+Four Bengali browser cases register for linked fields, notifications, List Sync
+recovery and import recovery. They remain unexecuted without the configured app.
+Longer Bengali software explanations are provisional pending speaker review;
+older non-English values have not been certified fluent or semantically correct.
+Existing human-verified `zh` translations remain unchanged. Their fill inventory
+currently has no gaps; future work may add missing strings only.
+
+## Shared labels and seeded-value repairs — 2026-10-13
+
+The [shared-label review](Shared-Labels-2026-10-13.md) fills 3,129 English
+placeholders and repairs 167 wrong-language or prefixed-English values across
+130 locale paths. All 46 reviewed labels have native text or an explicitly
+reviewed shared spelling. Existing correct-language values and all `zh`
+catalogs remain unchanged. The correction ledger now contains 24,820 records.
+Exact source token inventories match across 1,016,472 locale/key pairs.
+
+The full inventory remains 55,375 values across 130 non-English locale paths.
+Excluding the 368 pending source keys, it reports 28,516 values in 42 locales.
+Neither inventory establishes the language or quality of non-English values;
+whole-catalog wrong-language review and low-confidence terminology remain open.
+The configured Transifex executable and running browser test app are unavailable.
 
 ## Gujarati current fills — 2026-10-10
 

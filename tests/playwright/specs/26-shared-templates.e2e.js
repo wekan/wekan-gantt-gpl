@@ -181,3 +181,29 @@ test.describe('Admin – shared templates', () => {
     await expect(scopeCheckbox(page, 'teams')).not.toHaveClass(/is-checked/);
   });
 });
+
+test('Corsican shared-template guidance preserves scopes and nonempty eligibility', async ({ page, adminUser }) => {
+  await loginWithToken(page, adminUser.id, adminUser.token);
+  await page.evaluate(() => Meteor.callAsync('setLanguage', 'co'));
+  await navigateInApp(page, '/admin/people/shared-templates');
+  const description = page.locator('#templates-setting .templates-description');
+  await expect(description).toHaveText(require('../../../imports/i18n/data/co.i18n.json')['shared-templates-info']);
+  await expect(description).toContainText('unu o parechji ambiti');
+  await expect(description).toContainText('tavula Mudelli micca viota');
+  await expect(description).not.toContainText('Sfoglia');
+  const hint = page.locator('#templates-setting .shared-templates-hint');
+  await expect(hint).toHaveText(require('../../../imports/i18n/data/co.i18n.json')['shared-templates-select-scope']);
+  await expect(hint).not.toContainText('template condivisi');
+});
+
+
+test('Southern Sotho shared-template guidance requires nonempty template boards', async ({ page, adminUser }) => {
+  await loginWithToken(page, adminUser.id, adminUser.token);
+  await page.evaluate(() => Meteor.callAsync('setLanguage', 'st'));
+  await navigateInApp(page, '/admin/people/shared-templates');
+  const description = page.locator('#templates-setting .templates-description');
+  await expect(description).toHaveText(require('../../../imports/i18n/data/st.i18n.json')['shared-templates-info']);
+  await expect(description).toContainText('Ho thathamiswa feela basebedisi');
+  await expect(description).toContainText('Dithempleite e nang le dikahare');
+  await expect(description).not.toContainText('e seng feela');
+});

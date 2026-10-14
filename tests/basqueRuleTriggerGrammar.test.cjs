@@ -46,6 +46,8 @@ activeLanguage = 'eu';
 assert.equal(helpers.ruleTriggerCopula(), '');
 activeLanguage = 'th';
 assert.equal(helpers.ruleTriggerCopula(), '');
+activeLanguage = 'la';
+assert.equal(helpers.ruleTriggerCopula(), '', 'Latin finite predicates omit the extra copula');
 const assemble = (locale, subject, action, name = '') => {
   const d = read(locale);
   return [d[subject], name, ruleTriggerCopula(locale, d['r-is']), d[action], d['r-a-card']].filter(Boolean).join(' ');
@@ -183,4 +185,15 @@ for (const [key, noun] of [
   assert.match(`[Demo] ${eu[key]} ${eu['r-checked']}`,
     /^\[Demo\] .+ hau (?:Markatzen|Desmarkatzen|Osatzen) denean$/);
   assert.doesNotMatch(eu[key], /Cuando|When/);
+}
+
+// Irish temporal subjects contain their verb; adding tá duplicates it.
+for (const locale of ['ga', 'ga-IE', 'ga_IE', 'GA']) assert.equal(ruleTriggerCopula(locale, 'tá'), '');
+assert.equal(ruleTriggerCopula('gag', 'is'), 'is', 'do not affect another language sharing the prefix');
+activeLanguage = 'ga';
+assert.equal(helpers.ruleTriggerCopula(), '');
+for (const noun of ['label', 'member', 'assignee', 'checklist', 'item']) {
+  const sentence = assemble('ga', `r-when-the-${noun}`, 'r-added-to', 'Sampla');
+  assert.match(sentence, /^Nuair a bhíonn/);
+  assert.equal(sentence.split(/\s+/).includes('tá'), false);
 }
