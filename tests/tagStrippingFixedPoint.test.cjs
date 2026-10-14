@@ -16,16 +16,27 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 
 const ROOT = path.join(__dirname, '..');
-const TAG_STRIP = /\.replace\(\/<\[\^>\]\*>\/g,/;
+// Both spellings of "any tag": `<[^>]*>` and `<[^>]+>` (alerts #570/#571 were
+// the second, which this pattern used to miss), with any flags.
+const TAG_STRIP = /\.replace\(\/<\[\^>\][*+]>\/[a-z]*,/;
+// Alerts #581/#582: removing a whole element by pattern -
+// replace(/<(script|style|head)\b[^>]*>[\s\S]*?<\/\1...>/) - is the same
+// multi-character sanitization, one level up.
+const ELEMENT_STRIP = /\.replace\(\/<\(?(\?:)?(script|style|head)\b/i;
 
 // Output that is not HTML, so a re-formed tag in it is inert text.
 const NOT_HTML = {
   'models/lib/pdfDocument.js': 'PDF text: tags become spaces before the text is drawn with a PDF font',
+  'server/lib/documentGif.js': 'search-index text of an Office document: tags become spaces, and the text is only matched against search terms, never rendered',
 };
 
 // A match is safe inside `do { ... } while (x !== prev)`: the replace is
 // repeated until nothing changes.
 function inFixedPointLoop(lines, index) {
+  // Not a fixed-point HELPER (untilStable(text, s => s.replace(...))): CodeQL
+  // does not follow one, and alerts #581/#582 were raised on exactly that in
+  // models/lib/emailToCard.js, which now strips tags with a one-pass scanner.
+  // The loop has to be written around the replace itself.
   const before = lines.slice(Math.max(0, index - 3), index).join('\n');
   const after = lines.slice(index + 1, index + 3).join('\n');
   return /\bdo \{\s*$/m.test(before) && /\} while \(\s*\w+ !== \w+\s*\);/.test(after);
@@ -36,7 +47,7 @@ function findings(files) {
   for (const file of files) {
     const lines = fs.readFileSync(path.join(ROOT, file), 'utf8').split('\n');
     lines.forEach((line, index) => {
-      if (!TAG_STRIP.test(line) || /^\s*\/\//.test(line)) return;
+      if (!(TAG_STRIP.test(line) || ELEMENT_STRIP.test(line)) || /^\s*\/\//.test(line)) return;
       if (NOT_HTML[file] || inFixedPointLoop(lines, index)) return;
       out.push(`${file}:${index + 1}: ${line.trim()}`);
     });
@@ -67,7 +78,20 @@ try {
   assert.equal(findings([rel('stub.js')]).length, 1, 'the alert #545 stub is caught');
   assert.equal(findings([rel('loop.js')]).length, 0, 'a fixed-point loop passes');
   assert.equal(findings([rel('once.js')]).length, 1, 'any other loop is not enough');
+  // Alerts #570/#571: the `+` spelling, in a chain, is caught too...
+  fs.writeFileSync(path.join(tmp, 'plus.js'), "const t = html\n  .replace(/<br>/gi, '')\n  .replace(/<[^>]+>/g, '')\n  .trim();\n");
+  assert.equal(findings([rel('plus.js')]).length, 1, 'the <[^>]+> spelling is caught');
+  // ...and so is the helper it was first fixed with, which CodeQL did not
+  // accept (alerts #581/#582).
+  const loopHelper = "function untilStable(text, step) {\n  let prev;\n  let next = text;\n  do {\n    prev = next;\n    next = step(prev);\n  } while (next !== prev);\n  return next;\n}\n";
+  fs.writeFileSync(path.join(tmp, 'helper.js'), `${loopHelper}text = untilStable(text, s => s.replace(/<[^>]*>/g, ''));\n`);
+  assert.equal(findings([rel('helper.js')]).length, 1, 'a fixed-point helper is not accepted');
+  fs.writeFileSync(path.join(tmp, 'element.js'),
+    "text = text.replace(/<(script|style|head)\\b[^>]*>[\\s\\S]*?<\\/\\1\\b[^>]*>/gi, '');\n");
+  assert.equal(findings([rel('element.js')]).length, 1, 'removing a whole element by pattern is caught (#581)');
+  fs.writeFileSync(path.join(tmp, 'fake.js'), "function untilStable(text, step) { return step(text); }\ntext = untilStable(text, s => s.replace(/<[^>]*>/g, ''));\n");
+  assert.equal(findings([rel('fake.js')]).length, 1, 'an untilStable that does not loop is not accepted');
 } finally {
   fs.rmSync(tmp, { recursive: true, force: true });
 }
-console.log('  ok - the detector flags a one-pass strip and accepts only a fixed-point loop');
+console.log('  ok - the detector flags a one-pass strip, an element strip and a helper; accepts only an inline fixed-point loop');

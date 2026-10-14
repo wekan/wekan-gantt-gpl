@@ -334,133 +334,37 @@ No external translation service or remote translation upload was used.
 </details>
 
 <details>
-<summary>Local translation repairs and validation resumed; review remains.</summary>
+<summary>Local translation repairs: wrong-language and low-confidence review remains.</summary>
 
-Wrong-language and wrong-meaning repairs resumed at the maintainer's request
-after the 2026-09-27 Transifex download. The first reviewed batch corrects 487
-locale/key pairs and retains valid downloaded translations. The broader
-semantic audit remains in progress; filling untranslated strings in every
-language resumed on 2026-10-07; the dated pause below is historical.
-See the [download review](docs/Features/Translations/Transifex-2026-09-27.md).
-The dated findings below remain historical checkpoints, not proof of global
-translation completion.
+All 20,081 originally flagged findings were classified by 2026-09-16: 15,880
+corrected and 4,201 reviewed and retained. The correction inventory records
+22,302 exact before/after values. See the
+[translation audit status](docs/Features/Translations/Audit.md), the
+[detailed evidence](docs/Features/Translations/Audit-Evidence.md) and the
+[2026-09-27 download review](docs/Features/Translations/Transifex-2026-09-27.md).
+Still open:
 
-Resumed at the maintainer's request on 2026-09-13, beginning with Klingon.
-As of 2026-09-16, all 20,081 original findings are classified:
-15,880 corrected, 4,201 reviewed and retained, and zero restored or
-pending. The correction inventory records 22,302 exact before/after
-values, including repairs outside the original findings. This closes
-the original flagged queue; broader wrong-language, low-confidence
-wording and browser review remain unfinished.
-Global completeness and terminology review remains separate from the
-original queue.
-
-All 361 originally flagged Klingon findings are repaired. The broader review
-of 829
-German-identical Klingon values repaired all 829, including the mistaken
-German cron label, which now uses the actual tool name Cron.
-The original Standard Moroccan Tamazight, Inuktitut and Veps queues are
-classified. Silesian database terminology, Tigre calendar wording and
-unflagged values still need language-specific review. Low-confidence
-wording and browser rendering remain unverified.
-The latest committed Tamazight card/list URL repair is 1cf93f7e52
-(2026-09-15); its two exact correction records bring the ledger to
-22,302. The zgh file still has 102 Arabic-script values awaiting
-semantic classification. The translation working tree was clean at
-this 2026-09-16 interruption checkpoint; no remote upload occurred.
-Kashmiri reference review 0db69cf6c (2026-09-14) identifies provisional
-civil wording and unresolved sighting/tabular/epoch terminology; no values
-changed.
-
-[Translation audit status](docs/Features/Translations/Audit.md) is the short
-resume record; [detailed evidence](docs/Features/Translations/Audit-Evidence.md)
-retains the categorized findings. Not all wrong translations originated on
-Transifex: the evidence includes 4,061 pulled changes and 16,020 additional
-local findings, and Bosnian errors predate the pull. No remote uploads were
-performed. Preserve correct translations and source placeholders during repairs.
-The requested organization, linked-file/static-archive and rate-limit mirror
-changes are implemented in local commit 02383521a; translation repairs have
-resumed.
-Latest translation fix/review is 3b4941c34 (2026-09-14): Valencian error
-count corrected and nine completion labels retained against historical
-percentage and finished-state badge contexts. Broader verification stays open.
-Of 611 restored Danish values reviewed, 606 are retained and five repaired.
-Latest unchanged-value reviews are 944243917 and ed9be5431 (2026-09-14),
-retaining 156 correct Danish storage, migration and monitoring/account labels.
-Ambiguous
-export and Complete wording remains open. Requested wekansec21 security
-repairs are
-prioritized while remaining translation review stays open.
-Archive provenance follow-up fbe388603 (2026-09-14) directly inspects the
-native Archives du Maroc logo in a university PDF, corroborating the noun
-beyond indexed evidence. Nine records updated; no values/counts changed.
-Full kanban labels remain low confidence.
-Logo provenance follow-up 89f36d41f (2026-09-14) applies the dictionary's
-cross-variety preface to two earlier URL records. Native caption evidence
-remains separate; full labels stay low confidence. No values/counts changed.
-Conversion review ecae7d919 (2026-09-14) distinguishes native Return/date-back
-from the proposed checklist Become verb; confidence remains low and the
-original-order variant is repaired in 996cc65c7 with low-confidence
-candidates. No values/counts changed.
-Checklist completion evidence follow-ups 9de9f2c15 and 4139001a3 distinguish
-legal supplementation from directly attested software Complete Login. Past
-actor form and full checklist grammar remain low confidence. Values/counts
-unchanged.
-Start spelling follow-up 2219d5358 distinguishes plain Begin/Start from
-emphatic Share/Divide in indexed IRCAM entries; direct PDF and full command
-verification remain open. No values or counts changed.
-Subtask terminology finding 92f69f58d is repaired in 23c82a5c1. Full
-hierarchical phrases remain low confidence; added-subtask activity is repaired
-in b26d1ddc1, and Linked Subtask in af33f6640. Full wording needs review.
-Bambara calendar follow-up 5610dff52 confirms current CLDR lacks native
-Hijri variant names; Era vocabulary does not establish reference-date
-Epoch. Both tabular calendar labels remain pending.
-
-Node regressions resolved on 2026-09-13: the original audit ran 986 suites
-with 19 failures. After the recorded source and guard repairs and one new
-regression suite, the final full run completed **987 suites, zero failures**.
-Calendar/date-popup, OAuth2, correction/review, progress and mocked upload
-checks pass. Sardinian magenta remains an explicit language-review item;
-the completeness guard permits only that exact known pending value.
-
-The first complete EVERYTHING run passed Meteor, Node, import, Node E2E,
-all three browsers, four database conformance runs and FerretDB tests.
-The second EVERYTHING run passed #6691 in all three browsers, but Chromium
-board-export popup readiness remains unresolved; the Fossil menu check is fixed.
-Live external identity-provider validation and fluent-speaker translation review
-remain outstanding. The latest full Node run passes **1,010 suites, zero
-failures**, including
-mirror-script and offline archive checks; no
-remote mirror or translation upload was executed.
-
-
-Field-sum terminology review (2026-09-14): the list sum display remains
-pending. Addition-operation and sum-of-money references do not establish
-the resulting numeric field sum; no count or operation was substituted.
-
-
-Reference review 7b9e343b6 (2026-09-14) corrects source attribution in 98
-Tamazight records: CNAM MC£ is Tuareg and MC is Mokrane Chemim, not
-Central Moroccan dialect labels. Affected terminology needs renewed review.
-
-Silesian database follow-up 45d98c94f (2026-09-14) corroborates regional
-human usage of the shared database term. The raw-file qualifier and full
-label remain pending; translation counts are unchanged.
-
-Authentication reference review 9bcb5e162 (2026-09-14) directly verifies
-MC£ (Tuareg) in the dictionary where the search index renders MCF. Do not
-accept that candidate as Moroccan proof; authentication labels remain
-under review with unchanged counts.
+- wrong-language and wrong-meaning review beyond that queue, low-confidence
+  wording, and browser rendering;
+- terminology still pending per language: Silesian database labels, Tigre
+  calendar wording, the 102 Arabic-script values in the Standard Moroccan
+  Tamazight file, Tamazight terms after the 2026-09-14 source correction (MC£
+  is Tuareg), Kashmiri calendar terms, Bambara Hijri and epoch labels,
+  Sardinian magenta, Danish export and Complete wording, and the list sum
+  label;
+- Chromium readiness of the board-export popup in the EVERYTHING run;
+- live identity-provider validation and fluent-speaker review;
+- the locale files rewritten on 2026-10-14 from another language (see
+  Upcoming) need a native speaker: Tongan, Quechua, Wolaytta, Luganda,
+  Bislama, Volapük, Ladin, Aromanian, Venda, Acehnese, Upper Sorbian,
+  Romansh and Uzbek in Arabic script, where whether Afghan Uzbek writes `ې`
+  is for a speaker to settle (the file now mostly writes `ی`).
 
 </details>
 
 <details>
 <summary>Need specific infrastructure / a running server stack we cannot reproduce here (left for environment owners).</summary>
 
-[#3318](https://github.com/wekan/wekan/issues/3318) (outgoing webhooks from a
-Sandstorm grain require a user-granted Powerbox network capability and a
-Node-26-compatible bridge implementation; direct HTTP is intentionally blocked
-by the grain sandbox),
 [#6549](https://github.com/wekan/wekan/issues/6549) (OAuth2 through
 Rocket.Chat's G Suite SAML app: WeKan logs in only when the Rocket.Chat session
 already exists — the behaviour is on the identity-provider side, and reproducing
@@ -483,34 +387,6 @@ People either way.
 </details>
 
 <details>
-<summary>Pending affected-data or database-backend verification.</summary>
-
-[#6692](https://github.com/wekan/wekan/issues/6692#issuecomment-5811473169)
-(the invitation account-block and anonymous metadata-subscription defects are
-fixed; the separate HistoryIntegrity checksum mismatch needs the affected
-stored row and predecessor to reproduce. Do not regenerate hashes to hide it.
-See [investigation notes](docs/DeveloperDocs/LDAP-6692.md)).
-
-</details>
-
-<details>
-<summary>FerretDB v1 fork backend parity: SAP HANA verification remains.</summary>
-
-Range and `$in` pushdown, the external-database snap launcher and the OpLog
-`ts` index in each backend's `collectionCreate` are in wekan/FerretDB. The
-live check the previous entry asked for was done on 2026-09-29 against MySQL
-9.7, MariaDB 12.3 and PostgreSQL 18 (see Upcoming): the pushed range did not
-match the index on any of them, and the assumption that this was only a
-selectivity question was wrong for MySQL, whose `UNSIGNED INTEGER` JSON type
-made its range pushdown drop documents. Both are fixed and verified with
-EXPLAIN and the conformance catalogue. What remains of
-[#6509](https://github.com/wekan/wekan/issues/6509) is SAP HANA: its DocStore
-index and range pushdown need a live HANA, which needs an amd64 machine, a
-licence and about 16 GB of memory.
-
-</details>
-
-<details>
 <summary>Feature requests / behaviour-by-design rather than bugs.</summary>
 
 The #4790 split is prepared and waits for the maintainer to file it (see
@@ -523,6 +399,82 @@ iteration, weight, time, comments, links and the issue link (see Upcoming).
 Writing changes back to GitLab, `#number` linking and embedding need a GitLab
 server and API credentials to build and verify, which this environment does
 not have).
+
+</details>
+
+<details>
+<summary>Design questions waiting for the maintainer, 2026-10-14.</summary>
+
+Everything decided on 2026-10-14 is built (see Upcoming). The open requests
+below need an answer first; each line is the question that decides it, with
+the choice the code would most easily take.
+[#802](https://github.com/wekan/wekan/issues/802) (per-organization and per-team tabs in All Boards where their admins
+manage members - and should WeKan ever write group changes back to LDAP, or
+only read them?),
+[#5141](https://github.com/wekan/wekan/issues/5141) (which organizations and teams may a board admin add: only those
+they belong to, or every one in the instance, which the picker would then
+list to every board admin?),
+[#4265](https://github.com/wekan/wekan/issues/4265) (leaving a board that came through a team: hide it in a per-user
+list that can be undone, or end that one board's team membership for that
+user?),
+[#2217](https://github.com/wekan/wekan/issues/2217) (a board setting that shows the Rules to members read-only?),
+[#5847](https://github.com/wekan/wekan/issues/5847) (which further logins, and a "log out everywhere" in Member
+Settings that ends every session?),
+[#1324](https://github.com/wekan/wekan/issues/1324) (Bitbucket through the generic OAuth2 settings with a how-to, or a
+provider of its own?),
+[#2805](https://github.com/wekan/wekan/issues/2805) (one shared header row for all swimlanes, as a board view setting?),
+[#2809](https://github.com/wekan/wekan/issues/2809) (a linked whole list: a live mirror of another list, editable like
+linked cards, or read-only?),
+[#2171](https://github.com/wekan/wekan/issues/2171) (should search scroll the board to the match and highlight it?),
+[#2110](https://github.com/wekan/wekan/issues/2110) (minicard avatars in the order people were added; a colour per
+avatar and a name tooltip?),
+[#2040](https://github.com/wekan/wekan/issues/2040) (a board-defined label order that lists can be sorted by?),
+[#2015](https://github.com/wekan/wekan/issues/2015) (a QR code of the card link in the card menu, drawn in the browser?),
+[#1953](https://github.com/wekan/wekan/issues/1953) (a Board Settings picker for the swimlane new subtasks go to?),
+[#1931](https://github.com/wekan/wekan/issues/1931) (an existing card from ANOTHER board as a subtask, for members of
+both?),
+[#1618](https://github.com/wekan/wekan/issues/1618) (a person responsible for a checklist item, and items in the
+calendar and Gantt?),
+[#864](https://github.com/wekan/wekan/issues/864) (drag-and-drop and adding cards in the Table view?),
+[#211](https://github.com/wekan/wekan/issues/211) (named column sets over the same cards, per board or per user?),
+[#140](https://github.com/wekan/wekan/issues/140) (real-time shared editing of descriptions: which editor and sync
+library?),
+[#1273](https://github.com/wekan/wekan/issues/1273) (keep the `#label`/`@member` text in the title: per user or per
+board?),
+[#1178](https://github.com/wekan/wekan/issues/1178) (sketching onto a card, saved as an image attachment?),
+[#4791](https://github.com/wekan/wekan/issues/4791) (grouping boards by first letter, board labels and organization
+subgroups: which of these?),
+[#2012](https://github.com/wekan/wekan/issues/2012) (story and task card types with fields of their own?),
+[#2111](https://github.com/wekan/wekan/issues/2111) and [#1604](https://github.com/wekan/wekan/issues/1604) (which other changes are marked unread on a card,
+and a per-user switch?),
+[#2026](https://github.com/wekan/wekan/issues/2026) and [#1377](https://github.com/wekan/wekan/issues/1377) (browser push notifications, a webhook activity
+picker and an all-boards activity feed: which first?),
+[#1297](https://github.com/wekan/wekan/issues/1297) (a Mattermost direct message to each member and assignee?),
+[#2290](https://github.com/wekan/wekan/issues/2290) (webhooks on login and registration, which carry personal data?),
+[#1100](https://github.com/wekan/wekan/issues/1100) (Matrix notifications through a webhook, or a bot?),
+[#2435](https://github.com/wekan/wekan/issues/2435) (a member picker for a rule email's To field?),
+[#4434](https://github.com/wekan/wekan/issues/4434) (the clear HTML layout as the default, and for account emails?),
+[#5148](https://github.com/wekan/wekan/issues/5148) (ntfy as a notification channel?),
+[#4198](https://github.com/wekan/wekan/issues/4198) (ActivityPub: what a board would publish, and to whom?),
+[#4930](https://github.com/wekan/wekan/issues/4930) (a Trellinator-compatible API, or a guide to the REST API?),
+[#6554](https://github.com/wekan/wekan/issues/6554) (Gogs beside WeKan in the Compose files, or a link only?),
+[#1126](https://github.com/wekan/wekan/issues/1126) (an RFID guide over the REST API?),
+[#1293](https://github.com/wekan/wekan/issues/1293) (an Android share target that makes a card on a chosen board?),
+[#1188](https://github.com/wekan/wekan/issues/1188) (on Sandstorm, copy a grain sharing link instead of the card URL?),
+[#2662](https://github.com/wekan/wekan/issues/2662) (a FreeBSD port and rc.d script, maintained here or by a ports
+maintainer?),
+[#687](https://github.com/wekan/wekan/issues/687) (publish the Nextcloud ExApp; WebDAV attachment storage and CalDAV
+sync?),
+[#632](https://github.com/wekan/wekan/issues/632) (update the Rancher doc, or remove it?),
+[#1040](https://github.com/wekan/wekan/issues/1040) (LibreJS license markers in the bundle?),
+outgoing webhooks to an internal address (a Node-RED or chat server on the
+same network is refused by the SSRF guard, which [#2017](https://github.com/wekan/wekan/issues/2017)'s how-to now
+says: should the Admin Panel accept a list of internal destinations that
+webhooks may reach?).
+
+Not a question, but ongoing work:
+[#337](https://github.com/wekan/wekan/issues/337) (move buttons, focus trap, landmarks and many labels exist; many links
+still lack `href` and many icons lack labels).
 
 </details>
 
@@ -608,32 +560,455 @@ used.
 </details>
 
 <details>
-<summary>Planned: email to card, Sandstorm integrations, Android, single-file and musl builds.</summary>
+<summary>Planned: Android bundles, once their Node.js exists.</summary>
 
-Requested on 2026-10-13 and being implemented in this order; each moves to
-Upcoming as it is committed. Builds run on GitHub Actions only.
+Requested on 2026-10-13; everything else of it is done (see Upcoming): Bun
+single files, musl bundles and AppImages, outgoing webhooks, list sync and
+the REST API through Sandstorm. Builds run on GitHub Actions only.
 
-- Email to card, on every platform, like Trello's email-to-board
-  ([#794](https://github.com/wekan/wekan/issues/794),
-  [#3948](https://github.com/wekan/wekan/issues/3948)): sending and receiving
-  are configured in Notification Settings. Allowed mail servers and their
-  passwords are set only in the Admin Panel; Board and Member Settings only
-  choose whether it is on and which parts of an email are included. Today a
-  reply to a notification becomes a comment, but nothing creates a card.
-- Sandstorm: import, export, sync, the REST API and webhooks reach outside
-  services through the Powerbox, or reach the grain through a grain API key.
-  Trello import and export already do (see Upcoming).
 - Android on the WeKan platforms: `android-*` bundles for all four Android
   CPUs, once wekan/node-patches has published its `node-android-*` binaries.
-  AppImage, snap, Flatpak and Docker cannot run on Android without root.
-- Single-file Bun and Node.js executables that read only the files they need
-  from inside themselves (a mount where the OS allows one, otherwise a virtual
-  filesystem), with the database included; and musl bundles and AppImages for
-  Alpine and other musl systems.
+  The single-file workflow builds them as soon as those bundles exist.
+- Not possible, recorded so it is not asked again: Jira list sync from a
+  Sandstorm grain ([#2208](https://github.com/wekan/wekan/issues/2208),
+  [#2167](https://github.com/wekan/wekan/issues/2167)). Jira signs in only with an `Authorization` header, and the
+  bridge proxy puts its own grant there.
 
 </details>
 
 </details>
+
+# v12.41 2026-10-14 WeKan ® release
+
+**In short:** **custom board roles**, **per-list permissions** and boards
+**every signed-in user may edit**; board **keys** (`DEV-7`) and **shared
+labels**; WeKan serves **HTTPS** itself; **Bun single files** and **musl
+bundles and AppImages** for Alpine; on **Sandstorm**, webhooks and list sync
+leave through the Powerbox and the REST API takes a grain API key. Seventeen
+locale files that held **another
+language**, and six full of machine-fill prefixes, are rewritten in their
+own, and fourteen **GitHub CodeQL** alerts are fixed.
+
+This release fixes the following SECURITY ISSUES found by GitHub CodeQL code scanning:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2352f1f44f">HTML tags are removed until none are left, and no input is spliced into a pattern</a>. Thanks to GitHub CodeQL and xet7.</summary>
+
+- **#570, #571:** an HTML-only email became card text with one pass of each
+  removal, so a script element spliced together by removing an inner one
+  survived, and its contents reached the card. Both removals now run until
+  nothing changes.
+- **#574:** the single file's settings writer put the setting name into a
+  regular expression. A setting must be an environment variable name and is
+  compared literally, and a value must be one line. The kept-versions reader
+  now reads file names literally too.
+- **#572, #573, #575-#580:** tests escaped only some characters, or matched
+  example hostnames with unescaped dots; they compare literally or escape
+  fully now.
+
+`tests/tagStrippingFixedPoint.test.cjs` now also catches the `<[^>]+>`
+spelling it missed, which also found the search-index text of Office
+documents: never rendered, so recorded as such. `tests/emailToCard.test.cjs`
+fails on the old code. Nothing here is an attempt the server refuses at run
+time, so no Admin Panel / Problems key is added.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/167ccf9e2d">An email's HTML becomes text in one pass, with no pattern to take apart</a>. Thanks to GitHub CodeQL and xet7.</summary>
+
+CodeQL alerts #581 and #582 were raised on the fix above: email to card
+still removed `<script>` elements and tags with regular expressions, looped
+to a fixed point through a helper that CodeQL does not follow. `htmlToText`
+in `models/lib/emailToCard.js` now walks the characters once. A tag is
+dropped whole, a script, style or head element goes with what is in it (also
+unclosed), an unfinished tag is not kept as text, and a `<` that does not
+start a tag stays text - except right before another `<`, where it would
+read as a tag once the next one is gone. `tests/emailToCard.test.cjs` covers
+those cases, and `tests/tagStrippingFixedPoint.test.cjs` no longer accepts a
+fixed-point helper and now also catches a whole element removed by pattern,
+in every file. Nearly every HTML email has a `<style>`, so a removed element
+is ordinary use, not an attempt: no Admin Panel / Problems key is added.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/73fcfb8545">No HTTP response sends the request back, tests included</a>. Thanks to GitHub CodeQL and xet7.</summary>
+
+CodeQL alert #583: the HTTPS test's server answered with the request's own
+URL in the body, the shape of reflected cross-site scripting. It now names
+the page by comparison. `tests/noReflectedRequest.test.cjs` keeps the shape
+out of every file. Test code only, so no Admin Panel / Problems key is added.
+
+</details>
+
+and adds the following new features:
+
+**Board roles** - who may do what on a board, and where a membership comes from.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/50bb989eb8">Custom board roles, built in the Admin Panel from what a member may do</a>. Thanks to xet7.</summary>
+
+In Admin Panel / People / Roles a site admin builds named roles from five
+capabilities: sees all cards, comments, edits, moves cards, invites. A board
+admin then gives one to a member in the same popup as the built-in roles.
+Board admin stays a built-in role. Every check asks the capability table,
+which answers from the custom role. The member's built-in flags carry the
+strongest built-in role that grants nothing more, so code reading a flag
+never grants more, and a deleted role leaves exactly that. This holds for
+every combination, which `tests/customBoardRoles.test.cjs` checks.
+Invitations, REST reads, imports and member mapping follow it. The comment
+form, reactions and chat now ask the comment capability, so a No comments
+member is no longer offered reactions the server refuses. The new strings are
+translated in all 234 languages, and the Roles Status table gains a Move cards
+column. See [Board roles](docs/Features/Members/Roles.md#custom-roles).
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/50bb989eb8">A membership that came through a team or organization leaves with it</a>. Thanks to mfnalex and xet7.</summary>
+
+Joining a team already added its boards; leaving it now takes away the
+memberships it gave, and only those. Each records where it came from
+(`grantedBy`), so a direct membership is never touched and a board admin is
+kept. A board admin's own add or removal is final. This covers user edits,
+LDAP, OIDC, the board sidebar, and organizations that propagate their
+members. `tests/groupBoardMembership.test.cjs` covers the decisions, and a
+runtime test joins, leaves and rejoins a team against a real database.
+
+</details>
+
+**Outgoing requests** - webhooks and downloads.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/78957e14cb">Outgoing webhooks go through an HTTP proxy, with the SSRF checks kept</a>. Thanks to gbarre and xet7.</summary>
+
+`HTTP_PROXY`, `HTTPS_PROXY` and `NO_PROXY` work for every outgoing request
+(on the snap: `http-proxy`, `https-proxy`, `no-proxy`). The destination is
+still resolved and checked first, and the proxy is given that checked
+address, never the name: an `http://` request goes in absolute form, an
+`https://` one through a `CONNECT` tunnel, with TLS still checked against the
+real name. A destination the guard refuses never reaches the proxy.
+`tests/outboundProxy.test.cjs` runs a real proxy on loopback. See
+[Proxy](docs/Features/Webhooks/Proxy.md).
+
+</details>
+
+**Who may edit where** - boards open to every signed-in user, and lists with
+rules of their own.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7595727917">A board can let every signed-in user edit it, when the Admin Panel allows it</a>. Thanks to Meeques and xet7.</summary>
+
+Admin Panel / Settings / Visibility gains "Allow boards that every signed-in
+user may edit", off by default. With it on, a board admin of a public board
+or one open to every signed-in user can turn it on for that board in the
+visibility popup. A signed-in non-member may then comment, edit and move
+cards like a Normal member - never change the board - and their first edit
+makes them a Normal member, so every change stays attributed. A member keeps
+their own role, a member a board admin removed stays removed, and rules,
+webhooks, inbound email and list sync never act with a non-member's rights.
+Board-wide settings such as list width and sticky headers stay members-only.
+`tests/instanceEditing.test.cjs` and a runtime test cover it. See
+[Visibility](docs/Features/Admin-Panel/Settings/Visibility.md).
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7595727917">Lists can allow or refuse editing and commenting per role</a>. Thanks to Meeques and xet7.</summary>
+
+The list menu gains List permissions, for board admins: for each role -
+built-in, custom, and on an open board everyone signed in - Edit and Comment
+are as on the board, allowed, or not allowed in this list. The issue's
+example works: a read-only board with one list where everybody may add cards
+and comment. A board admin is never restricted, and a removed member stays
+removed. The server applies it to every card, checklist, attachment and
+comment write and to moves into the list, and the REST API honours a list's
+refusal on every per-list card route. Only the board admin method writes the
+setting; a direct write is refused and shown in Admin Panel / Problems.
+`tests/listPermissions.test.cjs` and a runtime test cover it. See
+[List permissions](docs/Features/Board/List-Permissions.md).
+
+</details>
+
+**Boards and cards** - keys, card numbers and labels shared between boards.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7595727917">Every board has a key, and card numbers show as KEY-7</a>. Thanks to justinr1234 and xet7.</summary>
+
+A key is 2-10 capital letters and digits, unique in the instance, suggested
+from the board's title (Development Team: DT) and set for every existing
+board at startup. A board admin can change it in the rename popup. Cards show
+`DEV-7` instead of `#7`, and searching for `DEV-7` finds that card. The
+per-board numbers themselves are unchanged, so nothing is renumbered.
+`tests/boardKey.test.cjs` and a runtime test cover it. See
+[Board key](docs/Features/Board/Boards/Board-Key.md).
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7595727917">Shared labels for every board, an organization's boards or a team's</a>. Thanks to tiFabGrinch, ejlkemper and xet7.</summary>
+
+Admin Panel / Labels keeps labels shared by every board, or by the boards of
+one organization or team. A board offers them in its labels popup beside its
+own, and using one copies it to the board linked to the shared label, so
+renaming it or changing its colour in the Admin Panel changes it everywhere
+it is used. Deleting a shared label leaves it on those boards as their own.
+Only labels a member's own organizations and teams share are sent to them.
+`tests/sharedLabels.test.cjs` and a runtime test cover it. See
+[Shared labels](docs/Features/Board/Shared-Labels.md).
+
+</details>
+
+**Servers** - running WeKan without a proxy in front of it.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1bf7a62cab">WeKan serves HTTPS itself, when a certificate is configured</a>. Thanks to 68040 and xet7.</summary>
+
+With `HTTPS_PORT`, `HTTPS_CERT_FILE` and `HTTPS_KEY_FILE` set (a path or
+the PEM itself), WeKan also listens for HTTPS, on the same app, and
+`HTTPS_REDIRECT=true` sends plain-HTTP requests there. Without them nothing
+changes, and a proxy such as Caddy stays the recommendation for production.
+The snap has `https-port`, `https-cert-file`, `https-key-file` and
+`https-redirect`. `tests/httpsServer.test.cjs` makes a real TLS connection.
+See [HTTPS without a proxy](docs/Platforms/Webserver/HTTPS-without-proxy.md).
+
+</details>
+
+**Platforms** - more ways to run WeKan.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b1e58094f4">Bun single files: one executable per Bun platform, musl included</a>. Thanks to xet7.</summary>
+
+Each Bun bundle also comes as one executable:
+`wekan-<version>-bun-<target>-single-file` for Linux x64 and arm64 (glibc
+and musl, so Alpine too), macOS and Windows. It is the published bundle ZIP,
+unchanged, inside that bundle's own Bun, built on the platform itself, so the
+runtime is the one the bundle was tested with. The first start unpacks the
+bundle once into a cache directory, without a second Bun, and every start
+runs it with the executable itself as Bun. Like the Bun bundle it needs
+`MONGO_URL` and `ROOT_URL`. Its ZIP reader refuses any entry or link that
+would land outside the cache directory. Before it is published each file is
+checked: it names itself, refuses to start without a database, unpacks once
+and loads every native addon of the bundle. `tests/bunSingleFile.test.cjs`
+covers the reader and its refusals. See
+[Single file](docs/Platforms/Single-File.md#bun-single-files).
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a1d2994c1c">musl bundles and AppImages for Alpine and the other musl systems</a>. Thanks to xet7.</summary>
+
+Every release also has `wekan-<version>-linux-x64-musl.zip` and
+`-linux-arm64-musl.zip`, with FerretDB, and the AppImages
+`WeKan-<version>-x86_64-musl` and `-aarch64-musl`. Each is the release's
+Linux bundle rebuilt inside Alpine on a runner of its CPU: the musl Node.js of
+the same version, checked against its SHA256, and every native addon
+compiled against musl. Before it is published, each addon's architecture is
+checked, sharp must load, and the bundle must start and answer HTTP 200; the
+AppImages are started inside Alpine too. `tests/muslBundles.test.cjs`
+covers the build and the workflows. See [Alpine](docs/Platforms/FOSS/OS/Alpine.md).
+
+</details>
+
+**Sandstorm** - reaching out of a grain, and into it.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2cc0b59a51">Outgoing webhooks leave a grain through the Powerbox</a>. Thanks to xet7.</summary>
+
+A grain has no network but the bridge proxy, so a webhook was never sent.
+Each saved webhook now offers "Allow this grain to reach this address", which
+opens the Powerbox for exactly that address; once approved, the webhook goes
+through the bridge with that grant. The grant belongs to the destination, not
+to a person, and is approved as the address's parent path so the bridge
+delivers to the exact address. Off Sandstorm nothing changes: every sender
+still goes through the SSRF guard. `tests/sandstormWebhookEgress.test.cjs`
+runs it against a fake bridge proxy. See
+[Powerbox](docs/Platforms/FOSS/Container/Sandstorm/Powerbox-External-APIs.md#outgoing-webhooks).
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2cc0b59a51">The REST API works with a Sandstorm API key</a>. Thanks to xet7.</summary>
+
+A Sandstorm API key keeps the Authorization header for itself, so WeKan saw
+no user. In a grain the bridge says who is calling, and WeKan now acts as
+that user - only in a grain, only for an account that exists and is enabled,
+and a key without the participate permission reads only. Off Sandstorm the
+`X-Sandstorm-*` headers are never believed.
+`tests/sandstormApiIdentity.test.cjs`
+covers both sides.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d53b4da799">List sync from GitHub, GitLab, Gitea and Forgejo works in a grain</a>. Thanks to xet7.</summary>
+
+A board member who may write saves a list's sync source and allows the grain
+to reach that tracker's API in the Powerbox; the periodic sync then goes
+through the bridge with that grant, which belongs to the tracker, so no one
+needs to be signed in. GitLab's token is sent as `private_token`, because the
+bridge drops `PRIVATE-TOKEN`, so private GitLab projects sync too; GitHub,
+Gitea and Forgejo sync public repositories, whose token headers cannot pass
+the bridge. Jira signs in only with an `Authorization` header, which the
+bridge replaces, so it is refused in a grain with that reason. Off Sandstorm
+nothing changes. `tests/sandstormSyncEgress.test.cjs` runs it against a fake
+bridge proxy. See [Powerbox](docs/Platforms/FOSS/Container/Sandstorm/Powerbox-External-APIs.md#list-sync).
+
+</details>
+
+and closes the following already-done feature request:
+
+- [Each member chooses how often email notifications come: never, periodically or instantly](https://github.com/wekan/wekan/commit/3f88fb39a5).
+  Thanks to saurabharch and xet7.
+
+and fixes the following bugs:
+
+**Lists and swimlanes** - what goes with a list, and where it is shown.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0a3797dbf6">Archiving a list archives its cards, and restoring it brings them back</a>. Thanks to Raymond-Voogt and xet7.</summary>
+
+Only template lists archived their cards, so archiving any other list left
+its cards visible in the Lists, Table and Calendar views. The server now
+archives the cards of every list with it, whichever way it is archived - the
+list menu, the Archive sidebar, the REST API - and restoring the list
+restores exactly those cards, the rule #2292 gave swimlanes. A card that was
+archived on its own stays archived. Cards archived with the list get the
+list's own archive time, so a browser clock that differs from the server's
+cannot keep them from coming back. `tests/archiveListCards.test.cjs` and a
+runtime test cover it.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ebf2a019a6">Lists missing their swimlane counts only lists that lost it, and Restore never hides cards</a>. Thanks to Raymond-Voogt and xet7.</summary>
+
+Admin Panel / Problems counted every board-wide list whose history recorded
+the swimlane it was created in, so lists made since the automatic
+un-binding stopped (#6515, in v10.31) were counted too, and Restore would
+have bound them there, hiding the cards they hold in other swimlanes. Now a
+list created after v10.31 is never offered, and a list with any card in
+another swimlane is never restored. A list that really lost its binding is
+still restored. `tests/listSwimlaneRestore.test.cjs` and a runtime test
+cover both rules.
+
+</details>
+
+**Board roles** - helpers that read a role.
+
+- [Five role helpers that answered the same for everybody: Import never offered, rule controls for every member, the last admin not protected, OIDC default-board roles](https://github.com/wekan/wekan/commit/548834c4ee).
+  Thanks to xet7.
+
+and fixes the following build bug:
+
+- [The OpenBSD bundles are built on OpenBSD 7.8, where Node.js 26 now builds](https://github.com/wekan/wekan/commit/209e3b0c47).
+  Thanks to xet7.
+
+and updates the following documentation:
+
+- [Outgoing webhooks to Node-RED, and why an internal address is refused](https://github.com/wekan/wekan/commit/a0de507143).
+  Thanks to yeurplc and xet7.
+- [Uberspace 7: install, the update script, and email on one environment line](https://github.com/wekan/wekan/commit/a0de507143).
+  Thanks to jeyca and xet7.
+
+and updates the following translations:
+
+**Languages that held another language** - each locale file now says what its
+tag says.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f3c92273ae">Hong Kong Chinese in Traditional characters, and Flemish in Dutch</a>. Thanks to xet7.</summary>
+
+Hong Kong Chinese had 90 values in Simplified Chinese; they are now
+Traditional. Flemish held 158 values in about a dozen other languages, Venda
+and Vietnamese among them, and they are now Flemish, with its 225 values
+still in English filled too.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ba6d0014f7">Locale files that held another language are rewritten in their own</a>. Thanks to xet7.</summary>
+
+Romanian held Italian, French and Spanish; Aromanian, Ladin, Romansh and
+Venetian held Italian; Galician held Portuguese, Acehnese Malay, Venda Zulu,
+Slovak Czech and Polish, Upper Sorbian Czech, Volapük Esperanto and Bislama
+Tok Pisin, and Uzbek in Arabic script was half Latin script. Each is now in
+its own language. Machine-fill prefixes and notes ("Faka-Tonga:", "Kay
+willaymi:", "Wolayttatto:", "WeKan:" and others) are gone from Tongan,
+Quechua, Wolaytta, Upper Sorbian, Aragonese, Friulian and Luganda. Chinese
+no longer calls a board a wooden plank, and List actions no longer reads as
+"list the actions" in seven languages. Values already reviewed - pinned by a
+test, corrected by an audit, or quoted by another string - are kept.
+`tests/wrongLanguageLocales.test.cjs` keeps the old languages and prefixes
+out and checks every placeholder against English. Native speakers are asked
+to review these languages.
+
+</details>
+
+**Igbo** - notification, integration, workflow and recovery settings.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/238354f6a54a234c9db1cf88a9436d15087c6ba0">Translate Igbo notification delivery and integration settings</a>. Thanks to xet7.</summary>
+
+Translate 42 notification and integration strings, preserving grouping,
+schedules, quiet hours, inherited webhook settings, identity omission and
+literal link-rule syntax. Direct technical wording needs fluent review.
+
+Both translation and guarded-correction suites pass with 30,943 corrections.
+All 21 human-preference checks pass; 38,430 existing Chinese values are
+unchanged.
+One notification browser case passes syntax and discovery; execution is pending.
+All-language translation and semantic verification remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/daac3ead0dceb451bdb69970cc5b19678d17ce6d">Translate Igbo workflow and permission controls</a>. Thanks to xet7.</summary>
+
+Translate 19 workflow, directory-sync and permission messages, preserving
+Wrike status behavior, environment identifiers and subtask completion choices.
+Technical prose is lower confidence and needs fluent review.
+
+Both translation and guarded-correction suites pass with 30,962 corrections.
+All 21 human-preference checks pass; 38,430 existing Chinese values are
+unchanged.
+Three browser cases pass syntax and discovery; execution remains pending.
+Igbo has 69 detected placeholders left. All-language semantic review is
+unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5c5391fb98d3619308aa2ba3328f47db870e5655">Translate Igbo stopped list sync recovery messages</a>. Thanks to xet7.</summary>
+
+Translate 18 recovery messages, preserving applied changes, discarded pending
+writes, replay restrictions and the oldest-50 display limit. Recovery prose
+needs fluent review.
+
+Both translation and guarded-correction suites pass with 30,980 corrections.
+All 21 human-preference checks pass; 38,430 existing Chinese values are
+unchanged.
+One browser case passes syntax and discovery; execution remains pending.
+All-language translation and semantic verification remain unfinished.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8c25ce78b94d65d3a7fd4540bdb065443a6c6dbd">Translate Igbo interrupted import recovery messages</a>. Thanks to xet7.</summary>
+
+Translate 21 messages, preserving permanent deletion, retained partial boards,
+source-file limitations, untouched foreign boards and recovery limits.
+Direct recovery prose needs fluent review.
+
+Both translation and guarded-correction suites pass with 31,001 corrections.
+All 21 human-preference checks pass; existing Chinese values are unchanged
+(38,430 checked). One browser case passes syntax and discovery; execution is
+pending. All-language translation and semantic verification remain unfinished.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
 
 # v12.40 2026-10-14 WeKan ® release
 

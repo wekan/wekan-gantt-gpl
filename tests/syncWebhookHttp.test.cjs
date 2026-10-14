@@ -24,9 +24,10 @@ function fixture({ addresses = ['93.184.216.34'], status = 200, body = '{"reply"
   const { isIpBlocked } = load('models/lib/attachmentUrlValidation.js', { Meteor: { isServer: true }, require }, ['isIpBlocked']);
   const { fetchSafe } = load('server/lib/ssrfGuard.js', { dns: { promises: { lookup: async () => {
     lookups++; return addresses.map(address => ({ address, family: address.includes(':') ? 6 : 4 }));
-  } } }, createOutboundDeadline: require('../server/lib/outboundDeadline').createOutboundDeadline, fs, net: require('node:net'), http: transport, https: transport, URL, isIpBlocked }, ['fetchSafe']);
+  } } }, createOutboundDeadline: require('../server/lib/outboundDeadline').createOutboundDeadline, fs, net: require('node:net'), http: transport, https: transport, URL, isIpBlocked, ...require('../server/lib/outboundProxy'), tls: require('node:tls') }, ['fetchSafe']);
   const { sendStoredWebhook } = load('server/notifications/storedWebhookHttp.js', {
-    fetchSafe, require: id => require(`..${id}`),
+    // Off Sandstorm, webhookFetch is fetchSafe itself (server/sandstormEgress.js).
+    webhookFetch: fetchSafe, require: id => require(`..${id}`),
   }, ['sendStoredWebhook']);
   const responses = { findOne: async ({ _id }) => rows.get(_id), insertOne: async row => rows.set(row._id, row) };
   return { sendStoredWebhook, connections, rows, responses, lookups: () => lookups };

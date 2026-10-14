@@ -292,6 +292,17 @@ Lists.attachSchema(
         }
       },
     },
+    roleExceptions: {
+      /**
+       * #4527: what each role may do in this list, over the board's own rule:
+       * { <role>: { write?: Boolean, comment?: Boolean } }
+       * (models/lib/listPermissions.js). Only the lists.setRoleExceptions
+       * method writes it; a direct client write is refused.
+       */
+      type: Object,
+      optional: true,
+      blackbox: true,
+    },
     // NOTE: collapsed state is per-user only, stored in user profile.collapsedLists
     // and localStorage for non-logged-in users
     // NOTE: width is per-board (shared with all users), stored in lists.width
@@ -696,6 +707,9 @@ Lists.helpers({
     return await Lists.updateAsync(this._id, { $set: { collapsed: !!enable } });
   },
 
+  // #6765: the list's cards are archived with it, and restored with it, by the
+  // server (the Lists.after.update hook in server/models/lists.js), for every
+  // kind of list and every way a list is archived.
   async archive() {
     if (this.isTemplateList()) {
       for (const card of await this.cards()) {

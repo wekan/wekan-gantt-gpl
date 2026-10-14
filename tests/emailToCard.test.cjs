@@ -79,6 +79,32 @@ test('no subject: the first line; no text part: the HTML as text, never as marku
   assert.equal(cardFromEmail({ subject: 'x'.repeat(400) }, {}).title.length, 255);
 });
 
+test('CodeQL #570/#571/#581/#582: removing a tag never splices the text around it into a new one', () => {
+  // One pass of each removal used to leave a whole tag or script element.
+  for (const html of ['<scr<script>ipt>alert(1)</script>', '<<b>script>alert(1)<</b>/script>',
+    '<scr<script>x</script>ipt>alert(1)</scr<script>x</script>ipt>', '<<<i>i>i>b>bold']) {
+    const text = htmlToText(html);
+    // No complete tag is left; a lone `<` with no `>` after it is not one.
+    assert.doesNotMatch(text, /<[^>]*>/, `${JSON.stringify(html)} -> ${JSON.stringify(text)}`);
+  }
+  // CodeQL #581/#582: since the regular expressions were replaced by a
+  // one-pass scanner, nothing is spliced together in the first place. In
+  // these two, "<scr<script>" is ONE unknown tag (as a browser reads it), so
+  // what follows is text, not a script element: it may stay, as inert text,
+  // but no tag and no script or style element may come out.
+  for (const html of ['<scr<script></script>ipt>alert(1)</script>', '<sty<style></style>le>p{}</style>ok']) {
+    const text = htmlToText(html);
+    assert.doesNotMatch(text, /<[^>]*>|<script|<style/i, JSON.stringify(html));
+  }
+  // A real script or style element goes with everything in it, also unclosed.
+  assert.equal(htmlToText('a<script type="x">alert(1)</SCRIPT >b'), 'ab');
+  assert.equal(htmlToText('a<style>p{}'), 'a');
+  // Negative: an unfinished tag is not text that could become one later.
+  assert.equal(htmlToText('ok<img src=x onerror=alert(1)'), 'ok');
+  // Negative: what is NOT a tag stays, and real text is kept.
+  assert.equal(htmlToText('<p>2 &lt; 3 and 4 > 1</p>'), '2 < 3 and 4 > 1');
+});
+
 test('board addresses: random, case-sensitive tokens', () => {
   const a = newBoardAddressToken();
   const b = newBoardAddressToken();

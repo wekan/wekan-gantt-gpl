@@ -263,6 +263,10 @@ template(name="listActionPopup")
               a.js-set-wip-limit
                 i.fa.fa-ban
                 | {{#if isWipLimitEnabled }}{{_ 'edit-wip-limit'}}{{else}}{{_ 'setWipLimitPopup-title'}}{{/if}}
+            li
+              a.js-list-permissions
+                i.fa.fa-lock
+                | {{_ 'listPermissionsPopup-title'}}
         //- #3847: board-wide toggle, exposed here per the maintainer's
           instruction to reach it from the List hamburger menu. See
           models/boards.js's stickyListHeaders and list.css's use of the
@@ -447,6 +451,21 @@ template(name="listSyncPopup")
       label {{_ 'list-sync-project-key'}}
       p
         input.list-sync-project-key.js-list-sync-project-key(type="text" value="{{currentSyncProjectKey}}" placeholder="{{_ 'list-sync-project-key-placeholder'}}")
+      //- A grain reaches a tracker only through an API a member allowed in the
+        Sandstorm Powerbox, for the SAVED source (server/sandstormEgress.js).
+      if isSandstorm
+        if syncSourceSaved
+          if syncGranted
+            p.quiet
+              i.fa.fa-check
+              | {{_ 'sandstorm-sync-granted'}}
+          else
+            p
+              a.button.js-sandstorm-sync-grant
+                i.fa.fa-plug
+                | {{_ 'sandstorm-sync-grant'}}
+          if syncGrantError
+            p.error {{syncGrantError}}
       each syncTextFields
         p
           a.flex.js-toggle-sync-field(data-field=field)

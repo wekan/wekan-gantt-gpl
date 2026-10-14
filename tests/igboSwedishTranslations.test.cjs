@@ -261,3 +261,43 @@ assert.match(locales.ig['import-file-label'], /Họrọ faịlụ.*ma ọ bụ t
 assert.match(locales.ig['export-selected-boards'], /ndị ahọpụtara/);
 assert.notEqual(locales.ig['export-selected-boards'], locales.ig['export-all-boards']);
 assert.match(locales.ig['import-one-board-per-project'], /Otu bọọdụ.*ọ bụla/);
+
+assert.match(locales.ig['external-link-rules-description'], /\[\{identifier\}:\{number\}\] = https:\/\/tracker.example.com\/\{identifier\}\/\{number\}/);
+assert.match(locales.ig['webhook-payload-field-standard'], /WEBHOOKS_ATTRIBUTES/);
+assert.match(locales.ig['webhook-payload-description'], /ntọala e ketara.*e debeghị ihe ọ bụla.*ihe ha na-ezigabu/);
+assert.match(locales.ig['webhook-hide-identity'], /E tinyela aha m/);
+assert.notEqual(locales.ig['notification-delivery-grouping-board'], locales.ig['notification-delivery-grouping-card']);
+assert.match(locales.ig['notification-delivery-grouping-all'], /oge iziga ha eruola.*otu ozi/);
+assert.match(locales.ig['notification-delivery-quiet'], /chere ruo mgbe ọ gwụchara/);
+assert.match(locales.ig['notification-delivery-quiet-clear'], /Enweghị/);
+assert.equal(locales.ig['notification-delivery-minutes'], 'Nkeji __count__');
+assert.match(locales.ig['notification-group-card'], /__count__.*__card__/);
+assert.match(locales.ig['notification-group-board'], /__count__.*__board__/);
+
+assert.match(locales.ig['read-only-field'], /onye otu ọ bụla.*naanị ndị nchịkwa/);
+assert.match(locales.ig['r-wrike-workflow-note'], /GET \/workflows.*Completed ma ọ bụ Cancelled.*Active ma ọ bụ Deferred.*Enweghị ike ibupụ iwu akpaaka/);
+assert.match(locales.ig['r-add-actinguser-assignee'], /onye ọrụ kpalitere iwu a/);
+assert.match(locales.ig['r-remove-all-assignees'], /ndị niile e kenyere/);
+assert.match(locales.ig['ldap-sync-now-nothing'], /LDAP_BACKGROUND_SYNC_IMPORT_NEW_USERS.*LDAP_BACKGROUND_SYNC_KEEP_EXISTANT_USERS_UPDATED/);
+assert.match(locales.ig['oauth-providers-allowed-email-domains'], /Naanị.*rịkọm.*efu.*ndị niile/);
+assert.match(locales.ig['subtask-mark-done'], /ka emechara$/);
+assert.match(locales.ig['subtask-mark-not-done'], /ka emechaghị$/);
+assert.match(locales.ig['subtask-done-no-permission'], /Ị nweghị ike/);
+assert.match(locales.ig['login-setting-env-only'], /Naanị gburugburu sava.*ọgụgụ naanị/);
+
+assert.match(locales.ig['stuck-sync-operation-description'], /enweghịzi ikike.*enweghị ike imekọrịta.*mgbanwe e tinyelarị na-anọgide.*a gaghị ede mgbanwe ndị fọdụrụ.*isi iyi ya ọzọ/);
+assert.match(locales.ig['stuck-sync-operation-discard-confirm'], /tinyelarị na-anọgide.*a gaghị ede ndị fọdụrụ/);
+assert.match(locales.ig['stuck-sync-operation-replayable-now'], /ga-emecha n’onwe ya.*enweghị ike ịtụfu/);
+assert.match(locales.ig['stuck-sync-operation-not-stuck'], /Achọpụtaghị.*enweghị ike ịtụfu/);
+assert.match(locales.ig['stuck-sync-operation-truncated'], /naanị 50 kacha ochie/);
+assert.equal(locales.ig['stuck-sync-operation-applied'], 'Etinyela mgbanwe __applied__ n’ime __total__');
+assert.match(locales.ig['stuck-sync-operation-reason-access-denied'], /ndepụta ahụ dum/);
+
+assert.match(locales.ig['interrupted-import-description'], /Enweghị ike ịga n’ihu.*a naghị edobe faịlụ isi iyi.*ihe ọ bụla agbakwunyere.*kemgbe/);
+assert.match(locales.ig['interrupted-import-keep-confirm'], /A naghị ewepụ ihe ọ bụla/);
+assert.match(locales.ig['interrupted-import-discard-confirm'], /ihe niile.*ruo mgbe ebighị ebi/);
+assert.match(locales.ig['interrupted-import-foreign-board'], /emepụtaghị.*emetụghị ya aka/);
+assert.match(locales.ig['interrupted-import-truncated'], /naanị 50 kacha ochie.*Debe ma ọ bụ tụfuo/);
+assert.match(locales.ig['interrupted-import-scrum'], /__state__.*__next__.*__total__.*mgbake mbubata Scrum/);
+assert.match(locales.ig['interrupted-import-state-failed'], /__error__.*__stage__/);
+assert.notEqual(locales.ig['interrupted-import-keep-confirm'], locales.ig['interrupted-import-discard-confirm']);

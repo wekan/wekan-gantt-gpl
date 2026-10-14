@@ -315,6 +315,17 @@ import '/server/publications/recoveryReport';
 import '/server/publications/recoveryMaintenance';
 import '/server/recovery';
 import '/server/publications/inviteToBoardRolesSettings';
+// Custom board roles (#3022): the permission lookup, publication and methods.
+import '/server/customBoardRoles';
+// Optional HTTPS in WeKan's own server (#916).
+import '/server/httpsServer';
+// Boards every signed-in user may edit (#4575).
+import '/server/instanceEditing';
+// Board keys: card numbers shown as KEY-7 (#2449, #2450).
+import '/server/boardKeys';
+// Shared labels (#2761, #4698).
+import '/server/sharedLabels';
+import '/server/listPermissions';
 import '/server/publications/lockoutSettings';
 import '/server/publications/notifications';
 import '/server/publications/org';

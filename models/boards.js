@@ -41,6 +41,7 @@ import {
 import { generateUniversalAttachmentUrl } from '/models/lib/universalUrlGenerator';
 import { buildCardSearchOr, matchingCommentCardIds } from '/models/lib/cardSearch';
 const { SimpleSchema } = require('/imports/simpleSchema');
+const { memberRoleOf, CUSTOM_ROLE_PREFIX, customRoleCapabilities, uiRoleFor } = require('/models/lib/boardRoleCapabilities');
 const getTAPi18n = () => require('/imports/i18n').TAPi18n;
 
 function getTranslatedString(key, fallback, options) {
@@ -64,6 +65,7 @@ function sanitizeBoardMembers(members) {
     isCommentAssignedOnly: !!member.isCommentAssignedOnly,
     isReadOnly: !!member.isReadOnly,
     isReadAssignedOnly: !!member.isReadAssignedOnly,
+    ...(member.customRoleId ? { customRoleId: member.customRoleId } : {}),
   }));
 }
 
@@ -235,6 +237,14 @@ Boards.attachSchema(
         return 'notAllowed';
       },
     },
+    'labels.$.sharedLabelId': {
+      /**
+       * This label is the board's copy of a shared label (#2761, #4698,
+       * models/lib/sharedLabels.js): its name and colour follow the shared one.
+       */
+      type: String,
+      optional: true,
+    },
     'labels.$.dueAt': {
       /**
        * Optional due date carried by the label itself (#2802), e.g. a
@@ -338,6 +348,44 @@ Boards.attachSchema(
        * Is the member only allowed to read assigned cards (no comments, no editing)
        */
       type: Boolean,
+      optional: true,
+    },
+    key: {
+      /**
+       * The board's key (#2449, #2450): 2-10 capital letters and digits,
+       * unique in the instance, so a card's number shows as KEY-7. Given when
+       * the board is created (server/boardKeys.js); a board admin may change it.
+       */
+      type: String,
+      optional: true,
+    },
+    allowsInstanceEditing: {
+      /**
+       * Every signed-in user may edit this open board (#4575), where Admin
+       * Panel / Settings / Visibility allows it. Their first edit makes them a
+       * Normal member.
+       */
+      type: Boolean,
+      optional: true,
+    },
+    'members.$.grantedBy': {
+      /**
+       * The teams and organizations this membership came through (#4178),
+       * e.g. ['team:<id>']. Absent: a direct membership. Leaving the last of
+       * them deactivates it (models/lib/groupBoardMembership.js).
+       */
+      type: Array,
+      optional: true,
+    },
+    'members.$.grantedBy.$': {
+      type: String,
+    },
+    'members.$.customRoleId': {
+      /**
+       * A custom board role (#3022, models/customBoardRoles.js). The flags above
+       * then carry the strongest built-in role that grants nothing more.
+       */
+      type: String,
       optional: true,
     },
     permission: {
@@ -2057,6 +2105,8 @@ Boards.helpers({
   },
 
   hasNoComments(memberId) {
+    const custom = this.customUiRoleOf(memberId);
+    if (custom) return custom === 'no-comments';
     return !!findWhere(this.members, {
       userId: memberId,
       isActive: true,
@@ -2067,6 +2117,8 @@ Boards.helpers({
   },
 
   hasCommentOnly(memberId) {
+    const custom = this.customUiRoleOf(memberId);
+    if (custom) return custom === 'comment-only';
     return !!findWhere(this.members, {
       userId: memberId,
       isActive: true,
@@ -2077,6 +2129,8 @@ Boards.helpers({
   },
 
   hasWorker(memberId) {
+    const custom = this.customUiRoleOf(memberId);
+    if (custom) return custom === 'worker';
     return !!findWhere(this.members, {
       userId: memberId,
       isActive: true,
@@ -2087,6 +2141,8 @@ Boards.helpers({
   },
 
   hasNormalAssignedOnly(memberId) {
+    const custom = this.customUiRoleOf(memberId);
+    if (custom) return custom === 'normal-assigned-only';
     return !!findWhere(this.members, {
       userId: memberId,
       isActive: true,
@@ -2097,6 +2153,8 @@ Boards.helpers({
   },
 
   hasCommentAssignedOnly(memberId) {
+    const custom = this.customUiRoleOf(memberId);
+    if (custom) return custom === 'comment-assigned-only';
     return !!findWhere(this.members, {
       userId: memberId,
       isActive: true,
@@ -2107,6 +2165,8 @@ Boards.helpers({
   },
 
   hasReadOnly(memberId) {
+    const custom = this.customUiRoleOf(memberId);
+    if (custom) return custom === 'read-only';
     return !!findWhere(this.members, {
       userId: memberId,
       isActive: true,
@@ -2116,12 +2176,33 @@ Boards.helpers({
   },
 
   hasReadAssignedOnly(memberId) {
+    const custom = this.customUiRoleOf(memberId);
+    if (custom) return custom === 'read-assigned-only';
     return !!findWhere(this.members, {
       userId: memberId,
       isActive: true,
       isAdmin: false,
       isReadAssignedOnly: true,
     });
+  },
+
+  // The built-in role a member's custom role (#3022) behaves like (uiRoleFor),
+  // or null when the member has none. The has*() helpers below answer from it,
+  // so every place that asks for a role by name treats a custom role by what
+  // it may do.
+  customUiRoleOf(memberId) {
+    const member = findWhere(this.members, { userId: memberId, isActive: true });
+    const role = memberRoleOf(member);
+    const caps = role && role.startsWith(CUSTOM_ROLE_PREFIX) ? customRoleCapabilities(role) : null;
+    return caps ? uiRoleFor(caps) : null;
+  },
+
+  // The custom role (#3022) of an active member, when it still exists: its id,
+  // else null. The member's built-in flags then only mirror it.
+  customRoleOf(memberId) {
+    const member = findWhere(this.members, { userId: memberId, isActive: true });
+    const role = memberRoleOf(member);
+    return role && role.startsWith(CUSTOM_ROLE_PREFIX) ? role.slice(CUSTOM_ROLE_PREFIX.length) : null;
   },
 
   // Returns the single BOARD-level role key of an active board member (see
@@ -2133,6 +2214,9 @@ Boards.helpers({
     const member = findWhere(this.members, { userId: memberId, isActive: true });
     if (!member) return null;
     if (member.isAdmin) return 'board-admin';
+    // A custom role is its own key, `custom:<id>` (#3022).
+    const resolved = memberRoleOf(member);
+    if (resolved && resolved.startsWith(CUSTOM_ROLE_PREFIX)) return resolved;
     if (member.isWorker) return 'worker';
     if (member.isCommentOnly) return 'comment-only';
     if (member.isNoComments) return 'no-comments';
@@ -2320,7 +2404,7 @@ Boards.helpers({
 
       // #5680: build the $or so numeric custom fields (number / currency, stored
       // as JS Numbers) match by value too — a regex alone only matches strings.
-      query.$or = buildCardSearchOr(term);
+      query.$or = buildCardSearchOr(term, { boardKey: this.key });
 
       // #3841: also find cards whose match is only inside a COMMENT. Comments
       // live in a separate collection, so Minimongo can't match them with a
@@ -2804,8 +2888,11 @@ Boards.helpers({
   async addMember(memberId) {
     const memberIndex = this.memberIndex(memberId);
     if (memberIndex >= 0) {
+      // Adding a member by hand is a direct membership from now on (#4178): a
+      // team that brought them can no longer take it away.
       return await Boards.updateAsync(this._id, {
         $set: { [`members.${memberIndex}.isActive`]: true },
+        $unset: { [`members.${memberIndex}.grantedBy`]: '' },
       });
     }
 
@@ -2853,6 +2940,8 @@ Boards.helpers({
         [`members.${memberIndex}.isActive`]: false,
         [`members.${memberIndex}.isAdmin`]: false,
       },
+      // A board admin's removal is final (#4178): no team brings them back.
+      $unset: { [`members.${memberIndex}.grantedBy`]: '' },
     });
   },
 
@@ -2883,6 +2972,11 @@ Boards.helpers({
         [`members.${memberIndex}.isCommentAssignedOnly`]: isCommentAssignedOnly,
         [`members.${memberIndex}.isReadOnly`]: isReadOnly,
         [`members.${memberIndex}.isReadAssignedOnly`]: isReadAssignedOnly,
+      },
+      // A built-in role replaces a custom one (#3022), which would otherwise
+      // keep deciding what the member may do.
+      $unset: {
+        [`members.${memberIndex}.customRoleId`]: '',
       },
     });
   },
