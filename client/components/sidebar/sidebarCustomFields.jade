@@ -5,7 +5,7 @@ template(name="customFieldsSidebar")
                 div.minicard-wrapper.js-minicard
                     i.fa.fa-bars.js-custom-field-drag-handle
                     div.minicard
-                        a.js-edit-custom-field.minicard-edit-button
+                        a.js-edit-custom-field.minicard-edit-button(title="{{_ 'editCustomFieldPopup-title'}}")
                           i.fa.fa-pencil
                         div.minicard-title
                           +viewer
@@ -88,6 +88,16 @@ template(name="createCustomFieldPopup")
         a.flex.js-field-always-on-card(class="{{#if alwaysOnCard}}is-checked{{/if}}")
             .materialCheckBox(class="{{#if alwaysOnCard}}is-checked{{/if}}")
             span {{_ 'always-field-on-card'}}
+
+        //- #2012: only on Story or Task cards; neither ticked is every card.
+        .custom-field-card-kinds
+          span {{_ 'custom-field-card-kinds'}}
+          a.flex.js-field-card-kind(data-kind="story" class="{{#if hasCardKind 'story'}}is-checked{{/if}}")
+            .materialCheckBox(class="{{#if hasCardKind 'story'}}is-checked{{/if}}")
+            span {{_ 'card-kind-story'}}
+          a.flex.js-field-card-kind(data-kind="task" class="{{#if hasCardKind 'task'}}is-checked{{/if}}")
+            .materialCheckBox(class="{{#if hasCardKind 'task'}}is-checked{{/if}}")
+            span {{_ 'card-kind-task'}}
 
         a.flex.js-field-showLabel-on-card(class="{{#if showLabelOnMiniCard}}is-checked{{/if}}")
             .materialCheckBox(class="{{#if showLabelOnMiniCard}}is-checked{{/if}}")

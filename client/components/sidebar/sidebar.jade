@@ -423,6 +423,20 @@ template(name="boardSubtaskSettingsBody")
             else
               option(value=_id) {{title}}
 
+    //- #1953: the swimlane new subtasks land in on the deposit board.
+    label
+      | {{_ 'deposit-subtasks-swimlane'}}
+      select.js-field-deposit-swimlane(disabled="{{#unless allowsSubtasks}}disabled{{/unless}}")
+          if isNullSwimlaneSelected
+            option(value='null' selected="selected") {{_ 'deposit-subtasks-swimlane-auto'}}
+          else
+            option(value='null') {{_ 'deposit-subtasks-swimlane-auto'}}
+          each depositSwimlanes
+            if isSwimlaneSelected
+              option(value=_id selected="selected") {{title}}
+            else
+              option(value=_id) {{title}}
+
 template(name="boardSubtaskSettingsPopup")
   +boardSubtaskSettingsBody
 
@@ -479,6 +493,20 @@ template(name="outgoingWebhooksPopup")
       a.flex.js-toggle-webhook-enabled
         .materialCheckBox(class="{{#unless enabled}}is-checked{{/unless}}")
         span {{_ 'disable-webhook'}}
+      //- #2026 / #1377: which activities this webhook is sent.
+      .webhook-activity-picker
+        span.quiet {{_ 'webhook-activities'}}
+        a.flex.js-toggle-webhook-activity-all
+          .materialCheckBox(class="{{#if webhookPicker.all}}is-checked{{/if}}")
+          span {{_ 'webhook-activities-all'}}
+        each webhookActivityGroups
+          a.flex.js-toggle-webhook-activity-group(data-group=key)
+            .materialCheckBox(class="{{#if checked}}is-checked{{/if}}")
+            span {{_ labelKey}}
+      //- #1297: also each card member and assignee, as a Mattermost direct message.
+      a.flex.js-toggle-webhook-mattermost-dm(title="{{_ 'webhook-mattermost-dm-desc'}}")
+        .materialCheckBox(class="{{#if mattermostDirectMessages}}is-checked{{/if}}")
+        span {{_ 'webhook-mattermost-dm'}}
       textarea.js-outgoing-webhooks-title(rows="2" placeholder="{{_ 'webhook-title'}}" name="title")= title
       input.js-outgoing-webhooks-url(type="text" name="url" value=url)
       input.js-outgoing-webhooks-token(placeholder="{{_ 'webhook-token' }}" type="text" value=token name="token")
@@ -614,6 +642,15 @@ template(name="boardMenuPopup")
               i.fa.fa-id-card-o
     //
               | {{_ 'board-info-on-my-boards'}}
+    hr
+  else if rulesReadable
+    //- #2217: a member of a board that shows its Rules reads them here; the
+      page draws no control that changes a rule.
+    ul.pop-over-list
+      li
+        a.js-open-rules-view(title="{{_ 'rules'}}")
+          i.fa.fa-magic
+          | {{_ 'rules'}}
     hr
   if currentUser
     //- Board View, Swimlane, List and Card settings, together. Board View,
@@ -767,6 +804,13 @@ template(name="boardSwimlaneSettingsPopup")
         span
           i.fa.fa-arrows-v
           | {{_ 'lock-swimlane-height-resize'}}
+    //- #2805: one sticky list header row for all swimlanes.
+    div.check-div
+      a.flex.js-toggle-shared-list-headers(title="{{_ 'shared-list-headers-desc'}}" class="{{#if hasSharedListHeaders}}is-checked{{/if}}")
+        i.fa(class="{{#if hasSharedListHeaders}}fa-check{{else}}fa-square-o{{/if}}")
+        span
+          i.fa.fa-header
+          | {{_ 'shared-list-headers'}}
   //- Board Settings / Swimlane / WIP Limit Groups (#2489). Used to be its own
     top-level Board Settings entry; it opens the unchanged wipLimitGroupsPopup
     below, stacked on this one so the popup's back arrow returns here.

@@ -1056,6 +1056,9 @@ const LOCALE_INVARIANTS = {
     'blockly-MATH_SUBTRACTION_SYMBOL_ARIA', 'blockly-MATH_TRIG_COS',
     'blockly-MATH_TRIG_SIN', 'blockly-SHIFT_KEY', 'blockly-SHORTCUTS_GENERAL',
     'blockly-TAB_KEY', 'blockly-WINDOWS', 'scrum-sprint',
+    // Romanian "calendar" and "card" (DEX); the file had the Italian
+    // "Calendario" and "Scheda" in these.
+    'calendar', 'board-view-cal', 'cardType-card', 'cards-count-one',
   ])])),
   rup: new Set(['color-indigo', 'color-magenta']),
   lld: new Set(['move-progress-file']),
@@ -1090,6 +1093,8 @@ const LOCALE_INVARIANTS = {
     'blockly-MATH_TRIG_ASIN', 'blockly-MATH_TRIG_ATAN', 'blockly-MATH_TRIG_COS',
     'blockly-MATH_TRIG_SIN', 'blockly-MATH_TRIG_TAN',
     ...(code === 'ca@valencia' ? ['errors'] : []),
+    // Catalan "no" is the same word as the English (DIEC2, entry no).
+    'no',
   ])])),
   sq: new Set(['color-indigo', 'color-magenta', 'email', 'normal', 'private',
     'blockly-ALT_KEY', 'blockly-COMMAND_KEY', 'blockly-TAB_KEY',

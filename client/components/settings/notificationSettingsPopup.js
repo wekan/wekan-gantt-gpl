@@ -44,9 +44,26 @@ Template.notificationSettingsPopup.onCreated(function () {
   this.dueRemindersOff = new ReactiveVar(Boolean(board && Array.isArray(board.dueReminderDays)
     && board.dueReminderDays.length === 0));
   this.dueReminderWebhook = new ReactiveVar(Boolean(board && board.dueReminderWebhook));
+  // #2026 / #1377: whether this device gets browser push.
+  this.webPushHere = new ReactiveVar(false);
+  this.webPushMessage = new ReactiveVar('');
+  if (this.data.scope === 'member') {
+    import('/client/lib/webPush').then(m => m.webPushEnabledHere()).then(on => this.webPushHere.set(on)).catch(() => {});
+  }
+  // #5148: the member's own ntfy topic, through their own methods.
+  this.ntfy = new ReactiveVar({ enabled: false, url: '', token: '' });
+  this.ntfyMessage = new ReactiveVar('');
+  if (this.data.scope === 'member') {
+    Meteor.call('getNtfySettings', (error, value) => { if (!error && value) this.ntfy.set(value); });
+  }
 });
 
 Template.notificationSettingsPopup.helpers({
+  ntfy() { return Template.instance().ntfy.get(); },
+  webPushSupported() { return require('/client/lib/webPush').webPushSupported(); },
+  webPushHere() { return Template.instance().webPushHere.get(); },
+  webPushMessage() { return Template.instance().webPushMessage.get(); },
+  ntfyMessage() { return Template.instance().ntfyMessage.get(); },
   // #5323: per-board due-date reminder offsets and webhook delivery.
   isBoardScope() {
     return Template.instance().data.scope === 'board';
@@ -107,6 +124,39 @@ Template.notificationSettingsPopup.helpers({
 });
 
 Template.notificationSettingsPopup.events({
+  async 'click .js-web-push-enable'(event, tpl) {
+    event.preventDefault();
+    try {
+      await require('/client/lib/webPush').enableWebPush();
+      tpl.webPushHere.set(true);
+      tpl.webPushMessage.set('');
+    } catch (error) {
+      tpl.webPushMessage.set(TAPi18n.__(error.error === 'web-push-denied' ? 'web-push-denied' : 'web-push-failed'));
+    }
+  },
+  async 'click .js-web-push-disable'(event, tpl) {
+    event.preventDefault();
+    try {
+      await require('/client/lib/webPush').disableWebPush();
+      tpl.webPushHere.set(false);
+    } catch (error) {
+      tpl.webPushMessage.set(TAPi18n.__('web-push-failed'));
+    }
+  },
+  'click .js-ntfy-enabled'(event, tpl) {
+    event.preventDefault();
+    tpl.ntfy.set({ ...tpl.ntfy.get(), enabled: !tpl.ntfy.get().enabled });
+  },
+  'click .js-ntfy-save, submit .js-ntfy-form'(event, tpl) {
+    event.preventDefault();
+    const value = { enabled: tpl.ntfy.get().enabled,
+      url: String(tpl.$('.js-ntfy-url').val() || ''), token: String(tpl.$('.js-ntfy-token').val() || '') };
+    Meteor.call('saveNtfySettings', value, (error, saved) => {
+      if (error) { tpl.ntfyMessage.set(TAPi18n.__(error.error) || error.reason || error.message); return; }
+      tpl.ntfy.set(saved);
+      tpl.ntfyMessage.set(TAPi18n.__('feature-saved'));
+    });
+  },
   'click .js-due-reminder-off'(event, instance) {
     event.preventDefault();
     instance.dueRemindersOff.set(!instance.dueRemindersOff.get());

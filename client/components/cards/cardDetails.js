@@ -639,6 +639,15 @@ Template.cardDetails.onDestroyed(function () {
       Popup.close();
     }
   }
+
+  // #2111 / #1604: closing the card counts as having seen it, so the
+  // member's own edits made while it was open do not mark it unread.
+  if (this.openedCardId) {
+    const closingUser = ReactiveCache.getCurrentUser();
+    if (closingUser && closingUser.profile && closingUser.profile.unreadChangesSince) {
+      closingUser.setCardLastViewed(this.openedCardId);
+    }
+  }
 });
 
 // The following are used from one of the cardFieldSection* templates
@@ -1802,6 +1811,10 @@ Template.cardDetailsActionsPopup.events({
     if (!card) return;
     const url = card.absoluteUrl();
     if (!url) return;
+    // #1188: inside a Sandstorm grain the address reaches nobody; Sandstorm's
+    // Share Access dialog makes a link that opens the grain at this card.
+    if (Meteor.settings?.public?.sandstorm && typeof window.sandstormShareUrl === 'function' &&
+        window.sandstormShareUrl(url)) return;
     Utils.showCopied(Utils.copyTextToClipboard(url), tpl.$('.copied-tooltip'));
   },
   // #1172: star/unstar this card for the current user only.
@@ -1853,6 +1866,8 @@ Template.cardDetailsActionsPopup.events({
   'click .js-convert-checklist-item-to-card': Popup.open('convertChecklistItemToCard'),
   'click .js-copy-checklist-cards': Popup.open('copyManyCards'),
   'click .js-set-card-color': Popup.open('setCardColor'),
+  'click .js-set-card-kind': Popup.open('cardKind'),
+  'click .js-card-drawing': Popup.open('cardDrawing'),
   async 'click .js-move-card-to-top'(event) {
     event.preventDefault();
     const card = Cards.findOne(getCardId());
@@ -2847,6 +2862,9 @@ Template.cardMorePopup.events({
     if (card) card.removeParent(event.currentTarget.dataset.id);
   },
   'click .js-copy-card-link-to-clipboard'(event, tpl) {
+    // #1188: on Sandstorm, share the card through the shell instead.
+    if (Meteor.settings?.public?.sandstorm && typeof window.sandstormShareUrl === 'function' &&
+        window.sandstormShareUrl(document.getElementById('cardURL').value)) return;
     const promise = Utils.copyTextToClipboard(location.origin + document.getElementById('cardURL').value);
 
     const $tooltip = tpl.$('.copied-tooltip');
@@ -3392,5 +3410,17 @@ Template.cardQrCodePopup.helpers({
     const svg = url ? qrSvg(url, { scale: 6 }) : '';
     // The SVG is the encoder's own ASCII markup, never the link's text.
     return svg ? `data:image/svg+xml;base64,${window.btoa(svg)}` : '';
+  },
+});
+
+// #2012: Template.currentData() is the card.
+Template.cardKindPopup.events({
+  async 'click .js-select-card-kind'(event) {
+    event.preventDefault();
+    const card = Template.currentData();
+    if (card && typeof card.setCardKind === 'function') {
+      try { await card.setCardKind(event.currentTarget.dataset.kind || null); } catch (error) { console.error(error); }
+    }
+    Popup.back();
   },
 });

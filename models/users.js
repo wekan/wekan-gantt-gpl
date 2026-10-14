@@ -247,6 +247,14 @@ Users.attachSchema(
        */
       type: String,
     },
+    'teams.$.isAdmin': {
+      /**
+       * #802: this member administers this team's members in All Boards, as
+       * orgs.$.isAdmin does for an organization (models/lib/groupMembers.js).
+       */
+      type: Boolean,
+      optional: true,
+    },
     emails: {
       /**
        * the list of emails attached to a user
@@ -343,6 +351,52 @@ Users.attachSchema(
     'profile.notifyMutedActivities.$': {
       type: String,
       allowedValues: GROUP_KEYS,
+    },
+    passkeys: {
+      /**
+       * #5847: this account's passkeys (server/passkeys.js): [{ id, publicKey,
+       * counter, transports, name, createdAt, lastUsedAt }]. Never published,
+       * and not writable from the client.
+       */
+      type: Array,
+      optional: true,
+    },
+    'passkeys.$': {
+      type: Object,
+      blackbox: true,
+    },
+    sqrl: {
+      /**
+       * #2460: this account's SQRL identity (server/sqrl.js): { idk, suk, vuk,
+       * disabled, addedAt } - public keys only. Never published, and not
+       * writable from the client.
+       */
+      type: Object,
+      optional: true,
+      blackbox: true,
+    },
+    webPushSubscriptions: {
+      /**
+       * #2026 / #1377: this member's browsers' push subscriptions
+       * (models/lib/webPush.js). Never published, not client-writable.
+       */
+      type: Array,
+      optional: true,
+    },
+    'webPushSubscriptions.$': {
+      type: Object,
+      blackbox: true,
+    },
+    ntfy: {
+      /**
+       * #5148: the member's own ntfy topic (models/lib/ntfy.js):
+       * { enabled, url, token }. Outside `profile` and never published - the
+       * token is a secret - read and saved only through the member's own
+       * methods (server/notifications/ntfy.js).
+       */
+      type: Object,
+      optional: true,
+      blackbox: true,
     },
     'profile.notifyOverrideTray': {
       /**
@@ -445,6 +499,15 @@ Users.attachSchema(
        * instead of the default Ctrl/Cmd+Enter. Off by default. See #4236/#6480.
        */
       type: Boolean,
+      optional: true,
+    },
+    'profile.unreadChangesSince': {
+      /**
+       * #2111 / #1604: when set, the time the member turned on "Mark cards
+       * changed since I last opened them"; unset is off
+       * (models/lib/unreadChanges.js).
+       */
+      type: Date,
       optional: true,
     },
     'profile.keepTitleTags': {
@@ -683,6 +746,27 @@ Users.attachSchema(
       optional: true,
     },
     'profile.invitedBoards.$': {
+      type: String,
+    },
+    'profile.boardLabels': {
+      /**
+       * #4791: the member's own board labels, { label: [boardId] }, for the
+       * All Boards facet bar (models/lib/allBoardsFacets.js).
+       */
+      type: Object,
+      optional: true,
+      blackbox: true,
+    },
+    'profile.hiddenBoards': {
+      /**
+       * #4265: boards this user left that they still reach through a team,
+       * organization or e-mail domain; All Boards leaves them out, and Member
+       * Settings / Hidden boards brings them back. The team is not touched.
+       */
+      type: Array,
+      optional: true,
+    },
+    'profile.hiddenBoards.$': {
       type: String,
     },
     'profile.language': {
@@ -937,6 +1021,7 @@ Users.attachSchema(
         'board-view-email',
         'board-view-chat',
         'board-view-version-control',
+        'board-view-column-sets',
       ],
     },
     'profile.listSortBy': {
@@ -2101,6 +2186,11 @@ Users.helpers({
   hasSubmitOnEnter() {
     const profile = this.profile || {};
     return profile.submitOnEnter || false;
+  },
+
+  // #2111 / #1604: when the member turned on unread changes, or null.
+  unreadChangesSince() {
+    return (this.profile || {}).unreadChangesSince || null;
   },
 
   // #1273: keep the #label / @member text in a new card's title.

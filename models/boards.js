@@ -726,6 +726,27 @@ Boards.attachSchema(
       defaultValue: null,
     },
 
+    rulesVisibleToMembers: {
+      /**
+       * #2217: board members may read this board's Rules, when Admin Panel /
+       * Settings / Visibility allows it (models/lib/rulesReadOnly.js). Set by
+       * a board admin; grants no right to change a rule.
+       */
+      type: Boolean,
+      optional: true,
+    },
+
+    subtasksDefaultSwimlaneId: {
+      /**
+       * #1953: the swimlane new subtasks land in on the deposit board
+       * (models/lib/subtaskLandingSwimlane.js). Unset: the swimlane with the
+       * parent card's swimlane title, else the default swimlane.
+       */
+      type: String,
+      optional: true,
+      defaultValue: null,
+    },
+
     dateSettingsDefaultBoardId: {
       type: String,
       optional: true,
@@ -1403,6 +1424,28 @@ Boards.attachSchema(
       type: Boolean,
       optional: true,
       defaultValue: false,
+    },
+    columnSets: {
+      /**
+       * #211: named column sets over the same cards (models/lib/columnSets.js):
+       * [{ _id, name, columns: [{ _id, title, color }] }].
+       */
+      type: Array,
+      optional: true,
+    },
+    'columnSets.$': {
+      type: Object,
+      blackbox: true,
+    },
+    sharedListHeaders: {
+      /**
+       * #2805: one shared list header row for all swimlanes - the first
+       * swimlane's, sticky at the top while the board scrolls - instead of the
+       * same headers repeated in every swimlane. A board view setting (Board
+       * Settings / Swimlane), off by default.
+       */
+      type: Boolean,
+      optional: true,
     },
     swimlaneHeightResizeLocked: {
       /**
@@ -3235,6 +3278,14 @@ Boards.helpers({
     });
   },
 
+  hasSharedListHeaders() {
+    return this.sharedListHeaders === true;
+  },
+
+  async setSharedListHeaders(sharedListHeaders) {
+    return await Boards.updateAsync(this._id, { $set: { sharedListHeaders: !!sharedListHeaders } });
+  },
+
   getSwimlaneHeightResizeLocked() {
     return !!this.swimlaneHeightResizeLocked;
   },
@@ -3420,6 +3471,10 @@ Boards.helpers({
 
   async setSubtasksDefaultListId(subtasksDefaultListId) {
     return await Boards.updateAsync(this._id, { $set: { subtasksDefaultListId } });
+  },
+
+  async setSubtasksDefaultSwimlaneId(subtasksDefaultSwimlaneId) {
+    return await Boards.updateAsync(this._id, { $set: { subtasksDefaultSwimlaneId } });
   },
 
   async setPresentParentTask(presentParentTask) {

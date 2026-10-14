@@ -68,7 +68,8 @@
       "https://ko\\-fi\\.com/rebeccastevens",
       "https://opencollective\\.com/express",
       "https://opencollective\\.com/fastify",
-      "https://tidelift\\.com/funding/github/npm/deepmerge\\-ts"
+      "https://tidelift\\.com/funding/github/npm/deepmerge\\-ts",
+      "https://github\\.com/sponsors/dmonad"
     ],
     "imports/sandstorm/capnp/api-session.mjs": [
       "https://api\\.github\\.com",
@@ -117,6 +118,40 @@
     ],
     "server/compatApi/core.js": [
       "http://127\\.0\\.0\\.1:\\$\\{process\\.env\\.PORT"
+    ],
+    "models/lib/jsWebLabels.js": [
+      "https://www\\.gnu\\.org/software/librejs/",
+      "http://www\\.jclark\\.com/xml/copying\\.txt",
+      "http://www\\.apache\\.org/licenses/LICENSE-2\\.0",
+      "http://www\\.xfree86\\.org/current/LICENSE4\\.html",
+      "http://www\\.freebsd\\.org/copyright/freebsd-license\\.html",
+      "https://www\\.isc\\.org/downloads/software-support-policy/isc-license/"
+    ],
+    "models/lib/ntfy.js": [
+      "https://ntfy\\.sh(/[A-Za-z0-9_-]*)?"
+    ],
+    "client/components/settings/notificationSettingsPopup.jade": [
+      "https://ntfy\\.sh/my-topic"
+    ],
+    "models/lib/sandstormShare.js": [
+      "http://grain\\.invalid",
+      "https://docs\\.sandstorm\\.io/en/latest/developing/path/(#[a-z-]+)?"
+    ],
+    "models/lib/activityPub.js": [
+      "https://www\\.w3\\.org/ns/activitystreams(#Public)?",
+      "https://w3id\\.org/security/v1"
+    ],
+    "client/components/settings/attachments.jade": [
+      "https://cloud\\.example\\.com(/[^\\s]*)?"
+    ],
+    "server/models/attachmentStorageSettings.js": [
+      "https://cloud\\.example\\.com(/[^\\s]*)?"
+    ],
+    "client/components/forms/dateFormatSettings.jade": [
+      "https://cloud\\.example\\.com(/[^\\s]*)?"
+    ],
+    "models/lib/sqrl.js": [
+      "https://www\\.grc\\.com/sqrl/sqrl\\.htm"
     ]
   },
   "files": {

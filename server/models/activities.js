@@ -510,6 +510,15 @@ Activities.after.insert(async (userId, doc) => {
   // separate from this local acknowledgement boundary.
   deliverStoredActivityNotifications(doc, userId, async () => prepared)
     .catch(() => console.error('Activity notification delivery incomplete; pending intent retained'));
+  // #5148: and to each recipient's own ntfy topic, when they set one.
+  try { require('/server/notifications/ntfy').sendActivityToNtfy(prepared); }
+  catch (error) { console.warn('ntfy notifications skipped'); }
+  // #2026 / #1377: and to each recipient's browsers, when they turned push on.
+  try { require('/server/webPush').sendActivityToWebPush(prepared); }
+  catch (error) { console.warn('browser push skipped'); }
+  // #4198: and to the fediverse followers of a public board.
+  try { require('/server/activityPub').deliverActivityToFollowers(doc); }
+  catch (error) { console.warn('ActivityPub delivery skipped'); }
 
   const integrations = await activityWebhookIntegrations(board, description);
   if (integrations.length > 0) {

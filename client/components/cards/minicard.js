@@ -48,6 +48,14 @@ function getMinicardFlag(board, onMinicardField, legacyField, defaultValue) {
 // });
 
 Template.minicard.helpers({
+  // #2012: the card's kind, as a badge.
+  cardKindIcon() {
+    const { KIND_ICONS } = require('/models/lib/cardKinds');
+    return KIND_ICONS[this.cardKind] || null;
+  },
+  cardKindTitle() {
+    return this.cardKind ? TAPi18n.__(`card-kind-${this.cardKind}`) : '';
+  },
   commentBadgeTitle() {
     return commentBadgeTitle(this.comments(), count => TAPi18n.__('card-comments-title', count));
   },
@@ -87,6 +95,24 @@ Template.minicard.helpers({
   // for this card (models/users.js getCardLastViewedAt/setCardLastViewed),
   // or any comment at all when the card was never opened by this user. The
   // decision itself is pure/tested in models/lib/unreadComments.js.
+  // #2111 / #1604: any change to the card since this member last opened it,
+  // when they turned that on (models/lib/unreadChanges.js).
+  hasUnreadChanges() {
+    const card = this;
+    if (!card || !card._id) return false;
+    const user = currentUserWith([`profile.cardLastViews.${card._id}`, 'profile.unreadChangesSince']);
+    const enabledAt = user && user.profile && user.profile.unreadChangesSince;
+    if (!enabledAt) return false;
+    const { latestChangeTime, hasUnreadChanges } = require('/models/lib/unreadChanges');
+    const latest = latestChangeTime({
+      card,
+      checklists: ReactiveCache.getChecklists({ cardId: card._id }) || [],
+      items: ReactiveCache.getChecklistItems({ cardId: card._id }) || [],
+      attachments: ReactiveCache.getAttachments({ 'meta.cardId': card._id }) || [],
+      comments: ReactiveCache.getCardComments({ cardId: card._id }) || [],
+    });
+    return hasUnreadChanges(latest, { lastViewedAt: user.getCardLastViewedAt(card._id), enabledAt });
+  },
   hasUnreadComments() {
     const card = this;
     if (!card || !card._id) return false;

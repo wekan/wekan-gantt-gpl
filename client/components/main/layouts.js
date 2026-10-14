@@ -41,6 +41,18 @@ Template.userFormsLayout.onCreated(function () {
   // the getAuthenticationsEnabled call in onRendered.
   templateInstance.enabledOauthProviders = new ReactiveVar([]);
   templateInstance.passwordlessEnabled = new ReactiveVar(false);
+  // #5847: what the passkey sign-in said, if it failed.
+  templateInstance.passkeyMessage = new ReactiveVar('');
+  // #2460: the SQRL session being shown ({ link, svg }), and what it said.
+  templateInstance.sqrlShown = new ReactiveVar(null);
+  templateInstance.sqrlMessage = new ReactiveVar('');
+  // The page a SQRL client opened on this device signs in with its token.
+  const sqrlToken = FlowRouter.getQueryParam('sqrl');
+  if (sqrlToken && !Meteor.userId()) {
+    require('/client/lib/sqrl').signInWithSqrlToken(sqrlToken)
+      .then(() => FlowRouter.go('/'))
+      .catch(() => templateInstance.sqrlMessage.set(TAPi18n.__('sqrl-sign-in-failed')));
+  }
   // The ROOT_URL origin and this page's, when they differ and a provider
   // login is offered (models/lib/loginOriginMismatch.js).
   templateInstance.loginOriginMismatch = new ReactiveVar(null);
@@ -270,7 +282,9 @@ Template.userFormsLayout.onRendered(function () {
   });
 });
 
-Template.userFormsLayout.onDestroyed(() => {
+Template.userFormsLayout.onDestroyed(function () {
+  // #2460: a SQRL session still waiting stops polling.
+  this.sqrlCancelled = true;
   // Stop drag-scrolling <body> after leaving login / register (e.g. once logged
   // in) so other layouts keep their normal behaviour.
   disablePageDragscroll();
@@ -278,6 +292,11 @@ Template.userFormsLayout.onDestroyed(() => {
 });
 
 Template.userFormsLayout.helpers({
+  passkeysSupported() { return require('/client/lib/passkeys').passkeysSupported(); },
+  passkeyMessage() { return Template.instance().passkeyMessage.get(); },
+  sqrlOffered() { return require('/client/lib/sqrl').sqrlOffered(Template.instance().currentSetting.get()); },
+  sqrlShown() { return Template.instance().sqrlShown.get(); },
+  sqrlMessage() { return Template.instance().sqrlMessage.get(); },
   logoSettingsReady() {
     return Template.instance().subscriptionsReady();
   },
@@ -370,6 +389,40 @@ Template.main.helpers({
 });
 
 Template.userFormsLayout.events({
+  // #5847: the browser offers this site's passkeys; the server verifies one.
+  async 'click .js-passkey-sign-in'(event, templateInstance) {
+    event.preventDefault();
+    templateInstance.passkeyMessage.set('');
+    try {
+      await require('/client/lib/passkeys').signInWithPasskey();
+      FlowRouter.go('/');
+    } catch (error) {
+      if (error && error.name === 'NotAllowedError') return; // the person closed the browser's dialog
+      templateInstance.passkeyMessage.set(TAPi18n.__(error.reason === 'passkey-invalid' || error.error === 'passkey-invalid'
+        ? 'passkey-invalid' : 'passkey-sign-in-failed'));
+    }
+  },
+  // #2460: show the SQRL link and code, and wait for the SQRL client.
+  async 'click .js-sqrl-sign-in'(event, templateInstance) {
+    event.preventDefault();
+    templateInstance.sqrlMessage.set('');
+    const run = (templateInstance.sqrlRun || 0) + 1;
+    templateInstance.sqrlRun = run;
+    try {
+      const ended = await require('/client/lib/sqrl').runSqrlSession('login', {
+        show: shown => templateInstance.sqrlShown.set(shown),
+        cancelled: () => templateInstance.sqrlCancelled || templateInstance.sqrlRun !== run,
+      });
+      if (ended === 'signed-in') FlowRouter.go('/');
+      else if (ended === 'expired') {
+        templateInstance.sqrlShown.set(null);
+        templateInstance.sqrlMessage.set(TAPi18n.__('sqrl-expired'));
+      }
+    } catch (error) {
+      templateInstance.sqrlShown.set(null);
+      templateInstance.sqrlMessage.set(TAPi18n.__(error && error.error === 'sqrl-needs-https' ? 'sqrl-needs-https' : 'sqrl-sign-in-failed'));
+    }
+  },
   'change .js-userform-set-language'(event) {
     const tag = $(event.currentTarget).val();
     // setLanguage is async; surface a failed load instead of silently leaving

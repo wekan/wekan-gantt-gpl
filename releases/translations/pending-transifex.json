@@ -2087,6 +2087,554 @@
     {
       "key": "keep-title-tags-description",
       "since": "2026-10-14"
+    },
+    {
+      "key": "deposit-subtasks-swimlane",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "deposit-subtasks-swimlane-auto",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "rules-read-only-for-members",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "rules-read-only-for-members-desc",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "rules-visible-to-members",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "r-rules-not-shown",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "account-webhook",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "account-webhook-desc",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "account-webhook-on-login",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "account-webhook-on-register",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "account-webhook-fields",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "account-webhook-field-email",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "account-webhook-field-ip",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "account-webhook-field-fullname",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "account-webhook-field-authMethod",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "r-email-add-member",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "r-email-members-hint",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "ntfy",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "ntfy-description",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "ntfy-enabled",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "ntfy-topic-url",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "ntfy-token",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "ntfy-invalid-topic-url",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "ntfy-invalid-token",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "webhook-mattermost-dm",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "webhook-mattermost-dm-desc",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "share-target-title",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "share-target-pick-board",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "share-target-create",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "share-target-empty",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "log-out-everywhere",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "logoutEverywherePopup-title",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "log-out-everywhere-confirm",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "passkeysPopup-title",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "passkeys-description",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "passkeys-none",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "passkey-name",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "passkey-add",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "passkeys-unsupported",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "passkey-added",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "passkey-invalid",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "passkey-sign-in",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "passkey-sign-in-failed",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "passkey-expired",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "passkey-exists",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "passkey-too-many",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "passkey-needs-https",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "passkey-cancelled",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "hide-board",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "hiddenBoardsPopup-title",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "hidden-boards-none",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "subtask-from-board",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "checklist-item-assignee",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "checklist-item-assignee-none",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "checklistItemAssigneePopup-title",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "shared-list-headers",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "shared-list-headers-desc",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "board-label-name",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "board-label-name-includes",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "board-label-apply",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "board-label-remove",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "board-facet-clear",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "cardKindPopup-title",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "card-kind-none",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "card-kind-story",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "card-kind-task",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "custom-field-card-kinds",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "show-unread-changes",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "show-unread-changes-desc",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "card-has-unread-changes",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "webhook-activities",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "webhook-activities-all",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "activity-feed-title",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "activity-feed-empty",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "activity-feed-more",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "web-push",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "web-push-description",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "web-push-enable",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "web-push-disable",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "web-push-denied",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "web-push-failed",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "link-list-from-board",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "link-list-create",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "linkListPopup-title",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "link-list-board",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "link-list-list",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "board-view-column-sets",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "feature-views-column-sets",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "feature-views-column-sets-desc",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "column-sets",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "column-set-new",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "column-new",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "column-set-remove",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "column-remove",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "column-not-placed",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "column-sets-empty",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "column-color",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "cardDrawingPopup-title",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "card-drawing-new",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "card-drawing-undo",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "card-drawing-clear",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "card-drawing-download-svg",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "card-drawing-saved",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "group-member-add",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "group-member-remove",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "group-members-read-only",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "activity-pub-enabled",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "activity-pub-desc",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "caldav-sync",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "caldav-sync-desc",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "caldav-url",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "caldav-app-password",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "caldav-enabled",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "caldav-sync-now",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "caldav-invalid-url",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "caldav-not-linked",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "webdav-storage",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "webdav-storage-description",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "webdav-endpoint",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "webdav-password",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "webdav-folder",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "move-storage-webdav",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "sqrl-enabled",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "sqrl-desc",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "sqrl-sign-in",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "sqrl-scan",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "sqrl-open-client",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "sqrl-expired",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "sqrl-sign-in-failed",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "sqrl-needs-https",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "sqrlPopup-title",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "sqrl-description",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "sqrl-add",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "sqrl-added",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "sqrl-none",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "sqrl-remove",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "sqrl-disabled-by-client",
+      "since": "2026-10-14"
     }
   ]
 }

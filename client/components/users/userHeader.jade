@@ -120,10 +120,32 @@ template(name="memberMenuPopup")
             a.js-two-factor-auth
               i.fa.fa-shield
               | {{_ 'twoFactorAuthPopup-title'}}
+      //- #4265: boards this member left that came through a team.
+      li
+        a.js-hidden-boards
+          i.fa.fa-eye-slash
+          | {{_ 'hiddenBoardsPopup-title'}}
+      //- #5847: sign in with a passkey instead of a password.
+      unless isSandstorm
+        li
+          a.js-passkeys
+            i.fa.fa-key
+            | {{_ 'passkeysPopup-title'}}
+      //- #2460: sign in with a SQRL identity.
+      if sqrlOffered
+        li
+          a.js-sqrl
+            i.fa.fa-qrcode
+            | {{_ 'sqrlPopup-title'}}
       li
         a.js-change-language
           i.fa.fa-flag
           | {{_ 'changeLanguagePopup-title'}}
+      //- #2026 / #1377: what happened on all my boards.
+      li
+        a(href="{{pathFor 'activity-feed'}}")
+          i.fa.fa-history
+          | {{_ 'activity-feed-title'}}
       if isSupportPageEnabled
         li
           a(href="{{pathFor 'support'}}")
@@ -136,6 +158,16 @@ template(name="memberMenuPopup")
         a.js-logout
           i.fa.fa-sign-out
           | {{_ 'log-out'}}
+      //- #5847: end every session of this account - other browsers, phones,
+        the desktop app - and this one.
+      li
+        a.js-logout-everywhere
+          i.fa.fa-power-off
+          | {{_ 'log-out-everywhere'}}
+
+template(name="logoutEverywherePopup")
+  p {{_ 'log-out-everywhere-confirm'}}
+  button.js-confirm.negate.full(type="submit") {{_ 'log-out-everywhere'}}
 
 template(name="invitePeoplePopup")
   ul#registration-setting.setting-detail
@@ -202,6 +234,68 @@ template(name="supportPopup")
 
 template(name="changePasswordPopup")
   +atForm(state='changePwd')
+
+//- #5847: this account's passkeys (server/passkeys.js), added on this device
+  and removed from any.
+template(name="passkeysPopup")
+  .passkeys-popup
+    p.quiet {{_ 'passkeys-description'}}
+    ul.pop-over-list
+      each passkeys
+        li.passkey-row
+          i.fa.fa-key
+          |  {{name}}
+          span.quiet  {{createdText}}
+          a.js-remove-passkey(data-id=id title="{{_ 'remove'}}")
+            i.fa.fa-trash
+      else
+        li.quiet {{_ 'passkeys-none'}}
+    if supported
+      form.js-add-passkey
+        input.js-passkey-name(type="text" maxlength="60" placeholder="{{_ 'passkey-name'}}" aria-label="{{_ 'passkey-name'}}")
+        button.primary.js-add-passkey-button(type="submit") {{_ 'passkey-add'}}
+    else
+      p.quiet {{_ 'passkeys-unsupported'}}
+    if message
+      p.quiet= message
+
+//- #2460: this account's SQRL identity (server/sqrl.js): added with the
+  member's SQRL client, removed from here.
+template(name="sqrlPopup")
+  .sqrl-popup
+    p.quiet {{_ 'sqrl-description'}}
+    if mine
+      if mine.added
+        p
+          i.fa.fa-check
+          |  {{_ 'sqrl-added'}}
+        if mine.disabled
+          p.quiet {{_ 'sqrl-disabled-by-client'}}
+        button.js-sqrl-remove(type="button") {{_ 'sqrl-remove'}}
+      else
+        p.quiet {{_ 'sqrl-none'}}
+        if shown
+          .sqrl-box
+            a.sqrl-qr(href=shown.link aria-label="{{_ 'sqrl-open-client'}}") {{{shown.svg}}}
+            p.quiet {{_ 'sqrl-scan'}}
+            a.button(href=shown.link) {{_ 'sqrl-open-client'}}
+        else
+          button.primary.js-sqrl-add(type="button") {{_ 'sqrl-add'}}
+    if message
+      p.quiet= message
+
+//- #4265: the boards this member hid by leaving them; each comes back to
+  All Boards with Restore. Access is the board's own, as before.
+template(name="hiddenBoardsPopup")
+  ul.pop-over-list.hidden-boards-popup
+    each hiddenBoards
+      li
+        span= title
+        a.js-restore-hidden-board(data-id=_id)
+          i.fa.fa-undo
+          |  {{_ 'restore'}}
+    else
+      li.quiet {{_ 'hidden-boards-none'}}
 
 template(name="twoFactorAuthPopup")
   //- Issue #3058: opt-in per-user TOTP two-factor authentication, via
@@ -311,6 +405,13 @@ template(name="changeSettingsPopup")
         i.fa.fa-arrows
         | {{_ 'show-desktop-drag-handles'}}
         if isShowDesktopDragHandles
+          i.fa.fa-check
+    //- #2111 / #1604: mark cards changed since I last opened them.
+    li
+      a.js-toggle-unread-changes(title="{{_ 'show-unread-changes-desc'}}")
+        i.fa.fa-circle
+        | {{_ 'show-unread-changes'}}
+        if isUnreadChanges
           i.fa.fa-check
     //- #1273: keep the #label / @member text in a new card's title.
     li

@@ -568,6 +568,13 @@ function boardsForView(tpl) {
     if (membershipOrs.length) {
       query.$and.splice(2, 0, { $or: membershipOrs });
     }
+    // #4265: boards this user hid by leaving them stay out of All Boards.
+    const hidden = currUser?.profile?.hiddenBoards;
+    if (Array.isArray(hidden) && hidden.length) query.$and.push({ _id: { $nin: hidden } });
+    // #4791: only the chosen facet's boards (the drag-ordered view).
+    const { facetSelector } = require('/models/lib/allBoardsFacets');
+    const facetPart = facetSelector(tpl.boardFacet && tpl.boardFacet.get(), currUser?.profile?.boardLabels);
+    if (facetPart) query.$and.push(facetPart);
   } else if (
     allowPrivateVisibilityOnly !== undefined &&
     !allowPrivateVisibilityOnly.booleanValue
@@ -789,6 +796,24 @@ Template.boardList.onCreated(function () {
   // #5799: server-side pagination state for the sorted (non-custom) modes.
   this.boardsPageVar = new ReactiveVar(1);
   this.pagedBoardsVar = new ReactiveVar({ ids: [], total: 0 });
+  // #4791: the facet bar - first characters, organizations, teams and the
+  // member's own board labels with their counts - and the chosen group.
+  this.boardFacet = new ReactiveVar(null);
+  this.boardFacets = new ReactiveVar({ chars: [], orgs: [], teams: [], labels: [] });
+  this.loadBoardFacets = () => Meteor.call('allBoardsFacets', (error, facets) => {
+    if (!error && facets) this.boardFacets.set(facets);
+  });
+  this.loadBoardFacets();
+  // #802: the organization or team tab picked, and its members.
+  this.selectedGroup = new ReactiveVar(null);
+  this.groupMembers = new ReactiveVar({ canManage: false, members: [] });
+  this.loadGroupMembers = () => {
+    const group = this.selectedGroup.get();
+    if (!group) return;
+    Meteor.call('groupMembers', group.kind, group.id, (error, result) => {
+      this.groupMembers.set(error ? { canManage: false, members: [] } : result);
+    });
+  };
   // #5850: the user's orgs/teams that have the per-org/team Shared Templates
   // flag set (plus email domains), fetched via a non-admin server method since
   // the org/team publications are admin-only. Gates the drag-to-share targets.
@@ -893,9 +918,10 @@ Template.boardList.onCreated(function () {
     const search = (this.boardSearchVar.get() || '').trim();
     const menu = this.selectedMenu.get();
     const page = this.boardsPageVar.get();
+    const facet = this.boardFacet.get();
     Meteor.call(
       'getAllBoardsPage',
-      { search, sortBy, menu, page, perPage: BOARDS_PER_PAGE },
+      { search, sortBy, menu, page, perPage: BOARDS_PER_PAGE, ...(facet ? { facet } : {}) },
       (err, res) => {
         if (err) {
           console.error('getAllBoardsPage failed:', err);
@@ -967,6 +993,29 @@ Template.boardList.onRendered(function () {
 });
 
 Template.boardList.helpers({
+  // #4791: the facet bar.
+  boardFacets() { return Template.instance().boardFacets.get(); },
+  hasBoardFacets() {
+    const f = Template.instance().boardFacets.get();
+    return f.chars.length + f.orgs.length + f.teams.length + f.labels.length > 1;
+  },
+  isFacet(type) {
+    const f = Template.instance().boardFacet.get();
+    return !!(f && f.type === type && f.value === (this.key || ''));
+  },
+  hasBoardFacet() { return !!Template.instance().boardFacet.get(); },
+  // #802
+  myGroups() {
+    const { myGroups } = require('/models/lib/groupMembers');
+    return myGroups(ReactiveCache.getCurrentUser());
+  },
+  isSelectedGroup() {
+    const g = Template.instance().selectedGroup.get();
+    return !!(g && g.kind === this.kind && g.id === this.id);
+  },
+  selectedGroup() { return Template.instance().selectedGroup.get(); },
+  groupMembers() { return Template.instance().groupMembers.get().members; },
+  canManageGroup() { return Template.instance().groupMembers.get().canManage; },
   userHasTeams() {
     if (ReactiveCache.getCurrentUser()?.teams?.length > 0) return true;
     else return false;
@@ -1075,6 +1124,14 @@ Template.boardList.helpers({
   isStarred() {
     const user = ReactiveCache.getCurrentUser();
     return user && user.hasStarred(this._id);
+  },
+
+  // #4265: not an active member - so it is here through a team, organization
+  // or e-mail domain - and not the archive.
+  canHideBoard() {
+    const userId = Meteor.userId();
+    if (!userId || this.archived) return false;
+    return !(this.members || []).some(m => m && m.userId === userId && m.isActive !== false);
   },
 
   // When this board was archived, in the reader's own date format. Shown only
@@ -1512,6 +1569,76 @@ function persistBoardOrderFromDom(evt, tpl) {
 }
 
 Template.boardList.events({
+  // #802: an organization or team tab: its boards, and its members.
+  'click .js-select-group'(evt, tpl) {
+    evt.preventDefault();
+    const { kind, id } = evt.currentTarget.dataset;
+    const current = tpl.selectedGroup.get();
+    if (current && current.kind === kind && current.id === id) {
+      tpl.selectedGroup.set(null);
+      tpl.boardFacet.set(null);
+      return;
+    }
+    const { myGroups } = require('/models/lib/groupMembers');
+    const group = myGroups(ReactiveCache.getCurrentUser()).find(g => g.kind === kind && g.id === id);
+    tpl.selectedGroup.set(group || { kind, id, name: '' });
+    tpl.boardFacet.set({ type: kind, value: id });
+    tpl.boardsPageVar.set(1);
+    tpl.loadGroupMembers();
+  },
+  async 'click .js-add-group-member-button, submit .js-add-group-member'(evt, tpl) {
+    evt.preventDefault();
+    const group = tpl.selectedGroup.get();
+    const username = String(tpl.$('.js-group-member-username').val() || '').trim();
+    if (!group || !username) return;
+    try {
+      await Meteor.callAsync('addGroupMember', group.kind, group.id, username);
+      tpl.$('.js-group-member-username').val('');
+      tpl.loadGroupMembers();
+    } catch (error) {
+      alert(error?.reason || error?.message || 'Could not add the member.');
+    }
+  },
+  async 'click .js-remove-group-member'(evt, tpl) {
+    evt.preventDefault();
+    const group = tpl.selectedGroup.get();
+    if (!group) return;
+    await Meteor.callAsync('removeGroupMember', group.kind, group.id, evt.currentTarget.dataset.userId);
+    tpl.loadGroupMembers();
+  },
+  // #4791: pick a group of the facet bar, again to clear it.
+  'click .js-board-facet'(evt, tpl) {
+    evt.preventDefault();
+    const { type, value } = evt.currentTarget.dataset;
+    const current = tpl.boardFacet.get();
+    tpl.boardFacet.set(current && current.type === type && current.value === value ? null : { type, value });
+    tpl.boardsPageVar.set(1);
+  },
+  'click .js-board-facet-clear'(evt, tpl) {
+    evt.preventDefault();
+    tpl.boardFacet.set(null);
+    tpl.boardsPageVar.set(1);
+  },
+  async 'click .js-apply-board-label-button, submit .js-apply-board-label'(evt, tpl) {
+    evt.preventDefault();
+    const label = String(tpl.$('.js-board-label-name').val() || '');
+    const text = String(tpl.$('.js-board-label-text').val() || '');
+    try {
+      await Meteor.callAsync('applyBoardLabel', label, text);
+      tpl.$('.js-board-label-name').val('');
+      tpl.$('.js-board-label-text').val('');
+      tpl.loadBoardFacets();
+    } catch (error) {
+      alert(error?.reason || error?.message || 'Could not label the boards.');
+    }
+  },
+  async 'click .js-remove-board-label'(evt, tpl) {
+    evt.preventDefault();
+    evt.stopPropagation();
+    await Meteor.callAsync('removeBoardLabel', evt.currentTarget.dataset.value);
+    if (tpl.boardFacet.get()?.type === 'label') tpl.boardFacet.set(null);
+    tpl.loadBoardFacets();
+  },
   // Boards in Archive no longer NAVIGATES anywhere. It is a section of this
   // page, drawn beside the left menu by the generic `js-select-menu` click
   // below - selecting it from a menu row and then losing the menu is a menu
@@ -1617,6 +1744,18 @@ Template.boardList.events({
     const total = tpl.pagedBoardsVar.get().total || 0;
     tpl.boardsPageVar.set(adjacentPage(total, tpl.boardsPageVar.get(), 1,
       BOARDS_PER_PAGE));
+  },
+  // #4265: leave a board that came through a team: it is hidden for this user.
+  'click .js-hide-board'(evt, tpl) {
+    evt.preventDefault();
+    evt.stopPropagation();
+    const boardId = this._id;
+    if (!boardId) return;
+    Meteor.call('quitBoard', boardId, (err) => {
+      if (err) return;
+      const paged = tpl.pagedBoardsVar.get();
+      tpl.pagedBoardsVar.set({ ids: (paged.ids || []).filter(id => id !== boardId), total: Math.max(0, (paged.total || 1) - 1) });
+    });
   },
   'click .js-star-board'(evt) {
     evt.preventDefault();

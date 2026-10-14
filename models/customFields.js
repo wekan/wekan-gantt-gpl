@@ -114,6 +114,18 @@ CustomFields.attachSchema(
       type: Boolean,
       defaultValue: false,
     },
+    cardKinds: {
+      /**
+       * #2012: the card kinds this field belongs to ('story', 'task'); empty
+       * is every card (models/lib/cardKinds.js).
+       */
+      type: Array,
+      optional: true,
+    },
+    'cardKinds.$': {
+      type: String,
+      allowedValues: ['story', 'task'],
+    },
     showSumAtTopOfList: {
       /**
        * should the sum of the custom fields be shown at top of list?

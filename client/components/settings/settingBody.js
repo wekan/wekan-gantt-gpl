@@ -1046,6 +1046,34 @@ Template.tableVisibilityModeSettings.events({
   // ── Features (#6736) ──────────────────────────────────────────────────────
   // Every feature row's tick, the two policies and the pilot users, in one
   // server method that validates them against the catalog.
+  // #2460
+  async 'click .js-toggle-sqrl'(event, instance) {
+    event.preventDefault();
+    try {
+      await Meteor.callAsync('saveSqrlEnabled', !instance.$('#sqrl-enabled').hasClass('is-checked'));
+    } catch (error) {
+      console.error(error);
+    }
+  },
+  // #4198
+  async 'click .js-toggle-activity-pub'(event, instance) {
+    event.preventDefault();
+    try {
+      await Meteor.callAsync('saveActivityPubEnabled', !instance.$('#activity-pub-enabled').hasClass('is-checked'));
+    } catch (error) {
+      console.error(error);
+    }
+  },
+  // #2217: saved at once, like a tick that changes nothing by itself.
+  async 'click .js-toggle-rules-read-only'(event, instance) {
+    event.preventDefault();
+    const box = instance.$('#rules-read-only-for-members');
+    try {
+      await Meteor.callAsync('saveRulesReadOnlyForMembers', !box.hasClass('is-checked'));
+    } catch (error) {
+      console.error(error);
+    }
+  },
   async 'click button.js-optional-apis-save'(event, instance) {
     event.preventDefault();
     const states = {};
@@ -1789,6 +1817,9 @@ Template.email.events({
 // never published.
 Template.webhookSettings.onCreated(function () {
   this.internalHosts = new ReactiveVar('');
+  // #2290: the login and registration webhook, through site-admin methods.
+  this.accountWebhook = new ReactiveVar({ url: '', token: '', onLogin: false, onRegister: false, fields: [] });
+  Meteor.call('getAccountWebhook', (error, value) => { if (!error && value) this.accountWebhook.set(value); });
   Meteor.call('getWebhookInternalHosts', (error, hosts) => {
     if (!error) this.internalHosts.set((hosts || []).join('\n'));
   });
@@ -1796,9 +1827,43 @@ Template.webhookSettings.onCreated(function () {
 
 Template.webhookSettings.helpers({
   internalHosts() { return Template.instance().internalHosts.get(); },
+  accountWebhook() { return Template.instance().accountWebhook.get(); },
+  accountWebhookFields() {
+    const { EXTRA_FIELDS } = require('/models/lib/accountWebhook');
+    const on = Template.instance().accountWebhook.get().fields || [];
+    return EXTRA_FIELDS.map(key => ({ key, on: on.includes(key), labelKey: `account-webhook-field-${key}` }));
+  },
 });
 
 Template.webhookSettings.events({
+  'click .js-account-webhook-tick'(event, tpl) {
+    event.preventDefault();
+    const key = event.currentTarget.dataset.key;
+    const value = { ...tpl.accountWebhook.get() };
+    value[key] = !value[key];
+    tpl.accountWebhook.set(value);
+  },
+  'click .js-account-webhook-field'(event, tpl) {
+    event.preventDefault();
+    const field = event.currentTarget.dataset.field;
+    const value = { ...tpl.accountWebhook.get() };
+    const fields = new Set(value.fields || []);
+    if (fields.has(field)) fields.delete(field); else fields.add(field);
+    value.fields = [...fields];
+    tpl.accountWebhook.set(value);
+  },
+  'click .js-save-account-webhook'(event, tpl) {
+    event.preventDefault();
+    const status = tpl.$('.js-account-webhook-status');
+    const value = { ...tpl.accountWebhook.get(),
+      url: String(tpl.$('.js-account-webhook-url').val() || ''),
+      token: String(tpl.$('.js-account-webhook-token').val() || '') };
+    Meteor.call('saveAccountWebhook', value, (error, saved) => {
+      if (error) { status.text(error.reason || error.message); return; }
+      tpl.accountWebhook.set(saved);
+      status.text(TAPi18n.__('feature-saved'));
+    });
+  },
   'click .js-save-webhook-internal-hosts'(event, tpl) {
     event.preventDefault();
     const status = tpl.$('.js-webhook-internal-hosts-status');

@@ -288,6 +288,8 @@ import '/server/notifications/notifications';
 import '/server/notifications/outgoing';
 import '/server/notifications/webhookQueue';
 import '/server/notifications/profile';
+// #5148: ntfy, per member.
+import '/server/notifications/ntfy';
 import '/server/notifications/watch';
 
 // ----------------------------------------------------------------------------
@@ -352,6 +354,35 @@ import '/server/compatApi/githubLike';
 import '/server/bots';
 // Admin Panel / Settings / Global Webhooks / Internal destinations.
 import '/server/webhookInternalHosts';
+// Admin Panel / Settings / Global Webhooks / Login and registration (#2290).
+import '/server/accountWebhook';
+// #1040: the JS Web Labels page for LibreJS.
+import '/server/jsWebLabels';
+// #1293: Android share target.
+import '/server/shareTarget';
+// #5847: passkey (WebAuthn) login.
+import '/server/passkeys';
+// #1931: an existing card from another board as a subtask.
+import '/server/crossBoardSubtasks';
+// #864: adding a card from the Table view.
+import '/server/tableViewCards';
+// #4791: All Boards facets and the member's board labels.
+import '/server/allBoardsFacets';
+// #2026 / #1377: the all-boards activity feed.
+import '/server/activityFeed';
+// #2026 / #1377: browser push notifications.
+import '/server/webPush';
+// #2809: linked whole lists.
+import '/server/linkedLists';
+// #802: All Boards organization and team tabs.
+import '/server/groupMembers';
+// #4198: ActivityPub for public boards.
+import '/server/activityPub';
+// #687: CalDAV sync of card due dates.
+import '/server/caldavSync';
+import '/server/sharedDescription';
+// #2460: SQRL sign-in.
+import '/server/sqrl';
 
 // ----------------------------------------------------------------------------
 // 14. Server — routes (REST API, file serving)

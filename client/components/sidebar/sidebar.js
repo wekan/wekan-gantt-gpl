@@ -1,3 +1,4 @@
+import { currentRulesAccess } from '/client/lib/rulesAccess';
 import '/client/components/forms/dateFormatSettings';
 import { Meteor } from 'meteor/meteor';
 import { Template } from 'meteor/templating';
@@ -768,6 +769,10 @@ Template.boardSwimlaneSettingsPopup.helpers({
     const board = Utils.getCurrentBoard();
     return Boolean(board && board.getSwimlaneHeightResizeLocked());
   },
+  hasSharedListHeaders() {
+    const board = Utils.getCurrentBoard();
+    return Boolean(board && board.hasSharedListHeaders());
+  },
 });
 
 Template.boardSwimlaneSettingsPopup.events({
@@ -775,6 +780,12 @@ Template.boardSwimlaneSettingsPopup.events({
     const board = Utils.getCurrentBoard();
     if (!board) return;
     board.setSwimlaneHeightResizeLocked(!board.getSwimlaneHeightResizeLocked());
+  },
+  // #2805: one shared, sticky list header row (models/boards.js).
+  'click .js-toggle-shared-list-headers'() {
+    const board = Utils.getCurrentBoard();
+    if (!board) return;
+    board.setSharedListHeaders(!board.hasSharedListHeaders());
   },
   // #2489: Board Settings / Swimlane / WIP Limit Groups. Opened from inside
   // this popup, so Popup.open stacks it and its back arrow returns here.
@@ -920,6 +931,8 @@ Template.wipLimitGroupsPopup.events({
 });
 
 Template.boardMenuPopup.helpers({
+  // #2217: a member reads the board's Rules when both switches allow it.
+  rulesReadable() { return currentRulesAccess() === 'read'; },
   isBoardAdmin() {
     return ReactiveCache.getCurrentUser()?.isBoardAdmin();
   },
@@ -1203,6 +1216,17 @@ Template.membersWidget.events({
 });
 
 Template.outgoingWebhooksPopup.helpers({
+  // #2026 / #1377: the activity picker of an existing webhook (this).
+  webhookPicker() {
+    const { pickerState } = require('/models/lib/webhookActivityPicker');
+    return pickerState(this.activities);
+  },
+  webhookActivityGroups() {
+    const { pickerState } = require('/models/lib/webhookActivityPicker');
+    const { GROUP_KEYS } = require('/models/lib/notificationActivityGroups');
+    const state = pickerState(this.activities);
+    return GROUP_KEYS.map(key => ({ key, labelKey: `notification-activity-${key}`, checked: !state.all && state.groups.includes(key) }));
+  },
   webhookGranted(integrationId) {
     return webhookGrants.get(integrationId) === true;
   },
@@ -1253,7 +1277,7 @@ Template.outgoingWebhooksPopup.events({
       console.error('sandstormRequestWebhook', error);
     }
   },
-  'click .js-toggle-webhook-enabled'(evt) {
+  'click .js-toggle-webhook-enabled, click .js-toggle-webhook-mattermost-dm, click .js-toggle-webhook-activity-all, click .js-toggle-webhook-activity-group'(evt) {
     evt.preventDefault();
     $(evt.currentTarget).find(MCB).toggleClass(CKCLS);
   },
@@ -1271,12 +1295,25 @@ Template.outgoingWebhooksPopup.events({
       .find(MCB)
       .hasClass(CKCLS);
     let remove = false;
+    // #2026 / #1377: the picked activities, in an existing webhook's form.
+    const allToggle = $(evt.target).find('.js-toggle-webhook-activity-all');
+    let pickedActivities;
+    if (allToggle.length) {
+      const { activitiesFor } = require('/models/lib/webhookActivityPicker');
+      pickedActivities = activitiesFor({ all: allToggle.find(MCB).hasClass(CKCLS),
+        groups: $(evt.target).find('.js-toggle-webhook-activity-group').toArray()
+          .filter(el => $(el).find(MCB).hasClass(CKCLS)).map(el => el.dataset.group) });
+    }
+    // #1297: present only in an existing webhook's form.
+    const dmToggle = $(evt.target).find('.js-toggle-webhook-mattermost-dm');
     const values = {
       url,
       type,
       token,
       title,
       enabled,
+      ...(dmToggle.length ? { mattermostDirectMessages: dmToggle.find(MCB).hasClass(CKCLS) } : {}),
+      ...(pickedActivities ? { activities: pickedActivities } : {}),
     };
 
     const findIntegration = function(cond) {
@@ -1831,6 +1868,24 @@ Template.boardSubtaskSettingsBody.helpers({
     );
     return lists.length > 0;
   },
+  // #1953: the deposit board's swimlanes, for the landing swimlane picker.
+  depositSwimlanes() {
+    const tpl = Template.instance();
+    const depositBoardId =
+      tpl.currentBoard.subtasksDefaultBoardId || tpl.currentBoard._id;
+    return ReactiveCache.getSwimlanes(
+      { boardId: depositBoardId, archived: false },
+      { sort: { sort: 1 } },
+    );
+  },
+  isSwimlaneSelected() {
+    const tpl = Template.instance();
+    return tpl.currentBoard.subtasksDefaultSwimlaneId === Template.currentData()._id;
+  },
+  isNullSwimlaneSelected() {
+    const tpl = Template.instance();
+    return !tpl.currentBoard.subtasksDefaultSwimlaneId;
+  },
   isListSelected() {
     // #3876 / #4947: the selected landing list must be compared against
     // subtasksDefaultListId (the stored list id), NOT subtasksDefaultBoardId.
@@ -1871,6 +1926,8 @@ Template.boardSubtaskSettingsBody.events({
     // newly-selected board starts fresh.
     if (value !== tpl.currentBoard.subtasksDefaultBoardId) {
       tpl.currentBoard.setSubtasksDefaultListId(null);
+      // #1953: the swimlane belonged to the old board as well.
+      tpl.currentBoard.setSubtasksDefaultSwimlaneId(null);
     }
     tpl.currentBoard.setSubtasksDefaultBoardId(value);
     evt.preventDefault();
@@ -1881,6 +1938,14 @@ Template.boardSubtaskSettingsBody.events({
       value = null;
     }
     tpl.currentBoard.setSubtasksDefaultListId(value);
+    evt.preventDefault();
+  },
+  'change .js-field-deposit-swimlane'(evt, tpl) {
+    let value = evt.target.value;
+    if (value === 'null' || value === '') {
+      value = null;
+    }
+    tpl.currentBoard.setSubtasksDefaultSwimlaneId(value);
     evt.preventDefault();
   },
   'click .js-field-show-parent-in-minicard'(evt, tpl) {
@@ -3111,9 +3176,12 @@ Template.addBoardOrgPopup.onRendered(function() {
 });
 
 Template.addBoardOrgPopup.helpers({
+  // #5141: only the admin's own organizations (all of them for a site admin).
   orgsDatas() {
-    let ret = ReactiveCache.getOrgs({}, {sort: { orgDisplayName: 1 }});
-    return ret;
+    const user = ReactiveCache.getCurrentUser();
+    const { offeredGroups } = require('/models/lib/boardGroupLinks');
+    return offeredGroups(ReactiveCache.getOrgs({}, { sort: { orgDisplayName: 1 } }),
+      ((user && user.orgs) || []).map(o => o && o.orgId), !!(user && user.isAdmin));
   },
 });
 
@@ -3333,9 +3401,12 @@ Template.addBoardTeamPopup.onRendered(function() {
 });
 
 Template.addBoardTeamPopup.helpers({
+  // #5141: only the admin's own teams (all of them for a site admin).
   teamsDatas() {
-    let ret = ReactiveCache.getTeams({}, {sort: { teamDisplayName: 1 }});
-    return ret;
+    const user = ReactiveCache.getCurrentUser();
+    const { offeredGroups } = require('/models/lib/boardGroupLinks');
+    return offeredGroups(ReactiveCache.getTeams({}, { sort: { teamDisplayName: 1 } }),
+      ((user && user.teams) || []).map(t => t && t.teamId), !!(user && user.isAdmin));
   },
 });
 

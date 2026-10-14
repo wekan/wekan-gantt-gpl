@@ -301,6 +301,30 @@ Settings.attachSchema(
     'webhookInternalHosts.$': {
       type: String,
     },
+    // #2290: the login and registration webhook (models/lib/accountWebhook.js):
+    // { url, token, onLogin, onRegister, fields }. Never published.
+    accountWebhook: {
+      type: Object,
+      optional: true,
+      blackbox: true,
+    },
+    // #2460: SQRL sign-in (server/sqrl.js). Off by default.
+    sqrlEnabled: {
+      type: Boolean,
+      optional: true,
+    },
+    // #4198: public boards publish their card activity over ActivityPub
+    // (models/lib/activityPub.js). Off by default.
+    activityPubEnabled: {
+      type: Boolean,
+      optional: true,
+    },
+    // #2217: boards may show their Rules to members, read-only
+    // (models/lib/rulesReadOnly.js). Off by default.
+    rulesReadOnlyForMembers: {
+      type: Boolean,
+      optional: true,
+    },
     // Admin Panel / Settings / Visibility / Optional APIs
     // (models/lib/optionalApis.js): { trello, jira, github, gitea } - each
     // compatible API is off unless ticked here.
