@@ -10,7 +10,7 @@ This is without container (without Docker or Snap).
 
 Right click and download files 1-4:
 
-1. [wekan-12.47-win64.zip](https://github.com/wekan/wekan/releases/download/v12.47/wekan-12.47-win64.zip) or newest available at https://github.com/wekan/wekan/releases/
+1. [wekan-12.48-win64.zip](https://github.com/wekan/wekan/releases/download/v12.48/wekan-12.48-win64.zip) or newest available at https://github.com/wekan/wekan/releases/
 
 2. [node.exe](https://nodejs.org/dist/latest-v26.x/win-x64/node.exe)
 
@@ -22,7 +22,7 @@ Right click and download files 1-4:
 
 6. Double click `mongodb-windows-x86_64-7.0.34-signed.msi` . In installer, uncheck downloading MongoDB compass.
 
-7. Unzip `wekan-12.47-win64.zip` , inside it is directory `bundle`, to it copy other files:
+7. Unzip `wekan-12.48-win64.zip` , inside it is directory `bundle`, to it copy other files:
 
 ```
 bundle (directory)
@@ -86,13 +86,10 @@ Caddyfile:
 ```
 wekan.example.com {
         tls {
-            load C:\wekan\certs\example.com.pem
+            load C:\wekan\certs
             alpn http/1.1
         }
-        proxy / localhost:2000 {
-          websocket
-          transparent
-        }
+        reverse_proxy localhost:2000
 }
 ```
 
@@ -288,13 +285,10 @@ extract .zip file, and copy caddy.exe to above directory structure.
 ```
 wekan.example.com {
         tls {
-            load C:\wekan\certs\example.com.pem
+            load C:\wekan\certs
             alpn http/1.1
         }
-        proxy / localhost:2000 {
-          websocket
-          transparent
-        }
+        reverse_proxy localhost:2000
 }
 ```
 11. Open `cmd.exe` terminal, write there:
