@@ -11,6 +11,7 @@
 const { test, expect } = require('../fixtures');
 const db = require('../helpers/db');
 const { navigateInApp } = require('../helpers/auth');
+const { smtpSink } = require('../helpers/smtpSink');
 
 const DOMAIN = 'boards.e2e.example.test';
 const escapeRegExp = text => String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -24,12 +25,24 @@ function enableInbound() {
 }
 
 async function openView(page, board, view) {
-  await page.evaluate(([v, id]) => Meteor.callAsync('setBoardView', v, id), [view, board.boardId]);
+  // After a reload the new connection signs in again from the login cookie;
+  // a method called before that answers "Must be logged in" (on a fast
+  // server, such as the production bundle).
+  await page.waitForFunction(() => typeof Meteor !== 'undefined' && Meteor.userId && Meteor.userId() && !Meteor.loggingIn(),
+    undefined, { timeout: 30_000 });
+  // A refusal names its code and reason; the minified client error alone does not.
+  await page.evaluate(async ([v, id]) => {
+    try { await Meteor.callAsync('setBoardView', v, id); } catch (e) { throw new Error(`setBoardView: ${e.error} ${e.reason || e.message}`); }
+  }, [view, board.boardId]);
   await navigateInApp(page, `/b/${board.boardId}/${board.slug}`);
 }
 
 test.describe('Email view', () => {
   test('folders, labels, rows, the card popup and Compose', async ({ boardPage: page, board, user }) => {
+    // Compose sends real mail: catch it locally, as the other mail specs do,
+    // or Send answers "The email could not be sent" with no server to take it.
+    test.skip(!process.env.WEKAN_TEST_SMTP_PORT, 'Requires the local SMTP capture port');
+    const sink = await smtpSink(Number(process.env.WEKAN_TEST_SMTP_PORT));
     const restore = enableInbound();
     try {
       const labelId = db.uid('lbl');
@@ -105,6 +118,9 @@ test.describe('Email view', () => {
       await compose.locator('.js-email-text').fill('Here is the quote.');
       await compose.locator('button[type="submit"]').click();
       await expect(compose).toHaveCount(0);
+      // It really went out, to the recipient, under the subject.
+      await expect.poll(() => sink.messages.some(m => m.recipients.some(r => r.includes('client@example.test'))
+        && /Quote for the printer/.test(m.data))).toBe(true);
       await expect.poll(() => db.findOne('cards', { boardId: board.boardId, title: 'Quote for the printer' })?.email?.direction)
         .toBe('out');
       const sentCard = db.findOne('cards', { boardId: board.boardId, title: 'Quote for the printer' });
@@ -130,6 +146,7 @@ test.describe('Email view', () => {
       await page.keyboard.press('Escape');
     } finally {
       restore();
+      await sink.close();
     }
   });
 
@@ -206,6 +223,8 @@ test.describe('Chat view', () => {
     await view.locator('.chat-view-tree .js-chat-fold').click();
     await expect(view.locator('.chat-view-tree')).toHaveCount(0);
     await expect(view.locator('.js-chat-unfold[data-pane="tree"]')).toBeVisible();
+    // The double caret stays visible on the folded pane (2026-10-15).
+    await expect(view.locator('.js-chat-unfold[data-pane="tree"] .fa-angle-double-right')).toBeVisible();
     await expect.poll(() => db.findOne('users', { _id: user.id }).profile.chatViewLayout?.treeCollapsed).toBe(true);
     await view.locator('.js-chat-unfold[data-pane="tree"]').click();
     await expect(view.locator('.chat-view-tree')).toBeVisible();
@@ -217,6 +236,7 @@ test.describe('Chat view', () => {
     await view.locator('.js-chat-unfold[data-pane="card"]').click();
     await view.locator('.chat-view-chat .js-chat-fold').click();
     await expect(view.locator('.js-chat-unfold[data-pane="chat"]')).toBeVisible();
+    await expect(view.locator('.js-chat-unfold[data-pane="chat"] .fa-angle-double-left')).toBeVisible();
     await view.locator('.js-chat-unfold[data-pane="chat"]').click();
 
     // Resize: drag the border right of the tree 120px wider.
@@ -339,11 +359,20 @@ test.describe('Chat view', () => {
       expect(before).toBe(true);
       await moved.locator(':scope > .chat-view-row').click();
       await expect(moved.locator('[data-kind="card"] .chat-view-unread')).toHaveText('1');
-      // Negative: my own message is never unread to me.
+      // A card from another board opens in the middle, with its conversation,
+      // and the page stays on this board (2026-10-15).
+      const here = page.url();
+      await moved.locator('[data-kind="card"] .js-chat-select-card').click();
+      await expect(page.locator('.chat-view-card .card-details')).toContainText('Talk here');
+      await expect(page.locator('.chat-view-message', { hasText: 'Hello' })).toBeVisible();
+      expect(page.url()).toBe(here);
+      // Opening it in the middle read "Hello". Negative: my own message after
+      // that is never unread to me, so nothing is unread on that board.
       db.insertOne('card_comments', { _id: db.uid('cmt'), boardId: other.boardId, cardId: talk._id, userId: user.id,
         text: 'Mine', createdAt: new Date(), modifiedAt: new Date() });
       await view_reload(page, board);
-      await expect(page.locator(`.chat-view-tree [data-kind="board"][data-id="${other.boardId}"] > .chat-view-row .chat-view-unread`)).toHaveText('1');
+      await expect(page.locator(`.chat-view-tree [data-kind="board"][data-id="${other.boardId}"]`)).toBeVisible();
+      await expect(page.locator(`.chat-view-tree [data-kind="board"][data-id="${other.boardId}"] > .chat-view-row .chat-view-unread`)).toHaveCount(0);
     } finally {
       db.deleteMany('card_comments', { boardId: other.boardId });
       db.cleanup({ boardIds: [other.boardId], userIds: [friend.id] });

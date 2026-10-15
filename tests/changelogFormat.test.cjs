@@ -166,7 +166,10 @@ test('TODO Later says what is NOT done, and thanks nobody for it', () => {
     (/^# v\d/.test(l) || l === '# Upcoming WeKan ® release'));
   const section = lines.slice(start, end);
   const inSection = ALL.filter(b => b.line > start && b.line < end);
-  assert.ok(inSection.length >= 5, 'the backlog is grouped by category');
+  // At least the opening block that says what the list is. The categories
+  // shrink as the backlog is built (2026-10-15: down to translations), and an
+  // emptied category is removed rather than kept as an empty heading.
+  assert.ok(inSection.length >= 1, 'the backlog opens by saying what it is');
   for (const b of inSection) {
     assert.ok(!/Thanks to /.test(b.summary),
       `line ${b.line}: nothing is done yet, so there is nobody to thank`);
@@ -180,8 +183,10 @@ test('TODO Later says what is NOT done, and thanks nobody for it', () => {
   // translations, backups, an e-mailed report. So the rule is now the thing
   // itself: the issue triage categories exist, and no category names an issue
   // without linking it.
-  const withIssues = inSection.filter(b => /\/issues\//.test(b.body)).length;
-  assert.ok(withIssues >= 3, 'the issue triage categories link the issues they are about');
+  // On 2026-10-14 and 2026-10-15 the built issues left it too (#5758, #2698,
+  // #337, #2208, #4790 closed), and with Jira sync from a Sandstorm grain
+  // working the last category naming an issue went: what is left is work no
+  // single issue tracks. The rule that stays is the one below.
   for (const b of inSection) {
     const bare = /(^|[^\[\/\w])#\d{3,5}\b/.exec(b.body.replace(/\[#\d+\]\([^)]*\)/g, ''));
     assert.ok(!bare, `line ${b.line}: an issue named without its link: ${bare && bare[0]}`);

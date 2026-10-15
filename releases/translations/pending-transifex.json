@@ -2791,6 +2791,46 @@
     {
       "key": "chat-view-message-cards",
       "since": "2026-10-14"
+    },
+    {
+      "key": "sandstorm-sync-jira-hint",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "import-attachment-auth",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "import-attachment-auth-hint",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "import-attachment-auth-url",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "import-attachment-auth-token",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "board-load-failed",
+      "since": "2026-10-14"
+    },
+    {
+      "key": "restoreAllSkippedPopup-title",
+      "since": "2026-10-15"
+    },
+    {
+      "key": "restore-card-wip-limit-reached",
+      "since": "2026-10-15"
+    },
+    {
+      "key": "restore-card-no-list-with-room",
+      "since": "2026-10-15"
+    },
+    {
+      "key": "restore-all-skipped-wip-limit",
+      "since": "2026-10-15"
     }
   ]
 }
