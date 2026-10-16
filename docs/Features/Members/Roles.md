@@ -122,13 +122,9 @@ How it is enforced:
 Each of those used to carry its own list of flags, and the lists had drifted —
 which is what the first three gaps below were.
 
-**Which cards they see** is the card publications, not an allow rule: for a member
-with `isNormalAssignedOnly`, `isCommentAssignedOnly` or `isReadAssignedOnly`, the
-card cursors are narrowed with `assignees: { $in: [userId] }` — in
-`server/publications/boards.js` (eager card loading) and
-`server/publications/cardsWindow.js` (lazy card loading), through
-`assignedOnlyCardScope()` in `models/lib/boardCardScope.js`. The window's
-comments, attachments, checklists and checklist items follow the same scope.
+**Which cards they see** is decided on the server for every board view, every
+API and every write - see [Roles in every board view](#roles-in-every-board-view)
+below.
 
 **Board settings, members, roles** is `isBoardAdmin()`.
 
@@ -141,6 +137,121 @@ That policy reads the update itself and allows only a move (`listId`,
 or an `$addToSet` / `$pull` of the caller's OWN id on `assignees`. Anything else —
 a title, a label, somebody else's name, a whole-document replacement, an operator
 it does not recognise — is refused.
+
+## Roles in every board view
+
+A role is a property of the member on **the board**, not of the view they look
+at it through. Every board view, the API and every write ask the same question
+of the same code, so switching from Swimlanes to Table, Calendar, Email or Chat
+never shows a member a card their role hides, and never lets them change one.
+This matters for the three assigned-only roles (and custom roles that see only
+assigned cards, which carry the same flags): such a member sees and changes
+**only the cards assigned to them** - `card.assignees` contains their user id.
+Being one of a card's *members*, its requester or its assigner is not the same
+thing and does not show them the card.
+
+The rule is one function, `assignedOnlyCardScope()` / `assignedOnlyAllowsCard()`
+in `models/lib/boardCardScope.js`, and the server applies it - the UI only
+decides what to draw. A view that has no server source of its own draws from the
+board's published cards, which are already narrowed.
+
+### Custom roles in every board view
+
+A [custom role](#custom-roles) from **Admin Panel → People → Roles → Custom
+roles** is applied in every board view exactly as a built-in role is, because
+every view asks the same two things of the member:
+
+- **What may they do?** - comment, create and edit, move cards, invite. This
+  is asked of the capability table (`memberCan()` / `roleCan()` in
+  `models/lib/boardRoleCapabilities.js`), which answers from the custom role
+  itself for a member who carries one.
+- **Which cards may they see?** - this is asked of the member's flags
+  (`isAssignedOnlyMember()`), and a custom role writes those flags. A role
+  whose **Sees all cards** is off gives its members one of the three
+  assigned-only flags (`fallbackRoleFor()` picks only among built-in roles
+  that see no more cards than the role does), so in every view below they see
+  and change only the cards assigned to them. A role with **Sees all cards**
+  on never carries an assigned-only flag.
+
+So the table below is the same for a custom role: read "an assigned-only
+member" as "a member whose role does not see all cards", built-in or custom.
+A custom role that may write but sees only assigned cards writes only its own
+cards, in every view and method, and is refused by REST writes, like Normal,
+assigned only.
+
+The two never drift apart:
+
+- **Giving the role** to a member writes its flags with it
+  (`boards.setMemberCustomRole`).
+- **Changing the role** in the Admin Panel rewrites the flags of every member
+  who has it, on every board, at once (`refreshMembersOf`) - turning **Sees
+  all cards** off narrows every view for all of them immediately, and turning
+  it on widens them again.
+- **Choosing a built-in role** removes the custom one, so its flags and its
+  capabilities are the built-in role's alone (`setMemberPermission`).
+- **Deleting the role** leaves its members on the flags it wrote, which see
+  no more cards than the role did.
+
+`tests/boardRoleViews.test.cjs` builds a member for every combination of
+custom role capabilities, as the server writes it, and checks that each view's
+rule narrows them exactly when their role does not see all cards - and that
+nothing sets the flags without the custom role following.
+`server/lib/tests/customBoardRoles.tests.js` checks on a running server that
+turning **Sees all cards** off and on again reaches the member.
+
+### Which source each view reads
+
+| Board view | Where its cards come from | For an assigned-only member |
+|---|---|---|
+| Swimlanes, Lists, Calendar, Calendar Mode, Multi Board Calendar, Bigboard, Gantt, Frappe Gantt, DHTMLX Gantt, Roadmap, Map, Column sets | the `board` publication and `boardCardsWindow` (lazy loading) | only their cards, with those cards' comments, checklists, attachments and reactions; parent, linked and dependency cards by the role on **their own** board |
+| Version Control | the board's published cards; closing or reopening an issue moves a card | only their cards, and only those can be closed or reopened |
+| Table | `boardTablePage` through `publishBoardMatches` | only their cards, in the rows and in the page counts |
+| Product Backlog, Sprints, Sprint Report, Velocity | `scrum.getBoardData` | only their cards; sprint snapshots, totals and rollover progress are narrowed to them |
+| Statistics | `boardStatus` | counts of their cards only |
+| Timeline | the `activities` publication | the board's activities that name no card, and those of their cards - on linked boards too, by their role there |
+| Email | `emailViewPage` and `emailViewCount` | every folder, label and search holds only their cards; replying by email works only on their own cards |
+| Chat | `chatViewChannels`, `chatViewBoardChannels`, `chatViewCardComments` | channels and conversations of their cards only |
+| Dashboard, Burndown, Burnup, Cumulative Flow, Control, Cycle Time, Flow Efficiency, Lead Time, Throughput Histogram, WIP Run, Pulse, Aging WIP, Blocker Analysis, Monte Carlo Forecasts, Process Behavior (XmR), Work Item Size vs. Cycle Time, Time, Group by Assignee | `boardChartData` | **not available**: these charts are computed from every card of the board, so they are refused (`canExportBoardData` in `models/lib/exportAccess.js`). The Scrum charts above narrow to the member's own cards instead. |
+
+The same rule reaches what is around the views:
+
+- **Card search and filters** (`boardTextMatches`, `boardMovementMatches`),
+  Global Search, Due Cards, My Cards and My Attachments - only their cards.
+- **All Boards** - the tiles' card counts count their cards; the activity feed
+  shows their cards' activities.
+- **Notifications** - an old notification shows its card only while the member
+  may still read it, so a card that is no longer theirs, or a board they left,
+  stops appearing there.
+- **Position history** - of their cards, and of the board's lists and
+  swimlanes.
+- **Change history** (undo, redo, restore) - of their cards only; a list or
+  swimlane snapshot can hold other cards, so it is not shown to them.
+- **Exports** (JSON, CSV, Excel, PDF, ZIP, iCalendar) - refused, as the charts
+  are, because an export is the whole board.
+- **REST API** - board reads and board writes are refused for an assigned-only
+  member (`Authentication.checkBoardAccess` and `checkBoardWriteAccess` in
+  `server/authentication.js`): those routes return or act on any card of the
+  board by id. `GET /api/user/cards` lists only their cards.
+- **Writes** - a Normal, assigned only member may create cards and edit, comment
+  on, move, watch, copy and attach files to their own cards. Every write to a
+  card asks the card (`canEditCardOrLinkedCard` in
+  `server/lib/linkedCardPermission.js`), so changing, commenting on, running a
+  card's button rule on, moving a checklist of, watching or copying another
+  member's card is refused, whatever view or method it comes from. Moving or
+  copying a whole list or swimlane is refused, because it carries cards they
+  cannot see.
+
+A request that no view would send for such a member - asking for another card
+by id - is recorded under **AssignedBleed** in **Admin Panel → Problems**, with
+the path that refused it. Opening a view, searching and API calls are narrowed or
+refused without a record, because a member reaches them in ordinary use.
+
+`tests/boardRoleViews.test.cjs` fails when a server file that serves card data
+has no role rule and no stated reason, and `tests/assignedOnlyReads.test.cjs`
+does the same for attachments and document text. A new board view needs no
+code of its own for this as long as it draws from those sources; one that adds
+a publication or method of its own must apply `assignedOnlyCardScope()` there,
+and the test will say so if it does not.
 
 ## Fixed
 
