@@ -98,14 +98,224 @@ Which databases WeKan supports
 <details>
 <summary>Carried to a future release.</summary>
 
-What is not built yet, checked against the code on 2026-10-15: nothing. Every
-item is built and in the releases and old-CHANGELOG/, also what is not yet
-tested against a live service. New work that cannot be done here is added
-below by category, with its reason.
+What is not built yet, checked against the code on 2026-10-17: nothing. The
+helpers that need no AI and the whiteboard are built and in the Upcoming
+release. New work that cannot be done here is added below by category, with
+its reason.
 
 </details>
 
 </details>
+
+# v12.51 2026-10-17 WeKan ® release
+
+**In short:** eleven **helpers that need no AI** - features other kanban
+apps sell as AI, done here with plain code: a **due date from the title**,
+**similar cards**, **rule suggestions**, a board **Summary**, **Since your last
+visit**, **At risk**, **suggested members**, a **forecast done date**, a
+**checklist from the description**, **action items** and **search phrases**.
+A card's drawing also opens as a **whiteboard** that several people draw on
+at once, and **Apple Glass Pastel** is now Liquid Glass. Each can be hidden
+per board or for the whole WeKan. A **CodeQL** alert in a test is fixed.
+
+This release fixes the following SECURITY ISSUES found by GitHub CodeQL code scanning:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6090be4dfd">Alert #588: a test removes template declarations to a fixed point</a>. Thanks to GitHub CodeQL and xet7.</summary>
+
+js/incomplete-multi-character-sanitization in
+tests/templatesAreRendered.test.cjs: one replace each removed template
+declarations and Template.<name>.helpers/onCreated/... from the source the
+test scans, so removing one could splice its neighbours into another. Both
+now repeat until nothing changes, as for alerts #545 and #570-#582, and
+tests/tagStrippingFixedPoint.test.cjs now also finds a multi-character removal
+of an on<Capital> name outside such a loop anywhere in the tree. A test's
+source scan, never run on user input, so nothing reaches Admin Panel ->
+Problems.
+
+</details>
+
+and adds the following new features:
+
+**Helpers that need no AI** - computed from the board's own data, hidden like
+every other optional part, and translated in every language.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f8267d704e">A due date typed at the end of a card title becomes its due date</a>. Thanks to xet7.</summary>
+
+"Call the printer tomorrow 14:00", "Soita huomenna klo 14", "friday 9:30",
+"in 3 days" or "23.10." at the end of a new card's title gives the card that
+due date, and the words leave the title. The words come from the browser's
+own Intl tables (relative days, weekdays, the language's date order and the
+word before a time), so every language works without a word list, and English
+works in every language. Only the end of the title is read, a time alone needs
+a colon, a day word or am/pm, and "Release 1.2" is never a date. A hint under
+the field shows the date and its x keeps the words; the opened card's title
+reads it only when the title changed. Board Settings / Card row *Due date
+from title*. models/lib/titleDueDate.js; tests/titleDueDate.test.cjs checks
+eleven languages, the negatives and every WeKan language tag, and
+assist-due-from-title.e2e.js the form, the x, the board switch and the
+opened card.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f8267d704e">Similar cards and possible duplicates while adding a card and on the opened card</a>. Thanks to xet7.</summary>
+
+Letter triples and the Dice coefficient - letter pairs for scripts written
+without spaces - rank the board's open cards against the title being typed or
+the opened card's title and description. The add-card form lists up to three,
+marking one 80 % alike or more as a possible duplicate; the opened card has a
+Similar cards section. The method cards.similar reads through
+server/lib/assistGate.js: a board the caller may read, the board's switch and
+the Admin Panel's, and for an assigned-only member only the cards assigned to
+them. tests/similarCards.test.cjs and assist-similar-cards.e2e.js, with the
+assigned-only and switched-off negatives.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2211b24119">Rules suggests rules from what people keep doing by hand</a>. Thanks to xet7.</summary>
+
+When the same person does one thing to a card and within two minutes
+another, the pair is counted once per card; seen on three cards in 30 days it
+is offered above the rule list - moved to a list then a label, a member or
+archive, and so on. A pair a rule already does is not offered. Create goes
+through rules.createRule with the trigger and action the wizard builds, and
+Dismiss hides one for that admin on that board. Board admins only, and
+Admin Panel / Settings / Visibility / Features has a Rule suggestions tick.
+tests/ruleSuggestions.test.cjs and assist-rule-suggestions.e2e.js.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/083c863fb7">Board menu: Summary, what each person did in the last day or week</a>. Thanks to xet7.</summary>
+
+Per person: done (marked complete, given an end date, archived or moved into
+the last list), moved, added, commented, and what they have overdue now -
+from the activities and History, only the cards the reader may see. Copy as
+text gives Markdown with card links. An Admin Panel / Settings / Visibility /
+Features tick. tests/boardSummary.test.cjs and assist-board-summary.e2e.js.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/083c863fb7">Board menu: Since your last visit, with how many changes</a>. Thanks to xet7.</summary>
+
+What others changed since the visit before this one, grouped by card. Opening
+a board remembers the visit in profile.boardVisits (500 boards at most) even
+while the feature is hidden; a board never opened shows its last seven days.
+tests/sinceLastVisit.test.cjs and assist-since-last-visit.e2e.js.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/083c863fb7">At risk: a triangle on the minicard and the reasons in the opened card</a>. Thanks to xet7.</summary>
+
+A weighted score: overdue 3, due within two days with less than half the
+checklist done 2, blocked by an open card 2, idle 14 days in a middle list
+2, moved back twice 1 (the opened card counts those). 3 or more is at risk;
+a complete card never is. models/lib/cardRisk.js; tests/cardRisk.test.cjs and
+assist-at-risk.e2e.js.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/083c863fb7">Suggested members in the Members and Assignees popups</a>. Thanks to xet7.</summary>
+
+Up to three active board members, by points from the board's open cards that
+share this card's labels (2 each), list (1) and swimlane (1); people already
+on the card are skipped. A Show on Card row only, the one row with no
+minicard side. tests/memberSuggestions.test.cjs and
+assist-suggested-members-forecast.e2e.js.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/083c863fb7">Forecast done date for one card, 50 % and 85 %</a>. Thanks to xet7.</summary>
+
+From the cycle times of the board's cards finished in 180 days, counting only
+those that took at least as long as this card has been open; fewer than five
+say so. The server sends the times once per board, numbers only, scoped by
+role. On the opened card's dates, and on the minicard when a board turns that
+side on. tests/cardForecast.test.cjs and the e2e above.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3cb089b8ca">Checklists: From description makes a checklist or subtasks from its list</a>. Thanks to xet7.</summary>
+
+The description's list lines - "- ", "* ", "+ ", "1. ", "1) " and task boxes,
+never inside a code block - are previewed, then made into a checklist ticked
+where the line was [x], or into subtasks through addSubtaskCard. The
+description is not changed. tests/descriptionListItems.test.cjs and
+assist-from-text.e2e.js.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3cb089b8ca">Cards from the action items of a comment or a description</a>. Thanks to xet7.</summary>
+
+"TODO: ...", "- [ ] ..." and "@user ..." lines become cards at the top of the
+card's list, each linking back to the card, with the mentioned user as member
+when they are an active board member - a mention of anybody else stays in the
+title. On the comment's line, and in the card menu for the description.
+tests/actionItems.test.cjs and assist-from-text.e2e.js.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3cb089b8ca">Global search understands plain phrases such as my overdue cards</a>. Thanks to xet7.</summary>
+
+Ten phrases in the reader's language, and in English everywhere, run as the
+search operators in the reader's language; the page shows the query it ran,
+and a query that already has an operator is never rewritten. An Admin Panel /
+Settings / Visibility / Features tick. tests/searchPhrases.test.cjs and
+assist-search-phrases.e2e.js.
+
+</details>
+
+**Apple Glass Pastel** - the theme as Apple's Liquid Glass, readable everywhere.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0c49f7f51b">Liquid Glass surfaces, and every text and icon measured readable</a>. Thanks to xet7.</summary>
+
+Header bars, swimlanes, lists, minicards, the opened card, the sidebar and
+popups are frosted glass over the pastel mesh: a translucent fill, blur and
+saturation, a rim of light brightest on top, a diagonal sheen and larger
+corners. The header bars are glass instead of solid blue, with dark text;
+blue stays for the primary action and what is active. Reduce transparency
+gets near-opaque surfaces. theme-appleglasspastel-contrast.e2e.js measures
+every text and icon against the pixels really behind it, to WCAG AA, on the
+board, card, sidebar, board menu and All Boards at laptop and phone size; it
+found white header text and icons, the forced-white hamburger, grey sidebar
+headings and icons, and a white hovered menu row, all fixed.
+
+</details>
+
+**Whiteboard** - a card's drawing full screen, for several people at once.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/390007e380">A card's drawing opens as a whiteboard that several people draw on at once</a>. Thanks to xet7.</summary>
+
+Card menu -> Drawing -> Open as whiteboard: the drawing under the header bar,
+over the opened card, with the drawing's and Red Strings' own colours, widths,
+Undo, Clear and Save picture, scaled to the screen. Each line is one atomic
+$push with its id and author, carried to everyone by the card's publication;
+Undo and Clear take away only one's own lines, Save picture writes only the
+PNG. Who may draw is who may edit the card. A Board Settings / Card row.
+tests/whiteboard.test.cjs, and whiteboard.e2e.js draws from two browsers at
+the same moment.
+
+</details>
+
+and improves the documentation:
+
+- [docs/Features: guides for the eleven helpers that need no AI, filed by menu](https://github.com/wekan/wekan/commit/e76f12bcdd),
+  and TODO Later lists them. Thanks to xet7.
+- [docs/Features: Cards / Whiteboard](https://github.com/wekan/wekan/commit/d9bb7b4f4f). Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
 
 # v12.50 2026-10-17 WeKan ® release
 

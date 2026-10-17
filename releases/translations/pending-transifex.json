@@ -2831,6 +2831,290 @@
     {
       "key": "restore-all-skipped-wip-limit",
       "since": "2026-10-15"
+    },
+    {
+      "key": "due-from-title",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "due-from-title-keep",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "similar-cards",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "similar-cards-none",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "possible-duplicate",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "rule-suggestions",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "rule-suggestion-when-moved",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "rule-suggestion-when-created",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "rule-suggestion-when-label",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "rule-suggestion-then-label",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "rule-suggestion-then-member",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "rule-suggestion-then-archive",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "rule-suggestion-count",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "rule-suggestion-create",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "rule-suggestion-dismiss",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "feature-rule-suggestions",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "feature-rule-suggestions-desc",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "summary-last-day",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "summary-last-week",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "summary-copy",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "summary-commented",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "feature-board-summary",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "feature-board-summary-desc",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "since-last-visit",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "since-last-visit-count",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "since-visit-none",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "since-visit-created",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "since-visit-moved",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "since-visit-commented",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "since-visit-due",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "since-visit-member",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "since-visit-archived",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "since-visit-label",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "since-visit-edited",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "feature-since-last-visit",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "feature-since-last-visit-desc",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "at-risk",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "at-risk-reason-overdue",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "at-risk-reason-due-soon",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "at-risk-reason-blocked",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "at-risk-reason-idle",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "at-risk-reason-sent-back",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "suggested-members",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "forecast",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "forecast-done",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "forecast-not-enough",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "checklist-from-description",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "from-description",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "make-checklist",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "make-subtasks",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "action-items",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "action-items-create",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "action-items-from",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "search-phrase-my-overdue-cards",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "search-phrase-my-cards",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "search-phrase-overdue-cards",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "search-phrase-due-this-week",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "search-phrase-unassigned-cards",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "search-phrase-cards-without-due-date",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "search-phrase-created-today",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "search-phrase-changed-this-week",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "search-phrase-archived-cards",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "search-phrase-cards-with-attachments",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "search-phrases-searching",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "feature-search-phrases",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "feature-search-phrases-desc",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "whiteboard",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "whiteboard-open",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "whiteboard-clear-mine",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "whiteboard-save-picture",
+      "since": "2026-10-17"
+    },
+    {
+      "key": "whiteboard-read-only",
+      "since": "2026-10-17"
     }
   ]
 }

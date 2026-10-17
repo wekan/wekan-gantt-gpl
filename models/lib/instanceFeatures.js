@@ -58,6 +58,17 @@ const FEATURES = [
   // #211
   { key: 'views-column-sets', labelKey: 'feature-views-column-sets', descKey: 'feature-views-column-sets-desc',
     views: ['board-view-column-sets'] },
+  // The board and search helpers that need no AI
+  // (docs/Features/General/Assistants/Assistants.md): no board view of their
+  // own, so `views` is empty and allowFeature() / featureOnFor() decide.
+  { key: 'rule-suggestions', labelKey: 'feature-rule-suggestions', descKey: 'feature-rule-suggestions-desc',
+    views: [] },
+  { key: 'board-summary', labelKey: 'feature-board-summary', descKey: 'feature-board-summary-desc',
+    views: [] },
+  { key: 'since-last-visit', labelKey: 'feature-since-last-visit', descKey: 'feature-since-last-visit-desc',
+    views: [] },
+  { key: 'search-phrases', labelKey: 'feature-search-phrases', descKey: 'feature-search-phrases-desc',
+    views: [] },
 ];
 
 const FEATURE_KEYS = FEATURES.map(feature => feature.key);

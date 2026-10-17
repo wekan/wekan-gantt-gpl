@@ -21,7 +21,9 @@
 //   flag/default   - a plain board flag: the generic 'js-board-card-flag'
 //                    handler toggles `field`, and a board that never set it
 //                    reads `default` (what that surface drew before the row
-//                    had this side). Every row has both sides (2026-10-02). `personal: true` marks
+//                    had this side). Every row has both sides (2026-10-02),
+//                    except a helper that works only in the opened card
+//                    (Suggested members). `personal: true` marks
 //                    the two rows that are the user's or the card's own rather
 //                    than the board's (sidebar.css .card-settings-row-personal);
 //                    `after` places a row that has NO element of its own on the
@@ -210,6 +212,30 @@ const CARD_SETTINGS_ROWS = [
   { key: 'unreadComments', icons: ['fa-comment'], label: ['card-has-unread-comments'],
     card: { toggle: 'js-board-card-flag', field: 'allowsUnreadCommentsOnCard', flag: true, default: false, after: 'comments' },
     minicard: { toggle: 'js-board-card-flag', field: 'allowsUnreadCommentsOnMinicard', flag: true, default: true, after: 'commentCount' } },
+
+  // The helpers that need no AI (docs/Features/General/Assistants/Assistants.md).
+  // For these a side is where the helper works rather than something drawn:
+  // the add-card form is the minicard's, the opened card is the card's.
+  { key: 'dueFromTitle', icons: ['fa-calendar-plus-o'], label: ['due-from-title'],
+    card: { toggle: 'js-board-card-flag', field: 'allowsDueFromTitleOnCard', flag: true, default: true, after: 'dueDate' },
+    minicard: { toggle: 'js-board-card-flag', field: 'allowsDueFromTitleOnMinicard', flag: true, default: true, after: 'dueDate' } },
+  { key: 'similarCards', icons: ['fa-clone'], label: ['similar-cards'],
+    card: { toggle: 'js-board-card-flag', field: 'allowsSimilarCardsOnCard', flag: true, default: true, after: 'textNotes' },
+    minicard: { toggle: 'js-board-card-flag', field: 'allowsSimilarCardsOnMinicard', flag: true, default: true, after: 'dueFromTitle' } },
+  { key: 'atRisk', icons: ['fa-exclamation-triangle'], label: ['at-risk'],
+    card: { toggle: 'js-board-card-flag', field: 'allowsAtRiskOnCard', flag: true, default: true, after: 'dueDate' },
+    minicard: { toggle: 'js-board-card-flag', field: 'allowsAtRiskOnMinicard', flag: true, default: true, after: 'dueDate' } },
+  { key: 'suggestedMembers', icons: ['fa-user-plus'], label: ['suggested-members'],
+    card: { toggle: 'js-board-card-flag', field: 'allowsSuggestedMembersOnCard', flag: true, default: true, after: 'members' } },
+  { key: 'forecast', icons: ['fa-line-chart'], label: ['forecast'],
+    card: { toggle: 'js-board-card-flag', field: 'allowsForecastOnCard', flag: true, default: true, after: 'endDate' },
+    minicard: { toggle: 'js-board-card-flag', field: 'allowsForecastOnMinicard', flag: true, default: false, after: 'atRisk' } },
+  { key: 'checklistFromDescription', icons: ['fa-list-ul'], label: ['checklist-from-description'],
+    card: { toggle: 'js-board-card-flag', field: 'allowsChecklistFromDescriptionOnCard', flag: true, default: true, after: 'checklists' } },
+  { key: 'whiteboard', icons: ['fa-expand'], label: ['whiteboard'],
+    card: { toggle: 'js-board-card-flag', field: 'allowsWhiteboardOnCard', flag: true, default: true, after: 'attachments' } },
+  { key: 'actionItems', icons: ['fa-tasks'], label: ['action-items'],
+    card: { toggle: 'js-board-card-flag', field: 'allowsActionItemsOnCard', flag: true, default: true, after: 'comments' } },
 
   // The Scrum fields, one row each, "Scrum settings: Sprint" and so on: shown
   // where the board's order puts them, like any other row. `scrum` names the

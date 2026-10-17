@@ -20,6 +20,10 @@ import {
 import { canArchiveCard } from '/client/lib/archivePermission';
 import { isTextSelectionInsideCard } from '/client/lib/cardCloseGuard';
 import { placeCardDetailsX, MARGIN } from '/client/lib/cardDetailsPlacement';
+import { dueFromTitle } from '/client/components/forms/titleDueHint';
+import { riskOf } from '/client/lib/cardRiskOf';
+import { suggestedMembersFor } from '/client/lib/suggestedMembers';
+import '/client/components/cards/similarCards';
 
 // Which dependency the icon picker should apply its choice to. The icon popup's
 // own data context is the dependency row (not the source card), so we capture
@@ -1253,11 +1257,18 @@ Template.cardDetails.events({
   async 'submit .js-card-details-title'(event, tpl) {
     event.preventDefault();
     const titleInput = tpl.find('.js-edit-card-title');
-    const title = titleInput ? titleInput.value.trim() : '';
+    const typed = titleInput ? titleInput.value.trim() : '';
     const card = Template.currentData();
+    // A due date typed at the end of a CHANGED title; saving the title a card
+    // already had never dates it. docs/Features/Cards/Dates/Due-Date-From-Title.md
+    const fromTitle = typed && typed !== card.title
+      ? dueFromTitle(titleInput.closest('form'), typed, 'allowsDueFromTitleOnCard')
+      : null;
+    const title = fromTitle ? fromTitle.title : typed;
     // #5809: surface a visible error instead of failing silently (see above).
     try {
       await card.setTitle(title || '');
+      if (fromTitle) await card.setDue(fromTitle.dueAt);
     } catch (error) {
       alert(errorMessage(error));
     }
@@ -1624,6 +1635,13 @@ Template.cardDetails.events({
 });
 
 
+// docs/Features/Cards/At-Risk.md: the opened card also counts moves back.
+Template.cardDetails.helpers({
+  cardAtRisk() {
+    return riskOf(Template.currentData(), { withMoves: true });
+  },
+});
+
 Template.cardDetails.helpers({
   isPopup() {
     let ret = !!Utils.getPopupCardId();
@@ -1786,6 +1804,8 @@ Template.cardDetailsActionsPopup.events({
     Utils.goBoardId(card.boardId);
     getSidebarInstance().setView('filter');
   },
+  // docs/Features/Cards/Action-Items.md: the description's action items.
+  'click .js-description-action-items': Popup.open('actionItems', { titleKey: 'action-items' }),
   // History.md §7a: adding History to a menu is a menu item and this handler,
   // opening the SAME historyTable every other scope opens.
   'click .js-card-history'(event) {
@@ -1987,6 +2007,9 @@ Template.cardMembersPopup.events({
 });
 
 Template.cardMembersPopup.helpers({
+  suggestedMembers() {
+    return suggestedMembersFor(getCurrentCardFromContext(), 'members');
+  },
   isCardMember() {
     const card = getCurrentCardFromContext();
     if (!card) return false;
@@ -3210,6 +3233,9 @@ Template.cardAssigneesPopup.events({
 });
 
 Template.cardAssigneesPopup.helpers({
+  suggestedMembers() {
+    return suggestedMembersFor(getCurrentCardFromContext(), 'assignees');
+  },
   isCardAssignee() {
     const card = getCurrentCardFromContext();
     if (!card) return false;

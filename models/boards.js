@@ -1357,6 +1357,20 @@ Boards.attachSchema(
     allowsCardButtonsOnMinicard: { type: Boolean, optional: true },
     allowsDescriptionBadgeOnCard: { type: Boolean, optional: true },
     allowsUnreadCommentsOnCard: { type: Boolean, optional: true },
+    // Helpers that need no AI: on unless a board admin turned them off.
+    // docs/Features/General/Assistants/Assistants.md
+    allowsDueFromTitleOnCard: { type: Boolean, optional: true },
+    allowsDueFromTitleOnMinicard: { type: Boolean, optional: true },
+    allowsSimilarCardsOnCard: { type: Boolean, optional: true },
+    allowsSimilarCardsOnMinicard: { type: Boolean, optional: true },
+    allowsAtRiskOnCard: { type: Boolean, optional: true },
+    allowsAtRiskOnMinicard: { type: Boolean, optional: true },
+    allowsSuggestedMembersOnCard: { type: Boolean, optional: true },
+    allowsForecastOnCard: { type: Boolean, optional: true },
+    allowsForecastOnMinicard: { type: Boolean, optional: true },
+    allowsChecklistFromDescriptionOnCard: { type: Boolean, optional: true },
+    allowsActionItemsOnCard: { type: Boolean, optional: true },
+    allowsWhiteboardOnCard: { type: Boolean, optional: true },
     allowsIssueTypeOnMinicard: {
       /**
        * Does the board show the work item type badge on the minicard? It was
