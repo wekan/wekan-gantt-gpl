@@ -40,6 +40,9 @@ import '/server/lib/requestReportContext';
 import '/server/00adminOnlyFieldBoundary';
 import '/server/apiMiddleware';
 import '/server/apiAuthRoutes';
+// LockoutBleed (GHSA-2g94-9x3m-hv37): the DDP `login` half of the timing fix -
+// written then, never imported, so only the REST login was equalized.
+import '/server/loginTimingNormalization';
 
 // ----------------------------------------------------------------------------
 // 1. Shared imports (i18n, utilities, reactive cache)
@@ -106,6 +109,10 @@ import '/models/server/metrics';
 import '/server/lib/speedMiddleware';
 import '/server/lib/debugSpeed';
 import '/server/lib/cpuMonitor';
+// Siblings of the CPU monitor: memory and swap, and each filesystem WeKan
+// writes to (docs/Features/Admin-Panel/Problems/RAM-usage.md, Disk-usage.md).
+import '/server/lib/ramMonitor';
+import '/server/lib/diskMonitor';
 import '/server/lib/selfChecks';
 import '/server/models/actions';
 import '/server/models/activities';
@@ -127,6 +134,8 @@ import '/server/models/lists';
 import '/server/models/org';
 import '/server/models/rules';
 import '/server/models/settings';
+// The product name for the snap's pages shown while the database is down.
+import '/server/productNameCache';
 import '/server/models/swimlanes';
 import '/server/models/team';
 import '/server/models/translation';
@@ -415,6 +424,8 @@ import '/server/rulesHelper';
 import '/server/triggersDef';
 import '/server/scheduledRules';
 import '/server/checklistResetSchedule';
+// Whole-card recurrence: the job the card's Recurrence setting waits for.
+import '/server/cardRecurrenceSchedule';
 import '/server/autoArchiveCards';
 import '/server/listSync';
 import '/server/methods/listSync';

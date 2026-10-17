@@ -1,6 +1,6 @@
 'use strict';
 
-// The shared left menu — docs/Features/Page/Left-Menu.md.
+// The shared left menu — docs/Features/All-Boards/Left-Menu.md.
 //
 // This is the COMBINED suite for that design: the pure helpers, the template, the
 // side it appears on (and its mirroring under a right-to-left language), the
@@ -31,7 +31,7 @@ const libSrc = read('models/lib/leftMenu.js');
 const jade = read('client/components/settings/leftMenu.jade');
 const css = read('client/components/settings/settingBody.css');
 const tableCss = read('client/components/settings/tablePage.css');
-const doc = read('docs/Features/Page/Left-Menu.md');
+const doc = read('docs/Features/All-Boards/Left-Menu.md');
 
 const lib = {};
 new Function('exports', libSrc.replace(/export function/g, 'function') +
@@ -591,9 +591,9 @@ test('the related-files table lists files that exist', () => {
 });
 
 test('the two page designs cross-link', () => {
-  assert.ok(/\[Table\]\(Table\.md\)/.test(doc),
+  assert.ok(/\[Table\]\(\.\.\/General\/Table\.md\)/.test(doc),
     'Left-Menu.md must link to Table.md - the two compose on the same page');
-  assert.ok(fs.existsSync(path.join(root, 'docs/Features/Page/Table.md')));
+  assert.ok(fs.existsSync(path.join(root, 'docs/Features/General/Table.md')));
 });
 
 // ── the template and the pages must agree on the data shape ─────────────────
@@ -1067,6 +1067,19 @@ test('Version is the FIRST Settings pane, and has no page of its own', () => {
   assert.strictEqual(adminPath('settings', 'version-setting'),
     '/admin/settings/version',
     'which names the pane rather than leaving the first one implicit');
+});
+
+// On a phone the menu is a wrapping row (settingBody.css, max-width 800px). The
+// list kept its disc bullets, which the column hid past its edge but the row
+// showed as a dot after every entry, and a separator shrank to a dash beside an
+// entry. tests/playwright/specs/viewport-matrix.e2e.js checks it in a browser.
+test('the menu has no bullets, and on a phone each group starts a row', () => {
+  const css = read('client/components/settings/settingBody.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.ok(/\.setting-content \.content-body \.side-menu ul \{\s*list-style:\s*none;/.test(css),
+    'list-style: none on the menu list, at every width');
+  const phone = css.slice(css.indexOf('@media screen and (max-width: 800px)'));
+  assert.ok(/li\.left-menu-separator,\s*\.setting-content \.content-body \.side-menu ul li\.left-menu-heading \{\s*flex:\s*0 0 100%;/.test(phone),
+    'a separator and a group title take a whole line in the wrapping row');
 });
 
 console.log(`\nleftMenu: ${passed} tests passed`);

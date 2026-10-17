@@ -105,6 +105,7 @@ const EXPECTED = [
   'js-outgoing-webhooks',
   'hr',
   'js-open-archives',
+  'js-open-original-positions',
   'js-archive-board',
 ];
 
@@ -158,6 +159,8 @@ test('the reorder kept every guard (negative: nothing became visible to more peo
   assert.deepStrictEqual(guardsOf('js-open-notification-settings'), [admin]);
   assert.deepStrictEqual(guardsOf('js-outgoing-webhooks'), [admin]);
   assert.deepStrictEqual(guardsOf('js-open-archives'), [], 'Archived items is open to everyone who sees the board');
+  assert.deepStrictEqual(guardsOf('js-open-original-positions'), [],
+    'so is Original positions: the server narrows it to what the reader may see');
   assert.deepStrictEqual(guardsOf('js-archive-board'), ['unless currentBoard.isTemplatesBoard', admin]);
 });
 
@@ -170,7 +173,7 @@ test('each group is its own ul, and a rule never follows a rule (negative)', () 
 });
 
 test('the docs draw the same order', () => {
-  const doc = read('docs/Features/Right-Sidebar/Board-Settings/Board-View.md');
+  const doc = read('docs/Features/Board-Sidebar/Board-Settings/Board-View.md');
   const diagram = doc.slice(doc.indexOf('┌─ Sidebar'), doc.indexOf('└', doc.indexOf('┌─ Sidebar')));
   const names = diagram.split('\n').slice(2)
     .map(l => (/^[│\s─]+$/.test(l) ? 'hr' : l.replace(/[│▸<-]|here/g, '').trim()))

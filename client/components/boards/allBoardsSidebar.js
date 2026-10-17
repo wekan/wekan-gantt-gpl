@@ -25,10 +25,11 @@ import {
   sidebarViewTemplate,
 } from '/models/lib/allBoardsSidebar';
 import { selectedStarTitleKey, selectedStarAction } from '/models/lib/selectedStars';
+import { errorMessage } from '/client/lib/errorMessage';
 
 // The All Boards right sidebar. Its shell mirrors the board sidebar's; what it
-// shows is this page's own. docs/Features/Page/Search.md,
-// docs/Features/Page/Multi-Selection.md
+// shows is this page's own. docs/Features/Board-Header/Search.md,
+// docs/Features/General/Multi-Selection.md
 
 Template.allBoardsSidebar.helpers({
   isSidebarOpen() {
@@ -99,7 +100,7 @@ Template.allBoardsHomeSidebar.events({
     evt.preventDefault();
     closeAllBoardsSidebar();
     // The SECTION of this page, not the full-width page it replaced.
-    // docs/Features/Page/Archive.md
+    // docs/Features/All-Boards/Archive.md
     FlowRouter.go(allBoardsPath(SECTION_ARCHIVE, []));
   },
 });
@@ -211,7 +212,7 @@ Template.allBoardsMultiSelectionSidebar.events({
     if (!ids || !confirm(TAPi18n.__('delete-board-confirm-popup'))) return;
     Meteor.call('permanentlyDeleteArchivedBoards', ids, (err) => {
       if (err) {
-        alert(err.reason || err.message || 'Failed to permanently delete boards');
+        alert(errorMessage(err));
         return;
       }
       BoardMultiSelection.reset();
@@ -243,7 +244,7 @@ Template.allBoardsMultiSelectionSidebar.events({
     ) {
       selectedBoards.forEach((boardId) => {
         Meteor.call('archiveBoard', boardId, (err) => {
-          if (err) alert(err?.reason || err?.message || 'Failed to archive board');
+          if (err) alert(errorMessage(err));
         });
       });
       BoardMultiSelection.reset();

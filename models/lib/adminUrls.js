@@ -40,7 +40,7 @@
 // Slugs are lowercase, words separated by `-`, and say what the pane IS rather
 // than what it is called internally.
 //
-// Pure: no Meteor, no FlowRouter. docs/Features/Page/Admin-Panel-URLs.md
+// Pure: no Meteor, no FlowRouter. docs/Features/Admin-Panel/Admin-Panel-URLs.md
 
 // slug -> pane id, per page. The pane id is what the page's own click handler
 // and its `activeXId()` already use, so nothing inside a page has to change.
@@ -112,6 +112,8 @@ const ADMIN_PAGES = {
       speed: 'report-speed',
       tests: 'report-tests',
       cpu: 'report-cpu',
+      ram: 'report-ram',
+      disk: 'report-disk',
       instrumentation: 'report-instrumentation',
       'broken-cards': 'report-broken',
       files: 'report-files',
@@ -205,6 +207,8 @@ const ADMIN_PANE_TITLES = {
     speed: { titleKey: 'speedReportTitle' },
     tests: { titleKey: 'testsReportTitle' },
     cpu: { titleKey: 'cpuReportTitle' },
+    ram: { titleKey: 'memory-usage' },
+    disk: { titleKey: 'sandstorm-disk-usage' },
     instrumentation: { title: 'Instrumentation' },
     'broken-cards': { titleKey: 'broken-cards' },
     files: { titleKey: 'filesReportTitle' },

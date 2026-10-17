@@ -391,7 +391,7 @@ Cards.attachSchema(
       optional: true,
       defaultValue: '',
     },
-    // List sync (docs/Features/ImportExport/Sync.md): when a card was created or
+    // List sync (docs/Features/Board-Sidebar/Board-Settings/Import-Export/Sync.md): when a card was created or
     // is kept up to date by a periodic sync job (server/listSync.js) from an
     // external tracker (Jira, GitHub, GitLab, Gitea...) rather than by hand,
     // syncExternalId is that source's own id for the item (a Jira issue key, a
@@ -2016,112 +2016,6 @@ Cards.helpers({
   getAssigners() {
     const card = this.isLinkedCard() ? ReactiveCache.getCard(this.linkedId) : this;
     return card ? card.assigners || [] : null;
-  },
-
-  assignMember(memberId) {
-    let ret;
-    if (this.isLinkedBoard()) {
-      const board = ReactiveCache.getBoard(this.linkedId);
-      ret = board.addMember(memberId);
-    } else {
-      ret = Cards.updateAsync(
-        { _id: this.getRealId() },
-        { $addToSet: { members: memberId } },
-      );
-    }
-    return ret;
-  },
-
-  assignAssignee(assigneeId) {
-    if (this.isLinkedCard()) {
-      return Cards.updateAsync(
-        { _id: this.linkedId },
-        { $addToSet: { assignees: assigneeId } },
-      );
-    } else if (this.isLinkedBoard()) {
-      const board = ReactiveCache.getBoard(this.linkedId);
-      return board.addAssignee(assigneeId);
-    } else {
-      return Cards.updateAsync(
-        { _id: this._id },
-        { $addToSet: { assignees: assigneeId } },
-      );
-    }
-  },
-
-  assignRequester(userId) {
-    return Cards.updateAsync({ _id: this.getRealId() }, { $addToSet: { requesters: userId } });
-  },
-
-  assignAssigner(userId) {
-    return Cards.updateAsync({ _id: this.getRealId() }, { $addToSet: { assigners: userId } });
-  },
-
-  unassignMember(memberId) {
-    if (this.isLinkedCard()) {
-      return Cards.updateAsync(
-        { _id: this.linkedId },
-        { $pull: { members: memberId } },
-      );
-    } else if (this.isLinkedBoard()) {
-      const board = ReactiveCache.getBoard(this.linkedId);
-      return board.removeMember(memberId);
-    } else {
-      return Cards.updateAsync({ _id: this._id }, { $pull: { members: memberId } });
-    }
-  },
-
-  unassignAssignee(assigneeId) {
-    if (this.isLinkedCard()) {
-      return Cards.updateAsync(
-        { _id: this.linkedId },
-        { $pull: { assignees: assigneeId } },
-      );
-    } else if (this.isLinkedBoard()) {
-      const board = ReactiveCache.getBoard(this.linkedId);
-      return board.removeAssignee(assigneeId);
-    } else {
-      return Cards.updateAsync(
-        { _id: this._id },
-        { $pull: { assignees: assigneeId } },
-      );
-    }
-  },
-
-  unassignRequester(userId) {
-    return Cards.updateAsync({ _id: this.getRealId() }, { $pull: { requesters: userId } });
-  },
-
-  unassignAssigner(userId) {
-    return Cards.updateAsync({ _id: this.getRealId() }, { $pull: { assigners: userId } });
-  },
-
-  toggleMember(memberId) {
-    const members = this.getMembers();
-    if (members && members.indexOf(memberId) > -1) {
-      return this.unassignMember(memberId);
-    } else {
-      return this.assignMember(memberId);
-    }
-  },
-
-  toggleAssignee(assigneeId) {
-    const assignees = this.getAssignees();
-    if (assignees && assignees.indexOf(assigneeId) > -1) {
-      return this.unassignAssignee(assigneeId);
-    } else {
-      return this.assignAssignee(assigneeId);
-    }
-  },
-
-  toggleRequester(userId) {
-    return (this.getRequesters() || []).includes(userId)
-      ? this.unassignRequester(userId) : this.assignRequester(userId);
-  },
-
-  toggleAssigner(userId) {
-    return (this.getAssigners() || []).includes(userId)
-      ? this.unassignAssigner(userId) : this.assignAssigner(userId);
   },
 
   // #3392: PI Program Board "Red Strings". Return this card's dependencies as

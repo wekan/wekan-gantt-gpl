@@ -9,6 +9,7 @@ import {
   subtaskBoardNavTarget,
 } from './subtaskViewHelpers';
 import { Utils } from '/client/lib/utils';
+import { errorMessage } from '/client/lib/errorMessage';
 const { cardParentIds, collectAllAncestorIdsSync } = require('/models/lib/cardParents');
 const { isSubtaskDone, subtaskDoneCountLabel, subtaskDoneDenial } = require('/models/lib/subtaskDone');
 const { isAssignedOnlyMember } = require('/models/lib/boardCardScope');
@@ -92,7 +93,7 @@ Template.subtasks.events({
         }
         textarea.focus();
       } catch (error) {
-        alert(error?.reason || error?.message || 'Could not create the subtask.');
+        alert(errorMessage(error));
         textarea.focus();
       }
     }
@@ -226,16 +227,7 @@ Template.subtaskDetail.events({
     try {
       await Meteor.callAsync('setSubtaskDone', data.parentCardId, subtask._id, done);
     } catch (error) {
-      alert(error?.reason || error?.message || error?.error || 'Could not change the subtask.');
-    }
-  },
-});
-
-Template.subtaskItemDetail.events({
-  async 'click .js-subtasks-item .check-box-container'() {
-    const item = Template.currentData().item;
-    if (item && item._id) {
-      await item.toggleItem();
+      alert(errorMessage(error));
     }
   },
 });
@@ -400,7 +392,7 @@ Template.addExistingSubtaskPopup.events({
       try {
         await Meteor.callAsync('addCrossBoardSubtask', parentCardId, String(cardId));
       } catch (error) {
-        alert(error?.reason || error?.message || 'Could not add the existing card as a subtask.');
+        alert(errorMessage(error));
       }
       Popup.close();
       return;
@@ -418,7 +410,7 @@ Template.addExistingSubtaskPopup.events({
       // subtask too - "A must be done before B and C", so A is under both.
       await targetCard.addParent(parentId);
     } catch (error) {
-      alert(error?.reason || error?.message || 'Could not add the existing card as a subtask.');
+      alert(errorMessage(error));
     }
     Popup.close();
   },

@@ -64,7 +64,6 @@ import { isHexColor, isAllowedCardColor, toHex, contrastText, customColorsInUse 
 import { uniqBy } from '/imports/lib/collectionHelpers';
 import { memberTargetBoardId } from '/models/lib/linkedCardMembers';
 import { isSubmitKey } from '/models/lib/editorSubmitKey';
-import { UserAvatar } from '../users/userAvatar';
 import { Filter } from '/client/lib/filter';
 import { BoardSwimlaneListCardDialog } from '/client/lib/dialogWithBoardSwimlaneListCard';
 import { handleFileUpload } from './attachments';
@@ -79,6 +78,7 @@ import { CSSEvents } from '/client/lib/cssEvents';
 import { UnsavedEdits } from '/client/lib/unsavedEdits';
 import { EscapeActions } from '/client/lib/escapeActions';
 import { MultiSelection } from '/client/lib/multiSelection';
+import { errorMessage } from '/client/lib/errorMessage';
 import { Utils } from '/client/lib/utils';
 import autosize from 'autosize';
 import { caretClassFor } from '/client/lib/sectionCaret';
@@ -1247,7 +1247,7 @@ Template.cardDetails.events({
       // description" warning behind.
       UnsavedEdits.reset({ fieldName: 'cardDescription', docId: card._id });
     } catch (error) {
-      alert(error?.reason || error?.message || 'Failed to save description');
+      alert(errorMessage(error));
     }
   },
   async 'submit .js-card-details-title'(event, tpl) {
@@ -1259,7 +1259,7 @@ Template.cardDetails.events({
     try {
       await card.setTitle(title || '');
     } catch (error) {
-      alert(error?.reason || error?.message || 'Failed to save title');
+      alert(errorMessage(error));
     }
   },
   'submit .js-card-details-assigner'(event, tpl) {
@@ -1804,7 +1804,7 @@ Template.cardDetailsActionsPopup.events({
   // tooltip to name it - the one place a name cannot be read without hovering -
   // and it is here now beside the swimlane's and the list's, so all three are
   // copied the same way from the same kind of menu.
-  // docs/Features/Page/Board-Item-Links.md
+  // docs/Features/General/Board-Item-Links.md
   'click .js-card-qr-code': Popup.open('cardQrCode'),
   'click .js-copy-card-link'(event, tpl) {
     event.preventDefault();
@@ -1860,7 +1860,7 @@ Template.cardDetailsActionsPopup.events({
       await Meteor.callAsync('saveCardAsTemplate', cardId);
       Popup.back();
     } catch (err) {
-      alert(err?.reason || err?.message || 'Failed to save card as template');
+      alert(errorMessage(err));
     }
   },
   'click .js-set-card-recurrence-interval': Popup.open('cardRecurrenceInterval'),
@@ -2845,7 +2845,7 @@ Template.cardMorePopup.events({
     try {
       card.addParent(parentId);
     } catch (error) {
-      alert(error?.reason || error?.message || 'Could not add the parent card.');
+      alert(errorMessage(error));
     }
   },
   'click .js-remove-other-parent'(event) {

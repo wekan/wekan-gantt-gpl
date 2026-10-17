@@ -17,7 +17,7 @@ const { memberCan } = require('/models/lib/boardRoleCapabilities');
 const { sourceRoleBlocksDelegation } = require('/models/lib/linkedWritePolicy');
 const { listCan } = require('/models/lib/listPermissions');
 
-// One key for both pages: they draw one menu. docs/Features/Page/Left-Menu.md
+// One key for both pages: they draw one menu. docs/Features/All-Boards/Left-Menu.md
 const LEFT_MENU_COLLAPSED_KEY = 'leftMenuCollapsed';
 const LEFT_MENU_WIDTH_KEY = 'leftMenuWidth';
 const pendingBoardView = new ReactiveVar(null);
@@ -313,62 +313,10 @@ export const Utils = {
           pendingBoardView.set(null);
         }
       });
-    } else if (view === 'board-view-swimlanes') {
-      window.localStorage.setItem('boardView', 'board-view-swimlanes'); //true
-      Utils.reload();
-    } else if (view === 'board-view-lists') {
-      window.localStorage.setItem('boardView', 'board-view-lists'); //true
-      Utils.reload();
-    } else if (view === 'board-view-cal') {
-      window.localStorage.setItem('boardView', 'board-view-cal'); //true
-      Utils.reload();
-    } else if (view === 'board-view-gantt') {
-      window.localStorage.setItem('boardView', 'board-view-gantt'); //true
-      Utils.reload();
-    } else if (
-      [
-        'board-view-multiboard-cal',
-        'board-view-calendar-mode',
-        'board-view-gantt-frappe',
-        'board-view-gantt-dhtmlx',
-        'board-view-table',
-        'board-view-time',
-        'board-view-timeline',
-        'board-view-stats',
-        'board-view-group-by-assignee',
-        'board-view-product-backlog',
-        'board-view-sprints',
-        'board-view-sprint-report',
-        'board-view-velocity',
-        'board-view-roadmap',
-        'board-view-dashboard',
-        'board-view-bigboard',
-        'board-view-burndown',
-        'board-view-burnup',
-        'board-view-cumulative-flow',
-        'board-view-control-chart',
-        'board-view-cycle-time',
-        'board-view-flow-efficiency',
-        'board-view-lead-time',
-        'board-view-throughput-histogram',
-        'board-view-wip-run',
-        'board-view-pulse',
-        'board-view-aging-wip',
-        'board-view-blocker-analysis',
-        'board-view-monte-carlo',
-        'board-view-process-behavior',
-        'board-view-size-cycle-time',
-        'board-view-map',
-        'board-view-email',
-        'board-view-chat',
-        'board-view-version-control',
-        'board-view-column-sets',
-      ].includes(view)
-    ) {
-      window.localStorage.setItem('boardView', view); //true
-      Utils.reload();
     } else {
-      window.localStorage.setItem('boardView', 'board-view-swimlanes'); //true
+      // Not logged in: the browser keeps the choice. Any view of the Board View
+      // menu (BOARD_VIEWS), anything else the default.
+      window.localStorage.setItem('boardView', isKnownBoardView(view) ? view : DEFAULT_BOARD_VIEW);
       Utils.reload();
     }
   },
@@ -427,58 +375,11 @@ export const Utils = {
     if (isKnownBoardView(profileView)) {
       return profileView;
     }
-    if (
-      window.localStorage.getItem('boardView') === 'board-view-swimlanes'
-    ) {
-      return 'board-view-swimlanes';
-    } else if (
-      window.localStorage.getItem('boardView') === 'board-view-lists'
-    ) {
-      return 'board-view-lists';
-    } else if (window.localStorage.getItem('boardView') === 'board-view-cal') {
-      return 'board-view-cal';
-    } else if (window.localStorage.getItem('boardView') === 'board-view-gantt') {
-      return 'board-view-gantt';
-    } else if (
-      [
-        'board-view-multiboard-cal',
-        'board-view-calendar-mode',
-        'board-view-gantt-frappe',
-        'board-view-gantt-dhtmlx',
-        'board-view-table',
-        'board-view-time',
-        'board-view-timeline',
-        'board-view-stats',
-        'board-view-group-by-assignee',
-        'board-view-roadmap',
-        'board-view-dashboard',
-        'board-view-bigboard',
-        'board-view-burndown',
-        'board-view-burnup',
-        'board-view-cumulative-flow',
-        'board-view-control-chart',
-        'board-view-cycle-time',
-        'board-view-flow-efficiency',
-        'board-view-lead-time',
-        'board-view-throughput-histogram',
-        'board-view-wip-run',
-        'board-view-pulse',
-        'board-view-aging-wip',
-        'board-view-blocker-analysis',
-        'board-view-monte-carlo',
-        'board-view-process-behavior',
-        'board-view-size-cycle-time',
-        'board-view-map',
-        'board-view-email',
-        'board-view-chat',
-        'board-view-version-control',
-        'board-view-column-sets',
-      ].includes(window.localStorage.getItem('boardView'))
-    ) {
-      return window.localStorage.getItem('boardView');
-    } else {
-      return DEFAULT_BOARD_VIEW;
-    }
+    // The same list setBoardView accepts. A hand-written copy of it here once
+    // lacked the four Scrum views, so a visitor's Product Backlog, Sprints,
+    // Sprint Report or Velocity opened as Swimlanes.
+    const browserView = window.localStorage.getItem('boardView');
+    return isKnownBoardView(browserView) ? browserView : DEFAULT_BOARD_VIEW;
   },
 
   // `swimlaneId` scopes a BOARD-WIDE list's collapse state to the one
@@ -581,7 +482,7 @@ export const Utils = {
   //
   // ONE state for both pages. All Boards and the Admin Panel draw one menu, and
   // a reader who folds it away on one of them has said what they want on the
-  // other. docs/Features/Page/Left-Menu.md
+  // other. docs/Features/All-Boards/Left-Menu.md
   getLeftMenuCollapseState() {
     const sessionVal = Session.get(LEFT_MENU_COLLAPSED_KEY);
     if (typeof sessionVal === 'boolean') return sessionVal;
@@ -617,7 +518,7 @@ export const Utils = {
   // `undefined` when nobody has ever dragged it, and that is deliberate: the
   // DEFAULT width is a number in the stylesheet, and returning one here too
   // would be a second copy of it to keep in step.
-  // docs/Features/Page/Left-Menu.md
+  // docs/Features/All-Boards/Left-Menu.md
   getLeftMenuWidth() {
     const sessionVal = Session.get(LEFT_MENU_WIDTH_KEY);
     if (typeof sessionVal === 'number') return sessionVal;
@@ -656,7 +557,7 @@ export const Utils = {
   // the user's profile behind it, and a cookie for a reader who is not signed
   // in. OPEN is the default - a tree that opened folded would hide the
   // workspaces a reader has never touched.
-  // docs/Features/Page/Workspaces.md
+  // docs/Features/All-Boards/Workspaces.md
   getWorkspaceCollapseState(workspaceId) {
     if (!workspaceId) return false;
     const key = `collapsedWorkspace-${workspaceId}`;
@@ -1119,7 +1020,7 @@ export const Utils = {
     // product name, so ten open tabs of one WeKan were ten identical tabs, and
     // a bookmark of any of them was named after the whole app rather than after
     // the page. The path is the one the header bar draws, published by it.
-    // docs/Features/Board/Starred.md
+    // docs/Features/Pages/Starred.md
     document.title = pageDocumentTitle(productName, headerPathVar.get());
   },
 

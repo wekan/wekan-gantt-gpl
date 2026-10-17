@@ -1,4 +1,4 @@
-/* The ONE table page layout. Design: docs/Features/Page/Table.md
+/* The ONE table page layout. Design: docs/Features/General/Table-Page.md
    Used by every paginated admin table (Security, Speed, Tests, CPU usage, Files,
    Rules, Boards, Cards, Impersonation, Recovery). Defined once here so a fix to
    the layout reaches every page instead of one report at a time. */
@@ -232,6 +232,21 @@
     flex: 1 1 100%;
     /* The table wraps now, so the panel itself never needs to scroll sideways. */
     overflow-x: auto !important;
+  }
+}
+
+/* Equal columns stop working when there are more of them than the window has
+   room for: the 13 columns of an event report (Problems / Memory Usage, Disk
+   usage, Security, ...) were about 25px each on a 393px iPhone, and every header
+   broke one letter per line - and 42px on an iPad held upright, where the menu
+   still sits beside the table. Up to 1024px a column keeps a readable floor, and
+   a table wider than the window scrolls sideways inside its own wrapper - the
+   last resort that wrapper exists for - while the page still does not. A table
+   with few columns is unaffected: the floor is below its share of the width.
+   tests/playwright/specs/viewport-matrix.e2e.js checks it at every size. */
+@media screen and (max-width: 1024px) {
+  .table-page-table {
+    min-width: calc(var(--table-page-columns, 1) * 6.5em) !important;
   }
 }
 

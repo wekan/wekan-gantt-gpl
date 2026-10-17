@@ -84,7 +84,7 @@ const VIEWS = [
 const HR_AFTER = ['board-view-table', 'board-view-timeline', 'board-view-stats', 'board-view-group-by-assignee', 'board-view-gantt-dhtmlx', 'board-view-bigboard'];
 
 // The menu is no longer 25 static entries in the jade: Board Settings / Board
-// View (docs/Features/Board/Board-View-Settings.md) lets a board admin hide
+// View (docs/Features/Board-Sidebar/Board-Settings/Board-View.md) lets a board admin hide
 // and REORDER the entries per board, so boardChangeViewPopup renders one
 // `each boardViewMenuEntries` loop from the shared table in
 // models/lib/boardViewSettings.js. The order, icon, label and separator pins
@@ -163,9 +163,16 @@ test('every new view has an isView* helper and a boardBody.jade branch rendering
 });
 
 test('the anonymous-user fallback (no logged-in profile) accepts every view', () => {
-  VIEWS.forEach(v => {
-    assert.ok(utilsJs.includes(`'${v.view}'`), `${v.view} is handled in client/lib/utils.js`);
-  });
+  // utils.js once kept two hand-written lists for this - one to store the
+  // browser's view, one to read it back - and the read list lacked the four
+  // Scrum views, so a visitor's Product Backlog opened as Swimlanes. Both now
+  // ask isKnownBoardView, i.e. BOARD_VIEWS, which every view here is in.
+  const known = require('../models/lib/boardViewSettings').isKnownBoardView;
+  VIEWS.forEach(v => assert.ok(known(v.view), `${v.view} is in BOARD_VIEWS`));
+  assert.match(utilsJs, /setItem\('boardView', isKnownBoardView\(view\) \? view : DEFAULT_BOARD_VIEW\)/, 'storing accepts every view');
+  assert.match(utilsJs, /return isKnownBoardView\(browserView\) \? browserView : DEFAULT_BOARD_VIEW;/, 'and so does reading it back');
+  assert.ok(!utilsJs.includes("'board-view-product-backlog',"),
+    'no hand-written view list is left to drift (negative)');
 });
 
 test('every view has an English menu label', () => {

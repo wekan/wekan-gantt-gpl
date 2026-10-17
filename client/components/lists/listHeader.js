@@ -14,6 +14,12 @@ import { Utils } from '/client/lib/utils';
 import { lazyListCardCount } from '/client/lib/lazyCards';
 import { currentUserWith } from '/client/lib/currentUserWith';
 import {
+  isFixedListWidth,
+  fixedListWidthValue,
+  setAnonFixedListWidthEnabled,
+  setAnonFixedListWidth,
+} from '/client/lib/fixedListWidth';
+import {
   sumCustomFieldValues,
   numberFieldStats,
   dateFieldRange,
@@ -29,7 +35,7 @@ import {
   parseListWidthInput,
   normalizeListWidth,
 } from '/models/lib/listWidth';
-// List sync (docs/Features/ImportExport/Sync.md): UI wiring only, calls the
+// List sync (docs/Features/Board-Sidebar/Board-Settings/Import-Export/Sync.md): UI wiring only, calls the
 // EXISTING setListSyncSource/hasListSyncCredential/syncListNow methods in
 // server/methods/listSync.js. SYNC_CAPABLE_SOURCES is the same list those
 // methods validate `type` against, reused here so the picker can never offer
@@ -885,7 +891,7 @@ Template.setListColorPopup.events({
   },
 });
 
-// List sync settings popup (docs/Features/ImportExport/Sync.md). UI wiring
+// List sync settings popup (docs/Features/Board-Sidebar/Board-Settings/Import-Export/Sync.md). UI wiring
 // only: reads the list's own (already published, credential-free) syncSource
 // fields and calls the configuration, Sync and conflict-resolution methods in
 // server/methods/listSync.js. Authority and fresh comparison checks stay there.
@@ -1298,70 +1304,6 @@ Template.listSyncPopup.events({
 function isPersonalListWidth(boardId) {
   const board = ReactiveCache.getBoard(boardId);
   return !!(board && board.allowsPersonalListWidth);
-}
-
-// #5729 Fixed (same) width for all lists is a per-viewer/per-board setting.
-// Logged-in users store it in their profile; anonymous (public board) users in
-// localStorage (mirrors the per-list anon storage in list.js).
-function readAnonFixedListWidthEnabled(boardId) {
-  try {
-    const stored = localStorage.getItem('wekan-fixed-list-width-enabled');
-    if (stored) {
-      const flags = JSON.parse(stored);
-      return flags[boardId] === true;
-    }
-  } catch (e) {
-    console.warn('Error reading fixed list width flag from localStorage:', e);
-  }
-  return false;
-}
-
-function readAnonFixedListWidth(boardId) {
-  try {
-    const stored = localStorage.getItem('wekan-fixed-list-width');
-    if (stored) {
-      const widths = JSON.parse(stored);
-      const w = widths[boardId];
-      if (typeof w === 'number' && w >= MIN_LIST_WIDTH) return w;
-    }
-  } catch (e) {
-    console.warn('Error reading fixed list width from localStorage:', e);
-  }
-  return DEFAULT_LIST_WIDTH;
-}
-
-function isFixedListWidth(boardId) {
-  const user = ReactiveCache.getCurrentUser();
-  if (user) return !!user.isFixedListWidth(boardId);
-  return readAnonFixedListWidthEnabled(boardId);
-}
-
-function fixedListWidthValue(boardId) {
-  const user = ReactiveCache.getCurrentUser();
-  if (user) return user.getFixedListWidth(boardId);
-  return readAnonFixedListWidth(boardId);
-}
-
-function setAnonFixedListWidthEnabled(boardId, enabled) {
-  try {
-    const stored = localStorage.getItem('wekan-fixed-list-width-enabled');
-    const flags = stored ? JSON.parse(stored) : {};
-    flags[boardId] = !!enabled;
-    localStorage.setItem('wekan-fixed-list-width-enabled', JSON.stringify(flags));
-  } catch (e) {
-    console.warn('Error saving fixed list width flag to localStorage:', e);
-  }
-}
-
-function setAnonFixedListWidth(boardId, width) {
-  try {
-    const stored = localStorage.getItem('wekan-fixed-list-width');
-    const widths = stored ? JSON.parse(stored) : {};
-    widths[boardId] = width;
-    localStorage.setItem('wekan-fixed-list-width', JSON.stringify(widths));
-  } catch (e) {
-    console.warn('Error saving fixed list width to localStorage:', e);
-  }
 }
 
 Template.setListWidthPopup.helpers({

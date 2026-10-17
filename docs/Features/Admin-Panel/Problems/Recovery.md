@@ -1,11 +1,11 @@
 # Design: SQLite corruption/bloat safety, automatic recovery, and Admin Panel → Problems → Recovery
 
-> **This page uses the shared [Table Page](../../../Features/Page/Table.md) design.**
+> **This page uses the shared [Table Page](../../General/Table.md) design.**
 > The layout, search, pagination, column spec and per-page data loading are defined
 > there and are not repeated here.
 
 Status: **Implemented for bundled FerretDB SQLite launch paths** · Owner: xet7 · Related (#6492):
-`models/lib/recoveryPlan.js`, `models/lib/recoveryEventsJsonl.js`,
+`releases/ferretdb/sqlite-recovery.mjs`, `models/lib/recoveryEventsJsonl.js`,
 `models/recoveryEvents.js`, `server/recovery.js`,
 `server/publications/recoveryReport.js`, `client/components/settings/adminProblems.*`,
 `snap-src/bin/ferretdb-control`, `releases/ferretdb/*`, and the FerretDB fork
@@ -68,7 +68,7 @@ control collections have no client publication or direct client writes.
 Detailed terminal receipt metadata is compacted after 30 days by default.
 Minimal replay identities remain indefinitely, so an old cancellation cannot
 affect later messages. Pending or failed work and recipient holds are retained.
-See [receipt retention](../../Email/Troubleshooting-Mail.md#completed-notification-receipts)
+See [receipt retention](../../General/Email/Troubleshooting-Mail.md#completed-notification-receipts)
 for configuration and [durable operations](Durable-Operations.md) for remaining
 activity-to-delivery integration work.
 
@@ -146,7 +146,7 @@ discarded automatically.
 ## Board imports that stopped before finishing
 
 Every board import and board copy is recorded before its first write, with the
-id its new board will have ([details](../../ImportExport/Import-Run-Recovery.md)).
+id its new board will have ([details](../../Board-Sidebar/Board-Settings/Import-Export/Import-Run-Recovery.md)).
 One that stops - its server restarted, its writer hung for longer than
 `WEKAN_IMPORT_RUN_STALE_MS`, or it failed after creating its board - is
 flagged once by the `wekan-import-run-scan` job and adds one
@@ -198,12 +198,12 @@ bundled release `start-wekan.sh`, the Docker `wekan-entrypoint.sh`):
 
 ### The recovery decision
 
-`models/lib/recoveryPlan.js` (`decideRecovery`) is the pure, unit-tested policy: given
-the integrity result and what backups / MongoDB are available, it chooses the
-least-invasive recovery — latest good backup → previous backup → re-migrate → (else)
-manual. It never chooses anything destructive unless the database is **known corrupt**.
-The launch scripts implement this policy through `sqlite-recovery.mjs` and FerretDB's
-read-only `check-sqlite` command. They verify the live file before FerretDB opens it,
+The policy is the least-invasive recovery - latest good backup → previous backup →
+re-migrate → (else) manual - and nothing destructive unless the database is **known
+corrupt**. `releases/ferretdb/sqlite-recovery.mjs` carries it out, with FerretDB's
+read-only `check-sqlite` command. (A separate model of the policy,
+`models/lib/recoveryPlan.js`, was never run by anything and was removed on
+2026-10-16; the script is what decides.) They verify the live file before FerretDB opens it,
 then restore and re-check latest or previous compressed snapshots. Snap quarantines
 unusable SQLite files and re-runs migration when retained MongoDB source files exist.
 
@@ -311,9 +311,9 @@ Recovery report.
 
 ## Tests
 
-- `tests/recoveryPlan.test.cjs` — the decision logic (positive + negatives: never act
-  on a healthy/unknown database; never restore a known-bad backup; nothing to restore
-  → manual, non-destructive).
+- `tests/sqliteVerifiedRecovery.test.cjs` — the recovery script itself: a healthy
+  database is left alone, a corrupt one is restored from the latest verified snapshot,
+  then the previous one, and only then is manual recovery reported.
 - `tests/recoveryEventsJsonl.test.cjs` — the JSONL parser (skips junk, normalizes
   severity, bounds line size; never throws).
 - `tests/recoveryReportQuery.test.cjs` — the report search and outcome selectors

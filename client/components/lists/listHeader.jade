@@ -167,7 +167,7 @@ template(name="editListTitleForm")
 template(name="listActionPopup")
   //- Copy link, FIRST and above every permission check - see the swimlane
     popup: copying an address is reading, not editing.
-    models/lib/boardItemUrl.js, docs/Features/Page/Board-Item-Links.md
+    models/lib/boardItemUrl.js, docs/Features/General/Board-Item-Links.md
   ul.pop-over-list
     li: a.js-copy-list-link
       i.fa.fa-link
@@ -276,7 +276,7 @@ template(name="listActionPopup")
             a.js-toggle-sticky-list-headers
               i.fa(class="{{#if isStickyListHeaders}}fa-check-square-o{{else}}fa-square-o{{/if}}")
               | {{_ 'sticky-list-headers'}}
-        //- List sync (docs/Features/ImportExport/Sync.md): opens the settings
+        //- List sync (docs/Features/Board-Sidebar/Board-Settings/Import-Export/Sync.md): opens the settings
           for keeping this list up to date from an external tracker. Calls the
           EXISTING setListSyncSource/hasListSyncCredential/syncListNow methods
           in server/methods/listSync.js - this popup is UI wiring only.
@@ -314,15 +314,6 @@ template(name="listActionPopup")
             a.js-more
               i.fa.fa-link
               | {{_ 'listMorePopup-title'}}
-
-template(name="boardLists")
-  ul.pop-over-list
-    each currentBoard.lists
-      li
-        if($eq ../_id _id)
-          a.disabled {{title}} ({{_ 'current'}})
-        else
-          a.js-select-list= title
 
 template(name="listMorePopup")
   p.quiet
@@ -425,7 +416,7 @@ template(name="setListColorPopup")
     button.primary.confirm.js-submit {{_ 'save'}}
     button.js-remove-color.negate.wide.right {{_ 'remove-btn'}}
 
-//- List sync settings (docs/Features/ImportExport/Sync.md). UI wiring only -
+//- List sync settings (docs/Features/Board-Sidebar/Board-Settings/Import-Export/Sync.md). UI wiring only -
   calls setListSyncSource/hasListSyncCredential/previewListSync/syncListNow
   Meteor methods (server/methods/listSync.js) exactly as they are defined;
   this popup does not touch the sync backend itself.

@@ -71,6 +71,7 @@ import {
   getSidebarInstance,
   setSidebarInstance,
 } from '/client/features/sidebar/service';
+import { errorMessage } from '/client/lib/errorMessage';
 
 export let Sidebar = null;
 
@@ -95,6 +96,7 @@ const viewTitles = {
   multiselection: 'multi-selection',
   customFields: 'custom-fields',
   archives: 'archives',
+  originalPositions: 'original-positions',
 };
 
 Template.sidebar.onCreated(function() {
@@ -561,6 +563,15 @@ Template.boardMenuPopup.events({
     }
     Popup.back();
   },
+  // Where each swimlane, list and card was put when it was made
+  // (originalPositionsSidebar). Open to everyone who sees the board, like
+  // Archived items: the server returns only what the reader may see.
+  'click .js-open-original-positions'() {
+    if (Sidebar) {
+      Sidebar.setView('originalPositions');
+    }
+    Popup.back();
+  },
   'click .js-change-board-color': Popup.open('boardChangeColor'),
   'click .js-open-board-announcement': Popup.open('boardAnnouncement', { titleKey: 'board-announcement' }),
   'click .js-change-background-image': Popup.open('boardChangeBackgroundImage'),
@@ -615,7 +626,7 @@ Template.boardMenuPopup.events({
       await Meteor.callAsync('archiveBoard', currentBoard._id);
       FlowRouter.go('home');
     } catch (err) {
-      alert(err?.reason || err?.message || 'Failed to archive board');
+      alert(errorMessage(err));
     }
   }),
   'click .js-delete-board': Popup.afterConfirm('deleteBoard', function() {
@@ -671,7 +682,7 @@ Template.boardMenuPopup.onCreated(function() {
   });
 });
 
-// Board Settings / Board View (docs/Features/Board/Board-View-Settings.md).
+// Board Settings / Board View (docs/Features/Board-Sidebar/Board-Settings/Board-View.md).
 // Rows come from the one shared BOARD_VIEWS table; every decision - what is
 // shown, what is default, what a click may change - is the pure module's,
 // applied through the Board instance setters, so the popup, the Board View
@@ -1108,35 +1119,40 @@ Template.leaveBoardPopup.helpers({
   },
 });
 
-Template.membersWidget.onCreated(function() {
-  this.error = new ReactiveVar('');
-  this.loading = new ReactiveVar(false);
-  this.findOrgsOptions = new ReactiveVar({});
-  this.findTeamsOptions = new ReactiveVar({});
-
-  this.page = new ReactiveVar(1);
-  this.teamPage = new ReactiveVar(1);
-  this.autorun(() => {
-    const limitOrgs = this.page.get() * Number.MAX_SAFE_INTEGER;
-    this.subscribe('org', this.findOrgsOptions.get(), limitOrgs, () => {});
+// The state the board's organization and team pickers share: an error and a
+// loading flag, and a subscription to `publication` that follows the paged
+// find options - with a second one to people for the pickers that list a
+// team's or organization's members.
+function initGroupPickerState(tpl, publication, { withPeople = false } = {}) {
+  tpl.error = new ReactiveVar('');
+  tpl.loading = new ReactiveVar(false);
+  tpl.findOrgsOptions = new ReactiveVar({});
+  tpl.page = new ReactiveVar(1);
+  tpl.autorun(() => {
+    const limit = tpl.page.get() * Number.MAX_SAFE_INTEGER;
+    tpl.subscribe(publication, tpl.findOrgsOptions.get(), limit, () => {});
   });
+  if (withPeople) {
+    tpl.findUsersOptions = new ReactiveVar({});
+    tpl.userPage = new ReactiveVar(1);
+    tpl.autorun(() => {
+      const limitUsers = tpl.userPage.get() * Number.MAX_SAFE_INTEGER;
+      tpl.subscribe('people', tpl.findUsersOptions.get(), limitUsers, () => {});
+    });
+  }
+  tpl.setError = error => tpl.error.set(error);
+  tpl.setLoading = w => tpl.loading.set(w);
+  tpl.isLoading = () => tpl.loading.get();
+}
 
+Template.membersWidget.onCreated(function() {
+  initGroupPickerState(this, 'org');
+  this.findTeamsOptions = new ReactiveVar({});
+  this.teamPage = new ReactiveVar(1);
   this.autorun(() => {
     const limitTeams = this.teamPage.get() * Number.MAX_SAFE_INTEGER;
     this.subscribe('team', this.findTeamsOptions.get(), limitTeams, () => {});
   });
-
-  this.setError = function(error) {
-    this.error.set(error);
-  };
-
-  this.setLoading = function(w) {
-    this.loading.set(w);
-  };
-
-  this.isLoading = function() {
-    return this.loading.get();
-  };
 });
 
 Template.membersWidget.onRendered(function() {
@@ -1193,7 +1209,7 @@ Template.membersWidget.events({
   'click .js-import-board': Popup.open('chooseBoardSource'),
   // Boards in Archive is a SECTION of All Boards, not a page of its own: the
   // row in its left menu. `/archive` is the full-width page that section
-  // replaced. docs/Features/Page/Archive.md
+  // replaced. docs/Features/All-Boards/Archive.md
   'click .js-open-archived-board'() {
     FlowRouter.go(allBoardsPath(SECTION_ARCHIVE, []));
   },
@@ -1350,7 +1366,7 @@ Template.outgoingWebhooksPopup.events({
       }
       Popup.back();
     } catch (error) {
-      alert(error?.reason || error?.message || 'Failed to save webhook');
+      alert(errorMessage(error));
     }
   },
 });
@@ -3141,34 +3157,8 @@ Template.addMemberPopup.helpers({
   }
 })
 
-Template.addMemberPopupTest.helpers({
-  searchResults() {
-    return Session.get('addMemberPopup.searchResults') || [];
-  }
-})
-
 Template.addBoardOrgPopup.onCreated(function() {
-  this.error = new ReactiveVar('');
-  this.loading = new ReactiveVar(false);
-  this.findOrgsOptions = new ReactiveVar({});
-
-  this.page = new ReactiveVar(1);
-  this.autorun(() => {
-    const limitOrgs = this.page.get() * Number.MAX_SAFE_INTEGER;
-    this.subscribe('org', this.findOrgsOptions.get(), limitOrgs, () => {});
-  });
-
-  this.setError = function(error) {
-    this.error.set(error);
-  };
-
-  this.setLoading = function(w) {
-    this.loading.set(w);
-  };
-
-  this.isLoading = function() {
-    return this.loading.get();
-  };
+  initGroupPickerState(this, 'org');
 });
 
 Template.addBoardOrgPopup.onRendered(function() {
@@ -3218,34 +3208,7 @@ Template.addBoardOrgPopup.events({
 });
 
 Template.removeBoardOrgPopup.onCreated(function() {
-  this.error = new ReactiveVar('');
-  this.loading = new ReactiveVar(false);
-  this.findOrgsOptions = new ReactiveVar({});
-
-  this.page = new ReactiveVar(1);
-  this.autorun(() => {
-    const limitTeams = this.page.get() * Number.MAX_SAFE_INTEGER;
-    this.subscribe('team', this.findOrgsOptions.get(), limitTeams, () => {});
-  });
-
-  this.findUsersOptions = new ReactiveVar({});
-  this.userPage = new ReactiveVar(1);
-  this.autorun(() => {
-    const limitUsers = this.userPage.get() * Number.MAX_SAFE_INTEGER;
-    this.subscribe('people', this.findUsersOptions.get(), limitUsers, () => {});
-  });
-
-  this.setError = function(error) {
-    this.error.set(error);
-  };
-
-  this.setLoading = function(w) {
-    this.loading.set(w);
-  };
-
-  this.isLoading = function() {
-    return this.loading.get();
-  };
+  initGroupPickerState(this, 'team', { withPeople: true });
 });
 
 Template.removeBoardOrgPopup.onRendered(function() {
@@ -3366,34 +3329,7 @@ Template.removeBoardDomainPopup.events({
 });
 
 Template.addBoardTeamPopup.onCreated(function() {
-  this.error = new ReactiveVar('');
-  this.loading = new ReactiveVar(false);
-  this.findOrgsOptions = new ReactiveVar({});
-
-  this.page = new ReactiveVar(1);
-  this.autorun(() => {
-    const limitTeams = this.page.get() * Number.MAX_SAFE_INTEGER;
-    this.subscribe('team', this.findOrgsOptions.get(), limitTeams, () => {});
-  });
-
-  this.findUsersOptions = new ReactiveVar({});
-  this.userPage = new ReactiveVar(1);
-  this.autorun(() => {
-    const limitUsers = this.userPage.get() * Number.MAX_SAFE_INTEGER;
-    this.subscribe('people', this.findUsersOptions.get(), limitUsers, () => {});
-  });
-
-  this.setError = function(error) {
-    this.error.set(error);
-  };
-
-  this.setLoading = function(w) {
-    this.loading.set(w);
-  };
-
-  this.isLoading = function() {
-    return this.loading.get();
-  };
+  initGroupPickerState(this, 'team', { withPeople: true });
 });
 
 Template.addBoardTeamPopup.onRendered(function() {
@@ -3471,34 +3407,7 @@ Template.addBoardTeamPopup.events({
 });
 
 Template.removeBoardTeamPopup.onCreated(function() {
-  this.error = new ReactiveVar('');
-  this.loading = new ReactiveVar(false);
-  this.findOrgsOptions = new ReactiveVar({});
-
-  this.page = new ReactiveVar(1);
-  this.autorun(() => {
-    const limitTeams = this.page.get() * Number.MAX_SAFE_INTEGER;
-    this.subscribe('team', this.findOrgsOptions.get(), limitTeams, () => {});
-  });
-
-  this.findUsersOptions = new ReactiveVar({});
-  this.userPage = new ReactiveVar(1);
-  this.autorun(() => {
-    const limitUsers = this.userPage.get() * Number.MAX_SAFE_INTEGER;
-    this.subscribe('people', this.findUsersOptions.get(), limitUsers, () => {});
-  });
-
-  this.setError = function(error) {
-    this.error.set(error);
-  };
-
-  this.setLoading = function(w) {
-    this.loading.set(w);
-  };
-
-  this.isLoading = function() {
-    return this.loading.get();
-  };
+  initGroupPickerState(this, 'team', { withPeople: true });
 });
 
 Template.removeBoardTeamPopup.onRendered(function() {

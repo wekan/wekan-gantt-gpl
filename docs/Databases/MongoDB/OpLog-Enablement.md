@@ -45,7 +45,7 @@ environment:
 
 **Setup:**
 ```bash
-sudo snap set wekan MONGO_OPLOG_URL=mongodb://127.0.0.1:27017/local?replicaSet=rs0
+sudo snap set wekan mongo-oplog-url='mongodb://127.0.0.1:27017/local?replicaSet=rs0'
 ```
 
 ### ✅ Production Deployments
@@ -116,7 +116,7 @@ For Users to Enable Oplog:
   - [ ] Run `docker-compose up --build`
 
 - [ ] **Snap:**
-  - [ ] Run `sudo snap set wekan MONGO_OPLOG_URL=...`
+  - [ ] Run `sudo snap set wekan mongo-oplog-url='...'`
   - [ ] Verify with `sudo wekan.wekan-help`
 
 - [ ] **Production:**
@@ -163,7 +163,7 @@ top -p $(pgrep node)
 
 - [Oplog-Configuration.md](Oplog-Configuration.md) - Full setup guide
 - [AWS.md](../../Platforms/Propietary/Cloud/AWS) - AWS oplog configuration
-- [LDAP.md](../../Features/Login/LDAP.md) - LDAP with oplog setup
+- [LDAP.md](../../Features/Login-Page/LDAP.md) - LDAP with oplog setup
 - [ToroDB-PostgreSQL](../ToroDB/PostgreSQL/docker-compose.yml) - ToroDB oplog config
 
 ## Files Modified This Session

@@ -15,6 +15,7 @@ import { Utils } from '/client/lib/utils';
 import { currentUserWith } from '/client/lib/currentUserWith';
 import { TAPi18n } from '/imports/i18n';
 import { defaultSwimlaneIdForBoard } from '/client/components/lists/listAddHelpers';
+import { errorMessage } from '/client/lib/errorMessage';
 const { calculateIndex } = Utils;
 
 // #4223 (Bigboard): normally exactly one board's lists are ever on the page,
@@ -435,6 +436,68 @@ Template.swimlane.onCreated(function () {
   this._lastDragPositionX = 0;
 });
 
+// The list drag-and-drop of one row of lists, shared by a swimlane and by the
+// Lists view (listsGroup). Any sortable already on the element is replaced, so
+// a re-render does not stack a second one.
+function initListsSortable(tpl, $parent, handleSelector, boardComponent) {
+  if ($parent.data('uiSortable') || $parent.data('sortable')) {
+    try {
+      $parent.sortable('destroy');
+    } catch (e) {}
+  }
+
+  // Check for drag handles
+  const $handles = $parent.find('.js-list-handle');
+
+  // Test if drag handles are clickable
+  $handles.on('click', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  });
+
+  $parent.sortable({
+    connectWith: connectWithSelector($parent),
+    tolerance: 'pointer',
+    appendTo: '.board-canvas',
+    helper: 'clone',
+    items: '.js-list:not(.js-list-composer)',
+    placeholder: 'list placeholder',
+    distance: 7,
+    handle: handleSelector,
+    disabled: !Utils.canModifyBoard() || !Utils.canDragBoardObject('list'),
+    dropOnEmpty: true,
+    start(evt, ui) {
+      ui.helper.css('z-index', 1000);
+      ui.placeholder.height(ui.helper.height());
+      ui.placeholder.width(ui.helper.width());
+      ui.placeholder.css('min-width', ui.helper.width()); // #6763
+      EscapeActions.executeUpTo('popup-close');
+      if (boardComponent) boardComponent.setIsDragging(true);
+      suspendBoardDragscroll(); // #6558
+    },
+    stop(evt, ui) {
+      resumeBoardDragscroll(); // #6558
+      if (boardComponent) boardComponent.setIsDragging(false);
+      saveSorting(ui);
+    },
+  });
+  // Reactively update handle when user toggles desktop drag handles
+  tpl.autorun(() => {
+    const newHandle = Utils.isTouchScreenOrShowDesktopDragHandles()
+      ? '.js-list-handle'
+      : '.js-list-header';
+    if ($parent.data('uiSortable') || $parent.data('sortable')) {
+      try {
+        // #6745: only what changed.
+        setSortableOptions($parent, {
+          handle: newHandle,
+          disabled: !Utils.canModifyBoard() || !Utils.canDragBoardObject('list'),
+        });
+      } catch (e) {}
+    }
+  });
+}
+
 Template.swimlane.onRendered(function () {
   const tpl = this;
   const boardBodyEl = tpl.firstNode?.parentElement?.closest?.('.board-body') || document.querySelector('.board-body');
@@ -470,57 +533,7 @@ Template.swimlane.onRendered(function () {
     const $parent = $listsDom;
 
     if ($parent.length > 0) {
-
-      // Check for drag handles
-      const $handles = $parent.find('.js-list-handle');
-
-      // Test if drag handles are clickable
-      $handles.on('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-      });
-
-      $parent.sortable({
-        connectWith: connectWithSelector($parent),
-        tolerance: 'pointer',
-        appendTo: '.board-canvas',
-        helper: 'clone',
-        items: '.js-list:not(.js-list-composer)',
-        placeholder: 'list placeholder',
-        distance: 7,
-        handle: handleSelector,
-        disabled: !Utils.canModifyBoard() || !Utils.canDragBoardObject('list'),
-        dropOnEmpty: true,
-        start(evt, ui) {
-          ui.helper.css('z-index', 1000);
-          ui.placeholder.height(ui.helper.height());
-          ui.placeholder.width(ui.helper.width());
-          ui.placeholder.css('min-width', ui.helper.width()); // #6763
-          EscapeActions.executeUpTo('popup-close');
-          if (boardComponent) boardComponent.setIsDragging(true);
-          suspendBoardDragscroll(); // #6558
-        },
-        stop(evt, ui) {
-          resumeBoardDragscroll(); // #6558
-          if (boardComponent) boardComponent.setIsDragging(false);
-          saveSorting(ui);
-        },
-      });
-      // Reactively update handle when user toggles desktop drag handles
-      tpl.autorun(() => {
-        const newHandle = Utils.isTouchScreenOrShowDesktopDragHandles()
-          ? '.js-list-handle'
-          : '.js-list-header';
-        if ($parent.data('uiSortable') || $parent.data('sortable')) {
-          try {
-            // #6745: only what changed.
-            setSortableOptions($parent, {
-              handle: newHandle,
-              disabled: !Utils.canModifyBoard() || !Utils.canDragBoardObject('list'),
-            });
-          } catch (e) {}
-        }
-      });
+      initListsSortable(tpl, $parent, handleSelector, boardComponent);
     }
   }, 100);
 });
@@ -1108,63 +1121,8 @@ Template.listsGroup.onRendered(function () {
     const $parent = $listsDom;
 
     // Initialize sortable even if there are no lists (to allow dropping into empty swimlanes)
-    if ($parent.length > 0 && $parent.hasClass('js-lists')) {
-      if ($parent.data('uiSortable') || $parent.data('sortable')) {
-        try {
-          $parent.sortable('destroy');
-        } catch (e) {}
-      }
-
-      // Check for drag handles
-      const $handles = $parent.find('.js-list-handle');
-
-      // Test if drag handles are clickable
-      $handles.on('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-      });
-
-      $parent.sortable({
-        connectWith: connectWithSelector($parent),
-        tolerance: 'pointer',
-        appendTo: '.board-canvas',
-        helper: 'clone',
-        items: '.js-list:not(.js-list-composer)',
-        placeholder: 'list placeholder',
-        distance: 7,
-        handle: handleSelector,
-        disabled: !Utils.canModifyBoard() || !Utils.canDragBoardObject('list'),
-        dropOnEmpty: true,
-        start(evt, ui) {
-          ui.helper.css('z-index', 1000);
-          ui.placeholder.height(ui.helper.height());
-          ui.placeholder.width(ui.helper.width());
-          ui.placeholder.css('min-width', ui.helper.width()); // #6763
-          EscapeActions.executeUpTo('popup-close');
-          if (boardComponent) boardComponent.setIsDragging(true);
-          suspendBoardDragscroll(); // #6558
-        },
-        stop(evt, ui) {
-          resumeBoardDragscroll(); // #6558
-          if (boardComponent) boardComponent.setIsDragging(false);
-          saveSorting(ui);
-        },
-      });
-      // Reactively update handle when user toggles desktop drag handles
-      tpl.autorun(() => {
-        const newHandle = Utils.isTouchScreenOrShowDesktopDragHandles()
-          ? '.js-list-handle'
-          : '.js-list-header';
-        if ($parent.data('uiSortable') || $parent.data('sortable')) {
-          try {
-            // #6745: only what changed.
-            setSortableOptions($parent, {
-              handle: newHandle,
-              disabled: !Utils.canModifyBoard() || !Utils.canDragBoardObject('list'),
-            });
-          } catch (e) {}
-        }
-      });
+    if ($parent.length > 0) {
+      initListsSortable(tpl, $parent, handleSelector, boardComponent);
     }
   }, 100);
 });
@@ -1337,7 +1295,7 @@ Template.linkListPopup.events({
       await Meteor.callAsync('createLinkedList', { boardId: board._id, sourceBoardId, sourceListId });
       Popup.back();
     } catch (error) {
-      alert(error?.reason || error?.message || 'Could not link the list.');
+      alert(errorMessage(error));
     }
   },
 });
