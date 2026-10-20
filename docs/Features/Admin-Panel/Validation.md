@@ -91,6 +91,7 @@ are not reachable from the current Admin Panel menu. Current storage panes use
 | Move Attachment (`move`) | [attachmentBulkMove.js](../../../server/attachmentBulkMove.js) | Persisted move jobs, progress, pause/resume/cancel and location repair. Cloud endpoints require live-service tests. |
 | Default Save Storage (`default-save-storage`) | [attachmentStorageSettings.js](../../../server/models/attachmentStorageSettings.js) | Validates backend and persists default for new files. |
 | Limits (`limits`) | [attachmentStorageSettings.js](../../../server/models/attachmentStorageSettings.js) | Saves size/blocking policies used by upload/download routes. |
+| Retention (`retention`) | [attachmentRetention.js](../../../server/attachmentRetention.js) | New (#6789): the shared override form on the catalog's attachmentRetention section; the nightly job soft-deletes through the card's Delete and purges through Attachments.removeAsync. Rules in [attachmentRetention.test.cjs](../../../tests/attachmentRetention.test.cjs); the pane in a Chromium/Firefox/WebKit UI spec. |
 | MongoDB GridFS Storage (`gridfs`) | [fileStoreStrategy.js](../../../models/lib/fileStoreStrategy.js) | Native GridFS read/write and metadata statistics; compaction requires actual MongoDB, not SQLite. |
 | Filesystem Storage (`filesystem`) | [fileStoreStrategy.js](../../../models/lib/fileStoreStrategy.js) | Filesystem read/write strategies and metadata statistics. |
 | S3/MinIO Storage (`s3`) | [cloudStorage.js](../../../models/lib/cloudStorage.js) | Real S3 adapter, connection test and secret-preserving settings; configured live storage not exercised here. |
@@ -107,6 +108,7 @@ are not reachable from the current Admin Panel menu. Current storage panes use
 | Security (`security`) | [settings.js](../../../models/settings.js) | Rich-text and import/export policies, enforced by renderers and server guards. |
 | Delete (`delete`) | [settings.js](../../../server/models/settings.js) | Explicit administrator permanent-delete setting; purge remains a separate action. |
 | Notifications (`notifications`) | [settings.js](../../../models/settings.js) | Activity, notification and watching switches; separate from delivery preferences. |
+| Backup (`backup`) | [backup.js](../../../server/methods/backup.js) | Recorded backup runs, health of the instance backup and its history (backupHistory method); settings stay in Attachments / Backup. |
 | Security Report (`security-report`) | [eventLog.js](../../../models/eventLog.js) | Recorded security events, search, detail and acknowledgement. |
 | Impersonation Report (`impersonation`) | [impersonationReport.js](../../../server/publications/impersonationReport.js) | Scoped event publication and counts. |
 | Performance (`performance`) | [adminProblems.js](../../../client/components/settings/adminProblems.js) | Persisted performance options; card loading uses the active loading policy. |
