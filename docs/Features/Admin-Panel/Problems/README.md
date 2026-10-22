@@ -33,6 +33,16 @@ Below that is the acknowledge list of the Security / Speed / Tests problem strea
 The Security Report also records denied passwordless code requests after five
 requests per source address in one minute. Meteor's per-connection Accounts
 limit still applies independently.
+Attempts that Meteor 3.5.3's security fixes refuse - a crashing DDP message,
+a `__proto__` update field, a malformed `import()` request, an OAuth token of
+another application - are recorded as **Meteor DDP**, **Meteor allow-deny**,
+**Meteor dynamic-import** and **Meteor OAuth**
+([details](../../../Security/Meteor-3.5.3-Security-Fixes-2026-10-22.md)).
+An import or export refused by the transfer boundary (a cycle, a non-plain
+object, a size limit) is **ImportExportValidation**. One that failed for
+another reason - a library that threw, as sanitize-html 2.18.0 did on nested
+`<iframe>` - is **ImportExportFailure**: detected, never an attempt, and it
+never disables the account of the user whose import or export it was.
 
 ## The menu, in two named groups
 

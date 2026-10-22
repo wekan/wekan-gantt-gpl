@@ -107,6 +107,164 @@ its reason.
 
 </details>
 
+# v12.60 2026-10-22 WeKan ® release
+
+**In short:** **sanitize-html 2.18.1** fixes a stack overflow that nested
+`<iframe>` tags caused in WeKan's import and export sanitizer, and a failed
+import or export no longer **disables the account** of whoever ran it unless it
+was an attempt. The forked Meteor **dynamic-import** and **meteor shell** keys
+come from the crypto RNG.
+
+This release fixes the following CRITICAL SECURITY ISSUES:
+
+**Imports and exports** - what nested `<iframe>` did to the sanitizer, and who
+a failure is blamed on.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/96ed9ad202">sanitize-html 2.18.1: nested iframes no longer crash imports and exports, or lock out who ran them</a>. Thanks to xet7.</summary>
+
+sanitize-html 2.18.0 re-sanitized the fallback of a discarded `<iframe>` with
+no recursion limit
+([GHSA-c9rx-x947-fp3h](https://github.com/advisories/GHSA-c9rx-x947-fp3h),
+CWE-674). WeKan's server sanitizer (`server/lib/inputSanitizer.js`) discards
+every tag, so it took that path: a few kilobytes of nested `<iframe>` threw
+`RangeError: Maximum call stack size exceeded` in `secureTransfer`, which
+sanitizes every import and export. `secureTransfer` records a throw as a high
+"blocked" event naming the user, and that disables the account, so a card
+planted with the payload locked out the next member who exported the board.
+2.18.1 bounds the recursion and keeps `nestingLimit` across it; it also drops
+the `deepmerge` dependency.
+
+[The tests](https://github.com/wekan/wekan/commit/d89bcab8e0):
+`tests/sanitizeHtmlNestedIframe.test.cjs` runs WeKan's own `sanitizeInput`
+options on three nested-iframe payloads and checks the installed and locked
+versions; with 2.18.0 it fails with the same `RangeError`. Its negative test
+fails if anything else imports sanitize-html. The Playwright spec exports and
+imports a board holding the payload and checks that nobody is locked out.
+Nothing is refused, so there is no Admin Panel → Problems key.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/567f99227b">A failed import or export disables an account only when it was an attempt</a>. Thanks to xet7.</summary>
+
+`secureTransfer` recorded every throw as a high "blocked" event naming the
+user, and that disables the account - so sanitize-html 2.18.0's crash, or any
+other library fault, locked out whoever happened to run the import or export.
+The transfer boundary now marks its own refusals (a cycle, a non-plain object,
+a size limit), and only those are recorded as blocked: high, and medium for a
+size limit, as before. Anything else shows in Admin Panel → Problems as
+ImportExportFailure: detected, still naming whose import or export it was, and
+never blocking an account.
+
+`tests/transferFailure.test.cjs` drives real boundary refusals and a sanitizer
+that throws through the account-blocking decision itself, and fails with the
+old `secureTransfer`. It also fails if the boundary throws a plain `Error` or
+anything other than `secureTransfer` calls it.
+
+</details>
+
+and fixes the following SECURITY ISSUES found by GitHub CodeQL code scanning:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6efd39a70e">The dynamic-import and meteor shell keys come from the crypto RNG</a>. Thanks to GitHub CodeQL and xet7.</summary>
+
+Alert 591 (js/insecure-randomness, CWE-338), in WeKan's fork of Meteor's
+`dynamic-import`: the key that lets a request read the SERVER's dynamic modules
+(`?key=` on `/__meteor__/dynamic-import/fetch`) came from `Math.random()`,
+whose state can be recovered from earlier outputs, and was compared with
+`===`. `meteor shell`'s connection key, which runs code in the server process,
+was made and compared the same way. Meteor 3.5.3 and 3.6-rc.0 both have this.
+
+Both now come from `crypto.randomBytes` (160 and 128 bits) and are compared
+with `crypto.timingSafeEqual`. `tests/meteorForkRandomKeys.test.cjs` runs both,
+and fails on any `Math.random()` in the forks and on a key, secret, token,
+nonce, salt, password or code made from `Math.random()` anywhere in the tree. A
+wrong key is not recorded in Admin Panel → Problems: another WeKan instance
+behind the same load balancer legitimately sends its own.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
+# v12.59 2026-10-22 WeKan ® release
+
+**In short:** WeKan carries **Meteor 3.5.3's six security fixes** - DDP,
+allow/deny, dynamic import, Google and Facebook login, and meteor shell - on
+Meteor 3.6-rc.0, which does not have them yet. **Release recovery** no longer
+stops on a passing GitHub API error, and **Cancel workflow** is kept able to
+stop every release workflow.
+
+This release fixes the following CRITICAL SECURITY ISSUES:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e0189bc53b">Meteor 3.5.3's six security fixes on Meteor 3.6-rc.0</a>. Thanks to Meteor developers, Vext Labs and xet7.</summary>
+
+Meteor published the same six fixes as 3.3.3, 3.4.2 and 3.5.3
+([announcement](https://forums.meteor.com/t/meteor-security-releases-3-3-3-3-4-2-and-3-5-3/64836)).
+3.6-rc.0, which WeKan runs, does not have them: its tag is behind 3.5.3 by
+exactly the 15 security commits. Going back to 3.5.3 would also mean Node.js
+24 and Rspack 1, so WeKan carries 3.6-rc.0's `allow-deny`, `ddp-server`,
+`dynamic-import`, `facebook-oauth`, `google-oauth` and `shell-server` in
+`packages/` with Meteor's 3.5.3 patch applied unchanged:
+
+- DDP: a message named `__proto__`, `toString` or not a string, and an async
+  handler that rejected, crashed the server.
+- allow/deny: a top-level `__proto__` in an update was missing from the field
+  list the validators saw.
+- dynamic `import()`: requests are bounded in size (413) and complexity (400).
+- Google and Facebook direct-token login: a token issued to another
+  application was accepted. Identity now comes from the provider, and a
+  Facebook verification error no longer carries the app secret.
+- `meteor shell`: its history and compile cache are private.
+- Deploy discovery is in `meteor-tool`, which an app cannot replace. WeKan is
+  never deployed with `meteor deploy`, and a test keeps it so.
+
+Refused attempts show in Admin Panel → Problems as Meteor DDP, Meteor
+allow-deny, Meteor dynamic-import and Meteor OAuth, and none disables an
+account. `tests/meteor353SecurityFixes.test.cjs` runs each fix's own code and
+searches the tree for the shape of each fault; every check fails on the unfixed
+packages, and the suite fails when `.meteor/release` moves on, because a fork
+would silently keep 3.6-rc.0's code. The Playwright spec sends each attack to
+a running WeKan built with the forks. See
+[Meteor 3.5.3 security fixes](docs/Security/Meteor-3.5.3-Security-Fixes-2026-10-22.md).
+
+</details>
+
+and has the following release-tooling fixes:
+
+**Release workflows** - how a release run recovers from GitHub errors, and how
+it stops when cancelled.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e304e1948a">Release recovery waits out GitHub API errors instead of dying on one</a>. Thanks to xet7.</summary>
+
+The Recover job of Release All missing died on one HTTP 502 from the GitHub
+API while `gh run watch --exit-status` listed the rerun's jobs, so its plan
+and every build after it were skipped. `releases/retry-failed-release.py` now
+polls `gh run view`, retries up to ten API errors in a row, waits for the new
+attempt instead of reading the old attempt's failure, and stops only on the
+rerun's own conclusion. `tests/retryFailedRelease.test.py` pins the 502, a
+failed rerun, a lasting outage and the stale attempt, and that `gh run watch`
+is gone.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/94e1749977">Every workflow's jobs that run after a cancel end on their own</a>. Thanks to xet7.</summary>
+
+Cancel workflow does not cancel a job whose `if:` is still true, and
+`always()` is true in a cancelled run. `tests/releaseCancelSafeJobs.test.cjs`
+checked only `release-all.yml`; it now fails on a job on `always()` in any
+workflow that is a reusable-workflow call or has no timeout of 60 minutes or
+less. Every such job today is a short report and is bounded. node-patches had
+eleven five-hour resume stages called this way, and Cancel workflow did not
+stop them.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v12.58 2026-10-21 WeKan ® release
 
 **In short:** an existing board can be **saved as a board template**, large
