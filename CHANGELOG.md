@@ -107,6 +107,93 @@ its reason.
 
 </details>
 
+# v12.62 2026-10-22 WeKan ® release
+
+**In short:** an opened card is **decluttered** - add buttons on their title's
+line, a compact attachment list with its upload rules in the upload popup, and
+two new **Show on Card** rows for attachment previews and details - and
+**Board Settings / Card** spreads into columns to fit the screen, with rows
+dragged by handle, icon or label. List moves no longer raise false
+**HistoryIntegrity** reports, refused edits no longer **disable accounts**, and
+a
+restarting database is no longer a **crash**.
+
+This release adds the following new features:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2c520ef382">A decluttered opened card, a compact attachment list, and Card Settings that fits the screen</a>. Thanks to mueschel and xet7.</summary>
+
+[#6796](https://github.com/wekan/wekan/issues/6796): an opened card gave most
+of its height to controls with nothing in them. A field's add button now sits
+on its title's line; Requested and Assigned By put their two buttons side by
+side; the checklist controls share a line. Attachments: the upload rules are in
+the upload popup instead of above every list, "+" is a small button, a file
+with nothing to preview gets a small file button, and the name has a line of
+its own. Two new Board Settings / Card / Show on Card rows, **Attachments:
+Preview** and **Attachments: Details**, are on by default.
+
+Board Settings / Card is a centred panel as wide (up to 1800px) and tall as
+the window, and each list spreads into as many columns as fit, read top to
+bottom: on 1920x1080 nothing scrolls. Its rows are dragged by the handle, the
+icon or the label with drag handles on, and by the icon or the label with them
+off; before, only the handle dragged, and only vertically. A Node test and a
+Playwright spec cover the layout, the new rows and every drag case.
+
+</details>
+
+and fixes the following bugs:
+
+**History** - the checksum every change history row carries.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/76f9d41bf4">A list move with no swimlane no longer fails its own history checksum</a>. Thanks to Raymond-Voogt and xet7.</summary>
+
+[#6797](https://github.com/wekan/wekan/issues/6797): Admin Panel / Problems /
+Security showed HistoryIntegrity (critical) 81,833 times. A list bound to no
+one swimlane has `swimlaneId: ''`; the legacy history append hashed the row
+with '' and stored it through collection2's default clean, which turned it into
+null, so every such move failed its own checksum. It now inserts as the
+stored-chain path does, and rows already stored that way verify - null for ''
+only in the id and label fields, so any real change still fails.
+`tests/historyEmptyStringChecksum.test.cjs` fails on the code before the fix.
+
+</details>
+
+
+**Admin Panel / Problems** - which events disable an account or are reported as
+a crash.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/425b4ddea7">An ordinary refused edit on one's own board no longer disables the account</a>. Thanks to Raymond-Voogt and xet7.</summary>
+
+[#6798](https://github.com/wekan/wekan/issues/6798): four accounts on one
+instance were disabled in three days. A Worker's allowed card move or checklist
+tick was first refused by the general card check, which recorded
+LinkedWriteBleed (high, blocked) and disabled the Worker; a read-only or
+comment-only member whose screen still offered an edit was disabled the same
+way. The Worker rules now ask without recording first and record only a change
+still refused, and `authz.linked-write` is still recorded but no longer
+disables an account. `tests/workerNoSelfBlock.test.cjs` runs both rules from
+their source.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f37204b1c3">A MongoDB pod restarting is a lost connection, not a critical crash</a>. Thanks to Raymond-Voogt and xet7.</summary>
+
+[#6799](https://github.com/wekan/wekan/issues/6799): while a MongoDB pod
+restarted in Kubernetes, its name did not resolve and nine critical CrashBleed
+events were recorded although WeKan kept running. `getaddrinfo ENOTFOUND` and
+`EAI_AGAIN` for the database's own host (from MONGO_URL and MONGO_OPLOG_URL) are
+now a lost connection, transient at startup and at run time - another host
+that does not resolve is still not a database problem - and the crash recorder
+skips what is transient. `tests/databaseDnsRestart.test.cjs` runs the guards
+and the recorder's own listeners.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v12.61 2026-10-22 WeKan ® release
 
 **In short:** WeKan's npm dependencies move to their newest versions, among
@@ -8677,80 +8764,6 @@ it and put it on PATH for their later `7z` steps, falling back to Chocolatey,
 retried five times, only on an image without it.
 `tests/releaseWindows7zip.test.cjs` checks all three jobs and fails when any
 workflow runs a bare `choco install` again.
-
-</details>
-
-Thanks to above GitHub users for their contributions and translators for their translations.
-
-# v12.29 2026-10-11 WeKan ® release
-
-**In short:** **Sandstorm** notifications and the activity log work again, and
-Powerbox identity claims can be redeemed, without the Node 14 Cap'n Proto addon
-that had switched them off: WeKan now speaks Cap'n Proto to the grain's bridge
-in plain JavaScript, through a fork of **capnp-es** checked against the
-reference C++ implementation. A booting grain also stops logging two false
-warnings.
-
-This release fixes the following bugs:
-
-**Sandstorm** - Cap'n Proto to the grain's bridge without a native addon, and a
-quieter grain log.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/ee63d478e3">Activity events and Powerbox identity claims work again on Node 26</a>. Thanks to xet7.</summary>
-
-Sandstorm's notifications and activity log, and redeeming a Powerbox identity
-request, are Cap'n Proto calls on sandstorm-http-bridge's `/tmp/sandstorm-api`
-socket. The bridge's HTTP proxy has no route for either - it implements only
-`claim` for HTTP APIs and Bearer forwarding (sandstorm
-`src/sandstorm/bridge-proxy.c++`) - so they went through node-capnp
-(`capnp.node`), built for Node 14, and every grain on Node 26 ran without them.
-`imports/sandstorm/bridgeClient.mjs` now makes the same calls in plain
-JavaScript, with schema classes generated from Sandstorm's own `.capnp` files by
-`releases/sandstorm-capnp-schemas.sh`. The activity hook also reads the board
-from the activity instead of the hard-coded `sandstorm` board a multi-board
-grain no longer has, and a notification that cannot be sent no longer fails the
-change that caused it. The `.spk` drops the 33.6 MB `capnp.node`.
-`tests/sandstormCapnpRpc.test.cjs` sends an activity event and redeems an
-identity request against the reference C++ RPC implementation with Sandstorm's
-schemas, and checks that the session context and identities are released after
-use and that a forged request token is refused. Not yet tried on a live grain.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/3eec76b366">The capnp-es fork completes the Cap'n Proto RPC a C++ peer needs</a>. Thanks to xet7.</summary>
-
-capnp-es 0.0.16 is vendored as `npm-packages/capnp-es`, with its tarball SHA256
-recorded. Its experimental RPC could not talk to sandstorm-http-bridge: it
-ignored Resolve, Release and Disembargo, never released an import, left every
-call the C++ side forwarded back as a tail call pending forever, released
-question ids instead of export ids, answered bootstrap with a null capability,
-and lost a message whenever two arrived together. Its compiler also declared
-structs from other files twice, so the generated Sandstorm modules did not load.
-The fork fixes each, in `patches/wekan.patch`. The test drives every one of
-those messages from a hand-built peer and against the C++ implementation; on
-upstream 0.0.16 it hangs at the first case.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/5e25090e8f">A booting grain no longer logs two false warnings</a>. Thanks to xet7.</summary>
-
-Node 26 printed `ExperimentalWarning: localStorage is not available because
---localstorage-file was not provided` into every grain log, because Node 25+
-has a global `localStorage` and server code merely probing for it triggers the
-warning. WeKan's server never uses Web Storage, so `start-memory.js` now adds
-`--no-experimental-webstorage` to `NODE_OPTIONS`. It also keeps an
-administrator's own heap size or Web Storage choice while adding whatever is
-missing, instead of computing nothing at all once `NODE_OPTIONS` was set. The
-ROOT_URL email warning of #6538 is skipped when `SANDSTORM=1`: a grain's
-ROOT_URL is always its loopback address behind sandstorm-http-bridge, and the
-grain has no SMTP of its own, so the advice to `snap set wekan root-url=...`
-never applied.
-`tests/sandstormNoShell.test.cjs` runs the launcher against a stub that touches
-`localStorage` and fails if the warning appears, and checks that the bare stub
-does print it.
 
 </details>
 
