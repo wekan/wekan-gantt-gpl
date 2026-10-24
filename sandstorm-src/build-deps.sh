@@ -14,11 +14,13 @@
 # Env (override as needed):
 #   OUT             work/output dir                    [$HOME/projects/meteor-spk]
 #   SANDSTORM_NODE_VERSION  exact Node to bundle   [the Dockerfile's NODE_VERSION]
-#   FERRETDB_TAG    wekan/FerretDB release to bundle   [newest release]
-#   FERRETDB_URL    URL of the ferretdb-amd64 binary   [that release's asset]
+#   FERRETDB_TAG    wekan/FerretDB release to bundle   [newest one with ferretdb-sqlite-amd64]
+#   FERRETDB_SOURCE download (prebuilt SQLite-only) | build (from source, local only)   [download]
+#   FERRETDB_SRC    FerretDB checkout to build from    [$OUT/FerretDB, cloned at FERRETDB_TAG]
+#   FERRETDB_URL    URL of a FerretDB amd64 binary     [releases/ferretdb-asset.sh picks it; download only]
 #
 # The grain gets the SAME Node.js and FerretDB as every other platform: the exact
-# Node the Dockerfile pins and the FerretDB release ferretdb-latest-tag.sh names,
+# Node the Dockerfile pins and the FerretDB release ferretdb-asset.sh picks,
 # which are the versions https://wekan.fi/version.txt advertises (written by
 # releases/update-website-version-info.sh from those same two sources). npm is
 # not bundled - a grain never runs it - but the workflows that pack the .spk
@@ -102,19 +104,50 @@ cp -fL --remove-destination "$LOADER" "$DEPS/lib/x86_64-linux-gnu/ld-linux-x86-6
 # NOTE: if `meteor-spk pack` / `spk dev` later reports a missing library for node
 # or ferretdb, add it here (or use `spk dev` tracing to regenerate the tree).
 
-echo "==> [4/7] FerretDB v1 (amd64) at deps root"
-# Download only the amd64 binary (per-arch assets, no ferretdb.zip) of the newest
-# wekan/FerretDB release, named by its TAG so the log says which version the grain
-# got. That is the version version.txt shows. If the tag cannot be looked up,
-# /releases/latest/download/ is the same release, just unnamed.
-FERRETDB_TAG="${FERRETDB_TAG:-$(bash "$REPO/releases/ferretdb-latest-tag.sh")}"
-if [ -n "$FERRETDB_TAG" ]; then
-  FERRETDB_URL="${FERRETDB_URL:-https://github.com/wekan/FerretDB/releases/download/$FERRETDB_TAG/ferretdb-amd64}"
+echo "==> [4/7] FerretDB v1 (amd64, SQLite handler only) at deps root"
+# sandstorm-src/start.js runs `--handler=sqlite` and nothing else, so the
+# PostgreSQL, MySQL and SAP HANA handlers - and the pgx/MySQL drivers behind
+# them - are dead weight in a grain. wekan/FerretDB publishes a binary without
+# them, ferretdb-sqlite-amd64 (-tags ferretdb_no_postgresql,ferretdb_no_mysql,
+# no ferretdb_hana). See docs/Platforms/FOSS/Container/Sandstorm/Smaller-wekan-spk.md.
+#
+# FERRETDB_SOURCE=download (default, and what the workflows use): that PREBUILT
+# binary, through releases/ferretdb-asset.sh - the same choice as every other
+# platform: the newest wekan/FerretDB release that has ferretdb-sqlite-amd64,
+# and the full ferretdb-amd64 of the newest release until one does, verified
+# against its .sha256sum. The log names the asset and the release, which is the
+# version version.txt shows. FERRETDB_TAG pins a release; FERRETDB_URL pins a file.
+# FERRETDB_SOURCE=build: build it from source with those tags instead, for a
+# local experiment with a FerretDB change - never in a release workflow.
+FERRETDB_SOURCE="${FERRETDB_SOURCE:-download}"
+FERRETDB_REPO="${FERRETDB_REPO:-https://github.com/wekan/FerretDB.git}"
+FERRETDB_TAGS="ferretdb_no_postgresql,ferretdb_no_mysql"
+if [ "$FERRETDB_SOURCE" = "build" ]; then
+  FERRETDB_TAG="${FERRETDB_TAG:-$(bash "$REPO/releases/ferretdb-latest-tag.sh")}"
+  command -v go >/dev/null 2>&1 || { echo "FERRETDB_SOURCE=build needs Go (or leave FERRETDB_SOURCE=download)" >&2; exit 1; }
+  SRC="${FERRETDB_SRC:-$OUT/FerretDB}"
+  if [ ! -d "$SRC/.git" ]; then
+    git clone --depth 1 ${FERRETDB_TAG:+--branch "$FERRETDB_TAG"} "$FERRETDB_REPO" "$SRC"
+  fi
+  echo "    FerretDB ${FERRETDB_TAG:-$(git -C "$SRC" rev-parse --short HEAD)} from source, -tags $FERRETDB_TAGS"
+  # GOTOOLCHAIN=auto: go.mod names the Go release FerretDB is built with, and an
+  # older `go` on the runner fetches exactly that one.
+  ( cd "$SRC" && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GOTOOLCHAIN=auto \
+      go build -mod=readonly -trimpath -ldflags "-s -w" -tags "$FERRETDB_TAGS" \
+      -o "$DEPS/ferretdb" ./cmd/ferretdb )
+elif [ -n "${FERRETDB_URL:-}" ]; then
+  echo "    FerretDB from FERRETDB_URL: $FERRETDB_URL"
+  bash "$FETCH" -o "$DEPS/ferretdb" "$FERRETDB_URL"
 else
-  FERRETDB_URL="${FERRETDB_URL:-https://github.com/wekan/FerretDB/releases/latest/download/ferretdb-amd64}"
+  ferret_meta="$(bash "$REPO/releases/ferretdb-asset.sh" amd64 -o "$DEPS/ferretdb")" \
+    || { echo "FerretDB for the grain could not be downloaded; the lines above say why." >&2; exit 1; }
+  eval "$ferret_meta"
+  FERRETDB_TAG="$FERRET_TAG"
+  echo "    FerretDB ${FERRET_TAG:-latest}: $FERRET_ASSET ($FERRET_URL)"
 fi
-echo "    FerretDB ${FERRETDB_TAG:-latest}: $FERRETDB_URL"
-bash "$FETCH" -o "$DEPS/ferretdb" "$FERRETDB_URL"
+# The grain must still have the one handler it runs, whichever binary it got.
+"$DEPS/ferretdb" --help 2>&1 | grep -q -- '--sqlite-url' \
+  || { echo "FerretDB in the grain has no sqlite handler" >&2; exit 1; }
 chmod +x "$DEPS/ferretdb"
 python3 "$REPO/releases/check-telemetry.py" --kind ferretdb "$DEPS/ferretdb"
 

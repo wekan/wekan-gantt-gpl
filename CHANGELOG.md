@@ -107,6 +107,145 @@ its reason.
 
 </details>
 
+# v12.64 2026-10-24 WeKan ® release
+
+**In short:** a **database speed test** times the common WeKan queries on every
+database WeKan runs on, with twice a production WeKan of data, and checks they
+all answer the same; its findings made **FerretDB** several times faster and
+stopped MariaDB losing edits. Every platform runs the prebuilt
+**ferretdb-sqlite**
+FerretDB, the **Sandstorm .spk** carries only what a grain runs, and every build
+loads **collection2** before the models.
+
+This release adds the following new features:
+
+**Sandstorm** - a smaller .spk, built from what a grain actually uses.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e413cd4720">The .spk leaves out every login method but Sandstorm's, and FerretDB's other database handlers</a>. Thanks to xet7.</summary>
+
+A grain has one login (Sandstorm's), one database (FerretDB on SQLite) and one
+mailbox (the grain's own address), but the .spk carried every login package
+WeKan has and a FerretDB with the PostgreSQL, MySQL and SAP HANA handlers.
+`releases/sandstorm-slim-spk.sh`, now used by `sandstorm.yml` and
+`release-all.yml`, builds with a package profile
+(`releases/sandstorm-slim.mjs`) that drops accounts-password, 2FA,
+passwordless, lockout, OAuth2/OIDC, CAS, LDAP, SAML and the seven social logins
+for that one build. It always trims the bundle for a linux/x64 sockjs grain,
+verifies none of those packages got in and packs with `spk pack`.
+`sandstorm-src/build-deps.sh` builds FerretDB from source with
+`ferretdb_no_postgresql,ferretdb_no_mysql`. Under Sandstorm the Admin Panel
+hides the login panes, Database migration, the IMAP/webhook mail settings and
+the password fields, and the REST password login answers `sandstorm-sso-only`.
+Against wekan-12.63-sandstorm.spk the file is 3.8 MiB (2.1 %) smaller and
+unpacks 26.7 MiB smaller. Docker, Snap and the bundles are unchanged. (The
+FerretDB source build was replaced by the prebuilt SQLite-only binary, see
+FerretDB below.)
+`tests/sandstormSlim.test.cjs` and
+`tests/playwright/specs/sandstorm-slim.e2e.js` pin it. Design:
+[Smaller-wekan-spk.md](docs/Platforms/FOSS/Container/Sandstorm/Smaller-wekan-spk.md).
+
+</details>
+
+**FerretDB** - every platform takes the smaller SQLite-only build, prebuilt.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/89da0e5be7">Every platform runs the prebuilt SQLite-only ferretdb-sqlite binary from wekan/FerretDB</a>. Thanks to xet7.</summary>
+
+wekan/FerretDB now releases `ferretdb-sqlite-<arch>` beside `ferretdb-<arch>`:
+the same FerretDB with only the SQLite handler, about 5 MB smaller, and also
+as the `ferretdb-sqlite` image. `releases/ferretdb-asset.sh` chooses for every
+download: the newest release that has `ferretdb-sqlite-<arch>`, and until one
+does, the full `ferretdb-<arch>` of the newest release, which has the SQLite
+handler too. The log says which one was taken. It verifies the download
+against its `.sha256sum` and gives the tag, URL and checksum to the provenance
+table. All bundle jobs of `release-all.yml`, `release-all-missing.yml`,
+`bsd.yml`, the preflight and the local release bundle use it, so the Docker
+images, snap, AppImage, Flatpak, macOS and Windows packages get it too. No
+workflow builds FerretDB: the Sandstorm deps download the same binary. The
+default `docker-compose.yml` downloads `ferretdb-sqlite-<arch>`
+(`FERRETDB_BINARY`); the PostgreSQL, MySQL, MariaDB and SAP HANA compose files
+keep the full binary. `tests/ferretdbSqliteAsset.test.cjs` pins it. See
+[FerretDB v1](docs/Databases/FerretDB/1/README.md).
+
+</details>
+
+**Databases** - how fast each database answers WeKan, and whether the same.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/70485c38df">A database speed test: the common WeKan queries on every database, twice a production WeKan of data</a>. Thanks to xet7.</summary>
+
+`docs/Databases/FerretDB/1/SpeedTest/speedtest.sh` (build.sh / build.bat ->
+Tests -> Database speed test) loads 30,116 users, 92,306 boards, 221,038 lists,
+222,546 swimlanes and 615,070 cards - twice a production WeKan, skewed like a
+real one - with WeKan's own indexes into SQLite, PostgreSQL, MySQL and MariaDB
+through FerretDB v1, MongoDB 6, 7, 8 and 9 and FerretDB 2, one at a time, and
+times 18 queries as WeKan builds them. `Results.md` ranks the databases fastest
+first, and the run fails when any answer or stored write differs from MongoDB's.
+MongoDB 9 was fastest; FerretDB + SQLite, after the FerretDB fixes it led to
+(below), came next. The README says what was found, what was improved and what
+could still be: sorting in the database, multikey indexes beyond SQLite,
+MySQL/MariaDB reads through their index columns, SQLite's JSONB.
+
+</details>
+
+and fixes the following bugs:
+
+**Due Cards** - what the page reads to find them.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c64b3a3b1d">The page reads only the ids and members of the boards it may show</a>. Thanks to xet7.</summary>
+
+The publication fetched every board the user may see - every public board of
+the instance among them, whole - to read two fields, and wrapped its board list
+in an `$or` that neither MongoDB nor FerretDB could use an index for. It asks
+for
+`_id` and `members` only, and with no assigned-only board uses a plain `boardId`
+list; an assigned-only board still shows only the user's assigned cards. With
+FerretDB's fixes, Due Cards on FerretDB + SQLite went from 34 s to 12.8 s on the
+speed test. `tests/dbSpeedTest.test.cjs` checks both board scopes.
+
+</details>
+
+**FerretDB 2** - the compose file that runs WeKan on it.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f9e1e90131">Its compose file starts with the current DocumentDB image</a>. Thanks to xet7.</summary>
+
+`ghcr.io/ferretdb/postgres-documentdb:17` installs `pg_cron`, which may only be
+created in the database named `postgres`; with `POSTGRES_DB: ferretdb` the
+DocumentDB extension failed to install and the database never started.
+`docker-compose-ferretdb-v2-postgresql.yml` uses `postgres` now - found when the
+speed test started FerretDB 2 from that file's images.
+
+</details>
+
+**Collections** - which attachSchema the models get.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2699f4deea">Collection2 is loaded before the models, so every write is cleaned and given its defaults</a>. Thanks to xet7.</summary>
+
+Collection2's attachSchema is in its lazy main module, which only
+aldeed:schema-index loads, with an async `Collection2.load()`. The models
+attached their schemas with whichever attachSchema existed first: collection2's,
+or the bare shim in `imports/collectionHelpers.js`, which never cleans a write.
+The full build happened to load collection2 first. The smaller Sandstorm build
+reached the models sooner, so a new board's swimlane was stored without
+`archived`, `sort` and `type`, and the board opened empty. `server/main.js` now
+loads `meteor/aldeed:collection2/main` before the models in every build.
+Without accounts-password the server also no longer stops on
+`Accounts.emailTemplates` (`server/lib/accountsEmailTemplates.js`) or on
+useraccounts' "at least one account service". `tests/sandstormSlim.test.cjs`
+and the board, list and card test in `sandstorm-slim.e2e.js` pin it.
+
+</details>
+
+and has the following developer-tooling fix:
+
+- [The Sandstorm package-import guard escapes the whole package name in its pattern](https://github.com/wekan/wekan/commit/f1e447dd36). Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v12.63 2026-10-22 WeKan ® release
 
 **In short:** copying a card, linking it to another board or making one from a
@@ -8607,192 +8746,6 @@ of what is built matches the v12.30 and v12.31 release files and the
 architectures of the Docker image: the armv7, armv6, Windows and macOS bundles
 are included, loong64 is marked as not built, and the win32 fix above is
 described. FreeBSD amd64 is listed as having both binaries now.
-
-</details>
-
-Thanks to above GitHub users for their contributions and translators for their translations.
-
-# v12.31 2026-10-11 WeKan ® release
-
-WeKan can be packaged as a Nextcloud External App with Nextcloud sign-in and
-persistent FerretDB SQLite storage. The companion and publisher are implemented;
-a real Docker build and Nextcloud/HaRP deployment still need validation before
-production publication. Ready files document how WeKan can be added to
-**ZimaOS**, **TrueNAS**, **Coolify**, **Dokploy** and the **AUR**.
-
-This release adds the following feature and fixes:
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/a325cfe991">Nextcloud ExApp sign-in and persistent SQLite packaging</a>. Thanks to xet7.</summary>
-
-The companion `wekan/nextcloud` provides AppAPI lifecycle endpoints, a
-navigation entry, authenticated HTTP/WebSocket forwarding, HaRP support and
-supervised WeKan/FerretDB processes in one container. Database, attachments and
-avatars persist in the AppAPI volume. WeKan binds sign-in and resumed sessions
-to the verified Nextcloud identity, keeps accounts separate by instance and user
-ID, and assigns site-administrator rights only to explicitly configured users.
-
-The standalone Nextcloud publisher checks for this authentication capability
-before building amd64/arm64 images. Local tests cover signed identities,
-concurrent account creation, cross-user resume refusal, disabled users, HTTP
-file access, lifecycle callbacks and WebSocket forwarding. A real-deployment
-browser suite is registered and syntax-checked, but was not run: Docker,
-Nextcloud and HaRP are unavailable here. Signing credentials, registration and
-live deployment checks remain documented in
-`docs/Design/Autoupdate/Nextcloud.md`.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/3c085a2d71">Fix Mac app smoke-test cleanup after successful startup</a>. Thanks to xet7.</summary>
-
-Handle macOS process-group permission errors when only exited processes remain.
-Inspect process state before ignoring the error, retain failures for live
-processes, and print the app log even if cleanup fails. Regression tests cover
-zombie groups, live permission failures, failed inspection and bounded shutdown.
-The workflow now runs these tests on both Mac architectures. Local Linux tests
-passed; the packaged app still needs a macOS workflow run.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/a1e97a18c4">Remove plaintext UCS provider password files (CodeQL alert 561)</a>. Thanks to xet7.</summary>
-
-Pass the provider password to each CLI invocation through an anonymous stdin
-pipe instead of writing a temporary credential file. Remove the password from
-the child environment and retain redacted failure messages. Offline tests verify
-repeated CLI authentication, no password file creation and failure redaction.
-UCS/Nextcloud workflow checks pass; CodeQL and a credentialed portal run remain
-for CI. No portal writes were performed during development.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/2c4c89e794">Fix Sandstorm port handoff after successful migration</a>. Thanks to xet7.</summary>
-
-An old waiting-page process could deliver its exit callback after the blocking
-migration had already started a replacement. That callback discarded the new
-process reference, leaving port 4000 occupied when Meteor started and causing
-`EADDRINUSE`. Only clear the reference when the exiting process still owns it.
-A real-process regression reproduces the old failure and verifies that the
-replacement exits before WeKan takes the port. All 20 focused Sandstorm checks
-pass locally; a full grain upgrade was not run in this environment.
-
-</details>
-
-and has the following documentation:
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/bb9c4c7044">Possible additional platforms, with ready files for five app stores and the AUR</a>. Thanks to xet7.</summary>
-
-`docs/Design/Autoupdate/Platforms.md` opens with the open source platforms WeKan
-is not on yet - checked in each catalog on 2026-10-11 - and, for each, what is
-done and what is still missing. ZimaOS/CasaOS, TrueNAS, Coolify, Dokploy and the
-Arch User Repository get the files their catalogs take and a README with the
-pull request each expects, under `docs/Platforms/`. Each was tested with its
-catalog's own tools where they run without the platform: CasaOS's validator and
-store builder (1/1 built, both architectures pinned), the TrueNAS library
-render, Dokploy's three validators, and Arch's `makepkg`, whose package started
-WeKan and answered HTTP 200. `tests/platformTemplates.test.cjs` keeps the image
-tag and the settings the same across them. None is submitted yet; the human
-steps are listed.
-
-</details>
-
-Thanks to above GitHub users for their contributions and translators for their translations.
-
-# v12.30 2026-10-11 WeKan ® release
-
-**In short:** The **Import** page shows every source under "Import from:" at
-once, in columns, when the window is wide enough. A **Sandstorm** grain shows
-its please-wait page until WeKan is ready instead of an empty response, follows
-the open board in its URL and title again, and its **Powerbox** button adds a
-person to the open board. The **Windows** bundles no longer fail when
-Chocolatey's package feed is down: they use the 7-Zip the build machine already
-has.
-
-This release adds the following new feature:
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/f44e52242c">The Import page shows every source under Import from: at once, in columns</a>. Thanks to xet7.</summary>
-
-The source list was one row per line, so a wide window showed WeKan, Trello and
-Jira and left the rest below the fold, beside a column of empty space. The
-source list and the "What to include" list now flow into as many 200px columns
-as fit (`columns: 200px`, a width rather than a count), so a phone keeps one
-column, and a row never splits between two columns.
-`tests/importPage.test.cjs` checks the column width and `break-inside: avoid`,
-and fails if the lists go back to one column.
-
-</details>
-
-and fixes the following bugs:
-
-**Sandstorm** - a grain that answers while it starts, a client that talks to the
-Sandstorm shell again, and Powerbox invitations to a board.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/6e6b5d2e30">A Sandstorm grain shows its please-wait page until WeKan is ready, not an empty response</a>. Thanks to xet7.</summary>
-
-The grain log reached `[repairBoardsOnStartup] done`, but the browser showed
-`NS_ERROR_NET_EMPTY_RESPONSE`. `sandstorm-src/start.js` killed the please-wait
-bridge on port 4000 and then loaded `main.js`, and Meteor 3 awaits every
-`Meteor.startup` hook before it calls `listen`, so nothing answered on the port
-for all of WeKan's startup. sandstorm-http-bridge got connection-refused, which
-Sandstorm passes on as an empty response. Now the first `listen` on the app port
-waits for the bridge process to exit and then binds, and the grain log says
-`WeKan is listening on port 4000`. `tests/sandstormPortHandoff.test.cjs` runs
-the real bridge and the handoff on a free port and checks the port answers 503
-throughout startup and then WeKan's 200.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/ed5502edfa">The grain's browser code runs again, so the URL and title follow the board</a>. Thanks to xet7.</summary>
-
-`sandstorm.js` was imported only by `server/imports.js` once `mainModule`
-turned eager loading off, so its browser half never ran in a grain: the grain
-URL and title stayed on the first page, the Powerbox picker could not open, and
-the `isSandstorm` helper was undefined, so the email, password, logout and
-avatar settings that Sandstorm handles itself were shown anyway. The server
-half - which loads the Cap'n Proto bridge client and `node:net` - is now
-`server/sandstorm.js`, and the client imports the shared `sandstorm.js`. Its
-shell listener ignores messages that are not its own replies, instead of
-throwing on every message another frame or extension posts.
-`tests/sandstormClientHalf.test.cjs` checks both imports and fails when the
-shared half picks up server-only code. Not yet tried in a live grain.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/ed5502edfa">The Powerbox button is back and adds the person picked to the open board</a>. Thanks to xet7.</summary>
-
-[#2405](https://github.com/wekan/wekan/issues/2405) removed the members
-widget's Powerbox button because the identity it claimed was never attached to
-a board, and node-capnp could not redeem it on Node 26 anyway. Redeeming works
-again through `imports/sandstorm/bridgeClient.mjs`, and the button, shown only
-in a grain and only to people who may invite, now passes the open board: the
-claimed person is invited to it through `inviteUserToBoard`, with the member
-picker's own checks - board membership, the Admin Panel's invite roles and the
-organization and team restrictions. `tests/sandstormMultiBoardMembers.test.cjs`
-pins the button, the board it passes, and that the claim adds members only
-through `inviteUserToBoard`.
-
-</details>
-
-and has the following developer-tooling fix:
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/6cb7e45b92">Windows bundles use the runner's 7-Zip instead of installing it from Chocolatey</a>. Thanks to xet7.</summary>
-
-v12.29's build-win64 failed before building anything, in `choco install -y
-7zip`: community.chocolatey.org answered `504 (Gateway Timeout)` and Chocolatey
-could not resolve `7zip.install`. The windows-latest image already has 7-Zip in
-`C:\Program Files\7-Zip`, so build-win64, build-win-arm64 and build-win32 use
-it and put it on PATH for their later `7z` steps, falling back to Chocolatey,
-retried five times, only on an image without it.
-`tests/releaseWindows7zip.test.cjs` checks all three jobs and fails when any
-workflow runs a bare `choco install` again.
 
 </details>
 
