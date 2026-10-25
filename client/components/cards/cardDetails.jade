@@ -152,6 +152,15 @@ template(name="cardDetails")
           .card-details-cover
             img.card-details-cover-image(alt="" src="{{attachmentPreviewUrl cover}}?dummyReloadAfterSessionEstablished={{sess}}" width="512" height="180" decoding="async")
 
+    //- "+ Add", under the cover: the card shows only the fields it has data
+      in - and its description, attachments and comments, empty or not - and
+      this chooses the rest, for this card (docs/Features/Cards/Card-Fields.md).
+    if canModifyCard
+      .card-details-add-fields
+        a.card-details-add-fields-button.js-open-card-add-fields(title="{{_ 'add'}}" aria-label="{{_ 'add'}}")
+          i.fa.fa-plus(aria-hidden="true")
+          |  {{_ 'add'}}
+
     .card-details-left
 
       //- At risk, Show on Card (docs/Features/Cards/At-Risk.md): every reason
@@ -198,18 +207,24 @@ template(name="cardDetails")
             +cardFieldSectionDescription
           //- Each Scrum field where the board's order puts it ("Scrum settings:
             Sprint" ... in Board Settings / Card).
-          if $eq section "scrumSprint"
-            +cardFieldSectionScrumSprint
-          if $eq section "scrumPastSprints"
-            +cardFieldSectionScrumPastSprints
-          if $eq section "scrumRelease"
-            +cardFieldSectionScrumRelease
-          if $eq section "scrumIssueType"
-            +cardFieldSectionScrumIssueType
-          if $eq section "scrumAcceptanceCriteria"
-            +cardFieldSectionScrumAcceptanceCriteria
-          if $eq section "scrumBacklogRank"
-            +cardFieldSectionScrumBacklogRank
+          //- The Scrum fields shown on this card are ONE section, "Scrum
+            settings", headed where the first of them is, with Card kind in its
+            hamburger (docs/Features/Cards/Card-Fields.md).
+          if $eq section firstScrumSection
+            +cardSectionHeader(section="scrum" icon="fa-repeat" label="scrum-settings" menuClass="js-section-card-kind" menuTitle="cardKindPopup-title")
+          if isSectionOpen "scrum"
+            if $eq section "scrumSprint"
+              +cardFieldSectionScrumSprint
+            if $eq section "scrumPastSprints"
+              +cardFieldSectionScrumPastSprints
+            if $eq section "scrumRelease"
+              +cardFieldSectionScrumRelease
+            if $eq section "scrumIssueType"
+              +cardFieldSectionScrumIssueType
+            if $eq section "scrumAcceptanceCriteria"
+              +cardFieldSectionScrumAcceptanceCriteria
+            if $eq section "scrumBacklogRank"
+              +cardFieldSectionScrumBacklogRank
 
       .card-checklist-attachmentGalleries
         .card-checklist-attachmentGallery.card-checklists
@@ -229,7 +244,7 @@ template(name="cardDetails")
             //- #4693: "Subtasks (1/3)", done/total (subtaskDoneCount in subtasks.js).
             +cardSectionHeader(section="subtasks" icon="fa-sitemap" label="subtasks"
               count=subtaskDoneCount
-              menuClass="js-open-subtasks-settings" menuTitle="subtask-settings")
+              menuClass="js-open-subtasks-menu" menuTitle="subtasks")
             if isSectionOpen "subtasks"
               +subtasks(cardId = _id)
         if currentBoard.allowsAttachments
@@ -253,26 +268,22 @@ template(name="cardDetails")
             +cardTextNotes(_id = _id)
 
         //- Similar cards, Show on Card: the cards of this board like this one
-          (docs/Features/Cards/Similar-Cards.md). Asked only while open.
+          (docs/Features/Cards/Similar-Cards.md). Asked when the card opens, and
+          the section is there only when there are some
+          (docs/Features/Cards/Card-Fields.md).
         unless $eq currentBoard.allowsSimilarCardsOnCard false
-          +cardSectionHeader(section="similar-cards" icon="fa-clone" label="similar-cards")
-          if isSectionOpen "similar-cards"
-            +similarCards(cardId=_id)
+          +cardSimilarCardsSection(cardId=_id)
 
-      if currentBoard.allowsComments
-        .comment-title
-          +cardSectionHeader(section="comments" icon="fa-comment-o" label="comments" count=cardCommentCountShown)
-          //- Unread comments, Show on Card: the same marker as a minicard's.
-          if currentBoard.allowsUnreadCommentsOnCard
-            if cardHasUnreadComments
-              span.card-details-unread-comments(title="{{_ 'card-has-unread-comments'}}")
-                i.fa.fa-comment
-        if isSectionOpen "comments"
-          if canComment
-            +commentForm
-          +comments
+      //- The comments: in this column, or - on a maximized card - at the top of
+        the right one (cardCommentsSection below).
+      unless cardMaximized
+        +cardCommentsSection
 
     .card-details-right
+
+      //- A maximized card has its comments here, beside the card's fields.
+      if cardMaximized
+        +cardCommentsSection
 
       //- #6688: `allowsActivities` existed in the schema (default true) but
         gated nothing; Board Settings / Card now has its row and this is what
@@ -663,14 +674,18 @@ template(name="cardFieldSectionSort")
                 //.card-details-items
               if $eq field "spentTime"
                 if currentBoard.allowsSpentTime
-                  if getSpentTime
-                    .card-details-item.card-details-item-spent
-                      if getIsOvertime
-                        h3.card-details-item-title
-                          | {{_ 'overtime-hours'}}
-                      else
-                        h3.card-details-item-title
-                          | {{_ 'spent-time-hours'}}
+                  //- Shown when it has hours, or ticked "On this card" - the
+                    card's own view of the board decides (cardAddFields.js).
+                  .card-details-item.card-details-item-spent
+                    if getIsOvertime
+                      h3.card-details-item-title
+                        | {{_ 'overtime-hours'}}
+                        +cardSpentTimeMenu
+                    else
+                      h3.card-details-item-title
+                        | {{_ 'spent-time-hours'}}
+                        +cardSpentTimeMenu
+                    if getSpentTime
                       +cardSpentTime
 
                 //- #6688: the two timers each have a Board Settings / Card toggle,
@@ -694,16 +709,14 @@ template(name="cardFieldSectionSort")
                 //.card-details-items
 
 template(name="cardFieldSectionCustomFields")
-    //- The heading is here for EVERY card the reader may write to, not only
-      for one that already has a custom field on it. The hamburger at the end
-      of it is the single place custom fields live - the picker of which
-      fields are on this card, a pencil each, and "Add custom field" - so
-      gating the heading on `customFieldsWD`, the card's VALUES, meant a card
-      with none had no way to get one, and a board that had never used them
-      had no way anywhere: the card menu's entry and the Board Settings row
-      were removed with the move, and the sidebar view is opened by nothing.
-      The FIELDS below still come from `customFieldsWD`, so an empty section
-      is an empty section, not a phantom row.
+    //- The heading is here for a card that has a custom field value, or that
+      ticked Custom Fields in "+ Add" (docs/Features/Cards/Card-Fields.md). It
+      used to be on EVERY card the reader may write to, because the hamburger
+      at its end is the single place custom fields live - the picker of which
+      fields are on this card, a pencil each, and "Add custom field" - and a
+      card with none had no other way to get one. "+ Add" is that way now, so
+      a card with none no longer carries an empty heading. The FIELDS below
+      still come from `customFieldsWD`.
     if canShowCustomFieldsOnCard
       //- ONE header for the whole group, outside the loop: a card with six
         custom fields is one Custom Fields section, not six sections that
@@ -735,6 +748,11 @@ template(name="cardFieldSectionVoteAndPoker")
                     | {{_ 'vote-question'}}
                   if getVoteEnd
                     +voteEndDate
+                  //- Edit voting is the section's own hamburger
+                    (docs/Features/Cards/Card-Fields.md).
+                  if canModifyCard
+                    a.card-details-section-menu.js-section-edit-voting(title="{{_ 'card-edit-voting'}}" aria-label="{{_ 'card-edit-voting'}}")
+                      i.fa.fa-navicon
                 .vote-result
                   if votePublic
                     a.card-label.card-label-green.js-show-positive-votes {{ voteCountPositive }}
@@ -756,6 +774,18 @@ template(name="cardFieldSectionVoteAndPoker")
                   if $eq voteState false
                     i.fa.fa-thumbs-down
                   | {{_ 'vote-against'}}
+          else
+            //- Shown on this card ("+ Add") but no question yet: the heading,
+              and its hamburger to ask one.
+            hr
+            .vote-title
+              div.flex
+                h3
+                  i.fa.fa-thumbs-up
+                  | {{_ 'vote-question'}}
+                if canModifyCard
+                  a.card-details-section-menu.js-section-edit-voting(title="{{_ 'card-edit-voting'}}" aria-label="{{_ 'card-edit-voting'}}")
+                    i.fa.fa-navicon
       if $eq field "poker"
           if currentBoard.allowsPoker
             if getPokerQuestion
@@ -767,6 +797,10 @@ template(name="cardFieldSectionVoteAndPoker")
                     | {{_ 'poker-question'}}
                   if getPokerEnd
                     +pokerEndDate
+                  //- Edit Planning Poker is the section's own hamburger.
+                  if canModifyCard
+                    a.card-details-section-menu.js-section-edit-poker(title="{{_ 'card-edit-planning-poker'}}" aria-label="{{_ 'card-edit-planning-poker'}}")
+                      i.fa.fa-navicon
                 div.flex
                   .poker-result
                     if expiredPoker
@@ -957,6 +991,17 @@ template(name="cardFieldSectionVoteAndPoker")
                       i.fa.fa-plus
                       | {{_ 'set-estimation'}}
                     input(type=text,autofocus value=getPokerEstimation,id="pokerEstimation")
+            else
+              //- Shown on this card ("+ Add") but no question yet.
+              hr
+              .poker-title
+                div.flex
+                  h3
+                    i.fa.fa-thumbs-up
+                    | {{_ 'poker-question'}}
+                  if canModifyCard
+                    a.card-details-section-menu.js-section-edit-poker(title="{{_ 'card-edit-planning-poker'}}" aria-label="{{_ 'card-edit-planning-poker'}}")
+                      i.fa.fa-navicon
 
 //- The Scrum fields, one template each like every other section of the
   card's order: "Scrum settings: Sprint" ... in Board Settings / Card.
@@ -1019,6 +1064,41 @@ template(name="cardFieldSectionDescription")
   The caret points DOWN when the section is open and toward the reading
   direction's end when it is closed (right in English, left in Arabic), which
   is what `sectionCaret` works out.
+//- The comments section, in the left column of the opened card or, when it is
+  maximized, at the top of the right one.
+template(name="cardCommentsSection")
+  if currentBoard.allowsComments
+    .card-details-comments
+      .comment-title
+        +cardSectionHeader(section="comments" icon="fa-comment-o" label="comments" count=cardCommentCountShown)
+        //- Unread comments, Show on Card: the same marker as a minicard's.
+        if currentBoard.allowsUnreadCommentsOnCard
+          if cardHasUnreadComments
+            span.card-details-unread-comments(title="{{_ 'card-has-unread-comments'}}")
+              i.fa.fa-comment
+      if isSectionOpen "comments"
+        if canComment
+          +commentForm
+        +comments
+
+//- The Spent time heading's hamburger: Change spent time.
+template(name="cardSpentTimeMenu")
+  if canModifyCard
+    a.card-details-section-menu.js-section-spent-time(title="{{_ 'editCardSpentTimePopup-title'}}" aria-label="{{_ 'editCardSpentTimePopup-title'}}")
+      i.fa.fa-navicon
+
+//- The Subtasks heading's hamburger: Filter: Subtasks, and the subtask settings.
+template(name="cardSubtasksMenuPopup")
+  ul.pop-over-list
+    li
+      a.js-filter-subtasks
+        i.fa.fa-filter
+        | {{_ 'filter'}}: {{_ 'subtasks'}}
+    li
+      a.js-open-subtask-settings
+        i.fa.fa-cog
+        | {{_ 'subtask-settings'}}
+
 template(name="cardSectionHeader")
   //- `noRule` for a section that must not have a separator above it: the FIRST
     one, which has nothing above it to be separated from, and one that already
@@ -1096,210 +1176,17 @@ template(name="editCardSortOrderForm")
     a.js-close-inlined-form
 
 template(name="cardDetailsActionsPopup")
+  //- One list, in this order (the maintainer's, 2026-10-25): Move Card, Copy
+    Card, Save as Template, Copy Template to Many Cards, Card recurrence, Move to
+    Top, Move to Bottom, Watch, Star | Set color, Drawing | Copy link, Link to
+    board, QR code, History, Export, Import, Move Card to Archive, More. Each
+    item keeps the permission it had. Filter: Subtasks, Edit voting, Edit
+    Planning Poker, Change spent time and Card kind are in the hamburger of
+    their own section of the opened card, and in Card Settings' pane of that
+    section (docs/Features/Cards/Card-Fields.md).
   if currentUser
-    //- Copy link, first, and named - the card's header carried this as an icon
-      with only a tooltip, which is the one place a name cannot be read without
-      hovering. It is here now, beside the swimlane's and the list's, so all
-      three are copied the same way from the same kind of menu.
-      docs/Features/General/Board-Item-Links.md
     ul.pop-over-list
-      li
-        a.js-copy-card-link
-          i.fa.fa-link
-          |  {{_ 'copy-link-to-clipboard'}}
-      //- #2015: the same link as a QR code, drawn in the browser
-        (models/lib/qrCode.js), to open the card on a phone.
-      li
-        a.js-card-qr-code
-          i.fa.fa-qrcode
-          |  {{_ 'card-qr-code'}}
-    span.copied-tooltip {{_ 'copied'}}
-    hr
-    //- History of the whole card (docs/Features/General/History/History.md §7a).
-      One menu item and nothing else: it opens the SAME historyTable every other
-      scope opens, with `scope: 'card'`.
-    ul.pop-over-list
-      li
-        a.js-card-history
-          i.fa.fa-history
-          |  {{_ 'history'}}
-    hr
-    //- Action items of the description, Show on Card
-      (docs/Features/Cards/Action-Items.md).
-    if canModifyCard
-      if actionItemsOf this
-        ul.pop-over-list
-          li
-            a.js-description-action-items
-              i.fa.fa-tasks
-              |  {{_ 'action-items-create'}}
-        hr
-    ul.pop-over-list
-      li
-        a.js-toggle-watch-card
-          if isWatching
-            i.fa.fa-eye
-            |  {{_ 'unwatch'}}
-          else
-            i.fa.fa-eye
-            |  {{_ 'watch'}}
-    hr
-    ul.pop-over-list
-      li
-        a.js-filter-subtasks
-          i.fa.fa-filter
-          | {{_ 'filter'}}: {{_ 'subtasks'}}
-    hr
-    //- #1172: star/unstar this card - same toggle pattern as the board star.
-    ul.pop-over-list
-      li
-        a.js-star-card-item
-          if isCardItemStarred
-            i.fa.fa-star
-            |  {{_ 'unstar-item'}}
-          else
-            i.fa.fa-star-o
-            |  {{_ 'star-item'}}
-    hr
-    //- The board's custom fields, and this card's. The first is Board Settings
-      / Custom Fields - the list of fields the board HAS, which is where one is
-      created, renamed or deleted; the second picks which of them are on THIS
-      card. They are two halves of one subject and were three groups apart, so
-      they are one group now, the board's list first because a field has to
-      exist before a card can be given it. A board admin's, the same as in
-      Board Settings. client/components/sidebar/sidebarCustomFields.jade
-    //- "Custom Fields" was here. It is the hamburger at the end of the Custom
-      Fields heading of the card itself now - which is where the fields are.
-    if canModifyCard
-      unless currentUser.isWorker
-        ul.pop-over-list
-          //li: a.js-members {{_ 'card-edit-members'}}
-          //li: a.js-labels {{_ 'card-edit-labels'}}
-          //li: a.js-attachments {{_ 'card-edit-attachments'}}
-          li
-            a.js-start-voting
-              i.fa.fa-thumbs-up
-              | {{_ 'card-edit-voting'}}
-          li
-            a.js-start-planning-poker
-              i.fa.fa-thumbs-up
-              | {{_ 'card-edit-planning-poker'}}
-          //li: a.js-received-date {{_ 'editCardReceivedDatePopup-title'}}
-          //li: a.js-start-date {{_ 'editCardStartDatePopup-title'}}
-          //li: a.js-due-date {{_ 'editCardDueDatePopup-title'}}
-          //li: a.js-end-date {{_ 'editCardEndDatePopup-title'}}
-          li
-            a.js-spent-time
-              i.fa.fa-clock-o
-              | {{_ 'editCardSpentTimePopup-title'}}
-          li
-            a.js-set-card-color
-              i.fa.fa-paint-brush
-              | {{_ 'setCardColorPopup-title'}}
-          //- #1178: draw or write by hand on the card.
-          li
-            a.js-card-drawing
-              i.fa.fa-pencil
-              | {{_ 'cardDrawingPopup-title'}}
-          //- #2012: a Story or a Task, with custom fields of its own.
-          li
-            a.js-set-card-kind
-              i.fa.fa-book
-              | {{_ 'cardKindPopup-title'}}
-    if canModifyCard
-      hr
-    else
-      unless currentUser.isReadOnly
-        unless currentUser.isReadAssignedOnly
-          hr
-  //- #1173: the same two rows every other menu has - the menu says what it is
-    about, so they are "Export" and "Import". Import writes, so it is asked for
-    with the same permission question the popup itself asks.
-  ul.pop-over-list
-    li
-      a.js-export-card
-        i.fa.fa-upload
-        | {{_ 'export'}}
-    if canImportIntoBoard
-      li
-        a.js-import-card
-          i.fa.fa-download
-          | {{_ 'import'}}
-  if currentUser
-    unless canModifyCard
-      unless currentUser.isReadOnly
-        unless currentUser.isReadAssignedOnly
-          hr
-          ul.pop-over-list
-            li
-              a.js-move-card-to-top
-                i.fa.fa-arrow-up
-                | {{_ 'moveCardToTop-title'}}
-            li
-              a.js-move-card-to-bottom
-                i.fa.fa-arrow-down
-                | {{_ 'moveCardToBottom-title'}}
-          hr
-          ul.pop-over-list
-            if currentUser.isBoardAdmin
-              li
-                a.js-move-card
-                  i.fa.fa-arrow-right
-                  | {{_ 'moveCardPopup-title'}}
-            unless currentUser.isWorker
-              li
-                a.js-copy-card
-                  i.fa.fa-clipboard
-                  | {{_ 'copyCardPopup-title'}}
-              li
-                a.js-save-card-as-template
-                  i.fa.fa-clone
-                  | {{_ 'save-card-as-template'}}
-
-          unless currentUser.isWorker
-            ul.pop-over-list
-              li
-                a.js-copy-checklist-cards
-                  i.fa.fa-copy
-                  | {{_ 'copyManyCardsPopup-title'}}
-            unless archived
-              hr
-              ul.pop-over-list
-                li
-                  a.js-archive
-                    i.fa.fa-archive
-                    | {{_ 'archive-card'}}
-            if archived
-              hr
-              ul.pop-over-list
-                li
-                  a.js-restore-archived-card
-                    i.fa.fa-recycle
-                    | {{_ 'restore'}}
-            hr
-            ul.pop-over-list
-              li
-                a.js-more
-                  span.emoji-icon
-                  i.fa.fa-link
-                  | {{_ 'cardMorePopup-title'}}
-              li
-                a.js-create-board-from-card
-                  i.fa.fa-external-link
-                  | {{_ 'linkCardToNewBoard'}}
-    if canModifyCard
-      hr
-      ul.pop-over-list
-        li
-          a.js-move-card-to-top
-            i.fa.fa-arrow-up
-            | {{_ 'moveCardToTop-title'}}
-        li
-          a.js-move-card-to-bottom
-            i.fa.fa-arrow-down
-            | {{_ 'moveCardToBottom-title'}}
-      hr
-      ul.pop-over-list
+      if cardMenuWrites
         if currentUser.isBoardAdmin
           li
             a.js-move-card
@@ -1315,40 +1202,122 @@ template(name="cardDetailsActionsPopup")
               i.fa.fa-clone
               | {{_ 'save-card-as-template'}}
           li
-            a.js-set-card-recurrence-interval.card-recurrence-interval
-              i.fa.fa-refresh
-              | {{_ 'card-recurrence-interval'}} ...
+            a.js-copy-checklist-cards
+              i.fa.fa-copy
+              | {{_ 'copyManyCardsPopup-title'}}
+          if canModifyCard
+            li
+              a.js-set-card-recurrence-interval.card-recurrence-interval
+                i.fa.fa-refresh
+                | {{_ 'card-recurrence-interval'}} ...
+        li
+          a.js-move-card-to-top
+            i.fa.fa-arrow-up
+            | {{_ 'moveCardToTop-title'}}
+        li
+          a.js-move-card-to-bottom
+            i.fa.fa-arrow-down
+            | {{_ 'moveCardToBottom-title'}}
+      li
+        a.js-toggle-watch-card
+          if isWatching
+            i.fa.fa-eye
+            |  {{_ 'unwatch'}}
+          else
+            i.fa.fa-eye
+            |  {{_ 'watch'}}
+      //- #1172: star/unstar this card - same toggle pattern as the board star.
+      li
+        a.js-star-card-item
+          if isCardItemStarred
+            i.fa.fa-star
+            |  {{_ 'unstar-item'}}
+          else
+            i.fa.fa-star-o
+            |  {{_ 'star-item'}}
+    if canModifyCard
+      unless currentUser.isWorker
+        hr
+        ul.pop-over-list
+          li
+            a.js-set-card-color
+              i.fa.fa-paint-brush
+              | {{_ 'setCardColorPopup-title'}}
+          //- #1178: draw or write by hand on the card.
+          li
+            a.js-card-drawing
+              i.fa.fa-pencil
+              | {{_ 'cardDrawingPopup-title'}}
+          //- Action items of the description, Show on Card
+            (docs/Features/Cards/Action-Items.md).
+          if actionItemsOf this
+            li
+              a.js-description-action-items
+                i.fa.fa-tasks
+                |  {{_ 'action-items-create'}}
+    hr
+  ul.pop-over-list
+    if currentUser
+      //- Copy link, named - the card's header carried this as an icon with only
+        a tooltip. docs/Features/General/Board-Item-Links.md
+      li
+        a.js-copy-card-link
+          i.fa.fa-link
+          |  {{_ 'copy-link-to-clipboard'}}
+      if canModifyCard
+        unless currentUser.isWorker
           li
             a.js-link-card-to-board
               i.fa.fa-link
               | {{_ 'linkCardToBoardPopup-title'}}
-      unless currentUser.isWorker
-        ul.pop-over-list
-          li
-            a.js-copy-checklist-cards
-              i.fa.fa-copy
-              | {{_ 'copyManyCardsPopup-title'}}
-        unless archived
-          hr
-          ul.pop-over-list
-            li
-              a.js-archive
-                i.fa.fa-archive
-                | {{_ 'archive-card'}}
-        if archived
-          hr
-          ul.pop-over-list
+      //- #2015: the same link as a QR code, drawn in the browser
+        (models/lib/qrCode.js), to open the card on a phone.
+      li
+        a.js-card-qr-code
+          i.fa.fa-qrcode
+          |  {{_ 'card-qr-code'}}
+      //- History of the whole card (docs/Features/General/History/History.md
+        §7a): the SAME historyTable every other scope opens, `scope: 'card'`.
+      li
+        a.js-card-history
+          i.fa.fa-history
+          |  {{_ 'history'}}
+    //- #1173: "Export" and "Import", as every other menu has them. Import
+      writes, so it is asked for with the same permission question the popup
+      itself asks.
+    li
+      a.js-export-card
+        i.fa.fa-upload
+        | {{_ 'export'}}
+    if canImportIntoBoard
+      li
+        a.js-import-card
+          i.fa.fa-download
+          | {{_ 'import'}}
+    if currentUser
+      if cardMenuWrites
+        unless currentUser.isWorker
+          if archived
             li
               a.js-restore-archived-card
                 i.fa.fa-recycle
                 | {{_ 'restore'}}
-        hr
-        ul.pop-over-list
+          else
+            li
+              a.js-archive
+                i.fa.fa-archive
+                | {{_ 'archive-card'}}
           li
             a.js-more
               span.emoji-icon
                 i.fa.fa-link
               | {{_ 'cardMorePopup-title'}}
+          unless canModifyCard
+            li
+              a.js-create-board-from-card
+                i.fa.fa-external-link
+                | {{_ 'linkCardToNewBoard'}}
+  span.copied-tooltip {{_ 'copied'}}
 
 //- #1173: the card export popup IS the shared export body - the same checkbox
   list and the same four formats every other menu offers, with the card as its
@@ -1816,26 +1785,36 @@ template(name="cardQrCodePopup")
 
 //- #2012: Story, Task or an ordinary card (models/lib/cardKinds.js).
 template(name="cardKindPopup")
-  ul.pop-over-list
+  //- The selected kind has a check mark at the end of its line (and
+    aria-checked), in its popup and in Card Settings' Scrum settings pane.
+  ul.pop-over-list.card-kind-list(role="radiogroup" aria-label="{{_ 'cardKindPopup-title'}}")
     li
-      a.js-select-card-kind(data-kind="" class="{{#unless cardKind}}is-active{{/unless}}")
+      a.js-select-card-kind(data-kind="" role="radio" aria-checked="{{#if cardKind}}false{{else}}true{{/if}}" class="{{#unless cardKind}}is-active{{/unless}}")
         i.fa.fa-square-o
         |  {{_ 'card-kind-none'}}
+        unless cardKind
+          i.fa.fa-check.card-kind-selected(aria-hidden="true")
     li
-      a.js-select-card-kind(data-kind="story" class="{{#if $eq cardKind 'story'}}is-active{{/if}}")
+      a.js-select-card-kind(data-kind="story" role="radio" aria-checked="{{#if $eq cardKind 'story'}}true{{else}}false{{/if}}" class="{{#if $eq cardKind 'story'}}is-active{{/if}}")
         i.fa.fa-book
         |  {{_ 'card-kind-story'}}
+        if $eq cardKind 'story'
+          i.fa.fa-check.card-kind-selected(aria-hidden="true")
     li
-      a.js-select-card-kind(data-kind="task" class="{{#if $eq cardKind 'task'}}is-active{{/if}}")
+      a.js-select-card-kind(data-kind="task" role="radio" aria-checked="{{#if $eq cardKind 'task'}}true{{else}}false{{/if}}" class="{{#if $eq cardKind 'task'}}is-active{{/if}}")
         i.fa.fa-check-square-o
         |  {{_ 'card-kind-task'}}
+        if $eq cardKind 'task'
+          i.fa.fa-check.card-kind-selected(aria-hidden="true")
 
 //- #1178: drawing on a card (models/lib/cardDrawing.js). The card's drawings
   open again for editing; saving keeps the strokes on the card and uploads a
   PNG attachment, and the SVG is downloaded from the strokes.
 template(name="cardDrawingPopup")
-  .card-drawing
-    if drawings.length
+  //- #6802: a NEW drawing (from Add Card, or Add attachment) opens maximized,
+    without the card's earlier drawings, and is saved as an SVG attachment.
+  .card-drawing(class="{{#if newFile}}card-drawing--new-file{{/if}}")
+    if showDrawingList
       .card-drawing-list
         each drawings
           a.card-drawing-thumb.js-edit-drawing(data-id=_id class="{{#if isEditing}}is-active{{/if}}")
@@ -1848,20 +1827,88 @@ template(name="cardDrawingPopup")
           i.fa.fa-plus
           |  {{_ 'card-drawing-new'}}
     .card-drawing-tools
+      //- #6802: the palette, then the custom colors added to it. Clicking a
+        color picks it and opens the color wheel and the HTML color code.
       each colors
-        a.card-drawing-color.js-drawing-color(data-color=this style="background:{{this}}" class="{{#if isColor this}}is-active{{/if}}")
+        a.card-drawing-color.js-drawing-color(data-color=this style="background:{{this}}" class="{{#if isColor this}}is-active{{/if}}" title=this aria-label=this)
+      each customColors
+        a.card-drawing-color.card-drawing-color--custom.js-drawing-color(data-color=this style="background:{{this}}" class="{{#if isColor this}}is-active{{/if}}" title=this aria-label=this)
+      a.card-drawing-add-custom.js-drawing-custom-color(title="{{_ 'card-drawing-custom-color'}}" aria-label="{{_ 'card-drawing-custom-color'}}")
+        i.fa.fa-plus
+      //- The eyedropper: a color from the screen, or from the drawing where the
+        browser cannot pick from the screen.
+      a.card-drawing-eyedropper.js-drawing-eyedropper(class="{{#if picking}}is-active{{/if}}" title="{{_ 'card-drawing-eyedropper'}}" aria-label="{{_ 'card-drawing-eyedropper'}}" aria-pressed="{{#if picking}}true{{else}}false{{/if}}")
+        i.fa.fa-eyedropper
       each widths
         a.card-drawing-width.js-drawing-width(data-width=this class="{{#if isWidth this}}is-active{{/if}}") {{this}}
       a.js-drawing-undo(title="{{_ 'card-drawing-undo'}}")
         i.fa.fa-undo
-      a.js-drawing-clear(title="{{_ 'card-drawing-clear'}}")
+      //- #6802: the eraser takes away the lines it touches.
+      a.card-drawing-eraser.js-drawing-eraser(class="{{#if erasing}}is-active{{/if}}" title="{{_ 'card-drawing-eraser'}}" aria-label="{{_ 'card-drawing-eraser'}}" aria-pressed="{{#if erasing}}true{{else}}false{{/if}}")
         i.fa.fa-eraser
-    svg.card-drawing-surface.js-drawing-surface(viewBox="0 0 800 500" width="100%")
-      rect(width="800" height="500" fill="#ffffff")
-      each strokes
-        path(d=pathD stroke=color stroke-width=width fill="none" stroke-linecap="round" stroke-linejoin="round")
-    .card-drawing-actions
-      button.primary.js-drawing-save(type="button" disabled=saving) {{_ 'save'}}
-      a.js-drawing-download-svg {{_ 'card-drawing-download-svg'}}
-      if message
-        span.quiet= message
+      a.js-drawing-clear(title="{{_ 'card-drawing-clear'}}")
+        i.fa.fa-trash-o
+      //- #6802: the lasso selects lines to move, resize, group and stack.
+      a.card-drawing-lasso.js-drawing-lasso(class="{{#if lassoOn}}is-active{{/if}}" title="{{_ 'card-drawing-lasso'}}" aria-label="{{_ 'card-drawing-lasso'}}" aria-pressed="{{#if lassoOn}}true{{else}}false{{/if}}")
+        i.fa.fa-draw-polygon
+      //- The magnifier: the drawing area larger and smaller on the screen.
+      a.js-drawing-zoom-out(title="{{_ 'zoom-out'}}" aria-label="{{_ 'zoom-out'}}")
+        i.fa.fa-search-minus
+      span.card-drawing-zoom.quiet {{zoomPercent}}%
+      a.js-drawing-zoom-in(title="{{_ 'zoom-in'}}" aria-label="{{_ 'zoom-in'}}")
+        i.fa.fa-search-plus
+      //- Save above the drawing, at the end of the tools.
+      .card-drawing-actions
+        if message
+          span.quiet= message
+        unless newFile
+          a.js-drawing-download-svg {{_ 'card-drawing-download-svg'}}
+        button.primary.js-drawing-save(type="button" disabled=saving) {{_ 'save'}}
+    if colorEditorOpen
+      .card-drawing-color-editor
+        canvas.card-drawing-wheel.js-drawing-wheel(width="160" height="160" aria-label="{{_ 'card-drawing-custom-color'}}")
+        .card-drawing-color-fields
+          label
+            | {{_ 'card-drawing-brightness'}}
+            input.js-drawing-brightness(type="range" min="0" max="100" value=brightnessPercent)
+          label
+            | {{_ 'card-drawing-color-code'}}
+            input.js-drawing-hex(type="text" value=currentColor maxlength="7" spellcheck="false" dir="ltr")
+          span.card-drawing-color-preview(style="background:{{currentColor}}")
+          button.js-drawing-add-color(type="button") {{_ 'card-drawing-add-color'}}
+          if isCustom currentColor
+            button.js-drawing-remove-color(type="button") {{_ 'card-drawing-remove-color'}}
+          a.js-drawing-close-colors(title="{{_ 'close'}}" aria-label="{{_ 'close'}}")
+            i.fa.fa-times
+    if hasSelection
+      .card-drawing-selection-tools
+        a.js-drawing-group(title="{{_ 'card-drawing-group'}}" aria-label="{{_ 'card-drawing-group'}}")
+          i.fa.fa-object-group
+          |  {{_ 'card-drawing-group'}}
+        if selectionGrouped
+          a.js-drawing-ungroup(title="{{_ 'card-drawing-ungroup'}}" aria-label="{{_ 'card-drawing-ungroup'}}")
+            i.fa.fa-object-ungroup
+            |  {{_ 'card-drawing-ungroup'}}
+        a.js-drawing-layer(data-layer="front" title="{{_ 'card-drawing-bring-to-front'}}" aria-label="{{_ 'card-drawing-bring-to-front'}}")
+          i.fa.fa-angle-double-up
+        a.js-drawing-layer(data-layer="forward" title="{{_ 'card-drawing-bring-forward'}}" aria-label="{{_ 'card-drawing-bring-forward'}}")
+          i.fa.fa-angle-up
+        a.js-drawing-layer(data-layer="backward" title="{{_ 'card-drawing-send-backward'}}" aria-label="{{_ 'card-drawing-send-backward'}}")
+          i.fa.fa-angle-down
+        a.js-drawing-layer(data-layer="back" title="{{_ 'card-drawing-send-to-back'}}" aria-label="{{_ 'card-drawing-send-to-back'}}")
+          i.fa.fa-angle-double-down
+    //- The drawing area takes the room there is; it grows from its corner
+      handle, and scrolls when zoomed past the window.
+    .card-drawing-stage.js-drawing-stage
+      .card-drawing-canvas(style="width:{{canvasWidth}}px;height:{{canvasHeight}}px")
+        svg.card-drawing-surface.js-drawing-surface(viewBox="0 0 {{drawingWidth}} {{drawingHeight}}" width=canvasWidth height=canvasHeight preserveAspectRatio="none" class="{{#if erasing}}is-erasing{{/if}} {{#if lassoOn}}is-lasso{{/if}} {{#if picking}}is-picking{{/if}}")
+          rect(width=drawingWidth height=drawingHeight fill="#ffffff")
+          each strokes
+            path(d=pathD stroke=color stroke-width=width fill="none" stroke-linecap="round" stroke-linejoin="round")
+          if lassoPath
+            path.card-drawing-lasso-loop(d=lassoPath)
+          with selectionBox
+            rect.card-drawing-selection(x=x y=y width=width height=height)
+            rect.card-drawing-resize-handle.js-drawing-resize-handle(x=hx y=hy width=size height=size)
+              title {{_ 'card-drawing-resize'}}
+        span.card-drawing-canvas-resize.js-drawing-canvas-resize(role="separator" tabindex="0" title="{{_ 'card-drawing-resize-canvas'}}" aria-label="{{_ 'card-drawing-resize-canvas'}}")

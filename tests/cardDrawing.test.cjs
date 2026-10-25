@@ -38,9 +38,14 @@ console.log('  ok - no markup, no foreign colours or widths, points clamped, bou
 // Wiring.
 assert.match(read('models/cards.js'), /drawings: \{[\s\S]{0,300}type: Array,\s*optional: true,\s*\},\s*'drawings\.\$': \{\s*type: Object,\s*blackbox: true,/);
 const js = read('client/components/cards/cardDrawing.js');
-assert.match(js, /const strokes = d\.cleanStrokes\(tpl\.strokes\.get\(\), \{ width: W, height: H \}\);/);
+// #6802: cleaned against the drawing's own size, which a new drawing takes
+// from the room on the screen and the corner handle changes.
+assert.match(js, /const size = bounds\(tpl\);\n\s+const strokes = d\.cleanStrokes\(tpl\.strokes\.get\(\), size\);/);
 assert.match(js, /Attachments\.insertAsync\(buildAttachmentUploadConfig\(\{ file, meta: Utils\.getCommonAttachmentMetaFrom\(target\) \}\), false\)/, 'the PNG through the normal attachment upload');
-assert.match(js, /\$set: \{ drawings: d\.drawingsAfterSave\(target\.drawings, drawing\) \}/);
+// A new drawing is also the card's cover image; an edit leaves the cover.
+assert.match(js, /\$set: \{ drawings: d\.drawingsAfterSave\(target\.drawings, drawing\), \.\.\.coverOf\(svgAttachmentId\) \}/);
+assert.match(js, /\$set: \{ drawings: d\.drawingsAfterSave\(target\.drawings, drawing\), \.\.\.\(isNew \? coverOf\(pngAttachmentId\) : \{\}\) \}/);
+assert.match(js, /const isNew = !tpl\.editingId\.get\(\);/);
 assert.match(read('client/components/cards/cardDetails.jade'), /a\.js-card-drawing/);
 assert.match(read('client/components/cards/cardDetails.jade'), /template\(name="cardDrawingPopup"\)/);
 console.log('  ok - stored on the card, PNG uploaded as an attachment, opened from the card menu');

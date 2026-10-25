@@ -587,6 +587,9 @@ body.desktop-mode .card-details.card-details-collapsed {
     float: inline-end;
     inset-inline-start: 50%;
     margin: 15px 0;
+    /* The comments are here when maximized (cardCommentsSection): the column
+       is as wide as the left one, beside it. */
+    width: calc(50% - 40px);
   }
   .card-details-maximized .card-details-header {
     width: 100%;
@@ -1435,3 +1438,14 @@ body.desktop-mode .card-details.card-details-position-pending:not(.card-details-
   font-size: 0.8em;
   word-break: break-all;
 }
+
+/* A maximized card has its comments at the top of the right column
+   (cardCommentsSection): nothing is above them there to be separated from, so
+   their heading has no rule. */
+.card-details-right .card-details-comments .card-details-section-rule {
+  display: none;
+}
+
+/* Card kind: the selected one is marked, at the end of its line, and bold. */
+.card-kind-list .js-select-card-kind.is-active { font-weight: bold; }
+.card-kind-list .card-kind-selected { margin-inline-start: 0.5em; color: #3cb500; }

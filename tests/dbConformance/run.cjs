@@ -150,6 +150,146 @@ async function runCase(db, c) {
       const names = (await db.listCollections().toArray()).map(x => x.name).sort();
       return names;
     }
+    case 'arrayMembership': {
+      // A membership test on an array of documents with an index on
+      // ARRAY.FIELD - WeKan's board membership. FerretDB answers it from a
+      // multikey side table (SQLite) or a GIN index (PostgreSQL); every shape
+      // the array can take must still be answered as MongoDB answers it, and
+      // after an update the index must follow.
+      await db.collection('array_member').drop().catch(() => {});
+      const am = db.collection('array_member');
+      await am.createIndex({ 'members.userId': 1 });
+      await am.insertMany([
+        { _id: 'member', members: [{ userId: 'u1', isActive: true }], permission: 'private' },
+        { _id: 'inactive', members: [{ userId: 'u1', isActive: false }] },
+        { _id: 'other', members: [{ userId: 'u2', isActive: true }] },
+        { _id: 'second', members: [{ userId: 'u2' }, { userId: 'u1', isActive: true }] },
+        { _id: 'field-array', members: [{ userId: ['u3', 'u1'], isActive: true }] },
+        { _id: 'object', members: { userId: 'u1', isActive: true } },
+        { _id: 'scalars', members: ['u1'] },
+        { _id: 'number', members: [{ userId: 1 }] },
+        { _id: 'missing', title: 'no members', permission: 'public' },
+        { _id: 'starred', members: [], permission: 'public' },
+        { _id: 'key-named', members: [{ key: 'k1', id: 'i1' }] },
+      ]);
+      const ids = async filter => (await am.find(filter, { sort: { _id: 1 } }).toArray()).map(d => d._id);
+      const member = user => ({ members: { $elemMatch: { userId: user, isActive: true } } });
+      const out = {
+        member: await ids(member('u1')),
+        anyU1: await ids({ members: { $elemMatch: { userId: 'u1' } } }),
+        inList: await ids({ members: { $elemMatch: { userId: { $in: ['u2', 'u3'] } } } }),
+        orStarred: await ids({ $or: [member('u1'), { _id: { $in: ['starred'] }, permission: 'public' }] }),
+        orOpen: await ids({ $or: [member('u1'), { permission: 'public' }] }),
+        dotted: await ids({ 'members.userId': 'u1' }),
+        keyField: await ids({ members: { $elemMatch: { key: 'k1' } } }),
+        count: await am.countDocuments(member('u1')),
+      };
+      await am.updateOne({ _id: 'member' }, { $set: { members: [{ userId: 'u9', isActive: true }] } });
+      await am.updateOne({ _id: 'other' }, { $set: { members: [{ userId: 'u1', isActive: true }] } });
+      await am.deleteOne({ _id: 'second' });
+      out.afterWrites = await ids(member('u1'));
+      await am.drop().catch(() => {});
+      return out;
+    }
+    case 'logicalPushdown': {
+      // The shapes FerretDB's PostgreSQL and MySQL backends now answer in the
+      // database: an $or of open permissions and a membership $elemMatch (the
+      // visible boards of due cards), an $or of array fields inside an $and
+      // (the due cards themselves), and an $in longer than 32 values, which MySQL
+      // sends as one IN. Each must still find matches in arrays, in documents
+      // with a field missing, and leave out what only looks similar.
+      await db.collection('logical_pd').drop().catch(() => {});
+      const lp = db.collection('logical_pd');
+      const ids = Array.from({ length: 40 }, (_, i) => `b${i}`);
+      await lp.insertMany([
+        { _id: 'public', permission: 'public', members: [] },
+        { _id: 'member', permission: 'private', members: [{ userId: 'u1', isActive: true }] },
+        { _id: 'inactive', permission: 'private', members: [{ userId: 'u1', isActive: false }] },
+        { _id: 'split', permission: 'private', members: [{ userId: 'u1', isActive: false }, { userId: 'u2', isActive: true }] },
+        { _id: 'idarray', permission: 'private', members: [{ userId: ['u3', 'u1'], isActive: true }] },
+        { _id: 'card1', boardId: 'b3', archived: false, members: ['u1'], dueAt: new Date(Date.UTC(2026, 0, 2)) },
+        { _id: 'card2', boardId: 'b39', archived: false, assignees: ['u1', 'u2'], dueAt: new Date(Date.UTC(2026, 0, 1)) },
+        { _id: 'card3', boardId: 'b5', archived: false, members: ['u2'], userId: 'u9' },
+        { _id: 'card4', boardId: ['x', 'b7'], archived: false, userId: 'u1' },
+        { _id: 'card5', boardId: 'zz', archived: false, members: ['u1'] },
+        { _id: 'card6', boardId: 'B3', archived: false, members: ['u1'] },
+      ]);
+      const ids2 = async (filter, sort = { _id: 1 }) => (await lp.find(filter, { sort }).toArray()).map(d => d._id);
+      const mine = { $or: [{ members: 'u1' }, { assignees: 'u1' }, { userId: 'u1' }] };
+      const out = {
+        visible: await ids2({ $or: [{ permission: 'public' }, { members: { $elemMatch: { userId: 'u1', isActive: true } } }] }),
+        dueCards: await ids2({ archived: false, $and: [{ boardId: { $in: ids } }, mine] }, { dueAt: 1, _id: 1 }),
+        longIn: await ids2({ boardId: { $in: ids } }),
+        longInNumbers: await ids2({ n: { $in: Array.from({ length: 40 }, (_, i) => i) } }),
+        orMissing: await ids2({ $or: [{ assignees: 'u2' }, { nothere: 'x' }] }),
+        orWithRegex: await ids2({ $or: [{ members: 'u2' }, { _id: { $regex: '^pub' } }] }),
+        elemMatchOperator: await ids2({ members: { $elemMatch: { userId: { $in: ['u3'] }, isActive: true } } }),
+      };
+      await lp.drop().catch(() => {});
+      return out;
+    }
+    case 'mixedSort': {
+      // A sort over values of every simple type, with ties, null and missing
+      // fields - SQLite sorts these in the database (FerretDB's ORDER BY
+      // pushdown) - and, separately, with an array and a document among them,
+      // which make the handler sort in Go again. _id breaks ties, so the
+      // answer is one order everywhere.
+      await db.collection('mixed_sort').drop().catch(() => {});
+      const ms = db.collection('mixed_sort');
+      const simple = [
+        5, -3, 2.5, 5, -0.5, 0, 'b', 'a', '', 'B', '\u00e4\u00f6', 'a', true, false,
+        new Date(Date.UTC(2026, 9, 24)), new Date(Date.UTC(2026, 9, 23)), null, undefined, 1e10, 2 ** 40,
+      ];
+      await ms.insertMany(simple.map((v, i) => (v === undefined ? { _id: i, k: i % 3 } : { _id: i, k: i % 3, v })));
+      const order = async (sort, limit) =>
+        (await ms.find({}, { sort, ...(limit ? { limit } : {}) }).toArray()).map(d => d._id);
+      const out = {
+        asc: await order({ v: 1, _id: 1 }),
+        desc: await order({ v: -1, _id: 1 }),
+        compound: await order({ k: -1, v: 1, _id: 1 }),
+        limited: await order({ v: 1, _id: 1 }, 5),
+        limitedDesc: await order({ v: -1, _id: -1 }, 5),
+      };
+      await ms.insertMany([{ _id: 100, v: [7, -10] }, { _id: 101, v: { x: 1 } }]);
+      out.complexAsc = await order({ v: 1, _id: 1 });
+      out.complexDesc = await order({ v: -1, _id: 1 }, 6);
+      await ms.drop().catch(() => {});
+      return out;
+    }
+    case 'indexedEquality': {
+      // An equality or $in on an INDEXED field. MySQL and MariaDB answer it from
+      // the index's generated column (FerretDB's indexedNarrowing), which must
+      // still find a value inside an array, a value differing only by case must
+      // not match, and a value the column cannot compare exactly (special
+      // characters, a number) must still be found the slower way.
+      await db.collection('indexed_eq').drop().catch(() => {});
+      const ix = db.collection('indexed_eq');
+      await ix.createIndex({ f: 1 });
+      await ix.createIndex({ g: 1, f: 1 });
+      await ix.insertMany([
+        { _id: 1, f: 'abc' }, { _id: 2, f: ['x', 'abc'] }, { _id: 3, f: 'ABC' }, { _id: 4, f: 'a<b&"c' },
+        { _id: 5, f: 5 }, { _id: 6, f: 5.5 }, { _id: 7 }, { _id: 8, f: 'abc', g: 'k' }, { _id: 9, f: 'x'.repeat(200) },
+        { _id: 10, f: [] }, { _id: 11, f: { abc: 1 } },
+      ]);
+      const ids = async filter => (await ix.find(filter, { sort: { _id: 1 } }).toArray()).map(d => d._id);
+      const out = {
+        eq: await ids({ f: 'abc' }),
+        eqOp: await ids({ f: { $eq: 'abc' } }),
+        upper: await ids({ f: 'ABC' }),
+        special: await ids({ f: 'a<b&"c' }),
+        number: await ids({ f: 5 }),
+        inList: await ids({ f: { $in: ['abc', 'x'] } }),
+        inMixed: await ids({ f: { $in: ['ABC', 5.5] } }),
+        compound: await ids({ g: 'k', f: 'abc' }),
+        long: await ids({ f: 'x'.repeat(200) }),
+        byId: await ids({ _id: 3 }),
+        // Inside an $and, as WeKan's due cards query wraps its board ids.
+        andIn: await ids({ $and: [{ f: { $in: ['abc', 'x'] } }, { $or: [{ g: 'k' }, { _id: { $lte: 2 } }] }] }),
+        andEq: await ids({ $and: [{ f: 'abc' }, { f: { $in: ['abc', 'ABC'] } }] }),
+      };
+      await ix.drop().catch(() => {});
+      return out;
+    }
     case 'stringIds': {
       // Writes by STRING _id - the seed's _ids are numbers, and MariaDB 12.3
       // compares JSON numbers right but two equal JSON strings as different:

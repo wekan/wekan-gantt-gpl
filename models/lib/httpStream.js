@@ -4,6 +4,26 @@ export const httpStreamOutput = function(readStream, name, http, downloadFlag, c
       fileResponsePolicy,
     } = require('./fileResponseSafety');
     const storedType = fileObj?.versions?.original?.type || fileObj?.type;
+    // An SVG is streamed through the SVG sanitizer, whole, as an image - or as
+    // the download that was asked for (server/lib/svgResponse.js); the stream
+    // sanitizer below decides from the first bytes only, which is not enough.
+    const svgResponse = require('/server/lib/svgResponse');
+    if (svgResponse.isSvg(storedType, name)) {
+      require('./fileCacheHeaders').setPrivateFileCacheHeaders(http.response);
+      svgResponse.sendInlineSvg(http.response, readStream, {
+        download: downloadFlag === 'true',
+        fileName: name,
+        onSanitized: text => {
+          try {
+            const { classifyExploitKinds } = require('/imports/lib/fileNameDisplay');
+            require('/server/lib/filenameSanitizeLog').logContentSanitized({
+              fileObj: fileObj || { name }, source: 'fileView', kinds: classifyExploitKinds(text),
+            });
+          } catch (e) { /* best effort */ }
+        },
+      }).catch(() => { if (!http.response.headersSent) { http.response.statusCode = 500; http.response.end(); } });
+      return;
+    }
     const policy = fileResponsePolicy(storedType, fileNameIsBrowserExecutable(name));
     // Sanitize known exploits from EXISTING files on the fly, straight from the
     // storage backend, without buffering whole files: the sanitizer sniffs the

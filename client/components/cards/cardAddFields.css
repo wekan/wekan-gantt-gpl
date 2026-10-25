@@ -1,0 +1,5 @@
+/* "+ Add" on the opened card (docs/Features/Cards/Card-Fields.md): it opens
+   Board Settings / Card for this card (sidebar.css .card-settings-sections). */
+.card-details-add-fields { padding: 4px 0 2px; }
+.card-details-add-fields-button { display: inline-flex; align-items: center; gap: 0.3em; padding: 2px 8px; border-radius: 3px; }
+.card-details-add-fields-button:hover { background: rgba(0, 0, 0, 0.06); }
