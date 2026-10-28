@@ -30,6 +30,9 @@ function scripts() {
     }
   };
   walk('releases');
+  // sandstorm-src/build-deps.sh assembled meteor-spk in ~/projects while the
+  // pack step looked in .tools/projects, so the v12.66 .spk did not pack.
+  walk('sandstorm-src');
   return [...new Set(out)];
 }
 const code = src => src.split('\n').filter(l => !/^\s*#/.test(l)).join('\n');
@@ -71,6 +74,32 @@ test('negative: sourcing never stops a script running under set -euo pipefail', 
   assert.strictEqual(r.stdout.trim(), 'survived');
 });
 
+test('a copy of the source tree without .git gets its own .tools/tmp; scripts mounted alone do not', () => {
+  // v12.66: the snap variants build from such a copy (/root/project); with no
+  // .tools/tmp there, every fetch.sh stopped at "TMPDIR: unbound variable".
+  const base = fs.mkdtempSync(path.join(root, '.tools', 'tmp', 'tools-env-copy-'));
+  try {
+    const run = dir => spawnSync('env', ['-u', 'TMPDIR', '-u', 'WEKAN_DIR', '-u', 'WEKAN_TOOLS_DIR', 'bash', '-c',
+      'set -euo pipefail; . releases/tools-env.sh; echo "$TMPDIR"'], { cwd: dir, encoding: 'utf8' });
+    const tree = path.join(base, 'project');
+    fs.mkdirSync(path.join(tree, 'releases'), { recursive: true });
+    fs.copyFileSync(path.join(root, 'releases/tools-env.sh'), path.join(tree, 'releases/tools-env.sh'));
+    fs.writeFileSync(path.join(tree, 'package.json'), '{}\n');
+    const r = run(tree);
+    assert.strictEqual(r.status, 0, r.stderr);
+    assert.strictEqual(r.stdout.trim(), path.join(tree, '.tools', 'tmp'));
+    // Negative: releases/ alone, as mounted into a build container, is not a
+    // source tree - no .tools/ is made beside it, and no TMPDIR is invented.
+    const mounted = path.join(base, 'mounted');
+    fs.mkdirSync(path.join(mounted, 'releases'), { recursive: true });
+    fs.copyFileSync(path.join(root, 'releases/tools-env.sh'), path.join(mounted, 'releases/tools-env.sh'));
+    const m = run(mounted);
+    assert.notStrictEqual(m.status, 0);
+    assert.match(m.stderr, /cannot be written and no writable TMPDIR is set/);
+    assert.ok(!fs.existsSync(path.join(mounted, '.tools')));
+  } finally { fs.rmSync(base, { recursive: true, force: true }); }
+});
+
 test('every script that makes temporary files names .tools/tmp, sourcing tools-env.sh', () => {
   const bad = [];
   for (const rel of scripts().filter(r => !ELSEWHERE.test(r) && r !== 'releases/tools-env.sh')) {
@@ -91,6 +120,16 @@ test('no script writes to a folder in the home directory or edits a shell rc fil
   const bad = scripts().filter(r => !ELSEWHERE.test(r))
     .filter(rel => HOME_WRITE.test(code(read(rel)).replace(/METEOR_BIN="\$HOME\/\.meteor\/meteor"/g, '')));
   assert.deepStrictEqual(bad, []);
+});
+
+test('workflows look for the Sandstorm toolchain where the scripts put it, in .tools', () => {
+  // v12.66: the workflows put $HOME/projects/meteor-spk on PATH and zipped it
+  // from there, while the scripts had moved it to .tools/projects.
+  const dir = path.join(root, '.github/workflows');
+  const bad = fs.readdirSync(dir).filter(f => /\.ya?ml$/.test(f))
+    .filter(f => /(~|\$HOME|\$\{HOME\})\/projects\b/.test(code(read(path.join('.github/workflows', f)))));
+  assert.deepStrictEqual(bad, []);
+  assert.match('echo "$HOME/projects/meteor-spk/meteor-spk-0.6.0" >> "$GITHUB_PATH"', /(~|\$HOME|\$\{HOME\})\/projects\b/);
 });
 
 test('build.sh sources tools-env.sh and installs Node.js and Meteor into .tools', () => {
