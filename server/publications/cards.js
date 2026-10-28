@@ -2,6 +2,7 @@ import { ReactiveCache } from '/imports/reactiveCache';
 import { publishComposite } from 'meteor/reywood:publish-composite';
 import { publishReportPage } from '/models/lib/reportPageIndex';
 import { findWhere } from '/imports/lib/collectionHelpers';
+import { readableCard } from '/server/lib/openCardAccess';
 import escapeForRegex from 'escape-string-regexp';
 import Users from '../../models/users';
 import {
@@ -33,6 +34,7 @@ import Attachments from '../../models/attachments';
 import Checklists from '../../models/checklists';
 import ChecklistItems from '../../models/checklistItems';
 import SessionData from '../../models/usersessiondata';
+import { ensureIndex } from '/server/lib/mongoStartup';
 import CustomFields from '../../models/customFields';
 const { boardVisibilitySelectors } = require('/models/lib/boardVisibilitySelectors');
 const { myAttachmentsSelector, myAttachmentsPageOptions } = require('/models/lib/myAttachmentsQuery');
@@ -83,6 +85,17 @@ import { CARD_TYPES } from '../../config/const';
 import Org from "../../models/org";
 import Team from "../../models/team";
 import { MATCH_NOTHING, selectorIsInjection } from '/server/lib/selectorGuard';
+
+// Search sessions (global search, Due Cards and the other card reports) are
+// read, upserted and pruned by { userId, sessionId } and by modifiedAt on
+// every search. The collection had only its _id index, so each search scanned
+// every stored session - on one instance 4,751 sessions holding 10 GB, three
+// full scans per search (#6824).
+Meteor.startup(async () => {
+  await ensureIndex(SessionData, { userId: 1, sessionId: 1 });
+  await ensureIndex(SessionData, { modifiedAt: 1 });
+});
+
 const { boardCardScope, isAssignedOnlyMember } = require('/models/lib/boardCardScope');
 const { retainRankedCard } = require('/models/lib/cardSearchRanking');
 const { withoutMembershipSelectors } = require('/models/lib/boardPermission');
@@ -93,30 +106,9 @@ const {
 
 Meteor.publish('card', async function(cardId) {
   check(cardId, String);
-
-  const userId = this.userId;
-  const card = await ReactiveCache.getCard({ _id: cardId });
-
-  if (!card || !card.boardId) {
-    return [];
-  }
-
-  const board = await ReactiveCache.getBoard({ _id: card.boardId });
-  if (!board || !board.isVisibleBy({ _id: userId })) {
-    return [];
-  }
-
-  // If user has assigned-only permissions, check if they're assigned to this card
-  if (userId && board.members) {
-    const member = findWhere(board.members, { userId: userId, isActive: true });
-    if (member && (member.isNormalAssignedOnly || member.isCommentAssignedOnly || member.isReadAssignedOnly)) {
-      // User with assigned-only permissions can only view cards assigned to them
-      if (!card.assignees || !card.assignees.includes(userId)) {
-        return []; // Don't publish if user is not assigned
-      }
-    }
-  }
-
+  // The rule is server/lib/openCardAccess.js, shared with 'cards.openCardAvailable'.
+  const card = await readableCard(this.userId, cardId);
+  if (!card) return [];
   const ret = await ReactiveCache.getCards(
     { _id: cardId },
     {},
@@ -919,24 +911,25 @@ async function buildSelector(queryParams, userId) {
       const attachmentScope = Array.isArray(boardIds) ? { 'meta.boardId': { $in: boardIds } } : {};
       for (const has of queryParams.getPredicates(OPERATOR_HAS)) {
         switch (has.field) {
-          case PREDICATE_ATTACHMENT:
-            selector.$and.push({
-              _id: {
-                $in: (await ReactiveCache.getAttachments(attachmentScope, { fields: { cardId: 1 } })).map(
-                  a => a.cardId,
-                ),
-              },
-            });
+          // An attachment names its card in meta.cardId - reading `cardId`
+          // found no card at all - and a negated predicate (has:-attachment,
+          // `exists: false`) asks for the cards WITHOUT one, which was ignored.
+          // Soft-deleted attachments do not count (History.md §12.1).
+          case PREDICATE_ATTACHMENT: {
+            // (Filtered here, not in the query: the publications keep sending
+            // soft-deleted ones for the card history.)
+            const { isLiveAttachment } = require('/models/lib/attachmentSoftDelete');
+            const ids = (await ReactiveCache.getAttachments(attachmentScope, { fields: { 'meta.cardId': 1, deletedAt: 1 } }))
+              .filter(isLiveAttachment).map(a => a.meta && a.meta.cardId).filter(Boolean);
+            selector.$and.push({ _id: has.exists ? { $in: ids } : { $nin: ids } });
             break;
-          case PREDICATE_CHECKLIST:
-            selector.$and.push({
-              _id: {
-                $in: (await ReactiveCache.getChecklists(checklistScope, { fields: { cardId: 1 } })).map(
-                  a => a.cardId,
-                ),
-              },
-            });
+          }
+          case PREDICATE_CHECKLIST: {
+            const ids = (await ReactiveCache.getChecklists(checklistScope, { fields: { cardId: 1 } }))
+              .map(a => a.cardId).filter(Boolean);
+            selector.$and.push({ _id: has.exists ? { $in: ids } : { $nin: ids } });
             break;
+          }
           case PREDICATE_DESCRIPTION:
           case PREDICATE_START_AT:
           case PREDICATE_DUE_AT:
@@ -982,7 +975,8 @@ async function buildSelector(queryParams, userId) {
       }
       const attachments = await ReactiveCache.getAttachments(
         attachmentSelector,
-        { fields: { cardId: 1 } },
+        // An attachment names its card in meta.cardId, not cardId.
+        { fields: { 'meta.cardId': 1 } },
       );
 
       // #5910: free-text search must match text inside card comments, for BOTH
@@ -1002,7 +996,7 @@ async function buildSelector(queryParams, userId) {
           { description: regex },
           { customFields: { $elemMatch: { value: regex } } },
           { _id: { $in: checklists.map(list => list.cardId) } },
-          { _id: { $in: attachments.map(attach => attach.cardId) } },
+          { _id: { $in: attachments.map(attach => attach.meta && attach.meta.cardId).filter(Boolean) } },
           // #5910: include cards whose comment text matches (board-scoped).
           { _id: { $in: comments.map(com => com.cardId) } },
         ];
@@ -1054,10 +1048,11 @@ async function buildSelector(queryParams, userId) {
         }
         const attachments = await ReactiveCache.getAttachments(
           attachmentSelector,
-          { fields: { cardId: 1 } },
+          // An attachment names its card in meta.cardId, not cardId.
+          { fields: { 'meta.cardId': 1 } },
         );
         if (attachments.length) {
-          selector.$and.push({ _id: { $in: attachments.map(attach => attach.cardId) } });
+          selector.$and.push({ _id: { $in: attachments.map(attach => attach.meta && attach.meta.cardId).filter(Boolean) } });
         } else {
           selector.$and.push({ _id: null });
         }
@@ -1473,9 +1468,11 @@ async function findCards(sessionId, query, userId) {
   // Check if the session data was actually stored
   const storedSessionData = typeof SessionData.findOneAsync === 'function' ? await SessionData.findOneAsync({ userId, sessionId }) : SessionData.findOne({ userId, sessionId });
 
-  // remove old session data
+  // Remove search sessions older than a day - everybody's, not only this
+  // user's: a user who never searched again kept theirs forever (one instance
+  // held 4,751 of them, 10 GB, each with the pickled selector of every board
+  // the user can see). Cheap with the modifiedAt index above (#6824).
   const removeSelector = {
-    userId,
     modifiedAt: {
       $lt: new Date(
         subtract(now(), 1, 'day').toISOString(),

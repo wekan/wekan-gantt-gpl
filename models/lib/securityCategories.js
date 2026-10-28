@@ -52,6 +52,12 @@ const CATALOG = {
   'authz.manage-board': { category: 'authz', bleed: 'ManageBoardBleed', severity: 'high', cwe: 'CWE-863' },
   'authz.comment-card': { category: 'authz', bleed: 'CommentBoundaryBleed', severity: 'high', cwe: 'CWE-639' },
   'authz.mutation': { category: 'authz', bleed: 'MutationBleed', severity: 'high', cwe: 'CWE-863' },
+  // AuthBleed: copyBoard / copyCard / copySwimlane / createCardWithDueDate
+  // called with no login, or createCardWithDueDate (no WeKan client calls it)
+  // into a board the caller cannot write. Membership refusals of the copy
+  // dialogs are NOT recorded: a template or a stale dialog reaches them in
+  // ordinary use, and a high-severity record would disable that login.
+  'authz.copy': { category: 'authz', bleed: 'AuthBleed', severity: 'high', cwe: 'CWE-862' },
   'authz.board-visibility': { category: 'authz', bleed: 'VisibilityBleed', severity: 'medium', cwe: 'CWE-863' },
   // blocksAccount: false on the next two - the URL comes from data the user did
   // not write (an identity provider's avatar, an imported Trello board's link
@@ -142,6 +148,22 @@ const CATALOG = {
   // and *Bleed name cannot drift from the guard it sits next to.
   'authz.canary':    { category: 'authz', bleed: 'CanaryBleed', severity: 'medium', cwe: 'CWE-863' },
   'authz.checklist': { category: 'authz', bleed: 'ChecklistBleed', severity: 'high', cwe: 'CWE-863' },
+  // StampBleed: a checklist, checklist item or text note inserted on one's own
+  // card with ANOTHER board's id (or an item into another card's checklist) -
+  // published to that board and drawn in its checklists. server/lib/cardChildStamp.js
+  'authz.card-child-stamp': { category: 'authz', bleed: 'StampBleed', severity: 'high', cwe: 'CWE-639' },
+  // AttachmentMigrationBleed (a SnowBleed finding): a board migration method
+  // asked about a board the caller cannot see (server/lib/migrationBoardAccess.js).
+  // No WeKan client calls those methods, so it is an attempt; it does not block
+  // the account, since the answer is refused either way.
+  'authz.migration-board': { category: 'authz', bleed: 'AttachmentMigrationBleed', severity: 'medium', cwe: 'CWE-862', blocksAccount: false },
+  // UploadBleed: an attachment upload through Meteor-Files' own pipeline, which
+  // inserts past the allow rules, by somebody not signed in or onto a card or
+  // board they cannot write to. models/lib/attachmentUploadAuth.js
+  'authz.attachment-upload': { category: 'authz', bleed: 'UploadBleed', severity: 'critical', cwe: 'CWE-862' },
+  // MoveStorageBleed sibling: validateAttachment - which deletes a file failing
+  // the current upload rules - asked by somebody who cannot change it.
+  'authz.attachment-validate': { category: 'authz', bleed: 'MoveStorageBleed', severity: 'high', cwe: 'CWE-862' },
   'authz.comment':   { category: 'authz', bleed: 'CommentBleed', severity: 'medium', cwe: 'CWE-639' },
   'authz.file-path': { category: 'authz', bleed: 'PathBleed', severity: 'high', cwe: 'CWE-22' },
   'authz.attachment-file-path': { category: 'authz', bleed: 'FilePathBleed', severity: 'high', cwe: 'CWE-22' },

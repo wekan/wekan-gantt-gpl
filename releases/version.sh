@@ -5,6 +5,7 @@
 # =================================================================
 
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/tools-env.sh"   # temporary files and downloads go to .tools/tmp
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -12,7 +13,9 @@ cd "$REPO_ROOT"
 
 # Local copy of dependency artifacts, used only for the optional
 # USE_LOCAL_DEP_VERSIONS offline mode. Builds themselves fetch from upstream.
-DOWNLOAD_DIR="${DOWNLOAD_DIR:-$HOME/Lataukset}"
+# Downloads and release zips stay in .tools/tmp (releases/tools-env.sh), not
+# in ~/Downloads or ~/Lataukset.
+DOWNLOAD_DIR="${DOWNLOAD_DIR:-$WEKAN_DOWNLOADS}"
 
 # Portable sedi function for macOS/Linux compatibility
 sedi() {
@@ -469,9 +472,9 @@ version_bump_logic() {
   fi
 
   # 9. Update and publish the WeKan Helm chart in the separate wekan/charts repo
-  # at ../w/charts. release-charts.sh bumps only the WeKan version numbers in the
+  # at .tools/charts. release-charts.sh bumps only the WeKan version numbers in the
   # chart, packages it, and publishes it to the gh-pages Helm repo index.
-  if [ -d "../w/charts/wekan" ]; then
+  if [ -d ".tools/charts/wekan" ]; then
     ./releases/release-charts.sh "${NEW_VERSION}"
   fi
 

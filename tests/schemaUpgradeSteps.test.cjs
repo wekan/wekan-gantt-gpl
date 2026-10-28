@@ -146,7 +146,10 @@ function fakeDb(initial = {}) {
         const vals = new Set();
         for (const d of docs()) if (matches(d, filter)) {
           const v = getPath(d, field);
-          if (v !== undefined) vals.add(typeof v === 'string' ? v : String(v));
+          // MongoDB's distinct() returns each element of an array field.
+          for (const x of Array.isArray(v) ? v : [v]) {
+            if (x !== undefined) vals.add(typeof x === 'string' ? x : String(x));
+          }
         }
         return [...vals];
       },
@@ -257,6 +260,72 @@ await test('speed: card fixes are server-side updateMany batches, never per-card
   assert.ok(db._ops.updateOne < 20,
     `per-document updateOne calls must stay constant-ish (got ${db._ops.updateOne}) — thousands of cards must not mean thousands of round trips`);
   assert.ok(db._ops.updateMany >= 2, 'fixes go through updateMany');
+});
+
+// ── card-list-other-board (#5874) ─────────────────────────────────────────────
+// A card moved to another board before the move hook existed kept the list of
+// the board it left: it exists, so the dangling-listId rescue does not see it,
+// and the card is shown nowhere.
+const foreignListStep = steps.find(s => s.name === 'card-list-other-board');
+
+await test('card-list-other-board: a card on a list of the board it left gets its own board\'s first list', async () => {
+  const db = fakeDb({
+    boards: [{ _id: 'A' }, { _id: 'B' }, { _id: 'C' }],
+    lists: [
+      { _id: 'la', boardId: 'A', sort: 0 },
+      { _id: 'lbArchived', boardId: 'B', sort: 0, archived: true },
+      { _id: 'lb2', boardId: 'B', sort: 2 },
+      { _id: 'lb1', boardId: 'B', sort: 1, swimlaneId: 'swB' },
+    ],
+    cards: [
+      { _id: 'moved', boardId: 'B', listId: 'la', swimlaneId: 'x' },        // the bug
+      { _id: 'movedArchived', boardId: 'B', listId: 'la', archived: true },
+      { _id: 'toC', boardId: 'C', listId: 'la' },                          // C has no list at all
+      { _id: 'fine', boardId: 'A', listId: 'la' },
+    ],
+  });
+  assert.strictEqual(await foreignListStep.check(db), true);
+  const res = await foreignListStep.run(db);
+  assert.strictEqual(res.fixed, 3);
+  const card = id => db._dump('cards').find(c => c._id === id);
+  assert.strictEqual(card('moved').listId, 'lb1', 'first unarchived list by sort');
+  assert.strictEqual(card('moved').swimlaneId, 'swB', 'a list bound to a swimlane brings the card into it');
+  assert.strictEqual(card('movedArchived').listId, 'lb1');
+  const rescued = db._dump('lists').find(l => l.boardId === 'C');
+  assert.ok(rescued && rescued.title === 'Rescued Data', 'a board without lists gets Rescued Data');
+  assert.strictEqual(card('toC').listId, rescued._id);
+  assert.strictEqual(card('fine').listId, 'la', 'a card on its own board is untouched');
+  assert.strictEqual(await foreignListStep.check(db), false, 'idempotent');
+});
+
+// #6814: the rescued card keeps the swimlane of the board it LEFT when its new
+// list is not bound to one - swimlane-structure's foreign-swimlane rescue must
+// see it in the same pass, so the step runs before it.
+await test('card-list-other-board runs before swimlane-structure, which then gives the card a swimlane of its board', async () => {
+  const names = steps.map(st => st.name);
+  assert.ok(names.indexOf('card-list-other-board') < names.indexOf('swimlane-structure'), 'the order the runner walks');
+  const db = fakeDb({
+    boards: [{ _id: 'A' }, { _id: 'B' }],
+    swimlanes: [{ _id: 'swA', boardId: 'A', sort: 0, archived: false }, { _id: 'swB', boardId: 'B', sort: 0, archived: false }],
+    lists: [{ _id: 'la', boardId: 'A', sort: 0, swimlaneId: '' }, { _id: 'lb', boardId: 'B', sort: 0, swimlaneId: '' }],
+    cards: [{ _id: 'moved', boardId: 'B', listId: 'la', swimlaneId: 'swA', archived: false }],
+  });
+  for (const name of ['card-list-other-board', 'swimlane-structure']) {
+    const step = steps.find(st => st.name === name);
+    if (await step.check(db)) await step.run(db);
+  }
+  const card = db._dump('cards').find(c => c._id === 'moved');
+  assert.strictEqual(card.listId, 'lb');
+  assert.strictEqual(card.swimlaneId, 'swB', 'negative: not left on the swimlane of the board it left');
+});
+
+await test('negative: card-list-other-board leaves a missing list to swimlane-structure', async () => {
+  const db = fakeDb({
+    boards: [{ _id: 'A' }],
+    lists: [{ _id: 'la', boardId: 'A', sort: 0 }],
+    cards: [{ _id: 'c1', boardId: 'A', listId: 'la' }, { _id: 'c2', boardId: 'A', listId: 'gone' }],
+  });
+  assert.strictEqual(await foreignListStep.check(db), false);
 });
 
 await test('negative: swimlane-structure does not run on healthy data', async () => {
@@ -714,6 +783,53 @@ await test('cover-on-card-on: a new install with no board marks it done, so a la
   assert.strictEqual(await coverStep.check(db), false, 'nothing to turn on');
   db._dump('boards').push({ _id: 'b9', allowsCoverAttachmentOnCard: false });
   assert.strictEqual(await coverStep.check(db), false, 'and the marker is written, so it never runs later');
+});
+
+// ── custom-fields-minicard-on (fields "Show on card" stay on the minicard) ─
+// The minicard switch for custom fields is opt-in and false in every board. A
+// board with a field marked "Show on card" had that field on its minicards
+// before; it is turned on there, ONCE.
+const cfMinicardStep = steps.find(s => s.name === 'custom-fields-minicard-on');
+
+await test('custom-fields-minicard-on: boards with a "Show on card" field keep it on the minicard', async () => {
+  const db = fakeDb({
+    customFields: [
+      { _id: 'f1', boardIds: ['b1', 'b2'], showOnCard: true },
+      { _id: 'f2', boardIds: ['b3'], showOnCard: false },
+      { _id: 'f3', boardIds: ['b4'], showOnCard: true },
+    ],
+    boards: [
+      { _id: 'b1', allowsCustomFieldsOnMinicard: false },
+      { _id: 'b2' },
+      { _id: 'b3', allowsCustomFieldsOnMinicard: false },
+      { _id: 'b4', allowsCustomFieldsOnMinicard: true },
+      { _id: 'b5', allowsCustomFieldsOnMinicard: false },
+    ],
+  });
+  assert.strictEqual(await cfMinicardStep.check(db), true);
+  const res = await cfMinicardStep.run(db);
+  assert.strictEqual(res.fixed, 2);
+  const on = Object.fromEntries(db._dump('boards').map(b => [b._id, b.allowsCustomFieldsOnMinicard]));
+  assert.deepStrictEqual(on, { b1: true, b2: true, b3: false, b4: true, b5: false },
+    'only boards with a "Show on card" field; the others keep the opt-in default');
+});
+
+await test('custom-fields-minicard-on: ONCE EVER - a later "off" stands (negative)', async () => {
+  const db = fakeDb({
+    customFields: [{ _id: 'f1', boardIds: ['b1'], showOnCard: true }],
+    boards: [{ _id: 'b1', allowsCustomFieldsOnMinicard: false }],
+  });
+  await cfMinicardStep.run(db);
+  db._dump('boards')[0].allowsCustomFieldsOnMinicard = false; // turned off afterwards
+  assert.strictEqual(await cfMinicardStep.check(db), false, 'the marker stops it');
+  assert.strictEqual(db._dump('boards')[0].allowsCustomFieldsOnMinicard, false);
+});
+
+await test('custom-fields-minicard-on: no "Show on card" field anywhere marks it done (negative)', async () => {
+  const db = fakeDb({ customFields: [], boards: [{ _id: 'b1', allowsCustomFieldsOnMinicard: false }] });
+  assert.strictEqual(await cfMinicardStep.check(db), false, 'nothing to turn on');
+  db._dump('customFields').push({ _id: 'f9', boardIds: ['b1'], showOnCard: true });
+  assert.strictEqual(await cfMinicardStep.check(db), false, 'a field added later is a choice made with the switch in place');
 });
 
 // ── nonfinite-sort-repair (#6481) ────────────────────────────────────────────

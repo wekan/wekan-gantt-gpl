@@ -238,6 +238,7 @@ import '/server/lib/databaseHealth';
 // stream, shown in Admin Panel / Problems / Filesystem integrity.
 import '/server/lib/fileIntegrityScan';
 import '/server/lib/historyIntegrityScan';
+import '/server/lib/dataHealthScan';
 import '/server/lib/uptimeWatch';
 import '/server/lib/utils';
 
@@ -257,6 +258,7 @@ import '/server/models/changeHistory';
 import '/server/models/changeHistoryHooks';
 import '/server/methods/repairBrokenCards';
 import '/server/methods/restoreListSwimlanes';
+import '/server/methods/dataHealth';
 // Removes the "Templates" container boards made for accounts that never used
 // them (pre-v10.00 signups). Dry run by default; see the method for why.
 import '/server/methods/cleanupTemplateContainers';
@@ -267,6 +269,7 @@ import '/server/methods/ruleSuggestions';
 import '/server/methods/boardSummary';
 import '/server/methods/sinceLastVisit';
 import '/server/methods/cardForecast';
+import '/server/methods/openCardAvailability';
 import '/server/methods/whiteboard';
 import '/server/methods/sandstormMigration';
 import '/server/methods/tenant';

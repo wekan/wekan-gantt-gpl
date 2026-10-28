@@ -483,11 +483,20 @@ Meteor.methods({
     check(dueDate, Date);
     check(swimlaneId, String);
 
-    if (!this.userId) throw new Meteor.Error('not-authorized');
+    // AuthBleed (DueDateBleed): no WeKan client calls this method, so every
+    // refusal is an attempt and is recorded.
+    const refuse = detail => {
+      try {
+        require('/server/lib/securityLog').record({ key: 'authz.copy', action: 'blocked',
+          source: 'method:createCardWithDueDate', userId: this.userId || undefined, detail });
+      } catch (e) { /* logging must never break the guard */ }
+      return new Meteor.Error('not-authorized');
+    };
+    if (!this.userId) throw refuse('Card insert refused: not signed in');
     const destBoard = await Boards.findOneAsync(boardId);
     if (!destBoard) throw new Meteor.Error('not-found');
     if (!allowIsBoardMemberWithWriteAccess(this.userId, destBoard))
-      throw new Meteor.Error('not-authorized');
+      throw refuse('Card insert refused: no write access to the board');
 
     const card = {
       title,
@@ -831,7 +840,16 @@ Meteor.methods({
     check(insertAtTop, Boolean);
     check(mergeCardValues, Object);
 
-    if (!this.userId) throw new Meteor.Error('not-authorized');
+    // AuthBleed: no signed-out client copies a card, so this is an attempt.
+    // The membership refusals below are not recorded: a stale Copy Card
+    // dialog reaches them in ordinary use.
+    if (!this.userId) {
+      try {
+        require('/server/lib/securityLog').record({ key: 'authz.copy', action: 'blocked',
+          source: 'method:copyCard', detail: 'Card copy refused: not signed in' });
+      } catch (e) { /* logging must never break the guard */ }
+      throw new Meteor.Error('not-authorized');
+    }
     const card = await ReactiveCache.getCard(cardId);
     if (!card) throw new Meteor.Error('not-found');
     const sourceBoard = await Boards.findOneAsync(card.boardId);
@@ -960,13 +978,63 @@ Meteor.startup(async () => {
   await ensureIndex(Cards, { swimlaneId: 1 });
   await ensureIndex(Cards, { listId: 1 });
   await ensureIndex(Cards, { type: 1 });
+  // The hourly recurring-card job (server/cardRecurrenceSchedule.js) asks for
+  // cards with a recurrenceInterval. Without an index that read every card -
+  // 1.1 million on one instance, 1.1 s of a full collection scan every hour -
+  // to find the few that recur (#6825). Partial: only those cards are in it,
+  // the same way activities indexes commentId and attachmentId.
+  await ensureIndex(Cards, { recurrenceInterval: 1 },
+    { partialFilterExpression: { recurrenceInterval: { $exists: true } } });
   Meteor.defer(() => {
     addCronJob();
   });
 });
 
+// #6815: card numbers stay unique per board (models/lib/cardNumberAssign.js).
+Cards.before.insert(async (userId, doc) => {
+  const { counterName, isCardNumber, needsNewCardNumber, counterFloor } = require('/models/lib/cardNumberAssign');
+  if (!doc || !doc.boardId || !isCardNumber(doc.cardNumber)) return;
+  const { Counters } = require('/models/counters');
+  const counters = Counters.rawCollection();
+  const counter = counterName(doc.boardId);
+  const topNumber = async () => {
+    const top = await Cards.findOneAsync(
+      { boardId: doc.boardId },
+      { sort: { cardNumber: -1 }, fields: { cardNumber: 1 } },
+    );
+    return top && top.cardNumber;
+  };
+  const taken = await Cards.findOneAsync(
+    { boardId: doc.boardId, cardNumber: doc.cardNumber },
+    { fields: { _id: 1 } },
+  );
+  if (needsNewCardNumber(doc.cardNumber, taken)) {
+    const board = await Boards.findOneAsync(doc.boardId);
+    if (!board) return;
+    // The counter may still be below numbers browsers wrote before this check
+    // existed: raise it to the board's highest number first.
+    const top = await topNumber();
+    if (isCardNumber(top)) {
+      await counters.updateOne({ _id: counter }, { $max: { next_val: top } }, { upsert: true });
+    }
+    doc.cardNumber = await board.getNextCardNumber();
+  } else {
+    // A free number the counter did not issue (from the browser or an import):
+    // never let the counter hand it out again. A board with no counter yet is
+    // seeded from its highest number too, as getNextCardNumber's lazy seed
+    // does - created here from a browser's number alone, the counter could
+    // start below numbers outside that browser's view, and the seed would
+    // never run again.
+    const exists = await counters.findOne({ _id: counter }, { projection: { _id: 1 } });
+    const floor = counterFloor(doc.cardNumber, exists ? null : await topNumber());
+    await counters.updateOne({ _id: counter }, { $max: { next_val: floor } }, { upsert: true });
+  }
+});
+
 Cards.after.insert(async (userId, doc) => {
-  if (!deferSyncRecording('create', doc)) await cardCreation(userId, doc);
+  // Outside a method (a REST route, a server job) the hook has no user: the
+  // card's own author is who created it (#6823).
+  if (!deferSyncRecording('create', doc)) await cardCreation(userId || doc.userId, doc);
 
   Meteor.setTimeout(async () => {
     const card = await Cards.findOneAsync(doc._id);
@@ -1351,6 +1419,23 @@ WebApp.handlers.get(
   },
 );
 
+// A card created over REST is placed on the board in the URL, so its list and
+// its swimlane must be that board's. Neither was checked: a list or swimlane id
+// of ANOTHER board was written onto the new card, which then pointed at a list
+// and a swimlane its own board does not have - the #6572 shape, a card that
+// shows on neither board. The PUT route has refused this since #6572; these
+// are its create siblings. Returns the error to answer with, or null.
+async function restPlacementError(boardId, listId, swimlaneId) {
+  if (typeof listId !== 'string' || !(await ReactiveCache.getList({ _id: listId, boardId }))) {
+    return 'listId does not belong to this board.';
+  }
+  if (swimlaneId === undefined || swimlaneId === null || swimlaneId === '') return null;
+  if (typeof swimlaneId !== 'string' || !(await ReactiveCache.getSwimlane({ _id: swimlaneId, boardId }))) {
+    return 'swimlaneId does not belong to this board.';
+  }
+  return null;
+}
+
 WebApp.handlers.post('/api/boards/:boardId/lists/:listId/cards', async function(req, res) {
   Authentication.checkLoggedIn(req.userId);
   const paramBoardId = req.params.boardId;
@@ -1385,10 +1470,12 @@ WebApp.handlers.post('/api/boards/:boardId/lists/:listId/cards', async function(
       return;
     }
     sendJsonResult(res, { code: 200, data: { _id: linkedNewId } });
-    const linkedCard = await ReactiveCache.getCard(linkedNewId);
     // GHSA-6jr3-42jf-vhm5: attribution comes from the session, not the body.
     noteAuthorSpoof(req, 'POST cards (linked)');
-    await cardCreation(req.userId, linkedCard);
+    // createLinkedCardFor inserts through the collection, so Cards.after.insert
+    // has already recorded the "created" activity; a second one here gave every
+    // linked card created over REST two, and its watchers two notifications
+    // (#6823).
     return;
   }
 
@@ -1397,6 +1484,12 @@ WebApp.handlers.post('/api/boards/:boardId/lists/:listId/cards', async function(
   // allowed when the caller may see that board; otherwise creating one card
   // would publish that board's ancestor cards to everyone subscribed here.
   await assertParentCardIsVisible(req.userId, paramParentId);
+
+  const placementError = await restPlacementError(paramBoardId, paramListId, req.body.swimlaneId);
+  if (placementError) {
+    sendJsonResult(res, { code: 400, data: { error: placementError } });
+    return;
+  }
 
   const nextCardNumber = await board.getNextCardNumber();
 
@@ -1492,6 +1585,12 @@ WebApp.handlers.post(
     await assertListNotRefused(req.userId, board, req.params.listId); // #4527
     const paramListId = req.params.listId;
 
+    const listError = await restPlacementError(paramBoardId, paramListId);
+    if (listError) {
+      sendJsonResult(res, { code: 400, data: { error: listError } });
+      return;
+    }
+
     const cardsInput = req.body.cards;
     if (!Array.isArray(cardsInput) || cardsInput.length === 0) {
       sendJsonResult(res, { code: 400, data: { error: 'cards must be a non-empty array' } });
@@ -1527,6 +1626,11 @@ WebApp.handlers.post(
       noteAuthorSpoof(req, 'POST cards/bulk');
       const authorId = req.userId;
       const swimlaneId = input.swimlaneId || req.body.swimlaneId;
+      const swimlaneError = await restPlacementError(paramBoardId, paramListId, swimlaneId);
+      if (swimlaneError) {
+        results.push({ index: i, error: swimlaneError });
+        continue;
+      }
       const checkUser = await ReactiveCache.getUser(authorId);
       if (typeof checkUser === 'undefined') {
         results.push({ index: i, error: 'authorId not found' });

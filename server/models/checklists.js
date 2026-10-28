@@ -78,8 +78,11 @@ Meteor.methods({
 // single reactive cursor on boardId and still see checklists on newly added
 // cards. Server-authoritative: the board publication runs on the server, so the
 // server document carrying boardId is what matters.
+// #6813: ALWAYS from the card, not only when missing - a client's own boardId
+// would otherwise stay, and a document on its own card could carry another
+// board's id (published to that board, and mistaken for being on it).
 Checklists.before.insert(async (userId, doc) => {
-  if (!doc.boardId && doc.cardId) {
+  if (doc.cardId) {
     const card = await ReactiveCache.getCard(doc.cardId);
     if (card) {
       doc.boardId = card.boardId;
@@ -154,6 +157,22 @@ Checklists.before.remove(async (userId, doc) => {
     });
   } catch (e) {
     console.error('[Checklists.before.remove] Error while processing checklist deletion for doc._id:', doc._id, e);
+  }
+});
+
+// #6816: a deleted checklist takes its items with it. Before this, deleting a
+// checklist - in the card, through the REST API or by a rule - left every item
+// in the database with a checklistId that points nowhere: invisible, never
+// cleaned up, and still found by searches on items. One production database had
+// 2335 of them from 690 deleted checklists. Deleting a card already removes its
+// items the same way (models/cards.js), without an activity per item: the
+// checklist's own removeChecklist activity above records the deletion.
+Checklists.after.remove(async (userId, doc) => {
+  if (!doc || !doc._id) return;
+  try {
+    await ChecklistItems.direct.removeAsync({ checklistId: doc._id });
+  } catch (e) {
+    console.error('[Checklists.after.remove] could not remove the items of checklist', doc._id, e);
   }
 });
 

@@ -104,6 +104,58 @@ Attachments.storagePath = function () {
   return fileStoreStrategyFactory.storagePath;
 };
 
+// UploadBleed: the upload pipeline inserts server-side, past the allow rules,
+// so this is where an upload is authorized - on every chunk, after the shared
+// file-name sanitizing (models/attachments.js). The decision is
+// models/lib/attachmentUploadAuth.js; a card attachment's board, list and
+// swimlane are its card's, whatever the client sent (StampBleed).
+const sharedOnBeforeUpload = Attachments.onBeforeUpload;
+Attachments.onBeforeUpload = async function (file) {
+  const shared = sharedOnBeforeUpload ? sharedOnBeforeUpload.call(this, file) : true;
+  if (shared !== true) return shared;
+  const { uploadDecision } = require('/models/lib/attachmentUploadAuth');
+  const { canEditCardOrLinkedCard } = require('/server/lib/linkedCardPermission');
+  const { allowIsBoardMemberWithWriteAccess } = require('/server/lib/utils');
+  const Cards = require('/models/cards').default;
+  const meta = (file && file.meta && typeof file.meta === 'object') ? file.meta : {};
+  let uploadsBlocked = false;
+  try {
+    const settings = await AttachmentStorageSettings.findOneAsync({});
+    uploadsBlocked = settings?.limitSettings?.attachmentsUploadBlocked === true;
+  } catch (e) { /* unreadable setting: uploads stay as they were */ }
+  const card = this.userId && typeof meta.cardId === 'string' && meta.cardId
+    ? await Cards.findOneAsync(meta.cardId) : null;
+  const board = this.userId && !meta.cardId && typeof meta.boardId === 'string' && meta.boardId
+    ? await Boards.findOneAsync(meta.boardId) : null;
+  const decision = uploadDecision({
+    userId: this.userId,
+    meta,
+    card,
+    // Recorded below once per upload, not by the helper on every chunk.
+    mayEditCard: Boolean(card) && await canEditCardOrLinkedCard(this.userId, card, undefined, { recordDenial: false }),
+    board,
+    mayWriteBoard: Boolean(board) && allowIsBoardMemberWithWriteAccess(this.userId, board),
+    uploadsBlocked,
+  });
+  if (!decision.allow) {
+    // Recorded once per upload, at its start (chunk -1), not per chunk.
+    if (decision.key && this.chunkId === -1) {
+      try {
+        require('/server/lib/securityLog').record({
+          key: decision.key, action: 'blocked', source: 'upload:attachments',
+          userId: this.userId || undefined,
+          detail: `Upload refused: ${decision.reason}`,
+        });
+      } catch (e) { /* logging must never break the guard */ }
+    }
+    return decision.reason;
+  }
+  if (decision.stamp) {
+    file.meta = { ...meta, ...decision.stamp };
+  }
+  return true;
+};
+
 Attachments.onAfterUpload = async function (fileObj) {
   // Detect and sanitize known exploits from the uploaded file IN PLACE, while it
   // is still on the local filesystem staging area and BEFORE it is validated or
@@ -426,6 +478,34 @@ Meteor.methods({
       throw new Meteor.Error('not-authorized', 'You do not have access to this board.');
     }
 
+    // MoveStorageBleed sibling (2026-10-27 regression audit): seeing the board
+    // was enough, and a file that fails the CURRENT upload rules - a type or a
+    // size an admin has since disallowed - is removed for good. So anybody who
+    // could see a board, a public one included, could delete its attachments.
+    // Only who may change the attachment's card (or write its board, for a
+    // board's own image), or a site admin, validates now. No WeKan client calls
+    // this method - validateAttachmentAndMoveToStorage does, for an admin - so
+    // a refusal is an attempt and is recorded.
+    const user = await ReactiveCache.getUser(this.userId);
+    if (!(user && user.isAdmin)) {
+      const { canEditCardOrLinkedCard } = require('/server/lib/linkedCardPermission');
+      const { allowIsBoardMemberWithWriteAccess } = require('/server/lib/utils');
+      const card = fileObj.meta?.cardId ? await ReactiveCache.getCard(fileObj.meta.cardId) : null;
+      const mayChange = card
+        ? await canEditCardOrLinkedCard(this.userId, card, undefined, { recordDenial: false })
+        : allowIsBoardMemberWithWriteAccess(this.userId, board);
+      if (!mayChange) {
+        try {
+          require('/server/lib/securityLog').record({
+            key: 'authz.attachment-validate', action: 'blocked', source: 'ddp:validateAttachment',
+            userId: this.userId,
+            detail: 'Asked to validate - and so possibly delete - an attachment the caller cannot change.',
+          });
+        } catch (e) { /* logging must never break the guard */ }
+        throw new Meteor.Error('not-authorized', 'You cannot change this attachment.');
+      }
+    }
+
     const effectiveUploadMaxBytes = await getAttachmentUploadMaxBytes();
     const isValid = await isFileValid(fileObj, attachmentUploadMimeTypes, effectiveUploadMaxBytes, attachmentUploadExternalProgram);
 
@@ -466,8 +546,15 @@ Meteor.methods({
 
     const fileObjAfter = await ReactiveCache.getAttachment(fileObjId);
 
+    // The move runs after the method returns. It used to re-enter
+    // moveAttachmentToStorage from Meteor.defer, where there is no method
+    // invocation and so no userId: that method's login check refused it every
+    // time, and the file never moved. Every check it makes - admin, the board
+    // visible, the destination allowlisted - was made above, so the deferred
+    // step moves the file itself, as the upload path does.
     if (fileObjAfter) {
-      Meteor.defer(() => Meteor.call('moveAttachmentToStorage', fileObjId, storageDestination));
+      Meteor.defer(() => Promise.resolve(moveToStorage(fileObjAfter, storageDestination, fileStoreStrategyFactory))
+        .catch(error => console.error('[validateAttachmentAndMoveToStorage] move failed:', error)));
     }
   },
 });

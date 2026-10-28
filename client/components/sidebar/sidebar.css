@@ -171,24 +171,52 @@
 .card-settings-pane-head,
 .card-settings-line {
   display: grid;
-  /* Show on Minicard, Show on Card, the field; opened from a card, On this
-     card first. Logical order: a right-to-left page mirrors it. Each line is
-     its own grid, so the side columns have FIXED widths - sized by content,
-     every line and the heading line would size them differently and nothing
-     would line up. */
-  grid-template-columns: 9em 9em minmax(10em, 1fr);
+  /* Two lists: Show on Card - opened from a card On this card first, then
+     Show on Card, Show empty (#6806) and the field - and Show on Minicard,
+     then the field. Logical order: a right-to-left page mirrors it. Each
+     line is its own grid, so the side columns have FIXED widths - sized by
+     content, every line and the heading line would size them differently and
+     nothing would line up. */
+  grid-template-columns: 9em 8em minmax(10em, 1fr);
   column-gap: 14px;
   align-items: center;
+  /* Every heading and every cell starts at its column's left edge (its start,
+     right-to-left), so a heading and the checkboxes under it line up. */
+  justify-items: start;
+  text-align: start;
 }
-.board-card-settings.has-card .card-settings-pane-head,
-.board-card-settings.has-card .card-settings-line {
-  grid-template-columns: 7em 9em 9em minmax(10em, 1fr);
+.board-card-settings.has-card .card-settings-list-card > .card-settings-pane-head,
+.board-card-settings.has-card .card-settings-list-card > .card-settings-line {
+  grid-template-columns: 7em 9em 8em minmax(10em, 1fr);
+}
+.card-settings-list-minicard > .card-settings-pane-head,
+.card-settings-list-minicard > .card-settings-line {
+  grid-template-columns: 9em minmax(10em, 1fr);
+}
+/* The minicard's list under the card's, a little apart. */
+.card-settings-list + .card-settings-list {
+  margin-block-start: 14px;
+}
+/* What a row is dragged by: its handle (drag handles on), its icon or name. */
+.card-field-order-drag-label {
+  cursor: grab;
+}
+.card-settings-line.ui-sortable-helper {
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 .card-settings-pane-head {
   font-weight: bold;
-  font-size: calc(12px * var(--wekan-ui-font-scale, 1));
   border-bottom: 1px solid #eee;
   padding-block-end: 4px;
+  align-items: start;
+}
+/* The headings' smaller font is on the headings, not on their line: the
+   columns are in em, and a smaller font on the line made every column of the
+   heading narrower than the same column of the rows - each heading drifted
+   further left of its checkboxes, and the rows' labels past the pane. */
+.card-settings-pane-head > span {
+  font-size: calc(12px * var(--wekan-ui-font-scale, 1));
 }
 .card-settings-line {
   padding: calc(4px * min(1, var(--wekan-ui-font-scale, 1))) 0;
@@ -197,6 +225,9 @@
 .card-settings-side-head {
   /* A heading longer than its column, in another language, wraps in it. */
   overflow-wrap: anywhere;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 .card-settings-line-label {
   display: inline-flex;
@@ -208,13 +239,22 @@
 .card-settings-side {
   display: inline-flex;
   align-items: center;
+  justify-content: flex-start;
+  justify-self: start;
   gap: 6px;
 }
-.card-settings-position {
-  min-width: 1.6em;
-  text-align: end;
-  color: #888;
-  font-size: calc(11px * var(--wekan-ui-font-scale, 1));
+.card-settings-side > a.flex {
+  margin: 0;
+}
+/* Select all / Select none under a column's heading, for that column's rows
+   of the open section: the Draggable table's buttons
+   (boardSettingsColumnActions.css), a little closer to their heading. */
+.card-settings-select {
+  margin: 3px 0 0;
+  font-weight: normal;
+}
+.card-settings-select button {
+  white-space: nowrap;
 }
 .card-settings-inline-action {
   /* The forms float their buttons (Save left, Delete right); flow-root keeps
@@ -229,24 +269,44 @@
 .card-settings-inline-action .card-custom-fields-more { display: none; }
 .card-settings-sections .materialCheckBox { transition: none; }
 .card-settings-sections .card-add-field.is-animating .materialCheckBox,
-.card-settings-sections .card-field-order-toggle.is-animating .materialCheckBox { transition: 0.2s; }
+.card-settings-sections .card-field-order-toggle.is-animating .materialCheckBox,
+.card-settings-sections .card-always-show.is-animating .materialCheckBox,
+.card-settings-sections .card-show-empty-fields.is-animating .materialCheckBox,
+.card-settings-sections .card-ask-move-reason.is-animating .materialCheckBox { transition: 0.2s; }
 
 .card-field-order-toggle,
 .card-field-order-move {
   flex-shrink: 0;
 }
 .card-field-order-move.is-disabled,
-.card-field-order-toggle.is-disabled {
+.card-field-order-toggle.is-disabled,
+.card-always-show.is-disabled,
+.card-show-empty-fields.is-disabled,
+.card-ask-move-reason.is-disabled {
   opacity: 0.3;
   cursor: not-allowed;
 }
 
+/* Show empty fields: every field is shown on every card, so the Show empty
+   column is set aside - hidden, and its track taken out of the grid. */
+.board-card-settings.show-empty-fields .card-settings-side-always,
+.board-card-settings.show-empty-fields .card-settings-side-head-always {
+  display: none;
+}
+.board-card-settings.show-empty-fields .card-settings-list-card > .card-settings-pane-head,
+.board-card-settings.show-empty-fields .card-settings-list-card > .card-settings-line {
+  grid-template-columns: 9em minmax(10em, 1fr);
+}
+.board-card-settings.show-empty-fields.has-card .card-settings-list-card > .card-settings-pane-head,
+.board-card-settings.show-empty-fields.has-card .card-settings-list-card > .card-settings-line {
+  grid-template-columns: 7em 9em minmax(10em, 1fr);
+}
+.card-settings-board-option { margin-block-end: 6px; }
+
 /* One side of the same popup: a menu that asks for one side hides the other
-   side's cells, so there is still ONE set of rows and one set of handlers. */
-.board-card-settings.show-card-only .card-settings-side-minicard,
-.board-card-settings.show-card-only .card-settings-side-head-minicard,
-.board-card-settings.show-minicard-only .card-settings-side-card,
-.board-card-settings.show-minicard-only .card-settings-side-head-card {
+   side's list, so there is still ONE set of lists and one set of handlers. */
+.board-card-settings.show-card-only .card-settings-list-minicard,
+.board-card-settings.show-minicard-only .card-settings-list-card {
   display: none;
 }
 
@@ -783,6 +843,9 @@ body.sidebar-resizing-active {
 /* #6699: this editor uses real, labelled checkboxes. Undo all three parts
    of forms.css's material-checkbox hiding rule in this popup only. */
 .wip-limit-groups input[type="checkbox"] {
+  /* #6820: no text-field padding, or a ticked box is drawn as a dot. */
+  min-height: 0;
+  padding: 0;
   display: inline-block;
   visibility: visible;
   position: static;

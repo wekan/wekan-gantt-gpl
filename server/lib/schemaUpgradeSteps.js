@@ -31,6 +31,11 @@
 // replacement in current WeKan, verified against `git show v8.00:server/migrations.js`):
 //   archived-flag-backfill   old docs missing `archived` never match the
 //                            archived:false view queries -> invisible
+//   card-list-other-board    #6814 / #5874: cards whose list belongs to ANOTHER
+//                            board (moved before the move hook fixed that) are
+//                            shown nowhere -> the board's first unarchived list;
+//                            before swimlane-structure, which then rescues
+//                            their swimlane in the same pass
 //   swimlane-structure       add-swimlanes (v0.65) + dangling-listId rescue +
 //                            #1959/#1971 Swimlanes-view visibility rescue
 //                            (cards under deleted/archived/foreign swimlanes)
@@ -59,6 +64,10 @@
 //                            (v6.10-18 uploads/<coll>, v6.19-v8.4x
 //                            WRITABLE_PATH/<coll>, CFS->ostrio temp files):
 //                            locate the binary and repoint/copy it
+//   custom-fields-minicard-on #6812: boards with a "Show on card" custom
+//                            field, whose minicards drew it before the switch
+//                            allowsCustomFieldsOnMinicard (opt-in, false
+//                            written into every board) -> switch on, once ever
 //
 // Pure, dependency-free (no Meteor imports) so it can be unit tested with
 // plain Node against a driver-compatible Db object. The Meteor wrapper (and
@@ -76,6 +85,7 @@ const MARKER_ID = 'schema-upgrade';
 // beside that one: see checklist-minicard-unset.
 const CHECKLIST_MINICARD_MARKER_ID = 'checklist-minicard-unset';
 const COVER_ON_CARD_MARKER_ID = 'cover-on-card-on';
+const CUSTOM_FIELDS_MINICARD_MARKER_ID = 'custom-fields-minicard-on';
 
 // Meteor-style random document ids (Random.id(): 17 chars, unmistakable set),
 // so upgraded documents look exactly like app-created ones.
@@ -262,6 +272,59 @@ const steps = [
           { archived: { $exists: false } },
           { $set: { archived: false } },
         );
+        fixed += (r && r.modifiedCount) || 0;
+      }
+      return { fixed, unresolved: 0 };
+    },
+  },
+
+  {
+    // #5874: a card moved to another board before the move hook kept it
+    // consistent (server/lib/cardBoardConsistency.js) can still point at a list
+    // of the board it LEFT. Every view of its own board selects cards by that
+    // board's lists, so the card is shown nowhere - and swimlane-structure's
+    // dangling-listId rescue does not see it, because the list does exist. One
+    // production database had 706 such cards (391 not archived), the oldest moved
+    // in early 2025. Give each its board's first unarchived list (or a "Rescued
+    // Data" list when the board has none), like the dangling-listId rescue.
+    //
+    // The cards are read with a two-field projection; the work is one updateMany
+    // per (list, board) pair that disagrees. Idempotent: a second pass finds
+    // nothing.
+    //
+    // #6814: BEFORE swimlane-structure, which the steps run in order: a rescued
+    // card whose new list is not bound to a swimlane keeps the swimlane of the
+    // board it left, and swimlane-structure's foreign-swimlane rescue (#1959)
+    // must see it in the same pass - after it, the card stayed hidden in the
+    // Swimlanes view until the next release re-ran the checks.
+    name: 'card-list-other-board',
+    async check(db) {
+      return (await foreignListPairs(db, { firstOnly: true })).length > 0;
+    },
+    async run(db) {
+      let fixed = 0;
+      const now = new Date();
+      const pairs = await foreignListPairs(db);
+      if (!pairs.length) return { fixed, unresolved: 0 };
+      const lists = await db.collection('lists').find(
+        { archived: { $ne: true }, type: { $ne: 'template-list' } },
+        { projection: { _id: 1, boardId: 1, swimlaneId: 1, sort: 1 } },
+      ).toArray();
+      const firstListOf = new Map();
+      for (const l of lists.sort((a, b) => (a.sort || 0) - (b.sort || 0))) {
+        if (!firstListOf.has(String(l.boardId))) firstListOf.set(String(l.boardId), l);
+      }
+      for (const { listId, boardId } of pairs) {
+        let target = firstListOf.get(boardId);
+        if (!target) {
+          target = { _id: randomId(), title: 'Rescued Data', boardId, swimlaneId: '', archived: false, sort: 0, type: 'list', createdAt: now, modifiedAt: now, updatedAt: now };
+          await db.collection('lists').insertOne(target);
+          firstListOf.set(boardId, target);
+        }
+        const set = { listId: String(target._id) };
+        // a list bound to one swimlane only shows its cards in that swimlane
+        if (target.swimlaneId) set.swimlaneId = String(target.swimlaneId);
+        const r = await db.collection('cards').updateMany({ boardId, listId }, { $set: set });
         fixed += (r && r.modifiedCount) || 0;
       }
       return { fixed, unresolved: 0 };
@@ -830,6 +893,43 @@ const steps = [
   },
 
   {
+    // Custom fields on minicards became a Board Settings / Card switch
+    // (allowsCustomFieldsOnMinicard), opt-in, and the schema's false was written
+    // into every board. A field marked "Show on card" was always drawn on the
+    // minicard before, so after the upgrade those fields vanished from every
+    // minicard until a board admin found the new switch. The switch is turned on
+    // for each board that has at least one such field: that is the board's own
+    // earlier choice. Boards without one keep the opt-in default.
+    //
+    // ONCE EVER, like cover-on-card-on: after this has run, a false is a choice
+    // somebody made, and the next upgrade must not turn it back on. With no such
+    // field anywhere it only marks itself done.
+    // #6812.
+    name: 'custom-fields-minicard-on',
+    async check(db) {
+      const markers = db.collection(MARKER_COLL);
+      if (await markers.findOne({ _id: CUSTOM_FIELDS_MINICARD_MARKER_ID }, { projection: { _id: 1 } })) return false;
+      if (await db.collection('customFields').findOne({ showOnCard: true }, { projection: { _id: 1 } })) return true;
+      await markers.updateOne({ _id: CUSTOM_FIELDS_MINICARD_MARKER_ID }, { $set: { at: new Date() } }, { upsert: true });
+      return false;
+    },
+    async run(db) {
+      const boardIds = (await db.collection('customFields').distinct('boardIds', { showOnCard: true }))
+        .filter(id => typeof id === 'string' && id);
+      const r = boardIds.length ? await db.collection('boards').updateMany(
+        { _id: { $in: boardIds }, allowsCustomFieldsOnMinicard: { $ne: true } },
+        { $set: { allowsCustomFieldsOnMinicard: true } },
+      ) : null;
+      await db.collection(MARKER_COLL).updateOne(
+        { _id: CUSTOM_FIELDS_MINICARD_MARKER_ID },
+        { $set: { at: new Date() } },
+        { upsert: true },
+      );
+      return { fixed: (r && r.modifiedCount) || 0, unresolved: 0 };
+    },
+  },
+
+  {
     // #6793: comments (and reactions, text notes, attachments) of a card that was
     // moved to another board before the move hook re-homed them still carry the
     // board the card LEFT, so the board publication - which finds them by board
@@ -932,6 +1032,27 @@ async function scanCardChildBoardIds(db, { fix }) {
   return { found, fixed };
 }
 
+// card-list-other-board: the (listId, boardId) pairs of cards whose list exists
+// but belongs to another board. Lists are held as id -> board; cards are
+// streamed with two fields.
+async function foreignListPairs(db, { firstOnly = false } = {}) {
+  const listBoard = new Map();
+  for (const l of await db.collection('lists').find({}, { projection: { _id: 1, boardId: 1 } }).toArray()) {
+    listBoard.set(String(l._id), String(l.boardId));
+  }
+  const pairs = new Map();
+  const cursor = db.collection('cards').find({}, { projection: { _id: 0, listId: 1, boardId: 1 } });
+  for await (const c of cursor) {
+    const owner = listBoard.get(String(c.listId));
+    if (!owner || !c.boardId || owner === String(c.boardId)) continue;   // missing list: swimlane-structure
+    const key = String(c.listId) + '\u0000' + String(c.boardId);
+    if (!pairs.has(key)) pairs.set(key, { listId: String(c.listId), boardId: String(c.boardId) });
+    if (firstOnly) break;
+  }
+  if (typeof cursor.close === 'function') await cursor.close();
+  return [...pairs.values()];
+}
+
 // Visible swimlanes (not archived, not templates) — the ones the Swimlanes
 // view actually renders. Swimlanes are few, so one projected fetch is cheap.
 // byId: swimlaneId -> boardId; firstOfBoard: boardId -> swimlaneId (by sort).
@@ -989,7 +1110,13 @@ async function healOne(db, ctx, { coll, doc, versionName, version }) {
   const writable = ctx.paths.writablePath;
   const filesRoot = path.dirname(destDir);   // <writable>[/files]
   const id = String(doc._id);
-  const name = doc.name || id;
+  // FloppyBleed / BackupFileBleed shape: `name` is user-supplied and was joined
+  // into the candidate paths below as-is. path.join resolves `..`, so a record
+  // named "../../../etc/passwd" (a client can insert one with no version path,
+  // which is exactly what this step heals) found a file OUTSIDE the storage
+  // directory, copied it in and pointed the attachment at it - an arbitrary
+  // file read on the next upgrade boot. Only the last path component is a name.
+  const name = path.basename(String(doc.name || id).replace(/\\/g, '/')) || id;
   const base = version.path ? path.basename(String(version.path).replace(/\\/g, '/')) : '';
 
   const candidates = [];

@@ -6,8 +6,8 @@ received date, members, custom fields and the rest beside them.
 
 ## What every card shows
 
-Four things are always there, empty or not, because they are what a card is
-for:
+By default three things are always there, empty or not, because they are what
+a card is for - and the cover when there is one:
 
 | Shown | When |
 | --- | --- |
@@ -15,6 +15,11 @@ for:
 | **Description** (its title and its text) | always, also when empty |
 | **Attachments**, with **Add attachment** | always, also when there are none |
 | **Comments** | always, also when there are none |
+
+Which fields are always shown is the board's choice: Board Settings / Card's
+**Show empty** column (below). Unticked there, the description, the
+attachments and the comments are shown when they have something in them, like
+any other field.
 
 Two sections are shown only when there is something in them: **Similar
 cards**, when the board has cards like this one, and **Custom Fields**, when
@@ -35,18 +40,32 @@ Panel: the same **left menu** and the same **pane title** (the shared templates
 of the [Left Menu](../All-Boards/Left-Menu.md) design), with the rows on the
 right.
 
-- The **left menu** lists the sections. The first, **Card**, holds what is
-  not a field - Ask for a reason when moving cards and the Draggable table,
-  with its select-all - and the card's own rows. Then Date, Time, Members,
+- The **left menu** lists the sections, and the popup opens on the first,
+  **Card** - from Board Settings and from **+ Add** alike. It holds what is not
+  a field - **Show empty fields** right under its title, Ask for a reason when
+  moving cards and the Draggable table, with its select-all - and the card's
+  own rows. Then Date, Time, Members,
   Labels, Description, Checklists, Subtasks, Attachments, Custom Fields,
   Voting, Planning Poker, Scrum settings and Comments.
-- The **right pane** lists every row of the open section, one line each: its
-  icon and name, then a **Show on Minicard** cell and a **Show on Card** cell -
-  each the board-wide checkbox of that side, the field's position on that side
-  and its **up and down arrows** (the Up and Down keys on a focused arrow do the
-  same; a row that only modifies another has none).
-- Opened from a card, a third cell, **On this card**, says whether this card
+- The **right pane** lists the open section's rows twice: **Show on Card**, in
+  the opened card's order, and **Show on Minicard**, in the minicard's - each
+  row with the board-wide checkbox of that side, and reordered by **drag and
+  drop** (the Up and Down keys on a focused handle or name move it one row; a
+  row that only modifies another is not dragged).
+- In the Show on Card list, a **Show empty** cell, for every per-card field: ticked, every card of the
+  board shows the field, empty or not
+  ([#6806](https://github.com/wekan/wekan/issues/6806)). By default the
+  description, attachments and comments are ticked.
+- Opened from a card, one more cell, **On this card**, says whether this card
   shows the field (the per-card fields only).
+- Under each column's heading, **Select all** and **Select none** set that
+  column for every row of the open section at once - the board's columns for a
+  board admin, On this card for who may change the card. A personal row
+  (Labels text, List title) is left as it is.
+
+Each heading and the cells under it start at the same place, and the popup is
+up to 1200px wide - as wide as the window allows - so that where there is room
+every row's whole label is shown; a label longer than its column wraps.
 
 A row's name leaves out what its section already says: under **Scrum settings**
 the rows are Sprint, Past sprints, Release, Issue type, Acceptance criteria and
@@ -75,8 +94,24 @@ the data stays, and ticking it again shows it. The choice is the card's own and
 is kept with the card; a field whose tick matches what its data would decide
 leaves nothing stored.
 
+**Show empty** chooses what every card of the board shows from the start,
+ready to be filled in. A board where nearly every card gets the same fields -
+labels, a due date, a checklist - ticks those; a board that does not want an
+empty description or comments on every card unticks them, and they are shown
+when they have something in them. A card still hides an always-shown field by
+unticking **On this card**, and a field turned off in **Show on Card** stays
+off. It is the board's setting, for a board admin, and the minicard's own view
+of the popup does not show it.
+
+**Show empty fields**, in the Card pane under its title, is off by default.
+Ticked, every card of the board shows all its fields - the empty ones too, as
+far as Show on Card allows - and the **Show empty** columns are hidden, because
+every field is then shown anyway. Their ticks are kept: unticked again, Show
+empty fields brings the columns back as they were. It is saved to the board
+(`showEmptyCardFields`), for a board admin.
+
 **+ Add** is shown to whoever may change the card. Its board-wide checkboxes
-and arrows work for a board admin; for anybody else they are shown disabled,
+and dragging work for a board admin; for anybody else they are shown disabled,
 and only **On this card** and their own rows (Labels text, List title) change.
 Below **+ Add** there is one separator line, above the first section the card
 shows: a section the card does not show draws no line of its own.
@@ -147,6 +182,13 @@ field, which fields a card shows, and the card's view of the board.
 
 Only the per-card field keys are accepted (`models/cards.js`).
 
+The board stores **Show empty** as `cardFieldsAlwaysShown`, a list of those
+keys (`models/boards.js`, written normalised by `setCardFieldAlwaysShown`). A
+board that never set it always shows `descriptionTitle`, `descriptionText`,
+`attachments` and `comments`; once set, the list is exactly what is ticked -
+an empty list too. A card that has made no choice of its own shows a field
+when it has data or the board always shows it.
+
 The opened card's templates read the board's flags (`currentBoard.allowsDueDate`
 and so on). The opened card and each of its section templates get their own
 `currentBoard` helper (`client/components/cards/cardAddFields.js`): this card's
@@ -164,7 +206,7 @@ section order the same way.
 | `models/lib/cardShownFields.js` | "Has data", what a card shows, the card's board view |
 | `models/lib/cardSettingsSections.js` | The popup's sections, and the row names within them |
 | `client/components/sidebar/sidebar.jade` | The popup (`boardCardSettingsPopup`): the left menu, the pane, the rows |
-| `client/components/sidebar/sidebar.js` | Its sections, rows, checkboxes, order arrows and On this card |
+| `client/components/sidebar/sidebar.js` | Its sections, the two lists, checkboxes, drag and drop and On this card |
 | `client/components/sidebar/sidebar.css` | The pane's layout |
 | `client/components/cards/cardAddFields.js` | "+ Add", and the card's own `currentBoard` |
 | `client/components/cards/cardDetails.jade` | The "+ Add" button under the cover, the section hamburgers |
@@ -172,5 +214,6 @@ section order the same way.
 | `tests/cardSectionActions.test.cjs` | The five actions in their sections, none left in the actions menu |
 | `models/cards.js` | `shownFields`, `hiddenFields` |
 | `tests/cardShownFields.test.cjs` | The rules, the wiring, and that no card section template is left out |
+| `tests/cardFieldsAlwaysShown6806.test.cjs` | Show empty and Show empty fields: the defaults, the rule, its storage, its column, that every caller passes the board |
 | `tests/cardSettingsCoverage.test.cjs` | Every row in a section, a checkbox and a handler for each side |
 | `tests/playwright/specs/card-add-fields.e2e.js` | An empty card, "+ Add", a field with data, the popup |

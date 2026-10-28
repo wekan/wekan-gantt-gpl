@@ -144,6 +144,11 @@ class CardPage {
    * handler so the dialog's selectedBoardId and list select are updated.
    */
   async _selectBoard(pop, targetBoardTitle) {
+    // The lists select is always drawn; wait for it before asking whether the
+    // boards one is there. count() answers at once, and asked while the popup
+    // was still rendering it said 0 - so a move to another board quietly stayed
+    // on the same board (#6793's Move Card spec).
+    await pop.locator('select.js-select-lists').waitFor();
     const boardSel = pop.locator('select.js-select-boards');
     if (await boardSel.count() === 0) return; // boards select hidden (isWorker user)
 
@@ -460,8 +465,10 @@ class CardPage {
    * textarea, and submits — which calls Checklists.insert on the server.
    */
   async addChecklist(title) {
-    // inlinedForm else-block: a.add-checklist.js-open-inlined-form (bottom trigger)
-    const trigger = this.root.locator('a.add-checklist.js-open-inlined-form').last();
+    // #6796: a card with no checklist has only the title line's "+"
+    // (a.add-checklist-top); the bottom a.add-checklist appears once there is
+    // one. Either opens the same form; .last() prefers the bottom one.
+    const trigger = this.root.locator('a.add-checklist.js-open-inlined-form, a.add-checklist-top.js-open-inlined-form').last();
     await trigger.click({ timeout: 10_000 });
     // After click the form becomes visible: form.inlined-form.js-add-checklist
     const form = this.root.locator('form.js-add-checklist').last();

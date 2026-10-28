@@ -43,9 +43,10 @@
 # repository's index is the maintainer's call, not a side effect of a dry run.
 #
 # CHARTS_DIR points at the wekan/charts checkout, as in release-charts.sh; it
-# defaults to ../w/charts beside this repo.
+# defaults to .tools/charts in this repo.
 
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/tools-env.sh"   # temporary files and downloads go to .tools/tmp
 
 APPLY=false
 PUSH=false
@@ -67,11 +68,11 @@ done
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 CHART_BASE_URL="https://wekan.github.io/charts"
 
-# .tools/charts first: companion repositories are kept under .tools/ (CLAUDE.md),
-# which is where the wekan/charts clone lives. ../w/charts stays as the older
-# location, so an existing checkout there keeps working.
+# .tools/charts: companion repositories are kept under .tools/ (CLAUDE.md),
+# which is where the wekan/charts clone lives. The old ../w/charts beside the
+# repo is not looked at any more: a stale checkout there was used silently.
 if [ -z "${CHARTS_DIR:-}" ]; then
-  for candidate in "$REPO_DIR/.tools/charts" "$REPO_DIR/../w/charts"; do
+  for candidate in "$REPO_DIR/.tools/charts"; do
     if [ -d "$candidate" ]; then
       CHARTS_DIR="$(cd "$candidate" && pwd)"
       break
@@ -79,7 +80,7 @@ if [ -z "${CHARTS_DIR:-}" ]; then
   done
 fi
 if [ -z "${CHARTS_DIR:-}" ] && [ "$APPLY" = true ]; then
-  echo "Charts repo not found at $REPO_DIR/.tools/charts or $REPO_DIR/../w/charts."
+  echo "Charts repo not found at $REPO_DIR/.tools/charts."
   echo "Set CHARTS_DIR to the wekan/charts checkout, or run with no --apply for a plan."
   exit 1
 fi
@@ -97,7 +98,7 @@ fi
 # its answer can change the outcome.
 mkdir -p "$REPO_DIR/.tools/tmp"
 export TMPDIR="$REPO_DIR/.tools/tmp"
-PLAN_JSON="$(mktemp)"
+PLAN_JSON="$(mktemp "$TMPDIR/wekan.XXXXXX")"
 trap 'rm -f "$PLAN_JSON"' EXIT
 
 CHART_BASE_URL="$CHART_BASE_URL" LIMIT="$LIMIT" python3 - "$PLAN_JSON" <<'PYEOF'
@@ -265,7 +266,7 @@ cd "$CHARTS_DIR"
 # are needed, so the source is copied out before the branch is switched.
 git checkout main
 git pull --ff-only || true
-SRC="$(mktemp -d)"
+SRC="$(mktemp -d "$TMPDIR/wekan.XXXXXX")"
 trap 'rm -f "$PLAN_JSON"; rm -rf "$SRC"' EXIT
 cp -a wekan "$SRC/wekan"
 
@@ -284,7 +285,7 @@ for VERSION in $(jq -r '.build[]' "$PLAN_JSON"); do
   if [ -f "wekan-${CHART_VERSION}.tgz" ]; then
     continue
   fi
-  work="$(mktemp -d)"
+  work="$(mktemp -d "$TMPDIR/wekan.XXXXXX")"
   cp -a "$SRC/wekan" "$work/wekan"
   sedi -E "s|^appVersion: \"[^\"]*\"|appVersion: \"${VERSION}\"|" "$work/wekan/Chart.yaml"
   sedi -E "s|^version: [0-9]+\.[0-9]+\.[0-9]+|version: ${CHART_VERSION}|" "$work/wekan/Chart.yaml"

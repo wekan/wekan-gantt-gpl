@@ -89,7 +89,7 @@ import { Utils } from '/client/lib/utils';
 import autosize from 'autosize';
 import { caretClassFor } from '/client/lib/sectionCaret';
 import { restoreArchivedCard } from '/client/components/sidebar/sidebarArchives';
-const { openCardIsUnavailable } = require('/models/lib/openCardPresence');
+const { openCardIsUnavailable, openCardCloseDecision } = require('/models/lib/openCardPresence');
 
 // Id of the location currently being edited in the cardLocationsPopup; null
 // when adding a new location.
@@ -356,9 +356,68 @@ function bindCardDetailsResize() {
   });
 }
 
+// #3114 / #6808: close every way the card `cardId` is open - the window,
+// the popup, the card's address - once it no longer belongs on `boardId`.
+function closeGoneCard(cardId, boardId) {
+  Session.set(
+    'openCards',
+    (Session.get('openCards') || []).filter(id => id !== cardId),
+  );
+  if (Session.get('currentCard') === cardId) {
+    Session.set('currentCard', null);
+  }
+  if (Session.get('popupCardId') === cardId) {
+    Session.set('popupCardId', null);
+    Session.set('popupCardBoardId', null);
+    Popup.close();
+  }
+  const routeCardId = FlowRouter.current()?.params?.cardId;
+  if (routeCardId === cardId) {
+    Utils.goBoardId(boardId);
+  }
+}
+
+// #6808: a card missing from Minimongo is closed only when the server
+// confirms it is gone, asked once the connection and the login have settled,
+// and only if Minimongo still agrees when it answers. Kept OUTSIDE the
+// window's lifecycle on purpose: when a card really is deleted, its window is
+// destroyed with its data, often before the answer comes back - the close (and
+// the step back from the card's address) must still happen then. A dropped
+// connection that comes back answers "available", and nothing is closed.
+const confirmingGoneCards = new Set();
+function confirmGoneCard(cardId, boardId) {
+  if (!cardId || !boardId || confirmingGoneCards.has(cardId)) return;
+  confirmingGoneCards.add(cardId);
+  // Not a child of whatever computation calls this, so it outlives it.
+  Tracker.nonreactive(() => Tracker.autorun(computation => {
+    if (!Meteor.status().connected || Meteor.loggingIn()) return;
+    computation.stop();
+    Meteor.callAsync('cards.openCardAvailable', cardId, boardId)
+      .then(available => {
+        confirmingGoneCards.delete(cardId);
+        if (available) return;
+        // Still gone now that the server has answered.
+        if (!openCardIsUnavailable(ReactiveCache.getCard(cardId), boardId)) return;
+        closeGoneCard(cardId, boardId);
+      })
+      .catch(() => {
+        // No answer (the connection dropped again): keep the card; it is
+        // asked again the next time it looks gone.
+        confirmingGoneCards.delete(cardId);
+      });
+  }));
+}
+
 Template.cardDetails.onCreated(function () {
   this.currentBoard = Utils.getCurrentBoard();
   this.isLoaded = new ReactiveVar(false);
+  // Whether the desktop window has been placed beside its minicard: until
+  // then it carries card-details-position-pending (unpainted). A reactive
+  // class rather than a static one that onRendered removes: Blaze writes a
+  // tag's static classes again whenever its class attribute changes, so the
+  // removed class came back on Maximize / Minimize and Collapse, and the
+  // opened card turned invisible (latin-card-archive.e2e.js).
+  this.positionSettled = new ReactiveVar(false);
   this.infiniteScrolling = new InfiniteScrolling();
   const openedCardId = this.data?._id;
   const openedBoardId = this.data?.boardId;
@@ -368,32 +427,24 @@ Template.cardDetails.onCreated(function () {
   // board. Minimongo then removed the data while the mobile details view kept
   // rendering an empty shell. Observe the card that created this instance and
   // close every way it can be open as soon as it no longer belongs here.
+  // #6808: but a card that only LOOKS gone - Minimongo emptied for a moment
+  // while a dropped connection comes back and its subscriptions re-run, as
+  // behind a reverse proxy while the page loads - is not closed: the server
+  // is asked first (models/lib/openCardPresence.js openCardCloseDecision).
   this.autorun(() => {
     if (!openedCardId || !openedBoardId) return;
-    // A same-tab card link can render the details before the destination card
-    // publication arrives. Only a ready subscription can prove it is gone.
-    if (!cardSubscription?.ready()) return;
-    const card = ReactiveCache.getCard(openedCardId);
-    if (!openCardIsUnavailable(card, openedBoardId)) return;
-
-    Session.set(
-      'openCards',
-      (Session.get('openCards') || []).filter(id => id !== openedCardId),
-    );
-    if (Session.get('currentCard') === openedCardId) {
-      Session.set('currentCard', null);
-    }
-    if (Session.get('popupCardId') === openedCardId) {
-      Session.set('popupCardId', null);
-      Session.set('popupCardBoardId', null);
-      Popup.close();
-    }
-
-    const routeCardId = FlowRouter.current()?.params?.cardId;
-    if (routeCardId === openedCardId) {
-      Utils.goBoardId(openedBoardId);
-    }
+    const decision = openCardCloseDecision({
+      // A same-tab card link can render the details before the destination
+      // card publication arrives. Only a ready subscription can prove it is gone.
+      subReady: Boolean(cardSubscription?.ready()),
+      connected: Meteor.status().connected,
+      loggingIn: Meteor.loggingIn(),
+      card: ReactiveCache.getCard(openedCardId),
+      openedBoardId,
+    });
+    if (decision === 'confirm') confirmGoneCard(openedCardId, openedBoardId);
   });
+  this.openedBoardId = openedBoardId;
 
   // #6686: a sub-popup opened from this card (Labels, Members, ...) is a
   // global singleton (client/lib/popup.js) that is not tied to this card
@@ -490,6 +541,7 @@ Template.cardDetails.onRendered(function () {
   // #6465: place the window beside its minicard (X only) once it has been laid
   // out, so the width measured here is the one the stylesheet gave it.
   const $cardDetails = this.$('.card-details').first();
+  const tpl = this;
   if ($cardDetails.length) {
     Tracker.afterFlush(() => {
       const element = $cardDetails.get(0);
@@ -499,6 +551,9 @@ Template.cardDetails.onRendered(function () {
         // The desktop window must never paint at the stylesheet's fallback
         // dock before its minicard-relative geometry has been measured.
         element.classList.remove('card-details-position-pending');
+        // And it stays removed: the class is drawn from this, so a later
+        // change of the window's classes does not bring it back.
+        tpl.positionSettled.set(true);
       }
     });
   }
@@ -631,6 +686,13 @@ Template.cardDetails.onRendered(function () {
 });
 
 Template.cardDetails.onDestroyed(function () {
+  // #6808: the window is destroyed with its data when the card is deleted,
+  // often before the autorun above could ask the server - ask now. A card that
+  // merely left for a moment (a reconnect) comes back and answers "available".
+  if (this.openedCardId && this.openedBoardId
+    && openCardIsUnavailable(ReactiveCache.getCard(this.openedCardId), this.openedBoardId)) {
+    confirmGoneCard(this.openedCardId, this.openedBoardId);
+  }
   const boardBody = getBoardBodyInstance();
   if (boardBody !== null) {
     boardBody.showOverlay.set(false);
@@ -900,6 +962,12 @@ Template.cardDetails.helpers({
   // heading goes, over all of them (docs/Features/Cards/Card-Fields.md).
   firstScrumSection() {
     return orderedSectionsOf(this).find(s => /^scrum[A-Z]/.test(s)) || null;
+  },
+
+  // Placed beside its minicard: card-details-position-pending is off for good.
+  positionSettled() {
+    const tpl = Template.instance();
+    return Boolean(tpl && tpl.positionSettled && tpl.positionSettled.get());
   },
 
   cardMaximized() {

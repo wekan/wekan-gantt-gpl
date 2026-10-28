@@ -29,6 +29,7 @@
 #   METEOR   the meteor command              [meteor]
 #   SANDSTORM_SLIM_NO_PACK=1  stop after the trimmed bundle is verified
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/tools-env.sh"   # temporary files and downloads go to .tools/tmp
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO"
@@ -40,7 +41,7 @@ if [ -z "$OUT" ] && [ "${SANDSTORM_SLIM_NO_PACK:-}" != "1" ]; then
 fi
 [ $# -gt 0 ] && shift
 
-DEPS="${DEPS:-$HOME/projects/meteor-spk/meteor-spk-0.6.0/meteor-spk.deps}"
+DEPS="${DEPS:-$WEKAN_METEOR_SPK_DIR/meteor-spk-0.6.0/meteor-spk.deps}"
 METEOR="${METEOR:-meteor}"
 SPK_BIN="${SPK:-}"
 if [ -z "$SPK_BIN" ]; then
@@ -90,7 +91,8 @@ fi
 echo "==> [5/5] spk pack (the trimmed trees, no rebuild)"
 [ -d "$DEPS" ] || { echo "no meteor-spk.deps at $DEPS - run sandstorm-src/build-deps.sh first" >&2; exit 1; }
 [ -n "$SPK_BIN" ] || { echo "no spk binary: install Sandstorm, or set SPK=/path/to/spk" >&2; exit 1; }
-ln -sfT "$DEPS" .meteor-spk/deps
+# -n (BSD and GNU) replaces an existing link instead of entering it, as -T did.
+ln -sfn "$DEPS" .meteor-spk/deps
 "$SPK_BIN" pack "$@" "$OUT"
-SPK_BYTES=$(stat -c%s "$OUT")
+SPK_BYTES=$(wc -c < "$OUT" | tr -d " ")   # wc -c: the same with GNU and BSD tools
 echo "Packed $OUT: $((SPK_BYTES/1024/1024)) MiB ($SPK_BYTES bytes)"

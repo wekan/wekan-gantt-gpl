@@ -1,3 +1,8 @@
+#!/bin/bash
+. "$(dirname "${BASH_SOURCE[0]}")/tools-env.sh"   # temporary files and downloads go to .tools/tmp
+# The checkout is wherever this script is: ~/repos/wekan on Linux,
+# ~/Documents/repos/wekan on macOS, Downloads\repos\wekan on Windows.
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ## After building bundles, copy and rename for uploading to releases
 
 if [ $# -ne 1 ]
@@ -8,7 +13,7 @@ if [ $# -ne 1 ]
 fi
 
 
-mkdir ~/rel$1
-mv ~/repos/wekan/wekan-$1*.zip /home/wekan/rel$1/
-mv ~/Julkinen/wekan-$1*.zip /home/wekan/rel$1/
-mv /home/wekan/repos/wekan/.build/wekan-$1-amd64.zip /home/wekan/rel$1/wekan-$1-amd64.zip
+mkdir -p "$TMPDIR/rel$1"
+mv "$REPO_DIR"/wekan-$1*.zip "$TMPDIR/rel$1/"
+mv "$TMPDIR"/wekan-$1*.zip "$TMPDIR/rel$1/"
+mv "$REPO_DIR"/.build/wekan-$1-amd64.zip "$TMPDIR/rel$1/wekan-$1-amd64.zip"

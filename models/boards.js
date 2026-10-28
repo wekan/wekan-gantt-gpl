@@ -9,6 +9,7 @@ const { boardVisibilitySelectors } = require('/models/lib/boardVisibilitySelecto
 const { BOARD_PERMISSIONS, readableWithoutMembership, withoutMembershipSelectors } = require('/models/lib/boardPermission');
 const { normalizeAutoArchiveDays } = require('/models/lib/autoArchive');
 const { cardParentIds, parentFields } = require('/models/lib/cardParents');
+const { FIELD_KEYS: CARD_SHOWN_FIELD_KEYS } = require('/models/lib/cardShownFields');
 const boardViewSettings = require('/models/lib/boardViewSettings');
 const { deliverySchemaFields } = require('/models/lib/notificationDelivery');
 import escapeForRegex from 'escape-string-regexp';
@@ -39,7 +40,7 @@ import {
   cardsEndInBetweenSelector,
 } from '/models/lib/calendarFilter';
 import { generateUniversalAttachmentUrl } from '/models/lib/universalUrlGenerator';
-import { buildCardSearchOr, matchingCommentCardIds } from '/models/lib/cardSearch';
+import { buildCardSearchOr, matchingCommentCardIds, literalSearchRegex } from '/models/lib/cardSearch';
 const { SimpleSchema } = require('/imports/simpleSchema');
 const { memberRoleOf, CUSTOM_ROLE_PREFIX, customRoleCapabilities, uiRoleFor } = require('/models/lib/boardRoleCapabilities');
 const getTAPi18n = () => require('/imports/i18n').TAPi18n;
@@ -629,6 +630,11 @@ Boards.attachSchema(
       defaultValue: false,
     },
     askForMoveReason: { type: Boolean, defaultValue: false },
+    // Card Settings / Card's "Show empty fields": every opened card of the
+    // board shows all its fields, the empty ones too - and the per-field
+    // "Show empty" column (cardFieldsAlwaysShown) is set aside, kept as it
+    // was for when this is unticked (models/lib/cardShownFields.js).
+    showEmptyCardFields: { type: Boolean, defaultValue: false },
     cardAging: {
       /**
        * #3984: Visually fade cards that have not been touched for a while
@@ -925,6 +931,21 @@ Boards.attachSchema(
     },
     'minicardFieldOrder.$': {
       type: String,
+    },
+    // #6806: the fields every card of the board shows, empty or not - Board
+    // Settings / Card's "Always show" (models/lib/cardShownFields.js). Never
+    // set: the description, attachments and comments. A card still hides one
+    // by unticking "On this card".
+    cardFieldsAlwaysShown: {
+      /**
+       * The opened card's fields shown on every card, even when empty
+       */
+      type: Array,
+      optional: true,
+    },
+    'cardFieldsAlwaysShown.$': {
+      type: String,
+      allowedValues: CARD_SHOWN_FIELD_KEYS,
     },
 
     allowsCoverAttachmentOnMinicard: {
@@ -2312,6 +2333,14 @@ Boards.helpers({
     return await Boards.updateAsync(this._id, { $set: { cardFieldOrder: applyCardOrder(order) } });
   },
 
+  // #6806: Board Settings / Card's "Show empty", normalised the same way
+  // (models/lib/cardShownFields.js alwaysShownAfter). `key` may be a list:
+  // Select all / Select none of the column.
+  async setCardFieldAlwaysShown(key, show) {
+    const { alwaysShownAfter } = require('/models/lib/cardShownFields');
+    return await Boards.updateAsync(this._id, { $set: { cardFieldsAlwaysShown: alwaysShownAfter(this, key, show) } });
+  },
+
   async setMinicardFieldOrder(order) {
     const { applyMinicardOrder } = require('/models/lib/cardFieldOrder');
     return await Boards.updateAsync(this._id, { $set: { minicardFieldOrder: applyMinicardOrder(order) } });
@@ -2389,7 +2418,7 @@ Boards.helpers({
     const projection = { limit: 10, sort: { createdAt: -1 } };
 
     if (term) {
-      const regex = new RegExp(term, 'i');
+      const regex = literalSearchRegex(term);
 
       query.$or = [{ title: regex }, { description: regex }];
     }
@@ -2411,7 +2440,7 @@ Boards.helpers({
     const projection = { limit: 10, sort: { createdAt: -1 } };
 
     if (term) {
-      const regex = new RegExp(term, 'i');
+      const regex = literalSearchRegex(term);
 
       query.$or = [{ title: regex }, { description: regex }];
     }
@@ -2436,7 +2465,7 @@ Boards.helpers({
       const projection = { sort: { createdAt: -1 } };
 
       if (term) {
-        const regex = new RegExp(term, 'i');
+        const regex = literalSearchRegex(term);
 
         query.$or = [{ title: regex }, { description: regex }];
       }
@@ -3435,6 +3464,9 @@ Boards.helpers({
 
   async setAskForMoveReason(askForMoveReason) {
     return Boards.updateAsync(this._id, { $set: { askForMoveReason } });
+  },
+  async setShowEmptyCardFields(showEmptyCardFields) {
+    return Boards.updateAsync(this._id, { $set: { showEmptyCardFields: showEmptyCardFields === true } });
   },
   async setCardAging(cardAging) {
     return await Boards.updateAsync(this._id, { $set: { cardAging } });

@@ -1,5 +1,6 @@
 #!/bin/bash
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/tools-env.sh"   # temporary files and downloads go to .tools/tmp
 
 if [ $# -ne 1 ]
   then
@@ -9,7 +10,9 @@ if [ $# -ne 1 ]
 fi
 
 
-DOWNLOAD_DIR="${DOWNLOAD_DIR:-$HOME/Lataukset}"
+# Downloads and release zips stay in .tools/tmp (releases/tools-env.sh), not
+# in ~/Downloads or ~/Lataukset.
+DOWNLOAD_DIR="${DOWNLOAD_DIR:-$WEKAN_DOWNLOADS}"
 
 git pull
 cd .build

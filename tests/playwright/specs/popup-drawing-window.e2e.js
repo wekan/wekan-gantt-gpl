@@ -3,8 +3,9 @@
 // The card's Drawing popup moves like the opened card - by its title bar or
 // its drag handle - and has the opened card's maximize / minimize button.
 // Minimizing puts it back where it was dragged, a maximized popup is not
-// dragged, and the drawing keeps its 800 x 500 shape so the pen lands under
-// the pointer.
+// dragged, and maximized the drawing takes the window (d5d027a6f2; it used to
+// keep an 800 x 500 shape). Opened from the card's menu at the right of the
+// window, it is kept inside the window as it grows (client/lib/popupBounds.js).
 
 const { test, expect } = require('../fixtures');
 const BoardPage = require('../pages/BoardPage');
@@ -19,6 +20,20 @@ async function openDrawing(page, board) {
   await page.locator('.js-pop-over .js-card-drawing').click();
   const popup = page.locator('.js-pop-over[data-popup="cardDrawingPopup"]');
   await expect(popup).toBeVisible({ timeout: 15_000 });
+  // The Drawing popup is the card menu's popup element, renamed: for a moment
+  // it still had the 960px menu's place, a box measured then was the menu's,
+  // and the drag pressed outside the popup once it had moved - selecting the
+  // page's text and closing it (Chromium). So: its drawing, then a box that
+  // stays put.
+  await expect(popup.locator('.js-drawing-surface')).toBeVisible();
+  let last = '';
+  await expect.poll(async () => {
+    const b = await popup.boundingBox();
+    const now = b ? [b.x, b.y, b.width, b.height].map(Math.round).join() : '';
+    const settled = now !== '' && now === last;
+    last = now;
+    return settled;
+  }, { intervals: [150] }).toBe(true);
   return popup;
 }
 
@@ -36,11 +51,17 @@ async function drag(page, locator, dx, dy) {
 test('the Drawing popup is dragged by its title bar and its handle', async ({ boardPage: page, board }) => {
   await page.evaluate(() => { try { localStorage.removeItem('wekan-popup-maximized-cardDrawingPopup'); } catch (e) { /* none */ } });
   const popup = await openDrawing(page, board);
+  const viewport0 = page.viewportSize();
+  // Opened from the card's menu at the right, it is wholly inside the window.
+  await expect.poll(async () => { const b = await popup.boundingBox(); return b.x + b.width; })
+    .toBeLessThanOrEqual(viewport0.width - 11);
   const before = await popup.boundingBox();
 
-  // Toward the middle of the window, so the popup is not stopped at an edge.
+  // Toward the side that has room, so the popup is not stopped at an edge: the
+  // 860px popup kept inside at the right starts left of the middle with no
+  // room to its right.
   const viewport = page.viewportSize();
-  const dx = before.x > viewport.width / 2 ? -80 : 80;
+  const dx = viewport.width - 12 - (before.x + before.width) >= 80 ? 80 : -80;
   const dy = before.y > viewport.height / 3 ? -40 : 40;
   await drag(page, popup.locator('.header-title'), dx, dy);
   const afterTitle = await popup.boundingBox();
@@ -72,10 +93,9 @@ test('maximize fills the window, minimize puts it back, and maximized it is not 
   const max = await popup.boundingBox();
   expect(max.width).toBeGreaterThan(viewport.width - 40);
   expect(max.height).toBeGreaterThan(viewport.height - 40);
-  // The drawing keeps its shape: the pointer is mapped onto its whole box.
-  const surface = await popup.locator('.js-drawing-surface').boundingBox();
-  expect(Math.abs(surface.width / surface.height - 1.6)).toBeLessThan(0.02);
-  expect(surface.width).toBeGreaterThan(placed.width * 0.9);
+  // Maximized, the drawing takes the window, not an 800 x 500 shape.
+  await expect.poll(async () => (await popup.locator('.js-drawing-surface').boundingBox()).width)
+    .toBeGreaterThan(viewport.width * 0.85);
 
   // Negative: a maximized popup stays where it is.
   await drag(page, popup.locator('.header-title'), 100, 100);

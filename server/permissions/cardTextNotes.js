@@ -1,7 +1,8 @@
 import Cards from '/models/cards';
 import CardTextNotes from '/models/cardTextNotes';
-import { denyCrossBoardMoveByCard } from '/server/lib/utils';
+import { denyCrossBoardMoveByCard, sourceBoardOfCardChild } from '/server/lib/utils';
 import { tripCanaryDeny } from '/server/lib/canary';
+import { denyForgedCardChildInsert } from '/server/lib/cardChildStamp';
 import { canEditCardOrLinkedCard } from '/server/lib/linkedCardPermission';
 
 CardTextNotes.allow({
@@ -27,8 +28,19 @@ CardTextNotes.allow({
 // caller cannot write to.
 CardTextNotes.deny({
   async update(userId, doc, fieldNames, modifier) {
-    if (!(await denyCrossBoardMoveByCard(userId, modifier))) return false;
+    // #6813: the source board from the source card, as the allow rule.
+    if (!(await denyCrossBoardMoveByCard(userId, modifier, await sourceBoardOfCardChild(doc)))) return false;
     return tripCanaryDeny('cardTextNote.cross-board-move', { userId });
+  },
+  fetch: ['cardId'],
+});
+
+// StampBleed: an insert on one's own card stamped with another board's id
+// (or, for an item, another card's checklist) is refused and recorded
+// (server/lib/cardChildStamp.js).
+CardTextNotes.deny({
+  async insert(userId, doc) {
+    return await denyForgedCardChildInsert(doc, { source: 'ddp:card-text-note-insert' });
   },
   fetch: [],
 });

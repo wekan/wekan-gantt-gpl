@@ -1,8 +1,9 @@
 import Boards from '/models/boards';
 import Cards from '/models/cards';
 import ChecklistItems from '/models/checklistItems';
-import { denyCrossBoardMoveByChecklistItem } from '/server/lib/utils';
+import { denyCrossBoardMoveByChecklistItem, sourceBoardOfCardChild } from '/server/lib/utils';
 import { tripCanaryDeny } from '/server/lib/canary';
+import { denyForgedCardChildInsert } from '/server/lib/cardChildStamp';
 import { canEditCardOrLinkedCard } from '/server/lib/linkedCardPermission';
 const { workerMayToggleChecklistItem } = require('/models/lib/workerChecklistItemToggle');
 
@@ -55,8 +56,19 @@ ChecklistItems.deny({
 
 ChecklistItems.deny({
   async update(userId, doc, fieldNames, modifier) {
-    if (!(await denyCrossBoardMoveByChecklistItem(userId, modifier))) return false;
+    // #6813: the source board from the source card, as the allow rule.
+    if (!(await denyCrossBoardMoveByChecklistItem(userId, modifier, await sourceBoardOfCardChild(doc)))) return false;
     return tripCanaryDeny('checklist-item.cross-board-move', { userId });
+  },
+  fetch: ['cardId'],
+});
+
+// StampBleed: an insert on one's own card stamped with another board's id
+// (or, for an item, another card's checklist) is refused and recorded
+// (server/lib/cardChildStamp.js).
+ChecklistItems.deny({
+  async insert(userId, doc) {
+    return await denyForgedCardChildInsert(doc, { source: 'ddp:checklist-item-insert', checklist: true });
   },
   fetch: [],
 });
