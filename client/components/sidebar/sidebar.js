@@ -23,15 +23,14 @@ const {
 const { rowsForSide, CARD_SETTINGS_ROWS } = require('/models/lib/cardSettingsRows');
 const { isRowVisible } = require('/models/lib/cardFieldVisibility');
 const cardSettingsSections = require('/models/lib/cardSettingsSections');
-const cardShownFields = require('/models/lib/cardShownFields');
-import { leftMenuData, paneTitle } from '/models/lib/leftMenu';
-import { shownFieldsOf } from '/client/components/cards/cardAddFields';
-import { filterSubtasksOf } from '/client/lib/filterSubtasks';
+const cardSettingsCustomFields = require('/models/lib/cardSettingsCustomFields');
+const cardSettingsSplit = require('/models/lib/cardSettingsSplit');
 import { invalidateScrumNames } from '/client/components/boards/scrum/scrumFields';
 import { InfiniteScrolling } from '/client/lib/infiniteScrolling';
 import '/client/components/boards/exportScope';
 import AccessibilitySettings from '/models/accessibilitySettings';
 import Boards from '/models/boards';
+import CustomFields from '/models/customFields';
 import CustomBoardRoles from '/models/customBoardRoles';
 const { normalizeCustomCapabilities } = require('/models/lib/boardRoleCapabilities');
 // What a custom role's description lists, in this order (#3022).
@@ -697,17 +696,13 @@ Template.boardMenuPopup.events({
   'click .js-open-board-list-settings': Popup.open('boardListSettings', { titleKey: 'list' }),
   // #2489: WIP Limit Groups is reached from Board Settings / Swimlane now -
   // its click handler sits with the Swimlane popup's events below.
-  // A non-admin may still open this for the one PERSONAL row in it ("Labels
-  // text"), same as the old showOnMinicardPopup did - `personalOnly` hides
-  // every other row (client/components/sidebar/sidebar.css). Overriding
+  // Board Settings / Card: Card Settings with no card. Overriding
   // `currentData` (rather than passing openOptions) is what actually reaches
   // boardCardSettingsPopup's data context: Popup.open only falls back to
   // `dataContextIfCurrentDataIsUndefined` when currentData() is falsy, and
-  // here it is always the board.
+  // here it is always the board - whose fields are not Card Settings' data.
   'click .js-open-board-card-settings'(event) {
-    const isAdmin = Boolean(ReactiveCache.getCurrentUser()?.isBoardAdmin());
-    const data = isAdmin ? {} : { personalOnly: true };
-    Popup.open('boardCardSettings').call({ currentData: () => data }, event);
+    Popup.open('boardCardSettings').call({ currentData: () => ({}) }, event);
   },
 });
 
@@ -736,15 +731,28 @@ Template.boardMenuPopup.onCreated(function() {
 // `handle` is the drag handle when drag handles are on, else the icon and
 // label (the templates put the class on whichever it is).
 // `axis`: 'y' for a single column; false where the rows flow into several
-// columns (Board Settings / Card, #6796), so a row can be dropped sideways.
-function reorderOnDrop($list, { items, handle, keyOf, drop, axis = 'y' }) {
+// columns, so a row can be dropped sideways.
+// `ownListOnly`: an item dropped outside its own list - on another, unrelated
+// list - goes back to where it was, and nothing is written (Card Settings: a
+// row belongs to its section).
+function reorderOnDrop($list, { items, handle, keyOf, drop, axis = 'y', ownListOnly = false }) {
   if (!$list.length || typeof $list.sortable !== 'function') return;
+  let outside = false;
+  let droppedOutside = false;
   $list.sortable({
     items, handle, axis, tolerance: 'pointer', distance: 5,
+    start() { outside = false; droppedOutside = false; },
+    out() { outside = true; },
+    over() { outside = false; },
+    // Read where it was dropped HERE: on release jQuery UI fires a delayed
+    // "out" for the list it was over just before "stop", so in stop the item
+    // always reads as outside.
+    beforeStop() { droppedOutside = outside; },
     stop(evt, ui) {
       const key = keyOf(ui.item[0]);
       const keys = $list.find(items).toArray().map(keyOf);
       $list.sortable('cancel');
+      if (ownListOnly && droppedOutside) return;
       if (key) drop(key, keys);
     },
   });
@@ -2022,10 +2030,11 @@ Template.boardSubtaskSettingsBody.events({
   },
 });
 
-Template.boardCardSettingsPopup.onCreated(function() {
-  // The section open in the right pane (models/lib/cardSettingsSections.js),
-  // and the one per-card checkbox that animates: the one just clicked.
-  this.settingsSection = new ReactiveVar(null);
+// Every template that draws Card Settings - the popup, the opened card's own
+// Card Settings and its hamburgers - has the state its shared handlers read
+// (cardSettingsEvents below).
+function setUpCardSettings() {
+  // The one checkbox that animates: the one just clicked.
   this.animating = new ReactiveVar(null);
   // Keep currentBoard reactive. The toggle handlers compute the new value from
   // tpl.currentBoard.allowsX, so a one-time snapshot went stale after the first
@@ -2036,23 +2045,15 @@ Template.boardCardSettingsPopup.onCreated(function() {
   this.autorun(() => {
     this.currentBoard = Utils.getCurrentBoard();
   });
-});
-
-// The card this popup was opened for, when it was opened for one. Board
-// Settings / Card Settings has no card - it is about every card of the board -
-// so the two rows that belong to a card are only ever drawn from the minicard's
-// own menu, which passes it in. client/components/sidebar/sidebar.jade
-function settingsCard() {
-  const passed = (Template.currentData() || {}).card;
-  return passed && passed._id ? ReactiveCache.getCard(passed._id) : null;
 }
+
 
 // The rows of one column of Board Settings / Card, ready for the template:
 // the board's order for that side (models/lib/cardFieldOrder.js) applied to
 // the row table (models/lib/cardSettingsRows.js), each row with the checkbox
 // state its own helper reports, its icons, its translated label, and whether
 // each arrow would do anything. `data` is the popup's data context, so the
-// helpers that read it (showsListOnMinicard, settingsSideClass) see what they
+// helpers that read it (showsListOnMinicard) see what they
 // saw when the rows were written out by hand.
 function buildCardSettingsRows(side, data) {
   const boardId = Session.get('currentBoard');
@@ -2061,11 +2062,11 @@ function buildCardSettingsRows(side, data) {
   const stored = side === 'card' ? currentBoard?.cardFieldOrder : currentBoard?.minicardFieldOrder;
   const order = applyLayoutOrder(stored, layout);
   return rowsForSide(side, order)
-    // "List title" is a CARD's setting: only for somebody who may change the
-    // card, the same gate the hand-written row had (`if canModifyCard`).
-    // Only when the popup was opened for a card (its own menu passes it in):
-    // from Board Settings there is no card for the row to change.
-    .filter(row => !row[side].needsCard || (Boolean(data?.card?._id) && Utils.canModifyCard(data)))
+    // "List title" is a CARD's own setting (`needsCard`): Card Settings is
+    // Board Settings / Card, about every card of the board, with no card for
+    // the row to change - so it is never drawn here; each card sets it in its
+    // own menu (cardDetails.js js-toggle-show-list-on-minicard).
+    .filter(row => !row[side].needsCard)
     // A field the administrator unticked in Admin Panel / Settings /
     // Visibility / Features is not offered on any board; the board keeps its
     // own choice for when it is ticked again. models/lib/cardFieldVisibility.js
@@ -2098,42 +2099,20 @@ function buildCardSettingsRows(side, data) {
     });
 }
 
-// A named object rather than an inline `.helpers({...})`: the two row
-// builders below (cardSettingsRows / minicardSettingsRows) ask each row's
+// A named object rather than an inline `.helpers({...})`: the row builder
+// (buildCardSettingsRows) asks each row's
 // "is it checked" helper by name - allowsLabels(), showsListOnMinicard(), ...
 // - so a row's checkbox reads exactly what its old hand-written `{{#if
 // allowsLabels}}` read, defaults and fallbacks included, without a second
 // copy of that logic. Registered at the end of the object.
-// The sections of the left menu this popup offers: every one, or - for a
-// reader who may set only their own PERSONAL rows - those that have one.
-function settingsSectionsFor(data) {
-  if (!data || !data.personalOnly) return cardSettingsSections.SECTIONS;
-  return cardSettingsSections.SECTIONS.filter(s => s.keys.some(k => {
-    const row = CARD_SETTINGS_ROWS.find(r => r.key === k);
-    return row && ['card', 'minicard'].some(side => row[side] && row[side].personal);
-  }));
-}
-
-function openSettingsSectionOf(tpl, data) {
-  const sections = settingsSectionsFor(data);
-  const chosen = tpl && tpl.settingsSection && tpl.settingsSection.get();
-  // It opens on the topmost entry, Card - from a card's "+ Add" too.
-  return (sections.find(s => s.id === chosen) || sections[0] || {}).id;
-}
-
-function settingsMenuOf(data) {
-  return settingsSectionsFor(data).map(s => ({ id: s.id, icon: s.icon, labelKey: s.labelKey }));
-}
-
-function sectionSideRows(tpl, data, side) {
-  const id = openSettingsSectionOf(tpl, data);
+// The rows of section `id` on one side, in that side's own order - the open
+// pane's rows in the popup, and each checklist of the opened card's Card
+// Settings. `animatingKey` is the checkbox just clicked.
+function sectionRowsOf(id, data, side, animatingKey) {
   const section = cardSettingsSections.SECTIONS.find(s => s.id === id);
   const keys = new Set(section ? section.keys : []);
   const board = ReactiveCache.getBoard(Session.get('currentBoard'));
-  // A linked card's data is on its source card; its own choices are its own.
-  const { card: thisCard, counts } = shownFieldsOf(settingsCard());
   const writable = Boolean(board && Utils.canModifyBoard && Utils.canModifyBoard());
-  const animatingKey = tpl.animating.get();
   const showDragHandles = Utils.showDragHandles();
   const rowOf = key => CARD_SETTINGS_ROWS.find(r => r.key === key);
   return buildCardSettingsRows(side, data)
@@ -2156,12 +2135,19 @@ function sectionSideRows(tpl, data, side) {
       labelTextOverride: built.labelTextOverride,
       labelTextOverridden: built.labelTextOverridden,
       labelTextResetClass: built.labelTextResetClass,
-      perCard: side === 'card' && Boolean(thisCard) && cardShownFields.FIELD_KEYS.includes(built.key),
-      shownOnThisCard: side === 'card' && Boolean(thisCard) && cardShownFields.isShown(built.key, thisCard, counts, board),
-      // #6806: the board shows this field on every card, empty or not.
-      alwaysShowable: side === 'card' && cardShownFields.FIELD_KEYS.includes(built.key),
-      alwaysShown: cardShownFields.boardAlwaysShows(board, built.key),
-      animatingAlways: animatingKey === `${built.key}:always`,
+    }));
+}
+
+// The board actions of section `id`, in that section's hamburger in Card
+// Settings (models/lib/cardSettingsSections.js CARD_ACTIONS): for who may
+// change the board.
+function sectionCardActionsOf(id) {
+  const mayBoard = Boolean(Utils.canModifyBoard && Utils.canModifyBoard());
+  return cardSettingsSections.cardActionsOf(id)
+    .filter(action => action.board && mayBoard)
+    .map(action => ({
+      ...action,
+      title: action.label.map(k => TAPi18n.__(k)).join(action.labelSeparator || ' '),
     }));
 }
 
@@ -2170,101 +2156,13 @@ const boardCardSettingsHelpers = {
   // is a plain property, which no helper re-runs for).
   askForMoveReason() { return ReactiveCache.getBoard(Session.get('currentBoard'))?.askForMoveReason === true; },
 
-  settingsMenuItems() {
-    return leftMenuData(settingsMenuOf(this), openSettingsSectionOf(Template.instance(), this), 'js-card-settings-menu');
-  },
-  settingsPaneTitle() {
-    return paneTitle(settingsMenuOf(this), openSettingsSectionOf(Template.instance(), this));
-  },
-  openSettingsSection() {
-    return openSettingsSectionOf(Template.instance(), this);
-  },
-  // The first entry, Card, also holds what is not a field.
-  openSettingsSectionIsGeneral() {
-    const id = openSettingsSectionOf(Template.instance(), this);
-    return Boolean(cardSettingsSections.SECTIONS.find(s => s.id === id)?.general);
-  },
-  // The card the popup was opened from ("+ Add"), if any.
-  settingsCardId() {
-    const card = settingsCard();
-    return card && Utils.canModifyCard(card) ? card._id : null;
-  },
   isAnimating(key) { return Template.instance().animating.get() === key; },
-  showEmptyCardFields() {
-    return cardShownFields.boardShowsEmptyFields(ReactiveCache.getBoard(Session.get('currentBoard')));
-  },
-  // The open section's card actions, opened from a card.
-  sectionCardActions() {
-    const id = openSettingsSectionOf(Template.instance(), this);
-    const card = settingsCard();
-    const mayCard = Boolean(card && Utils.canModifyCard(card));
-    const mayBoard = Boolean(Utils.canModifyBoard && Utils.canModifyBoard());
-    return cardSettingsSections.cardActionsOf(id)
-      // A board action for who may change the board; a card action only with
-      // a card, Filter: Subtasks for any reader of it, the edits for who may
-      // change it.
-      .filter(action => (action.board ? mayBoard : (action.id === 'filterSubtasks' ? Boolean(card) : mayCard)))
-      .map(action => ({
-      ...action,
-      // An inline form reads its card from its data (Card kind) or the
-      // opened card (the others); a board one has none.
-      inlineData: action.board ? {} : card,
-      title: action.label.map(k => TAPi18n.__(k)).join(action.labelSeparator || ' '),
-    }));
-  },
-  // The open section's rows of one side's list - Show on Card or Show on
-  // Minicard - in that side's own order (buildCardSettingsRows, the builder
-  // the two lists always used, so each checkbox, its handler class and its
-  // default are what they were), each list reordered by drag and drop. The
-  // card list also carries On this card and Show empty.
-  // (Two helpers rather than one with an argument: the Jade compiler does not
-  // take a helper call as `each`'s list.)
-  sectionCardRows() { return sectionSideRows(Template.instance(), Template.currentData(), 'card'); },
-  sectionMinicardRows() { return sectionSideRows(Template.instance(), Template.currentData(), 'minicard'); },
-
-
-
   allowsMinicardCollapse() { return ReactiveCache.getBoard(Session.get('currentBoard'))?.allowsMinicardCollapse !== false; },
   labelsAboveTitleOnMinicard() { return ReactiveCache.getBoard(Session.get('currentBoard'))?.labelsAboveTitleOnMinicard === true; },
   allowsChecklistDueDate() { return ReactiveCache.getBoard(Session.get('currentBoard'))?.allowsChecklistDueDate !== false; },
   allowsChecklistTitle() { return ReactiveCache.getBoard(Session.get('currentBoard'))?.allowsChecklistTitle !== false; },
   // The work item type badge was on every minicard before it had a row: on unless turned off.
   allowsIssueTypeOnMinicard() { return ReactiveCache.getBoard(Session.get('currentBoard'))?.allowsIssueTypeOnMinicard !== false; },
-  // Board Settings / Card Settings shows both columns - "Show on Card" and
-  // "Show on Minicard" beside each other. The card's own menu and the
-  // minicard's menu open the SAME popup asking for one of them, and the other
-  // column is hidden by this class rather than by a second copy of the list:
-  // twenty-four settings written out twice would drift the first time one is
-  // added. client/components/sidebar/sidebar.css
-  settingsSideClass() {
-    const data = Template.currentData() || {};
-    const classes = [];
-    if (data.side === 'card') classes.push('show-card-only');
-    if (data.side === 'minicard') classes.push('show-minicard-only');
-    // A user who is not a board admin may still set the one PERSONAL row of
-    // this table - "Labels text" - and none of the board's own. They get that
-    // row alone rather than a table of checkboxes the server would refuse.
-    if (data.personalOnly) classes.push('show-personal-only');
-    // Opened from a card's "+ Add": the card's own rows are shown too.
-    // The same test as settingsCardId: the column is drawn only then.
-    if (data.card && data.card._id && Utils.canModifyCard(data.card)) classes.push('has-card');
-    // Show empty fields: every field is shown, so the Show empty column is
-    // set aside - hidden, its ticks kept.
-    if (cardShownFields.boardShowsEmptyFields(ReactiveCache.getBoard(Session.get('currentBoard')))) classes.push('show-empty-fields');
-    return classes.join(' ');
-  },
-
-  // The rows of the "Show on Card" list, in the board's card order, and of
-  // the "Show on Minicard" list, in its minicard order - each row with its
-  // checkbox state, its handler class, its icons and its translated label,
-  // and whether each arrow does anything. models/lib/cardSettingsRows.js
-  // is the table, models/lib/cardFieldOrder.js the order.
-  cardSettingsRows() {
-    return buildCardSettingsRows('card', this);
-  },
-  minicardSettingsRows() {
-    return buildCardSettingsRows('minicard', this);
-  },
 
   // Board-level DEFAULT (#4256, Board Settings): whether this board shows
   // label text on its minicards unless a user overrides it. Checked means
@@ -2294,19 +2192,6 @@ const boardCardSettingsHelpers = {
     return typeof (currentUser.profile || {}).showLabelTextOverride === 'boolean';
   },
 
-  // "List title" is the CARD's own setting, not the board's, so the card is
-  // passed in with the side (showOnMinicardPopup) rather than looked up: a
-  // minicard's menu is opened from the board, where there is no "current card".
-  // Re-read from the collection so the checkbox follows its own click.
-  showsListOnMinicard() {
-    const card = settingsCard();
-    return Boolean(card && card.showListOnMinicard);
-  },
-  // ...and on the opened card.
-  showsListOnCard() {
-    const card = settingsCard();
-    return Boolean(card && card.showListOnCard);
-  },
   // The labels text of the OPENED card, the user's override included.
   showsCardLabelText() {
     return resolveShowCardLabelText(ReactiveCache.getBoard(Session.get('currentBoard')));
@@ -2695,7 +2580,6 @@ const boardCardSettingsHelpers = {
   },
 };
 boardCardSettingsHelpers.showDragHandles = () => Utils.showDragHandles();
-Template.boardCardSettingsPopup.helpers(boardCardSettingsHelpers);
 
 // The order of each side is set with the up and down arrows of a row's side
 // cell (moveCardSettingsRow below), or the Up and Down keys on a focused
@@ -2738,16 +2622,6 @@ function placeInListOrder(side, key, keys) {
   else board.setCardFieldOrder(order);
 }
 
-Template.boardCardSettingsPopup.onRendered(function () {
-  this.$('.js-card-field-order-sortable').each((i, list) => {
-    reorderOnDrop(this.$(list), {
-      items: '> .js-card-field-order-row.is-positioned', handle: '.js-card-field-order-handle',
-      keyOf: el => el.dataset.key,
-      drop: (key, keys) => placeInListOrder(list.dataset.side, key, keys),
-    });
-  });
-});
-
 // The keyboard way to drag: one step up or down in the list as it is shown -
 // past the row above or below it - placed the same way as a drop.
 function moveCardSettingsRow(evt, direction) {
@@ -2764,8 +2638,11 @@ function moveCardSettingsRow(evt, direction) {
   placeInListOrder(list.dataset.side, rowEl.dataset.key, keys);
 }
 
-Template.boardCardSettingsPopup.events({
-  // The same animated checkbox as Show empty fields; a board admin's.
+// The handlers of Card Settings: the popup Board Settings opens, and the same
+// handlers on the opened card's own Card Settings (cardSettingsInline) and its
+// hamburgers, so a checkbox does the same thing wherever it is drawn.
+const cardSettingsEvents = {
+  // The same animated checkbox as the rows; a board admin's.
   async 'click .js-ask-move-reason'(evt, tpl) {
     evt.preventDefault();
     const board = ReactiveCache.getBoard(Session.get('currentBoard'));
@@ -2780,133 +2657,55 @@ Template.boardCardSettingsPopup.events({
 
   // A row is dragged by its handle or its name: a click on them does nothing.
   'click .js-card-field-order-handle'(evt) { evt.preventDefault(); },
-  // A card action of the open section, for the card the popup was opened from.
-  'click .js-card-settings-action'(evt) {
-    evt.preventDefault();
-    const card = settingsCard();
-    const id = evt.currentTarget.dataset.action;
-    const action = Object.values(cardSettingsSections.CARD_ACTIONS).flat().find(a => a.id === id);
-    if (!action) return;
-    if (action.board) {
-      Popup.open(action.popup)(evt);
-      return;
-    }
-    if (!card) return;
-    if (id === 'filterSubtasks') {
-      filterSubtasksOf(card);
-      return;
-    }
-    if (!Utils.canModifyCard(card)) return;
-    Popup.open(action.popup, { dataContext: card })(evt);
-  },
   // Only the checkbox just clicked animates; its own handler does the change.
   'click .card-field-order-toggle'(evt, tpl) {
     const cell = evt.currentTarget.closest('.js-card-field-order-row');
     if (cell) tpl.animating.set(`${cell.dataset.key}:${cell.dataset.side}`);
   },
-  'click .js-card-settings-menu'(evt, tpl) {
+  // The checkbox left of a section's title: whether the whole section is
+  // shown on the side Card Settings shows (models/lib/cardSettingsSections.js
+  // hiddenSectionsOf). Its rows keep their own ticks. A board admin's.
+  async 'click .js-card-settings-section-shown'(evt, tpl) {
     evt.preventDefault();
-    tpl.animating.set(null);
-    tpl.settingsSection.set(evt.currentTarget.dataset.id);
-  },
-  // Opened from a card: whether THIS card shows the field
-  // (models/lib/cardShownFields.js) - ticked, an empty one is shown to be
-  // filled in; unticked, one with data is hidden from this card.
-  async 'click .js-card-add-field'(evt, tpl) {
-    evt.preventDefault();
-    const card = settingsCard();
-    const key = evt.currentTarget.dataset.key;
-    if (!card || !cardShownFields.FIELD_KEYS.includes(key) || !Utils.canModifyCard(card)) return;
-    tpl.animating.set(key);
-    const { card: view, counts } = shownFieldsOf(card);
-    const board = ReactiveCache.getBoard(card.boardId);
-    const next = cardShownFields.cardFieldsAfter(view, key, !cardShownFields.isShown(key, view, counts, board), counts, board);
-    await Cards.updateAsync(card._id, { $set: next });
-  },
-  // Select all / Select none under a column's heading: that column's rows of
-  // the open section (the ones drawn in the pane), each set the way its own
-  // checkbox would set it - the board's columns for a board admin, On this
-  // card for who may change the card. A personal row (Labels text, List
-  // title) is the user's or the card's own, not the board's: left as it is.
-  async 'click .js-card-settings-select'(evt, tpl) {
-    evt.preventDefault();
-    const { column, value } = evt.currentTarget.dataset;
-    const on = value === 'all';
-    const pane = evt.currentTarget.closest('.card-settings-pane');
+    const sectionEl = evt.currentTarget.closest('.js-card-settings-section');
+    const id = sectionEl && sectionEl.dataset.section;
+    const side = evt.currentTarget.dataset.side;
     const board = ReactiveCache.getBoard(Session.get('currentBoard'));
-    if (!pane || !board) return;
-    const isOn = el => el.getAttribute('aria-checked') === 'true';
-    const keysOf = selector => [...pane.querySelectorAll(selector)].map(el => el.dataset.key).filter(Boolean);
-    tpl.animating.set(null);
-    try {
-      if (column === 'this') {
-        const card = settingsCard();
-        if (!card || !Utils.canModifyCard(card)) return;
-        const { card: view, counts } = shownFieldsOf(card);
-        let next = { shownFields: card.shownFields || [], hiddenFields: card.hiddenFields || [] };
-        keysOf('.js-card-add-field').forEach(key => {
-          next = cardShownFields.cardFieldsAfter({ ...view, ...next }, key, on, counts, board);
-        });
-        await Cards.updateAsync(card._id, { $set: next });
-        return;
-      }
-      if (!(Utils.canModifyBoard && Utils.canModifyBoard())) return;
-      if (column === 'always') {
-        await board.setCardFieldAlwaysShown(keysOf('.js-card-always-show'), on);
-        return;
-      }
-      if (column !== 'minicard' && column !== 'card') return;
-      const cells = [...pane.querySelectorAll(`.js-card-field-order-row[data-side="${column}"]`)]
-        .filter(cell => !cell.classList.contains('card-settings-row-personal'))
-        .map(cell => cell.querySelector('.card-field-order-toggle'))
-        .filter(toggle => toggle && !toggle.classList.contains('is-disabled') && isOn(toggle) !== on);
-      // The Scrum rows are one write of the board's Scrum visibility: one by
-      // one, each would carry the same revision and all but the first fail.
-      const scrum = {};
-      cells.filter(t => t.classList.contains('js-scrum-field-toggle')).forEach(toggle => {
-        const key = toggle.closest('.js-card-field-order-row').dataset.key;
-        const spec = CARD_SETTINGS_ROWS.find(r => r.key === key)?.[column];
-        if (spec?.scrum) scrum[spec.scrum] = on;
-      });
-      if (Object.keys(scrum).length) {
-        await Meteor.callAsync('scrum.configure', board._id, { visibility: scrum }, board.scrumRevision || 0);
-        invalidateScrumNames();
-      }
-      // Every other row through its own checkbox's handler, which knows the
-      // field it sets and its default.
-      cells.filter(t => !t.classList.contains('js-scrum-field-toggle')).forEach(toggle => toggle.click());
-    } catch (error) {
-      console.error(error);
-    } finally {
-      tpl.animating.set(null);
-    }
-  },
-  // Card Settings / Card's "Show empty fields": every card shows all its
-  // fields, the empty ones too. A board admin's, like the rest.
-  async 'click .js-show-empty-card-fields'(evt, tpl) {
-    evt.preventDefault();
-    const board = ReactiveCache.getBoard(Session.get('currentBoard'));
-    if (!board || !(Utils.canModifyBoard && Utils.canModifyBoard())) return;
-    tpl.animating.set('showEmptyCardFields');
-    try {
-      await board.setShowEmptyCardFields(!cardShownFields.boardShowsEmptyFields(board));
-    } catch (error) {
-      console.error(error);
-    }
-  },
-  // #6806: "Show empty" - every card of the board shows the field, empty or
-  // not (models/lib/cardShownFields.js). A board admin's, like the rest.
-  async 'click .js-card-always-show'(evt, tpl) {
-    evt.preventDefault();
-    const board = ReactiveCache.getBoard(Session.get('currentBoard'));
-    const key = evt.currentTarget.dataset.key;
-    if (!board || !cardShownFields.FIELD_KEYS.includes(key)) return;
+    if (!board || !id || !cardSettingsSections.SIDES.includes(side)) return;
     if (!(Utils.canModifyBoard && Utils.canModifyBoard())) return;
-    tpl.animating.set(`${key}:always`);
+    tpl.animating.set(`section:${id}:${side}`);
     try {
-      await board.setCardFieldAlwaysShown(key, !cardShownFields.boardAlwaysShows(board, key));
+      await board.setCardSettingsSectionShown(side, id, !cardSettingsSections.sectionShown(board, side, id));
     } catch (error) {
       console.error(error);
+    }
+  },
+  // A section with one row on this side is one line (inlineSectionsOf
+  // `single`): its one checkbox is "this field is shown on this side". It sets
+  // the row's own flag through the row's own handler - the row's real
+  // checkbox, kept in the line out of sight - and, turning it on, also shows
+  // the section again if it was hidden whole.
+  async 'click .js-card-settings-single-toggle'(evt, tpl) {
+    evt.preventDefault();
+    const sectionEl = evt.currentTarget.closest('.js-card-settings-section');
+    const real = sectionEl && sectionEl.querySelector('.js-card-settings-single-real .card-field-order-toggle');
+    const id = sectionEl && sectionEl.dataset.section;
+    const side = evt.currentTarget.dataset.side;
+    const board = ReactiveCache.getBoard(Session.get('currentBoard'));
+    if (!board || !real || real.classList.contains('is-disabled') || !cardSettingsSections.SIDES.includes(side)) return;
+    const rowOn = real.getAttribute('aria-checked') === 'true';
+    const shown = cardSettingsSections.sectionShown(board, side, id);
+    if (rowOn && shown) {
+      real.click();
+      return;
+    }
+    if (!rowOn) real.click();
+    if (!shown) {
+      try {
+        await board.setCardSettingsSectionShown(side, id, true);
+      } catch (error) {
+        console.error(error);
+      }
     }
   },
   // The keyboard way to drag: Up and Down on a focused handle or name move
@@ -2976,20 +2775,6 @@ Template.boardCardSettingsPopup.events({
     evt.preventDefault();
     evt.stopPropagation();
     resetCardLabelTextOverride();
-  },
-  'click .js-toggle-show-list-on-card'(evt) {
-    evt.preventDefault();
-    const card = settingsCard();
-    if (!card) return;
-    Cards.update(card._id, { $set: { showListOnCard: !card.showListOnCard } });
-  },
-  'click .js-toggle-show-list-on-minicard'(evt) {
-    evt.preventDefault();
-    const card = settingsCard();
-    if (!card) return;
-    Cards.update(card._id, {
-      $set: { showListOnMinicard: !card.showListOnMinicard },
-    });
   },
   'click .js-field-has-receiveddate'(evt, tpl) {
     evt.preventDefault();
@@ -3343,6 +3128,521 @@ Template.boardCardSettingsPopup.events({
     const newValue = !tpl.currentBoard.allowsCardSortingByNumberOnMinicard;
     Boards.update(tpl.currentBoard._id, { $set: { allowsCardSortingByNumberOnMinicard: newValue } });
   },
+};
+
+// ── Card Settings: Board Settings / Card ────────────────────────────────────
+// docs/Features/Cards/Card-Settings.md. Two panes, Show on Minicard and Show
+// on Card, each the same template with its own fixed side, and in each the
+// sections as checklists - each a title with its own checkbox (the whole
+// section shown on that side) and its rows as items, the checkbox the side's
+// board-wide Show on Minicard or Show on Card. Sections and
+// rows are dragged like checklists and their items, and collapse like them;
+// what else a section or a row has is in its hamburger, drawn only when it has
+// something in it. The opened card has no Card Settings of its own.
+
+// Where the collapsed sections are kept: the user's collapsed card sections
+// (models/users.js), under the BOARD's id, because Card Settings is the
+// board's and not one card's.
+// Per side, since each pane is its own list: the Card pane keeps the key the
+// one list had (`card-settings-<id>`), so what a user collapsed before stays
+// collapsed there. A whole pane is `card-settings-pane-<side>`.
+const inlineCollapseKey = (id, side) => (side === 'minicard' ? `card-settings-minicard-${id}` : `card-settings-${id}`);
+const paneCollapseKey = side => `card-settings-pane-${side === 'minicard' ? 'minicard' : 'card'}`;
+
+function collapsedOnBoard(key) {
+  const user = ReactiveCache.getCurrentUser();
+  const boardId = Session.get('currentBoard');
+  return Boolean(user && boardId && user.getCollapsedCardSection(boardId, key) === true);
+}
+
+function inlineSectionCollapsed(id, side) {
+  return collapsedOnBoard(inlineCollapseKey(id, side));
+}
+
+// What a row's hamburger holds: only Labels text's way back to the board's
+// default, while the user overrides it. A row with nothing in it has no
+// hamburger at all - the icon is not drawn.
+function inlineRowMenu(row) {
+  return {
+    labelTextReset: Boolean(row.labelTextOverride && row.labelTextOverridden),
+  };
+}
+
+// Whether a section's hamburger has anything in it: Card's always does (Ask
+// for a reason when moving cards, the Draggable table); any other section only
+// when it has card or board actions for this user here (sectionCardActionsOf).
+// Without, the icon is not drawn.
+function sectionHasMenu(section) {
+  if (section && section.general) return true;
+  return Boolean(section) && sectionCardActionsOf(section.id).length > 0;
+}
+
+function inlineSectionsOf(tpl, data) {
+  const board = ReactiveCache.getBoard(Session.get('currentBoard'));
+  const side = tpl.showSide.get();
+  const mayBoard = Boolean(Utils.canModifyBoard && Utils.canModifyBoard());
+  const showDragHandles = Utils.showDragHandles();
+  const animating = tpl.animating.get();
+  // The one hamburger of this pane whose panel is open (cardSettingsInlinePanel).
+  const open = tpl.openPanel ? tpl.openPanel.get() : null;
+  // This pane's side's own section order: the order its surface draws them in.
+  return cardSettingsSections.orderedSections(cardSettingsSections.SECTIONS,
+    board && board[cardSettingsSections.SECTION_ORDER_FIELD[side]], side)
+    .map(section => {
+      const rows = sectionRowsOf(section.id, data, side, animating).map(row => {
+        const menu = inlineRowMenu(row);
+        // Blaze keeps a row's element by _id, so switching Show moves each
+        // row to its place on the other side rather than relabelling the rows
+        // where they stand - a click in between would land on another field.
+        return { ...row, _id: row.key, menu, hasMenu: menu.labelTextReset, menuOpen: open === `row:${row.key}` };
+      });
+      // Whether the WHOLE section is shown on this side - the checkbox left
+      // of its title; its rows keep their own ticks while it is not.
+      const shown = cardSettingsSections.sectionShown(board, side, section.id);
+      // Custom Fields: its items are the board's custom fields, its own
+      // checkbox the board's Custom Fields flag of this side - the row that
+      // was its only item (models/lib/cardSettingsCustomFields.js).
+      const customFields = section.id === cardSettingsCustomFields.CUSTOM_FIELDS_SECTION;
+      const customFieldItems = customFields ? customFieldItemsOf(side, animating, mayBoard, showDragHandles)
+        .map(item => ({ ...item, menuOpen: open === `field:${item.id}` })) : [];
+      // One row on this side: one line - its checkbox, its name, the
+      // section's hamburger (cardSettingsSections.js isSingleRowSection).
+      const single = !customFields && cardSettingsSections.isSingleRowSection(rows);
+      const flagRow = single ? rows[0]
+        : customFields ? rows.find(r => r.key === cardSettingsCustomFields.CUSTOM_FIELDS_ROW) || null : null;
+      const items = customFields ? customFieldItems : rows;
+      return {
+        // Blaze keeps a section's element (and the drag bound to it) by _id.
+        // A section turning into one line (or back) is another element.
+        _id: `${section.id}${single ? ':single' : ''}`,
+        id: section.id,
+        icon: section.icon,
+        title: TAPi18n.__(section.labelKey),
+        side,
+        sideTitle: TAPi18n.__(side === 'minicard' ? 'show-on-minicard' : 'show-on-card'),
+        rows: customFields ? [] : rows,
+        shown,
+        writable: mayBoard,
+        animatingShown: animating === `section:${section.id}:${side}`,
+        single,
+        customFields,
+        customFieldItems,
+        // The checkbox of one line and of Custom Fields: the row's flag, and
+        // the section not hidden whole - "this field is shown on this side".
+        flagRow,
+        flagChecked: Boolean(flagRow) && cardSettingsSections.singleLineChecked(board, side, section.id, flagRow.checked),
+        flagWritable: Boolean(flagRow && flagRow.writable),
+        hasMenu: sectionHasMenu(section),
+        menuOpen: open === `section:${section.id}`,
+        createOpen: customFields && open === 'create',
+        checkedCount: items.filter(r => r.checked).length,
+        total: items.length,
+        collapsed: inlineSectionCollapsed(section.id, side),
+        draggable: mayBoard,
+        showDragHandles,
+      };
+    })
+    // A section with no row on this side is left out - except Card, whose
+    // hamburger holds what is not a field, and Custom Fields while its flag
+    // row is offered.
+    .filter(section => section.rows.length || section.flagRow
+      || cardSettingsSections.SECTIONS.find(s => s.id === section.id)?.general);
+}
+
+// The board's custom fields as Custom Fields' items in Card Settings, in their
+// `sort` order (models/lib/cardSettingsCustomFields.js): each a checkbox - its
+// Show on Card (alwaysOnCard) or Show on Minicard (showOnCard) - its name, and
+// a hamburger opening its edit form, for a board admin.
+function boardCustomFieldDefinitions() {
+  const boardId = Session.get('currentBoard');
+  if (!boardId) return [];
+  return cardSettingsCustomFields.orderedDefinitions(
+    ReactiveCache.getCustomFields({ boardIds: { $in: [boardId] } }, { sort: { sort: 1, name: 1 } }) || []);
+}
+
+function customFieldItemsOf(side, animating, mayBoard, showDragHandles) {
+  const sideTitle = TAPi18n.__(side === 'minicard' ? 'show-on-minicard' : 'show-on-card');
+  return boardCustomFieldDefinitions().map(definition => ({
+    // Blaze keeps an item's element by _id, as it keeps the rows'.
+    _id: `customField:${definition._id}`,
+    id: definition._id,
+    name: definition.name,
+    side,
+    sideTitle,
+    checked: cardSettingsCustomFields.definitionChecked(definition, side),
+    writable: mayBoard,
+    animating: animating === `customField:${definition._id}:${side}`,
+    draggable: mayBoard,
+    showDragHandles,
+    hasMenu: mayBoard,
+  }));
+}
+
+// Custom Fields' items dropped in a new order, or one moved a step by Up and
+// Down: each definition whose place changed gets its new `sort`, through the
+// same CustomFields write as the board sidebar's own list.
+function placeCustomFieldOrder(ids) {
+  if (!(Utils.canModifyBoard && Utils.canModifyBoard())) return;
+  const sorts = cardSettingsCustomFields.sortsAfterDrop(boardCustomFieldDefinitions(), ids);
+  Object.entries(sorts).forEach(([id, sort]) => CustomFields.update(id, { $set: { sort } }));
+}
+
+// Each pane's side is fixed by boardCardSettingsPopup (`side="minicard"` or
+// `side="card"`); everything that depends on the side reads it from here.
+function setUpCardSettingsInline() {
+  setUpCardSettings.call(this);
+  const side = Template.currentData() && Template.currentData().side;
+  this.showSide = new ReactiveVar(side === 'minicard' ? 'minicard' : 'card');
+  // Which hamburger's panel is open in this pane: `section:<id>`,
+  // `row:<key>`, `field:<customFieldId>` or `create` (the + under Custom
+  // Fields); null when none. Not kept: a reopened Card Settings starts closed.
+  this.openPanel = new ReactiveVar(null);
+}
+
+// A hamburger toggles its panel: open, or closed when it is the one open -
+// and opening one closes the pane's other.
+function togglePanel(tpl, key) {
+  tpl.animating.set(null);
+  tpl.openPanel.set(tpl.openPanel.get() === key ? null : key);
+}
+
+// The Card Settings pane template instance around a view, for a panel's
+// helpers (its checkboxes animate in the pane's state).
+function paneInstanceOf(view) {
+  let v = view;
+  while (v && v.name !== 'Template.cardSettingsInline') v = v.parentView;
+  return v && v.templateInstance ? v.templateInstance() : null;
+}
+
+Template.cardSettingsInline.onCreated(setUpCardSettingsInline);
+Template.cardSettingsInline.onDestroyed(function () {
+  if (this._onPanelEscape) document.removeEventListener('keydown', this._onPanelEscape, true);
+});
+Template.cardSettingsInline.helpers({
+  ...boardCardSettingsHelpers,
+  inlineSections() { return inlineSectionsOf(Template.instance(), Template.currentData()); },
+  showSide() { return Template.instance().showSide.get(); },
+  paneTitle() {
+    return TAPi18n.__(Template.instance().showSide.get() === 'minicard' ? 'show-on-minicard' : 'show-on-card');
+  },
+  paneCollapsed() { return collapsedOnBoard(paneCollapseKey(Template.instance().showSide.get())); },
+});
+
+// ── The two panes and the splitter between them ─────────────────────────────
+// Board Settings / Card shows the Minicard pane and the Card pane at once
+// (sidebar.jade boardCardSettingsPopup). Side by side, the splitter between
+// them is dragged like the Admin Panel left menu's inner edge
+// (client/components/settings/leftMenu.js): pointer down on it, move, and the
+// Minicard pane's share of the width follows; it is saved once, at the end, in
+// the user's profile as a fraction (models/lib/cardSettingsSplit.js), with a
+// Session value in front so it does not jump back while the server answers.
+// The Arrow keys, Home and End move it too; a double-click goes back to half
+// and half.
+const CARD_SETTINGS_SPLIT_KEY = 'cardSettingsSplit';
+
+function savedCardSettingsSplit() {
+  const session = Session.get(CARD_SETTINGS_SPLIT_KEY);
+  if (typeof session === 'number') return session;
+  const user = ReactiveCache.getCurrentUser();
+  const stored = user && typeof user.getCardSettingsSplit === 'function' ? user.getCardSettingsSplit() : undefined;
+  return typeof stored === 'number' ? stored : cardSettingsSplit.DEFAULT_SPLIT;
+}
+
+function saveCardSettingsSplit(fraction) {
+  const value = cardSettingsSplit.normaliseSplit(fraction);
+  Session.set(CARD_SETTINGS_SPLIT_KEY, value === undefined ? cardSettingsSplit.DEFAULT_SPLIT : value);
+  const user = ReactiveCache.getCurrentUser();
+  if (user && typeof user.setCardSettingsSplit === 'function') {
+    Promise.resolve(user.setCardSettingsSplit(value)).catch(error => console.error(error));
+  }
+}
+
+const isRtlPage = () =>
+  (document.documentElement.getAttribute('dir') || getComputedStyle(document.documentElement).direction) === 'rtl';
+
+// The panes' geometry: the width the two panes share (the splitter's own
+// width left out) and the minimum of one pane in pixels, at the popup's font.
+function panesGeometry(panesEl, splitterEl) {
+  const total = panesEl.getBoundingClientRect().width - (splitterEl ? splitterEl.getBoundingClientRect().width : 0);
+  const em = parseFloat(getComputedStyle(panesEl).fontSize) || 16;
+  return { total, min: cardSettingsSplit.MIN_PANE_EM * em };
+}
+
+Template.boardCardSettingsPopup.helpers({
+  splitFraction() { return savedCardSettingsSplit(); },
+  splitPercent() { return cardSettingsSplit.splitPercent(savedCardSettingsSplit()); },
+  // With a pane collapsed the other takes the width and there is no splitter.
+  anyPaneCollapsed() {
+    return cardSettingsSections.SIDES.some(side => collapsedOnBoard(paneCollapseKey(side)));
+  },
+});
+
+Template.boardCardSettingsPopup.onRendered(function () {
+  const panesEl = this.find('.js-card-settings-panes');
+  const splitter = this.find('.js-card-settings-splitter');
+  if (!panesEl || !splitter) return;
+  let drag = null;
+  const show = fraction => {
+    panesEl.style.setProperty('--card-settings-split', String(fraction));
+    splitter.setAttribute('aria-valuenow', String(cardSettingsSplit.splitPercent(fraction)));
+  };
+  // The saved split, clamped against the width the popup has now.
+  const current = () => {
+    const { total, min } = panesGeometry(panesEl, splitter);
+    return cardSettingsSplit.clampSplit(savedCardSettingsSplit(), total, min);
+  };
+  const onMove = evt => {
+    if (!drag) return;
+    const { total, min } = panesGeometry(panesEl, splitter);
+    drag.last = cardSettingsSplit.splitAfterDrag(drag.start, evt.clientX - drag.x, total, min, isRtlPage());
+    // Straight onto the property while dragging: no write per pixel.
+    show(drag.last);
+    evt.preventDefault();
+  };
+  const onEnd = evt => {
+    if (!drag) return;
+    const { last, start, pointerId } = drag;
+    drag = null;
+    document.body.classList.remove('card-settings-splitting-active');
+    try { splitter.releasePointerCapture(pointerId); } catch (e) { /* already released */ }
+    // A press that did not move (half of a double-click) saves nothing.
+    if (last !== start) saveCardSettingsSplit(last);
+    if (evt && evt.preventDefault) evt.preventDefault();
+  };
+  const onDown = evt => {
+    if (evt.button !== undefined && evt.button !== 0) return;
+    const start = current();
+    drag = { x: evt.clientX, start, last: start, pointerId: evt.pointerId };
+    // Mouse, touch and pen alike; the splitter keeps the pointer while it is
+    // dragged, so a fast move off it does not end the drag.
+    try { splitter.setPointerCapture(evt.pointerId); } catch (e) { /* not capturable */ }
+    document.body.classList.add('card-settings-splitting-active');
+    evt.preventDefault();
+    evt.stopPropagation();
+  };
+  const onKey = evt => {
+    const { total, min } = panesGeometry(panesEl, splitter);
+    const next = cardSettingsSplit.splitAfterKey(current(), evt.key, total, min, isRtlPage());
+    if (next === null) return;
+    evt.preventDefault();
+    show(next);
+    saveCardSettingsSplit(next);
+  };
+  const onDouble = evt => {
+    evt.preventDefault();
+    show(cardSettingsSplit.DEFAULT_SPLIT);
+    saveCardSettingsSplit(undefined);
+  };
+  splitter.addEventListener('pointerdown', onDown, { passive: false });
+  splitter.addEventListener('pointermove', onMove, { passive: false });
+  splitter.addEventListener('pointerup', onEnd, { passive: false });
+  splitter.addEventListener('pointercancel', onEnd, { passive: false });
+  splitter.addEventListener('keydown', onKey);
+  splitter.addEventListener('dblclick', onDouble);
+  this._cardSettingsSplitCleanup = () => {
+    drag = null;
+    document.body.classList.remove('card-settings-splitting-active');
+  };
+});
+
+Template.boardCardSettingsPopup.onDestroyed(function () {
+  // A drag still going when the popup closed is not what the reader chose.
+  if (this._cardSettingsSplitCleanup) this._cardSettingsSplitCleanup();
+});
+
+// A section dropped above or below another: the shown sections in their new
+// order, written to the board as `side`'s section order - the Minicard pane's
+// to the minicard's, the Card pane's to the opened card's; the other side's
+// is untouched (models/lib/cardSettingsSections.js).
+function placeSectionOrder(ids, side) {
+  const board = ReactiveCache.getBoard(Session.get('currentBoard'));
+  if (!board || !(Utils.canModifyBoard && Utils.canModifyBoard())) return;
+  const which = side === 'minicard' ? 'minicard' : 'card';
+  const stored = board[cardSettingsSections.SECTION_ORDER_FIELD[which]];
+  const order = cardSettingsSections.sectionOrderAfterDrop(stored, ids, which);
+  if (order.join(' ') === cardSettingsSections.sectionOrder(stored, which).join(' ')) return;
+  board.setCardSettingsSectionOrder(order, which);
+}
+
+Template.cardSettingsInline.onRendered(function () {
+  const pane = this.find('.js-card-settings-pane');
+  // A form in a panel saved (sidebarCustomFields.js closeCardSettingsPanel):
+  // the panel closes, Card Settings stays.
+  this._onPanelDone = () => this.openPanel.set(null);
+  if (pane) pane.addEventListener('cardsettingspaneldone', this._onPanelDone);
+  // Escape closes the open panel, not Card Settings: before the popup's own
+  // Escape (EscapeActions on the document), in the capture phase.
+  this._onPanelEscape = evt => {
+    if (evt.key !== 'Escape' || !this.openPanel.get()) return;
+    evt.preventDefault();
+    evt.stopImmediatePropagation();
+    this.openPanel.set(null);
+  };
+  document.addEventListener('keydown', this._onPanelEscape, true);
+  reorderOnDrop(this.$('.js-card-settings-sections-sortable'), {
+    items: '> .js-card-settings-section.is-draggable', handle: '.js-card-settings-section-handle',
+    keyOf: el => el.dataset.section,
+    drop: (id, ids) => placeSectionOrder(ids, this.showSide.get()),
+  });
+});
+
+// Each section's rows reorder within it, as checklist items do, through the
+// board's order of that side (placeInListOrder). A row dropped on another
+// section goes back: the sections are unrelated kinds of fields. Dragged by
+// the handle with drag handles on, by the icon and name with them off
+// (cardSettingsRowLabel).
+Template.cardSettingsInlineSection.onRendered(function () {
+  // Custom Fields' items reorder within Custom Fields only, as rows do.
+  const fields = this.find('.js-card-settings-custom-fields-sortable');
+  if (fields) {
+    reorderOnDrop(this.$(fields), {
+      ownListOnly: true,
+      items: '> .js-card-settings-custom-field.is-positioned', handle: '.js-card-settings-custom-field-handle',
+      keyOf: el => el.dataset.id,
+      drop: (id, ids) => placeCustomFieldOrder(ids),
+    });
+  }
+  const list = this.find('.js-card-field-order-sortable');
+  if (!list) return;
+  reorderOnDrop(this.$(list), {
+    ownListOnly: true,
+    items: '> .js-card-field-order-row.is-positioned', handle: '.js-card-field-order-handle',
+    keyOf: el => el.dataset.key,
+    drop: (key, keys) => placeInListOrder(list.dataset.side, key, keys),
+  });
+});
+
+// The pane's handlers leave alone what a panel's own templates handle - the
+// custom field form, the subtask settings (`.js-card-settings-panel-own-handlers`):
+// the subtask settings' "Subtasks" checkbox has the same class as the
+// Subtasks row's, and both handlers toggling it was a click that did nothing.
+const paneEvents = Object.fromEntries(Object.entries(cardSettingsEvents).map(([key, handler]) => [key,
+  function paneHandler(evt, ...rest) {
+    if (evt && evt.target && evt.target.closest && evt.target.closest('.js-card-settings-panel-own-handlers')) return undefined;
+    return handler.call(this, evt, ...rest);
+  }]));
+
+Template.cardSettingsInline.events({
+  ...paneEvents,
+  // The caret at the top of a pane: the whole pane, only its header left.
+  async 'click .js-toggle-card-settings-pane'(evt, tpl) {
+    evt.preventDefault();
+    const user = ReactiveCache.getCurrentUser();
+    const boardId = Session.get('currentBoard');
+    if (!user || !boardId) return;
+    const key = paneCollapseKey(tpl.showSide.get());
+    await user.setCollapsedCardSection(boardId, key, !collapsedOnBoard(key));
+  },
+  async 'click .js-toggle-card-settings-section'(evt, tpl) {
+    evt.preventDefault();
+    const id = evt.currentTarget.closest('.js-card-settings-section')?.dataset.section;
+    const side = tpl.showSide.get();
+    const user = ReactiveCache.getCurrentUser();
+    const boardId = Session.get('currentBoard');
+    if (!id || !user || !boardId) return;
+    await user.setCollapsedCardSection(boardId, inlineCollapseKey(id, side), !inlineSectionCollapsed(id, side));
+  },
+  // A section is dragged by its handle or its title: a click there does nothing.
+  'click .js-card-settings-section-handle'(evt) { evt.preventDefault(); },
+  // The keyboard way to drag a section: Up and Down move it one step.
+  'keydown .js-card-settings-section-handle'(evt, tpl) {
+    const direction = ARROW_KEYS[evt.key];
+    if (!direction) return;
+    evt.preventDefault();
+    const sectionEl = evt.currentTarget.closest('.js-card-settings-section');
+    const list = sectionEl && sectionEl.closest('.js-card-settings-sections-sortable');
+    if (!list) return;
+    const ids = [...list.querySelectorAll(':scope > .js-card-settings-section')].map(el => el.dataset.section);
+    const at = ids.indexOf(sectionEl.dataset.section);
+    const to = direction === 'up' ? at - 1 : at + 1;
+    if (at < 0 || to < 0 || to >= ids.length) return;
+    ids.splice(at, 1);
+    ids.splice(to, 0, sectionEl.dataset.section);
+    placeSectionOrder(ids, tpl.showSide.get());
+  },
+  'click .js-open-card-settings-section-menu'(evt, tpl) {
+    const id = evt.currentTarget.closest('.js-card-settings-section')?.dataset.section;
+    evt.preventDefault();
+    if (!cardSettingsSections.SECTIONS.some(s => s.id === id)) return;
+    togglePanel(tpl, `section:${id}`);
+  },
+  // A panel's X.
+  'click .js-close-card-settings-panel'(evt, tpl) {
+    evt.preventDefault();
+    tpl.openPanel.set(null);
+  },
+  // Custom Fields' items: the checkbox is the definition's flag of this side.
+  'click .js-card-settings-custom-field-toggle'(evt, tpl) {
+    evt.preventDefault();
+    const item = evt.currentTarget.closest('.js-card-settings-custom-field');
+    const id = item && item.dataset.id;
+    const side = item && item.dataset.side;
+    if (!id || !(Utils.canModifyBoard && Utils.canModifyBoard())) return;
+    // From what the checkbox shows: the cached definition can still be the
+    // one before a click just made, and two quick clicks would both write on.
+    const definition = ReactiveCache.getCustomField(id);
+    const set = definition && cardSettingsCustomFields.definitionToggleSet(side,
+      evt.currentTarget.getAttribute('aria-checked') !== 'true');
+    if (!set) return;
+    tpl.animating.set(`customField:${id}:${side}`);
+    CustomFields.update(id, { $set: set });
+  },
+  // Dragged by its handle or its name: a click there does nothing.
+  'click .js-card-settings-custom-field-handle'(evt) { evt.preventDefault(); },
+  'keydown .js-card-settings-custom-field-handle'(evt) {
+    const direction = ARROW_KEYS[evt.key];
+    const item = evt.currentTarget.closest('.js-card-settings-custom-field');
+    if (!direction || !item) return;
+    evt.preventDefault();
+    placeCustomFieldOrder(cardSettingsCustomFields.idsAfterStep(boardCustomFieldDefinitions(), item.dataset.id, direction));
+  },
+  // Its hamburger: the custom field's own edit form - the board sidebar's -
+  // under the item.
+  'click .js-card-settings-edit-custom-field'(evt, tpl) {
+    evt.preventDefault();
+    const item = evt.currentTarget.closest('.js-card-settings-custom-field');
+    const definition = item && ReactiveCache.getCustomField(item.dataset.id);
+    if (!definition || !(Utils.canModifyBoard && Utils.canModifyBoard())) return;
+    togglePanel(tpl, `field:${definition._id}`);
+  },
+  // "+" under the items: a new custom field of the board's form, under the +.
+  'click .js-card-settings-add-custom-field'(evt, tpl) {
+    evt.preventDefault();
+    if (!(Utils.canModifyBoard && Utils.canModifyBoard())) return;
+    togglePanel(tpl, 'create');
+  },
+  'click .js-open-card-settings-item-menu'(evt, tpl) {
+    const row = evt.currentTarget.closest('.js-card-field-order-row');
+    if (!row) return;
+    evt.preventDefault();
+    togglePanel(tpl, `row:${row.dataset.key}`);
+  },
+});
+
+// What a hamburger holds, opened under its line inside the pane
+// (sidebar.jade cardSettingsInlinePanel). It has NO event map: the pane's
+// (cardSettingsEvents, registered once, on cardSettingsInline) handles its
+// checkboxes, so each click is handled exactly once; Blaze runs the event map
+// of every enclosing template, and a second registration here toggled every
+// checkbox twice. tests/cardSettingsInlinePanels.test.cjs.
+Template.cardSettingsInlinePanel.helpers({
+  ...boardCardSettingsHelpers,
+  isAnimating(key) {
+    const pane = paneInstanceOf(Template.instance().view);
+    return Boolean(pane && pane.animating.get() === key);
+  },
+  sectionIsGeneral() {
+    return Boolean(cardSettingsSections.SECTIONS.find(s => s.id === this.sectionId)?.general);
+  },
+  sectionActions() { return sectionCardActionsOf(this.sectionId); },
+  itemRow() {
+    const pane = paneInstanceOf(Template.instance().view);
+    const animating = pane ? pane.animating.get() : null;
+    const row = sectionRowsOf(this.sectionId, this, this.side, animating).find(r => r.key === this.rowKey);
+    return row ? { ...row, menu: inlineRowMenu(row) } : null;
+  },
+  fieldDefinition() { return this.fieldId ? ReactiveCache.getCustomField(this.fieldId) : null; },
+  createData() { return { boardId: Session.get('currentBoard') }; },
 });
 
 // Use Session variables instead of global ReactiveVars

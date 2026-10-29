@@ -1,9 +1,9 @@
 # Cards and minicards
 
 Create a card in a list, then click its minicard to open its details. The
-opened card shows only the fields it has data in, plus its description,
-attachments and comments; **+ Add** under the cover adds the rest
-([Card fields](Card-Fields.md)). Board-wide field visibility and order are in
+opened card shows every field its board shows on cards, empty or not
+([Card fields](Card-Fields.md)). Which fields, and in what order, on the
+opened card and on the minicard, is [Card Settings](Card-Settings.md) -
 [Board Settings / Card](../Board-Sidebar/Board-Settings/Card.md).
 
 | Place or action | Guide |

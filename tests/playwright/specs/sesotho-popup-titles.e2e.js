@@ -61,16 +61,29 @@ test('Southern Sotho card linking names the destination without claiming the cur
 test('Southern Sotho card settings identify data fields', async ({ boardPage: page }) => {
   await page.evaluate(async () => {
     await Meteor.callAsync('setLanguage', 'st');
-    Popup.open('boardCardSettings')({ currentTarget: document.body, target: document.body, preventDefault() {}, stopPropagation() {} });
+    Popup.open('boardCardSettings').call({ currentData: () => ({}) }, { currentTarget: document.body, target: document.body, preventDefault() {}, stopPropagation() {} });
   });
-  // The label column's heading of a section pane (docs/Features/Cards/Card-Fields.md).
-  // A pane has two lists since 2026-10-27, Show on Card and Show on Minicard;
-  // the heading text is in the card list's head, the minicard list's head
-  // keeps an empty cell so the columns line up.
-  await page.locator('.js-pop-over .js-card-settings-menu[data-id="date"]').click();
-  const heading = page.locator('.js-pop-over .card-settings-list[data-side="card"] .card-settings-pane-head-label');
-  await expect(heading).toHaveText('Tatellano ya dikarolo tsa karete');
-  await expect(heading).not.toContainText('masimo');
+  // Board Settings / Card is Card Settings (cardSettingsInline): the pane's
+  // "Card field order" heading went with the pane. What names the card's data
+  // fields now is "Show" and its two sides, the sections' titles, and Card's
+  // hamburger (whose "Show empty fields" was removed 2026-10-28; Ask for a
+  // reason is what is left there) - each in Southern Sotho, and none calling
+  // a data field "masimo" (farm fields).
+  const popup = page.locator('.js-pop-over[data-popup="boardCardSettingsPopup"]');
+  // Two panes since 2026-10-28 instead of a "Show" radio: each pane's title is
+  // what the radio's option said.
+  const sides = popup.locator('.card-settings-pane-title');
+  await expect(sides.nth(0)).toHaveText('Bontsha kareteng e nyenyane');
+  await expect(sides.nth(1)).toHaveText('Bontsha kareteng');
+  const card = popup.locator('.js-card-settings-pane[data-side="card"]');
+  await expect(card.locator('.js-card-settings-section[data-section="date"] .card-settings-inline-section-title')).toHaveText('Letsatsi');
+  await expect(popup.locator('.js-card-settings-panes')).not.toContainText('masimo');
+  await card.locator('.js-card-settings-section[data-section="card"] .js-open-card-settings-section-menu').click();
+  // The hamburger opens under its line, inside the pane (no popup layer).
+  const menu = card.locator('.js-card-settings-section[data-section="card"] .js-card-settings-panel');
+  await expect(menu.locator('.js-ask-move-reason')).toBeVisible();
+  await expect(menu).not.toContainText('masimo');
+  await expect(menu.locator('.js-show-empty-card-fields')).toHaveCount(0);
   await page.evaluate(() => Popup.close());
 });
 

@@ -43,7 +43,11 @@ test('a field\'s add button is on its title\'s line, and the attachment list is 
   try {
     await openAlpha(page, board);
     const details = page.locator('.card-details');
-    for (const item of ['labels', 'start', 'members']) {
+    // Since 2026-10-28 Labels and Members are headed by their SECTION's
+    // heading (Card Settings' sections), and their items have no title of
+    // their own - so the rule is pinned on fields that carry their own title:
+    // Start, Stickers and Assignee.
+    for (const item of ['stickers', 'start', 'assignees']) {
       const row = details.locator(`.card-details-item-${item}`).first();
       const title = await row.locator('.card-details-item-title').boundingBox();
       const add = await row.locator('.add-label, .add-member, .add-assignee').first().boundingBox();
@@ -86,11 +90,13 @@ test('Board Settings / Card: the attachment rows are in the Attachments section,
   await page.locator('.js-toggle-page-sidebar').first().click();
   await page.locator('.board-sidebar .js-open-board-menu').click();
   await page.locator('.js-pop-over .js-open-board-card-settings').click();
-  const form = page.locator('.js-pop-over .board-card-settings');
+  // Board Settings / Card is Card Settings since 2026-10-28 (cardSettingsInline):
+  // every section at once, in the Card pane (the Minicard pane beside it).
+  const form = page.locator('.js-pop-over .js-card-settings-pane[data-side="card"]');
   await form.waitFor();
-  await form.locator('.js-card-settings-menu[data-id="attachments"]').click();
+  const attachments = form.locator('.js-card-settings-section[data-section="attachments"]');
   for (const [key, field] of [['attachmentPreviews', 'allowsAttachmentPreviewsOnCard'], ['attachmentDetails', 'allowsAttachmentDetailsOnCard']]) {
-    const cell = form.locator(`.js-card-field-order-row[data-key="${key}"][data-side="card"]`);
+    const cell = attachments.locator(`.js-card-field-order-row[data-key="${key}"][data-side="card"]`);
     await expect(cell).toBeVisible();
     await expect(cell.locator('.card-field-order-toggle')).toHaveClass(/is-checked/);
     await cell.locator('.card-field-order-toggle').click();
@@ -110,10 +116,10 @@ test('Card Settings: the keyboard moves a field on its own side, one row of its 
     await page.locator('.js-toggle-page-sidebar').first().click();
     await page.locator('.board-sidebar .js-open-board-menu').click();
     await page.locator('.js-pop-over .js-open-board-card-settings').click();
-    const form = page.locator('.js-pop-over .board-card-settings');
+    // The Card pane (two panes since 2026-10-28).
+    const form = page.locator('.js-pop-over .js-card-settings-pane[data-side="card"]');
     await form.waitFor();
-    await form.locator('.js-card-settings-menu[data-id="date"]').click();
-    const due = form.locator('.js-card-field-order-row[data-key="dueDate"][data-side="card"]');
+    const due = form.locator('.js-card-settings-section[data-section="date"]').locator('.js-card-field-order-row[data-key="dueDate"][data-side="card"]');
     const before = cardOrder(board);
     // Up on the focused name: one row up in the Show on Card list.
     await due.locator('.card-settings-line-label').focus();
@@ -124,8 +130,7 @@ test('Card Settings: the keyboard moves a field on its own side, one row of its 
     // The minicard's order is not touched by the card's list.
     expect(db.findOne('boards', { _id: board.boardId }).minicardFieldOrder).toBeFalsy();
     // Negative: a modifier row is not dragged.
-    await form.locator('.js-card-settings-menu[data-id="checklists"]').click();
-    await expect(form.locator('.js-card-field-order-row[data-key="checklistDueDate"][data-side="card"] .js-card-field-order-handle')).toHaveCount(0);
+    await expect(form.locator('.js-card-settings-section[data-section="checklists"] .js-card-field-order-row[data-key="checklistDueDate"][data-side="card"] .js-card-field-order-handle')).toHaveCount(0);
   } finally {
     db.updateOne('boards', { _id: board.boardId }, { $unset: { cardFieldOrder: 1 } });
   }

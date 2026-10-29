@@ -367,19 +367,16 @@
     max-width: 90vw !important;
   }
 
-  /* Board Settings / Card: Draggable, Show on Minicard and Show on Card.
-     #6796: as wide as the window allows, up to 1800px - width buys COLUMNS
-     inside each list (sidebar.css), and enough of them means the whole of
-     both lists is read without scrolling. client/lib/popupOffset.js centres
-     it at this width (CARD_SETTINGS_MAX_WIDTH) and gives it the window's
-     height. */
-  /* Board Settings / Card, and the opened card's "+ Add": the Admin Panel's
-     left menu and right pane, wide enough for a row's label and both sides
-     (sidebar.css .card-settings-sections). */
+  /* Board Settings / Card: Card Settings, TWO panes of checklists - the
+     Minicard's and the Card's (sidebar.jade boardCardSettingsPopup) - side by
+     side, each about as wide as the one column was (600px until 2026-10-28,
+     when the two sides became two panes instead of a Show switch).
+     client/lib/popupOffset.js centres it at this width
+     (CARD_SETTINGS_MAX_WIDTH) and gives it the window's height (#6796). */
   .pop-over[data-popup='boardCardSettingsPopup'] {
     position: fixed;
     box-sizing: border-box;
-    width: min(96vw, 1200px) !important;
+    width: min(96vw, 1100px) !important;
     max-width: 96vw !important;
     max-height: calc(100dvh - 24px) !important;
     margin-top: 0;
@@ -1498,4 +1495,37 @@ body.mobile-mode .pop-over .content-wrapper {
    wide in a 1280 x 720 window (card-drawing-canvas.e2e.js). */
 .pop-over.pop-over--maximized .card-drawing {
   min-width: 0;
+}
+
+/* Card Settings' panes scroll on their own (client/components/cards
+   /cardAddFields.css .card-settings-panes-container): the popup's content
+   does not scroll as a whole, it hands its height down to the panes. At every
+   width - stacked, the panes' container is the one scroller. Also after the
+   corner grip resized it (popup.js resizeDatePopup, `data-user-resized`,
+   whose rule above would make the wrapper scroll again). The bottom padding
+   keeps the grip in a strip of its own, under the panes' scrollbars rather
+   than over the Card pane's. */
+.pop-over[data-popup='boardCardSettingsPopup'] {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 24px;
+}
+.pop-over[data-popup='boardCardSettingsPopup'] .content-wrapper,
+.pop-over[data-popup='boardCardSettingsPopup'][data-user-resized] > .content-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden !important;
+}
+.pop-over[data-popup='boardCardSettingsPopup'] .content-container,
+.pop-over[data-popup='boardCardSettingsPopup'] .content-container > .content {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+.pop-over[data-popup='boardCardSettingsPopup'] .content-container > .clearfix {
+  display: none;
 }

@@ -104,7 +104,7 @@ test('Board Settings reveals Scrum minicard fields and preserves independent car
  await expect(page.locator('.minicard .scrum-metadata')).toHaveCount(0);
  // The issue type is a minicard badge on every board now, not a Scrum toggle.
  await expect(page.locator('.minicard .minicard-issue-type',{hasText:'Story'})).toHaveCount(1);
- await page.evaluate(()=>{Popup.close();const opener=document.body;Popup.open('boardCardSettings')({currentTarget:opener,target:opener,preventDefault(){},stopPropagation(){}});});
+ await page.evaluate(()=>{Popup.close();const opener=document.body;Popup.open('boardCardSettings').call({currentData:()=>({})},{currentTarget:opener,target:opener,preventDefault(){},stopPropagation(){}});});
  const popup=page.locator('.pop-over[data-popup="boardCardSettingsPopup"]');
  await expect(popup).toBeVisible();
  // Every Scrum field is a row of the Scrum settings section (2026-10-25,
@@ -112,21 +112,25 @@ test('Board Settings reveals Scrum minicard fields and preserves independent car
  // before it - the section's title says that once; the old separate Scrum
  // checkbox list is gone.
  await expect(popup.locator('input.js-scrum-visibility')).toHaveCount(0);
- await popup.locator('.js-card-settings-menu[data-id="scrum"]').click();
- // Each row is drawn twice since 2026-10-27, once in the Show on Card list and
- // once in the Show on Minicard list (data-side), so a label is read per side.
+ // Board Settings / Card is Card Settings since 2026-10-28: every section at
+ // once, in a pane per side (the "Show" radio that switched one list between
+ // the sides is gone), so a label is read per side in that side's pane.
+ const scrumOf=side=>popup.locator(`.js-card-settings-pane[data-side="${side}"] .js-card-settings-section[data-section="scrum"]`);
  for(const side of ['card','minicard']){
-  await expect(popup.locator(`.card-settings-line[data-side="${side}"][data-key="scrumBacklogRank"] .card-settings-line-label`)).toHaveText('Backlog rank');
-  await expect(popup.locator(`.card-settings-line[data-side="${side}"][data-key="scrumSprint"] .card-settings-line-label`)).toHaveText('Sprint');
+  const scrum=scrumOf(side);
+  // A pane's rows are all its own side's.
+  const sides=await scrum.locator('.js-card-field-order-row').evaluateAll(els=>els.map(el=>el.dataset.side));
+  expect(sides.length>0&&sides.every(s=>s===side)).toBe(true);
+  await expect(scrum.locator(`.card-settings-line[data-side="${side}"][data-key="scrumBacklogRank"] .card-settings-line-label`)).toHaveText('Backlog rank');
+  await expect(scrum.locator(`.card-settings-line[data-side="${side}"][data-key="scrumSprint"] .card-settings-line-label`)).toHaveText('Sprint');
+  await expect(scrum.locator(`.js-card-field-order-row[data-side="${side}"][data-key="scrumBacklogRank"] .card-field-order-toggle`)).toHaveCount(1);
  }
- for(const side of ['card','minicard']){
-  await expect(popup.locator(`.js-card-field-order-row[data-side="${side}"][data-key="scrumBacklogRank"] .card-field-order-toggle`)).toHaveCount(1);
- }
- await popup.locator('.js-card-field-order-row[data-side="minicard"][data-key="scrumBacklogRank"] .card-field-order-toggle').click();
+ const scrum=scrumOf('minicard');
+ await scrum.locator('.js-card-field-order-row[data-side="minicard"][data-key="scrumBacklogRank"] .card-field-order-toggle').click();
  await expect.poll(()=>db.findOne('boards',{_id:board.boardId}).scrum?.visibility?.minicardBacklogRank).toBe(true);
  expect(db.findOne('boards',{_id:board.boardId}).scrum?.visibility?.cardBacklogRank).not.toBe(true);
  // The minicard's work item type row is the badge's own switch, on by default.
- const issueType=popup.locator('.js-card-field-order-row[data-side="minicard"][data-key="scrumIssueType"] .card-field-order-toggle');
+ const issueType=scrum.locator('.js-card-field-order-row[data-side="minicard"][data-key="scrumIssueType"] .card-field-order-toggle');
  await expect(issueType).toHaveClass(/is-checked/);
  await issueType.click();
  await expect.poll(()=>db.findOne('boards',{_id:board.boardId}).allowsIssueTypeOnMinicard).toBe(false);
