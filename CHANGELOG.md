@@ -123,6 +123,117 @@ its reason.
 
 </details>
 
+# v12.69 2026-10-29 WeKan ® release
+
+**In short:** **ImportPlacementBleed** is fixed: an import is placed only on its
+own board. **Invite via Email** adds the invited new user again, instead of
+the first user of the database. The **OpenBSD** bundle starts again, and
+**History** works on **FerretDB**: date custom field changes are recorded there,
+and the database migration says when documents did not arrive.
+
+This release fixes the following CRITICAL SECURITY ISSUE of [ImportPlacementBleed](https://wekan.fi/hall-of-fame/importplacementbleed/):
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0d6d481fcb">An import into a board is placed only beside that board's own list, swimlane or card</a>. Thanks to Zachariah Mithani (AploSec) and xet7.</summary>
+
+The scoped importer, reached by `POST /api/import/zip` and the `importScoped`
+method, authorized the import on `boardId` alone. The `listId` and
+`swimlaneId` beside it were written onto the new cards as given, and a `cardId`
+was looked up with no board, so a writer of board A could create cards on A
+whose list and swimlane were board B's, and probe whether a card id existed on
+a board they cannot see. Before anything is written, the list, swimlane and
+card are now looked up together with the board's id; an id of another board is
+refused (400 over REST, `error-import-placement` from the method), with the
+same answer for a foreign card and a missing one. A refusal is shown in Admin
+Panel → Problems as ImportPlacementBleed, without blocking the account, since
+an import menu left open while its list moved can reach it.
+`tests/importPlacementBleed.test.cjs` pins the decision, the check before every
+write and a negative scan for a target id used without the board;
+`security-import-placement.e2e.js` runs the reporter's attack by both routes
+and fails on the previous code.
+
+</details>
+
+and fixes the following bugs:
+
+**Board members** - who an invitation adds to a board.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8556459f97">Invite via Email adds the invited new user, not the first user of the database</a>. Thanks to momosari and xet7.</summary>
+
+Meteor 3's server `Accounts.createUser` is `createUserAsync`, and
+`inviteUserToBoard` called it without `await`. The new user's id was a Promise,
+which `findOneAsync` read as the empty selector `{}`, so it returned the FIRST
+user - usually the site administrator - who was added to the board and got the
+invitee's language and invited boards
+([#6831](https://github.com/wekan/wekan/issues/6831)). It happened on any
+database, not only FerretDB. `createUser` and `sendEnrollmentEmail` are awaited,
+the user found must be the one just created, and every server `ReactiveCache`
+getter now refuses a Promise as its id or selector, so a missing `await` fails
+loudly instead of picking the first document.
+`tests/inviteNewUserByEmail.test.cjs`
+pins the guard, the reporter's case and that no server file calls an async
+Accounts API without `await`; `invite-member-email-case.e2e.js` invites a new
+address and checks that exactly that account joined - it fails on the previous
+code.
+
+</details>
+
+**Bundles** - starting WeKan on the BSDs.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ec6cf66bff">The OpenBSD bundle starts again, start-wekan.sh takes only a number from sysctl</a>. Thanks to xet7.</summary>
+
+OpenBSD's `sysctl` prints nothing and exits 0 for a name it does not have, so
+`sysctl -n hw.memsize || sysctl -n hw.physmem` stopped at the empty
+`hw.memsize`, and `$(( / 1048576 ))` ended `start-wekan.sh` before WeKan
+answered (the v12.68 BSD bundles job). Both `start-wekan.sh` copies now try
+`hw.memsize`, `hw.physmem64` (NetBSD, whose `hw.physmem` is 32-bit) and
+`hw.physmem` in turn and take the first numeric answer.
+`tests/macosShellPortability.test.cjs` runs those lines against fake OpenBSD,
+NetBSD and macOS `sysctl`s, and shows the old chain failing on the OpenBSD one.
+
+</details>
+
+**History on FerretDB** - what the History of a card keeps, and what the
+database migration copies.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/01968fc637">Date custom field changes are recorded on FerretDB, and the migration reports refused documents</a>. Thanks to vijlautens and xet7.</summary>
+
+A History row of a date-valued custom field held `datePaths` as an array of
+path arrays, `[["3","value"]]`. FerretDB v1 does not store an array inside an
+array, so on FerretDB the change was not recorded, and the text database
+migration to FerretDB dropped those rows while it swallowed the per-document
+error and still reported success
+([#6832](https://github.com/wekan/wekan/issues/6832)). Each path is now a JSON
+string, `'["3","value"]'`; rows already written in the array form on MongoDB
+still restore, and the migration to FerretDB rewrites them to strings. The
+migration counts every document the target refuses and ends as failed, with the
+count per collection and the first error. `tests/changeHistoryGroups.test.cjs`
+pins the string form, the legacy restore, the rewrite with no array left inside
+an array, and that a refused document is counted before success;
+`history-nested-dates.e2e.js` checks the stored row.
+
+</details>
+
+and has the following release-tooling fix:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/99d9958e39">Release all missing builds the missing assets even when the rerun of failed jobs fails again</a>. Thanks to xet7.</summary>
+
+The planner needed `recover`, so one job failing again in the rerun of the full
+release skipped the planner and every build after it. For v12.68 the rerun
+failed on four Launchpad snaps (503 / timeout) and on the OpenBSD bundle, whose
+`start-wekan.sh` fault is in the tagged code and so in every rerun of it. The
+planner now runs unless the run is cancelled, each job after it checks the
+planner's own result, and `recover` stays red and names the jobs that failed
+again. `tests/retryFailedRelease.test.py` pins both.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v12.68 2026-10-29 WeKan ® release
 
 **In short:** **Card Settings**, in Board Settings / Card, becomes two panes of
