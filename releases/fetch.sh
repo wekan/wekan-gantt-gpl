@@ -68,7 +68,13 @@ if [ -z "$url" ] || { [ "$mode" = download ] && [ -z "$out" ]; }; then
     exit 2
 fi
 
-tmp=$(mktemp "$TMPDIR/wekan.XXXXXX")
+tmp=$(mktemp "${TMPDIR:-/nonexistent}/wekan.XXXXXX" 2>/dev/null) || tmp=""
+if [ -z "$tmp" ]; then
+    # v12.69's Launchpad builds went on with an empty name, and curl answered
+    # "option -o: is badly used here" seven times, called an outage.
+    echo "::error::fetch.sh has no temporary directory (TMPDIR '${TMPDIR:-}'): releases/tools-env.sh is missing or could not make .tools/tmp. Nothing was downloaded from $url." >&2
+    exit 2
+fi
 trap 'rm -f "$tmp"' EXIT
 
 attempt=1
@@ -81,12 +87,25 @@ while : ; do
             --connect-timeout "$connect_timeout" "$@" "$url")
     fi
     rc=$?
+    # curl exit 2 is "failed to initialize": it never reached the server, so a
+    # retry cannot change the answer and it is not an outage.
+    if [ "$rc" -eq 2 ]; then
+        echo "::error::curl could not start for $url (exit 2, a bad command line) - not an outage, nothing was retried." >&2
+        exit 2
+    fi
 
     # 000 is curl's "no HTTP response at all" - DNS, TLS, a dropped connection.
     case "$code" in
         2??)
             if [ "$mode" = check ]; then exit 0; fi
-            if [ "$out" = "-" ]; then cat "$tmp"; else mv "$tmp" "$out"; fi
+            if [ "$out" = "-" ]; then cat "$tmp"; else
+                # mktemp made it 0600, and mv keeps that: a FerretDB or
+                # mongo-tools fetched here and then `chmod +x`ed was 0711,
+                # unreadable to anyone else, and appimagetool refused to pack
+                # it (v12.69). A download gets the mode the umask gives a file.
+                chmod "$(printf '%o' $(( 0666 & ~$(umask) )))" "$tmp"
+                mv "$tmp" "$out"
+            fi
             exit 0
             ;;
         401|403|404|410)
@@ -99,7 +118,13 @@ while : ; do
 
     if [ "$attempt" -ge "$attempts" ]; then
         [ "$mode" = check ] && exit 2
-        echo "::error::$url could not be downloaded in $attempts attempts (last HTTP $code, curl exit $rc). The server is having an outage, not WeKan: re-run this job when it is over." >&2
+        if [ "$rc" -eq 60 ]; then
+            # v12.69 Sandstorm: install.sandstorm.io's certificate had expired,
+            # which is not an outage and is fixed only by that site's owner.
+            echo "::error::$url could not be downloaded in $attempts attempts: its TLS certificate could not be verified (curl exit 60 - expired, or not for this host). Only that server's owner can fix it; re-run this job once its certificate is renewed." >&2
+        else
+            echo "::error::$url could not be downloaded in $attempts attempts (last HTTP $code, curl exit $rc). The server is having an outage, not WeKan: re-run this job when it is over." >&2
+        fi
         exit "${rc:-1}"
     fi
 

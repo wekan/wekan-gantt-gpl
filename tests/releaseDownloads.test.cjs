@@ -87,6 +87,57 @@ test('a 503 is waited out, and the file arrives', () => {
   assert.ok(/::warning::/.test(r.stderr), 'and the log says why the job paused');
 });
 
+test('a download is readable by everyone, as an AppImage needs (v12.69)', () => {
+  // mktemp's 0600 survived the mv, so FerretDB and mongo-tools were 0711
+  // after `chmod +x`, and appimagetool refused to pack them.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'fetch-'));
+  const out = path.join(dir, 'ferretdb');
+  const r = spawnSync('bash', ['-c', `umask 022; bash "${fetchSh}" -o "${out}" "${base}/ok" && chmod +x "${out}"`],
+    { encoding: 'utf8', env: Object.assign({}, process.env, { FETCH_SLEEPS: '0' }) });
+  assert.strictEqual(r.status, 0, r.stderr);
+  assert.strictEqual((fs.statSync(out).mode & 0o777).toString(8), '755');
+});
+
+test('a download still follows a stricter umask (negative)', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'fetch-'));
+  const out = path.join(dir, 'private');
+  const r = spawnSync('bash', ['-c', `umask 077; bash "${fetchSh}" -o "${out}" "${base}/ok"`],
+    { encoding: 'utf8', env: Object.assign({}, process.env, { FETCH_SLEEPS: '0' }) });
+  assert.strictEqual(r.status, 0, r.stderr);
+  assert.strictEqual((fs.statSync(out).mode & 0o777).toString(8), '600');
+});
+
+test('no temporary directory stops at once, with the reason (negative, v12.69 Launchpad)', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'fetch-'));
+  // A TMPDIR inside .tools is kept as it is (tools-env.sh), so one that does
+  // not exist leaves mktemp nothing to make - as Launchpad's missing one did.
+  const r = run(['-o', path.join(dir, 'x'), `${base}/ok`], { TMPDIR: path.join(dir, 'missing'), FETCH_SLEEPS: '30' });
+  assert.strictEqual(r.status, 2);
+  assert.match(r.stderr, /has no temporary directory/);
+  assert.doesNotMatch(r.stderr, /badly used|blank argument|::warning::/, 'curl is never handed an empty -o');
+  assert.ok(!fs.existsSync(path.join(dir, 'x')));
+});
+
+test('a curl that cannot start is not retried as an outage (negative)', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'fetch-'));
+  const bin = path.join(dir, 'bin'); fs.mkdirSync(bin);
+  fs.writeFileSync(path.join(bin, 'curl'), '#!/bin/sh\necho "curl: option -o: is badly used here" >&2\nexit 2\n', { mode: 0o755 });
+  const r = run(['-o', path.join(dir, 'x'), `${base}/ok`], { PATH: `${bin}:${process.env.PATH}`, FETCH_SLEEPS: '30' });
+  assert.strictEqual(r.status, 2);
+  assert.match(r.stderr, /could not start/);
+  assert.doesNotMatch(r.stderr, /::warning::|outage, not WeKan/, 'no retries, and not called an outage');
+});
+
+test('an unverifiable certificate is named as that, not as an outage (v12.69 Sandstorm)', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'fetch-'));
+  const bin = path.join(dir, 'bin'); fs.mkdirSync(bin);
+  fs.writeFileSync(path.join(bin, 'curl'), '#!/bin/sh\necho "curl: (60) SSL certificate problem: certificate has expired" >&2\nprintf 000\nexit 60\n', { mode: 0o755 });
+  const r = run(['-o', path.join(dir, 'x'), `${base}/ok`], { PATH: `${bin}:${process.env.PATH}` });
+  assert.strictEqual(r.status, 60);
+  assert.match(r.stderr, /TLS certificate could not be verified/);
+  assert.doesNotMatch(r.stderr, /having an outage/);
+});
+
 test('a 404 fails at once - it is an answer, not an outage (negative)', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'fetch-'));
   const out = path.join(dir, 'nope');
