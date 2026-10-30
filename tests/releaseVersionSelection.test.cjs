@@ -20,6 +20,8 @@ function fixture(fn) {
     const source = fs.readFileSync(path.join(root, 'releases/release-all.sh'), 'utf8');
     fs.writeFileSync(path.join(dir, 'releases/preflight.sh'), source.split('DATE="$(date +%F)"')[0] + '\nprintf "%s %s\\n" "$OLD" "$NEW"\n');
     fs.writeFileSync(path.join(dir, 'releases/ensure-tools.sh'), 'ensure_tools() { :; }\n');
+    // The release pulls first (build.sh git-pull); here that is all it may do.
+    fs.writeFileSync(path.join(dir, 'build.sh'), '#!/bin/sh\n[ "$1" = git-pull ] || exit 99\n', { mode: 0o755 });
     fs.writeFileSync(path.join(dir, 'releases/fix-changelog-hashes.sh'), 'exit 0\n');
     // Dependency checks are covered by releaseTelemetry/remoteRelease; this fixture
     // isolates version selection and refuses all other git/gh operations.
@@ -28,14 +30,14 @@ function fixture(fn) {
     fs.writeFileSync(path.join(dir, 'bin/gh'), '#!/bin/sh\n[ \"$1 $2\" = \"auth status\" ] || exit 99\n', { mode: 0o755 });
     fs.writeFileSync(path.join(dir, 'bin/git'), '#!/bin/bash\ncase "$1" in\nbranch) echo main;;\nremote) echo git@github.com:wekan/wekan.git;;\nls-remote) [ "${OFFLINE:-0}" = 0 ] || exit 1; printf "%s\\n" "$REMOTE_TAGS";;\ntag) printf "%s\\n" "$LOCAL_TAGS";;\n*) exit 99;;\nesac\n', { mode: 0o755 });
     const notes = '# Upcoming WeKan ® release\n\n**In short:** Fix release builds.\n\n<details>\n<summary><a href="https://example.com">Fix</a></summary>\n</details>\n# v11.89 2026-09-20 WeKan ® release\n';
-    fs.writeFileSync(path.join(dir, 'CHANGELOG.md'), notes);
+    fs.writeFileSync(path.join(dir, 'CHANGELOG-big.md'), notes);
     fs.writeFileSync(path.join(dir, 'package.json'), '{\n  "version": "v11.89.0",\n  "private": true\n}\n');
     const run = (env = {}, args = []) => {
       const result = spawnSync('bash', [path.join(dir, 'releases/preflight.sh'), ...args], {
         encoding: 'utf8', env: { ...process.env, TMPDIR: tmpRoot, PATH: path.join(dir, 'bin') + path.delimiter + process.env.PATH,
           REMOTE_TAGS: '', LOCAL_TAGS: '', ...env },
       });
-      assert.equal(fs.readFileSync(path.join(dir, 'CHANGELOG.md'), 'utf8'), notes);
+      assert.equal(fs.readFileSync(path.join(dir, 'CHANGELOG-big.md'), 'utf8'), notes);
       return result;
     };
     fn(run, dir);
