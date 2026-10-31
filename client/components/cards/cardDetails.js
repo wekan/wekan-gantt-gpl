@@ -701,9 +701,12 @@ Template.cardDetails.onDestroyed(function () {
 
   // #6686: see the comment in onCreated above. Only close a popup that is
   // still showing THIS card's data at the base of its stack - a popup opened
-  // for an unrelated card/context must not be touched.
+  // for an unrelated card/context must not be touched. #6840: and only when
+  // this card is no longer the open one - closed, or another card opened. A
+  // card whose details are merely rendered again is still open, and its popup
+  // (the Due date one `d` just opened) must not flash shut.
   const openedCardId = this.openedCardId;
-  if (openedCardId && Popup.isOpen()) {
+  if (openedCardId && Popup.isOpen() && Utils.getCurrentCardId() !== openedCardId) {
     const baseStackEntry = Popup._stack?.[0];
     if (baseStackEntry?.dataContext?._id === openedCardId) {
       Popup.close();
@@ -1287,17 +1290,18 @@ Template.cardDetails.events({
       // selects text instead of moving the card window.
       return;
     }
-    // ...and don't drag from the half that EDITS. The title is split like a
-    // minicard's: the leading half opens the editor, the trailing half is what
-    // you take hold of. With drag handles ON the zone covers the whole title
-    // (cardDetails.css), so the window is dragged by its handle alone - which is
-    // what turning handles on means.
+    // #6839: ...and never from the title, which edits - all of it
+    // (cardDetails.css). The window is moved from the empty space of the
+    // header row above it, beside the collapse caret and the menu.
     if ($(event.target).closest('.card-details-title-edit-zone').length > 0) {
       return;
     }
     // The drag handle has its own handler; without this both would run and the
-    // window would be moved twice by one press.
-    if ($(event.target).closest('.js-card-drag-handle').length > 0) {
+    // window would be moved twice by one press. And when there IS a handle -
+    // drag handles on - it is the only thing that moves the window, which is
+    // what turning handles on means.
+    if ($(event.target).closest('.js-card-drag-handle').length > 0
+      || $(event.target).closest('.card-details').find('.js-card-drag-handle').length > 0) {
       return;
     }
 

@@ -142,6 +142,7 @@ Template.people.onCreated(function () {
   this.teamSetting = new ReactiveVar(false);
   this.peopleSetting = new ReactiveVar(false);
   this.lockedUsersSetting = new ReactiveVar(false);
+  this.auditLogSetting = new ReactiveVar(false);
   this.rolesSetting = new ReactiveVar(false);
   this.templatesSetting = new ReactiveVar(false);
   // #5850: Admin Panel > People > Domains tab. The domains table itself
@@ -434,6 +435,7 @@ Template.people.onCreated(function () {
       this.teamSetting.set('team-setting' === targetID);
       this.peopleSetting.set('people-setting' === targetID);
       this.lockedUsersSetting.set('locked-users-setting' === targetID);
+      this.auditLogSetting.set('audit-log-setting' === targetID);
       this.rolesSetting.set('roles-setting' === targetID);
       this.templatesSetting.set('templates-setting' === targetID);
       this.domainSetting.set('domains-setting' === targetID);
@@ -551,6 +553,9 @@ function peopleMenu(user) {
     { id: 'team-setting', icon: 'fa-users', labelKey: 'teams' },
     { id: 'people-setting', icon: 'fa-user', labelKey: 'people' },
     { id: 'locked-users-setting', icon: 'fa-lock', labelKey: 'accounts-lockout-locked-users', iconWrapCls: 'text-red' },
+    // What site administrators did (models/lib/adminAudit.js). Site admins only:
+    // tenantAdminPeopleMenu keeps a per-tenant admin's menu to its own panes.
+    { id: 'audit-log-setting', icon: 'fa-list-alt', labelKey: 'admin-audit-log' },
     { id: 'roles-setting', icon: 'fa-key', labelKey: 'roles' },
     { id: 'templates-setting', icon: 'fa-clone', labelKey: 'shared-templates' },
     { id: 'registration-setting', icon: 'fa-key', labelKey: 'login', emoji: true },
@@ -579,6 +584,15 @@ function peopleMenu(user) {
     return tenantAdmin.tenantAdminPeopleMenu(items, user);
   }
   return items;
+}
+
+// A password the server refused (server/lib/passwordPolicy.js), in the
+// reader's language; the popup that sent it has already closed.
+function passwordErrorMessage(error) {
+  const key = error && error.error;
+  if (key === 'password-too-short') return TAPi18n.__('password-too-short', { min: error.details?.min });
+  if (['password-pwned', 'password-same-as-username'].includes(key)) return TAPi18n.__(key);
+  return error.reason || error.message;
 }
 
 // People panes drawn from models/lib/authConfigCatalog.js, and the data the
@@ -899,6 +913,8 @@ Template.people.helpers({
   // The Login pane's own login settings (PASSWORD_LOGIN_ENABLED, ...).
   loginOptionsData() { return authConfigData('login'); },
   windowsSsoData() { return authConfigData('windowsSso'); },
+  // HSTS (HSTS_MAX_AGE, ...), below the login settings.
+  httpSecurityData() { return authConfigData('httpSecurity'); },
   ldapPane() { return Template.instance().activeMenuId.get() === 'ldap-setting'; },
   authenticationSection() {
     return {
@@ -926,6 +942,9 @@ Template.people.helpers({
   },
   lockedUsersSetting() {
     return Template.instance().lockedUsersSetting;
+  },
+  auditLogSetting() {
+    return Template.instance().auditLogSetting;
   },
   rolesSetting() {
     return Template.instance().rolesSetting;
@@ -2352,7 +2371,9 @@ Template.editUserPopup.events({
     });
 
     if (isChangePassword) {
-      Meteor.call('setPassword', password, this.userId);
+      Meteor.call('setPassword', password, this.userId, error => {
+        if (error) alert(passwordErrorMessage(error));
+      });
     }
 
     if (isChangeEmailVerified) {
@@ -2651,6 +2672,8 @@ Template.newUserPopup.events({
           } else if (errorElement === 'email-already-taken') {
             usernameMessageElement.hide();
             emailMessageElement.show();
+          } else if (String(errorElement).startsWith('password-')) {
+            alert(passwordErrorMessage(error));
           }
         } else {
           usernameMessageElement.hide();

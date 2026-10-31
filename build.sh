@@ -468,10 +468,17 @@ function build_wekan(){
 		echo "===== wekan build started $(date '+%F %T') ====="
 		export npm_config_loglevel=verbose npm_config_foreground_scripts=true
 		export METEOR_PROFILE="${METEOR_PROFILE:-100}"
-		export NODE_DEBUG="${NODE_DEBUG:+$NODE_DEBUG,}module"
+		# Node module resolution, one line per require. OFF unless
+		# WEKAN_BUILD_TRACE_MODULES=1: a Meteor build writes it at gigabytes a
+		# minute - 1.1 GB in the first three minutes of a menu dev build, over
+		# 12 GB in the first half hour of EVERYTHING on macOS, written twice
+		# through tee - and slows the build it is tracing.
+		if [ "${WEKAN_BUILD_TRACE_MODULES:-0}" = 1 ]; then
+			export NODE_DEBUG="${NODE_DEBUG:+$NODE_DEBUG,}module"
+		fi
 		# NODE_OPTIONS parses quoted paths, including checkouts with spaces.
 		export NODE_OPTIONS="${NODE_OPTIONS:-} --require=\"$(pwd)/tools/build-command-output.cjs\""
-		echo "Build diagnostics: resolver command/output tracing, Node module resolution, npm verbose output, foreground install scripts, METEOR_PROFILE=$METEOR_PROFILE (milliseconds)."
+		echo "Build diagnostics: resolver command/output tracing, npm verbose output, foreground install scripts, METEOR_PROFILE=$METEOR_PROFILE (milliseconds), Node module resolution $([ "${WEKAN_BUILD_TRACE_MODULES:-0}" = 1 ] && echo on || echo 'off (WEKAN_BUILD_TRACE_MODULES=1 turns it on)')."
 		build_stage "1/4 Remove dependencies and build caches" rm -rf node_modules node_modules/.cache .meteor/local .build _build || return $?
 		# Updating npm metadata has historically been best effort; installation is required.
 		build_stage "2/4 Compile app to resolve Meteor plugin npm dependencies" meteor update --npm || echo "WARNING: Meteor plugin npm dependency compilation failed; trying dependency installation."

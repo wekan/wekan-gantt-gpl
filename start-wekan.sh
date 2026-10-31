@@ -197,6 +197,28 @@
       # - ACCOUNTS_COMMON_LOGIN_EXPIRATION_IN_DAYS=90
       # Disable accounts unused for this many days (admins never). Unset or 0 = off.
       #export USERS_DISABLE_INACTIVE_AFTER_DAYS=180
+      # LOGOUT_IDLE_MINUTES : Sign a browser session out after this many minutes without a key press, click,
+      # touch or scroll. Empty or 0 = off (default). REST API tokens are not affected.
+      #export LOGOUT_IDLE_MINUTES=30
+      # REQUIRE_2FA : Compulsory two-factor authentication for accounts that sign in with a WeKan password:
+      # off (default), admins or all. They must set it up right after signing in.
+      #export REQUIRE_2FA=admins
+      # PASSWORD_MIN_LENGTH : Minimum password length, in characters. Default 8. A sign-in with a shorter
+      # password is listed in Admin Panel / Problems / Password length; nothing is refused unless enforced:
+      #export PASSWORD_MIN_LENGTH=12
+      # PASSWORD_MIN_LENGTH_ENFORCE : true = refuse a shorter new password, and make an account that
+      # signs in with a shorter one change it; the change signs every session out. Off by default.
+      #export PASSWORD_MIN_LENGTH_ENFORCE=true
+      # PASSWORD_CHECK_PWNED : true = refuse a new password found in a known data breach. Off by default.
+      # Only 5 hex digits of its SHA-1 are sent to api.pwnedpasswords.com.
+      #export PASSWORD_CHECK_PWNED=true
+      # HSTS_MAX_AGE : Strict-Transport-Security max-age in seconds, sent only when ROOT_URL is https.
+      # Default 15552000 (180 days). 0 = do not send it.
+      #export HSTS_MAX_AGE=31536000
+      # HSTS_INCLUDE_SUBDOMAINS : true = HSTS covers every subdomain too. Only when ALL of them have HTTPS.
+      #export HSTS_INCLUDE_SUBDOMAINS=false
+      # HSTS_PRELOAD : true = add the preload token (needs includeSubDomains and max-age >= 31536000).
+      #export HSTS_PRELOAD=false
       # Keep Admin Panel filesystem backups this many days (newest always kept).
       # Unset or 0 = all. Admin Panel / Attachments / Backup can set it too.
       #export BACKUP_KEEP_DAYS=7

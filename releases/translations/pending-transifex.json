@@ -3139,6 +3139,142 @@
     {
       "key": "cardSettingsItemPopup-title",
       "since": "2026-10-28"
+    },
+    {
+      "key": "password-pwned",
+      "since": "2026-10-30"
+    },
+    {
+      "key": "password-too-short",
+      "since": "2026-10-30"
+    },
+    {
+      "key": "password-same-as-username",
+      "since": "2026-10-30"
+    },
+    {
+      "key": "two-factor-required-title",
+      "since": "2026-10-30"
+    },
+    {
+      "key": "two-factor-required-text",
+      "since": "2026-10-30"
+    },
+    {
+      "key": "admin-audit-log",
+      "since": "2026-10-30"
+    },
+    {
+      "key": "admin-audit-log-info",
+      "since": "2026-10-30"
+    },
+    {
+      "key": "admin-audit-log-when",
+      "since": "2026-10-30"
+    },
+    {
+      "key": "admin-audit-log-who",
+      "since": "2026-10-30"
+    },
+    {
+      "key": "admin-audit-log-action",
+      "since": "2026-10-30"
+    },
+    {
+      "key": "admin-audit-log-details",
+      "since": "2026-10-30"
+    },
+    {
+      "key": "admin-audit-log-empty",
+      "since": "2026-10-30"
+    },
+    {
+      "key": "s3-sse",
+      "since": "2026-10-30"
+    },
+    {
+      "key": "s3-sse-none",
+      "since": "2026-10-30"
+    },
+    {
+      "key": "s3-sse-description",
+      "since": "2026-10-30"
+    },
+    {
+      "key": "s3-sse-kms-key-id",
+      "since": "2026-10-30"
+    },
+    {
+      "key": "password-length-report-title",
+      "since": "2026-10-31"
+    },
+    {
+      "key": "password-length-report-desc",
+      "since": "2026-10-31"
+    },
+    {
+      "key": "password-length-no-results",
+      "since": "2026-10-31"
+    },
+    {
+      "key": "password-length-first-login",
+      "since": "2026-10-31"
+    },
+    {
+      "key": "password-length-last-login",
+      "since": "2026-10-31"
+    },
+    {
+      "key": "password-length-login-count",
+      "since": "2026-10-31"
+    },
+    {
+      "key": "password-length-fixed",
+      "since": "2026-10-31"
+    },
+    {
+      "key": "password-length-filter-short",
+      "since": "2026-10-31"
+    },
+    {
+      "key": "password-length-filter-fixed",
+      "since": "2026-10-31"
+    },
+    {
+      "key": "password-length-filter-all",
+      "since": "2026-10-31"
+    },
+    {
+      "key": "password-min-length",
+      "since": "2026-10-31"
+    },
+    {
+      "key": "password-min-length-description",
+      "since": "2026-10-31"
+    },
+    {
+      "key": "password-min-length-enforce",
+      "since": "2026-10-31"
+    },
+    {
+      "key": "password-min-length-enforce-description",
+      "since": "2026-10-31"
+    },
+    {
+      "key": "password-length-saved",
+      "since": "2026-10-31"
+    },
+    {
+      "key": "password-length-from-environment",
+      "since": "2026-10-31"
+    },
+    {
+      "key": "password-change-required-title",
+      "since": "2026-10-31"
+    },
+    {
+      "key": "password-change-required-text",
+      "since": "2026-10-31"
     }
   ]
 }

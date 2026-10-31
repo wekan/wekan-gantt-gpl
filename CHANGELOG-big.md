@@ -118,10 +118,433 @@ its reason.
   `node_modules`, so a clean install comes first.
 - The WebKit stage cannot run in the Flatpak sandbox: MiniBrowser needs its
   own sandbox, and turning that off is not allowed there. Run it on a host.
+- [#6834](https://github.com/wekan/wekan/issues/6834) (the minicard due date is fixed; the board header bar wrapping to a second row and the list header icons under the card count did not reproduce on the current code at the same window width, in Persian, with the card count on - which WeKan release and browser zoom showed them is asked; wrapping the header rather than hiding buttons is by design)
+
+</details>
+
+<details>
+<summary>Needs a maintainer decision on the intended contract</summary>
+
+- [#6837](https://github.com/wekan/wekan/issues/6837) (a Simple and an Advanced mode, or profiles an administrator defines and assigns, to hide features from new users: which features each mode or profile shows, who chooses it, and how it relates to the existing per-board Board Settings / Card and Show on Minicard switches and the Admin Panel feature toggles)
 
 </details>
 
 </details>
+
+# v12.76 2026-10-31 WeKan ® release
+
+**In short:** Security features: a **password policy** with an optional
+breached-password check, **Admin Panel / Problems / Password length**,
+**compulsory two-factor authentication**, sign-out of **idle sessions** and of
+every session after a password change, an **audit log** of what administrators
+did, **HSTS**, a cross-site request guard, and **S3 encryption at rest**.
+**Sign-up** works again; the date picker has **Today**, the whole card title
+edits and **every popup can be moved**; and an old **Sandstorm** grain migrated
+from MongoDB 3 shows its boards again.
+
+This release adds the following security features:
+
+**Signing in** - which passwords are accepted and which are reported, who must
+have a second factor, and when sessions end.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d7abe9910a">New passwords have a minimum length, and a breached one can be refused</a>. Thanks to xet7.</summary>
+
+`PASSWORD_MIN_LENGTH` (default 8) and `PASSWORD_CHECK_PWNED` (off by default),
+in Admin Panel / People / Login and on every platform. The browser sends a
+password to Meteor hashed, so the server checks every password that reaches it
+as text - Admin Panel Set password and Add user, `POST /users/register` - and
+the sign-up, Change Password, reset and enrolment forms check in the browser.
+Signing in is never checked, so an existing shorter password keeps working
+until it is changed. A breached password is found with Have I Been Pwned's
+k-anonymity range API: only 5 hex digits of the SHA-1 leave WeKan, and an
+unreachable service never refuses a password. A refused password is ordinary
+use, not an attack, so it is not recorded in Admin Panel / Problems.
+`tests/passwordPolicy.test.cjs` checks every place a password reaches the
+server as text, and that nothing else sets one without the check.
+
+</details>
+
+- [The breached-password check computes its lookup digest once, with Web Crypto, in browser and server; it is never stored (CodeQL \#599)](https://github.com/wekan/wekan/commit/f406d46fe7).
+  Thanks to GitHub CodeQL and xet7.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c99aa7f845">Admin Panel / Problems / Password length lists who signs in with a too short password</a>. Thanks to xet7.</summary>
+
+The minimum above was enforced as soon as it existed. Now `PASSWORD_MIN_LENGTH`
+(default 8) is the length below which a sign-in is REPORTED, and the new
+`PASSWORD_MIN_LENGTH_ENFORCE` (off by default) makes it a rule: a shorter new
+password is refused, and an account that signs in with an older shorter one
+sees only "Change your password" until it has a long enough one. Signing in is
+never refused, so nobody is locked out by a minimum set after their password.
+LDAP, OAuth2, OIDC, SAML, CAS and Sandstorm passwords are their provider's, and
+are neither reported nor asked. Meteor sends a password hashed, so the browser
+that typed it says "it was short" after signing in - never the password or its
+length. The page has both settings and one row per account: username, first and
+last such login, the latest IPv4 and IPv6 address with flag and city when a CDN
+says where it is, the count and when it was fixed, filtered Too short (default),
+Fixed or All. Node suites `passwordPolicy`, `passwordChangeRequired` and
+`shortPasswordLogins`; Playwright `password-length-report` changes each setting
+on the page and checks what it does, in Chromium and WebKit.
+[Password length](docs/Features/Admin-Panel/Problems/Password-length.md).
+
+</details>
+
+- [The Password length pane names itself in the title bar, like every other Admin Panel pane](https://github.com/wekan/wekan/commit/85af731c1b).
+  Thanks to xet7.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c99aa7f845">Changing one's own password signs every session of the account out, this one too</a>. Thanks to xet7.</summary>
+
+Meteor's Change Password kept the session that changed it, and a reset link
+signed the reset in. Now Member Settings, the forced change and a reset link
+all end every session of the account, and only the new password signs in
+again; the browser goes to the sign-in page as soon as it is signed out, since
+the server closes the connection before the answer can arrive. An
+administrator's Set password already signed everything out.
+`password-change-other-sessions.e2e.js` changes it in one of two browsers:
+both are signed out, the old password is refused and the new one signs in.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d7abe9910a">Two-factor authentication can be made compulsory, for administrators or for everybody</a>. Thanks to xet7.</summary>
+
+`REQUIRE_2FA`: `off` (default), `admins` or `all`. It covers the accounts that
+sign in with a WeKan password; LDAP, OAuth2, SAML, CAS and Sandstorm accounts
+sign in through an identity provider and are never asked. Such an account can
+still sign in - it has to, to enrol - and sees only the set-up until it has
+2FA. Until then the server refuses every method and publication but signing in
+and enrolling, HTTP routes do not accept its login and the REST API gives it no
+token; once required, 2FA cannot be switched off. An account between signing
+in and enrolling is ordinary use, so nothing is recorded in Problems.
+`tests/requireTwoFactor.test.cjs` runs the real wrappers.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/41173f0f6b">A browser session is signed out after LOGOUT_IDLE_MINUTES without activity</a>. Thanks to xet7.</summary>
+
+`LOGOUT_WITH_TIMER` ends a login at a deadline however busy its user is; nothing
+ended a session somebody walked away from. The browser now reports a key press,
+click, touch or scroll at most once a minute, the server keeps the time per
+login token in `idleSessions`, and once a minute every token idle past the
+limit is removed, which signs its connections out. A tab that reconnects by
+itself - a laptop waking up - is not activity, and REST API tokens are never
+removed. The time is kept beside the user rather than on the token, because
+updating one element of the token array needs the positional `$` operator,
+which not every database WeKan runs on supports. `tests/idleLogout.test.cjs`.
+
+</details>
+
+**HTTP** - what every response tells the browser, and which requests are
+accepted only from WeKan's own pages.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4993242c5f">Strict-Transport-Security on every response of an HTTPS site</a>. Thanks to xet7.</summary>
+
+Without HSTS, a link typed as plain HTTP or a downgrade on a hostile network
+could strip TLS from the next visit unless the reverse proxy added the header.
+It is now sent whenever `ROOT_URL` is https: 180 days, this host only.
+`HSTS_MAX_AGE`, `HSTS_INCLUDE_SUBDOMAINS` and `HSTS_PRELOAD` change it; 0 stops
+it, and preload is sent only with includeSubDomains and at least a year. Every
+response also carries `X-Content-Type-Options: nosniff` and
+`Referrer-Policy: strict-origin-when-cross-origin`. A header has no attempt to
+record. `tests/securityHeaders.test.cjs`.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/48a2e97ea3">A state-changing request that logs in only with the cookie must come from WeKan itself</a>. Thanks to xet7.</summary>
+
+`POST /import-trello` and other routes accept the login cookie as the login.
+The cookie is SameSite=Strict, which keeps it off a cross-site request in
+today's browsers; this is the second line, for older browsers, same-site
+sibling hosts and routes added later. A POST, PUT, PATCH or DELETE whose only
+login is the cookie must carry an Origin, or Referer, naming `ROOT_URL`'s host
+or the Host / X-Forwarded-Host it was sent to - on Sandstorm, the grain's own
+host. A refusal is recorded in Admin Panel / Problems as
+`csrf.cross-site-cookie` and never blocks the account whose cookie it was.
+`tests/crossSiteRequest.test.cjs` also fails when a route registers a handler
+that runs before the guard.
+
+</details>
+
+**The Admin Panel** - a record of what administrators changed.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4d5b832499">People / Audit log shows what site administrators did</a>. Thanks to xet7.</summary>
+
+Nothing recorded who set somebody's password, made somebody an admin, changed
+a login setting or restored a backup. Every call of those administrative
+methods by a site administrator is now kept for a year, one document each:
+when, who, the action, its outcome - a refused call too - its arguments and
+the address. A password or a secret never reaches the trail: credential-named
+keys, password arguments by position and passwords inside URLs are replaced by
+`[redacted]`. An administrator editing cards is not in it, and a trail that
+cannot be written never changes what the method did.
+`tests/adminAudit.test.cjs`.
+
+</details>
+
+- [The audit log has its own URL, /admin/people/audit-log, a title, and right-to-left alignment](https://github.com/wekan/wekan/commit/2017f2871f).
+  Thanks to xet7.
+
+**Attachments** - where the files are kept, and how.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/482c2c29f4">Files and backups in S3 can be encrypted at rest</a>. Thanks to xet7.</summary>
+
+Admin Panel / Attachments / S3 / Server-side encryption: SSE-S3 (AES256) or
+SSE-KMS, with a KMS key or the account's default. S3 encrypts each object as it
+is written and decrypts it for WeKan on read, so reads, range requests and
+moves are unchanged; every upload, renamed object and backup written to S3
+carries it. On the filesystem, encryption at rest stays with the disk or volume
+(LUKS, an encrypted cloud volume): exports, PDF, thumbnails, virus scans,
+backups and WebDAV all read the stored files directly.
+`tests/s3Encryption.test.cjs`.
+
+</details>
+
+and adds the following new features:
+
+**Dates** - choosing a date in a date popup.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/bc21c901f4">The date picker has a Today button, back to today's month from wherever the arrows went</a>. Thanks to mimZD and xet7.</summary>
+
+The board Calendar view and Calendar mode already had Today; the date picker
+of every date popup had only « ‹ › ». Today shows today's month and focuses
+today, and changes nothing until a day is clicked and saved. Testing it found a
+picker bug that was already there: a month navigated back to was drawn wrong -
+October as "29, empty, 30, empty", without its 31st - because Blaze matched the
+weeks and days, which had no `_id`, by position. Every week and cell has one
+now. `calendarPickerControls.test.cjs` and `calendar-today-marker.e2e.js`,
+which checks every day of the month in order after Today.
+
+</details>
+
+**The opened card and popups** - editing a card's title, and moving windows.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/22a12dc7f8">The whole card title edits; the window and every popup move by their bar or drag handle</a>. Thanks to mimZD and xet7.</summary>
+
+The title was split like a minicard's: the leading half edited and the
+trailing half dragged the window, so a click on the right of the title did not
+edit. All of it edits now. With drag handles off the window is moved from the
+empty space of its header row above the title, between the collapse caret and
+the menu; with them on, by the drag handle alone. Every popup moves the same
+way - by its title bar, or its handle alone - where only four kinds moved
+before, and a drag no longer makes a popup placed from the right edge, or one
+with a margin, jump as it begins. `card-title-edit-and-move-6839.e2e.js` in
+Chromium and WebKit.
+
+</details>
+
+**Member Settings** - Change Settings.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ffd5cbd2ad">Change Settings: icons in a column on the first line, compact wrapped lines, rows divided</a>. Thanks to mimZD and xet7.</summary>
+
+Its settings are sentences, and most wrap; on the shared popup list each line
+was 33px high with the icon centred between them and nothing between one
+setting and the next. Each row is an icon column, the words and the check mark
+now, the icon on the first line, a wrapped line an ordinary line high, and a
+rule between rows. `change-settings-popup-6835.e2e.js` in Persian and English.
+
+</details>
+
+and fixes the following bugs:
+
+**The d shortcut** - opening the Due date editor from the keyboard.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b1403ca7af">d opens the Due date editor of a card that is still being opened, and it stays open</a>. Thanks to mimZD and xet7.</summary>
+
+On a slower server a card's details render a few hundred milliseconds after
+the click that opens it, and `d` pressed in that moment found no Due date
+control and did nothing; only the hovered-minicard path waited. Both wait now
+for that card's control. The card details also closed their card's popup when
+merely rendered again, so a popup could open and shut at once; they close it
+now only when the card is closed or another card opened. The Playwright test
+emulates a 300 ms connection, and fails on the code before this change.
+
+</details>
+
+- [Typing d in the card title types at the end of the title in WebKit too](https://github.com/wekan/wekan/commit/73c21dfe3e).
+  Thanks to xet7.
+
+**Minicards** - what a minicard shows, and where.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/cf4b48df09">A due date uses the minicard's width instead of three lines beside an empty strip</a>. Thanks to mimZD and xet7.</summary>
+
+The dates row reserved 84px at its trailing edge - a third of a narrow card -
+for nothing, and a due date with its "1 day left" was broken over three lines.
+It reserves the drag handle's 24px now. The rest of
+[#6834](https://github.com/wekan/wekan/issues/6834) is in TODO Later.
+`minicard-dates-width-6834.e2e.js` in English and Persian.
+
+</details>
+
+- [A card-button rule is a button on the minicard: Board Settings / Card, Card buttons, Show on Minicard, since v12.16, now with a test](https://github.com/wekan/wekan/commit/429fdc5319).
+  Thanks to mimZD and xet7.
+
+**Signing up** - registering a new account with the sign-up form.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/508484ef1e">Registering no longer answers Internal server error, and signs the new user in</a>. Thanks to xet7.</summary>
+
+The REQUIRE_2FA wrapper of every method and publication, and the Audit log's
+wrapper of the administrators' methods, awaited before calling the handler -
+even with REQUIRE_2FA off. audit-argument-checks asks synchronously, the moment
+a handler returns, whether check() saw every argument, so the handler's own
+check() came too late: sign-up answered "Internal server error" while the
+account was created anyway (the next try said it already existed), and the
+starredPublicBoards and translation publications failed for everybody. A
+wrapper now calls the handler at once when it needs no lookup, and hands the
+audit over when it must await (`server/lib/argumentChecks.js`).
+`tests/wrappedHandlerArgumentChecks.test.cjs` runs both wrappers under a model
+of the audit, and the sign-up Playwright test registers - with no mail server
+configured - and checks that the new user is signed in.
+
+</details>
+
+**Upgrading old data** - documents from old WeKan versions are brought to the
+current structure at startup, so nothing that is in the database stays hidden.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2ab0afdc93">Boards from before the templates feature are shown on All Boards again</a>. Thanks to xet7.</summary>
+
+A Sandstorm grain migrated from MongoDB 3 to FerretDB copied every document -
+1 board, 31 cards, 8 lists - and then showed an empty All Boards page. Boards,
+swimlanes, lists and cards made before the templates feature have no `type`:
+the schemas fill it on insert only. All Boards publishes `type: 'board'` and
+the card queries ask for `cardType-card`, and a missing field matches neither.
+The new `type-defaults-backfill` startup step sets the schema default where
+`type` is missing, null or empty, and never changes an explicit type such as
+a template or a linked card. `tests/schemaUpgradeSteps.test.cjs` upgrades the
+grain's shape and checks that typed documents are left alone.
+
+The same log showed `merge-per-swimlane-lists FAILED ... missing schema for key
+"swimlaneId"`: FerretDB's SQLite `distinct` could not read documents without
+the fields it asked for. That is fixed in the FerretDB fork (Upcoming FerretDB
+release), which the next bundle includes.
+
+</details>
+
+**Snap** - backing up, restoring and repairing a snap from the host's shell.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0b5c855820">Backup and restore instructions find mongodump and mongorestore on AlmaLinux, Rocky Linux and Fedora</a>. Thanks to Group-Deed and xet7.</summary>
+
+snapd keeps the snaps in `/var/lib/snapd/snap` on Fedora, RHEL, AlmaLinux,
+Rocky Linux, CentOS Stream and Arch Linux, which have no `/snap`. The
+instructions exported `/snap/wekan/current/bin` and its `lib/x86_64-linux-gnu`,
+so restoring a backup on Rocky Linux failed until both were found by hand, and
+only Arch had a note - for the library path alone. Every instruction now picks
+the directory with one `S=` line and the CPU's library directory with
+`$(uname -m)`, so arm64 works too. `database-role`, `database-compare` and
+`database-merge`, which can be run from a host shell, find the snap in either
+place. `tests/snapPathElLinux.test.cjs` fails on an export of a `/snap`-only
+path in any document and on a script that falls back to `/snap` alone.
+
+</details>
+
+and has the following developer-tooling fixes:
+
+**The build log** - what a build from build.sh and build.bat writes while it
+runs, and how much of it.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6551062492">EVERYTHING builds without the per-require module trace, so it no longer fills the disk</a>. Thanks to xet7.</summary>
+
+The build's `NODE_DEBUG=module` trace wrote over 12 GB in the first half hour
+of an EVERYTHING run on macOS - twice, through tee - and slowed the build it
+traced, so the run would fill the disk before it reached the tests. A build
+from the `build.sh` menu still traces by default; `WEKAN_BUILD_TRACE_MODULES=0`
+turns it off, and EVERYTHING sets that unless the caller asked for `1`. The
+other build diagnostics (resolver commands, npm verbose, `METEOR_PROFILE`) are
+unchanged. `tests/buildCommandOutput.test.cjs` checks that a menu build still
+traces and that nothing exports the module trace unconditionally.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5a13e927bc">Every build traces module resolution only when WEKAN_BUILD_TRACE_MODULES=1 asks for it</a>. Thanks to xet7.</summary>
+
+Turning the trace off for EVERYTHING alone was not enough: a dev build from the
+menu wrote 1.1 GB, three million lines, in its first three minutes. So the
+trace is now opt-in in `build.sh` and `build.bat` alike, and the diagnostics
+line says whether it is on and how to turn it on. The entry above describes
+the menu default as it was then. `tests/buildCommandOutput.test.cjs` pins the
+opt-in in both scripts, and fails on a trace turned on by default or
+unconditionally.
+
+</details>
+
+**Meteor in .tools** - starting the Meteor that build.sh and build.bat keep in
+the repository's own tools directory.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9a118c83b2">Meteor starts with one springboard instead of springboarding forever</a>. Thanks to xet7.</summary>
+
+A build from the menu printed `uname -p` and `sysctl hw.cpu64bit_capable` over
+and over and never reached its first package. With `METEOR_WAREHOUSE_DIR` set
+and no `SANDBOX`, Meteor takes the running tool to be wherever the warehouse's
+`meteor` link points - 3.5.4, the release it was installed with - so with
+`.meteor/release` at 3.6-rc.1 every start springboarded to 3.6.0-rc.1, found
+itself the wrong tool again and springboarded again: 28 times in 20 seconds of
+`meteor --version`. The 1.1 GB build log above was the same loop, its module
+trace printed again on every exec. `releases/tools-env.sh` and `tools-env.bat`
+now set `SANDBOX=true` beside the warehouse, as Meteor's own self-test does,
+and so do the Nextcloud test scripts and the dev-source runner.
+`tests/meteorSpringboardLoop.test.cjs` checks both scripts, fails on any file
+that sets the warehouse without `SANDBOX`, and runs the installed Meteor to
+count its springboards.
+
+</details>
+
+and updates the following documentation:
+
+- [Security settings: every hardening option of a WeKan site on one page](https://github.com/wekan/wekan/commit/302b47db6f).
+  Thanks to xet7.
+- [Admin Panel / People / Audit log: what it records and what it never does](https://github.com/wekan/wekan/commit/f165a24192).
+  Thanks to xet7.
+
+and updates the following translations:
+
+**Languages updated:** 234 languages.
+
+**Password length** - the strings of Admin Panel / Problems / Password length
+and of the Change your password dialog.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3f9379ac86">The 18 new password-length strings in every language</a>. Thanks to xet7.</summary>
+
+Each string is in the language and script its locale tag names, with the terms
+the file already uses for password, account, save and sign in, and `__min__`
+kept exactly; only those 18 keys changed in each file. The commit lists the
+languages written with low confidence, for a speaker to correct on Transifex.
+
+</details>
+
+**Security features** - the strings of the password policy, two-factor, the
+audit log and S3 encryption.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/de23dece66">The 16 new security strings in every language, and Frisian two-factor text that was Dutch</a>. Thanks to xet7.</summary>
+
+Each string is in the language and script its locale tag names, with the terms
+the file already uses for password, account, attachment, backup and two-factor
+authentication, and `__min__` kept exactly. fy and fy-NL had Dutch two-factor
+strings, now Frisian (`tests/frisianTwoFactorLanguage.test.cjs`); Tigre spells
+storage መክዘን, not Tigrinya's መኽዘን. The commit lists the languages written
+with low confidence, for a speaker to correct on Transifex.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
 
 # v12.75 2026-10-30 WeKan ® release
 

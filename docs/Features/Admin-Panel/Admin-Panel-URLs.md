@@ -58,6 +58,7 @@ OAuth providers and Passwordless login each have their own menu entry.
 | `/admin/people/organizations` | Organizations | `org-setting` |
 | `/admin/people/teams` | Teams | `team-setting` |
 | `/admin/people/locked-users` | Locked Users | `locked-users-setting` |
+| `/admin/people/audit-log` | Audit log | `audit-log-setting` |
 | `/admin/people/roles` | Roles | `roles-setting` |
 | `/admin/people/shared-templates` | Shared templates | `templates-setting` |
 | `/admin/people/login` | Login | `registration-setting` |
@@ -80,6 +81,7 @@ OAuth providers and Passwordless login each have their own menu entry.
 | `/admin/problems/backup` | Backup (status and history; settings stay in Attachments / Backup) | `features-backup` |
 | `/admin/problems/security-report` | Security Report | `report-security` |
 | `/admin/problems/impersonation` | Impersonation Report | `report-impersonation` |
+| `/admin/problems/password-length` | Password length | `report-password-length` |
 | `/admin/problems/performance` | Performance | `features-performance` |
 | `/admin/problems/speed` | Speed | `report-speed` |
 | `/admin/problems/tests` | Tests | `report-tests` |

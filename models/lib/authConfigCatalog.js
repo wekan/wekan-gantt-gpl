@@ -185,9 +185,22 @@ const SECTIONS = {
       ['logoutIn', 'LOGOUT_IN', 'number', { max: 3650 }],
       ['logoutOnHours', 'LOGOUT_ON_HOURS', 'number', { max: 23 }],
       ['logoutOnMinutes', 'LOGOUT_ON_MINUTES', 'number', { max: 59 }],
+      // Sign a browser session out after this many idle minutes; empty or 0 is
+      // off (models/lib/idleLogout.js, server/idleLogout.js).
+      ['logoutIdleMinutes', 'LOGOUT_IDLE_MINUTES', 'number', { max: 10080 }],
       // Disable accounts unused for this many days, nightly; empty or 0 is off
       // (models/lib/inactiveUsers.js, server/disableInactiveUsers.js, #6784).
       ['disableInactiveAfterDays', 'USERS_DISABLE_INACTIVE_AFTER_DAYS', 'number', { max: 36500 }],
+      // Passwords (models/lib/passwordPolicy.js): the length below which a
+      // sign-in is reported (Admin Panel / Problems / Password length), whether
+      // that minimum is enforced, and whether to refuse a password that
+      // appears in a known breach.
+      ['passwordMinLength', 'PASSWORD_MIN_LENGTH', 'number', { defaultValue: 8, max: 256 }],
+      ['passwordMinLengthEnforce', 'PASSWORD_MIN_LENGTH_ENFORCE', 'boolean', { defaultValue: false }],
+      ['passwordCheckPwned', 'PASSWORD_CHECK_PWNED', 'boolean', { defaultValue: false }],
+      // Compulsory two-factor authentication for password accounts
+      // (models/lib/twoFactorRequirement.js, server/requireTwoFactor.js).
+      ['require2fa', 'REQUIRE_2FA', 'choice', { choices: ['off', 'admins', 'all'], defaultValue: 'off' }],
     ],
   },
   // Not a login method, but the same contract: settings an environment variable
@@ -238,6 +251,18 @@ const SECTIONS = {
       ['domains', 'WINDOWS_SSO_DOMAINS', 'text'],
       ['activeDirectory', 'WINDOWS_SSO_ACTIVE_DIRECTORY', 'boolean', { defaultValue: false }],
       ['mergeExistingUsers', 'WINDOWS_SSO_MERGE_EXISTING_USERS', 'boolean', { defaultValue: false }],
+    ],
+  },
+  // Strict-Transport-Security (models/lib/securityHeaders.js,
+  // server/securityHeaders.js): sent only when ROOT_URL is https, below Admin
+  // Panel / People / Login. 0 seconds stops it; a browser that already saw it
+  // keeps it for the max-age it saw.
+  httpSecurity: {
+    storage: 'httpSecurity',
+    fields: [
+      ['hstsMaxAge', 'HSTS_MAX_AGE', 'number', { defaultValue: 15552000, max: 63072000 }],
+      ['hstsIncludeSubdomains', 'HSTS_INCLUDE_SUBDOMAINS', 'boolean', { defaultValue: false }],
+      ['hstsPreload', 'HSTS_PRELOAD', 'boolean', { defaultValue: false }],
     ],
   },
   // Admin Panel / Attachments / Backup (#6790, models/lib/backupRuns.js).

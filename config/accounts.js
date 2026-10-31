@@ -115,6 +115,63 @@ AccountsTemplates.addFields([
   },
 ]);
 
+// PASSWORD_MIN_LENGTH and PASSWORD_CHECK_PWNED (models/lib/passwordPolicy.js).
+// useraccounts checks a NEW password's minLength in the browser - sign-up,
+// Change Password, reset, enrolment; never sign-in - and reads it from the
+// field at submit time, so the server's value applies once it has arrived.
+// Unless the minimum is enforced (PASSWORD_MIN_LENGTH_ENFORCE, off by
+// default) the fields keep their own 6.
+// The breached-password check runs before useraccounts sees the submit.
+if (Meteor.isClient) {
+  const passwordPolicy = { minLength: 8, enforce: false, checkPwned: false };
+  Meteor.call('getPasswordPolicy', (error, result) => {
+    if (error || !result) return;
+    Object.assign(passwordPolicy, result);
+    if (!passwordPolicy.enforce) return;
+    for (const id of ['password', 'password_again']) {
+      const field = AccountsTemplates.getField(id);
+      if (field) field.minLength = passwordPolicy.minLength;
+    }
+  });
+  // Signing in is never refused for a short password: it is reported to
+  // Admin Panel / Problems / Password length, and with the minimum enforced the
+  // account is asked to change it (server/passwordChangeRequired.js). Only this
+  // browser knows the length, so it is noted on the sign-in form - the length,
+  // never the password - and compared with the minimum once the login worked.
+  const { isNewPasswordForm } = require('/client/lib/newPasswordCheck');
+  let signInPasswordLength = null;
+  document.addEventListener('submit', event => {
+    const form = event.target;
+    const field = form && form.id === 'at-pwd-form' && form.querySelector('#at-field-password');
+    if (field && !isNewPasswordForm(form)) signInPasswordLength = [...field.value].length;
+  }, true);
+  Accounts.onLogin(() => {
+    const length = signInPasswordLength;
+    signInPasswordLength = null;
+    if (length === null) return;
+    // Asked again: the minimum may have changed since the page loaded.
+    Meteor.call('getPasswordPolicy', (error, result) => {
+      if (error || !result || !(result.minLength > 0) || length >= result.minLength) return;
+      Meteor.call('reportShortPasswordLogin', () => {
+        const { checkPasswordChangeRequirement } = require('/client/components/users/passwordChangeRequired');
+        checkPasswordChangeRequirement();
+      });
+    });
+  });
+  const { createNewPasswordSubmitHandler } = require('/client/lib/newPasswordCheck');
+  document.addEventListener('submit', createNewPasswordSubmitHandler({
+    policy: () => passwordPolicy,
+    range: prefix => Meteor.callAsync('passwordPwnedRange', prefix),
+    subtle: globalThis.crypto && globalThis.crypto.subtle,
+    pwnedMessage: () => tr('password-pwned'),
+    showError(message) {
+      AccountsTemplates.setDisabled(false);
+      AccountsTemplates.state.form.set('error', [message]);
+    },
+    replay: form => form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })),
+  }), true);
+}
+
 // The sign-in / register form field labels and placeholders were rendered through
 // accounts-t9n (`T9n.get`), whose per-language coverage is incomplete, and
 // useraccounts' `getPlaceholder()` never invokes a function placeholder (unlike
@@ -333,6 +390,12 @@ AccountsTemplates.configure({
   forbidClientAccountCreation: disableRegistration,
   homeRoutePath: '/',
   onSubmitHook(error, state) {
+    if (!error && state === 'changePwd') {
+      // The server has signed every session of the account out, this one too
+      // (server/passwordChangeRequired.js): sign in with the new password.
+      Meteor.logout(() => FlowRouter.go('atSignIn'));
+      return;
+    }
     if (!error && (state === 'signUp' || state === 'signIn')) {
       hideTwoFactorPrompt();
       goHomeWhenSignedIn();

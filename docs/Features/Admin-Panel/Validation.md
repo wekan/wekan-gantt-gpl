@@ -79,6 +79,7 @@ are not reachable from the current Admin Panel menu. Current storage panes use
 | Teams (`teams`) | [team.js](../../../models/team.js) | Team records and membership operations; scoped server permissions. |
 | People (`people`) | [users.js](../../../server/models/users.js) | Create/edit, roles, password/email operations, impersonation and removal. |
 | Locked Users (`locked-users`) | [lockedUsers.js](../../../server/methods/lockedUsers.js) | Locked-account listing and administrator unlock methods. |
+| Audit log (`audit-log`) | [adminAudit.js](../../../server/adminAudit.js) | New: every administrative method a site administrator calls, one document each for a year, secrets redacted; site administrators only. Real wrapper in [adminAudit.test.cjs](../../../tests/adminAudit.test.cjs). |
 | Roles (`roles`) | [inviteToBoardRolesSettings.js](../../../models/inviteToBoardRolesSettings.js) | Invitation-role defaults and per-role settings. |
 | Shared Templates (`shared-templates`) | [users.js](../../../server/models/users.js) | Shared-template administration with tenant boundaries. |
 
@@ -111,6 +112,7 @@ are not reachable from the current Admin Panel menu. Current storage panes use
 | Backup (`backup`) | [backup.js](../../../server/methods/backup.js) | Recorded backup runs, health of the instance backup and its history (backupHistory method); settings stay in Attachments / Backup. |
 | Security Report (`security-report`) | [eventLog.js](../../../models/eventLog.js) | Recorded security events, search, detail and acknowledgement. |
 | Impersonation Report (`impersonation`) | [impersonationReport.js](../../../server/publications/impersonationReport.js) | Scoped event publication and counts. |
+| Password length (`password-length`) | [shortPasswordLogins.js](../../../server/lib/shortPasswordLogins.js) | The minimum password length and whether it is enforced, saved as Login settings; one row per account that signed in with a shorter password, reported by its browser, with the Too short / Fixed / All filter. |
 | Performance (`performance`) | [adminProblems.js](../../../client/components/settings/adminProblems.js) | Persisted performance options; card loading uses the active loading policy. |
 | Speed (`speed`) | [eventLog.js](../../../models/eventLog.js) | Recorded speed events; no events is a valid empty report. |
 | Tests (`tests`) | [eventLog.js](../../../models/eventLog.js) | Recorded test results; opening the pane does not run every repository test. |

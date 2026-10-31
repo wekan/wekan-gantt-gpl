@@ -173,6 +173,12 @@ import '/server/lib/clientAccountCreationGuard';
 import '/server/eventLogSummaryStartup';
 import '/server/authentication';
 import '/server/cors';
+import '/server/securityHeaders';
+import '/server/crossSiteRequestGuard';
+// PASSWORD_MIN_LENGTH: an older, shorter password is changed after signing in.
+import '/server/passwordChangeRequired';
+import '/server/requireTwoFactor';
+import '/server/adminAudit';
 import '/server/header-login';
 import '/server/nextcloud';
 import '/server/max-image-pixel';
@@ -502,6 +508,7 @@ import '/server/methods/loginOffices';
 import '/server/lastActiveOnLogin';
 // Automatic logout: LOGOUT_WITH_TIMER and the LOGOUT_* settings.
 import '/server/logoutTimer';
+import '/server/idleLogout';
 // #824: DEFAULT_AVATAR_URL for users without an avatar of their own.
 import '/server/defaultAvatar';
 import '/server/methods/lastActiveHeartbeat';

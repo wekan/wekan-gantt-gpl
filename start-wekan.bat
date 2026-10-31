@@ -858,6 +858,28 @@ REM # USERS_DISABLE_INACTIVE_AFTER_DAYS : once a night, disable accounts unused
 REM # for this many days. Admins never. Unset or 0 = off. Admin Panel / People /
 REM # Login can set it too, and its value there wins.
 REM SET USERS_DISABLE_INACTIVE_AFTER_DAYS=180
+REM # LOGOUT_IDLE_MINUTES : Sign a browser session out after this many minutes without a key press, click,
+REM # touch or scroll. Empty or 0 = off (default). REST API tokens are not affected.
+REM SET LOGOUT_IDLE_MINUTES=30
+REM # REQUIRE_2FA : Compulsory two-factor authentication for accounts that sign in with a WeKan password:
+REM # off (default), admins or all. They must set it up right after signing in.
+REM SET REQUIRE_2FA=admins
+REM # PASSWORD_MIN_LENGTH : Minimum password length, in characters. Default 8. A sign-in with a shorter
+REM # password is listed in Admin Panel / Problems / Password length; nothing is refused unless enforced:
+REM SET PASSWORD_MIN_LENGTH=12
+REM # PASSWORD_MIN_LENGTH_ENFORCE : true = refuse a shorter new password, and make an account that
+REM # signs in with a shorter one change it; the change signs every session out. Off by default.
+REM SET PASSWORD_MIN_LENGTH_ENFORCE=true
+REM # PASSWORD_CHECK_PWNED : true = refuse a new password found in a known data breach. Off by default.
+REM # Only 5 hex digits of its SHA-1 are sent to api.pwnedpasswords.com.
+REM SET PASSWORD_CHECK_PWNED=true
+REM # HSTS_MAX_AGE : Strict-Transport-Security max-age in seconds, sent only when ROOT_URL is https.
+REM # Default 15552000 (180 days). 0 = do not send it.
+REM SET HSTS_MAX_AGE=31536000
+REM # HSTS_INCLUDE_SUBDOMAINS : true = HSTS covers every subdomain too. Only when ALL of them have HTTPS.
+REM SET HSTS_INCLUDE_SUBDOMAINS=false
+REM # HSTS_PRELOAD : true = add the preload token (needs includeSubDomains and max-age >= 31536000).
+REM SET HSTS_PRELOAD=false
 REM # Keep Admin Panel filesystem backups this many days (newest always kept).
 REM # Unset or 0 = all. Admin Panel / Attachments / Backup can set it too.
 REM SET BACKUP_KEEP_DAYS=7

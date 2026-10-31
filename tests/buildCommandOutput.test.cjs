@@ -21,3 +21,16 @@ test('Node module resolution tracing emits actual resolver activity', () => {
   const result=spawnSync(process.execPath,['-e','require("node:path")'],{encoding:'utf8',env:{...process.env,NODE_DEBUG:'module'}});
   assert.equal(result.status,0);assert.match(result.stderr,/MODULE \d+:/);assert.match(result.stderr,/node:path/);
 });
+test('module tracing is off unless WEKAN_BUILD_TRACE_MODULES=1, because it buries the build it traces', () => {
+  const fs=require('node:fs');
+  const sh=fs.readFileSync(path.join(__dirname,'..','build.sh'),'utf8');
+  const bat=fs.readFileSync(path.join(__dirname,'..','build.bat'),'utf8');
+  // Opt-in: the trace is exported only when the variable is 1, and it defaults to 0.
+  assert.match(sh,/if \[ "\$\{WEKAN_BUILD_TRACE_MODULES:-0\}" = 1 \]; then\n\s+export NODE_DEBUG="\$\{NODE_DEBUG:\+\$NODE_DEBUG,\}module"/);
+  assert.match(bat,/if "%WEKAN_BUILD_TRACE_MODULES%"=="1" \(\r?\n\s+if defined NODE_DEBUG \(set "NODE_DEBUG=!NODE_DEBUG!,module"\) else \(set "NODE_DEBUG=module"\)/);
+  // Negative: nothing turns the module trace on unconditionally, or by default.
+  assert.equal((sh.match(/export NODE_DEBUG=/g)||[]).length,1);
+  assert.equal((bat.match(/set "NODE_DEBUG=/g)||[]).length,2);
+  assert.doesNotMatch(sh,/WEKAN_BUILD_TRACE_MODULES:-1/);
+  assert.doesNotMatch(bat,/^if defined NODE_DEBUG \(set "NODE_DEBUG=[^\n]*module/m);
+});
