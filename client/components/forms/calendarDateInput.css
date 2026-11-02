@@ -107,6 +107,24 @@
   white-space: nowrap;
   padding-inline: 6px;
 }
-.selected-calendar-heading .selected-calendar-date {
-  margin-inline-start: 4px;
+/* #6853: year, month and day drop-downs under the calendar. */
+.selected-calendar-selects {
+  display: flex;
+  gap: 4px;
+  margin-block-start: 6px;
+}
+.selected-calendar-selects select,
+.selected-calendar-selects input {
+  flex: 1;
+  box-sizing: border-box;
+  height: auto;
+  margin-bottom: 0;
+  min-width: 0;
+  padding-inline: 4px;
+}
+.selected-calendar-selects .js-calendar-year { flex: 1.4; }
+.calendar-date-input .selected-calendar-selects select:focus-visible,
+.calendar-date-input .selected-calendar-selects input:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
 }

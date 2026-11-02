@@ -124,6 +124,141 @@ its reason.
 
 </details>
 
+# v12.79 2026-11-02 WeKan ® release
+
+**In short:** A cluster of servers runs the **schema re-check** and the
+**due-date reminders** once, and a slow-query warning says which query it is.
+The site **announcement** shows on Home and All
+Boards too. The **date picker** popup shows the year and has year, month and
+day drop-downs under the calendar. The **macOS sandbox** for VSCodium no longer
+asks for a keychain, starts from the checkout, and can carry a **Claude Code**
+token so its login sticks.
+
+This release fixes the following bugs:
+
+**Database load** - work that every server of a cluster repeated.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d42369e96a">The schema re-check and the due-date reminders run once, not on every server</a>. Thanks to Raymond-Voogt and xet7.</summary>
+
+[\#6855](https://github.com/wekan/wekan/issues/6855). With 24 replicas on one
+database every start of every server re-checked the schema, reading 1.1
+million cards several times, and each server sent its own due-date reminder
+for every card. The re-check now claims a run in the migration collection, so
+one server does it and the others skip; a claim older than 2 hours, from a
+server killed mid-run, is taken over. A run that leaves work it cannot do
+(an attachment whose file is gone) is retried once a day instead of at every
+start, and a clean run clears that. The daily reminder scan is claimed per day
+in the dueReminderRuns collection, so the first server scans and the rest get
+a duplicate key and skip. A partial index on lists serves the 15-minute list
+sync scan, and a sparse index on boards.dueReminderDays the due-date lookup.
+`tests/schemaUpgradeSteps.test.cjs` and `tests/dueScanClaim.test.cjs` pin the
+claims, the stale takeover, the daily retry and that the scheduler claims
+before it scans.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/bc79de8c57">A collection-scan row names the command, the operators per field and the queryHash</a>. Thanks to Raymond-Voogt and xet7.</summary>
+
+[\#6856](https://github.com/wekan/wekan/issues/6856). Admin Panel -> Problems
+-> Database named only the collection and the filtered fields, for example
+"wekan.lists (filter on archived,syncSource.enabled,syncSource.type)", which
+does not say which query it is, and a slow getMore read "filter on nothing".
+The row now shows the command (find, distinct, aggregate, ...), for a getMore
+the query it continues, each field with the operators used on it - for example
+`archived:$exists` or `$nor[sort:$gte$lte]` - and MongoDB's queryHash, so
+the query can be found in the code and with explain(). Values never reach the
+row. `tests/databaseHealthScans.test.cjs` pins the shape, the queryHash, the
+getMore origin and that no value leaks.
+
+</details>
+
+**Announcement** - the site announcement of Admin Panel -> Announcement.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/64b5762020">The announcement shows on Home and on every All Boards list</a>. Thanks to titver968 and xet7.</summary>
+
+[\#6854](https://github.com/wekan/wekan/issues/6854). The banner waited
+for the user to be a member of the current board, and Home, Remaining, Starred,
+Templates and the other All Boards pages have no current board, so it showed
+only on boards. It now shows to every signed-in user on those pages, and to the
+members of the open board on a board page; a visitor who is not signed in still
+does not see it (#1281).
+`tests/announcementAudience.test.cjs` pins the rule and that no membership test
+of a current board is left in front of the banner.
+
+</details>
+
+**Date picker** - the calendar in the Received, Start, Due and End date popups.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/45c291b406">The calendar heading shows the year as well as the month</a>. Thanks to brlin-tw and xet7.</summary>
+
+[\#6853](https://github.com/wekan/wekan/issues/6853). The popup calendar
+heading named only the month, so after the arrows had moved past December
+there was no sign of which year was shown; the selected date beside it does
+not change when the month does. The heading now reads for example "January
+2027", in every calendar system. `tests/calendarPickerControls.test.cjs` pins
+the year in the heading and that no picker mode leaves it out again, and the
+Playwright date display spec expects it.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/dcaa316a01">Any year by number, and month and day drop-downs, under the calendar</a>. Thanks to brlin-tw and xet7.</summary>
+
+[\\#6853](https://github.com/wekan/wekan/issues/6853). The heading above the
+calendar now shows only the month and the year, no longer the YYYY-MM-DD of
+the selected day. Under the calendar are three controls: a year field, where
+any whole year can be typed or stepped to - thousands of years back or ahead,
+0 being 1 BC and -2999 3000 BC, as far as a date reaches (about 275,000 years
+either side of 1970) - a drop-down of the months of that year, and one of the
+days of that month. A pick selects the date and shows its month; Enter in the
+year field applies the year instead of saving the popup, and a value that is
+not a year puts the field back. The months and days are read from the calendar
+system in use, so they hold for the Islamic, Hebrew, Japanese and every other
+system, including leap months and a short thirteenth month. A day that the new
+month lacks falls to its last day. Calendars whose eras restart or switch the
+count (Japanese, ROC, Coptic, Ethiopic) refuse a year no number can name.
+`tests/calendarDropdowns.test.cjs` checks ten calendar systems and that no
+date text is left in the heading.
+
+</details>
+
+and has the following developer-tooling fixes:
+
+**The macOS sandbox** - running VSCodium and Claude Code in the sandbox on a
+Mac.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c58b2896d1">VSCodium no longer asks for a keychain in the macOS sandbox</a>. Thanks to xet7.</summary>
+
+The sandbox refuses `~/Library/Keychains`, so VSCodium's secret storage asked
+for a keychain to keep "VSCodium Key" in, with a "Reset To Defaults" button
+that would have replaced the login keychain. `sandbox.sh` now starts VSCodium
+with `--use-mock-keychain`, so the real Keychain is never touched. The README
+explains the price: extension secrets in `.tools/vscodium/user-data` are only
+obfuscated. `tests/macosSandbox.test.cjs` covers the sandbox script.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/21c94ce098">Claude Code stays signed in inside the macOS sandbox, and the sandbox starts in the checkout</a>. Thanks to xet7.</summary>
+
+Claude Code keeps its login in the Keychain, which the sandbox cannot reach.
+`sandbox.sh --claude-token` now saves a token from `claude setup-token` to
+`.tools/secrets/claude-oauth-token` (read from the clipboard, line breaks
+joined, a cut-short token refused) and passes it as `CLAUDE_CODE_OAUTH_TOKEN`,
+with onboarding marked done and the extension's login prompt off. The script
+also changes to the checkout first, because Finder starts it in the home
+directory, which the sandbox refuses ("EPERM: process.cwd failed"), and starts
+VSCodium with `nohup` so closing the launcher's Terminal does not close it.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v12.78 2026-11-02 WeKan ® release
 
 **In short:** **CrossBoardExportBleed** and **UnassignedAttachBleed** are
