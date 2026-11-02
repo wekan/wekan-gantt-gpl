@@ -124,6 +124,82 @@ its reason.
 
 </details>
 
+# v12.85 2026-11-02 WeKan ® release
+
+**In short:** The findings of the **accessibility audit** are fixed in the
+default theme: header and label **colour contrast**, names that contain the
+visible text, named form fields, card section headings that are real buttons,
+and landmarks and headings on every page. axe-core now finds no violation on
+22 pages. A cleared database connection pool is reported as a lost connection.
+
+This release fixes the following bugs:
+
+**Accessibility** - what an automated axe-core scan of the default theme found
+(see Audit.md in docs/Features/General/Accessibility).
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c8bcc4817d">axe-core finds no violation on 22 pages of the default theme</a>. Thanks to xet7.</summary>
+
+The audit of 2026-11-02 found, on seven pages, colour contrast of the header
+bars and the labels (WCAG 1.4.3), a Label in Name mismatch on the Starred menu,
+the user menu and the avatars (2.5.3), form fields without a name (4.1.2),
+headings that were buttons holding other controls (4.1.2), and missing
+landmarks and headings. Each is fixed, and the scan, now on 22 pages (the
+signed-out ones, All Boards and its lists, the other pages, the Admin Panel, a
+board and an opened card), finds nothing.
+
+The default theme's blue is `#2573a7` instead of `#2980b9` everywhere the
+stylesheets, the accent table and the colour picker name it, so white and the
+`#f2f2f2` button labels reach 5.14 and 4.59. The label colours green, red, sky,
+magenta and gray and the Global search list chips have black text. The quiet
+greys `#8c8c8c` and `#727479`, the "no items" text and the grey board tiles
+are darker. The Starred menu, the user menu link and an avatar drawn as initials
+have those letters or numbers in their accessible name. The Pomodoro field and
+the comment, description and edit-comment editors have a name (the editor takes
+a `labelKey`). A section heading of the card details is an `h3` holding a real
+`button` with `aria-expanded`; the section menu and the layout toggle are
+beside the button, and Enter, Space and a click on the heading still fold the
+section. The sign-in and register form is the `main` landmark, its title is the
+level-one heading and the empty logo `h1` is a spacer; every other page's title
+in the header bar is the level-one heading, Activity, Import and Bookmarks have
+one, and the shortcuts list can be reached by keyboard.
+
+`tests/accessibilityAuditFixes.test.cjs` pins each fault by its shape (contrast
+ratios are computed from the stylesheets), and
+`tests/playwright/specs/45-axe-accessibility.e2e.js` runs axe-core on the pages
+and fails on any violation. Other board colours and themes, the phone width,
+dark mode, popups, and the views not scanned still need the same check.
+
+</details>
+
+**Database problems** - how Admin Panel -> Problems and the startup read the
+database.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/abc23a7eda">A cleared connection pool is a lost connection, and the board key backfill uses the key index</a>. Thanks to Raymond-Voogt and xet7.</summary>
+
+[\#6860](https://github.com/wekan/wekan/issues/6860). While a MongoDB pod
+restarted, a method's "Connection pool for <host> was cleared" reached Admin
+Panel -> Problems as "did not match its schema": collection2 wraps a failed
+write as "ValidationError: Failed validation" plus the driver's text, so the
+class name PoolClearedError was gone, and the host in the text is a replica set
+member's name (wekan-mongodb-0.wekan-mongodb-internal in a StatefulSet) that
+MONGO_URL does not list, so the "getaddrinfo ENOTFOUND" behind it did not count
+as the database's. The text itself is now a lost connection, for the Problems
+page and for both startup guards, and a message about a pool setting is not.
+The board key backfill looked for boards without a key with an `$or` that
+included an exists-false branch, a scan of every board at every start of every
+server (32,600 boards in the report); `key: null` already matches a missing
+field, so one `$in` on the `key` index finds the same boards, and the same
+selector still guards the writes, so a key a board admin set meanwhile is never
+replaced. `tests/databaseErrorsWrappedCause.test.cjs` and
+`tests/boardKeyBackfill.test.cjs` pin both, and that no exists-false branch on
+`key` is left.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v12.84 2026-11-02 WeKan ® release
 
 **In short:** GitHub code scanning's **code-quality** findings are fixed: a
