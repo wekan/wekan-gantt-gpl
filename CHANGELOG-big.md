@@ -124,6 +124,62 @@ its reason.
 
 </details>
 
+# v12.84 2026-11-02 WeKan ® release
+
+**In short:** GitHub code scanning's **code-quality** findings are fixed: a
+promise formatted as text, undeclared globals, an upload that hung on an
+unreadable file, and the lint around them. `npm run lint:promises`
+now finds promises that are not awaited or handled.
+
+This release fixes the following bugs:
+
+**Code quality** - findings of GitHub code scanning.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/582a22c291">The real faults among the code-quality findings, and the lint around them</a>. Thanks to GitHub CodeQL and xet7.</summary>
+
+A card's original-position description formatted a promise, because it did
+not await the history it reads. The attachment swipe distances and two
+drag-scroll locals were undeclared globals. A file that cannot be read during
+a GridFS upload now unlinks itself instead of leaving the upload open, since
+`pipe()` does not pass a read error on. `api.py` called `exit()`, which is
+missing when the site module is not loaded, and its usage branch never
+exited; it uses `sys.exit()`. A rules test redefined a property and a
+security-log test kept an unreachable branch. Besides these: 31 missing
+semicolons, unused imports in the card details, the exporters and the
+attachment API, unused Python imports, and a comment on each empty except
+clause. The list-sync scanner test cut its source at the last
+`Meteor.startup`, which the index startup of the schema-scan fix had moved;
+it now cuts at the first one after the scanner. Two unhandled rejections are
+caught as well: the instance-editing
+hook's board lookup and the service worker registration.
+`tests/codeqlFindingsRegression.test.cjs` pins the shape of each fault.
+Findings in vendored bundles (the Office viewer, Jade, capnp-es, exceljs)
+and style-only ones are left as they are.
+
+</details>
+
+and has the following developer-tooling fixes:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f1d2a497bc">npm run lint:promises finds promises that are not awaited, handled or marked void</a>. Thanks to xet7.</summary>
+
+GitHub code scanning's "Missing await" finding was a real fault in
+`models/cards.js` (a description formatted a promise), and a plain ESLint
+cannot see that kind of mistake because it does not know which calls return a
+promise. `npm run lint:promises` runs typescript-eslint's
+`no-floating-promises` and `no-misused-promises` over `models/lib`,
+`server/lib` and `imports/lib`, with the type information read from
+`tsconfig.lint.json`; the code stays JavaScript and nothing is type-checked.
+The eleven findings were promises that already catch their own errors, now
+marked `void`, and three checks that used a promise as a boolean.
+`tests/promiseLint.test.cjs` keeps the configuration in place and the tree
+clean.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v12.83 2026-11-02 WeKan ® release
 
 **In short:** An **LDAP** login with a reused login name no longer opens the
