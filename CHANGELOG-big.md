@@ -109,13 +109,6 @@ its reason.
 <details>
 <summary>Need the running app to reproduce/verify</summary>
 
-- The browser test fixes of 2026-10-27 are not verified in a browser yet: the
-  second EVERYTHING run was stopped during its build, before any browser
-  stage. The first run's Chromium stage reached 3212 of 3703 tests, and every
-  failure it reported is fixed in the source; Firefox, the database
-  conformance runs and FerretDB's own suites did not run. Run `./build.sh`'s
-  EVERYTHING option again. The stopped build had started reinstalling
-  `node_modules`, so a clean install comes first.
 - The WebKit stage cannot run in the Flatpak sandbox: MiniBrowser needs its
   own sandbox, and turning that off is not allowed there. Run it on a host.
 - [#6834](https://github.com/wekan/wekan/issues/6834) (the minicard due date is fixed; the board header bar wrapping to a second row and the list header icons under the card count did not reproduce on the current code at the same window width, in Persian, with the card count on - which WeKan release and browser zoom showed them is asked; wrapping the header rather than hiding buttons is by design)
@@ -130,6 +123,513 @@ its reason.
 </details>
 
 </details>
+
+# v12.78 2026-11-02 WeKan ® release
+
+**In short:** **CrossBoardExportBleed** and **UnassignedAttachBleed** are
+fixed: a checklist scope stays on its board, every export obeys Disable all
+export and Anonymize export users, and an assigned-only member changes
+attachments only on their own cards. **SAML** logins use **node-saml 5.2.0**,
+and **continuous backup** no longer misses a change made right after it starts.
+**Keyboard shortcuts** keep working after a popup closes, and the Rules page has
+a way back to the board.
+
+This release fixes the following CRITICAL SECURITY ISSUES:
+
+**Exports** - what a board export may contain, and whether it runs at all.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/be6727607c">A checklist scope stays on its board, and every export obeys Disable all export and Anonymize export users</a>. Thanks to ccsimplyspolit and xet7.</summary>
+
+[CrossBoardExportBleed](https://wekan.fi/hall-of-fame/crossboardexportbleed/),
+[GHSA-8885-xrq4-j47h](https://github.com/wekan/wekan/security/advisories/GHSA-8885-xrq4-j47h).
+A board export scoped with `?checklistId=` streamed a checklist of another,
+even private, board with its items and creator; it is now bound to the
+exported board's cards. The streaming CSV/TSV export ignored Disable all
+export and Anonymize export users, and so did the Excel, PDF, chart, calendar
+and external-format exports: every export route now refuses with 403 when
+export is disabled, and every exporter that names people anonymizes. Refusals
+are shown in Admin Panel / Problems.
+
+</details>
+
+**Attachments** - who may add or delete a card's files through the API.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/532a96da11">An assigned-only member adds and deletes attachments only on cards assigned to them</a>. Thanks to Javier García Herrera and xet7.</summary>
+
+[UnassignedAttachBleed](https://wekan.fi/hall-of-fame/unassignedattachbleed/),
+[GHSA-w26g-rc43-q6cm](https://github.com/wekan/wekan/security/advisories/GHSA-w26g-rc43-q6cm).
+A member with the Normal, assigned only role whose card assignment was removed
+kept the card and attachment ids, and `POST /api/attachment/upload` and
+`DELETE /api/attachment/delete/:id` still added a file to that card and
+soft-deleted its existing one: both asked only for board write access. The
+DDP methods, and copy and move onto a target card, had the same gap. All
+eight handlers now apply the card rule the ordinary card Delete used, and a
+refusal is shown in Admin Panel / Problems.
+`tests/unassignedAttachBleed.test.cjs`
+fails if any attachment API write lacks it.
+
+</details>
+
+and updates the following dependencies:
+
+- **isomorphic-git 1.44.3 → 1.44.8** — the GitHub wiki sync
+  ([#6846](https://github.com/wekan/wekan/pull/6846)).
+- **@node-saml/node-saml 5.1.0 → 5.2.0** — SAML; see the fix below, without
+  which it changed nothing that runs ([#6850](https://github.com/wekan/wekan/pull/6850)).
+- **@typescript-eslint/eslint-plugin 8.72.0 → 8.72.1** — lint only
+  ([#6849](https://github.com/wekan/wekan/pull/6849)).
+- **@rspack/dev-server 2.2.1 → 2.2.2** — development server only
+  ([#6848](https://github.com/wekan/wekan/pull/6848)).
+- **mailparser 3.12.2 → 3.12.4** — inbound email and bounces
+  ([#6845](https://github.com/wekan/wekan/pull/6845)).
+- **i18next 26.5.4 → 26.5.11** — translations
+  ([#6847](https://github.com/wekan/wekan/pull/6847)).
+- **@aws-sdk/client-s3 3.1155.0 → 3.1159.0** — S3 backups; see the
+  @smithy/core fix below ([#6844](https://github.com/wekan/wekan/pull/6844)).
+- **imapflow 2.8.0 → 2.9.1** — the IMAP mailbox
+  ([#6842](https://github.com/wekan/wekan/pull/6842)).
+- **glob 13.0.6 → 14.0.3** — no WeKan code loads it: it is only the target of
+  an `archiver-utils` override that archiver 8 no longer needs; @babel/cli and
+  rimraf keep their own copies ([#6851](https://github.com/wekan/wekan/pull/6851)).
+- **helm/chart-releaser-action 1.7.0 → 1.8.0** and **docker/login-action 4.6.0
+  → 4.7.0** — CI, each still pinned to the commit its tag names
+  ([#6843](https://github.com/wekan/wekan/pull/6843),
+  [#6841](https://github.com/wekan/wekan/pull/6841)).
+
+Thanks to dependabot.
+
+and fixes the following bugs:
+
+**Dependencies** - what the updates above did, and did not, change.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5c50f38e25">SAML logins are verified by node-saml 5.2.0, as package.json says</a>. Thanks to xet7.</summary>
+
+The bump changed the app's `package.json`, but a login is verified by the
+`wekan-accounts-saml` package's own copy, still pinned to 5.1.0 - so nothing
+that runs changed. 5.2.0 rejects a message with more than one Issuer, checks
+`idpIssuer`, rejects a `RelayState` that is not the signed one, and checks a
+POST LogoutResponse's status and issuer. The package pins 5.2.0 now, and
+`samlLogin.test.cjs` requires both to name the same version. A login
+roundtrip with the package's copy logs in a signed Response and a signed
+Assertion, and refuses a changed NameID, another key, an unsigned response and
+an answer to a request WeKan never made.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/338afc15f8">@smithy/core 3.38.1, the AWS SDK's logger redaction fix</a>. Thanks to xet7.</summary>
+
+The S3 SDK bump resolved `@smithy/core` 3.37.0, deprecated for a bug that
+passed sensitive fields nested in lists or maps unredacted to a custom logger
+([aws-sdk-js-v3#8393](https://github.com/aws/aws-sdk-js-v3/issues/8393));
+3.36.2 before it had the bug too. WeKan's only AWS client, the S3 backup,
+passes no logger, so nothing leaked. Updated in the lockfile only, one
+package; the telemetry gate (`releases/check-telemetry.py`), which had failed
+on the deprecation note's new github.com link, passes again. The ten updates
+add no package, install script, network host or telemetry, and every tarball
+matches its lockfile hash.
+
+</details>
+
+**Continuous backup** - what it sees right after it starts.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8cbe2605fe">Files are watched before the first scan, and a macOS start catches up once</a>. Thanks to xet7.</summary>
+
+The file engine scanned its sources first and only then started watching, so
+a change made between the two waited for the next scan, five minutes by
+default. macOS FSEvents also delivers nothing for a moment after a watcher is
+created. The watchers start first now, sharing one queue with the scan so a
+change is recorded once, and on macOS one catch-up scan runs two seconds after
+the start; Linux's inotify needs none. A new test with a silent watcher pins
+the order, the macOS catch-up and that Linux runs no second scan.
+
+</details>
+
+**Single-file builds** - signing and the start/backup commands.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8d4f4caa2f">A macOS build is signed whatever its target is called, and start/backup return once WeKan runs</a>. Thanks to xet7.</summary>
+
+Only a target named mac or darwin was ad-hoc signed, so a Mach-O built under
+another label had the signature its injected archive invalidated, and macOS
+killed it before it printed anything. Every Mach-O output is signed now, read
+from the file's magic number. `start --background` and `backup` returned
+before WeKan wrote its pid file, so a `stop` right after them said WeKan was
+not running and left it running; both wait now until the pid file names the
+process they started. `singleFile.test.cjs` passes 24 of 24, the real single
+executable included.
+
+</details>
+
+**Release builds** - the bundles each platform downloads.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/24a7270b7f">Android bundles start again: npm 12 runs argon2's and bcrypt's install scripts</a>. Thanks to xet7.</summary>
+
+npm 12 lets only declared dependencies run install scripts, and the rebuild
+directories declared none, so argon2 and bcrypt were never compiled. Prebuilds
+hid it everywhere except Android, whose bundles crash-looped on "No native build
+was found for platform=android". Each rebuild directory now declares the
+reviewed installers it holds, and the Android build loads both before starting
+WeKan.
+
+</details>
+
+**Filters** - the filter sidebar's date ranges.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c5f5ad2338">A refused date range says why in the form, so Clear still works in Firefox</a>. Thanks to xet7.</summary>
+
+A reversed card date or card movement range was reported with the browser's
+validation bubble, which Firefox opens over the Apply and Clear buttons and
+which took every click on them: the range could not be cleared. The end date
+is still marked invalid, and the reason is a `role="alert"` line in the form;
+editing the range or Clear takes it back.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4ad13db5ef">The date-range forms are checked by WeKan, not refused by WebKit after Clear</a>. Thanks to xet7.</summary>
+
+After Clear, WebKit kept a half-edited date in the From field and silently
+refused the next submit, so a new range never applied. Both forms are
+`novalidate` now; WeKan's own check already marks a refused range and says
+why.
+
+</details>
+
+**History recovery** - an undo or redo that is still waiting for the server.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/96845f6f4b">Retry is enabled only once the board lets this person write on it</a>. Thanks to xet7.</summary>
+
+After a reload the notice showed before the board and its members arrived,
+and a Retry clicked then did nothing and the notice stayed. Retry is disabled
+until it can act; Forget stays usable.
+
+</details>
+
+**Keyboard shortcuts** - when a focused button or link lets them through.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ba0de93f79">Shortcuts keep working after a click on a minicard or a closed popup</a>. Thanks to mimZD and xet7.</summary>
+
+The shortcut filter refused every key while a link or button had the focus.
+The minicard is itself a link, so clicking its date badge or menu left it
+focused, and closing a popup returns focus to its opener: hovering a card and
+pressing d did nothing until a reload. A focused control now keeps only its
+own keys - Enter, Space for a button, the arrows for a tab - and every other
+key is a shortcut again ([#6755](https://github.com/wekan/wekan/issues/6755)).
+
+</details>
+
+**Rules** - the way back from the Rules page.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/34d9817110">The Rules page has a Back to the board</a>. Thanks to mimZD and xet7.</summary>
+
+The page lost its Back with its old sidebar, and only the trigger, action and
+rule details pages kept one, to the rules list. The list and its Workflow,
+Bots, Blocks and History views now link back to the board; the three
+sub-pages keep only their own Back ([#6852](https://github.com/wekan/wekan/issues/6852)).
+
+</details>
+
+**Sign-in** - the error shown on the sign-in page.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3a2fef4dc7">Login errors are rendered from template state, so a redraw of the form keeps them</a>. Thanks to xet7.</summary>
+
+The error region sits inside the form's loading switch, and an error written
+into it was lost whenever that part of the form was drawn again. The template
+now renders the message as escaped text from a reactive value. The SAML error
+test also waits for the finished form before it clicks.
+
+</details>
+
+**Whiteboard** - how its lines are drawn.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/40f60582b7">A line is drawn at its own width, not the whiteboard's 800</a>. Thanks to xet7.</summary>
+
+The line's `stroke-width=width` found the template's `width` helper - the
+drawing's width - before the line's own field, so every line was drawn 800
+wide, one black shape over the whole whiteboard. The lines use `strokeWidth`
+now, and a test fails if any of their fields shares a helper's name.
+
+</details>
+
+and has the following developer-tooling fixes:
+
+**The whole-suite run** - EVERYTHING, on a Mac and in a sandboxed editor.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/16103f9ad2">The test database is kept in .tools/, not beside the checkout</a>. Thanks to xet7.</summary>
+
+`build.sh` and `build.bat` put the :3001 test database in the checkout's
+parent directory, the one thing a test run wrote outside the repository, and a
+sandboxed editor could not create it. It is `.tools/mongodb-test-<port>` now;
+`toolsDirOnly.test.cjs` pins it in both scripts.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7f948bf438">On macOS the Playwright container uses Docker's bridge network, not the host network</a>. Thanks to xet7.</summary>
+
+Firefox tests waited the full 60 seconds for a page whose document never
+came. Docker Desktop's host network lost about one connection in 75 to
+`host.docker.internal` (8 of 600 connects never completed), while the bridge
+network lost none in 1000. Nothing there needs the host network on macOS, so
+the container uses the bridge network; Linux keeps the host network.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d9e48a909d">The list-sync specs' mock servers are reachable from WeKan when the browsers run in Docker on macOS</a>. Thanks to xet7.</summary>
+
+WeKan fetched from mock Jira and GitLab servers on the container's loopback,
+which Docker Desktop keeps from the host. build.sh already forwarded the test
+SMTP port into the container; it now forwards a small pool of ports the same
+way, and those specs take one of them.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ffe207e191">The Docker test proxy dials the host again when a connect is never answered</a>. Thanks to xet7.</summary>
+
+On the bridge network too, Docker Desktop's gateway now and then left one
+connect to the host unanswered through nine retransmits while the next went
+straight through. The proxy reads nothing from the browser until a connection
+is up, drops a dial that has not connected in 1.5 seconds and dials again, up
+to five times, so no byte is lost or sent twice.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8a1f7a14a9">The Playwright container sees the repo and the files root at their own host paths</a>. Thanks to xet7.</summary>
+
+Specs and the server share files by path. With the repository mounted at
+`/repo`, the continuous backup tests gave the server a key file it could not
+find and looked for a stream it wrote elsewhere. Both are mounted at their
+host paths now, so a path names the same file on both sides.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a6bec88266">The phone invitation tile is measured in one layout with its buttons</a>. Thanks to xet7.</summary>
+
+Measured one at a time, the tile and its buttons were taken from two layouts:
+Firefox drew the row above the board list in between and moved the tile down
+29 pixels. They are measured together now, and the test still fails when the
+tile clips its buttons, the original #6488 bug.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f5eb4ecf61">The Mac smoke test asks libproc, not ps, whether a process group still lives</a>. Thanks to xet7.</summary>
+
+When macOS refuses to signal a group of zombies, the smoke test asked `ps`
+whether a member was alive, and a Mac that does not let the build run `ps`
+failed a correct app. On macOS it asks the kernel through `proc_listpids` and
+`proc_pidinfo` now, starting no process; elsewhere it uses `ps` as before.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/897376ba54">The button theme test checks the Board Settings that still have action buttons</a>. Thanks to xet7.</summary>
+
+Card Settings has had no column actions since card actions moved into each
+section's own menu, so the test failed on Card in every theme. Swimlane and
+List are checked in all four themes, and the test says why Card is not.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d5e3325e87">Card Settings section order waits for the published board before reading the card</a>. Thanks to xet7.</summary>
+
+The test writes the board straight to the database and reloads. The board
+publication's cursor has `limit: 1`, so on the standalone test MongoDB it
+polls and a reload could get the old board for up to ten seconds. The test
+waits for the published board, up to 15 seconds, before it reads the card.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/89b64966c6">The password minimum specs wait until the server has the policy they wrote</a>. Thanks to xet7.</summary>
+
+The specs write the password policy straight into the settings document, and
+on the standalone test MongoDB the server's settings observer polls, so for up
+to ten seconds it still enforced the old policy. `untilServerHas()` asks
+`getPasswordPolicy` until the server has it, then reloads the sign-up form; 6
+of 6 with two workers.
+
+</details>
+
+**Browser tests** - specs that read the page before it had settled, in Firefox.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/dbf07aadf9">The activity recovery report is searched again until no worker lease covers it</a>. Thanks to xet7.</summary>
+
+The report is a snapshot, and the live recovery worker's short lease could
+make it show a seeded orphan as being delivered. The test searches again
+until the snapshot falls between leases.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9188843369">The checklist drag tests drag once the opened card's rows hold still</a>. Thanks to xet7.</summary>
+
+Sections drawn above the checklist moved its rows 50 pixels between measuring
+and releasing, so the release opened an item's editor or dropped it in the
+wrong place.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0cea141702">The duplicate relation picker is opened once the card has opened</a>. Thanks to xet7.</summary>
+
+A picker opened while the card was still opening was closed again when the
+card settled.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0403e27c62">The notification delivery sections are opened until they stay open</a>. Thanks to xet7.</summary>
+
+The language arriving after the click drew the popup again with its sections
+closed.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2042fd5102">The Blocks drag test grabs the block's body, not its edge</a>. Thanks to xet7.</summary>
+
+A Khmer label overflows its block in Firefox, and the first point found was
+the block's outline, where a press drags nothing.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0a1f8584ee">The board view popup is opened until it stays open for the Product Backlog</a>. Thanks to xet7.</summary>
+
+The language arriving after the click drew the header again and closed the
+popup.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/efe0e9287c">A language switch is waited for, and WebKit does not freeze on asking for a push subscription</a>. Thanks to xet7.</summary>
+
+A spec that switched language and clicked at once clicked into the redraw
+that followed, which closed its popup; every page of the test context now
+waits until it shows the new language. Playwright's WebKit froze the page on
+asking for a push subscription, which Member Notification Settings does on
+opening; there the page answers that it has none.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0c8c254dc5">The viewport matrix cleans up only what it seeded</a>. Thanks to xet7.</summary>
+
+The matrix is Chromium-only. In Firefox and WebKit its setup never ran, but
+its cleanup did, and failed every viewport.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f241681e80">Background notification recovery checks its own mail</a>. Thanks to xet7.</summary>
+
+The shared SMTP sink had caught another worker's mail first.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c71c875649">The custom field settings popup is opened until its Create button shows</a>. Thanks to xet7.</summary>
+
+The opened card was still drawing and closed the popup again.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4a9c3f21d2">The drawing surface's width is waited for</a>. Thanks to xet7.</summary>
+
+The element's layout follows its viewBox a frame later.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c8ed3e0fd0">The bulk export popup is opened until it stays</a>. Thanks to xet7.</summary>
+
+All Boards was still drawing after the route changed, in all five Haitian
+Creole tests.
+
+</details>
+
+**Test coverage** - October changes that had no test of their own.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/148d18d456">Server changes are tested: OpenSSL 4 decrypt refusal, the Scrum rollover lease, the backup catch-up scan</a>. Thanks to xet7.</summary>
+
+Each with a negative test, and the lease with a tree-wide one: every lease
+field is written only by its claim.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/79c40407d1">Admin Panel pane titles, audit log alignment, storage help, Data health and card reports are tested</a>. Thanks to xet7.</summary>
+
+Unit and negative tests, and a Chromium browser test of the titles, the
+right-to-left audit log, the storage help shown once and Data health's own
+"Never".
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/121f37be91">The drawing refit, Due Cards scope, dependency import counts and SAML's one Issuer are tested</a>. Thanks to xet7.</summary>
+
+A signed SAML Response with two Issuers is refused in the browser, which
+node-saml 5.1.0 accepted; an assigned-only member's Due Cards show only their
+own cards.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3ccb465c3f">The keyboard shortcut browser test focuses the minicard link itself</a>. Thanks to mimZD and xet7.</summary>
+
+Chromium does not leave the focus on the minicard after its menu is closed,
+so the test makes the reported state directly; it passes in Chromium and
+WebKit.
+
+</details>
+
+**The source-loaded server** - starting WeKan from source for development.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/15877dd1bc">A local package fork that a prebuilt package implies is loaded first</a>. Thanks to xet7.</summary>
+
+The source server stopped at "isopack dynamic-import not yet loaded". It now
+gets past that, and still stops later on "Cannot find module
+'meteor/accounts-base'"; the browser tests ran against the bundle server.
+
+</details>
+
+**The changelog** - its guards between releases.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/05cc2460ea">The short changelog guard holds between releases too, when there is no Upcoming section yet</a>. Thanks to xet7.</summary>
+
+`changelogShort.test.cjs` assumed an Upcoming section was always there, so it
+failed right after every release, before anything new was written. With none
+it checks that the newest release comes first and that nothing links an
+Upcoming that does not exist.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
 
 # v12.77 2026-10-31 WeKan ® release
 

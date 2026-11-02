@@ -112,6 +112,12 @@ test('with every field allowed, the card draws exactly the Card pane\'s sections
     allowsSubtasks: true, allowsAttachments: true, allowsComments: true, 'scrum.visibility': visibility,
   } });
   await page.reload();
+  // Written straight to the database, the board reaches the page by the
+  // publication's next poll: its cursor has a limit, which change streams do
+  // not follow, so a reload can still be served the board as it was for up to
+  // ten seconds - and the card drew no Scrum section yet.
+  await expect.poll(() => page.evaluate(id => Boolean(Meteor.connection._mongo_livedata_collections.boards
+    .findOne(id)?.scrum?.visibility?.cardSprint), board.boardId), { timeout: 15_000 }).toBe(true);
   await openCard(page, board);
   const onCard = await cardSections(page);
   await openCardSettings(page);
@@ -244,6 +250,16 @@ test('the splitter: dragged it widens one pane, clamped, kept, reset by a double
   await expect(splitter).toHaveAttribute('role', 'separator');
   const mini = paneOf(page, 'minicard');
   const card = paneOf(page, 'card');
+  // The popup is still placing itself just after it opens: in WebKit the
+  // press landed where the splitter had been and dragged nothing. Measure once
+  // the splitter and the panes hold still, read twice 150 ms apart.
+  const layout = () => page.evaluate(() => [...document.querySelectorAll('.js-card-settings-splitter, .js-card-settings-pane')]
+    .map(el => { const r = el.getBoundingClientRect(); return `${Math.round(r.x)},${Math.round(r.y)},${Math.round(r.width)}`; }).join('|'));
+  await expect.poll(async () => {
+    const before = await layout();
+    await page.waitForTimeout(150);
+    return before === await layout();
+  }, { timeout: 15000 }).toBe(true);
   const m0 = (await mini.boundingBox()).width;
   const c0 = (await card.boundingBox()).width;
   const s = await splitter.boundingBox();

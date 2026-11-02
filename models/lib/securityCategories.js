@@ -112,6 +112,13 @@ const CATALOG = {
   'xss.handler-link': { category: 'xss', bleed: 'HandlerLink', severity: 'medium', cwe: 'CWE-939' },
   'spoofing.xff':    { category: 'spoofing', bleed: 'MetricsBleed', severity: 'medium', cwe: 'CWE-290' },
   'authz.export':    { category: 'authz', bleed: 'ImpersonateBleed', severity: 'high', cwe: 'CWE-863' },
+  // CrossBoardExportBleed (GHSA-8885-xrq4-j47h). A board export scoped to a
+  // checklist of ANOTHER board's card: no export menu asks for one.
+  'authz.export-checklist-scope': { category: 'authz', bleed: 'CrossBoardExportBleed', severity: 'medium', cwe: 'CWE-639' },
+  // An export asked for while Admin Panel turned all export off. The menus are
+  // hidden then, but a page opened before the switch still shows them, so it
+  // never costs the account.
+  'authz.export-disabled': { category: 'authz', bleed: 'CrossBoardExportBleed', severity: 'medium', cwe: 'CWE-863', blocksAccount: false },
   'authn.import':    { category: 'authn', bleed: 'ImportBleed', severity: 'critical', cwe: 'CWE-306' },
   'authn.miniprofile': { category: 'authn', bleed: 'MiniProfileBleed', severity: 'medium', cwe: 'CWE-306' },
   'authz.board':     { category: 'authz', bleed: 'BoardBleed', severity: 'high', cwe: 'CWE-863' },
@@ -208,6 +215,10 @@ const CATALOG = {
   'authz.readonly':  { category: 'authz', bleed: 'ReadOnlyBleed', severity: 'medium', cwe: 'CWE-863' },
   'authz.calendar':  { category: 'authz', bleed: 'CalendarBleed', severity: 'medium', cwe: 'CWE-863' },
   'authz.assigned':  { category: 'authz', bleed: 'AssignedBleed', severity: 'medium', cwe: 'CWE-863' },
+  // UnassignedAttachBleed (GHSA-w26g-rc43-q6cm): an assigned-only member
+  // added or soft-deleted attachments, through the REST API, on a card that
+  // was no longer assigned to them. Only a caller with a kept card id reaches it.
+  'authz.assigned-attachment-write': { category: 'authz', bleed: 'UnassignedAttachBleed', severity: 'medium', cwe: 'CWE-863' },
   'authz.tenant':    { category: 'authz', bleed: 'TenantBleed', severity: 'medium', cwe: 'CWE-862' },
   'authz.search-session': { category: 'authz', bleed: 'SessionBleed', severity: 'medium', cwe: 'CWE-639' },
   'authz.database':  { category: 'authz', bleed: 'DatabaseBleed', severity: 'high', cwe: 'CWE-863' },

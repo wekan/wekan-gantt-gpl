@@ -652,8 +652,18 @@ function run_playwright_docker(){
 	local docker_base_url="${WEKAN_BASE_URL:-http://127.0.0.1:3000}"
 	local docker_mongo_url="${WEKAN_MONGO_URL:-mongodb://127.0.0.1:3001/meteor}"
 	local docker_host_proxy_port=""
+	local docker_network="host"
 	# Docker Desktop on macOS keeps the host outside the container's loopback.
 	if [ "$(uname -s)" = Darwin ]; then
+		# Its host network loses connections to host.docker.internal: from a
+		# container on that network about 1 connect in 75 never completed, so a
+		# test page waited 60 s for a document that never came (Firefox, 2026-11-01:
+		# 8 of 600 direct connects, against 0 of 1000 from the bridge network).
+		# Nothing here needs the host network on macOS - WeKan and Mongo are reached
+		# through host.docker.internal and SMTP through docker exec - so the
+		# container uses Docker's bridge network, where the proxy below still
+		# serves localhost.
+		docker_network="bridge"
 		# Meteor's dynamic imports use ROOT_URL (localhost in the test server).
 		# Keep the browser on that same origin and bridge its loopback to the host.
 		# Browsing host.docker.internal while ROOT_URL is localhost makes Firefox
@@ -677,35 +687,53 @@ function run_playwright_docker(){
 	mkdir -p "$filesroot"
 	echo "Running Playwright $browser in Docker ($image)."
 	echo "Expecting WeKan at $docker_base_url."
-	local smtp_proxy_pid="" smtp_proxy_ready="" container_name="wekan-playwright-${browser}-$$"
-	if [ "$(uname -s)" = Darwin ] && [ -n "${WEKAN_TEST_SMTP_PORT:-}" ]; then
-		smtp_proxy_ready="$(mktemp "$WEKAN_DIR/.tools/tmp/smtp-proxy.XXXXXX")"
-		node "$pwdir/helpers/docker-smtp-proxy.cjs" "$container_name" "$WEKAN_TEST_SMTP_PORT" "$smtp_proxy_ready" &
-		smtp_proxy_pid=$!
-		for i in 1 2 3 4 5 6 7 8 9 10; do
-			[ -s "$smtp_proxy_ready" ] && break
-			kill -0 "$smtp_proxy_pid" 2>/dev/null || break
-			sleep 0.1
+	local container_name="wekan-playwright-${browser}-$$"
+	# Docker Desktop keeps the container's loopback from the host, so a server a
+	# spec starts in the container cannot be reached by WeKan outside it. Each
+	# port below is forwarded from the host into the container through docker
+	# exec (helpers/docker-smtp-proxy.cjs, which carries any TCP): the test SMTP
+	# server, and a small pool for the mock Jira/GitLab servers of the list-sync
+	# specs, which take a free port from WEKAN_TEST_REVERSE_PORTS
+	# (helpers/reachable-server.cjs). Elsewhere they listen on any port.
+	local forward_pids="" forward_ready="" reverse_ports=""
+	if [ "$(uname -s)" = Darwin ]; then
+		reverse_ports="${WEKAN_TEST_REVERSE_PORTS:-39101 39102 39103 39104}"
+		local fport fready fpid i
+		for fport in ${WEKAN_TEST_SMTP_PORT:-} $reverse_ports; do
+			fready="$(mktemp "$WEKAN_DIR/.tools/tmp/docker-port-proxy.XXXXXX")"
+			node "$pwdir/helpers/docker-smtp-proxy.cjs" "$container_name" "$fport" "$fready" &
+			fpid=$!
+			forward_pids="$forward_pids $fpid"; forward_ready="$forward_ready $fready"
+			for i in 1 2 3 4 5 6 7 8 9 10; do
+				[ -s "$fready" ] && break
+				kill -0 "$fpid" 2>/dev/null || break
+				sleep 0.1
+			done
+			if [ ! -s "$fready" ]; then
+				kill $forward_pids 2>/dev/null; wait $forward_pids 2>/dev/null
+				rm -f $forward_ready
+				echo "ERROR: local test proxy for port $fport did not start."
+				return 1
+			fi
 		done
-		if [ ! -s "$smtp_proxy_ready" ]; then
-			kill "$smtp_proxy_pid" 2>/dev/null; wait "$smtp_proxy_pid" 2>/dev/null
-			rm -f "$smtp_proxy_ready"
-			echo "ERROR: local SMTP test proxy did not start."
-			return 1
-		fi
 	fi
 	# Mount the whole repo so specs that reach the repo-root node_modules
 	# (e.g. @wekanteam/exceljs) and .tools resolve; run from tests/playwright.
+	# The repo and the files root are mounted at their OWN host paths, so a path
+	# names the same file for the specs in here and for the server outside:
+	# admin-continuous-backup gives the server a key file it wrote and reads the
+	# stream the server wrote, and with the repo at /repo neither side found the
+	# other's file.
 	# Run as the host user (--user) with a writable HOME so the container does
 	# not leave root-owned files under test-results/ (which would later make
 	# native Chromium/Firefox runs fail with "EACCES: permission denied, mkdir
 	# .../test-results/.playwright-artifacts-N").
-	docker_exec run --rm --init --ipc=host --network host \
+	docker_exec run --rm --init --ipc=host --network "$docker_network" \
 		--name "$container_name" \
 		--label org.wekan.test-run=everything \
 		--user "$(id -u):$(id -g)" \
-		-e HOME=/repo/.tools/tmp \
-		-e TMPDIR=/repo/.tools/tmp \
+		-e HOME="$reporoot/.tools/tmp" \
+		-e TMPDIR="$reporoot/.tools/tmp" \
 		-e WEKAN_BASE_URL="$docker_base_url" \
 		-e WEKAN_DOCKER_HOST_PROXY_PORT="$docker_host_proxy_port" \
 		-e WEKAN_MONGO_URL="$docker_mongo_url" \
@@ -717,16 +745,17 @@ function run_playwright_docker(){
 		-e WEKAN_TEST_SERIAL="${WEKAN_TEST_SERIAL:-0}" \
 		-e WEKAN_TEST_SERVER_MODE="${WEKAN_TEST_SERVER_MODE:-bundle}" \
 		-e WEKAN_TEST_SMTP_PORT="${WEKAN_TEST_SMTP_PORT:-}" \
+		-e WEKAN_TEST_REVERSE_PORTS="$reverse_ports" \
 		-e PLAYWRIGHT_HTML_OPEN=never \
-		-e WEKAN_FILES_PATH=/wekan-files \
+		-e WEKAN_FILES_PATH="$filesroot" \
 		-e PLAYWRIGHT_JSON_OUTPUT_NAME="${PLAYWRIGHT_JSON_OUTPUT_NAME:-}" \
-		-v "$filesroot":/wekan-files \
-		-v "$reporoot":/repo -w /repo/tests/playwright \
+		-v "$filesroot":"$filesroot" \
+		-v "$reporoot":"$reporoot" -w "$pwdir" \
 		"$image" \
 		sh -c '
-			export PATH=/repo/tests/playwright/node_modules/.bin:$PATH
+			export PATH="$PWD/node_modules/.bin:$PATH"
 			if [ -n "$WEKAN_DOCKER_HOST_PROXY_PORT" ]; then
-				node /repo/tests/playwright/helpers/docker-host-proxy.cjs &
+				node "$PWD/helpers/docker-host-proxy.cjs" &
 				proxy_pid=$!
 				trap '\''kill "$proxy_pid" 2>/dev/null || true; wait "$proxy_pid" 2>/dev/null || true'\'' EXIT
 				ready=0
@@ -739,9 +768,9 @@ function run_playwright_docker(){
 			npx playwright test --project="$0" "$@"
 		' "$browser" "$@"
 	local playwright_rc=$?
-	if [ -n "$smtp_proxy_pid" ]; then
-		kill "$smtp_proxy_pid" 2>/dev/null; wait "$smtp_proxy_pid" 2>/dev/null
-		rm -f "$smtp_proxy_ready"
+	if [ -n "$forward_pids" ]; then
+		kill $forward_pids 2>/dev/null; wait $forward_pids 2>/dev/null
+		rm -f $forward_ready
 	fi
 	return "$playwright_rc"
 }
@@ -1513,7 +1542,11 @@ function run_all_tests(){
 			echo "ERROR: nothing is listening on :$TEST_DB_PORT and no mongod was found (Meteor dev_bundle or PATH)."
 			echo "       Meteor's bundled mongod is normally at <dev_bundle>/mongodb/bin/mongod."; rm -rf "$STATDIR"; return 1
 		fi
-		local DBPATH="../mongodb-test-$TEST_DB_PORT"
+		# In .tools/, where everything this script writes lives (CLAUDE.md;
+		# tests/toolsDirOnly.test.cjs). It was in the checkout's PARENT directory,
+		# which a sandboxed editor cannot write - the test database never
+		# started there.
+		local DBPATH="$WEKAN_DIR/.tools/mongodb-test-$TEST_DB_PORT"
 		mkdir -p "$DBPATH"
 		echo "==> Starting MongoDB (Meteor's mongod) on :$TEST_DB_PORT, dbpath $DBPATH."
 		{ echo "===== mongod :$TEST_DB_PORT - started $(date '+%Y-%m-%d %H:%M:%S %Z') ====="; exec "$MONGOD_BIN" --port "$TEST_DB_PORT" --dbpath "$DBPATH" --bind_ip 127.0.0.1 --nounixsocket; } > "$RUN_LOGDIR/wekan-test-mongod.log" 2>&1 &
@@ -1541,7 +1574,7 @@ function run_all_tests(){
 	export WEKAN_FILES_PATH_HOST="$WRITABLE_ABS/files"
 	# ...and the same path for a LOCAL playwright run, not only the Docker one.
 	# Only WEKAN_FILES_PATH_HOST was exported, which is read when the browsers run
-	# in a container (it is mounted there as /wekan-files). A local run fell back
+	# in a container (it is mounted there at the same path). A local run fell back
 	# to the spec's own default of .build/bundle/files, so a spec that writes a
 	# stored attachment wrote it OUTSIDE the root this server reads - and then
 	# tested what WeKan does with a file it does not own.
