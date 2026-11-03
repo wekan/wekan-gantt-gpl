@@ -89,13 +89,98 @@ stylesheets, a `role="button"` on the heading, `h3` in the title, a `#999`
 tile colour, an editor harness) and were updated to the new markup; each keeps
 the assertion that made it worth having.
 
+### Dark themes (#6863), found after the fix above
+
+The colour change above made the quiet text greys dark for every theme, and the
+dark themes (`cleandark`, `moderndark`, `dark`, `exodark`) have dark surfaces:
+dark grey text on them was nearly invisible. [Issue #6863](https://github.com/wekan/wekan/issues/6863)
+reported it ("Dark Themes broken in 12.87"), together with faults that were
+older than the audit: Card Settings drew white text on light grey blocks
+(1.07:1), popup items, the sidebar's shortcuts row and the "quiet buttons" were
+black on dark (1.18 to 2.19:1), and a list header's `!important` light grey beat
+each theme's own and left its light text at 1.09:1 and 1.27:1. The audit had
+scanned the default theme only, which is why none of this showed.
+
+What was done:
+
+- The quiet text colour is a variable, `--wekan-quiet-text`: `#595959` on the
+  light themes (the fallback), `#b4b4b4` on `cleandark`, `#dcdcdc` on
+  `moderndark` (lighter greys), and on `dark` and `exodark` for the board, the
+  opened card and the sidebar (`exodark`'s popups too). `dark`'s popups are light,
+  so they keep the dark one.
+- Card Settings' sections take their background from a variable, a faint lift of
+  the dark surface instead of `#f7f7f7`; its muted text was `#808080` on
+  `#f7f7f7` (3.68:1) and is the quiet variable now, also on the light themes.
+- Popup items and the board sidebar's lists were forced black with `!important`
+  by popup.css; `moderndark` and `exodark` now force them white where their
+  surfaces are dark. Quiet buttons, the sidebar's labels and swimlane lists, the
+  shortcuts row, `dark`'s swimlane header and `moderndark`'s selected minicard
+  and primary buttons got light text or a darker fill.
+- The list header's `!important` background is gone, so each theme's own list
+  header applies.
+
+`tests/playwright/specs/46-axe-theme-contrast.e2e.js` scans the four themes, in the
+board, the sidebar, Card Settings, an opened card and the custom fields popup,
+and finds nothing; `tests/darkThemeContrast6863.test.cjs` pins each rule. A
+crawl of more popups and sidebar tabs in `cleandark`, `moderndark`, `dark` and
+`exodark` also found nothing.
+
+### The other themes, and colors a member chooses
+
+The same scan was then run on **all 25 board themes** (the board, the filter and
+board sidebars, an opened card, Card Settings, and the popups of the card), with
+this result before the fix: 0 failures in `belize`, `pomegranate`, `wisteria`,
+`natural`, `midnight` and `appleglasspastel`, and failures in the rest:
+
+- **The header and the buttons of eight themes**: white text on the theme's
+  accent was 2.1 to 4.3:1 in `nephritis` (`#27ae60`), `pumpkin`, `moderatepink`,
+  `strongcyan`, `limegreen`, `relax`, `corteza` and `modern`, and their dark,
+  hover and emphasis shades were just as low. The accents are darkened, with the
+  same hue, until white text and the header's `#f2f2f2` labels read at 4.5:1; the
+  hover, selected and emphasis shades follow, so a hovered button is still
+  visibly different. This is the one change that is easy to see: `limegreen` is a
+  forest green now, `strongcyan` a teal, `pumpkin` a burnt orange. White text at
+  4.5:1 cannot be had on a bright accent. The colour-slide themes `clearblue`,
+  `cleargreen`, `clearorange` and `clearpink` end in the same colours, so their
+  bottom colour changed too, and their buttons (Start Flow) read.
+- **The filter sidebar's headings** were `#808080` on `#f7f7f7` (3.68:1) in every
+  theme, the default one too; they use the quiet text variable.
+- **`clear*` themes' quiet text** was `rgba(0,0,0,0.4)` (2.83:1); it is 0.68.
+- **`cleanlight`'s add-dependency link** was 50% black on `#f8f8f9` (3.64:1); it
+  is 70%.
+
+Afterwards **all 25 themes show no colour contrast failure** in those states.
+`tests/playwright/specs/46-axe-theme-contrast.e2e.js` runs the scan on every
+theme.
+
+What the scan cannot see: axe-core cannot measure text over a **gradient**, so the
+headers of the six `clear*` slides are not covered by it (it reports them as
+"needs review"). Their ends were not changed beyond the shared accent colours
+above, and white text on the light top of a slide (`clearblue`'s `#499bea` is
+3.0:1) is not verified here.
+
+**Colors a member chooses.** A free color choice is one half of a pair, and the
+other half is worked out so the pair is legible, whatever was picked
+(`models/lib/contrastColor.js`, `tests/customColorContrast.test.cjs`):
+
+| Chosen | Paired with | What is done |
+|---|---|---|
+| A custom label, card, list or swimlane color | its text | The text is black or white, whichever has the higher contrast (`contrastText`): never below 4.5:1 on any color, checked on a sample of every color and on the named colors. Kanri's export of a label's text follows the same rule. |
+| A custom theme accent, or the two ends of a custom slide | the header's white text and `#f2f2f2` labels | The color is darkened, with the same hue, until both are at 4.5:1 (`readableAccent`). The picker's preview shows the darkened color and says so. |
+| The text color a member picks (Member Settings / Font) | the surface of the theme in use | The color is lightened or darkened, with the same hue, until it reads at 4.5:1 on the surfaces of that theme (`readableUiTextColor`); a color that already reads is applied as chosen. The popup says when it changed it. The text color no longer reaches the header bars, labels and primary buttons, which sit on a color of their own: a grey `#626262` was 1.18:1 on the blue header. |
+| A dependency line's color | the board | The line is drawn at 3:1 against the theme's surface (WCAG 1.4.11); the stored color is untouched. |
+
+A text color cannot be legible on a light and a dark surface at once. The four
+themes with a dark board (`cleandark`, `moderndark`, `dark`, `exodark`) use the
+dark surfaces, the others the light ones; the light popups of `dark` and
+`exodark` are a case the choice cannot cover.
+
 ### Known side effects of the colour change
 
 - `#2980b9` was the default blue in 21 files; `#2573a7` is slightly darker and
   was checked by eye on the card and the sign-in page only.
-- The quiet greys changed in 11 stylesheets for the light themes. The dark
-  themes have their own rules for the same text, and were not scanned, so a dark
-  theme could show these greys differently.
+- The quiet greys changed in 12 stylesheets. The dark themes were not scanned at
+  first and showed them dark on dark; that is fixed above (#6863).
 - The PDF export's progress bar still draws `#2980b9`; it is not part of the
   web pages.
 
