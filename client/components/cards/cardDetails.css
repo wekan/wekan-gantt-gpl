@@ -250,6 +250,24 @@ body.desktop-mode .card-details.card-details-collapsed {
   color: #b3b3b3;
   display: inline-block;
   margin-inline-end: 6px;
+  /* Above the title's edit zone (z-index 1, over the whole title): a press on the
+     card number moves the window like the rest of the header row; only the title
+     itself edits. */
+  position: relative;
+  z-index: 2;
+}
+
+/* The areas that move the window by a finger. Without touch-action: none the browser
+   takes a finger drag for a scroll and cancels the pointer, so the window never moves
+   (the page behind it scrolls instead). Only in desktop mode, where the card is a
+   window; the full-screen card of mobile mode is not moved. */
+body.desktop-mode .card-details .card-details-header,
+body.desktop-mode .card-details .card-details-header .card-drag-handle {
+  touch-action: none;
+}
+body.card-window-dragging {
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* Collapse toggle triangle */
@@ -534,6 +552,19 @@ body.desktop-mode .card-details.card-details-collapsed {
     bottom: 0;
     position: fixed;
     resize: both;
+  }
+
+  /* A card opened as a POPUP (Session popupCardId: from a search result, a table
+     or a Roadmap/Gantt bar) docks at the very top of the window like every other
+     opened card, and covers the header bars, as the .pop-over[data-popup=
+     "cardDetailsPopup"] rule near the end of this file says it must. The 97px
+     above is the room the header takes for a card that is NOT docked by the
+     desktop-mode rules (those skip popups), and it opened the popup BELOW the
+     header: collapsed, it was a bar floating over the swimlane. Mobile mode keeps
+     its own full-window rule (top: 0 !important). */
+  .card-details.card-details-popup {
+    top: 8px;
+    z-index: 2001;
   }
 
   /* Override for mobile mode even on larger screens */

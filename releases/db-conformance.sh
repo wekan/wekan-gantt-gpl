@@ -101,8 +101,11 @@ BACKENDS=(
   "mongodb8|image:mongo:8.0|mongodb|27017|mongodb"
   "mongodb9|image:mongo:9.0|mongodb|27017|mongodb"
   "postgresql|docker-compose-ferretdb-v1-postgresql.yml|postgres|5432|postgresql"
+  "pgrust|image:malisper/pgrust:v0.4-beta|pgrust|5432|postgresql"
   "mysql|docker-compose-ferretdb-v1-mysql.yml|mysql|3306|mysql"
   "mariadb|docker-compose-ferretdb-v1-mariadb.yml|mariadb|3306|mysql"
+  "tidb|image:pingcap/tidb:latest|tidb|4000|mysql"
+  "dolt|image:dolthub/dolt-sql-server:latest|dolt|3306|mysql"
   "sap-hana|docker-compose-ferretdb-v1-sap-hana.yml|hana|39017|hana"
   "ferretdb2|docker-compose-ferretdb-v2-postgresql.yml|postgres-documentdb|5432|ferretdb2"
 )
@@ -417,8 +420,19 @@ engine_name() {
                 echo "MongoDB ${v:-?}"; return ;;
     postgresql) v="$(docker_exec exec "$CONTAINER" postgres --version 2>/dev/null | grep -oE '[0-9]+(\.[0-9]+)+' | head -1)"
                 v="PostgreSQL ${v:-?}" ;;
+    # pgrust (https://github.com/malisper/pgrust): PostgreSQL rewritten in Rust,
+    # wire compatible, so FerretDB's postgresql handler talks to it unchanged.
+    # `postgres --version` says "pgrust 0.4-beta (PostgreSQL 18.6 compatible)".
+    pgrust)     v="$(docker_exec exec "$CONTAINER" postgres --version 2>/dev/null | head -1)"
+                v="${v:-pgrust ?}" ;;
     mysql)      v="$(docker_exec exec "$CONTAINER" mysqld --version 2>/dev/null | grep -oE 'Ver [0-9.]+' | head -1)"
                 v="MySQL ${v#Ver }" ;;
+    # `select version()` says 8.0.11-TiDB-v7.5.1. The image has no client, so the
+    # mysql image's is used, over the host network.
+    dolt)       v="$(docker_exec run --rm --network host mysql:9 mysql -h 127.0.0.1 -P "$hostport" -u root -pferretdb_root_secret -N -e 'select dolt_version()' 2>/dev/null | head -1)"
+                v="Dolt ${v:-?}" ;;
+    tidb)       v="$(docker_exec run --rm --network host mysql:9 mysql -h 127.0.0.1 -P "$hostport" -u root -N -e 'select version()' 2>/dev/null | grep -oE 'TiDB-v[0-9.]+' | head -1)"
+                v="TiDB ${v#TiDB-}" ;;
     mariadb)    v="$(docker_exec exec "$CONTAINER" mariadbd --version 2>/dev/null | grep -oE 'Ver [0-9.]+' | head -1)"
                 v="MariaDB ${v#Ver }" ;;
     sqlite)     v="$(grep -m1 -oE 'modernc.org/sqlite v[0-9.]+' "$FERRET_DIR/go.mod" 2>/dev/null)"
@@ -471,6 +485,35 @@ for entry in "${BACKENDS[@]}"; do
   if [ "$name" = "ferretdb2" ] && [ "$SUITE" != speedtest ] && [ "${WEKAN_CONFORMANCE_FERRETDB2:-0}" != "1" ]; then
     echo "SKIP  ferretdb2    (FerretDB 2 + DocumentDB; set WEKAN_CONFORMANCE_FERRETDB2=1 to include)"
     echo "SKIP  ferretdb2  not requested" >> "$SUMMARY"
+    skipped=$((skipped + 1))
+    continue
+  fi
+
+  # pgrust is a young database (v0.4-beta): in the speed test it is one more row to
+  # compare, but a conformance case it answers differently is a finding about
+  # pgrust, not a failed EVERYTHING run - so there it is opt-in, like FerretDB 2.
+  if [ "$name" = "pgrust" ] && [ "$SUITE" != speedtest ] && [ "${WEKAN_CONFORMANCE_PGRUST:-0}" != "1" ]; then
+    echo "SKIP  pgrust       (PostgreSQL in Rust; set WEKAN_CONFORMANCE_PGRUST=1 to include)"
+    echo "SKIP  pgrust  not requested" >> "$SUMMARY"
+    skipped=$((skipped + 1))
+    continue
+  fi
+
+  # TiDB (MySQL wire, Apache-2.0) is a distributed SQL database run here as one
+  # process on its own storage; same reasoning as pgrust above.
+  if [ "$name" = "tidb" ] && [ "$SUITE" != speedtest ] && [ "${WEKAN_CONFORMANCE_TIDB:-0}" != "1" ]; then
+    echo "SKIP  tidb         (TiDB, MySQL protocol; set WEKAN_CONFORMANCE_TIDB=1 to include)"
+    echo "SKIP  tidb  not requested" >> "$SUMMARY"
+    skipped=$((skipped + 1))
+    continue
+  fi
+
+  # Dolt (git for data, MySQL protocol) is run as it comes: without
+  # dolt_transaction_commit, so it makes no commit per write and is measured as a
+  # database. Same reasoning as pgrust above.
+  if [ "$name" = "dolt" ] && [ "$SUITE" != speedtest ] && [ "${WEKAN_CONFORMANCE_DOLT:-0}" != "1" ]; then
+    echo "SKIP  dolt         (Dolt, MySQL protocol; set WEKAN_CONFORMANCE_DOLT=1 to include)"
+    echo "SKIP  dolt  not requested" >> "$SUMMARY"
     skipped=$((skipped + 1))
     continue
   fi
@@ -565,7 +608,9 @@ for entry in "${BACKENDS[@]}"; do
       SQLITE_DATA="$(mktemp -d "$WEKAN_DIR/.tools/tmp/$PREFIX-sqlite.XXXXXX")"
       url="file:$SQLITE_DATA/"
       ;;
-    postgresql)
+    postgresql|pgrust)
+      # pgrust's image is a drop-in for postgres: the same variables and the same
+      # data directory, initialised by pgrust's own initdb.
       start_db_container \
         -e POSTGRES_USER=ferretdb -e POSTGRES_PASSWORD=ferretdb_secret \
         -e POSTGRES_DB=ferretdb "$image" \
@@ -589,6 +634,22 @@ for entry in "${BACKENDS[@]}"; do
       # root, for the same reason as the compose file: FerretDB CREATES a SQL
       # database per MongoDB database, which a per-database grant cannot allow.
       url="mysql://root:ferretdb_root_secret@127.0.0.1:$hostport/ferretdb"
+      ;;
+    dolt)
+      # DOLT_ROOT_HOST=% lets root in from outside the container; the image
+      # creates the database FerretDB opens.
+      start_db_container -e DOLT_ROOT_PASSWORD=ferretdb_root_secret -e DOLT_ROOT_HOST=% \
+        -e DOLT_DATABASE=ferretdb "$image" \
+        || { echo "ERROR $name  container did not start" >> "$SUMMARY"; stop_on_failure; continue; }
+      url="mysql://root:ferretdb_root_secret@127.0.0.1:$hostport/ferretdb"
+      ;;
+    tidb)
+      # One process with its own storage (unistore), no PD or TiKV: enough for a
+      # single-node comparison. It has no MYSQL_DATABASE variable, so the database
+      # FerretDB opens is created below, once it answers.
+      start_db_container "$image" --store=unistore --path="" --host=0.0.0.0 \
+        || { echo "ERROR $name  container did not start" >> "$SUMMARY"; stop_on_failure; continue; }
+      url="mysql://root@127.0.0.1:$hostport/ferretdb"
       ;;
     mongodb*)
       start_db_container "$image" \
@@ -628,12 +689,17 @@ for entry in "${BACKENDS[@]}"; do
       # confusing connection error.
       case "$name" in
         postgresql) docker_exec exec "$CONTAINER" pg_isready -U ferretdb -d ferretdb >/dev/null 2>&1 && up=1 ;;
+        pgrust)     docker_exec exec "$CONTAINER" psql -U ferretdb -d ferretdb -tAc 'SELECT 1' 2>/dev/null | grep -q 1 && up=1 ;;
         # Ready once the DocumentDB extension is installed, not merely accepting
         # connections - the entrypoint restarts the server after its init scripts.
         ferretdb2)  docker_exec exec "$CONTAINER" psql -U ferretdb -d postgres -tAc \
                       "SELECT 1 FROM pg_extension WHERE extname = 'documentdb'" 2>/dev/null | grep -q 1 && up=1 ;;
         mysql)      docker_exec exec "$CONTAINER" mysqladmin ping -h 127.0.0.1 -u root -pferretdb_root_secret --silent >/dev/null 2>&1 && up=1 ;;
         mariadb)    docker_exec exec "$CONTAINER" healthcheck.sh --connect --innodb_initialized >/dev/null 2>&1 && up=1 ;;
+        dolt)       docker_exec run --rm --network host mysql:9 mysql -h 127.0.0.1 -P "$hostport" -u root -pferretdb_root_secret \
+                      -D ferretdb -e 'SELECT 1' >/dev/null 2>&1 && up=1 ;;
+        tidb)       docker_exec run --rm --network host mysql:9 mysql -h 127.0.0.1 -P "$hostport" -u root \
+                      -e 'CREATE DATABASE IF NOT EXISTS ferretdb' >/dev/null 2>&1 && up=1 ;;
         sap-hana)   docker_exec logs "$CONTAINER" 2>&1 | grep -q "Startup finished" && up=1 ;;
         mongodb*)
                     docker_exec exec "$CONTAINER" mongosh --quiet --eval 'db.runCommand({ping:1}).ok' 2>/dev/null | grep -q 1 && up=1 ;;

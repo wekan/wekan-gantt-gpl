@@ -124,6 +124,234 @@ its reason.
 
 </details>
 
+# v12.93 2026-11-04 WeKan ® release
+
+**In short:** The database **speed test** has a new small-scale result, ordered
+from fastest to slowest with how many times slower each database is, and two
+more databases: **pgrust** (PostgreSQL in Rust) and **TiDB**. Noria, YugabyteDB
+and CockroachDB were looked at and cannot be used, for reasons the README gives.
+
+This release adds the following new features:
+
+**Database speed test** - how fast the databases answer WeKan's queries.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/46c0ad43e8">Results.md is a quick small-scale run, fastest first, with how many times slower each is</a>. Thanks to Raymond-Voogt and xet7.</summary>
+
+The speed test was only ever run at twice a production WeKan, which takes hours.
+`WEKAN_SPEEDTEST_SCALE=0.05` is 1/20 of one and the whole run takes under half
+an
+hour. Results.md opens with an **At a glance** table: rank, the total of all
+queries, and **how many times slower** than the fastest database, for the
+average
+user and for the slowest one (the biggest board or the busiest user). Every
+table
+is ordered by its own numbers, so the slowest-user table can rank differently,
+the
+loading table is ordered by the whole load time, and the header says the real
+data
+size and the real operating system (it said "twice a production WeKan" and
+"Linux" whatever was measured). `tests/dbSpeedTest.test.cjs` pins the ranks, the
+ratios, the per-table order and the header, with a negative test for each.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/46c0ad43e8">The speed test includes pgrust, PostgreSQL rewritten in Rust</a>. Thanks to Raymond-Voogt and xet7.</summary>
+
+[pgrust](https://github.com/malisper/pgrust) v0.4-beta is wire compatible with
+PostgreSQL 18, so FerretDB's PostgreSQL handler uses it unchanged, and it gives
+the
+same answers as MongoDB. It is **not faster** than PostgreSQL for WeKan's
+queries
+(174 ms against 145 ms in total), and creating WeKan's 47 indexes takes 38 s
+against 1 s. In the conformance run it is opt-in (`WEKAN_CONFORMANCE_PGRUST=1`).
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f576a0cca9">The speed test includes TiDB, and the README says which other databases cannot run FerretDB and why</a>. Thanks to Raymond-Voogt and xet7.</summary>
+
+TiDB 7.5 (Apache-2.0, MySQL protocol, one process on its own storage) runs
+FerretDB's MySQL handler and gives the same answers as MongoDB, after one change
+in FerretDB: its metadata table's generated columns are `VIRTUAL`, because TiDB
+refuses `ALTER TABLE ... ADD COLUMN ... STORED`. Opt-in in the conformance run
+(`WEKAN_CONFORMANCE_TIDB=1`). Noria has no JSON type, triggers or generated
+columns, which the MySQL handler needs; YugabyteDB refuses a `CREATE INDEX` on a
+`jsonb` expression, which every FerretDB v1 PostgreSQL index is; CockroachDB is
+under a proprietary licence. The README's **Other databases tried** has the
+reasons.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1c44876beb">The speed test includes Dolt, and VersionHistory tests what version history would give undo and redo</a>. Thanks to Raymond-Voogt and xet7.</summary>
+
+[Dolt](https://github.com/dolthub/dolt) (git for data, MySQL protocol) runs under
+FerretDB's existing MySQL handler and gives the same answers, but is by far the
+slowest: 20,470 ms in total, 1,230x MongoDB, because every query over cards is a
+2.8 s whole-table scan. `docs/Databases/FerretDB/1/VersionHistory` drives
+WeKan-shaped changes through FerretDB onto Dolt and through the REST API of
+TerminusDB. Dolt makes a commit per FerretDB write for +0.4 ms, undoes and
+redoes
+with `DOLT_REVERT` and reads any earlier state with `AS OF`, but names the SQL
+user and not the WeKan user, and cannot restore one field of a document that
+changed again (a conflict). TerminusDB records the author and message of every
+commit and restores one field while later changes stay, but speaks neither the
+MongoDB protocol nor SQL. WeKan's own History remains the undo; Dolt would be a
+backup and audit layer under it. ClickHouse and StarRocks were tried with the
+MySQL handler and need a handler of their own, which has not been written.
+`tests/versionHistoryExperiment.test.cjs` and `tests/dbSpeedTest.test.cjs` pin
+the
+scripts and the findings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/96d56ecc6c">Go databases that could be linked into FerretDB were compared with its SQLite: none is faster where it counts</a>. Thanks to Raymond-Voogt and xet7.</summary>
+
+`docs/Databases/FerretDB/1/SpeedTest/embedded` is a Go module of its own (pure
+Go,
+no cgo) that loads the speed test's cards into SQLite set up as FerretDB sets it
+and into Pebble, Badger, bbolt, BuntDB, Nutsdb and Clover, and asks each the
+questions WeKan asks of cards, at 15,377 and 153,768 cards. Every engine must
+give
+the right counts first. A board's cards take the same time on every engine that
+is
+not slower, because decoding the JSON dominates; the key-value stores win single
+reads and writes by microseconds that a FerretDB call hides, and would make the
+handler do in Go what SQL does in SQLite. Pebble is 12x slower on fetching a
+board, Clover 90-190x slower in total, and bbolt with its default fsync 100-160x
+slower on writes. The README accounts for every entry of the awesome-go
+databases section. `tests/embeddedEnginesBench.test.cjs` pins the export, the
+engines, the SQLite setup and the conclusion.
+
+</details>
+
+**The header bar** - what sits beside the logo.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f25957dcf3">A full screen button to the right of the logo in the header bar</a>. Thanks to xet7.</summary>
+
+A button puts the whole page in full screen and takes it out again with the
+Fullscreen API, in iPad Safari, desktop browsers and Android browsers. Its label
+is the existing Maximize, so no language file changes. It is drawn only where
+the
+browser offers the API and the page may use it: iPhone Safari does not have it
+for pages (use Add to Home Screen, the manifest says `display: standalone`), and
+neither does a page in an iframe without `allowfullscreen`. The icon follows the
+browser's own events, so leaving with Esc is understood.
+`tests/fullscreenButton.test.cjs`
+drives the pure part with fake documents, including a refusal, and
+`tests/playwright/specs/header-fullscreen.e2e.js` checks the position, the
+label,
+entering, leaving, Esc and the negative case in Chromium and WebKit.
+
+</details>
+
+and updates the following dependencies:
+
+- **minimatch 10.2.6 → 11.0.4** in the `npm-packages/exceljs` and vendored
+  `jade` lockfiles ([GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249),
+  Dependabot alerts \#180 and \#182), through overrides on `readdir-glob`,
+  `glob` 13 and
+  `test-exclude`, as the root lockfile has; a test reads every
+  `package-lock.json`.
+- **klauspost/compress 1.18.0 → 1.18.7**, **golang.org/x/net 0.23.0 → 0.62.0**,
+  **golang.org/x/text 0.14.0 → 0.43.0**, **golang/glog 1.0.0 → 1.2.4** and
+  **OpenTelemetry 1.41.0 → 1.42.0** in the Go module of the embedded-engine
+  benchmark (Dependabot alerts \#183-\#187; `govulncheck` reports none). A test
+  holds
+  every `go.mod` at or above these floors.
+
+Thanks to dependabot.
+
+and fixes the following bugs:
+
+**Opened cards** - where a card opens.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/84b0480aa8">A card opened as a popup covers the header bars instead of opening below them</a>. Thanks to xet7.</summary>
+
+On an iPad, a card opened from the Roadmap view (and from search results and the
+table view) opened below the top header, and collapsed it was a bar floating
+over
+the swimlane. A card opened as a popup got the generic wide-layout rule
+`top: 97px` and `z-index: 30`, because the desktop-mode rules that dock an
+opened
+card at the top skip a popup, while the popup wrapper rule in the same file says
+it must cover the header bars. It now docks at `top: 8px` with `z-index: 2001`
+in
+the wide layout; mobile mode keeps its full-window rule. This was reproduced in
+Chromium and in WebKit with an iPad profile; whether it is the whole of what an
+iPad shows is for the iPad to say.
+`tests/cardPopupOverHeader.test.cjs` pins the rule and
+`tests/playwright/specs/card-popup-over-header.e2e.js` shows the card over the
+header, open and collapsed, and fails without the fix (top 97 against a header
+88
+high).
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1b05673200">The opened card and every popup move under a finger, on an iPad</a>. Thanks to xet7.</summary>
+
+On an iPad the opened card did not move when dragged from the collapse caret,
+the
+space beside it, the card number, or the drag handle, while the page behind it
+scrolled. The card window was moved by mouse events only, which a finger does
+not
+send while it moves, and its drag areas did not say `touch-action: none`, so the
+browser took the gesture for a scroll. It is moved by Pointer Events now: the
+header row or the handle starts the drag; a link or button in the row (the
+caret,
+close, the menu) still does its job when tapped and moves the window when
+dragged,
+without also collapsing or closing; the title still edits when tapped; and with
+drag handles on only the handle moves it. The card number is above the title's
+edit
+zone, so it drags too. The window is kept within reach, and `touch-action: none`
+is
+on the card header, its handle and every popup's title bar and handle, so popups
+move by finger as well.
+`tests/windowDragTouch.test.cjs` pins the decisions and the wiring, and
+`tests/playwright/specs/card-window-touch-drag.e2e.js` drags with a real touch
+from
+each place with handles on and off, taps the caret, drags with a mouse and moves
+a
+popup; the finger tests fail without the fix. Tested in Chromium; an iPad is the
+final check.
+
+</details>
+
+and has the following documentation change:
+
+**Database speed test** - what was improved, and what was tried and was not.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d05a42a5af">The speed test README lists the improvements since the last run, and what did not help</a>. Thanks to Raymond-Voogt and xet7.</summary>
+
+SQLite sorts in the database and stores JSONB, PostgreSQL answers membership
+from a GIN index and pushes down `$or`, `$elemMatch` and `$and`, MySQL and
+MariaDB read through their indexes with multikey side tables, and WeKan no
+longer scans whole collections every hour or at every start of every server. The
+small run found one more: **PostgreSQL planned from no statistics** until
+autovacuum analyzed a freshly indexed table, so a Due Cards query took 407 ms
+and
+84 ms after; FerretDB now analyzes the table when its indexes are created (the
+PostgreSQL row went from 454 to 145 ms, and from last place to eighth). A
+profile of Due Cards on SQLite found another: a membership test made SQLite turn
+the whole `members` array into JSON text and parse it again for every row, and
+reading it from the column instead cut the visible-boards query from 26 to 16 ms
+(All Boards 6.9 → 4.9 and 5.9 → 3.9 ms, Due Cards 54.5 → 43.9 ms, the SQLite
+total 82.7 → 68.3 ms) with identical answers. Tried and
+not kept, with the numbers: sorting in the database on PostgreSQL (52 ms against
+38-49 ms decoded in Go) and `ANALYZE TABLE` on MySQL and MariaDB (no change).
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v12.92 2026-11-03 WeKan ® release
 
 **In short:** A missing **REST checklist** answers a JSON 404 instead of an
