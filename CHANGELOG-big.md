@@ -124,6 +124,91 @@ its reason.
 
 </details>
 
+# v12.94 2026-11-04 WeKan ® release
+
+**In short:** On an iPad the **opened card covers the header bar** instead of
+sitting
+behind it, and the speed test measures where the time goes when a WeKan board is
+opened, on FerretDB and on MongoDB.
+
+This release fixes the following bugs:
+
+**Opened cards** - where a card opens.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/efaf94242e">On a phone in desktop mode the opened card starts below the header bar</a>. Thanks to xet7.</summary>
+
+The header wraps to several rows on a phone, far taller than the 8px the
+floating card docks at, so the card's top row was among the header's rows and
+was only seen by dragging it down. Below 801px a card without an inline top,
+popup cards included, now starts at `--wekan-header-height` + 8px. A dragged
+place is an inline top, so it is kept when the finger is lifted.
+`tests/cardBelowHeaderOnPhone.test.cjs` pins the rule and that it never
+matches a dragged card.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/006d24502c">The opened card covers the header bar on an iPad instead of sitting behind it</a>. Thanks to xet7.</summary>
+
+On iPad Chrome (and Safari) the opened card's top row - the collapse caret, the
+card
+number, the menu, maximize and X - was behind the header bar, although the
+card's
+`z-index` is 2001 and the header's 1000. iOS WebKit makes every scrolling
+element
+(`#content`, the board wrapper) a stacking context of its own, so the card's
+`z-index`
+is compared only inside it, and the header bar, itself a stacking context, is
+painted
+over all of it. While a card is open the header bar is now at the level of the
+content,
+which comes after it in the page and paints over it; with no card open it keeps
+its
+own level. A browser spec makes the same trap with `isolation: isolate` on
+`#content`
+and the board wrapper and shows the card over the header, open and collapsed,
+with its
+close button reachable, in Chromium and WebKit; without the rule it fails as the
+screenshot shows. `tests/cardOverHeaderStacking.test.cjs` pins the rule and its
+selector. An iPad is the final check.
+
+</details>
+
+and has the following documentation change:
+
+**Database speed test** - how fast the databases answer WeKan's queries.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3621413d6f">The speed test measures where the time goes when a WeKan board is opened, on FerretDB and on MongoDB</a>. Thanks to Raymond-Voogt and xet7.</summary>
+
+`docs/Databases/FerretDB/1/SpeedTest/app` opens a board of 200, 2,000 and 5,000
+cards in
+Chromium on WeKan with FerretDB (SQLite) and with MongoDB 8, and profiles the
+Meteor
+server (Node inspector) and FerretDB (pprof). Two runs each. The Meteor server
+uses
+0.1-0.5 s of CPU, the same on both, and its DDP server is 1% of that; the
+browser gets
+the same ~210 KB at every size. A 5,000-card board takes FerretDB 400-600 ms
+longer to
+open (first card +42-48%), a small board only 70-100 ms, and FerretDB spends
+about 4 s
+of CPU on it, 39% in the SQLite engine and 34% filtering in Go what it read. So
+a
+backend rewritten in another language would save part of a fraction of a second,
+while
+the part that scales with the board is the database layer. The README says what
+was not
+measured: a production build, the browser's own time, and which query sends the
+`aggregate`. `tests/boardOpenProfile.test.cjs` pins the analysis of the profile
+and what
+the README claims.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v12.93 2026-11-04 WeKan ® release
 
 **In short:** The database **speed test** has a new small-scale result, ordered
