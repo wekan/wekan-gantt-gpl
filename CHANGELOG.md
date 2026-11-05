@@ -5,6 +5,26 @@ each one changed and the project status are in
 Written by `node releases/changelog-short.mjs` from CHANGELOG-big.md:
 make changes there.
 
+# v12.96 2026-11-05 WeKan ® release
+
+The release **bundle starts again**: v12.95's build stopped on
+boot because the **nodemailer** 10 raised inside Meteor's email package no
+longer had the files that package was built against.
+
+[All changes in v12.96](CHANGELOG-big.md#v1296-2026-11-05-wekan--release)
+
+# v12.95 2026-11-05 WeKan ® release
+
+**Continuous backup** now runs on one server at a time, with a
+lease, when WeKan has several servers. Missing-board **exports** and REST
+updates of missing **integrations**, **users**, **organizations** and **teams**
+answer 404 instead of 200, the **minicard** shows a picked Requested by and
+Assigned by, a card stops offering the attachment "+" when uploads are blocked,
+and the Docker image's **nodemailer**, **body-parser**, **qs**, **uuid** and
+**postcss-selector-parser** are raised past the advisories a Grype scan found.
+
+[All changes in v12.95](CHANGELOG-big.md#v1295-2026-11-05-wekan--release)
+
 # v12.94 2026-11-04 WeKan ® release
 
 On an iPad the **opened card covers the header bar** instead of
@@ -29,21 +49,3 @@ A missing **REST checklist** answers a JSON 404 instead of an
 empty 500.
 
 [All changes in v12.92](CHANGELOG-big.md#v1292-2026-11-03-wekan--release)
-
-# v12.91 2026-11-03 WeKan ® release
-
-A **GitHub CodeQL** finding in a test is fixed, and the guard
-against
-replacing text with itself now also sees patterns with a `^` or `$` anchor.
-
-[All changes in v12.91](CHANGELOG-big.md#v1291-2026-11-03-wekan--release)
-
-# v12.90 2026-11-03 WeKan ® release
-
-The login page can have its own **background color**, Member
-Settings
-has a per-member switch, **Show focus outline**, to hide the blue focus ring,
-and
-**Escape closes the add-list composer**.
-
-[All changes in v12.90](CHANGELOG-big.md#v1290-2026-11-03-wekan--release)

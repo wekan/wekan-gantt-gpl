@@ -124,6 +124,252 @@ its reason.
 
 </details>
 
+# v12.96 2026-11-05 WeKan ® release
+
+**In short:** The release **bundle starts again**: v12.95's build stopped on
+boot because the **nodemailer** 10 raised inside Meteor's email package no
+longer had the files that package was built against.
+
+This release fixes the following bug:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5a21b074d4">The bundle starts again, with nodemailer 10 inside Meteor's email package</a>. Thanks to xet7.</summary>
+
+v12.95 raised the nodemailer in `meteor/email` from 8.0.3 to 10.3.1, and
+nodemailer 10 moved `lib/` to `dist/cjs/`. `packages/email.js`, compiled
+against 8.0.3, links `lib/nodemailer.js` and `lib/well-known/index.js` and
+`Npm.require`s `lib/mail-composer` by path, so build-amd64 failed its smoke
+boot. `releases/bundle-npm-security-bumps.json` now shims nodemailer as it
+already shims uuid 11: `lib/nodemailer.js` and every `lib/<name>` directory the
+exports map lists are written back, forwarding to `dist/cjs`, with a
+`lib/package.json` marking them CommonJS because nodemailer is `"type":
+"module"`. A fresh local bundle taken through build-amd64's install, bump, trim
+and prune steps passes `releases/bundle-smoke-boot.sh`.
+`tests/bundleNpmSecurityBumps.test.cjs` requires the recorded paths through the
+shim, checks every exported `lib/<name>`, and fails without the CommonJS marker.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
+# v12.95 2026-11-05 WeKan ® release
+
+**In short:** **Continuous backup** now runs on one server at a time, with a
+lease, when WeKan has several servers. Missing-board **exports** and REST
+updates of missing **integrations**, **users**, **organizations** and **teams**
+answer 404 instead of 200, the **minicard** shows a picked Requested by and
+Assigned by, a card stops offering the attachment "+" when uploads are blocked,
+and the Docker image's **nodemailer**, **body-parser**, **qs**, **uuid** and
+**postcss-selector-parser** are raised past the advisories a Grype scan found.
+
+This release fixes the following bugs:
+
+**Exports** - what the export routes answer when something is wrong.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0c0d666ffa">Missing-board exports return 404, and an over-long export token returns 400</a>. Thanks to AhmedLukman and xet7.</summary>
+
+The board Excel export answered a missing board with HTTP 200 and only the text
+`Board not found` (PR #6869). The two PDF export routes had the same fault, and
+the Excel and PDF routes answered an over-long auth token with 200 as well,
+while `export.js` already used 404 and 400. All of them now choose their status
+the same way.
+
+`tests/exportErrorStatuses.test.cjs` scans every `models/export*.js` route for a
+text answer without a status, so the fault cannot return anywhere there; the
+PR's route and browser tests stay.
+
+</details>
+
+**Continuous backup** - which server streams it.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/880ec2d707">Only one server streams it at a time, holding a lease</a>. Thanks to Raymond-Voogt and xet7.</summary>
+
+With several WeKan servers on one database, every server applied the continuous
+backup setting, so
+each of them tailed the oplog and wrote its own archives into the same target
+directory
+(\#6861). The leader now holds a lease, one `continuousBackupLease` document
+with its id and an
+expiry. Taking it is one atomic operation, the leader renews it every 15 seconds
+and it lapses after
+45, so another server takes over within a minute when the leader stops, and a
+server that loses the
+lease stops its stream. Startup, saving the settings and a change saved on
+another server converge
+through that loop; a restore or a fetch from the cloud takes the lease and waits
+one renewal so it
+is the only writer. One server is always its own leader.
+
+Checked against the real driver on FerretDB (SQLite): 24 clients at once give
+exactly one leader, and
+renewal, expiry, the old leader losing the lease and release behave.
+`tests/continuousBackupLease.test.cjs`
+pins the same and the wiring.
+
+</details>
+
+**Attachments** - what a card offers when the administrator blocked uploads.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d8b3579117">A card no longer offers the attachment "+" when uploads are blocked for the whole site</a>. Thanks to Raymond-Voogt and xet7.</summary>
+
+Admin Panel / Attachments / Transfer limits already has "Attachments upload" and
+"API upload" set to
+Blocked, and the server refuses on every path: the upload pipeline,
+`api.attachment.upload` and
+`.copy`, and the `/api/attachment` upload, upload-background and copy routes.
+The card still showed
+the "+" button and accepted a drop or paste for an upload that would then be
+refused. It now asks
+the server one boolean, at most once a minute, and hides both. No second setting
+was added
+(\#6870 proposed a `disableAttachments`), so nothing can disagree with what the
+server enforces.
+
+`tests/attachmentUploadPolicy.test.cjs` pins the client, the method, the server
+enforcement it relies
+on, and that no `disableAttachments` setting exists.
+
+The method was not imported at first, so the call failed and the "+" stayed;
+[a follow-up](https://github.com/wekan/wekan/commit/3aaa46fdae) loads it, and
+`tests/serverModulesLoaded.test.cjs` now passes.
+
+</details>
+
+**REST API** - what the integration, user, organization and team update routes
+answer for something that is not there.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6012521ccc">An integration update for a missing or wrong-board integration returns 404</a>. Thanks to AhmedLukman and xet7.</summary>
+
+`PUT /api/boards/:boardId/integrations/:intId` answered 200 with the requested
+id when no
+integration matched that id and board (PR #6871). The two activities routes
+(`POST` and `DELETE`
+`.../activities`) updated nothing and answered 200 with `data: null`. All three
+now look the
+integration up on that board after board-admin authorization and answer the JSON
+404 the `GET`
+route already uses, before validating or writing anything.
+
+`tests/restIntegrationWriteRoutes404.test.cjs` pins, for the whole file, that
+every handler that
+updates an integration looks it up first and only after authorization; the PR's
+route and browser
+tests stay.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d3edc56170">An update of a missing user returns 404</a>. Thanks to AhmedLukman and xet7.</summary>
+
+`PUT /api/users/:userId` answered 200 with no data when no user had that id,
+for every action (PR #6873). After the admin check it now answers a JSON 404
+`User not found` before taking ownership, disabling or enabling a login.
+`tests/restUserUpdate.test.cjs` runs the handler for every action against a
+missing user, and checks that authorization still comes first, that
+self-disable stays a no-op and that a database failure stays a safe 500;
+`tests/playwright/specs/rest-user-update.e2e.js` drives it.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4d44349ab6">A feature update of a missing organization or team returns 404</a>. Thanks to AhmedLukman and xet7.</summary>
+
+`PUT /api/admin/orgs/:orgId/features` and `PUT
+/api/admin/teams/:teamId/features`
+answered 200 with `data: undefined` when there was no such organization or team
+(PR #6874). They now answer a JSON 404 `Organization not found` / `Team not
+found`. `tests/restPeopleFeatures.test.cjs` runs both handlers for missing and
+existing records, empty bodies, denied authorization and database failures;
+`tests/playwright/specs/rest-people-features.e2e.js` checks the Admin Panel /
+People feature checkboxes.
+
+</details>
+
+**The minicard** - who requested and who assigned a card.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/22e5df55d7">Requested by and Assigned by show when a member was picked, with one icon per field everywhere</a>. Thanks to mueschel and xet7.</summary>
+
+The opened card's + button picks board members into `requesters` /
+`assigners`, and the free-text name is optional, but the minicard drew only the
+free text: a requester picked the usual way never showed although Show on
+Minicard was on (#6872). The minicard now shows the picked members as avatars
+beside any typed name. Card Settings also had the icons swapped - a head with a
+plus for Requested by and a cart for Assigned by - and now uses the cart and
+user-plus that the opened card and the minicard use.
+`tests/minicardRequestedAssignedBy6872.test.cjs` pins the avatars, the
+either-or condition and one icon per field, and fails on a minicard block gated
+on the free text alone;
+`tests/playwright/specs/minicard-requested-by-6872.e2e.js`
+drives it.
+
+</details>
+
+and updates the following dependencies:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/dad03959d9">nodemailer 10.3.1, body-parser 1.20.9 and 2.4.0, qs 6.16.1, uuid 11.1.1 and postcss-selector-parser 6.1.5 in the bundle</a>. Thanks to the Grype scan reporter and xet7.</summary>
+
+A Grype scan of the image found High and Medium advisories in packages that
+Meteor's own packages carry inside `programs/server/npm/node_modules/meteor/`,
+where `package.json` and its `overrides` cannot reach.
+`releases/bump-bundle-npm-deps.mjs` raises them after `meteor build`.
+
+- **nodemailer 8.0.11 to 10.3.1** (GHSA-2x7j-588g-ccc2, GHSA-v53p-9fqp-m79j,
+  GHSA-p6gq-j5cr-w38f and the rest fixed in 10.1.4 or later). It was listed as
+  not fixable because the fix is a new major. `meteor/email` only calls
+  `createTransport`, the `stream` plugin hook, `nodemailer/lib/well-known` and
+  `nodemailer/lib/mail-composer`, and all four were run against 10.3.1 through
+  the bundle's own package specifiers.
+- **body-parser 1.20.6 and 1.20.8 to 1.20.9, and 2.3.0 to 2.4.0**
+  (GHSA-27r3-jxmh-p828). A minimum may now be written `body-parser@2`, which
+  applies to copies of that major only, so each major is raised inside itself.
+- **qs to 6.16.1** (GHSA-6pq8-jhm2-2vcw) and **postcss-selector-parser 6.1.4 to
+  6.1.5** (GHSA-rj75-hqrm-r3gf).
+- **uuid 8.3.2 and 9.0.1 to 11.1.1** (GHSA-w5hq-g745-h8pq). uuid 11 moved its
+  entry point from `dist/index.js` to `dist/cjs/index.js`, which killed the
+  server on boot the one time it was tried. The bumper now writes the old
+  `dist/index.js` back as `export * from './esm/index.js'`: it is an ES module
+  because uuid is `"type": "module"`, and Node 26 `require()`s it.
+
+glob 14 and minimatch 11 were already in `package.json`; the scanned image
+predates them. The runtime image installs no compiler (`gcc-14-base` is Debian's
+one-file package), so the multi-stage build the report asks for is already how
+it is built. Run against a copy of the published image's bundle, the bumper
+raised all of the above and every raised copy loaded.
+
+**This release's bundle did not start.** "Every raised copy loaded" was checked
+by loading each package, not by booting the bundle: nodemailer 10 moved `lib/`
+to `dist/cjs/`, Meteor's `email` package still links the `lib/` paths of 8.0.3,
+and build-amd64 failed its smoke boot with "Cannot find module
+.../meteor/email/node_modules/nodemailer/lib/nodemailer.js". The fix is in the
+next release.
+`tests/bundleNpmSecurityBumps.test.cjs` pins the minimums, the per-major
+rule and the shim, and runs the bumper with `--dry-run` on a bundle of
+body-parser, uuid and nodemailer copies at, below and above their minimums.
+
+</details>
+
+and has the following documentation change:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/016b4bf3bd">Only maintainer mode commits directly and updates changelogs, and a pull request has one feature or fix</a>. Thanks to xet7.</summary>
+
+CLAUDE.md and AGENTS.md now say that a pull request contributor, to wekan/wekan
+or to the maintainer's repositories under `.tools/`, sends each feature or fix
+as its own pull request with only related changes in it, and changes no
+changelog. The maintainer, or an agent working as the maintainer, writes the
+entry after merging, when there is a commit to link.
+`tests/changelogFormat.test.cjs` checks both files.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v12.94 2026-11-04 WeKan ® release
 
 **In short:** On an iPad the **opened card covers the header bar** instead of

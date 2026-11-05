@@ -41,8 +41,9 @@ console.log('bundleNpmSecurityBumps:');
 
 test('the manifest lists the packages the scan found, at fixed versions', () => {
   const expected = {
-    'nodemailer': '8.0', 'openpgp': '5.11', 'svgo': '2.8.4', 'postcss': '8.5',
-    'nanoid': '3.3', 'lodash': '4.18', 'qs': '6.16', 'body-parser': '1.20',
+    'nodemailer': '10.3', 'openpgp': '5.11', 'svgo': '2.8.4', 'postcss': '8.5',
+    'nanoid': '3.3', 'lodash': '4.18', 'qs': '6.16.1', 'body-parser': '1.20.9', 'body-parser@2': '2.4',
+    'uuid': '11.1.1', 'postcss-selector-parser': '6.1.5',
     'cookie': '0.7', 'on-headers': '1.1', 'tmp': '0.2', 'diff': '3.5',
     '@babel/runtime': '7.', 'underscore': '1.13.8',
     // Artifact Hub's Trivy report of the v12.38 image: same-major fixes.
@@ -57,25 +58,106 @@ test('the manifest lists the packages the scan found, at fixed versions', () => 
   }
 });
 
-test('uuid is NOT bumped, and says why (negative)', () => {
-  // The one that was tried and reverted. If somebody adds it back, the bundle
-  // stops booting - so the reason lives where they would look.
-  assert.ok(!('uuid' in manifest.minimums), 'uuid must not be in minimums');
-  const reason = (manifest.notFixable.uuid || []).join(' ');
-  assert.ok(/Cannot find module/.test(reason) && /dist\/cjs\/index\.js/.test(reason),
-    'and notFixable carries the boot error it caused');
+test('uuid is bumped to 11.1.1 and the entry point the bundle recorded is written back', () => {
+  // uuid 11 moved its entry from dist/index.js to dist/cjs/index.js, and a bundle
+  // that recorded dist/index.js died on boot ("Cannot find module
+  // .../uuid/dist/index.js"). The fix is a shim at the old path, not a refusal.
+  assert.strictEqual(manifest.minimums.uuid, '11.1.1');
+  const shim = (manifest.shims || {}).uuid || {};
+  assert.strictEqual(shim['dist/index.js'], "export * from './esm/index.js';\n",
+    'dist/index.js re-exports the ESM build (uuid is "type": "module"; a CJS shim would be parsed as ESM)');
+  assert.ok(/manifest\.shims/.test(bumper) && /writeFileSync\(file, body\)/.test(bumper),
+    'and the bumper writes it after every replacement');
+  // negative: nothing is described as unfixable that was fixed
+  for (const name of ['uuid', 'nodemailer']) {
+    assert.ok(!(name in manifest.notFixable), `${name} must not stay in notFixable`);
+  }
 });
 
-test('a fix that needs a new major is recorded in notFixable, never in minimums (negative)', () => {
-  for (const name of ['nodemailer', 'postcss-selector-parser', 'uuid']) {
-    const reason = (manifest.notFixable[name] || []).join(' ');
-    assert.ok(/major/.test(reason), `${name} says the fix is a new major`);
+test('nodemailer 10 gets back the lib/ files meteor/email was built against', () => {
+  // v12.95's bundle failed its smoke boot: nodemailer 10 moved lib/ to dist/cjs/,
+  // and packages/email.js links the paths it recorded for 8.0.3 - "Cannot find
+  // module .../meteor/email/node_modules/nodemailer/lib/nodemailer.js" - and
+  // Npm.requires nodemailer/lib/mail-composer, which Meteor resolves by path.
+  const shim = (manifest.shims || {}).nodemailer || {};
+  const os = require('os');
+  const src = path.join(repoRoot, 'node_modules/nodemailer');
+  const pkg = JSON.parse(fs.readFileSync(path.join(src, 'package.json'), 'utf8'));
+  assert.ok(Number(pkg.version.split('.')[0]) >= 10, `node_modules/nodemailer ${pkg.version} has the 10 layout`);
+  // every lib/<name> directory nodemailer 10 still exports has its old file back,
+  // so no path a nodemailer 8 caller could have recorded is left unresolvable
+  const dirs = Object.entries(pkg.exports)
+    .filter(([key, target]) => /^\.\/lib\/[a-z0-9-]+$/.test(key)
+      && target && target.require === `./dist/cjs/${key.slice(6)}/index.js`)
+    .map(([key]) => `lib/${key.slice(6)}/index.js`);
+  assert.ok(dirs.includes('lib/mail-composer/index.js') && dirs.includes('lib/well-known/index.js'));
+  for (const rel of ['lib/package.json', 'lib/nodemailer.js', ...dirs]) {
+    assert.ok(rel in shim, `nodemailer shim for ${rel}`);
   }
-  // nodemailer stays at the newest 8.x; the 9.x/10.x fixes are named, not taken.
-  assert.ok(manifest.minimums.nodemailer.startsWith('8.'));
-  assert.ok(!('postcss-selector-parser' in manifest.minimums));
-  // lodash.template has had a fixed release (4.18.x) since 2026-04; it is no
-  // longer described as unfixable.
+  const tmp = fs.mkdtempSync(path.join(process.env.TMPDIR || os.tmpdir(), 'nodemailer-shim-'));
+  try {
+    const shimmed = path.join(tmp, 'with', 'nodemailer');
+    const bare = path.join(tmp, 'without', 'nodemailer');
+    for (const [dir, files] of [[shimmed, Object.keys(shim)], [bare, ['lib/nodemailer.js']]]) {
+      fs.cpSync(src, dir, { recursive: true });
+      for (const rel of files) {
+        fs.mkdirSync(path.dirname(path.join(dir, rel)), { recursive: true });
+        fs.writeFileSync(path.join(dir, rel), shim[rel]);
+      }
+    }
+    // the two paths the bundle recorded, required by file as Meteor's runtime does
+    assert.strictEqual(typeof require(path.join(shimmed, 'lib/nodemailer.js')).createTransport, 'function');
+    assert.strictEqual(typeof require(path.join(shimmed, 'lib/well-known/index.js')), 'function');
+    assert.strictEqual(typeof require(path.join(shimmed, 'lib/mail-composer')), 'function');
+    // and each forward is the module the exports map gives a require() caller
+    for (const rel of dirs) {
+      assert.strictEqual(require(path.join(shimmed, rel)),
+        require(path.join(shimmed, 'dist/cjs', rel.slice(4))), rel);
+    }
+    // negative: without lib/package.json the CommonJS shim is parsed as ESM
+    // (nodemailer is "type": "module") and does not load
+    assert.throws(() => require(path.join(bare, 'lib/nodemailer.js')));
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('body-parser 1.x and 2.x are each raised inside their own major', () => {
+  assert.strictEqual(manifest.minimums['body-parser'], '1.20.9');
+  assert.strictEqual(manifest.minimums['body-parser@2'], '2.4.0');
+  const fs2 = require('fs'), os = require('os'), cp = require('child_process');
+  const bundle = fs2.mkdtempSync(path.join(process.env.TMPDIR || os.tmpdir(), 'bump-test-'));
+  const put = (dir, version) => {
+    const d = path.join(bundle, 'programs/server/npm/node_modules', dir);
+    fs2.mkdirSync(d, { recursive: true });
+    fs2.writeFileSync(path.join(d, 'package.json'), JSON.stringify({ name: 'x', version }));
+  };
+  put('meteor/a/node_modules/body-parser', '1.20.6');
+  put('meteor/b/node_modules/body-parser', '2.3.0');
+  put('meteor/c/node_modules/body-parser', '2.4.0');
+  put('meteor/d/node_modules/body-parser', '1.20.9');
+  put('meteor/e/node_modules/uuid', '8.3.2');
+  put('meteor/f/node_modules/uuid', '14.0.2');
+  put('meteor/g/node_modules/nodemailer', '8.0.11');
+  const out = cp.execFileSync(process.execPath,
+    [path.join(repoRoot, 'releases/bump-bundle-npm-deps.mjs'), bundle, '--dry-run'], { encoding: 'utf8' });
+  fs2.rmSync(bundle, { recursive: true, force: true });
+  const lines = out.split('\n').filter(l => /->/.test(l));
+  const has = re => lines.some(l => re.test(l));
+  assert.ok(has(/body-parser 1\.20\.6 -> 1\.20\.9/), '1.x below 1.20.9 is raised to 1.20.9');
+  assert.ok(has(/body-parser 2\.3\.0 -> 2\.4\.0/), '2.3.0 is raised to 2.4.0');
+  // negative: neither crosses into the other major, and fixed copies are left alone
+  assert.ok(!has(/body-parser 1\.\d+\.\d+ -> 2\./) && !has(/body-parser 2\.\d+\.\d+ -> 1\./));
+  assert.ok(!has(/body-parser 2\.4\.0 ->/) && !has(/body-parser 1\.20\.9 ->/));
+  assert.ok(has(/uuid 8\.3\.2 -> 11\.1\.1/) && !has(/uuid 14\./), 'uuid 14 is above the minimum');
+  assert.ok(has(/nodemailer 8\.0\.11 -> 10\.3\.1/));
+});
+
+test('a fix that needs a new major its dependents cannot take is recorded in notFixable (negative)', () => {
+  const reason = (manifest.notFixable['postcss-selector-parser'] || []).join(' ');
+  assert.ok(/major/.test(reason) && /CVE-2026-104844/.test(reason));
+  assert.ok(manifest.minimums['postcss-selector-parser'] === '6.1.5',
+    'but the same-major fix that exists is taken');
   assert.ok(!('lodash.template' in manifest.notFixable));
   for (const [name, version] of Object.entries(manifest.minimums)) {
     assert.ok(/^\d+\.\d+\.\d+$/.test(version), `${name} is pinned to an exact version`);
