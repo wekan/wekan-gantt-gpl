@@ -124,6 +124,66 @@ its reason.
 
 </details>
 
+# v12.97 2026-11-06 WeKan ® release
+
+**In short:** `build.sh` and the `releases/` scripts now work on **Arch Linux**
+and **Omarchy**, and the release builds no longer lose the **OpenBSD arm64
+bundle** to a smoke test that left WeKan running, or the **s390x snap** to
+Launchpad outages that were counted as build failures.
+
+This release fixes the following release build bugs:
+
+**Release builds** - bundles and snaps that built correctly but failed the job.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b46f155fa3">The BSD smoke test stops WeKan and FerretDB and removes its files before returning</a>. Thanks to xet7.</summary>
+
+v12.96 openbsd-arm64: `releases/bsd/smoke.sh` returned OK with WeKan and
+FerretDB still running, because `start-wekan.sh` runs its TERM trap only after
+the foreground node exits. FerretDB then removed `wekan.sqlite-wal` and `-shm`
+while the VM's copyback rsync walked the workspace, and rsync exit 24 failed a
+bundle that had built and started. The smoke test now stops both, waits until
+they are gone and deletes its work directory. `tests/bsdBundles.test.cjs`
+runs it against a launcher of `start-wekan.sh`'s shape and fails if a process
+or a smoke-test file is left behind.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b46f155fa3">Launchpad outages seen only in snapcraft's execution log earn snap retries</a>. Thanks to xet7.</summary>
+
+v12.96 s390x: all three attempts met Launchpad's `HTTP Error 503` /
+`Error: Timeout`, but snapcraft printed only its last exception, "Could not
+find repository at path ...", so the outage was counted as three WeKan
+failures. `infra_failure()` now reads this attempt's snapcraft execution logs
+too, and counts the "You do not have permission to create refs/" push refusal
+from the half-created repository. `tests/snapLaunchpadInfraRetry.test.cjs`
+pins both, and its negatives an earlier attempt's log and one with no outage.
+
+</details>
+
+and has the following developer-tooling fix:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c61a1b7f41">build.sh and releases scripts work on Arch Linux and Omarchy</a>. Thanks to xet7.</summary>
+
+Omarchy is Arch with Hyprland: pacman, the Arch repositories and yay for the
+AUR. `releases/ensure-tools.sh` names it and the other Arch derivatives
+explicitly. Packages are installed with `pacman -S --needed` instead of the
+unsupported `-Sy` partial upgrade; a full `-Syu` runs only on a never-synced
+pacman or with `WEKAN_PACMAN_SYU=1`, and a failed install says to update first
+(`omarchy-update` on Omarchy). 7zip replaces Arch's retired p7zip, snapcraft
+gets snapd from the AUR with yay or paru, the SSH server menu entries use
+`sshd.service` outside Debian/Ubuntu, and Playwright's browser libraries come
+from pacman (or dnf) instead of the apt-only `--with-deps`, with WebKit in the
+Playwright Docker image on Arch. `tests/archOmarchyScripts.test.cjs` drives
+the helpers offline, and its negative test fails if any shell script does a
+`pacman -Sy` partial upgrade or installs p7zip.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v12.96 2026-11-05 WeKan ® release
 
 **In short:** The release **bundle starts again**: v12.95's build stopped on
