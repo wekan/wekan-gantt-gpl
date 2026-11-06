@@ -5,6 +5,20 @@ each one changed and the project status are in
 Written by `node releases/changelog-short.mjs` from CHANGELOG-big.md:
 make changes there.
 
+# v12.98 2026-11-06 WeKan ® release
+
+**GroupLinkBleed** is fixed: a board admin can no longer skip the
+board methods by writing the board directly, to attach an organization or team
+they do not belong to or to add a member past the invitation checks.
+**Public board CSV and TSV exports** honour the selected columns, and the REST
+**card archive, restore and custom-field** endpoints answer an unmatched card
+with a JSON 404 instead of 500, and a REST **card update** can set sort 0, turn
+overtime off and clear a description. The **notifications drawer** gets its
+attachments again, and the developer instructions cover the **weba** Gambas
+companion repository.
+
+[All changes in v12.98](CHANGELOG-big.md#v1298-2026-11-06-wekan--release)
+
 # v12.97 2026-11-06 WeKan ® release
 
 `build.sh` and the `releases/` scripts now work on **Arch Linux**
@@ -42,12 +56,3 @@ behind it, and the speed test measures where the time goes when a WeKan board is
 opened, on FerretDB and on MongoDB.
 
 [All changes in v12.94](CHANGELOG-big.md#v1294-2026-11-04-wekan--release)
-
-# v12.93 2026-11-04 WeKan ® release
-
-The database **speed test** has a new small-scale result, ordered
-from fastest to slowest with how many times slower each database is, and two
-more databases: **pgrust** (PostgreSQL in Rust) and **TiDB**. Noria, YugabyteDB
-and CockroachDB were looked at and cannot be used, for reasons the README gives.
-
-[All changes in v12.93](CHANGELOG-big.md#v1293-2026-11-04-wekan--release)

@@ -124,6 +124,166 @@ its reason.
 
 </details>
 
+# v12.98 2026-11-06 WeKan ® release
+
+**In short:** **GroupLinkBleed** is fixed: a board admin can no longer skip the
+board methods by writing the board directly, to attach an organization or team
+they do not belong to or to add a member past the invitation checks.
+**Public board CSV and TSV exports** honour the selected columns, and the REST
+**card archive, restore and custom-field** endpoints answer an unmatched card
+with a JSON 404 instead of 500, and a REST **card update** can set sort 0, turn
+overtime off and clear a description. The **notifications drawer** gets its
+attachments again, and the developer instructions cover the **weba** Gambas
+companion repository.
+
+This release fixes the following CRITICAL SECURITY ISSUE of [GroupLinkBleed](https://wekan.fi/hall-of-fame/grouplinkbleed/):
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e3458004ec">Board admins can no longer attach foreign teams or add members by direct board writes</a>. Thanks to bhaswanthc and xet7.</summary>
+
+[GroupLinkBleed](https://wekan.fi/hall-of-fame/grouplinkbleed/),
+[GHSA-v544-rmr5-38gx](https://github.com/wekan/wekan/security/advisories/GHSA-v544-rmr5-38gx).
+The board allow rule lets a board admin update any field, and two checks lived
+only in Meteor methods: adding only the organizations and teams the admin
+belongs to ([#5141](https://github.com/wekan/wekan/issues/5141)), and the
+invitation's checks, including the same organization/team policy
+([#6116](https://github.com/wekan/wekan/issues/6116)). A client writing the
+board over DDP skipped both, so a whole team could be given an attacker's
+board and any user added to it. Client writes naming `orgs`, `teams` or
+`domains`, and client updates that add or reactivate a member, are now
+refused and shown in Admin Panel / Problems; role changes and removals still
+pass. `tests/groupLinkBleed.test.cjs` runs the real deny rules and fails if a
+method-guarded board field is client-writable.
+
+</details>
+
+and fixes the following bugs:
+
+**Exports** - the CSV and TSV columns a public board exports.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4762bed8c1">Public board CSV and TSV exports honour the selected fields</a>. Thanks to AhmedLukman and xet7.</summary>
+
+On a public board the CSV and TSV export ignored `fields=` and wrote all 20
+columns, while a private board wrote only the selected ones (PR
+[#6875](https://github.com/wekan/wekan/pull/6875)). The validated selection is
+now parsed once, before the public/private branch, so both get the same
+columns; a missing, empty or unrecognised selection still exports all of them,
+and the export guards are unchanged. `tests/publicCsvExportFields.test.cjs`
+drives the route for comma, semicolon and tab, and a Playwright spec checks the
+export menu's checkboxes on a public board.
+
+</details>
+
+**REST API** - what the card endpoints accept, and answer when no card matches.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3b33c7d7ba">Card archive and restore answer a JSON 404 for an unmatched card instead of 500</a>. Thanks to AhmedLukman and xet7.</summary>
+
+`POST …/cards/:cardId/archive` and `…/unarchive` threw `Meteor.Error(404)`
+when no card matched the board, list, id and archive state. A WebApp handler is
+a plain connect handler, so that reached the client as HTTP 500 (PR
+[#6876](https://github.com/wekan/wekan/pull/6876)). They now answer through
+`sendJsonResult` with `{ error: 'Card not found' }` and 404, writing nothing.
+`tests/restCardArchive.test.cjs` and a Playwright spec cover a missing card,
+the wrong list, the wrong board, the wrong state and refused callers.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b0a71ba57b">A card update can set sort to 0</a>. Thanks to AhmedLukman and xet7.</summary>
+
+`PUT …/cards/:cardId` with `{ "sort": 0 }` answered 404 and left the card
+where it was, because the handler read `sort` by truthiness (PR
+[#6877](https://github.com/wekan/wekan/pull/6877)). It now writes any sort that
+is present. `tests/restCardSort.test.cjs` and a Playwright spec check 0, other
+numbers, form-encoded `'0'`, an omitted sort and refused callers.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b895e61237">A card update checks sort, isOverTime and description, so false and empty work</a>. Thanks to AhmedLukman and xet7.</summary>
+
+Writing `sort` whenever it is present would also have written `null`, `''` or
+`'abc'` as the card's position, and the same handler read `isOverTime` and
+`description` by truthiness, so overtime could not be turned off and a
+description could not be cleared. `parseCardScalarFields()` decides all three
+by presence before the first write: sort a finite number, isOverTime a boolean
+(`'true'`/`'false'` from a form too), description a string or `null` to clear.
+Anything else is a 400 and the card is unchanged.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6d5f660c27">The card custom-field update answers a JSON 404 for an unmatched card instead of 500</a>. Thanks to AhmedLukman and xet7.</summary>
+
+`POST …/cards/:cardId/customFields/:customFieldId` had the same
+`throw new Meteor.Error(404)` as the archive endpoints, and now answers the
+same JSON 404. `tests/restHandlerNotFound.test.cjs` drives it for a matching,
+missing, wrong-list, wrong-board and archived card, and scans every
+`WebApp.handlers` route in the tree so no REST handler answers not-found by
+throwing again.
+
+</details>
+
+**Notifications** - what the notifications drawer receives.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/adb73fd8ee">The notifications drawer receives its attachments again, without a server exception</a>. Thanks to xet7.</summary>
+
+Every `notificationAttachments` subscription failed with `Publish function can
+only return a Cursor or an array of Cursors`: Attachments is an ostrio:files
+FilesCollection, and the publication returned its FilesCursor instead of the
+Mongo cursor it wraps. It now returns `.cursor`, as every other attachment
+publication does. `tests/publishFilesCursor.test.cjs` runs the publication and
+scans every publishing file so no attachment or avatar cursor query is
+published without it.
+
+</details>
+
+and has the following developer-facing changes:
+
+**Tests** - guards that had drifted from the code they pin.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/68b575637d">Three client guards follow the code they pin again</a>. Thanks to xet7.</summary>
+
+`sidebarBelowHeader`, `maximizedCardPosition` and `titleClickToEdit` read
+source that the full screen button, the phone-below-header rule and the
+Pointer Events drag had since moved. The behaviour had not changed; the guards
+now read the new places, `titleClickToEdit` calls `cardHeaderPress()` from
+`models/lib/windowDrag.js`, and each still fails when its behaviour is removed.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/081690875d">The real single executable test says why it cannot run on a kernel with large pages</a>. Thanks to xet7.</summary>
+
+`--build-sea` injects the SEA blob with LIEF, which adds 4 KiB-aligned
+segments; a Linux kernel with 16 KiB or 64 KiB pages cannot map them, and the
+executable dies with SIGSEGV - a one-line `console.log` SEA does too. The test
+failed there as `null !== 0`; it is now skipped on such a kernel with that
+reason. Release builders have 4 KiB pages and still run it.
+
+</details>
+
+**Developer instructions** - what an assistant working in this repository is
+told.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1ef7a57ce4">AGENTS.md and CLAUDE.md describe the weba companion repository</a>. Thanks to xet7.</summary>
+
+`.tools/weba` is the separate `wekan/weba` repository, a Gambas Web UI Kanban
+with SQLite by default. The instructions say where its project, forms, browser
+reports and database modules are, that WeKan's author, local-commit and no-push
+rules apply there too, how to compile and run it with `gbc3`/`gbx3` from the
+local Gambas under `.tools/bin/gambas3`, how its tests run on a copy of the
+database, and to keep its SQL portable across Gambas database drivers.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v12.97 2026-11-06 WeKan ® release
 
 **In short:** `build.sh` and the `releases/` scripts now work on **Arch Linux**
