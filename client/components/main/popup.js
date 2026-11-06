@@ -123,8 +123,16 @@ Popup.template.events({
     const drag = tpl._dateMove;
     if (!drag || drag.pointerId !== evt.pointerId) return;
     evt.preventDefault(); evt.stopPropagation();
-    const boxLeft = Math.max(12, Math.min(window.innerWidth - drag.width - 12, drag.left + drag.dx + evt.clientX - drag.x));
-    const boxTop = Math.max(12, Math.min(window.innerHeight - drag.height - 12, drag.top + drag.dy + evt.clientY - drag.y));
+    // The popup's size NOW, not when the drag began: a long menu gets its
+    // 960px column layout a frame after it is drawn (popupMenuLayout.js), so a
+    // drag that starts in that frame would keep clamping for the narrow size
+    // and push the grown popup most of the way out of the window - and undo
+    // the ResizeObserver that had just put it back inside.
+    const size = drag.element.getBoundingClientRect();
+    const width = size.width || drag.width;
+    const height = size.height || drag.height;
+    const boxLeft = Math.max(12, Math.min(window.innerWidth - width - 12, drag.left + drag.dx + evt.clientX - drag.x));
+    const boxTop = Math.max(12, Math.min(window.innerHeight - height - 12, drag.top + drag.dy + evt.clientY - drag.y));
     const left = boxLeft - drag.dx;
     const top = boxTop - drag.dy;
     // Dragging uses physical pointer coordinates in either text direction.
@@ -230,13 +238,16 @@ Popup.template.onRendered(function () {
   this._focusTrap = event => trapTabKey(event, this._popupElement);
   this._popupElement?.addEventListener('keydown', this._focusTrap);
   if (this._popupElement) {
-    const update = () => {
-      this._menuLayoutFrame = null;
-      updatePopupMenuColumns(this._popupElement);
-    };
-    this._menuLayoutObserver = new MutationObserver(() => {
-      if (this._menuLayoutFrame == null) this._menuLayoutFrame = requestAnimationFrame(update);
-    });
+    const update = () => updatePopupMenuColumns(this._popupElement);
+    // At once, not on the next animation frame: a MutationObserver callback
+    // already runs before the browser paints, and a frame later the popup had
+    // been drawn - and could be clicked or dragged - at its narrow size, then
+    // jumped to the 960px column layout under the pointer. A click aimed at
+    // Board View's "Lists" landed on "Calendar"'s place, and a drag clamped
+    // for the narrow size (06-views-layout, card-title-edit-and-move-6839).
+    // update() toggles a class only when it changes, so the attribute it
+    // observes settles after one more call.
+    this._menuLayoutObserver = new MutationObserver(update);
     this._menuLayoutObserver.observe(this._popupElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
     update();
     // A movable popup that grows - Drawing replacing the card's menu in this
@@ -278,6 +289,5 @@ Popup.template.onRendered(function () {
 Popup.template.onDestroyed(function () {
   this._menuLayoutObserver?.disconnect();
   this._boundsObserver?.disconnect();
-  if (this._menuLayoutFrame != null) cancelAnimationFrame(this._menuLayoutFrame);
   this._popupElement?.removeEventListener('keydown', this._focusTrap);
 });
