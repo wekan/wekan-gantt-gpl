@@ -124,6 +124,84 @@ its reason.
 
 </details>
 
+# v13.01 2026-11-08 WeKan ® release
+
+**In short:** Translations: the strings still in English are written in **33
+more languages**, **Sardinian** is Sardinian instead of Italian and **Moroccan
+Arabic** is Darija instead of Persian. Dependabot's updates of **mailparser**,
+**isomorphic-git**, **pdfjs-dist** and the S3 libraries are checked and kept,
+with the S3 client brought to the version the upload library needs.
+
+This release updates the following dependencies:
+
+- **mailparser 3.12.4 → 3.14.2** — inbound email and bounces; it brings
+  nodemailer 10.3.1, libmime 5.6.4 and @zone-eu/mailsplit 5.4.30, the same
+  authors' packages ([#6886](https://github.com/wekan/wekan/pull/6886)).
+- **isomorphic-git 1.44.8 → 1.44.10** — the GitHub wiki sync; reads commit and
+  tag headers the way git does ([#6885](https://github.com/wekan/wekan/pull/6885)).
+- **@aws-sdk/lib-storage 3.1155.0 → 3.1161.0** — S3 uploads
+  ([#6884](https://github.com/wekan/wekan/pull/6884)); it needs the
+  client-s3 below.
+- **filesize 11.0.28 → 11.0.30** — file sizes shown
+  ([#6883](https://github.com/wekan/wekan/pull/6883)).
+- **pdfjs-dist 6.4.299 → 6.5.438** — PDF previews
+  ([#6882](https://github.com/wekan/wekan/pull/6882)).
+- **mongodb 7.7.0 → 7.8.0** in tests/playwright — the browser tests' seeding
+  only ([#6880](https://github.com/wekan/wekan/pull/6880)).
+- **helm/chart-releaser-action 1.8.0 → 1.9.0** and **vmactions/netbsd-vm
+  1.5.2 → 1.5.3** — CI, each still pinned to the commit its tag names
+  ([#6881](https://github.com/wekan/wekan/pull/6881),
+  [#6879](https://github.com/wekan/wekan/pull/6879)).
+
+Each was checked before it was kept: every package's integrity matches its
+lockfile entry, none has an install script, the action pins are the commits of
+their tags, and the new versions add no network calls or telemetry.
+
+Thanks to dependabot.
+
+- **@aws-sdk/client-s3 3.1159.0 → 3.1161.0** - [the version @aws-sdk/lib-storage 3.1161.0 requires as a peer](https://github.com/wekan/wekan/commit/e33b3f26d3db1f15fcea20542c6143d142e84f65); tests/dependencySecurityUpdates.test.cjs caught the mismatch, and only AWS SDK packages changed version. Thanks to xet7.
+
+and updates the following translations:
+
+**Languages updated:** 31 languages.
+
+**Every string in the language** - what was still English, or another language.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1211221a0fe35a9be4b41ef2954935df1c71e62a">The strings still in English, written in 33 more languages</a>. Thanks to xet7.</summary>
+
+Every value still equal to English was written in the locale's language from
+its existing translations and kanban terms; only English placeholders were
+filled, human translations were not touched and every `__x__` and `%s` is
+English's. The commit names the languages written with low confidence.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d1d3beb12d62f245ca8f044e5d389e4edb950b92">Sardinian is Sardinian, not Italian</a>. Thanks to xet7.</summary>
+
+1772 values of `sc.i18n.json` were Italian or Italian/Sardinian mixtures; the
+locale tag is authoritative, so they are Sardinian now.
+`tests/sardinianTranslationProgress.test.cjs` scans every value for words only
+Italian has, and proves the scan catches the old strings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/fe0e187fa0907cf77017e7029eeabdb2450ef1f1">Moroccan Arabic is Darija, not Persian</a>. Thanks to xet7.</summary>
+
+374 values of `ary.i18n.json` were Persian, Persian words in Arabic text, or
+English left in. `tests/moroccanArabicNotPersian.test.cjs` scans every value for
+words only Persian has, pins repaired values and checks every placeholder.
+
+</details>
+
+and has the following developer-facing changes:
+
+- [Companion repositories are found in .tools/w, .tools/xet7 and .tools/Secretchronicles](https://github.com/wekan/wekan/commit/11bed267889c77ffc6651e858a6eb6ec1e4c83a1). Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v13.00 2026-11-07 WeKan ® release
 
 **In short:** **CreateBleed** is fixed: "Only admins can create boards" now
