@@ -124,6 +124,53 @@ its reason.
 
 </details>
 
+# v13.04 2026-11-09 WeKan ® release
+
+**In short:** **ListLockBleed** is fixed: when a list refuses a role write
+access, that refusal now also holds for the checklist and checklist-item REST
+routes. The **Sandstorm** and **Android** bundles retry their npm install when
+github.com is briefly unavailable.
+
+This release fixes the following CRITICAL SECURITY ISSUE of [ListLockBleed](https://wekan.fi/hall-of-fame/listlockbleed/):
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/214b20e7ad">A list that refuses a role write access refuses its checklist REST writes too</a>. Thanks to tsurutanmen and xet7.</summary>
+
+[ListLockBleed](https://wekan.fi/hall-of-fame/listlockbleed/),
+[GHSA-4734-8vrg-8j3w](https://github.com/wekan/wekan/security/advisories/GHSA-4734-8vrg-8j3w).
+A board admin can refuse a role write access in one list (#4527). The card
+and comment REST routes and the DDP checklist writes applied that refusal,
+but the six checklist and checklist-item REST routes asked only the board. A
+member the list refused could therefore still create, rename, tick and delete
+the checklists of its cards with an API token. Those routes now ask the
+card's list and answer 403, and the refusal shows in Admin Panel / Problems.
+`tests/listPermissions.test.cjs` fails for any REST write route of the tree
+that names a card without asking its list. And
+`tests/playwright/specs/list-lock-checklists.e2e.js` replays the six writes
+against a running server.
+
+</details>
+
+and fixes the following bugs:
+
+**Release builds** - what the release workflow does when a download fails.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c3f12b5659">The Sandstorm and Android bundles retry their npm install through a GitHub outage</a>. Thanks to xet7.</summary>
+
+v13.03's Sandstorm .spk failed with "npm error 504 Gateway Time-out" for
+github.com's `meteor/node-source-map-support` tarball: the same kind of
+outage `releases/npm-retry.sh` has retried since v10.86. That install in
+`releases/sandstorm-slim-spk.sh`, and the Android bundle's server and sharp
+installs, ran npm without it, because `tests/npmRetry.test.cjs` read only
+`release-all.yml`. All three go through the retry now. The test follows
+every `releases/` script a workflow runs and fails on a bare npm install in
+any of them.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v13.03 2026-11-09 WeKan ® release
 
 **In short:** The amd64 **snaps** no longer fail the release when the Ubuntu
