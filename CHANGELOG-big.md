@@ -124,6 +124,65 @@ its reason.
 
 </details>
 
+# v13.05 2026-11-10 WeKan ® release
+
+**In short:** WeKan is updated to **Meteor 3.6**. The **Android** bundles
+build again, after v13.04's npm retry broke their install, and the **Super
+Productivity** export no longer fails for a board with a card whose list is
+archived.
+
+This release updates the following dependencies:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0fbef8936fa2524d21048669e4c41be15e4e3f38">Updated to Meteor 3.6</a>. Thanks to xet7.</summary>
+
+From 3.6-rc.1. `meteor update` refused it, because WeKan's forks of six Meteor
+packages in `packages/` declared 3.6-rc.1's versions, and a local package
+overrides the release's. Meteor 3.6 changed those six only in their version
+line, so each fork now declares 3.6's version with its `_1` wrap number. The
+Dockerfile builds with Meteor 3.6, and the Bun build's patch applies unchanged
+to it as `meteor-3.6.patch`. WeKan builds with Meteor 3.6, and the node suites
+pass.
+
+</details>
+
+and fixes the following bugs:
+
+**Release builds** - what the release workflow builds.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d08f658deae3b8369b75f1c54371ad8c1cf9367d">The Android bundles build again: npm-retry.sh is given Android's node and npm</a>. Thanks to xet7.</summary>
+
+v13.04's four Android bundle jobs all failed with "environment: node: unbound
+variable". v13.04 sent the Android npm installs through
+`releases/npm-retry.sh` by the name of `build-bundle.sh`'s own `npm` shell
+function. `npm-retry.sh` is a new bash with `set -u`: the exported function
+reached it, but the `$node` and `$npm_cli` it reads did not, so it failed before
+npm ran. The two installs now give `npm-retry.sh` the program itself, still
+retried on a network error. `tests/npmRetry.test.cjs` fails when any
+`releases/` script gives `npm-retry.sh` one of its own shell functions, and
+reproduces the failure.
+
+</details>
+
+**Exports** - a board in another tool's format.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8b4fe0e7376194c498219a0b496340a94020098a">The Super Productivity export no longer fails on a card whose list is archived</a>. Thanks to xet7.</summary>
+
+A card whose list is archived is collected with an empty list title. The
+Super Productivity formatter tagged that card with a tag that did not exist, so
+the export threw "Cannot read properties of undefined (reading 'taskIds')" and
+the whole board's export failed. That list is now "Untitled", for its tag and
+its panel alike, so the panel shows its cards and every tag a task names
+exists. `tests/superProductivityFormat.test.cjs` fails with that error on the
+old formatter. It was found while checking Weddy's Super Productivity export
+against WeKan's formatter.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v13.04 2026-11-09 WeKan ® release
 
 **In short:** **ListLockBleed** is fixed: when a list refuses a role write
