@@ -5,6 +5,17 @@ each one changed and the project status are in
 Written by `node releases/changelog-short.mjs` from CHANGELOG-big.md:
 make changes there.
 
+# v13.06 2026-11-11 WeKan ® release
+
+**CodeQL** alert #601 in a test is fixed, with two more tests
+that had the same fault. A card's **overtime** set through the REST API is
+saved where WeKan reads it, and cards that lost it before are repaired at
+startup. Card **members and assignees** whose account was deleted can be removed
+and added without an error, and clearing a card **date** no longer passes as a
+date set to the rules, the due date count and the activity feed.
+
+[All changes in v13.06](CHANGELOG-big.md#v1306-2026-11-11-wekan--release)
+
 # v13.05 2026-11-10 WeKan ® release
 
 WeKan is updated to **Meteor 3.6**. The **Android** bundles
@@ -37,13 +48,3 @@ archive is briefly unreachable: the build waits for it and retries once.
 to them, through every card method.
 
 [All changes in v13.02](CHANGELOG-big.md#v1302-2026-11-09-wekan--release)
-
-# v13.01 2026-11-08 WeKan ® release
-
-Translations: the strings still in English are written in **33
-more languages**, **Sardinian** is Sardinian instead of Italian and **Moroccan
-Arabic** is Darija instead of Persian. Dependabot's updates of **mailparser**,
-**isomorphic-git**, **pdfjs-dist** and the S3 libraries are checked and kept,
-with the S3 client brought to the version the upload library needs.
-
-[All changes in v13.01](CHANGELOG-big.md#v1301-2026-11-08-wekan--release)
