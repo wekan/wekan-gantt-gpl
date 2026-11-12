@@ -124,6 +124,89 @@ its reason.
 
 </details>
 
+# v13.08 2026-11-12 WeKan ® release
+
+**In short:** The **REST API** creates a card under the **parent** it is given,
+and a refused **integration URL** no longer leaves the other fields of the same
+update written. The **single-file** WeKan for **32-bit ARM** builds again, with
+an i386 Node.js of the exact version its bundle embeds. A **GitHub CodeQL**
+alert in the security alert download script is fixed.
+
+This release fixes the following SECURITY ISSUES found by GitHub CodeQL code scanning:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ed19817433e14ef4f8cb7d9623f5d8b84a1794ff">The security alert download summary carries no secret scanning field, and kept secrets are owner-only</a>. Thanks to GitHub CodeQL and xet7.</summary>
+
+Code scanning alert #604 (`py/clear-text-storage-sensitive-data`, CWE-312):
+`releases/sec/download_github_security.py` wrote a secret scanning alert's type
+name into `SUMMARY.md`. That was the type of the secret, not the secret, but
+`SUMMARY.md` is never redacted, so it now names only the kind of finding and
+points at `secret-scanning/`. With `--include-secret-values` the files that hold
+the secrets are created readable by their owner only.
+`tests/securityDownloadScript.test.cjs` pins both, and that no secret scanning
+field reaches the summary. This is a maintainer tool, not WeKan's server, so
+there is no attempt for Admin Panel → Problems to record.
+
+</details>
+
+and fixes the following bugs:
+
+**The REST API** - creating cards and updating integrations.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/552950ed637d6ddeb486322e3c08dd61dbfc13dc">A card created with a parentId is created under that parent</a>. Thanks to AhmedLukman and xet7.</summary>
+
+`POST /api/boards/:boardId/lists/:listId/cards` read `parentId` from the URL
+parameters, which that route does not have, so the parent in the request body
+was ignored: it was never stored, and the visibility check for the parent
+(GHSA-jvv9-498p-hxrg) never saw it. It is read from the body now, as the bulk
+endpoint does. A parentId that is not a string is refused with 400, and a parent
+on a board the caller cannot see is still refused and recorded under
+ParentBleed. `tests/restCardParent.test.cjs` and
+`tests/playwright/specs/rest-card-parent.e2e.js` cover a stored parent, the
+subtask it renders as, an empty parent and the refused requests.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1418cb8480e0ca13ccecc54290b16c36d40f82a6">An integration update with a refused URL changes nothing</a>. Thanks to AhmedLukman and xet7.</summary>
+
+`PUT /api/boards/:boardId/integrations/:intId` wrote `enabled` and `title`
+before it checked the new URL against the SSRF rules (GHSA-hc3x-hq3m-663q), so a
+request whose URL was refused with 400 had already changed those two fields. The
+URL is validated first now, like the delivery settings, and a refused request
+leaves the integration as it was. `tests/restIntegrationUpdate.test.cjs` and its
+Playwright spec pin the order.
+
+</details>
+
+and has the following developer-tooling fixes:
+
+**Release builds** - the single-file executables.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c35c672ffb398b68be22f257087db28738eb4701">The 32-bit host Node.js of a single file is its bundle's exact version</a>. Thanks to xet7.</summary>
+
+The v13.07 single files for armhf, armv6 and armv7 stopped on "The bundle's
+Node.js is v26.13.0 but this is v26.13.1". A 32-bit target's SEA blob is
+written by a 32-bit Node.js, and `.github/workflows/single-file.yml` borrowed
+the i386 bundle's. Each bundle takes the newest Node.js of the pinned major its
+platform has, so i386 had v26.13.1 while 32-bit ARM had v26.13.0. The host is
+now resolved with `releases/resolve-node-source.sh` at the target bundle's exact
+version, checked against its published SHA256, and refused unless it reports
+that version. `tests/singleFile.test.cjs` pins all three, and that the host is
+never taken from another platform's bundle.
+
+</details>
+
+**Browser tests** - what a spec may rely on from the database.
+
+- [list-sync-estimate's checkbox test no longer depends on the order an index returns](https://github.com/wekan/wekan/commit/af76406d127568b45b0e76659160a8821cdf00a2) -
+  it expected an unsorted find of activities in insertion order, which
+  activities' cardId/createdAt index returns newest first. Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v13.07 2026-11-12 WeKan ® release
 
 **In short:** **ListLockAttachBleed** is fixed: when a list refuses a role
