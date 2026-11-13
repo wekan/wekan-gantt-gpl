@@ -2725,7 +2725,9 @@ WebApp.handlers.put('/api/users/:userId', async function(req, res) {
     }
     if (action === 'takeOwnership') {
       const boards = await ReactiveCache.getBoards(
-        { 'members.userId': id, 'members.isAdmin': true },
+        // Both conditions must describe the same member; another member's
+        // admin role does not make this user's ordinary membership ownership.
+        { members: { $elemMatch: { userId: id, isAdmin: true } } },
         { sort: { sort: 1 } },
       );
       data = [];
@@ -2733,7 +2735,7 @@ WebApp.handlers.put('/api/users/:userId', async function(req, res) {
         if (board.hasMember(req.userId)) {
           await board.removeMember(req.userId);
         }
-        board.changeOwnership(id, req.userId);
+        await board.changeOwnership(id, req.userId);
         data.push({ _id: board._id, title: board.title });
       }
     } else {

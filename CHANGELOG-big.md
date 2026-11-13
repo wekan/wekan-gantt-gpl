@@ -124,6 +124,109 @@ its reason.
 
 </details>
 
+# v13.11 2026-11-13 WeKan ® release
+
+**In short:** The **file-integrity scan** stops reporting attachments and
+avatars that WeKan deleted itself as missing, which had buried real
+**StorageBleed** findings under thousands of false ones. The recurring-checklist
+reset no longer scans every **checklist** on each tick. In the **REST API**, a
+refused custom-field update changes nothing, ownership transfer takes only the
+boards the user administers, and deleting a missing integration answers 404.
+
+This release fixes the following bugs:
+
+**The file-integrity scan** - what it counts as a missing file.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ec05ff008928c390b11fec225c564f2dd209ec7f">Files WeKan deleted or moved itself are no longer reported missing</a>. Thanks to Raymond-Voogt and xet7.</summary>
+
+The daily scan keeps one baseline per stored file and reports a baseline whose
+file is gone as a StorageBleed. Nothing removed a baseline, so every attachment
+the retention purge deleted and every avatar a user deleted was reported on
+every run from then on; one finding was folded 1,164 times. The baseline is now
+forgotten in Attachments and Avatars `onAfterRemove`, for every version path.
+That is the retention purge's path: Meteor-Files unlinks the files itself after
+that hook, without going through the store strategy. It is also forgotten in
+the filesystem strategy's `unlink()` and, for the old path, in `rename()`. A
+file that vanishes any other way keeps its baseline and is still reported.
+Baselines orphaned before this fix stay until removed, as
+[#6898](https://github.com/wekan/wekan/issues/6898) describes.
+`tests/integrityBaselineForgottenOnDelete.test.cjs` fails on a delete or rename
+in the filesystem strategy that does not forget its baseline, and
+`tests/playwright/specs/integrity-baseline-on-delete.e2e.js` deletes an avatar
+in the UI.
+
+</details>
+
+**Database indexes** - the queries the background jobs make.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c37575f1faff4e8ca518c7eae0ba7e50d05c1fae">The recurring-checklist reset reads only recurring checklists</a>. Thanks to Raymond-Voogt and xet7.</summary>
+
+The reset cron asks for every checklist with a `resetInterval` on each tick,
+and with no index that read the whole collection (about 45,000 documents on the
+reporting instance), shown as a collection scan on Admin Panel / Problems. A
+partial index on `resetInterval`, like the one recurring cards got, holds only
+the recurring checklists. `tests/checklistResetIndex.test.cjs` pins the index
+and a selector that can use it.
+
+</details>
+
+**The REST API** - custom fields, ownership transfer and integrations.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a81ec6ecdfea8a0b0709d7c0cd463cfd051ca80f">A refused custom-field update leaves the whole field unchanged</a>. Thanks to AhmedLukman and xet7.</summary>
+
+`PUT /api/boards/:boardId/custom-fields/:customFieldId` wrote each property
+with its own update, so a refused `type` or `settings` left the name and flags
+sent before it already saved. The properties are now saved in one board-scoped
+update that the schema accepts or refuses as a whole. Authorization, the field
+allowlist and the reply are unchanged. `tests/restCustomFieldUpdate.test.cjs`
+and `tests/playwright/specs/rest-custom-field-update.e2e.js` cover both.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4b4db92a1b97eae43770e56082012073d87c4c9a">Ownership transfer takes only the boards the user administers</a>. Thanks to AhmedLukman and xet7.</summary>
+
+`takeOwnership` selected boards where the user was a member and somebody, not
+necessarily the user, was an administrator. The user and the administrator flag
+are now matched on the same member, so a board where the user is an ordinary
+member is left as it is. `tests/restOwnershipSelection.test.cjs` and
+`tests/playwright/specs/rest-ownership-selection.e2e.js` cover it.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ab685a7f6fe0450a31b9150a14b17b909933c86f">Deleting a missing or another board's integration answers 404</a>. Thanks to AhmedLukman and xet7.</summary>
+
+`DELETE /api/boards/:boardId/integrations/:intId` answered 200 for an
+integration that did not exist, was on another board or was already deleted,
+because the removal matched nothing and the reply did not check. It now looks
+the integration up on that board first, after the board-admin check, like PUT
+and the activities routes, and answers the same JSON 404. Server errors still
+answer 500. `tests/restIntegrationWriteRoutes404.test.cjs` and
+`tests/playwright/specs/rest-integration-update.e2e.js` cover it, including
+the board's webhook settings.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a8e25952aa6b244b76891c3fa3cdc1779d35a78f">Ownership transfer finishes before it replies, and a deleted account leaves the board when removed</a>. Thanks to xet7.</summary>
+
+`takeOwnership` called the async `changeOwnership()` without `await`, so the
+reply was sent before the board changed and a failed update was an unhandled
+rejection behind a 200. `Boards.removeMember` tested
+`!ReactiveCache.getUser(id)`, which on the server is a Promise and always
+truthy. Because of that, the branch that removes a member whose account was
+deleted never ran there, and that member only lingered as inactive. Both
+calls are awaited now. `tests/reactiveCacheNegatedAwait.test.cjs` fails on any
+negated un-awaited `ReactiveCache` lookup in `server/` or `models/`.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v13.10 2026-11-13 WeKan ® release
 
 **In short:** The release's **Snap Store** credential check bounds each
@@ -8521,219 +8624,6 @@ instance, scanned the whole `cronJobs` history: synced-cron indexes only
 `{ intendedAt, name }` and the TTL. `{ name, finishedAt }` is created at
 startup. `tests/syncedCronIndex.test.cjs` and a runtime test that checks the
 plan.
-
-</details>
-
-Thanks to above GitHub users for their contributions and translators for their translations.
-
-# v12.42 2026-10-14 WeKan ® release
-
-**In short:** a new **Version Control** board view shows a board as a
-**GitHub** or **Gitea** issue tracker, with releases, a **wiki** and history
-with undo, and a whole **GitHub organization** imports into it, its **GitHub
-Actions** as Rules. Optional **Trello**, **Jira**, **GitHub** and **Gitea**
-compatible APIs let their clients use WeKan as a backend. Old boards get their
-keys in one pass, list sync keeps issue details current, any board view can be
-a **read-only public view**, and WeKan has **Android** bundles.
-
-This release adds the following new features:
-
-**Board views** - a repository's issue tracker as a view, and which views the
-public sees.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/326d9bbf61">Version Control: the board as a GitHub or Gitea issue tracker</a>. Thanks to xet7.</summary>
-
-Board → View → **Version Control**, in the board's own theme. A card is an
-issue: open, or closed when archived, in a list named *Closed*, *Done*,
-*Resolved*, *Merged* or *Wontfix*, or closed upstream. The issue number is
-the upstream one of an imported issue, else the card number. The board's
-labels are labels, and labels with a due date and the importers'
-`milestone:` labels are milestones, with progress bars. Comments are the
-conversation, attachments the files. The search box takes GitHub's words:
-`is:open`, `label:`, `-label:`, `milestone:`, `author:`, `assignee:@me`,
-`no:label` and `sort:`. **New issue**, **Close** and **Reopen** write through
-the ordinary collections, so the **History** tab (the board's history table)
-shows them and **Restore** undoes them. A synced issue is closed in its
-tracker. **Import** opens the GitHub, GitLab, Gitea and Forgejo importers, and
-each synced list has a **Sync now** button. Visitors see it read-only. Tested
-by `tests/versionControlView.test.cjs`. See
-[Version Control view](docs/Features/Board/Version-Control-View.md).
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/326d9bbf61">A public board's public views are for the public; its members keep theirs</a>. Thanks to xet7.</summary>
-
-Board Settings → Board View's *Show on* and *Default on Public Board* now
-apply to the people looking who are not members: visitors who are not logged
-in, and logged-in users who are not on the board. The board's members get the
-*Private* columns. So a public board can open read-only in Version Control,
-Email, Chat or any other view for the world, and list only the views chosen
-for it, while its members keep every view. Before, a public board's members
-had the public menu too. `boardViewAudience` in
-`models/lib/boardViewSettings.js`; `tests/boardViewSettings.test.cjs` covers
-visitors, non-members, former members and members.
-
-</details>
-
-**Import and sync** - what an issue tracker's issues bring with them.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/326d9bbf61">GitHub, GitLab, Gitea and Forgejo issues bring their files</a>. Thanks to xet7.</summary>
-
-The files an issue or its comments link or carry become card attachments in
-Admin Panel → Attachments → Default Storage. These are GitHub
-`user-attachments` and `user-images` links, GitLab `/uploads/` links, and
-Gitea and Forgejo assets and `/attachments/<uuid>` links, at most 50 per
-issue. Each one is downloaded through the import's SSRF guard, which checks
-every redirect hop, and the upload checks its type and size. One that cannot
-be fetched is on the import's loss report. Ordinary links are not files.
-`models/lib/issueAttachments.js`; `tests/issueAttachments.test.cjs`.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/326d9bbf61">List sync can bring each issue's comments, labels, state and files</a>. Thanks to xet7.</summary>
-
-A new Sync option for GitHub, GitLab, Gitea and Forgejo, off by default.
-Comments come from one paged repository-wide list (GitHub and Gitea), or
-from each issue's notes (GitLab). They are keyed by the tracker's comment id,
-and an edit upstream updates them. A label sync added and the issue lost is
-taken off, and labels added in WeKan stay. Each file is downloaded once. It
-runs after a successful sync as a step of its own, so a failure is shown and
-retried and never undoes the title and description sync. Gitea issues are
-fetched with `type=issues`. A rate-limited answer is waited out once when it
-frees up within a minute; otherwise the run ends with the time to try again.
-`tests/listSyncIssueDetails.test.cjs`.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/935e68dfdd">A whole GitHub organization imports, each repository as its own board</a>. Thanks to xet7.</summary>
-
-Import → GitHub → **Import a whole GitHub organization**: every repository of
-an organization or user becomes a board named `owner/repository`, opening in
-Version Control. Issues go through the ordinary `importBoard`, run as the
-person who started the job, with their comments, labels and files. Releases
-are cards in a *Releases* list, with their files attached only when chosen.
-`.github/workflows` files become Rules. Each wiki is read from its git
-repository with isomorphic-git (1.42.4, pinned), with every request through
-the SSRF guard and only to github.com. A page is a card in the *Wiki* list:
-its `[[links]]` point at the linked pages' cards and are attached to them,
-and each commit that changed it is a dated edit in the card's history, so
-**Restore** brings back an older version. Version Control gains **Releases**
-and **Wiki** tabs, the wiki laid out as on GitHub. The job shows progress, can
-be cancelled, pauses on a restart and stops at a rate limit. The token is
-kept in memory only. Tests: `tests/githubOrgImport.test.cjs`,
-`tests/githubWiki.test.cjs` and `tests/workflowYaml.test.cjs`, the last
-checking 52 real workflow files against js-yaml.
-
-</details>
-
-**Rules** - what GitHub Actions workflows needed, for everyone.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/935e68dfdd">GitHub Actions workflows become Rules; Rules gain comments, cron and descriptions</a>. Thanks to xet7.</summary>
-
-Issue events become triggers. Label, close, reopen, comment, assign and
-create steps become actions, from the well-known actions or from `gh issue`
-commands, and `actions/stale` becomes an aging rule. A build, test or script
-is never run: such a workflow is a disabled rule with its YAML as its
-description. For this, WeKan's Rules gain several parts, available to every
-board:
-
-- a **commented on** trigger;
-- an **add comment** action, written as the person whose change ran the rule
-  and only where they may comment;
-- **cron schedules** in UTC (`models/lib/cronSchedule.js`);
-- a rule **description**, shown on the rule.
-
-Tests: `tests/githubActionsRules.test.cjs`, `tests/cronSchedule.test.cjs` and
-`tests/ruleCommentCron.test.cjs`.
-
-</details>
-
-**Optional APIs** - other trackers' clients, with WeKan as their backend.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/86ec72fade">Trello, Jira, GitHub and Gitea compatible APIs, off until an admin ticks them</a>. Thanks to xet7.</summary>
-
-Admin Panel → Settings → Visibility → **Optional APIs** turns on REST APIs
-in Trello's, Jira's, GitHub's and Gitea's shape (#4930), each described with
-the address a client uses. None has rights of its own: each translates a
-request into the matching request to WeKan's own REST API, made with the
-caller's WeKan token, so every WeKan permission applies unchanged. An API that
-is not ticked answers 404, and `WITH_API` turns them all off. Trello covers
-members, boards, lists, cards, labels, comments and checklists. In Jira a
-board is a project (the board key), a card is an issue (`DEV-7`), lists are
-statuses, and simple JQL works. In GitHub and Gitea a board is a repository and
-a card an issue, open or closed as in Version Control. Deleting archives. See
-[Optional APIs](docs/API/Optional-APIs.md). `tests/optionalApis.test.cjs`
-fails if any of them writes past WeKan's REST API.
-`server/lib/tests/compatApi.tests.js` runs them over real HTTP.
-
-</details>
-
-**Cards** - opening a card on a phone.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/326d9bbf61">A QR code of the card's link in the card menu</a>. Thanks to xet7.</summary>
-
-Card menu → **QR code** shows the card's link as a QR code, to open the card
-on a phone or tablet. It is drawn in the browser by WeKan's own encoder
-(`models/lib/qrCode.js`: byte mode, level M, versions 1–10), so the link is
-sent to no QR service. `tests/qrCode.test.cjs` checks the encoder module for
-module against qrcode-svg, which Meteor's accounts-2fa ships, and checks that
-no outside QR service is used anywhere.
-
-</details>
-
-**Platforms** - where WeKan runs.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/b8d9cb2565">Android bundles for Termux, for all four Android CPUs</a>. Thanks to xet7.</summary>
-
-Every release that has wekan/node-patches' Android Node.js also has
-`wekan-<version>-android-arm64.zip`, `-x64`, `-armv7` and `-x86`, with
-FerretDB. Each is the release's Linux bundle rebuilt inside Termux's own
-image with that Node.js, checked against its SHA256: every native addon is
-built for it, and sharp against Termux's libvips. Before it is published,
-each addon's architecture is checked, sharp must load, and the bundle must
-start and answer HTTP 200. A CPU whose Android Node.js is not published yet
-is skipped and builds by itself once it is. `tests/androidBundles.test.cjs`
-covers the build and the workflow. See [Android](docs/Platforms/FOSS/OS/Android.md).
-
-</details>
-
-and fixes the following bugs:
-
-**Board keys** - how old boards get theirs.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/d0378f33c2">Old boards get their keys in one pass, in seconds rather than hours</a>. Thanks to Raymond-Voogt and xet7.</summary>
-
-v12.41 gave each board without a key one at startup by re-reading every key
-of the instance per board. It also counted up from 2 again for every board
-sharing a title. That is quadratic: on 32,500 boards it ran for hours of slow
-queries. Now the keys in use are read once, the new ones are planned in
-memory, linearly, and written in batches, each only where the board still has
-no key. A single new board reads only the keys that could collide with it,
-through a new index. Tests: `tests/boardKeyBackfill.test.cjs` (32,500 boards
-planned well under a second) and `server/lib/tests/boardKeys.tests.js`.
-
-</details>
-
-**Rules** - when a rule runs.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/935e68dfdd">A disabled rule no longer runs on a schedule or from its button</a>. Thanks to xet7.</summary>
-
-Turning a rule off (#2322) stopped it only for card events: the scheduler and
-the rule's button ran it anyway, because neither looked at `enabled`. Both
-check it now. Imported GitHub Actions workflows rely on this, since a
-workflow that is code is imported disabled. Pinned by
-`tests/ruleCommentCron.test.cjs`.
 
 </details>
 
