@@ -16,6 +16,16 @@ import { currentUserWith } from '/client/lib/currentUserWith';
 import { TAPi18n } from '/imports/i18n';
 import { defaultSwimlaneIdForBoard } from '/client/components/lists/listAddHelpers';
 import { errorMessage } from '/client/lib/errorMessage';
+import { keepResizeHandleInView } from '/client/components/swimlanes/resizeHandleScroll';
+import {
+  hasSharedListRow,
+  sharedListSelector,
+  installSharedSwimlaneScroll,
+} from '/client/components/swimlanes/sharedListRow';
+
+// #6902: swimlanes of a board with the shared list header row scroll sideways
+// together (sharedListRow.js).
+if (typeof document !== 'undefined') installSharedSwimlaneScroll(document);
 const { calculateIndex } = Utils;
 
 // #4223 (Bigboard): normally exactly one board's lists are ever on the page,
@@ -109,7 +119,11 @@ function saveSorting(ui) {
   // one swimlane — the list then vanished from all the other swimlanes. Requiring
   // originalSwimlaneId keeps board-wide lists board-wide; genuinely
   // swimlane-scoped lists can still be moved between swimlanes.
+  // #6902: with the shared list header row every swimlane shows every list,
+  // so a drop under another swimlane is a reorder, never a move of the list
+  // (and all its cards) to that swimlane.
   const isDifferentSwimlane =
+    !hasSharedListRow(ReactiveCache.getBoard(list.boardId)) &&
     originalSwimlaneId &&
     targetSwimlaneId &&
     targetSwimlaneId !== originalSwimlaneId;
@@ -207,6 +221,8 @@ function saveSorting(ui) {
 function currentListIsInThisSwimlane(swimlaneId) {
   const currentList = Utils.getCurrentList();
   if (!currentList) return false;
+  // #6902: with the shared list header row every list is in every swimlane.
+  if (hasSharedListRow(Utils.getCurrentBoard())) return true;
   // Match the list's own swimlane, or shared/orphaned lists (empty/null
   // swimlaneId are visible in every swimlane as a fallback).
   if (currentList.swimlaneId === swimlaneId || !currentList.swimlaneId) {
@@ -742,6 +758,10 @@ function initializeSwimlaneResize(tpl, retryCount = 0) {
   $resizeHandle.on('mousedown', (e) => {
     e.stopPropagation();
   });
+
+  // #6903: the handle spans the whole visible width of the swimlane however
+  // far its row of lists is scrolled (resizeHandleScroll.js).
+  keepResizeHandleInView($resizeHandle[0], $swimlane[0]);
 }
 
 Template.swimlane.helpers({
@@ -761,6 +781,11 @@ Template.swimlane.helpers({
   },
   lists() {
     const swimlane = this;
+    // #6902: with the shared list header row every swimlane shows all of the
+    // board's lists (sharedListRow.js); nothing is written to the lists.
+    if (hasSharedListRow(ReactiveCache.getBoard(swimlane.boardId))) {
+      return ReactiveCache.getLists(sharedListSelector(swimlane.boardId), { sort: ['sort'] });
+    }
     // myLists() already covers:
     //   • lists owned by this swimlane (swimlaneId === this._id)
     //   • shared / pre-migration lists (swimlaneId empty or null)
@@ -804,6 +829,11 @@ Template.swimlane.helpers({
   // Empty swimlane / empty board: there are no list headers to host the button,
   // so offer a + button that reveals the inline composer only when clicked.
   swimlaneHasNoLists() {
+    // #6902: a swimlane of a shared-row board has no lists only when the
+    // board has none; otherwise it shows the board's.
+    if (hasSharedListRow(ReactiveCache.getBoard(this.boardId))) {
+      return ReactiveCache.getLists(sharedListSelector(this.boardId)).length === 0;
+    }
     return !this.myLists || this.myLists().length === 0;
   },
   // #6465: is the empty-state create-list form open for this swimlane? (Set by the

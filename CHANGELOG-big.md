@@ -124,6 +124,213 @@ its reason.
 
 </details>
 
+# v13.12 2026-11-14 WeKan ® release
+
+**In short:** WeKan is updated to **Meteor 3.6.1**, whose DDP server refuses
+malformed messages without stalling the connection. **One shared list header
+row** now shows the same lists in every swimlane, scrolling together, and
+**Shift+M** and **Shift+C** open Move Card and Copy Card. Those popups
+remember the swimlane and list, not only the board. The embedded-engine
+benchmark takes **OpenTelemetry 1.47.0** for a Dependabot alert. A **REST
+API** write that changes nothing answers 404, and a card deletion naming the
+wrong list no longer strips the card's checklists (**ListLockBleed**).
+
+This release fixes the following CRITICAL SECURITY ISSUE of [ListLockBleed](https://wekan.fi/hall-of-fame/listlockbleed/):
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d4c0d3e8820520dc7b1cef5b27e9e3e516a67158">A card deletion naming another list no longer strips the card's checklists and comments</a>. Thanks to xet7.</summary>
+
+A follow-up to [ListLockBleed](https://wekan.fi/hall-of-fame/listlockbleed/),
+[GHSA-4734-8vrg-8j3w](https://github.com/wekan/wekan/security/advisories/GHSA-4734-8vrg-8j3w),
+found while checking the REST deletions. `DELETE
+/api/boards/:boardId/lists/:listId/cards/:cardId` found the card by board
+alone, removed its checklists, checklist items, comments and attachments, and
+only then removed the card by board AND list. With the wrong list id the card
+stayed, emptied, and the reply was 200. Only the list in the URL was asked
+whether the caller may write, so a member a list refuses could strip the cards
+of that list by naming one they may write. The card now has to be in the named
+list, its own list is asked as well, and the refusal shows in Admin Panel /
+Problems as `authz.list-locked`. `tests/restWriteRoutes404.test.cjs` runs the
+handler on both cases and requires the list check before anything is removed,
+and `tests/playwright/specs/rest-write-routes-404.e2e.js` checks that the
+checklist survives against a running server.
+
+</details>
+
+and adds the following new features:
+
+**Keyboard shortcuts** - the opened card's actions from the keyboard.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8508c150159a160b13b45505065ff788171a777a">Shift+M opens Move Card and Shift+C opens Copy Card</a>. Thanks to mimZD and xet7.</summary>
+
+They act on the opened card, or on the hovered or selected minicard, which is
+opened first, as the `d` due date shortcut does. They click the card's menu and
+then its Move Card or Copy Card item, so the menu's permissions decide: Move
+Card for board admins, Copy Card for everyone who is not a Worker, and a menu
+without the item is closed again. Shift keeps them apart from `m` (assign
+yourself) and `c` (archive). The shortcut list names them with the already
+translated popup titles. User-defined shortcuts, also asked in
+[#6904](https://github.com/wekan/wekan/issues/6904), are not part of this.
+`tests/cardMenuKeyboardShortcut.test.cjs` drives the DOM logic, and
+`tests/playwright/specs/move-copy-keyboard-shortcut-6904.e2e.js` presses the
+keys, with shortcuts off, while typing, and as a non-admin member.
+
+</details>
+
+**The Swimlanes view** - swimlanes that share their lists.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/67321dcb6c071e1d9572fb79eb344349178d274b">One shared list header row shows the same lists in every swimlane, scrolling together</a>. Thanks to mimZD and xet7.</summary>
+
+The setting only hid the list headers of every swimlane but the first, while
+each swimlane kept lists of its own: a new swimlane showed no lists, and each
+scrolled sideways alone. With it on, every swimlane now shows all of the
+board's lists under the one header row, as swimlanes were before lists belonged
+to one, and the swimlanes scroll sideways together. Each list still holds the
+cards of the swimlane it is shown in. Nothing is written to a list or a card, so
+on a board whose swimlanes have different lists, turning the setting off shows
+each swimlane's own lists again. While it is on, a list dropped under another
+swimlane is reordered, never moved there with its cards.
+`tests/sharedListRow6902.test.cjs` and
+`tests/playwright/specs/shared-list-row-6902.e2e.js` cover it, with the setting
+on and off.
+
+</details>
+
+and updates the following dependencies:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ed5a5349416b4e6374b2c19db480b64a7793a25c">Updated to Meteor 3.6.1</a>. Thanks to xet7.</summary>
+
+`meteor update --release METEOR@3.6.1` refused it: Meteor 3.6.1 pins
+`ddp-server@~3.6.1`, and WeKan's local fork of ddp-server was `3.6.0_1`. Of
+WeKan's six Meteor package forks only ddp-server changed in 3.6.1, so its fixes
+are rebased onto the fork, now `3.6.1_1`: a non-string unsubscription or ping
+id is refused, and a protocol handler that throws synchronously is contained.
+The packages 3.6.1 bumps (accounts-base, accounts-express, accounts-password,
+minimongo, mongo, webapp) are updated. WeKan configures OAuth services on the
+server only, so 3.6.1's restriction on client-side configuration does not
+affect it. `tests/meteor353SecurityFixes.test.cjs` checks that the fork carries
+the 3.6.1 fixes and not the older code.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0566bf6ec8b40d5af0ff317babfced7072424d57">The Docker image and the Bun build use Meteor 3.6.1</a>. Thanks to xet7.</summary>
+
+The Dockerfile's `METEOR_RELEASE` is `METEOR@3.6.1`. The Bun build refused
+every release but 3.6; its patch applies unchanged to 3.6.1, so 3.6.1 is
+accepted, pinned to its commit.
+
+</details>
+
+- [OpenTelemetry 1.42.0 → 1.47.0 and klauspost/compress 1.18.7 → 1.20.2 in the Go module of the embedded-engine benchmark](https://github.com/wekan/wekan/commit/e0eb6c64dbd976f2195563c59f169e8129855a34).
+  Dependabot alert \#189: attribute values made of U+FFFD runes bypassed
+  OpenTelemetry's AttributeValueLengthLimit. govulncheck then reported
+  GO-2026-6865 in klauspost/compress. A test holds every `go.mod` at or above
+  these floors.
+
+Thanks to dependabot.
+
+and fixes the following bugs:
+
+**Move and Copy card** - where their popups open.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4b47ec81a72aab1ab8d04addb8fe41b7e0181841">They open on the swimlane and list chosen last time, not only the board</a>. Thanks to mimZD and xet7.</summary>
+
+The remembered swimlane and list were checked right after subscribing to the
+remembered board. For another board than the open one, its swimlanes and lists
+had not arrived yet, so both were reset to the first. That check now waits for
+the board's documents, and falls back to the first swimlane and list only when
+a remembered one is really gone. The same picker serves Move, Copy, Link to
+board, Copy many and Convert checklist item to card.
+`tests/moveCopyRemembersDestination6901.test.cjs` runs the real dialog classes
+with the board arriving later, and
+`tests/playwright/specs/move-copy-remembers-destination-6901.e2e.js` opens the
+popups.
+
+</details>
+
+**The Swimlanes view** - the swimlane resize line.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8d5109b4b9d7f77205e6ba8fd2c581a9c4720ff9">The resize line reaches the right edge of a swimlane scrolled to the right</a>. Thanks to mimZD and xet7.</summary>
+
+The swimlane-height resize handle sits in the swimlane that scrolls its row of
+lists sideways, so it moved with the lists, and after scrolling right by some
+distance the line stopped that far short of the right edge. It now follows the
+swimlane's scroll, in right-to-left boards too.
+`tests/swimlaneResizeHandleScroll6903.test.cjs` and
+`tests/playwright/specs/swimlane-resize-handle-scroll-6903.e2e.js` measure it.
+
+</details>
+
+**The REST API** - a write that changes nothing answers 404, not 200.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2733c8ba65342dfb0bdfbbddff03f366ac8756b5">Deleting a missing or another board's custom field answers 404</a>. Thanks to AhmedLukman and xet7.</summary>
+
+`DELETE /api/boards/:boardId/custom-fields/:customFieldId` answered 200 for a
+custom field that did not exist, was on another board or was already deleted,
+because the removal matched nothing and the reply did not check. It now answers
+a JSON 404 when the board-scoped removal removes nothing. A real deletion still
+answers 200 and its `before.remove` hook still clears the field's values from
+the board's cards and its activities. `tests/restCustomFieldDelete.test.cjs`
+and `tests/playwright/specs/rest-custom-field-delete.e2e.js` cover it.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/cefb6771cbde23a468526448256f182309c49bdd">Deleting a missing dropdown item of a custom field answers 404</a>. Thanks to AhmedLukman and xet7.</summary>
+
+`DELETE` of a custom field's `dropdown-items/:dropdownItemId` answered 200
+even when the custom field had no such item, because `$pull` of an absent item
+still matched the field. The update now also requires the item
+to be in `settings.dropdownItems`, so a missing item, a missing field or one
+on another board matches nothing and answers a JSON 404, while the other items
+stay. `tests/restDropdownItemDelete.test.cjs` and
+`tests/playwright/specs/rest-dropdown-item-delete.e2e.js` cover it.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d4c0d3e8820520dc7b1cef5b27e9e3e516a67158">The other deletions and updates of a record that is not there answer 404 too</a>. Thanks to xet7.</summary>
+
+The two entries above, and the integrations of #6900, had siblings that
+answered 200 for a change that changed nothing: deleting a swimlane, a list
+(also an already deleted one), a card, a card dependency or a board domain
+that is not there; renaming a missing custom field (even with an empty body),
+adding dropdown items to one, or renaming a dropdown item it does not have;
+updating a dependency the card does not have; adding or removing a member of a
+board that does not exist, a user that does not exist, or a user who is not a
+member; and deleting the tokens of a user that does not exist. Each now looks
+the record up on its board first and answers a JSON 404, and removing a
+board's last admin, which the board keeps, answers 409. Member removal also
+deactivates the active entry of a user listed twice, not the first entry. An
+unknown token of a real user still answers 200: revoking makes sure it is
+gone. `tests/restWriteRoutes404.test.cjs` runs each handler with the record
+missing and present, and fails for any REST write in `server/` whose path
+names a record and that has no 404; `DELETE /api/boards/:boardId` was already
+right, because the board check answers 404 first.
+`tests/playwright/specs/rest-write-routes-404.e2e.js` replays them against a
+running server.
+
+</details>
+
+and has the following developer-tooling fixes:
+
+**Meteor skills** - the agent notes for installing Meteor.
+
+- [The npm fallback install works with npm 12](https://github.com/wekan/wekan/commit/58273d2bf8d43bcd6a4ef36cbe657668db1569aa). Thanks to xet7.
+
+**Node test suites** - tests that depended on the machine.
+
+- [The npmRetry test passes with a localized bash](https://github.com/wekan/wekan/commit/e95596c3b0c7a71f235bcb16ba2b703c41fc648e). Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v13.11 2026-11-13 WeKan ® release
 
 **In short:** The **file-integrity scan** stops reporting attachments and
@@ -8467,164 +8674,5 @@ and has the following developer-tooling and translation changes:
 - [The SQRL strings translated](https://github.com/wekan/wekan/commit/b0e47537e0). Thanks to xet7.
 - [A test pins the issue's own example of keeping #label and @member](https://github.com/wekan/wekan/commit/cd4c4ad9ce), which shipped in v12.43. Thanks to biji and xet7.
 - [A guard skips every rspack output directory, not only _build](https://github.com/wekan/wekan/commit/5f2dd80f41). Thanks to xet7.
-
-Thanks to above GitHub users for their contributions and translators for their translations.
-
-# v12.43 2026-10-14 WeKan ® release
-
-**In short:** **Bots** hand cards to external runners such as an AI agent, a
-CI job or a script, as kanbots does, with no rights of their own. Board search
-**reveals each card it finds** on the board, lists **sort by label order**, and
-a Member Settings switch **keeps #label and @member** in new card titles.
-Webhooks may reach **internal hosts** a site admin lists, the activity
-notification **recovery list drains**, and the **FreeBSD** bundle runs as a
-service.
-
-This release adds the following new features:
-
-**Bots** - external runners a board hands cards to.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/aa48a2b71d">Board Settings / Bots: hand cards to an AI agent, CI job or script, as kanbots does</a>. Thanks to xet7.</summary>
-
-Board Settings → **Bots**, below Workflow view, is the Rules page's view for
-bots, laid out like kanbots in the board's theme. The rail lists the bots,
-the live runs and their activity. The board's lists are the columns, each
-card showing its run's state, its current step and the answers to the bot's
-question. The drawer shows the card's thread, **Hand to bot**, **Stop** and a
-reply box. A bot has no rights of its own. WeKan only sends to it: a dispatch
-goes through the outgoing-webhook queue, behind the SSRF guard and signed,
-and a bot receives no board activity. The runner works on the board through
-WeKan's REST API with its own user's role, and reports at one route that
-needs write access. Board admins only: in the view, or with the new Rule
-action **Hand the card to bot**. See [Bots](docs/Features/Automation/Bots.md).
-Tests: `tests/botRuns.test.cjs` and `server/lib/tests/bots.tests.js`.
-
-</details>
-
-**Search** - finding a card on the board.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/c239177cd8">Board search shows each card found on the board, and Enter steps to the next</a>. Thanks to rlach and xet7.</summary>
-
-A result opened from the board search is also scrolled into the middle of
-the board and highlighted for a moment. Enter again in the search box steps
-to the next card found, wrapping round, with "2 of 7" under the box, as
-finding on a page works. Shift+Enter or the arrows beside the count step back
-([previous](https://github.com/wekan/wekan/commit/7dd484f8c2)). A list found is
-revealed the same way. Tests:
-`tests/revealOnBoard.test.cjs` (jsdom), and a Playwright spec in
-`tests/playwright/specs/04-search.e2e.js`.
-
-</details>
-
-**Labels and avatars** - order and recognition at a glance.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/cba618e2f9">Sort a list by the board's label order</a>. Thanks to mnantel and xet7.</summary>
-
-Board admins move a label up or down when editing it, and Sort cards has
-**Label order**: a card comes where its first label comes, and cards without
-labels come last. It is a display order only, like Sort by votes: it never
-changes the dragged order. `tests/labelOrder.test.cjs`.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/c56c03d202">Minicard avatars in the order people were added, each with its own colour</a>. Thanks to HolgerGH and xet7.</summary>
-
-The minicard floated each avatar to the end of its row, which drew them
-reversed: the first person added, whom a team treats as responsible, came
-last. They are a wrapping row in added order now, still right-aligned, as
-issue \#5081 asked. Each person's initials avatar has a lasting colour of
-their own, readable at WCAG AA, and the tooltip names them.
-`tests/avatarColor.test.cjs`.
-
-</details>
-
-**Webhooks** - where they may go.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/b4d2604e61">Outgoing webhooks may reach the internal hosts a site admin lists</a>. Thanks to xet7.</summary>
-
-Admin Panel → Settings → Global Webhooks → **Internal destinations** lists
-hosts on WeKan's own network that outgoing webhooks may reach: a Node-RED, a
-chat server, a Matrix hookshot. Each entry is a name or an address, with a
-port to allow only that port. It is empty by default. Only site
-administrators read and change it, through methods, and it is never
-published, so a board member still cannot point a webhook inward. A listed
-host is called without following redirects; everything else stays behind
-the SSRF guard. `tests/internalWebhookHosts.test.cjs`.
-
-</details>
-
-**Documentation** - how-tos the decided issues asked for.
-
-- [Bitbucket login through the generic OAuth2 settings](https://github.com/wekan/wekan/commit/f715e95b40), checked against the OIDC code. Thanks to thuanpq and xet7.
-- [Matrix notifications through an outgoing webhook and matrix-hookshot, no bot](https://github.com/wekan/wekan/commit/dff0856585). Thanks to killua-eu and xet7.
-- [RFID tags moving cards through the REST API](https://github.com/wekan/wekan/commit/c47fe98ab0). Thanks to xet7.
-- [WeKan on current Rancher with the Helm chart](https://github.com/wekan/wekan/commit/28477b5a85). Thanks to Dreampie and xet7.
-
-**Member Settings** - how a new card's title is typed.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/a6b2938e1c">Keep #label and @member in a new card's title, as a Member Settings switch</a>. Thanks to biji and xet7.</summary>
-
-Picking a label with `#` or a member with `@` while typing a new card's title
-gave the card that label or member and removed the text from the title. Member
-Settings → **Keep #label and @member in new card titles** keeps the text as
-well, for those who read the title as a sentence. It is off by default, so
-nothing changes unless a user turns it on. `models/lib/titleTags.js` decides
-what stays; `tests/titleTags.test.cjs` checks both settings, a label known
-only by its colour, and that nothing like `@undefined` is ever left. The two
-strings are in every locale
-([translations](https://github.com/wekan/wekan/commit/8fd04f9984)).
-
-</details>
-
-**Platforms** - where WeKan runs.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/9a29dbd8b7">The FreeBSD bundle runs as a service, with an rc.d script</a>. Thanks to xet7.</summary>
-
-`bundle/rc.d/wekan` in the FreeBSD bundle runs the bundle's own
-`start-wekan.sh` - the bundled Node.js and FerretDB on SQLite - under
-`daemon(8)` as an unprivileged user, set up in `rc.conf`: `wekan_enable`,
-`wekan_port`, `wekan_root_url`, `wekan_data`, `wekan_env`. `service wekan
-stop` stops FerretDB with WeKan. The FreeBSD bundle job fails without it.
-[FreeBSD](docs/Platforms/FOSS/OS/FreeBSD.md) has the install steps and an
-outline of a ports Makefile to propose to FreeBSD.
-`tests/freebsdRcScript.test.cjs`.
-
-</details>
-
-and fixes the following bugs:
-
-**Notifications and background jobs** - large instances.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/e0317a9ff3">The activity notification recovery list drains, and old entries expire</a>. Thanks to Raymond-Voogt and xet7.</summary>
-
-The recovery scan retried every pending notification each round. One that
-can never be delivered failed every time and stayed forever: its activity
-was deleted or changed, a recipient lost access, or its plan had nothing or
-too much to send. After a ten-minute grace such a notification is now
-cancelled through the administrator's own cancellation, as the system.
-Pending notifications older than `ACTIVITY_NOTIFICATION_MAX_AGE_DAYS` (7)
-expire. Admin Panel → Problems gets **Retry all** and **Cancel older…**.
-`tests/activityNotificationExpiry.test.cjs` and a runtime test.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/e0317a9ff3">synced-cron's per-minute running-job lookup uses an index</a>. Thanks to Raymond-Voogt and xet7.</summary>
-
-`{ name, finishedAt: { $exists: false } }`, asked every minute per job and
-instance, scanned the whole `cronJobs` history: synced-cron indexes only
-`{ intendedAt, name }` and the TTL. `{ name, finishedAt }` is created at
-startup. `tests/syncedCronIndex.test.cjs` and a runtime test that checks the
-plan.
-
-</details>
 
 Thanks to above GitHub users for their contributions and translators for their translations.

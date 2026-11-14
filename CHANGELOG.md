@@ -5,6 +5,19 @@ each one changed and the project status are in
 Written by `node releases/changelog-short.mjs` from CHANGELOG-big.md:
 make changes there.
 
+# v13.12 2026-11-14 WeKan ® release
+
+WeKan is updated to **Meteor 3.6.1**, whose DDP server refuses
+malformed messages without stalling the connection. **One shared list header
+row** now shows the same lists in every swimlane, scrolling together, and
+**Shift+M** and **Shift+C** open Move Card and Copy Card. Those popups
+remember the swimlane and list, not only the board. The embedded-engine
+benchmark takes **OpenTelemetry 1.47.0** for a Dependabot alert. A **REST
+API** write that changes nothing answers 404, and a card deletion naming the
+wrong list no longer strips the card's checklists (**ListLockBleed**).
+
+[All changes in v13.12](CHANGELOG-big.md#v1312-2026-11-14-wekan--release)
+
 # v13.11 2026-11-13 WeKan ® release
 
 The **file-integrity scan** stops reporting attachments and
@@ -39,14 +52,3 @@ an i386 Node.js of the exact version its bundle embeds. A **GitHub CodeQL**
 alert in the security alert download script is fixed.
 
 [All changes in v13.08](CHANGELOG-big.md#v1308-2026-11-12-wekan--release)
-
-# v13.07 2026-11-12 WeKan ® release
-
-**ListLockAttachBleed** is fixed: when a list refuses a role
-write access, that refusal now also holds for the attachment API's upload,
-delete, copy and move. **CodeQL** alerts #602 and #603 in the tests are fixed,
-**fast-xml-parser** is updated to 5.12.0, spent time reads as a **duration**,
-the **indexes** that LDAP, card member and History queries need are added, and
-Admin Panel → Problems can **Clear** resolved problems, which also age out.
-
-[All changes in v13.07](CHANGELOG-big.md#v1307-2026-11-12-wekan--release)
