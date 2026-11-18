@@ -4,11 +4,21 @@
 // opened card's attachments - a click on it views it in the same viewer, then
 // download, rename, delete and the cover / background menu.
 
-const { test, expect } = require('../fixtures');
+const { test: base, expect } = require('../fixtures');
 const db = require('../helpers/db');
 const { navigateInApp } = require('../helpers/auth');
 const fs = require('node:fs');
 const path = require('node:path');
+const { targetsWeLite, openWeLiteBoard } = require('../helpers/welite-auth');
+
+const test = targetsWeLite ? base.extend({
+  boardPage: async ({ page, user, board }, use) => {
+    await openWeLiteBoard(page, user, board.boardId);
+    await use(page);
+  },
+}) : base;
+if (targetsWeLite) test.use({ javaScriptEnabled: false });
+
 
 // Where the server keeps attachment files: an administrator's method, so the
 // test's user is one for this call only.
@@ -34,7 +44,92 @@ async function insertFile(page, board, storage, id, name, type, bytes) {
   return file;
 }
 
-test('Version Control Attachments: view, download, rename, delete', async ({ boardPage: page, board, user }) => {
+async function verifyWeLiteAttachments(page, request, board, user) {
+  const card = db.findOne('cards', { boardId: board.boardId, title: 'Alpha Card' });
+  const image = fs.readFileSync(path.resolve(__dirname, '../../../public/favicon-32x32.png'));
+  const binary = Buffer.from([0, 1, 2, 3]);
+  async function upload(fileName, fileType, data) {
+    const query = new URLSearchParams({ boardId: board.boardId, cardId: card._id,
+      listId: card.listId, swimlaneId: board.swimlaneId, fileName, fileType });
+    const response = await request.post(`/api/attachment/upload?${query}`, {
+      headers: { Authorization: `Bearer ${user.token}`, 'Content-Type': 'application/octet-stream' }, data,
+    });
+    expect(response.status()).toBe(200);
+    return (await response.json()).attachmentId;
+  }
+  const imageId = await upload('diagram.png', 'image/png', image);
+  const binaryId = await upload('firmware.bin', 'application/octet-stream', binary);
+  await page.getByRole('link', { name: 'Attachments', exact: true }).click();
+  const imageRow = page.locator('li').filter({ has: page.getByRole('link', { name: 'diagram.png', exact: true }) });
+  const other = page.locator('li').filter({ has: page.getByRole('link', { name: 'firmware.bin', exact: true }) });
+  const english = page.url();
+  const finnish = new URL(english);
+  finnish.searchParams.set('lang', 'fi');
+  const localized = await page.goto(finnish.href);
+  expect(localized.headers()['content-language']).toBe('fi');
+  await expect(imageRow.getByRole('link', { name: 'Esikatsele', exact: true })).toBeVisible();
+  const localizedList = new URL(english);
+  const localizedCard = new URL('/board/card', english);
+  localizedCard.search = new URL(english).search;
+  localizedCard.searchParams.set('card', card._id);
+  for (const [locale, uploadLabel] of [['ar-DZ', 'رفع'], ['ar-EG', 'رفع'], ['ary', 'طلّع']]) {
+    localizedList.searchParams.set('lang', locale);
+    const listResponse = await page.goto(localizedList.href);
+    expect(listResponse.headers()['content-language']).toBe(locale);
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+    await expect(imageRow.getByRole('link', { name: 'معاينة', exact: true })).toBeVisible();
+    localizedCard.searchParams.set('lang', locale);
+    const cardResponse = await page.goto(localizedCard.href);
+    expect(cardResponse.headers()['content-language']).toBe(locale);
+    const uploadForm = page.locator('form').filter({ has: page.locator('#attachment-file') });
+    await expect(uploadForm.getByRole('button', { name: uploadLabel, exact: true })).toBeVisible();
+  }
+  await page.goto(english);
+  const preview = imageRow.getByRole('link', { name: 'Preview', exact: true });
+  const previewUrl = new URL(await preview.getAttribute('href'), page.url());
+  const headers = { 'User-Agent': await page.evaluate(() => navigator.userAgent) };
+  const withoutSession = new URL(previewUrl);
+  withoutSession.searchParams.delete('sessionId');
+  expect((await request.get(withoutSession.href, { headers })).status()).toBe(404);
+  const previewResponse = await request.get(previewUrl.href, { headers });
+  expect(previewResponse.status()).toBe(200);
+  expect(previewResponse.headers()['content-type']).toContain('image/png');
+  expect(previewResponse.headers()['content-disposition']).toMatch(/^inline/);
+  expect(await previewResponse.body()).toEqual(image);
+  await preview.click();
+  await expect(page.locator('img')).toBeVisible();
+  await expect.poll(() => page.locator('img').evaluate(element => element.naturalWidth)).toBeGreaterThan(0);
+  await page.goBack();
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    imageRow.getByRole('link', { name: 'diagram.png', exact: true }).click(),
+  ]);
+  expect(download.suggestedFilename()).toBe('diagram.png');
+  expect(fs.readFileSync(await download.path())).toEqual(image);
+  const input = imageRow.getByRole('textbox', { name: 'Rename' });
+  await expect(input).toHaveValue('diagram');
+  await input.fill('architecture');
+  await imageRow.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'architecture.png', exact: true })).toBeVisible();
+  expect(db.findOne('attachments', { _id: imageId }).name).toBe('architecture.png');
+
+  await expect(other.getByRole('link', { name: 'Preview', exact: true })).toHaveCount(0);
+  const binaryUrl = new URL(await other.getByRole('link', { name: 'firmware.bin' }).getAttribute('href'), page.url());
+  binaryUrl.searchParams.set('preview', '1');
+  const binaryResponse = await request.get(binaryUrl.href, { headers });
+  expect(binaryResponse.status()).toBe(200);
+  expect(binaryResponse.headers()['content-disposition']).toMatch(/^attachment/);
+  expect(await binaryResponse.body()).toEqual(binary);
+  await other.getByRole('checkbox').check();
+  await other.getByRole('button', { name: 'Delete', exact: true }).click();
+  await expect(other).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'architecture.png', exact: true })).toBeVisible();
+  expect(db.findOne('attachments', { _id: binaryId }).deletedAt).toBeTruthy();
+  expect(await page.context().cookies()).toEqual([]);
+}
+
+test('Version Control Attachments: view, download, rename, delete', async ({ boardPage: page, request, board, user }) => {
+  if (targetsWeLite) return verifyWeLiteAttachments(page, request, board, user);
   const storage = await storagePaths(page, user);
   const image = db.uid('vcsimage');
   const binary = db.uid('vcsbinary');

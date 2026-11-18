@@ -104,7 +104,10 @@ async function call(file, verb, route, { params, body = {}, cache = {}, extra = 
     extractErrorMessage: error => String(error.message),
     sendJsonResult(_res, result) { responses.push(plain(result)); },
     check(value) { if (typeof value !== 'string') throw new Error('Match failed'); },
-    require: () => ({ record() {} }),
+    // The per-list role exception gates (decided 2026-11-18) pass here: these
+    // routes' list refusals are tested in tests/listLockStructure.test.cjs.
+    require: () => ({ record() {}, async assertSwimlaneListsNotRefused() {}, async assertListNotRefused() {} }),
+    async assertListNotRefused() {},
     Random: { id: () => 'rnd' },
     writes,
     ...extra(writes),
@@ -424,7 +427,8 @@ test('negative: the card deletion checks the list before it removes anything, an
   }
   assert.ok(callers.some(([route]) => route === '/api/boards/:boardId/cards/bulk'), 'the bulk deletion is checked');
   for (const [route, body] of callers) {
-    // RaceBleed: the removal is the claim, keyed on the board looked up with.
-    assert.match(body, /getCard\(\{ _id: cardId, boardId: paramBoardId \}\)[\s\S]*removeClaimedCard\(\{\s*card,\s*selector: \{ boardId: paramBoardId \}/, route);
+    // RaceBleed: the removal is the claim, keyed on the board looked up with -
+    // and, since ListLockBulkBleed, on the list that was checked as well.
+    assert.match(body, /getCard\(\{ _id: cardId, boardId: paramBoardId \}\)[\s\S]*removeClaimedCard\(\{\s*card,\s*selector: \{ boardId: paramBoardId(, listId: card\.listId)? \}/, route);
   }
 });

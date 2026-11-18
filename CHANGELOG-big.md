@@ -5,6 +5,8 @@
 
 https://wekan.fi/status/
 
+What is not done yet, and why, is in [TODO.md](TODO.md).
+
 </details>
 
 <details>
@@ -93,36 +95,260 @@ Which databases WeKan supports
 
 </details>
 
-<details>
-<summary>TODO Later</summary>
+# v13.16 2026-11-19 WeKan ® release
+
+**In short:** **ListLockBulkBleed** is fixed, and a list that refuses a role
+now also refuses that role's bulk writes, dependency lines, rule actions and
+changes to the list or swimlane itself. Administrators can give chosen users,
+teams and organizations a smaller WeKan with opt-in **feature profiles**. A
+server no longer runs out of memory in the hourly **History integrity audit**,
+**scheduled rules** can create cards again, and **Card Excel export** and
+clearing a card's text work again.
+
+This release fixes the following CRITICAL SECURITY ISSUE of [ListLockBulkBleed](https://wekan.fi/hall-of-fame/listlockbulkbleed/):
 
 <details>
-<summary>Carried to a future release.</summary>
+<summary><a href="https://github.com/wekan/wekan/commit/ba3d94390ba724344a2d5cfe50e9dee3cc6f8d89">Bulk REST card writes and server-side card writes ask the list's role exception</a>. Thanks to immanuwell and xet7.</summary>
 
-What is not built yet, checked against the code on 2026-10-17: nothing. The
-helpers that need no AI and the whiteboard are built and in the Upcoming
-release. New work that cannot be done here is added below by category, with
-its reason.
+[GHSA-83w9-74mx-7v83](https://github.com/wekan/wekan/security/advisories/GHSA-83w9-74mx-7v83),
+CWE-863. A board admin can refuse a role write access in one list (#4527).
+`DELETE /api/boards/:boardId/cards/bulk` and
+`POST /api/boards/:boardId/cards/labels` take their cards from the body, so no
+URL names a list, and asked only for board write access; the methods
+`archiveSelectedCards`, `copyCard` and `createLinkedCard` write from server
+code, past the Cards allow/deny rules. A normal member the list refused could
+permanently delete its cards in one request, relabel and archive them, and copy
+or link new cards into it.
+
+The bulk routes now read every card and ask each list before the first write:
+any refusal is a 403 and nothing changes, and each removal and relabel is keyed
+on the list that was checked. The refusal shows in Admin Panel / Problems as
+ListLockBulkBleed (`authz.list-locked-bulk`, medium, never disables). The
+methods answer `not-authorized` and are not recorded, because Copy Card and
+Multi-Selection reach them in ordinary use. The same shape was fixed in twelve
+more paths: converting a card to a board, adding a subtask,
+`createCardWithDueDate`, the iCalendar import, sending and receiving board
+email, creating a version-control issue, moving board objects, History and
+position-history undo and redo, renaming an attachment, the scoped import and a
+card's rule button. Dependency lines keep their own board-wide rule.
+`tests/listLockBulkBleed.test.cjs` runs the gate on the reporter's board and
+pins every path; `tests/playwright/specs/list-lock-bulk.e2e.js` replays the
+proof of concept.
+
+</details>
+
+and adds the following new feature:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/fc21b0b177dc8f8902efa39d0f89c8b041c7cf2d">Feature profiles hide features from the users, teams and organizations an administrator chooses</a>. Thanks to mimZD and xet7.</summary>
+
+[#6837](https://github.com/wekan/wekan/issues/6837): Admin Panel / Settings /
+Visibility / Features gains feature profiles - a name, the optional features it
+hides, and the users, teams and organizations it applies to. It is strictly
+opt-in: a user with no profile sees everything, a profile only hides and changes
+no data or permission, and the member menu tells the user which profile hides
+how many features, so nothing looks missing. Every place that hides a disabled
+feature follows it. The new strings are in every language.
+`tests/featureProfiles.test.cjs` and `feature-profiles.e2e.js` cover it.
+
+</details>
+
+and fixes the following bugs:
+
+**Per-list role exceptions** - what else a list that refuses a role refuses,
+as decided after ListLockBulkBleed.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/da6d9d39b8bd209006fc02fe735f1c277a2be693">Dependency lines follow the card's list</a>. Thanks to xet7.</summary>
+
+A dependency line is stored on its source card, but it followed only the
+board-wide dependency rule, so a role a list refused could still add, change and
+remove lines on that list's cards. Now the methods answer `not-authorized`, the
+REST dependency routes answer 403 recorded as ListLockBleed, and the import
+skips such lines; board and site admins are not restricted.
+`tests/listLockDependencies.test.cjs` and `tests/listPermissions.test.cjs` pin
+it, and `list-lock-bulk.e2e.js` replays it over REST.
 
 </details>
 
 <details>
-<summary>Need the running app to reproduce/verify</summary>
+<summary><a href="https://github.com/wekan/wekan/commit/3202a1d7ac1027b41af5a5dfbe03893ccbc89c36">Deleting, archiving or moving a list or swimlane follows the list</a>. Thanks to xet7.</summary>
 
-- The WebKit stage cannot run in the Flatpak sandbox: MiniBrowser needs its
-  own sandbox, and turning that off is not allowed there. Run it on a host.
-- [#6834](https://github.com/wekan/wekan/issues/6834) (the minicard due date is fixed; the board header bar wrapping to a second row and the list header icons under the card count did not reproduce on the current code at the same window width, in Persian, with the card count on - which WeKan release and browser zoom showed them is asked; wrapping the header rather than hiding buttons is by design)
+These do the same to the cards in them, yet were gated by board write access
+alone. A list that refuses a role now also refuses that role deleting,
+restoring, archiving or moving it, and deleting, archiving or moving a swimlane
+holding its cards - on DDP, REST (403, recorded as ListLockBleed) and client
+writes alike. The list menu no longer offers its archive actions there.
+Renaming and reordering stay allowed, and board admins are never restricted.
+`tests/listLockStructure.test.cjs` pins it.
 
 </details>
 
 <details>
-<summary>Needs a maintainer decision on the intended contract</summary>
+<summary><a href="https://github.com/wekan/wekan/commit/ee24453dcb5d9ed8af5c07b848cbd5bd8979ae28">A rule action into a refusing list is skipped, and the rest of the rule runs</a>. Thanks to xet7.</summary>
 
-- [#6837](https://github.com/wekan/wekan/issues/6837) (a Simple and an Advanced mode, or profiles an administrator defines and assigns, to hide features from new users: which features each mode or profile shows, who chooses it, and how it relates to the existing per-board Board Settings / Card and Show on Minicard switches and the Admin Panel feature toggles)
+A rule's move, archive, create-card, copy, link and list actions checked only
+board write access. Each now asks the lists it writes in as the user who
+triggered the rule; a refusing list skips that action and shows in Admin Panel /
+Problems as ListLockRule (detected, low), since a rule meeting a locked list is
+not an attack. `tests/listLockRules.test.cjs` pins it.
 
 </details>
 
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a0f36819610e6d0aa9c170340f8421c1b7fc2bbe">List Sync's rule replay skips such an action too</a>. Thanks to xet7.</summary>
+
+The journaled List Sync replay still wrote with board write access only. Each of
+its list-writing runners now decides before saving its command, records a
+durable skip and lets the rest of the plan run; a replay reads the saved skip,
+so it never re-decides and never skips a half-finished action.
+`tests/listSyncRuleListSkip.test.cjs` pins it.
+
 </details>
+
+**Server memory and timed jobs** - what runs on its own, every hour.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/cfd9a62466a64b58d514d46c3c6560f003704523">Swap alone is not high RAM usage, and resource monitors are not named like vulnerabilities</a>. Thanks to xet7.</summary>
+
+A laptop with many programs open showed "RamBleed, high: high RAM usage started
+(>= 90%)" at RAM 52% and swap 60%: swap at 25% started a period by itself. Swap
+now counts only while RAM is also tight, the row says what started it, and only
+RAM near full is high severity. The RAM, CPU, disk and speed rows are named for
+what happened (HighRamUsage, HighCpuUsage, HighDiskUsage, SlowRequest) without a
+CWE, and old rows are renamed at startup. `tests/ramHighTracker.test.cjs` and
+`tests/resourceStreamNames.test.cjs` cover it.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7459c5bde66ea22966526a7179eede62b5233f0e">The History integrity audit streams each board instead of loading it whole</a>. Thanks to xet7.</summary>
+
+A production server died twice with "JavaScript heap out of memory", 42 and 74
+seconds after the hourly History integrity audit started, both times in its
+first run after a restart. The audit fetched each board's whole History - every
+row with its full previous and new content - into memory. It now streams each
+board through a cursor and keeps only hashes and small summaries; the findings
+are the same, in the same order. `tests/historyIntegrityStreaming.test.cjs`
+compares both on forked, tampered and orphaned chains and fails if a board is
+fetched whole.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f23695cc1bf6447fb38693ea8fe2e1ce4ab51f8f">Scheduled rules act as the board's admin, so a created card has an author</a>. Thanks to xet7.</summary>
+
+Every run of a scheduled rule with a "create card" action failed with "User ID
+is required in cards insertAsync". Scheduled rules, auto-archive and attachment
+retention acted as `board.createdBy`, but boards have no such field, so they ran
+as nobody. They now act as the board's first active admin
+(`models/lib/boardActor.js`), and the rule's new card names its author.
+`tests/boardActor.test.cjs` scans the tree so nothing reads `board.createdBy`
+again.
+
+</details>
+
+**Cards** - exporting a card, and clearing its text.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/997c6d88ad4c67850831aa99de1f874765c90a41">Card Excel export works with only Description or only Labels selected</a>. Thanks to AhmedLukman and xet7.</summary>
+
+The card Excel exporter loads the board, list and swimlane only when the
+selected fields need them, and passes `null` for the rest. The shared card
+document builder defaulted them with `board = {}`, which applies only to
+`undefined`, so it read `.title` of `null` and the download ended in "Export
+failed". The titles are optional now (`board?.title || ''`), which also covers
+a PDF card export of a card with no swimlane.
+`tests/cardExportDocument.test.cjs`
+fails on the old code with that TypeError, and
+`tests/playwright/specs/card-excel-field-selection.e2e.js` downloads both
+workbooks from the real route and checks that each holds only its own field.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c59c751547aa36fabda088eed4cfd7b8ce6b37e4">REST card update can clear a card title</a>. Thanks to AhmedLukman and xet7.</summary>
+
+`PUT` with `{"title":""}` answered 404 and kept the old title, because the
+handler read the title by truthiness. An empty title is a value now, a title
+that is not a string is a 400 before anything is written, and
+[an update that matches no card](https://github.com/wekan/wekan/commit/79a98822cbe6f1aaa0da0ad2646c7b2cb4fb2726)
+is a 404 again. `tests/restCardSort.test.cjs` and
+`tests/playwright/specs/rest-card-title.e2e.js` cover it.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/aacb2fd4d68c4873bd01685dceee172c24e48379">A cleared card title or description can be undone and redone</a>. Thanks to AhmedLukman and xet7.</summary>
+
+Clearing a value is an edit kept in History, not a deletion, so it is
+restorable whatever Admin Panel / Problems / Delete says. Undo already put the
+old text back, but redo and Restore of the clearing threw: collection2 removes
+`''` from `$set` and then refuses the empty modifier. History, the card details,
+the board description and the REST card update now write `''` as it is, and a
+REST title of only spaces no longer fails with a 500.
+`tests/emptyStringClearWrites.test.cjs` and
+`tests/playwright/specs/card-clear-undo-redo.e2e.js` cover it.
+
+</details>
+
+and has the following developer-facing changes:
+
+**Card Excel export** - the browser test for the fix above.
+
+- [A Playwright spec drives the card Excel export with one field selected](https://github.com/wekan/wekan/commit/320a3ca8672b6a70867baa0c3f657d3a5eb53536).
+  Thanks to AhmedLukman and xet7.
+
+**Node test suites** - a sandbox that resolves its helpers.
+
+- [The attachment cleanup test resolves the Playwright helpers' own requires](https://github.com/wekan/wekan/commit/74dd0b705e21ecb4723dcb8a6055c7edc5aae9aa).
+  Thanks to xet7.
+
+**WeLite REST API** - the upstream REST specs, run against the native WeLite
+target as well.
+
+- [Ownership selection](https://github.com/wekan/wekan/commit/049b628a0310a33026de423a590a6c33489d5b41). Thanks to xet7.
+- [Card title edits](https://github.com/wekan/wekan/commit/22dae19a64325695a17dd90ea7f4675ffeecfbed). Thanks to xet7.
+- [Board card sorting](https://github.com/wekan/wekan/commit/5f06b28aef680d2682e7fa4e965a0e797b502214). Thanks to xet7.
+- [Archive and restore](https://github.com/wekan/wekan/commit/11fc468ff77f9126b97d1eca72de9c2d90314022). Thanks to xet7.
+- [Subtasks](https://github.com/wekan/wekan/commit/db3f489ab27f672c9d1ab4db5feaf3a116eba928). Thanks to xet7.
+- [Overtime](https://github.com/wekan/wekan/commit/2033c177ce452f59bc6cb9d3d07a6566169ed015). Thanks to xet7.
+- [People features](https://github.com/wekan/wekan/commit/72ee1c8b231896586086ac7067ea6dd96135506c). Thanks to xet7.
+- [User update](https://github.com/wekan/wekan/commit/e4115e68905f4b9a2d521a749a9fe77dde322aa9). Thanks to xet7.
+- [Checklists](https://github.com/wekan/wekan/commit/ede46c7a9873f20864a77eeda7cb5007762824ff). Thanks to xet7.
+- [Write-route scope](https://github.com/wekan/wekan/commit/399a8defec10165e1cf7fa18faa5113d5bb7176f). Thanks to xet7.
+- [Assignment removal](https://github.com/wekan/wekan/commit/8abb9504bb1f714873419f7b481650d758294ef7). Thanks to xet7.
+- [Dropdown item rename](https://github.com/wekan/wekan/commit/b8fd94a7e70bf65e85b8d06b491e4d3d13e3a9ec). Thanks to xet7.
+- [Dropdown item deletion](https://github.com/wekan/wekan/commit/f1adc7982eca4aebf8831403f6b4bd219cec51b9). Thanks to xet7.
+- [Custom-field lifecycle](https://github.com/wekan/wekan/commit/6bf2d53d756e59f494ea50587f62bc467afb7b77). Thanks to xet7.
+- [Webhook settings](https://github.com/wekan/wekan/commit/f34fee658206ab4d90583f58746067793f10d12a). Thanks to xet7.
+- [Native Playwright credentials are seeded before an API token is used](https://github.com/wekan/wekan/commit/a9059b7b155aaea4bf9ccb1647a492bab251bb10).
+  Thanks to xet7.
+
+**WeLite attachments** - the attachment workflows in the native browser.
+
+- [The upstream card attachment cascade spec](https://github.com/wekan/wekan/commit/26e27f62c4b6b9e2bcd1e10623de7dd3e0b31b5e). Thanks to xet7.
+- [Attachment rename, and a missing form token is refused](https://github.com/wekan/wekan/commit/7c3b798a1d0ff6e26b6afa8f49c3359a73ba526a). Thanks to xet7.
+- [Direct attachment removal in Chromium](https://github.com/wekan/wekan/commit/c060c6d2db51b2fc22fab72dadecd90ab173bd8f). Thanks to xet7.
+- [The Version Control Attachments workflow](https://github.com/wekan/wekan/commit/b6bc2b200ce7545ca43b2f6b3a3ac39874227812). Thanks to xet7.
+- [The Finnish attachment preview](https://github.com/wekan/wekan/commit/c5344761d856cf5234e5a12ccc61f336c6a9a0e8). Thanks to xet7.
+- [The cascade spec reuses its browser session](https://github.com/wekan/wekan/commit/bd6b00c5f437237a3cab8bf7d51172d948e45462). Thanks to xet7.
+- [The attachment browser workflow gets the time it needs](https://github.com/wekan/wekan/commit/333928f123f9dd061042c8b18b0e44663dc76d04). Thanks to xet7.
+
+**WeLite boards and sessions** - export links and session revocation.
+
+- [Both export links on the board](https://github.com/wekan/wekan/commit/075e6dbe730291543c8a384ce58429167976741c). Thanks to xet7.
+- [Revoking one browser session](https://github.com/wekan/wekan/commit/e30c439fa7f4e82bb2f4f949513aa1fcc4287953). Thanks to xet7.
+
+**WeLite right-to-left captions** - Arabic table captions read in their own
+direction.
+
+- [People table captions](https://github.com/wekan/wekan/commit/f1fe22ac16254fa3d7f14df6c09dd3f250c7d61a). Thanks to xet7.
+- [Regional Arabic People table captions](https://github.com/wekan/wekan/commit/8c1152f23468e76d07c964b5f1358900372c8248). Thanks to xet7.
+- [Arabic webhook field captions](https://github.com/wekan/wekan/commit/6f7292cffdfb42a7accf4955735bbd8a43d4472a). Thanks to xet7.
+- [Regional Arabic attachment captions](https://github.com/wekan/wekan/commit/ba9504d6db8dbd2adf8e72b98cb10c991a379cda). Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
 
 # v13.15 2026-11-18 WeKan ® release
 
@@ -8390,124 +8616,5 @@ search abbreviation is tb. Tsonga's Archive is "vuhlayiselo bya swa khale",
 while storage stays "vuhlayiselo". Bosnian and Croatian translate S3 port.
 
 </details>
-
-Thanks to above GitHub users for their contributions and translators for their translations.
-
-# v12.45 2026-10-14 WeKan ® release
-
-**In short:** **Sync and rule notifications** are delivered again with the clear
-e-mail layout, and the **musl**, **Android**, **FreeBSD**, **Windows
-single-file** and **Bun** builds that stopped publishing in v12.41 build again.
-**Latvian**, **Tsonga** and **Bosnian** are translated where they were
-Lithuanian, filler or Serbian, and the attachment viewer's picture gets **alt
-text**.
-
-This release fixes the following bugs:
-
-**Notifications and accessibility** - Sync notifications, and an image name.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/e85eaa3ad3">Sync and rule notifications are planned again with the clear e-mail layout</a>. Thanks to xet7.</summary>
-
-v12.44 made the clear HTML layout the default for notification e-mail, and
-with it every e-mail job carries its plain-text part. The Sync notification
-plan accepted exactly seven job fields, so it refused every plan, and a rule or
-Sync run's notifications failed with `sync-notification-plan-invalid`. It now
-takes what the e-mail outbox takes, checked the same way, and
-`tests/syncNotificationPlan.test.cjs` pins that the two lists are the same.
-
-</details>
-
-- [The attachment viewer's picture has alt text](https://github.com/wekan/wekan/commit/a530a3c673):
-  "Preview" until a picture opens, then the file's name; a guard fails on any
-  image without alt. Part of #337. Thanks to ndarilek and xet7.
-
-**Release builds** - the platforms v12.41 to v12.44 did not publish.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/5331e06199">musl and Android bundles give sharp its platform package where it is</a>. Thanks to xet7.</summary>
-
-sharp is an application package, under programs/server/npm, but its glibc
-platform packages were removed from programs/server/node_modules and the musl
-ones never arrived, so "Cannot find module 'sharp'" ended the musl builds.
-platform-native-packages.mjs now takes --libc musl. Android builds sharp from
-source in its own directory, falls back to WebAssembly with a warning, and no
-longer stops at "chmod: Operation not permitted" in Termux.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/0d23746441">The FreeBSD bundles start</a>. Thanks to xet7.</summary>
-
-The launcher ran every binary through cpu-exec, a Linux #!/bin/bash script, and
-FreeBSD has no /bin/bash: "cpu-exec: not found". It is used only on Linux with a
-/bin/bash, and the BSD bundles drop it.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/0966a90d39">The Windows single files start</a>. Thanks to xet7.</summary>
-
-Node.js mounts the archive at `\\.\NUL\vfs`, which Meteor's path conversion
-turned into a C: path, so the server stopped with "Cannot find module 'denque'";
-the single file carries a patched mini-files.js that keeps device and UNC paths.
-A 32-bit single file is built by a 32-bit Node.js now, because the SEA blob
-stores its lengths as size_t: win32 found no archive, and i386 and 32-bit ARM
-had the same fault unseen.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/41399b7518">The Bun FreeBSD and Windows bundles build</a>. Thanks to xet7.</summary>
-
-FreeBSD packages libvips 8.18.6 and sharp 0.35.5 asked for 8.18.7; a
-patch-release gap is accepted with a notice. A CDN HTTP 500 is retried, and the
-checksum files are LF on every platform.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/ce3d4310d5">The Docker image copy to Quay retries a dropped connection</a>. Thanks to xet7.</summary>
-
-An HTTP/2 stream reset failed the copy; a transport error is retried up to four
-times, and a refusal still fails at once.
-
-</details>
-
-and fixes the following translations:
-
-**Languages updated:** Latvian, Tsonga, Bosnian, Macedonian, Persian, Cantonese,
-Occitan, Aromanian.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/e0649b0cfb">Latvian is Latvian, and wrong words are gone wherever they were</a>. Thanks to xet7.</summary>
-
-The first half shipped in v12.44 with Updated translations: Spanish Save is
-Guardar, the Bosnian file is in Latin script and Romanian's Italian words are
-Romanian. This finishes it: 225 Lithuanian values in the Latvian file are
-Latvian, in the file's own words, and the same wrong words are replaced under
-every key - Macedonian Настройки, the Persian settings typo, Cantonese 依戀 in
-the attachment search operator and Occitan "mot de Santa-Clara" for password.
-`tests/wrongLanguageCorrections20261014.test.cjs` fails on any Lithuanian left
-in the Latvian file and checks its placeholders.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/ac2410fead">Tsonga, Bosnian and Aromanian are translated where they were filler or Serbian</a>. Thanks to xet7.</summary>
-
-Tsonga had 618 values of the filler "Hi Xitsonga: mhaka" and 831 more padded
-with a repeated "mhaka" wherever its generator had no word; all are translated
-now. The Bosnian values that were Serbian are ijekavian Bosnian, with the
-file's own words for board, card and list, and Aromanian's "Calendario" is
-"Calendar". The test fails on any filler, padding or ekavian form left.
-
-</details>
-
-and has the following developer-tooling fix:
-
-- [problemsMenuOrder and sandstormWebhookEgress follow two v12.43 changes](https://github.com/wekan/wekan/commit/c11fd215c4):
-  the recovery list's toolbar actions are not menu panes, and webhooks to a
-  site admin's internal hosts are not fetchSafe's. Thanks to xet7.
 
 Thanks to above GitHub users for their contributions and translators for their translations.

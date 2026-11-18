@@ -1,4 +1,5 @@
 import Lists from '/models/lists';
+import Cards from '/models/cards';
 import { allowIsBoardMemberWithWriteAccess, allowIsBoardMemberCommentOnly } from '/server/lib/utils';
 
 // #4527: the server half of per-list exceptions (models/lib/listPermissions.js
@@ -50,4 +51,70 @@ export async function assertListNotRefused(userId, board, listId, capability = '
   const error = new Meteor.Error('Forbidden', 'Forbidden');
   error.statusCode = 403;
   throw error;
+}
+
+/**
+ * GHSA-83w9-74mx-7v83: a REST write that takes its cards from the BODY (the
+ * bulk delete and bulk label routes) names no list in its URL, so it has to ask
+ * for the list of every card it is given - all of them before the first write,
+ * so a refused selection changes nothing.
+ */
+export async function assertCardListsNotRefused(userId, board, cards, capability = 'write', source = 'rest:cards/bulk') {
+  const listIds = new Set((cards || []).map(card => card && card.listId).filter(Boolean));
+  for (const listId of listIds) {
+    if ((await listException(userId, board, listId, capability)) !== false) continue;
+    try {
+      require('/server/lib/securityLog').record({ key: 'authz.list-locked-bulk', action: 'blocked', source, userId,
+        detail: `A REST bulk ${capability} naming cards in a list whose exception refuses the caller's role.` });
+    } catch (e) { /* logging must never break the guard */ }
+    const { Meteor } = require('meteor/meteor');
+    const error = new Meteor.Error('Forbidden', 'Forbidden');
+    error.statusCode = 403;
+    throw error;
+  }
+}
+
+/**
+ * The Meteor methods' half (GHSA-83w9-74mx-7v83): server code writes past the
+ * Cards allow/deny rules in server/listPermissions.js, so a method that writes a
+ * card in - or into - a list asks here. Not recorded in Admin Panel -> Problems:
+ * Copy Card's destination picker and Multi-Selection reach these methods in
+ * ordinary use, so a refusal is not evidence of an attempt.
+ */
+export async function assertListsWritable(userId, board, listIds, capability = 'write') {
+  for (const listId of new Set((listIds || []).filter(Boolean))) {
+    if ((await listException(userId, board, listId, capability)) === false) {
+      const { Meteor } = require('meteor/meteor');
+      throw new Meteor.Error('not-authorized', 'This list does not allow your role to do that.');
+    }
+  }
+}
+
+/**
+ * Decided 2026-11-18 (TODO.md): deleting, archiving or moving a swimlane does
+ * the same to every card in it, so a list holding its cards - or bound to it -
+ * that refuses this user's role refuses the swimlane change too (#4527). The
+ * ids of the refusing lists; none for a board admin.
+ */
+export async function swimlaneRefusingListIds(userId, board, swimlaneId) {
+  if (!userId || !board || typeof swimlaneId !== 'string' || !swimlaneId) return [];
+  const withCards = await Cards.rawCollection().distinct('listId', { boardId: board._id, swimlaneId });
+  const bound = await Lists.rawCollection().distinct('_id', { boardId: board._id, swimlaneId });
+  const refusing = [];
+  for (const listId of new Set([...withCards, ...bound].filter(id => typeof id === 'string' && id))) {
+    if ((await listException(userId, board, listId, 'write')) === false) refusing.push(listId);
+  }
+  return refusing;
+}
+
+/** The method half: not-authorized, unrecorded (assertListsWritable). */
+export async function assertSwimlaneListsWritable(userId, board, swimlaneId) {
+  await assertListsWritable(userId, board, await swimlaneRefusingListIds(userId, board, swimlaneId));
+}
+
+/** The REST half: 403, recorded as ListLockBleed (assertListNotRefused). */
+export async function assertSwimlaneListsNotRefused(userId, board, swimlaneId, source) {
+  for (const listId of await swimlaneRefusingListIds(userId, board, swimlaneId)) {
+    await assertListNotRefused(userId, board, listId, 'write', source);
+  }
 }
