@@ -95,6 +95,60 @@ Which databases WeKan supports
 
 </details>
 
+# v13.17 2026-11-19 WeKan ® release
+
+**In short:** The **Admin Panel** answers one question per tab: Settings gains
+**Appearance**, **Features**, **Feature profiles**, Security, Activities and
+notifications, and Delete, Problems keeps only what is going wrong, and every
+old
+address redirects. The docs now have a page for every menu entry, and cards of
+an archived swimlane no longer appear in the first swimlane.
+
+This release adds the following new features:
+
+**The Admin Panel** - one question per tab, and docs that follow the menus.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e1a053d059191640a63a22ab553c0b0c6b833d8d">Settings gains Appearance, Features, Feature profiles, Security, Activities and Delete</a>. Thanks to xet7.</summary>
+
+Who sees and may use what was spread over three tabs: the feature switches and
+profiles sat in Settings / Visibility beside the logo, and Security, Delete and
+Notifications sat in Problems among the reports. Visibility is Appearance now,
+Features and Feature profiles are panes of their own, the three settings moved
+to Settings, Problems is Summary, Backup and the reports, and every old address
+redirects. People, Teams and Organizations show the feature profile that
+applies. `tests/adminPanelStructure.test.cjs` and
+`admin-panel-structure.e2e.js` cover it.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a8fd080bc8ece74157e5f2e9e436fa2dafe76348">The docs have a page for every menu entry, laid out like the menus</a>. Thanks to xet7.</summary>
+
+Every Admin Panel pane, the member menu, the board header, Board Settings, the
+All Boards left menu and the list, swimlane and card menus now have pages,
+written from the code, and `Who-Sees-What.md` explains which layer decides what
+is shown and what is allowed. What documenting them found is in TODO.md.
+
+</details>
+
+and fixes the following bug:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0d9c8c1250d42c9c55d469d28384a14e59975eee">Cards of an archived swimlane stay hidden with the Archive sidebar closed</a>. Thanks to sro-lbohn, hmeunier95 and xet7.</summary>
+
+[#6927](https://github.com/wekan/wekan/issues/6927), a regression of #6659: on a
+board migrated from an old WeKan, cards of an archived swimlane appeared in the
+first swimlane and vanished while the Archive was open, because the client
+could only exclude archived swimlanes it had loaded. Their ids are now
+published on their own and excluded; the cards themselves are not changed.
+`tests/archivedSwimlaneCards6927.test.cjs` and
+`archived-swimlane-cards-6927.e2e.js` cover it.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v13.16 2026-11-19 WeKan ® release
 
 **In short:** **ListLockBulkBleed** is fixed, and a list that refuses a role
