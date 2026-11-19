@@ -95,6 +95,56 @@ Which databases WeKan supports
 
 </details>
 
+# v13.18 2026-11-19 WeKan ® release
+
+**In short:** **Admin Panel / Problems** says what its numbers count - "New
+problems: 1" and "Checks with findings: 8 / 31", in every language - and a
+report row's address, location and user always belong to the same occurrence.
+
+This release fixes the following bugs:
+
+**Admin Panel / Problems / Summary** - its counts read as sentences in every
+language.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7c92cf3298bef9ec1199bef5edb48bd334b5fb21">New problems and Data health checks say what they count</a>. Thanks to xet7.</summary>
+
+"1 new problems" glued a number to a plural label, and Data health's
+"Last Run: ... - 8/31" did not say that 8 of 31 checks found something. Each is
+now one sentence with its numbers as placeholders, `new-problems-count` and
+`data-health-checks-found`, translated into all 244 locales; new keys rather
+than changed ones, so a Transifex pull does not bring the old wording back. The
+menu's "Memory Usage" is "Memory usage" like CPU usage and Disk usage, and
+broken translations of it are corrected: Aymara had an English wrapper, Latvian
+had Lithuanian, and Dutch, Frisian, Tagalog, Tswana, Yoruba and Hawaiian were
+split or in the wrong word order. `tests/problemsSummaryLabels.test.cjs` pins
+the placeholders and key order in every locale, and that no bare number is
+glued to a label any more.
+
+</details>
+
+**Admin Panel / Problems reports** - who and where in a row belong together.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/80fb1c65fc0a19c1a8f970ea4873fd690188acd8">A row's address, location and user describe one occurrence, not several</a>. Thanks to xet7.</summary>
+
+A summary row keeps the latest occurrence's username, address, location and
+detail, but a field the newest occurrence did not carry stayed from an older
+one: `summaryUpdate` dropped the other address family only from `$set`, so the
+database kept the old value. Security Report showed a German IPv4 as
+"Vancouver, CA" - the location of another person's IPv6 beside it - and
+JamBleed's "gerald" beside a lockout of account trottola. The newest occurrence
+now replaces all the latest fields, and `$unset` clears the ones it does not
+carry, in `server/lib/eventLogFold.js` and in the in-memory fold the legacy
+migration uses. Existing rows are right from their next occurrence on.
+`tests/eventLogSummary.test.cjs` pins both, and that no update sends an empty
+`$unset`.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their
+translations.
+
 # v13.17 2026-11-19 WeKan ® release
 
 **In short:** The **Admin Panel** answers one question per tab: Settings gains
