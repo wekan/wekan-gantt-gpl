@@ -1448,6 +1448,21 @@ Boards.attachSchema(
     allowsForecastOnMinicard: { type: Boolean, optional: true },
     allowsChecklistFromDescriptionOnCard: { type: Boolean, optional: true },
     allowsActionItemsOnCard: { type: Boolean, optional: true },
+    // Kanban flow policies of the lists (models/lib/boardFlowPolicies.js),
+    // Board Settings / List: off until a board admin turns them on.
+    allowsListPolicies: { type: Boolean, optional: true },
+    commitmentListId: { type: String, optional: true },
+    personWipLimit: { type: SimpleSchema.Integer, optional: true, min: 1, max: 99 },
+    allowsSplitLists: { type: Boolean, optional: true },
+    // The Kanban and Scrum flow fields (models/lib/cardFlow.js), off until turned on.
+    allowsBlockedOnCard: { type: Boolean, optional: true },
+    allowsBlockedOnMinicard: { type: Boolean, optional: true },
+    allowsClassOfServiceOnCard: { type: Boolean, optional: true },
+    allowsClassOfServiceOnMinicard: { type: Boolean, optional: true },
+    allowsMoscowOnCard: { type: Boolean, optional: true },
+    allowsMoscowOnMinicard: { type: Boolean, optional: true },
+    allowsWsjfOnCard: { type: Boolean, optional: true },
+    allowsWsjfOnMinicard: { type: Boolean, optional: true },
     allowsWhiteboardOnCard: { type: Boolean, optional: true },
     // #6796: the opened card's attachment previews, and each attachment's
     // uploader and date. On unless a board admin turned them off.
@@ -3396,6 +3411,26 @@ Boards.helpers({
 
   getListWidthResizeLocked() {
     return !!this.listWidthResizeLocked;
+  },
+
+  // Board Settings / List: the Kanban flow policies (models/lib/boardFlowPolicies.js).
+  async setAllowsListPolicies(allowsListPolicies) {
+    return await Boards.updateAsync(this._id, { $set: { allowsListPolicies: !!allowsListPolicies } });
+  },
+
+  async setAllowsSplitLists(allowsSplitLists) {
+    return await Boards.updateAsync(this._id, { $set: { allowsSplitLists: !!allowsSplitLists } });
+  },
+
+  async setCommitmentListId(commitmentListId) {
+    if (!commitmentListId) return await Boards.updateAsync(this._id, { $unset: { commitmentListId: '' } });
+    return await Boards.updateAsync(this._id, { $set: { commitmentListId: String(commitmentListId) } });
+  },
+
+  async setPersonWipLimit(value) {
+    const limit = require('/models/lib/boardFlowPolicies').normalizePersonWipLimit(value);
+    if (limit === null) return await Boards.updateAsync(this._id, { $unset: { personWipLimit: '' } });
+    return await Boards.updateAsync(this._id, { $set: { personWipLimit: limit } });
   },
 
   async setListWidthResizeLocked(listWidthResizeLocked) {

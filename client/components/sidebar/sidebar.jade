@@ -755,24 +755,20 @@ template(name="boardMenuPopup")
         a.js-open-board-date-settings(title="{{_ 'date'}}")
           i.fa.fa-calendar
           | {{_ 'date'}}
+      //- All Boards Settings: what the All Boards page shows of this board
+        (card counters, member avatars), card aging, auto-archive and personal
+        list widths. It was commented out for the #4214 "icons random dance";
+        the All Boards tiles now read one fetch of getAllBoardsTileData, not
+        reactive cursors, so the loop it caused cannot return. The popup hides
+        its own counter and avatar rows when Admin Panel turns those off.
+      li
+        a.js-board-info-on-my-boards(title="{{_ 'board-info-on-my-boards'}}")
+          i.fa.fa-id-card-o
+          | {{_ 'board-info-on-my-boards'}}
       //- "Board backgrounds" was here. It was the list of pictures uploaded to
         this board, and that list is drawn inside Change Background Image now -
         under the upload that adds to it - so a second entry to the same list
         was a second place to look for one thing.
-    //Bug Board icons random dance https://github.com/wekan/wekan/issues/4214
-    //if currentUser.isBoardAdmin
-    //
-      unless currentSetting.hideBoardMemberList
-    //
-        unless currentSetting.hideCardCounterList
-    //
-          li
-    //
-            a.js-board-info-on-my-boards(title="{{_ 'board-info-on-my-boards'}}")
-    //
-              i.fa.fa-id-card-o
-    //
-              | {{_ 'board-info-on-my-boards'}}
     hr
   else if rulesReadable
     //- #2217: a member of a board that shows its Rules reads them here; the
@@ -875,6 +871,18 @@ template(name="boardMenuPopup")
             | {{_ 'since-last-visit-count' count=sinceVisitCount}}
           else
             | {{_ 'since-last-visit'}}
+    //- The Scrum meeting helpers (client/components/boards/scrum/scrumMeetings.jade),
+      each hidden by its Admin Panel feature and by the board's Scrum settings.
+    if showsStandupTimer
+      li
+        a.js-open-daily-standup
+          i.fa.fa-hourglass-half
+          | {{_ 'daily-standup'}}
+    if showsRetrospectiveBoard
+      li
+        a.js-create-retrospective-board
+          i.fa.fa-refresh
+          | {{_ 'retrospective-board'}}
     unless currentBoard.isTemplatesBoard
       if currentUser.isBoardAdmin
         // li
@@ -920,6 +928,9 @@ template(name="boardViewSettingsPopup")
         h4 {{_ 'description'}}
     .board-view-settings-rows.js-board-view-sortable
       each boardViewRows
+        //- The same groups as the Board View menu; only rows are dragged.
+        if groupLabelKey
+          .board-view-settings-group-heading {{_ groupLabelKey}}
         .board-view-settings-row.js-board-view-row(data-view="{{view}}")
           unless ../publicBoardsHidden
             .board-view-settings-column
@@ -1001,6 +1012,7 @@ template(name="boardListSettingsPopup")
         span
           i.fa.fa-columns
           | {{_ 'same-width-for-all-lists'}}
+  +boardFlowListSettings
 
 //- #2489: Board Settings / WIP Limit Groups - a shared WIP limit across two or
   more of this board's lists together, on top of the existing per-list

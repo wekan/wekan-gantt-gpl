@@ -28,15 +28,31 @@ export function validateImportSourceShape(source, value) {
     // Notion: the Markdown & CSV export .zip as { zipBase64 }, or one database CSV.
     case 'notion':
     case 'vikunja': valid = (typeof value?.zipBase64 === 'string' && value.zipBase64.length > 0)
+      || typeof value?.zipFile === 'string'
       || (typeof value === 'string' && value.trim().length > 0); break;
     // Plane: the export .zip as { zipBase64 }, a workbook as { xlsxBase64 },
     // or the text of a JSON or CSV export file.
     case 'plane': valid = (typeof value?.zipBase64 === 'string' && value.zipBase64.length > 0)
+      || typeof value?.zipFile === 'string'
       || (typeof value?.xlsxBase64 === 'string' && value.xlsxBase64.length > 0)
       || (typeof value === 'string' && value.trim().length > 0); break;
     case 'excel': case 'planner': case 'monday': case 'wrike': case 'teamwork': case 'businessmap': valid = typeof value?.excelBase64 === 'string' && value.excelBase64.length > 0; break;
     case 'markdown': case 'todotxt': case 'taskwarrior': case 'focalboard': case 'todoist': case 'meistertask': case 'obsidian': case 'linear': case 'ticktick': case 'clickup': case 'nullboard': case 'pivotal': case 'redmine': case 'superproductivity': case 'quire': case 'orgmode': valid = typeof value === 'string' && value.trim().length > 0; break;
     case 'leo': valid = typeof value === 'string' && /<leo_file[\s>]/.test(value); break;
+    // Mail, calendar, chat and note exports (models/lib/mailFormat.js,
+    // icalendarFormat.js, chatExportFormats.js, enexFormat.js,
+    // googleTakeoutFormat.js).
+    case 'mail': valid = (typeof value === 'string' && value.trim().length > 0) || typeof value?.mboxFile === 'string'; break;
+    case 'whatsapp': valid = typeof value === 'string' && value.trim().length > 0; break;
+    case 'ical': valid = typeof value === 'string' && /BEGIN:VCALENDAR/i.test(value); break;
+    case 'mattermost': valid = (typeof value === 'string' && /"type"\s*:\s*"version"/.test(value))
+      || (Array.isArray(value?.jsonLines) && value.jsonLines.some(line => line && line.type === 'version')); break;
+    case 'evernote': valid = typeof value === 'string' && /<en-export[\s>]/.test(value); break;
+    case 'telegram': valid = arrayAt(value, 'messages') || arrayAt(value?.chats, 'list'); break;
+    case 'discord': valid = (Array.isArray(value) ? value : [value]).every(e => e && e.channel && Array.isArray(e.messages)); break;
+    // A .zip sent in the call, or one streamed to the local disk (zipFile).
+    case 'slack': case 'googletakeout': valid = (typeof value?.zipBase64 === 'string' && value.zipBase64.length > 0)
+      || typeof value?.zipFile === 'string'; break;
     case 'opml': valid = typeof value === 'string' && /<opml[\s>]/.test(value); break;
   }
   if (!valid) throw new Error(`Invalid ${source} import document shape`);

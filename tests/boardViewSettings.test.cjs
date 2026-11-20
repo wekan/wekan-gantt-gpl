@@ -129,7 +129,7 @@ test('the Board View menu and the popup render the same BOARD_VIEWS table, every
   // rows and the menu's entries are the same list by construction; every
   // view has a click handler (per-view class), a label key and an icon.
   assert.ok(bvs.BOARD_VIEWS.length >= 25, `the table has ${bvs.BOARD_VIEWS.length} views`);
-  assert.match(menu, /each boardViewMenuEntries\n\s*li\n\s*a\.js-board-view-entry\(class="\{\{jsClass\}\}"\)\n\s*i\.fa\(class="\{\{icon\}\}"\)\n\s*\| \{\{_ labelKey\}\}/);
+  assert.match(menu, /each boardViewMenuEntries\n\s*if groupLabelKey\n\s*li\.board-view-group-heading \{\{_ groupLabelKey\}\}\n\s*li\n\s*a\.js-board-view-entry\(class="\{\{jsClass\}\}"\)\n\s*i\.fa\(class="\{\{icon\}\}"\)\n\s*\| \{\{_ labelKey\}\}/);
   bvs.BOARD_VIEWS.forEach(v => {
     assert.ok(typeof en[v.labelKey] === 'string' && en[v.labelKey], `${v.labelKey} is an English key`);
     assert.ok(/^fa-[a-z-]+$/.test(v.icon), `${v.view} has an icon`);
@@ -257,12 +257,17 @@ test('the Board View menu lists only the views shown for the board\'s visibility
     boardViewSettings: { 'board-view-lists': { showOnPublic: false }, 'board-view-cal': { showOnPrivate: false } },
   };
   const pub = bvs.boardViewMenuEntries(board, 'board-view-pulse');
-  assert.deepStrictEqual(pub.slice(0, 2).map(e => e.view), ['board-view-pulse', 'board-view-swimlanes'], 'custom order, Lists hidden on public');
+  // Grouped since 2026-11-20: Pulse leads its own group (Overview), the board
+  // group starts with Swimlanes, and Lists is hidden on public.
+  const overview = pub.filter(e => bvs.BOARD_VIEWS.find(v => v.view === e.view).group === 'overview').map(e => e.view);
+  assert.strictEqual(overview[0], 'board-view-pulse', 'the custom order inside its group');
+  assert.strictEqual(pub[0].view, 'board-view-swimlanes');
   assert.ok(!pub.some(e => e.view === 'board-view-lists'));
   assert.ok(pub.some(e => e.view === 'board-view-cal'), 'Calendar is hidden on private only');
-  assert.strictEqual(pub[0].isCurrent, true);
-  assert.strictEqual(pub[0].jsClass, 'js-open-pulse-view');
-  assert.ok(pub.every(e => !e.separatorAfter), 'a custom order has no separators');
+  const pulse = pub.find(e => e.view === 'board-view-pulse');
+  assert.strictEqual(pulse.isCurrent, true);
+  assert.strictEqual(pulse.jsClass, 'js-open-pulse-view');
+  assert.strictEqual(pulse.groupLabelKey, 'board-view-group-overview', 'the first of its group carries the heading');
   const priv = bvs.boardViewMenuEntries({ ...board, permission: 'private' }, 'board-view-cal');
   assert.ok(priv.some(e => e.view === 'board-view-lists') && !priv.some(e => e.view === 'board-view-cal'));
   assert.ok(priv.every(e => !e.isCurrent), 'the hidden current view is ticked nowhere');
@@ -329,8 +334,9 @@ test('moveBoardView moves one step, and the first up / last down / unknown are n
   assert.deepStrictEqual(down, all, 'and back');
   assert.deepStrictEqual(bvs.moveBoardView(undefined, 'board-view-swimlanes', 'up'), all, 'first item up');
   // #3256 appended the Map view; the Email (#794), Chat, Version Control and
-  // Column sets (#211) views followed it, so Column sets is the last row now.
-  assert.deepStrictEqual(bvs.moveBoardView(undefined, 'board-view-column-sets', 'down'), all, 'last item down');
+  // Column sets (#211) views followed it, and the reports of 2026-11-20 after
+  // those, so the Activity Heatmap is the last row now.
+  assert.deepStrictEqual(bvs.moveBoardView(undefined, 'board-view-activity-heatmap', 'down'), all, 'last item down');
   assert.notDeepStrictEqual(bvs.moveBoardView(undefined, 'board-view-chat', 'down'), all, 'Chat is no longer last');
   assert.notDeepStrictEqual(bvs.moveBoardView(undefined, 'board-view-map', 'down'), all, 'Map is no longer last');
   assert.deepStrictEqual(bvs.moveBoardView(undefined, 'board-view-nope', 'up'), all, 'unknown');
@@ -433,6 +439,19 @@ const PRE_FEATURE_MENU = [
   'board-view-version-control',
   // #211: Column sets, appended after Version Control.
   'board-view-column-sets',
+  // The reports of 2026-11-20 (models/lib/boardReports.js), appended after Column sets.
+  'board-view-created-resolved',
+  'board-view-net-flow',
+  'board-view-time-in-list',
+  'board-view-average-age',
+  'board-view-throughput-run',
+  'board-view-due-date-performance',
+  'board-view-release-burndown',
+  'board-view-epic-progress',
+  'board-view-workload',
+  'board-view-distribution',
+  'board-view-dependency-map',
+  'board-view-activity-heatmap',
 ];
 const bvsSrc = read('models/lib/boardViewSettings.js');
 const PRE_FEATURE_ORDER = PRE_FEATURE_MENU.filter(k => k !== 'hr');
@@ -456,8 +475,8 @@ test('the default order is the pre-feature menu order (525bcab1b), literally', (
   assert.deepStrictEqual(bvs.DEFAULT_BOARD_VIEW_ORDER, PRE_FEATURE_ORDER);
   // 34 before the Map view (#3256) was appended, 35 before Calendar Mode
   // (#3194), 36 before Email (#794) and Chat, 38 before Version Control,
-  // 39 before Column sets (#211).
-  assert.strictEqual(PRE_FEATURE_ORDER.length, 40);
+  // 39 before Column sets (#211), 40 before the twelve reports of 2026-11-20.
+  assert.strictEqual(PRE_FEATURE_ORDER.length, 52);
   // The literal in the model is a list of its own, not a slice of the table
   // (negative: re-sorting BOARD_VIEWS must not be able to change the default).
   assert.match(bvsSrc, /const DEFAULT_BOARD_VIEW_ORDER = \[\n\s*'board-view-swimlanes',/);
@@ -466,16 +485,16 @@ test('the default order is the pre-feature menu order (525bcab1b), literally', (
   assert.deepStrictEqual(bvs.DEFAULT_BOARD_VIEW_ORDER.slice().sort(), bvs.BOARD_VIEWS.map(v => v.view).sort());
 });
 
-test('a board with no stored order renders the pre-feature menu, separators in the same places', () => {
+test('a board with no stored order renders the pre-feature order, grouped under headings', () => {
+  // The pre-feature order decides inside each group; the six separators it
+  // had are group headings since 2026-11-20 (BOARD_VIEW_GROUPS).
+  const preFeature = PRE_FEATURE_MENU.filter(e => e !== 'hr');
+  const grouped = bvs.groupedBoardViews(preFeature.map(view => bvs.BOARD_VIEWS.find(v => v.view === view))).map(v => v.view);
   ['public', 'private'].forEach(permission => {
     [undefined, null, [], 'garbage'].forEach(boardViewOrder => {
       const entries = bvs.boardViewMenuEntries({ permission, boardViewOrder });
-      const rendered = [];
-      entries.forEach(e => {
-        rendered.push(e.view);
-        if (e.separatorAfter) rendered.push('hr');
-      });
-      assert.deepStrictEqual(rendered, PRE_FEATURE_MENU, `${permission} / ${JSON.stringify(boardViewOrder)}`);
+      assert.deepStrictEqual(entries.map(e => e.view), grouped, `${permission} / ${JSON.stringify(boardViewOrder)}`);
+      assert.strictEqual(entries.filter(e => e.groupLabelKey).length, bvs.BOARD_VIEW_GROUPS.length);
     });
   });
   assert.deepStrictEqual(bvs.SEPARATOR_AFTER, PRE_FEATURE_HR_AFTER);

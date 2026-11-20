@@ -4,9 +4,11 @@
  * Spec 26 — Admin Panel → People → "Shared templates" tab (feature #3313)
  *
  * The Templates tab lets an admin browse users' shareable template boards,
- * grouped by Organization / Team / email Domain. The three checkboxes are LIVE
- * view filters (default unchecked); checking one shows that grouping. Only users
- * whose Templates board is NON-EMPTY are listed.
+ * grouped by Organization / Team / email Domain. The three checkboxes write
+ * the instance setting Settings.sharedTemplatesScopes at once (default none);
+ * checking one shows that grouping, and lets every user share a template board
+ * with a group of that kind. Only users whose Templates board is NON-EMPTY are
+ * listed.
  *
  * Covers:
  *  - The Templates tab is reachable from the People side-menu; its three
@@ -25,6 +27,13 @@ const BASE_URL = process.env.WEKAN_BASE_URL || 'http://localhost:3000';
 
 test.describe('Admin – shared templates', () => {
   test.use({ storageState: undefined });
+  // The scopes are one instance setting (Settings.sharedTemplatesScopes), not
+  // each browser's storage: tests that tick them must not run at the same time.
+  test.describe.configure({ mode: 'serial' });
+  // A template link inside the group of that name, so a scope another test left
+  // on - listing the same board in its own group - cannot make it ambiguous.
+  const inGroup = (page, groupName, title) => page.locator('.shared-templates-group', {
+    has: page.locator('h5', { hasText: groupName }) }).locator('a.js-shared-template-link', { hasText: title });
 
   // Shared scope/group identifiers for the seeded users. Every value carries a
   // random per-run token: the parallel run launches Chromium/Firefox/WebKit as
@@ -64,16 +73,27 @@ test.describe('Admin – shared templates', () => {
     db.seedTemplatesBoard({ ownerId: userEmpty.id, templateTitles: [] });
   });
 
+  // One instance setting for every browser now, so each test starts from none.
+  const setScopes = scopes => db.updateOne('settings', {}, { $set: { sharedTemplatesScopes: scopes } });
+  test.beforeEach(() => setScopes([]));
+
   test.afterAll(() => {
+    setScopes([]);
     db.cleanup({ userIds: [userA.id, userB.id, userEmpty.id] });
   });
 
-  async function openTemplatesTab(page) {
+  async function openTemplatesTab(page, { reset = true } = {}) {
     await navigateInApp(page, '/admin/people/shared-templates');
     // The shared left menu addresses an entry by data-id, not by a per-page class
     // (docs/Features/All-Boards/Left-Menu.md).
     // templatesGeneral renders its three scope checkboxes.
     await page.locator('#templates-setting').waitFor({ timeout: 15_000 });
+    // The server sees the beforeEach reset of the setting at its next poll of
+    // the database, so wait for the page to show it before ticking anything:
+    // a tick on the previous test's state would add to it.
+    for (const scope of reset ? ['organizations', 'teams', 'domains'] : []) {
+      await expect(scopeCheckbox(page, scope)).not.toHaveClass(/is-checked/, { timeout: 30_000 });
+    }
   }
 
   function scopeCheckbox(page, scope) {
@@ -108,15 +128,15 @@ test.describe('Admin – shared templates', () => {
     await expect(page.locator('.shared-templates-group h5', { hasText: ORG.orgDisplayName })).toBeVisible();
 
     // Non-empty users' template boards appear by name.
-    await expect(page.locator('a.js-shared-template-link', { hasText: TPL.alpha })).toBeVisible();
-    await expect(page.locator('a.js-shared-template-link', { hasText: TPL.beta })).toBeVisible();
-    await expect(page.locator('a.js-shared-template-link', { hasText: TPL.gamma })).toBeVisible();
+    await expect(inGroup(page, ORG.orgDisplayName, TPL.alpha)).toBeVisible();
+    await expect(inGroup(page, ORG.orgDisplayName, TPL.beta)).toBeVisible();
+    await expect(inGroup(page, ORG.orgDisplayName, TPL.gamma)).toBeVisible();
 
     // The empty user must NOT be listed.
     await expect(page.locator('.shared-templates-user', { hasText: userEmpty.username })).toHaveCount(0);
 
     // Links point at the template boards.
-    const href = await page.locator('a.js-shared-template-link', { hasText: TPL.alpha }).getAttribute('href');
+    const href = await inGroup(page, ORG.orgDisplayName, TPL.alpha).getAttribute('href');
     expect(href).toMatch(/^\/b\//);
 
     // Screenshot for visual verification of grouped shared templates.
@@ -131,8 +151,8 @@ test.describe('Admin – shared templates', () => {
     await expect(scopeCheckbox(page, 'teams')).toHaveClass(/is-checked/);
 
     await expect(page.locator('.shared-templates-group h5', { hasText: TEAM.teamDisplayName })).toBeVisible();
-    await expect(page.locator('a.js-shared-template-link', { hasText: TPL.alpha })).toBeVisible();
-    await expect(page.locator('a.js-shared-template-link', { hasText: TPL.beta })).toBeVisible();
+    await expect(inGroup(page, TEAM.teamDisplayName, TPL.alpha)).toBeVisible();
+    await expect(inGroup(page, TEAM.teamDisplayName, TPL.beta)).toBeVisible();
   });
 
   test('checking Domains groups by email domain', async ({ page, adminUser }) => {
@@ -143,8 +163,8 @@ test.describe('Admin – shared templates', () => {
     await expect(scopeCheckbox(page, 'domains')).toHaveClass(/is-checked/);
 
     await expect(page.locator('.shared-templates-group h5', { hasText: DOMAIN })).toBeVisible();
-    await expect(page.locator('a.js-shared-template-link', { hasText: TPL.alpha })).toBeVisible();
-    await expect(page.locator('a.js-shared-template-link', { hasText: TPL.gamma })).toBeVisible();
+    await expect(inGroup(page, DOMAIN, TPL.alpha)).toBeVisible();
+    await expect(inGroup(page, DOMAIN, TPL.gamma)).toBeVisible();
   });
 
   test('unchecking a scope hides its results again', async ({ page, adminUser }) => {
@@ -153,7 +173,7 @@ test.describe('Admin – shared templates', () => {
 
     const orgToggle = page.locator('a.js-toggle-template-scope[data-scope="organizations"]');
     await orgToggle.click();
-    await expect(page.locator('a.js-shared-template-link', { hasText: TPL.alpha })).toBeVisible();
+    await expect(inGroup(page, ORG.orgDisplayName, TPL.alpha)).toBeVisible();
 
     // Uncheck — results disappear, the hint returns.
     await orgToggle.click();
@@ -170,15 +190,37 @@ test.describe('Admin – shared templates', () => {
     await expect(scopeCheckbox(page, 'teams')).toHaveClass(/is-checked/);
 
     // Reload and reopen the tab: the selection must still be checked and applied.
-    await openTemplatesTab(page);
+    await openTemplatesTab(page, { reset: false });
     await expect(scopeCheckbox(page, 'teams')).toHaveClass(/is-checked/);
     await expect(
       page.locator('.shared-templates-group h5', { hasText: TEAM.teamDisplayName }),
     ).toBeVisible();
 
+    // It is the instance setting, not this browser's storage.
+    await expect.poll(() => db.findOne('settings', {}).sharedTemplatesScopes).toEqual(['teams']);
+    expect(await page.evaluate(() => localStorage.getItem('sharedTemplatesScopes'))).toBeNull();
+
     // Clean up the persisted state so other tests start unchecked.
     await page.locator('a.js-toggle-template-scope[data-scope="teams"]').click();
     await expect(scopeCheckbox(page, 'teams')).not.toHaveClass(/is-checked/);
+    await expect.poll(() => db.findOne('settings', {}).sharedTemplatesScopes).toEqual([]);
+  });
+
+  test('a user in another browser gets the share targets the admin enabled', async ({ page }) => {
+    // A fresh browser of a user who is not an admin: no localStorage of the
+    // admin's ticks. The targets follow the instance setting alone.
+    setScopes(['domains']);
+    await loginWithToken(page, userA.id, userA.token);
+    await navigateInApp(page, '/');
+    await page.locator('.js-select-menu[data-type="templates"]').click();
+    await expect(page.locator('.js-share-target', { hasText: DOMAIN })).toBeVisible();
+
+    // Negative: with that kind off, the same user has no such target.
+    setScopes([]);
+    await page.reload();
+    await page.locator('.js-select-menu[data-type="templates"]').click();
+    await expect(page.locator('.js-select-menu[data-type="templates"]')).toBeVisible();
+    await expect(page.locator('.js-share-target')).toHaveCount(0);
   });
 });
 

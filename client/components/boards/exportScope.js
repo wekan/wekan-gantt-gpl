@@ -238,11 +238,17 @@ const EXPORT_FORMAT_GROUPS = [
       // Straight into Trello through its API (server/trelloApiExport.js), not
       // a file: an action that opens its own popup.
       { key: 'trello-api', icon: 'fa-trello', label: 'Trello', action: 'js-export-to-trello', scopes: BOARD_ONLY },
+      // Trello's board.json with the cards' attachments as files, the .zip
+      // the Trello import reads (server/lib/renderExternalExport.js streamTrelloZip).
+      { key: 'trellozip', icon: 'fa-file-archive-o', labelKey: 'attachments', labelPrefix: 'Trello .zip', path: 'export/trellozip', ext: 'zip', scopes: BOARD_ONLY },
       { key: 'kanboard', icon: 'fa-upload', label: 'Kanboard', path: 'export/kanboard', ext: 'json', scopes: BOARD_ONLY },
       { key: 'markdown', icon: 'fa-file-text-o', label: 'Markdown', path: 'export/markdown', ext: 'md', scopes: BOARD_ONLY },
       { key: 'leo', icon: 'fa-sitemap', label: 'Leo', path: 'export/leo', ext: 'leo', scopes: BOARD_ONLY },
       { key: 'opml', icon: 'fa-indent', label: 'OPML', path: 'export/opml', ext: 'opml', scopes: BOARD_ONLY },
       { key: 'orgmode', icon: 'fa-list-alt', label: 'Org mode', path: 'export/orgmode', ext: 'org', scopes: BOARD_ONLY },
+      { key: 'mbox', icon: 'fa-envelope-o', label: 'Mail (mbox)', path: 'export/mbox', ext: 'mbox', scopes: BOARD_ONLY },
+      { key: 'enex', icon: 'fa-sticky-note', label: 'Evernote (.enex)', path: 'export/enex', ext: 'enex', scopes: BOARD_ONLY },
+      { key: 'mattermost', icon: 'fa-comments', label: 'Mattermost', path: 'export/mattermost', ext: 'jsonl', scopes: BOARD_ONLY },
       { key: 'todotxt', icon: 'fa-list-ul', label: 'todo.txt', path: 'export/todotxt', ext: 'txt', scopes: BOARD_ONLY },
       { key: 'taskwarrior', icon: 'fa-terminal', label: 'Taskwarrior', path: 'export/taskwarrior', ext: 'json', scopes: BOARD_ONLY },
       { key: 'focalboard', icon: 'fa-th-large', label: 'Focalboard', path: 'export/focalboard', ext: 'jsonl', scopes: BOARD_ONLY },
@@ -316,7 +322,21 @@ function resolvedFormatGroups() {
         url: entry.path ? exportUrl(`/api/boards/:boardId/${entry.path}`, entry.query || {}) : '',
       })),
     }))
-    .filter(group => group.entries.length);
+    .filter(group => group.entries.length)
+    // The other tools' formats under headings by kind (models/lib/toolGroups.js),
+    // the same groups as the Import page; WeKan's own JSON keeps "JSON".
+    .flatMap(group => {
+      if (group.key !== 'json') return [group];
+      const { groupTools } = require('/models/lib/toolGroups');
+      const parts = [];
+      for (const entry of groupTools(group.entries)) {
+        if (entry.groupStart) {
+          parts.push({ key: `json-${entry.group}`, heading: entry.groupLabelKey ? TAPi18n.__(entry.groupLabelKey) : group.heading, entries: [] });
+        }
+        parts[parts.length - 1].entries.push(entry);
+      }
+      return parts;
+    });
 }
 
 // Import writes to the board, so unlike export it is offered only to somebody

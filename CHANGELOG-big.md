@@ -95,6 +95,652 @@ Which databases WeKan supports
 
 </details>
 
+# v13.21 2026-11-20 WeKan ® release
+
+**In short:** Twelve new **Board View reports** - Created vs. Resolved, Net
+Flow, Time in List and more - and **grouped menus**: the Board View menu, the
+Import and Export lists and the list, card and swimlane menus have headings.
+WeKan imports **mail**, **calendars**, **chats** and **notes**, and large files
+are **streamed to disk** within the free space or an Admin Panel limit. Menu
+entries that did nothing now work. Cards get the **Kanban and Scrum flow
+fields** Blocked, Class of service, MoSCoW and WSJF, lists their **policies**,
+the board menu a **standup timer** and a **retrospective board**, every export
+is **written a page at a time**, and **InviteBleed** is closed for the old
+invitation codes too.
+
+This release fixes the following CRITICAL SECURITY ISSUE of [InviteBleed](https://wekan.fi/hall-of-fame/invitebleed/):
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4fad2a9000403ae92069060eb3a4b6b53e67f658">Old six-digit invitation codes are refused, and the sign-up form is throttled</a>. Thanks to meifukun and xet7.</summary>
+
+[GHSA-rg85-qx5c-qx67](https://github.com/wekan/wekan/security/advisories/GHSA-rg85-qx5c-qx67)
+reported the invitation code brute force again. The 128-bit code of the first
+fix was in place, but an invitation made before it, and not used yet, kept its
+guessable six-digit code and was still accepted - a re-invite even mailed that
+code again. A code shorter than the 22 characters of a 128-bit code is now
+refused at sign-up and replaced by a strong one on a re-invite. The throttle was
+on `createUser`, which a client is refused anyway, while the sign-up form calls
+`ATCreateUserServer`: that method now takes 10 attempts a minute per address,
+and each refusal is counted in Admin Panel / Problems under InviteBleed. The
+same report's OIDC race
+([GHSA-6944-p22h-3qpx](https://github.com/wekan/wekan/security/advisories/GHSA-6944-p22h-3qpx))
+and stale impersonation export
+([GHSA-j4x8-689m-h4hv](https://github.com/wekan/wekan/security/advisories/GHSA-j4x8-689m-h4hv))
+were checked against the current code and were already fixed.
+`tests/securityMeifukun.test.cjs` pins both places a code is looked up, sweeps
+for any lookup without the strength check, and drives the throttle's Problems
+record; `tests/invitationCodeEmail.test.cjs` refuses six-digit and malformed
+codes and checks that a re-invite replaces them.
+
+</details>
+
+and adds the following new features:
+
+**Import and Export** - mail, calendars, chats and notes, each into the view it
+is for.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ccfa6cf362e9b1eb812804d38e4d85653c5b0b0a">Import mail, calendars, chats and notes, and export .mbox, .enex and Mattermost files</a>. Thanks to xet7.</summary>
+
+The Import page reads nine more kinds of export. **Mail** (an .mbox from
+Thunderbird, Apple Mail, mutt or Gmail, or one .eml) becomes cards of Board
+View / Email, one per conversation, the replies its comments and Gmail labels
+its labels. An **iCalendar** .ics puts tasks into To Do, In Progress, Done or
+Cancelled by their status and events into Events, with their dates. A **Google
+Takeout** .zip is one board with a swimlane per product - Mail, Tasks, Keep,
+Calendar, Google Chat - recognised by content, since Takeout names its folders
+in the account's language. **Slack**, **Mattermost**, **Telegram**,
+**WhatsApp** and **Discord** (DiscordChatExporter) exports become channels whose
+messages are comments, for Board View / Chat. **Evernote** .enex notes keep
+their to-dos as checklists, tags as labels and reminders as due dates. The
+Export menu writes a board as an .mbox, an .enex and a Mattermost bulk import
+file, each read back by the same import. MIME and ENEX are decoded on the
+server (mailparser, htmlparser2), the zips under the zip-bomb guards of the
+other zip imports, and an imported Message-ID survives the import sanitizer so
+a later reply joins its thread. The nine instructions are translated into every
+language. `tests/mailFormat.test.cjs`, `icalendarFormat`, `chatExportFormats`,
+`enexFormat` and `googleTakeoutFormat` run each format both ways with its
+negative cases; `tests/playwright/specs/import-mail-chat-notes.e2e.js` imports
+through the page and reads the result in the Email and Chat views.
+
+</details>
+
+**Board View reports** - twelve more reports, each with the export bar at its
+top like the other charts.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/63b5e089f5113960f22fc3d72e3dce3ae86981e2">Created vs. Resolved, Net Flow, Time in List, Average Age, Throughput Run, Due Date Performance and six more</a>. Thanks to xet7.</summary>
+
+Added after comparing WeKan's charts with the reports of Jira, Azure DevOps,
+Nave, ActionableAgile and the Flow Framework: Created vs. Resolved, Net Flow,
+Time in List, Average Age, Throughput Run Chart and Due Date Performance under
+Kanban flow; Release Burndown and Epic Progress under Scrum; Workload,
+Distribution, Dependency Map and Activity Heatmap under Overview. Each draws a
+Chart.js chart over its data table, and its PDF and Excel export write that
+table. The calculations are pure (`models/lib/boardReports.js`) and answer one
+shape, so the view and both exports read every report the same way. A member
+who may see only their assigned cards gets none of them.
+`tests/boardReports.test.cjs` checks each report's numbers from known cards,
+including a dependency cycle and an empty release;
+`tests/playwright/specs/board-reports.e2e.js` opens each from the menu and
+downloads its PDF and Excel.
+
+</details>
+
+**Menus** - grouped under headings, as the Admin Panel is.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/257835733b0ec5d950fac6feb2e13c589219bb9d">The Board View menu and the Import and Export lists are grouped under headings</a>. Thanks to xet7.</summary>
+
+The Board View menu and Board Settings / Board View show the views in six
+groups - Board, Calendar and time, Scrum, Kanban flow, Overview, and
+Communication and code - with the board's own order inside each. The Import
+page and the Export menu list the other tools under the same headings from one
+table (`models/lib/toolGroups.js`): Kanban and project tools, Issue trackers and
+version control, Task and to-do apps, Spreadsheets and tables, Text and
+outlines, Mail, calendars, chats and notes, and Fetched from a service.
+`tests/boardViewMenu.test.cjs`, `tests/toolGroups.test.cjs` and
+`tests/playwright/specs/board-view-groups.e2e.js` check the groups and their
+order.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0d8f8b8d96b868a6d75b803ef105e50aad450977">The list, card and swimlane menus are grouped under headings</a>. Thanks to xet7.</summary>
+
+Share and history, Export and import, Add, Watch, Edit or Appearance,
+Settings, Move and copy, and Archive. No entry moved or changed its
+condition; each heading sits inside its group's condition, so a member who sees
+none of a group sees no heading, and a heading is not clickable. The two header
+bars keep their layout. `tests/menuGroupHeadings.test.cjs` and
+`tests/playwright/specs/menu-group-headings.e2e.js`.
+
+</details>
+
+**Large files** - imports streamed to the disk, within its free space.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/32c24ed84e9d6c8080e89bdd4097f87a3b0b4b04">Import page uploads stream to the server's disk, checked against the free space and an Admin Panel limit</a>. Thanks to xet7.</summary>
+
+A chosen file is POSTed to `/api/import/upload/:source` and written to
+`WRITABLE_PATH/import-uploads` a part at a time, instead of being read in the
+browser and sent whole through the import method. Before the first byte the
+announced size is checked against Admin Panel / Settings / Security **Largest
+import** (empty: no limit) and against the free space less a reserve, and the
+space again every 64 MB; a refused or interrupted upload leaves no file. Zip
+exports are opened from the disk and mailboxes read a message at a time, also
+inside a Google Takeout zip. `tests/importUpload.test.cjs` covers the limit,
+the full disk before and during the upload and an interrupted one;
+`tests/playwright/specs/import-mail-chat-notes.e2e.js` refuses a file over the
+limit.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3b1c7ce7bb430834e024d7684734f7586a07b007">WeKan and Trello .zip imports use the same limit and disk check; .mbox and .enex export a page at a time</a>. Thanks to xet7.</summary>
+
+The WeKan .zip and Trello package routes had caps of their own (5 GB, and
+200 MB with 1 GB unpacked); they now use the shared receiver, so the limit is
+the administrator's or the free disk space. The .mbox and .enex exports are
+written 500 cards at a time, waiting for the socket, rather than built whole in
+memory.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/640e4925935e3842e00a864057b083b6dc386031">Uploaded JSON is parsed from the file a chunk at a time; a Mattermost export a line at a time</a>. Thanks to xet7.</summary>
+
+A JavaScript string cannot be longer than about 512 MB, so `readFile` and
+`JSON.parse` could not read a larger uploaded export at all.
+`server/lib/streamJson.js` builds the value as the file is read: every escape
+and surrogate pair, chunk boundaries anywhere, the same value and refusals as
+`JSON.parse`, a `__proto__` key as an own property, nesting bounded.
+`tests/streamJson.test.cjs` compares it with `JSON.parse` on 500 random
+documents in random chunks.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/60bbf69164766746718c1792f228b6f2809cd715">Jira and CSV / TSV files are uploaded too; their people and columns are read on the server</a>. Thanks to xet7.</summary>
+
+They were the last files the page read itself and sent whole. A Jira file's
+people for the map-members step, and a CSV / TSV file's header, sample rows,
+guessed mapping and people, now come from the server's reading of the upload
+(`csvUploadPreview`, `csvUploadPeople`); each reads only the sender's own
+upload, signed in and while import is enabled. `tests/csvUpload.test.cjs` and
+`tests/playwright/specs/csv-upload.e2e.js`.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e2cbbe510457940b6db26c90b45307a6c539a0e7">Ten more exports are written a page of cards at a time</a>. Thanks to xet7.</summary>
+
+Todoist, TickTick, ClickUp, MeisterTask, Linear, Pivotal, Redmine, Quire and
+Taskwarrior exports, with todo.txt, are written 500 cards at a time instead
+of as one string. What a row refers to on another page - a parent's number,
+a section, a counted column - comes from a light first pass that reads no
+descriptions and no comment text (`models/lib/exportPaging.js`).
+`tests/exportPaging.test.cjs` checks that the pages together are byte for byte
+the whole file, for every page size.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ce40b56abdf5b166f523dab98a14414907809b1f">The Markdown, Obsidian, OPML and Org mode outlines and the Notion CSV are written a page at a time</a>. Thanks to xet7.</summary>
+
+The outlines come list by list in the board's order, each list's heading
+opened before its first card and closed after its last wherever a page ends,
+and a list with no cards in its place. Every page's board and list titles now
+pass the export boundary, as the whole export's do. Markdown and Obsidian write
+a list title once, where two lists of one name used to repeat their cards under
+both.
+`tests/exportPaging.test.cjs` and the 173 round trips of
+`import-export-format-audit.e2e.js`.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e1261ef5fb9f233e60352ee28a8e4e16eb44a4c7">Leo outlines are written a page at a time too</a>. Thanks to xet7.</summary>
+
+Leo's outline holds only titles and checklists, which the light first pass
+already has, so the first page writes it whole and each page then writes its
+own cards' texts after it, under the same node numbers.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/bad71f9a1e80f54472c87eb8605d5a4206185ea4">Focalboard and Mattermost exports are written a page at a time</a>. Thanks to xet7.</summary>
+
+Their heads - Focalboard's board options, Mattermost's channels and users - are
+named over the whole board from the light first pass and written on the first
+page; each page then writes its own cards' records.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f293ae4076092a387505b1909053cd66a62441c8">Trello, Jira, Asana, Zenkit, OpenProject, GitHub, Gitea, Forgejo and GitLab exports are written a page at a time</a>. Thanks to xet7.</summary>
+
+Each is one JSON document whose cards are one array: the first page writes the
+document around it, and every page its own cards into it. Every part passes the
+export boundary and the admin-only field redaction, as a whole document does.
+Jira's issue keys and OpenProject's numbers are counted over the whole board,
+so a card refers to one on another page. The import/export audit (173) and the
+admin-only custom field specs (12) pass.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/21c64e092d8b067a9416a09a92c0ca1424b9da26">Deck and Kanri exports are written a page at a time, each list around its cards</a>. Thanks to xet7.</summary>
+
+The pages come list by list, and each list is opened at its first card and
+closed after its last. A Deck card is in the stack of its own list by id, where
+two lists of one name each carried the other's cards, and Kanri's cards of no
+list are one column, where each made a column of its own.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4666bb60f42acbc2b774c1657171636b7b900767">Nullboard exports are written a page at a time too</a>. Thanks to xet7.</summary>
+
+Its lists, the board's and one per title of a list that is not exported, are
+found over the whole board, and each is written around its notes.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a2257442a855ce930cc3ae3a4a5b9fdb16555aa8">Teamwork and Planner workbooks are streamed a page at a time</a>. Thanks to xet7.</summary>
+
+They are written by ExcelJS's streaming workbook writer, each row as it comes,
+instead of a whole workbook in memory. Teamwork's task tree is planned over the
+whole board, so each page writes its cards at their depth.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/db9c06dc5eb5d5ff76867431f969da67eb3b0676">monday.com, Businessmap and Wrike workbooks are streamed a page at a time too</a>. Thanks to xet7.</summary>
+
+Every workbook export is now written a row at a time. The columns any card
+fills, Businessmap's parents and Wrike's lane folders and keys are found over
+the whole board first, so every page writes its own rows in their place.
+
+</details>
+
+**Cards** - Kanban and Scrum flow fields, each one hidden until a board shows
+it.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0071dde0f36bb7c8582073a2c072159e15f41ceb">Blocked with a reason, Class of service with Expedite's WIP limit, MoSCoW and WSJF on cards</a>. Thanks to xet7.</summary>
+
+Four practices other Kanban and Scrum tools have, offline and with no AI
+(docs/Features/Cards/Flow-Fields.md). **Blocked** keeps why, who and since
+when, and puts a red badge on the minicard. **Class of service** is Standard,
+Fixed date, Expedite or Intangible, and only one open card of a board can be
+Expedite. **MoSCoW** is Must, Should, Could or Won't have. **WSJF** divides
+the cost of delay by the job size. Each is a row of Board Settings / Card, off
+until a board turns it on, and an Admin Panel card field that hides it on every
+board. Only the `setCardFlow` method writes them, checking the card edit right
+and the values. `tests/cardFlow.test.cjs` and
+`tests/playwright/specs/card-flow-fields.e2e.js`.
+
+</details>
+
+**Lists** - the Kanban policies of a board's lists, and the Scrum Definition
+of Ready.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9ac7b916c08bb139f1090d4e87b8319aed08d324">List policies, a commitment point, a WIP limit per person and the Definition of Ready</a>. Thanks to xet7.</summary>
+
+A list can carry its own **policy** - when a card may come in and when it is
+done there - written from the list menu and shown as a gavel at its header. A
+board can name its **commitment point**, the list from which work is committed
+to, flagged at that list. A **WIP limit per person** makes an opened card name
+each of its people holding more open cards than the limit. All three are off
+until a board admin turns them on in Board Settings / List, and each is an
+Admin Panel feature that hides it on every board
+(docs/Features/Lists/Flow-Policies.md). The Scrum settings get a **Definition
+of Ready** beside the Definition of Done, both now readable by every member in
+the Scrum views. `tests/boardFlowPolicies.test.cjs`,
+`tests/playwright/specs/list-flow-policies.e2e.js` and
+`scrum-definition-of-ready.e2e.js`.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/524946c1bf14ada5660ffde987574b8129c47732">The list policy popup asks the board's write capability</a>. Thanks to xet7.</summary>
+
+Its edit check called each role helper as an optional call, which the
+role-helper guard reads as a bare reference; it asks
+`Utils.currentUserCan('write')`, as the server's Lists allow rule does.
+
+</details>
+
+**Scrum meetings** - a standup timer and a retrospective board, in the board
+menu.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2f7a4e210f0e90005bba662e7ac418b403ffa2ba">Daily standup timer and retrospective board</a>. Thanks to xet7.</summary>
+
+**Daily standup** lists the board's members in a shuffled order and gives each
+the same timebox, set in the Scrum settings, counted down and red once over.
+**Retrospective board** makes a new private board with the lists Start doing,
+Stop doing, Keep doing and Action items, through the same server path as Add
+Board. Both are in the board menu for every member, each turned off per board
+in its Scrum settings and for the instance in Admin Panel / Features
+(docs/Features/Scrum/Meetings.md). `tests/scrumMeetings.test.cjs` and
+`tests/playwright/specs/scrum-meetings.e2e.js`.
+
+</details>
+
+**Split lists** - Doing and Done in one list.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/fd5c207006ac1c3ac605b4689860b47205a18d80">A list split into Doing and Done</a>. Thanks to xet7.</summary>
+
+A card of a split list marked **Done here** waits, dimmed and edged green, to be
+pulled into the next list, and the list header counts Doing and Done. The mark
+belongs to the list it was made in, so a card moved on is in Doing again. A
+board admin allows split lists in Board Settings / List and splits a list from
+its menu; Admin Panel / Features / Split lists hides it everywhere.
+`tests/boardFlowPolicies.test.cjs` and
+`tests/playwright/specs/list-flow-policies.e2e.js`.
+
+</details>
+
+**Import and Export coverage** - what each tool's files carry, tool by tool.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/cde21a7651262efe00147228ea57cf67d8fdc004">The Trello export imports back, with its checklists, comments and members</a>. Thanks to xet7.</summary>
+
+It wrote no card's last activity date or position, which the Trello import
+checks for, so no Trello export imported back; its checklists and comments were
+empty. Now the checklists, the comments and the board's people come along, and
+`trello-export-round-trip.e2e.js` exports a board and imports it back.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c20c7296a8cd6ee2232b9cda99c20f719a2794a2">The Trello export carries the custom fields, and a Trello number field imports as a number</a>. Thanks to xet7.</summary>
+
+One Trello field per custom field name, typed by its values, and each card's
+values as Trello writes them. Trello writes a number as text, so its import now
+stores a number field's value as a number.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ba31f2b592f9db1de8dabaf0ea20d3bdcf4553eb">GitHub, Gitea and Forgejo exports carry the comments</a>. Thanks to xet7.</summary>
+
+As the embedded comments the issues import reads, so an exported board imports
+back with them.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3ac8b802c5a6be6bfebdb4d3303625a8e1cf3484">The Trello export carries the archived cards and lists, as closed ones</a>. Thanks to xet7.</summary>
+
+As Trello's own export does, and the import reads them back archived. Every
+other format still exports the open cards, and no format a deleted one.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e8330fb090c885c9d8ea015ed896c34a9b6cf251">A Trello .zip export carries the attachment files and imports back with them</a>. Thanks to xet7.</summary>
+
+Board Settings / Export / Trello .zip writes the Trello board JSON beside each
+card's attachments as files, streamed from storage, and the Trello .zip import
+brings the files back with their cards, byte for byte.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d613a00030a7827d4d6318c50d6feb5d80d008ce">Jira and Taskwarrior exports carry the card dependencies</a>. Thanks to xet7.</summary>
+
+As Jira issue links and Taskwarrior's depends, which their imports read back.
+The round trip of every export now checks dependencies too: Jira, Kanboard,
+Taskwarrior and Redmine keep them.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c0b3d9013d68ae4ac787655183233935766c5997">The .mbox export carries the card labels, as Gmail labels</a>. Thanks to xet7.</summary>
+
+The mail import reads X-Gmail-Labels, so labels now come back. The round trip
+of every export also checks labels and due dates.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c9da13b63e6f1fea86cb30b604093a8a120bcf53">Asana, OpenProject, Obsidian and Wrike exports carry the card dependencies</a>. Thanks to xet7.</summary>
+
+Each import read what a task waits for and no export wrote it; now each does,
+in its own format. Eight formats keep dependencies through an export and import.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/bd34f44460838cfacd10c678d6349f9cc5fd90a0">The Vikunja export is streamed a page at a time, and carries the dependencies</a>. Thanks to xet7.</summary>
+
+Its .zip was built whole; now data.json is written a page of cards at a time,
+numbered over the whole board, and a task's dependencies are Vikunja's blocked
+relations. The round trip of every export includes Vikunja and keeps all six.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6187806cf1006bb0f00d27d5e72af9147027f0a9">The Super Productivity export is written a page at a time</a>. Thanks to xet7.</summary>
+
+The backup is made over the whole board on every page, and each page writes
+only its own cards' tasks, with their notes.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9f85b51695be62df106f9c823645b10988a9a13a">The Taiga export is written a page at a time: every export now is</a>. Thanks to xet7.</summary>
+
+The project is made over the whole board on every page, and each page writes
+only its own cards' epics, stories, tasks and issues, with their text; the
+tasks made of checklist items come on the last page.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/df92d8de63fa332d9d287c9c97e72ac5596c0f5c">Every export WeKan also imports is round-tripped, each held to what its file keeps</a>. Thanks to xet7.</summary>
+
+One spec exports a board in each of the 41 formats WeKan both writes and reads
+and imports it back; every one brings the card back, and a table holds each to
+what its file keeps of the description, the checklist and the comment.
+
+</details>
+
+and fixes the following bugs:
+
+**Trello import** - a file with no members.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d1be2d2131714d023a22a6ffc0a94de651dc7f4e">A Trello file with no members imports instead of doing nothing</a>. Thanks to xet7.</summary>
+
+The member mapper read the file's members list without checking it was there,
+so a board nobody else was on threw in the browser and the Import buttons did
+nothing. No members is nobody to map.
+
+</details>
+
+**Member menu** - Edit Profile and Support do what their settings say.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/42959d02f1ea7b87512439415a9ea8187cd4e19b">Edit Profile saves a member's own new username when Username change is allowed</a>. Thanks to xet7.</summary>
+
+With Admin Panel / People / Login **Username change** allowed, a member's new
+username was not saved and the popup closed as if it had: `setUsername` wrote
+only for a site admin. It now follows `setEmail` beside it - an admin renames
+any account, a member their own when the setting allows it - and anything else
+is refused with `not-authorized` instead of returning quietly.
+`setUsernameAndEmail` needs both changes allowed.
+`tests/selfUsernameChange.test.cjs` runs the methods with the collections
+stubbed; `tests/playwright/specs/45-profile-email.e2e.js` saves one through the
+popup and is refused for another account and with the setting off.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0ccf182001e64d1949b1cec94604cecf08537338">A signed-out visitor sees a Public Support page, and no text of one that is not</a>. Thanks to xet7.</summary>
+
+The `/support` route sent every signed-out visitor to sign-in, so the page's
+**Public** setting did nothing and the "only for logged-in users" text was
+never shown - while the page's text was sent to every signed-out subscriber of
+the settings publication anyway. The route is open, and a visitor who is not
+signed in receives the text only when the page is Public. The support popup the
+menu no longer opened is removed. `tests/supportPageSignedOut.test.cjs` and
+`tests/playwright/specs/support-page-signed-out.e2e.js` check both cases,
+including that the text is not in the browser.
+
+</details>
+
+**Card menu** - who sees which entry.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/60c25690dfc2072509f0e1075e905984cb733f5f">Create board from this card is shown to members who can edit the card</a>. Thanks to xet7.</summary>
+
+The entry sat under `unless canModifyCard`, so exactly the members the
+`createBoardFromCard` method lets convert a card never saw it. It was in both
+branches when it was added; a later refactor kept only that one. It is now
+with the card menu's other write entries, not for Workers, when board creation
+is allowed. `tests/createBoardFromCardMethod.test.cjs` checks the entry's
+conditions in the template, and
+`tests/playwright/specs/create-board-from-card-menu.e2e.js` that an editor sees
+it and a read-only member does not.
+
+</details>
+
+**Board menu** - an entry that had no way in.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b00e2c81333032063bad33092181cc917911384f">All Boards Settings is back in the board menu, below Date, for board admins</a>. Thanks to xet7.</summary>
+
+The entry was commented out for the "icons random dance"
+([#4214](https://github.com/wekan/wekan/issues/4214)), which left its popup -
+card counters and member avatars on All Boards, card aging, auto-archive and
+personal list widths - with no way in. The All Boards tiles now read one fetch
+of `getAllBoardsTileData` instead of reactive cursors, so the loop cannot
+return. `tests/boardMenuOrder.test.cjs` pins its place and its board-admin
+guard; `tests/playwright/specs/all-boards-settings-menu.e2e.js` opens it and
+saves a row.
+
+</details>
+
+**Shared templates** - one choice for the whole instance, and the targets that
+it allows.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c0339ccc592ceb3f14f5339db864b2e63004ca98">The group kinds to share templates with are an instance setting, and the targets appear</a>. Thanks to xet7.</summary>
+
+Which group kinds Admin Panel / People / Shared templates allows came from the
+browser's localStorage, so it differed per browser and was empty for everyone
+but the admin who ticked it. It is `Settings.sharedTemplatesScopes` now,
+published to every client, and an admin's earlier ticks are carried over once.
+The All Boards / Templates targets were empty for everyone anyway:
+`getMyShareableGroups` did not await the user, and read the groups from a
+Promise. `tests/sharedTemplatesScopesSetting.test.cjs` and
+`tests/playwright/specs/26-shared-templates.e2e.js` check the setting, and that
+a user in another browser gets the targets.
+
+</details>
+
+**Sandstorm** - notifications of comments.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a24e3a49a9bb4ce64cc692d4ce75c2cbbed0a9aa">Comment activity notifications await the card, comment and board</a>. Thanks to xet7.</summary>
+
+The Sandstorm activity notifier read the card, the comment and the board from
+`ReactiveCache` without `await`. On the server those are Promises, so
+`comment.text.match` threw on every comment activity and a card's members were
+never found. `tests/serverReactiveCacheAwaited.test.cjs` sweeps `server/` for
+any other unawaited result kept in a variable.
+
+</details>
+
+and has the following developer-facing changes:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/49dbdbb6d62d10dbcfd7b9f922221f76ba04c875">Push Snap to Store releases the release's snaps to every Snap Store channel</a>. Thanks to xet7.</summary>
+
+On v13.20 every build was green and the snaps were on the GitHub release, but
+the Snap Store kept the old version: the store kept the uploads in processing
+and never released them. The new workflow runs after every release, and by
+hand for any tag: it releases each wekan, wekan-ondra and wekan-gantt-gpl snap
+of the release to stable, candidate, beta and edge - a revision the store
+already has without uploading it again, a new one after its upload - and fails
+when a snap still did not reach a channel. `tests/snapStorePush.test.cjs`.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c4da72ff72ddbe51370bd94ceb19a96b1c540ed5">The shared templates spec runs its tests in order and waits for the reset</a>. Thanks to xet7.</summary>
+
+The scopes are one instance setting now, so the spec's tests run serially,
+wait until the page shows the reset the test server sees at its next database
+poll, and find each template link inside its own group.
+
+</details>
+
+- [v12.49 is kept in old-CHANGELOG/2026/10.md, where the changelog's size budget moved it](https://github.com/wekan/wekan/commit/3a1d6701554b95bd594828b36021bb187ea565b1). Thanks to xet7.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/11992ac951278a22d376d079e7dfe0347112b04e">The built server bundle is checked with node --check; the streamed export no longer stops the server starting</a>. Thanks to xet7.</summary>
+
+A parameter of the page-at-a-time export was named like a const in its
+function's body, so the server bundle did not load; no node suite loads that
+ES module, so all of them passed. `tests/serverBundleSyntax.test.cjs` now
+checks the built bundle whenever a build is there. The fault never reached a
+release.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/905f60a1ea15aa240a65c83d32ba505d6608b6d6">UI specs: Release Burndown gets a release to show; the upload limit test signs in by the login cookie</a>. Thanks to xet7.</summary>
+
+The reports spec seeds a Scrum release; the limit test POSTs with the HttpOnly
+login cookie, as the page's own upload does, and checks the warning names the
+limit.
+
+</details>
+
+and updates the following documentation:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/0c277c4d187e59f3e32e1ce1cc04900009a8e047">The docs follow the menus and cover this release's features; README lists what WeKan has</a>. Thanks to xet7.</summary>
+
+Scrum meetings moved under Board Settings, where they are turned on. The
+Board Settings Card, List and Scrum pages name the flow fields, list
+policies, Definition of Ready, standup and retrospective settings, and Admin
+Panel / Settings / Features the new Kanban and Scrum features. Docs that still
+said Settings / Visibility / Features name the pane where they are now.
+Newest-Features.md has a November 2026 guide, and README.md and the
+wekan.fi docs page list the reports, the flow features, the mail, calendar and
+chat imports and the paged exports. The docs link and menu suites pass.
+
+</details>
+
+and improves the following translations:
+
+**Languages updated:** 245 languages.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d1732bd3a598e7e2828a4596ec4b60765759003f">Locale files that held another language get their own</a>. Thanks to xet7.</summary>
+
+Values in another language than their locale's tag are replaced with the tag's
+language: Northern Sami seeded in Finnish, Veps in Venda, Maltese sentences in
+Italian, Northern Ndebele in Shona, Uzbek in Latin letters in the Arabic-script
+file, Wolaytta in Ethiopic script, Tsonga in Swati, Luganda in Swahili, the
+Armenian "board" and the Vietnamese "history". Words correct in both languages
+are kept. Low confidence: the chart and metric names in Veps, Wolaytta, Tsonga,
+Luganda and Northern Sami.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their
+translations.
+
 # v13.20 2026-11-19 WeKan ® release
 
 **In short:** The **REST API** card lists of a list and of a swimlane now carry
@@ -7999,638 +8645,5 @@ and improves the documentation:
 - [docs/Features: guides for the eleven helpers that need no AI, filed by menu](https://github.com/wekan/wekan/commit/e76f12bcdd),
   and TODO Later lists them. Thanks to xet7.
 - [docs/Features: Cards / Whiteboard](https://github.com/wekan/wekan/commit/d9bb7b4f4f). Thanks to xet7.
-
-Thanks to above GitHub users for their contributions and translators for their translations.
-
-# v12.50 2026-10-17 WeKan ® release
-
-**In short:** a **LockoutBleed** follow-up loads the web login's timing
-equalizer, which was finished but never imported. Admin Panel / Problems gains
-**Memory Usage** and **Disk usage** reports, and the board menu **Original
-positions**. Cloning, calendars, notification attachments and failed-call
-messages work as they should. Removing **duplicated and unreachable code**
-leaves the app over 1,700 lines smaller even with the new reports, and
-**docs/Features is filed by the WeKan menus**.
-
-This release fixes the following CRITICAL SECURITY ISSUE of [LockoutBleed](https://wekan.fi/hall-of-fame/lockoutbleed/):
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/3f3a61df0c">The web login no longer tells by its response time whether a username exists</a>. Thanks to xet7.</summary>
-
-[GHSA-2g94-9x3m-hv37](https://github.com/wekan/wekan/security/advisories/GHSA-2g94-9x3m-hv37)
-follow-up: `package.json` sets `meteor.mainModule`, so the server runs only
-what an import chain from `server/main.js` reaches, and
-`server/loginTimingNormalization.js` - the DDP `login` half of the timing fix -
-was never imported. The REST login was equalized; the web login was not. It
-is loaded now. Nothing is refused by it, so there is nothing to record in Admin
-Panel → Problems; the lockout itself still records under LockoutBleed.
-`tests/serverModulesLoaded.test.cjs` fails when any server module that
-registers a login handler, methods, publications, a route, a startup hook or
-a job is not reached.
-
-</details>
-
-and adds the following new features:
-
-**Admin Panel / Problems** - what the machine is short of.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/2b8a33022b">Instrumentation shows the whole picture as one bar per area of WeKan</a>. Thanks to xet7.</summary>
-
-Instead of up to 200 rows on 11 pages, the page opens with one bar per area -
-Settings, Login, People, Boards, Cards and the rest - showing its calls, the
-share that failed and the average duration; clicking an area filters the table
-to it. All of WeKan's 614 methods and publications are grouped and tested.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/b6a3d98736">Memory Usage and Disk usage reports, beside CPU usage</a>. Thanks to xet7.</summary>
-
-The two pages were designs no code carried out. Each monitor records only the
-start and the end of a sustained high-usage period: memory from MemAvailable
-and swap, and each filesystem WeKan writes to - files, uploads and the snap's
-data - once per device. A live line sits above the rows, the labels use keys
-every language already translates, and the settings are `WEKAN_RAM_*`,
-`WEKAN_SWAP_HIGH_PERCENT` and `WEKAN_DISK_*`. Observe and report only.
-
-</details>
-
-**Admin Panel / Settings** - Shared labels.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/8c3e80240a">Shared labels pick their colour with the board labels' picker</a>. Thanks to xet7.</summary>
-
-The dropdown of colour names is gone: each row has the palette swatches and the
-custom colour wheel of a board label, one shared template for both, and each
-swatch is the size it is on an opened card at every window width.
-
-</details>
-
-**Boards** - what happened to a board's swimlanes, lists and cards.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/b9e28a8fbb">Board menu: Original positions, where each swimlane, list and card was put</a>. Thanks to xet7.</summary>
-
-The positions were recorded on creation and shown by nothing. The right sidebar
-lists them by the names they have now, marks what has moved and shows the
-title each was made with. The server shows each reader only what they may see.
-One new key, translated into every language.
-
-</details>
-
-and fixes the following bugs:
-
-**Cards** - features that were saved but never acted on.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/3f3a61df0c">A card's Recurrence setting recurs, and the snap's offline pages show the product name</a>. Thanks to xet7.</summary>
-
-`server/cardRecurrenceSchedule.js`, the hourly job behind a card's Recurrence
-setting, and `server/productNameCache.js`, the Admin Panel product name for the
-pages the snap shows while the database is down, were never imported, so the
-setting was saved and nothing recurred. Both are loaded with the timing fix
-above.
-
-</details>
-
-**Notifications and labels** - what the drawer receives, and what the pages
-say.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/262f9194fc">Notification attachments show, and six labels no longer show their translation key</a>. Thanks to xet7.</summary>
-
-The notifications drawer subscribed to `notificationsAttachments` while the
-server publishes `notificationAttachments`, so the subscription never became
-ready. Six template keys did not exist: the sidebar filter's Due group, the
-Scrum sprint form, the Jira estimate field, the passkey trash icon and two
-webhook URL fields showed `dueAt`, `end`, `no-cards`, `custom-field`, `remove`
-and `URL`. They use existing keys now. Two tests check every subscription
-against every publication and every template key against `en.i18n.json`.
-
-</details>
-
-**Board views** - cloning, the calendars, and what a visitor or a viewer is
-offered.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/7e29641111">Cloning a board through the cloneBoard method works again</a>. Thanks to xet7.</summary>
-
-`getMembersToMap` is async, and `cloneBoard` called `.forEach` on the Promise it
-returned, so every clone through that method stopped with an error; the board
-menu clones with `copyBoard` and was not affected. A test resolves every
-variable assigned from an async function, file by file, and fails when it is
-used as a value without `await`.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/a896f3ed8c">A visitor's Product Backlog, Sprints, Sprint Report or Velocity view stays chosen</a>. Thanks to xet7.</summary>
-
-Without an account the browser keeps the board view, and `client/lib/utils.js`
-stored it from one hand-written list of views but read it back through another
-that lacked the four Scrum views, so they opened as Swimlanes. Both ask
-`BOARD_VIEWS` now, which removes the two lists.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/0fff9d4828">Calendars leave archived cards out, and Timeline offers Restore only to those who may</a>. Thanks to xet7.</summary>
-
-Every calendar showed archived cards once the Archive sidebar had loaded them.
-Timeline's restore was offered to every viewer and a refusal vanished. A Table
-swimlane row spanned a fixed 11 columns. Map showed the raw "upload-failed".
-25 alerts fell back to their own English sentence; they report the error in the
-reader's language through one helper, and a test keeps new ones from falling
-back to English.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/483f3cd538">The file integrity scan waits for a quiet CPU again</a>. Thanks to xet7.</summary>
-
-It asked the CPU monitor for a function it never had, so its CPU check was
-always NaN and the hourly scan never skipped a busy hour. A test checks every
-named import of an app module against what that module exports.
-
-</details>
-
-**Screen sizes** - the new UI on a phone, the iPhone Duo, a tablet, a laptop and
-a 55" touchscreen, upright and on its side.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/e34a488617">Header, Admin Panel menu and tables, and the Table view fit every screen size</a>. Thanks to xet7.</summary>
-
-A browser test opens the new pages at ten sizes and checks that icons and texts
-are on screen and visible, that nothing scrolls the page sideways, that every
-table column can be reached and read, and that dragscroll pans by mouse and by
-finger. It found the iPhone header's hamburger past the right edge, bullets and
-dashes in the Admin Panel menu on a phone, Admin table columns too narrow to
-read on a phone and an upright iPad, the Table view's toggles drawn white on
-white, and its columns cut off on an upright iPad. Each is fixed.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/0242249a1c">The iPhone Duo, open and closed, at its real resolution</a>. Thanks to xet7.</summary>
-
-The foldable in the screen-size test is the iPhone Duo now, instead of a
-Galaxy Fold standing in for it: Apple's 1878 x 2670 and 1398 x 2034 pixel
-displays, 626 x 890 and 466 x 678 CSS pixels at 3x, each upright and on its
-side.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/85ab1b79a3">"or Template or link a list from another board" has its space again</a>. Thanks to xet7.</summary>
-
-The add-list form read "Templateor": in its flex row each alternative is a
-flex item, which drops the space its text starts with; the gap is a margin
-now. Every dev-server start also printed a Jade warning for editor.jade; a
-test compiles every template with the build's own compiler and fails on any
-warning.
-
-</details>
-
-and has the following developer-facing changes:
-
-**Less code to maintain** - copies that decided nothing, and code nothing
-reached.
-
-- [Remove files nothing loads, and point their tests at the code that runs](https://github.com/wekan/wekan/commit/70dcc2a134).
-  Thanks to xet7.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/7dc5399dc7">Remove code a second copy replaced, and templates nothing draws</a>. Thanks to xet7.</summary>
-
-Twelve card member methods and two user helpers were defined twice in one
-object literal, where only the last copy runs. An Admin Panel attachment
-settings pane that no menu opened, a dozen templates nothing drew, and CSS
-blocks repeated word for word went with them. Two tests fail on a key defined
-twice in an object literal and on a template nothing draws.
-
-</details>
-
-- [The list and its header share the fixed list width helpers](https://github.com/wekan/wekan/commit/73e815b4f4).
-  Thanks to xet7.
-- [The board's organization and team pickers share one state helper](https://github.com/wekan/wekan/commit/a6aa3fdfb7).
-  Thanks to xet7.
-- [Each card date is described once for its card and minicard badge](https://github.com/wekan/wekan/commit/9a73bf9173).
-  Thanks to xet7.
-- [One list drag-and-drop setup for a swimlane and the Lists view](https://github.com/wekan/wekan/commit/d444a76af2).
-  Thanks to xet7.
-- [The Calendar and Multi Board Calendar views share their calendar options](https://github.com/wekan/wekan/commit/5908fab5de).
-  Thanks to xet7.
-
-and updates the following documentation:
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/b7589737f5">docs/Features is filed the way the WeKan menus are, with the code behind each entry</a>. Thanks to xet7.</summary>
-
-Guides sit under the menu they are used from: Header-Bar, All-Boards, Pages,
-Board-Header, Board-Sidebar, Rules, Swimlanes, Lists, Cards, Member-Settings,
-Admin-Panel and Login-Page, with shared topics in General. Each area has a
-README mapping its menu entries to guides and to the template or module that
-implements them; Board View lists all 40 views, of which five have no guide of
-their own yet. Old paths that released changelogs link keep a forwarding page.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/11babe27f2">Snap keys, the setting guide and Docker examples match this WeKan</a>. Thanks to xet7.</summary>
-
-Three `snap set` lines named keys the snap does not have, which snapd stores
-without a word; a test checks every one in the docs against
-`snap-src/bin/config`. The guide to adding a setting follows the real config,
-help and Admin Panel catalog. The LDAP and Traefik examples ran MongoDB 3.2 and
-4.0 with the removed `--smallfiles` and 2018 WeKan images.
-
-</details>
-
-- [Guides for the Table, Calendar Mode, Time, Timeline and Map views](https://github.com/wekan/wekan/commit/c046afa807).
-  Thanks to xet7.
-
-Thanks to above GitHub users for their contributions and translators for their translations.
-
-# v12.49 2026-10-16 WeKan ® release
-
-**In short:** an **AssignedBleed** follow-up makes **board role permissions
-apply to every board view** and API: an assigned-only member sees and changes
-only the cards assigned to them, in the **Email View**, the Chat view, linked
-cards, notifications, counts and REST alike.
-
-This release fixes the following CRITICAL SECURITY ISSUE of [AssignedBleed](https://wekan.fi/hall-of-fame/assignedbleed/):
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/5b2ed17e6b">Board role permissions apply to every board view and every path to a card</a>. Thanks to crypto-nidh, binary-lover and xet7.</summary>
-
-[GHSA-r4gm-mjj9-g3x8](https://github.com/wekan/wekan/security/advisories/GHSA-r4gm-mjj9-g3x8):
-the Board Email View checked only that the reader was a board member, so an
-assigned-only member read the title and body of every card in a list or label,
-and their counts. An audit of every path to a card found the same shape in the
-board publication's parent and linked cards, All Boards counts, linked boards'
-activities, the Chat view, notifications, position history and REST - and in
-writes: the role's `write` let such a member change, comment on, move or watch
-any card by id. Each now asks the card. REST writes refuse assigned-only
-members, as REST reads already did. Attempts no view would make show as
-AssignedBleed in Admin Panel → Problems; a test fails when any server path
-serving card data has no role rule.
-
-</details>
-
-and updates the following documentation:
-
-- [Board roles: how a role applies to every board view, the API and every write](https://github.com/wekan/wekan/commit/63117b61d9).
-  Thanks to xet7.
-- [Custom roles from the Admin Panel apply in every board view as built-in roles do, verified for every combination](https://github.com/wekan/wekan/commit/1020cd7e86).
-  Thanks to xet7.
-
-Thanks to above GitHub users for their contributions and translators for their translations.
-
-# v12.48 2026-10-15 WeKan ® release
-
-**In short:** an **AssignedBleed** follow-up keeps assigned-only members to
-their own cards' files and document text on every remaining read path, and the
-**release workflows** are hardened against injection. The **Windows** and
-**NetBSD** bundles build again: the release scripts read their files as UTF-8 on
-every runner, and the NetBSD build finds pkgsrc's Python. **LDAP background
-sync** imports new users again and keeps the interval it is given, and every
-**Caddyfile** example is **Caddy 2**, so the snap no longer renames a Caddyfile
-copied from the docs.
-
-This release fixes the following CRITICAL SECURITY ISSUE of [AssignedBleed](https://wekan.fi/hall-of-fame/assignedbleed/):
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/7f3428db8e">Assigned-only members get only their own cards' files and document text</a>. Thanks to crypto-nidh and xet7.</summary>
-
-[GHSA-3cgr-47wm-9cc9](https://github.com/wekan/wekan/security/advisories/GHSA-3cgr-47wm-9cc9):
-an assigned-only member sees only the cards assigned to them, but six read
-paths asked only for board membership. Both file downloads, the
-`Attachments.protected` check and the legacy download route served any card's
-file. The document search returned other cards' extracted text with their ids,
-the legacy attachment publication listed every legacy file of the board, and a
-linked list showed every card of its source list. Each now applies the
-assigned-only rule. A refused download, or a subscription to another card's
-legacy files, shows as AssignedBleed in Admin Panel → Problems; searching and
-viewing a linked list are ordinary use and are narrowed without a record. The
-board's background and map image stay readable to every member. A test fails
-when any file serving attachment or document data lacks the rule.
-
-</details>
-
-and fixes the following SECURITY ISSUES found by Qlty code scanning:
-
-**Release workflows** - the GitHub Actions that build and publish every release.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/7f7cc63cde">No expressions in scripts, every action pinned, and write access only where it is used</a>. Thanks to Qlty and xet7.</summary>
-
-A `${{ ... }}` pasted into a `run:` script is expanded before the shell sees it,
-so a crafted input, tag or output became shell code: 251 such values now reach
-their scripts through `env:`. Every action is pinned to a commit with its
-version in a comment. Six workflows granted write to every job; they grant read
-and each job that writes says so. Checkouts no longer keep the token, except in
-the jobs that push. `tests/workflowHardening.test.cjs` fails on any of the four
-and runs zizmor when installed. Build tooling only, so there is no attempt to
-record in Admin Panel → Problems.
-
-</details>
-
-**Python scripts and tests** - the bandit findings.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/ee2a657977">The LDAP photo hash says it is not for security, and a downloaded zip is checked before extracting</a>. Thanks to Qlty and xet7.</summary>
-
-The LDAP sync script's MD5 only notices a changed photo, and says so. The
-Nextcloud test bootstrap checks every member of the WeKan zip lands inside its
-target before extracting. The other three were test code: a fixture password
-is passed as a variable, and an `exec` of the repository's own script and a
-fake `/tmp` path are marked with their reasons.
-
-</details>
-
-and fixes the following bugs:
-
-**Bundle builds** - the Windows and NetBSD bundles of v12.47.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/11f97d016e">The Windows bundles build again: release scripts read their files as UTF-8</a>. Thanks to xet7.</summary>
-
-All three Windows bundles of v12.47 stopped at the risk audit, which named a
-file that had not changed. The audit read its baseline in the runner's own
-encoding - cp1252 on Windows - so a URL ending in "…" no longer matched. Every
-text read and write in the release scripts now names UTF-8, and a test fails on
-any that does not.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/fa62479245">The NetBSD bundle builds again: node-gyp finds pkgsrc's Python</a>. Thanks to xet7.</summary>
-
-pkgsrc installs Python as `python3.13` only, so compiling argon2 stopped with
-"You need to install the latest version of Python". The build now hands node-gyp
-the versioned interpreter when there is no `python3`.
-
-</details>
-
-**LDAP background sync** - which users it imports, and how often it runs.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/a944be1817">It imports new users again and keeps the sync interval it is given</a>. Thanks to tromlet and xet7.</summary>
-
-The import searched `(uid=\2a)` and found nobody: it asked for every user with
-the string `*`, and the escaping added for login names on 2026-09-27 made that
-a literal asterisk. Only an internal value a login cannot send is the wildcard
-now, so a typed `*` is still escaped.
-
-The interval in milliseconds became a later.js calendar rule that only works
-when it divides the hour: 2 hours and 1 day synced hourly, 90 seconds every
-minute, and 3600 every 4 seconds. Each interval now becomes one later keeps
-exactly, or the nearest one with a warning, and one under a minute is warned
-about as probably seconds. Tests reproduce the reported filter and check the
-spacing of every interval with the real later.js.
-
-</details>
-
-**The snap's Caddy** - the Caddyfiles it ships and the ones the docs show.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/37d2397603">Caddyfile examples are Caddy 2, and Caddy proxies to where WeKan listens</a>. Thanks to Group-Deed and xet7.</summary>
-
-The snap moves a Caddyfile that Caddy 2 cannot read to `Caddyfile.v1.bak-<n>`
-on every start, and 19 examples in the docs were Caddy v1 (`proxy / ...
-websocket transparent`, `browse`, `fastcgi`, `tls self_signed`), so a file
-copied from the snap install page was renamed each time it was put back. All
-are Caddy 2 now and pass `caddy adapt`, as do the Docker Caddyfile and
-Caddy.md's systemd unit.
-
-The default the migration writes proxied to port 3000, where nothing of WeKan
-listens in the snap. Both templates now read `port` and `caddy-bind-port` from
-the snap settings. A test fails on Caddy v1 syntax anywhere and, with a Caddy
-2 binary, adapts all 30 Caddyfiles.
-
-</details>
-
-Thanks to above GitHub users for their contributions and translators for their translations.
-
-# v12.47 2026-10-15 WeKan ® release
-
-**In short:** **Jira List Sync works from a Sandstorm grain** and the **Jira
-import brings closed sprints**. Imports from **Jira, Deck, OpenProject, Asana
-and GitLab** bring their **attachment files**, a board that fails to load says
-so, and an **LDAP sync interval in milliseconds** no longer stops WeKan. **Every
-language** is translated, Blockly included, and TODO Later is empty.
-
-This release fixes the following SECURITY ISSUES found by GitHub CodeQL code scanning:
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/de95789e45">No live test logs anything from a login</a>. Thanks to GitHub CodeQL and xet7.</summary>
-
-CodeQL alert #586 (clear-text logging): the Basecamp live test logged the
-account id read from its environment. Planka's address and the GitLab test's
-address and project path went into the log the same way. Every live test now
-logs fixed words, and `tests/liveTestsNoSecretLogs.test.cjs` fails on any log
-line of any live test that interpolates a value from a login. These are
-human-run scripts, not the server, so there is no attempt to record in Admin
-Panel → Problems.
-
-</details>
-
-and adds the following new features:
-
-**Jira** - List Sync from a Sandstorm grain, and closed sprints in the import.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/1dc5b82369">List Sync works from a Sandstorm grain</a>. Thanks to xet7.</summary>
-
-It was recorded as impossible, because the bridge proxy takes the
-Authorization header Jira needs. Sandstorm's HTTP driver keeps the sign-in in
-the grant instead: in the Powerbox, connect to any address and enter
-`https://EMAIL:API-TOKEN@your-site.atlassian.net`, and Sandstorm adds it to
-every request; WeKan never sees it. The Powerbox request asks for Basic
-authentication, and the List Sync popup says what to enter. Not run in a real
-grain here.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/cc0b8c60ba">The import brings closed sprints, rebuilt from the issues</a>. Thanks to xet7.</summary>
-
-Jira's sprint report has no documented API, so a closed sprint was reported
-and skipped. It is imported as closed now, its start and close snapshots
-rebuilt from each issue's Sprint field, status and resolution at the sprint's
-dates - from the change history when the export has `expand=changelog`, from
-the issues as they are now otherwise - and marked partial. A closed sprint
-with no dates is still reported. Not run against a live Jira here.
-
-</details>
-
-**Import** - attachment files that exports name but do not carry.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/51238ed8ad">Jira, Deck, OpenProject, Asana and GitLab imports bring their attachment files</a>. Thanks to xet7.</summary>
-
-Their exports name attachments without the files, so the files were reported
-as lost. Under **Attachment files** the import page asks for the service's
-address and sign-in, and each file is downloaded from the service's documented
-endpoint: Jira's attachment content, Deck's attachment API, OpenProject's
-`downloadLocation`, Asana's `download_url`, and GitLab's project uploads API
-for a private project. The sign-in goes with that one import, only to the
-address typed, and is never stored or logged; every download goes through
-the import's SSRF guard. A file that cannot be fetched is on the loss report.
-Zenkit is left out: it publishes no way to download a file. Not run against
-the live services here.
-
-</details>
-
-**Version Control view** - its Attachments tab.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/132b341b8d">Attachments have the card's controls and open in the viewer</a>. Thanks to xet7.</summary>
-
-The Attachments tab listed each file as a link to a new browser tab. A click on
-a file now views it in the card's attachment viewer, next and previous walking
-the tab's files, and each file has the opened card's controls: view, download,
-rename, delete and the cover / background menu, for the same members.
-
-</details>
-
-and fixes the following bugs:
-
-**LDAP** - the background sync interval.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/7dfd942ff6">A sync interval in milliseconds no longer stops WeKan</a>. Thanks to B2RN, tromlet and xet7.</summary>
-
-The docs give LDAP_BACKGROUND_SYNC_INTERVAL in milliseconds, but the number
-reached later.js's text parser, which threw "string.toLowerCase is not a
-function" from a timer, and the snap stopped and restarted in a loop. A quoted
-value such as 'every 1 mins' from a compose file never ran at all
-([#2354](https://github.com/wekan/wekan/issues/2354)); the same crash on Snap 12.46
-with LDAP sign-in is [#6771](https://github.com/wekan/wekan/issues/6771). Milliseconds and later.js
-text both work now, with or without quotes; an unreadable value is logged and
-the default is used, and nothing a setting holds can throw.
-
-</details>
-
-**Attachments** - renaming.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/515e63d322">Renaming a migrated attachment keeps its extension</a>. Thanks to xet7.</summary>
-
-The rename popup appended extensionWithDot, which a migrated attachment can
-lack, so a file became "nameundefined"; it falls back to the extension. Found
-by running the new browser tests, which pass against a local server.
-
-</details>
-
-**Board loading** - a board restored from an old WeKan.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/31615d7f98">A board that fails to load says so, and 6.09 attachments no longer break covers</a>. Thanks to xet7.</summary>
-
-After a 6.09 to 10.85 restore, one board with attachments showed only the
-loading animation. The board page waited forever when its publication stopped
-with an error; it now says the board could not be loaded and points at the
-server log, which names the cause. The client also took a pending legacy
-lookup for a found attachment, which broke a 6.09 card's cover, and the legacy
-attachments publication threw on a record whose type was not text. The board
-itself was not reproduced: that needs its data.
-
-</details>
-
-**Archive** - restoring cards into lists that are full.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/b9edbcc858">Restore into a full list asks for another list instead of doing nothing</a>. Thanks to jullbo and xet7.</summary>
-
-Restoring an archived card whose list had reached a hard WIP limit did nothing
-at all, and Restore all skipped such cards silently
-([#6772](https://github.com/wekan/wekan/issues/6772)). Restore now asks which
-list to restore it to, offering only lists with room, and Restore all says how
-many cards it left out. A list already over its hard limit blocks too, which the
-old check let through; a soft limit still only warns.
-
-</details>
-
-**Search in the Email view and Public Boards** - results of the search typed.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/49344f32f4">A search shows its own results, never the previous search's</a>. Thanks to xet7.</summary>
-
-Both views subscribe in an autorun, so a new search starts before the old one
-stops, and both sent their page's ids in one shared document: while both
-existed, the older search's rows won, and a search for something that matches
-nothing could still list the last search's card. Each search now has its own
-page index, keyed the same way on the server and the client, and the view reads
-only its own. Found running the Email view's browser test against the
-production bundle.
-
-</details>
-
-**Chat view** - opening cards and folding panes.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/230badf48e">A card from any board opens in the middle, and folded panes keep their carets</a>. Thanks to xet7.</summary>
-
-A card clicked in the channel tree took the member to its board; it opens in
-the middle pane now, with its conversation, from any board the member may
-read. Folding Channels or Comments left only an icon; the double caret stays.
-
-</details>
-
-and has the following developer-facing fixes:
-
-- [Two guards follow the Chat view and the live-test log fixes](https://github.com/wekan/wekan/commit/71b862c28c):
-  the Chat comment check is on the card's board, and the live-test guard
-  escapes every RegExp metacharacter. Thanks to xet7.
-- [The Email and Chat browser specs pass against the production bundle](https://github.com/wekan/wekan/commit/160110d1b3):
-  Compose's mail is caught by the local mail sink the other mail specs use, and
-  the Chat spec waits for the sign-in after a reload. Thanks to xet7.
-- [Every node suite passes again](https://github.com/wekan/wekan/commit/75534b5f1a):
-  the thirteen translation guards that failed before this release, fixed in
-  the locale where the locale was wrong (Bislama, Uzbek, Romansh, Tigre,
-  Wolaytta, Tamazight) and in the guard where it was stale. Thanks to xet7.
-
-and updates the following translations:
-
-**Languages updated:** 82 languages.
-
-**Every language** - the last of the backlog, Blockly's editor included.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/7c6a94c734">The remaining strings of 82 languages are translated</a>. Thanks to xet7.</summary>
-
-About 46,000 values still equal to English, Blockly's editor messages
-included, in the 82 languages that had them - Klingon, Tamazight, Volapük,
-Cherokee, Inuktitut, Wolaytta and the rest - translated directly from each
-language's existing wording, in three more commits -
-[20 more languages](https://github.com/wekan/wekan/commit/d698d6a1d6),
-[12 more](https://github.com/wekan/wekan/commit/7cbbec8836) and [the last English strings](https://github.com/wekan/wekan/commit/d085a30f2d), which also
-translates key names and Blockly's math terms the way established locales do.
-Placeholders were checked against English and only English placeholders were
-filled; a speaker's Transifex translation replaces any of them, and the
-commits name the low-confidence ones. What stays equal to English is the
-language's own word, or in Blockly an operating system or a key label.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/f4126b9514">Attachment files on the import page and a board that failed to load, in every language</a>. Thanks to xet7.</summary>
-
-The five new strings of this release.
-
-</details>
-
-and tidies the backlog:
-
-- [Close the built issues and keep only unbuilt work in TODO Later](https://github.com/wekan/wekan/commit/707021fee2):
-  #5758, #2698, #337 and #2208 are closed, also where they are not yet
-  tested live. Thanks to nikalasmd, ndarilek and xet7.
-- [Close #4790: User Filter is covered by what WeKan has](https://github.com/wekan/wekan/commit/0d68c3536b):
-  organizations and teams, LDAP group sync, board sharing and custom roles.
-  Thanks to xet7.
-- [No speaker review and no undocumented formats in TODO Later](https://github.com/wekan/wekan/commit/aad7e1414a).
-  Thanks to xet7.
 
 Thanks to above GitHub users for their contributions and translators for their translations.

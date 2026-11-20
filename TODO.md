@@ -20,28 +20,44 @@ the changelog only says what changed.
 - The WebKit stage cannot run in the Flatpak sandbox: MiniBrowser needs its own
   sandbox, and turning that off is not allowed there. Run it on a host.
 
-## Found while documenting the menus, to fix
+## Import and Export of everything each tool has
 
-- Member menu / Edit Profile: with Admin Panel / People / Login **Username
-  change** allowed, a user's new username is not saved - `setUsername`
-  (`server/models/users.js`) writes only when the caller is a site admin, while
-  `setEmail` beside it allows a self change when the setting says so. The popup
-  closes as if it had saved. Found on 2026-11-19.
-- Member menu / Support: the Support page template has a case for signed-out
-  visitors, but the `/support` route sends them to sign-in first, so that case is
-  never reached; and `supportPopup` with its `.js-support` handler is no longer
-  opened by the menu, which links to `/support`. Decide whether signed-out
-  visitors should see the page, and remove the unused popup.
-- Card menu / Create board from this card: the entry sits under `unless
-  canModifyCard` in `cardDetailsActionsPopup` (`client/components/cards/
-  cardDetails.jade`), so a member who can edit the card does not see it, while
-  the `createBoardFromCard` method requires write access. It was in both
-  branches when added (17c6d8d9b9); a later refactor kept only this one. Check in
-  the running app and restore it for members who can edit the card.
-- Board menu / All Boards Settings: the board menu entry is commented out
-  ("Bug Board icons random dance", [#4214](https://github.com/wekan/wekan/issues/4214)), so the popup cannot be reached.
-- Admin Panel / People / Shared templates: which group kinds the "Share template
-  with" picker offers comes from the browser's `localStorage`
-  (`sharedTemplatesScopes`), so it differs per browser and is empty in a browser
-  where the admin never ticked them. An instance setting belongs in Settings.
+Asked on 2026-11-20: check and fix that everything each tool with a WeKan
+import or export can hold comes across, whether a whole export is read or
+written at once or only a part of it (a board, a project, some lists, a date
+range), and check each tool's newest features - what its current version
+exports and imports - so their data has a place in WeKan too. For every tool,
+compare its newest export file, documentation and changelog with the parser
+and the formatter here, record what is lost in the import loss report
+(`unsupported`), and add what has a place in WeKan.
 
+Done so far: `tests/playwright/specs/export-import-round-trip.e2e.js` exports
+a board in each of the 41 formats WeKan both writes and reads and imports the
+file back; every one brings the card back, and its KEEPS table holds each
+format to what its file keeps of the description, the checklist and the
+comment, so a format that loses more fails. The Trello export imports back
+with checklists, comments, members, custom fields and archived cards and
+lists, and a Trello .zip export carries the attachment files; the GitHub,
+Gitea and Forgejo exports carry the comments. What is left below is per tool: the
+tool's newest features against its parser and formatter.
+
+- WeKan's own JSON and .zip: every field of the current schema, attachments
+  and their versions, custom fields, rules, templates, Scrum data, and a part
+  of a board as well as all of it.
+- Kanban and project tools: Kanboard, Nextcloud Deck, OpenProject, Asana,
+  Zenkit, Planner, monday.com, Wrike, Teamwork, Businessmap, ClickUp, Notion,
+  Plane, Taiga, Focalboard, Nullboard, Kanri, Obsidian Kanban, MeisterTask,
+  Quire, Planka, KanbanFlow, Basecamp - sub-items, dependencies, time
+  tracking, custom fields, comments, attachments and their newer views.
+- Issue trackers: Jira, GitHub, GitLab, Gitea, Forgejo, Redmine, Linear,
+  Pivotal - epics, sprints, versions and milestones, links between issues,
+  work logs, reactions, and fields added in their newest releases.
+- Task tools: Todoist, TickTick, Tasks.org, Super Productivity, todo.txt,
+  Taskwarrior, Vikunja, Microsoft To Do, Google Tasks, Google Keep -
+  recurrence, reminders, priorities, sub-tasks and sections.
+- Spreadsheets, text and outlines: CSV / TSV, Excel, Markdown, Leo, OPML,
+  Org mode - every column, and every Org property and timestamp.
+- Mail, calendars and chats: mail, mbox, iCalendar, Google Takeout, Slack,
+  Mattermost, Telegram, WhatsApp, Discord, Evernote .enex - threads, replies,
+  reactions, recurring events and the attached files that are now only
+  counted.

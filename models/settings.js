@@ -126,6 +126,14 @@ Settings.attachSchema(
       optional: true,
       defaultValue: false,
     },
+    // Admin Panel / Settings / Security: the largest file an Import page upload
+    // may be, in megabytes. Unset or 0: no limit - as large as the free disk
+    // space lets the import finish (server/lib/importDiskSpace.js).
+    importMaxMegabytes: {
+      type: Number,
+      optional: true,
+      min: 0,
+    },
     // Admin Panel / Features: when true, avatars (user profile pictures) are never
     // included when EXPORTING a board (WeKan JSON / CSV export). Default false.
     disableExportAvatars: {
@@ -295,6 +303,16 @@ Settings.attachSchema(
     featureProfiles: {
       type: Array,
       optional: true,
+    },
+    // Admin Panel / People / Shared templates: the group kinds a template board
+    // may be shared with (models/lib/sharedTemplatesScopes.js).
+    sharedTemplatesScopes: {
+      type: Array,
+      optional: true,
+    },
+    'sharedTemplatesScopes.$': {
+      type: String,
+      allowedValues: ['organizations', 'teams', 'domains'],
     },
     'featureProfiles.$': {
       type: Object,

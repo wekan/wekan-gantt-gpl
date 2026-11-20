@@ -3,7 +3,7 @@ import { trelloGetMembersToMap } from './trelloMembersMapper';
 import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
 import { wekanGetMembersToMap } from './wekanMembersMapper';
 import { csvGetMembersToMap } from './csvMembersMapper';
-import { jiraGetMembersToMap } from './jiraMembersMapper';
+import { jiraGetMembersToMap } from '/models/lib/jiraMembersMapper';
 import getSlug from 'limax';
 import { UserSearchIndex } from '/models/users';
 import { Utils } from '/client/lib/utils';
@@ -47,6 +47,13 @@ function attachmentAuthData(importTpl) {
   const auth = importTpl.attachmentAuth;
   importTpl.attachmentAuth = null;
   return auth ? { attachmentAuth: auth } : {};
+}
+
+// The file streamed to the server for this import (postImportUpload), by its
+// id; the preview of its people and the import itself both read it.
+function uploadData(importTpl) {
+  return importTpl.upload && importTpl.upload.uploadId
+    ? { uploadId: importTpl.upload.uploadId, ...(importTpl.uploadExtras || {}) } : {};
 }
 
 // Helper to find the closest ancestor template instance by name
@@ -115,6 +122,33 @@ async function postTrelloImport(body, contentType) {
   if (!resp.ok || result.error) {
     throw new Error(result.error || 'import-trello-failed');
   }
+  return result;
+}
+
+// A chosen file of the generalized importer's sources, streamed to the server
+// a part at a time (server/routes/importUpload.js) rather than read here and
+// sent whole through the importBoard method: the server writes it to its disk,
+// checking the free space and the administrator's import limit, and importBoard
+// reads it by the id answered here. Returns { uploadId, size }.
+async function postImportUpload(source, file) {
+  const token =
+    (window.localStorage && window.localStorage.getItem('Meteor.loginToken')) || '';
+  const resp = await fetch(`/api/import/upload/${encodeURIComponent(source)}`, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: {
+      'Content-Type': 'application/octet-stream',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: file,
+  });
+  let result = {};
+  try {
+    result = await resp.json();
+  } catch (e) {
+    result = {};
+  }
+  if (!resp.ok || result.error || !result.uploadId) throw new Error(result.error || 'import-upload-failed');
   return result;
 }
 
@@ -313,7 +347,19 @@ Template.import.onCreated(function () {
         openOrReportImportedBoard(boardId, '');
         return;
       }
-      if (file) {
+      this.upload = null;
+      this.uploadExtras = null;
+      // Jira too: its people are read from the uploaded file by the server.
+      if (file && (spec.creator === 'generalized' || dataSource === 'jira' || dataSource === 'csv')) {
+        // Streamed to the server's disk, never read into this page whole.
+        try {
+          this.upload = await postImportUpload(dataSource, file);
+        } catch (e) {
+          this.setError((e && e.message) || 'import-upload-failed');
+          return;
+        }
+        doc = {};
+      } else if (file) {
         doc = documentForFile(dataSource, file.name || '', new Uint8Array(await file.arrayBuffer()));
       } else {
         const text = (this.find('.js-import-json') || {}).value || '';
@@ -331,6 +377,13 @@ Template.import.onCreated(function () {
     // CSV/TSV and Excel: which column is which field comes first
     // (csvMapping.js), the people after it for CSV.
     if (dataSource === 'csv') {
+      // An uploaded file: its header, rows and people are read on the server.
+      if (this.upload) {
+        this.importedData.set([]);
+        this.membersToMap.set([]);
+        await startCsvMapping(this, { uploadId: this.upload.uploadId, membersStep: !skipMapping });
+        return;
+      }
       if (!Array.isArray(doc) || !doc.length) {
         this.setError('error-csv-schema');
         return;
@@ -356,6 +409,8 @@ Template.import.onCreated(function () {
       const estimateFieldId = this.find('.js-jira-estimate-field')?.value.trim();
       if (estimateFieldId) doc.wekanScrumMapping = { estimateFieldId,
         estimateUnit: this.find('.js-jira-estimate-unit')?.value.trim() };
+      // An uploaded file is read on the server: the mapping goes with the call.
+      if (this.upload && doc.wekanScrumMapping) this.uploadExtras = { wekanScrumMapping: doc.wekanScrumMapping };
     }
     // Trello: remember the target personal-workspace name for finishImport.
     this.workspaceName = '';
@@ -371,6 +426,17 @@ Template.import.onCreated(function () {
     // (mapPeopleOrImport); WeKan, Trello and Jira read their own.
     if (spec.creator === 'generalized') {
       await this.mapPeopleOrImport(dataSource, skipMapping);
+      return;
+    }
+    // An uploaded Jira file: its people from the server, read from the file.
+    if (this.upload && dataSource === 'jira') {
+      try {
+        this.membersToMap.set(await Meteor.callAsync('importBoard', {}, { previewPeople: true, ...uploadData(this) }, 'jira', null));
+      } catch (e) {
+        this.setError((e && (e.reason || e.error)) || 'error-json-malformed');
+        return;
+      }
+      await advance();
       return;
     }
     this.membersToMap.set(_prepareAdditionalData(doc));
@@ -393,7 +459,7 @@ Template.import.onCreated(function () {
     let people = [];
     try {
       people = await Meteor.callAsync('importBoard', pruneImportDocument(this.importedData.get(), selectedFields()),
-        { previewPeople: true, importFields: selectedFields() }, source, null);
+        { previewPeople: true, importFields: selectedFields(), ...uploadData(this) }, source, null);
     } catch (e) {
       this.setError((e && (e.reason || e.error)) || 'error-json-malformed');
       return;
@@ -544,7 +610,10 @@ Template.import.onCreated(function () {
     this.membersToMap.set([]);
     let settled = false;
     const importDocument = pruneImportDocument(importedData, selectedFields());
-    const timeoutMs = importDeadlineFor(parseInt(window.WEKAN_IMPORT_TIMEOUT_MS, 10) || 120000, importDocument);
+    // An uploaded file is not in the document: its size gives it time, two
+    // seconds a megabyte on top of the usual deadline.
+    const uploadMs = this.upload ? Math.ceil((this.upload.size || 0) / (1024 * 1024)) * 2000 : 0;
+    const timeoutMs = importDeadlineFor(parseInt(window.WEKAN_IMPORT_TIMEOUT_MS, 10) || 120000, importDocument) + uploadMs;
     const watchdog = Meteor.setTimeout(() => {
       if (settled) return;
       settled = true;
@@ -560,7 +629,7 @@ Template.import.onCreated(function () {
       // The selection again, for the parts only a creator can leave out:
       // the Scrum planning external parsers find (models/kanboardCreator.js).
       { membersMapping: mappingById, importFields: selectedFields(), membersMode: this.membersMode || 'map', ...csvMappingData(this),
-        ...attachmentAuthData(this),
+        ...attachmentAuthData(this), ...uploadData(this),
         ...(splitByProject(this.importSource) ? { splitBy: 'swimlane' } : {}) },
       this.importSource,
       Session.get('fromBoard'),
@@ -614,12 +683,18 @@ Template.import.helpers({
     const setting = ReactiveCache.getCurrentSetting();
     const product = productNameOrDefault(setting && setting.productName);
     const current = Session.get('importSource');
-    return IMPORT_SOURCES.map(source => ({
+    // Grouped by kind under headings (models/lib/toolGroups.js), the same
+    // groups the Export menu uses; WeKan's own is headed by the product name.
+    const { groupTools } = require('/models/lib/toolGroups');
+    return groupTools(IMPORT_SOURCES.map(source => ({
       key: source.key,
       // "a previous export of <Product name>", which for an unbranded WeKan is
       // "WeKan" and for a rebranded one is whatever it was rebranded to.
       name: source.product ? `${product} (JSON, .zip)` : source.name,
       selected: source.key === current,
+    }))).map(source => ({
+      ...source,
+      groupHeading: source.groupStart ? (source.groupLabelKey ? TAPi18n.__(source.groupLabelKey) : product) : '',
     }));
   },
   hasImportSource() {

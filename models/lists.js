@@ -217,6 +217,24 @@ Lists.attachSchema(
         }
       },
     },
+    policy: {
+      /**
+       * The list's explicit policy - when a card may come in and when it is
+       * done here (models/lib/boardFlowPolicies.js). Shown at the list header
+       * when the board shows list policies.
+       */
+      type: String,
+      optional: true,
+      max: 2000,
+    },
+    split: {
+      /**
+       * The list is split into Doing and Done (models/lib/boardFlowPolicies.js):
+       * a card marked Done here waits in it to be pulled into the next list.
+       */
+      type: Boolean,
+      optional: true,
+    },
     wipLimit: {
       /**
        * WIP object, see below

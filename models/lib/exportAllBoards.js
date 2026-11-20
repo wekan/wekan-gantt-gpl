@@ -16,13 +16,16 @@ const EXTENSIONS = {
   todoist: 'csv', meistertask: 'csv', obsidian: 'md', linear: 'csv', ticktick: 'csv', clickup: 'csv', nullboard: 'nbx',
   pivotal: 'csv', redmine: 'csv', notion: 'csv', quire: 'csv', superproductivity: 'json', vikunja: 'zip',
   planner: 'xlsx', monday: 'xlsx', wrike: 'xlsx', teamwork: 'xlsx', businessmap: 'xlsx',
+  mbox: 'mbox', enex: 'enex', mattermost: 'jsonl',
 };
 export const extensionOf = format => EXTENSIONS[format] || 'json';
 
 // The formats "Export all boards" offers: WeKan's own JSON, CSV/TSV, Excel and
 // every tool format. PDF, HTML, iCalendar and the dependency graph are
 // documents of one board and are not among them.
-export const MASS_EXPORT_FORMATS = ['wekan', 'csv', 'scsv', 'tsv', 'excel', ...EXTERNAL_EXPORT_FORMATS];
+// The Trello .zip streams a board's files and is not one of them: "Export all
+// boards" makes each board's file whole (server/lib/renderExternalExport.js).
+export const MASS_EXPORT_FORMATS = ['wekan', 'csv', 'scsv', 'tsv', 'excel', ...EXTERNAL_EXPORT_FORMATS.filter(format => format !== 'trellozip')];
 export const MAX_MASS_EXPORT_BOARDS = 1000;
 
 // ?boardIds=a,b,c -> ['a', 'b', 'c'], or null for every board. Ids are

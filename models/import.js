@@ -97,6 +97,11 @@ Meteor.methods({
     // or GitLab import (models/lib/importAttachmentAuth.js): used for this
     // import's downloads only, never stored or logged.
     check(data.attachmentAuth, Match.Maybe(Match.Where(isAttachmentAuthShape)));
+    // An upload streamed to the local disk (server/routes/importUpload.js):
+    // the file is read from there instead of `board`.
+    check(data.uploadId, Match.Maybe(Match.Where(id => typeof id === 'string' && /^[0-9a-f]{32}$/.test(id))));
+    // Jira's estimate mapping, sent with the call when the file was uploaded.
+    check(data.wekanScrumMapping, Match.Maybe(Match.ObjectIncluding({ estimateFieldId: String })));
     // ImportBleed (GHSA-qp32-wqxw-wq3h): this method reaches direct collection
     // writes, so authentication is rejected immediately after Meteor's mandatory
     // argument audit and before feature checks, parsing or creator construction.
@@ -109,6 +114,28 @@ Meteor.methods({
     // CreateBleed: every import makes a new board - the UI's, and POST
     // /api/boards/import and /api/boards/import/:source, which call this.
     await assertMayCreateBoardOnServer(this.userId, 'method:importBoard');
+    let uploadId = null;
+    if (data.uploadId) {
+      if (!Meteor.isServer) return undefined;
+      uploadId = data.uploadId;
+      try {
+        const Settings = require('/models/settings').default;
+        board = await require('/server/lib/importUploadSource').uploadedImportValue(uploadId, this.userId, importSource, {
+          setting: (await Settings.findOneAsync({}, { fields: { importMaxMegabytes: 1 } })) || {},
+          spec: require('/models/lib/importSources').importSource(importSource),
+        });
+      } catch (error) {
+        throw new Meteor.Error(error.code || 'invalid-import-format', error.message);
+      }
+      if (importSource === 'jira' && data.wekanScrumMapping && board && typeof board === 'object' && !Array.isArray(board)) {
+        board.wekanScrumMapping = { estimateFieldId: String(data.wekanScrumMapping.estimateFieldId),
+          ...(typeof data.wekanScrumMapping.estimateUnit === 'string' ? { estimateUnit: data.wekanScrumMapping.estimateUnit } : {}) };
+      }
+      // The people of an uploaded Jira file, for the page's map-members step.
+      if (data.previewPeople === true && importSource === 'jira') {
+        return require('/models/lib/jiraMembersMapper').jiraGetMembersToMap(board);
+      }
+    }
     try { validateImportSourceShape(importSource, board); }
     catch (error) { throw new Meteor.Error('invalid-import-format', error.message); }
     let creator;
@@ -123,7 +150,10 @@ Meteor.methods({
     // So is a Notion export: a .zip whose pages are read on the server, or a
     // database CSV; the parsed board is sanitized. And a Plane export: a zip, a
     // workbook, or JSON or CSV text whose cells hold JSON.
-    let importedBoard = importSource === 'leo' || importSource === 'opml' || importSource === 'vikunja' || importSource === 'notion' || importSource === 'plane' ? board
+    // So are mail (raw MIME, whose "Name <address>" would read as a tag), an
+    // iCalendar, chat and note text, and the Slack and Google Takeout zips:
+    // each is parsed first, and what was parsed is sanitized.
+    let importedBoard = importSource === 'mail' || importSource === 'ical' || importSource === 'googletakeout' || importSource === 'slack' || importSource === 'mattermost' || importSource === 'whatsapp' || importSource === 'evernote' || importSource === 'leo' || importSource === 'opml' || importSource === 'vikunja' || importSource === 'notion' || importSource === 'plane' ? board
       : sanitizeImported(board, importSource, this);
     switch (importSource) {
       case 'trello':
@@ -496,6 +526,29 @@ Meteor.methods({
         }
         creator = new KanboardCreator(data, 'orgmode');
         break;
+      case 'mail':
+      case 'ical':
+      case 'googletakeout':
+      case 'slack':
+      case 'mattermost':
+      case 'whatsapp':
+      case 'evernote':
+      case 'telegram':
+      case 'discord':
+        // Mail, calendars, chats and notes - models/lib/mailFormat.js,
+        // icalendarFormat.js, chatExportFormats.js, enexFormat.js and
+        // googleTakeoutFormat.js. The zips and the MIME and XML decoders are
+        // server-only (server/lib/chatArchives.js, mailImport.js, enexImport.js).
+        check(board, Match.OneOf(Object, Array, String));
+        if (!Meteor.isServer) return undefined;
+        try {
+          importedBoard = await require('/server/lib/messageImports').parseMessageImport(importSource, importedBoard);
+        } catch (error) {
+          throw new Meteor.Error('invalid-import-format', error.message);
+        }
+        importedBoard = sanitizeImported(importedBoard, importSource, this);
+        creator = new KanboardCreator(data, importSource);
+        break;
       case 'leo':
         // The Leo literate editor's outline - see models/lib/leoOutline.js.
         check(board, String);
@@ -534,6 +587,10 @@ Meteor.methods({
         }
         break;
     }
+    // The upload has been read and parsed: it is not kept on the disk. (One
+    // that failed to parse is removed by the hourly sweep.)
+    // The people preview reads the same upload once more for the import itself.
+    if (uploadId && data.previewPeople !== true) await require('/server/lib/importUpload').removeUpload(uploadId);
     if (!creator) {
       throw new Meteor.Error('invalid-import-source', `Unknown import source: ${importSource}`);
     }

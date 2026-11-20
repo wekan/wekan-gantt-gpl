@@ -48,7 +48,7 @@ test('the README links the page from its import and export lists', () => {
 // docs/Features/Board-Sidebar/Board-Settings/Import-Export, with the steps and the details, linked from the
 // coverage index (which used to hold every format's details in one table).
 const DIRECTORY = {
-  wekan: 'WeKan', json: 'WeKan', 'json-no-attachments': 'WeKan', zip: 'WeKan', trello: 'Trello', 'trello-api': 'Trello', csv: 'CSV', scsv: 'CSV', tsv: 'CSV',
+  wekan: 'WeKan', json: 'WeKan', 'json-no-attachments': 'WeKan', zip: 'WeKan', trello: 'Trello', 'trello-api': 'Trello', trellozip: 'Trello', csv: 'CSV', scsv: 'CSV', tsv: 'CSV',
   excel: 'Excel', pdf: 'PDF', html: 'HTML', ical: 'iCalendar', 'dep-json': 'Dependencies', 'dep-svg': 'Dependencies', jira: 'Jira',
   kanboard: 'Kanboard', deck: 'Nextcloud-Deck', openproject: 'OpenProject', github: 'GitHub', gitlab: 'GitLab', gitea: 'Gitea',
   forgejo: 'Forgejo', asana: 'Asana', zenkit: 'ZenKit', markdown: 'Markdown', leo: 'Leo', opml: 'OPML', orgmode: 'Org-mode',
@@ -59,6 +59,8 @@ const DIRECTORY = {
   wrikeworkflow: 'Wrike', teamwork: 'Teamwork', businessmap: 'Businessmap', quire: 'Quire', notion: 'Notion', plane: 'Plane',
   planka: 'Planka', mstodo: 'Microsoft-To-Do', kanbanflow: 'KanbanFlow', basecamp: 'Basecamp', googletasks: 'Google-Tasks',
   googlekeep: 'Google-Keep',
+  mail: 'Mail', mbox: 'Mail', googletakeout: 'Google-Takeout', slack: 'Slack', mattermost: 'Mattermost',
+  telegram: 'Telegram', whatsapp: 'WhatsApp', discord: 'Discord', evernote: 'Evernote', enex: 'Evernote',
 };
 const HEADINGS = ['How to import', 'How to import many boards at once', 'How to export', 'How to export all boards at once',
   'Format details', 'What is kept', 'What is not kept', 'REST API', 'How it is built and tested', 'Sources'];

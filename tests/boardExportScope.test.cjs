@@ -434,7 +434,7 @@ test('every downloadable format carries the selection, and the server reads it',
     // exports share one handler (serveExternalExport), which does.
     const route = `'/api/boards/:boardId/${p}'`;
     // Kanboard joined the shared handler when its own route was removed.
-    if (!server.includes(route) && !/^export\/(trello|jira|deck|kanboard|openproject|github|gitlab|gitea|forgejo|asana|zenkit|markdown|leo|todotxt|taskwarrior|focalboard|todoist|planner|meistertask|obsidian|linear|ticktick|clickup|nullboard|kanri|pivotal|redmine|tasksorg|monday|superproductivity|taiga|vikunja|notion|wrike|wrikeworkflow|teamwork|businessmap|quire|opml|orgmode)$/.test(p)) {
+    if (!server.includes(route) && !/^export\/(trello|trellozip|jira|deck|kanboard|openproject|github|gitlab|gitea|forgejo|asana|zenkit|markdown|leo|todotxt|taskwarrior|focalboard|todoist|planner|meistertask|obsidian|linear|ticktick|clickup|nullboard|kanri|pivotal|redmine|tasksorg|monday|superproductivity|taiga|vikunja|notion|wrike|wrikeworkflow|teamwork|businessmap|quire|opml|orgmode|mbox|enex|mattermost)$/.test(p)) {
       return true;
     }
     return false;
@@ -450,7 +450,9 @@ test('every downloadable format carries the selection, and the server reads it',
   }
   // The route hands the selection to the shared renderer
   // (server/lib/renderExternalExport.js), which hands it to the collector.
-  assert.ok(/renderExternalExport\(boardId, format,\s*\n\s*parseExportFields\(req\.query && req\.query\.fields, BOARD_EXPORT_FIELD_KEYS\)\)/
+  // The selection is parsed once and given to both the streamed path (.mbox,
+  // .enex, a page at a time) and the shared renderer.
+  assert.ok(/const fields = parseExportFields\(req\.query && req\.query\.fields, BOARD_EXPORT_FIELD_KEYS\);[\s\S]{0,300}streamExternalExport\(res, boardId, format, fields\)[\s\S]{0,300}renderExternalExport\(boardId, format, fields\)/
     .test(read('models/export.js')),
     'and the external-tool exports (Trello, Jira, GitHub, Markdown, ...) must read it too');
 });

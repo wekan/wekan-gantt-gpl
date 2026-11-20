@@ -8,6 +8,11 @@ tools. You use them from the existing menus:
   text where the format is text.
 - **Export**: **Board Settings → Export**. Choose the scope and the fields to
   include, then the format.
+- Both list the tools under the same headings - WeKan, Kanban and project
+  tools, Issue trackers and version control, Task and to-do apps,
+  Spreadsheets and tables, Text and outlines, Mail, calendars, chats and
+  notes, and Fetched from a service - from one table,
+  `models/lib/toolGroups.js`, so a tool is in the same group on both.
 - **Rules and workflows**: **Board Settings → Rules → Import / Export rules**
   (see [Rules](../../../Rules/Rules/Rules.md#import--export)).
 
@@ -84,6 +89,23 @@ own API, so the exported file is for a script that calls it.
 | [OPML](./OPML/OPML.md) | Outline from Workflowy, Dynalist, OmniOutliner, Logseq and others | OPML (`.opml`) |
 | [Leo](./Leo/Leo.md) | Leo outline (`.leo`) | Leo outline |
 
+## Mail, calendars, chats and notes
+
+Mail shows in Board View → Email, chats in Board View → Chat (a channel is a
+card, its messages the comments), and dated items in Calendar and Gantt.
+
+| Tool | Import (the file you give WeKan) | Export (the file WeKan writes) |
+| --- | --- | --- |
+| [Mail (mbox, .eml)](./Mail/Mail.md) | An `.mbox` (Thunderbird, Apple Mail, mutt, Gmail) or one `.eml` message | Mail (mbox) |
+| [iCalendar (.ics)](./iCalendar/iCalendar.md) | An `.ics` file: tasks (VTODO) by status, and events | Calendar feed of the board's dates |
+| [Google Takeout](./Google-Takeout/Google-Takeout.md) | The Takeout `.zip`: Tasks, Keep, Mail, Calendar and Google Chat | — (Takeout is not imported back into Google) |
+| [Slack](./Slack/Slack.md) | The workspace export `.zip` | — |
+| [Mattermost](./Mattermost/Mattermost.md) | Bulk export `.jsonl` (`mmctl export create`) | Mattermost bulk import `.jsonl` |
+| [Telegram](./Telegram/Telegram.md) | Telegram Desktop's JSON export `result.json` | — |
+| [WhatsApp](./WhatsApp/WhatsApp.md) | *Export chat* `.txt` | — |
+| [Discord (DiscordChatExporter)](./Discord/Discord.md) | DiscordChatExporter JSON | — |
+| [Evernote (.enex)](./Evernote/Evernote.md) | Notes export `.enex` | Evernote (.enex) |
+
 ## WeKan's own formats and documents
 
 | Format | Import | Export |
@@ -92,7 +114,6 @@ own API, so the exported file is for a script that calls it.
 | [CSV / TSV](./CSV/CSV.md) | Comma, semicolon or tab separated | CSV `,` / CSV `;` / TSV |
 | [Excel](./Excel/Excel.md) | WeKan-style `.xlsx` | Excel (`.xlsx`) |
 | [PDF](./PDF/PDF.md), [HTML](./HTML/HTML.md) | — | PDF and an HTML archive of the board |
-| [iCalendar](./iCalendar/iCalendar.md) | — | Calendar feed of the board's dates |
 | [Dependencies](./Dependencies/Dependencies.md) | — | Dependency graph as JSON or SVG |
 | [Rules](./Rules/Rules.md) | WeKan rules JSON or CSV, Trello Butler text, n8n and Node-RED workflows, Wrike workflows | WeKan rules JSON or CSV, Wrike workflow |
 
@@ -118,6 +139,36 @@ Attachments in an imported `.zip` are streamed into the attachment storage one
 at a time, never held whole in memory, and held to the upload limit set in
 **Admin Panel → Attachments → Limits**, if one is set
 (`server/lib/importAttachmentStream.js`).
+
+## Large files
+
+A file chosen on the Import page for any tool of the generalized importer is
+sent to the server a part at a time (`POST /api/import/upload/:source`,
+`server/routes/importUpload.js`) and written to `WRITABLE_PATH/import-uploads`,
+never held whole in the browser or in the server's memory on the way:
+
+- before the first byte, the size the browser announces is checked against
+  the largest import the administrator set (Admin Panel → Settings → Security)
+  and against the free space of that disk, less a reserve
+  (`IMPORT_DISK_RESERVE_MB`, default 512 MB); while it is written, the space is
+  checked again every 64 MB. An import that would fill the disk is refused with
+  that reason, and its partial file is removed;
+- with no limit set, an import may be as large as the free disk space lets it
+  finish;
+- a `.zip` export (Slack, Google Takeout, Vikunja, Notion, Plane) is opened from
+  the disk, its entries read as they are needed, and what they inflate to is
+  counted against the limit or the free space; a mailbox is read a message at
+  a time, also inside a Takeout zip;
+- JSON is built from the file a chunk at a time (`server/lib/streamJson.js`),
+  so an export larger than one JavaScript string - about 512 MB - can still be
+  read; a Mattermost export is read a line at a time;
+- a Jira file is uploaded too, and the people of its map-members step are read
+  from it on the server; a CSV / TSV file's header, sample rows and people come
+  from the server for its column mapping step;
+- the file is removed once it has been read, or after an hour.
+
+`tests/importUpload.test.cjs` covers the limit, the full disk before and during
+the upload, an interrupted upload and how each source reads its file.
 
 ## Many boards at once
 

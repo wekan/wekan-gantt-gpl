@@ -10,6 +10,7 @@
 // startAt, endAt, createdAt, owner, assignees, creator, requestedBy, comments,
 // checklists, parentCardId and customFields. A format drops what it has no
 // field for; that is the honest answer, not a loss this module invents.
+import { pagingOf, blockersOf } from './exportPaging.js';
 import { formatMarkdownKanban } from './markdownKanbanFormat.js';
 import { formatLeo } from './leoOutlineFormat.js';
 import { formatTodoTxt } from './todoTxtFormat.js';
@@ -38,6 +39,9 @@ import { formatTeamworkSheet } from './teamworkFormat.js';
 import { formatQuireCsv } from './quireCsvFormat.js';
 import { formatNotionCsv } from './notionFormat.js';
 import { formatOpml } from './opmlOutlineFormat.js';
+import { formatMbox } from './mailFormat.js';
+import { formatEnex } from './enexFormat.js';
+import { formatMattermostBulk } from './chatExportFormats.js';
 import { formatOrgMode } from './orgModeFormat.js';
 
 // A WeKan list maps to a "closed" issue state when its name looks terminal.
@@ -49,6 +53,9 @@ const has = value => value !== undefined && value !== null && value !== '';
 const list = value => (Array.isArray(value) ? value : []);
 const checklistItems = item => list(item.checklists).flatMap(c => list(c.items));
 
+// The comments go along as comments_data, the embedded comments the issues
+// parser reads (models/lib/externalParsers.js issueComments) - the shape
+// `gh issue view --json comments` and similar clients write.
 const githubLike = ({ items }) =>
   items.map(i => ({
     title: i.title,
@@ -56,6 +63,8 @@ const githubLike = ({ items }) =>
     state: isClosed(i.listTitle) ? 'closed' : 'open',
     labels: i.labels.map(name => ({ name })),
     due_date: i.dueAt,
+    ...(list(i.comments).some(c => c && has(c.text)) ? { comments_data: list(i.comments).filter(c => c && has(c.text)).map(c => ({
+      body: String(c.text), ...(has(c.author) ? { user: { login: c.author } } : {}), ...(has(c.date) ? { created_at: c.date } : {}) })) } : {}),
   }));
 
 // OpenProject reads ids from HAL hrefs ending in a number.
@@ -126,14 +135,113 @@ function kanboardTaskLinks(items) {
   return links;
 }
 
+// An attachment's file name in a Trello .zip, the same in board.json and in
+// the archive: no path separators, never empty.
+export const trelloZipFileName = att => String((att && att.name) || (att && att.id) || 'file').replace(/[\\/\0]/g, '_').slice(0, 200) || 'file';
+
+function trelloDocument(collected, { withAttachments = false } = {}) {
+  const { board, lists } = collected;
+  const { items, all, offset } = pagingOf(collected);
+  // The board's people - card owners, assignees, comment authors - over the
+  // whole board, as Trello members named by username; the import maps them
+  // to users by username (client/components/import/trelloMembersMapper.js).
+  const peopleOf = i => [i.owner, ...list(i.assignees)].filter(has).map(String);
+  const people = [...new Set(all.flatMap(i => [...peopleOf(i),
+    ...list(i.comments).map(c => c && c.author).filter(has).map(String)]))];
+  // Custom fields: one Trello field per name the board's cards use, its type
+  // what every value of it is (checkbox, number, date, else text), and each
+  // card's values as Trello's customFieldItems (models/trelloCreator.js).
+  const fieldNames = [...new Set(all.flatMap(i => Object.keys(i.customFields || {})))];
+  const ISO_DAY = /^\d{4}-\d{2}-\d{2}(T|$)/;
+  const typeOf = name => {
+    const values = all.map(i => (i.customFields || {})[name]).filter(has);
+    if (values.length && values.every(v => typeof v === 'boolean')) return 'checkbox';
+    if (values.length && values.every(v => typeof v === 'number' && Number.isFinite(v))) return 'number';
+    if (values.length && values.every(v => typeof v === 'string' && ISO_DAY.test(v) && !Number.isNaN(Date.parse(v)))) return 'date';
+    return 'text';
+  };
+  const fields = fieldNames.map((name, n) => ({ id: `${board._id || 'board'}-field-${n + 1}`, name, type: typeOf(name) }));
+  const valueOf = (field, raw) => {
+    if (field.type === 'checkbox') return { checked: raw ? 'true' : 'false' };
+    if (field.type === 'number') return { number: String(raw) };
+    if (field.type === 'date') return { date: new Date(raw).toISOString() };
+    return { text: Array.isArray(raw) ? raw.join(', ') : String(raw) };
+  };
+  // What models/trelloCreator.js checks every card for: an ISO date of its
+  // last activity and a position - without them a Trello export did not
+  // import into WeKan at all.
+  const isoOf = value => {
+    const date = value ? new Date(value) : null;
+    return date && !Number.isNaN(date.getTime()) ? date.toISOString() : new Date(0).toISOString();
+  };
+  const checklistsOf = i => list(i.checklists).map((c, n) => ({
+    id: `${i.cardId}-checklist-${n + 1}`,
+    idBoard: String(board._id || ''),
+    idCard: String(i.cardId),
+    name: String(c.title || 'Checklist'),
+    pos: n + 1,
+    checkItems: list(c.items).map((x, m) => ({
+      id: `${i.cardId}-checklist-${n + 1}-item-${m + 1}`,
+      name: String(x.title || ''),
+      state: x.done ? 'complete' : 'incomplete',
+      pos: m + 1,
+    })),
+  }));
+  return {
+    name: board.title,
+    prefs: { background: 'blue', permissionLevel: 'private' },
+    members: people.map(username => ({ id: username, username, fullName: username })),
+    customFields: fields.map((field, n) => ({ id: field.id, idModel: String(board._id || ''), modelType: 'board',
+      name: field.name, type: field.type, pos: n + 1, display: { cardFront: true } })),
+    labels: (board.labels || []).map(l => ({ id: l._id, name: String(l.name || ''), color: l.color })),
+    // Archived lists and cards are Trello's closed ones (the Trello
+    // export collects them; models/trelloCreator.js reads closed back).
+    lists: lists.map((l, n) => ({ id: l._id, name: l.title, closed: Boolean(l.archived), pos: n + 1 })),
+    cards: items.map((i, n) => ({
+      id: i.cardId,
+      name: i.title,
+      desc: String(i.description || ''),
+      pos: offset + n + 1,
+      dateLastActivity: isoOf(i.modifiedAt || i.createdAt),
+      idList: i.listId,
+      due: i.dueAt || null,
+      ...(has(i.startAt) ? { start: i.startAt } : {}),
+      dueComplete: Boolean(i.dueComplete),
+      closed: Boolean(i.archived),
+      idLabels: list(i.labelIds),
+      idMembers: [...new Set(peopleOf(i))],
+      idChecklists: checklistsOf(i).map(c => c.id),
+      // The Trello .zip: each attachment named as its file in the archive
+      // (attachments/<id>_<name>), which the Trello .zip import matches by
+      // fileName (server/routes/importTrelloZip.js).
+      ...(withAttachments ? { attachments: list(i.attachments).map(att => ({ id: att.id, name: trelloZipFileName(att),
+        fileName: trelloZipFileName(att), bytes: att.size || 0, mimeType: att.type || '', isUpload: true })) } : {}),
+      customFieldItems: fields.filter(field => has((i.customFields || {})[field.name])).map(field => ({
+        id: `${i.cardId}-${field.id}`, idCustomField: field.id, idModel: i.cardId, modelType: 'card',
+        value: valueOf(field, i.customFields[field.name]) })),
+    })),
+    checklists: items.flatMap(checklistsOf),
+    actions: items.flatMap(i => list(i.comments).filter(c => c && has(c.text)).map((c, n) => ({
+      id: `${i.cardId}-comment-${n + 1}`,
+      type: 'commentCard',
+      date: isoOf(c.date || i.createdAt),
+      idMemberCreator: c.author || null,
+      memberCreator: c.author ? { username: c.author, fullName: c.author } : null,
+      data: { text: String(c.text), card: { id: i.cardId, name: i.title }, board: { id: String(board._id || '') } },
+    }))),
+  };
+}
+
 export const formatters = {
   // NextCloud Deck: board with stacks, each stack carrying its cards.
+  // A card is in the stack of its own list (by id; by title when either has
+  // none), so two lists of one name do not each carry the other's cards.
   deck: ({ board, lists, items }) => ({
     title: board.title,
     stacks: lists.map(l => ({
       title: l.title,
       cards: items
-        .filter(i => i.listTitle === l.title)
+        .filter(i => (l._id && i.listId ? i.listId === l._id : i.listTitle === l.title))
         .map(i => ({
           title: i.title,
           description: i.description,
@@ -179,11 +287,14 @@ export const formatters = {
     };
   },
   // OpenProject: a work-packages collection with HAL links.
+  // A page of the board, or all of it (models/lib/exportPaging.js): the
+  // numbers, ranks and custom field columns are counted over the whole board.
   openproject: collected => {
-    const { items } = collected;
-    const ids = numericIds(items);
+    const { items, all } = pagingOf(collected);
+    const ids = numericIds(all);
+    const blockers = blockersOf(all);
     const planning = planningIndex(collected);
-    const ranks = positions(items);
+    const ranks = positions(all);
     const versions = [...planning.releases.values()].map(r => ({ _type: 'Version', id: r.number, name: r.name,
       ...(has(r.notes) ? { description: { raw: r.notes } } : {}),
       ...(r.plannedStart ? { startDate: day(r.plannedStart) } : {}), ...(r.plannedEnd ? { endDate: day(r.plannedEnd) } : {}),
@@ -194,7 +305,7 @@ export const formatters = {
       _links: { self: { href: `/api/v3/sprints/${sp.number}`, title: sp.name },
         status: { href: `urn:openproject-org:api:v3:sprints:status:${OPENPROJECT_SPRINT_STATUS[sp.state] || 'in_planning'}`,
           title: OPENPROJECT_SPRINT_TITLE[sp.state] || 'In planning' } } }));
-    const fieldNames = [...new Set(items.flatMap(i => Object.keys(i.customFields || {})))];
+    const fieldNames = [...new Set(all.flatMap(i => Object.keys(i.customFields || {})))];
     const fieldKey = name => `customField${fieldNames.indexOf(name) + 1}`;
     return {
       _embedded: {
@@ -221,9 +332,15 @@ export const formatters = {
             ...(has(i.creator) ? { author: { title: i.creator } } : {}),
             ...(ids.has(i.parentCardId) ? { parent: { href: `/api/v3/work_packages/${ids.get(i.parentCardId)}` } } : {}),
           },
-          ...(list(i.comments).length ? { _embedded: { activities: i.comments.map(c => ({
-            _type: 'Activity::Comment', comment: { raw: c.text }, createdAt: c.date,
-            _links: { user: { title: c.author } } })) } } : {}),
+          // Comments as activities, and what the work package waits for as
+          // "blocked" relations from it, which the OpenProject import reads.
+          ...(list(i.comments).length || blockers.has(i.cardId) ? { _embedded: {
+            ...(list(i.comments).length ? { activities: i.comments.map(c => ({
+              _type: 'Activity::Comment', comment: { raw: c.text }, createdAt: c.date,
+              _links: { user: { title: c.author } } })) } : {}),
+            ...(blockers.has(i.cardId) ? { relations: blockers.get(i.cardId).map(on => ({ _type: 'Relation', type: 'blocked',
+              _links: { from: { href: `/api/v3/work_packages/${ids.get(i.cardId)}` }, to: { href: `/api/v3/work_packages/${ids.get(on)}` } } })) } : {}),
+          } } : {}),
         })),
       },
     };
@@ -259,29 +376,22 @@ export const formatters = {
     }));
   },
   // Trello board JSON (round-trips with WeKan's Trello import).
-  trello: ({ board, lists, items }) => ({
-    name: board.title,
-    prefs: { background: 'blue', permissionLevel: 'private' },
-    labels: (board.labels || []).map(l => ({ id: l._id, name: l.name, color: l.color })),
-    lists: lists.map(l => ({ id: l._id, name: l.title, closed: false })),
-    cards: items.map(i => ({
-      id: i.cardId,
-      name: i.title,
-      desc: i.description,
-      idList: i.listId,
-      due: i.dueAt || null,
-      closed: false,
-      idLabels: i.labelIds,
-      idMembers: [],
-      idChecklists: [],
-    })),
-    checklists: [],
-    actions: [],
-  }),
+  // The card's checklists are Trello checklists and its comments commentCard
+  // actions, the shapes models/trelloCreator.js reads back (checkChecklists,
+  // parseActions); each card's arrays depend only on the card, so a page
+  // writes its own (server/lib/renderExternalExport.js JSON_PAGED).
+  trello: collected => trelloDocument(collected),
+  // The same, with the cards' attachments, as a .zip beside board.json
+  // (server/lib/renderExternalExport.js streamTrelloZip).
+  trellozip: collected => trelloDocument(collected, { withAttachments: true }),
   // Jira issues collection (round-trips with WeKan's Jira import).
-  jira: ({ board, items, jiraEstimateMapping }) => {
-    const keys = new Map(items.map((item, idx) => [item.cardId, `WEKAN-${idx + 1}`]));
-    const fieldNames = [...new Set(items.flatMap(i => Object.keys(i.customFields || {})))];
+  // The issue keys and custom field names are counted over the whole board,
+  // whichever page is written (models/lib/exportPaging.js).
+  jira: collected => {
+    const { board, jiraEstimateMapping } = collected;
+    const { items, all } = pagingOf(collected);
+    const keys = new Map(all.map((item, idx) => [item.cardId, `WEKAN-${idx + 1}`]));
+    const fieldNames = [...new Set(all.flatMap(i => Object.keys(i.customFields || {})))];
     const fieldKey = name => `customfield_${90000 + fieldNames.indexOf(name) + 1}`;
     return {
       board: { name: board.title },
@@ -306,6 +416,16 @@ export const formatters = {
           ...(has(i.owner) ? { assignee: { name: i.owner } } : {}),
           ...(has(i.requestedBy || i.creator) ? { reporter: { displayName: i.requestedBy || i.creator } } : {}),
           ...(keys.has(i.parentCardId) ? { parent: { key: keys.get(i.parentCardId) } } : {}),
+          // Card dependencies as Jira issue links, read back by
+          // models/jiraCreator.js createDependencies: blocks and duplicates
+          // keep their direction, anything else is Relates.
+          ...(list(i.dependencies).some(dep => keys.has(dep.cardId)) ? { issuelinks: list(i.dependencies)
+            .filter(dep => keys.has(dep.cardId)).map(dep => {
+              const key = keys.get(dep.cardId);
+              const kind = { blocks: ['Blocks', 'outward'], 'is-blocked-by': ['Blocks', 'inward'],
+                duplicates: ['Duplicate', 'outward'], 'is-duplicated-by': ['Duplicate', 'inward'] }[dep.type] || ['Relates', 'outward'];
+              return { type: { name: kind[0] }, [kind[1] === 'outward' ? 'outwardIssue' : 'inwardIssue']: { key } };
+            }) } : {}),
           ...(checklistItems(i).length ? { subtasks: checklistItems(i).map(x => ({
             fields: { summary: x.title, status: { statusCategory: { key: x.done ? 'done' : 'new' } } } })) } : {}),
           ...(list(i.comments).length ? { comment: { comments: i.comments.map(c => ({
@@ -316,8 +436,11 @@ export const formatters = {
     };
   },
   // Asana tasks (sections become the board columns).
-  asana: ({ items }) => ({
+  // A task's dependencies are what it waits for, as the Asana import reads
+  // them (models/lib/externalParsers.js parseAsana): over the whole board.
+  asana: collected => { const { items, all } = pagingOf(collected); const blockers = blockersOf(all); return {
     data: items.map(i => ({
+      ...(blockers.has(i.cardId) ? { dependencies: blockers.get(i.cardId).map(gid => ({ gid })) } : {}),
       gid: i.cardId,
       name: i.title,
       notes: i.description,
@@ -336,7 +459,7 @@ export const formatters = {
       ...(list(i.comments).length ? { stories: i.comments.map(c => ({
         resource_subtype: 'comment_added', text: c.text, created_by: { name: c.author }, created_at: c.date })) } : {}),
     })),
-  }),
+  }; },
   // ZenKit-style export (stages + items), the adapter shape the importer reads.
   zenkit: ({ board, lists, items }) => ({
     title: board.title,
@@ -431,6 +554,12 @@ export const formatters = {
   opml: formatOpml,
   // An Org mode outline; round-trips with parseOrgMode (orgModeFormat.js).
   orgmode: formatOrgMode,
+  // Mail, notes and chat: an .mbox (models/lib/mailFormat.js), an Evernote
+  // .enex (enexFormat.js) and a Mattermost bulk import file (chatExportFormats.js),
+  // each read back by WeKan's import of the same format.
+  mbox: formatMbox,
+  enex: data => formatEnex(data),
+  mattermost: formatMattermostBulk,
 };
 
 export const EXTERNAL_EXPORT_FORMATS = Object.keys(formatters);

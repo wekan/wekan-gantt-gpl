@@ -7,6 +7,23 @@ board opens in - separately for when the board is **public** and when it is
 offer only Roadmap and Gantt and open in Roadmap, while the same board, made
 private again, shows its members every view and opens in Swimlanes.
 
+## Groups
+
+The Board View menu and this popup show the views in six groups, each under its
+heading (`BOARD_VIEW_GROUPS` in `models/lib/boardViewSettings.js`):
+
+| Group | Views |
+| --- | --- |
+| Board | Swimlanes, Lists, Table, Column sets, Group by Assignee, Map, Bigboard |
+| Calendar and time | Calendar, Calendar Mode, Multi Board Calendar, Time, Timeline, Gantt, Frappe Gantt, DHTMLX Gantt, Roadmap |
+| Scrum | Product Backlog, Sprints, Sprint Report, Velocity, Burndown, Burnup, Release Burndown, Epic Progress |
+| Kanban flow | Cumulative Flow, Control, Cycle Time, Lead Time, Flow Efficiency, Throughput Histogram, WIP Run, Aging WIP, Blocker Analysis, Monte Carlo, Process Behavior, Size vs. Cycle Time, Created vs. Resolved, Net Flow, Time in List, Average Age, Throughput Run Chart, Due Date Performance |
+| Overview | Dashboard, Pulse, Statistics, Workload, Distribution, Dependency Map, Activity Heatmap |
+| Communication and code | Email, Chat, Version Control |
+
+The order a board admin drags here decides inside each group; a view stays in
+its own group. A group none of whose views is shown has no heading.
+
 ## Where to find it
 
 **Board sidebar (hamburger menu) → Board Settings → Board View**, the first
@@ -108,6 +125,18 @@ menu's own order**, with the same translation keys the menu uses:
 38. Chat (`board-view-chat`)
 39. Version Control (`board-view-version-control`)
 40. Column sets (`board-view-column-sets`)
+41. Created vs. Resolved (`board-view-created-resolved`)
+42. Net Flow (`board-view-net-flow`)
+43. Time in List (`board-view-time-in-list`)
+44. Average Age (`board-view-average-age`)
+45. Throughput Run Chart (`board-view-throughput-run`)
+46. Due Date Performance (`board-view-due-date-performance`)
+47. Release Burndown (`board-view-release-burndown`)
+48. Epic Progress (`board-view-epic-progress`)
+49. Workload (`board-view-workload`)
+50. Distribution (`board-view-distribution`)
+51. Dependency Map (`board-view-dependency-map`)
+52. Activity Heatmap (`board-view-activity-heatmap`)
 
 The one list is `BOARD_VIEWS` in `models/lib/boardViewSettings.js`. Both the
 popup and the Board View menu (`boardChangeViewPopup` in

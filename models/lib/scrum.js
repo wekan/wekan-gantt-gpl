@@ -43,7 +43,9 @@ function provenance(value) {
   return result;
 }
 const DEFAULT_SCRUM_SETTINGS = Object.freeze({
-  enabled: false, productGoal: '', definitionOfDone: '', estimateSource: 'poker',
+  enabled: false, productGoal: '', definitionOfDone: '', definitionOfReady: '', estimateSource: 'poker',
+  // The meeting helpers (models/lib/scrumMeetings.js), on unless turned off.
+  standupTimer: true, standupMinutes: 2, retrospectiveBoard: true,
   estimateCustomFieldId: null, estimateUnit: 'points', completionPolicy: 'dueComplete',
   productOwnerId: null, scrumMasterId: null, developerIds: [], workingDays: [1, 2, 3, 4, 5], visibility: {},
 });
@@ -55,7 +57,10 @@ function normalizeScrumSettings(value) {
       'minicardAcceptanceCriteria', 'minicardBacklogRank', 'listCategory', 'swimlaneSprint', 'swimlaneRelease', 'swimlanePurpose',
     ].map(key => [key, flag => { if (typeof flag !== 'boolean') fail('Invalid visibility flag'); return flag; }]))),
     enabled: v => { if (typeof v !== 'boolean') fail('Invalid enabled flag'); return v; },
-    productGoal: text, definitionOfDone: text,
+    productGoal: text, definitionOfDone: text, definitionOfReady: text,
+    standupTimer: v => { if (typeof v !== 'boolean') fail('Invalid standup flag'); return v; },
+    standupMinutes: v => { if (!Number.isInteger(v) || v < 1 || v > 15) fail('Invalid standup minutes'); return v; },
+    retrospectiveBoard: v => { if (typeof v !== 'boolean') fail('Invalid retrospective flag'); return v; },
     estimateSource: v => choice(v, ['poker', 'customField']), estimateCustomFieldId: id,
     estimateUnit: v => text(v, 80).trim() || fail('Estimate unit is required'),
     completionPolicy: v => choice(v, ['dueComplete', 'doneLists']),

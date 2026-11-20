@@ -57,6 +57,20 @@ if (Meteor.isServer) {
     10,
     60 * 1000,
   );
+  // InviteBleed (GHSA-rg85-qx5c-qx67): the sign-up FORM creates the account
+  // through useraccounts' ATCreateUserServer, not through createUser above -
+  // which a client is refused anyway - so the throttle the first fix added
+  // never applied to the method the attack used. The same 10 a minute per
+  // address here, and a refusal is shown in Admin Panel -> Problems.
+  DDPRateLimiter.addRule(
+    { type: 'method', name: 'ATCreateUserServer', clientAddress() { return true; } },
+    10,
+    60 * 1000,
+    (result, input) => recordAuthRateLimitDenial(result, input, event =>
+      require('/server/lib/securityLog').record(event), {
+      key: 'brute.invite', detail: 'sign-up DDP rate limit exceeded',
+    }),
+  );
   DDPRateLimiter.addRule(
     { type: 'method', name: 'searchUsers' },
     20,
@@ -1539,13 +1553,25 @@ Meteor.methods({
     if (username.includes('/') || userId.includes('/')) {
       return false;
     }
-    if ((await ReactiveCache.getCurrentUser())?.isAdmin) {
-      const nUsersWithUsername = (await ReactiveCache.getUsers({ username })).length;
-      if (nUsersWithUsername > 0) {
-        throw new Meteor.Error('username-already-taken');
-      } else {
-        await Users.updateAsync(userId, { $set: { username } });
-      }
+    // As setEmail: a site admin changes anybody's username, and a member their
+    // own when Admin Panel / People / Login allows a username change. Anything
+    // else is refused, so the Edit Profile popup does not close as if it saved.
+    const currentUser = await ReactiveCache.getCurrentUser();
+    const allowSelfChange =
+      !!this.userId && this.userId === userId &&
+      !!(await AccountSettings.findOneAsync('accounts-allowUserNameChange'))
+        ?.booleanValue;
+    if (!currentUser?.isAdmin && !allowSelfChange) {
+      throw new Meteor.Error('not-authorized');
+    }
+    if (!username.trim()) {
+      throw new Meteor.Error('invalid-username');
+    }
+    const nUsersWithUsername = (await ReactiveCache.getUsers({ username })).length;
+    if (nUsersWithUsername > 0) {
+      throw new Meteor.Error('username-already-taken');
+    } else {
+      await Users.updateAsync(userId, { $set: { username } });
     }
   },
 
@@ -1594,13 +1620,20 @@ Meteor.methods({
     if (username.includes('/') || email.includes('/') || userId.includes('/')) {
       return false;
     }
-    if ((await ReactiveCache.getCurrentUser())?.isAdmin) {
-      if (Array.isArray(email)) {
-        email = email.shift();
+    // Each of the two checks its own permission (admin, or the member's own
+    // account with that change allowed); the username is not changed when the
+    // e-mail address may not be.
+    const currentUser = await ReactiveCache.getCurrentUser();
+    if (!currentUser?.isAdmin) {
+      const own = !!this.userId && this.userId === userId;
+      const allowed = async key => !!(await AccountSettings.findOneAsync(key))?.booleanValue;
+      if (!own || !(await allowed('accounts-allowUserNameChange'))
+        || !(await allowed('accounts-allowEmailChange'))) {
+        throw new Meteor.Error('not-authorized');
       }
-      await Meteor.callAsync('setUsername', username, userId);
-      await Meteor.callAsync('setEmail', email, userId);
     }
+    await Meteor.callAsync('setUsername', username, userId);
+    await Meteor.callAsync('setEmail', email, userId);
   },
 
   async setPassword(newPassword, userId) {
@@ -2282,7 +2315,11 @@ Accounts.onCreateUser(async (options, user) => {
   if (!options || !options.profile) {
     throw new Meteor.Error('error-invitation-code-blank', 'The invitation code is required');
   }
-  const invitationCode = await ReactiveCache.getInvitationCode({
+  // InviteBleed: a six-digit code from before v9.96 can be guessed, so it is
+  // not looked up at all - the invitee is invited again and gets a strong one.
+  const { isStrongInvitationCode } = require('/models/lib/invitationCodeEmail');
+  const strongCode = isStrongInvitationCode(options.profile.invitationcode);
+  const invitationCode = strongCode && await ReactiveCache.getInvitationCode({
     code: options.profile.invitationcode,
     email: options.email,
     valid: true,
@@ -2572,7 +2609,8 @@ Users.after.insert(async (userId, doc) => {
         email: typeof oauthEmail === 'string' ? oauthEmail.toLowerCase() : '',
         valid: true,
       });
-    } else {
+    } else if (require('/models/lib/invitationCodeEmail').isStrongInvitationCode(doc.profile && doc.profile.icode)) {
+      // InviteBleed: only a strong code, as at onCreateUser above.
       invitationCode = await ReactiveCache.getInvitationCode({
         code: doc.profile.icode,
         valid: true,

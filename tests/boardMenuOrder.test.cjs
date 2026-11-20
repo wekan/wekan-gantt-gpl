@@ -47,7 +47,7 @@ const menu = jade.slice(menuAt, jade.indexOf('\ntemplate(', menuAt + 1));
 
 // Only the LIVE lines of the template: a jade `//` or `//-` comment and
 // everything indented under it is dropped, so the commented-out entries
-// (delete-duplicate-lists, board-info-on-my-boards) and the prose comments
+// (delete-duplicate-lists) and the prose comments
 // that explain where an entry went cannot register as entries.
 function liveLines(src) {
   const out = [];
@@ -93,6 +93,8 @@ const EXPECTED = [
   'js-open-board-announcement',
   'js-change-background-image',
   'js-open-board-date-settings',
+  // All Boards Settings, back from behind the #4214 comment (2026-11-20).
+  'js-board-info-on-my-boards',
   'hr',
   'js-open-board-view-settings',
   'js-open-board-swimlane-settings',
@@ -110,6 +112,11 @@ const EXPECTED = [
   // Settings / Visibility / Features tick (docs/Features/General/Assistants).
   'js-open-board-summary',
   'js-open-since-last-visit',
+  // The Scrum meeting helpers (models/lib/scrumMeetings.js, 2026-11-20): for
+  // every member, like the two above, each behind its Admin Panel feature and
+  // the board's Scrum setting.
+  'js-open-daily-standup',
+  'js-create-retrospective-board',
   // #6792: the board, copied into the user's Templates as a board template.
   'js-save-board-as-template',
   'js-archive-board',
@@ -156,6 +163,7 @@ test('the reorder kept every guard (negative: nothing became visible to more peo
   assert.deepStrictEqual(guardsOf('js-open-board-view-settings'), ['if currentUser', admin]);
   assert.deepStrictEqual(guardsOf('js-open-board-swimlane-settings'), ['if currentUser', admin]);
   assert.deepStrictEqual(guardsOf('js-open-board-date-settings'), [admin]);
+  assert.deepStrictEqual(guardsOf('js-board-info-on-my-boards'), [admin]);
   assert.deepStrictEqual(guardsOf('js-open-board-list-settings'), ['if currentUser', admin]);
   assert.deepStrictEqual(guardsOf('js-open-board-scrum-settings'), [admin]);
   assert.deepStrictEqual(guardsOf('js-open-board-card-settings'), ['if currentUser'],

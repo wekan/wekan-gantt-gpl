@@ -13,7 +13,8 @@ const TEXT_TYPES = { markdown: 'text/markdown', leo: 'application/xml', todotxt:
   taskwarrior: 'application/json', focalboard: 'application/x-ndjson', todoist: 'text/csv', meistertask: 'text/csv',
   obsidian: 'text/markdown', linear: 'text/csv', ticktick: 'text/csv', clickup: 'text/csv', nullboard: 'application/json',
   pivotal: 'text/csv', redmine: 'text/csv', notion: 'text/csv', superproductivity: 'application/json', quire: 'text/csv',
-  opml: 'text/x-opml', orgmode: 'text/x-org' };
+  opml: 'text/x-opml', orgmode: 'text/x-org',
+  mbox: 'application/mbox', enex: 'application/enex+xml', mattermost: 'application/x-ndjson' };
 // The tools whose import file is an Excel workbook, and the function writing
 // it. Each require names its module literally: the bundler (rspack) resolves
 // only a literal path, and the [path, name] pairs this used to hold were
@@ -47,4 +48,425 @@ async function renderExternalExport(boardId, format, fields) {
   return { json: built };
 }
 
-module.exports = { renderExternalExport };
+// The text formats that are a sequence of independent parts, written to the
+// response a page of cards at a time instead of built whole: an .mbox is one
+// message after another, an .enex a head, notes and a tail.
+const STREAMED = {
+  mbox: () => {
+    const { formatMbox } = require('/models/lib/mailFormat');
+    let first = true;
+    return { head: '', page: collected => {
+      const text = formatMbox(collected);
+      const out = first || !text ? text : `\n${text}`;
+      first = false;
+      return out;
+    }, tail: '' };
+  },
+  enex: () => {
+    const { enexHead, enexNotes, ENEX_TAIL } = require('/models/lib/enexFormat');
+    return { head: enexHead(), page: collected => enexNotes(collected.items), tail: ENEX_TAIL };
+  },
+};
+
+// The formats whose rows refer to other cards - a parent's number, columns
+// counted over the board, the order of the lists - written a page at a time
+// with the board's light references (models/lib/exportPaging.js): the
+// formatter writes the head on the first page and the tail on the last.
+// byList: its cards are written list by list (Todoist's sections).
+// byList: 'lists': the outlines, list by list in the board's order, each
+// list's heading opened before its first card and closed after its last.
+const PAGED = {
+  todotxt: {}, taskwarrior: {}, meistertask: {}, linear: {}, ticktick: {}, clickup: {},
+  pivotal: {}, redmine: {}, quire: {}, todoist: { byList: true }, notion: {},
+  // NDJSON: the head named over the whole board on the first page, each
+  // card's records after it.
+  focalboard: {}, mattermost: {},
+  markdown: { byList: 'lists' }, opml: { byList: 'lists' }, orgmode: { byList: 'lists' }, obsidian: { byList: 'lists' },
+  // Leo: its outline from the light first pass on the first page, each page's
+  // card texts after it.
+  leo: { byList: 'lists' },
+};
+
+// The formats that are one JSON document whose cards are one array: `path`
+// names the array (empty: the document is the array). The first page writes
+// the document around it, with the array left open; every page then writes
+// its own cards into it. Each part passes the export boundary and the
+// admin-only field redaction as the whole document does (sendJsonResult).
+const JSON_PAGED = {
+  // Trello: the cards, their checklists and their comments (commentCard
+  // actions), each array a pass of its own.
+  trello: { paths: [['cards'], ['checklists'], ['actions']] },
+  jira: { path: ['issues'] },
+  asana: { path: ['data'] },
+  zenkit: { path: ['items'] },
+  openproject: { path: ['_embedded', 'elements'] },
+  github: { path: [] }, gitea: { path: [] }, forgejo: { path: [] }, gitlab: { path: [] },
+  // Nested: the cards are in their lists' `cards` (Deck's stacks, Kanri's
+  // columns). The pages come list by list; the lists are the document's own,
+  // the same on every page (the formatter makes them from the board's lists
+  // and its light first pass), each written around its cards.
+  deck: { path: ['stacks'], nested: 'cards', byList: 'listIds' },
+  kanri: { path: ['columns'], nested: 'cards', byList: 'listIds' },
+  // Nullboard's formatter writes its JSON as text; its lists of cards whose
+  // list is not exported are named by that list's title.
+  nullboard: { path: ['lists'], nested: 'notes', byList: 'listIdsThenTitles', text: true },
+  // Super Productivity's backup: made over the whole board on every page, its
+  // task entities (by id) the page's own (models/lib/superProductivityFormat.js).
+  superproductivity: { paths: [{ path: ['data', 'task', 'entities'], object: true }], text: true },
+  // Taiga's project: made over the whole board on every page, its epics,
+  // stories, tasks and issues a page's own (models/lib/taigaFormat.js).
+  taiga: { paths: [['epics'], ['user_stories'], ['tasks'], ['issues']] },
+};
+const ARRAY_PLACE = '__wekan_paged_array__';
+
+// A JSON document with several card arrays (`paths`, e.g. Trello's cards,
+// checklists and comment actions): the document around them is made on the
+// first page, and each array is written by a pass of its own over the pages,
+// in the order the arrays stand in the document. Every part passes safe().
+// `paths` may be a function of the document around the arrays (Vikunja: three
+// arrays in each of its projects); `transform` makes the written document of
+// the formatter's (Vikunja's archive HTML).
+async function streamJsonArrays(res, boardId, format, fields, paths = JSON_PAGED[format].paths, transform = doc => doc) {
+  const { externalExportPages, formatters } = require('/models/lib/externalExporters');
+  const { secureTransfer } = require('/server/lib/secureTransfer');
+  const { containsFields } = require('/models/lib/adminOnlyCustomFields');
+  const context = { direction: 'export', source: `export:${format}` };
+  const userId = res.req && res.req.userId;
+  // A transform that makes its document from text it has checked itself
+  // (`transform.checked`: Vikunja's HTML is made after the boundary, as the
+  // whole export's is) is not checked again; every other part is here.
+  const safe = transform.checked ? async value => value : async value => {
+    const checked = secureTransfer(value, context);
+    return containsFields(checked) ? require('/server/lib/adminOnlyCustomFields').redactFields(checked, userId) : checked;
+  };
+  const write = async text => {
+    if (!res.write(text)) await new Promise(resolve => res.once('drain', resolve));
+  };
+  const at = (doc, path) => path.reduce((node, key) => (node ? node[key] : undefined), doc) || [];
+  const pages = () => externalExportPages(boardId, format, fields, 500, { paged: true });
+  // The document around the arrays, from the first page with no cards.
+  let skeleton = null;
+  for await (const collected of pages()) {
+    skeleton = JSON.parse(JSON.stringify(transform(formatters[format]({ ...collected, items: [] }))));
+    break;
+  }
+  if (typeof paths === 'function') paths = paths(skeleton);
+  // A path is an array of cards, or { path, object: true }: an object whose
+  // entries are the cards (Super Productivity's task entities by id).
+  const specs = paths.map(entry => (Array.isArray(entry) ? { path: entry, object: false } : entry));
+  paths = specs.map(entry => entry.path);
+  const places = paths.map((path, i) => {
+    let node = skeleton;
+    path.slice(0, -1).forEach(key => { node = node[key]; });
+    const mark = `${ARRAY_PLACE}${i}`;
+    node[path[path.length - 1]] = mark;
+    return JSON.stringify(mark);
+  });
+  const text = JSON.stringify(await safe(skeleton));
+  const order = paths.map((path, i) => i).sort((a, b) => text.indexOf(places[a]) - text.indexOf(places[b]));
+  res.statusCode = 200;
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Content-Type', 'application/json');
+  let from = 0;
+  for (const i of order) {
+    const where = text.indexOf(places[i]);
+    const object = specs[i].object;
+    await write(`${text.slice(from, where)}${object ? '{' : '['}`);
+    let count = 0;
+    for await (const collected of pages()) {
+      const container = at(transform(formatters[format](collected)), paths[i]);
+      if (object) {
+        for (const [key, element] of Object.entries(container || {})) {
+          // The entry as a whole passes safe(), its key with its value.
+          // eslint-disable-next-line no-await-in-loop
+          const [[checkedKey, checkedValue]] = Object.entries(await safe({ [key]: element }));
+          await write(`${count ? ',' : ''}${JSON.stringify(checkedKey)}:${JSON.stringify(checkedValue)}`);
+          count += 1;
+        }
+        continue;
+      }
+      for (const element of container) {
+        // eslint-disable-next-line no-await-in-loop
+        await write(`${count ? ',' : ''}${JSON.stringify(await safe(element))}`);
+        count += 1;
+      }
+    }
+    await write(object ? '}' : ']');
+    from = where + places[i].length;
+  }
+  res.end(text.slice(from));
+  return true;
+}
+
+async function streamJsonExport(res, boardId, format, fields) {
+  if (JSON_PAGED[format].paths) {
+    // A formatter that writes its JSON as text (Super Productivity) is read as JSON.
+    const transform = JSON_PAGED[format].text ? doc => JSON.parse(doc) : undefined;
+    return streamJsonArrays(res, boardId, format, fields, JSON_PAGED[format].paths, transform);
+  }
+  const { path, nested, byList, text: asText } = JSON_PAGED[format];
+  const formatted = collected => {
+    const out = formatters[format](collected);
+    return asText ? JSON.parse(out) : out;
+  };
+  const { externalExportPages, formatters } = require('/models/lib/externalExporters');
+  const { secureTransfer } = require('/server/lib/secureTransfer');
+  const { containsFields } = require('/models/lib/adminOnlyCustomFields');
+  const context = { direction: 'export', source: `export:${format}` };
+  const userId = res.req && res.req.userId;
+  const safe = async value => {
+    const checked = secureTransfer(value, context);
+    return containsFields(checked) ? require('/server/lib/adminOnlyCustomFields').redactFields(checked, userId) : checked;
+  };
+  const write = async text => {
+    if (!res.write(text)) await new Promise(resolve => res.once('drain', resolve));
+  };
+  const place = JSON.stringify(ARRAY_PLACE);
+  // A JSON text split around its placeholder.
+  const around = async value => {
+    const text = JSON.stringify(await safe(value));
+    const at = text.indexOf(place);
+    return [text.slice(0, at), text.slice(at + place.length)];
+  };
+  let tail = null;
+  let count = 0;
+  // Nested: each list written around its cards, opened when its first card
+  // comes (or the next list's does) and closed after it.
+  let shells = null;
+  let open = -1;
+  const openUpTo = async index => {
+    while (open < index) {
+      if (open >= 0) await write(`]${shells[open][1]}`);
+      open += 1;
+      await write(`${open ? ',' : ''}${shells[open][0]}[`);
+      count = 0;
+    }
+  };
+  for await (const collected of externalExportPages(boardId, format, fields, 500, { paged: true, ...(byList ? { byList } : {}) })) {
+    const doc = formatted(collected);
+    if (nested) {
+      const lists = path.reduce((node, key) => (node ? node[key] : undefined), doc) || [];
+      if (tail === null) {
+        const empty = formatted({ ...collected, items: [] });
+        const shellLists = path.reduce((node, key) => (node ? node[key] : undefined), empty) || [];
+        shells = [];
+        for (const list of shellLists) {
+          // eslint-disable-next-line no-await-in-loop
+          shells.push(await around({ ...JSON.parse(JSON.stringify(list)), [nested]: ARRAY_PLACE }));
+        }
+        const skeleton = JSON.parse(JSON.stringify(empty));
+        let node = skeleton;
+        path.slice(0, -1).forEach(key => { node = node[key]; });
+        node[path[path.length - 1]] = ARRAY_PLACE;
+        const [head, rest] = await around(skeleton);
+        tail = rest;
+        res.statusCode = 200;
+        res.setHeader('Cache-Control', 'no-store');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Content-Type', 'application/json');
+        await write(`${head}[`);
+      }
+      for (const [index, list] of lists.entries()) {
+        const cards = list[nested] || [];
+        if (!cards.length) continue;
+        // eslint-disable-next-line no-await-in-loop
+        await openUpTo(index);
+        for (const card of cards) {
+          // eslint-disable-next-line no-await-in-loop
+          await write(`${count ? ',' : ''}${JSON.stringify(await safe(card))}`);
+          count += 1;
+        }
+      }
+      continue;
+    }
+    const cards = path.reduce((node, key) => (node ? node[key] : undefined), doc) || [];
+    if (tail === null) {
+      let skeleton = ARRAY_PLACE;
+      if (path.length) {
+        skeleton = JSON.parse(JSON.stringify(doc));
+        let node = skeleton;
+        path.slice(0, -1).forEach(key => { node = node[key]; });
+        node[path[path.length - 1]] = ARRAY_PLACE;
+      }
+      const text = JSON.stringify(await safe(skeleton));
+      const at = text.indexOf(JSON.stringify(ARRAY_PLACE));
+      tail = text.slice(at + JSON.stringify(ARRAY_PLACE).length);
+      res.statusCode = 200;
+      res.setHeader('Cache-Control', 'no-store');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Content-Type', 'application/json');
+      await write(`${text.slice(0, at)}[`);
+    }
+    for (const card of cards) {
+      // eslint-disable-next-line no-await-in-loop
+      await write(`${count ? ',' : ''}${JSON.stringify(await safe(card))}`);
+      count += 1;
+    }
+  }
+  if (nested) {
+    await openUpTo(shells.length - 1);
+    res.end(`${shells.length ? `]${shells[shells.length - 1][1]}` : ''}]${tail}${asText ? '\n' : ''}`);
+    return true;
+  }
+  res.end(`]${tail}`);
+  return true;
+}
+
+// The workbooks written a page of cards at a time: the order the pages come
+// in (planned over the whole board's light first pass) and the streaming
+// writer of the format's rows.
+const STREAMED_WORKBOOKS = {
+  teamwork: {
+    order: () => require('/models/lib/teamworkFormat').teamworkPageOrder,
+    write: () => require('/server/lib/teamworkWorkbook').streamTeamworkWorkbook,
+  },
+  // monday.com: one sheet, its custom field columns counted over the board.
+  monday: {
+    order: () => null,
+    write: () => require('/server/lib/mondayWorkbook').streamMondayWorkbook,
+  },
+  // Wrike: the Default lane's cards, then each lane's folder row and cards,
+  // planned over the whole board.
+  wrike: {
+    order: () => require('/models/lib/wrikeFormat').wrikePageOrder,
+    write: () => require('/server/lib/wrikeWorkbook').streamWrikeWorkbook,
+  },
+  // Businessmap: one sheet, its columns found over the whole board.
+  businessmap: {
+    order: () => null,
+    write: () => require('/server/lib/businessmapWorkbook').streamBusinessmapWorkbook,
+  },
+  // Planner's rows stand on their own: the cards in board order.
+  planner: {
+    order: () => null,
+    write: () => require('/server/lib/plannerWorkbook').streamPlannerWorkbook,
+  },
+};
+
+async function streamWorkbookExport(res, boardId, format, fields) {
+  const { externalExportPages, formatters } = require('/models/lib/externalExporters');
+  const spec = STREAMED_WORKBOOKS[format];
+  const { secureTransfer } = require('/server/lib/secureTransfer');
+  const context = { direction: 'export', source: `export:${format}` };
+  res.writeHead(200, { 'Content-Type': XLSX });
+  // Each page's rows pass the export boundary, as the whole workbook's do
+  // (buildExternalExport).
+  async function* pages() {
+    for await (const collected of externalExportPages(boardId, format, fields, 500, { paged: true, ...(spec.order() ? { order: spec.order() } : {}) })) {
+      yield secureTransfer(formatters[format](collected), context);
+    }
+  }
+  await spec.write()(res, pages());
+  return true;
+}
+
+// The Trello .zip: board.json - the Trello document, written by
+// streamJsonArrays a page at a time - and each exported card's attachments as
+// the files they are, attachments/<id>_<name>, piped from the file store as
+// WeKan's own .zip export does (models/server/ExporterZip.js). The Trello
+// .zip import reads it back with the files.
+// Vikunja's export .zip: data.json - its projects, each with its tasks,
+// task buckets and positions, every array a pass over the pages
+// (streamJsonArrays) - filters.json and VERSION. Every page has the same
+// projects (models/lib/vikunjaFormat.js formatVikunja), and its tasks are
+// written as the archive does (vikunjaArchiveData).
+async function streamVikunjaZip(res, boardId, fields) {
+  const { PassThrough } = require('stream');
+  const { ZipArchive } = require('archiver');
+  const { vikunjaArchiveData, VIKUNJA_EXPORT_VERSION } = require('/models/lib/vikunjaFormat');
+  const archive = new ZipArchive({ zlib: { level: 6 } });
+  res.writeHead(200, { 'Content-Type': 'application/zip', 'Content-Disposition': 'attachment; filename="vikunja.zip"' });
+  let failed = null;
+  archive.on('error', err => { failed = err; });
+  archive.pipe(res);
+  const json = new PassThrough();
+  archive.append(json, { name: 'data.json' });
+  const into = {
+    req: res.req, statusCode: 200, setHeader() {},
+    write: text => json.write(text), once: (event, fn) => json.once(event, fn), end: text => json.end(text),
+  };
+  const ARRAYS = ['tasks', 'task_buckets', 'positions'];
+  // The formatter's document passes the export boundary first; the HTML is
+  // made from what it let through, as the whole export's is.
+  const { secureTransfer } = require('/server/lib/secureTransfer');
+  const context = { direction: 'export', source: 'export:vikunja' };
+  const archiveData = doc => vikunjaArchiveData(secureTransfer(doc, context));
+  archiveData.checked = true;
+  await streamJsonArrays(into, boardId, 'vikunja', fields,
+    skeleton => skeleton.flatMap((project, p) => ARRAYS.map(key => [p, key])), archiveData);
+  archive.append('[]', { name: 'filters.json' });
+  // Vikunja parses this file as it is: no trailing newline.
+  archive.append(String(VIKUNJA_EXPORT_VERSION).trim(), { name: 'VERSION' });
+  await archive.finalize();
+  if (failed) throw failed;
+  return true;
+}
+
+async function streamTrelloZip(res, boardId, fields) {
+  const { PassThrough } = require('stream');
+  const { ZipArchive } = require('archiver');
+  const { ReactiveCache } = require('/imports/reactiveCache');
+  const { trelloZipFileName } = require('/models/lib/externalExportFormatters');
+  const { fileStoreStrategyFactory } = require('/models/attachments.server');
+  const archive = new ZipArchive({ zlib: { level: 6 } });
+  res.writeHead(200, { 'Content-Type': 'application/zip', 'Content-Disposition': 'attachment; filename="trello.zip"' });
+  let failed = null;
+  archive.on('error', err => { failed = err; });
+  archive.on('warning', err => { console.warn('Trello .zip export:', err && err.message); });
+  archive.pipe(res);
+  const json = new PassThrough();
+  archive.append(json, { name: 'board.json' });
+  // streamJsonArrays writes to a response; here, into the archive's entry.
+  const into = {
+    req: res.req,
+    statusCode: 200,
+    setHeader() {},
+    write: text => json.write(text),
+    once: (event, fn) => json.once(event, fn),
+    end: text => json.end(text),
+  };
+  await streamJsonArrays(into, boardId, 'trellozip', fields, JSON_PAGED.trello.paths);
+  const { notDeleted } = require('/models/lib/softDelete');
+  const cardIds = (await ReactiveCache.getCards({ boardId, ...notDeleted({}) }, { fields: { _id: 1 } })).map(card => card._id);
+  const wantsFiles = !fields || !fields.length || fields.includes('attachments');
+  const files = wantsFiles && cardIds.length
+    ? await ReactiveCache.getAttachments(require('/models/lib/attachmentSoftDelete').liveAttachments({ 'meta.cardId': { $in: cardIds } }))
+    : [];
+  for (const attachment of files) {
+    try {
+      const strategy = fileStoreStrategyFactory.getFileStrategy(attachment, 'original');
+      const stream = strategy && strategy.getReadStream();
+      if (stream) archive.append(stream, { name: `attachments/${attachment._id}_${trelloZipFileName({ id: attachment._id, name: attachment.name })}` });
+    } catch (error) {
+      console.warn(`Trello .zip export: could not add attachment ${attachment._id}: ${error.message}`);
+    }
+  }
+  await archive.finalize();
+  if (failed) throw failed;
+  return true;
+}
+
+// Writes the export to `res` page by page, or answers false when the format
+// is not one that streams.
+async function streamExternalExport(res, boardId, format, fields) {
+  if (format === 'trellozip') return streamTrelloZip(res, boardId, fields);
+  if (format === 'vikunja') return streamVikunjaZip(res, boardId, fields);
+  if (STREAMED_WORKBOOKS[format]) return streamWorkbookExport(res, boardId, format, fields);
+  if (JSON_PAGED[format]) return streamJsonExport(res, boardId, format, fields);
+  if (!STREAMED[format] && !PAGED[format]) return false;
+  const { externalExportPages, formatters } = require('/models/lib/externalExporters');
+  const parts = STREAMED[format] ? STREAMED[format]() : { head: '', page: collected => formatters[format](collected), tail: '' };
+  const options = PAGED[format] ? { paged: true, ...PAGED[format] } : {};
+  res.writeHead(200, { 'Content-Type': `${TEXT_TYPES[format]}; charset=utf-8` });
+  if (parts.head) res.write(parts.head);
+  for await (const collected of externalExportPages(boardId, format, fields, 500, options)) {
+    const text = parts.page(collected);
+    // Wait for the socket when it is full, so the pages do not pile up in memory.
+    if (text && !res.write(text)) await new Promise(resolve => res.once('drain', resolve));
+  }
+  res.end(parts.tail);
+  return true;
+}
+
+module.exports = { renderExternalExport, streamExternalExport, STREAMED, PAGED, JSON_PAGED, STREAMED_WORKBOOKS };

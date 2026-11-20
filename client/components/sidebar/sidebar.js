@@ -547,6 +547,17 @@ function openRulesViewFromBoardMenu(mode) {
 }
 
 Template.boardMenuPopup.events({
+  'click .js-open-daily-standup': Popup.open('dailyStandup'),
+  async 'click .js-create-retrospective-board'() {
+    const board = Utils.getCurrentBoard();
+    if (!board) return;
+    Popup.close();
+    try {
+      await require('/client/components/sidebar/scrumMeetings').createRetrospectiveBoard(board);
+    } catch (error) {
+      window.alert((error && (error.reason || error.error)) || String(error));
+    }
+  },
   'click .js-open-rules-list-view'(event) { event.preventDefault(); openRulesViewFromBoardMenu('list'); },
   'click .js-open-rules-workflow-view'(event) { event.preventDefault(); openRulesViewFromBoardMenu('workflow'); },
   'click .js-open-rules-bots-view'(event) { event.preventDefault(); openRulesViewFromBoardMenu('bots'); },
@@ -780,8 +791,13 @@ Template.boardViewSettingsPopup.helpers({
   boardViewRows() {
     const board = Utils.getCurrentBoard();
     // #6736: views the instance disabled are not rows; their board settings stay.
-    const ordered = boardViewSettings.orderedBoardViews(board).filter(v => allowBoardView(v.view));
-    return ordered.map(v => ({
+    // Grouped as the Board View menu is (BOARD_VIEW_GROUPS): a heading over
+    // each group, the board's order inside it.
+    const ordered = boardViewSettings.groupedBoardViews(
+      boardViewSettings.orderedBoardViews(board).filter(v => allowBoardView(v.view)));
+    const headingOf = group => (boardViewSettings.BOARD_VIEW_GROUPS.find(g => g.group === group) || {}).labelKey;
+    return ordered.map((v, i) => ({
+      groupLabelKey: i === 0 || ordered[i - 1].group !== v.group ? headingOf(v.group) : null,
       view: v.view,
       labelKey: v.labelKey,
       icon: `fa ${v.icon}`,
@@ -993,6 +1009,11 @@ Template.wipLimitGroupsPopup.events({
 });
 
 Template.boardMenuPopup.helpers({
+  // The Scrum meeting helpers (scrumMeetings.js).
+  showsStandupTimer() { return require('/client/components/sidebar/scrumMeetings').showsStandupTimer(Utils.getCurrentBoard()); },
+  showsRetrospectiveBoard() {
+    return require('/client/components/sidebar/scrumMeetings').showsRetrospectiveBoard(Utils.getCurrentBoard());
+  },
   sinceVisitCount() {
     return Template.instance().sinceVisitCount.get();
   },

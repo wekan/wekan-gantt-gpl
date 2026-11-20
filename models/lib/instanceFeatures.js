@@ -46,7 +46,21 @@ const FEATURES = [
       'board-view-cycle-time', 'board-view-flow-efficiency', 'board-view-lead-time',
       'board-view-throughput-histogram', 'board-view-wip-run', 'board-view-pulse', 'board-view-aging-wip',
       'board-view-blocker-analysis', 'board-view-monte-carlo', 'board-view-process-behavior',
-      'board-view-size-cycle-time'] },
+      'board-view-size-cycle-time',
+      // The reports of 2026-11-20 (models/lib/boardReports.js).
+      'board-view-created-resolved',
+      'board-view-net-flow',
+      'board-view-time-in-list',
+      'board-view-average-age',
+      'board-view-throughput-run',
+      'board-view-due-date-performance',
+      'board-view-release-burndown',
+      'board-view-epic-progress',
+      'board-view-workload',
+      'board-view-distribution',
+      'board-view-dependency-map',
+      'board-view-activity-heatmap',
+    ] },
   { key: 'views-map', labelKey: 'feature-views-map', descKey: 'feature-views-map-desc',
     views: ['board-view-map'] },
   { key: 'views-email', labelKey: 'feature-views-email', descKey: 'feature-views-email-desc',
@@ -68,6 +82,22 @@ const FEATURES = [
   { key: 'since-last-visit', labelKey: 'feature-since-last-visit', descKey: 'feature-since-last-visit-desc',
     views: [] },
   { key: 'search-phrases', labelKey: 'feature-search-phrases', descKey: 'feature-search-phrases-desc',
+    views: [] },
+  // The Kanban flow policies of the lists (models/lib/boardFlowPolicies.js):
+  // each also turned on per board in Board Settings / List.
+  { key: 'list-policies', labelKey: 'feature-list-policies', descKey: 'feature-list-policies-desc',
+    views: [] },
+  { key: 'commitment-point', labelKey: 'feature-commitment-point', descKey: 'feature-commitment-point-desc',
+    views: [] },
+  { key: 'person-wip-limit', labelKey: 'feature-person-wip-limit', descKey: 'feature-person-wip-limit-desc',
+    views: [] },
+  { key: 'split-lists', labelKey: 'feature-split-lists', descKey: 'feature-split-lists-desc',
+    views: [] },
+  // The Scrum meeting helpers (models/lib/scrumMeetings.js): each also turned
+  // off per board in its Scrum settings.
+  { key: 'standup-timer', labelKey: 'feature-standup-timer', descKey: 'feature-standup-timer-desc',
+    views: [] },
+  { key: 'retrospective-board', labelKey: 'feature-retrospective-board', descKey: 'feature-retrospective-board-desc',
     views: [] },
 ];
 

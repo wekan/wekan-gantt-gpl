@@ -452,6 +452,16 @@ Template.listHeader.events({
 });
 
 Template.listActionPopup.helpers({
+  showsSplitLists() {
+    const board = ReactiveCache.getBoard(this.boardId);
+    return board?.allowsSplitLists === true
+      && require('/client/lib/instanceFeatures').allowFeature('split-lists');
+  },
+  showsListPolicies() {
+    const board = ReactiveCache.getBoard(this.boardId);
+    return board?.allowsListPolicies === true
+      && require('/client/lib/instanceFeatures').allowFeature('list-policies');
+  },
   isBoardAdmin() {
     return ReactiveCache.getCurrentUser()?.isBoardAdmin();
   },
@@ -611,6 +621,11 @@ Template.listActionPopup.events({
     Popup.back();
   },
   'click .js-set-wip-limit': Popup.open('setWipLimit'),
+  'click .js-list-policy': Popup.open('listPolicy'),
+  async 'click .js-toggle-list-split'(event) {
+    event.preventDefault();
+    await Lists.updateAsync(this._id, this.split === true ? { $unset: { split: '' } } : { $set: { split: true } });
+  },
   'click .js-list-permissions': Popup.open('listPermissions'),
   'click .js-copy-list': Popup.open('copyList'),
   'click .js-move-list': Popup.open('moveList'),

@@ -5,8 +5,12 @@ const { jiraScrumMetadataExport } = require('./jiraScrumMetadata');
 const { jiraEstimateExportMapping, jiraEstimateExportValue } = require('./jiraEstimateMapping');
 const { buildCustomFieldsWD } = require('./customFieldsWD');
 const { notDeleted } = require('./softDelete');
+// Formats that export the archived cards and lists as well (collect below).
+const ARCHIVED_FORMATS = new Set(['trello', 'trellozip']);
+// Formats that list each card's attachments (the Trello .zip carries the files).
+const ATTACHMENT_FORMATS = new Set(['trellozip']);
 
-export { EXTERNAL_EXPORT_FORMATS };
+export { EXTERNAL_EXPORT_FORMATS, formatters };
 
 // Generalized export: collect a WeKan board into a neutral intermediate, then a
 // per-format formatter (externalExportFormatters.js) emits the target
@@ -59,11 +63,21 @@ async function moveCompletionRules(boardId) {
   return out;
 }
 
-async function collect(boardId, fields, format) {
+// pageCardIds: only these cards (one page of a streamed export), else all.
+// (Not `cardIds`: the body declares a const of that name, and a parameter of
+// the same name is a SyntaxError the server died of on 2026-11-20.)
+// light: the board's references for a paged export (models/lib/exportPaging.js
+// `all`) - no description and no comment text, each comment only counted.
+async function collect(boardId, fields, format, pageCardIds, light) {
   const board = await ReactiveCache.getBoard(boardId);
-  const lists = await ReactiveCache.getLists({ boardId, archived: false }, { sort: { sort: 1 } });
+  // The formats whose own exports carry the archived cards and lists too
+  // (Trello's closed ones); every other format, the open ones. Never a
+  // deleted one.
+  const open = ARCHIVED_FORMATS.has(format) ? notDeleted({}) : { archived: false };
+  const lists = await ReactiveCache.getLists({ boardId, ...open }, { sort: { sort: 1 } });
   const swimlanes = await ReactiveCache.getSwimlanes({ boardId, archived: false }, { sort: { sort: 1 } });
-  const cards = await ReactiveCache.getCards({ boardId, archived: false }, { sort: { sort: 1 } });
+  const cards = await ReactiveCache.getCards({ boardId, ...open, ...(Array.isArray(pageCardIds) ? { _id: { $in: pageCardIds } } : {}) },
+    { sort: { sort: 1 } });
   const listById = {};
   const listRecords = new Map(lists.map(list => [list._id, list]));
   lists.forEach(l => { listById[l._id] = l.title; });
@@ -91,9 +105,13 @@ async function collect(boardId, fields, format) {
   // assertFieldExport has let this caller read every value on the board.
   const cardIds = cards.map(c => c._id);
   const comments = want('comments') && cardIds.length
-    ? await ReactiveCache.getCardComments(notDeleted({ cardId: { $in: cardIds } }), { sort: { createdAt: 1 } }) : [];
+    ? await ReactiveCache.getCardComments(notDeleted({ cardId: { $in: cardIds } }),
+      { sort: { createdAt: 1 }, ...(light ? { fields: { cardId: 1, userId: 1, createdAt: 1 } } : {}) }) : [];
   const checklists = want('checklists') && cardIds.length
     ? await ReactiveCache.getChecklists(notDeleted({ cardId: { $in: cardIds } }), { sort: { sort: 1 } }) : [];
+  const attachments = ATTACHMENT_FORMATS.has(format) && want('attachments') && cardIds.length
+    ? await ReactiveCache.getAttachments(require('./attachmentSoftDelete').liveAttachments({ 'meta.cardId': { $in: cardIds } }),
+      { fields: { _id: 1, name: 1, size: 1, type: 1, 'meta.cardId': 1 } }) : [];
   const checklistItems = checklists.length
     ? await ReactiveCache.getChecklistItems(notDeleted({ checklistId: { $in: checklists.map(c => c._id) } }), { sort: { sort: 1 } }) : [];
   const definitions = want('custom-fields')
@@ -108,7 +126,7 @@ async function collect(boardId, fields, format) {
   // Admin Panel / Anonymize export users, for every external format: the names
   // and the cards' and comments' text (CrossBoardExportBleed - only the JSON
   // export anonymized).
-  await require('./importExportSecurity').anonymizeExportIdentities({ boardId, users, cards, comments });
+  const anonymized = await require('./importExportSecurity').anonymizeExportIdentities({ boardId, users, cards, comments });
   const username = id => (users.find(u => u._id === id) || {}).username;
 
   const items = cards.map(c => {
@@ -131,9 +149,12 @@ async function collect(boardId, fields, format) {
         // One release in these formats: the card's first (models/lib/scrum.js).
         firstReleaseId: require('./scrum').cardReleaseIds(c.scrum)[0] || undefined, backlogRank: c.scrum.backlogRank ?? undefined } } : {}),
       cardId: c._id,
+      ...(c.archived ? { archived: true } : {}),
+      ...(attachments.length ? { attachments: attachments.filter(att => att.meta && att.meta.cardId === c._id)
+        .map(att => ({ id: att._id, name: att.name, size: att.size, type: att.type })) } : {}),
       listId: c.listId,
       title: c.title,
-      description: c.description || '',
+      description: light ? '' : c.description || '',
       listTitle: listById[c.listId] || '',
       swimlaneTitle: swById[c.swimlaneId] || 'Default',
       dueAt: iso(c.dueAt),
@@ -153,8 +174,18 @@ async function collect(boardId, fields, format) {
       // Hours spent, for formats with a place for tracked time (Super Productivity).
       ...(want('dates') && Number(c.spentTime) > 0 ? { spentTime: Number(c.spentTime) } : {}),
       ...(comments.length ? { comments: comments.filter(cm => cm.cardId === c._id)
-        .map(cm => ({ text: cm.text, author: username(cm.userId), date: iso(cm.createdAt) })) } : {}),
+        // A light comment is only counted; its text is read with its page.
+        .map(cm => ({ text: light ? '\u00b7' : cm.text, author: username(cm.userId), date: iso(cm.createdAt) })) } : {}),
       ...(cardChecklists.length ? { checklists: cardChecklists } : {}),
+      // A card that came from mail keeps its sender, recipients and
+      // Message-ID in an .mbox - not when Admin Panel anonymizes the export,
+      // since they name people.
+      ...(format === 'mbox' && !anonymized && want('people') && c.email && c.email.from ? { email: {
+        from: { name: c.email.from.name || '', address: c.email.from.address || '' },
+        to: Array.isArray(c.email.to) ? c.email.to : [],
+        // Without brackets: the export boundary reads "<id@host>" as a tag.
+        messageId: String(c.email.messageId || '').replace(/^<|>$/g, ''), at: iso(c.email.at),
+      } } : {}),
       ...(Object.keys(customFields).length ? { customFields } : {}),
     };
   });
@@ -162,6 +193,59 @@ async function collect(boardId, fields, format) {
     ...(planning ? { scrumSprints: planning.sprints, scrumReleases: planning.releases } : {}),
     ...(workflowRules ? { workflowRules } : {}),
     items: items.map(item => gateItem(item, wanted)) };
+}
+
+// A text export a page of cards at a time (server/lib/renderExternalExport.js
+// streams the formats that are a sequence of independent parts): the board's
+// card ids are read first, then each page is collected and passed through the
+// export boundary as the whole document is, so only one page is in memory.
+// With { paged: true } each page also carries the board's light references
+// and its place (models/lib/exportPaging.js), for the formats whose rows refer
+// to other cards; { byList: true } orders the cards list by list, as the
+// formats that group by list write them. There is always at least one page,
+// so a formatter writes its head and tail for an empty board too.
+export async function* externalExportPages(boardId, format, fields, pageSize = 500, options = {}) {
+  const { secureTransfer } = require('/server/lib/secureTransfer');
+  const context = { direction: 'export', source: `export:${format}` };
+  let all = null;
+  let ids;
+  // The board's, lists' and swimlanes' titles pass the boundary as the cards
+  // do, on every page as in buildExternalExport below.
+  const safeTitle = doc => (doc && typeof doc.title === 'string'
+    ? Object.assign(Object.create(Object.getPrototypeOf(doc)), doc, { title: secureTransfer(doc.title, context) }) : doc);
+  const safeParts = collected => ({ board: safeTitle(collected.board), lists: (collected.lists || []).map(safeTitle),
+    swimlanes: (collected.swimlanes || []).map(safeTitle) });
+  if (options.paged) {
+    const light = await collect(boardId, fields, format, null, true);
+    all = secureTransfer(light.items, context);
+    const paging = require('./exportPaging');
+    // `order`: a format's own order of the cards (Teamwork's task tree).
+    if (options.order) all = options.order(all);
+    // 'lists': in the board's list order, as the outlines group them;
+    // true: in the order the cards first name their lists (Todoist).
+    if (options.byList === 'lists') all = paging.byListOrder(all, paging.listTitlesOf(safeParts(light).lists, all));
+    // 'listIds': by list id, for the documents that nest cards in their lists.
+    else if (options.byList === 'listIds') all = paging.byListIdOrder(all, (light.lists || []).map(l => l._id));
+    // 'listIdsThenTitles': a card of a list that is not exported by its list's title (Nullboard).
+    else if (options.byList === 'listIdsThenTitles') {
+      all = paging.byListIdOrder(all, (light.lists || []).map(l => l._id), item => String(item.listTitle || 'List'));
+    }
+    else if (options.byList) all = paging.byFirstListOrder(all, item => item.listTitle || '');
+    ids = all.map(item => item.cardId);
+  } else {
+    ids = (await ReactiveCache.getCards({ boardId, archived: false }, { sort: { sort: 1 }, fields: { _id: 1 } })).map(c => c._id);
+  }
+  const pages = Math.max(1, Math.ceil(ids.length / pageSize));
+  for (let n = 0; n < pages; n += 1) {
+    const pageIds = ids.slice(n * pageSize, (n + 1) * pageSize);
+    // eslint-disable-next-line no-await-in-loop
+    const collected = await collect(boardId, fields, format, pageIds);
+    // A page is in the order of its ids (the board's order, or list by list).
+    const rank = new Map(pageIds.map((id, i) => [id, i]));
+    const items = secureTransfer(collected.items, context).sort((a, b) => rank.get(a.cardId) - rank.get(b.cardId));
+    yield { ...collected, ...safeParts(collected), items,
+      ...(all ? { page: { all, offset: n * pageSize, first: n === 0, last: n === pages - 1 } } : {}) };
+  }
 }
 
 export async function buildExternalExport(boardId, format, fields) {

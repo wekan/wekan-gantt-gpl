@@ -35,6 +35,7 @@ template(name="listHeader")
            |&nbsp;(
            span(class="{{#if exceededWipLimit}}highlight{{/if}}") {{cardsCountWhole}}
            |/#{wipLimit.value})
+        +listFlowMarks
         if showCardsCountForList cardsCountWhole
           span.cardCount {{cardsCount containerSwimlaneId}} {{cardsCountForListIsOne cardsCountWhole}}
           if hasNumberFieldsSum
@@ -88,6 +89,8 @@ template(name="listHeader")
                span(class="{{#if exceededWipLimit}}highlight{{/if}}") {{cardsCountWhole}}
                |/#{wipLimit.value})
         unless collapsed
+          //- List policy and commitment point (listFlowPolicies.jade).
+          +listFlowMarks
           if showCardsCountForList cardsCountWhole
             span.cardCount {{cardsCount containerSwimlaneId}} {{cardsCountForListIsOne cardsCountWhole}}
             if hasNumberFieldsSum
@@ -165,9 +168,13 @@ template(name="editListTitleForm")
         i.fa.fa-times-thin
 
 template(name="listActionPopup")
+  //- Grouped under headings by what the entries act on (2026-11-20); every
+    entry keeps its own condition, and a heading sits inside the same condition
+    as its group.
   //- Copy link, FIRST and above every permission check - see the swimlane
     popup: copying an address is reading, not editing.
     models/lib/boardItemUrl.js, docs/Features/General/Board-Item-Links.md
+  h4.menu-group-heading {{_ 'menu-group-share'}}
   ul.pop-over-list
     li: a.js-copy-list-link
       i.fa.fa-link
@@ -196,6 +203,7 @@ template(name="listActionPopup")
     Import WRITES, so it is offered only to somebody who may change the board;
     `canImportIntoBoard` is the same question the popup itself asks
     (client/components/boards/exportScope.js).
+  h4.menu-group-heading {{_ 'menu-group-export'}}
   ul.pop-over-list
     li: a.js-export-list
       i.fa.fa-upload
@@ -207,6 +215,7 @@ template(name="listActionPopup")
   hr
   unless currentUser.isReadOnly
     unless currentUser.isReadAssignedOnly
+      h4.menu-group-heading {{_ 'add'}}
       ul.pop-over-list
         li
           a.js-add-card.list-header-plus-top
@@ -229,6 +238,7 @@ template(name="listActionPopup")
     the fixed-width value it used to set is now a board-wide admin toggle
     there too - a menu entry for the same thing was a second place to look
     for it. client/components/sidebar/sidebar.jade
+  h4.menu-group-heading {{_ 'watch'}}
   ul.pop-over-list
     li
       a.js-toggle-watch-list
@@ -241,6 +251,7 @@ template(name="listActionPopup")
   unless currentUser.isCommentOnly
     unless currentUser.isReadOnly
       unless currentUser.isReadAssignedOnly
+        h4.menu-group-heading {{_ 'edit'}}
         unless currentUser.isWorker
           ul.pop-over-list
             li
@@ -258,6 +269,7 @@ template(name="listActionPopup")
                 a.js-archive-list-cards
                   i.fa.fa-archive
                   | {{_ 'list-archive-cards'}}
+        h4.menu-group-heading {{_ 'settings'}}
         if currentUser.isBoardAdmin
           ul.pop-over-list
             li
@@ -268,6 +280,22 @@ template(name="listActionPopup")
               a.js-list-permissions
                 i.fa.fa-lock
                 | {{_ 'listPermissionsPopup-title'}}
+        //- The list's policy, when the board shows list policies
+          (listFlowPolicies.jade); every member who may edit the list.
+        if showsListPolicies
+          ul.pop-over-list
+            li
+              a.js-list-policy
+                i.fa.fa-gavel
+                | {{_ 'list-policy'}}
+        //- Split into Doing and Done (listFlowPolicies.jade), when the board
+          allows split lists.
+        if showsSplitLists
+          ul.pop-over-list
+            li
+              a.js-toggle-list-split
+                i.fa(class="{{#if split}}fa-check-square-o{{else}}fa-square-o{{/if}}")
+                | {{_ 'list-split'}}
         //- #3847: board-wide toggle, exposed here per the maintainer's
           instruction to reach it from the List hamburger menu. See
           models/boards.js's stickyListHeaders and list.css's use of the
@@ -290,6 +318,7 @@ template(name="listActionPopup")
                 | &nbsp;
                 i.fa.fa-check-circle(class="{{#if syncSource.enabled}}list-sync-active{{else}}list-sync-paused{{/if}}")
         hr
+        h4.menu-group-heading {{_ 'menu-group-move-copy'}}
         ul.pop-over-list
           unless currentUser.isWorker
             li
@@ -304,6 +333,7 @@ template(name="listActionPopup")
         unless currentUser.isWorker
           if mayWriteList
             hr
+            h4.menu-group-heading {{_ 'archives'}}
             ul.pop-over-list
               li
                 a.js-close-list
