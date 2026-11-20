@@ -167,6 +167,12 @@ export class KanboardCreator {
       boardToCreate.labels.push({ _id: Random.id(6), color: chosen, name });
     }
 
+    // A blocked card's Blocked field is shown only where the board shows it
+    // (Board Settings / Card): on, when the import has a blocked card.
+    if (this._tasks(data).some(task => task && task.blocked === true)) {
+      boardToCreate.allowsBlockedOnCard = true;
+      boardToCreate.allowsBlockedOnMinicard = true;
+    }
     const boardId = await Boards.direct.insertAsync(boardToCreate);
     await Activities.direct.insertAsync({
       activityType: 'importBoard',
@@ -261,6 +267,17 @@ export class KanboardCreator {
       // Subtasks of many sources arrive as checklists.
       await insertImportedChecklists(plan.checklists, { boardId, cardId, now: this._now() });
       await insertImportedComments(plan.comments, { boardId, cardId, now: this._now(), importerId: this._user() });
+      // Reactions WeKan could not keep (models/lib/importedReactions.js).
+      const unknown = plan.comments.reduce((sum, c) => sum + (c.reactionsUnknown || 0), 0);
+      const unmapped = plan.comments.reduce((sum, c) => sum + (c.reactionsUnmapped || 0), 0);
+      if (unknown) {
+        this.losses.push({ path: `/tasks/${index}/comments/reactions`,
+          reason: `${unknown} reaction(s) with an emoji WeKan cannot store (a shortcode it does not know, or several code points) are not imported` });
+      }
+      if (unmapped) {
+        this.losses.push({ path: `/tasks/${index}/comments/reactions`,
+          reason: `${unmapped} reaction(s) of people not mapped to a WeKan user are not imported` });
+      }
       await this.createAttachments(task.attachments, { boardId, cardId, index });
     }
     await this.createLinks(tasks, cardIds);

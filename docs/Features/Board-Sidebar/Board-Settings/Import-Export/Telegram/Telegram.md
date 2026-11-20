@@ -9,7 +9,9 @@ Chat**: each chat is a card and its messages are the card's comments.
    (or a chat's menu → **Export chat history**), choose the format
    **Machine-readable JSON**, and export.
 2. In WeKan, go to **All Boards → New → Import → Telegram**.
-3. Choose `result.json`, or paste its text.
+3. Choose `result.json`, or paste its text - or, to bring the photos and
+   files along, zip the whole export folder (the one with `result.json`,
+   `photos/` and `files/`) and choose the `.zip`.
 4. Map the people to WeKan members, or leave them as they are.
 5. Click **Import**.
 
@@ -52,9 +54,26 @@ out.
 
 Chats, message text, author and time.
 
+## Replies
+
+A reply, found by its `reply_to_message_id`, is a reply to the comment of the message it answers,
+one level deep as WeKan's replies are: a reply to a reply goes under the same
+comment. A reply to a message that is not in the file is a comment of its own,
+starting with "↳".
+
+## Reactions
+
+A message's reactions become the comment's reactions, read from the emoji itself; Telegram's export names the most recent people who reacted.
+WeKan keeps a reaction by who reacted, so a reaction is kept for each person
+mapped to a WeKan user in the members step. The loss report counts the
+reactions of people who were not mapped, and those with an emoji WeKan cannot
+store: a shortcode WeKan does not know, a server's or a chat's own emoji, or an
+emoji of several code points (a skin tone, a flag). See
+`models/lib/importedReactions.js`.
+
 ## What is not kept
 
-Photos, files, stickers and voice messages (counted), reactions, edits, replies as links. What was left out is listed in the import's loss report, also in
+Photos and files the export did not download ("File not included"), and every one when only `result.json` is imported (counted); stickers and voice messages not in the zipped folder (counted); custom emoji reactions; edits. A photo or file the zipped folder carries is an attachment of the chat's card. What was left out is listed in the import's loss report, also in
 **Admin Panel → Problems → Recovery**.
 
 ## REST API

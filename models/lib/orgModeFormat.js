@@ -27,16 +27,22 @@
 //   :tag1:tag2:             -> labels
 //   SCHEDULED / DEADLINE / CLOSED -> start / due / end dates
 //   :CREATED: property      -> creation date
+//   :ID: / :CUSTOM_ID:      -> the card's source reference
+//   any other property      -> a custom field of that name (EFFORT, Owner ...),
+//                              written back as a property
+//   CLOCK lines (LOGBOOK)   -> spent time, the sum of the closed clocks
 //   body text               -> description; "- [ ]" / "- [X]" checkbox lines
 //                              in it -> a checklist named after the card
 //   level 3 with children   -> a checklist, its descendants the items
 //   level 3 without         -> an item of the card's checklist
 //   #+TITLE                 -> board title
 // Timestamps carry no time zone in Org; they are read and written as UTC. A
-// repeater (+1w) or warning delay (-2d) is dropped and reported, as are text
-// under a list heading and before the first heading.
+// +1d / +1w / +1m repeater makes the card repeat; any other repeater, a
+// warning delay (-2d), another drawer, an open clock, text under a list
+// heading and text before the first heading are dropped and reported.
 
 import { pagingOf, listTitlesOf, byListOrder, outlineMarks, joinPage, markKey } from './exportPaging.js';
+import { recurrenceFromText, orgRepeaterOf } from './recurrenceMap.js';
 
 export const MAX_ORG_LENGTH = 16 * 1024 * 1024;
 export const MAX_ORG_HEADINGS = 100000;
@@ -119,22 +125,51 @@ export function parseOrgMode(text) {
     const dates = {};
     const checkboxes = [];
     const text = [];
+    const properties = {};
+    let clocked = 0;
     let drawer = null;
     heading.body.forEach(line => {
       const trimmed = line.trim();
       if (drawer) {
         if (/^:END:$/i.test(trimmed)) { drawer = null; return; }
-        const property = /^:CREATED:\s*(.*)$/i.exec(trimmed);
-        if (drawer === 'PROPERTIES' && property && orgTimestamp(property[1])) dates.created = orgTimestamp(property[1]).iso;
+        if (drawer === 'PROPERTIES') {
+          const property = /^:([^\s:]+?)(\+)?:(?:\s+(.*))?$/.exec(trimmed);
+          if (!property) { unsupported.push({ path: at, reason: `Org property line "${trimmed}" is not :NAME: value` }); return; }
+          const [, name, append, value = ''] = property;
+          if (/^CREATED$/i.test(name)) {
+            if (orgTimestamp(value)) dates.created = orgTimestamp(value).iso;
+            else unsupported.push({ path: `${at}/CREATED`, reason: `Org CREATED ${value} is not a date` });
+          } else if (/^(CUSTOM_)?ID$/i.test(name)) {
+            if (value.trim() && !(/^ID$/i.test(name) && properties.$ref)) properties.$ref = value.trim();
+          } else if (value.trim()) {
+            properties[name] = append && properties[name] ? `${properties[name]} ${value.trim()}` : value.trim();
+          }
+          return;
+        }
+        if (drawer === 'LOGBOOK') {
+          const clock = /^CLOCK:\s*\[[^\]]*\](?:--\[[^\]]*\]\s*=>\s*(\d+):(\d{2}))?/.exec(trimmed);
+          if (clock && clock[1] !== undefined) clocked += Number(clock[1]) * 60 + Number(clock[2]);
+          else if (clock) unsupported.push({ path: at, reason: 'an open Org clock (no end) is not counted' });
+          // State-change notes ("- State "DONE" from ...") are history, not kept.
+          return;
+        }
         return;
       }
       const opening = /^:([A-Za-z_-]+):$/.exec(trimmed);
-      if (opening) { drawer = opening[1].toUpperCase(); return; }
+      if (opening) {
+        drawer = opening[1].toUpperCase();
+        if (drawer !== 'PROPERTIES' && drawer !== 'LOGBOOK') unsupported.push({ path: at, reason: `Org drawer :${drawer}: is not imported` });
+        return;
+      }
       if (!text.length && !checkboxes.length && /^(SCHEDULED|DEADLINE|CLOSED):/.test(trimmed)) {
         for (const [, word, stamp] of trimmed.matchAll(/(SCHEDULED|DEADLINE|CLOSED):\s*([<[][^>\]]*[>\]])/g)) {
           const parsed = orgTimestamp(stamp);
           if (!parsed) { unsupported.push({ path: `${at}/${word}`, reason: `Org ${word} is not a date` }); continue; }
-          if (parsed.extra) unsupported.push({ path: `${at}/${word}`, reason: `Org repeater or delay ${parsed.extra} is not kept` });
+          // A daily, weekly or monthly repeater alone makes the card repeat;
+          // any other repeater, and a warning delay, is reported.
+          const repeat = parsed.extra && word !== 'CLOSED' ? recurrenceFromText(parsed.extra) : null;
+          if (repeat) dates.recurrence = repeat;
+          else if (parsed.extra) unsupported.push({ path: `${at}/${word}`, reason: `Org repeater or delay ${parsed.extra} is not kept` });
           dates[word.toLowerCase()] = parsed.iso;
         }
         return;
@@ -143,7 +178,7 @@ export function parseOrgMode(text) {
       if (box) { checkboxes.push({ title: box[2].trim(), done: /x/i.test(box[1]) }); return; }
       text.push(line.replace(/^ {0,3}/, ''));
     });
-    return { dates, checkboxes, description: text.join('\n').replace(/^\n+|\n+$/g, '') };
+    return { dates, checkboxes, properties, clocked, description: text.join('\n').replace(/^\n+|\n+$/g, '') };
   };
 
   // Build the tree.
@@ -182,6 +217,9 @@ export function parseOrgMode(text) {
         ...cardNode.tags,
         ...(cardNode.done ? ['done'] : []),
       ];
+      if (body.dates.recurrence && cardNode.done) {
+        unsupported.push({ path: at, reason: `the ${body.dates.recurrence} repeater of a done heading is not kept` });
+      }
       tasks.push({
         title: cardNode.title || 'Imported heading',
         description: body.description,
@@ -192,6 +230,11 @@ export function parseOrgMode(text) {
         ...(body.dates.scheduled ? { date_started: body.dates.scheduled } : {}),
         ...(body.dates.closed ? { date_end: body.dates.closed } : {}),
         ...(body.dates.created ? { date_creation: body.dates.created } : {}),
+        ...(body.properties.$ref ? { ref: body.properties.$ref } : {}),
+        ...(Object.keys(body.properties).some(k => k !== '$ref') ? { custom_fields: Object.fromEntries(
+          Object.entries(body.properties).filter(([k]) => k !== '$ref')) } : {}),
+        ...(body.clocked > 0 ? { spent_hours: Math.round(body.clocked / 0.6) / 100 } : {}),
+        ...(body.dates.recurrence && !cardNode.done ? { recurrence: body.dates.recurrence } : {}),
         ...(checklists.length ? { checklists } : {}),
       });
     }
@@ -210,13 +253,13 @@ export function parseOrgMode(text) {
 const isClosed = listTitle => /done|closed|complete|archiv|finished/i.test(listTitle || '');
 
 // "<2026-10-10 Sat>" or "<2026-10-10 Sat 14:30>"; brackets [] for inactive.
-function stamp(value, active = true) {
+function stamp(value, active = true, repeater = null) {
   if (!value) return '';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
   const day = date.toISOString().slice(0, 10);
   const time = date.toISOString().slice(11, 16);
-  const inner = `${day} ${DAYS[date.getUTCDay()]}${time === '00:00' ? '' : ` ${time}`}`;
+  const inner = `${day} ${DAYS[date.getUTCDay()]}${time === '00:00' ? '' : ` ${time}`}${repeater ? ` ${repeater}` : ''}`;
   return active ? `<${inner}>` : `[${inner}]`;
 }
 
@@ -249,11 +292,20 @@ export function formatOrgMode(collected) {
       out.push(`** ${done ? 'DONE' : 'TODO'} ${priority ? `[#${priority[1]}] ` : ''}${title}${tags.length ? ` :${tags.join(':')}:` : ''}`);
       const planning = [
         item.startAt && `SCHEDULED: ${stamp(item.startAt)}`,
-        item.dueAt && `DEADLINE: ${stamp(item.dueAt)}`,
+        item.dueAt && `DEADLINE: ${stamp(item.dueAt, true, done ? null : orgRepeaterOf(item.recurrence))}`,
         done && item.endAt && `CLOSED: ${stamp(item.endAt, false)}`,
       ].filter(Boolean);
       if (planning.length) out.push(`   ${planning.join(' ')}`);
-      if (item.createdAt) out.push('   :PROPERTIES:', `   :CREATED:  ${stamp(item.createdAt, false)}`, '   :END:');
+      // Custom fields as properties: a name has no spaces in Org, so a space is
+      // written as "_"; a value is one line.
+      const props = [
+        ...(item.createdAt ? [`   :CREATED:  ${stamp(item.createdAt, false)}`] : []),
+        ...Object.entries(item.customFields || {})
+          .map(([name, value]) => [String(name).trim().replace(/[\s:]+/g, '_'), oneLine(String(value))])
+          .filter(([name, value]) => name && value && !/^(CREATED|ID|CUSTOM_ID)$/i.test(name))
+          .map(([name, value]) => `   :${name}: ${value}`),
+      ];
+      if (props.length) out.push('   :PROPERTIES:', ...props, '   :END:');
       if (item.description) {
         // A body line that would read as a heading is indented.
         for (const line of String(item.description).split(/\r\n|\r|\n/)) out.push(line ? `   ${line}` : '');

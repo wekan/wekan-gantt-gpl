@@ -35,9 +35,19 @@ export async function parseMessageImport(source, value) {
       return parseGoogleTakeout(await require('./chatArchives').readGoogleTakeout(value));
     case 'mattermost':
       return EXTERNAL_PARSERS.mattermost(value && Array.isArray(value.jsonLines) ? value : text(value));
+    case 'rocketchat':
+      if (value && (typeof value.zipFile === 'string' || typeof value.zipBase64 === 'string')) {
+        return EXTERNAL_PARSERS.rocketchat(await require('./chatArchives').readRocketChatExport(value));
+      }
+      return EXTERNAL_PARSERS.rocketchat(text(value));
     case 'ical': case 'whatsapp':
       return EXTERNAL_PARSERS[source](text(value));
     case 'telegram': case 'discord':
+      // The export folder zipped: its JSON and the message files beside it.
+      if (value && (typeof value.zipFile === 'string' || typeof value.zipBase64 === 'string')) {
+        const archives = require('./chatArchives');
+        return EXTERNAL_PARSERS[source](await (source === 'telegram' ? archives.readTelegramExport(value) : archives.readDiscordExport(value)));
+      }
       return EXTERNAL_PARSERS[source](value);
     default:
       throw new Error(`Unknown import source: ${source}`);

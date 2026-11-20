@@ -11,6 +11,7 @@
 // checklists, parentCardId and customFields. A format drops what it has no
 // field for; that is the honest answer, not a loss this module invents.
 import { pagingOf, blockersOf } from './exportPaging.js';
+import { kanboardRecurrenceOf, KANBOARD_ESTIMATE_FIELD, kanboardColorId } from './kanboardFields.js';
 import { formatMarkdownKanban } from './markdownKanbanFormat.js';
 import { formatLeo } from './leoOutlineFormat.js';
 import { formatTodoTxt } from './todoTxtFormat.js';
@@ -33,6 +34,7 @@ import { formatBusinessmapSheets } from './businessmapFormat.js';
 import { formatSuperProductivity } from './superProductivityFormat.js';
 import { formatTaiga } from './taigaFormat.js';
 import { formatVikunja } from './vikunjaFormat.js';
+import { formatFizzy } from './fizzyFormat.js';
 import { formatWrikeRows } from './wrikeFormat.js';
 import { formatWrikeWorkflow } from './wrikeWorkflow.js';
 import { formatTeamworkSheet } from './teamworkFormat.js';
@@ -41,7 +43,7 @@ import { formatNotionCsv } from './notionFormat.js';
 import { formatOpml } from './opmlOutlineFormat.js';
 import { formatMbox } from './mailFormat.js';
 import { formatEnex } from './enexFormat.js';
-import { formatMattermostBulk } from './chatExportFormats.js';
+import { formatMattermostBulk, formatRocketChat } from './chatExportFormats.js';
 import { formatOrgMode } from './orgModeFormat.js';
 
 // A WeKan list maps to a "closed" issue state when its name looks terminal.
@@ -63,6 +65,13 @@ const githubLike = ({ items }) =>
     state: isClosed(i.listTitle) ? 'closed' : 'open',
     labels: i.labels.map(name => ({ name })),
     due_date: i.dueAt,
+    // What parseGithub / parseGitea read back: who it is for and who asked,
+    // when it was made and closed, and Gitea's time estimate in seconds.
+    ...(has(i.owner) ? { assignee: { login: i.owner }, assignees: [i.owner, ...list(i.assignees)].filter(has).map(login => ({ login })) } : {}),
+    ...(has(i.creator) ? { user: { login: i.creator } } : {}),
+    ...(has(i.createdAt) ? { created_at: i.createdAt } : {}),
+    ...(isClosed(i.listTitle) && has(i.endAt) ? { closed_at: i.endAt } : {}),
+    ...(Number((i.customFields || {})['Time estimate (hours)']) > 0 ? { time_estimate: Math.round(Number(i.customFields['Time estimate (hours)']) * 3600) } : {}),
     ...(list(i.comments).some(c => c && has(c.text)) ? { comments_data: list(i.comments).filter(c => c && has(c.text)).map(c => ({
       body: String(c.text), ...(has(c.author) ? { user: { login: c.author } } : {}), ...(has(c.date) ? { created_at: c.date } : {}) })) } : {}),
   }));
@@ -249,7 +258,9 @@ export const formatters = {
           ...(Object.keys(i.timetracking || {}).length ? { timetracking: i.timetracking } : {}),
           labels: i.labels.map(name => ({ title: name })),
           ...(has(i.createdAt) ? { createdAt: i.createdAt } : {}),
-          ...(has(i.endAt) ? { done: i.endAt } : {}),
+          // Deck's done: the end date, or done without one when the due
+          // date is ticked done (the import reads both).
+          ...(has(i.endAt) ? { done: i.endAt } : i.dueComplete ? { done: true } : {}),
           ...(has(i.owner) || list(i.assignees).length
             ? { assignedUsers: [i.owner, ...list(i.assignees)].filter(has).map(uid => ({ participant: { uid } })) } : {}),
           ...(has(i.creator) ? { owner: { uid: i.creator } } : {}),
@@ -283,6 +294,15 @@ export const formatters = {
         ...(list(i.comments).length ? { comments: i.comments.map(c => ({
           comment: c.text, username: c.author, date_creation: c.date })) } : {}),
         ...(links[index].length ? { links: links[index] } : {}),
+        // What parseKanboard reads back: spent time, recurrence, and the
+        // estimate, score and reference custom fields.
+        ...(Number(i.spentTime) > 0 ? { time_spent: Number(i.spentTime) } : {}),
+        ...(kanboardColorId(i.color) ? { color_id: kanboardColorId(i.color) } : {}),
+        ...(kanboardRecurrenceOf(i.recurrence) && !has(i.endAt) ? { recurrence_status: 1, recurrence_trigger: 0,
+          recurrence_factor: kanboardRecurrenceOf(i.recurrence)[0], recurrence_timeframe: kanboardRecurrenceOf(i.recurrence)[1] } : {}),
+        ...(Number((i.customFields || {})[KANBOARD_ESTIMATE_FIELD]) > 0 ? { time_estimated: Number(i.customFields[KANBOARD_ESTIMATE_FIELD]) } : {}),
+        ...(Number((i.customFields || {}).Score) > 0 ? { score: Number(i.customFields.Score) } : {}),
+        ...(has((i.customFields || {}).Reference) ? { reference: String(i.customFields.Reference) } : {}),
       })),
     };
   },
@@ -320,6 +340,8 @@ export const formatters = {
           ...(has(i.startAt) ? { startDate: i.startAt } : {}),
           ...(has(i.createdAt) ? { createdAt: i.createdAt } : {}),
           ...(ranks.has(i.cardId) ? { position: ranks.get(i.cardId) } : {}),
+          // Hours spent as OpenProject's ISO 8601 duration, which parseOpenProject reads back.
+          ...(Number(i.spentTime) > 0 ? { spentTime: `PT${Math.round(Number(i.spentTime) * 100) / 100}H` } : {}),
           ...Object.fromEntries(Object.entries(i.customFields || {}).map(([name, value]) => [fieldKey(name), value])),
           _links: {
             status: { title: i.listTitle },
@@ -361,6 +383,8 @@ export const formatters = {
       state: isClosed(i.listTitle) ? 'closed' : 'opened',
       labels: i.labels,
       due_date: i.dueAt,
+      // Hours spent, as GitLab's time_stats seconds - what parseGitlab reads back.
+      ...(Number(i.spentTime) > 0 ? { time_stats: { total_time_spent: Math.round(Number(i.spentTime) * 3600) } } : {}),
       ...(has(i.owner) ? { assignees: [i.owner, ...list(i.assignees)].map(username => ({ username })) } : {}),
       ...(has(i.creator) ? { author: { username: i.creator } } : {}),
       ...(has(i.createdAt) ? { created_at: i.createdAt } : {}),
@@ -447,6 +471,8 @@ export const formatters = {
       completed: isClosed(i.listTitle),
       ...(isClosed(i.listTitle) && has(i.endAt) ? { completed_at: i.endAt } : {}),
       due_on: i.dueAt,
+      // Asana's time tracking, in minutes - what parseAsana reads back.
+      ...(Number(i.spentTime) > 0 ? { actual_time_minutes: Math.round(Number(i.spentTime) * 60) } : {}),
       ...(has(i.startAt) ? { start_on: i.startAt } : {}),
       ...(has(i.createdAt) ? { created_at: i.createdAt } : {}),
       ...(has(i.owner) ? { assignee: { name: i.owner } } : {}),
@@ -536,6 +562,9 @@ export const formatters = {
   // Vikunja's data export: projects that models/export.js writes as the .zip
   // (vikunjaArchiveFiles, server/lib/vikunjaArchive.js); round-trips with parseVikunjaExport.
   vikunja: data => formatVikunja(data),
+  // Fizzy's account export, which its account import reads: rows here, the
+  // .zip written by server/lib/renderExternalExport.js (fizzyArchiveFiles).
+  fizzy: data => formatFizzy(data),
   // Wrike's Excel import template: rows models/export.js writes as .xlsx
   // (server/lib/wrikeWorkbook.js); round-trips with parseWrikeRows.
   wrike: formatWrikeRows,
@@ -560,6 +589,9 @@ export const formatters = {
   mbox: formatMbox,
   enex: data => formatEnex(data),
   mattermost: formatMattermostBulk,
+  // The .zip Rocket.Chat's CSV importer reads: rows here, the files written by
+  // server/lib/renderExternalExport.js (rocketChatCsvFiles).
+  rocketchat: formatRocketChat,
 };
 
 export const EXTERNAL_EXPORT_FORMATS = Object.keys(formatters);

@@ -10,7 +10,10 @@ card's comments, by their author and time.
    Export**, start the export and download the `.zip` when Slack mails the
    link.
 2. In WeKan, go to **All Boards → New → Import → Slack**.
-3. Choose the `.zip` file.
+3. Choose the `.zip` file. To bring the messages' files along, give a Slack
+   token with the `files:read` scope under the file sign-in (a user token of a
+   Slack app installed in the workspace): the files are on Slack's file host,
+   behind its sign-in, and are not in the export zip.
 4. Map the Slack users to WeKan members, or leave them as they are.
 5. Click **Import**, and open the board in **Board View → Chat**.
 
@@ -54,9 +57,26 @@ out.
 
 Channels with their topic and purpose, every message and thread reply with its author and time.
 
+## Replies
+
+A reply, found by its `thread_ts`, is a reply to the comment of the message it answers,
+one level deep as WeKan's replies are: a reply to a reply goes under the same
+comment. A reply to a message that is not in the file is a comment of its own,
+starting with "↳".
+
+## Reactions
+
+A message's reactions become the comment's reactions, read from Slack's shortcode, such as `thumbsup` or `tada`.
+WeKan keeps a reaction by who reacted, so a reaction is kept for each person
+mapped to a WeKan user in the members step. The loss report counts the
+reactions of people who were not mapped, and those with an emoji WeKan cannot
+store: a shortcode WeKan does not know, a server's or a chat's own emoji, or an
+emoji of several code points (a skin tone, a flag). See
+`models/lib/importedReactions.js`.
+
 ## What is not kept
 
-Files and images (counted in the loss report), reactions, edits and pins. The zip is read within the same bounds as the other zip imports. What was left out is listed in the import's loss report, also in
+Files and images without a token, deleted ones, and ones hidden by the plan's history limit (counted in the loss report), edits and pins. With a token, each file is downloaded from `files.slack.com` only, through the import's guarded download, and attached to the channel's card. The zip is read within the same bounds as the other zip imports. What was left out is listed in the import's loss report, also in
 **Admin Panel → Problems → Recovery**.
 
 ## REST API

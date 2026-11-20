@@ -103,6 +103,22 @@ async function main() {
     assert.equal(parseGitlab([]).tasks.length, 0);
   });
 
+  const { formatters } = await import('../models/lib/externalExportFormatters.js');
+  test('the export writes spent hours as time_stats seconds, and they come back', () => {
+    const out = formatters.gitlab({ items: [{ title: 'T', listTitle: 'Open', labels: [], spentTime: 2.25 },
+      { title: 'U', listTitle: 'Open', labels: [] }] });
+    assert.deepStrictEqual(out[0].time_stats, { total_time_spent: 8100 });
+    assert.strictEqual(out[1].time_stats, undefined, 'negative: none when nothing was spent');
+    assert.strictEqual(parseGitlab(out).tasks[0].spent_hours, 2.25);
+  });
+
+  test('health status and an incident\'s severity are labels; UNKNOWN severity is none', () => {
+    const out = parseGitlab([{ iid: 1, title: 'A', state: 'opened', health_status: 'needs_attention', severity: 'HIGH', issue_type: 'incident' },
+      { iid: 2, title: 'B', state: 'opened', severity: 'UNKNOWN', health_status: null }]);
+    assert.deepStrictEqual(out.tasks[0].tags, ['type:incident', 'health:needs attention', 'severity:high']);
+    assert.deepStrictEqual(out.tasks[1].tags, [], 'negative: no health, and an unknown severity, are no labels');
+  });
+
   console.log(`\ngitlabImport: ${passed} tests passed`);
 }
 

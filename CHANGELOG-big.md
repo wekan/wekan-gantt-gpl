@@ -95,6 +95,264 @@ Which databases WeKan supports
 
 </details>
 
+# v13.22 2026-11-20 WeKan ® release
+
+**In short:** Repeating tasks of **Taskwarrior**, **Microsoft To Do**,
+**Todoist**, **TickTick**, **Tasks.org**, **Vikunja**, **Super Productivity**,
+**iCalendar**, **Org mode** and **Obsidian Kanban** now repeat in WeKan, and
+their exports write the repeat back. **Release All**
+builds and pushes **wekan**, **wekan-ondra** and **wekan-gantt-gpl** to every
+Snap Store channel, and **Release All Missing** adds what a release lacks,
+snaps included. A **WeKan board** imported from its own export keeps all of
+its Board Settings and card fields, and **Rocket.Chat** and **Fizzy** are
+imported and exported.
+
+This release adds the following new features:
+
+**Import and Export** - repeating tasks, the rest of an Org heading, and every
+column of a table.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/24ac6b2bd2e55323fa1c6e52eb53ff3291fc80fb">A daily, weekly or monthly repeat becomes the card's recurrence, and is exported back</a>. Thanks to xet7.</summary>
+
+WeKan cards can repeat daily, weekly or monthly, but no import set it and no
+export wrote it: seven formats reported a repeat as lost and imported the task
+once. `models/lib/recurrenceMap.js` reads iCalendar and TickTick RRULEs,
+Taskwarrior `recur`, Org repeaters, Obsidian's and Todoist's "every week" and
+Microsoft To Do patterns, and keeps a rule only when it is exactly daily,
+weekly or monthly; every two weeks, yearly or a count stays in the import loss
+report. An imported repeating card counts its last occurrence from the import,
+so the recurrence job does not copy every card at once; of Taskwarrior's
+instances only the newest open one repeats. The exports write it back
+(Taskwarrior, Org mode, Obsidian Kanban, TickTick, the iCal feed), and the WeKan
+JSON import keeps it. `tests/recurrenceMap.test.cjs`, with negative tests.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/878e53f418c2416796b5af00876ada7cc87a4161">Tasks.org, Vikunja and Super Productivity repeats become the card's recurrence too</a>. Thanks to xet7.</summary>
+
+The Tasks.org RRULE and Vikunja's repeat_after (a day, a week) or repeat_mode
+1 (monthly) are imported and written back; a Super Productivity task's repeat
+config of every 1 day, week or month is imported. Other rules, and the repeat
+of a finished task, stay in the import loss report. Google Tasks' API has no
+repeat to read.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/55c3f574f4d0ba3fce3e507679b8c9d467feea46">Org mode keeps every property, uses :ID: as the card's reference and LOGBOOK clocks as its spent time</a>. Thanks to xet7.</summary>
+
+Only :CREATED: was read from a heading's property drawer; the other
+properties and the :LOGBOOK: drawer were dropped without a word in the import
+loss report. Every other property is now a custom field, written back as a
+property on export, and the closed CLOCK lines add up to the spent time. An
+open clock, a malformed property line and any other drawer are reported.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5b9fa791a82da0bcaa01e5b04f8e711c011580db">CSV, TSV and Excel imports keep every column, a column with no card field as a text custom field</a>. Thanks to xet7.</summary>
+
+A column the header guess had no field for was imported only when ticked in
+the mapping step, and dropped without a word otherwise - always for a REST
+import. Every other named column now becomes a text custom field of its name,
+ticked by default on the page; WeKan's own Number, Last activity and Voting
+columns are not.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/95b88095c45bf582a2fdc3056cf5030f0b61e57a">OPML keeps created, category, links and an outliner's own attributes</a>. Thanks to xet7.</summary>
+
+A card outline's created date, its categories, a link and any attribute of
+the outliner's own (OmniOutliner's columns) were dropped or only reported.
+Now they are the creation date, labels, a link in the description and custom
+fields; the export writes created and the labels as category. An attribute of
+a list or a checklist item is reported.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3be07b147b46bcbe42f64da1170eda5fafcfe2ad">Leo keeps a card's creation date in its node id, both ways, and reports plugin data</a>. Thanks to xet7.</summary>
+
+Leo stamps a node's id with the time it was made, and WeKan read it only as a
+key and wrote ids without a time. The import now takes the creation date from
+the id and the export writes it there; a Leo plugin's own data on a node is
+reported instead of dropped.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/10caa20b094beae76ce941e609c7f130e6dd7d5f">Markdown reads and writes #tags, due dates and indented checkboxes as labels, due dates and checklists</a>. Thanks to xet7.</summary>
+
+The import kept only a card's title, done mark and indented text, and the
+export wrote no labels, dates or checklists. #tag words, Obsidian Kanban's
+@{day} @@{time}, Obsidian Tasks' 📅 and todo.txt's due: are now labels and the
+due date, and indented checkboxes the checklist, both ways.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f467e31d176a2be66cfffecd87d9ac9938ff0d93">Slack, Mattermost, Telegram and Discord reactions become the imported comments' reactions</a>. Thanks to xet7.</summary>
+
+Every reaction in a chat export was dropped without a word. An emoji, or a
+Slack or Mattermost shortcode, is now kept as the comment's reaction for each
+person mapped to a WeKan user; the loss report counts the reactions of people
+not mapped and those of an emoji WeKan cannot store, such as a server's own
+emoji or a skin tone.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1122e49ca96930ac19f0431b514f68f7716da45a">Chat imports keep threads: a reply is a reply to the comment of the message it answers</a>. Thanks to xet7.</summary>
+
+Slack, Mattermost, Telegram and Discord say which message a reply answers,
+and the import made each reply a comment of its own. It is now a reply to that
+comment, one level deep as WeKan's replies are; a reply to a message that is
+not in the file stays a comment marked "↳".
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/28891103f6bec2d51e1dd1531103235d95a1a70c">Kanboard keeps its task recurrence, estimate, score, reference and external links, both ways</a>. Thanks to xet7.</summary>
+
+WeKan's card recurrence was modelled on Kanboard's, and the import ignored it.
+A repeat every 1 day, 7 days or 1 month now makes the card repeat, the
+estimate, score and reference are custom fields, and external links are lines
+of the description; the export writes them back.
+
+</details>
+
+- [Nextcloud Deck labels keep their colors instead of coming in black](https://github.com/wekan/wekan/commit/22d000b9136b11a4f8030d0e5d42e77518a70f64). Thanks to xet7.
+- [OpenProject imports remaining time and exports spent time, which a round trip lost](https://github.com/wekan/wekan/commit/9bd503a71b22cfcf46c6e75e159c5bf0f5417331). Thanks to xet7.
+- [ClickUp and GitLab exports write spent time, which their imports read and a round trip lost](https://github.com/wekan/wekan/commit/14afc74adbb6659ee3a8f57ebe84999b439557c6). Thanks to xet7.
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1a02de4b5b398018bbe2076d98cba10b01639e5a">Exports are held to what their imports read back; Asana time, Deck done ticks, Kanboard colors survive</a>. Thanks to xet7.</summary>
+
+A new test exports a card with every field set in 32 formats, reads the file
+back and holds each format to what it keeps of dates, spent time, the done
+tick, recurrence, people, custom fields and color. It found Asana's time
+tracking read and written by neither side, Deck's done tick lost without an
+end date, and Kanboard colors not written; all three are fixed.
+
+</details>
+
+- [Asana's html_notes, approval states and comment likes come across](https://github.com/wekan/wekan/commit/57a657445ef63cc979530f04585227d778c01845). Thanks to xet7.
+- [Planka 2 custom fields and stopwatch time come across](https://github.com/wekan/wekan/commit/0d65eec4f2f36ba6df3b0fcf2d26aa023a02fa75). Thanks to xet7.
+- [Imported subtasks keep their due date and person on the checklist item (Google Tasks, KanbanFlow)](https://github.com/wekan/wekan/commit/cf6f67e789ac404866d4b51591820570850baaa3). Thanks to xet7.
+- [Basecamp card steps keep their due date and assignee](https://github.com/wekan/wekan/commit/a72b29726821301db304b4120bcc21566650202a). Thanks to xet7.
+- [Notion relations between rows of an export become "related to" dependencies](https://github.com/wekan/wekan/commit/f546ff238345dd267e568d75ce1fe25bf4fdbbb7). Thanks to xet7.
+- [ClickUp custom field columns come across both ways, and the task link is kept](https://github.com/wekan/wekan/commit/60f569afe679ffcf6bdfe36f16d4d2bb42f07502). Thanks to xet7.
+- [Todoist and TickTick imports report a column they do not write, instead of dropping it](https://github.com/wekan/wekan/commit/c72a05d11a7527a0b0cb1855de8609de4217faa2). Thanks to xet7.
+- [Taiga's blocked state is the card's Blocked flow field, both ways](https://github.com/wekan/wekan/commit/ab884547f44913cb5269b8248e6301b4983a43c0). Thanks to xet7.
+- [Linear cycles become Scrum sprints and project milestones Scrum releases](https://github.com/wekan/wekan/commit/75694ac644d71016b092c0543a62fb63aef817ee). Thanks to xet7.
+- [Telegram and Discord imports bring their message files from a zipped export folder](https://github.com/wekan/wekan/commit/828ca63713b0a034c9e1c436341cd60435c01443). Thanks to xet7.
+- [Slack import downloads the messages' files with a Slack token, from Slack's file host only](https://github.com/wekan/wekan/commit/dd8242b82ffe97bb760471a3677550632d72a4d8). Thanks to xet7.
+- [Super Productivity export writes a repeating card's repeat config, so it repeats there too](https://github.com/wekan/wekan/commit/35f3f6c9dbec5de87e1181956ed7bf71c30a2f12). Thanks to xet7.
+- [GitHub, Gitea and Forgejo keep an issue's dates, people and Gitea's time estimate, both ways](https://github.com/wekan/wekan/commit/efeb55f57a903a80ab7b6ee124a87f9ce39bdf00). Thanks to xet7.
+- [GitHub's issue type is kept as a "type:" label](https://github.com/wekan/wekan/commit/9ceb4dbf55ecb2518c64d449b9d6d06703b961a9). Thanks to xet7.
+- [GitLab issue health status and incident severity are kept as labels](https://github.com/wekan/wekan/commit/c916b154731084d1a9e7674852575a205ff68a66). Thanks to xet7.
+- [Planner imports read the newer "Export as Excel" column names too](https://github.com/wekan/wekan/commit/d3aa34e7b8f5d579fabb0e4df9f06710493fd1f2). Thanks to xet7.
+- [GitHub, Gitea, Forgejo and GitLab imports count reactions in the loss report, which are counts without who reacted](https://github.com/wekan/wekan/commit/1b9ec7b9a1ba12f83969379ec059dd9bd5ec5c3a). Thanks to xet7.
+
+**Rocket.Chat and Fizzy** - two more tools, imported and exported.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/dffbafd30fd16978dbae49a4e0d576bb1ff017ec">Rocket.Chat exports are imported for the Chat view, and a board exports for its CSV importer</a>. Thanks to xet7.</summary>
+
+Read from Rocket.Chat's source: "Download my data" as JSON is a .zip of
+`channels.json` and a message file per room with the files under `assets/`;
+one room's `.json` and the .zip its CSV importer reads are imported too. A room
+is a card in Channels, Groups, Direct messages or Omnichannel, its messages the
+comments, its files the attachments; system messages and missing files are
+counted. The export writes `users.csv`, `channels.csv` and a `messages.csv` per
+card, with no header rows and names Rocket.Chat accepts.
+`tests/chatExportFormats.test.cjs` reads both zips and round-trips the export.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/dffbafd30fd16978dbae49a4e0d576bb1ff017ec">Fizzy's account and personal data exports are imported, and a board exports as its account export</a>. Thanks to xet7.</summary>
+
+Read from Fizzy's source (37signals). A Fizzy board is a swimlane, its columns
+lists between Maybe?, Not now and Done; tags, assignees, steps, comments,
+golden cards and files come along, drafts and reactions are counted. The
+export is `data/<table>/<id>.json` with every column Fizzy's account import
+requires, base36 UUIDv7 ids and only users of the export, so Fizzy reads it
+back. `tests/fizzyFormat.test.cjs` checks those columns and round-trips it; the
+Playwright round trip sends it through the server.
+
+</details>
+
+and fixes the following bugs:
+
+**WeKan import** - a board exported and imported back.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c640c5c376526f6550873b757fa6b68511c63d42">A WeKan board imported from its own export keeps every Board Settings choice and every card field</a>. Thanks to xet7.</summary>
+
+The export writes the whole board and its cards, and the import wrote 32 of
+the 210 board fields and about 30 of the 87 card fields: every Board Settings
+choice came back at its default, and cards lost their flow fields, votes,
+planning poker, stickers, locations, drawings and more. They are all written
+now, users mapped to the new board's; access and inbound email are left to
+the new board's admin, and a value the schema refuses is reported.
+`tests/wekanCardFields.test.cjs` holds the lists to the schemas.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/24b6b9b0247bf1cda039faec6dba9298f9115116">It also keeps the lists' WIP limits and policies, checklist settings, custom field access and comment replies</a>. Thanks to xet7.</summary>
+
+A list lost its WIP limit, flow policy and split, a swimlane its height, a
+checklist its hide settings and reset schedule, an item its assignee, a reply
+its comment - and a custom field its "admin only" and "read only", which left
+it open to everyone on the imported board. All of them come back now; a list
+role exception is kept only where it restricts a role.
+
+</details>
+
+- [Templates stay templates: a WeKan template board, card, list or swimlane imports as one](https://github.com/wekan/wekan/commit/a4359731b1bed397e1616dd8289b0d437f8e7243). Thanks to xet7.
+
+and has the following developer-facing changes:
+
+**Snap packages** - all three snap names, on every channel.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/dc0a1ad049f19fd8557dfde81e2de948b601f999">Release All ends by pushing all three snaps of its release; Release All Missing makes and pushes the missing ones</a>. Thanks to xet7.</summary>
+
+Push Snap to Store failed for v13.20: snap-variants never attached
+wekan-ondra and wekan-gantt-gpl to the GitHub Release, a store-side "Error
+checking upload uniqueness" was waited on for two hours instead of uploaded
+again, and the workflow took "the latest release", the previous one. Now
+snap-variants attaches its snaps, `releases/snap-store-push.sh` retries store
+failures and fails at once on any other refusal, and Release All calls Push
+Snap to Store for the tag it released. Release All Missing lists the snaps as
+release assets, makes a missing variant from the release's own wekan snap
+(`releases/snap-rename.sh`, name and title only), pushes the release's snaps,
+and with no version starts one run per incomplete release.
+`tests/snapStorePush.test.cjs`.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ce646dc937689f4ff84049e3af9b73ebeff9ef07">Push Snap to Store releases what the store already has, each channel on its own, and uploads a file once</a>. Thanks to xet7.</summary>
+
+snapcraft 9 renamed list-revisions to revisions, so the push never found the
+revision the store already had and uploaded the same file again and again,
+answered "Error checking upload uniqueness". It now reads the store's
+revisions, releases one it has instead of uploading, uploads a file once,
+releases to each channel on its own so one refusal does not stop the others,
+and also releases the newest revision of every architecture the store holds.
+A revision held for the store's manual review ("ReviewQueued") is reported
+with how to ask for the review. Release All and Release All Missing run the
+same steps.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v13.21 2026-11-20 WeKan ® release
 
 **In short:** Twelve new **Board View reports** - Created vs. Resolved, Net
@@ -8327,323 +8585,5 @@ An account disabled by this before the upgrade is enabled again in Admin
 Panel / People.
 
 </details>
-
-Thanks to above GitHub users for their contributions and translators for their translations.
-
-# v12.52 2026-10-18 WeKan ® release
-
-**In short:** the release builds that failed in v12.51 work again: the
-**Android** bundles, the **musl AppImages** and the **i386** and
-**freebsd-x64** single files. Nine dependency updates, among them
-**qrcode-generator 2** and **actions/download-artifact 8**, were checked
-against how WeKan uses them.
-
-This release updates the following dependencies:
-
-- **qrcode-generator 1.4.4 → 2.0.4** — [the SQRL sign-in QR
-  code](https://github.com/wekan/wekan/pull/6775); now ES module and CommonJS
-  builds, and the SVG of WeKan's call is byte for byte the same.
-- **temml 0.13.5 → 0.14.0** — [math in
-  Markdown](https://github.com/wekan/wekan/pull/6777); WeKan's
-  `renderToString` options give the same output for formulas, errors and
-  `\href`.
-- **i18next 26.4.2 → 26.4.5** — [the translation
-  library](https://github.com/wekan/wekan/pull/6779).
-- **@swc/core 1.16.13 → 1.16.18** — [the compiler of the
-  build](https://github.com/wekan/wekan/pull/6778).
-- **@rspack/cli 2.2.8 → 2.2.9** — [the bundler's command
-  line](https://github.com/wekan/wekan/pull/6773).
-- **@playwright/test 1.63.0 → 1.64.1** — [the browser
-  tests](https://github.com/wekan/wekan/pull/6776).
-- **actions/download-artifact 7.0.0 → 8.0.2** — [in five
-  workflows](https://github.com/wekan/wekan/pull/6774); a hash mismatch now
-  fails the download, and every artifact WeKan uploads is still a zip.
-- **actions/setup-python 6.3.0 → 7.0.0** — [in
-  bun.yml](https://github.com/wekan/wekan/pull/6780); the removed `pip-install`
-  input was not used.
-- **vmactions/freebsd-vm 1.5.5 → 1.5.9** — [in
-  bsd.yml](https://github.com/wekan/wekan/pull/6781), the version bun.yml
-  already uses.
-
-Thanks to dependabot.
-
-and fixes the following bugs:
-
-**Release builds** - the Android, musl and single-file builds of v12.51, and
-the guards of the dependency updates.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/53729d47f5">The guards follow freebsd-vm 1.5.9 and qrcode-generator 2.0.4</a>. Thanks to dependabot and xet7.</summary>
-
-Two tests stopped at the merged updates. `tests/bsdBundles.test.cjs` pinned
-`bsd.yml`'s FreeBSD VM action to its old commit, because the VM that builds
-the bundle's native modules must be the one that built node-freebsd-x64. It
-now reads the pin and requires wekan/node-patches to use the same commit, and
-node-patches now does. `tests/sqrl.test.cjs` required qrcode-generator 1.4.4
-exactly, and now requires an exact version.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/0670cc65a3">Android bundles: the checkout belongs to Termux's user, so npm may chmod</a>. Thanks to xet7.</summary>
-
-Every Android bundle of v12.51 stopped with EPERM. npm chmods each package's
-bin when it installs (`uuid/dist/bin/uuid`), and only a file's owner may
-chmod it, so making the bind mount writable to everyone (`a+rwX`) was not
-enough. `android.yml` now reads the uid of Termux's user from the image,
-chowns the checkout to it before the rebuild, and takes it back before
-packaging. If it cannot read the uid, it stops the job.
-`tests/androidBundles.test.cjs` pins the order and the negative case.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/bce305029a">musl bundles carry libstdc++ and libgcc_s, so their Node.js starts on a bare Alpine</a>. Thanks to xet7.</summary>
-
-Every musl AppImage of v12.51 died at once in Alpine with "Error relocating
-.../bundle/node: _ZTVN10__cxxabiv117__class_type_infoE: symbol not found".
-The musl Node.js is linked against GCC's C++ runtime. The Alpine that
-`musl.yml` builds in had it installed, and a user's Alpine does not. The
-bundle's `node-runtime` now holds that Alpine's `libstdc++.so.6` and
-`libgcc_s.so.1`, with a license notice. `start-wekan.sh` puts them on the
-library path, as it does with libatomic, and the AppImage workflow requires
-both files in a musl bundle. Its smoke test still adds only curl to Alpine,
-so `tests/muslBundles.test.cjs` would catch this fault again.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/c316616ef8">Single files: a Node.js that LIEF cannot inject is skipped with the reason, not failed</a>. Thanks to xet7.</summary>
-
-The v12.51 i386 single file stopped with `std::bad_alloc`, and the
-freebsd-x64 one with "Failed to relocate ELF program headers". Node.js
-injects the archive with LIEF:
-
-- The i386 Node.js is a PIE with 1,524 R_386_32 relocations, which LIEF does
-  not adjust. postject, which uses the same LIEF, "succeeds" and leaves a
-  broken binary.
-- The FreeBSD Node.js is a non-PIE with two bss-like segments.
-
-`releases/single-file/sea-inject.mjs` detects both from the ELF before
-anything is built. `build.mjs` then exits 3 with the reason, which
-`single-file.yml` turns into a notice. wekan/node-patches now builds the
-i386 Node.js as a non-PIE and the FreeBSD one as a PIE, so both single files
-come back with its next release. A target that was not built leaves a
-one-line artifact saying why, so its Start job no longer logs "Artifact not
-found" errors. `tests/singleFileSeaInject.test.cjs` checks both cases on
-synthetic ELF files, and its negative cases let through what LIEF does
-inject.
-
-</details>
-
-Thanks to above GitHub users for their contributions and translators for their translations.
-
-# v12.51 2026-10-17 WeKan ® release
-
-**In short:** eleven **helpers that need no AI** - features other kanban
-apps sell as AI, done here with plain code: a **due date from the title**,
-**similar cards**, **rule suggestions**, a board **Summary**, **Since your last
-visit**, **At risk**, **suggested members**, a **forecast done date**, a
-**checklist from the description**, **action items** and **search phrases**.
-A card's drawing also opens as a **whiteboard** that several people draw on
-at once, and **Apple Glass Pastel** is now Liquid Glass. Each can be hidden
-per board or for the whole WeKan. A **CodeQL** alert in a test is fixed.
-
-This release fixes the following SECURITY ISSUES found by GitHub CodeQL code scanning:
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/6090be4dfd">Alert #588: a test removes template declarations to a fixed point</a>. Thanks to GitHub CodeQL and xet7.</summary>
-
-js/incomplete-multi-character-sanitization in
-tests/templatesAreRendered.test.cjs: one replace each removed template
-declarations and Template.<name>.helpers/onCreated/... from the source the
-test scans, so removing one could splice its neighbours into another. Both
-now repeat until nothing changes, as for alerts #545 and #570-#582, and
-tests/tagStrippingFixedPoint.test.cjs now also finds a multi-character removal
-of an on<Capital> name outside such a loop anywhere in the tree. A test's
-source scan, never run on user input, so nothing reaches Admin Panel ->
-Problems.
-
-</details>
-
-and adds the following new features:
-
-**Helpers that need no AI** - computed from the board's own data, hidden like
-every other optional part, and translated in every language.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/f8267d704e">A due date typed at the end of a card title becomes its due date</a>. Thanks to xet7.</summary>
-
-"Call the printer tomorrow 14:00", "Soita huomenna klo 14", "friday 9:30",
-"in 3 days" or "23.10." at the end of a new card's title gives the card that
-due date, and the words leave the title. The words come from the browser's
-own Intl tables (relative days, weekdays, the language's date order and the
-word before a time), so every language works without a word list, and English
-works in every language. Only the end of the title is read, a time alone needs
-a colon, a day word or am/pm, and "Release 1.2" is never a date. A hint under
-the field shows the date and its x keeps the words; the opened card's title
-reads it only when the title changed. Board Settings / Card row *Due date
-from title*. models/lib/titleDueDate.js; tests/titleDueDate.test.cjs checks
-eleven languages, the negatives and every WeKan language tag, and
-assist-due-from-title.e2e.js the form, the x, the board switch and the
-opened card.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/f8267d704e">Similar cards and possible duplicates while adding a card and on the opened card</a>. Thanks to xet7.</summary>
-
-Letter triples and the Dice coefficient - letter pairs for scripts written
-without spaces - rank the board's open cards against the title being typed or
-the opened card's title and description. The add-card form lists up to three,
-marking one 80 % alike or more as a possible duplicate; the opened card has a
-Similar cards section. The method cards.similar reads through
-server/lib/assistGate.js: a board the caller may read, the board's switch and
-the Admin Panel's, and for an assigned-only member only the cards assigned to
-them. tests/similarCards.test.cjs and assist-similar-cards.e2e.js, with the
-assigned-only and switched-off negatives.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/2211b24119">Rules suggests rules from what people keep doing by hand</a>. Thanks to xet7.</summary>
-
-When the same person does one thing to a card and within two minutes
-another, the pair is counted once per card; seen on three cards in 30 days it
-is offered above the rule list - moved to a list then a label, a member or
-archive, and so on. A pair a rule already does is not offered. Create goes
-through rules.createRule with the trigger and action the wizard builds, and
-Dismiss hides one for that admin on that board. Board admins only, and
-Admin Panel / Settings / Visibility / Features has a Rule suggestions tick.
-tests/ruleSuggestions.test.cjs and assist-rule-suggestions.e2e.js.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/083c863fb7">Board menu: Summary, what each person did in the last day or week</a>. Thanks to xet7.</summary>
-
-Per person: done (marked complete, given an end date, archived or moved into
-the last list), moved, added, commented, and what they have overdue now -
-from the activities and History, only the cards the reader may see. Copy as
-text gives Markdown with card links. An Admin Panel / Settings / Visibility /
-Features tick. tests/boardSummary.test.cjs and assist-board-summary.e2e.js.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/083c863fb7">Board menu: Since your last visit, with how many changes</a>. Thanks to xet7.</summary>
-
-What others changed since the visit before this one, grouped by card. Opening
-a board remembers the visit in profile.boardVisits (500 boards at most) even
-while the feature is hidden; a board never opened shows its last seven days.
-tests/sinceLastVisit.test.cjs and assist-since-last-visit.e2e.js.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/083c863fb7">At risk: a triangle on the minicard and the reasons in the opened card</a>. Thanks to xet7.</summary>
-
-A weighted score: overdue 3, due within two days with less than half the
-checklist done 2, blocked by an open card 2, idle 14 days in a middle list
-2, moved back twice 1 (the opened card counts those). 3 or more is at risk;
-a complete card never is. models/lib/cardRisk.js; tests/cardRisk.test.cjs and
-assist-at-risk.e2e.js.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/083c863fb7">Suggested members in the Members and Assignees popups</a>. Thanks to xet7.</summary>
-
-Up to three active board members, by points from the board's open cards that
-share this card's labels (2 each), list (1) and swimlane (1); people already
-on the card are skipped. A Show on Card row only, the one row with no
-minicard side. tests/memberSuggestions.test.cjs and
-assist-suggested-members-forecast.e2e.js.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/083c863fb7">Forecast done date for one card, 50 % and 85 %</a>. Thanks to xet7.</summary>
-
-From the cycle times of the board's cards finished in 180 days, counting only
-those that took at least as long as this card has been open; fewer than five
-say so. The server sends the times once per board, numbers only, scoped by
-role. On the opened card's dates, and on the minicard when a board turns that
-side on. tests/cardForecast.test.cjs and the e2e above.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/3cb089b8ca">Checklists: From description makes a checklist or subtasks from its list</a>. Thanks to xet7.</summary>
-
-The description's list lines - "- ", "* ", "+ ", "1. ", "1) " and task boxes,
-never inside a code block - are previewed, then made into a checklist ticked
-where the line was [x], or into subtasks through addSubtaskCard. The
-description is not changed. tests/descriptionListItems.test.cjs and
-assist-from-text.e2e.js.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/3cb089b8ca">Cards from the action items of a comment or a description</a>. Thanks to xet7.</summary>
-
-"TODO: ...", "- [ ] ..." and "@user ..." lines become cards at the top of the
-card's list, each linking back to the card, with the mentioned user as member
-when they are an active board member - a mention of anybody else stays in the
-title. On the comment's line, and in the card menu for the description.
-tests/actionItems.test.cjs and assist-from-text.e2e.js.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/3cb089b8ca">Global search understands plain phrases such as my overdue cards</a>. Thanks to xet7.</summary>
-
-Ten phrases in the reader's language, and in English everywhere, run as the
-search operators in the reader's language; the page shows the query it ran,
-and a query that already has an operator is never rewritten. An Admin Panel /
-Settings / Visibility / Features tick. tests/searchPhrases.test.cjs and
-assist-search-phrases.e2e.js.
-
-</details>
-
-**Apple Glass Pastel** - the theme as Apple's Liquid Glass, readable everywhere.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/0c49f7f51b">Liquid Glass surfaces, and every text and icon measured readable</a>. Thanks to xet7.</summary>
-
-Header bars, swimlanes, lists, minicards, the opened card, the sidebar and
-popups are frosted glass over the pastel mesh: a translucent fill, blur and
-saturation, a rim of light brightest on top, a diagonal sheen and larger
-corners. The header bars are glass instead of solid blue, with dark text;
-blue stays for the primary action and what is active. Reduce transparency
-gets near-opaque surfaces. theme-appleglasspastel-contrast.e2e.js measures
-every text and icon against the pixels really behind it, to WCAG AA, on the
-board, card, sidebar, board menu and All Boards at laptop and phone size; it
-found white header text and icons, the forced-white hamburger, grey sidebar
-headings and icons, and a white hovered menu row, all fixed.
-
-</details>
-
-**Whiteboard** - a card's drawing full screen, for several people at once.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/390007e380">A card's drawing opens as a whiteboard that several people draw on at once</a>. Thanks to xet7.</summary>
-
-Card menu -> Drawing -> Open as whiteboard: the drawing under the header bar,
-over the opened card, with the drawing's and Red Strings' own colours, widths,
-Undo, Clear and Save picture, scaled to the screen. Each line is one atomic
-$push with its id and author, carried to everyone by the card's publication;
-Undo and Clear take away only one's own lines, Save picture writes only the
-PNG. Who may draw is who may edit the card. A Board Settings / Card row.
-tests/whiteboard.test.cjs, and whiteboard.e2e.js draws from two browsers at
-the same moment.
-
-</details>
-
-and improves the documentation:
-
-- [docs/Features: guides for the eleven helpers that need no AI, filed by menu](https://github.com/wekan/wekan/commit/e76f12bcdd),
-  and TODO Later lists them. Thanks to xet7.
-- [docs/Features: Cards / Whiteboard](https://github.com/wekan/wekan/commit/d9bb7b4f4f). Thanks to xet7.
 
 Thanks to above GitHub users for their contributions and translators for their translations.

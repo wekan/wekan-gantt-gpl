@@ -26,7 +26,7 @@ function gateItem(item, wanted) {
   const out = { ...item };
   if (!wanted.has('description')) out.description = '';
   if (!wanted.has('labels')) { out.labelIds = []; out.labels = []; }
-  if (!wanted.has('dates')) delete out.dueAt;
+  if (!wanted.has('dates')) { delete out.dueAt; delete out.recurrence; }
   return out;
 }
 
@@ -171,6 +171,10 @@ async function collect(boardId, fields, format, pageCardIds, light) {
       ...(want('dependencies') && Array.isArray(c.cardDependencies) && c.cardDependencies.length ? {
         dependencies: c.cardDependencies.filter(dep => dep && dep.cardId).map(dep => ({ cardId: dep.cardId, type: dep.type })),
       } : {}),
+      // Blocked, with its reason, for formats with a blocked state (Taiga).
+      ...(c.flow && c.flow.blocked ? { blocked: true, ...(c.flow.blockedReason ? { blockedReason: c.flow.blockedReason } : {}) } : {}),
+      // How the card repeats, for formats with a repeat rule (models/lib/recurrenceMap.js).
+      ...(want('dates') && ['daily', 'weekly', 'monthly'].includes(c.recurrenceInterval) ? { recurrence: c.recurrenceInterval } : {}),
       // Hours spent, for formats with a place for tracked time (Super Productivity).
       ...(want('dates') && Number(c.spentTime) > 0 ? { spentTime: Number(c.spentTime) } : {}),
       ...(comments.length ? { comments: comments.filter(cm => cm.cardId === c._id)

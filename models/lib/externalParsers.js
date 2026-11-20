@@ -1,4 +1,6 @@
 import { jiraTimeTracking } from './jiraTimeTracking.js';
+import { mstodoBodyText } from './mstodoApiFormat.js';
+import { kanboardRecurrence, KANBOARD_ESTIMATE_FIELD, KANBOARD_COLORS } from './kanboardFields.js';
 import { parseTodoTxt } from './todoTxtFormat.js';
 import { parseTaskwarrior } from './taskwarriorFormat.js';
 import { parseFocalboard } from './focalboardFormat.js';
@@ -19,6 +21,7 @@ import { parseBusinessmapSheets } from './businessmapFormat.js';
 import { parseSuperProductivity } from './superProductivityFormat.js';
 import { parseTaiga } from './taigaFormat.js';
 import { parseVikunjaExport } from './vikunjaFormat.js';
+import { parseFizzyExport } from './fizzyFormat.js';
 import { parseWrikeRows } from './wrikeFormat.js';
 import { parseTeamworkSheet } from './teamworkFormat.js';
 import { parseQuireCsv } from './quireCsvFormat.js';
@@ -33,7 +36,7 @@ import { parseGoogleTasksApi } from './googletasksApiFormat.js';
 import { parseGoogleKeepApi } from './googlekeepApiFormat.js';
 import { issueAttachments } from './issueAttachments.js';
 import { parseICalendar } from './icalendarFormat.js';
-import { parseMattermostBulk, parseTelegramExport, parseWhatsAppChat, parseDiscordExport } from './chatExportFormats.js';
+import { parseMattermostBulk, parseTelegramExport, parseWhatsAppChat, parseDiscordExport, parseRocketChatExport } from './chatExportFormats.js';
 import {
   gitlabScrumPlanning, openProjectScrumPlanning, asanaScrumPlanning, STORY_POINTS_FIELD,
 } from './externalScrumPlanning.js';
@@ -75,12 +78,6 @@ function uniq(arr) {
 // a task with only column_id/swimlane_id/category_id still lands correctly,
 // and task links resolve through the tasks' own `id`s into parent cards and
 // dependencies.
-const KANBOARD_COLORS = {
-  yellow: 'yellow', blue: 'blue', green: 'green', purple: 'purple', red: 'red',
-  orange: 'orange', grey: 'gray', brown: 'saddlebrown', deep_orange: 'crimson',
-  dark_grey: 'black', pink: 'pink', teal: 'paleturquoise', cyan: 'sky',
-  lime: 'lime', light_green: 'darkgreen', amber: 'gold',
-};
 
 function byId(items, nameKeys) {
   const map = {};
@@ -240,17 +237,25 @@ export function parseKanboard(data) {
     const priority = Number(task.priority);
     if (Number.isFinite(priority) && priority > 0) tags.push(`priority:${priority}`);
     const subtasks = Array.isArray(task.subtasks) ? task.subtasks : [];
+    // The estimate, the complexity score and the external reference, as
+    // custom fields - the way the GitLab import keeps its estimate.
+    const custom = {};
     const estimated = Number(task.time_estimated);
-    if (Number.isFinite(estimated) && estimated > 0) {
-      unsupported.push({ path: `${at}/time_estimated`, reason: 'WeKan cards have no estimate field; map it to a custom field by hand' });
+    if (Number.isFinite(estimated) && estimated > 0) custom[KANBOARD_ESTIMATE_FIELD] = estimated;
+    if (Number(task.score) > 0) custom.Score = Number(task.score);
+    if (typeof task.reference === 'string' && task.reference.trim()) custom.Reference = task.reference.trim();
+    const recurrence = kanboardRecurrence(task);
+    if (Number(task.recurrence_status) && !recurrence) {
+      unsupported.push({ path: `${at}/recurrence_factor`, reason: `a Kanboard repeat every ${task.recurrence_factor} ${['day(s)', 'month(s)', 'year(s)'][Number(task.recurrence_timeframe) || 0] || ''} is not every 1 day, 7 days or 1 month; the task is imported once` });
     }
     if (Array.isArray(task.files) && task.files.length) {
       unsupported.push({ path: `${at}/files`, reason: `${task.files.length} file(s): the API export carries metadata, not file contents` });
     }
-    if (Array.isArray(task.external_links) && task.external_links.length) {
-      unsupported.push({ path: `${at}/external_links`, reason: `${task.external_links.length} external link(s) are not imported` });
-    }
-    const footer = task.url ? `Source: ${task.url}` : '';
+    // External links: a line each at the end of the description.
+    const linkLines = (Array.isArray(task.external_links) ? task.external_links : [])
+      .filter(link => link && typeof link.url === 'string' && link.url.trim())
+      .map(link => (link.title && link.title !== link.url ? `${link.title}: ${link.url}` : link.url));
+    const footer = [...linkLines, task.url ? `Source: ${task.url}` : ''].filter(Boolean).join('\n');
     const parentRef = links.parentRefs.get(index);
     const dependencies = links.dependencies.get(index);
     return {
@@ -268,6 +273,8 @@ export function parseKanboard(data) {
       archived: task.is_active === '0' || task.is_active === 0 || task.is_active === false,
       color: KANBOARD_COLORS[task.color_id] || undefined,
       spent_hours: task.time_spent,
+      ...(Object.keys(custom).length ? { custom_fields: custom } : {}),
+      ...(recurrence ? { recurrence } : {}),
       owner_id: task.owner_id,
       owner_username: task.owner_username || task.assignee_username,
       owner_name: task.owner_name || task.assignee_name,
@@ -372,7 +379,10 @@ export function parseNextcloudDeck(data) {
         owner_username: people[0] || deckUser(card.owner),
         assignees: people.slice(1),
         requested_by: deckUser(card.owner),
-        tags: (card.labels || []).map(l => (typeof l === 'string' ? l : l && l.title)).filter(Boolean),
+        // A Deck label has a hex color ("31CC7C"): it stays the label's color
+        // (models/lib/importedTaskPlan.js planImportedLabels).
+        tags: (card.labels || []).map(l => (typeof l === 'string' ? l
+          : l && l.title ? (l.color ? { name: l.title, color: String(l.color) } : l.title) : null)).filter(Boolean),
         comments: (Array.isArray(card.comments) ? card.comments : []).map(comment => ({
           text: comment && comment.message,
           author: comment && (comment.actorId || comment.actorDisplayName),
@@ -460,6 +470,8 @@ export function parseOpenProject(data) {
     Object.keys(links).filter(k => /^customField\d+$/.test(k)).forEach(key => addField(key, halTitle(links[key])));
     const estimated = isoDurationHours(wp.estimatedTime);
     if (estimated !== undefined) custom['Estimated time (hours)'] = estimated;
+    const remaining = isoDurationHours(wp.remainingTime);
+    if (remaining !== undefined) custom['Remaining time (hours)'] = remaining;
     if (typeof wp.percentageDone === 'number') custom['Progress (%)'] = wp.percentageDone;
     // Backlogs story points: the board's Scrum estimate (externalScrumPlanning.js).
     if (typeof wp.storyPoints === 'number' && Number.isFinite(wp.storyPoints) && wp.storyPoints >= 0) {
@@ -602,6 +614,23 @@ function withAttachments(issue) {
   return attachments.length ? { attachments } : {};
 }
 
+// GitHub's and Gitea's reaction summary ({ total_count, "+1": 2, ... }) and
+// GitLab's upvotes/downvotes are counts, without who reacted; a WeKan reaction
+// is kept by who reacted (models/lib/importedReactions.js), so they are counted
+// in the loss report rather than dropped without a word.
+function reactionCount(summary) {
+  if (!summary || typeof summary !== 'object') return 0;
+  if (Number(summary.total_count) > 0) return Number(summary.total_count);
+  return Object.entries(summary).filter(([key]) => key !== 'url' && key !== 'total_count')
+    .reduce((sum, [, value]) => sum + (Number(value) > 0 ? Number(value) : 0), 0);
+}
+function reportReactionCounts(unsupported, path, count) {
+  if (count > 0) {
+    unsupported.push({ path: `${path}/reactions`,
+      reason: `${count} reaction(s) are counts without who reacted, and are not imported` });
+  }
+}
+
 function parseIssuesArray(data, system) {
   const issues = Array.isArray(data) ? data : data.issues || [];
   const unsupported = [];
@@ -626,11 +655,20 @@ function parseIssuesArray(data, system) {
       if (issue.state_reason && issue.state_reason !== 'completed') {
         tags.push(`state_reason:${issue.state_reason}`);
       }
+      // GitHub's issue type (2025): { name, color, ... } - a "type:" label,
+      // as the GitLab import keeps issue_type.
+      if (issue.type && typeof issue.type === 'object' && typeof issue.type.name === 'string' && issue.type.name.trim()) {
+        tags.push(`type:${issue.type.name.trim()}`);
+      }
       const footer = [
         issue.number != null ? `Source: #${issue.number}` : null,
         issue.html_url || issue.url || null,
       ].filter(Boolean).join(' ');
       const comments = issueComments(issue, path, unsupported);
+      // Gitea and Forgejo (1.23+): the time estimate, in seconds.
+      const estimate = Number(issue.time_estimate);
+      reportReactionCounts(unsupported, path, reactionCount(issue.reactions)
+        + (Array.isArray(issue.comments) ? issue.comments : []).reduce((sum, c) => sum + reactionCount(c && c.reactions), 0));
       const description = [issue.body || issue.description || '', footer]
         .filter(Boolean).join('\n\n').trim();
       return {
@@ -653,6 +691,10 @@ function parseIssuesArray(data, system) {
           || (issue.author && (issue.author.login || issue.author.username || issue.author.name))
           || undefined,
         tags,
+        // Created, and closed for a closed issue.
+        ...(issue.created_at ? { date_creation: issue.created_at } : {}),
+        ...(issue.state === 'closed' && issue.closed_at ? { date_end: issue.closed_at } : {}),
+        ...(Number.isFinite(estimate) && estimate > 0 ? { custom_fields: { 'Time estimate (hours)': Math.round(estimate / 36) / 100 } } : {}),
         ...(comments.length ? { comments } : {}),
         // The issue's files, downloaded into the board's attachments.
         ...withAttachments(issue),
@@ -705,6 +747,10 @@ export function parseGitlab(data) {
     if (milestoneTitle) tag(`milestone:${milestoneTitle}`);
     if (issue.iteration && issue.iteration.title) tag(`iteration:${issue.iteration.title}`);
     if (issue.issue_type && issue.issue_type !== 'issue') tags.push(`type:${issue.issue_type}`);
+    // An issue's health status (on_track, needs_attention, at_risk) and an
+    // incident's severity (Issues API v4): labels, as the type is.
+    if (typeof issue.health_status === 'string' && issue.health_status) tag(`health:${issue.health_status.replace(/_/g, ' ')}`);
+    if (typeof issue.severity === 'string' && issue.severity && issue.severity.toUpperCase() !== 'UNKNOWN') tag(`severity:${issue.severity.toLowerCase()}`);
     if (issue.confidential) {
       tags.push('confidential');
       warnings.push(`${path}: confidential in GitLab; on the board, the board's visibility decides who can read it`);
@@ -719,6 +765,7 @@ export function parseGitlab(data) {
     if (completion && Number(completion.count) > 0) {
       custom.Tasks = `${Number(completion.completed_count) || 0}/${Number(completion.count)}`;
     }
+    reportReactionCounts(unsupported, path, (Number(issue.upvotes) || 0) + (Number(issue.downvotes) || 0));
     const notes = Array.isArray(issue.notes) ? issue.notes : null;
     const comments = (notes || [])
       .filter(note => note && !note.system && typeof note.body === 'string' && note.body.trim())
@@ -852,15 +899,23 @@ export function parseAsana(data) {
         .filter(d => d && d.gid !== undefined)
         .map(d => ({ ref: String(d.gid), type: 'is-blocked-by' })),
       title: t.name || 'Imported task',
-      description: [t.notes || '', footer].filter(Boolean).join('\n\n'),
+      // An API export asked for html_notes may carry only those: the rich text
+      // as text (the same careful stripping as the Microsoft To Do body).
+      description: [t.notes || (typeof t.html_notes === 'string' ? mstodoBodyText({ contentType: 'html', content: t.html_notes }) : ''),
+        footer].filter(Boolean).join('\n\n'),
       column_name: section,
       swimlane_name: 'Default',
       date_due: t.due_at || t.due_on,
       date_started: t.start_at || t.start_on,
+      // Asana's time tracking: the minutes logged on the task.
+      ...(Number(t.actual_time_minutes) > 0 ? { spent_hours: Math.round(Number(t.actual_time_minutes) / 0.6) / 100 } : {}),
       date_end: t.completed ? t.completed_at : undefined,
       date_creation: t.created_at,
       owner_username: asanaUser(t.assignee),
-      tags: (t.tags || []).map(tag => (typeof tag === 'string' ? tag : tag && tag.name)).filter(Boolean),
+      tags: [...(t.tags || []).map(tag => (typeof tag === 'string' ? tag : tag && tag.name)).filter(Boolean),
+        // An approval task's state: approved, rejected, changes requested.
+        ...(t.resource_subtype === 'approval' && typeof t.approval_status === 'string' && t.approval_status !== 'pending'
+          ? [`approval:${t.approval_status.replace(/_/g, ' ')}`] : [])],
       custom_fields: custom,
       ...(followers.length ? { watchers: followers } : {}),
       checklists: embedded.length ? [{
@@ -869,7 +924,14 @@ export function parseAsana(data) {
       }] : [],
       comments: (Array.isArray(t.stories) ? t.stories : [])
         .filter(story => story && story.resource_subtype === 'comment_added')
-        .map(story => ({ text: story.text, author: asanaUser(story.created_by), date: story.created_at })),
+        .map(story => {
+          // A story's likes are who liked the comment: its 👍 reactions
+          // (models/lib/importedReactions.js).
+          const likes = (Array.isArray(story.likes) ? story.likes : []).map(like => asanaUser(like && like.user)).filter(Boolean);
+          const count = Math.max(Number(story.num_likes) || 0, likes.length);
+          return { text: story.text, author: asanaUser(story.created_by), date: story.created_at,
+            ...(count ? { reactions: [{ emoji: '👍', authors: likes, count }] } : {}) };
+        }),
     };
   });
   // Milestone tasks as releases; Asana has no sprint record.
@@ -1084,6 +1146,34 @@ export function parseZenkit(data) {
 // open (unchecked) card, so an ordinary bulleted to-do list imports too, not
 // only one written specifically for a kanban tool. Round-trips with the
 // `markdown` formatter in externalExporters.js.
+// On a card line, the conventions markdown-kanban tools share:
+//   #tag                    -> a label (a word starting with a letter: not
+//                              "#123", not "C#")
+//   @{2026-12-24}, @@{14:30} -> the due date and its time (Obsidian Kanban's)
+//   📅 2026-12-24, due: 2026-12-24 -> the due date (Obsidian Tasks, todo.txt)
+// and an indented "- [ ]" / "- [x]" line under it is an item of its checklist.
+// A description line that starts "\- [" is a description line: the export
+// escapes it so it does not read back as a checklist item.
+const MD_TAG = /(^|\s)#([A-Za-z][\w/-]*)/g;
+const MD_DUE = /(?:@\{(\d{4}-\d{2}-\d{2})\}|📅\s*(\d{4}-\d{2}-\d{2})|\bdue:(\d{4}-\d{2}-\d{2}))/u;
+const MD_TIME = /@@\{(\d{1,2}):(\d{2})\}/;
+function markdownCardLine(text) {
+  let title = text;
+  let due;
+  const day = MD_DUE.exec(title);
+  if (day) {
+    const iso = day[1] || day[2] || day[3];
+    const time = MD_TIME.exec(title);
+    const date = new Date(`${iso}T${time ? `${time[1].padStart(2, '0')}:${time[2]}` : '00:00'}:00Z`);
+    if (!Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === iso) due = date.toISOString();
+    title = title.replace(day[0], ' ');
+    if (time) title = title.replace(time[0], ' ');
+  }
+  const tags = [];
+  title = title.replace(MD_TAG, (all, space, tag) => { tags.push(tag); return space; });
+  return { title: title.replace(/\s+/g, ' ').trim(), tags, due, dayText: day && !due ? day[0] : '' };
+}
+
 export function parseMarkdownKanban(text) {
   const lines = String(text == null ? '' : text).split(/\r\n|\r|\n/);
   const tasks = [];
@@ -1111,20 +1201,30 @@ export function parseMarkdownKanban(text) {
     }
     if (taskMatch) {
       const done = (taskMatch[1] || '').toLowerCase() === 'x';
+      const card = markdownCardLine(taskMatch[2]);
+      if (card.dayText) unsupported.push({ path: `/${index}`, reason: `${card.dayText} is not a date` });
       currentTask = {
-        title: taskMatch[2],
+        title: card.title || taskMatch[2],
         description: '',
         column_name: currentList,
         swimlane_name: 'Default',
-        tags: done ? ['done'] : [],
+        tags: [...new Set([...(done ? ['done'] : []), ...card.tags])],
+        ...(card.due ? { date_due: card.due } : {}),
       };
       tasks.push(currentTask);
       return;
     }
+    const item = currentTask && /^\s+[-*+]\s+\[([ xX])\]\s+(.+?)\s*$/.exec(line);
+    if (item) {
+      if (!currentTask.checklists) currentTask.checklists = [{ title: 'Checklist', items: [] }];
+      currentTask.checklists[0].items.push({ title: item[2], done: item[1].toLowerCase() === 'x' });
+      return;
+    }
     if (currentTask && /^\s+\S/.test(line)) {
+      const body = line.trim().replace(/^\\(?=[-*+]\s+\[)/, '');
       currentTask.description = currentTask.description
-        ? `${currentTask.description}\n${line.trim()}`
-        : line.trim();
+        ? `${currentTask.description}\n${body}`
+        : body;
       return;
     }
     if (line.trim() && !/^#{1,6}\s/.test(line)) {
@@ -1230,6 +1330,7 @@ export const EXTERNAL_PARSERS = {
   taiga: parseTaiga,
   // Vikunja's data export: data.json, as server/lib/vikunjaArchive.js reads it from the zip.
   vikunja: parseVikunjaExport,
+  fizzy: parseFizzyExport,
   // Wrike's Excel import template, as rows of its Tasks sheet (server/lib/wrikeWorkbook.js).
   wrike: parseWrikeRows,
   // Teamwork.com's Excel task import template, as a sheet of rows (server/lib/teamworkWorkbook.js).
@@ -1253,6 +1354,7 @@ export const EXTERNAL_PARSERS = {
   // the server (models/import.js): their decoders are server-only.
   ical: parseICalendar,
   mattermost: parseMattermostBulk,
+  rocketchat: parseRocketChatExport,
   telegram: parseTelegramExport,
   whatsapp: parseWhatsAppChat,
   discord: parseDiscordExport,

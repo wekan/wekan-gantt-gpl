@@ -20,44 +20,38 @@ the changelog only says what changed.
 - The WebKit stage cannot run in the Flatpak sandbox: MiniBrowser needs its own
   sandbox, and turning that off is not allowed there. Run it on a host.
 
-## Import and Export of everything each tool has
+## Need accounts on the tools, or a running copy of one
 
-Asked on 2026-11-20: check and fix that everything each tool with a WeKan
-import or export can hold comes across, whether a whole export is read or
-written at once or only a part of it (a board, a project, some lists, a date
-range), and check each tool's newest features - what its current version
-exports and imports - so their data has a place in WeKan too. For every tool,
-compare its newest export file, documentation and changelog with the parser
-and the formatter here, record what is lost in the import loss report
-(`unsupported`), and add what has a place in WeKan.
+The import/export review asked on 2026-11-20 (everything each tool with a
+WeKan import or export can hold comes across, whole or in part) went through
+every parser and formatter against the export format its header documents.
+What it found is fixed and in the Upcoming release; the round trips are held
+by `tests/playwright/specs/export-import-round-trip.e2e.js` (41 formats, the
+description, checklist, comment, dependency, label and due date) and
+`tests/exportRoundTripFields.test.cjs` (32 formats in plain Node: start and
+creation dates, spent time, the done tick, recurrence, people, custom fields,
+color, Blocked), and a WeKan board's every field by
+`tests/wekanCardFields.test.cjs`. What is left needs what this checkout does
+not have:
 
-Done so far: `tests/playwright/specs/export-import-round-trip.e2e.js` exports
-a board in each of the 41 formats WeKan both writes and reads and imports the
-file back; every one brings the card back, and its KEEPS table holds each
-format to what its file keeps of the description, the checklist and the
-comment, so a format that loses more fails. The Trello export imports back
-with checklists, comments, members, custom fields and archived cards and
-lists, and a Trello .zip export carries the attachment files; the GitHub,
-Gitea and Forgejo exports carry the comments. What is left below is per tool: the
-tool's newest features against its parser and formatter.
-
-- WeKan's own JSON and .zip: every field of the current schema, attachments
-  and their versions, custom fields, rules, templates, Scrum data, and a part
-  of a board as well as all of it.
-- Kanban and project tools: Kanboard, Nextcloud Deck, OpenProject, Asana,
-  Zenkit, Planner, monday.com, Wrike, Teamwork, Businessmap, ClickUp, Notion,
-  Plane, Taiga, Focalboard, Nullboard, Kanri, Obsidian Kanban, MeisterTask,
-  Quire, Planka, KanbanFlow, Basecamp - sub-items, dependencies, time
-  tracking, custom fields, comments, attachments and their newer views.
-- Issue trackers: Jira, GitHub, GitLab, Gitea, Forgejo, Redmine, Linear,
-  Pivotal - epics, sprints, versions and milestones, links between issues,
-  work logs, reactions, and fields added in their newest releases.
-- Task tools: Todoist, TickTick, Tasks.org, Super Productivity, todo.txt,
-  Taskwarrior, Vikunja, Microsoft To Do, Google Tasks, Google Keep -
-  recurrence, reminders, priorities, sub-tasks and sections.
-- Spreadsheets, text and outlines: CSV / TSV, Excel, Markdown, Leo, OPML,
-  Org mode - every column, and every Org property and timestamp.
-- Mail, calendars and chats: mail, mbox, iCalendar, Google Takeout, Slack,
-  Mattermost, Telegram, WhatsApp, Discord, Evernote .enex - threads, replies,
-  reactions, recurring events and the attached files that are now only
-  counted.
+- Each tool's newest release, checked with a real export file of it: Planner,
+  Wrike, Teamwork, Businessmap, MeisterTask, Quire and Jira - the
+  proprietary ones, whose current export is only seen with an account
+  (Planner's newer Status, Task title and Assignments columns are read, as
+  Microsoft's help page names them; a real file would confirm their exact
+  spelling). The parsers follow
+  the formats the tools document and report what they do not read, so a new
+  field shows up in the import's loss report; checking for one needs an
+  account on each tool. (Checked against their current source on 2026-11-20:
+  Plane's IssueExportSerializer, Kanri's kanban-types.d.ts, Obsidian Kanban's
+  markers, Nullboard's board object, and Gitea's (and Forgejo's) Issue
+  struct, whose created_at, closed_at and time_estimate are read now;
+  GitHub's REST issue, whose issue type is read now; GitLab's Issues API v4,
+  whose health status and incident severity are read now. Redmine and
+  monday.com import every column they do not name as a custom field, so a
+  column a new release adds comes across without a change. Focalboard's archive
+  format is frozen: Mattermost stopped merging changes to Focalboard and
+  Boards in September 2023.
+  Pivotal Tracker was shut down in 2025, so there is no newer release.
+  Linear's open-source importer, @linear/import, declares the columns the
+  parser reads.)

@@ -59,9 +59,10 @@ async function main() {
     assert.deepEqual(idea.tags, ['done'], 'CANCELLED is a done keyword from #+TODO');
     assert.deepEqual([pump.tags, pump.date_end], [['done'], '2026-10-09T12:00:00.000Z']);
     assert.equal(weekly.date_started, '2026-10-05T00:00:00.000Z');
+    // A +1w repeater makes the card repeat weekly now (models/lib/recurrenceMap.js).
+    assert.equal(weekly.recurrence, 'weekly');
     assert.deepEqual(unsupported.map(u => u.reason), [
       'text before the first heading has no WeKan field',
-      'Org repeater or delay +1w is not kept',
     ]);
     const plan = planImportedTask(valves);
     assert.equal(plan.card.dueAt.toISOString(), '2026-10-10T14:30:00.000Z');
@@ -120,6 +121,45 @@ async function main() {
     assert.match(read('server/lib/renderExternalExport.js'), /orgmode: 'text\/x-org'/);
     const en = JSON.parse(read('imports/i18n/data/en.i18n.json'));
     assert.match(en['import-board-instruction-orgmode'], /Org mode/);
+  });
+
+  test('properties are custom fields, ID the reference, LOGBOOK clocks the spent time; custom fields are written back', () => {
+    const board = parseOrgMode([
+      '* L', '** TODO A',
+      '   :PROPERTIES:', '   :ID: abc', '   :EFFORT: 1:30', '   :Owner: ann', '   :Owner+: bob', '   :END:',
+      '   :LOGBOOK:',
+      '   CLOCK: [2026-10-01 Thu 10:00]--[2026-10-01 Thu 11:30] =>  1:30',
+      '   CLOCK: [2026-10-02 Fri 10:00]--[2026-10-02 Fri 10:15] =>  0:15',
+      '   :END:', '   Body', ''].join('\n'));
+    const [card] = board.tasks;
+    assert.equal(card.ref, 'abc');
+    assert.deepEqual(card.custom_fields, { EFFORT: '1:30', Owner: 'ann bob' });
+    assert.equal(card.spent_hours, 1.75);
+    assert.equal(card.description, 'Body');
+    assert.deepEqual(board.unsupported, []);
+    const plan = planImportedTask(card);
+    assert.equal(plan.card.spentTime, 1.75);
+    const org = formatOrgMode({ board: { title: 'B' }, items: [
+      { cardId: 'c', title: 'A', listTitle: 'L', createdAt: '2026-09-01T12:00:00.000Z', customFields: { 'Time estimate': 2, EFFORT: '1:30' } }] });
+    assert.match(org, /^ {3}:PROPERTIES:\n {3}:CREATED: {2}\[2026-09-01 Tue 12:00\]\n {3}:Time_estimate: 2\n {3}:EFFORT: 1:30\n {3}:END:$/m);
+    assert.deepEqual(parseOrgMode(org).tasks[0].custom_fields, { Time_estimate: '2', EFFORT: '1:30' });
+  });
+
+  test('negative: an open clock, another drawer and a bad property line are reported, not lost silently', () => {
+    const board = parseOrgMode(['* L', '** TODO A',
+      '   :PROPERTIES:', '   not a property', '   :CREATED: yesterday', '   :END:',
+      '   :LOGBOOK:', '   CLOCK: [2026-10-03 Sat 10:00]', '   :END:',
+      '   :NOTES:', '   kept nowhere', '   :END:', ''].join('\n'));
+    const reasons = board.unsupported.map(u => u.reason);
+    assert.ok(reasons.some(r => /property line "not a property"/.test(r)), reasons.join('|'));
+    assert.ok(reasons.some(r => /CREATED yesterday is not a date/.test(r)));
+    assert.ok(reasons.some(r => /open Org clock/.test(r)));
+    assert.ok(reasons.some(r => /drawer :NOTES:/.test(r)));
+    assert.equal(board.tasks[0].spent_hours, undefined);
+    assert.equal(board.tasks[0].description, '', 'drawer text is not the description');
+    // A custom field cannot write the reference or the creation date over.
+    const org = formatOrgMode({ board: { title: 'B' }, items: [{ cardId: 'c', title: 'A', listTitle: 'L', customFields: { ID: 'x', CREATED: 'y' } }] });
+    assert.doesNotMatch(org, /:ID:|:CREATED:/);
   });
 
   console.log(`\norgMode: ${passed} tests passed`);

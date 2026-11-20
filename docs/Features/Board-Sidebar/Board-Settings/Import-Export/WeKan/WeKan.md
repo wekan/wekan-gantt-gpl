@@ -149,16 +149,18 @@ What the current code does:
 
 | WeKan export | WeKan |
 | --- | --- |
-| Board fields, labels, members, settings | The board, its labels and members (mapped or placeholder users) |
-| `swimlanes`, `lists` | Swimlanes and lists, with order, archive and color |
-| `cards` | Cards with text, order, archive, dates, people, labels, custom fields, votes, poker, locations and dependencies |
-| `customFields` | Custom fields |
-| `checklists`, `checklistItems` | Checklists and items |
+| Board fields, labels, members | The board, its labels and members (mapped or placeholder users) |
+| Board Settings | Every one: what a card and a minicard show and in which order, the flow policies, the board views, column sets, WIP limit groups, date format, notification delivery, announcement (`models/lib/wekanBoardFields.js`) |
+| `swimlanes`, `lists` | Swimlanes and lists, with order, archive and color; a swimlane's height; a list's WIP limit, flow policy, split into Doing and Done, and its role restrictions |
+| `cards` | Cards with text, order, archive, dates and the due date's done tick, people, labels, custom fields, flow fields (Blocked, Class of service, MoSCoW, WSJF), votes and poker by who voted, stickers, locations, drawings, column-set columns, kind, map position, mail headers, recurrence, display settings and dependencies (`models/lib/wekanCardFields.js`) |
+| `customFields` | Custom fields, with "admin only", "read only", the card kinds they apply to and the list sum |
+| `checklists`, `checklistItems` | Checklists, with their hide settings and reset schedule (counted from the import), and items with their assignee |
 | `subtaskItems`, parent links | Subtasks |
-| `comments` | Comments |
+| `comments` | Comments, a reply under the comment it answers |
 | `activities` | Activities |
 | `rules`, `triggers`, `actions` | Rules |
-| `attachments` (base64 in JSON, files in .zip) | Attachments, in the default storage |
+| `attachments` (base64 in JSON, files in .zip) | Attachments, in the default storage. The original is the file; a thumbnail is made from it when it is first shown, so it is not exported |
+| `type`: a template board, card, list or swimlane | It stays a template. A user's own Templates board comes as a template board (the importing user's own Templates board stays theirs), and is noted in the loss report |
 | Scrum records | Sprints, releases and Scrum settings |
 | Board background attachments | Board background |
 
@@ -169,7 +171,22 @@ What the current code does:
 - Parts not ticked under **Select what to include:** are left out of the
   export, or out of the import.
 - Ids are kept only as source references: the imported board, its cards and
-  everything else get new ids.
+  everything else get new ids. A user in a vote, a poker card or "blocked by"
+  is the mapped user; one who is not on the new board is left out.
+- What a file must not decide on its own is left to the new board's admin:
+  who may open or edit the board (organizations, teams, email domains, "every
+  signed-in user may edit"), whether the board accepts inbound email, and a
+  list role exception that lets a role do more than the board's rule (one that
+  lets it do less is kept).
+- What belongs to the exporting WeKan: the trash, external sync bookkeeping,
+  running Pomodoro and flow timers, linked cards and Gantt links to other
+  boards, and default boards for subtasks and dates. The two lists, with the
+  reason for each field, are `NOT_COPIED` in `models/lib/wekanBoardFields.js`
+  and `models/lib/wekanCardFields.js`, and `notCopied` in
+  `models/lib/wekanRecordFields.js` for the rest; `tests/wekanCardFields.test.cjs` fails
+  when a field of the schema is in neither.
+- A Board Settings value this WeKan's schema refuses - from an older or newer
+  WeKan - is left at its default and listed in the import's loss report.
 
 Older WeKan versions used other database schemas. For moving data from them,
 see [Migrating from old WeKan manually](./Migrating-from-old-Wekan-manually.md)

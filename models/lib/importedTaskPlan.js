@@ -15,11 +15,18 @@
 //   comments:   [{ text, author, authorName, date }]
 //   watchers:   [source user key]           - who follows the item
 //   date_received                           - when it arrived (receivedAt)
+//   blocked, blocked_reason                 - the card's Blocked flow field
+//                                             (models/lib/cardFlow.js)
+//   recurrence                              - 'daily', 'weekly' or 'monthly'
+//                                             (models/lib/recurrenceMap.js)
 //   email: { direction, from: { name, address }, to: [address], cc: [address],
 //            subject, messageId, threadIds: [Message-ID], at }
 //                                           - a mail message (mbox, .eml,
 //            Google Takeout Mail): the card is then mail in Board View / Email
 // Every one of them is optional; a task without them imports as before.
+
+import { RECURRENCES } from './recurrenceMap.js';
+import { importedReactions } from './importedReactions.js';
 
 const HEX6 = /^#?([0-9a-fA-F]{6})$/;
 
@@ -109,21 +116,58 @@ export function importedComment(comment, members = {}) {
   const author = text(comment.author).trim();
   const shown = text(comment.authorName).trim() || author;
   const userId = (author && members[author]) || null;
+  // Reactions of a chat message (models/lib/importedReactions.js).
+  const { reactions, unknown, unmapped } = importedReactions(comment.reactions, members);
   return {
     text: userId || !shown ? body : `${shown}: ${body}`,
     userId,
     createdAt: importedDate(comment.date),
+    ...(reactions.length ? { reactions } : {}),
+    ...(unknown ? { reactionsUnknown: unknown } : {}),
+    ...(unmapped ? { reactionsUnmapped: unmapped } : {}),
+    ...(text(comment.ref) ? { ref: text(comment.ref) } : {}),
+    ...(text(comment.reply_to) ? { replyTo: text(comment.reply_to) } : {}),
   };
 }
 
-export function importedChecklists(checklists) {
+// A chat's replies as WeKan's: a comment with `replyTo` (the `ref` of the
+// message it answers, on the same card) gets `parentIndex`, the index of the
+// top-level comment it belongs under - one level of threading, as WeKan has
+// (models/cardComments.js resolveParentId): a reply to a reply goes under the
+// first one's parent. A reply whose message is not on the card stays a
+// comment of its own, marked "↳ " so a reader still sees it answers one.
+export function threadImportedComments(comments) {
+  const indexOf = new Map();
+  const out = (Array.isArray(comments) ? comments : []).map(comment => ({ ...comment }));
+  out.forEach((comment, index) => {
+    const parent = comment.replyTo && indexOf.has(comment.replyTo) ? indexOf.get(comment.replyTo) : undefined;
+    if (parent !== undefined && parent !== index) {
+      comment.parentIndex = out[parent].parentIndex !== undefined ? out[parent].parentIndex : parent;
+    } else if (comment.replyTo && !/^↳ /.test(comment.text)) {
+      comment.text = `↳ ${comment.text}`;
+    }
+    if (comment.ref && !indexOf.has(comment.ref)) indexOf.set(comment.ref, index);
+    delete comment.replyTo;
+    delete comment.ref;
+  });
+  return out;
+}
+
+// An item may carry `due` (a date) and `assignee` (a source user key): a
+// WeKan checklist item has a due date and an assignee too.
+export function importedChecklists(checklists, members = {}) {
   if (!Array.isArray(checklists)) return [];
   return checklists
     .map((checklist, index) => ({
       title: text(checklist && checklist.title).trim() || 'Checklist',
       sort: index,
       items: (Array.isArray(checklist && checklist.items) ? checklist.items : [])
-        .map(item => ({ title: text(item && item.title).trim(), isFinished: Boolean(item && item.done) }))
+        .map(item => {
+          const due = importedDate(item && item.due);
+          const assignee = item && (typeof item.assignee === 'string' || typeof item.assignee === 'number') ? members[item.assignee] : undefined;
+          return { title: text(item && item.title).trim(), isFinished: Boolean(item && item.done),
+            ...(due ? { dueAt: due } : {}), ...(assignee ? { assigneeId: assignee } : {}) };
+        })
         .filter(item => item.title)
         .map((item, sort) => ({ ...item, sort })),
     }))
@@ -133,7 +177,7 @@ export function importedChecklists(checklists) {
 // `boardMemberIds` are the new board's members. A source watcher becomes a
 // card watcher only when mapped to one of them: watching grants no access,
 // but a watcher outside a private board must not receive its notifications.
-export function planImportedTask(task, { members = {}, allowedColors = [], boardMemberIds = [] } = {}) {
+export function planImportedTask(task, { members = {}, allowedColors = [], boardMemberIds = [], now } = {}) {
   const card = {
     title: text(task.title) || 'Imported task',
     description: text(task.description),
@@ -157,6 +201,17 @@ export function planImportedTask(task, { members = {}, allowedColors = [], board
   const email = importedEmail(task.email);
   if (email) card.email = email;
   if (task.due_complete === true && card.dueAt) card.dueComplete = true;
+  // Blocked, with its reason: the card's Blocked flow field.
+  if (task.blocked === true) {
+    card.flow = { blocked: true, ...(text(task.blocked_reason).trim() ? { blockedReason: text(task.blocked_reason).trim().slice(0, 1000) } : {}) };
+  }
+  // A repeating source task repeats here too. Its last occurrence counts as
+  // now: from its creation date, the recurrence job would make a copy of
+  // every imported card at once.
+  if (RECURRENCES.includes(task.recurrence)) {
+    card.recurrenceInterval = task.recurrence;
+    card.lastRecurrenceAt = now instanceof Date ? new Date(now.getTime()) : new Date();
+  }
   const spent = Number(task.spent_hours);
   if (task.spent_hours !== undefined && task.spent_hours !== null && Number.isFinite(spent) && spent > 0) {
     card.spentTime = spent;
@@ -177,10 +232,10 @@ export function planImportedTask(task, { members = {}, allowedColors = [], board
     memberIds,
     watcherIds,
     unwatchedCount: watcherKeys.length - watcherKeys.filter(key => watcherIds.includes(members[key])).length,
-    checklists: importedChecklists(task.checklists),
-    comments: (Array.isArray(task.comments) ? task.comments : [])
+    checklists: importedChecklists(task.checklists, members),
+    comments: threadImportedComments((Array.isArray(task.comments) ? task.comments : [])
       .map(comment => importedComment(comment, members))
-      .filter(Boolean),
+      .filter(Boolean)),
   };
 }
 

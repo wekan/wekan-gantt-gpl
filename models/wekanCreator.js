@@ -1,3 +1,7 @@
+import { wekanCardFields } from '/models/lib/wekanCardFields';
+import { wekanRecordFields } from '/models/lib/wekanRecordFields';
+import { recordImportLosses } from '/models/lib/importedCardChildren';
+import { BOARD_COPIED, wekanBoardFields, wekanBoardType } from '/models/lib/wekanBoardFields';
 import { membersMode, membersMappingFor } from '/models/lib/importMembersMode';
 import { Meteor } from 'meteor/meteor';
 import { ReactiveCache } from '/imports/reactiveCache';
@@ -93,6 +97,8 @@ export class WekanCreator {
     this.commentIds = {};
     // Map of attachments Wekan ID => Wekan ID
     this.attachmentIds = {};
+    // What the import could not bring over (models/lib/importLossReport.js).
+    this.losses = [];
     // Map of checklists Wekan ID => Wekan ID
     this.checklists = {};
     // Map of checklistItems Wekan ID => Wekan ID
@@ -172,6 +178,11 @@ export class WekanCreator {
    * @param wekanUserId
    * @private
    */
+  // The id maps models/lib/wekanRecordFields.js remaps by.
+  _recordMaps() {
+    return { members: this.members, cards: this.cards, comments: this.commentIds, now: this._now() };
+  }
+
   _user(wekanUserId) {
     if (wekanUserId && this.members[wekanUserId]) {
       return this.members[wekanUserId];
@@ -449,6 +460,10 @@ export class WekanCreator {
         dueAt: cardDates.dueAt,
         endAt: cardDates.endAt,
         spentTime: card.spentTime || null,
+        // A repeating card repeats again after its import; from the import,
+        // not from its old creation date, or every one would be copied at once.
+        ...(['daily', 'weekly', 'monthly'].includes(card.recurrenceInterval)
+          ? { recurrenceInterval: card.recurrenceInterval, lastRecurrenceAt: this._now() } : {}),
         // The two free-text "by" fields. They are exported - the JSON, the
         // .zip, the CSV and both card exports all carry them - and were not
         // imported, so a card came back having forgotten who asked for it and
@@ -521,6 +536,10 @@ export class WekanCreator {
         });
       }
 
+      // The rest of the card: flow fields, votes, poker, stickers, locations,
+      // drawings, display settings (models/lib/wekanCardFields.js, which
+      // also names the fields deliberately not written).
+      Object.assign(cardToCreate, wekanCardFields(card, { members: this.members, attachmentIds: this.attachmentIds }));
       // insert card
       const cardId = await writeImportedEntity(Cards, cardToCreate);
       // keep track of Wekan id => Wekan id
@@ -543,6 +562,8 @@ export class WekanCreator {
       // add comments
       const comments = this.comments[card._id];
       if (comments) {
+        // A reply whose comment comes later is linked once that one exists.
+        const unlinked = [];
         for (const comment of comments) {
           const commentToCreate = {
             boardId,
@@ -551,11 +572,14 @@ export class WekanCreator {
             text: comment.text,
             // we attribute the comment to the original author, default to current user
             userId: this._user(comment.userId),
+            // A reply, under the new id of the comment it answers.
+            ...wekanRecordFields('cardComments', comment, this._recordMaps()),
           };
           // dateLastActivity will be set from activity insert, no need to
           // update it ourselves
           const commentId = await writeImportedEntity(CardComments, commentToCreate);
           this.commentIds[comment._id] = commentId;
+          if (comment.parentId && !commentToCreate.parentId) unlinked.push({ commentId, parentId: comment.parentId });
           // Activities.direct.insert({
           //   activityType: 'addComment',
           //   boardId: commentToCreate.boardId,
@@ -566,6 +590,9 @@ export class WekanCreator {
           //   // to the original author - it is needed by some UI elements.
           //   userId: commentToCreate.userId,
           // });
+        }
+        for (const { commentId, parentId } of unlinked) {
+          if (this.commentIds[parentId]) await CardComments.direct.updateAsync(commentId, { $set: { parentId: this.commentIds[parentId] } });
         }
       }
       const attachments = this.attachments[card._id];
@@ -653,6 +680,12 @@ export class WekanCreator {
             // One failed attachment must not abort the whole import.
           }
         }
+        // A drawing's PNG is one of these attachments: written again now that
+        // its new id is known.
+        if (Array.isArray(card.drawings) && card.drawings.some(d => d && d.pngAttachmentId)) {
+          const { drawings } = wekanCardFields({ drawings: card.drawings }, { attachmentIds: this.attachmentIds });
+          if (drawings) await Cards.direct.updateAsync(cardId, { $set: { drawings } });
+        }
       }
       result.push(cardId);
     }
@@ -679,6 +712,8 @@ export class WekanCreator {
         //use date "now" if now created at date is provided (e.g. for very old boards)
         createdAt: this._now(this.createdAt.customFields[field._id]),
         modifiedAt: field.modifiedAt,
+        // "Admin only" and "read only" are who may see and edit the field.
+        ...wekanRecordFields('customFields', field, this._recordMaps()),
       };
       //insert copy of custom field
       await writeImportedEntity(CustomFields, fieldToCreate, {
@@ -743,6 +778,8 @@ export class WekanCreator {
       if (typeof list.collapsed === 'boolean') {
         listToCreate.collapsed = list.collapsed;
       }
+      // WIP limit, flow policy, split, role restrictions (models/lib/wekanRecordFields.js).
+      Object.assign(listToCreate, wekanRecordFields('lists', list, this._recordMaps()));
       const listId = await writeImportedEntity(Lists, listToCreate, {
         ids: this.lists,
         sourceId: list._id,
@@ -788,6 +825,7 @@ export class WekanCreator {
       if (swimlane.color && SWIMLANE_COLORS.includes(swimlane.color)) {
         swimlaneToCreate.color = swimlane.color;
       }
+      Object.assign(swimlaneToCreate, wekanRecordFields('swimlanes', swimlane, this._recordMaps()));
       const swimlaneId = await writeImportedEntity(Swimlanes, swimlaneToCreate, {
         ids: this.swimlanes,
         sourceId: swimlane._id,
@@ -894,6 +932,7 @@ export class WekanCreator {
         title: checklist.title,
         createdAt: checklist.createdAt,
         sort: checklist.sort ? checklist.sort : checklistIndex,
+        ...wekanRecordFields('checklists', checklist, this._recordMaps()),
       };
       const checklistId = await writeImportedEntity(Checklists, checklistToCreate, {
         ids: this.checklists,
@@ -958,6 +997,7 @@ export class WekanCreator {
           boardId,
           sort: checklistitem.sort ? checklistitem.sort : checklistitemIndex,
           isFinished: checklistitem.isFinished,
+          ...wekanRecordFields('checklistItems', checklistitem, this._recordMaps()),
         };
 
         const checklistItemId = await ChecklistItems.direct.insertAsync(
@@ -1151,6 +1191,8 @@ export class WekanCreator {
       { method: 'createBoardAndLabels', createsBoard: true },
       { method: 'createLists', source: 'lists' },
       { method: 'createSwimlanes', source: 'swimlanes' },
+      // Board Settings name lists, so they come once the lists exist.
+      { method: 'createBoardSettings' },
       { method: 'createCustomFields', source: 'customFields' },
       { method: 'createCards', source: 'cards' },
       { method: 'createSubtasks', source: 'cards' },
@@ -1165,7 +1207,38 @@ export class WekanCreator {
       { method: 'createRules', source: 'rules' },
       { method: 'recordImportedUsernames' },
       { method: 'recreateBackgrounds' },
+      { method: 'recordLosses' },
     ]);
+  }
+
+  // The import's loss report, as the other importers write it.
+  async recordLosses(board, boardId) {
+    if (!Meteor.isServer || !this.losses.length) return;
+    await recordImportLosses({ source: 'wekan', unsupported: this.losses, boardId,
+      boardTitle: board.title || undefined, userId: Meteor.userId() });
+  }
+
+  // Board Settings (models/lib/wekanBoardFields.js): one update, and when the
+  // schema refuses it - a value from an older or newer WeKan - one field at a
+  // time, each refused one reported, so one bad value does not fail the import.
+  async createBoardSettings(board, boardId) {
+    const fields = wekanBoardFields(board, BOARD_COPIED, { lists: this.lists });
+    if (wekanBoardType(board.type)) fields.type = wekanBoardType(board.type);
+    if (board.type === 'template-container') {
+      this.losses.push({ path: '/type', reason: 'a user\'s Templates board is imported as a template board; the importing user\'s own Templates board stays theirs' });
+    }
+    if (!Object.keys(fields).length) return;
+    try {
+      await Boards.direct.updateAsync(boardId, { $set: fields });
+    } catch (error) {
+      for (const [field, value] of Object.entries(fields)) {
+        try {
+          await Boards.direct.updateAsync(boardId, { $set: { [field]: value } });
+        } catch (refused) {
+          this.losses.push({ path: `/${field}`, reason: `Board Settings ${field} is not a value this WeKan accepts: ${refused && refused.message}` });
+        }
+      }
+    }
   }
 
   async createScrumData(board, boardId) {

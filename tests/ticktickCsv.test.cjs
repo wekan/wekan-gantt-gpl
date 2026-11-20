@@ -58,7 +58,10 @@ async function main() {
     assert.deepEqual(dropped.tags, ["won't do"]);
     const reasons = board.unsupported.map(u => `${u.path} ${u.reason}`).join('\n');
     assert.match(reasons, /Reminder TickTick reminders/);
-    assert.match(reasons, /Repeat repeating task "FREQ=WEEKLY;INTERVAL=1" is imported once/);
+    // A weekly repeat is a card repeat now (models/lib/recurrenceMap.js); on a
+    // finished task it is not kept, and the report says so.
+    assert.match(reasons, /Repeat the repeat "FREQ=WEEKLY;INTERVAL=1" of a finished task is not kept/);
+    assert.equal(later.recurrence, undefined);
   });
 
   test('a 7.1 backup without projectKind reads the same, by header name', () => {
@@ -125,6 +128,14 @@ async function main() {
     assert.match(read('client/components/boards/exportScope.js'), /key: 'ticktick'[^}]*path: 'export\/ticktick', ext: 'csv'/);
     assert.match(JSON.parse(read('imports/i18n/data/en.i18n.json'))['import-board-instruction-ticktick'], /Backup & Import/);
   });
+
+  // Negative: a column TickTick does not write is reported, not dropped.
+  {
+    const board = parseTickTickCsv(backup('7.1', [...HEADER_71, 'Story Points'], [{ 'List Name': 'L', Title: 'T', 'Story Points': '5' }]));
+    assert.ok(board.unsupported.some(u => /column\(s\) TickTick does not write are not imported: Story Points/.test(u.reason)));
+    assert.ok(!parseTickTickCsv(backup('7.1', HEADER_71, [{ 'List Name': 'L', Title: 'T' }])).unsupported.some(u => /does not write/.test(u.reason)));
+    passed += 1;
+  }
 
   console.log(`\nticktickCsv: ${passed} checks passed`);
 }
