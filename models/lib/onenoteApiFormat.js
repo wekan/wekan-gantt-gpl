@@ -56,11 +56,21 @@ export function onenotePage(html) {
   const created = (/<meta\s+name="created"\s+content="([^"]+)"/i.exec(str(html)) || [])[1] || '';
   let source = str(html);
   let prev;
+  // One loop for all four, until nothing changes: removing one can join the
+  // halves of another around it (`<!-<!---->-` is a comment again once the
+  // inner one is gone, `<scr<!---->ipt>` a script), so a single pass of any
+  // of them is incomplete (CodeQL js/incomplete-multi-character-sanitization).
+  // All four are ONE replace whose result is the next pass's input: CodeQL
+  // accepts a removal only when its own result flows back into it, so a
+  // chain, or four assignments in a row, left the value between two removals
+  // counted as unsanitized (alerts #609/#610). At each position the
+  // alternation removes whichever construct starts there; a declaration
+  // (`<!DOCTYPE ...>`) has no `<` in it, so it cannot swallow the start of a
+  // comment that follows a stray `<!-`.
   do {
     prev = source;
-    source = source.replace(/<(head|style|script)\b[\s\S]*?<\/\1\s*>/gi, '');
+    source = source.replace(/<(head|style|script)\b[\s\S]*?<\/\1\s*>|<!--[\s\S]*?-->|<![^<>]*>|<\?[\s\S]*?\?>/gi, '');
   } while (source !== prev);
-  source = source.replace(/<!--[\s\S]*?-->/g, '').replace(/<![^>]*>/g, '').replace(/<\?[\s\S]*?\?>/g, '');
   const todos = [];
   source = source.replace(/<(p|li|span|div|h[1-6])\b([^>]*\bdata-tag="([^"]*)"[^>]*)>([\s\S]*?)<\/\1\s*>/gi, (whole, tag, attrs, tags, inner) => {
     const kinds = tags.split(',').map(t => t.trim());

@@ -95,6 +95,94 @@ Which databases WeKan supports
 
 </details>
 
+# v13.25 2026-11-21 WeKan ® release
+
+**In short:** **CodeQL** alerts #605-#610 in the **OneNote** and **Sandstorm
+grain** formats are fixed: comments in imported HTML are removed to a fixed
+point, SandChat user ids come from a cryptographic generator, and the guards
+that missed these shapes now find them anywhere in the tree.
+
+This release fixes the following SECURITY ISSUES found by GitHub CodeQL code scanning:
+
+**Imported HTML** - how the OneNote and WordPress readers remove what is not
+text.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3f5e4f3f14adb42af5eb486fb393ec143833e392">Alert #606: a OneNote page's comments cannot splice a script back together</a>. Thanks to GitHub CodeQL and xet7.</summary>
+
+`models/lib/onenoteApiFormat.js` removed `<head>`, `<style>` and `<script>`
+in a loop, and only then comments, declarations and processing instructions,
+once each. So `<scr<!---->ipt>alert(1)</scr<!---->ipt>` became a script after
+the element loop had finished, and `alert(1)` reached the card as text
+(CWE-116).
+All four removals are now one loop to a fixed point.
+`tests/onenoteApiImport.test.cjs` imports that page and a comment spliced from
+two halves and gets only the page's text. The negative case is an ordinary page
+with an escaped `&lt;!--`, which keeps all of its text.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/cc4a494185bcb947a4195830887c2bf72a0a98e0">Alerts #609 and #610: a OneNote page's removals are one replace, as CodeQL needs</a>. Thanks to GitHub CodeQL and xet7.</summary>
+
+The fix for #606 above looped the four removals to a fixed point, but as a
+chain, `x = x.replace(A).replace(B)`. CodeQL exempts a removal only when its
+own result flows back into it, so the value between two removals still
+counted as unsanitized ("may still contain `<!--`", "`<script`"); four
+assignments in a row were no better, checked with CodeQL 2.27.5. The patterns
+are now one regex of alternatives in the loop, which CodeQL reports nothing
+for. A declaration is `<![^<>]*>`, so it cannot swallow the start of a comment
+after a stray `<!-` - the splice test caught that. The guard
+`tests/tagStrippingFixedPoint.test.cjs` had accepted the chain; it now accepts
+only `prev = x;` and one `x = x.replace(...);` in the loop, flags the old
+OneNote lines exactly, and has fixtures for a chain, several assignments and
+one replace of alternatives.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3f5e4f3f14adb42af5eb486fb393ec143833e392">Alert #607: a WordPress post's comments are removed until none is left</a>. Thanks to GitHub CodeQL and xet7.</summary>
+
+The WordPress grain reader in `models/lib/sandstorm/grainApps.js` removed
+`<!-- ... -->` once, so `<!-<!-- x -->- y -->` was a comment again. It now
+loops to a fixed point, and `tests/sandstormGrain.test.cjs` imports a post
+that opens with that comment. `tests/tagStrippingFixedPoint.test.cjs` now
+refuses a one-pass comment or `<!...>` strip in any tracked file, and its
+detector fixtures show a one-pass strip caught and a loop accepted. Both alerts
+are about import parsing, where no attempt can be told apart from an odd
+document, so neither is recorded in Admin Panel → Problems.
+
+</details>
+
+**Sandstorm grain export** - what WeKan writes into the grains it exports.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3f5e4f3f14adb42af5eb486fb393ec143833e392">Alert #605: SandChat user ids come from Web Crypto, not Math.random</a>. Thanks to GitHub CodeQL and xet7.</summary>
+
+A SandChat grain's `users.uid` identifies a user, and it was 32 hex digits
+from `Math.random()`, whose output predicts the rest of it (CWE-338). It now
+comes from `crypto.getRandomValues` in `models/lib/sandstorm/randomHex.js`,
+two hex digits per byte, so there is no modulo bias. The test reads the uids
+back from two exports: 32 hex digits each, none repeated. The negative test
+refuses `Math.random` anywhere in the Sandstorm grain code. Admin Panel →
+Problems has nothing to record: this changes what an export contains.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3f5e4f3f14adb42af5eb486fb393ec143833e392">Alert #608: the EtherCalc header has no replace of a newline with itself</a>. Thanks to GitHub CodeQL and xet7.</summary>
+
+The SocialCalc save header ended with `.replace(/\n$/, '\n')`, which does
+nothing (CWE-116). It is removed, and the test pins the exact header with its
+one newline before the first part. `tests/noIdentityReplacement.test.cjs`
+missed this shape because it did not accept `\n`-style escapes in a pattern.
+It now compares them as the characters they are, and its negative samples
+check that removing a newline, or turning CRLF into LF, is not reported.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v13.24 2026-11-21 WeKan ® release
 
 **In short:** Six more of **Microsoft**'s tools are imported and exported under
@@ -8368,170 +8456,6 @@ already left behind to their card's board.
 `tests/cardChildrenFollowMove.test.cjs` pins the list and fails on any move
 path that skips the helper, and a Playwright spec moves a commented card with
 the Move Card popup and by REST.
-
-</details>
-
-Thanks to above GitHub users for their contributions and translators for their translations.
-
-# v12.57 2026-10-20 WeKan ® release
-
-**In short:** attachments can be **deleted after a set time** and deleted ones
-**purged**, every **backup** is recorded with failures and overdue runs shown,
-and the newest features' settings are on **every platform** and in the **Admin
-Panel**. Adding a board member by email works whatever the letter case, and the
-**Security report** stops crying wolf.
-
-This release adds the following new features:
-
-**Attachments and backups** - how long files and backups are kept, and whether
-the backups worked.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/dcf91e4471">Attachment retention: delete card attachments after N days, purge deleted ones after M days</a>. Thanks to Raymond-Voogt and xet7.</summary>
-
-[#6789](https://github.com/wekan/wekan/issues/6789): off unless configured, a
-nightly job deletes card attachments older than `ATTACHMENTS_RETENTION_DAYS`
-through the card's own restorable Delete, optionally only on inactive cards.
-`ATTACHMENTS_PURGE_DELETED_AFTER_DAYS` then removes them for good, file
-included, from every storage backend. There are also dry-run and per-night
-cap settings. All five are in **Admin Panel / Attachments / Retention** and on
-every platform. `tests/attachmentRetention.test.cjs` and a UI spec cover it.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/06b7ce994a">Backup status: every run recorded, failures and overdue backups shown, old backups pruned</a>. Thanks to Raymond-Voogt and xet7.</summary>
-
-[#6790](https://github.com/wekan/wekan/issues/6790): a backup's result lived only
-in the memory of the server that ran it, so after a restart, or on another pod,
-nobody could tell whether last night's backup worked. Every run is now recorded
-for 400 days. Admin Panel / Problems / Backup shows the last success, the last
-failure, the next run and the history. Problems / Summary and `/metrics` report
-failed and overdue backups. `BACKUP_KEEP_DAYS`, also in Admin Panel /
-Attachments / Backup, prunes old local backups and always keeps the newest.
-`tests/backupRuns.test.cjs` covers it.
-
-</details>
-
-**Admin Panel settings** - the newest features' environment variables.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/718fdb5dac">The newest features' settings are on every release platform and in the Admin Panel</a>. Thanks to xet7.</summary>
-
-An audit found 30 variables new since v12.00. The Email to card limits, the
-login-cookie limit and Windows SSO are now Admin Panel settings. Those and the
-per-process switches are listed in the Dockerfile, docker-compose, start-wekan
-and the snap; none had been. `tests/envVarCoverage.test.cjs` now fails for any
-variable read that is neither an Admin Panel setting nor environment-only with
-a stated reason.
-
-</details>
-
-and fixes the following bugs:
-
-**Board members** - adding a colleague to a board.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/193fb449bd">Adding a board member by email works in any letter case, and search finds colleagues past five matches</a>. Thanks to Raymond-Voogt and xet7.</summary>
-
-[#6788](https://github.com/wekan/wekan/issues/6788): LDAP and OIDC store an
-address as the directory spells it, and the invite matched it exactly, so
-"jan.jansen@example.com" found nobody and WeKan tried to create a new account.
-The match is now case-insensitive, anchored and escaped. The member search read
-five users before filtering out disabled accounts and other organizations, so a
-colleague could be hidden; it filters first now. A test of the source and a
-UI spec cover both (`tests/inviteMemberEmailCase.test.cjs`).
-
-</details>
-
-**Admin Panel / Problems / Security** - reports that named an attack or a
-tampering where there was none, and labels it showed in English.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/4f3ec0afa3">History rows are hashed as stored, so an unset value is not tampering</a>. Thanks to xet7.</summary>
-
-HistoryIntegrity reported "checksum-mismatch", critical, 89472 times, on a row
-nobody had touched. Meteor stores rows with `ignoreUndefined`, so a content
-value like `deletedAt: list.deletedAt` (unset) is dropped when stored, and the
-row's hash, which still covered it, failed every audit. Rows are now hashed as
-stored. Rows written before this verify by re-adding exactly the keys the
-other side of the change has. A changed or removed real value still fails.
-`tests/changeHistoryIntegrity.test.cjs` stores rows through BSON as the
-driver does.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/c7c541ccc5">FileNameBleed: a percent-encoded name is not an exploit, and opening a file is not an upload</a>. Thanks to xet7.</summary>
-
-Opening a board of 2019 photos with Cyrillic names tripped "uploaded a
-filename carrying an exploit pattern; URL-encoded name". Percent-encoding is
-how browsers and older WeKan store any non-ASCII name. It is no longer a
-dangerous reason. Path traversal and null bytes are now named from the
-decoded name, so an encoded `../` still trips the path-traversal canary. A
-name repaired while a file is read never trips the upload canary.
-`tests/filenameCanaryReasons.test.cjs` covers both directions.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/52f127c0a5">A clean file-integrity scan is no longer a StorageBleed event</a>. Thanks to xet7.</summary>
-
-The background scan reported its own summary ("0 changed, 0 with no record
-saying why") on every run, 41 times. The summary is recorded only beside the
-changed or missing files it sums up; a clean run goes to the server log.
-`tests/fileIntegrity.test.cjs` pins it.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/8a23306c2e">Locations from Cloudflare keep their letters: Dinkelsbühl, not DinkelsbÃ¼hl</a>. Thanks to xet7.</summary>
-
-Cloudflare sends the city as UTF-8 bytes and Node reads header values as
-Latin-1. A value that is valid UTF-8 as bytes is now read as UTF-8; genuine
-Latin-1 and percent-encoded names are unchanged. `tests/geoHeadersUtf8.test.cjs`
-includes a real HTTP request.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/3d703965c4">IPv6 location and Instrumentation are translated</a>. Thanks to xet7.</summary>
-
-The IPv6 location column is the translated "location" plus " (IPv6)", and the
-Instrumentation report has a title key, translated into every language
-(French: "Instrumentation logicielle"). Several translations are
-low-confidence and listed in the commit.
-
-</details>
-
-**Release builds** - jobs that v12.56 lost to infrastructure rather than to
-WeKan.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/294a9016d3">Bun bundles wait for their smoke-test MongoDB, and replace a lost one</a>. Thanks to xet7.</summary>
-
-v12.56's Bun linux-x64 bundle stopped with "Topology is closed": nothing
-listened on the smoke-test database's port. The container had been started
-with `--rm` and never checked, so its log was gone too. `bun.yml` now waits
-until it answers a ping, and prints its log if it does not. `build-target.sh`
-checks again before starting WeKan, with the new `releases/bun/wait-mongo.mjs`;
-a lost database is shown and replaced once. `tests/bunSmokeMongo.test.cjs`
-covers it.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/727e96e527">Launchpad snaps retry an outage there for longer, not three strikes</a>. Thanks to xet7.</summary>
-
-v12.56's ppc64el snap gave up after 20 minutes of a five-hour budget. The
-builder lost TLS while cloning our source, and the next two attempts, a minute
-apart, met Launchpad's HTTP 503. An attempt that fails on Launchpad
-infrastructure now earns another, up to six, after a growing pause. Other
-failures keep three attempts. `tests/snapLaunchpadInfraRetry.test.cjs` runs
-the workflow's own check against logs shaped like v12.56's, and against the
-negatives. Its git-error pattern says `RPC failed;` rather than naming curl
-([follow-up](https://github.com/wekan/wekan/commit/363cd22916)), as the
-downloads guard requires.
 
 </details>
 
