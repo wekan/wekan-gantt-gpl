@@ -95,6 +95,154 @@ Which databases WeKan supports
 
 </details>
 
+# v13.24 2026-11-21 WeKan ® release
+
+**In short:** Six more of **Microsoft**'s tools are imported and exported under
+the Microsoft heading: **Azure DevOps Boards**, **Microsoft Lists**,
+**Microsoft Project** (XML), **Outlook** (.msg in, .eml out), **Teams** and
+**OneNote**, the last two also fetched from Microsoft Graph. **Sandstorm** grain
+backups of twelve apps are imported and nine exported, and **Vietnamese** no
+longer shows Malay text.
+
+This release adds the following new features:
+
+**Microsoft** - six tools of Microsoft's, each read from what it exports and
+written as what it imports, with tests and the instruction in every language.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/01e88410cd7440b26c5f845d98ae058f93c16a85">Azure DevOps Boards: a query's CSV is imported, and a board exports as its CSV import</a>. Thanks to xet7.</summary>
+
+Board Column (or State) becomes the lists and Board Lane the swimlanes; a tree
+query's Title 1, Title 2, ... columns become parent and child cards,
+`Name <address>` people the owner, regional dates are read day first when they
+have
+to be, and the other columns become custom fields. The export is the file
+**Import from CSV** reads: new work items whose type and State come from a
+label and a list named after the built-in processes' types and states.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/01e88410cd7440b26c5f845d98ae058f93c16a85">Microsoft Lists: a list's CSV is imported, and a board exports as a CSV Lists makes a list of</a>. Thanks to xet7.</summary>
+
+The Status (or Progress) column - the one a list's board view groups by -
+becomes the lists, with the items' people (also SharePoint's `;#` form), dates,
+tags and the other columns as custom fields. SharePoint's own columns are
+reported. The export is the CSV **New list → From CSV** reads.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/01e88410cd7440b26c5f845d98ae058f93c16a85">Microsoft Project: its XML plan is imported, and a board exports as a plan Project opens</a>. Thanks to xet7.</summary>
+
+MSPDI XML: summary tasks become swimlanes, tasks cards in Not started, In
+progress or Completed, with dates, notes, resources, subtasks and predecessors.
+A small XML reader of WeKan's own reads it and never resolves a DTD or an
+entity; the negative test feeds it an external entity and gets the text back
+unexpanded.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/01e88410cd7440b26c5f845d98ae058f93c16a85">Outlook: .msg files are imported as mail, and a board exports as .eml files</a>. Thanks to xet7.</summary>
+
+The Compound File Binary format and the message's properties are read without
+a library - subject, sender, recipients, time, ids, body and attachments - and
+go through the mail import, so replies join their thread in Board View / Email.
+A `.zip` of `.msg` and `.eml` files is read too. Tested with `.msg` files
+written by a Compound File writer in the test, and checked against files saved
+by Outlook.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/01e88410cd7440b26c5f845d98ae058f93c16a85">Teams: chats and channels are fetched from Microsoft Graph or read from an export</a>. Thanks to xet7.</summary>
+
+Graph chat messages, the Teams Export API's file and the personal export's
+`.tar` become cards in Board View / Chat, the messages and replies their
+comments, with files as links and reactions. A board exports as Teams chats of
+Graph chat messages, which the migration API takes and WeKan reads back.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/01e88410cd7440b26c5f845d98ae058f93c16a85">OneNote: a notebook is fetched from Microsoft Graph, and a board exports as OneNote pages</a>. Thanks to xet7.</summary>
+
+Sections become lists and pages cards, with the page's text, its to-do boxes as
+a checklist and subpages as subtasks. The export is a `.zip` of pages in the
+XHTML Graph's create page takes, with `onenote.json` that WeKan reads back.
+Both Graph clients refuse a next link that leaves graph.microsoft.com, and
+have live tests in `releases/live-tests/`.
+
+</details>
+
+**Sandstorm** - the grain backups of Sandstorm apps, read and written in
+each app's own storage, under a heading of their own.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6f3f6cc5a83df1b91a40d6afae261a74cf5b6507">Sandstorm grain backups are imported, and for nine apps exported as a grain Sandstorm restores</a>. Thanks to xet7.</summary>
+
+A grain backup's metadata, a GrainInfo Cap'n Proto message, is read and
+written without a Cap'n Proto library, and each app's data is read from its
+own storage: WeKan's FerretDB SQLite, Prioritize's JSON, Yet Another TODO list's
+and SandChat's SQLite, μTodo's bitcask log, EtherCalc's SocialCalc sheets,
+Radicale's calendar and address book, Davros' files and Hacker CMS's Jekyll
+site, all of them also written back; Gogs' issues and WordPress's posts and
+pages are imported only, as their grains are whole installations. Rocket.Chat,
+Text Editor, SandForms and Piwik keep their data in MongoDB's or MySQL's own
+files: such a grain is refused with that reason, and a grain of another app
+than the one chosen says which app it is. The readers were run on real grains
+of every app; `tests/sandstormGrain.test.cjs` makes its own.
+
+</details>
+
+- [EtherCalc's escaping is one pass, and Hacker CMS's title pattern allows end-tag attributes](https://github.com/wekan/wekan/commit/c28f6de37891cb25197651a9bef1a60bd0012e4a). Thanks to xet7.
+
+and fixes the following bug:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/20c67216fe627eedc72a02c3536aef8024aabb8c">Outlook and OneNote exports: the files are written after the export boundary</a>. Thanks to xet7.</summary>
+
+The export boundary passes every string that looks like markup through the
+HTML sanitizer, and both exports wrote their files before it: the OneNote pages
+lost their `<html>`, `<head>`, `<title>` and `<meta>`, and an `.eml` file's
+`Message-ID: <...@wekan.invalid>` read as a tag and was removed. The
+formatters now return plain values and the files are written from the checked
+values, as Vikunja's archive is; the negative tests, which run the export
+through the boundary with a sanitizer that removes every tag, fail with the
+previous code.
+
+</details>
+
+and the following translation:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/02b101ad88f7f845212b280d037b6a12e7a88c37">Vietnamese: comments and 282 other strings are Vietnamese, not Malay</a>. Thanks to xet7.</summary>
+
+vi and vi-VN were partly seeded with Malay and Indonesian - "Komen" for
+Comments, "Hapus komen?", the colours, Planning Poker, the minicard settings,
+the Node heap statistics, the e-mail templates and more. They are Vietnamese
+now, with the words the files already use. `tests/vietnameseNotMalay.test.cjs`
+fails on a Malay or Indonesian word in either file and on a placeholder that
+differs from English.
+
+</details>
+
+and updates the documentation:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4f022b8af6615b8b5ee9e0c968cdbc64c73112bb">README and feature docs list what WeKan has now, by its menus</a>. Thanks to xet7.</summary>
+
+The README's import and export lists follow the headings of the Import page
+and the Export menu, its Board Views the Board View menu's six headings; the
+feature docs' newest features, the Import / Export overview, Board Settings and
+the docs index have the new tools and the current counts - 78 import sources
+and some sixty export formats.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v13.23 2026-11-20 WeKan ® release
 
 **In short:** The **Import** page and the **Export** menu list a company's
@@ -8384,229 +8532,6 @@ the workflow's own check against logs shaped like v12.56's, and against the
 negatives. Its git-error pattern says `RPC failed;` rather than naming curl
 ([follow-up](https://github.com/wekan/wekan/commit/363cd22916)), as the
 downloads guard requires.
-
-</details>
-
-Thanks to above GitHub users for their contributions and translators for their translations.
-
-# v12.56 2026-10-20 WeKan ® release
-
-**In short:** accounts nobody uses can be **disabled after a set number of
-days**, from the Admin Panel or the environment, and **LDAP background sync**
-disables what the directory disabled. Admin Panel / People shows everyone's
-**Last active**, check marks are check marks in **right-to-left** languages,
-and **restored list swimlanes** survive the next upgrade.
-
-This release adds the following new features:
-
-**People** - who uses WeKan, and what happens to accounts nobody does.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/b933a69cd4">Inactive accounts can be disabled; LDAP sync honours its search filter; everyone's Last active is shown</a>. Thanks to Raymond-Voogt and xet7.</summary>
-
-- [#6783](https://github.com/wekan/wekan/issues/6783): Admin Panel / People
-  showed "Last active" as "-" for every user but the administrator, because
-  the `people` publication did not carry `lastConnectionDate`. The table's own
-  row projection left it out too, which the UI test found
-  ([the table's half](https://github.com/wekan/wekan/commit/c4376f92a5)).
-- [#6784](https://github.com/wekan/wekan/issues/6784):
-  `USERS_DISABLE_INACTIVE_AFTER_DAYS` disables, once a night, accounts unused
-  for that many days, and revokes their logins.
-  - Admins are never disabled.
-  - An account with no recorded activity starts its count on the first run,
-    not from when it was created.
-  - Re-enabling an account restarts its count.
-  - The setting is in **Admin Panel / People / Login** as well as in every
-    platform's settings. It is read each night, so a change there needs no
-    restart.
-- [#6785](https://github.com/wekan/wekan/issues/6785): LDAP background sync
-  looked users up without `LDAP_USER_SEARCH_FILTER`. An account the filter
-  excludes, such as one disabled in Active Directory, could not log in but was
-  still found: it was never disabled, and a manual disable was undone on the
-  next sync. The filter is now part of the lookup, and an account disabled for
-  inactivity is not re-enabled by the sync.
-
-From the patch by Raymond-Voogt. `tests/inactiveUsers.test.cjs`,
-`tests/ldapBackgroundSync.test.cjs`, `tests/ldapUserIdFilter.test.cjs`,
-`tests/authConfigCatalog.test.cjs` and
-`inactive-users-last-active.e2e.js` cover it.
-
-</details>
-
-and fixes the following bugs:
-
-**Right-to-left languages** - how a checked checkbox looks.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/b4bcded492">A checked checkbox shows a check mark in right-to-left languages too</a>. Thanks to mimZD and xet7.</summary>
-
-[#6786](https://github.com/wekan/wekan/issues/6786): the tick is a box rotated
-40 degrees and drawn by its bottom and side borders. The side was
-`border-inline-end`, which a right-to-left page puts on the left, so the tick
-opened the other way. All 25 rules that draw a tick now use `border-right`.
-`tests/rtlCheckMark.test.cjs` fails if any checked state in `client/` draws
-one with a logical border, and `rtl-check-mark.e2e.js` compares both
-directions.
-
-</details>
-
-**Admin Panel / Problems** - repairs that stay repaired.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/3469f84c78">Restored list swimlanes stay restored after a WeKan upgrade</a>. Thanks to mimZD and xet7.</summary>
-
-[#6787](https://github.com/wekan/wekan/issues/6787): after every new release,
-the startup upgrade's `merge-per-swimlane-lists` step, written for v7.98-era
-damage, un-bound every list on a board with two lists of one title, the lists
-"Lists missing their swimlane" -> Restore had bound included. So the count
-came back the same after each upgrade. A list bound to the swimlane it was
-created in, with all its cards there, is now left alone. Press Restore once
-more after upgrading. `tests/schemaUpgradeSteps.test.cjs` covers the issue's
-board and two negatives.
-
-</details>
-
-Thanks to above GitHub users for their contributions and translators for their translations.
-
-# v12.55 2026-10-18 WeKan ® release
-
-**In short:** the **32-bit ARM single files** are injected outside the 32-bit
-Node.js that ran out of memory doing it, and each **musl AppImage** is built
-once, under a name of its own.
-
-This release fixes the following bugs:
-
-**Release builds** - single files and AppImages that v12.54 built broken,
-twice, or not at all.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/29dfe94886">A 32-bit ARM single file's blob is injected in a 64-bit process</a>. Thanks to xet7.</summary>
-
-v12.54's retry did not help: armv7 failed with `std::bad_alloc` on all three
-attempts. A 32-bit target's blob must be written by a 32-bit Node.js, and
-`--build-sea` also injects it with LIEF in that process, which does not have
-the address space for it. The i386 Node.js now writes only the blob
-(`--experimental-sea-config`), and `releases/single-file/sea-inject-elf.py`
-injects it with LIEF 1.0.0, the version Node.js vendors, step for step as
-`--build-sea` does. The result is byte-identical to `--build-sea`'s, for a
-non-PIE x64 Node.js and the PIE node-armv7. win32 and 64-bit targets are
-unchanged, and the retry is gone. `tests/singleFileSeaInject.test.cjs`
-compares the two outputs byte for byte where LIEF is available.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/2cbb038719">Each musl AppImage is built once, and every AppImage job has its own name</a>. Thanks to xet7.</summary>
-
-The glibc AppImages call built the musl rows too, so "AppImage x86_64" and
-"AppImage aarch64" ran twice. Their logs then collided in the run's log
-archive and asked to be overwritten when it was unpacked. That call now builds
-only the glibc four, the job is named `AppImage x86_64-musl` and so on, and
-each run checks only its own AppImages are attached. The musl run had warned
-that the glibc ones were missing. `tests/muslBundles.test.cjs` checks that the
-names are unique and that each row is built by one call.
-
-</details>
-
-Thanks to above GitHub users for their contributions and translators for their translations.
-
-# v12.54 2026-10-18 WeKan ® release
-
-**In short:** the **Android** bundles, the **x86_64 musl AppImage** and the
-**armhf single file**, which v12.53 could not build or start, build again.
-
-This release fixes the following bugs:
-
-**Release builds** - bundles that v12.53 built broken or not at all.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/519869b561">Android bundles preload termux-exec, so bcrypt's install script runs</a>. Thanks to xet7.</summary>
-
-Every Android bundle of v12.53 stopped in `npm-rebuild.js` with "sh: 1:
-node-gyp-build: not found". Termux has no `/usr/bin/env`, so a
-`#!/usr/bin/env node` script runs only through termux-exec, an `LD_PRELOAD`
-library that Termux's `login` exports, and the workflow starts bash without
-`login`. `releases/android/build-bundle.sh` now exports it the way `login`
-does. `tests/androidBundles.test.cjs` pins it before `npm install`.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/fa0c03437c">A single file's --build-sea is tried again when it runs out of memory</a>. Thanks to xet7.</summary>
-
-The armhf single file of v12.53 failed with `std::bad_alloc`. A 32-bit target
-is injected by the 32-bit i386 Node.js, and the executable, the 180 MiB
-archive and LIEF's copies of both come near its 4 GiB address space: armv7
-and armv6, with the same archive and host, built in the same run. `buildSea()`
-retries up to three times on `std::bad_alloc` only.
-`tests/singleFileSeaInject.test.cjs` covers the retry and that no other
-failure is retried.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/df5560ad51">musl bundles carry every library their Node.js needs, libatomic too</a>. Thanks to xet7.</summary>
-
-Every x86_64 musl AppImage of v12.53 did not start in a bare Alpine: "Error
-loading shared library libatomic.so.1". `node-runtime` held only libstdc++
-and libgcc_s, and the build container had libatomic through g++. The musl
-build now copies every `NEEDED` library of `bundle/node` except musl's libc,
-and `AppImage.yml` checks each is there before packing.
-`tests/muslBundles.test.cjs` pins both.
-
-</details>
-
-Thanks to above GitHub users for their contributions and translators for their translations.
-
-# v12.53 2026-10-18 WeKan ® release
-
-**In short:** moving a card with an **outgoing webhook** no longer disables
-the mover's account as **HookBleed**, and a security refusal that says it
-blocks nobody (**RedirectBleed**, **LiveBleed**, **IntegrationBleed**) now
-really does not.
-
-This release fixes the following bugs:
-
-**Outgoing webhooks** - a card move delivered to a webhook is the server's own,
-and costs nobody their account.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/b01c233269">Moving a card with an outgoing webhook is no HookBleed and keeps the mover's account</a>. Thanks to do4me and xet7.</summary>
-
-[#6782](https://github.com/wekan/wekan/issues/6782): the activity hook sent
-webhooks through `Meteor.call('outgoingWebhooks')`, and that method took a
-call without `this.connection` to be the server's own. Meteor gives a
-server-side `Meteor.call` the user and connection of the method it runs in,
-and a card moved in a browser runs in that browser's method. The server's own
-`act-moveCard` delivery was therefore taken for a client forging one. It was
-logged as HookBleed, and the mover's account was disabled.
-
-- The server now delivers through `deliverActivityWebhook()`, a function that
-  no client can call. It reads the integration again and names the
-  activity's actor. The method accepts only the card-opened notification, as
-  it already did for clients.
-- A server delivery no longer needs the actor to be a member of the hook's
-  board. That check had also stopped global webhooks and activities with no
-  method behind them, such as REST and timers.
-- `securityLog.record()` passed neither the catalog key nor `blocksAccount`
-  to the block decision. Every high-severity refusal therefore disabled the
-  account it named: a hook refused for its own internal address disabled the
-  mover too, and the existing `blocksAccount: false` of RedirectBleed and
-  LiveBleed never applied. Both reach the decision now, and `ssrf.webhook`
-  is `blocksAccount: false`, because the mover did not write the hook's URL.
-
-`tests/hookBleedServerDelivery.test.cjs` covers:
-
-- a card move delivered with nothing logged, also in an inherited context;
-- a forged call, still refused, logged and blocking;
-- the card-opened notification;
-- failing and internal hooks that block nobody, through `record()` itself;
-- a scan of the whole tree that no server code calls a method gated on
-  `this.connection` from inside a client's method.
-
-`hook-bleed.e2e.js` moves a card in the Move dialog with a webhook enabled.
-An account disabled by this before the upgrade is enabled again in Admin
-Panel / People.
 
 </details>
 

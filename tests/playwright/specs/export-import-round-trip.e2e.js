@@ -29,6 +29,17 @@ const ROUND_TRIPS = {
   planner: ['planner', 'excel'], monday: ['monday', 'excel'], wrike: ['wrike', 'excel'], teamwork: ['teamwork', 'excel'],
   businessmap: ['businessmap', 'excel'],
   vikunja: ['vikunja', 'zip'], fizzy: ['fizzy', 'zip'],
+  // Microsoft's (2026-11-21): Outlook's .eml files and OneNote's pages are a
+  // .zip, Teams' chats JSON.
+  azuredevops: ['azuredevops', 'text'], mslists: ['mslists', 'text'], msproject: ['msproject', 'text'],
+  outlook: ['outlook', 'zip'], teams: ['teams', 'json'], onenote: ['onenote', 'zip'],
+  // Sandstorm grain backups (2026-11-21). SandChat is not here: its one card is
+  // the room, named after the board, so "Alpha Card" does not come back by
+  // name - tests/sandstormGrain.test.cjs round-trips it.
+  sandstormprioritize: ['sandstormprioritize', 'zip'], sandstormyatl: ['sandstormyatl', 'zip'], sandstormmutodo: ['sandstormmutodo', 'zip'],
+  sandstormethercalc: ['sandstormethercalc', 'zip'], sandstormradicalecalendar: ['sandstormradicalecalendar', 'zip'],
+  sandstormradicalecontacts: ['sandstormradicalecontacts', 'zip'], sandstormdavros: ['sandstormdavros', 'zip'],
+  sandstormhackercms: ['sandstormhackercms', 'zip'],
   // Rocket.Chat is not here: its CSV importer has no display name for a
   // channel and takes only [0-9a-zA-Z-_.] in its name, so "Alpha Card" comes
   // back as "#alpha-card" - tests/chatExportFormats.test.cjs round-trips it.
@@ -83,6 +94,26 @@ const KEEPS = {
   businessmap: ['description', 'comment', 'label', 'due'],
   vikunja: ['description', 'checklist', 'comment', 'dependency', 'label', 'due'],
   fizzy: ['description', 'checklist', 'comment', 'label', 'due'],
+  // Azure DevOps writes no dates, and a checklist only into the description's
+  // HTML; Lists has no comments; Project has dates and links but no labels
+  // (other than Milestone); Outlook is the .mbox export's messages; a Teams
+  // chat keeps its description and messages; OneNote a page's text and to-do
+  // boxes.
+  azuredevops: ['description', 'label'],
+  mslists: ['description', 'label', 'due'],
+  msproject: ['description', 'dependency', 'due'],
+  outlook: ['description', 'comment', 'label'],
+  teams: ['description', 'comment'],
+  onenote: ['description', 'checklist'],
+  // The to-do apps keep only the title (and done); EtherCalc a row's columns;
+  // Radicale a calendar's dates or a contact's note and categories; Davros a
+  // card's Markdown file; Hacker CMS a page and its tags.
+  sandstormprioritize: [], sandstormyatl: [], sandstormmutodo: [],
+  sandstormethercalc: ['description', 'label', 'due'],
+  sandstormradicalecalendar: ['description', 'label', 'due'],
+  sandstormradicalecontacts: ['description', 'label'],
+  sandstormdavros: ['description'],
+  sandstormhackercms: ['description', 'label'],
 };
 const DESCRIPTION = 'Round trip description';
 const STEP = 'Round trip step';

@@ -1,7 +1,7 @@
 # Import / Export with other tools
 
-WeKan imports boards from, and exports boards to, more than fifty formats and
-tools. You use them from the existing menus:
+WeKan imports boards from 78 sources and exports boards to some sixty formats
+and tools. You use them from the existing menus:
 
 - **Import**: **All Boards → New → Import**, then pick the tool. The import
   page says where in that tool to get the file. Choose the file, or paste its
@@ -17,8 +17,10 @@ tools. You use them from the existing menus:
   after WeKan, and its products are listed under it without the company's
   name in front: **37signals** (Basecamp, Fizzy), **Atlassian** (Trello,
   Jira), **Google** (Takeout, Tasks, Keep) and **Microsoft** (Planner, To Do,
-  Excel, GitHub). A company with one product stays under the heading of its
-  kind.
+  Azure DevOps Boards, Lists, Project, Outlook, Teams, OneNote, Excel,
+  GitHub). A company with one product stays under the heading of its kind.
+- **Sandstorm** is a heading of the same kind, after Microsoft: the apps whose
+  grain backups WeKan reads and writes (see [Sandstorm](./Sandstorm/Sandstorm.md)).
 - **Rules and workflows**: **Board Settings → Rules → Import / Export rules**
   (see [Rules](../../../Rules/Rules/Rules.md#import--export)).
 
@@ -68,6 +70,10 @@ sources of the format.
 | [OpenProject](./OpenProject/OpenProject.md) | Work packages (`GET /api/v3/work_packages`) | OpenProject work packages JSON, with versions |
 | [Planka](./Planka/Planka.md) | Fetched from its API with your address, username and password | — |
 | [Microsoft To Do](./Microsoft-To-Do/Microsoft-To-Do.md) | Fetched from Microsoft Graph with your access token | — |
+| [Azure DevOps Boards](./Azure-DevOps/Azure-DevOps.md) | A query's *Export to CSV* (a tree query keeps parents) | The CSV *Import from CSV* reads |
+| [Microsoft Lists](./Microsoft-Lists/Microsoft-Lists.md) | A list's *Export to CSV* | The CSV *New list → From CSV* reads |
+| [Microsoft Project (XML)](./Microsoft-Project/Microsoft-Project.md) | *Save As → XML Format* (MSPDI) | Project XML that *File → Open* reads |
+| [Microsoft OneNote](./Microsoft-OneNote/Microsoft-OneNote.md) | Fetched from Microsoft Graph with your access token | OneNote pages `.zip` (Graph's create-page XHTML) |
 | [KanbanFlow](./KanbanFlow/KanbanFlow.md) | Fetched from its API with the board's API token | — |
 | [Basecamp](./Basecamp/Basecamp.md) | Fetched from its API with your account ID and access token: card tables and to-do lists | — |
 | [Google Tasks](./Google-Tasks/Google-Tasks.md) | Fetched from its API with your access token | — |
@@ -112,7 +118,31 @@ card, its messages the comments), and dated items in Calendar and Gantt.
 | [WhatsApp](./WhatsApp/WhatsApp.md) | *Export chat* `.txt` | — |
 | [Discord (DiscordChatExporter)](./Discord/Discord.md) | DiscordChatExporter JSON | — |
 | [Rocket.Chat](./Rocket-Chat/Rocket-Chat.md) | "Download my data" as JSON `.zip`, one room's `.json`, or a CSV importer `.zip` | Rocket.Chat CSV importer `.zip` |
+| [Microsoft Outlook (.msg)](./Microsoft-Outlook/Microsoft-Outlook.md) | `.msg` files, or a `.zip` of `.msg` and `.eml` files | Microsoft Outlook (.eml) `.zip` |
+| [Microsoft Teams](./Microsoft-Teams/Microsoft-Teams.md) | Fetched from Microsoft Graph, the personal export `.tar`, or Graph chat messages `.json` | Teams chats as Graph chat messages `.json` |
 | [Evernote (.enex)](./Evernote/Evernote.md) | Notes export `.enex` | Evernote (.enex) |
+
+## Sandstorm
+
+[Sandstorm](https://sandstorm.org) apps' grain backups: under the heading
+**Sandstorm** on both the import page and the export menu. Rocket.Chat, Text
+Editor, SandForms and Piwik keep their data in MongoDB's or MySQL's own files
+and are not read.
+
+| App | Import | Export |
+| --- | --- | --- |
+| [Sandstorm WeKan](./Sandstorm/Sandstorm.md) | The grain backup `.zip` (Download backup) | — (import only) |
+| [Sandstorm Prioritize](./Sandstorm/Sandstorm.md) | The grain backup `.zip` (Download backup) | Sandstorm Prioritize grain backup `.zip` |
+| [Sandstorm Yet Another TODO list](./Sandstorm/Sandstorm.md) | The grain backup `.zip` (Download backup) | Sandstorm Yet Another TODO list grain backup `.zip` |
+| [Sandstorm μTodo](./Sandstorm/Sandstorm.md) | The grain backup `.zip` (Download backup) | Sandstorm μTodo grain backup `.zip` |
+| [Sandstorm SandChat](./Sandstorm/Sandstorm.md) | The grain backup `.zip` (Download backup) | Sandstorm SandChat grain backup `.zip` |
+| [Sandstorm EtherCalc](./Sandstorm/Sandstorm.md) | The grain backup `.zip` (Download backup) | Sandstorm EtherCalc grain backup `.zip` |
+| [Sandstorm Radicale calendar](./Sandstorm/Sandstorm.md) | The grain backup `.zip` (Download backup) | Sandstorm Radicale calendar grain backup `.zip` |
+| [Sandstorm Radicale address book](./Sandstorm/Sandstorm.md) | The grain backup `.zip` (Download backup) | Sandstorm Radicale address book grain backup `.zip` |
+| [Sandstorm Davros](./Sandstorm/Sandstorm.md) | The grain backup `.zip` (Download backup) | Sandstorm Davros grain backup `.zip` |
+| [Sandstorm Hacker CMS](./Sandstorm/Sandstorm.md) | The grain backup `.zip` (Download backup) | Sandstorm Hacker CMS grain backup `.zip` |
+| [Sandstorm Gogs](./Sandstorm/Sandstorm.md) | The grain backup `.zip` (Download backup) | — (import only) |
+| [Sandstorm WordPress](./Sandstorm/Sandstorm.md) | The grain backup `.zip` (Download backup) | — (import only) |
 
 ## WeKan's own formats and documents
 
