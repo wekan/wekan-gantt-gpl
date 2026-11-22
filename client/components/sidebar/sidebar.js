@@ -8,6 +8,7 @@ import { ReactiveCache } from '/imports/reactiveCache';
 import { isSelectedSubtaskBoard, isSelectedSubtaskList } from '/models/lib/subtaskSettings';
 import { liveAttachments } from '/models/lib/attachmentSoftDelete';
 import { TAPi18n } from '/imports/i18n';
+import { sidebarViewHelpId } from '/models/lib/featureHelp';
 import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
 const { allBoardsPath, SECTION_ARCHIVE } = require('/models/lib/allBoardsUrls');
 const {
@@ -28,6 +29,8 @@ const cardSettingsCustomFields = require('/models/lib/cardSettingsCustomFields')
 const cardSettingsSplit = require('/models/lib/cardSettingsSplit');
 import { invalidateScrumNames } from '/client/components/boards/scrum/scrumFields';
 import { InfiniteScrolling } from '/client/lib/infiniteScrolling';
+// Registers {{webhooksOff}}: the board menu's Outgoing Webhooks and Bots.
+import '/client/lib/webhooksSwitch';
 import '/client/components/boards/exportScope';
 import AccessibilitySettings from '/models/accessibilitySettings';
 import Boards from '/models/boards';
@@ -346,6 +349,10 @@ Template.sidebar.helpers({
   },
   getViewTitle() {
     return Sidebar && Sidebar.getViewTitle();
+  },
+  // The open view's ? (docs/Features/General/Help-Button.md).
+  sidebarHelp() {
+    return Sidebar && sidebarViewHelpId(Sidebar.getView());
   },
   showTongueTitle() {
     return Sidebar && Sidebar.showTongueTitle();
@@ -706,6 +713,8 @@ Template.boardMenuPopup.events({
   'click .js-open-board-swimlane-settings': Popup.open('boardSwimlaneSettings', { titleKey: 'swimlane' }),
   'click .js-open-board-date-settings': Popup.open('boardDateSettings', { titleKey: 'date' }),
   'click .js-open-board-list-settings': Popup.open('boardListSettings', { titleKey: 'list' }),
+  // Board Settings / Shop (client/components/boards/shopView.js).
+  'click .js-open-board-shop-settings': Popup.open('boardShopSettings', { titleKey: 'board-view-shop' }),
   // #2489: WIP Limit Groups is reached from Board Settings / Swimlane now -
   // its click handler sits with the Swimlane popup's events below.
   // Board Settings / Card: Card Settings with no card. Overriding

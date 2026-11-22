@@ -241,6 +241,13 @@ REM # ==== METRICS ALLOWED IP ADDRESSES ====
 REM # https://github.com/wekan/wekan/wiki/Metrics
 REM SET METRICS_ALLOWED_IP_ADDRESSES=192.168.0.100,192.168.0.200
 
+REM # ==== ADMIN PANEL ALLOWED IP ADDRESSES ====
+REM # https://github.com/wekan/wekan/blob/main/docs/Features/Admin-Panel/Admin-Panel-Allowed-Addresses.md
+REM # The IPv4 and IPv6 addresses and CIDR ranges the Admin Panel and the admin
+REM # REST API can be used from. Set here, it wins over the Admin Panel list.
+REM # any = no restriction, the way back in after a list that locked you out.
+REM SET ADMIN_PANEL_ALLOWED_IP_ADDRESSES=192.168.0.0/24,2001:db8::/32
+
 REM # The value of the site ID given in Matomo server for Wekan
 REM # example: - MATOMO_SITE_ID=12345
 REM SET MATOMO_SITE_ID=
@@ -905,10 +912,14 @@ REM # WEKAN_DISK_WATCH_PATHS: Comma-separated paths on this server whose disk us
 REM SET WEKAN_DISK_WATCH_PATHS=/data,/var/lib/wekan
 REM # WEKAN_RAM_MONITOR: false turns off the memory monitor of this server (Admin Panel / Problems / Memory usage). Default on.
 REM SET WEKAN_RAM_MONITOR=false
+REM # CLOUD: The Cloud Admin container's own domain, e.g. cloud.wekan.fi: only then is there a Cloud Panel (Admin Panel / Cloud), and only at that address. Empty: none. Never set from the browser.
+REM SET CLOUD=cloud.example.com
 REM # WEKAN_IMPORT_RUN_STALE_MS: Milliseconds after which an import with no progress counts as interrupted and can be resumed or discarded (at least 60000).
 REM SET WEKAN_IMPORT_RUN_STALE_MS=600000
 REM # EVENTLOG_RETENTION_DAYS: Days after which an Admin Panel / Problems event is deleted by the daily sweep, so resolved problems age out; a recurring problem keeps a recent date and stays. Default 90, 0 = keep forever.
 REM SET EVENTLOG_RETENTION_DAYS=90
+REM # LOGIN_ADDRESS_RETENTION_DAYS: Days a sign-in address is kept on the account, in loginAddresses and in shortPasswordLogins after its last use. Default 365; 0 keeps them.
+REM SET LOGIN_ADDRESS_RETENTION_DAYS=365
 REM # Attachment retention, off unless set. See docs/Features/Cards/Attachments/Attachments.md
 REM SET ATTACHMENTS_RETENTION_DAYS=730
 REM SET ATTACHMENTS_RETENTION_MODE=uploaded

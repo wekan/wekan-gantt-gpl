@@ -54,6 +54,8 @@ template(name="adminProblems")
             +officeReport
           else if isPane 'report-password-length'
             +passwordLengthReport
+          else if isPane 'report-webhooks'
+            +webhooksReport
           else if tablePageData
             +tablePage(tablePageData)
 
@@ -145,6 +147,8 @@ template(name="featuresPerformance")
 //- Admin Panel / Settings / Security (moved from Problems on 2026-11-19).
 template(name="featuresSecurity")
   ul.setting-detail
+    li
+      +adminPanelAllowedAddresses
     li
       a.flex.js-toggle-render-links-as-plain-text
         .materialCheckBox(class="{{#if renderLinksAsPlainText}}is-checked{{/if}}")

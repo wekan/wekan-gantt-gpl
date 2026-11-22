@@ -1,3 +1,4 @@
+import { check, Match } from 'meteor/check';
 import { ReactiveCache } from '/imports/reactiveCache';
 import { allowIsBoardMemberWithWriteAccess } from '/server/lib/utils';
 import { tripCanary } from '/server/lib/canary';
@@ -195,6 +196,82 @@ Meteor.startup(() => {
     return true;
   });
 
+  // PASSWORD_LOGIN_ENABLED=false refuses every password-service sign-in, not
+  // only the form (models/lib/passwordLoginPolicy.js). Refused whether or not
+  // the password was right, so the answer says nothing about it. The LDAP
+  // handler's own LDAP_LOGIN_FALLBACK keeps working while LDAP is on.
+  Accounts.validateLoginAttempt(function(options) {
+    const { passwordLoginRefusal, REFUSAL_MESSAGES } = require('/models/lib/passwordLoginPolicy');
+    const refusal = passwordLoginRefusal({
+      type: options.type,
+      loginRequest: Array.isArray(options.methodArguments) ? options.methodArguments[0] : undefined,
+      env: authEnvObject,
+    });
+    if (!refusal) return true;
+    // The sign-in page shows no password form now, so this is an attempt -
+    // or a page left open from before the setting changed (blocksAccount: false).
+    try {
+      require('/server/lib/securityLog').record({
+        key: 'authn.password-login-disabled', action: 'blocked',
+        source: `ddp:${options.methodName || 'login'}`,
+        userId: options.user && options.user._id,
+        detail: 'Password sign-in refused while password login is disabled.',
+      });
+    } catch (e) { /* logging must never break the guard */ }
+    throw new Meteor.Error(refusal, REFUSAL_MESSAGES[refusal]);
+  });
+
+  // The `login` method itself refuses a { user, password } request first
+  // (models/lib/passwordLoginPolicy.js loginRequestRefusal), so the answer is
+  // the same whatever the password and the account: the hook above stays for
+  // resetPassword, verifyEmail and createUser. Decided synchronously, so the
+  // original method's own check() still counts for audit-argument-checks.
+  const loginHandlers = Meteor.server && Meteor.server.method_handlers;
+  const originalLogin = loginHandlers && loginHandlers.login;
+  if (typeof originalLogin === 'function') {
+    loginHandlers.login = function guardedLogin(...args) {
+      const { loginRequestRefusal, REFUSAL_MESSAGES } = require('/models/lib/passwordLoginPolicy');
+      const refusal = loginRequestRefusal(args[0], authEnvObject);
+      if (refusal) {
+        check(args, [Match.Any]);
+        try {
+          require('/server/lib/securityLog').record({
+            key: 'authn.password-login-disabled', action: 'blocked', source: 'ddp:login',
+            detail: 'Password sign-in refused while password login is disabled.',
+          });
+        } catch (e) { /* logging must never break the guard */ }
+        throw new Meteor.Error(refusal, REFUSAL_MESSAGES[refusal]);
+      }
+      return originalLogin.apply(this, args);
+    };
+  }
+
+  // DISABLE_FORGOT_PASSWORD, and password login off, refuse Meteor's own
+  // forgotPassword method, which e-mails a reset link whatever the page shows.
+  const handlers = Meteor.server && Meteor.server.method_handlers;
+  const originalForgotPassword = handlers && handlers.forgotPassword;
+  if (typeof originalForgotPassword === 'function') {
+    handlers.forgotPassword = async function guardedForgotPassword(...args) {
+      // audit-argument-checks audits the outer DDP handler; the original
+      // method still checks its own arguments below this guard.
+      check(args, Match.Any);
+      const { forgotPasswordRefusal, REFUSAL_MESSAGES } = require('/models/lib/passwordLoginPolicy');
+      const refusal = forgotPasswordRefusal({ setting: await ReactiveCache.getCurrentSetting(), env: authEnvObject });
+      if (refusal) {
+        try {
+          require('/server/lib/securityLog').record({
+            key: 'authn.forgot-password-disabled', action: 'blocked', source: 'ddp:forgotPassword',
+            detail: refusal === 'forgot-password-disabled'
+              ? 'Password reset e-mail refused while forgot password is disabled.'
+              : 'Password reset e-mail refused while password login is disabled.',
+          });
+        } catch (e) { /* logging must never break the guard */ }
+        throw new Meteor.Error(refusal, REFUSAL_MESSAGES[refusal]);
+      }
+      return originalForgotPassword.apply(this, args);
+    };
+  }
+
   // OAuth2/OIDC and CAS are configured by reconfigureOidc()/reconfigureCas()
   // below, from Admin Panel / People or the environment, at startup and again
   // whenever their settings change. SAML is applied by server/saml.js.
@@ -234,6 +311,21 @@ export async function reconfigureOidc() {
         // default and every wiki example used to have - reached the provider as
         // the scope `'openid` … `email'` and Keycloak refused the request.
         requestPermissions: oauth2RequestPermissions(authEnv('OAUTH2_REQUEST_PERMISSIONS')),
+        // Sign in with Apple and other OIDC providers that need them
+        // (models/lib/oidcProviderMode.js): response_mode=form_post, and the
+        // claims read from the ID token rather than a userinfo endpoint.
+        ...(() => {
+          const mode = require('/models/lib/oidcProviderMode');
+          // The two provider quirks are environment-only (tests/envVarCoverage.test.cjs
+          // ENV_ONLY): Apple's are set by itself; these are for another provider.
+          const env = { OAUTH2_RESPONSE_MODE: process.env.OAUTH2_RESPONSE_MODE, OAUTH2_CLAIMS_IN_ID_TOKEN: process.env.OAUTH2_CLAIMS_IN_ID_TOKEN,
+            OAUTH2_ADFS_ENABLED: authEnv('OAUTH2_ADFS_ENABLED'), OAUTH2_B2C_ENABLED: authEnv('OAUTH2_B2C_ENABLED') };
+          const serverUrl = authEnv('OAUTH2_SERVER_URL');
+          return {
+            responseMode: mode.responseMode({ serverUrl, env }),
+            claimsSource: mode.claimsSource({ serverUrl, userinfoEndpoint: authEnv('OAUTH2_USERINFO_ENDPOINT'), env }),
+          };
+        })(),
       },
     },
   );

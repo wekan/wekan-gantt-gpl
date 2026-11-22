@@ -5,6 +5,20 @@ each one changed and the project status are in
 Written by `node releases/changelog-short.mjs` from CHANGELOG-big.md:
 make changes there.
 
+# v13.28 2026-11-23 WeKan ® release
+
+A board can be a **Shop** with invoices and order email, the
+**Admin Panel** can be
+limited to chosen addresses, all **webhooks** can be turned off at once, the
+**Cloud Panel** exists only in a
+Cloud Admin container with the `CLOUD` variable (**CloudPanelBleed**), a forged
+bounce report can no longer stop email (**BounceBleed**), and every setting that
+turns something off is **refused on the server**. The **audit log**, **sign-in
+address retention** and a **personal-data inventory** begin the missing law and
+standard features, and every **feature page** of the docs has one shape.
+
+[All changes in v13.28](CHANGELOG-big.md#v1328-2026-11-23-wekan--release)
+
 # v13.27 2026-11-22 WeKan ® release
 
 **CodeQL** alert #611 is fixed: the **autolink rules** find the
@@ -45,11 +59,3 @@ backups of twelve apps are imported and nine exported, and **Vietnamese** no
 longer shows Malay text.
 
 [All changes in v13.24](CHANGELOG-big.md#v1324-2026-11-21-wekan--release)
-
-# v13.23 2026-11-20 WeKan ® release
-
-The **Import** page and the **Export** menu list a company's
-products under the company's name: **37signals**, **Atlassian**, **Google** and
-**Microsoft**.
-
-[All changes in v13.23](CHANGELOG-big.md#v1323-2026-11-20-wekan--release)

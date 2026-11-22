@@ -153,4 +153,18 @@ import './notificationDelivery.tests';
 import './customFieldLinks.tests';
 import './passkeys.tests';
 import './sqrl.tests';
+// Turn off all webhooks, and Admin Panel / Problems / Webhooks.
+import './webhooksSwitch.tests';
 import './webPush.tests';
+// PASSWORD_LOGIN_ENABLED=false refused on the server, DDP and REST.
+import './passwordLoginDisabled.tests';
+// Own account deletion follows the self delete setting on the server.
+import './selfAccountRemoval.tests';
+// Admin Panel / Settings / Features refused on the server while off.
+import './featureServerGates.tests';
+// CloudPanelBleed: the Cloud Panel without the CLOUD environment variable.
+import './cloudPanel.security.tests';
+// Admin Panel / Settings / Privacy and security / Allowed addresses.
+import './adminPanelAddresses.tests';
+// Board View / Shop: settings for board admins only, orders priced from the cards.
+import './shop.tests';

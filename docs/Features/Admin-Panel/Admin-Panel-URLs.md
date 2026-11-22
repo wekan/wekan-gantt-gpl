@@ -60,7 +60,6 @@ OAuth providers and Passwordless login each have their own menu entry.
 | `/admin/people/email` | Email | `email-setting` |
 | `/admin/people/notifications` | Notifications | `notify-setting` |
 | `/admin/people/domains` | Domains | `domains-setting` |
-| `/admin/people/cloud` | Cloud | `cloud-setting` |
 | `/admin/people/organizations` | Organizations | `org-setting` |
 | `/admin/people/teams` | Teams | `team-setting` |
 | `/admin/people/locked-users` | Locked Users | `locked-users-setting` |
@@ -89,12 +88,13 @@ OAuth providers and Passwordless login each have their own menu entry.
 | `/admin/problems/speed` | Speed | `report-speed` |
 | `/admin/problems/tests` | Tests | `report-tests` |
 | `/admin/problems/cpu` | CPU usage | `report-cpu` |
-| `/admin/problems/ram` | Memory Usage | `report-ram` |
+| `/admin/problems/ram` | Memory usage | `report-ram` |
 | `/admin/problems/disk` | Disk usage | `report-disk` |
 | `/admin/problems/instrumentation` | Instrumentation | `report-instrumentation` |
 | `/admin/problems/broken-cards` | Broken Cards | `report-broken` |
 | `/admin/problems/files` | Files Report | `report-files` |
 | `/admin/problems/rules` | Rules Report | `report-rules` |
+| `/admin/problems/webhooks` | All webhooks | `report-webhooks` |
 | `/admin/problems/boards` | Boards Report | `report-boards` |
 | `/admin/problems/cards` | Cards Report | `report-cards` |
 | `/admin/problems/recovery` | Recovery | `report-recovery` |
@@ -105,8 +105,9 @@ OAuth providers and Passwordless login each have their own menu entry.
 | `/admin/problems/mail` | Email | `report-mail` |
 
 Two panes are called Security, and they are different things: the *settings*
-pane and the *report*. `security` is the settings one, beside `notifications`
-and `performance`; `security-report` is the report, beside `impersonation`.
+pane and the *report*. `security` is the settings one, in Settings beside
+`activities` and `delete`; `security-report` is the report, in Problems beside
+`impersonation`.
 
 ## Attachments — `/admin/attachments`
 
@@ -125,6 +126,28 @@ and `performance`; `security-report` is the report, beside `impersonation`.
 | `/admin/attachments/gcs` | Google Cloud Storage | `gcs` |
 | `/admin/attachments/webdav` | WebDAV (Nextcloud Files) | `webdav` |
 | `/admin/attachments/database-migration` | Database migration | `database-migration` |
+
+## Cloud — `/admin/cloud`
+
+Only where the server has the `CLOUD` environment variable, at that address,
+for its Cloud Admins ([Cloud Panel](Cloud-Panel.md)). It is not one of the four
+pages of `models/lib/adminUrls.js`: its route, `cloud-admin`, is in
+`config/router.js`, and the tab shows only when the server says this user is a
+Cloud Admin here. A bare `/admin/cloud` opens Domains; `/cloud` is the same
+page for customers.
+
+| URL | Pane |
+| --- | --- |
+| `/admin/cloud/domains` | Domains |
+| `/admin/cloud/invoices` | Invoices |
+| `/admin/cloud/tickets` | Tickets |
+| `/admin/cloud/chat` | Chat |
+| `/admin/cloud/cloudflare` | Cloudflare |
+| `/admin/cloud/caddy` | Caddy |
+| `/admin/cloud/allowed-addresses` | Allowed addresses |
+
+The People pane `/admin/people/cloud` that set the Cloud Panel's domain from
+the browser is gone: the domain is the `CLOUD` environment variable.
 
 ## The slug is not derived from the pane id
 
@@ -170,8 +193,10 @@ render an empty panel.
 | Old | Now |
 | --- | --- |
 | `/setting` | `/admin/settings/version` |
-| `/information` | `/settings` — Version, which it used to be a page of |
+| `/information` | `/admin/settings/version` — Version, which it used to be a page of |
 | `/translation` | `/admin/settings/translation` |
+| `/settings`, `/people`, `/admin-reports`, `/attachments` | the tab's default pane, e.g. `/admin/settings/version` |
+| `/settings/<slug>` and the same for the other three | `/admin/settings/<slug>`, or the default pane when the slug is unknown |
 
 They redirect with the `redirect` their trigger is handed, never with
 `FlowRouter.go()` — a `go()` from inside `triggersEnter` runs while that route is
@@ -231,3 +256,28 @@ instead of in two places that can disagree.
 
 - [Left menu](../All-Boards/Left-Menu.md) — the menu these URLs open
 - [The Table page design](../General/Table.md) — what most of these panes render
+
+## Commits
+
+ - [Admin Panel: one question per tab, and the moved panes keep their old addresses as redirects](https://github.com/wekan/wekan/commit/e1a053d059191640a63a22ab553c0b0c6b833d8d)
+ - [Password length gets its own URL and title](https://github.com/wekan/wekan/commit/85af731c1bdf33ba3131134c3926fbf5f353c476)
+ - [Audit log gets its own URL and title](https://github.com/wekan/wekan/commit/2017f2871feda219172d446f257994ecac03babd)
+ - [Backup status gets a Problems pane and URL](https://github.com/wekan/wekan/commit/06b7ce994ad193357a20fc6a036060ea04c83947)
+ - [Attachments / Retention gets its URL](https://github.com/wekan/wekan/commit/dcf91e4471814d765c148d1402865089f6e3ad21)
+ - [Memory usage and Disk usage get their URLs](https://github.com/wekan/wekan/commit/b6a3d98736ebf58ef3905613e303d091ef89f65a)
+ - [WebDAV storage gets its URL](https://github.com/wekan/wekan/commit/42340817523e2e62cc55cbd31982bc2eada1a858)
+ - [Shared labels get their URL](https://github.com/wekan/wekan/commit/7595727917d436ea71969d6d74d166b42b38ed4e)
+ - [Problems / Email gets its URL](https://github.com/wekan/wekan/commit/79ac3016751a4633f9efb1eda2102dcb798378b4)
+ - [OAuth2, CAS and Header login panes get their URLs](https://github.com/wekan/wekan/commit/eb49a4b1b6853650823434e924f5d0dc47a4fe5b)
+ - [Continuous backup gets its URL](https://github.com/wekan/wekan/commit/6b9bc496b1b56a54b40f5403341272c33770561a)
+ - [SAML gets its pane and URL](https://github.com/wekan/wekan/commit/05f1f0a032110dcdd06a355f6ffcc7135cc489e4)
+ - [People login settings split into menu entries, Email the default pane](https://github.com/wekan/wekan/commit/ecdae60a8a9d0b069839193c45d6e5c8ee8a9f5d)
+ - [Instrumentation gets its URL](https://github.com/wekan/wekan/commit/23ed8d927fa0ad110b341dc346a4ea11937a2047)
+ - [People / Notifications gets a URL of its own](https://github.com/wekan/wekan/commit/e15f53135240cebb6e9aec8268c326aeab922afa)
+ - [The API report gets its URL](https://github.com/wekan/wekan/commit/6dc2651b48005f26f769feebfffc751d3022bf50)
+ - [The Offices report gets its URL](https://github.com/wekan/wekan/commit/961ff6cb47437c2eaff2ea4354caf64b676ef8af)
+ - [Problems: the route and the template say what the menu says](https://github.com/wekan/wekan/commit/fa289e4a4de8d4411cfbbd984bae4b184d1eb3c7)
+ - [Filesystem integrity gets its URL](https://github.com/wekan/wekan/commit/2cc0d42ddfaa72dcd04ef59abc541503c7703352)
+ - [The Admin Panel moves under /admin, and the title bar names the pane](https://github.com/wekan/wekan/commit/03cb79bdd71b1e20f4b971267d7ca73420ff33ca)
+ - [A URL for every left-menu entry](https://github.com/wekan/wekan/commit/841479774e12c34337712ef26d2b808b49dc4bfc)
+ - [/information and /translation redirect instead of showing the page you came from](https://github.com/wekan/wekan/commit/9f82877492ee735c78607d4370f985bc5264c8b0)

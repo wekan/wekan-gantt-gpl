@@ -247,6 +247,11 @@ const CATALOG = {
   // REST bulk delete and bulk label routes, which take their cards from the
   // body. No screen calls them, so a refusal is an attempt. Medium.
   'authz.list-locked-bulk': { category: 'authz', bleed: 'ListLockBulkBleed', severity: 'medium', cwe: 'CWE-863' },
+  // ListLockMoveBleed (GHSA-394w-8q99-q4qx): the same list refusal, for the
+  // REST swimlane move, which carried a locked list's cards to lists on another
+  // board with no exceptions. The board's menu refuses the move to such a
+  // member, so a refusal here is an attempt. Medium: recorded, never disables.
+  'authz.list-locked-move': { category: 'authz', bleed: 'ListLockMoveBleed', severity: 'medium', cwe: 'CWE-863' },
   // Decided 2026-11-18 (TODO.md): a rule action that would write into a list
   // refusing the triggering user's role is skipped, and the rest of the rule
   // runs. Not an attack - a rule a board admin wrote met a list somebody locked
@@ -280,6 +285,31 @@ const CATALOG = {
   // Every call that reaches the refusal is an attempt: the admin has turned
   // registration off, so there is no legitimate caller.
   'authz.register':    { category: 'authz', bleed: 'SignupBleed', severity: 'critical', cwe: 'CWE-862' },
+  // A password sign-in (DDP login, resetPassword, verifyEmail, createUser, or
+  // POST /users/login) while PASSWORD_LOGIN_ENABLED=false, and a forgotPassword
+  // call while forgot password - or password login - is disabled
+  // (models/lib/passwordLoginPolicy.js). The sign-in page offers neither then.
+  // Not a Hall of Fame vulnerability: a setting that used to only hide the
+  // form. blocksAccount: false - a sign-in page left open from before the
+  // administrator changed the setting still sends it.
+  'authn.password-login-disabled': { category: 'authn', bleed: 'Password login disabled', severity: 'medium', cwe: 'CWE-284', blocksAccount: false },
+  'authn.forgot-password-disabled': { category: 'authn', bleed: 'Forgot password disabled', severity: 'low', cwe: 'CWE-284', blocksAccount: false },
+  // Something an administrator turned off, asked for anyway on a path no
+  // screen offers while it is off (docs/Features/Admin-Panel/
+  // Settings-Enforced-On-Server.md): an Admin Panel / Settings / Features
+  // entry (models/lib/featureServerGates.js), a board's Card Settings switch,
+  // or an account setting of People / Login (own account deletion, username
+  // change). One key for the kind, the source says which. Not a Hall of Fame
+  // vulnerability: settings that used to only hide their buttons.
+  // blocksAccount: false - a page open from before the change still asks.
+  'authz.disabled-setting': { category: 'authz', bleed: 'Disabled setting', severity: 'medium', cwe: 'CWE-284', blocksAccount: false },
+  // Admin Panel / Settings / Features / Turn off all webhooks
+  // (models/lib/webhooksSwitch.js): a webhook added or changed anyway - the
+  // Integrations allow/deny rules, the REST integration routes, a webhook's
+  // delivery settings, the login and registration webhook. Every screen that
+  // makes one is hidden while it is on. Not a Hall of Fame vulnerability.
+  // blocksAccount: false - a page open from before the switch still sends it.
+  'authz.webhooks-disabled': { category: 'authz', bleed: 'Webhooks turned off', severity: 'medium', cwe: 'CWE-284', blocksAccount: false },
   'authn.authentication-method': { category: 'authn', bleed: 'MembershipBleed', severity: 'high', cwe: 'CWE-200' },
   'injection.nosql': { category: 'injection', bleed: 'SelectorBleed', severity: 'high', cwe: 'CWE-943' },
   'injection.sql':   { category: 'injection', bleed: 'EscapeBleed', severity: 'critical', cwe: 'CWE-89' },
@@ -297,6 +327,56 @@ const CATALOG = {
   // of which a real reply produces. NOT logged: an expired or pre-fix token, a
   // disabled user or one who lost comment access - real people reach those.
   'authn.inbound-email': { category: 'authn', bleed: 'ReplyBleed', severity: 'medium', cwe: 'CWE-346' },
+  // BounceBleed (GHSA-7w85-38ph-c96v): a bounce report through the generic
+  // inbound webhook without its secret - one would stop every email WeKan sends
+  // to the address it names. Logged: no real mail provider's bounce comes that
+  // way once the secret is set, and until it is, the row says to set it.
+  'authn.inbound-bounce': { category: 'authn', bleed: 'BounceBleed', severity: 'medium', cwe: 'CWE-306' },
+  // The Cloud Panel (server/cloudPanel.js) connects to MongoDB servers with
+  // credentials it is given, so it exists only where the server's environment
+  // says CLOUD=<its domain>. Before 2026-11-22 any site administrator of any
+  // WeKan - a customer is the administrator of their own container - could
+  // turn it on from the browser and make the server connect to internal
+  // MongoDB servers. Every cloud method called on a WeKan without CLOUD, and
+  // every attempt to set the old browser setting, is this key. blocksAccount:
+  // false - a page left open from before the upgrade still asks, and the
+  // administrator of a self-hosted WeKan is often its only one; the call is
+  // refused whatever happens to the account.
+  'authz.cloud-panel-off': { category: 'authz', bleed: 'CloudPanelBleed', severity: 'critical', cwe: 'CWE-918', blocksAccount: false },
+  // A Cloud Admin method called, at the CLOUD address, by somebody who is not
+  // a Cloud Admin there: a customer, or a Cloud Admin away from the allowed
+  // addresses. No page offers them one. blocksAccount: false for the same
+  // reason as above - a tab open since the allowed addresses changed.
+  'authz.cloud-panel-access': { category: 'authz', bleed: 'CloudPanelBleed', severity: 'high', cwe: 'CWE-863', blocksAccount: false },
+  // Admin Panel / Cloud / Allowed addresses: a Cloud Admin login from any
+  // other address. The account is the Cloud Admin's own, so it is the login
+  // that is refused, not the account that is disabled.
+  'authn.cloud-admin-address': { category: 'authn', bleed: 'CloudPanelBleed', severity: 'high', cwe: 'CWE-284', blocksAccount: false },
+  // The REST API at the CLOUD address, without a login: POST /users/login,
+  // /users/register and /api/ are not there at all (server/apiMiddleware.js).
+  'authn.cloud-rest-off': { category: 'authn', bleed: 'CloudPanelBleed', severity: 'medium', cwe: 'CWE-306', blocksAccount: false },
+  // Admin Panel / Settings / Privacy and security / Allowed addresses
+  // (server/adminPanelAddresses.js): a site administrator's admin method,
+  // admin check or admin REST call from an address the list does not have.
+  // blocksAccount: false - it is the administrator's own account, and their
+  // boards still work from there; only the admin action is refused.
+  'authz.admin-panel-address': { category: 'authz', bleed: 'Admin Panel allowed addresses', severity: 'medium', cwe: 'CWE-284', blocksAccount: false },
+  // Board View / Shop (server/shop.js). Board Settings / Shop saved by
+  // somebody who is not an admin of the board, an Orders list named on a board
+  // they do not administer, or a client write of a board's shopSettings past
+  // the method that checks it. No screen offers any of these. blocksAccount:
+  // false - an admin demoted while the popup was open still saves.
+  'authz.shop-settings': { category: 'authz', bleed: 'Shop', severity: 'medium', cwe: 'CWE-863', blocksAccount: false },
+  // An order the shop does not take: the shop closed, a visitor without an
+  // account where only accounts order, a payment method the shop does not
+  // offer, a board the caller can not read - the Shop view offers no checkout
+  // then. 'detected': a cart line carrying a price, which is not read.
+  // blocksAccount: false - a visitor has no account, and a tab open since the
+  // shop closed still sends.
+  'authz.shop-order': { category: 'authz', bleed: 'Shop', severity: 'medium', cwe: 'CWE-602', blocksAccount: false },
+  // More orders to one shop in an hour than it takes (server/shop.js
+  // MAX_ORDERS_PER_HOUR): the shop is being flooded with orders.
+  'dos.shop-orders': { category: 'dos', bleed: 'Shop', severity: 'medium', cwe: 'CWE-770', blocksAccount: false },
 };
 
 const DEFAULT = { category: 'unknown', bleed: 'Generic', severity: 'info', cwe: '' };

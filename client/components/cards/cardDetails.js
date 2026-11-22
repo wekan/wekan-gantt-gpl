@@ -22,11 +22,13 @@ import {
 import { canArchiveCard } from '/client/lib/archivePermission';
 import { isTextSelectionInsideCard } from '/client/lib/cardCloseGuard';
 import { placeCardDetailsX, MARGIN } from '/client/lib/cardDetailsPlacement';
+import { rememberCardDetailsWidth, hasCardDetailsWidth, resetCardDetailsWidth } from '/client/lib/cardDetailsWidthMemory';
 import { dueFromTitle } from '/client/components/forms/titleDueHint';
 import { riskOf } from '/client/lib/cardRiskOf';
 import Rules from '/models/rules';
 import { suggestedMembersFor } from '/client/lib/suggestedMembers';
 import '/client/components/cards/similarCards';
+import { webhooksOff } from '/client/lib/webhooksSwitch';
 
 // Which dependency the icon picker should apply its choice to. The icon popup's
 // own data context is the dependency row (not the source card), so we capture
@@ -51,6 +53,7 @@ import { CARD_RECURRENCE_INTERVALS } from '/models/lib/cardRecurrenceSchedule';
 import { isHexColor, isAllowedCardColor, toHex, contrastText, customColorsInUse } from '/models/lib/contrastColor';
 import { uniqBy } from '/imports/lib/collectionHelpers';
 import { memberTargetBoardId } from '/models/lib/linkedCardMembers';
+import { cardSectionHelpId } from '/models/lib/featureHelp';
 import { isSubmitKey } from '/models/lib/editorSubmitKey';
 import { Filter } from '/client/lib/filter';
 import { BoardSwimlaneListCardDialog } from '/client/lib/dialogWithBoardSwimlaneListCard';
@@ -528,6 +531,8 @@ Template.cardDetails.onRendered(function () {
   if ($cardDetails.length) {
     Tracker.afterFlush(() => {
       const element = $cardDetails.get(0);
+      // #6939: a drag of the resize handle is remembered for the next card.
+      rememberCardDetailsWidth(element);
       try {
         anchorCardDetailsX(element);
       } finally {
@@ -556,7 +561,8 @@ Template.cardDetails.onRendered(function () {
       url: '',
     };
 
-    const integrations = ReactiveCache.getIntegrations({
+    // None while all webhooks are turned off (the server sends nothing anyway).
+    const integrations = webhooksOff() ? [] : ReactiveCache.getIntegrations({
       boardId: { $in: [card.boardId, Integrations.Const.GLOBAL_WEBHOOK_ID] },
       enabled: true,
       activities: { $in: ['CardDetailsRendered', 'all'] },
@@ -1153,6 +1159,14 @@ Template.registerHelper('attachmentCount', function attachmentCount() {
 // is the same control and must not point the other way in the same language.
 Template.registerHelper('sectionCaret', section =>
   caretClassFor(isCardSectionOpen(section)));
+
+// The section's ? (docs/Features/General/Help-Button.md): which help it shows
+// is models/lib/featureHelp.js CARD_SECTION_HELP.
+Template.cardSectionHeader.helpers({
+  sectionHelp() {
+    return cardSectionHelpId(this.section);
+  },
+});
 
 Template.cardSectionHeader.events({
   // A hamburger at the end of a heading opens that section's settings. Neither
@@ -1918,6 +1932,10 @@ Template.inlinedCardDescription.events({
 });
 
 Template.cardDetailsActionsPopup.helpers({
+  // #6939: "Reset width" is offered when there is a dragged width to forget.
+  hasCardDetailsWidth() {
+    return hasCardDetailsWidth();
+  },
   // The moving and copying items: for who may change the card, and - as they
   // always were - for a member who is not read-only.
   cardMenuWrites() {
@@ -1969,6 +1987,11 @@ Template.cardSpentTimeMenu.events({
 });
 
 Template.cardDetailsActionsPopup.events({
+  'click .js-reset-card-details-width'(event) {
+    event.preventDefault();
+    resetCardDetailsWidth();
+    Popup.back();
+  },
   // docs/Features/Cards/Action-Items.md: the description's action items.
   'click .js-description-action-items': Popup.open('actionItems', { titleKey: 'action-items' }),
   // History.md §7a: adding History to a menu is a menu item and this handler,
@@ -3365,7 +3388,9 @@ EscapeActions.register(
         : null,
       getCardDetailsElement(getCurrentCardFromContext()?._id),
     );
-    if (Session.get('cardDetailsIsDragging') || selectingInsideCard) {
+    // #6939: a resize of the window by its corner handle ends outside the card
+    // whenever it made it wider (client/lib/cardDetailsWidthMemory.js).
+    if (Session.get('cardDetailsIsDragging') || Session.get('cardDetailsIsResizing') || selectingInsideCard) {
       // Reset dragging status as the mouse landed outside the cardDetails template area and this will prevent a mousedown event from firing
       Session.set('cardDetailsIsDragging', false);
       Session.set('cardDetailsIsMouseDown', false);

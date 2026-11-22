@@ -29,6 +29,10 @@ const python = (() => {
 const FAKE_GH = `#!${process.execPath}
 const args = process.argv.slice(2);
 if (args[0] === 'auth') { process.exit(process.env.FAKE_GH_AUTH === 'out' ? 1 : 0); }
+if (args[0] === 'run' && args[1] === 'view') {
+  if (process.env.FAKE_GH_RUNVIEW === 'fail') { process.stderr.write('run view failed (HTTP 403)\\n'); process.exit(1); }
+  process.stdout.write('from run view\\nError: 3 tests failed\\n'); process.exit(0);
+}
 const p = args[args.length - 1];
 const out = s => process.stdout.write(s);
 if (p.startsWith('/orgs/acme/repos')) {
@@ -50,6 +54,22 @@ if (p.startsWith('/orgs/acme/repos')) {
     secret: 'ghp_SHOULDNOTBEWRITTEN0123456789' }]));
 } else if (p.startsWith('/repos/acme/app/security-advisories')) {
   out(JSON.stringify([{ ghsa_id: 'GHSA-aaaa-bbbb-cccc', state: 'triage', severity: 'medium', summary: 'A report' }]));
+} else if (p.startsWith('/repos/acme/app/actions/runs/501/jobs')) {
+  out(JSON.stringify({ total_count: 2, jobs: [
+    { id: 9001, name: 'Build arm64', conclusion: 'failure', steps: [{ name: 'Checkout', conclusion: 'success' }, { name: 'npm test', conclusion: 'failure' }] },
+    { id: 9002, name: 'Lint', conclusion: 'success', steps: [] }] }));
+} else if (p.startsWith('/repos/acme/app/actions/jobs/9001/logs') && process.env.FAKE_GH_LOGS === 'redirect') {
+  process.stderr.write('gh: Found (HTTP 302)\\n'); process.exit(1);
+} else if (p.startsWith('/repos/acme/app/actions/jobs/9001/logs')) {
+  out(Array.from({ length: 300 }, (_, i) => 'line ' + i).join('\\n') + '\\nError: 3 tests failed\\n');
+} else if (p.startsWith('/repos/acme/app/actions/jobs/')) {
+  process.stderr.write('a job that did not fail was asked for: ' + p + '\\n'); process.exit(4);
+} else if (p.startsWith('/repos/acme/app/actions/runs')) {
+  out(JSON.stringify({ total_count: 4, workflow_runs: [
+    { id: 503, workflow_id: 2, name: 'Docker', status: 'in_progress', conclusion: null, head_branch: 'main' },
+    { id: 502, workflow_id: 2, name: 'Docker', status: 'completed', conclusion: 'success', head_branch: 'main', html_url: 'https://github.com/acme/app/actions/runs/502' },
+    { id: 501, workflow_id: 1, name: 'Release ../All', status: 'completed', conclusion: 'failure', head_branch: 'main', head_sha: 'abcdef1234567', html_url: 'https://github.com/acme/app/actions/runs/501' },
+    { id: 400, workflow_id: 1, name: 'Release ../All', status: 'completed', conclusion: 'failure', head_branch: 'main' }] }));
 } else if (p.startsWith('/repos/acme/tools/')) {
   process.stderr.write('gh: Not Found (HTTP 404)\\n'); process.exit(1);
 } else {
@@ -103,6 +123,47 @@ test('every repository, each kind in its directory, an alert a file, the summary
     // A kind GitHub does not answer: its reason, and the run went on.
     const tools = runDir(t.out, 'tools');
     assert.match(fs.readFileSync(path.join(tools, 'dependabot', 'status.txt'), 'utf8'), /HTTP 404/);
+  } finally {
+    fs.rmSync(t.dir, { recursive: true, force: true });
+  }
+});
+
+test('builds: the newest finished run of each workflow, and the failed jobs\' logs of those that failed', { skip: !python }, () => {
+  const t = setup();
+  try {
+    assert.equal(run({}, ['acme', '--out', t.out], t).status, 0);
+    const app = runDir(t.out, 'app');
+    assert.equal(JSON.parse(fs.readFileSync(path.join(app, 'builds', 'runs.json'), 'utf8')).length, 4);
+    // The workflow name is a directory name, never a path: '../' is gone.
+    const runPath = path.join(app, 'builds', 'Release-All', 'run-501');
+    const log = fs.readFileSync(path.join(runPath, 'job-9001-Build-arm64.log'), 'utf8');
+    assert.match(log, /Error: 3 tests failed/);
+    const tail = fs.readFileSync(path.join(runPath, 'job-9001-Build-arm64.tail.txt'), 'utf8').trim().split('\n');
+    assert.equal(tail.length, 200, 'the last 200 lines');
+    assert.match(tail[tail.length - 1], /3 tests failed/);
+    // Negative: only failed jobs' logs (the fake gh exits on any other), an
+    // older run of the same workflow and a successful workflow get none.
+    assert.ok(!fs.existsSync(path.join(app, 'builds', 'Release-All', 'run-400')));
+    assert.ok(!fs.existsSync(path.join(app, 'builds', 'Docker')));
+    const summary = fs.readFileSync(path.join(app, 'SUMMARY.md'), 'utf8');
+    assert.match(summary, /## Builds/);
+    assert.match(summary, /\| Release \.\.\/All \| main \| failure \| Build arm64 \(npm test\) \| builds\/Release-All\/run-501\/job-9001-Build-arm64\.log \| https:\/\/github\.com\/acme\/app\/actions\/runs\/501 \|/);
+    assert.match(summary, /\| Docker \| main \| success \|/, 'the newest FINISHED run: the one in progress is skipped');
+    // A repository whose Actions GitHub does not answer: its reason.
+    assert.match(fs.readFileSync(path.join(runDir(t.out, 'tools'), 'builds', 'status.txt'), 'utf8'), /HTTP 404/);
+    // The log endpoint refused: read through `gh run view`; both refused: why.
+    const viaRun = path.join(t.dir, 'viarun');
+    assert.equal(run({ FAKE_GH_LOGS: 'redirect' }, ['acme', '--repo', 'app', '--out', viaRun], t).status, 0);
+    assert.match(fs.readFileSync(path.join(runDir(viaRun, 'app'), 'builds', 'Release-All', 'run-501', 'job-9001-Build-arm64.log'), 'utf8'), /from run view/);
+    const neither = path.join(t.dir, 'neither');
+    assert.equal(run({ FAKE_GH_LOGS: 'redirect', FAKE_GH_RUNVIEW: 'fail' }, ['acme', '--repo', 'app', '--out', neither], t).status, 0);
+    const errorFile = path.join(runDir(neither, 'app'), 'builds', 'Release-All', 'run-501', 'job-9001-Build-arm64.log-error.txt');
+    assert.match(fs.readFileSync(errorFile, 'utf8'), /HTTP 302.*run view failed/s);
+    assert.match(fs.readFileSync(path.join(runDir(neither, 'app'), 'SUMMARY.md'), 'utf8'), /log not available \(302\)/);
+    // --builds 0: no builds at all.
+    const none = path.join(t.dir, 'none');
+    assert.equal(run({}, ['acme', '--repo', 'app', '--out', none, '--builds', '0'], t).status, 0);
+    assert.ok(!fs.existsSync(path.join(runDir(none, 'app'), 'builds')));
   } finally {
     fs.rmSync(t.dir, { recursive: true, force: true });
   }

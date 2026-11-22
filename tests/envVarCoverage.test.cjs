@@ -36,8 +36,28 @@ const ENV_ONLY = {
   WEKAN_DISK_WATCH_PATHS: { platforms: true, reason: "paths on this server's disk, per host" },
   WEKAN_RAM_MONITOR: { platforms: true, reason: "this server's own memory monitor, per process" },
   WEKAN_IMPORT_RUN_STALE_MS: { platforms: true, reason: 'operational tuning of interrupted-import detection' },
+  LOGIN_ADDRESS_RETENTION_DAYS: { platforms: true, reason: 'how long sign-in addresses are kept (docs/Compliance/README.md WP-2); 0 keeps them' },
   EVENTLOG_RETENTION_DAYS: { platforms: true, reason: 'how long the Problems report keeps its own rows (#6893); the Clear button is its Admin Panel side' },
   DEFAULT_AVATAR_URL: { platforms: true, reason: 'maintainer decision (#824): "There should be no UI in Admin Panel"' },
+  // models/lib/oidcProviderMode.js: Sign in with Apple needs both and WeKan
+  // sets them by itself from Apple's address; these are only for another
+  // provider with the same quirk, so no platform lists them.
+  // The /metrics address allowlist under the name every platform sets
+  // (models/server/metrics.js reads it beside METRICS_ACCEPTED_IP_ADDRESS).
+  METRICS_ALLOWED_IP_ADDRESSES: { platforms: true, reason: 'which addresses may scrape /metrics: an operator setting of this deployment, not a WeKan option' },
+  // Admin Panel / Settings / Privacy and security / Allowed addresses
+  // (models/lib/adminPanelAddresses.js): the server's own list wins over the
+  // Admin Panel's, and "any" is the way back in for an operator whose saved
+  // list no longer has their address - which a browser setting cannot be.
+  ADMIN_PANEL_ALLOWED_IP_ADDRESSES: { platforms: true, reason: 'the addresses the Admin Panel can be used from, set by the operator so a list that locked the admins out can be overridden without the Admin Panel' },
+  OAUTH2_RESPONSE_MODE: { platforms: false, reason: "an OIDC provider's response_mode; Apple's is set by itself" },
+  OAUTH2_CLAIMS_IN_ID_TOKEN: { platforms: false, reason: "an OIDC provider that keeps the claims in the ID token; Apple's is detected by itself" },
+  // The Cloud Panel's way back in for an operator locked out by its allowed
+  // addresses (docs/Features/Admin-Panel/Cloud-Panel.md): set for one restart,
+  // never kept, and never something the browser may switch.
+  // The Cloud Admin container's domain (models/lib/cloudPanel.js cloudDomainFromEnv): CloudPanelBleed.
+  CLOUD: { platforms: true, reason: 'the Cloud Panel exists only with it, and only the server may set it - a browser setting was the hole (CloudPanelBleed)' },
+  CLOUD_ADMIN_ANY_ADDRESS: { platforms: false, reason: 'a one-off recovery switch for a Cloud Panel locked out by its own allowed addresses; a setting in the browser could not reach a locked-out operator' },
   NEXTCLOUD_EXAPP: { platforms: false, reason: "set by Nextcloud's AppAPI when it deploys WeKan as an ExApp" },
   NEXTCLOUD_URL: { platforms: false, reason: "set by Nextcloud's AppAPI when it deploys WeKan as an ExApp" },
   WEKAN_NEXTCLOUD_PROXY_KEY: { platforms: false, reason: "a per-deployment secret Nextcloud's AppAPI hands over" },

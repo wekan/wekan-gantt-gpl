@@ -244,10 +244,14 @@
       #export WEKAN_DISK_WATCH_PATHS=/data,/var/lib/wekan
       # WEKAN_RAM_MONITOR: false turns off the memory monitor of this server (Admin Panel / Problems / Memory usage). Default on.
       #export WEKAN_RAM_MONITOR=false
+      # CLOUD: The Cloud Admin container's own domain, e.g. cloud.wekan.fi: only then is there a Cloud Panel (Admin Panel / Cloud), and only at that address. Empty: none. Never set from the browser.
+      #export CLOUD=cloud.example.com
       # WEKAN_IMPORT_RUN_STALE_MS: Milliseconds after which an import with no progress counts as interrupted and can be resumed or discarded (at least 60000).
       #export WEKAN_IMPORT_RUN_STALE_MS=600000
       # EVENTLOG_RETENTION_DAYS: Days after which an Admin Panel / Problems event is deleted by the daily sweep, so resolved problems age out; a recurring problem keeps a recent date and stays. Default 90, 0 = keep forever.
       #export EVENTLOG_RETENTION_DAYS=90
+      # LOGIN_ADDRESS_RETENTION_DAYS: Days a sign-in address is kept on the account, in loginAddresses and in shortPasswordLogins after its last use. Default 365; 0 keeps them.
+      #export LOGIN_ADDRESS_RETENTION_DAYS=365
       # Attachment retention, off unless set (docs/Features/Cards/Attachments/Attachments.md):
       #export ATTACHMENTS_RETENTION_DAYS=730
       #export ATTACHMENTS_RETENTION_MODE=uploaded
@@ -345,6 +349,13 @@
       # ==== METRICS ALLOWED IP ADDRESSES ====
       # https://github.com/wekan/wekan/wiki/Metrics
       #export METRICS_ALLOWED_IP_ADDRESSES=192.168.0.100,192.168.0.200
+      #---------------------------------------------
+      # ==== ADMIN PANEL ALLOWED IP ADDRESSES ====
+      # https://github.com/wekan/wekan/blob/main/docs/Features/Admin-Panel/Admin-Panel-Allowed-Addresses.md
+      # The IPv4 and IPv6 addresses and CIDR ranges the Admin Panel and the admin
+      # REST API can be used from. Set here, it wins over the Admin Panel list.
+      # any = no restriction, the way back in after a list that locked you out.
+      #export ADMIN_PANEL_ALLOWED_IP_ADDRESSES=192.168.0.0/24,2001:db8::/32
       #-----------------------------------------------------------------
       # Enable browser policy and allow one trusted URL that can have iframe that has Wekan embedded inside.
       # Setting this to false is not recommended, it also disables all other browser policy protections

@@ -99,6 +99,8 @@ const EXPECTED = [
   'js-open-board-view-settings',
   'js-open-board-swimlane-settings',
   'js-open-board-list-settings',
+  // Board Settings / Shop (2026-11-22), with the board's other admin settings.
+  'js-open-board-shop-settings',
   'js-open-board-card-settings',
   'hr',
   'js-export-board',
@@ -156,7 +158,12 @@ function guardsOf(cls) {
 test('the reorder kept every guard (negative: nothing became visible to more people)', () => {
   const admin = 'if currentUser.isBoardAdmin';
   assert.deepStrictEqual(guardsOf('js-open-rules-view'), [admin]);
-  for (const cls of RULES_VIEWS) assert.deepStrictEqual(guardsOf(cls), [admin], `${cls} is board-admin only, like Rules`);
+  // Bots is a webhook, so it is also hidden while Admin Panel / Settings /
+  // Features / Turn off all webhooks is on - one guard more, never one fewer.
+  for (const cls of RULES_VIEWS) {
+    assert.deepStrictEqual(guardsOf(cls), cls === 'js-open-rules-bots-view' ? [admin, 'unless webhooksOff'] : [admin],
+      `${cls} is board-admin only, like Rules`);
+  }
   assert.deepStrictEqual(guardsOf('js-change-board-color'), [admin]);
   assert.deepStrictEqual(guardsOf('js-open-board-announcement'), [admin]);
   assert.deepStrictEqual(guardsOf('js-change-background-image'), [admin]);
@@ -165,13 +172,20 @@ test('the reorder kept every guard (negative: nothing became visible to more peo
   assert.deepStrictEqual(guardsOf('js-open-board-date-settings'), [admin]);
   assert.deepStrictEqual(guardsOf('js-board-info-on-my-boards'), [admin]);
   assert.deepStrictEqual(guardsOf('js-open-board-list-settings'), ['if currentUser', admin]);
-  assert.deepStrictEqual(guardsOf('js-open-board-scrum-settings'), [admin]);
+  // Board Settings / Shop: board admins, while Admin Panel / Settings /
+  // Features keeps the Shop view on (server/shop.js refuses it otherwise).
+  assert.deepStrictEqual(guardsOf('js-open-board-shop-settings'), ['if currentUser', admin, "if allowFeature 'views-shop'"]);
+  // 2026-11-22: Scrum settings open the Sprints view, which the server refuses
+  // while Admin Panel / Settings / Features turns the Scrum views off
+  // (models/lib/featureServerGates.js), so the entry follows that tick too.
+  assert.deepStrictEqual(guardsOf('js-open-board-scrum-settings'), [admin, "if allowFeature 'views-scrum'"]);
   assert.deepStrictEqual(guardsOf('js-open-board-card-settings'), ['if currentUser'],
     'Card stays open to any board member for its personal Labels text row');
   assert.deepStrictEqual(guardsOf('js-export-board'), ['if withApi', 'unless exportDisabled']);
   assert.deepStrictEqual(guardsOf('js-import-into-board'), ['if withApi', 'unless exportDisabled', 'if canImportIntoBoard']);
   assert.deepStrictEqual(guardsOf('js-open-notification-settings'), [admin]);
-  assert.deepStrictEqual(guardsOf('js-outgoing-webhooks'), [admin]);
+  // And hidden while every webhook is turned off (Features / Turn off all webhooks).
+  assert.deepStrictEqual(guardsOf('js-outgoing-webhooks'), [admin, 'unless webhooksOff']);
   assert.deepStrictEqual(guardsOf('js-open-archives'), [], 'Archived items is open to everyone who sees the board');
   // The helpers answer only what the reader may see; the tick hides them.
   assert.deepStrictEqual(guardsOf('js-open-board-summary'), ["if allowFeature 'board-summary'"]);

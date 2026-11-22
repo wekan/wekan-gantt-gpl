@@ -95,6 +95,501 @@ Which databases WeKan supports
 
 </details>
 
+# v13.28 2026-11-23 WeKan ® release
+
+**In short:** A board can be a **Shop** with invoices and order email, the
+**Admin Panel** can be
+limited to chosen addresses, all **webhooks** can be turned off at once, the
+**Cloud Panel** exists only in a
+Cloud Admin container with the `CLOUD` variable (**CloudPanelBleed**), a forged
+bounce report can no longer stop email (**BounceBleed**), and every setting that
+turns something off is **refused on the server**. The **audit log**, **sign-in
+address retention** and a **personal-data inventory** begin the missing law and
+standard features, and every **feature page** of the docs has one shape.
+
+This release fixes the following CRITICAL SECURITY ISSUES:
+
+**[BounceBleed](https://wekan.fi/hall-of-fame/bouncebleed/)** - a forged
+bounce report stopped email to any address.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/81ca7b868bfc9c06f3246fe988981b0f87158ffe">A forged bounce report no longer stops email to any address</a>. Thanks to crypto-nidh and xet7.</summary>
+
+POST `/api/inbound-email` needs no secret by default, and every email it got
+was first checked for being a delivery status notification: one forged DSN
+naming any address was recorded as a hard bounce, which stops every email
+WeKan sends there - invitations, notifications, password resets - and only an
+administrator could undo it ([GHSA-7w85-38ph-c96v](https://github.com/wekan/wekan/security/advisories/GHSA-7w85-38ph-c96v),
+also filed as GHSA-2wcc-f289-3r95 and GHSA-735h-p955-fwxp). A bounce is now
+recorded only from a transport that proves who sent it: the webhook with its
+secret configured and matched, SES after its SNS signature is checked, an IMAP
+mailbox WeKan signs in to, and the Sandstorm grain mailbox. Elsewhere it is
+refused with 403, makes no card or comment, and shows in Admin Panel /
+Problems as BounceBleed. `tests/bounceBleed.test.cjs` requires every receiver
+to say whether it may carry a bounce and nothing to record one around the
+gate; `inboundEmailRoute.tests.js` posts the advisory's DSN over HTTP.
+
+</details>
+
+**[CloudPanelBleed](https://wekan.fi/hall-of-fame/cloudpanelbleed/)** - any
+WeKan administrator could make the server connect to internal MongoDB servers.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ac856dd38fc7cadd5d09a74d3f85a03585d4b3cd">The Cloud Panel exists only with the server's CLOUD variable, with its Cloud Admins, customer login and support boards</a>. Thanks to xet7.</summary>
+
+Any site administrator of any WeKan - also a customer's own container, where
+the customer is the administrator - could set the Cloud Panel Domain from the
+browser and save a customer domain with a MongoDB host and credentials of
+their choosing, which the server then connected to. Now the panel exists only
+when the server has `CLOUD=<its domain>`; it cannot be set or changed from the
+browser or the API, a stored value has no effect, and every Cloud Panel method
+and the one place that connects to a given database refuse without it, shown
+in Admin Panel / Problems. The Cloud Admins are that container's
+administrators, in Admin Panel / Cloud, and may be limited to chosen IPv4 and
+IPv6 addresses. A customer signs in with the password of their own WeKan,
+checked against its database, and sees their invoices, support chat and
+tickets - a WeKan board per domain where they are Comment only.
+`tests/cloudPanelGate.test.cjs` fails when any `MongoClient` is built from
+given data outside the gate. [Docs](docs/Features/Admin-Panel/Cloud-Panel.md).
+
+</details>
+
+- [No REST API at the Cloud Panel's address for a request without a login](https://github.com/wekan/wekan/commit/ed7aa2264209e1f0a40ba7f28b41c06de5bf37d6). Thanks to xet7.
+- [A customer signs in as username_customerdomain, so one username can be a customer at many domains](https://github.com/wekan/wekan/commit/bdaad563ac68ce3ec6f558b99a970c90e6a2b13f). Thanks to xet7.
+
+**Settings that turn something off** - refused on the server, not only hidden
+in the browser.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/24be123ee56ac546037be77ee01f7766d4688fe3">Password login disabled and forgot password disabled are refused on the server</a>. Thanks to xet7.</summary>
+
+`PASSWORD_LOGIN_ENABLED=false` only hid the form: a DDP or REST password login
+still worked. Now every password-service sign-in, `POST /users/login` and
+Meteor's `forgotPassword` are refused (LDAP keeps its own login), and the
+attempt is shown in Admin Panel / Problems. A follow-up refuses the request
+before any lookup, so the answer no longer told a right password from a wrong
+one. [Docs](docs/Features/Admin-Panel/Settings-Enforced-On-Server.md).
+
+</details>
+
+- [The login method refuses a password request before any lookup while password login is off](https://github.com/wekan/wekan/commit/47fc873e1d3e65d64fef31049d8bb77bc218d508). Thanks to xet7.
+- [Own account deletion and username change follow their settings on the server, and the last admin stays](https://github.com/wekan/wekan/commit/57a24eb8ba321198ecee62df53fddc9b53d0b1d9). Thanks to xet7.
+- [An unticked feature of Admin Panel / Settings / Features is refused on the server](https://github.com/wekan/wekan/commit/68dcfd14fef672cc025cae3bc84385a24dcceacb). Thanks to xet7.
+- [Disable all import also refuses the Trello API, iCalendar and Scrum transfer imports](https://github.com/wekan/wekan/commit/c5b3b597e8f07e9c58ae9664563de9dd37ed6a0f). Thanks to xet7.
+
+and adds the following new features:
+
+**The attachment slideshow** - more kinds of files, and only what is on the
+screen is read.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6d842a5e2fe7242ade92ca19e2ce5a4f9081485d">The attachment slideshow shows Markdown, CSV, code, iCalendar, Outlook .msg, tar and OpenDocument files</a>. Thanks to xet7.</summary>
+
+The slideshow showed images, PDF, video, audio, plain text, ZIP listings and
+docx/xlsx/pptx. It now also shows, with viewers loaded only when such a file
+is opened (`client/lib/attachmentRichViewer.js`):
+
+- Markdown (`.md`) formatted, through WeKan's own `+viewer`, so an attached
+  file follows every setting a card description does;
+- CSV and TSV as a table (papaparse), the first 1000 rows;
+- source code and JSON coloured by highlight.js - an HTML or SVG source file is
+  shown as text, never run;
+- iCalendar (`.ics`) events and tasks, with WeKan's iCalendar reader;
+- Outlook `.msg` headers, text and attachment names, with WeKan's reader;
+- tar, tar.gz and `.tgz` file names (fflate, with an inflate limit and header
+  checksums);
+- OpenDocument text, spreadsheets and presentations (`.odt`, `.ods`, `.odp`)
+  as headings, paragraphs and tables.
+
+Everything a file contains reaches the page as text. Whether a file opens is
+now one answer, `attachmentCanPreview`, shared by the card, the board's version
+control view and the history table, whose own copy of the list had lost ZIP.
+`tests/attachmentRichViewer.test.cjs` drives each viewer in jsdom, with
+negative tests for binary files, refused downloads, gzip bombs, damaged tar
+headers and oversized OpenDocument content; `attachment-rich-preview.e2e.js`
+opens each kind in Chromium and checks that nothing in the files ran.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d6652f19b748aaf5fac0bf68fb3588b10ba63907">The slideshow reads only what is on the screen, with no row or size limit</a>. Thanks to xet7.</summary>
+
+The text-like viewers read a whole file (up to 32 MB) and showed at most 1000
+rows or 2048 names. Now only what is on the screen is fetched and only that is
+in the page (`client/lib/attachmentWindow.js`). Text, logs, CSV/TSV, code, and
+JSON and Markdown larger than 256 KB are read through HTTP Range requests: the
+scrollbar is the whole file, so dragged to the middle it shows the middle and at
+its end the last row. ZIP lists its names from the central directory, ZIP64 too,
+without downloading an entry. tar and tar.gz, iCalendar and OpenDocument are
+read
+in order as far as they are scrolled - infinite scroll downwards - as compressed
+data cannot be read from its middle; an OpenDocument's `content.xml` is the only
+part read. In Chromium, `attachment-rich-preview.e2e.js` opens a 150,000-row CSV
+and
+finds only ranges fetched and only a screenful of rows in the page.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/cd74045a9f453527c6f6eea2ba36bd75c3f955ac">Outlook .msg and OpenDocument are converted once, a piece at a time, into rows read a screen at a time</a>. Thanks to xet7.</summary>
+
+Their content is scattered through the file - a Compound File's sectors, a
+ZIP's compressed `content.xml` - so they cannot be read a row at a time as they
+are. The first time one is opened, the server reads it from its own storage in
+64 KB byte ranges, never whole (of a `.msg` only the sector tables; an
+attachment's data never), and writes what it finds as rows with an index in
+`attachment-previews/` under the files root
+(`server/lib/attachmentPreviewStore.js`).
+The slideshow fetches only the rows on the screen, and its scrollbar is exactly
+the rows. The parts are served at `/cdn/storage/attachments/<id>/preview-meta`,
+`-index` and `-rows` after every check the original has; one preview takes at
+most 512 MB of disk, and it is removed with the attachment.
+
+</details>
+
+**Attachments** - searchable inside, and checked against their content.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b335c5df0718e10f064706de293237926de196d1">Each gets a SHA-256 and plain search text, checked on every read and searched by Filter, Search and Search All Boards</a>. Thanks to xet7.</summary>
+
+When it is added - or, for an older one, when it is first read whole - an
+attachment gets `contentHash` (SHA-256, size, time) and its plain search text
+with the time it was made: text, Markdown, CSV, code, JSON, HTML and e-mail as
+text, PDF and Office through the document extractor, `.msg` and OpenDocument
+from their slideshow rows. Its "Added" card history row carries the hash. A
+whole read hashes the bytes on their way out: a missing hash is stored, a hash
+the card history knows (an earlier version an undo or restore brought back)
+gets a new hash and search text, and anything else is a warning in Admin Panel
+/ Problems. Filter, the board's Search and Search All Boards find a card by its
+live attachments' text, never sent to the browser.
+`attachment-content-search.e2e.js` finds a file three ways, changes it on disk
+and reads it. [Docs](docs/Features/Cards/Attachments/Attachment-Search-And-Integrity.md).
+
+</details>
+
+**The card details window** - its width.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/9372148915cff7824b64e06fca337d696e51e3df">It remembers the width each user drags it to, and an admin sets the default as a percentage</a>. Thanks to rmb82 and xet7.</summary>
+
+[\#6939](https://github.com/wekan/wekan/issues/6939): every card opened at
+520px however often it was widened. The dragged width is now kept per user -
+the profile, or a cookie for a reader who is not signed in - and Reset width in
+the card menu or a double-click on the handle forgets it. Admin Panel /
+Settings / Appearance / Card details default width is a percentage of the
+browser window, 30 to 95, at least 520px. The card opened as a popup takes the
+same width; mobile and maximized cards do not. A resize that ended with the
+mouse outside the card closed it; it no longer does.
+`card-details-width.e2e.js` drags the real handle in Chromium.
+[Docs](docs/Features/Cards/Card-Details-Width.md).
+
+</details>
+
+**Hosting** - the Meteor 3 Docker scripts, and the Cloud Admin container.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b530f5c1a42aceb803adb02b4ae3d44f652a7005">One menu, build.sh, for every script - run here or on a server over SSH</a>. Thanks to xet7.</summary>
+
+`docs/Platforms/FOSS/Container/Docker/Meteor3/build.sh` lists every script of
+the directory in groups and asks each one's parameters. Its `settings.ini`
+names the server - a host of `~/.ssh/config` such as `c2` - and the directory on
+it; with a server set, the scripts are copied there and run over `ssh -t`, so
+the machine the menu runs on keeps no passwords.
+`tests/meteor3BuildMenu.test.cjs`
+plays the server with a fake ssh.
+
+</details>
+
+- [CLOUD on every platform: the Dockerfile, start-wekan, every docker-compose file and the Snap](https://github.com/wekan/wekan/commit/f4439cb285562ed3c4cca3439b41a664fdec86c4). Thanks to xet7.
+
+**Shop** - a board's cards as a web shop.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/04436a739da5d0f1c5326253c4c92310c4fdb983">Board View / Shop: the products on the cards as a web shop, with a cart and a checkout</a>. Thanks to xet7.</summary>
+
+A card in a list on sale whose price custom field holds a number is a product,
+its labels are the categories. A visitor fills a cart and orders; the order is
+a card on a private Orders board, numbered `ORD-<year>-<number>`, with the
+lines, totals with VAT, the payment method and its reference. A public board
+can show the Shop instead of the kanban, as it can show the Website.
+[Docs](docs/Features/Board-Header/Board-Views/Shop.md).
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/493af449982c808b11e4d9e3ff138c635e05cc2a">Board Settings / Shop: open the shop, map the cards to products, choose the Orders list and the payment methods</a>. Thanks to xet7.</summary>
+
+The payment methods are the ones Budget and billing already has - SEPA QR, bank
+barcodes, Swish, Pix, UPI, PayPal.me, crypto addresses, cash and the rest - with
+the QR code or barcode made for the order's total. No card gateway or outside
+account is added. [Docs](docs/Features/Board-Sidebar/Board-Settings/Shop.md).
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8892734fa987d89c0f455464dfdf7def84488850">Every Shop setting is enforced on the server, and refused attempts are in Admin Panel / Problems</a>. Thanks to xet7.</summary>
+
+Only a board admin saves the settings, and the Orders list must be on a private
+board they also administer. An order's prices come from the cards, never from
+the browser; a changed price or stock refuses the order, and orders are rate
+limited per connection, address and shop.
+
+</details>
+
+- [Products, cart, totals and orders computed from the cards](https://github.com/wekan/wekan/commit/0aa3d0b9d67330670e51bb118dae44fa40eaca8a). Thanks to xet7.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c7b48bce2f106e97a8cb2e4343a2544b59023887">An order is also a Budget and billing invoice, the buyer gets a confirmation email, and a board copy closes its shop</a>. Thanks to xet7.</summary>
+
+With Budget and billing on, an order becomes an invoice numbered as billing
+numbers them, with the order's payment reference, and the order card names it;
+an order that fails takes the invoice and the stock back with it. The buyer is
+sent the order, its totals and how to pay in their own language, which a Board
+Settings / Shop tick can turn off; a failed send is in Admin Panel / Problems
+and never fails the order. A copied board's shop is closed and has no Orders
+list, so it cannot send orders to the original's.
+
+</details>
+
+**The Admin Panel** - who may use it, and the webhooks.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7f1226454209424d534326e499918a7e26206d74">Allowed addresses: from any other address the admin pages and the admin REST API refuse</a>. Thanks to xet7.</summary>
+
+Admin Panel / Settings / Privacy and security takes IPv4 and IPv6 addresses
+and ranges. From any other address a site administrator is an ordinary member
+on the server: every admin method, publication and REST API answer refuses,
+their own boards keep working, and the attempt is in Admin Panel / Problems.
+A list without the saver's own address is refused, and
+`ADMIN_PANEL_ALLOWED_IP_ADDRESSES` on the server wins over it (`any` turns it
+off) as the way back in. [Docs](docs/Features/Admin-Panel/Admin-Panel-Allowed-Addresses.md).
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d2b40f64df9eb4a7e3e4655e2b2fc646f72a2e3f">Turn off all webhooks: the server sends none and refuses to add or change one</a>. Thanks to xet7.</summary>
+
+One tick in Admin Panel / Settings / Features. Board, global, two-way, Sync,
+login and bot webhooks send nothing, adding or changing one is refused from the
+browser and the REST API and shown in Admin Panel / Problems, and the stored
+webhooks stay for when the tick is taken off. Queued notifications wait and are
+sent then. ntfy, CalDAV and the email-to-card address are not webhooks and stay.
+
+</details>
+
+- [Every webhook screen is hidden while they are turned off](https://github.com/wekan/wekan/commit/c90bbbcd30feaf0861ef25e241050ade0728381c). Thanks to xet7.
+- [Problems / All webhooks: every webhook, its board, owner and contents, with secrets masked](https://github.com/wekan/wekan/commit/df16bc55de63cbd35bab15276e6259da9bf958eb). Thanks to xet7.
+
+**Laws and standards** - what GDPR, NIS2, ISO 27001 and the others need, added
+where WeKan lacked it. [Gap analysis](docs/Compliance/README.md).
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/377a7b3abc87257a6a9a11dc468cbd1a556e6b24">Audit log: the Admin Panel's own collection writes and user anonymisation are recorded</a>. Thanks to xet7.</summary>
+
+The Admin Panel saved settings, announcements, translations and the access
+settings through Meteor's collection methods, which the audit log did not see.
+Those writes, and anonymising a user, are now recorded with who did it and when.
+
+</details>
+
+- [Audit log: Account settings and the table visibility modes too](https://github.com/wekan/wekan/commit/94c598dd6bacca3fb0e52b079bdd6da1a94fd18a). Thanks to xet7.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/02baa650feef415248abe055f9284881e48483f5">Sign-in addresses expire: LOGIN_ADDRESS_RETENTION_DAYS, default 365 days</a>. Thanks to xet7.</summary>
+
+The addresses an account signed in from, the accounts behind an address and the
+short-password logins were capped in number but kept forever. Once a day an
+entry last used before the limit is removed; an address in use stays, and 0
+keeps everything as before.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/bfd83d09b606b5fce72f2d4f3fa673f00227dd87">Personal-data inventory: every collection classified, with a generated Data-Inventory.md</a>. Thanks to xet7.</summary>
+
+All 185 collections, 128 holding personal data, each with its categories,
+purpose, retention and what erasure does to it. A test fails when a new
+collection is not classified, and lists the collections erasure does not
+clean yet, for the complete erasure that comes next.
+[Inventory](docs/Compliance/Data-Inventory.md).
+
+</details>
+
+- [Compliance: rows 2.1 and 2.2 point at the personal-data inventory](https://github.com/wekan/wekan/commit/70769674d6b1775ab83adc5270f194aefc5d0bf3). Thanks to xet7.
+
+and fixes the following bugs:
+
+**Import** - a .zip as a new board.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a7cd22f94ca17a5702fa7f0c81e439c2df03cebc">A .zip that becomes a new board, and a Trello API import, run as the importing user</a>. Thanks to xet7.</summary>
+
+POST `/api/import/zip?newBoard=1` - All Boards / Import of a WeKan .zip, and
+"Import many boards" - answered 500 for every archive that named people:
+`trackImport()` starts the import at once, and only the await of its promise
+was inside the importer's method context, so `Meteor.userId()` threw. The
+Trello API import job had no context at all. Both now start inside it;
+`tests/importZipUserContext.test.cjs` requires that of every caller, and
+`gitea-backup-wekan-import.e2e.js` imports a .zip as a new board.
+
+</details>
+
+**Sign-in** - Sign in with Apple.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/dfbd1a6d187d4a0f1552b3694e3cc29891735d3b">Sign in with Apple: response_mode=form_post, and the claims read from the ID token</a>. Thanks to xet7.</summary>
+
+Apple has no userinfo endpoint, its access token is opaque, and it requires
+`response_mode=form_post` for the name and email scopes; WeKan decoded the
+access token and sent no response mode. Now Apple's address reads the claims
+from the ID token and sends form_post (`OAUTH2_RESPONSE_MODE` and
+`OAUTH2_CLAIMS_IN_ID_TOKEN` for other providers); a setup made from the old
+docs keeps working. Not yet tried against Apple's servers.
+
+</details>
+
+**Boards and cards** - found while documenting the features.
+
+- [The calendar offers a day click and a drag only to who may write on the board](https://github.com/wekan/wekan/commit/705f12e754166d6c74bd3cb047180463f811bbe4). Thanks to xet7.
+- [Changing only a label's due date is saved](https://github.com/wekan/wekan/commit/64ed51246720fe154fe70e384dc791f2bbb2914c). Thanks to xet7.
+- [The card count shows from more than N cards, the permanent delete hint names Settings / Delete in every language](https://github.com/wekan/wekan/commit/80b70100bb08671497495705b0c1b5387506b7eb). Thanks to xet7.
+
+**Metrics** - the /metrics address allowlist.
+
+- [The allowlist is read under the name every platform sets](https://github.com/wekan/wekan/commit/22bfe054bbbdf18b0e05aea95961ae68af325203). Thanks to xet7.
+- [Both allowlist names are read where the environment check sees them](https://github.com/wekan/wekan/commit/db43260918fc7978c86ee39ff1017e01977b15c8). Thanks to xet7.
+
+and has the following developer-facing changes:
+
+**The security download** - `releases/sec/download-github-security.sh` and its
+build logs.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/689d53815215e47d90da767911f7fc578c2e9c05">The newest build logs too, to fix failing builds from the files</a>. Thanks to xet7.</summary>
+
+Per repository, `<datetime>/builds/` now holds the newest GitHub Actions runs
+and, for every workflow whose newest finished run failed, each failed job's
+log and its last 200 lines; SUMMARY.md lists the failing workflows first, with
+their failed jobs and steps. `--builds N` looks at the N newest runs, 0 at
+none.
+
+</details>
+
+- [A build log the log endpoint refuses is read through gh run view, and why it failed is kept](https://github.com/wekan/wekan/commit/4599e34518a20da55a996e6da9b93a69f9293fa1). Thanks to xet7.
+
+**Tests** - guards that followed the changes above.
+
+- [The Meteor 3 menu's fake ssh gets the server directory from the environment](https://github.com/wekan/wekan/commit/3c6427cbfd590ae9f7d19568220e172f06d66fde). Thanks to xet7.
+- [BounceBleed is a guarded Hall of Fame vulnerability](https://github.com/wekan/wekan/commit/e5bfcf0d531a769ce8a13bf263b81f6d980a2c62). Thanks to crypto-nidh and xet7.
+
+- [CloudPanelBleed is a guarded Hall of Fame vulnerability](https://github.com/wekan/wekan/commit/3690697c567ece0e2fda8ae2cc406fa5342c2d7e). Thanks to xet7.
+- [Playwright: settings enforced on the server, called from the page the way the hidden button would](https://github.com/wekan/wekan/commit/94c0ee643748cfaa4264f327346d281288d5681a). Thanks to xet7.
+- [Mocha: the feature gate test turns the admin preview off for itself](https://github.com/wekan/wekan/commit/f6dcb7aadeedd0ac46e63ca66d61008d71775376). Thanks to xet7.
+- [The suites the earlier fixes broke: the hint's tests, the calendar guard, the OIDC quirks, tag stripping](https://github.com/wekan/wekan/commit/4364c7d0084800a0abfda06499b3a2e47d4b4420). Thanks to xet7.
+- [Starred pages: the comment says what toggling does](https://github.com/wekan/wekan/commit/2dbc2a30bec2bbc86a47ca72da1cff079e0f4325). Thanks to xet7.
+
+- [Shop: tests of the products, the prices, the settings and the orders, and of what is refused](https://github.com/wekan/wekan/commit/0d74e6ec25a8d7f976cbb69f1a5c34763036cf25). Thanks to xet7.
+- [Shop: a product tile strips tags until none is left](https://github.com/wekan/wekan/commit/3a4e8899573ce745f4ed0d49afde3e646ae06c86). Thanks to xet7.
+- [Shop test: the Problems keys are escaped whole when matched](https://github.com/wekan/wekan/commit/f5181faf779aef0db4da7e51e580094556de0554). Thanks to xet7.
+- [Personal-data inventory: table cells escape backslashes, and the shared-description guard knows it only names collections](https://github.com/wekan/wekan/commit/bad1407412c37dae2a94880eead4a66e8454c863). Thanks to xet7.
+- [Personal-data inventory: its generator is in the build-script guard, and the scan escapes a whole name](https://github.com/wekan/wekan/commit/e039e1716ae6f70193bda5cd4e7e70edb5f4ca22). Thanks to xet7.
+
+- [Shop tests: the invoice, the confirmation email and the board copy, and what each must never do](https://github.com/wekan/wekan/commit/1083b52a3602219a8adda299ddcb0e1820a9ec5e). Thanks to xet7.
+
+and has the following documentation:
+
+**Feature pages** - every page under `docs/Features/` in one shape: what it
+is, read more, how to use it, how its numbers are calculated, how it works,
+and its commits; checked against the code, which corrected many pages.
+
+- [Import / Export guides and notes](https://github.com/wekan/wekan/commit/99ab728ff98562f60ad8bf4c8890c75e96da81ec). Thanks to xet7.
+- [Import / Export index, List sync and recovery](https://github.com/wekan/wekan/commit/4c86108dcb58a79aeba8dc0dc80d8b00a3635b8e). Thanks to xet7.
+- [Outgoing Webhooks](https://github.com/wekan/wekan/commit/85c057de8c1d73b9e6c5c7d2a1291c35175f1ab1). Thanks to xet7.
+- [Card and Board View settings, Archive, Labels, Filter and Members](https://github.com/wekan/wekan/commit/8f5a091b222eca0e21b85b6e45525e8033cfb57f). Thanks to xet7.
+- [Card actions](https://github.com/wekan/wekan/commit/942d1f022c83f32a667a51e73400dcc94725457a). Thanks to xet7.
+- [Board Settings](https://github.com/wekan/wekan/commit/9e01b2db1aa25d68f4948d7a6e71977d5188c64d). Thanks to xet7.
+- [Card features](https://github.com/wekan/wekan/commit/bfa07485182a7188210ad190784821abe3d2cb71). Thanks to xet7.
+- [General: Translations](https://github.com/wekan/wekan/commit/681927309e81917c86aba4a3824361cfacab340b). Thanks to xet7.
+- [General: Translations: the review and audit notes keep their content and get their commits](https://github.com/wekan/wekan/commit/e16e698b5c284d4818132f194f7c3ffc33584c71). Thanks to xet7.
+- [Card attachments, custom fields and dates](https://github.com/wekan/wekan/commit/3e6a5fdf5e35e41317b21596b6ebedebee3f9f2a). Thanks to xet7.
+- [Admin Panel index, URLs, validation, Who sees what and Attachments](https://github.com/wekan/wekan/commit/75f02d9c32b0253600729d9ca2094ad8d22b135b). Thanks to xet7.
+- [Cards](https://github.com/wekan/wekan/commit/407ad71e28c819358eb36997dec88d4879bbd9b5). Thanks to xet7.
+- [General: Email](https://github.com/wekan/wekan/commit/a65fe52a2dd678cdd0593b395b84b528de813eaa). Thanks to xet7.
+- [General: Accessibility](https://github.com/wekan/wekan/commit/17fdad790a980b2fb248a19b061e7b95a67d976d). Thanks to xet7.
+- [General: Theme](https://github.com/wekan/wekan/commit/6bb55652ece420f6fec567a71897f066ccb90c06). Thanks to xet7.
+- [Import / Export formats Super-Productivity to monday-com](https://github.com/wekan/wekan/commit/f4264cf7a9de67e84b1b38ad9ee5c3f0ccea4598). Thanks to xet7.
+- [Import / Export formats Microsoft-To-Do to Slack](https://github.com/wekan/wekan/commit/6e7cd35edaa37d329e79f5fa0cf831d4fbf4d006). Thanks to xet7.
+- [Import / Export formats Google-Tasks to Microsoft-Teams](https://github.com/wekan/wekan/commit/bea184b2ea337039880403ce7ff14f7cd618d983). Thanks to xet7.
+- [Import / Export formats Asana to Google-Takeout](https://github.com/wekan/wekan/commit/80b45a4c58c63c1caba0da110d257373316806d8). Thanks to xet7.
+- [General: the editor, Markdown, dependencies, filenames and drag and drop: what each is, how to use it, how its numbers are calculated, how it works, and its commits](https://github.com/wekan/wekan/commit/688760a4029e95ab114a6c2fa2b3cf32cab29739). Thanks to xet7.
+- [Login Page](https://github.com/wekan/wekan/commit/124b61f286a9cfacdab74be89889b12a309f4bd0). Thanks to xet7.
+- [Login Page](https://github.com/wekan/wekan/commit/2f9fb01ff16e2c53d199ddc46f7a95f1601f1137). Thanks to xet7.
+- [Admin Panel / Settings](https://github.com/wekan/wekan/commit/90e1da878d8100113f4cffd1435a425f427c8a7e). Thanks to xet7.
+- [Member Settings](https://github.com/wekan/wekan/commit/87a283cb291fa424e6834b8275fa1ef94ee3188e). Thanks to xet7.
+- [Features index and the menu audits: what the index is, how to use it, and the commits](https://github.com/wekan/wekan/commit/49666d2abbd7e570e2a7ea26c954c03cb4ff71f2). Thanks to xet7.
+- [Billing: what the feature is, how to use it, how its numbers are calculated, how it works, and its commits](https://github.com/wekan/wekan/commit/150a470e580f1acdd2e32161d1f7b6772c75efe8). Thanks to xet7.
+- [Workload: what the feature is, how to use it, how its numbers are calculated, how it works, and its commits](https://github.com/wekan/wekan/commit/910239b53faeb29199da5c2982c197ca9306d106). Thanks to xet7.
+- [Board header and board views](https://github.com/wekan/wekan/commit/9e97f5119dff091f816ca9ef1ffab0567bcd1c74). Thanks to xet7.
+- [Admin Panel / People](https://github.com/wekan/wekan/commit/c9b297d9766c9cc55384e62627f6c3282fe86b72). Thanks to xet7.
+- [Login Page](https://github.com/wekan/wekan/commit/74717ea829228f6761f5d67c014c5b0085606ae8). Thanks to xet7.
+- [Admin Panel / Problems](https://github.com/wekan/wekan/commit/acd6c500e5348c5c80b61b46dcf588aed24347d6). Thanks to xet7.
+- [General: History, Undo, the Table Page, Multi-Selection, links and notifications: what each is, how to use it, how its numbers are calculated, how it works, and its commits](https://github.com/wekan/wekan/commit/a8d9e271fe530d7a2a806f2c10ca189a1d261ade). Thanks to xet7.
+- [Header bar](https://github.com/wekan/wekan/commit/a28cd22db784e74aad1df09f9eb700ce5a77ea42). Thanks to xet7.
+- [All Boards](https://github.com/wekan/wekan/commit/601c04504e0180cc293c2a5c85cff94e69eacf0d). Thanks to xet7.
+- [Rules](https://github.com/wekan/wekan/commit/174debbeeaa19cc2f78037991e7826fb5cd711cd). Thanks to xet7.
+- [Board views](https://github.com/wekan/wekan/commit/33a3e2f8a3fa6677f8327519f1b82a40f03cb462). Thanks to xet7.
+- [Scrum](https://github.com/wekan/wekan/commit/698b65b94ae8d39a3b6ff04fc99a3e072f242871). Thanks to xet7.
+- [Board charts](https://github.com/wekan/wekan/commit/193baae902e726794f6ccd37c76f7f312b77a4c3). Thanks to xet7.
+- [Admin Panel / Problems, API to Durable operations](https://github.com/wekan/wekan/commit/89af889874eddacd43c396b0b068863b46fb55ef). Thanks to xet7.
+- [Admin Panel / Problems (Files to Performance)](https://github.com/wekan/wekan/commit/c66af0e134cff5e0f43df7b16c05db4d4b257b2f). Thanks to xet7.
+- [Lists](https://github.com/wekan/wekan/commit/4a016735cbf1be7db6e9c02b05b623567bf43913). Thanks to xet7.
+- [General](https://github.com/wekan/wekan/commit/d89485879323e8c2d64b4472880f6cab3714df05). Thanks to xet7.
+- [Pages](https://github.com/wekan/wekan/commit/70d767208d58d39a6c0de7fb28858f1932e9c68e). Thanks to xet7.
+- [Swimlanes](https://github.com/wekan/wekan/commit/77dc56591d16a0be7cb1fd9580cd3f8cf4d8e103). Thanks to xet7.
+
+**Laws, standards and the new features** - and the pages of this release.
+
+- [Shop: the order as a Budget and billing invoice, the confirmation email, and a board copy](https://github.com/wekan/wekan/commit/9d44b3f3e2290cdcd3009028f784ba38007ae870). Thanks to xet7.
+- [Admin Panel allowed addresses](https://github.com/wekan/wekan/commit/030a9e4a295df0ba444590b3e62dcf89facc22ee). Thanks to xet7.
+- [Turn off all webhooks, and Admin Panel / Problems / All webhooks](https://github.com/wekan/wekan/commit/6fbbb83cd26500d9e943c6ffee65bb22b6639358). Thanks to xet7.
+- [Shop: in the feature list, the newest features, and the commits that built it](https://github.com/wekan/wekan/commit/9e8bdc5381f4b5f5c959c711cfd72dc4524bf91e). Thanks to xet7.
+- [Compliance - laws and standards against what WeKan has, with the official sources](https://github.com/wekan/wekan/commit/98b8a76bca3f919a7c0d1c011c96ba2357355d8e). Thanks to xet7.
+- [Settings enforced on the server - what each disabling setting refuses, and what is display only and why](https://github.com/wekan/wekan/commit/7377724b6bd88f4b9e684bf9d46d6b09885c753b). Thanks to xet7.
+- [the Cloud Panel with CLOUD=<its domain>, its Cloud Admins, customer login, support boards, allowed addresses and no REST API](https://github.com/wekan/wekan/commit/2beb52cea864098923fd05977480931fbe84eb42). Thanks to xet7.
+- [Docs: the attachment slideshow - which files are shown, and how much is read](https://github.com/wekan/wekan/commit/53c0fbeba0aee9b4f0da335bd3dd22ed5546e97e). Thanks to xet7.
+- [README: attachment search and integrity, the slideshow, the card details width](https://github.com/wekan/wekan/commit/d7af7a3a665ee006bc0cb9188311c1274152ea3a). Thanks to xet7.
+
+and updates the following translations:
+
+**Card details width** - its four new strings.
+
+**Languages updated:** 245 languages.
+
+- [Card details width in every language](https://github.com/wekan/wekan/commit/9372148915cff7824b64e06fca337d696e51e3df). Thanks to xet7.
+
+**Cloud Panel** - its new strings.
+
+**Languages updated:** 246 languages.
+
+- [The Cloud Panel's new strings in every language](https://github.com/wekan/wekan/commit/04c5b399aa51002c4d819a8d8d57263adee6496c). Thanks to xet7.
+- [The Cloud Panel's support board in Bosnian and Tigre](https://github.com/wekan/wekan/commit/55ed7065ff84bd9e59db3ae35691c37ca412656a). Thanks to xet7.
+
+**Shop** - its new strings.
+
+**Languages updated:** 232 languages.
+
+- [The Shop's 38 new strings in every language](https://github.com/wekan/wekan/commit/136fdebf969071d371b94c5b7646b10fb43a925a). Thanks to xet7.
+- [The Shop's confirmation email and its setting in every language](https://github.com/wekan/wekan/commit/9f22d02b5dd5cb734a241c591a39b7eab98fd13f). Thanks to xet7.
+
+**The Admin Panel** - its allowed addresses and the webhook switch.
+
+**Languages updated:** 244 languages.
+
+- [Allowed addresses in every language](https://github.com/wekan/wekan/commit/7f1226454209424d534326e499918a7e26206d74). Thanks to xet7.
+- [Turn off all webhooks and the All webhooks report in every language](https://github.com/wekan/wekan/commit/cdf4da3d8d383d41835b371a8e9251fef1b6b99f). Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v13.27 2026-11-22 WeKan ® release
 
 **In short:** **CodeQL** alert #611 is fixed: the **autolink rules** find the
@@ -7787,753 +8282,5 @@ and updates the following translations:
 
 - [Tigre card noun in the Retention help line](https://github.com/wekan/wekan/commit/c7145402af).
   Thanks to xet7.
-
-Thanks to above GitHub users for their contributions and translators for their translations.
-
-# v12.65 2026-10-25 WeKan ® release
-
-**In short:** an **opened card** shows only the fields it has, with **+ Add**
-for the rest. **Drawing** works with a pen on the whole window - from Add Card
-and Add attachment, saved as SVG, with an eraser, palm rejection and a lasso
-that moves, resizes, groups and layers lines - and **SVG** is an image again,
-sanitized whole at any size, streaming, on upload and on every serve.
-**FerretDB** answers WeKan's queries in the database on every backend, and
-**SQLite** stores documents as JSONB. **Right-to-left** checkboxes and list
-resizing are fixed.
-
-This release fixes the following SECURITY ISSUES found by GitHub CodeQL code scanning:
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/a90576bafa">The speed test report escapes a backslash before the pipe in a table cell</a>. Thanks to GitHub CodeQL and xet7.</summary>
-
-CodeQL alerts #593, #594 and #595 (`js/incomplete-sanitization`):
-`docs/Databases/FerretDB/1/SpeedTest/report.cjs` escaped `|` as `\|` in
-Markdown table cells but not a backslash, so a value ending in one turned the
-added backslash into a literal one and its pipe split the cell. One `mdCell()`
-escapes the backslash first, then the pipe, and a line break becomes a space;
-the database's name and the query's title now go through it too.
-`tests/speedTestReportCells.test.cjs` checks that no value can add a column to
-its row, and that nothing in the tree escapes a pipe without the backslash. The
-report is built from local results, so there is no attempt to record in
-Admin Panel / Problems.
-
-</details>
-
-and adds the following new features:
-
-**Opened card** - only the fields a card has, and "+ Add" for the rest.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/6fe0a7ef94">An opened card shows only the fields it has data in, and + Add under the cover adds the rest</a>. Thanks to xet7.</summary>
-
-An opened card shows the fields it has data in, plus its description,
-attachments and comments - empty or not - and its cover when it has one.
-"+ Add", under the cover, opens the Admin Panel's own left menu and pane: the
-sections (Date, Members, Scrum settings, ...) on the left, their fields from
-Board Settings / Card on the right, each with a checkbox that shows or hides
-the field on this card. Board Settings / Card still decides what a card can
-show. The design is
-[Card fields](https://github.com/wekan/wekan/blob/main/docs/Features/Cards/Card-Fields.md);
-`tests/cardShownFields.test.cjs` and
-`tests/playwright/specs/card-add-fields.e2e.js` cover it.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/c4f528159b">Cover on by default, a new drawing is the cover, no empty Similar cards or Custom Fields, and a better + Add popup</a>. Thanks to xet7.</summary>
-
-The opened card's cover image is on by default; a once-ever upgrade step turns
-it on for boards created while it was opt-in, and a board turned off later
-stays off. A new drawing becomes the card's cover. There is one separator line
-under "+ Add": the Sort group drew its rule for fields the card did not show.
-Similar cards and Custom Fields are shown only when there is something in
-them. The "+ Add" popup moves by its title bar (the drag handle of every
-movable popup is shown only while drag handles are on), maximizes, is wide
-and high enough for its labels and menu, and only a clicked checkbox animates.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/5d80b07bed">A maximized card has its comments in the right column</a>. Thanks to xet7.</summary>
-
-The comments section is its own template, in the left column of the opened
-card and, when the card is maximized, at the top of the right one beside the
-fields.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/20e2273c07">Board Settings / Card and + Add are one popup, with sections in a left menu</a>. Thanks to xet7.</summary>
-
-Board Settings / Card is the Admin Panel's left menu and pane, and the opened
-card's "+ Add" opens the same popup for that card. Every row is in one section;
-each line has, in reading order, On this card (from a card), Show on Minicard,
-Show on Card and the field, each side with its checkbox, its position and up
-and down arrows. A row's name leaves out its section's ("Sprint", not "Scrum
-settings: Sprint"). "On this card" is new in every language.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/4f20f24201">Five card actions are in the hamburger of the section they act on</a>. Thanks to xet7.</summary>
-
-They left the card's actions menu: on the opened card each is in the hamburger
-of the section it acts on - the Scrum fields the card shows are one Scrum
-settings section with Card kind in its hamburger - and in Card Settings they
-are at the top of that section's pane. `tests/cardSectionActions.test.cjs`
-fails for a hamburger whose items are not in Card Settings.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/65621f44cc">The card actions menu in a new order, as one list</a>. Thanks to xet7.</summary>
-
-Move Card, Copy Card, Save as Template, Copy Template to Many Cards, Card
-recurrence, Move to Top, Move to Bottom, Watch, Star; Set color, Drawing; Copy
-link to clipboard, Link to board, QR code, History, Export, Import, Move Card to
-Archive, More. Each item keeps the permission it had.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/c69f3fe25a">Card Settings: Card first, Subtasks and Planning Poker sections, settings in their pane</a>. Thanks to xet7.</summary>
-
-The first entry is Card, with the move-reason question, Draggable and the
-card's own rows. Subtask settings, Edit custom fields, Change spent time, Card
-kind, Edit voting and Edit Planning Poker are forms at the top of their pane
-instead of popups; saved there, Card Settings stays open.
-
-</details>
-
-- [Card Settings: the pane's columns line up, and an inline form's buttons no longer push the rows aside](https://github.com/wekan/wekan/commit/ede0d68b27).
-  Thanks to xet7.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/f33987931f">Card Settings / Custom Fields: Create Field and Link fields are forms in the pane</a>. Thanks to xet7.</summary>
-
-Under Edit custom fields, the pane has the two forms its buttons opened: Create
-Field (also from Board Settings, for a board admin) and Link fields to another
-card. A field saved there empties the form for the next one and Card Settings
-stays open; opened as their own popup they step back when saved, as before.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/ca53019d96">Card kind shows which kind is selected</a>. Thanks to xet7.</summary>
-
-In Card Settings / Scrum settings and in the Card kind popup the selected kind
-has a check mark at the end of its line and is bold, and the list is a
-radiogroup with `aria-checked`. Before, it only had an `is-active` class that
-nothing styled. `tests/cardKinds.test.cjs` pins the mark on each kind.
-
-</details>
-
-**Drawing** - handwriting and sketching on a card, with a pen too
-([#6802](https://github.com/wekan/wekan/issues/6802)).
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/54726264d3">A new drawing from Add Card and Add attachment, on the whole window, saved as SVG</a>. Thanks to mimZD and xet7.</summary>
-
-Add attachment / Drawing, and Add Card's new Drawing button - shown while the
-composer adds one card: the card is added, opened and drawn on - open a new
-drawing on the whole window, saved as an SVG attachment of the card, its lines
-kept for editing. The eraser takes away the lines it touches, and palm rejection
-keeps a hand resting on a tablet from drawing once a pen has. A lasso tool is
-not part of it. `tests/cardDrawingPen.test.cjs` and
-`tests/playwright/specs/card-drawing-pen.e2e.js`; described in
-[Drawing.md](docs/Features/Cards/Drawing.md).
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/c11976a2e1">The Drawing popup moves by its title bar or a drag handle, and maximizes</a>. Thanks to mimZD and xet7.</summary>
-
-Like the opened card: dragged by its title bar or the handle beside it, with the
-card's maximize / minimize button. Minimizing puts it back where it was, a
-maximized popup stays put, the drawing keeps its shape so the pen lands under
-the
-pointer, and a popup left maximized opens maximized again. Drag to move,
-Maximize
-and Minimize are in every language.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/4bea319239">Board Settings / Card calls the Whiteboard row Drawing</a>. Thanks to mimZD and xet7.</summary>
-
-The row that shows or hides the Drawing popup's Open as whiteboard button is
-named after the card menu's Drawing, with its existing translations.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/1c26e1bcd0">A lasso selects lines to move, resize, group and ungroup, and to change their layer</a>. Thanks to mimZD and xet7.</summary>
-
-Issue #6802 suggested a lasso for selecting and moving things. A loop drawn with
-it
-selects every line wholly inside, and a grouped line brings its whole group.
-The selection moves from inside its box, stopping at the edge; resizes from
-its corner handle, line widths to the nearest allowed one; groups and
-ungroups, the group saved with the drawing; and goes to the front, the back,
-or one layer up or down. Undo now steps back through every change.
-`tests/cardDrawingLasso.test.cjs` and
-`tests/playwright/specs/card-drawing-lasso.e2e.js` cover each step, with
-every locale translated.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/d5d027a6f2">The whole window to draw on, growing from its corner, zoom, any color, and Save above the drawing</a>. Thanks to xet7.</summary>
-
-The drawing area takes all the room the popup has instead of a fixed 800 x 500:
-a handle at its corner makes it larger, or smaller without cutting a line, and
-the magnifier zooms it. Clicking a color opens a color wheel, a brightness
-slider and the HTML color code; custom colors are added to the palette, and
-the eyedropper picks a color from the screen (or the drawing). Save is above
-the drawing, and Add Card's Drawing is in Search / Template / Drawing / More
-options. `tests/cardDrawingCanvasColors.test.cjs` and
-`tests/playwright/specs/card-drawing-canvas.e2e.js` cover it.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/91c12ebcce">Custom colors are kept with the account when signed in, in the browser otherwise</a>. Thanks to xet7.</summary>
-
-The custom colors added to the palette are stored in the user's profile
-(`profile.drawingColors`, the `setDrawingColors` method), so they follow the
-user to every browser. Only `#rrggbb` codes are stored, each once, at most 16,
-and nobody who is not signed in can store any. Drawing on a public board
-without signing in keeps them in that browser.
-
-</details>
-
-**SVG images** - an image like any other again, made safe where it is served.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/0afb1336db">SVG is uploaded and shown as an image: an attachment, a cover, a board background, an avatar</a>. Thanks to xet7.</summary>
-
-SVG uploads were refused, and every SVG served as a download, after
-JVN#74210258. Every uploaded SVG was already sanitized before it is stored - no
-script, event handler, `javascript:` URI, `foreignObject` or XML loop - so they
-are allowed again. Every route that serves a file now sanitizes an SVG whole
-again before sending it, under a Content-Security-Policy with no script and
-`sandbox`, so it runs nothing even opened directly. Removed active markup is
-logged to Admin Panel / Problems.
-`tests/svgServing.test.cjs` also fails when a serving route skips this, and
-`tests/playwright/specs/svg-attachment.e2e.js` uploads one and uses it as a
-cover and a board background.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/e748559838">An SVG of any size is sanitized whole, streaming, on upload, on validation and when served</a>. Thanks to xet7.</summary>
-
-The sanitizer was a set of regular expressions over the whole file: it read
-the file into memory, missed an entity-encoded `&#106;avascript:`, saw nothing
-in UTF-16, and the serve path sent anything over 8 MB as an unsanitized
-download while validation rejected every SVG over its 1 MB scan. A streaming
-tokenizer, `models/lib/svgSanitizer.js`, replaces it everywhere: script,
-foreignObject, iframe/object/embed, SMIL set/animate, event handlers,
-script URIs after decoding references, dangerous CSS, DOCTYPE/ENTITY and
-processing instructions are removed wherever they are, however the file is
-split into chunks. `tests/svgSanitizerStreaming.test.cjs` splits a hostile SVG
-at every byte offset, and sanitizes a 132 MB file with payloads at the start,
-middle and end in about 3 s with 38 MB of memory.
-
-</details>
-
-and has the following database speed improvements:
-
-**FerretDB** - WeKan's queries answered in the database instead of in Go, on
-every database FerretDB supports; measured with the speed test in
-[docs/Databases/FerretDB/1/SpeedTest](docs/Databases/FerretDB/1/SpeedTest).
-
-<details>
-<summary><a href="https://github.com/wekan/FerretDB/commit/ea7951d7">SQLite stores documents as SQLite JSONB, and an existing database is converted once</a>. Thanks to xet7.</summary>
-
-Every filter, sort key, index and multikey trigger parsed a document's JSON text
-again. Documents are now kept in SQLite's binary JSONB and turned back into the
-same text in Go ([the reader](https://github.com/wekan/FerretDB/commit/6e725c9b)). On 61,507 cards due cards went
-from 1,003 to 519 ms, All Boards from 95 to 42 ms, search from 12.6 to 5.2 ms
-and creating the 44 indexes from 107 to 70 s; nothing got slower.
-
-**At the first start with this FerretDB, an existing SQLite database is
-converted**, table by table, each in one transaction: 204,212 documents took
-81 s, and the file grows until SQLite reuses the freed pages. A table whose
-conversion fails stays text and keeps working. **After it, an older WeKan or
-FerretDB cannot read the database**, so take a backup before upgrading if a
-downgrade may be needed.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/FerretDB/commit/5be94bb7">PostgreSQL answers $and, $or and $elemMatch, and membership tests through a GIN index</a>. Thanks to xet7.</summary>
-
-[An array's GIN index](https://github.com/wekan/FerretDB/commit/9c06c788) answers `members.userId`, [a top-level
-`$and`](https://github.com/wekan/FerretDB/commit/555273c1) no longer reads the whole table, and an `$or` and an
-`$elemMatch` are conditions in the database. All Boards count went from 8-9 s to
-11 ms for a typical user on twice the production data, and due cards from 2,031
-to 815 ms on 61,507 cards.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/FerretDB/commit/dbc7d65d">MySQL and MariaDB use their indexes, and adding them takes minutes instead of tens of minutes</a>. Thanks to xet7.</summary>
-
-A card by `_id` went from 3.4 s to 1.8 ms on MySQL, and adding the 44 indexes
-from
-20 minutes to 3. [Multikey side tables](https://github.com/wekan/FerretDB/commit/a2caced7) answer membership tests,
-[an `$or` of `_id` sets is one `UNION ALL`](https://github.com/wekan/FerretDB/commit/c7b0a1c8) - All Boards with a
-starred board 900 ms to 6 ms on MySQL and 5.7 s to 7 ms on MariaDB - and
-[`$and`, `$or`, `$elemMatch` and a long `$in`](https://github.com/wekan/FerretDB/commit/df43d76d) are answered in the
-database: due cards 1,957 to 750 ms on MySQL. MariaDB, whose JSON is text,
-keeps what an index answers.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/FerretDB/commit/19311038">SQLite sorts in the database</a>. Thanks to xet7.</summary>
-
-A sorted query no longer reads and keeps every match in Go to return a few: the
-ten newest of 30,000 users allocate 2.6 MB instead of 264 MB, and the first
-batch of an unlimited sort comes 30% sooner ([each key read once](https://github.com/wekan/FerretDB/commit/34b02dbe)).
-
-</details>
-
-and updates the following dependencies:
-
-- **fast-uri 3.1.8 → 3.1.9** and **undici 7.30.0 → 7.30.1** — [the npm
-  group](https://github.com/wekan/wekan/pull/6804).
-- **actions/setup-python 7.0.0 → 7.1.0** — [in
-  bun.yml](https://github.com/wekan/wekan/pull/6803).
-
-Thanks to dependabot.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/31332bfed4">@azure/msal-node 6.0.1 → 7.1.1 by an npm override, for GHSA-xcx6-jx8p-x3h5</a>. Thanks to xet7.</summary>
-
-`npm audit` reported two high severity issues: msal-node below 7.1.0 may
-disclose authorization code flow parameters to an attacker-controlled endpoint
-([GHSA-xcx6-jx8p-x3h5](https://github.com/advisories/GHSA-xcx6-jx8p-x3h5)). It
-comes through the Azure Blob storage adapter's `@azure/identity`, whose newest
-release still asks for msal-node 6, so `npm audit fix --force` changed nothing.
-`package.json` overrides it; 7's only breaking change is one `@azure/identity`
-does not use, and a token request still reaches Microsoft Entra. WeKan's Azure
-Blob storage signs in with `DefaultAzureCredential`, not the authorization code
-flow. `npm audit` finds 0 vulnerabilities, and `tests/msalNodeAdvisory.test.cjs`
-fails if a vulnerable copy is locked again.
-
-</details>
-
-and fixes the following bugs:
-
-**Right-to-left languages** - checkboxes and list resizing work the way they do
-left-to-right.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/6bb926af19">A checked checkbox sits on its own square, not beside it</a>. Thanks to mimZD and xet7.</summary>
-
-[#6786](https://github.com/wekan/wekan/issues/6786): after its first fix the tick
-was a check mark right-to-left, but it was still placed with
-`inset-inline-start`/`margin-inline-end`, which a right-to-left page flips: the
-narrowed, rotated box started at the square's right edge and was pushed further
-right, outside its box. It is placed with `left`/`margin-right` now, like its
-borders, so it lands on the square in the same place as left-to-right and the
-label does not move; the import page keeps its label gap on the reading side.
-`tests/rtlCheckMark.test.cjs` fails on any tick placed logically, and the
-Playwright spec measures the tick on its square in both directions.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/80208a7141">Resizing a list follows the pointer instead of moving the other way</a>. Thanks to mimZD and xet7.</summary>
-
-[#6801](https://github.com/wekan/wekan/issues/6801): a list's resize handle is on
-its inline end, which is its left edge right-to-left, but the new width was the
-start width plus the pointer's movement - so dragging the handle out of the list
-narrowed it and dragging it in widened it. The movement is now counted with the
-list's own direction, as the board sidebar and the left menus already did.
-`tests/rtlListResize.test.cjs` pins it and fails when any width resizer does not
-flip right-to-left; a Playwright spec drags the handle out and back in, in both
-directions.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/37024aa9f9">The comment form's avatar is inside the card</a>. Thanks to mimZD and xet7.</summary>
-
-[#6805](https://github.com/wekan/wekan/issues/6805): the comment form kept 38px
-free for the writer's avatar with a physical left margin, but drew the avatar at
-the reading start, so right-to-left it was outside the card. The room is
-`margin-inline` now, and the other margins of the comments are logical too.
-`tests/commentFormRtl6805.test.cjs` fails on any left- or right-only margin or
-padding in `comments.css`.
-
-</details>
-
-**Notifications** - what the server log says when one is not delivered.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/bf7520f972">A notification that is not delivered says which check failed</a>. Thanks to xet7.</summary>
-
-"Activity notification delivery incomplete; pending intent retained" filled
-the server log, one line for nearly every activity, and never said why: the
-error was dropped. That line, and the recovery and cleanup ones, now carry the
-failure's code, such as `activity-notification-intent-invalid` or `sync-busy`.
-Any other error gives only its name and code, never its message, which can
-contain an address or a card title. `tests/notificationFailureReason.test.cjs`
-fails when a notification failure line drops its reason again.
-
-</details>
-
-and has the following developer-facing changes:
-
-**Database tests** - the conformance catalogue and the speed test.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/e9fa734853">Conformance checks indexed equality, array membership and mixed-type sorting</a>. Thanks to xet7.</summary>
-
-Three cases for what FerretDB now answers from indexes or in the database: an
-equality or `$in` on an indexed field (inside an array, a value differing only
-by case, special characters, numbers, a long string), membership in an indexed
-array of documents in every shape the array can take and after writes, and a
-sort over every simple type with ties, null and missing fields, with and
-without a limit, then with an array and a document among the values.
-[A later commit](https://github.com/wekan/wekan/commit/494cbee598) adds both
-inside an `$and`, as the due cards query sends them. SQLite, PostgreSQL, MySQL
-and MariaDB answer all 114 cases as MongoDB 8 does.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/18878f6f29">Conformance checks the $or, $elemMatch and long $in shapes FerretDB now answers in the database</a>. Thanks to xet7.</summary>
-
-The visible boards and the due cards of the `dueCards` publication - an `$or`
-of the open permissions and a membership `$elemMatch`, and an `$or` of array
-fields inside an `$and` - and an `$in` longer than the 32 values FerretDB's
-MySQL backend compares with JSON functions, with negatives that must stay in Go.
-SQLite, PostgreSQL, MySQL and MariaDB answer all 115 cases as MongoDB 8.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/9d2b64273b">db-conformance.sh no longer removes the containers of a run that is still going</a>. Thanks to xet7.</summary>
-
-At start it removed every `wekan-conformance-db-*` container and network as
-left behind by an interrupted run, including those of a run still in
-progress: a speed test beside a conformance run lost its MySQL in the middle of
-Due Cards ("connection refused") and its MariaDB while loading. Containers and
-networks now carry the process id of their run as a label, and one whose run is
-alive is kept; one without the label, of a run that ended, or whose process id
-now belongs to something else is removed as before.
-`tests/dbConformanceStaleContainers.test.cjs` runs the script's own functions
-against a fake docker.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/e81d17da80">New speed test results for SQLite, PostgreSQL, MySQL and MariaDB</a>. Thanks to xet7.</summary>
-
-The four FerretDB v1 backends again, at twice the production data, after the
-MySQL/MariaDB index reads, their multikey side tables, PostgreSQL's GIN
-membership index and SQLite sorting in the database; every database returned
-the same data as MongoDB. All Boards count went from 8-9 s to 159 ms on
-PostgreSQL and from 9.4 s to 1.1 s on MySQL, and adding the 44 indexes takes
-172 s on MySQL and 901 s on MariaDB instead of 20 and 40 minutes. The fixes for
-the People page on SQLite, All Boards with a starred board on MySQL/MariaDB and
-Due Cards' `$and` came after this run.
-
-</details>
-
-**Tests** - guards that had fallen behind a deliberate change.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/132fecbfd8">The import page guard pins the checked tick's physical margins from the first right-to-left fix</a>. Thanks to mimZD and xet7.</summary>
-
-`tests/importPage.test.cjs` still required the checked box's label gap to be
-`margin-inline-end`, which the [#6786](https://github.com/wekan/wekan/issues/6786)
-fix changed on purpose. It now pins `margin-right` with the right-to-left rule
-that moves the gap to the left, and the unchecked box's logical gap.
-
-</details>
-
-and updates the following translations:
-
-**Languages updated:** Romanian, Standard Moroccan Tamazight, Tigre, Urdu.
-
-**Wrong languages** - each locale in the language its tag names.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/d3dead539b">Romanian, Tamazight and Urdu in their own languages</a>. Thanks to xet7.</summary>
-
-About 160 Romanian values were Italian, with some Spanish and French; about
-330 Tamazight values were Arabic, or Kabyle and French in Latin letters, now
-in Tifinagh; and most of the Urdu file was English spelled letter by letter in
-Urdu script ("منتقل کو توپ" - توپ is a cannon - for Move to Top), now natural
-Urdu. Search keywords in these locales are one word, as the query parser reads
-them. `tests/wrongLanguageCorrections20261025.test.cjs` pins the languages,
-the placeholders and the keywords.
-
-</details>
-
-**Other** - one more translation fix.
-
-- [Tigre: the import size message uses the attested plural for files](https://github.com/wekan/wekan/commit/52bcd74efa).
-  Thanks to xet7.
-
-Thanks to above GitHub users for their contributions and translators for their translations.
-
-# v12.64 2026-10-24 WeKan ® release
-
-**In short:** a **database speed test** times the common WeKan queries on every
-database WeKan runs on, with twice a production WeKan of data, and checks they
-all answer the same; its findings made **FerretDB** several times faster and
-stopped MariaDB losing edits. Every platform runs the prebuilt
-**ferretdb-sqlite**
-FerretDB, the **Sandstorm .spk** carries only what a grain runs, and every build
-loads **collection2** before the models.
-
-This release adds the following new features:
-
-**Sandstorm** - a smaller .spk, built from what a grain actually uses.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/e413cd4720">The .spk leaves out every login method but Sandstorm's, and FerretDB's other database handlers</a>. Thanks to xet7.</summary>
-
-A grain has one login (Sandstorm's), one database (FerretDB on SQLite) and one
-mailbox (the grain's own address), but the .spk carried every login package
-WeKan has and a FerretDB with the PostgreSQL, MySQL and SAP HANA handlers.
-`releases/sandstorm-slim-spk.sh`, now used by `sandstorm.yml` and
-`release-all.yml`, builds with a package profile
-(`releases/sandstorm-slim.mjs`) that drops accounts-password, 2FA,
-passwordless, lockout, OAuth2/OIDC, CAS, LDAP, SAML and the seven social logins
-for that one build. It always trims the bundle for a linux/x64 sockjs grain,
-verifies none of those packages got in and packs with `spk pack`.
-`sandstorm-src/build-deps.sh` builds FerretDB from source with
-`ferretdb_no_postgresql,ferretdb_no_mysql`. Under Sandstorm the Admin Panel
-hides the login panes, Database migration, the IMAP/webhook mail settings and
-the password fields, and the REST password login answers `sandstorm-sso-only`.
-Against wekan-12.63-sandstorm.spk the file is 3.8 MiB (2.1 %) smaller and
-unpacks 26.7 MiB smaller. Docker, Snap and the bundles are unchanged. (The
-FerretDB source build was replaced by the prebuilt SQLite-only binary, see
-FerretDB below.)
-`tests/sandstormSlim.test.cjs` and
-`tests/playwright/specs/sandstorm-slim.e2e.js` pin it. Design:
-[Smaller-wekan-spk.md](docs/Platforms/FOSS/Container/Sandstorm/Smaller-wekan-spk.md).
-
-</details>
-
-**FerretDB** - every platform takes the smaller SQLite-only build, prebuilt.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/89da0e5be7">Every platform runs the prebuilt SQLite-only ferretdb-sqlite binary from wekan/FerretDB</a>. Thanks to xet7.</summary>
-
-wekan/FerretDB now releases `ferretdb-sqlite-<arch>` beside `ferretdb-<arch>`:
-the same FerretDB with only the SQLite handler, about 5 MB smaller, and also
-as the `ferretdb-sqlite` image. `releases/ferretdb-asset.sh` chooses for every
-download: the newest release that has `ferretdb-sqlite-<arch>`, and until one
-does, the full `ferretdb-<arch>` of the newest release, which has the SQLite
-handler too. The log says which one was taken. It verifies the download
-against its `.sha256sum` and gives the tag, URL and checksum to the provenance
-table. All bundle jobs of `release-all.yml`, `release-all-missing.yml`,
-`bsd.yml`, the preflight and the local release bundle use it, so the Docker
-images, snap, AppImage, Flatpak, macOS and Windows packages get it too. No
-workflow builds FerretDB: the Sandstorm deps download the same binary. The
-default `docker-compose.yml` downloads `ferretdb-sqlite-<arch>`
-(`FERRETDB_BINARY`); the PostgreSQL, MySQL, MariaDB and SAP HANA compose files
-keep the full binary. `tests/ferretdbSqliteAsset.test.cjs` pins it. See
-[FerretDB v1](docs/Databases/FerretDB/1/README.md).
-
-</details>
-
-**Databases** - how fast each database answers WeKan, and whether the same.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/70485c38df">A database speed test: the common WeKan queries on every database, twice a production WeKan of data</a>. Thanks to xet7.</summary>
-
-`docs/Databases/FerretDB/1/SpeedTest/speedtest.sh` (build.sh / build.bat ->
-Tests -> Database speed test) loads 30,116 users, 92,306 boards, 221,038 lists,
-222,546 swimlanes and 615,070 cards - twice a production WeKan, skewed like a
-real one - with WeKan's own indexes into SQLite, PostgreSQL, MySQL and MariaDB
-through FerretDB v1, MongoDB 6, 7, 8 and 9 and FerretDB 2, one at a time, and
-times 18 queries as WeKan builds them. `Results.md` ranks the databases fastest
-first, and the run fails when any answer or stored write differs from MongoDB's.
-MongoDB 9 was fastest; FerretDB + SQLite, after the FerretDB fixes it led to
-(below), came next. The README says what was found, what was improved and what
-could still be: sorting in the database, multikey indexes beyond SQLite,
-MySQL/MariaDB reads through their index columns, SQLite's JSONB.
-
-</details>
-
-and fixes the following bugs:
-
-**Due Cards** - what the page reads to find them.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/c64b3a3b1d">The page reads only the ids and members of the boards it may show</a>. Thanks to xet7.</summary>
-
-The publication fetched every board the user may see - every public board of
-the instance among them, whole - to read two fields, and wrapped its board list
-in an `$or` that neither MongoDB nor FerretDB could use an index for. It asks
-for
-`_id` and `members` only, and with no assigned-only board uses a plain `boardId`
-list; an assigned-only board still shows only the user's assigned cards. With
-FerretDB's fixes, Due Cards on FerretDB + SQLite went from 34 s to 12.8 s on the
-speed test. `tests/dbSpeedTest.test.cjs` checks both board scopes.
-
-</details>
-
-**FerretDB 2** - the compose file that runs WeKan on it.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/f9e1e90131">Its compose file starts with the current DocumentDB image</a>. Thanks to xet7.</summary>
-
-`ghcr.io/ferretdb/postgres-documentdb:17` installs `pg_cron`, which may only be
-created in the database named `postgres`; with `POSTGRES_DB: ferretdb` the
-DocumentDB extension failed to install and the database never started.
-`docker-compose-ferretdb-v2-postgresql.yml` uses `postgres` now - found when the
-speed test started FerretDB 2 from that file's images.
-
-</details>
-
-**Collections** - which attachSchema the models get.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/2699f4deea">Collection2 is loaded before the models, so every write is cleaned and given its defaults</a>. Thanks to xet7.</summary>
-
-Collection2's attachSchema is in its lazy main module, which only
-aldeed:schema-index loads, with an async `Collection2.load()`. The models
-attached their schemas with whichever attachSchema existed first: collection2's,
-or the bare shim in `imports/collectionHelpers.js`, which never cleans a write.
-The full build happened to load collection2 first. The smaller Sandstorm build
-reached the models sooner, so a new board's swimlane was stored without
-`archived`, `sort` and `type`, and the board opened empty. `server/main.js` now
-loads `meteor/aldeed:collection2/main` before the models in every build.
-Without accounts-password the server also no longer stops on
-`Accounts.emailTemplates` (`server/lib/accountsEmailTemplates.js`) or on
-useraccounts' "at least one account service". `tests/sandstormSlim.test.cjs`
-and the board, list and card test in `sandstorm-slim.e2e.js` pin it.
-
-</details>
-
-and has the following developer-tooling fix:
-
-- [The Sandstorm package-import guard escapes the whole package name in its pattern](https://github.com/wekan/wekan/commit/f1e447dd36). Thanks to xet7.
-
-Thanks to above GitHub users for their contributions and translators for their translations.
-
-# v12.63 2026-10-22 WeKan ® release
-
-**In short:** copying a card, linking it to another board or making one from a
-**card template** no longer fails when the card carries values of another
-board's **custom fields**, and no longer records AdminFieldBleed against the
-user who tried.
-
-This release fixes the following bugs:
-
-**Custom fields** - which values a card brings to the board it is copied or
-linked to.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/63ebdb9072">Copying or linking a card carries only the custom field values of its new board</a>. Thanks to Raymond-Voogt and xet7.</summary>
-
-[#6800](https://github.com/wekan/wekan/issues/6800): a card made from a card
-template, linked from another board or copied - and each subtask copied with it
-- took its whole customFields array along: values of another board's fields,
-of deleted fields, and entries with no field id. The admin-only field guard
-could not match those to a field of the new board, refused the whole card and
-recorded AdminFieldBleed against the user. Copy, subtask copy and link now keep
-only values of fields defined on the destination board; an admin-only value of
-that board is kept, so the guard still decides it.
-`tests/copyForeignCustomFields.test.cjs` fails on the code before the fix.
-
-</details>
-
-Thanks to above GitHub users for their contributions and translators for their translations.
-
-# v12.62 2026-10-22 WeKan ® release
-
-**In short:** an opened card is **decluttered** - add buttons on their title's
-line, a compact attachment list with its upload rules in the upload popup, and
-two new **Show on Card** rows for attachment previews and details - and
-**Board Settings / Card** spreads into columns to fit the screen, with rows
-dragged by handle, icon or label. List moves no longer raise false
-**HistoryIntegrity** reports, refused edits no longer **disable accounts**, and
-a
-restarting database is no longer a **crash**.
-
-This release adds the following new features:
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/2c520ef382">A decluttered opened card, a compact attachment list, and Card Settings that fits the screen</a>. Thanks to mueschel and xet7.</summary>
-
-[#6796](https://github.com/wekan/wekan/issues/6796): an opened card gave most
-of its height to controls with nothing in them. A field's add button now sits
-on its title's line; Requested and Assigned By put their two buttons side by
-side; the checklist controls share a line. Attachments: the upload rules are in
-the upload popup instead of above every list, "+" is a small button, a file
-with nothing to preview gets a small file button, and the name has a line of
-its own. Two new Board Settings / Card / Show on Card rows, **Attachments:
-Preview** and **Attachments: Details**, are on by default.
-
-Board Settings / Card is a centred panel as wide (up to 1800px) and tall as
-the window, and each list spreads into as many columns as fit, read top to
-bottom: on 1920x1080 nothing scrolls. Its rows are dragged by the handle, the
-icon or the label with drag handles on, and by the icon or the label with them
-off; before, only the handle dragged, and only vertically. A Node test and a
-Playwright spec cover the layout, the new rows and every drag case.
-
-</details>
-
-and fixes the following bugs:
-
-**History** - the checksum every change history row carries.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/76f9d41bf4">A list move with no swimlane no longer fails its own history checksum</a>. Thanks to Raymond-Voogt and xet7.</summary>
-
-[#6797](https://github.com/wekan/wekan/issues/6797): Admin Panel / Problems /
-Security showed HistoryIntegrity (critical) 81,833 times. A list bound to no
-one swimlane has `swimlaneId: ''`; the legacy history append hashed the row
-with '' and stored it through collection2's default clean, which turned it into
-null, so every such move failed its own checksum. It now inserts as the
-stored-chain path does, and rows already stored that way verify - null for ''
-only in the id and label fields, so any real change still fails.
-`tests/historyEmptyStringChecksum.test.cjs` fails on the code before the fix.
-
-</details>
-
-
-**Admin Panel / Problems** - which events disable an account or are reported as
-a crash.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/425b4ddea7">An ordinary refused edit on one's own board no longer disables the account</a>. Thanks to Raymond-Voogt and xet7.</summary>
-
-[#6798](https://github.com/wekan/wekan/issues/6798): four accounts on one
-instance were disabled in three days. A Worker's allowed card move or checklist
-tick was first refused by the general card check, which recorded
-LinkedWriteBleed (high, blocked) and disabled the Worker; a read-only or
-comment-only member whose screen still offered an edit was disabled the same
-way. The Worker rules now ask without recording first and record only a change
-still refused, and `authz.linked-write` is still recorded but no longer
-disables an account. `tests/workerNoSelfBlock.test.cjs` runs both rules from
-their source.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/f37204b1c3">A MongoDB pod restarting is a lost connection, not a critical crash</a>. Thanks to Raymond-Voogt and xet7.</summary>
-
-[#6799](https://github.com/wekan/wekan/issues/6799): while a MongoDB pod
-restarted in Kubernetes, its name did not resolve and nine critical CrashBleed
-events were recorded although WeKan kept running. `getaddrinfo ENOTFOUND` and
-`EAI_AGAIN` for the database's own host (from MONGO_URL and MONGO_OPLOG_URL) are
-now a lost connection, transient at startup and at run time - another host
-that does not resolve is still not a database problem - and the crash recorder
-skips what is transient. `tests/databaseDnsRestart.test.cjs` runs the guards
-and the recorder's own listeners.
-
-</details>
 
 Thanks to above GitHub users for their contributions and translators for their translations.

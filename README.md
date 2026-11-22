@@ -38,6 +38,8 @@ that by providing one-click installation on various platforms.
     build.bat.
 - [Features](https://github.com/wekan/wekan/tree/main/docs/Features):
   - Real-time user interface
+  - [Help button](docs/Features/General/Help-Button.md): a ? at every feature place - board views, sidebar, Board and Member Settings,
+    card sections, Admin Panel panes - shows What is it? and How it works? in your own language
   - All Boards page, Drag drop reorder with one or Multi-Selection:
     - Board icons at Remaining, (Sub)Workspaces, Archive
     - Shared Templates: Boards, Lists, Cards
@@ -94,7 +96,13 @@ that by providing one-click installation on various platforms.
     - Swimlanes, Lists
       - Minicard: At list there is card, that has not been not opened yet
       - Card: Opened card popup of minicard
-        - Attachments viewer for PDF and Office documents
+        - Attachments viewer for PDF and Office documents, and a slideshow that reads only what is on the screen -
+          also of text, CSV, code, ZIP and tar listings, calendars, Outlook .msg and OpenDocument
+        - [Search inside attachments](docs/Features/Cards/Attachments/Attachment-Search-And-Integrity.md) with Filter,
+          Search and Search All Boards; every attachment's SHA-256 is checked when it is read, with a warning in
+          Admin Panel / Problems when a file changed behind WeKan's back
+        - The [card details width](docs/Features/Cards/Card-Details-Width.md) is remembered per user, and an admin
+          sets the default as a percentage of the browser window
         - Kanban and Scrum flow fields: Blocked, Class of service, MoSCoW priority, WSJF score
       - List policies, Definition of Ready, commitment point, WIP limit per person,
         lists split into Doing and Done
@@ -111,7 +119,8 @@ that by providing one-click installation on various platforms.
         Throughput Run Chart, Due Date Performance
       - Overview: Statistics, Dashboard, Pulse, Workload, Distribution, Dependency Map, Activity Heatmap
       - Communication and code: Email, Chat, Version Control,
-        [Website](docs/Features/Board-Sidebar/Board-Settings/Import-Export/Website/Website.md): the board as a website, which a public board can show at its own address instead of the kanban
+        [Website](docs/Features/Board-Sidebar/Board-Settings/Import-Export/Website/Website.md): the board as a website, which a public board can show at its own address instead of the kanban,
+        [Shop](docs/Features/Board-Header/Board-Views/Shop.md): the products on the cards as a web shop - cart, checkout, orders as cards, Budget and billing's payment methods - which a public board can show instead of the kanban
       - The charts and reports each have PDF and Excel export
    - Right Sidebar / Board Settings:
     - Rules: like IFTTT like Trello Butler
@@ -150,20 +159,27 @@ that by providing one-click installation on various platforms.
   - Admin Panel
     - Settings
       - Version
-      - Features: which features this WeKan offers, Card fields, Feature profiles
+      - Features: which features this WeKan offers, Card fields, Feature profiles,
+        [Turn off all webhooks](docs/Features/Admin-Panel/Settings/Turn-Off-All-Webhooks.md) at once: every webhook screen hidden,
+        nothing sent and no webhook added or changed on the server, the saved ones kept
       - Appearance: What is shown/hidden, Whitelabeling
       - Announcement
       - Accessibility
       - Translation: Add custom translation strings
       - PWA
       - Global Webhooks
+      - Privacy and security: [Allowed addresses](docs/Features/Admin-Panel/Admin-Panel-Allowed-Addresses.md), the IPv4 and IPv6
+        addresses and ranges the Admin Panel and the admin REST API can be used from
   - People
     - Email, Notifications, Domains, Organizations, Teams, People
-    - Cloud: the [Cloud Panel](docs/Features/Admin-Panel/Cloud-Panel.md) Domain and its SuperAdmin. At that domain the Cloud Panel keeps
-      the customer domains - each with its own WeKan and MongoDB, or sharing this WeKan - and merges many WeKans into one,
-      with CloudFlare DNS, Caddy routes, each customer's invoices, and a chat with earlier Rocket.Chat and SandChat conversations
     - Locked Users, Roles, Shared Templates
     - Login, SAML, LDAP, OAuth2 login providers, Passwordless login
+  - Cloud, only in a container started with the environment variable `CLOUD=<its domain>`: the
+    [Cloud Panel](docs/Features/Admin-Panel/Cloud-Panel.md). Its site administrators are the Cloud Admins - the first
+    registered user is one - and keep the customer domains, each with its own WeKan and MongoDB or sharing this WeKan,
+    merge many WeKans into one, with CloudFlare DNS, Caddy routes, invoices, support tickets and chat on a support board per
+    domain, and the addresses a Cloud Admin may sign in from. A customer signs in there with the password of their own
+    WeKan, checked against its database, and sees their invoices, tickets and chat. No REST API at that address
   - Attachments
     - Scheduled Backups, Continuous realtime backups, Move Attachments, Default Save Storage, Limits
     - Storage: MongoDB GridFS, Filesystem, S3/MinIO, Azure Blob, Google Cloud
@@ -178,6 +194,7 @@ that by providing one-click installation on various platforms.
       - Security: shows any attempted attacks based on names from https://wekan.fi/hall-of-fame/ like built-in SIEM with country flag and city based of location of IP address based on location headers like CloudFlare etc
       - Impersonation
       - Performance, Speed, Tests, CPU usage, Instrumentation, Broken Cards, Files, Rules, Boards, Recovery, Offices, API, Database problems, Filesystem integrity
+      - [Webhooks](docs/Features/Admin-Panel/Problems/Webhooks.md): every webhook, its board or Global, the user who added it and what it sends, tokens hidden
 - [Platforms](https://wekan.fi/install/):
   - Windows/Mac/Linux bundle .zip
   - Linux [Snap](https://snapcraft.io/wekan): Automatic updates

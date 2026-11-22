@@ -1567,6 +1567,20 @@ Boards.attachSchema(
       blackbox: true,
       optional: true,
     },
+    // Board Settings / Shop (docs/Features/Board-Sidebar/Board-Settings/Shop.md):
+    // whether the board's cards are a web shop, which custom fields are the
+    // price, product code and stock, the lists on sale, the categories, the
+    // Orders list and the payment methods. Written only by the shopSetSettings
+    // method (server/shop.js), which checks it with models/lib/shop.js; a client
+    // write is refused there. Nothing secret is in it: it is what the shop shows.
+    shopSettings: {
+      /**
+       * The shop's settings (models/lib/shop.js normalizeShopSettings)
+       */
+      type: Object,
+      blackbox: true,
+      optional: true,
+    },
     defaultPublicBoardView: {
       /**
        * The Board View a PUBLIC board opens in when the viewer has no stored
@@ -1804,6 +1818,10 @@ Boards.helpers({
     if (!selection.labels) this.labels = [];
     delete this._id;
     delete this.slug;
+    // Board Settings / Shop: the copy's shop is closed and has no Orders list,
+    // so a copy - a board template too - never takes orders into the source
+    // board's Orders list (models/lib/shop.js copiedShopSettings).
+    if (this.shopSettings) this.shopSettings = require('/models/lib/shop').copiedShopSettings(this.shopSettings);
     this.title = await this.copyTitle();
     const _id = await Boards.insertAsync(this);
 
@@ -2586,6 +2604,13 @@ Boards.helpers({
       if (commentCardIds.length) {
         query.$or.push({ _id: { $in: commentCardIds } });
       }
+      // The cards whose attachments contain it: the server's board text
+      // matches (client/lib/boardTextFilter.js), which the search sidebar
+      // subscribes to - attachment text is never sent to the browser.
+      if (Meteor.isClient) {
+        const { boardTextSelector } = require('/client/lib/boardTextFilter');
+        query.$or.push(boardTextSelector(term));
+      }
 
       ret = ReactiveCache.getCards(query, projection);
     }
@@ -3023,7 +3048,11 @@ Boards.helpers({
   },
 
   async editLabel(labelId, name, color, dueAt) {
-    if (!this.getLabel(name, color)) {
+    // Refused only when ANOTHER label already has this name and colour: the
+    // label being edited has them itself whenever only its due date changes,
+    // and that change was silently not saved.
+    const same = this.getLabel(name, color);
+    if (!same || same._id === labelId) {
       const labelIndex = this.labelIndex(labelId);
       const update = {
         $set: {

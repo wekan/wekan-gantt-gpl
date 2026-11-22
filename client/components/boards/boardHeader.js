@@ -10,6 +10,7 @@ import Swimlanes from '/models/swimlanes';
 import TableVisibilityModeSettings from '/models/tableVisibilityModeSettings';
 import visibilityDesc from '/imports/i18n/lib/visibilityDesc';
 const { boardViewMenuEntries } = require('/models/lib/boardViewSettings');
+const { boardViewHelpId } = require('/models/lib/featureHelp');
 import { allowBoardView } from '/client/lib/instanceFeatures';
 import { Filter } from '/client/lib/filter';
 // Which way a button that opens a sidebar view goes on a click - one answer,
@@ -517,6 +518,10 @@ Template.boardChangeViewPopup.events({
     Utils.setBoardView('board-view-website');
     Popup.back();
   },
+  'click .js-open-shop-view'() {
+    Utils.setBoardView('board-view-shop');
+    Popup.back();
+  },
   'click .js-open-version-control-view'() {
     Utils.setBoardView('board-view-version-control');
     Popup.back();
@@ -985,6 +990,10 @@ Template.boardViewMenu.helpers({
   boardView() {
     return Utils.boardView();
   },
+  // The ? of the view that is on (docs/Features/General/Help-Button.md).
+  boardViewHelp() {
+    return boardViewHelpId(Utils.boardView());
+  },
   // The tooltip: the name of the view that is ON. The button is icon only, so
   // this is the only place the name appears. docs/Features/Header-Bar/Header.md
   boardViewName() {
@@ -1028,6 +1037,7 @@ Template.boardViewMenu.helpers({
       'board-view-email': 'board-view-email',
       'board-view-chat': 'board-view-chat',
       'board-view-website': 'board-view-website',
+      'board-view-shop': 'board-view-shop',
       'board-view-version-control': 'board-view-version-control',
       'board-view-column-sets': 'board-view-column-sets',
       'board-view-created-resolved': 'board-view-created-resolved',

@@ -270,8 +270,27 @@ replaced with the language named by that tag.**
 ### Shared translation source for WeKan prototypes under `.tools/`
 
 The WeKan catalogs in `imports/i18n/data/` are the source of truth for
-translations in every WeKan prototype under `.tools/`, including WeLite,
-Weddy, Wami, and any future WeKan prototype with its own catalog.
+translations in every WeKan prototype under `.tools/`, including Omi, Wami,
+Weddy, WeLite, and any future WeKan prototype with its own catalog. A prototype
+does not keep translations of its own that WeKan's catalogs do not have.
+
+Version control translations come from ONE place too:
+`.tools/w/gitea-patches/dist/translations/gitea-locale/locale_<lang>.json`,
+upstream Gitea's locale files with gitea-patches' own translations merged in.
+Only gitea-patches has the complete Finnish, so a prototype never takes its
+Gitea strings from upstream Gitea directly. Refresh them with gitea-patches'
+`./build.sh translations` (menu: "Download the newest Gitea translations from
+upstream") and commit them there.
+
+So a prototype that needs translations - Omi, Wami, Weddy, WeLite,
+github-to-gitea and the rest of the WeKan and version control prototypes under
+`.tools/w/` - COPIES them directly: WeKan's strings from WeKan's catalogs, and
+Gitea's own things (repositories, issues, pull requests, releases,
+organizations) from gitea-patches' `gitea-locale`, into its own catalog format.
+It uses no other translation source. Gitea's strings are NOT added to WeKan's
+catalogs (decided 2026-11-22: they would grow every WeKan locale file by about
+45 %). A string that neither has is added to WeKan's catalog, as in step 2
+below, and is used from there in WeKan and in the `.tools` repositories.
 
 1. Before adding a translation key in a prototype, search WeKan's English
    catalog for a key with the same meaning and usage. Reuse that key and its

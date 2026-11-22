@@ -1,5 +1,90 @@
 # Meteor 3 WeKan: Hosting many WeKan kanban, websites, etc
 
+## The menu: build.sh
+
+Every script here is in one menu, [build.sh](build.sh):
+
+```
+./build.sh                      # the menu
+./build.sh backup.sh customer1  # one script, from cron or by hand
+./build.sh --list               # the scripts it knows
+```
+
+Its settings are in `settings.ini` beside it, and are set from the menu's
+**Settings**:
+
+| Setting | What it is |
+| --- | --- |
+| Server | a host name from `~/.ssh/config`, for example `c2` when `ssh c2` signs in with an SSH key. Empty: this machine |
+| Directory | where the scripts run on that server, for example `/root/wekan`: the directory with `admin.txt`, the customers' `<name>.txt` and `restore/<name>/` |
+| Copy the scripts | yes: before each run, this directory's scripts and templates are copied to the server's directory, so it always runs the version here |
+
+With a server set, **nothing runs on this machine**: every script runs on the
+server, over SSH, in its directory. The customers' database passwords stay in
+the files the scripts write on the server, and this machine keeps only the
+server's name and its SSH key - so the machine you run the menu from holds no
+passwords. `settings.ini`, `admin.txt` and the customers' files are never
+copied to the server. The menu can also open a shell on the server, in that
+directory.
+
+### Limit localhost access to current node.js port and database port only
+
+The containers run with `network_mode: host`, so they share the server's
+network: without a limit, one customer's WeKan could open every other
+customer's `127.0.0.1:<port>`, and every other local service.
+[localhost-limit.sh](localhost-limit.sh), in the menu under **Server setup**,
+lets each WeKan container reach on this machine only:
+
+- its own Node.js `PORT`,
+- the database port(s) of its `MONGO_URL` and `MONGO_OPLOG_URL`,
+- the local DNS resolver, and
+- the answers to the connections Caddy makes to it.
+
+Everything else it sends to a local port is rejected. Caddy -> WeKan and WeKan
+-> MongoDB work as before, and outgoing internet traffic (mail, webhooks) is
+not touched. Which database a container may read is still MongoDB's decision:
+each customer's user has rights to its own database only (`1createdb.sh`).
+
+It finds the containers with `docker ps` (names ending in `-app` or `-tenant`)
+and reads their `PORT` and `MONGO_URL` with `docker inspect`, falling back to
+`restore/<customer>/docker-compose.yml`. It compares them with the ports in
+`/etc/caddy/Caddyfile` and `1createdb.sh`, and reports a Caddy port with no
+container, or a container that Caddy does not proxy.
+
+```
+./localhost-limit.sh plan     # what was found and the rules; changes nothing
+./localhost-limit.sh apply    # put the rules in place (root)
+./localhost-limit.sh status   # the rules now in place
+./localhost-limit.sh remove   # take them away
+./localhost-limit.sh --host c2 plan   # the same for the server c2, over SSH
+```
+
+**With a server set in the menu's Settings**, this item runs on the machine
+the menu runs on, not on the server: the settings - `1createdb.sh`, the
+customers' `<name>.txt` and `restore/<name>/docker-compose.yml` - are read
+here, in this directory, because they and their passwords need not be copied
+to the server. Only what is on the server is reached over SSH: its running
+containers and their cgroups, its `/etc/caddy/Caddyfile`, and its firewall -
+one SSH call to read them, one to put the rules in place and one to show them.
+Without a server, it runs on this machine like every other script.
+
+How: the containers cannot be told apart by address, but each is a cgroup of
+its own. The rules are an iptables / ip6tables chain `WEKAN-LOCALHOST`, jumped
+to from `OUTPUT -o lo`, that matches each container by its cgroup v2 path
+(`-m cgroup --path`). It needs cgroup v2 and iptables 1.6.1 or newer; Ubuntu
+26.04 has both (its `iptables` is the nftables one, beside ufw).
+
+**ufw.** ufw guards what comes in from outside - here only http, https and
+ssh, ssh with keys only - and it accepts all loopback traffic, between the
+processes of the server itself (`ufw-before-output`: `-o lo -j ACCEPT`). That
+local traffic is what this limits, so the two do not overlap: ufw keeps the
+outside out of the local ports, this keeps each container out of the others'.
+The jump to `WEKAN-LOCALHOST` must come before ufw's in `OUTPUT`, so `apply`
+inserts it first; `status` says whether it still is. Run `apply` again after
+a container is recreated (`update-docker-settings.sh`,
+`update-wekan-version.sh`), because it then has a new cgroup, after a reboot,
+and after `ufw reload` or `ufw enable`.
+
 ## 1) Install WeKan exactly like this
 
 Use all settings and config files at this page and subdirectories.

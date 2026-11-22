@@ -77,10 +77,16 @@ template(name="attachmentViewer")
         audio#audio-viewer.hidden(controls="true")
         object#pdf-viewer.hidden(type="application/pdf")
           span.pdf-preview-error {{_ 'preview-pdf-not-supported' }}
-        object#txt-viewer.hidden(type="text/plain")
         #zip-viewer.hidden(aria-live="polite")
         #office-viewer.hidden
+        #rich-viewer.hidden(aria-live="polite")
       button.fa.fa-caret-right#next-attachment(type="button" aria-label="{{_ 'next'}}")
+
+//- An attached Markdown file in the slideshow (client/lib/attachmentRichViewer.js):
+  the same +viewer as a card description, with all of its settings.
+template(name="attachmentMarkdownPreview")
+  +viewer
+    = text
 
 template(name="attachmentGallery")
 

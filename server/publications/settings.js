@@ -93,9 +93,14 @@ const SETTING_FIELDS = {
   rulesReadOnlyForMembers: 1,
   // #4198: whether public boards are on the fediverse; no secret.
   activityPubEnabled: 1,
+  // Whether every webhook is turned off (models/lib/webhooksSwitch.js): every
+  // client hides the webhook screens; no secret.
+  webhooksDisabled: 1,
   // #2460: whether the sign-in page offers SQRL; no secret.
   sqrlEnabled: 1,
   hideBoardMemberList: 1,
+  // #6939: the card details default width (percent of the window); no secret.
+  cardDetailsDefaultWidthPercent: 1,
   hideDateFormat: 1,
   globalDateFormat: 1,
   cardsLoading: 1,

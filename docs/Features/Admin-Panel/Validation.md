@@ -1,9 +1,12 @@
 # Admin Panel implementation validation
 
-Audit against the September 2026 source. The 48 pane routes are defined by
-[adminUrls.js](../../../models/lib/adminUrls.js). A visible menu entry alone
-is not proof that its action works: the table identifies its implementation
-and the boundaries of this validation.
+Audit against the September 2026 source, which then had 48 pane routes. The
+pane routes are defined by [adminUrls.js](../../../models/lib/adminUrls.js),
+and the tables below follow its current list in menu order -
+[tests/adminPanelDocsMatchMenu.test.cjs](../../../tests/adminPanelDocsMatchMenu.test.cjs)
+fails when a pane is missing from them or in a different order. A visible menu
+entry alone is not proof that its action works: the table identifies its
+implementation and the boundaries of this validation.
 
 ## Findings and fixes
 
@@ -80,7 +83,6 @@ are not reachable from the current Admin Panel menu. Current storage panes use
 | E-mail (`email`) | [settings.js](../../../server/models/settings.js) | Mail service settings, secret masking and test-email method; delivery needs a configured SMTP/provider account. |
 | Notifications (`notifications`) | [settings.js](../../../server/models/settings.js) | Site defaults through setAdminNotifyDefault; used by notification resolution. |
 | Domains (`domains`) | [peopleBody.js](../../../client/components/settings/peopleBody.js) | Server-backed domain membership counts, search and pagination. |
-| Cloud (`cloud`) | [cloudPanel.js](../../../server/cloudPanel.js) | The Cloud Panel Domain and its SuperAdmin, site administrators only; the panel itself answers only on that domain, to the SuperAdmin and a domain's customers ([Cloud Panel](Cloud-Panel.md)). Real methods in [cloudPanelAccess.test.cjs](../../../tests/cloudPanelAccess.test.cjs). |
 | Organizations (`organizations`) | [tenant.js](../../../server/methods/tenant.js) | Organization membership, tenant fields and administrator scope. |
 | Teams (`teams`) | [team.js](../../../models/team.js) | Team records and membership operations; scoped server permissions. |
 | People (`people`) | [users.js](../../../server/models/users.js) | Create/edit, roles, password/email operations, impersonation and removal. |
@@ -120,12 +122,13 @@ are not reachable from the current Admin Panel menu. Current storage panes use
 | Speed (`speed`) | [eventLog.js](../../../models/eventLog.js) | Recorded speed events; no events is a valid empty report. |
 | Tests (`tests`) | [eventLog.js](../../../models/eventLog.js) | Recorded test results; opening the pane does not run every repository test. |
 | CPU usage (`cpu`) | [systemStatus.js](../../../server/methods/systemStatus.js) | CPU detail and recorded governor events. |
-| Memory Usage (`ram`) | [ramMonitor.js](../../../server/lib/ramMonitor.js) | Live RAM and swap, and recorded high-memory periods. |
+| Memory usage (`ram`) | [ramMonitor.js](../../../server/lib/ramMonitor.js) | Live RAM and swap, and recorded high-memory periods. |
 | Disk usage (`disk`) | [diskMonitor.js](../../../server/lib/diskMonitor.js) | Live use of each filesystem WeKan writes to, and recorded high-usage periods. |
 | Instrumentation (`instrumentation`) | [instrumentationReport.js](../../../server/methods/instrumentationReport.js) | Local Meteor operation counters; no external telemetry upload. |
 | Broken Cards (`broken-cards`) | [repairBrokenCards.js](../../../server/methods/repairBrokenCards.js) | Broken-card repair and reports, with administrator checks. |
 | Files (`files`) | [fileStatusAudit.js](../../../server/methods/fileStatusAudit.js) | Read-only file/status/type/history scans and report data. |
 | Rules (`rules`) | [rules.js](../../../server/publications/rules.js) | Rules report subscriptions, search and pagination. |
+| All webhooks (`webhooks`) | [webhooksSwitch.js](../../../server/webhooksSwitch.js) | Every integration through the site-admin method webhooksReportPage: board or Global, owner, type, status, activities, whether a token is set (never the token), with the On / Off filter, search and pagination. |
 | Boards (`boards`) | [boards.js](../../../server/publications/boards.js) | Board report with server-side visibility filtering. |
 | Cards (`cards`) | [cards.js](../../../server/publications/cards.js) | Card report with server-side counts and pagination. |
 | Recovery (`recovery`) | [recovery.js](../../../server/recovery.js) | Recorded maintenance/recovery events and actions; actual corruption recovery is a separate destructive scenario. |
@@ -134,6 +137,16 @@ are not reachable from the current Admin Panel menu. Current storage panes use
 | Database problems (`database`) | [databaseProblems.js](../../../server/lib/databaseProblems.js) | Database event ingestion/classification and problem reporting. |
 | Filesystem integrity (`integrity`) | [fileIntegrityScan.js](../../../server/lib/fileIntegrityScan.js) | Integrity scans/baselines plus file-status audit; scans report their coverage limits. |
 | Email (`mail`) | [mailProblems.js](../../../models/lib/mailProblems.js) | Sends the mail server refused, IMAP mailboxes that cannot be read, unreadable email and email for a board that no longer takes it - one folded row per kind; runtime-tested against local SMTP and IMAP servers. |
+
+## Cloud
+
+Admin Panel / Cloud exists only where the server has `CLOUD`; it is not one
+of the four pages this audit follows. [cloudPanel.js](../../../server/cloudPanel.js)
+refuses every method without `CLOUD` and records the attempt; the real methods,
+the customer login, the support boards and the allowed addresses are in
+[cloudPanelAccess.test.cjs](../../../tests/cloudPanelAccess.test.cjs), the gate
+in [cloudPanelGate.test.cjs](../../../tests/cloudPanelGate.test.cjs)
+([Cloud Panel](Cloud-Panel.md)).
 
 ## Reproduce the checks
 
@@ -151,3 +164,19 @@ that spec with the repository Playwright configuration. The backup test restores
 all collections in that test instance; never point it at a working installation.
 
 See [Backup](Attachments/Backup.md) for supported procedures and limitations.
+
+## Commits
+
+ - [The audit lists the Cloud pane of People](https://github.com/wekan/wekan/commit/240f0dad935cba56618346fa0781ac1e72159af6)
+ - [The audit lists Password length](https://github.com/wekan/wekan/commit/c99aa7f845ea41fe3a108d9c55abaa28298cdbf9)
+ - [The audit lists the Audit log](https://github.com/wekan/wekan/commit/f165a2419219abcc847e5b4adb036be58d1b5bf4)
+ - [The audit lists the Retention pane](https://github.com/wekan/wekan/commit/4d8df83fdd719a3a72f81f50d53459937cdc6d09)
+ - [The audit lists the Problems / Backup status pane](https://github.com/wekan/wekan/commit/06b7ce994ad193357a20fc6a036060ea04c83947)
+ - [The audit lists Memory usage and Disk usage](https://github.com/wekan/wekan/commit/b6a3d98736ebf58ef3905613e303d091ef89f65a)
+ - [The audit lists WebDAV storage](https://github.com/wekan/wekan/commit/42340817523e2e62cc55cbd31982bc2eada1a858)
+ - [The audit lists Shared labels](https://github.com/wekan/wekan/commit/7595727917d436ea71969d6d74d166b42b38ed4e)
+ - [The audit lists Problems / Email](https://github.com/wekan/wekan/commit/79ac3016751a4633f9efb1eda2102dcb798378b4)
+ - [The audit covers every LDAP, OAuth2, CAS and Header login setting](https://github.com/wekan/wekan/commit/eb49a4b1b6853650823434e924f5d0dc47a4fe5b)
+ - [The audit lists Continuous backup](https://github.com/wekan/wekan/commit/6b9bc496b1b56a54b40f5403341272c33770561a)
+ - [Every People authentication pane documented in menu order](https://github.com/wekan/wekan/commit/dd30cd052217cdac7687a3ee220175b979418100)
+ - [Scheduled full-instance backups fixed and the Admin Panel validated](https://github.com/wekan/wekan/commit/58d8563637d1a9badcf2ff5cf0ea6793d7b7d1eb)

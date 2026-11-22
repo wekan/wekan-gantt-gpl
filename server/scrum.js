@@ -516,6 +516,8 @@ const methods = {
   async 'scrum.importIntoBoard'(boardId, file, options = {}) {
     check(boardId, String); check(file, Object); check(options, { dryRun: Match.Optional(Boolean) });
     const userId = this.userId;
+    // Admin Panel / Settings / Security / Disable all import.
+    await require('/models/lib/importExportSecurity').assertImportEnabled();
     return locked(boardId, async () => {
       await boardFor(userId, boardId, true); await pending(boardId);
       const { importScrumTransferIntoBoard } = require('/server/lib/scrumTransferMerge');
@@ -650,6 +652,26 @@ for (const kind of ['Card', 'List', 'Swimlane']) {
     check(boardId, String); check(id, String); check(metadata, Object); check(expectedRevision, Match.OneOf(Number, null));
     return locked(boardId, () => updateMetadata(this.userId, kind.toLowerCase(), boardId, id, metadata, expectedRevision));
   };
+}
+// Admin Panel / Settings / Features / Scrum views (models/lib/featureServerGates.js):
+// every method of the Scrum view is refused while the feature is off, except
+// the ones the card details, Board Settings and data recovery use too, which
+// SERVER_PATHS lists with why. A method added above is gated by default.
+{
+  const { requireFeature } = require('/server/lib/assistGate');
+  const scrumGate = require('/models/lib/featureServerGates').SERVER_PATHS.find(entry => entry.key === 'views-scrum');
+  for (const name of Object.keys(methods)) {
+    if (Object.prototype.hasOwnProperty.call(scrumGate.exempt, name)) continue;
+    const method = methods[name];
+    methods[name] = async function scrumViewGated(...args) {
+      // audit-argument-checks counts only the check() calls made before the
+      // first await, and the gate awaits: the method's own check() calls
+      // below still validate every argument and throw on a bad one.
+      check(args, [Match.Any]);
+      await requireFeature(this.userId, 'views-scrum', `ddp:${name}`);
+      return method.apply(this, args);
+    };
+  }
 }
 Meteor.methods(methods);
 DDPRateLimiter.addRule({ type: 'method', name: name => Object.prototype.hasOwnProperty.call(methods, name),

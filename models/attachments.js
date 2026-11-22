@@ -211,4 +211,21 @@ if (Meteor.isServer) {
   });
 }
 
+// The slideshow's converted previews (server/lib/attachmentPreviewStore.js) are
+// a cache of the file: they go with it.
+if (Meteor.isServer) {
+  Attachments.collection.after.remove((userId, doc) => {
+    try {
+      require('/server/lib/attachmentPreviewStore').removePreviews(doc && doc._id);
+    } catch (error) {
+      console.error('Failed to remove attachment previews:', error);
+    }
+    // Its search text goes with it: a removed file is found by no search.
+    if (doc && doc._id) {
+      require('/server/lib/documentGif').DocumentPreviews.rawCollection().deleteMany({ attachmentId: doc._id })
+        .catch(error => console.error('Failed to remove attachment search text:', error));
+    }
+  });
+}
+
 export default Attachments;

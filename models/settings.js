@@ -330,12 +330,30 @@ Settings.attachSchema(
     'webhookInternalHosts.$': {
       type: String,
     },
+    // Admin Panel / Settings / Privacy and security / Allowed addresses
+    // (models/lib/adminPanelAddresses.js): the addresses and ranges the Admin
+    // Panel and the admin REST API can be used from. Empty: any. Never
+    // published; saved through a method that refuses a list without the
+    // saver's own address (server/adminPanelAddresses.js).
+    adminPanelAllowedAddresses: {
+      type: Array,
+      optional: true,
+    },
+    'adminPanelAllowedAddresses.$': {
+      type: String,
+    },
     // #2290: the login and registration webhook (models/lib/accountWebhook.js):
     // { url, token, onLogin, onRegister, fields }. Never published.
     accountWebhook: {
       type: Object,
       optional: true,
       blackbox: true,
+    },
+    // Admin Panel / Settings / Features / Turn off all webhooks
+    // (models/lib/webhooksSwitch.js). Off by default: webhooks work.
+    webhooksDisabled: {
+      type: Boolean,
+      optional: true,
     },
     // #2460: SQRL sign-in (server/sqrl.js). Off by default.
     sqrlEnabled: {
@@ -411,6 +429,15 @@ Settings.attachSchema(
     hideBoardMemberList: {
       type: Boolean,
       optional: true,
+    },
+    // #6939: the width the card details window opens at, in percent of the
+    // browser window (520px at least), until a user drags their own. Unset =
+    // 520px. models/lib/cardDetailsWidth.js
+    cardDetailsDefaultWidthPercent: {
+      type: Number,
+      optional: true,
+      min: 30,
+      max: 95,
     },
     // Hide the activity feed on EVERY board, instance-wide. Read once from this
     // global setting instead of being written into every board document: the old

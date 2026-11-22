@@ -37,6 +37,10 @@ import '/server/initializeDirs';
 // 0. API middleware & auth routes (must register before model routes)
 // ----------------------------------------------------------------------------
 import '/server/lib/requestReportContext';
+// Admin Panel / Settings / Privacy and security / Allowed addresses: from any
+// other address a site administrator reads as a non-administrator. Early, so
+// it is in place before any admin check can run.
+import '/server/adminPanelAddresses';
 import '/server/00adminOnlyFieldBoundary';
 import '/server/apiMiddleware';
 import '/server/apiAuthRoutes';
@@ -112,6 +116,8 @@ import '/server/lib/cpuMonitor';
 // Siblings of the CPU monitor: memory and swap, and each filesystem WeKan
 // writes to (docs/Features/Admin-Panel/Problems/RAM-usage.md, Disk-usage.md).
 import '/server/lib/ramMonitor';
+// docs/Compliance/README.md WP-2: sign-in addresses expire.
+import '/server/lib/loginAddressRetention';
 import '/server/lib/diskMonitor';
 import '/server/lib/selfChecks';
 import '/server/models/actions';
@@ -383,6 +389,9 @@ import '/server/bots';
 import '/server/webhookInternalHosts';
 // Admin Panel / Settings / Global Webhooks / Login and registration (#2290).
 import '/server/accountWebhook';
+// Admin Panel / Settings / Features / Turn off all webhooks, and Admin Panel /
+// Problems / Webhooks (models/lib/webhooksSwitch.js).
+import '/server/webhooksSwitch';
 // #1040: the JS Web Labels page for LibreJS.
 import '/server/jsWebLabels';
 // #1293: Android share target.
@@ -535,6 +544,8 @@ import '/server/scrum';
 import '/server/workload';
 // Budget and billing (docs/Features/Billing/Billing.md).
 import '/server/billing';
+// Board View / Shop: Board Settings / Shop and the orders (models/lib/shop.js).
+import '/server/shop';
 // Cloud Panel (docs/Features/Admin-Panel/Cloud-Panel.md).
 import '/server/cloudPanel';
 // Time entries: a card's time by day (server/timeEntries.js).
