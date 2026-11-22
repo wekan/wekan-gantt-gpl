@@ -67,6 +67,9 @@ const FEATURES = [
     views: ['board-view-email'] },
   { key: 'views-chat', labelKey: 'feature-views-chat', descKey: 'feature-views-chat-desc',
     views: ['board-view-chat'] },
+  // The board as a website (models/lib/websiteView.js).
+  { key: 'views-website', labelKey: 'feature-views-website', descKey: 'feature-views-website-desc',
+    views: ['board-view-website'] },
   { key: 'views-version-control', labelKey: 'feature-views-version-control', descKey: 'feature-views-version-control-desc',
     views: ['board-view-version-control'] },
   // #211
@@ -98,6 +101,14 @@ const FEATURES = [
   { key: 'standup-timer', labelKey: 'feature-standup-timer', descKey: 'feature-standup-timer-desc',
     views: [] },
   { key: 'retrospective-board', labelKey: 'feature-retrospective-board', descKey: 'feature-retrospective-board-desc',
+    views: [] },
+  // Workload and capacity (docs/Features/Workload/Workload.md): the user menu's
+  // page, and every workload* method behind it (server/workload.js).
+  { key: 'workload', labelKey: 'workload-title', descKey: 'feature-workload-desc',
+    views: [] },
+  // Budget and billing (docs/Features/Billing/Billing.md): the user menu's
+  // page, and every billing* method behind it (server/billing.js).
+  { key: 'billing', labelKey: 'billing-title', descKey: 'feature-billing-desc',
     views: [] },
 ];
 

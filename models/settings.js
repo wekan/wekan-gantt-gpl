@@ -11,6 +11,7 @@ const getReactiveCache = () => require('/imports/reactiveCache').ReactiveCache;
 // Lazy getter — avoids circular dependency (i18n/tap → reactiveCache → settings)
 const getTAPi18n = () => require('/imports/i18n').TAPi18n;
 const { SimpleSchema } = require('/imports/simpleSchema');
+const { createdAtAutoValue, modifiedAtAutoValue } = require('/models/lib/schemaTimestamps');
 const { deliverySchemaFields } = require('/models/lib/notificationDelivery');
 const InvitationCodes = require('/models/invitationCodes').default;
 //var nodemailer = require('nodemailer');
@@ -54,7 +55,7 @@ Settings.attachSchema(
     // tracker. externalLinkPatternPrefix is the literal token prefix (commonly
     // "#"); externalLinkPatternUrl is the URL template containing "{number}",
     // which is replaced with the digits that followed the prefix. Either left
-    // empty disables the feature (no-op). See models/lib/externalLinkAutolink.js
+    // empty disables the feature (no-op). See npm-packages/autolink/externalLinkAutolink.js
     // for the pure matching/URL-building function this setting drives.
     externalLinkPatternPrefix: {
       type: String,
@@ -66,7 +67,7 @@ Settings.attachSchema(
     },
     // #1463: further autolink rules, one "<token> = <url>" per line with
     // {number} and {identifier}, and identifier abbreviations "TK=Task".
-    // See models/lib/externalLinkRules.js.
+    // See npm-packages/autolink/externalLinkRules.js.
     externalLinkRules: {
       type: String,
       optional: true,
@@ -680,27 +681,11 @@ Settings.attachSchema(
     },
     createdAt: {
       type: Date,
-      // eslint-disable-next-line consistent-return
-      autoValue() {
-        if (this.isInsert) {
-          return new Date();
-        } else if (this.isUpsert) {
-          return { $setOnInsert: new Date() };
-        } else {
-          this.unset();
-        }
-      },
+      autoValue: createdAtAutoValue,
     },
     modifiedAt: {
       type: Date,
-      // eslint-disable-next-line consistent-return
-      autoValue() {
-        if (this.isInsert || this.isUpsert || this.isUpdate) {
-          return new Date();
-        } else {
-          this.unset();
-        }
-      },
+      autoValue: modifiedAtAutoValue,
     },
   }),
 );

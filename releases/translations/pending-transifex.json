@@ -3379,6 +3379,1198 @@
     {
       "key": "import-board-instruction-sandstorm",
       "since": "2026-11-21"
+    },
+    {
+      "key": "workload-title",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-intro",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-from",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-weeks",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-show",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-story-points",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-all-boards",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-truncated",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-legend-ok",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-legend-under",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-legend-over",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-week-short",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-unscheduled",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-capacity-label",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-allocated",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-absent-days",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-holiday-days",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-unestimated",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-unassigned",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-no-cards",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-hours-short",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-points-short",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-overloaded",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-my-capacity",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-hours-per-week",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-work-percent",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-working-days",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-my-absences",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-absence-type",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-absence-vacation",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-absence-sick",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-absence-holiday",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-absence-training",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-absence-other",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-note",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-add-absence",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-allocations",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-allocations-intro",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-role-placeholder",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-role",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-role-example",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-headcount",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-allocation-percent",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-add-allocation",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-holidays",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-no-holidays",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-holiday-name",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-add-holiday",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-estimated-hours",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-invalid-estimate",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "feature-workload-desc",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-title",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-intro",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-no-boards",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-budget",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-spent",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-remaining",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-forecast",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-left",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-invoiced",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-paid",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-over-budget",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-unrated",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-amount",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-currency",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-budget-hours",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-rates",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-default-rate",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-hourly-rate",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-new-invoice",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-draft-summary",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-nothing-to-invoice",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-set-rate-first",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-customer",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-reference",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-issue-date",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-due-date",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-create-invoice",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-invoices",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-invoice",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-no-invoices",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-number",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-status",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-status-draft",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-status-sent",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-status-paid",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-status-void",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-mark-sent",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-mark-paid",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-void",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-back-to-draft",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-print",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-total",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-billable",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "feature-billing-desc",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-add-method",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-add-payment",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-address",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-amount-due",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-business-id",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-country",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-credit",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-credit-note",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-credit-of",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-days-overdue",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-e-invoice",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-field-bic",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-field-building",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-field-details",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-field-iban",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-field-label",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-field-name",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-field-payee",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-field-paypal-user",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-field-pix-key",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-field-postcode",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-field-street",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-field-town",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-field-url",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-field-vpa",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-footer",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-include-undated",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-issuer",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-issuer-name",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-method",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-method-bank-transfer",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-method-bitcoin",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-method-cash",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-method-cheque",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-method-fi-bank",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-method-link",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-method-other",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-method-paypal",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-method-pix",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-method-sepa",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-method-swish",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-method-swiss-qr",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-method-upi",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-net",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-open",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-overdue-count",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-pay-by-scanning",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-payment-methods",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-payment-reference",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-payment-terms",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-payments",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-penalty-interest",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-period",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-phone",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-reference-fi",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-reference-none",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-reference-rf",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-reverse-charge",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-status-credited",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-status-overdue",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-status-partial",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-undated-included",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-vat",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-vat-id",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-website",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "time-entries",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "time-entry-invoiced",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "time-entry-log",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "time-entry-undated",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-method-promptpay",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-method-paynow",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-method-vietqr",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-method-fps",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-method-spayd",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-method-zbp",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-method-mnb",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-method-ips",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-method-dk-fik",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-method-ethereum",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-method-litecoin",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-field-crypto-address",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-field-promptpay-target",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-field-proxy",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-field-bank-bin",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-field-account",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-field-nip",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-field-creditor",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-reference-be",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-reference-no",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-reference-se",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-unbilled",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-expenses",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-cost",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-margin",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-uncosted",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-cost-rate",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-bill-time",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-approve-time",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-default-customer",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-quote-valid-days",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-not-billable",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-no-expenses",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-expense-category",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-expense-travel",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-expense-accommodation",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-expense-meals",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-expense-materials",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-expense-subcontracting",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-expense-software",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-expense-other",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-markup",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-add-expense",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-fees",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-fees-intro",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-recurring",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-recurring-none",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-recurring-monthly",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-fee-billed",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-no-fees",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-add-fee",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-time-to-approve",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-approve",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-reject",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-nothing-to-approve",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-unapproved",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-quotes",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-quotes-intro",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-quote",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-valid-until",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-create-quote",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-quote-expired",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-quote-accepted",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-quote-declined",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-accept-sets-budget",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-no-quotes",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-line-fee",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "billing-line-expense",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "time-entry-approved",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "time-entry-rejected",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-utilization",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-utilization-title",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-utilization-target",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-skills",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-skills-example",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-skill",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-skill-level",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-candidates",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "workload-no-candidates",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-settings-intro",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-cloudflare-zone",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-cloudflare-target",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-cloudflare-proxied",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-dns-check",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-dns-apply",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-dns-conflict",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-caddy-intro",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-caddy-admin",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-caddy-upstream",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-caddy-show",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-caddy-push",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-caddy-pushed",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-domain-new",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-mode",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-mode-own",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-mode-shared",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-upstream",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-database",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-database-uri",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-database-host",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-database-port",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-database-name",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-database-auth-source",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-database-replica-set",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-customers",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-domain-cloudflare",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-test",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-test-ok",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-import",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-import-report",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-import-users",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-import-files",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-import-now",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-invoice-open",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-paid-on",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-invoice-link",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-add-invoice",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-chat-empty",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-chat-message",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-chat-send",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-chat-import",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "cloud-panel-chat-imported",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "board-view-website",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "tool-group-website",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "website-view-empty",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "feature-views-website",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "feature-views-website-desc",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "import-board-instruction-wordpress",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "import-board-instruction-wordpressjson",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "import-board-instruction-ghost",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "import-board-instruction-blogger",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "import-board-instruction-markdownsite",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "import-board-instruction-htmlsite",
+      "since": "2026-11-21"
+    },
+    {
+      "key": "import-board-instruction-substack",
+      "since": "2026-11-21"
     }
   ]
 }

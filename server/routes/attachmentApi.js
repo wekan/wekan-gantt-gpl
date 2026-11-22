@@ -14,85 +14,16 @@ import AttachmentStorageSettings from '/models/attachmentStorageSettings';
 import fs from 'fs';
 import path from 'path';
 import { ObjectId } from 'bson';
-import { allowIsBoardMemberWithWriteAccess } from '/server/lib/utils';
-import { tripCanary } from '/server/lib/canary';
 import { liveAttachments } from '/models/lib/attachmentSoftDelete';
 import { softDeleteAttachment } from '/server/attachmentSoftDelete';
+import {
+  userHasBoardWriteAccess,
+  maxBase64LengthForBytes,
+  getApiTransferLimits,
+} from '/server/lib/attachmentApiAccess';
 import { assignedOnlyAttachmentScope, mayReadBoardAttachment, mayWriteCardAttachment, mayWriteInCardList } from '/server/lib/assignedOnlyAttachments';
 
-const HARD_MAX_API_FILE_BYTES = 64 * 1024 * 1024;
 const HARD_MAX_API_UPLOAD_BODY_BYTES = 96 * 1024 * 1024;
-
-function normalizeConfiguredLimit(configuredValue, fallbackValue = 0) {
-  if (Number.isFinite(configuredValue) && configuredValue >= 0) {
-    return configuredValue;
-  }
-  return Number.isFinite(fallbackValue) && fallbackValue >= 0 ? fallbackValue : 0;
-}
-
-function getEffectiveApiFileLimit(maxBytes) {
-  if (Number.isFinite(maxBytes) && maxBytes > 0) {
-    return Math.min(maxBytes, HARD_MAX_API_FILE_BYTES);
-  }
-  // Unlimited in settings still uses a hard in-memory safety cap.
-  return HARD_MAX_API_FILE_BYTES;
-}
-
-function maxBase64LengthForBytes(maxBytes) {
-  const safeBytes = Number.isFinite(maxBytes) && maxBytes > 0 ? maxBytes : HARD_MAX_API_FILE_BYTES;
-  return Math.ceil((safeBytes * 4) / 3) + 4;
-}
-
-function parseNonNegativeInt(value, fallback = 0) {
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isFinite(parsed) || parsed < 0) {
-    return fallback;
-  }
-  return parsed;
-}
-
-async function getApiTransferLimits() {
-  const envUploadFallback = parseNonNegativeInt(process.env.ATTACHMENT_API_MAX_UPLOAD_BYTES, 0);
-  const envDownloadFallback = parseNonNegativeInt(process.env.ATTACHMENT_API_MAX_DOWNLOAD_BYTES, 0);
-
-  const fallback = {
-    apiUploadMaxBytes: envUploadFallback,
-    apiDownloadMaxBytes: envDownloadFallback,
-    apiUploadBlocked: false,
-    apiDownloadBlocked: false,
-  };
-
-  try {
-    const settings = await AttachmentStorageSettings.findOneAsync({});
-    const limitSettings = settings?.limitSettings || {};
-
-    const apiUploadMaxBytes = normalizeConfiguredLimit(limitSettings.apiUploadMaxBytes, fallback.apiUploadMaxBytes);
-    const apiDownloadMaxBytes = normalizeConfiguredLimit(limitSettings.apiDownloadMaxBytes, fallback.apiDownloadMaxBytes);
-    const apiUploadBlocked = limitSettings.apiUploadBlocked === true;
-    const apiDownloadBlocked = limitSettings.apiDownloadBlocked === true;
-
-    return {
-      apiUploadMaxBytes,
-      apiDownloadMaxBytes,
-      apiUploadBlocked,
-      apiDownloadBlocked,
-      effectiveApiUploadMaxBytes: getEffectiveApiFileLimit(apiUploadMaxBytes),
-      effectiveApiDownloadMaxBytes: getEffectiveApiFileLimit(apiDownloadMaxBytes),
-    };
-  } catch (error) {
-    const apiUploadMaxBytes = normalizeConfiguredLimit(null, fallback.apiUploadMaxBytes);
-    const apiDownloadMaxBytes = normalizeConfiguredLimit(null, fallback.apiDownloadMaxBytes);
-
-    return {
-      apiUploadMaxBytes,
-      apiDownloadMaxBytes,
-      apiUploadBlocked: false,
-      apiDownloadBlocked: false,
-      effectiveApiUploadMaxBytes: getEffectiveApiFileLimit(apiUploadMaxBytes),
-      effectiveApiDownloadMaxBytes: getEffectiveApiFileLimit(apiDownloadMaxBytes),
-    };
-  }
-}
 
 // Attachment API HTTP routes
 // Helper function to authenticate API requests using X-User-Id and X-Auth-Token
@@ -128,6 +59,21 @@ async function authenticateApiRequest(req) {
   return userId;
 }
 
+// server/apiMiddleware.js runs express.json() for every path before these
+// routes, so a JSON body has already been read when a route starts listening
+// for it: the request's 'end' is over and never comes again, and the route
+// waited until its own timeout (list-lock-attachments.e2e.js: copy and move
+// never answered). Hand the parsed body to the route's own data/end listeners,
+// so a body arrives the same way whichever middleware read it first.
+function replayParsedBody(req) {
+  if (req._body !== true && !req.readableEnded) return;
+  const text = typeof req.body === 'string' ? req.body : JSON.stringify(req.body ?? {});
+  process.nextTick(() => {
+    req.emit('data', Buffer.from(text));
+    req.emit('end');
+  });
+}
+
 // Helper function to send JSON response
 function sendJsonResponse(res, statusCode, data) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -158,22 +104,6 @@ function sendRawFile(res, readStream, file, maxBytes) {
   const body = limitStream(readStream, maxBytes);
   body.on('error', () => res.destroy());
   body.pipe(res);
-}
-
-async function userHasBoardWriteAccess(board, userId) {
-  if (!board || !userId) {
-    return false;
-  }
-  if (allowIsBoardMemberWithWriteAccess(userId, board)) {
-    return true;
-  }
-  // Global site admins may write to any board.
-  const admin = await ReactiveCache.getUser({ _id: userId, isAdmin: true });
-  if (admin !== undefined) {
-    return true;
-  }
-  tripCanary('board.write-without-capability', { userId });
-  return false;
 }
 
 // Upload attachment endpoint
@@ -327,6 +257,7 @@ WebApp.handlers.use('/api/attachment/upload', async (req, res, next) => {
         body += chunk.toString();
       });
 
+      replayParsedBody(req);
       req.on('end', async () => {
         if (bodyComplete) return; // Already processed
         bodyComplete = true;
@@ -510,6 +441,7 @@ WebApp.handlers.use('/api/attachment/upload', async (req, res, next) => {
         body += chunk.toString();
       });
 
+      replayParsedBody(req);
       req.on('end', async () => {
         if (bodyComplete) return;
         bodyComplete = true;
@@ -932,6 +864,7 @@ WebApp.handlers.use('/api/boards/:boardId/attachments', async (req, res, next) =
         }
       });
 
+      replayParsedBody(req);
       req.on('end', async () => {
         if (bodyComplete) return;
         bodyComplete = true;
@@ -1118,6 +1051,7 @@ WebApp.handlers.use('/api/boards/:boardId/attachments', async (req, res, next) =
         }
       });
 
+      replayParsedBody(req);
       req.on('end', async () => {
         if (bodyComplete) return;
         bodyComplete = true;

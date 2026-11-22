@@ -531,6 +531,14 @@ import '/server/methods/instrumentationReport';
 import '/server/moveBoardObjects';
 
 import '/server/scrum';
+// Workload and capacity (docs/Features/Workload/Workload.md).
+import '/server/workload';
+// Budget and billing (docs/Features/Billing/Billing.md).
+import '/server/billing';
+// Cloud Panel (docs/Features/Admin-Panel/Cloud-Panel.md).
+import '/server/cloudPanel';
+// Time entries: a card's time by day (server/timeEntries.js).
+import '/server/timeEntries';
 import '/server/publications/scrum';
 import '/server/methods/syncRuleEmailRecovery';
 

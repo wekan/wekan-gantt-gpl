@@ -13,14 +13,15 @@ import {
 } from '/models/lib/swimlaneFilter';
 import { planListCopy, copiedCardSwimlaneId } from './lib/listCopyPlan';
 import { planListMove } from './lib/listMovePlan';
+import { createdAtAutoValue, modifiedAtAutoValue } from '/models/lib/schemaTimestamps';
 const { SimpleSchema } = require('/imports/simpleSchema');
 
 const Lists = new Mongo.Collection('lists');
 
 // Pure, dependency-free helper for scoping a set of cards to a list and
 // (optionally) a swimlane (#5623). Defined here (an isomorphic model file) so
-// client and server share identical logic; re-exported from
-// server/lib/cardScope.js for unit testing.
+// client and server share identical logic; server/lib/tests imports it from
+// this file.
 //
 // - When `swimlaneId` is undefined (no swimlane context), every card in the
 //   list is returned (preserves the historical "select all in list" behavior).
@@ -62,7 +63,7 @@ export function filterCardsByListAndSwimlane(cards, listId, swimlaneId, otherSwi
 
 // Pure, dependency-free helper for list / swimlane colors (#5382). Defined here
 // (an isomorphic model file) so client and server share identical logic;
-// re-exported from server/lib/listColors.js for unit testing.
+// server/lib/tests imports it from this file.
 //
 // `ALLOWED_LIST_COLORS` is the single canonical list of colors allowed for
 // lists and swimlanes (the same `LIST_COLORS` the schema allowedValues uses,
@@ -168,16 +169,7 @@ Lists.attachSchema(
        * creation date
        */
       type: Date,
-      // eslint-disable-next-line consistent-return
-      autoValue() {
-        if (this.isInsert) {
-          return new Date();
-        } else if (this.isUpsert) {
-          return { $setOnInsert: new Date() };
-        } else {
-          this.unset();
-        }
-      },
+      autoValue: createdAtAutoValue,
     },
     sort: {
       /**
@@ -193,14 +185,7 @@ Lists.attachSchema(
        */
       type: Date,
       optional: true,
-      // eslint-disable-next-line consistent-return
-      autoValue() {
-        if (this.isUpdate || this.isUpsert || this.isInsert) {
-          return new Date();
-        } else {
-          this.unset();
-        }
-      },
+      autoValue: modifiedAtAutoValue,
     },
     modifiedAt: {
       type: Date,

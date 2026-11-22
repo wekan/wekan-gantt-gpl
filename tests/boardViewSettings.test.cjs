@@ -335,8 +335,8 @@ test('moveBoardView moves one step, and the first up / last down / unknown are n
   assert.deepStrictEqual(bvs.moveBoardView(undefined, 'board-view-swimlanes', 'up'), all, 'first item up');
   // #3256 appended the Map view; the Email (#794), Chat, Version Control and
   // Column sets (#211) views followed it, and the reports of 2026-11-20 after
-  // those, so the Activity Heatmap is the last row now.
-  assert.deepStrictEqual(bvs.moveBoardView(undefined, 'board-view-activity-heatmap', 'down'), all, 'last item down');
+  // those, and Website after the Activity Heatmap, so it is the last row now.
+  assert.deepStrictEqual(bvs.moveBoardView(undefined, 'board-view-website', 'down'), all, 'last item down');
   assert.notDeepStrictEqual(bvs.moveBoardView(undefined, 'board-view-chat', 'down'), all, 'Chat is no longer last');
   assert.notDeepStrictEqual(bvs.moveBoardView(undefined, 'board-view-map', 'down'), all, 'Map is no longer last');
   assert.deepStrictEqual(bvs.moveBoardView(undefined, 'board-view-nope', 'up'), all, 'unknown');
@@ -349,9 +349,11 @@ test('moveBoardView moves one step, and the first up / last down / unknown are n
 });
 
 test('Utils.boardView() resolves the stored choice through the current board', () => {
-  assert.ok(/boardView\(\) \{\s*const stored = Utils\.storedBoardView\(\);\s*const board = Utils\.getCurrentBoard\(\);\s*return board \? resolveBoardView\(board, stored, allowBoardView, Meteor\.userId\(\)\) : stored;/.test(utilsJs), 'a view the instance disabled falls back too (#6736); the viewer decides public or private');
+  // On a board, only a view the person chose goes in; none is null, so the
+  // board's default applies (the last test of this file).
+  assert.ok(/boardView\(\) \{\s*const board = Utils\.getCurrentBoard\(\);\s*if \(!board\) return Utils\.storedBoardView\(\);[\s\S]{0,400}return resolveBoardView\(board, Utils\.storedBoardView\(\{ chosenOnly: true \}\), allowBoardView, Meteor\.userId\(\)\);/.test(utilsJs), 'a view the instance disabled falls back too (#6736); the viewer decides public or private');
   // #4906 / #4256: the stored choice is this board's own, else the shared one.
-  assert.ok(/storedBoardView\(\) \{\s*const pendingChoice = pendingBoardView\.get\(\);/.test(utilsJs), 'the previous body is the stored choice');
+  assert.ok(/storedBoardView\(\{ chosenOnly = false \} = \{\}\) \{\s*const pendingChoice = pendingBoardView\.get\(\);/.test(utilsJs), 'the previous body is the stored choice');
   assert.ok(utilsJs.includes("require('/models/lib/boardViewSettings')"));
 });
 
@@ -452,6 +454,8 @@ const PRE_FEATURE_MENU = [
   'board-view-distribution',
   'board-view-dependency-map',
   'board-view-activity-heatmap',
+  // Appended after Activity Heatmap: the board as its website.
+  'board-view-website',
 ];
 const bvsSrc = read('models/lib/boardViewSettings.js');
 const PRE_FEATURE_ORDER = PRE_FEATURE_MENU.filter(k => k !== 'hr');
@@ -475,8 +479,9 @@ test('the default order is the pre-feature menu order (525bcab1b), literally', (
   assert.deepStrictEqual(bvs.DEFAULT_BOARD_VIEW_ORDER, PRE_FEATURE_ORDER);
   // 34 before the Map view (#3256) was appended, 35 before Calendar Mode
   // (#3194), 36 before Email (#794) and Chat, 38 before Version Control,
-  // 39 before Column sets (#211), 40 before the twelve reports of 2026-11-20.
-  assert.strictEqual(PRE_FEATURE_ORDER.length, 52);
+  // 39 before Column sets (#211), 40 before the twelve reports of 2026-11-20,
+  // 52 before Website.
+  assert.strictEqual(PRE_FEATURE_ORDER.length, 53);
   // The literal in the model is a list of its own, not a slice of the table
   // (negative: re-sorting BOARD_VIEWS must not be able to change the default).
   assert.match(bvsSrc, /const DEFAULT_BOARD_VIEW_ORDER = \[\n\s*'board-view-swimlanes',/);
@@ -556,7 +561,7 @@ test('a public board shows its public views to visitors and its private views to
 test('the client resolves and draws the menu for the person looking', () => {
   const utils = read('client/lib/utils.js');
   const header = read('client/components/boards/boardHeader.js');
-  assert.match(utils, /resolveBoardView\(board, stored, allowBoardView, Meteor\.userId\(\)\)/);
+  assert.match(utils, /resolveBoardView\(board, Utils\.storedBoardView\(\{ chosenOnly: true \}\), allowBoardView, Meteor\.userId\(\)\)/);
   assert.match(header, /boardViewMenuEntries\(board, Utils\.boardView\(\), allowBoardView, Meteor\.userId\(\)\)/);
 });
 
@@ -601,3 +606,15 @@ test('every Board View entry links a guide that exists', () => {
 });
 
 console.log(`boardViewSettings: ${passed} passed`);
+
+// A visitor who never chose a view gets the board's "Default on Public
+// Board" - Swimlanes is not passed off as their choice, which made the public
+// default do nothing for everybody who had not picked a view.
+test('no view of one\'s own: the board\'s default; a choice of one\'s own: that choice', () => {
+  const board = { permission: 'public', members: [], defaultPublicBoardView: 'board-view-website' };
+  assert.strictEqual(bvs.resolveBoardView(board, null, () => true, null), 'board-view-website');
+  assert.strictEqual(bvs.resolveBoardView(board, 'board-view-lists', () => true, null), 'board-view-lists', 'a visitor\'s own choice wins');
+  const utils = read('client/lib/utils.js');
+  assert.match(utils, /resolveBoardView\(board, Utils\.storedBoardView\(\{ chosenOnly: true \}\), allowBoardView, Meteor\.userId\(\)\)/);
+  assert.match(utils, /return chosenOnly \? null : DEFAULT_BOARD_VIEW;/, 'negative: no choice is null, not Swimlanes');
+});

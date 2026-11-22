@@ -4,6 +4,7 @@ import { Random } from 'meteor/random';
 import { EJSON } from 'meteor/ejson';
 import { ReactiveCache, ReactiveMiniMongoIndex } from '/imports/reactiveCache';
 import { CARD_RECURRENCE_INTERVALS } from '/models/lib/cardRecurrenceSchedule';
+import { createdAtAutoValue, modifiedAtAutoValue } from '/models/lib/schemaTimestamps';
 const { wipLimitBlocksRestore } = require('/models/lib/wipRestore');
 const { FIELD_KEYS: CARD_SHOWN_FIELD_KEYS } = require('/models/lib/cardShownFields');
 import {
@@ -272,38 +273,18 @@ Cards.attachSchema(
       /** When this card entered its current board/list. Unrelated edits do not reset it. */
       type: Date,
       optional: true,
-      autoValue() {
-        if (this.isInsert) return new Date();
-        if (this.isUpsert) return { $setOnInsert: new Date() };
-        this.unset();
-      },
+      autoValue: createdAtAutoValue,
     },
     createdAt: {
       /**
        * creation date
        */
       type: Date,
-      // eslint-disable-next-line consistent-return
-      autoValue() {
-        if (this.isInsert) {
-          return new Date();
-        } else if (this.isUpsert) {
-          return { $setOnInsert: new Date() };
-        } else {
-          this.unset();
-        }
-      },
+      autoValue: createdAtAutoValue,
     },
     modifiedAt: {
       type: Date,
-      // eslint-disable-next-line consistent-return
-      autoValue() {
-        if (this.isInsert || this.isUpsert || this.isUpdate) {
-          return new Date();
-        } else {
-          this.unset();
-        }
-      },
+      autoValue: modifiedAtAutoValue,
     },
     customFields: {
       /**
@@ -705,6 +686,25 @@ Cards.attachSchema(
       type: Number,
       optional: true,
       defaultValue: 0,
+    },
+    estimatedHours: {
+      /**
+       * How many hours the card is estimated to take (Workload,
+       * docs/Features/Workload/Workload.md). What is still to do is this
+       * less spentTime.
+       */
+      type: Number,
+      optional: true,
+      min: 0,
+      max: 10000,
+    },
+    billable: {
+      /**
+       * Budget and billing (docs/Features/Billing/Billing.md): false when the
+       * card's time is not invoiced. Absent means billable.
+       */
+      type: Boolean,
+      optional: true,
     },
     isOvertime: {
       /**
@@ -2298,6 +2298,41 @@ Cards.helpers({
     } else {
       return this.spentTime;
     }
+  },
+
+  getEstimatedHours() {
+    if (this.isLinkedCard()) {
+      const card = ReactiveCache.getCard(this.linkedId);
+      return card === undefined ? null : card.estimatedHours;
+    }
+    return this.estimatedHours;
+  },
+
+  // Budget and billing: whether this card's time is invoiced (default yes).
+  isBillable() {
+    const card = this.isLinkedCard() ? ReactiveCache.getCard(this.linkedId) : this;
+    return !card || card.billable !== false;
+  },
+
+  setBillable(billable) {
+    return Cards.updateAsync({ _id: this.getRealId() }, billable
+      ? { $unset: { billable: '' } } : { $set: { billable: false } });
+  },
+
+  // The Time section shows the badge when there is time spent or an estimate.
+  hasSpentOrEstimatedTime() {
+    const estimate = this.getEstimatedHours();
+    return !!this.getSpentTime() || (typeof estimate === 'number' && estimate > 0);
+  },
+
+  // Workload: the card's estimate in hours, or null to clear it. A linked card
+  // keeps the estimate of the card it links to.
+  setEstimatedHours(hours) {
+    const id = this.isLinkedCard() ? this.linkedId : this.getRealId();
+    if (hours === null || hours === undefined || hours === '') {
+      return Cards.updateAsync({ _id: id }, { $unset: { estimatedHours: '' } });
+    }
+    return Cards.updateAsync({ _id: id }, { $set: { estimatedHours: Number(hours) } });
   },
 
   setSpentTime(spentTime) {

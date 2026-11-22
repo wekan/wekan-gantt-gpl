@@ -95,6 +95,400 @@ Which databases WeKan supports
 
 </details>
 
+# v13.26 2026-11-22 WeKan ® release
+
+**In short:** New **Workload and capacity**, **Budget and billing** and **Cloud
+Panel** pages: hours against working time, each board's cost and margin with
+**expenses**, **fees**, **quotes** and **invoices** in **PDF**, **Excel** and
+**e-invoice**, and many customer domains merged into one WeKan. WordPress,
+Ghost, Blogger and static sites import and export under **Website**, and a
+public board can show itself as a **website**. The **Venda** and **Klingon**
+translations hold only their own language, the move and copy pickers show names
+without numbers (#6135), and unused code is removed.
+
+This release adds the following new features:
+
+**Workload and capacity** - hours against each person's working time, across
+boards.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/165dfa3c1676f6069d456ead021fa0db69f92e22">Workload and capacity page: load per person and week, with absences, holidays and allocations</a>. Thanks to xet7.</summary>
+
+User menu → Workload and capacity (`/workload`) shows, week by week, the
+estimated hours (a new card field, set beside the time spent) and Scrum story
+points of the cards assigned to each person, across every board the viewer is
+an active member of, against that person's working time: hours per week, work
+percent and working days, less absences and public holidays. A week over
+100 % is red. A board's admins allocate a share of a member's time to the
+board for a period, or a role before anybody is named (a placeholder row).
+The server computes the report; public boards and assigned-only boards are
+left out, and somebody else's absence is dates only. Admin Panel → Features
+turns it off. `tests/workload.test.cjs` and `tests/workloadAccess.test.cjs`
+pin the rules and who may do what, and a Playwright spec drives the page. See
+[Workload](docs/Features/Workload/Workload.md).
+
+</details>
+
+**Budget and billing** - what a board's work costs, and invoices of it.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/604b3dbe84c17d11af722826741866c8953e91b3">Hourly rates, a budget against cost and forecast, and invoices of the hours spent</a>. Thanks to xet7.</summary>
+
+User menu → Budget and billing (`/billing`), for a board's admins: hourly
+rates per member and a board default, a budget of money and/or hours, and
+the cost of the time spent, the work still to do and the forecast against it,
+in red when over. Invoices bill the billable hours not invoiced yet (a card
+can be marked not billable), numbered per year, with the statuses draft,
+sent, paid and void; they print alone and download as CSV. Money is integer
+cents; only board admins and site administrators see it; nothing is
+published. `tests/billing.test.cjs`, `tests/billingAccess.test.cjs` and a
+Playwright spec pin it. See [Billing](docs/Features/Billing/Billing.md).
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/13b0d5fe37d5ff73e109e06a4fdc21418497e273">Time by day, invoices of a period, payment codes, PDF, SVG, Excel and e-invoice</a>. Thanks to xet7.</summary>
+
+A card's Time popup lists its time by day - the day, the hours, who logged
+them, a note - and Log time adds an entry on a day. The card's total stays
+what the timers, the REST API, the imports and the reports read; whenever it
+changes the server records the difference as an entry of that day. An
+invoice covers a period: the billable entries of it that are on no invoice
+yet, per card and person, at that person's rate, so nothing is billed twice;
+voiding or crediting frees them. Payment codes follow their published
+standards and are checked against the standards' own examples: SEPA EPC QR,
+the Finnish bank barcode (Code 128 C), Finnish and ISO 11649 RF references,
+the Swiss QR-bill, Swish, Pix, UPI, Bitcoin BIP 21, PayPal.me and payment
+links. An invoice downloads as PDF, SVG, Excel, CSV and a UBL 2.1 Peppol BIS
+Billing 3.0 e-invoice, with QR codes and barcode as vectors. Also: the
+invoicer's details, VAT and reverse charge, due dates and penalty interest,
+payments, partial payment and overdue, and credit notes. Nothing is sent to
+any payment service. `tests/timeEntries.test.cjs`,
+`tests/paymentCodes.test.cjs`, `tests/ublInvoice.test.cjs`,
+`tests/invoiceFiles.test.cjs` and the billing suites pin it, and the
+Playwright spec invoices a period and downloads the PDF and SVG.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/37bc16e1e5f4c5f248e7aca9a779e4fc5cc5d8d2">Amounts in each currency's own decimals, and payment codes of more countries</a>. Thanks to xet7.</summary>
+
+Money had been kept in cents for every currency, so 1000 JPY was 100000 and
+1.500 KWD could not be written. `models/lib/currencies.js` now holds the ISO
+4217 minor unit of each currency - none for JPY, KRW, VND, CLP and ISK,
+three for KWD, BHD, JOD, OMR, TND, IQD and LYD - and rates, budgets,
+payments and every invoice file use it. New payment methods, each from its
+published specification: PromptPay, PayNow, VietQR and FPS as EMVCo QR codes,
+Czech SPAYD, Polish ZBP, Hungarian MNB, Serbian NBS IPS, Danish FI +71, and
+Ethereum and Litecoin; each requires the currency it is for. References add
+the Belgian structured +++ reference, the Norwegian KID and the Swedish OCR.
+`tests/regionalPaymentCodes.test.cjs` checks them against the standards'
+examples and billing in JPY and KWD.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d88662d69c212650a7ed5d0ab82d69262a2c6690">Expenses, fixed fees and retainers, approving time, cost rates and margin, and quotes</a>. Thanks to xet7.</summary>
+
+What a professional services automation system has besides time and
+invoices. Expenses - travel, materials, a subcontractor - with a markup, on
+a card and a person, spend the budget and go on the next invoice once. Fixed
+fees are billed once from their day and retainers every month to their end;
+a board can be a fixed price that bills no time. With approval on, only time
+a board admin approved is invoiced, and the card's Time popup shows the
+decision. A cost per hour gives the board its cost, unbilled work and margin.
+Quotes price the work still to do, and accepting one can make it the budget.
+Invoices and quotes fill in the board's customer. `tests/billing.test.cjs`,
+`tests/billingAccess.test.cjs`, `tests/invoiceFiles.test.cjs` and
+`tests/ublInvoice.test.cjs` pin it, and a Playwright spec drives it.
+
+</details>
+
+**Workload and capacity** - utilization and skills.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d88662d69c212650a7ed5d0ab82d69262a2c6690">Billable utilization against a target, and placeholders that list who has the skill</a>. Thanks to xet7.</summary>
+
+Under each person, the billable hours they logged against the hours they
+had, red under their own target. Skills with levels 1 to 5 are part of a
+person's working time; a placeholder that needs a skill lists the people
+with it at that level or better, the most free hours first.
+`tests/workload.test.cjs` and `tests/workloadAccess.test.cjs` pin it.
+
+</details>
+
+**Cloud Panel** - hosting many WeKan customer domains from one place.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/240f0dad935cba56618346fa0781ac1e72159af6">Customer domains, their databases, CloudFlare, Caddy, invoices and chat, and many WeKans merged into one</a>. Thanks to xet7.</summary>
+
+Admin Panel / People / Cloud names the Cloud Panel Domain and its
+SuperAdmin, as Weddy's Cloud Panel does. At that domain, `/cloud` keeps the
+customer domains in a table: each has its own WeKan container and MongoDB
+database, or shares this WeKan as an Organization claiming the domain.
+Import into this WeKan merges a domain's own database into this one, its
+accounts matched by e-mail address, so ten containers and ten databases
+become one of each. The SuperAdmin records the hosting invoices, which each
+customer sees with whether and when they were paid; a chat per domain takes
+earlier Rocket.Chat and SandChat conversations. CloudFlare DNS records and
+Caddy routes are written from the table. The panel answers only at its own
+domain; passwords and the CloudFlare token never reach a browser.
+`tests/cloudPanel.test.cjs` and `tests/cloudPanelAccess.test.cjs` pin it.
+See [Cloud Panel](docs/Features/Admin-Panel/Cloud-Panel.md).
+
+</details>
+
+**Website** - websites as boards, and boards as websites.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/2e8549032ea4b44e90a96eb53a4e1941f53a5261">Import and export WordPress, Ghost, Blogger, static and HTML sites; the board as a website</a>. Thanks to xet7.</summary>
+
+A new Website group in Import and Export reads and writes WordPress's WXR
+and REST JSON, Ghost, Blogger, a Markdown site of Hugo, Jekyll, Eleventy or
+Astro, a plain HTML site or Medium's export, and reads Substack's. Pages
+and posts become cards by status, with their content as Markdown, labels,
+comments and images. Board View / Website shows the board as that website,
+built from its own cards and attachments, and a public board can open in
+it, so visitors see the site at the board's address. No script of a site
+reaches a card, and none of a card reaches an exported site.
+`tests/websiteFormat.test.cjs` and a Playwright spec pin it. See
+[Website](docs/Features/Board-Sidebar/Board-Settings/Import-Export/Website/Website.md).
+
+</details>
+
+- [The comment-stripping loop and the script checks as the code guards read them](https://github.com/wekan/wekan/commit/fcc8f19fe41a3b73e6d6ce8290e3450338bf7d14). Thanks to xet7.
+
+and fixes the following bugs:
+
+**Budget and billing, Workload and the Cloud Panel** - faults their own tests
+found, on a real database and in the browser.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d88662d69c212650a7ed5d0ab82d69262a2c6690">Crediting an invoice works on a real database</a>. Thanks to xet7.</summary>
+
+The invoice schema allowed draft, sent, paid and void but not credited, so
+the credit note's update of the invoice was refused by collection2; the
+tests ran on in-memory collections that check no schema. A test now reads
+the schemas and requires every status, line kind and decision the server
+writes to be one of them.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/d88662d69c212650a7ed5d0ab82d69262a2c6690">The workload report uses each person's own working time</a>. Thanks to xet7.</summary>
+
+`capacityOf` validated the stored document, with its `_id` and `userId`, as
+if it were a form; the unknown fields failed it, and the report fell back to
+37.5 hours a week for everybody. It now reads only the capacity's own fields.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1032b472f3264e82c1cb860e59ebda3719f374ef">Saves show their result, the Cloud Panel's forms render and invoice PDFs print</a>. Thanks to xet7.</summary>
+
+Running the pages' Chromium specs through `build.sh` found five faults. Budget
+and billing read the current template data inside a promise, where there is
+none, so nothing refreshed after a save; it uses its own instance's data, and
+refreshes only the saved board without the spinner and without running into
+the rate limit of the board list. Workload's refresh showed the spinner that
+replaces the capacity form, so its "saved" note never stayed; the spinner is
+for the first load only. The Cloud Panel passed functions to its forms as
+`done=done`, which Spacebars calls, so the forms got a result instead and did
+not render. The app-wide form styles hid the checkboxes of all three pages.
+And pdfkit looked for its standard font in the bundle and failed; it is given
+the bundled font. `tests/templateDataInPromise`, `spacebarsFunctionArgs` and
+`nativeCheckboxesShown` find each shape anywhere in the client.
+
+</details>
+
+**Website** - the board shown as a website at its public address.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/fd7836e99cd93b7bd01d71845ceebffa1701cb9d">A visitor who never chose a view sees the board's own default view</a>. Thanks to xet7.</summary>
+
+The browser's fallback, Swimlanes, was handed to the view resolver as if the
+visitor had chosen it, so a public board set to Website showed its kanban to
+everybody. Only a view somebody chose overrides the board's default now;
+`tests/boardViewSettings` pins it.
+
+</details>
+
+**Attachments** - the attachment REST API.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b3a1ba762c5d05f12ad6a1a6d4d7747c3f076e29">Copy and move answer a JSON body again</a>. Thanks to xet7.</summary>
+
+`express.json()` in `server/apiMiddleware.js` reads a JSON body before any
+route runs, and the attachment routes then waited for a request end that had
+already happened; copy and move answered only at their 30-second timeout. The
+parsed body is handed to the routes' own listeners.
+`tests/attachmentApiParsedBody` fails when a server file waits for a body a
+parser may already have read.
+
+</details>
+
+**Checklists** - copying one to another card.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/131260b5bc531f7cbd6eb691ecd582a4d00e6d6f">Copy Checklist copies again</a>. Thanks to xet7.</summary>
+
+A copy carried the author's `userId`, which the insert hook stores but neither
+schema has, and the server refused it, so Done did nothing. The copy builders
+leave it out, and `tests/checklistTemplateCopy` requires every field of a copy
+to be in its schema.
+
+</details>
+
+**Menus and accessibility** - group headings and the Board View menu.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/91fea6e50df62a0faa13f22fe6f17d5ab633f5da">Group headings are readable and the Board View menu fits the window</a>. Thanks to xet7.</summary>
+
+The Import list's and the Board View menu's group headings had 4.48:1
+contrast where small text needs 4.5:1; they are darker. Long option menus are
+up to 1200px wide, four columns on a 1280px screen, so the grouped Board View
+menu no longer runs below a 720px-high window. Two browser tests follow
+renamed labels: "Memory usage", and Taiga's Blocked on the card's flow field.
+
+</details>
+
+**Move and copy pickers** - how boards, swimlanes and lists are named in them.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/bc5bf3c25edef7063f5bbf706611944719e06473">Board, swimlane and list options show the name without a number in front</a>. Thanks to mimZD and xet7.</summary>
+
+Issue [#6135](https://github.com/wekan/wekan/issues/6135) was closed by
+[an earlier fix](https://github.com/wekan/wekan/commit/fe4d2a56f2ab1f147faa683980bdbbe3b7593268),
+which took the "3. " prefix out of the card move/copy popups and added a
+`boardOptionLabel()` helper that nothing called. The list move/copy picker, the
+multi-selection move/copy picker, the
+add-list position select and the restore-from-archive pickers kept
+`{{add @index 1}}. {{title}}`, so a board whose name starts with a digit was
+still hard to read there and typing a name's first letter did not jump to it.
+They now show the name alone; the unused helper and the Blaze helpers `add`
+and `increment`, which only those numbers used, are removed.
+`tests/optionLabelsStartWithName.test.cjs` pins the pickers to their names and
+fails on any option in the tree whose label starts with an index number.
+
+</details>
+
+**Brute-force lockout** - when it is configured in Meteor.settings.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7f9fc2e9573b0854eec90b37147861a8293a1566">The lockout starts when Meteor.settings configures it</a>. Thanks to xet7.</summary>
+
+The wekan-accounts-lockout README documents
+`Meteor.settings['accounts-lockout'].knownUsers` and `.unknownUsers` as objects
+that override the configured values. Both counters applied them with
+`settings.forEach(function ...)`: an object has no `forEach`, and in a function
+callback `this` is undefined, so with either shape `startup()` threw before it
+hooked into Accounts, and nothing awaited it to notice. The two counters now
+share `src/lockoutSettings.js`, which merges a plain-object override and
+checks the values once; `tests/lockoutSettings.test.cjs` runs the README's
+settings. This is a configuration that never worked rather than an attempt
+anyone made, so there is nothing to record in Admin Panel → Problems.
+
+</details>
+
+and removes code nothing used, and shares code that was copied:
+
+**Code nothing loads** - files, helpers and copies outside the app's import
+graph.
+
+- [popup.jade at the repository root and migrations/009_fix_v795_due_dates.js, which nothing loaded, are removed](https://github.com/wekan/wekan/commit/b8734a8630742aad33633d0e24320c993a3a3976). Thanks to xet7.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/23c81e0b6c0a5c4a2ce0ddd846936b304fb24ec1">Tests drive the code the app runs, not copies of it that nothing loads</a>. Thanks to xet7.</summary>
+
+Ten modules were reached only from tests. The copies are gone and their
+tests read what runs: the OAuth2 client-secret JWT is the wekan-oidc package
+file, the #5439 scrollbar rules are read from `list.css`, the
+`createListAfter` check pattern is read from `server/models/lists.js` and run
+by Meteor's `check` rules, the #5910 comment search is read from the
+publication, and the #6081 counter's unused helper is removed. The checklist
+hide helpers and the subtask picker checks are now called by the app, and five
+re-export files only tests imported are removed.
+
+</details>
+
+**Shared code** - one copy of what several files had written out.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/bb4a01393987107dd656edfd6bc104372a31a493">Collection schemas share one createdAt and one modifiedAt autoValue</a>. Thanks to xet7.</summary>
+
+34 schema files wrote the same two functions 65 times in five spellings. They
+are `createdAtAutoValue` and `modifiedAtAutoValue` in
+`models/lib/schemaTimestamps.js`; `tests/schemaTimestamps.test.cjs` runs both in
+SimpleSchema's insert, upsert, update and validation contexts and fails when a
+schema writes one out by hand again.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/eb0df61e7f9681379491dc45431b7373271e7614">The autolinks are one package, shared by the app and the markdown package</a>. Thanks to xet7.</summary>
+
+The markdown package cannot import app code, so it carried its own copies of
+the #3069, #1463 and #2453 autolinks, kept in step by tests that compared the
+source text. They are now `@wekanteam/autolink` in `npm-packages/autolink`, a
+`file:` dependency both load. An older, unused third sanitizer config,
+`client/lib/secureDOMPurify.js`, is removed as well.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/27c3716f3d150fb63ab07b2c476cc8c7279196ed">Attachment APIs, file routes and storage strategies share what they had copied</a>. Thanks to xet7.</summary>
+
+The size limits and board write check of the attachment methods and REST
+routes are `server/lib/attachmentApiAccess.js`; the Content-Disposition
+functions of the file routes are `server/lib/contentDisposition.js`; the three
+storage strategies' download handler is the base class's, still failing closed
+with a 404; and Attachments and Avatars read an upload's id and name with
+`uploadNameParts()`. The AssignedBleed and fail-closed tests now read the
+shared code and fail if an API or a strategy brings its own copy back.
+
+</details>
+
+- [A swimlane titled Default is shown by one function instead of five copies](https://github.com/wekan/wekan/commit/c1a89b98fdaf115204f245b89fd665f498969357). Thanks to xet7.
+
+and updates the documentation:
+
+- [README and docs name Workload and capacity, Budget and billing, the Cloud Panel and Website](https://github.com/wekan/wekan/commit/2ba61536176a29ed853d0a99867f29a7e18a30a1):
+  the README's feature list, the feature index by menu and Newest features.
+  Thanks to xet7.
+
+and improves the following translations:
+
+**Translations** - each locale in its own language.
+
+**Languages updated:** Venda, Klingon, Aymara, Setswana, Luxembourgish, Sindhi,
+Northern Sami, Hawaiian, Sardinian, Sinhala.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/c039243a12508ab9a4e16ec8734349b7464c70e0">English behind a label replaced by translations in eight languages</a>. Thanks to xet7.</summary>
+
+646 values were the English source with a word of the language in front of
+it - "Aymar aruna: Actions" 480 times in Aymara, "Tshedimosetso: ..." 116
+times in Setswana, a few in Luxembourgish, Sindhi, Northern Sami, Hawaiian,
+Sardinian and Sinhala. Each is now translated into the language of its
+file. `tests/prefixedEnglishValues.test.cjs` reads every value of every
+locale and fails on that shape.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ae081a430c317f49c7ca3a22e4d06ffa12864a2a">Venda and Klingon translations hold only Venda and Klingon</a>. Thanks to xet7.</summary>
+
+The Venda file had been seeded partly from Zulu and Xhosa and used Venda
+"thutha" (moving house) for delete; the Klingon file had French, German and
+English. Every value of both was reviewed against the English source: 579
+Venda and 401 Klingon values are rewritten in their own language, with one
+word for each recurring term. `tests/vendaKlingonOwnLanguage.test.cjs` fails if
+another language comes back.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v13.25 2026-11-21 WeKan ® release
 
 **In short:** **CodeQL** alerts #605-#610 in the **OneNote** and **Sandstorm
@@ -8108,354 +8502,6 @@ now a lost connection, transient at startup and at run time - another host
 that does not resolve is still not a database problem - and the crash recorder
 skips what is transient. `tests/databaseDnsRestart.test.cjs` runs the guards
 and the recorder's own listeners.
-
-</details>
-
-Thanks to above GitHub users for their contributions and translators for their translations.
-
-# v12.61 2026-10-22 WeKan ® release
-
-**In short:** WeKan's npm dependencies move to their newest versions, among
-them **Blockly 13.4**, whose new toolbox search is translated into every
-language, and **imapflow**, **mailparser**, **pdfjs-dist** and
-**isomorphic-git**, which now have tests that run them the way WeKan does. The
-**core26 snap** gets the Caddy part the main snap already had, a language saved
-as **ca@valencia** shows Valencian, and **Admin Panel / Problems** stops
-re-reporting list indexes and calling a lost connection a schema bug.
-
-This release updates the following dependencies:
-
-- [The small npm updates](https://github.com/wekan/wekan/commit/8a00898252):
-  `@aws-sdk/*` 3.1155.0, `@fastify/busboy` 3.2.4, `@tweedegolf/sab-adapter-*`,
-  `blockly` 13.4.0, `dompurify` 3.4.17, `file-type` 22.2.0, `filesize`
-  11.0.28, `i18next` 26.5.4, `meteor-node-stubs` 1.2.32, `wasmagic` 1.0.12,
-  and for development `@rspack/core` 2.2.9, `@typescript-eslint/*` 8.72.0 and
-  `puppeteer` 25.15.0. Thanks to xet7.
-- [imapflow 2.8.0, mailparser 3.12.2, pdfjs-dist 6.4.299, isomorphic-git
-  1.44.3 and pretty-ms 10](https://github.com/wekan/wekan/commit/189adaee52),
-  each with a test that runs it as WeKan does: the IMAP poller against
-  WeKan's fake IMAP server, attachment text search on a PDF, and the GitHub
-  wiki import's history reading. Thanks to xet7.
-- [vmactions/openbsd-vm 1.4.9 and actions/setup-node v7.1.0](https://github.com/wekan/wekan/commit/92001bcfd9);
-  the BSD bundles are still built on OpenBSD 7.8. Thanks to xet7.
-
-and fixes the following bugs:
-
-**Admin Panel / Problems** - what a database message is reported as, and how
-often.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/058a2dcbce">List sort indexes are made from key objects, so they are no longer re-created at every start</a>. Thanks to Raymond-Voogt and xet7.</summary>
-
-[#6794](https://github.com/wekan/wekan/issues/6794): "Created the missing index
-"-modifiedAt" on lists" came back at every start, from every pod. The list
-sort options were passed to `ensureIndex` as strings, so lists got indexes on
-fields literally named "-modifiedAt", "-title" and "-sort", and the "is it
-there already?" check compared a string with an index key object, which never
-matched. Startup now ensures one index per sort field and drops the three
-stray ones; `ensureIndex` turns a string key into the key it means.
-`tests/listSortIndexes.test.cjs` uses the reporter's real index list, runs
-`ensureIndex` itself against a fake collection, and fails on any call in the
-tree whose key is not an index key object.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/a9e680d4b2">A lost database connection inside a validation error is a connection problem, not a schema bug</a>. Thanks to Raymond-Voogt and xet7.</summary>
-
-[#6795](https://github.com/wekan/wekan/issues/6795): while MongoDB restarted,
-"ValidationError: Failed validation Socket 'connect' timed out" was reported as
-an empty required field and a WeKan bug, and treated as fatal at startup.
-collection2 wraps whatever failed during validation, so the schema rule now
-yields to a lost connection, timeout, lock or too many connections in the same
-message, and the MongoDB driver's own network, server-selection, pool and
-not-primary errors are connection problems. The test runs both startup guards'
-own decision on the reported error and on every wrapped transient cause.
-
-</details>
-
-**Snap** - the Caddy reverse proxy part of the core26 snap.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/2ad5999bc7">The core26 snap gets the fixed Caddy part, and both snaps fall back to Caddy 2.11.7</a>. Thanks to xet7.</summary>
-
-`snapcraft-core26.yaml` still had the Caddy part `snapcraft.yaml` had before
-v10.71: the version from `api.github.com`, whose 403 to a busy CI runner ended
-the part under pipefail before its 2.8.4 fallback ran; a plain curl with no
-retry; and a default Caddyfile that proxied to port 3000, where WeKan does not
-listen when Caddy is on. Both snaps build from `snap-src`, so core26 now has
-the main snap's part, and both pin 2.11.7 as the fallback.
-`tests/releaseSnapArches.test.cjs` read `snapcraft.yaml` only, which is how
-the copy was missed; it now checks every `snapcraft*.yaml` and the
-Caddyfile's port.
-
-</details>
-
-**Languages** - which language a saved setting selects.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/6a37160bc8">A language saved as ca@valencia shows Valencian, not English</a>. Thanks to xet7.</summary>
-
-The Valencian file is `ca@valencia.i18n.json` but its registry tag is
-`ca-valencia`, and the resolver treated only `_` as `-`, so a profile saved
-as the file's name stayed in English. Both resolvers now compare through one
-`normalizeLanguageTag`, and `tests/browserLanguageFallback.test.cjs` requires
-every locale file name to resolve to a registry language.
-
-</details>
-
-and has the following translation updates:
-
-**Blockly toolbox search** - the five texts Blockly 13.4 adds, in every
-language.
-
-**Languages updated:** 230 languages.
-
-- [Toolbox search, in every locale](https://github.com/wekan/wekan/commit/8a00898252),
-  written from each file's own words for "block" and "search", with `%1`
-  kept. Corrected while there: Polish "Szukaj blokad" (search for
-  blockades) from Blockly's catalog, a stray "(1)" in Arabic, English mixed
-  into Odia's "no results", and Telugu's literal `null` that the importer
-  had replaced. The commit lists the languages translated with low
-  confidence, for a speaker to correct. Thanks to translators and xet7.
-
-Thanks to above GitHub users for their contributions and translators for their translations.
-
-# v12.60 2026-10-22 WeKan ® release
-
-**In short:** **sanitize-html 2.18.1** fixes a stack overflow that nested
-`<iframe>` tags caused in WeKan's import and export sanitizer, and a failed
-import or export no longer **disables the account** of whoever ran it unless it
-was an attempt. The forked Meteor **dynamic-import** and **meteor shell** keys
-come from the crypto RNG.
-
-This release fixes the following CRITICAL SECURITY ISSUES:
-
-**Imports and exports** - what nested `<iframe>` did to the sanitizer, and who
-a failure is blamed on.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/96ed9ad202">sanitize-html 2.18.1: nested iframes no longer crash imports and exports, or lock out who ran them</a>. Thanks to xet7.</summary>
-
-sanitize-html 2.18.0 re-sanitized the fallback of a discarded `<iframe>` with
-no recursion limit
-([GHSA-c9rx-x947-fp3h](https://github.com/advisories/GHSA-c9rx-x947-fp3h),
-CWE-674). WeKan's server sanitizer (`server/lib/inputSanitizer.js`) discards
-every tag, so it took that path: a few kilobytes of nested `<iframe>` threw
-`RangeError: Maximum call stack size exceeded` in `secureTransfer`, which
-sanitizes every import and export. `secureTransfer` records a throw as a high
-"blocked" event naming the user, and that disables the account, so a card
-planted with the payload locked out the next member who exported the board.
-2.18.1 bounds the recursion and keeps `nestingLimit` across it; it also drops
-the `deepmerge` dependency.
-
-[The tests](https://github.com/wekan/wekan/commit/d89bcab8e0):
-`tests/sanitizeHtmlNestedIframe.test.cjs` runs WeKan's own `sanitizeInput`
-options on three nested-iframe payloads and checks the installed and locked
-versions; with 2.18.0 it fails with the same `RangeError`. Its negative test
-fails if anything else imports sanitize-html. The Playwright spec exports and
-imports a board holding the payload and checks that nobody is locked out.
-Nothing is refused, so there is no Admin Panel → Problems key.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/567f99227b">A failed import or export disables an account only when it was an attempt</a>. Thanks to xet7.</summary>
-
-`secureTransfer` recorded every throw as a high "blocked" event naming the
-user, and that disables the account - so sanitize-html 2.18.0's crash, or any
-other library fault, locked out whoever happened to run the import or export.
-The transfer boundary now marks its own refusals (a cycle, a non-plain object,
-a size limit), and only those are recorded as blocked: high, and medium for a
-size limit, as before. Anything else shows in Admin Panel → Problems as
-ImportExportFailure: detected, still naming whose import or export it was, and
-never blocking an account.
-
-`tests/transferFailure.test.cjs` drives real boundary refusals and a sanitizer
-that throws through the account-blocking decision itself, and fails with the
-old `secureTransfer`. It also fails if the boundary throws a plain `Error` or
-anything other than `secureTransfer` calls it.
-
-</details>
-
-and fixes the following SECURITY ISSUES found by GitHub CodeQL code scanning:
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/6efd39a70e">The dynamic-import and meteor shell keys come from the crypto RNG</a>. Thanks to GitHub CodeQL and xet7.</summary>
-
-Alert 591 (js/insecure-randomness, CWE-338), in WeKan's fork of Meteor's
-`dynamic-import`: the key that lets a request read the SERVER's dynamic modules
-(`?key=` on `/__meteor__/dynamic-import/fetch`) came from `Math.random()`,
-whose state can be recovered from earlier outputs, and was compared with
-`===`. `meteor shell`'s connection key, which runs code in the server process,
-was made and compared the same way. Meteor 3.5.3 and 3.6-rc.0 both have this.
-
-Both now come from `crypto.randomBytes` (160 and 128 bits) and are compared
-with `crypto.timingSafeEqual`. `tests/meteorForkRandomKeys.test.cjs` runs both,
-and fails on any `Math.random()` in the forks and on a key, secret, token,
-nonce, salt, password or code made from `Math.random()` anywhere in the tree. A
-wrong key is not recorded in Admin Panel → Problems: another WeKan instance
-behind the same load balancer legitimately sends its own.
-
-</details>
-
-Thanks to above GitHub users for their contributions and translators for their translations.
-
-# v12.59 2026-10-22 WeKan ® release
-
-**In short:** WeKan carries **Meteor 3.5.3's six security fixes** - DDP,
-allow/deny, dynamic import, Google and Facebook login, and meteor shell - on
-Meteor 3.6-rc.0, which does not have them yet. **Release recovery** no longer
-stops on a passing GitHub API error, and **Cancel workflow** is kept able to
-stop every release workflow.
-
-This release fixes the following CRITICAL SECURITY ISSUES:
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/e0189bc53b">Meteor 3.5.3's six security fixes on Meteor 3.6-rc.0</a>. Thanks to Meteor developers, Vext Labs and xet7.</summary>
-
-Meteor published the same six fixes as 3.3.3, 3.4.2 and 3.5.3
-([announcement](https://forums.meteor.com/t/meteor-security-releases-3-3-3-3-4-2-and-3-5-3/64836)).
-3.6-rc.0, which WeKan runs, does not have them: its tag is behind 3.5.3 by
-exactly the 15 security commits. Going back to 3.5.3 would also mean Node.js
-24 and Rspack 1, so WeKan carries 3.6-rc.0's `allow-deny`, `ddp-server`,
-`dynamic-import`, `facebook-oauth`, `google-oauth` and `shell-server` in
-`packages/` with Meteor's 3.5.3 patch applied unchanged:
-
-- DDP: a message named `__proto__`, `toString` or not a string, and an async
-  handler that rejected, crashed the server.
-- allow/deny: a top-level `__proto__` in an update was missing from the field
-  list the validators saw.
-- dynamic `import()`: requests are bounded in size (413) and complexity (400).
-- Google and Facebook direct-token login: a token issued to another
-  application was accepted. Identity now comes from the provider, and a
-  Facebook verification error no longer carries the app secret.
-- `meteor shell`: its history and compile cache are private.
-- Deploy discovery is in `meteor-tool`, which an app cannot replace. WeKan is
-  never deployed with `meteor deploy`, and a test keeps it so.
-
-Refused attempts show in Admin Panel → Problems as Meteor DDP, Meteor
-allow-deny, Meteor dynamic-import and Meteor OAuth, and none disables an
-account. `tests/meteor353SecurityFixes.test.cjs` runs each fix's own code and
-searches the tree for the shape of each fault; every check fails on the unfixed
-packages, and the suite fails when `.meteor/release` moves on, because a fork
-would silently keep 3.6-rc.0's code. The Playwright spec sends each attack to
-a running WeKan built with the forks. See
-[Meteor 3.5.3 security fixes](docs/Security/Meteor-3.5.3-Security-Fixes-2026-10-22.md).
-
-</details>
-
-and has the following release-tooling fixes:
-
-**Release workflows** - how a release run recovers from GitHub errors, and how
-it stops when cancelled.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/e304e1948a">Release recovery waits out GitHub API errors instead of dying on one</a>. Thanks to xet7.</summary>
-
-The Recover job of Release All missing died on one HTTP 502 from the GitHub
-API while `gh run watch --exit-status` listed the rerun's jobs, so its plan
-and every build after it were skipped. `releases/retry-failed-release.py` now
-polls `gh run view`, retries up to ten API errors in a row, waits for the new
-attempt instead of reading the old attempt's failure, and stops only on the
-rerun's own conclusion. `tests/retryFailedRelease.test.py` pins the 502, a
-failed rerun, a lasting outage and the stale attempt, and that `gh run watch`
-is gone.
-
-</details>
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/94e1749977">Every workflow's jobs that run after a cancel end on their own</a>. Thanks to xet7.</summary>
-
-Cancel workflow does not cancel a job whose `if:` is still true, and
-`always()` is true in a cancelled run. `tests/releaseCancelSafeJobs.test.cjs`
-checked only `release-all.yml`; it now fails on a job on `always()` in any
-workflow that is a reusable-workflow call or has no timeout of 60 minutes or
-less. Every such job today is a short report and is bounded. node-patches had
-eleven five-hour resume stages called this way, and Cancel workflow did not
-stop them.
-
-</details>
-
-Thanks to above GitHub users for their contributions and translators for their translations.
-
-# v12.58 2026-10-21 WeKan ® release
-
-**In short:** an existing board can be **saved as a board template**, large
-**Jira** exports import instead of failing, and **comments** stay with a card
-moved to another board. A **GitHub CodeQL** alert in a test is fixed.
-
-This release fixes the following SECURITY ISSUES found by GitHub CodeQL code scanning:
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/e18794fa46">The invite-by-email test escapes the address completely, and a partial escape is found anywhere</a>. Thanks to GitHub CodeQL and xet7.</summary>
-
-Alert 590: the #6788 e2e put the stored address into a `$regex` with only `.`
-escaped, so a backslash in the address could cancel the escape. It now uses
-escape-string-regexp, the module the server matches addresses with.
-`tests/incompleteEscaping.test.cjs` knew only single-character patterns; it now
-also reports a character class without a backslash replaced by a backslash
-escape, and found this line before it was fixed. It is a test, so nothing is
-recorded in Admin Panel → Problems.
-
-</details>
-
-and adds the following new feature:
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/14a43da557">Board menu / Save as Template turns an existing board into a board template</a>. Thanks to xet7.</summary>
-
-Asked on IRC ([#6792](https://github.com/wekan/wekan/issues/6792)): a board
-template could only be built inside the Templates board. Save as Template
-copies the board - swimlanes, lists, cards, labels and custom fields - as a
-template board, private with the creator as its one member, and adds the linked
-card in the user's Templates / Board Templates swimlane that makes it a
-template; the copy opens. Board admins only, as Copy Board, and not offered on
-a board that already is a template. The entry reuses the card's own "Save as
-Template" words. `tests/largeImportAndBoardTemplate.test.cjs` pins the guards
-and the linked card, and a Playwright spec saves a board from the menu and
-checks a non-admin and a template board are refused.
-
-</details>
-
-and fixes the following bugs:
-
-**Import** - a large file imports instead of failing halfway or with an
-internal error.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/14a43da557">A Jira export of hundreds of issues imports, and a file too large says so</a>. Thanks to xet7.</summary>
-
-From IRC ([#6792](https://github.com/wekan/wekan/issues/6792)): a Jira import of
-25 issues worked and one of 858 failed. The import boundary refused documents
-over 250,000 values, and a Jira search export carries some 250 per issue even
-without comments, so it stopped at under 1,000 issues. The refusal was a plain
-Error, "Internal server error" on the import page. The cap is now four million
-values, a file over it is refused as "The file is too large to import at
-once", and the import deadline is `WEKAN_IMPORT_TIMEOUT_MS` plus half a second
-per record, on the server and in the page's watchdog alike. The test imports
-the 858-issue shape that the old cap refused.
-
-</details>
-
-**Moving cards** - what belongs to a card goes with it to another board.
-
-<details>
-<summary><a href="https://github.com/wekan/wekan/commit/696b5b073f">Comments stay with a card moved to another board, and do not reappear only when it moves back</a>. Thanks to fabiosalles and xet7.</summary>
-
-The board publication finds a board's comments, comment reactions, text notes,
-checklists, checklist items and attachments by the board id each row carries
-(#6480), but a card that changed board re-homed only its checklists and items.
-Its comments were still published to the board it left. Attachments followed
-only when the move ran on the server, never for a drag in the browser, and the
-REST card move skipped the hooks entirely. Now one list,
-`models/lib/cardChildrenBoard.js`, names every such collection, and one helper
-re-homes them from the move hook, the REST move and the durable rule move. The
-startup schema upgrade step `card-children-boardid` moves rows that a move
-already left behind to their card's board.
-`tests/cardChildrenFollowMove.test.cjs` pins the list and fails on any move
-path that skips the helper, and a Playwright spec moves a commented card with
-the Move Card popup and by REST.
 
 </details>
 

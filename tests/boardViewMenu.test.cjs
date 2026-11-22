@@ -87,6 +87,8 @@ const VIEWS = [
   { view: 'board-view-distribution', jsClass: 'js-open-distribution-view', icon: 'fa-pie-chart', template: 'distributionView', helper: 'isViewDistribution', chart: true },
   { view: 'board-view-dependency-map', jsClass: 'js-open-dependency-map-view', icon: 'fa-share-alt', template: 'dependencyMapView', helper: 'isViewDependencyMap', chart: true },
   { view: 'board-view-activity-heatmap', jsClass: 'js-open-activity-heatmap-view', icon: 'fa-th', template: 'activityHeatmapView', helper: 'isViewActivityHeatmap', chart: true },
+  // Appended after Activity Heatmap: the board as its website (models/lib/websiteView.js).
+  { view: 'board-view-website', jsClass: 'js-open-website-view', icon: 'fa-globe', template: 'websiteView', helper: 'isViewWebsite' },
 ];
 
 // Between Table and Calendar, between Timeline and Statistics, between
@@ -194,7 +196,7 @@ test('the anonymous-user fallback (no logged-in profile) accepts every view', ()
   const known = require('../models/lib/boardViewSettings').isKnownBoardView;
   VIEWS.forEach(v => assert.ok(known(v.view), `${v.view} is in BOARD_VIEWS`));
   assert.match(utilsJs, /setItem\('boardView', isKnownBoardView\(view\) \? view : DEFAULT_BOARD_VIEW\)/, 'storing accepts every view');
-  assert.match(utilsJs, /return isKnownBoardView\(browserView\) \? browserView : DEFAULT_BOARD_VIEW;/, 'and so does reading it back');
+  assert.match(utilsJs, /if \(isKnownBoardView\(browserView\)\) return browserView;/, 'and so does reading it back');
   assert.ok(!utilsJs.includes("'board-view-product-backlog',"),
     'no hand-written view list is left to drift (negative)');
 });
