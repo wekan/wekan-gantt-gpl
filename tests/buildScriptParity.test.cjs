@@ -633,7 +633,9 @@ test('build.bat cannot fail the same way', () => {
   const everything = bat.slice(start, bat.indexOf('\nREM ===', start));
   assert.ok(/bash \.\/releases\/run-everything\.sh/.test(everything),
     'the .bat EVERYTHING delegates to the shared script');
-  for (const [choice, label] of [['1', 'two'], ['2', 'one'], ['3', 'all']]) {
+  // One by one is option 1 since 2026-11-23 (the maintainer's choice: the
+  // least RAM first), two-worker option 2.
+  for (const [choice, label] of [['1', 'one'], ['2', 'two'], ['3', 'all']]) {
     assert.ok(new RegExp(`if "%choice%"=="${choice}"\\s+goto test_everything_${label}`).test(bat),
       `EVERYTHING mode ${choice} is reached by number, not by matching a sentence`);
   }
@@ -686,9 +688,10 @@ test('the first three Tests options are complete bounded execution modes', () =>
   const testsMenu = sh.slice(sh.indexOf('choose "Tests"'));
   const labels = [...testsMenu.matchAll(/^\s*"(EVERYTHING [^|"\n]+)\|/gm)]
     .slice(0, 3).map((match) => match[1]);
+  // One by one first since 2026-11-23, as the maintainer asked.
   assert.deepStrictEqual(labels, [
-    'EVERYTHING two-worker',
     'EVERYTHING one by one',
+    'EVERYTHING two-worker',
     'EVERYTHING at once',
   ]);
 
@@ -707,7 +710,8 @@ test('the first three Tests options are complete bounded execution modes', () =>
     assert.match(bat, new RegExp(`:test_everything_${label}\\s+set "WEKAN_EVERYTHING_MODE=${mode}"`));
   }
   assert.match(read('releases\/run-everything.sh'),
-    /--run-everything "\$\{1:-\$\{WEKAN_EVERYTHING_MODE:-two-worker\}\}"/);
+    // One by one is the default since 2026-11-23: two-worker ran out of RAM.
+    /--run-everything "\$\{1:-\$\{WEKAN_EVERYTHING_MODE:-sequential\}\}"/);
 });
 
 test('both scripts write ONE LOG PER BROWSER, not one for all three', () => {
@@ -860,7 +864,9 @@ test('the Mocha run is the same in both: --full-app, its own build dir, and its 
 });
 
 test('both accept --run-everything on the command line', () => {
-  assert.match(sh, /--run-everything\) run_everything "\$\{2:-two-worker\}"/);
+  // The default is one by one (sequential): two-worker ran out of RAM.
+  assert.match(sh, /--run-everything\) run_everything "\$\{2:-sequential\}"/);
+  assert.match(bat, /if "%~2"=="" \(set "WEKAN_EVERYTHING_MODE=sequential"\)/);
   assert.match(bat, /if \/I "%~1"=="--run-everything" \([\s\S]{0,200}goto test_everything/);
 });
 

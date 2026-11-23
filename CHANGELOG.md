@@ -5,6 +5,14 @@ each one changed and the project status are in
 Written by `node releases/changelog-short.mjs` from CHANGELOG-big.md:
 make changes there.
 
+# v13.29 2026-11-23 WeKan ® release
+
+**EVERYTHING** tests now run one stage and one worker at a time by
+default, so a full test run no longer runs the machine out of RAM; the
+two-worker mode stays available when asked for.
+
+[All changes in v13.29](CHANGELOG-big.md#v1329-2026-11-23-wekan--release)
+
 # v13.28 2026-11-23 WeKan ® release
 
 A board can be a **Shop** with invoices and order email, the
@@ -48,14 +56,3 @@ point, SandChat user ids come from a cryptographic generator, and the guards
 that missed these shapes now find them anywhere in the tree.
 
 [All changes in v13.25](CHANGELOG-big.md#v1325-2026-11-21-wekan--release)
-
-# v13.24 2026-11-21 WeKan ® release
-
-Six more of **Microsoft**'s tools are imported and exported under
-the Microsoft heading: **Azure DevOps Boards**, **Microsoft Lists**,
-**Microsoft Project** (XML), **Outlook** (.msg in, .eml out), **Teams** and
-**OneNote**, the last two also fetched from Microsoft Graph. **Sandstorm** grain
-backups of twelve apps are imported and nine exported, and **Vietnamese** no
-longer shows Malay text.
-
-[All changes in v13.24](CHANGELOG-big.md#v1324-2026-11-21-wekan--release)

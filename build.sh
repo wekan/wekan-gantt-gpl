@@ -1335,7 +1335,7 @@ mongo_answers() {
 }
 
 function run_all_tests(){
-	local REQUESTED_MODE="${1:-two-worker}"
+	local REQUESTED_MODE="${1:-sequential}"
 	local RUN_MODE="$REQUESTED_MODE" PLAYWRIGHT_WORKERS=1
 	case "$REQUESTED_MODE" in
 		two-worker) RUN_MODE=sequential; PLAYWRIGHT_WORKERS=2 ;;
@@ -2008,7 +2008,7 @@ function floating_promises_checks(){
 # releases/db-conformance.sh, which needs it a stage earlier). .tools/ is ignored
 # by git and by Meteor, so a companion repo cannot reach a commit or a rebuild.
 function run_everything(){
-	local EVERYTHING_MODE="${1:-two-worker}"
+	local EVERYTHING_MODE="${1:-sequential}"
 	acquire_everything_lock || return 1
 	trap 'trap - EXIT INT TERM; cleanup_everything_processes own; release_everything_lock' EXIT
 	trap 'trap - EXIT INT TERM; cleanup_everything_processes own; release_everything_lock; exit 130' INT TERM
@@ -3133,7 +3133,7 @@ cli_run() {
 # on Windows): the same "EVERYTHING (sequential)" the Tests menu offers, without
 # the menu.
 case "${1:-}" in
-	--run-everything) run_everything "${2:-two-worker}"; exit $? ;;
+	--run-everything) run_everything "${2:-sequential}"; exit $? ;;
 	--playwright-spec)
 		[ -n "${2:-}" ] || { echo "Usage: ./build.sh --playwright-spec <spec> [chromium|firefox|webkit|all] [title filter]" >&2; exit 2; }
 		run_playwright_spec "$2" "${3:-chromium}" "${4:-}" build; exit $? ;;
@@ -3168,8 +3168,8 @@ while [ -z "$opt" ]; do
 					"Kill all dev servers|Kill all dev servers (free ports 3000/3001/3100/3101/4000/4001/8080)" ;;
 			"Tests")
 				choose "Tests" \
-					"EVERYTHING two-worker|Run EVERYTHING with stages one by one and two Playwright workers per browser; database and FerretDB stages stay sequential; logs in log/<datetime>/" \
 					"EVERYTHING one by one|Run EVERYTHING one stage and one Playwright worker at a time for minimum RAM usage; database and FerretDB stages stay sequential; logs in log/<datetime>/" \
+					"EVERYTHING two-worker|Run EVERYTHING with stages one by one and two Playwright workers per browser; database and FerretDB stages stay sequential; logs in log/<datetime>/" \
 					"EVERYTHING at once|Run EVERYTHING with the WeKan test jobs concurrently; database backends and FerretDB stages stay sequential; logs in log/<datetime>/" \
 					"EVERYTHING source one by one|Run EVERYTHING against Dev server nobuild on localhost:3000, one test at a time, all browsers" \
 					"Mocha (server-side)|Test Mocha unit + security + API-logic tests (server-side only, no browser)" \
