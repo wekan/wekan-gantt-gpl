@@ -767,6 +767,21 @@ directly after the merge.
   WeKan ® release` of `CHANGELOG-big.md`, linking the commit (its `Fixes #NNNN`
   closes the issue). A done item never stays in `TODO.md`.
   `tests/todoFile.test.cjs` checks the file.
+- **Every time `TODO.md` is updated, check EVERY item in it for being done
+  already** - not only the one that prompted the update. Releases are frequent,
+  so an item is often finished, and even released, while it still sits there.
+  Check from the source, not from the wording: the code, `git log`, the issue's
+  state, the Snap Store or the GitHub Release. Then:
+  - **done and NOT released yet** (its commit is not an ancestor of the newest
+    release's `Prepare v… release` commit: `git merge-base --is-ancestor
+    <commit> <prepare-commit>`) - move it: remove it from `TODO.md` and write
+    its entry in `# Upcoming WeKan ® release`, linking the commit;
+  - **done and ALREADY released** - just remove it from `TODO.md`. Its release
+    is a record, and an entry is never added to a released section afterwards;
+  - **partly done** - shorten it to what is left, and say what was released.
+  A security advisory is the same: once its fix is released and its GHSA
+  published, it is done, and nothing about it stays in WeKan's `TODO.md` - not
+  the advisory and not the wait for its CVE number.
 - FerretDB Upcoming structure — `### New Features 🎉`, `### Fixed 🐛`, `### Other Changes
   🤖`; entries end `... by @xet7. Thanks to xet7.`
 - Word-wrap both CHANGELOGs at 80 chars, but never break a long link across lines (a
@@ -995,6 +1010,26 @@ have cost a released section its accuracy:
   the change in Audit-Stars.md. Match by the report's subject and reporter, not by
   a nearby advisory - a GHSA about something else is no upgrade. Until the GHSA
   exists, the row stays at 3 and its Process cell says the GHSA is awaited.
+- **Every new security issue updates the Hall of Fame, and every Hall of Fame
+  update fills in the GHSA and CVE details that are missing.** Compare the
+  published advisories (`releases/sec/download-github-security.sh` saves them,
+  or `https://api.github.com/repos/wekan/wekan/security-advisories?state=published`
+  read to its LAST page - there are more than 100, so one `per_page=100`
+  request misses the oldest, which then look unpublished) with
+  `hall-of-fame/index.html`:
+  - a **published GHSA with no row** gets one - the row, its own page,
+    `Audit-Icons.md`, `Audit-Stars.md`, the page's exact URLs in wekan.fi's
+    `releases/risk-baseline.json`, and a catalog key or a recorded reason in
+    `tests/hallOfFameProblemsCoverage.test.cjs` - even when the fix shipped long
+    before the advisory, as OidcRaceBleed's did (GHSA-6944-p22h-3qpx, 2026-11-23);
+  - a row whose advisory has a **CVE assigned** gets it in its CVE cell, on the
+    index AND on its own page, in place of "CVE requested";
+  - a row linking an advisory that is **not public** (the API answers 404) is
+    named to the maintainer: it is a draft or was closed, and readers get a
+    404 from it.
+  A CVE that is requested but not assigned yet is NOT a TODO item: requesting
+  it is part of publishing the advisory, and the CVE cell says "CVE requested"
+  until the next Hall of Fame update finds the number.
 - **On the Hall of Fame index page, the Process and Vulnerabilities cells are
   collapsed.** Those two columns carry the prose — how the report arrived, and the
   whole story of the vulnerability — so the page would be one wall of text and the

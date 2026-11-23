@@ -377,6 +377,25 @@ copy of it in shell.
 architecture is promoted — and edge is often ahead of stable, so a bare run
 publishes edge builds to stable users. Pass the version, or `--dry-run` first.
 
+### What's new on the store page
+
+Each release puts **What's new in WeKan v<version>** - the release's **In
+short** paragraph from `CHANGELOG-big.md`, with a link to all its changes - at
+the top of the Snap Store page of `wekan`, `wekan-ondra` and `wekan-gantt-gpl`.
+
+The store has **no API for a revision's own changelog**: the dashboard's "Add
+changelog" link on a revision is a web form and nothing else, and neither
+snapcraft nor its store library can set it. So the text goes on the listing,
+which `snapcraft upload-metadata` updates, with the `SNAP_AUTH` login the
+uploads already use (`package_update`).
+
+| | |
+| --- | --- |
+| Page text | `releases/snap-listing/<snap>.md`. Edit the page text there, not on the web: each release writes the page from this file. |
+| What's new | `releases/snap-listing.mjs` puts it first and keeps as much of the page text as fits the store's 4096 bytes, in whole lines; when something had to go, the page ends with a link to the whole file. wekan's feature list alone is 4047 bytes, so its end is on the linked page. |
+| Sending | `releases/snap-listing-update.sh`: title, summary, license and icon are sent back exactly as the store has them, so only the description changes. |
+| When | the last step of **Push Snap to Store**, for the newest release only - run for an older tag it would put the older What's new back. A failure there is an `::error::` and does not fail the push. |
+
 ### What each snap currently has, and what is still to add
 
 As of WeKan **10.78** the store holds:
@@ -398,16 +417,22 @@ point of the table:
   been failing — most recently on Caddy, which publishes no `linux_armhf` archive
   because its asset names are Go's. That is fixed for the next release. Nothing
   to do here but release.
-- **🚫 the release does not build it for that snap at all.** The `snap-variants`
+- **🚫 the release did not build it for that snap at all.** The `snap-variants`
   job that publishes `wekan-ondra` and `wekan-gantt-gpl` has FOUR matrix entries —
-  each variant on amd64 and on arm64, on GitHub runners. The exotic architectures
-  come from `snap-launchpad`, which builds only the `wekan` name. So no upload is
-  pending for these squares: they need the variant job extended to Launchpad
-  remote builds under the variant snap names first.
+  each variant on amd64 and on arm64, on GitHub runners — and the other
+  architectures came from `snap-launchpad`, which built only the `wekan` name.
+  **Fixed for the next release:** each `snap-launchpad` leg now also makes
+  `wekan-ondra` and `wekan-gantt-gpl` from the `wekan` snap it just built
+  (`releases/snap-rename.sh` changes `name:` and `title:`, nothing else), releases
+  them to all four channels and attaches them to the GitHub Release, so every 🚫
+  square above gets the release's version. **Push Snap to Store** and **Release
+  All Missing** make any variant a release lacks from that release's `wekan` snap
+  of the same architecture. See
+  [Snap-Ondra-Gantt.md](Snap-Ondra-Gantt.md#architectures-and-channels).
 - **⚠️ a fossil.** `wekan-ondra`'s armhf is stuck at version **0.22** on all four
-  channels — a revision the store kept from years ago. Promoting channels cannot
-  fix it: there is no newer revision to promote, and per the row above nothing
-  currently builds one.
+  channels — a revision the store kept from years ago. Promoting channels could
+  not fix it, because there was no newer revision to promote; the first release
+  with the change above uploads one and releases it over 0.22 on every channel.
 
 Publishing the **stable** channel is safe for these because the snap performs its
 **automatic migrations** on start — the schema upgrades and the one-time

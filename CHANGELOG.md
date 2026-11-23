@@ -5,6 +5,17 @@ each one changed and the project status are in
 Written by `node releases/changelog-short.mjs` from CHANGELOG-big.md:
 make changes there.
 
+# v13.30 2026-11-23 WeKan ® release
+
+The **wekan-ondra** and **wekan-gantt-gpl** snaps are published on
+every architecture the wekan snap has, on all four channels, and each **Snap
+Store page** shows what is new in the newest release. **Time tracking**
+works again on imported cards whose spent time was stored empty, and the
+**Admin Panel recovery list** no longer fills up with old cancelled
+notifications.
+
+[All changes in v13.30](CHANGELOG-big.md#v1330-2026-11-23-wekan--release)
+
 # v13.29 2026-11-23 WeKan ® release
 
 **EVERYTHING** tests now run one stage and one worker at a time by
@@ -47,12 +58,3 @@ translations hold only their own language, the move and copy pickers show names
 without numbers (#6135), and unused code is removed.
 
 [All changes in v13.26](CHANGELOG-big.md#v1326-2026-11-22-wekan--release)
-
-# v13.25 2026-11-21 WeKan ® release
-
-**CodeQL** alerts #605-#610 in the **OneNote** and **Sandstorm
-grain** formats are fixed: comments in imported HTML are removed to a fixed
-point, SandChat user ids come from a cryptographic generator, and the guards
-that missed these shapes now find them anywhere in the tree.
-
-[All changes in v13.25](CHANGELOG-big.md#v1325-2026-11-21-wekan--release)

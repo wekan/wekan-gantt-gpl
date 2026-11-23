@@ -15,22 +15,22 @@ the changelog only says what changed.
 
 `tests/todoFile.test.cjs` checks this shape.
 
-**Where things are** (2026-11-22). Each repository's own TODO.md has the
+**Where things are** (2026-11-23). Each repository's own TODO.md has the
 details; WeKan's are below.
 
 | Repository | In progress, or not verified yet | Needs a person |
 | --- | --- | --- |
-| WeKan | The help button's texts in 176 of 232 languages; the test build that runs out of memory; the changelog of the newest work; Latvian with Lithuanian words; laws and standards WP-4 onwards; accessibility; the docs folders | Push; the CVEs and advisories of ListLockMoveBleed and BounceBleed after the release; the Snap Store review ([#6929](https://github.com/wekan/wekan/issues/6929)) |
-| [gitea-patches](https://github.com/wekan/gitea-patches/blob/main/TODO.md) | 90 new upstream Gitea strings not yet in Finnish | Push; run "Migrate all Gitea to backups" with `--dry-run` first |
+| WeKan | The help button's Playwright spec; the test build that runs out of memory; wrong-language words in some locales; laws and standards WP-4 onwards; accessibility; the docs folders | Push |
+| [gitea-patches](https://github.com/wekan/gitea-patches/blob/main/TODO.md) | 90 new upstream Gitea strings not yet in Finnish | Run "Migrate all Gitea to backups" with `--dry-run` first |
 | [omi](https://github.com/wekan/omi/blob/main/TODO.md) | Delete and import not yet run on a real Gitea folder or against the real GitHub; the import has no reactions, review comments, LFS, Actions or fork branches | Push; stop and back up Gitea before the first real write |
 | [welite](https://github.com/wekan/welite/blob/main/TODO.md) | WeKan data folders: no zip archives, GridFS or object-storage downloads, avatars or cross-target builds yet; retro-browser acceptance | - |
 | [weddy](https://github.com/wekan/weddy/blob/main/TODO.md) | 20 of WeKan's 174 templates in Go; attachments' Office preview and WebP thumbnails; more of WeKan's specs; Firefox and WebKit; netbsd/arm64 | Its "For the maintainer (on GitHub)" items |
-| [caddy-ferretdb-plugin](https://github.com/wekan/caddy-ferretdb-plugin/blob/main/TODO.md) | The Windows SQLite URI fix, checked on Linux only | Close the otel Dependabot alert; push before caddy-wekan-plugin |
-| [caddy-wekan-plugin](https://github.com/wekan/caddy-wekan-plugin/blob/main/TODO.md) | Weddy behind WeKan's newest settings; the Windows fixes, checked on Linux only | Push; close the otel Dependabot alert |
+| [caddy-ferretdb-plugin](https://github.com/wekan/caddy-ferretdb-plugin/blob/main/TODO.md) | The Windows SQLite URI fix, checked on Linux only | Close the otel Dependabot alert |
+| [caddy-wekan-plugin](https://github.com/wekan/caddy-wekan-plugin/blob/main/TODO.md) | Weddy behind WeKan's newest settings; the Windows fixes, checked on Linux only | Close the otel Dependabot alert |
 | [node-patches](https://github.com/wekan/node-patches/blob/main/TODO.md) | The clone retry, until the next Release All | - |
 | [wekango](https://github.com/wekan/wekango/blob/main/TODO.md) | The Windows and macOS fixes, checked on Linux only | Confirm the mongo-tools notice review |
 | [weror](https://github.com/wekan/weror/blob/main/TODO.md) | - | Decide on the demo account that takes any password; close the rack Dependabot pull request |
-| [wekan.fi](https://github.com/wekan/wekan.fi/blob/main/TODO.md) | - | Rerun the Pages deploy; the CVE numbers into the Hall of Fame |
+| [wekan.fi](https://github.com/wekan/wekan.fi/blob/main/TODO.md) | - | Rerun the Pages deploy |
 | [wekan-meteor3-html4](https://github.com/wekan/wekan-meteor3-html4/blob/main/TODO.md) | Left out for now | - |
 | wena | aros-i386 without AHI audio | Rerun Release all for haiku-amd64 |
 | wepica | Left out: too old | - |
@@ -40,24 +40,16 @@ details; WeKan's are below.
 Work being done now. Each item moves to the `# Upcoming WeKan ® release`
 section of `CHANGELOG-big.md`, and to the docs, when it is committed.
 
-- A help button (?) at the top of every feature's place, mirrored for
-  right-to-left languages, opening "What is it?" and "How it works?" for that
-  feature as plain text without links, in every language. Done: the button,
-  the popup, 161 places and the English texts. Translating the 323
-  descriptions: 176 of the 232 non-English locales are done (2026-11-22),
-  the rest are being translated, a few languages at a time. Not yet run: the
-  Playwright spec `feature-help.e2e.js`.
+- The help button (?): its Playwright spec `feature-help.e2e.js` has not been
+  run yet. The button, its texts and their translations into every language
+  are released (v13.28).
 - The Meteor test build (`meteor test --full-app`) ran out of memory before
   any test started after the help texts grew every locale file; the release
   build (`meteor build`) still works. To find out why and fix it, then run
   the Shop, webhooks and Admin Panel addresses server tests, and their
   Playwright specs in Firefox and WebKit.
-- The changelog entries for what landed since the last changelog update:
-  ListLockMoveBleed, the help button, the Shop's Product line kind, the
-  Meteor 3 hosting localhost limit, the Omi and WeLite translation keys, and
-  the translation rule for the prototypes.
 - Wrong-language and wrong-meaning words seen by the help-text translators,
-  to correct once they are done with those files: Latvian (`lv`) has
+  to correct now that the help texts are translated: Latvian (`lv`) has
   Lithuanian words; Estonian (`et-EE`) calls a board "juhatus" (a company's
   management board) in "Board Settings" and "Board View"; Aromanian (`rup`)
   and Sicilian (`scn`) have Italian menu names; Northern Sami (`se`) has two
@@ -97,15 +89,7 @@ section of `CHANGELOG-big.md`, and to the docs, when it is committed.
 ## For the maintainer: needs a person, not code
 
 - Push `main` here and in the `.tools/w/` repositories with local commits:
-  gitea-patches, omi, welite, wekan.fi, charts and caddy-wekan-plugin.
-- [GHSA-394w-8q99-q4qx](https://github.com/wekan/wekan/security/advisories/GHSA-394w-8q99-q4qx)
-  (ListLockMoveBleed) and
-  [GHSA-7w85-38ph-c96v](https://github.com/wekan/wekan/security/advisories/GHSA-7w85-38ph-c96v)
-  (BounceBleed): fixed in Upcoming; after the release, request the CVEs and
-  publish the advisories. The Hall of Fame says "CVE requested" for both.
-- The Snap Store push of v13.27 failed and waits for the Store's manual review
-  ([#6929](https://github.com/wekan/wekan/issues/6929)); nothing to change in
-  the code.
+  omi and wekan.fi.
 - Dependabot pull requests and alerts to close by hand: the
   go.opentelemetry.io/otel/sdk/log update in caddy-ferretdb-plugin and
   caddy-wekan-plugin (Dependabot cannot resolve their local `replace`, and the
@@ -143,7 +127,7 @@ section of `CHANGELOG-big.md`, and to the docs, when it is committed.
 The import/export review asked on 2026-11-20 (everything each tool with a
 WeKan import or export can hold comes across, whole or in part) went through
 every parser and formatter against the export format its header documents.
-What it found is fixed and in the Upcoming release; the round trips are held
+What it found is fixed and released; the round trips are held
 by `tests/playwright/specs/export-import-round-trip.e2e.js` (41 formats, the
 description, checklist, comment, dependency, label and due date) and
 `tests/exportRoundTripFields.test.cjs` (32 formats in plain Node: start and
